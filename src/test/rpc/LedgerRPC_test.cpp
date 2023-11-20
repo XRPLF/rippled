@@ -396,7 +396,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             auto const jrr =
                 env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::ledger][jss::closed] == true);
-            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == 1);
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "1");
         }
 
         {
@@ -405,7 +405,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             auto const jrr =
                 env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::ledger][jss::closed] == true);
-            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == 1);
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "1");
         }
 
         {
@@ -414,7 +414,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(jrr[jss::ledger][jss::closed] == false);
             BEAST_EXPECT(
                 jrr[jss::ledger][jss::ledger_index] ==
-                env.current()->info().seq);
+                std::to_string(env.current()->info().seq));
             BEAST_EXPECT(
                 jrr[jss::ledger_current_index] == env.current()->info().seq);
         }
@@ -1833,7 +1833,7 @@ class LedgerRPC_test : public beast::unit_test::suite
                 boost::lexical_cast<std::string>(jvParams))[jss::result];
             BEAST_EXPECT(jrr.isMember(jss::ledger));
             BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
-            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == 5);
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "5");
 
             jvParams[jss::ledger] = "validated";
             jrr = env.rpc(
@@ -1842,7 +1842,7 @@ class LedgerRPC_test : public beast::unit_test::suite
                 boost::lexical_cast<std::string>(jvParams))[jss::result];
             BEAST_EXPECT(jrr.isMember(jss::ledger));
             BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
-            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == 5);
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "5");
 
             jvParams[jss::ledger] = "current";
             jrr = env.rpc(
@@ -1850,7 +1850,7 @@ class LedgerRPC_test : public beast::unit_test::suite
                 "ledger",
                 boost::lexical_cast<std::string>(jvParams))[jss::result];
             BEAST_EXPECT(jrr.isMember(jss::ledger));
-            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == 6);
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "6");
 
             // ask for a bad ledger keyword
             jvParams[jss::ledger] = "invalid";
@@ -1869,7 +1869,7 @@ class LedgerRPC_test : public beast::unit_test::suite
                 boost::lexical_cast<std::string>(jvParams))[jss::result];
             BEAST_EXPECT(jrr.isMember(jss::ledger));
             BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
-            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == 4);
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "4");
 
             // numeric index - out of range
             jvParams[jss::ledger] = 20;
@@ -1894,7 +1894,7 @@ class LedgerRPC_test : public beast::unit_test::suite
                 boost::lexical_cast<std::string>(jvParams))[jss::result];
             BEAST_EXPECT(jrr.isMember(jss::ledger));
             BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
-            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == 3);
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "3");
 
             // extra leading hex chars in hash are not allowed
             jvParams[jss::ledger_hash] = "DEADBEEF" + hash3;
@@ -1947,7 +1947,7 @@ class LedgerRPC_test : public beast::unit_test::suite
                 boost::lexical_cast<std::string>(jvParams))[jss::result];
             BEAST_EXPECT(jrr.isMember(jss::ledger));
             BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
-            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == 5);
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "5");
             BEAST_EXPECT(jrr.isMember(jss::ledger_index));
 
             jvParams[jss::ledger_index] = "validated";
@@ -1957,7 +1957,7 @@ class LedgerRPC_test : public beast::unit_test::suite
                 boost::lexical_cast<std::string>(jvParams))[jss::result];
             BEAST_EXPECT(jrr.isMember(jss::ledger));
             BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
-            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == 5);
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "5");
 
             jvParams[jss::ledger_index] = "current";
             jrr = env.rpc(
@@ -1965,7 +1965,7 @@ class LedgerRPC_test : public beast::unit_test::suite
                 "ledger",
                 boost::lexical_cast<std::string>(jvParams))[jss::result];
             BEAST_EXPECT(jrr.isMember(jss::ledger));
-            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == 6);
+            BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == "6");
             BEAST_EXPECT(jrr.isMember(jss::ledger_current_index));
 
             // ask for a bad ledger keyword
@@ -1988,7 +1988,8 @@ class LedgerRPC_test : public beast::unit_test::suite
                 BEAST_EXPECT(jrr.isMember(jss::ledger));
                 if (i < 6)
                     BEAST_EXPECT(jrr.isMember(jss::ledger_hash));
-                BEAST_EXPECT(jrr[jss::ledger][jss::ledger_index] == i);
+                BEAST_EXPECT(
+                    jrr[jss::ledger][jss::ledger_index] == std::to_string(i));
             }
 
             // numeric index - out of range

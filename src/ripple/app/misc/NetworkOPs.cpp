@@ -2220,12 +2220,25 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
 
+        // TODO Replace multiObj with jvObj when API version 1 is retired
+        MultiApiJson multiObj = {{jvObj, jvObj}};
+        constexpr std::size_t indexApi1 = apiVersionSelector(1)();
+        static_assert(indexApi1 == 0);
+        auto& jvObjApi1 = multiObj.val[indexApi1];
+        if (jvObjApi1.isMember(jss::ledger_index))
+        {
+            // Cast back to API version 1 type of this field, i.e. string
+            jvObjApi1[jss::ledger_index] =
+                std::to_string(jvObjApi1[jss::ledger_index].asUInt());
+        }
         for (auto i = mStreamMaps[sValidations].begin();
              i != mStreamMaps[sValidations].end();)
         {
             if (auto p = i->second.lock())
             {
-                p->send(jvObj, true);
+                p->send(
+                    multiObj.select(apiVersionSelector(p->getApiVersion())),
+                    true);
                 ++i;
             }
             else

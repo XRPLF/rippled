@@ -477,7 +477,8 @@ public:
                     to_string(env.closed()->info().hash))
                     return false;
 
-                if (jv[jss::ledger_index] != env.closed()->info().seq)
+                if (jv[jss::ledger_index] !=
+                    std::to_string(env.closed()->info().seq))
                     return false;
 
                 if (jv[jss::flags] != (vfFullyCanonicalSig | vfFullValidation))
