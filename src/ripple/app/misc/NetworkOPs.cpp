@@ -2220,9 +2220,10 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
 
-        // TODO Replace multiObj with jvObj when API version 1 is retired
-        MultiApiJson multiObj = {{jvObj, jvObj}};
+        // TODO Replace multiObj with jvObj when API versions 1 & 2 are retired
+        MultiApiJson multiObj = {{jvObj, jvObj, jvObj}};
         constexpr std::size_t indexApi1 = apiVersionSelector(1)();
+        // TODO also version 2
         static_assert(indexApi1 == 0);
         auto& jvObjApi1 = multiObj.val[indexApi1];
         if (jvObjApi1.isMember(jss::ledger_index))
@@ -3172,7 +3173,7 @@ NetworkOPsImp::transJson(
     }
 
     std::string const hash = to_string(transaction->getTransactionID());
-    MultiApiJson multiObj({jvObj, jvObj});
+    MultiApiJson multiObj({jvObj, jvObj, jvObj});
     // Minimum supported API version must match index 0 in MultiApiJson
     static_assert(apiVersionSelector(RPC::apiMinimumSupportedVersion)() == 0);
     // Last valid (possibly beta) API ver. must match last index in MultiApiJson

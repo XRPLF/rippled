@@ -248,8 +248,8 @@ struct MultivarJson_test : beast::unit_test::suite
             // NOTE It's fine to change this test when we change API versions
             testcase("apiVersionSelector");
 
-            static_assert(MultiApiJson::size == 2);
-            static MultiApiJson x{{obj1, str1}};
+            static_assert(MultiApiJson::size == 3);
+            static MultiApiJson x{{obj1, str1, str1}};
 
             static_assert(
                 std::is_same_v<decltype(apiVersionSelector(1)()), std::size_t>);
@@ -266,10 +266,11 @@ struct MultivarJson_test : beast::unit_test::suite
             static_assert(apiVersionSelector(0)() == 0);
             static_assert(apiVersionSelector(1)() == 0);
             static_assert(apiVersionSelector(2)() == 1);
-            static_assert(apiVersionSelector(3)() == 1);
+            static_assert(apiVersionSelector(3)() == 2);
+            static_assert(apiVersionSelector(4)() == 2);
             static_assert(
                 apiVersionSelector(
-                    std::numeric_limits<unsigned int>::max())() == 1);
+                    std::numeric_limits<unsigned int>::max())() == 2);
         }
 
         {

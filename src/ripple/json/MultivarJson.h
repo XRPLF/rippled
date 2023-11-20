@@ -68,7 +68,7 @@ struct MultivarJson
 };
 
 // Wrapper for Json for all supported API versions.
-using MultiApiJson = MultivarJson<2>;
+using MultiApiJson = MultivarJson<3>;
 
 /*
 
@@ -101,9 +101,12 @@ apiVersionSelector(unsigned int apiVersion) noexcept
 {
     return [apiVersion]() constexpr
     {
-        // apiVersion <= 1 returns 0
-        // apiVersion > 1  returns 1
-        return static_cast<std::size_t>(apiVersion > 1);
+        return static_cast<std::size_t>(
+            apiVersion <= 1         //
+                ? 0                 //
+                : (apiVersion <= 2  //
+                       ? 1          //
+                       : 2));
     };
 }
 
