@@ -88,20 +88,16 @@ If a future API version change adds another possible format, change the size of
 `MultiApiJson`, and update `apiVersionSelector()` to return the appropriate
 selection value for the new `apiVersion` and higher.
 
-e.g. There are 2 formats now, the first, for version one, the second for
-versions > 1. Hypothetically, if API version 4 adds a new format, `MultiApiJson`
-would be MultivarJson<3>, and `apiVersionSelector` would return
-`static_cast<std::size_t>(apiVersion < 2 ? 0u : (apiVersion < 4 ? 1u : 2u))`
-
-NOTE:
-
 The more different JSON formats we support, the more CPU cycles we need to
-pre-build JSON for different API versions e.g. when publishing streams to
+prepare JSON for different API versions e.g. when publishing streams to
 `subscribe` clients. Hence it is desirable to keep MultiApiJson small and
 instead fully deprecate and remove support for old API versions. For example, if
 we removed support for API version 1 and added a different format for API
 version 3, the `apiVersionSelector` would change to
 `static_cast<std::size_t>(apiVersion > 2)`
+
+Such hypothetical change should correspond with change in RPCHelpers.h
+`apiMinimumSupportedVersion = 2;`
 
 */
 
