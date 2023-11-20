@@ -3174,24 +3174,9 @@ NetworkOPsImp::transJson(
 
     std::string const hash = to_string(transaction->getTransactionID());
     MultiApiJson multiObj({jvObj, jvObj, jvObj});
-    // Minimum supported API version must match index 0 in MultiApiJson
-    static_assert(apiVersionSelector(RPC::apiMinimumSupportedVersion)() == 0);
-    // Last valid (possibly beta) API ver. must match last index in MultiApiJson
-    static_assert(
-        apiVersionSelector(RPC::apiMaximumValidVersion)() + 1  //
-        == MultiApiJson::size);
-    for (unsigned apiVersion = RPC::apiMinimumSupportedVersion,
-                  lastIndex = MultiApiJson::size;
-         apiVersion <= RPC::apiMaximumValidVersion;
-         ++apiVersion)
-    {
-        unsigned const index = apiVersionSelector(apiVersion)();
-        assert(index < MultiApiJson::size);
-        if (index != lastIndex)
-        {
-            lastIndex = index;
-
-            Json::Value& jvTx = multiObj.val[index];
+    visit<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(
+        multiObj,  //
+        [&](Json::Value& jvTx, unsigned int apiVersion) {
             RPC::insertDeliverMax(
                 jvTx[jss::transaction], transaction->getTxnType(), apiVersion);
 
@@ -3204,8 +3189,7 @@ NetworkOPsImp::transJson(
             {
                 jvTx[jss::transaction][jss::hash] = hash;
             }
-        }
-    }
+        });
 
     return multiObj;
 }

@@ -26,6 +26,8 @@
 #include <cassert>
 #include <concepts>
 #include <cstdlib>
+#include <type_traits>
+#include <utility>
 
 namespace ripple {
 template <std::size_t Size>
@@ -108,6 +110,35 @@ apiVersionSelector(unsigned int apiVersion) noexcept
                        ? 1          //
                        : 2));
     };
+}
+
+// Helper to execute a callback for every version. Want both min and max version
+// provided explicitly, so user will know to do update `size` when they change
+template <
+    unsigned int minVer,
+    unsigned int maxVer,
+    std::size_t size,
+    typename Fn>
+    requires                                       //
+    (maxVer >= minVer) &&                          //
+    (size == maxVer + 1 - minVer) &&               //
+    (apiVersionSelector(minVer)() == 0) &&         //
+    (apiVersionSelector(maxVer)() + 1 == size) &&  //
+    requires(Json::Value& json, Fn fn)
+{
+    fn(json, static_cast<unsigned int>(1));
+}
+void
+visit(MultivarJson<size>& json, Fn fn)
+{
+    [&]<std::size_t... offset>(std::index_sequence<offset...>)
+    {
+        static_assert(((apiVersionSelector(minVer + offset)() >= 0) && ...));
+        static_assert(((apiVersionSelector(minVer + offset)() < size) && ...));
+        (fn(json.val[apiVersionSelector(minVer + offset)()], minVer + offset),
+         ...);
+    }
+    (std::make_index_sequence<size>{});
 }
 
 }  // namespace ripple

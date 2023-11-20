@@ -33,6 +33,14 @@ namespace test {
 
 struct MultivarJson_test : beast::unit_test::suite
 {
+    static auto
+    makeJson(const char* key, int val)
+    {
+        Json::Value obj1(Json::objectValue);
+        obj1[key] = val;
+        return obj1;
+    };
+
     void
     run() override
     {
@@ -213,12 +221,6 @@ struct MultivarJson_test : beast::unit_test::suite
             // Well defined behaviour even if we have different types of members
             BEAST_EXPECT(subject.isMember("foo") == decltype(subject)::none);
 
-            auto const makeJson = [](const char* key, int val) {
-                Json::Value obj1(Json::objectValue);
-                obj1[key] = val;
-                return obj1;
-            };
-
             {
                 // All variants have element "One", none have element "Two"
                 MultivarJson<2> const s1{
@@ -284,6 +286,100 @@ struct MultivarJson_test : beast::unit_test::suite
                 == MultiApiJson::size);
 
             BEAST_EXPECT(MultiApiJson::size >= 1);
+        }
+
+        {
+            testcase("visit");
+
+            MultivarJson<3> s1{
+                {makeJson("value", 2),
+                 makeJson("value", 3),
+                 makeJson("value", 5)}};
+
+            int result = 1;
+            ripple::visit<1, 3>(
+                s1, [&](Json::Value& json, unsigned int i) -> void {
+                    if (BEAST_EXPECT(json.isObject() && json.isMember("value")))
+                    {
+                        auto const value = json["value"].asInt();
+                        BEAST_EXPECT(
+                            (value == 2 && i == 1) ||  //
+                            (value == 3 && i == 2) ||  //
+                            (value == 5 && i == 3));
+                        result *= value;
+                    }
+                });
+            BEAST_EXPECT(result == 30);
+
+            // Can use fn with constexpr functor
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    ripple::visit<1, 3>(
+                        v, [](Json::Value&, unsigned int) constexpr {});
+                };
+            }(s1));
+
+            // Can use fn with deduction over all parameters
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    ripple::visit<1, 3>(v, [](auto&, auto) constexpr {});
+                };
+            }(s1));
+
+            // Can use fn with conversion of version parameter
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    ripple::visit<1, 3>(v, [](auto&, std::size_t) constexpr {});
+                };
+            }(s1));
+
+            // Cannot use fn with const parameter
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    ripple::visit<1, 3>(
+                        v, [](Json::Value const&, auto) constexpr {});
+                };
+            }(const_cast<MultivarJson<3> const&>(s1)));
+
+            // Cannot call visit with size mismatch
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    ripple::visit<1, 2>(
+                        v, [](Json::Value&, unsigned int) constexpr {});
+                };
+            }(s1));
+
+            // Cannot call visit with version offset
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    ripple::visit<0, 2>(
+                        v, [](Json::Value&, unsigned int) constexpr {});
+                };
+            }(s1));
+
+            // Cannot call visit with size mismatch
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    ripple::visit<1, 4>(
+                        v, [](Json::Value&, unsigned int) constexpr {});
+                };
+            }(s1));
+
+            // Cannot call visit with wrong order of versions
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    ripple::visit<3, 1>(
+                        v, [](Json::Value&, unsigned int) constexpr {});
+                };
+            }(s1));
         }
     }
 };
