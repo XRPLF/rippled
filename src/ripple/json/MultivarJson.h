@@ -33,8 +33,16 @@ namespace ripple {
 template <std::size_t Size>
 struct MultivarJson
 {
-    std::array<Json::Value, Size> val;
+    std::array<Json::Value, Size> val = {};
     constexpr static std::size_t size = Size;
+
+    explicit MultivarJson(Json::Value const& init = {})
+    {
+        if (init == Json::Value{})
+            return;  // All elements are already default-initialized
+        for (auto& v : val)
+            v = init;
+    }
 
     Json::Value const&
     select(auto&& selector) const

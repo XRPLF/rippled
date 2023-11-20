@@ -2221,7 +2221,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
 
         // TODO Replace multiObj with jvObj when API versions 1 & 2 are retired
-        MultiApiJson multiObj = {{jvObj, jvObj, jvObj}};
+        MultiApiJson multiObj{jvObj};
         visit<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(
             multiObj,  //
             [](Json::Value& jvTx, unsigned int apiVersion) {
@@ -3174,7 +3174,7 @@ NetworkOPsImp::transJson(
     }
 
     std::string const hash = to_string(transaction->getTransactionID());
-    MultiApiJson multiObj({jvObj, jvObj, jvObj});
+    MultiApiJson multiObj{jvObj};
     visit<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(
         multiObj,  //
         [&](Json::Value& jvTx, unsigned int apiVersion) {
