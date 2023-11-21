@@ -117,22 +117,9 @@ was released on Mar 14, 2023.
   removed from the [ledger subscription stream](https://xrpl.org/subscribe.html#ledger-stream), because it will no longer
   have any meaning.
 
-# In development
-
-Changes below this point are in development.
-
 ## API Version 2
 
-At the time of writing, this version is expected to be introduced in `rippled` version 2.0.
-
-Currently (prior to the release of 2.0), it is available as a "beta" version, meaning it can be enabled with a config setting in `rippled.cfg`:
-
-```
-[beta_rpc_api]
-1
-```
-
-Since `api_version` 2 is in "beta", breaking changes to V2 can currently be made at any time.
+API version 2 is introduced in `rippled` version 2.0. Users can request it explicitly, using `"api_version" : 2` element.
 
 #### Removed methods
 
@@ -180,17 +167,11 @@ This change affects the following methods:
   - returns `lgrIdxMalformed` in API version 2. (https://github.com/XRPLF/rippled/issues/4288)
   - Previously, in API version 1, no error was returned.
 
-##### In progress
-
-- Attempting to use a non-boolean value (such as a string) for the `binary` or `forward` parameters returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4620)
+- Attempting to use a non-boolean value (such as a string) for the `binary` or `forward` parameters returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (<https://github.com/XRPLF/rippled/pull/4620>)
 
 #### Modifications to [noripple_check](https://xrpl.org/noripple_check.html#noripple_check) response in V2
 
-##### In progress
-
-- Attempting to use a non-boolean value (such as a string) for the `transactions` parameter returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4620)
-
-##### In progress
+- Attempting to use a non-boolean value (such as a string) for the `transactions` parameter returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (<https://github.com/XRPLF/rippled/pull/4620>)
 
 - In `Payment` transaction type, JSON RPC field `Amount` is renamed to `DeliverMax`. To enable smooth client transition, `Amount` is still handled, as described below:
   - On JSON RPC input (e.g. `submit_multisigned` etc. methods), `Amount` is recognized as an alias to `DeliverMax` for both API version 1 and version 2 clients.
