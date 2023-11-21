@@ -655,14 +655,15 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
         {
             jvResult[jss::tx_json] =
                 tpTrans->getJson(JsonOptions::disable_API_prior_V2);
-            RPC::insertDeliverMax(
-                jvResult[jss::tx_json],
-                tpTrans->getSTransaction()->getTxnType(),
-                apiVersion);
             jvResult[jss::hash] = to_string(tpTrans->getID());
         }
         else
             jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
+
+        RPC::insertDeliverMax(
+            jvResult[jss::tx_json],
+            tpTrans->getSTransaction()->getTxnType(),
+            apiVersion);
 
         jvResult[jss::tx_blob] =
             strHex(tpTrans->getSTransaction()->getSerializer().peekData());
