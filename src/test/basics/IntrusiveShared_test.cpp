@@ -314,12 +314,12 @@ public:
                 destructorRan = true;
             }
         };
-        std::jthread t1{[&] {
+        std::thread t1{[&] {
             partialDeleteStartedSyncPoint.arrive_and_wait();
             weak.reset();  // Trigger a full delete as soon as the partial
                            // delete starts
         }};
-        std::jthread t2{[&] {
+        std::thread t2{[&] {
             strong.reset();  // Trigger a partial delete
         }};
         t1.join();
@@ -364,11 +364,11 @@ public:
                 destructorRan = true;
             }
         };
-        std::jthread t1{[&] {
+        std::thread t1{[&] {
             weak.reset();
             weakResetSyncPoint.arrive_and_wait();
         }};
-        std::jthread t2{[&] {
+        std::thread t2{[&] {
             weakResetSyncPoint.arrive_and_wait();
             strong.reset();  // Trigger a partial delete
         }};
@@ -501,7 +501,7 @@ public:
                 v.clear();
             }
         };
-        std::vector<std::jthread> threads;
+        std::vector<std::thread> threads;
         for (int i = 0; i < numThreads; ++i)
         {
             threads.emplace_back(cloneAndDestroy, i);
@@ -649,7 +649,7 @@ public:
                 v.clear();
             }
         };
-        std::vector<std::jthread> threads;
+        std::vector<std::thread> threads;
         for (int i = 0; i < numThreads; ++i)
         {
             threads.emplace_back(cloneAndDestroy, i);
@@ -759,7 +759,7 @@ public:
                 toLock[threadId].reset();
             }
         };
-        std::vector<std::jthread> threads;
+        std::vector<std::thread> threads;
         for (int i = 0; i < numThreads; ++i)
         {
             threads.emplace_back(lockAndDestroy, i);
