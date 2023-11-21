@@ -260,7 +260,7 @@ struct MultivarJson_test : beast::unit_test::suite
             }(x));
 
             BEAST_EXPECT(x.select(apiVersionSelector(0)) == obj1);
-            BEAST_EXPECT(x.select(apiVersionSelector(2)) == obj1);
+            BEAST_EXPECT(x.select(apiVersionSelector(2)) == obj2);
 
             static_assert(apiVersionSelector(0)() == 0);
             static_assert(apiVersionSelector(1)() == 0);
