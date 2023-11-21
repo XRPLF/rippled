@@ -87,7 +87,7 @@ public:
         // Try to get all transactions in one message.
         request->set_querydepth(Tuning::maxQueryDepth);
         // TODO: See getPeerWithLedger in PeerImp.cpp.
-        for (auto& peer : courier.freshPeers())
+        for (auto& peer : courier.peers())
         {
             if (courier.send(peer, *request, this, timeout_))
             {

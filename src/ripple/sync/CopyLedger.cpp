@@ -84,7 +84,7 @@ CopyLedger::unsend()
     std::size_t after = 0;
     {
         std::lock_guard lock(senderMutex_);
-        before = partialRequests_.size() + fullRequests_.size();
+        before = partialRequests_.size();
         auto& requests = partialRequests_;
         // Claw back the last non-full request.
         if (!requests.empty())
@@ -92,7 +92,7 @@ CopyLedger::unsend()
             request = std::move(requests.back());
             requests.pop_back();
         }
-        after = partialRequests_.size() + fullRequests_.size();
+        after = partialRequests_.size();
     }
     JLOG(journal_.warn()) << "unsend: " << before << " -> " << after;
     return request;

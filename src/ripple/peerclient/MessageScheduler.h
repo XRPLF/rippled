@@ -66,30 +66,14 @@ struct MetaPeer
     ChannelCnt nclosed;
 
     bool
-    isOpen() const
+    hasOpenChannels(std::lock_guard<std::mutex> const& lock) const
     {
         return nchannels > nclosed;
     }
-
-    bool
-    isClosed() const
-    {
-        return !isOpen();
-    }
-
-    /** Number of channels that are open. */
-    ChannelCnt
-    nopen() const
-    {
-        return isOpen() ? (nchannels - nclosed) : 0;
-    }
 };
 
-// `MessageScheduler` stores `MetaPeer`s in a `MetaPeerList`,
-// but everyone touches them through `MetaPeerPtr`s.
-using MetaPeerList = std::list<MetaPeer>;
-using MetaPeerPtr = typename MetaPeerList::iterator;
-// A set of peers, typically sorted by ID for set operations.
+using MetaPeerPtr = MetaPeer*;
+// A set of peers, ordered by ID.
 using MetaPeerSet = std::vector<MetaPeerPtr>;
 
 using MessagePtr = std::shared_ptr<::google::protobuf::Message>;
@@ -109,6 +93,7 @@ public:
     class Courier;
 
     class Sender;
+    using SenderQueue = std::vector<Sender*>;
 
     // A receiver has methods for success and failure callbacks.
     // We package them together in the same object because they may share data,
@@ -163,20 +148,14 @@ private:
     boost::asio::io_service& io_service_;
     beast::Journal journal_;
 
-    // Sending requests is a negotiation between peers and senders.
-    // This mutex must be locked when handling either set.
-    std::mutex sendMutex_;
-    // The list is for storage.
-    // The set is for couriers.
-    MetaPeerList peerList_;
+    // This mutex protects all members, including `MetaPeer`s and `Request`s.
+    std::mutex mutex_;
+    // This set owns the metapeers.
     MetaPeerSet peers_;
-    // These are the sums, across all connected peers,
-    // of total and closed channels.
+    // The sum, across all connected peers, of all channels.
     ChannelCnt nchannels_ = 0;
-    ChannelCnt nclosed_ = 0;
-    std::vector<Sender*> senders_;
+    SenderQueue senders_;
     // `stopped` is used to block new senders.
-    // It might as well be protected by the same mutex as for `senders_`.
     bool stopped_ = false;
 
     // Randomize the first ID to avoid collisions after a restart.
@@ -184,9 +163,8 @@ private:
     // https://en.cppreference.com/w/cpp/experimental/randint
     std::atomic<RequestId> prevId_ =
         rand_int<RequestId>(MINIMUM_REQUEST_ID, MAXIMUM_REQUEST_ID);
-    // If `sendMutex_` and `receiveMutex_` must both be locked,
-    // then they must be locked in that order.
-    std::mutex receiveMutex_;
+    // The sum, across all connected peers, of closed channels.
+    ChannelCnt nclosed_ = 0;
     // C++20: Look into `unordered_set` with heterogeneous lookup.
     hash_map<RequestId, std::unique_ptr<Request>> requests_;
 
@@ -242,15 +220,21 @@ public:
 
 private:
     bool
-    hasOpenChannels() const
+    hasOpenChannels(std::lock_guard<std::mutex> const& lock) const
     {
         return nchannels_ > nclosed_;
     }
 
     bool
-    schedule_(
-        std::lock_guard<std::mutex> const& sendLock,
-        std::vector<Sender*>& senders);
+    canSchedule(Sender* sender) const;
+
+    void
+    negotiateNewPeers(
+        std::lock_guard<std::mutex> const& lock,
+        MetaPeerSet& peers);
+
+    void
+    negotiateNewSenders(std::lock_guard<std::mutex> const& lock);
 
     /**
      * Offer channels to senders, in turn, until senders either
@@ -284,10 +268,10 @@ private:
     // 5. A request times out. This case is exactly the same as receiving
     // a response.
     void
-    ready_(
-        std::lock_guard<std::mutex> const& sendLock,
-        MetaPeerSet const& freshPeers,
-        std::vector<Sender*>& senders);
+    negotiate(
+        std::lock_guard<std::mutex> const& lock,
+        MetaPeerSet& peers,
+        SenderQueue& senders);
 
     /**
      * Send a request to a peer.
@@ -297,18 +281,19 @@ private:
      * The message must be taken by non-const reference in order to assign
      * a request identifier.
      *
-     * @return zero if the message cannot be sent to the peer; non-zero otherwise
+     * @return zero if the message cannot be sent to the peer; non-zero
+     * otherwise
      */
     RequestId
     send(
-        std::lock_guard<std::mutex> const& sendLock,
+        std::lock_guard<std::mutex> const& lock,
         MetaPeerPtr const& metaPeer,
         protocol::TMGetLedger& message,
         Receiver* receiver,
         NetClock::duration timeout);
     RequestId
     send(
-        std::lock_guard<std::mutex> const& sendLock,
+        std::lock_guard<std::mutex> const& lock,
         MetaPeerPtr const& metaPeer,
         protocol::TMGetObjectByHash& message,
         Receiver* receiver,
@@ -316,7 +301,7 @@ private:
 
     RequestId
     send_(
-        std::lock_guard<std::mutex> const& sendLock,
+        std::lock_guard<std::mutex> const& lock,
         MetaPeerPtr const& metaPeer,
         RequestId requestId,
         ::google::protobuf::Message const& message,
@@ -330,6 +315,16 @@ private:
         RequestId requestId,
         protocol::MessageType type,
         MessagePtr const& message);
+
+    void
+    timeout_(RequestId requestId);
+
+    void
+    reopen(
+        std::lock_guard<std::mutex> const& lock,
+        char const* caller,
+        MetaPeer* metaPeer,
+        std::function<void()> callback);
 
     RequestId
     nextId_()
@@ -390,14 +385,14 @@ private:
 
     MessageScheduler& scheduler_;
     /**
-     * `sendLock_` is a lock on `scheduler_.sendMutex_`.
+     * `lock_` is a lock on `scheduler_.mutex_`.
      * Its presence guarantees that
      * no other thread is reading or writing the sender queue.
-     * It is passed when calling `MessageScheduler::send()`.
+     * It is required to call `MessageScheduler::send()`.
      */
-    std::lock_guard<std::mutex> const& sendLock_;
-    /** `freshPeers_` is owned by the stack. */
-    MetaPeerSet const& freshPeers_;
+    std::lock_guard<std::mutex> const& lock_;
+    /** `peers_` is owned by the stack. */
+    MetaPeerSet const& peers_;
     ChannelCnt limit_;
     ChannelCnt closed_ = 0;
     bool evict_ = false;
@@ -405,14 +400,16 @@ private:
 public:
     Courier(
         MessageScheduler& scheduler,
-        std::lock_guard<std::mutex> const& sendLock,
-        MetaPeerSet const& freshPeers,
+        std::lock_guard<std::mutex> const& lock,
+        MetaPeerSet const& peers,
         ChannelCnt limit)
-        : scheduler_(scheduler)
-        , sendLock_(sendLock)
-        , freshPeers_(freshPeers)
-        , limit_(limit)
+        : scheduler_(scheduler), lock_(lock), peers_(peers), limit_(limit)
     {
+        assert(!peers.empty());
+        assert(std::all_of(
+            std::begin(peers), std::end(peers), [&lock](auto const& metaPeer) {
+                return metaPeer->hasOpenChannels(lock);
+            }));
         assert(limit_ > closed_);
     }
 
@@ -431,13 +428,14 @@ public:
     // a recently re-opened channel. `openPeers` would be even worse because
     // there can be peers in `allPeers` that have open channels too.
     MetaPeerSet const&
-    freshPeers() const
+    peers() const
     {
-        return freshPeers_;
+        return peers_;
     }
 
     /**
-     * @return zero if the message cannot be sent to the peer; non-zero otherwise
+     * @return zero if the message cannot be sent to the peer; non-zero
+     * otherwise
      */
     template <typename Message>
     RequestId
@@ -448,7 +446,7 @@ public:
         NetClock::duration timeout)
     {
         auto requestId =
-            scheduler_.send(sendLock_, metaPeer, message, receiver, timeout);
+            scheduler_.send(lock_, metaPeer, message, receiver, timeout);
         if (requestId)
         {
             ++closed_;
@@ -491,7 +489,8 @@ public:
     }
 
     bool
-    evicting() const {
+    evicting() const
+    {
         return evict_;
     }
 };
@@ -523,19 +522,13 @@ private:
 
 public:
     Blaster(MessageScheduler::Courier& courier)
-        : courier_(courier), peers_(courier.allPeers())
+        : courier_(courier), peers_(courier.peers())
     {
+        assert(!peers_.empty());
+        // All of these peers should be open.
         std::random_device rd;
         std::mt19937 urbg(rd());
         std::shuffle(peers_.begin(), peers_.end(), urbg);
-        auto const& freshPeers = courier_.freshPeers();
-        // Move fresh peers to the front.
-        std::partition(peers_.begin(), peers_.end(), [&](auto const& peer) {
-            return std::find(freshPeers.begin(), freshPeers.end(), peer) !=
-                freshPeers.end();
-        });
-        // Do not remove closed peers here.
-        // That can wait for when and if the caller tries to send a message.
     }
 
     operator bool() const

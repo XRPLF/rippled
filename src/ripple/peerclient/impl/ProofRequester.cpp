@@ -40,7 +40,7 @@ ProofRequester::onReady(MessageScheduler::Courier& courier)
     // TODO: Step up to two levels at a time.
     request->set_querydepth(0);
     // TODO: See getPeerWithLedger in PeerImp.cpp.
-    for (auto& peer : courier.freshPeers())
+    for (auto& peer : courier.peers())
     {
         if (courier.send(peer, *request, this, timeout_))
         {
