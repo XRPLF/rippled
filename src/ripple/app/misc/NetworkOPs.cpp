@@ -2226,7 +2226,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             multiObj,  //
             [](Json::Value& jvTx, unsigned int apiVersion) {
                 // Type conversion for older API versions to string
-                if (jvTx.isMember(jss::ledger_index) && apiVersion < 3)
+                if (jvTx.isMember(jss::ledger_index) && apiVersion < 2)
                 {
                     jvTx[jss::ledger_index] =
                         std::to_string(jvTx[jss::ledger_index].asUInt());
