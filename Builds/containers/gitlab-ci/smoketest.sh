@@ -62,9 +62,10 @@ else
     yum -y update
     if [ "${install_from}" = "repo" ] ; then
         pkgs=("yum-utils coreutils util-linux")
-        if [ "$ID" = "rocky" ]; then
-            pkgs="${pkgs[@]/coreutils}"
-        fi
+        case "$ID" in
+            rocky|almalinux)
+                pkgs="${pkgs[@]/coreutils}"
+        esac
         yum install -y $pkgs
         REPOFILE="/etc/yum.repos.d/artifactory.repo"
         echo "[Artifactory]" > ${REPOFILE}

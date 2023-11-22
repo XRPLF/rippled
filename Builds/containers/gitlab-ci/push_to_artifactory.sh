@@ -20,7 +20,7 @@ RIPPLED_REPORTING_DBG_PKG=$(ls rippled-reporting-dbgsym_*.*deb)
 # TODO - where to upload src tgz?
 RIPPLED_SRC=$(ls rippled_*.orig.tar.gz)
 DEB_MATRIX=";deb.component=${COMPONENT};deb.architecture=amd64"
-for dist in buster bullseye bionic focal jammy; do
+for dist in bookworm buster bullseye bionic focal jammy; do
     DEB_MATRIX="${DEB_MATRIX};deb.distribution=${dist}"
 done
 echo "{ \"debs\": {" > "${TOPDIR}/files.info"
