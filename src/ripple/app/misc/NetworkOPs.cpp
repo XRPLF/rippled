@@ -2181,6 +2181,8 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (masterKey != signerPublic)
             jvObj[jss::master_key] = toBase58(TokenType::NodePublic, masterKey);
 
+        // NOTE *seq is a number, but old API versions used string. We replace
+        // number with a string using MultiApiJson near end of this function
         if (auto const seq = (*val)[~sfLedgerSequence])
             jvObj[jss::ledger_index] = *seq;
 
@@ -2220,7 +2222,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
 
-        // TODO Replace multiObj with jvObj when API versions 1 & 2 are retired
+        // TODO Replace multiObj with jvObj when API versions 1 is retired
         MultiApiJson multiObj{jvObj};
         visit<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(
             multiObj,  //
