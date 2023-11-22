@@ -235,6 +235,7 @@ install (
     src/ripple/protocol/AccountID.h
     src/ripple/protocol/AMMCore.h
     src/ripple/protocol/AmountConversions.h
+    src/ripple/protocol/ApiVersion.h
     src/ripple/protocol/Book.h
     src/ripple/protocol/BuildInfo.h
     src/ripple/protocol/ErrorCodes.h

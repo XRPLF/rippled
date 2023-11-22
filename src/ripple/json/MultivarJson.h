@@ -26,15 +26,37 @@
 #include <cassert>
 #include <concepts>
 #include <cstdlib>
+#include <functional>
+#include <limits>
 #include <type_traits>
 #include <utility>
 
 namespace ripple {
-template <std::size_t Size>
+
+// This class is designed to wrap a collection of _almost_ identical Json::Value
+// objects, indexed by version (i.e. there is some mapping of version to object
+// index). It is used e.g. when we need to publish JSON data to users supporting
+// different API versions. We allow manipulation and inspection of all objects
+// at once with `isMember` and `set`, and also individual inspection and updates
+// of an object selected by the user by version, using `visitor_t` nested type.
+//
+// It is used to define `MultiApiJson` type in API versions header.
+template <typename Policy>
 struct MultivarJson
 {
-    std::array<Json::Value, Size> val = {};
-    constexpr static std::size_t size = Size;
+    constexpr static std::size_t size = Policy::size;
+    constexpr static auto
+    index(unsigned int v) noexcept -> std::size_t
+    {
+        return Policy::index(v);
+    }
+    constexpr static auto
+    valid(unsigned int v) noexcept -> bool
+    {
+        return Policy::valid(v);
+    }
+
+    std::array<Json::Value, size> val = {};
 
     explicit MultivarJson(Json::Value const& init = {})
     {
@@ -42,15 +64,6 @@ struct MultivarJson
             return;  // All elements are already default-initialized
         for (auto& v : val)
             v = init;
-    }
-
-    Json::Value const&
-    select(auto&& selector) const
-        requires std::same_as<std::size_t, decltype(selector())>
-    {
-        auto const index = selector();
-        assert(index < size);
-        return val[index];
     }
 
     void
@@ -75,75 +88,149 @@ struct MultivarJson
 
         return (count == 0 ? none : (count < size ? some : all));
     }
-};
 
-// Wrapper for Json for all supported API versions.
-using MultiApiJson = MultivarJson<3>;
-
-/*
-
-NOTE:
-
-If a future API version change adds another possible format, change the size of
-`MultiApiJson`, and update `apiVersionSelector()` to return the appropriate
-selection value for the new `apiVersion` and higher.
-
-The more different JSON formats we support, the more CPU cycles we need to
-prepare JSON for different API versions e.g. when publishing streams to
-`subscribe` clients. Hence it is desirable to keep MultiApiJson small and
-instead fully deprecate and remove support for old API versions. For example, if
-we removed support for API version 1 and added a different format for API
-version 3, the `apiVersionSelector` would change to
-`static_cast<std::size_t>(apiVersion > 2)`
-
-Such hypothetical change should correspond with change in RPCHelpers.h
-`apiMinimumSupportedVersion = 2;`
-
-*/
-
-// Helper to create appropriate selector for indexing MultiApiJson by apiVersion
-constexpr auto
-apiVersionSelector(unsigned int apiVersion) noexcept
-{
-    return [apiVersion]() constexpr
+    static constexpr struct visitor_t final
     {
-        return static_cast<std::size_t>(
-            apiVersion <= 1         //
-                ? 0                 //
-                : (apiVersion <= 2  //
-                       ? 1          //
-                       : 2));
-    };
-}
+        // Mutable Json, integral_constant version
+        template <unsigned int Version, typename... Args, typename Fn>
+        auto
+        operator()(
+            MultivarJson& json,
+            std::integral_constant<unsigned int, Version> const version,
+            Fn fn,
+            Args&&... args) const
+            -> std::invoke_result_t<
+                Fn,
+                Json::Value&,
+                std::integral_constant<unsigned int, Version>,
+                Args&&...> requires requires()
+        {
+            fn(json.val[index(Version)], version, std::forward<Args>(args)...);
+        }
+        {
+            static_assert(
+                valid(Version) && index(Version) >= 0 && index(Version) < size);
+            return fn(
+                json.val[index(Version)], version, std::forward<Args>(args)...);
+        }
 
-// Helper to execute a callback for every version. Want both min and max version
-// provided explicitly, so user will know to do update `size` when they change
-template <
-    unsigned int minVer,
-    unsigned int maxVer,
-    std::size_t size,
-    typename Fn>
-    requires                                       //
-    (maxVer >= minVer) &&                          //
-    (size == maxVer + 1 - minVer) &&               //
-    (apiVersionSelector(minVer)() == 0) &&         //
-    (apiVersionSelector(maxVer)() + 1 == size) &&  //
-    requires(Json::Value& json, Fn fn)
-{
-    fn(json, static_cast<unsigned int>(1));
-}
-void
-visit(MultivarJson<size>& json, Fn fn)
-{
-    [&]<std::size_t... offset>(std::index_sequence<offset...>)
+        // Immutable Json, integral_constant version
+        template <unsigned int Version, typename... Args, typename Fn>
+        auto
+        operator()(
+            MultivarJson const& json,
+            std::integral_constant<unsigned int, Version> const version,
+            Fn fn,
+            Args&&... args) const
+            -> std::invoke_result_t<
+                Fn,
+                Json::Value const&,
+                std::integral_constant<unsigned int, Version>,
+                Args&&...> requires requires()
+        {
+            fn(json.val[index(Version)], version, std::forward<Args>(args)...);
+        }
+        {
+            static_assert(
+                valid(Version) && index(Version) >= 0 && index(Version) < size);
+            return fn(
+                json.val[index(Version)], version, std::forward<Args>(args)...);
+        }
+
+        // Mutable Json, unsigned int version
+        template <typename... Args, typename Fn>
+        auto
+        operator()(
+            MultivarJson& json,
+            unsigned int version,
+            Fn fn,
+            Args&&... args) const
+            -> std::invoke_result_t<
+                Fn,
+                Json::Value&,
+                unsigned int,
+                Args&&...> requires requires()
+        {
+            fn(json.val[index(version)], version, std::forward<Args>(args)...);
+        }
+        {
+            assert(
+                valid(version) && index(version) >= 0 && index(version) < size);
+            return fn(
+                json.val[index(version)], version, std::forward<Args>(args)...);
+        }
+
+        // Immutable Json, unsigned int version
+        template <typename... Args, typename Fn>
+        auto
+        operator()(
+            MultivarJson const& json,
+            unsigned int version,
+            Fn fn,
+            Args&&... args) const
+            -> std::invoke_result_t<
+                Fn,
+                Json::Value const&,
+                unsigned int,
+                Args&&...> requires requires()
+        {
+            fn(json.val[index(version)], version, std::forward<Args>(args)...);
+        }
+        {
+            assert(
+                valid(version) && index(version) >= 0 && index(version) < size);
+            return fn(
+                json.val[index(version)], version, std::forward<Args>(args)...);
+        }
+    } visitor = {};
+
+    auto
+    visit() &
     {
-        static_assert(((apiVersionSelector(minVer + offset)() >= 0) && ...));
-        static_assert(((apiVersionSelector(minVer + offset)() < size) && ...));
-        (fn(json.val[apiVersionSelector(minVer + offset)()], minVer + offset),
-         ...);
+        return [self = this](auto... args) {
+            return visitor(*self, std::forward<decltype(args)>(args)...);
+        };
     }
-    (std::make_index_sequence<size>{});
-}
+
+    auto
+    visit() const&
+    {
+        return [self = this](auto... args) {
+            return visitor(*self, std::forward<decltype(args)>(args)...);
+        };
+    }
+
+    template <typename... Args>
+        auto
+        visit(Args... args) & -> std::
+            invoke_result_t<visitor_t, MultivarJson&, Args...> requires(
+                sizeof...(args) > 0) &&
+        requires()
+    {
+        visitor(*this, std::forward<decltype(args)>(args)...);
+    }
+    {
+        return visitor(*this, std::forward<decltype(args)>(args)...);
+    }
+
+    template <typename... Args>
+        auto
+        visit(Args... args) const& -> std::
+            invoke_result_t<visitor_t, MultivarJson const&, Args...> requires(
+                sizeof...(args) > 0) &&
+        requires()
+    {
+        visitor(*this, std::forward<decltype(args)>(args)...);
+    }
+    {
+        return visitor(*this, std::forward<decltype(args)>(args)...);
+    }
+
+    void
+    visit(auto...) && = delete;
+    void
+    visit(auto...) const&& = delete;
+};
 
 }  // namespace ripple
 

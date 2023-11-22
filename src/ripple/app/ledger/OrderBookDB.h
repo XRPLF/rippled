@@ -24,6 +24,7 @@
 #include <ripple/app/ledger/BookListeners.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/json/MultivarJson.h>
+#include <ripple/protocol/ApiVersion.h>
 
 #include <mutex>
 

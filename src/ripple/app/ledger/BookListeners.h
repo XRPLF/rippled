@@ -22,6 +22,7 @@
 
 #include <ripple/json/MultivarJson.h>
 #include <ripple/net/InfoSub.h>
+#include <ripple/protocol/ApiVersion.h>
 
 #include <memory>
 #include <mutex>
