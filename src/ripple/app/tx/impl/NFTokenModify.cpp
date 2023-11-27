@@ -1,9 +1,13 @@
+
+#include <ripple/app/tx/impl/NFTokenModify.h>
 #include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Rate.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/st.h>
+
+namespace ripple {
 
 NotTEC
 NFTokenModify::preflight(PreflightContext const& ctx)
@@ -20,9 +24,11 @@ NFTokenModify::preflight(PreflightContext const& ctx)
     if (!account || !nftID)
        return temMALFORMED; 
 
-    if (auto uri = ctx.tx[sfURI])
+    if (ctx.tx.isFieldPresent(sfURI))
     {
-        if (uri->length() == 0 || uri->length() > maxTokenURILength)
+        auto uri = ctx.tx[sfURI];
+
+        if (uri.length() == 0 || uri.length() > maxTokenURILength)
             return temMALFORMED;
     }
 
@@ -69,6 +75,7 @@ NFTokenModify::doApply()
     auto const nftokenID = ctx_.tx[sfNFTokenID];
     auto const account = ctx_.tx[sfAccount];
 
+
     // Find the token and its page
     auto tokenAndPage = nft::findTokenAndPage(view(), account, nftokenID);
     if (!tokenAndPage)
@@ -77,7 +84,7 @@ NFTokenModify::doApply()
     // Replace the URI if present in the transaction
     if (ctx_.tx.isFieldPresent(sfURI)) {
         auto newURI = ctx_.tx[sfURI];
-        (*tokenAndPage->token)[sfURI] = newURI;
+        tokenAndPage->token[sfURI] = newURI; 
     }
 
     // Apply the changes to the token
@@ -85,4 +92,5 @@ NFTokenModify::doApply()
         return ret;
 
     return tesSUCCESS;    
+}
 }
