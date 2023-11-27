@@ -26,13 +26,14 @@ In `api_version: 2`, the `signer_lists` field [will be moved](#modifications-to-
 
 The `network_id` field was added in the `server_info` response in version 1.5.0 (2019), but it was not returned in [reporting mode](https://xrpl.org/rippled-server-modes.html#reporting-mode).
 
-## Unreleased
+## Unreleased (expected in XRP Ledger version 2.0)
 
 ### Additions
 
 Additions are intended to be non-breaking (because they are purely additive).
 
 - `server_definitions`: A new RPC that generates a `definitions.json`-like output that can be used in XRPL libraries.
+- In `Payment` transactions, `DeliverMax` has been added. This is a replacement for the `Amount` field, which should be no longer used - instead, use `delivered_amount` in transaction metadata. To ease the transition, `DeliverMax` is present regardless of API version, since adding a field is non-breaking. The field `Amount` is no longer present in `Payment`s in API version 2.
 
 ## XRP Ledger version 1.12.0
 
