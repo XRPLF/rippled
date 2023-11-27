@@ -119,7 +119,7 @@ was released on Mar 14, 2023.
 
 ## API Version 2
 
-API version 2 is introduced in `rippled` version 2.0. Users can request it explicitly, using `"api_version" : 2` element.
+API version 2 is introduced in `rippled` version 2.0. Users can request it explicitly by specifying `"api_version" : 2`.
 
 #### Removed methods
 
