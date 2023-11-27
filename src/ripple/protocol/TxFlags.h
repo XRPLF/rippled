@@ -129,6 +129,7 @@ constexpr std::uint32_t const tfBurnable                   = 0x00000001;
 constexpr std::uint32_t const tfOnlyXRP                    = 0x00000002;
 constexpr std::uint32_t const tfTrustLine                  = 0x00000004;
 constexpr std::uint32_t const tfTransferable               = 0x00000008;
+constexpr std::uint32_t const tfMutable               = 0x00000016;
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
 // accounts allowed a TrustLine to be added to the issuer of that token
@@ -147,7 +148,7 @@ constexpr std::uint32_t const tfNFTokenMintOldMask =
     ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTrustLine | tfTransferable);
 
 constexpr std::uint32_t const tfNFTokenMintMask =
-    ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTransferable);
+    ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTransferable | tfMutable);
 
 // NFTokenCreateOffer flags:
 constexpr std::uint32_t const tfSellNFToken                = 0x00000001;
