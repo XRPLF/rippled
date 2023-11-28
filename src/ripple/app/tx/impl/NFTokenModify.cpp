@@ -12,7 +12,7 @@ namespace ripple {
 NotTEC
 NFTokenModify::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureNonFungibleTokensV1))
+    if (!ctx.rules.enabled(featureDNFT))
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))

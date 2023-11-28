@@ -353,6 +353,7 @@ extern uint256 const fixDisallowIncomingV1;
 extern uint256 const featureDID;
 extern uint256 const fixFillOrKill;
 
+
 }  // namespace ripple
 
 #endif
