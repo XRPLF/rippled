@@ -28,6 +28,7 @@
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/SOTemplate.h>
 #include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/STBase.h>
 #include <ripple/protocol/STIssue.h>
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/STVector256.h>

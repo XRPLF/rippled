@@ -37,7 +37,6 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/Role.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 
 #include <grpcpp/grpcpp.h>
 
@@ -195,8 +194,8 @@ getLedgerRange(
                         return status;
                     }
 
-                    bool validated = RPC::isValidated(
-                        context.ledgerMaster, *ledgerView, context.app);
+                    bool validated =
+                        context.ledgerMaster.isValidated(*ledgerView);
 
                     if (!validated || ledgerView->info().seq > uValidatedMax ||
                         ledgerView->info().seq < uValidatedMin)
@@ -320,25 +319,51 @@ populateJsonResponse(
         if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
         {
             assert(!args.binary);
+
             for (auto const& [txn, txnMeta] : *txnsData)
             {
                 if (txn)
                 {
                     Json::Value& jvObj = jvTxns.append(Json::objectValue);
+                    jvObj[jss::validated] = true;
 
-                    jvObj[jss::tx] = txn->getJson(JsonOptions::include_date);
+                    auto const json_tx =
+                        (context.apiVersion > 1 ? jss::tx_json : jss::tx);
+                    if (context.apiVersion > 1)
+                    {
+                        jvObj[json_tx] = txn->getJson(
+                            JsonOptions::include_date |
+                                JsonOptions::disable_API_prior_V2,
+                            false);
+                        jvObj[jss::hash] = to_string(txn->getID());
+                        jvObj[jss::ledger_index] = txn->getLedger();
+                        jvObj[jss::ledger_hash] =
+                            to_string(context.ledgerMaster.getHashBySeq(
+                                txn->getLedger()));
+
+                        if (auto closeTime =
+                                context.ledgerMaster.getCloseTimeBySeq(
+                                    txn->getLedger()))
+                            jvObj[jss::close_time_iso] =
+                                to_string_iso(*closeTime);
+                    }
+                    else
+                        jvObj[json_tx] =
+                            txn->getJson(JsonOptions::include_date);
+
                     auto const& sttx = txn->getSTransaction();
                     RPC::insertDeliverMax(
-                        jvObj[jss::tx], sttx->getTxnType(), context.apiVersion);
+                        jvObj[json_tx], sttx->getTxnType(), context.apiVersion);
                     if (txnMeta)
                     {
                         jvObj[jss::meta] =
                             txnMeta->getJson(JsonOptions::include_date);
-                        jvObj[jss::validated] = true;
                         insertDeliveredAmount(
                             jvObj[jss::meta], context, txn, *txnMeta);
                         insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
                     }
+                    else
+                        assert(false && "Missing transaction medatata");
                 }
             }
         }
@@ -352,7 +377,9 @@ populateJsonResponse(
                 Json::Value& jvObj = jvTxns.append(Json::objectValue);
 
                 jvObj[jss::tx_blob] = strHex(std::get<0>(binaryData));
-                jvObj[jss::meta] = strHex(std::get<1>(binaryData));
+                auto const json_meta =
+                    (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
+                jvObj[json_meta] = strHex(std::get<1>(binaryData));
                 jvObj[jss::ledger_index] = std::get<2>(binaryData);
                 jvObj[jss::validated] = true;
             }
