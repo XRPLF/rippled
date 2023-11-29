@@ -104,35 +104,35 @@ $(function() {
 <div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
 <div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1MultivarJson__test.html">   34</a></span>&#160;<span class="keyword">struct </span><a class="code" href="structripple_1_1test_1_1MultivarJson__test.html">MultivarJson_test</a> : beast::unit_test::suite</div>
 <div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160;{</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1MultivarJson__test.html#ac0a1306cb79b8dc9abaca9188f217b9c">   37</a></span>&#160;    <a class="code" href="structripple_1_1test_1_1MultivarJson__test.html#ac0a1306cb79b8dc9abaca9188f217b9c">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        constexpr <span class="keyword">static</span> <a class="code" href="classJson_1_1StaticString.html">Json::StaticString</a> string1(<span class="stringliteral">&quot;string1&quot;</span>);</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        <span class="keyword">static</span> <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> str1{string1};</div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;        <span class="keyword">static</span> <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> obj1{[]() {</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> obj1(<a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>);</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;            obj1[<span class="stringliteral">&quot;one&quot;</span>] = 1;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;            <span class="keywordflow">return</span> obj1;</div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;        }()};</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160; </div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <span class="keyword">static</span> <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> jsonNull{};</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <a class="code" href="structripple_1_1MultivarJson.html">MultivarJson&lt;3&gt;</a> <span class="keyword">const</span> subject({str1, obj1});</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;        static_assert(<span class="keyword">sizeof</span>(subject) == <span class="keyword">sizeof</span>(subject.val));</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        static_assert(subject.size == subject.val.size());</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        static_assert(</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same_v</a>&lt;decltype(subject.val), <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;Json::Value, 3&gt;</a>&gt;);</div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;        BEAST_EXPECT(subject.val.size() == 3);</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;            (subject.val == <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;Json::Value, 3&gt;</a>{str1, obj1, jsonNull}));</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="keyword">static</span> <span class="keyword">auto</span></div>
+<div class="line"><a name="l00037"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1MultivarJson__test.html#a1fd3517a142d4547551f00e899383845">   37</a></span>&#160;    <a class="code" href="structripple_1_1test_1_1MultivarJson__test.html#a1fd3517a142d4547551f00e899383845">makeJson</a>(<span class="keyword">const</span> <span class="keywordtype">char</span>* key, <span class="keywordtype">int</span> val)</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    {</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> obj1(<a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;        obj1[key] = val;</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <span class="keywordflow">return</span> obj1;</div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    };</div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00045"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1MultivarJson__test.html#ac0a1306cb79b8dc9abaca9188f217b9c">   45</a></span>&#160;    <a class="code" href="structripple_1_1test_1_1MultivarJson__test.html#ac0a1306cb79b8dc9abaca9188f217b9c">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> obj1 = <a class="code" href="structripple_1_1test_1_1MultivarJson__test.html#a1fd3517a142d4547551f00e899383845">makeJson</a>(<span class="stringliteral">&quot;value&quot;</span>, 1);</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> obj2 = <a class="code" href="structripple_1_1test_1_1MultivarJson__test.html#a1fd3517a142d4547551f00e899383845">makeJson</a>(<span class="stringliteral">&quot;value&quot;</span>, 2);</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> obj3 = <a class="code" href="structripple_1_1test_1_1MultivarJson__test.html#a1fd3517a142d4547551f00e899383845">makeJson</a>(<span class="stringliteral">&quot;value&quot;</span>, 3);</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;        <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> jsonNull{};</div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <a class="code" href="structripple_1_1MultivarJson.html">MultivarJson&lt;3&gt;</a> subject{};</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        static_assert(<span class="keyword">sizeof</span>(subject) == <span class="keyword">sizeof</span>(subject.val));</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        static_assert(subject.size == subject.val.size());</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;        static_assert(</div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same_v</a>&lt;decltype(subject.val), <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;Json::Value, 3&gt;</a>&gt;);</div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        BEAST_EXPECT(subject.val.size() == 3);</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            (<a class="code" href="structripple_1_1MultivarJson.html">MultivarJson&lt;3&gt;</a>({obj1, str1}).val ==</div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;             <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;Json::Value, 3&gt;</a>{obj1, str1, jsonNull}));</div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;        BEAST_EXPECT(</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;            (<a class="code" href="structripple_1_1MultivarJson.html">MultivarJson&lt;3&gt;</a>({jsonNull, obj1, str1}).val ==</div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;             <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;Json::Value, 3&gt;</a>{jsonNull, obj1, str1}));</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;            (subject.val ==</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;             <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array&lt;Json::Value, 3&gt;</a>{jsonNull, jsonNull, jsonNull}));</div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160; </div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;        subject.val[0] = obj1;</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;        subject.val[1] = obj2;</div>
 <div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160; </div>
 <div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;        {</div>
 <div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;            testcase(<span class="stringliteral">&quot;default copy construction / assignment&quot;</span>);</div>
@@ -167,9 +167,9 @@ $(function() {
 <div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;            testcase(<span class="stringliteral">&quot;select&quot;</span>);</div>
 <div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
 <div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                subject.select([]() -&gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> { return 0; }) == str1);</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;                subject.select([]() -&gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> { return 0; }) == obj1);</div>
 <div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;                subject.select([]() -&gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> { return 1; }) == obj1);</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;                subject.select([]() -&gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> { return 1; }) == obj2);</div>
 <div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            BEAST_EXPECT(</div>
 <div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;                subject.select([]() -&gt; <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> { return 2; }) == jsonNull);</div>
 <div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
@@ -215,55 +215,55 @@ $(function() {
 <div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;        }</div>
 <div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160; </div>
 <div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;        {</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;            <span class="keyword">struct </span>foo_t final</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;            {</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;            };</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;            testcase(<span class="stringliteral">&quot;set&quot;</span>);</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160; </div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;            <span class="keyword">auto</span> x = <a class="code" href="structripple_1_1MultivarJson.html">MultivarJson&lt;2&gt;</a>{{<a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>, <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>}};</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            x.set(<span class="stringliteral">&quot;name1&quot;</span>, 42);</div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;            BEAST_EXPECT(x.val[0].isMember(<span class="stringliteral">&quot;name1&quot;</span>));</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;            BEAST_EXPECT(x.val[1].isMember(<span class="stringliteral">&quot;name1&quot;</span>));</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;            BEAST_EXPECT(x.val[0][<span class="stringliteral">&quot;name1&quot;</span>].isInt());</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;            BEAST_EXPECT(x.val[1][<span class="stringliteral">&quot;name1&quot;</span>].isInt());</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;            BEAST_EXPECT(x.val[0][<span class="stringliteral">&quot;name1&quot;</span>].asInt() == 42);</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;            BEAST_EXPECT(x.val[1][<span class="stringliteral">&quot;name1&quot;</span>].asInt() == 42);</div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160; </div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;            x.set(<span class="stringliteral">&quot;name2&quot;</span>, <span class="stringliteral">&quot;bar&quot;</span>);</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;            BEAST_EXPECT(x.val[0].isMember(<span class="stringliteral">&quot;name2&quot;</span>));</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            BEAST_EXPECT(x.val[1].isMember(<span class="stringliteral">&quot;name2&quot;</span>));</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;            BEAST_EXPECT(x.val[0][<span class="stringliteral">&quot;name2&quot;</span>].isString());</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;            BEAST_EXPECT(x.val[1][<span class="stringliteral">&quot;name2&quot;</span>].isString());</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;            BEAST_EXPECT(x.val[0][<span class="stringliteral">&quot;name2&quot;</span>].asString() == <span class="stringliteral">&quot;bar&quot;</span>);</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;            BEAST_EXPECT(x.val[1][<span class="stringliteral">&quot;name2&quot;</span>].asString() == <span class="stringliteral">&quot;bar&quot;</span>);</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160; </div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;            <span class="comment">// Tests of requires clause - these are expected to match</span></div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;                {</div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;                    v.set(<span class="stringliteral">&quot;name&quot;</span>, <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391">Json::nullValue</a>);</div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;                };</div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;            }(x));</div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;                {</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;                    v.set(<span class="stringliteral">&quot;name&quot;</span>, <span class="stringliteral">&quot;value&quot;</span>);</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                };</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;            }(x));</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;                {</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;                    v.set(<span class="stringliteral">&quot;name&quot;</span>, <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;                };</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;            }(x));</div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;                {</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;                    v.set(<span class="stringliteral">&quot;name&quot;</span>, 42);</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;                };</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;            }(x));</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160; </div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;            <span class="comment">// Tests of requires clause - these are expected NOT to match</span></div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;            testcase(<span class="stringliteral">&quot;set&quot;</span>);</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160; </div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;            <span class="keyword">auto</span> x = <a class="code" href="structripple_1_1MultivarJson.html">MultivarJson&lt;2&gt;</a>{<a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>};</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;            x.set(<span class="stringliteral">&quot;name1&quot;</span>, 42);</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;            BEAST_EXPECT(x.val[0].isMember(<span class="stringliteral">&quot;name1&quot;</span>));</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;            BEAST_EXPECT(x.val[1].isMember(<span class="stringliteral">&quot;name1&quot;</span>));</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;            BEAST_EXPECT(x.val[0][<span class="stringliteral">&quot;name1&quot;</span>].isInt());</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;            BEAST_EXPECT(x.val[1][<span class="stringliteral">&quot;name1&quot;</span>].isInt());</div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;            BEAST_EXPECT(x.val[0][<span class="stringliteral">&quot;name1&quot;</span>].asInt() == 42);</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;            BEAST_EXPECT(x.val[1][<span class="stringliteral">&quot;name1&quot;</span>].asInt() == 42);</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160; </div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;            x.set(<span class="stringliteral">&quot;name2&quot;</span>, <span class="stringliteral">&quot;bar&quot;</span>);</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;            BEAST_EXPECT(x.val[0].isMember(<span class="stringliteral">&quot;name2&quot;</span>));</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;            BEAST_EXPECT(x.val[1].isMember(<span class="stringliteral">&quot;name2&quot;</span>));</div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;            BEAST_EXPECT(x.val[0][<span class="stringliteral">&quot;name2&quot;</span>].isString());</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;            BEAST_EXPECT(x.val[1][<span class="stringliteral">&quot;name2&quot;</span>].isString());</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            BEAST_EXPECT(x.val[0][<span class="stringliteral">&quot;name2&quot;</span>].asString() == <span class="stringliteral">&quot;bar&quot;</span>);</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;            BEAST_EXPECT(x.val[1][<span class="stringliteral">&quot;name2&quot;</span>].asString() == <span class="stringliteral">&quot;bar&quot;</span>);</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160; </div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;            <span class="comment">// Tests of requires clause - these are expected to match</span></div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;                {</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;                    v.set(<span class="stringliteral">&quot;name&quot;</span>, <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391">Json::nullValue</a>);</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;                };</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;            }(x));</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;                {</div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;                    v.set(<span class="stringliteral">&quot;name&quot;</span>, <span class="stringliteral">&quot;value&quot;</span>);</div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;                };</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;            }(x));</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;                {</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;                    v.set(<span class="stringliteral">&quot;name&quot;</span>, <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;                };</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;            }(x));</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;                {</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;                    v.set(<span class="stringliteral">&quot;name&quot;</span>, 42);</div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;                };</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;            }(x));</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160; </div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;            <span class="comment">// Tests of requires clause - these are expected NOT to match</span></div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;            <span class="keyword">struct </span>foo_t final</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;            {</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;            };</div>
 <div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
 <div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;                <span class="keywordflow">return</span> !<a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
 <div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;                {</div>
@@ -284,63 +284,63 @@ $(function() {
 <div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;            <span class="comment">// Well defined behaviour even if we have different types of members</span></div>
 <div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;            BEAST_EXPECT(subject.isMember(<span class="stringliteral">&quot;foo&quot;</span>) == decltype(subject)::none);</div>
 <div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160; </div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> makeJson = [](<span class="keyword">const</span> <span class="keywordtype">char</span>* key, <span class="keywordtype">int</span> val) {</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;                <a class="code" href="classJson_1_1Value.html">Json::Value</a> obj1(<a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>);</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;                obj1[key] = val;</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;                <span class="keywordflow">return</span> obj1;</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;            };</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160; </div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;            {</div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;                <span class="comment">// All variants have element &quot;One&quot;, none have element &quot;Two&quot;</span></div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;                <a class="code" href="structripple_1_1MultivarJson.html">MultivarJson&lt;2&gt;</a> <span class="keyword">const</span> s1{</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;                    {makeJson(<span class="stringliteral">&quot;One&quot;</span>, 12), makeJson(<span class="stringliteral">&quot;One&quot;</span>, 42)}};</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;                BEAST_EXPECT(s1.isMember(<span class="stringliteral">&quot;One&quot;</span>) == decltype(s1)::<a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a>);</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;                BEAST_EXPECT(s1.isMember(<span class="stringliteral">&quot;Two&quot;</span>) == decltype(s1)::none);</div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;            }</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160; </div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;            {</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                <span class="comment">// Some variants have element &quot;One&quot; and some have &quot;Two&quot;</span></div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;                <a class="code" href="structripple_1_1MultivarJson.html">MultivarJson&lt;2&gt;</a> <span class="keyword">const</span> s2{</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;                    {makeJson(<span class="stringliteral">&quot;One&quot;</span>, 12), makeJson(<span class="stringliteral">&quot;Two&quot;</span>, 42)}};</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;                BEAST_EXPECT(s2.isMember(<span class="stringliteral">&quot;One&quot;</span>) == decltype(s2)::<a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cca03d59e663c1af9ac33a9949d1193505a">some</a>);</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;                BEAST_EXPECT(s2.isMember(<span class="stringliteral">&quot;Two&quot;</span>) == decltype(s2)::<a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cca03d59e663c1af9ac33a9949d1193505a">some</a>);</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;            }</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160; </div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;            {</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;                <span class="comment">// Not all variants have element &quot;One&quot;, because last one is null</span></div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;                <a class="code" href="structripple_1_1MultivarJson.html">MultivarJson&lt;3&gt;</a> <span class="keyword">const</span> s3{</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;                    {makeJson(<span class="stringliteral">&quot;One&quot;</span>, 12), makeJson(<span class="stringliteral">&quot;One&quot;</span>, 42), {}}};</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;                BEAST_EXPECT(s3.isMember(<span class="stringliteral">&quot;One&quot;</span>) == decltype(s3)::<a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cca03d59e663c1af9ac33a9949d1193505a">some</a>);</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;                BEAST_EXPECT(s3.isMember(<span class="stringliteral">&quot;Two&quot;</span>) == decltype(s3)::none);</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;            }</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;        }</div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160; </div>
-<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;        {</div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;            <span class="comment">// NOTE It&#39;s fine to change this test when we change API versions</span></div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;            testcase(<span class="stringliteral">&quot;apiVersionSelector&quot;</span>);</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160; </div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;            static_assert(<a class="code" href="structripple_1_1MultivarJson.html#a3ae5ea9936244101bb5d1c8d6e5cfe15">MultiApiJson::size</a> == 2);</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;            <span class="keyword">static</span> <a class="code" href="structripple_1_1MultivarJson.html">MultiApiJson</a> x{{obj1, str1}};</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;            static_assert(</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same_v</a>&lt;decltype(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(1)()), <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&gt;);</div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
-<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;                {</div>
-<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;                    v.select(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(1));</div>
-<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;                };</div>
-<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160;            }(x));</div>
-<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160; </div>
-<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;            BEAST_EXPECT(x.select(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(0)) == obj1);</div>
-<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160;            BEAST_EXPECT(x.select(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(2)) == str1);</div>
-<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160; </div>
-<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;            static_assert(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(0)() == 0);</div>
-<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;            static_assert(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(1)() == 0);</div>
-<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;            static_assert(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(2)() == 1);</div>
-<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;            static_assert(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(3)() == 1);</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;            {</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;                <span class="comment">// All variants have element &quot;One&quot;, none have element &quot;Two&quot;</span></div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;                <a class="code" href="structripple_1_1MultivarJson.html">MultivarJson&lt;2&gt;</a> s1{};</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;                s1.<a class="code" href="structripple_1_1MultivarJson.html#ad65cd6925a1e4bdd76f46fe46f57b2ac">val</a>[0] = <a class="code" href="structripple_1_1test_1_1MultivarJson__test.html#a1fd3517a142d4547551f00e899383845">makeJson</a>(<span class="stringliteral">&quot;One&quot;</span>, 12);</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;                s1.val[1] = <a class="code" href="structripple_1_1test_1_1MultivarJson__test.html#a1fd3517a142d4547551f00e899383845">makeJson</a>(<span class="stringliteral">&quot;One&quot;</span>, 42);</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;                BEAST_EXPECT(s1.isMember(<span class="stringliteral">&quot;One&quot;</span>) == decltype(s1)::<a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a>);</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;                BEAST_EXPECT(s1.isMember(<span class="stringliteral">&quot;Two&quot;</span>) == decltype(s1)::none);</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;            }</div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160; </div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;            {</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;                <span class="comment">// Some variants have element &quot;One&quot; and some have &quot;Two&quot;</span></div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;                <a class="code" href="structripple_1_1MultivarJson.html">MultivarJson&lt;2&gt;</a> s2{};</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;                s2.<a class="code" href="structripple_1_1MultivarJson.html#ad65cd6925a1e4bdd76f46fe46f57b2ac">val</a>[0] = <a class="code" href="structripple_1_1test_1_1MultivarJson__test.html#a1fd3517a142d4547551f00e899383845">makeJson</a>(<span class="stringliteral">&quot;One&quot;</span>, 12);</div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                s2.val[1] = <a class="code" href="structripple_1_1test_1_1MultivarJson__test.html#a1fd3517a142d4547551f00e899383845">makeJson</a>(<span class="stringliteral">&quot;Two&quot;</span>, 42);</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;                BEAST_EXPECT(s2.isMember(<span class="stringliteral">&quot;One&quot;</span>) == decltype(s2)::<a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cca03d59e663c1af9ac33a9949d1193505a">some</a>);</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                BEAST_EXPECT(s2.isMember(<span class="stringliteral">&quot;Two&quot;</span>) == decltype(s2)::<a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cca03d59e663c1af9ac33a9949d1193505a">some</a>);</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;            }</div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160; </div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;            {</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;                <span class="comment">// Not all variants have element &quot;One&quot;, because last one is null</span></div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;                <a class="code" href="structripple_1_1MultivarJson.html">MultivarJson&lt;3&gt;</a> s3{};</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;                s3.<a class="code" href="structripple_1_1MultivarJson.html#ad65cd6925a1e4bdd76f46fe46f57b2ac">val</a>[0] = <a class="code" href="structripple_1_1test_1_1MultivarJson__test.html#a1fd3517a142d4547551f00e899383845">makeJson</a>(<span class="stringliteral">&quot;One&quot;</span>, 12);</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;                s3.val[1] = <a class="code" href="structripple_1_1test_1_1MultivarJson__test.html#a1fd3517a142d4547551f00e899383845">makeJson</a>(<span class="stringliteral">&quot;One&quot;</span>, 42);</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;                BEAST_EXPECT(s3.isMember(<span class="stringliteral">&quot;One&quot;</span>) == decltype(s3)::<a class="code" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cca03d59e663c1af9ac33a9949d1193505a">some</a>);</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;                BEAST_EXPECT(s3.isMember(<span class="stringliteral">&quot;Two&quot;</span>) == decltype(s3)::none);</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            }</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;        }</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160; </div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;        {</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;            <span class="comment">// NOTE It&#39;s fine to change this test when we change API versions</span></div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;            testcase(<span class="stringliteral">&quot;apiVersionSelector&quot;</span>);</div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160; </div>
+<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;            static_assert(<a class="code" href="structripple_1_1MultivarJson.html#a3ae5ea9936244101bb5d1c8d6e5cfe15">MultiApiJson::size</a> == 3);</div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;            <span class="keyword">static</span> <a class="code" href="structripple_1_1MultivarJson.html">MultiApiJson</a> x{obj1};</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;            x.val[1] = obj2;</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;            x.val[2] = obj3;</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160; </div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;            static_assert(</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same_v</a>&lt;decltype(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(1)()), <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&gt;);</div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;                {</div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;                    v.select(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(1));</div>
+<div class="line"><a name="l00259"></a><span class="lineno">  259</span>&#160;                };</div>
+<div class="line"><a name="l00260"></a><span class="lineno">  260</span>&#160;            }(x));</div>
+<div class="line"><a name="l00261"></a><span class="lineno">  261</span>&#160; </div>
+<div class="line"><a name="l00262"></a><span class="lineno">  262</span>&#160;            BEAST_EXPECT(x.select(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(0)) == obj1);</div>
+<div class="line"><a name="l00263"></a><span class="lineno">  263</span>&#160;            BEAST_EXPECT(x.select(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(2)) == obj2);</div>
+<div class="line"><a name="l00264"></a><span class="lineno">  264</span>&#160; </div>
+<div class="line"><a name="l00265"></a><span class="lineno">  265</span>&#160;            static_assert(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(0)() == 0);</div>
+<div class="line"><a name="l00266"></a><span class="lineno">  266</span>&#160;            static_assert(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(1)() == 0);</div>
+<div class="line"><a name="l00267"></a><span class="lineno">  267</span>&#160;            static_assert(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(2)() == 1);</div>
+<div class="line"><a name="l00268"></a><span class="lineno">  268</span>&#160;            static_assert(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(3)() == 2);</div>
+<div class="line"><a name="l00269"></a><span class="lineno">  269</span>&#160;            static_assert(<a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(4)() == 2);</div>
 <div class="line"><a name="l00270"></a><span class="lineno">  270</span>&#160;            static_assert(</div>
 <div class="line"><a name="l00271"></a><span class="lineno">  271</span>&#160;                <a class="code" href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">apiVersionSelector</a>(</div>
-<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits&lt;unsigned int&gt;::max</a>())() == 1);</div>
+<div class="line"><a name="l00272"></a><span class="lineno">  272</span>&#160;                    <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits&lt;unsigned int&gt;::max</a>())() == 2);</div>
 <div class="line"><a name="l00273"></a><span class="lineno">  273</span>&#160;        }</div>
 <div class="line"><a name="l00274"></a><span class="lineno">  274</span>&#160; </div>
 <div class="line"><a name="l00275"></a><span class="lineno">  275</span>&#160;        {</div>
@@ -355,36 +355,131 @@ $(function() {
 <div class="line"><a name="l00284"></a><span class="lineno">  284</span>&#160; </div>
 <div class="line"><a name="l00285"></a><span class="lineno">  285</span>&#160;            BEAST_EXPECT(<a class="code" href="structripple_1_1MultivarJson.html#a3ae5ea9936244101bb5d1c8d6e5cfe15">MultiApiJson::size</a> &gt;= 1);</div>
 <div class="line"><a name="l00286"></a><span class="lineno">  286</span>&#160;        }</div>
-<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160;    }</div>
-<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;};</div>
-<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160; </div>
-<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">BEAST_DEFINE_TESTSUITE</a>(<a class="code" href="structripple_1_1MultivarJson.html">MultivarJson</a>, ripple_basics, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160; </div>
-<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;}  <span class="comment">// namespace test</span></div>
-<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00287"></a><span class="lineno">  287</span>&#160; </div>
+<div class="line"><a name="l00288"></a><span class="lineno">  288</span>&#160;        {</div>
+<div class="line"><a name="l00289"></a><span class="lineno">  289</span>&#160;            testcase(<span class="stringliteral">&quot;visit&quot;</span>);</div>
+<div class="line"><a name="l00290"></a><span class="lineno">  290</span>&#160; </div>
+<div class="line"><a name="l00291"></a><span class="lineno">  291</span>&#160;            <a class="code" href="structripple_1_1MultivarJson.html">MultivarJson&lt;3&gt;</a> s1{};</div>
+<div class="line"><a name="l00292"></a><span class="lineno">  292</span>&#160;            s1.<a class="code" href="structripple_1_1MultivarJson.html#ad65cd6925a1e4bdd76f46fe46f57b2ac">val</a>[0] = <a class="code" href="structripple_1_1test_1_1MultivarJson__test.html#a1fd3517a142d4547551f00e899383845">makeJson</a>(<span class="stringliteral">&quot;value&quot;</span>, 2);</div>
+<div class="line"><a name="l00293"></a><span class="lineno">  293</span>&#160;            s1.val[1] = <a class="code" href="structripple_1_1test_1_1MultivarJson__test.html#a1fd3517a142d4547551f00e899383845">makeJson</a>(<span class="stringliteral">&quot;value&quot;</span>, 3);</div>
+<div class="line"><a name="l00294"></a><span class="lineno">  294</span>&#160;            s1.val[2] = <a class="code" href="structripple_1_1test_1_1MultivarJson__test.html#a1fd3517a142d4547551f00e899383845">makeJson</a>(<span class="stringliteral">&quot;value&quot;</span>, 5);</div>
+<div class="line"><a name="l00295"></a><span class="lineno">  295</span>&#160; </div>
+<div class="line"><a name="l00296"></a><span class="lineno">  296</span>&#160;            <span class="keywordtype">int</span> result = 1;</div>
+<div class="line"><a name="l00297"></a><span class="lineno">  297</span>&#160;            ripple::visit&lt;1, 3&gt;(</div>
+<div class="line"><a name="l00298"></a><span class="lineno">  298</span>&#160;                s1, [&amp;](<a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; <a class="code" href="classripple_1_1test_1_1jtx_1_1json.html">json</a>, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> i) -&gt; <span class="keywordtype">void</span> {</div>
+<div class="line"><a name="l00299"></a><span class="lineno">  299</span>&#160;                    <span class="keywordflow">if</span> (BEAST_EXPECT(<a class="code" href="classripple_1_1test_1_1jtx_1_1json.html">json</a>.isObject() &amp;&amp; <a class="code" href="classripple_1_1test_1_1jtx_1_1json.html">json</a>.isMember(<span class="stringliteral">&quot;value&quot;</span>)))</div>
+<div class="line"><a name="l00300"></a><span class="lineno">  300</span>&#160;                    {</div>
+<div class="line"><a name="l00301"></a><span class="lineno">  301</span>&#160;                        auto const value = json[<span class="stringliteral">&quot;value&quot;</span>].asInt();</div>
+<div class="line"><a name="l00302"></a><span class="lineno">  302</span>&#160;                        BEAST_EXPECT(</div>
+<div class="line"><a name="l00303"></a><span class="lineno">  303</span>&#160;                            (value == 2 &amp;&amp; i == 1) ||  <span class="comment">//</span></div>
+<div class="line"><a name="l00304"></a><span class="lineno">  304</span>&#160;                            (value == 3 &amp;&amp; i == 2) ||  <span class="comment">//</span></div>
+<div class="line"><a name="l00305"></a><span class="lineno">  305</span>&#160;                            (value == 5 &amp;&amp; i == 3));</div>
+<div class="line"><a name="l00306"></a><span class="lineno">  306</span>&#160;                        result *= value;</div>
+<div class="line"><a name="l00307"></a><span class="lineno">  307</span>&#160;                    }</div>
+<div class="line"><a name="l00308"></a><span class="lineno">  308</span>&#160;                });</div>
+<div class="line"><a name="l00309"></a><span class="lineno">  309</span>&#160;            BEAST_EXPECT(result == 30);</div>
+<div class="line"><a name="l00310"></a><span class="lineno">  310</span>&#160; </div>
+<div class="line"><a name="l00311"></a><span class="lineno">  311</span>&#160;            <span class="comment">// Can use fn with constexpr functor</span></div>
+<div class="line"><a name="l00312"></a><span class="lineno">  312</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
+<div class="line"><a name="l00313"></a><span class="lineno">  313</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
+<div class="line"><a name="l00314"></a><span class="lineno">  314</span>&#160;                {</div>
+<div class="line"><a name="l00315"></a><span class="lineno">  315</span>&#160;                    ripple::visit&lt;1, 3&gt;(</div>
+<div class="line"><a name="l00316"></a><span class="lineno">  316</span>&#160;                        v, [](<a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp;, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span>) constexpr {});</div>
+<div class="line"><a name="l00317"></a><span class="lineno">  317</span>&#160;                };</div>
+<div class="line"><a name="l00318"></a><span class="lineno">  318</span>&#160;            }(s1));</div>
+<div class="line"><a name="l00319"></a><span class="lineno">  319</span>&#160; </div>
+<div class="line"><a name="l00320"></a><span class="lineno">  320</span>&#160;            <span class="comment">// Can use fn with deduction over all parameters</span></div>
+<div class="line"><a name="l00321"></a><span class="lineno">  321</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
+<div class="line"><a name="l00322"></a><span class="lineno">  322</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
+<div class="line"><a name="l00323"></a><span class="lineno">  323</span>&#160;                {</div>
+<div class="line"><a name="l00324"></a><span class="lineno">  324</span>&#160;                    ripple::visit&lt;1, 3&gt;(v, [](<span class="keyword">auto</span>&amp;, <span class="keyword">auto</span>) constexpr {});</div>
+<div class="line"><a name="l00325"></a><span class="lineno">  325</span>&#160;                };</div>
+<div class="line"><a name="l00326"></a><span class="lineno">  326</span>&#160;            }(s1));</div>
+<div class="line"><a name="l00327"></a><span class="lineno">  327</span>&#160; </div>
+<div class="line"><a name="l00328"></a><span class="lineno">  328</span>&#160;            <span class="comment">// Can use fn with conversion of version parameter</span></div>
+<div class="line"><a name="l00329"></a><span class="lineno">  329</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
+<div class="line"><a name="l00330"></a><span class="lineno">  330</span>&#160;                <span class="keywordflow">return</span> <a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
+<div class="line"><a name="l00331"></a><span class="lineno">  331</span>&#160;                {</div>
+<div class="line"><a name="l00332"></a><span class="lineno">  332</span>&#160;                    ripple::visit&lt;1, 3&gt;(v, [](<span class="keyword">auto</span>&amp;, <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>) constexpr {});</div>
+<div class="line"><a name="l00333"></a><span class="lineno">  333</span>&#160;                };</div>
+<div class="line"><a name="l00334"></a><span class="lineno">  334</span>&#160;            }(s1));</div>
+<div class="line"><a name="l00335"></a><span class="lineno">  335</span>&#160; </div>
+<div class="line"><a name="l00336"></a><span class="lineno">  336</span>&#160;            <span class="comment">// Cannot use fn with const parameter</span></div>
+<div class="line"><a name="l00337"></a><span class="lineno">  337</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
+<div class="line"><a name="l00338"></a><span class="lineno">  338</span>&#160;                <span class="keywordflow">return</span> !<a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
+<div class="line"><a name="l00339"></a><span class="lineno">  339</span>&#160;                {</div>
+<div class="line"><a name="l00340"></a><span class="lineno">  340</span>&#160;                    ripple::visit&lt;1, 3&gt;(</div>
+<div class="line"><a name="l00341"></a><span class="lineno">  341</span>&#160;                        v, [](<a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp;, <span class="keyword">auto</span>) constexpr {});</div>
+<div class="line"><a name="l00342"></a><span class="lineno">  342</span>&#160;                };</div>
+<div class="line"><a name="l00343"></a><span class="lineno">  343</span>&#160;            }(<span class="keyword">const_cast&lt;</span><a class="code" href="structripple_1_1MultivarJson.html">MultivarJson&lt;3&gt;</a> const&amp;<span class="keyword">&gt;</span>(s1)));</div>
+<div class="line"><a name="l00344"></a><span class="lineno">  344</span>&#160; </div>
+<div class="line"><a name="l00345"></a><span class="lineno">  345</span>&#160;            <span class="comment">// Cannot call visit with size mismatch</span></div>
+<div class="line"><a name="l00346"></a><span class="lineno">  346</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
+<div class="line"><a name="l00347"></a><span class="lineno">  347</span>&#160;                <span class="keywordflow">return</span> !<a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
+<div class="line"><a name="l00348"></a><span class="lineno">  348</span>&#160;                {</div>
+<div class="line"><a name="l00349"></a><span class="lineno">  349</span>&#160;                    ripple::visit&lt;1, 2&gt;(</div>
+<div class="line"><a name="l00350"></a><span class="lineno">  350</span>&#160;                        v, [](<a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp;, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span>) constexpr {});</div>
+<div class="line"><a name="l00351"></a><span class="lineno">  351</span>&#160;                };</div>
+<div class="line"><a name="l00352"></a><span class="lineno">  352</span>&#160;            }(s1));</div>
+<div class="line"><a name="l00353"></a><span class="lineno">  353</span>&#160; </div>
+<div class="line"><a name="l00354"></a><span class="lineno">  354</span>&#160;            <span class="comment">// Cannot call visit with version offset</span></div>
+<div class="line"><a name="l00355"></a><span class="lineno">  355</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
+<div class="line"><a name="l00356"></a><span class="lineno">  356</span>&#160;                <span class="keywordflow">return</span> !<a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
+<div class="line"><a name="l00357"></a><span class="lineno">  357</span>&#160;                {</div>
+<div class="line"><a name="l00358"></a><span class="lineno">  358</span>&#160;                    ripple::visit&lt;0, 2&gt;(</div>
+<div class="line"><a name="l00359"></a><span class="lineno">  359</span>&#160;                        v, [](<a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp;, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span>) constexpr {});</div>
+<div class="line"><a name="l00360"></a><span class="lineno">  360</span>&#160;                };</div>
+<div class="line"><a name="l00361"></a><span class="lineno">  361</span>&#160;            }(s1));</div>
+<div class="line"><a name="l00362"></a><span class="lineno">  362</span>&#160; </div>
+<div class="line"><a name="l00363"></a><span class="lineno">  363</span>&#160;            <span class="comment">// Cannot call visit with size mismatch</span></div>
+<div class="line"><a name="l00364"></a><span class="lineno">  364</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
+<div class="line"><a name="l00365"></a><span class="lineno">  365</span>&#160;                <span class="keywordflow">return</span> !<a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
+<div class="line"><a name="l00366"></a><span class="lineno">  366</span>&#160;                {</div>
+<div class="line"><a name="l00367"></a><span class="lineno">  367</span>&#160;                    ripple::visit&lt;1, 4&gt;(</div>
+<div class="line"><a name="l00368"></a><span class="lineno">  368</span>&#160;                        v, [](<a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp;, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span>) constexpr {});</div>
+<div class="line"><a name="l00369"></a><span class="lineno">  369</span>&#160;                };</div>
+<div class="line"><a name="l00370"></a><span class="lineno">  370</span>&#160;            }(s1));</div>
+<div class="line"><a name="l00371"></a><span class="lineno">  371</span>&#160; </div>
+<div class="line"><a name="l00372"></a><span class="lineno">  372</span>&#160;            <span class="comment">// Cannot call visit with wrong order of versions</span></div>
+<div class="line"><a name="l00373"></a><span class="lineno">  373</span>&#160;            static_assert([](<span class="keyword">auto</span>&amp;&amp; v) {</div>
+<div class="line"><a name="l00374"></a><span class="lineno">  374</span>&#160;                <span class="keywordflow">return</span> !<a class="code" href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">requires</a></div>
+<div class="line"><a name="l00375"></a><span class="lineno">  375</span>&#160;                {</div>
+<div class="line"><a name="l00376"></a><span class="lineno">  376</span>&#160;                    ripple::visit&lt;3, 1&gt;(</div>
+<div class="line"><a name="l00377"></a><span class="lineno">  377</span>&#160;                        v, [](<a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp;, <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span>) constexpr {});</div>
+<div class="line"><a name="l00378"></a><span class="lineno">  378</span>&#160;                };</div>
+<div class="line"><a name="l00379"></a><span class="lineno">  379</span>&#160;            }(s1));</div>
+<div class="line"><a name="l00380"></a><span class="lineno">  380</span>&#160;        }</div>
+<div class="line"><a name="l00381"></a><span class="lineno">  381</span>&#160;    }</div>
+<div class="line"><a name="l00382"></a><span class="lineno">  382</span>&#160;};</div>
+<div class="line"><a name="l00383"></a><span class="lineno">  383</span>&#160; </div>
+<div class="line"><a name="l00384"></a><span class="lineno">  384</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">BEAST_DEFINE_TESTSUITE</a>(<a class="code" href="structripple_1_1MultivarJson.html">MultivarJson</a>, ripple_basics, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00385"></a><span class="lineno">  385</span>&#160; </div>
+<div class="line"><a name="l00386"></a><span class="lineno">  386</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00387"></a><span class="lineno">  387</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1json_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1json.html">ripple::test::jtx::json</a></div><div class="ttdoc">Inject raw JSON.</div><div class="ttdef"><b>Definition:</b> <a href="jtx__json_8h_source.html#l00031">jtx_json.h:31</a></div></div>
 <div class="ttc" id="ais_same_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same_v</a></div><div class="ttdeci">T is_same_v</div></div>
-<div class="ttc" id="astructripple_1_1MultivarJson_html_a3ae5ea9936244101bb5d1c8d6e5cfe15"><div class="ttname"><a href="structripple_1_1MultivarJson.html#a3ae5ea9936244101bb5d1c8d6e5cfe15">ripple::MultivarJson::size</a></div><div class="ttdeci">constexpr static std::size_t size</div><div class="ttdef"><b>Definition:</b> <a href="MultivarJson_8h_source.html#l00035">MultivarJson.h:35</a></div></div>
-<div class="ttc" id="astructripple_1_1MultivarJson_html_ad65cd6925a1e4bdd76f46fe46f57b2ac"><div class="ttname"><a href="structripple_1_1MultivarJson.html#ad65cd6925a1e4bdd76f46fe46f57b2ac">ripple::MultivarJson::val</a></div><div class="ttdeci">std::array&lt; Json::Value, Size &gt; val</div><div class="ttdef"><b>Definition:</b> <a href="MultivarJson_8h_source.html#l00034">MultivarJson.h:34</a></div></div>
+<div class="ttc" id="astructripple_1_1MultivarJson_html_a3ae5ea9936244101bb5d1c8d6e5cfe15"><div class="ttname"><a href="structripple_1_1MultivarJson.html#a3ae5ea9936244101bb5d1c8d6e5cfe15">ripple::MultivarJson::size</a></div><div class="ttdeci">constexpr static std::size_t size</div><div class="ttdef"><b>Definition:</b> <a href="MultivarJson_8h_source.html#l00037">MultivarJson.h:37</a></div></div>
+<div class="ttc" id="astructripple_1_1MultivarJson_html_ad65cd6925a1e4bdd76f46fe46f57b2ac"><div class="ttname"><a href="structripple_1_1MultivarJson.html#ad65cd6925a1e4bdd76f46fe46f57b2ac">ripple::MultivarJson::val</a></div><div class="ttdeci">std::array&lt; Json::Value, Size &gt; val</div><div class="ttdef"><b>Definition:</b> <a href="MultivarJson_8h_source.html#l00036">MultivarJson.h:36</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51"><div class="ttname"><a href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">ripple::TxSearched::all</a></div><div class="ttdeci">@ all</div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a1359badd82538ee3d5a05bfd744f2d80"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a1359badd82538ee3d5a05bfd744f2d80">ripple::RPC::apiBetaVersion</a></div><div class="ttdeci">constexpr unsigned int apiBetaVersion</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8h_source.html#l00239">RPCHelpers.h:239</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1MultivarJson__test_html_ac0a1306cb79b8dc9abaca9188f217b9c"><div class="ttname"><a href="structripple_1_1test_1_1MultivarJson__test.html#ac0a1306cb79b8dc9abaca9188f217b9c">ripple::test::MultivarJson_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="MultivarJson__test_8cpp_source.html#l00037">MultivarJson_test.cpp:37</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1MultivarJson__test_html_ac0a1306cb79b8dc9abaca9188f217b9c"><div class="ttname"><a href="structripple_1_1test_1_1MultivarJson__test.html#ac0a1306cb79b8dc9abaca9188f217b9c">ripple::test::MultivarJson_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="MultivarJson__test_8cpp_source.html#l00045">MultivarJson_test.cpp:45</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7796383bfef292efc87ae0c132e4f230"><div class="ttname"><a href="namespaceripple.html#a7796383bfef292efc87ae0c132e4f230">ripple::requires</a></div><div class="ttdeci">requires(T::ConsequencesFactory==Transactor::Normal) TxConsequences consequences_helper(PreflightContext const &amp;ctx)</div><div class="ttdef"><b>Definition:</b> <a href="applySteps_8cpp_source.html#l00181">applySteps.cpp:181</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1MultivarJson__test_html"><div class="ttname"><a href="structripple_1_1test_1_1MultivarJson__test.html">ripple::test::MultivarJson_test</a></div><div class="ttdef"><b>Definition:</b> <a href="MultivarJson__test_8cpp_source.html#l00034">MultivarJson_test.cpp:34</a></div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a></div><div class="ttdeci">@ objectValue</div><div class="ttdoc">object value (collection of name/value pairs).</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00043">json_value.h:43</a></div></div>
 <div class="ttc" id="aarray_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="acstdint_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a519cd620ba800774f42d2bac371cc20b"><div class="ttname"><a href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">ripple::apiVersionSelector</a></div><div class="ttdeci">constexpr auto apiVersionSelector(unsigned int apiVersion) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="MultivarJson_8h_source.html#l00100">MultivarJson.h:100</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a519cd620ba800774f42d2bac371cc20b"><div class="ttname"><a href="namespaceripple.html#a519cd620ba800774f42d2bac371cc20b">ripple::apiVersionSelector</a></div><div class="ttdeci">constexpr auto apiVersionSelector(unsigned int apiVersion) noexcept</div><div class="ttdef"><b>Definition:</b> <a href="MultivarJson_8h_source.html#l00106">MultivarJson.h:106</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a86a3780c8662fae3e2a81382afe4d51b"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a86a3780c8662fae3e2a81382afe4d51b">ripple::RPC::apiMinimumSupportedVersion</a></div><div class="ttdeci">constexpr unsigned int apiMinimumSupportedVersion</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8h_source.html#l00236">RPCHelpers.h:236</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="alimits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/limits.html">limits</a></div></div>
-<div class="ttc" id="aclassJson_1_1StaticString_html"><div class="ttname"><a href="classJson_1_1StaticString.html">Json::StaticString</a></div><div class="ttdoc">Lightweight wrapper to tag static string.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00060">json_value.h:60</a></div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391">Json::nullValue</a></div><div class="ttdeci">@ nullValue</div><div class="ttdoc">'null' value</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00036">json_value.h:36</a></div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a></div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
-<div class="ttc" id="astructripple_1_1MultivarJson_html"><div class="ttname"><a href="structripple_1_1MultivarJson.html">ripple::MultivarJson</a></div><div class="ttdef"><b>Definition:</b> <a href="MultivarJson_8h_source.html#l00032">MultivarJson.h:32</a></div></div>
+<div class="ttc" id="astructripple_1_1MultivarJson_html"><div class="ttname"><a href="structripple_1_1MultivarJson.html">ripple::MultivarJson</a></div><div class="ttdef"><b>Definition:</b> <a href="MultivarJson_8h_source.html#l00034">MultivarJson.h:34</a></div></div>
 <div class="ttc" id="anumeric_limits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits</a></div></div>
 <div class="ttc" id="atype_traits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/type_traits.html">type_traits</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1MultivarJson__test_html_a1fd3517a142d4547551f00e899383845"><div class="ttname"><a href="structripple_1_1test_1_1MultivarJson__test.html#a1fd3517a142d4547551f00e899383845">ripple::test::MultivarJson_test::makeJson</a></div><div class="ttdeci">static auto makeJson(const char *key, int val)</div><div class="ttdef"><b>Definition:</b> <a href="MultivarJson__test_8cpp_source.html#l00037">MultivarJson_test.cpp:37</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7ffb3f54d739bb8f967d695f08fb66cca03d59e663c1af9ac33a9949d1193505a"><div class="ttname"><a href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cca03d59e663c1af9ac33a9949d1193505a">ripple::TxSearched::some</a></div><div class="ttdeci">@ some</div></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00145">json_value.h:145</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_html_a36e90e9cdf2adf7993483b3190ee8e21"><div class="ttname"><a href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">ripple::test::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(DeliverMin, app, ripple)</div></div>

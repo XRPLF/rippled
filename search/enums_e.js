@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['qualitydirection_27792',['QualityDirection',['../namespaceripple.html#a7cc64e12723fbc9606d85442a2569fed',1,'ripple']]]
+  ['qualitydirection_27795',['QualityDirection',['../namespaceripple.html#a7cc64e12723fbc9606d85442a2569fed',1,'ripple']]]
 ];
