@@ -2222,7 +2222,8 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
 
-        // TODO Replace multiObj with jvObj when API versions 1 is retired
+        // NOTE Use MultiApiJson to publish two slightly different JSON objects
+        // for consumers supporting different API versions
         MultiApiJson multiObj{jvObj};
         visit<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(
             multiObj,  //
