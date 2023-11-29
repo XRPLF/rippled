@@ -230,22 +230,20 @@ class TransactionEntry_test : public beast::unit_test::suite
             }
 
             // Use the command line form with the index.
-            if (apiVersion == RPC::apiMaximumSupportedVersion)
-            {
-                Json::Value const clIndex{env.rpc(
-                    "transaction_entry", txhash, std::to_string(index))};
-                BEAST_EXPECT(clIndex["result"] == resIndex);
-            }
+            Json::Value const clIndex{env.rpc(
+                apiVersion,
+                "transaction_entry",
+                txhash,
+                std::to_string(index))};
+            BEAST_EXPECT(clIndex["result"] == resIndex);
 
             // Use the command line form with the ledger_hash.
-            if (apiVersion == RPC::apiMaximumSupportedVersion)
-            {
-                Json::Value const clHash{env.rpc(
-                    "transaction_entry",
-                    txhash,
-                    resIndex[jss::ledger_hash].asString())};
-                BEAST_EXPECT(clHash["result"] == resIndex);
-            }
+            Json::Value const clHash{env.rpc(
+                apiVersion,
+                "transaction_entry",
+                txhash,
+                resIndex[jss::ledger_hash].asString())};
+            BEAST_EXPECT(clHash["result"] == resIndex);
         };
 
         Account A1{"A1"};
