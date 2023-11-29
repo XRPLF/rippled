@@ -45,6 +45,7 @@ doSign(RPC::JsonContext& context)
 
     auto ret = RPC::transactionSign(
         context.params,
+        context.apiVersion,
         failType,
         context.role,
         context.ledgerMaster.getValidatedLedgerAge(),

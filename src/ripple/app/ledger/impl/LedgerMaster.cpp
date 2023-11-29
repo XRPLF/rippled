@@ -603,6 +603,54 @@ LedgerMaster::clearLedger(std::uint32_t seq)
     mCompleteLedgers.erase(seq);
 }
 
+bool
+LedgerMaster::isValidated(ReadView const& ledger)
+{
+    if (app_.config().reporting())
+        return true;  // Reporting mode only supports validated ledger
+
+    if (ledger.open())
+        return false;
+
+    if (ledger.info().validated)
+        return true;
+
+    auto const seq = ledger.info().seq;
+    try
+    {
+        // Use the skip list in the last validated ledger to see if ledger
+        // comes before the last validated ledger (and thus has been
+        // validated).
+        auto const hash = walkHashBySeq(seq, InboundLedger::Reason::GENERIC);
+
+        if (!hash || ledger.info().hash != *hash)
+        {
+            // This ledger's hash is not the hash of the validated ledger
+            if (hash)
+            {
+                assert(hash->isNonZero());
+                uint256 valHash =
+                    app_.getRelationalDatabase().getHashByIndex(seq);
+                if (valHash == ledger.info().hash)
+                {
+                    // SQL database doesn't match ledger chain
+                    clearLedger(seq);
+                }
+            }
+            return false;
+        }
+    }
+    catch (SHAMapMissingNode const& mn)
+    {
+        JLOG(m_journal.warn()) << "Ledger #" << seq << ": " << mn.what();
+        return false;
+    }
+
+    // Mark ledger as validated to save time if we see it again.
+    ledger.info().validated = true;
+    return true;
+}
+
 // returns Ledgers we have all the nodes for
 bool
 LedgerMaster::getFullValidatedRange(
