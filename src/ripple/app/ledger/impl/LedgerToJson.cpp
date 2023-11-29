@@ -27,6 +27,7 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 
@@ -52,10 +53,17 @@ isBinary(LedgerFill const& fill)
 
 template <class Object>
 void
-fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
+fillJson(
+    Object& json,
+    bool closed,
+    LedgerInfo const& info,
+    bool bFull,
+    unsigned apiVersion)
 {
     json[jss::parent_hash] = to_string(info.parentHash);
-    json[jss::ledger_index] = to_string(info.seq);
+    json[jss::ledger_index] = (apiVersion > 1)
+        ? Json::Value(info.seq)
+        : Json::Value(std::to_string(info.seq));
 
     if (closed)
     {
@@ -159,7 +167,10 @@ fillJsonTx(
         txJson[jss::validated] = validated;
         if (validated)
         {
-            txJson[jss::ledger_index] = to_string(fill.ledger.seq());
+            auto const seq = fill.ledger.seq();
+            txJson[jss::ledger_index] = (fill.context->apiVersion > 1)
+                ? Json::Value(seq)
+                : Json::Value(std::to_string(seq));
             if (fill.closeTime)
                 txJson[jss::close_time_iso] = to_string_iso(*fill.closeTime);
         }
@@ -315,7 +326,13 @@ fillJson(Object& json, LedgerFill const& fill)
     if (isBinary(fill))
         fillJsonBinary(json, !fill.ledger.open(), fill.ledger.info());
     else
-        fillJson(json, !fill.ledger.open(), fill.ledger.info(), bFull);
+        fillJson(
+            json,
+            !fill.ledger.open(),
+            fill.ledger.info(),
+            bFull,
+            (fill.context ? fill.context->apiVersion
+                          : RPC::apiMaximumSupportedVersion));
 
     if (bFull || fill.options & LedgerFill::dumpTxrp)
         fillJsonTx(json, fill);
