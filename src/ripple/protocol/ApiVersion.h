@@ -81,8 +81,9 @@ template <unsigned minVer, unsigned maxVer, typename Fn, typename... Args>
     constexpr auto size = maxVer + 1 - minVer;
     [&]<std::size_t... offset>(std::index_sequence<offset...>)
     {
-        (fn(std::integral_constant<unsigned int, minVer + offset>{},
-            std::forward<Args>(args)...),
+        (((void)fn(
+             std::integral_constant<unsigned int, minVer + offset>{},
+             std::forward<Args>(args)...)),
          ...);
     }
     (std::make_index_sequence<size>{});
@@ -106,11 +107,13 @@ struct ApiVersionHelper final
 {
     constexpr static std::size_t size =
         RPC::apiMaximumValidVersion + 1 - RPC::apiMinimumSupportedVersion;
+
     constexpr static auto
     index(unsigned int v) noexcept -> std::size_t
     {
         return static_cast<std::size_t>(v <= 1 ? 0 : (v <= 2 ? 1 : 2));
     }
+
     constexpr static auto
     valid(unsigned int v) noexcept -> bool
     {

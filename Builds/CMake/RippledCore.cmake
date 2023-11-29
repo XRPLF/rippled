@@ -1016,6 +1016,7 @@ if (tests)
        test sources:
          subdir: protocol
     #]===============================]
+    src/test/protocol/ApiVersion_test.cpp
     src/test/protocol/BuildInfo_test.cpp
     src/test/protocol/InnerObjectFormats_test.cpp
     src/test/protocol/Issue_test.cpp
