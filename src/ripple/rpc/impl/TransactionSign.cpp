@@ -20,6 +20,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/TxQ.h>
@@ -658,6 +659,11 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
         }
         else
             jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
+
+        RPC::insertDeliverMax(
+            jvResult[jss::tx_json],
+            tpTrans->getSTransaction()->getTxnType(),
+            apiVersion);
 
         jvResult[jss::tx_blob] =
             strHex(tpTrans->getSTransaction()->getSerializer().peekData());
