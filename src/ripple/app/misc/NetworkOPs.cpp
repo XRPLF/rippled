@@ -2213,16 +2213,12 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         // NOTE Use MultiApiJson to publish two slightly different JSON objects
         // for consumers supporting different API versions
         MultiApiJson multiObj{jvObj};
-        visit<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(
-            multiObj,  //
-            [](Json::Value& jvTx, unsigned int apiVersion) {
-                // Type conversion for older API versions to string
-                if (jvTx.isMember(jss::ledger_index) && apiVersion < 2)
-                {
-                    jvTx[jss::ledger_index] =
-                        std::to_string(jvTx[jss::ledger_index].asUInt());
-                }
-            });
+        Json::Value& jvTx = multiObj.val[apiVersionSelector(1)()];
+        if (jvTx.isMember(jss::ledger_index))
+        {
+            jvTx[jss::ledger_index] =
+                std::to_string(jvTx[jss::ledger_index].asUInt());
+        }
 
         for (auto i = mStreamMaps[sValidations].begin();
              i != mStreamMaps[sValidations].end();)
