@@ -159,6 +159,61 @@ struct ApiVersion_test : beast::unit_test::suite
                 &result);
 
             BEAST_EXPECT(result == productAllVersions);
+
+            // Several overloads we want to fail
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](Json::Value&, auto) {});            // missing const
+                };
+            }(std::as_const(s1)));
+
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto...) {});  // cannot bind rvalues
+                };
+            }(std::move(s1)));
+
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto) {});  // missing parameter
+                };
+            }(s1));
+
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](Json::Value const&) {});  // missing parameter
+                };
+            }(std::as_const(s1)));
+
+            // Sanity checks
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto...) {});
+                };
+            }(s1));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](Json::Value const&, auto...) {});
+                };
+            }(std::as_const(s1)));
         }
     }
 };
