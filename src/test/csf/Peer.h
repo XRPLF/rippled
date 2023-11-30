@@ -1077,6 +1077,15 @@ struct Peer
         std::optional<std::chrono::milliseconds> vd = std::nullopt) const
     {
     }
+
+    template <class T>
+    void
+    dispose([[maybe_unused]] T&& garbage)
+    {
+        static_assert(std::is_rvalue_reference_v<decltype(garbage)>);
+        // This "empty" function runs the destructor on the garbage argument
+        // as a way to clean up accumulated garbage.
+    }
 };
 
 }  // namespace csf
