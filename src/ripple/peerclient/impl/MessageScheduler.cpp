@@ -199,7 +199,7 @@ MessageScheduler::disconnect(Peer::id_t peerId)
         request->timer.cancel();
         try
         {
-            BlockLog bl{journal_.info(), this, "onFailure(DISCONNECT)"};
+            // BlockLog bl{journal_.info(), this, "onFailure(DISCONNECT)"};
             // This callback may call `schedule`
             // which is fine because we're not holding the lock.
             request->receiver->onFailure(request->id, FailureCode::DISCONNECT);
@@ -242,8 +242,8 @@ struct MessageSchedulerLogger {
 bool
 MessageScheduler::schedule(Sender* sender)
 {
-    JLOG(journal_.trace()) << "schedule,during=" << during
-                           << ",sender=" << sender;
+    // JLOG(journal_.trace()) << "schedule,during=" << during
+    //                        << ",sender=" << sender;
     if (tsenders)
     {
         // `mutex_` is already locked in this thread.
@@ -260,7 +260,7 @@ MessageScheduler::schedule(Sender* sender)
     {
         return false;
     }
-    MessageSchedulerLogger logger(*this, lock, "schedule");
+    // MessageSchedulerLogger logger(*this, lock, "schedule");
     push_value during_(during, "schedule");
     assert(!tsenders);
     SenderQueue senders{sender};
@@ -296,7 +296,7 @@ MessageScheduler::send(
     }
     auto requestId = nextId_();
     message.set_requestcookie(requestId);
-    JLOG(journal_.trace()) << "send,type=get_ledger";
+    // JLOG(journal_.trace()) << "send,type=get_ledger";
     return send_(
         lock,
         metaPeer,
@@ -324,8 +324,8 @@ MessageScheduler::send(
     auto requestId = nextId_();
     message.set_query(true);
     message.set_seq(requestId);
-    JLOG(journal_.trace()) << "send,type=get_objects,count="
-                           << message.objects_size();
+    // JLOG(journal_.trace()) << "send,type=get_objects,count="
+    //                        << message.objects_size();
     return send_(
         lock,
         metaPeer,
@@ -342,7 +342,7 @@ MessageScheduler::negotiateNewPeers(
     std::lock_guard<std::mutex> const& lock,
     MetaPeerSet& peers)
 {
-    MessageSchedulerLogger logger(*this, lock, "negotiateNewPeers");
+    // MessageSchedulerLogger logger(*this, lock, "negotiateNewPeers");
     assert(tsenders);
     assert(!senders_.empty());
     // `negotiate` will assert that `peers` is a non-empty set of open peers.
@@ -353,7 +353,7 @@ MessageScheduler::negotiateNewPeers(
 void
 MessageScheduler::negotiateNewSenders(std::lock_guard<std::mutex> const& lock)
 {
-    MessageSchedulerLogger logger(*this, lock, "negotiateNewSenders");
+    // MessageSchedulerLogger logger(*this, lock, "negotiateNewSenders");
     assert(tsenders);
     if (!tsenders->empty() && this->hasOpenChannels(lock)) {
         MetaPeerSet peers{peers_};
@@ -373,11 +373,11 @@ MessageScheduler::negotiate(
     MetaPeerSet& peers,
     SenderQueue& senders)
 {
-    JLOG(journal_.trace()) << "negotiate,during=" << during
-                           << ",peers=" << peers.size()
-                           << ",nclosed=" << nclosed_ << "/" << nchannels_
-                           << ",senders=" << senders.size();
-    MessageSchedulerLogger logger(*this, lock, "negotiate");
+    // JLOG(journal_.trace()) << "negotiate,during=" << during
+    //                        << ",peers=" << peers.size()
+    //                        << ",nclosed=" << nclosed_ << "/" << nchannels_
+    //                        << ",senders=" << senders.size();
+    // MessageSchedulerLogger logger(*this, lock, "negotiate");
     assert(!senders.empty());
     assert(!peers.empty());
     assert(std::all_of(
@@ -397,8 +397,7 @@ MessageScheduler::negotiate(
         Courier courier{*this, lock, peers, limit};
         try
         {
-            BlockLog bl{journal_.info(), this, "onReady"};
-            JLOG(journal_.info()) << "sender=" << senders[i];
+            // BlockLog bl{journal_.info(), this, "onReady"};
             senders[i]->onReady(courier);
         }
         catch (...)
@@ -467,9 +466,9 @@ MessageScheduler::send_(
     peer->send(packet);
     ++metaPeer->nclosed;
     ++nclosed_;
-    JLOG(journal_.trace()) << "send,id=" << requestId
-                           << ",peerId=" << peer->id()
-                           << ",inflight=" << nrequests;
+    // JLOG(journal_.trace()) << "send,id=" << requestId
+    //                        << ",peerId=" << peer->id()
+    //                        << ",inflight=" << nrequests;
     return requestId;
 }
 
@@ -477,11 +476,11 @@ void
 MessageScheduler::receive(
     std::shared_ptr<protocol::TMLedgerData> const& message)
 {
-    JLOG(journal_.trace()) << "receive,type=ledger_data,count="
-                           << message->nodes().size();
+    // JLOG(journal_.trace()) << "receive,type=ledger_data,count="
+    //                        << message->nodes().size();
     if (!message->has_requestcookie())
     {
-        JLOG(journal_.info()) << "LedgerData message missing request ID";
+        JLOG(journal_.warn()) << "LedgerData message missing request ID";
         return;
     }
     auto requestId = message->requestcookie();
@@ -492,11 +491,11 @@ void
 MessageScheduler::receive(
     std::shared_ptr<protocol::TMGetObjectByHash> const& message)
 {
-    JLOG(journal_.trace()) << "receive,type=get_objects,count="
-                           << message->objects().size();
+    // JLOG(journal_.trace()) << "receive,type=get_objects,count="
+    //                        << message->objects().size();
     if (!message->has_seq())
     {
-        JLOG(journal_.info()) << "GetObjectByHash message missing request ID";
+        JLOG(journal_.warn()) << "GetObjectByHash message missing request ID";
         return;
     }
     auto requestId = message->seq();
@@ -570,7 +569,7 @@ MessageScheduler::timeout_(RequestId requestId)
 
     requests_.erase(it);
 
-    JLOG(journal_.trace()) << "timeout,id=" << requestId;
+    // JLOG(journal_.trace()) << "timeout,id=" << requestId;
 
     reopen(lock, "timeout_", request->metaPeer, [&] {
         // Non-trivial callbacks should just schedule a job.
@@ -598,7 +597,7 @@ MessageScheduler::reopen(
 
     try
     {
-        BlockLog bl{journal_.info(), this, "onSuccess/onFailure(TIMEOUT)"};
+        // BlockLog bl{journal_.info(), this, "onSuccess/onFailure(TIMEOUT)"};
         // Non-trivial callbacks should just schedule a job.
         callback();
     }
@@ -628,7 +627,7 @@ MessageScheduler::stop()
     {
         try
         {
-            BlockLog bl{journal_.info(), this, "onFailure(SHUTDOWN)"};
+            // BlockLog bl{journal_.info(), this, "onFailure(SHUTDOWN)"};
             request->receiver->onFailure(id, FailureCode::SHUTDOWN);
         }
         catch (...)
@@ -642,7 +641,7 @@ MessageScheduler::stop()
     {
         try
         {
-            BlockLog bl{journal_.info(), this, "onDiscard"};
+            // BlockLog bl{journal_.info(), this, "onDiscard"};
             sender->onDiscard();
         }
         catch (...)
