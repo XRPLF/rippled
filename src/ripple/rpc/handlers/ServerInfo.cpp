@@ -21,6 +21,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/reporting/P2pProxy.h>
 #include <ripple/json/json_value.h>
+#include <ripple/json/json_writer.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/SField.h>
