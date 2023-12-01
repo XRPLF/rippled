@@ -6918,10 +6918,12 @@ public:
         static FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
         static std::array<FeatureBitset, 5> const feats{
-            all - fixNFTDir - fixNonFungibleTokensV1_2 - fixNFTokenRemint - featureNFTokenMintOffer,
+            all - fixNFTDir - fixNonFungibleTokensV1_2 - fixNFTokenRemint -
+                featureNFTokenMintOffer,
             all - disallowIncoming - fixNonFungibleTokensV1_2 -
                 fixNFTokenRemint - featureNFTokenMintOffer,
-            all - fixNonFungibleTokensV1_2 - fixNFTokenRemint - featureNFTokenMintOffer,
+            all - fixNonFungibleTokensV1_2 - fixNFTokenRemint -
+                featureNFTokenMintOffer,
             all - fixNFTokenRemint - featureNFTokenMintOffer,
             all - featureNFTokenMintOffer,
             all};
