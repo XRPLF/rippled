@@ -193,7 +193,8 @@ async def loop(
     id = 0
     while True:
         logging.info(f'iteration: {id}')
-        shutil.rmtree(the_database_path, ignore_errors=True)
+        if clear:
+            shutil.rmtree(the_database_path, ignore_errors=True)
         async with rippled(exe, config_path) as process:
             start = time.perf_counter()
             exited = asyncio.create_task(process.wait())
