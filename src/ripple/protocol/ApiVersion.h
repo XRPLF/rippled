@@ -50,13 +50,17 @@ namespace ripple {
 
 namespace RPC {
 
-constexpr unsigned int apiInvalidVersion = 0;
-constexpr unsigned int apiVersionIfUnspecified = 1;
-constexpr unsigned int apiMinimumSupportedVersion = 1;
-constexpr unsigned int apiMaximumSupportedVersion = 2;
-constexpr unsigned int apiCommandLineVersion = 1;  // TODO Bump to 2 later
-constexpr unsigned int apiBetaVersion = 3;
-constexpr unsigned int apiMaximumValidVersion = apiBetaVersion;
+template <unsigned int Version>
+constexpr static std::integral_constant<unsigned, Version> apiVersion = {};
+
+constexpr static auto apiInvalidVersion = apiVersion<0>;
+constexpr static auto apiVersionIfUnspecified = apiVersion<1>;
+constexpr static auto apiMinimumSupportedVersion = apiVersion<1>;
+constexpr static auto apiMaximumSupportedVersion = apiVersion<2>;
+constexpr static auto apiCommandLineVersion =
+    apiVersion<1>;  // TODO Bump to 2 later
+constexpr static auto apiBetaVersion = apiVersion<3>;
+constexpr static auto apiMaximumValidVersion = apiBetaVersion;
 
 static_assert(apiMinimumSupportedVersion >= apiVersionIfUnspecified);
 static_assert(apiMaximumSupportedVersion >= apiMinimumSupportedVersion);

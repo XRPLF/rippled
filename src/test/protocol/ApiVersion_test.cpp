@@ -90,7 +90,7 @@ struct ApiVersion_test : beast::unit_test::suite
                     RPC::apiMinimumSupportedVersion);
 
             int productAllVersions = 1;
-            for (auto i = RPC::apiMinimumSupportedVersion;
+            for (unsigned i = RPC::apiMinimumSupportedVersion;
                  i <= RPC::apiMaximumValidVersion;
                  ++i)
             {
@@ -102,8 +102,9 @@ struct ApiVersion_test : beast::unit_test::suite
             }
             BEAST_EXPECT(!s1.valid(0));
             BEAST_EXPECT(!s1.valid(RPC::apiMaximumValidVersion + 1));
-            BEAST_EXPECT(!s1.valid(std::numeric_limits<decltype(
-                                       RPC::apiMaximumValidVersion)>::max()));
+            BEAST_EXPECT(
+                !s1.valid(std::numeric_limits<decltype(
+                              RPC::apiMaximumValidVersion.value)>::max()));
 
             int result = 1;
             static_assert(

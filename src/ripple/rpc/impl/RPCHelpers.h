@@ -223,7 +223,7 @@ setVersion(Object& parent, unsigned int apiVersion, bool betaEnabled)
     }
     else
     {
-        object[jss::first] = apiMinimumSupportedVersion;
+        object[jss::first] = apiMinimumSupportedVersion.value;
         object[jss::last] =
             betaEnabled ? apiBetaVersion : apiMaximumSupportedVersion;
     }
