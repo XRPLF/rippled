@@ -797,7 +797,7 @@ $(function() {
 , <a class="el" href="classripple_1_1AmendmentTable.html#ac63a31d38346fba5d5ca78c4894af31a">ripple::AmendmentTable</a>
 , <a class="el" href="classripple_1_1AmendmentTableImpl.html#a9c84b0a42b131a8c6392a993bc4b4c4c">ripple::AmendmentTableImpl</a>
 , <a class="el" href="classripple_1_1Consensus.html#a6e81235f0c5f91c23cbe1938ffe8a9e3">ripple::Consensus&lt; Adaptor &gt;</a>
-, <a class="el" href="classripple_1_1ConsensusProposal.html#ad5ae4fa82a1681204852e81d7ada5df5">ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t, Seq &gt;</a>
+, <a class="el" href="classripple_1_1ConsensusProposal.html#a799315c246e228ac703759505d8997d8">ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t &gt;</a>
 , <a class="el" href="classripple_1_1DisputedTx.html#a17ac6060bf6ac7641f4ea9b8cc25d9c9">ripple::DisputedTx&lt; Tx_t, NodeID_t &gt;</a>
 , <a class="el" href="classripple_1_1InboundLedger.html#a069c3ef1adae2c6d17c67e71071ca962">ripple::InboundLedger</a>
 , <a class="el" href="classripple_1_1JobQueue.html#a8a0f5f0f114ceb9d5f03f66252d6889b">ripple::JobQueue</a>
@@ -944,8 +944,6 @@ $(function() {
 <li>getLedgerMaster()
 : <a class="el" href="classripple_1_1Application.html#a57929fa83c551514e364fe6981b0c104">ripple::Application</a>
 , <a class="el" href="classripple_1_1ApplicationImp.html#a0c54a2fd4cfd80f52bf3b31ee780a294">ripple::ApplicationImp</a>
-, <a class="el" href="classripple_1_1RCLConsensus_1_1Adaptor.html#af636744c5b5ed6f3ca46c9a1b726d879">ripple::RCLConsensus::Adaptor</a>
-, <a class="el" href="structripple_1_1test_1_1csf_1_1Peer.html#a75da335a67d168402db3fef00a54b657">ripple::test::csf::Peer</a>
 </li>
 <li>getLedgerRangeSearched()
 : <a class="el" href="structripple_1_1Transaction_1_1Locator.html#a27258e279892b75ebd46ac23ccd0869f">ripple::Transaction::Locator</a>
@@ -1066,7 +1064,7 @@ $(function() {
 : <a class="el" href="classripple_1_1AcceptedLedgerTx.html#a87f79a4dc64ebd2695773b49e50b86e8">ripple::AcceptedLedgerTx</a>
 </li>
 <li>getMetaSQL()
-: <a class="el" href="classripple_1_1STTx.html#acdc9d0299656cd65dd4f9a17b90a010b">ripple::STTx</a>
+: <a class="el" href="classripple_1_1STTx.html#ada5110e3b815b7197e203e9022799194">ripple::STTx</a>
 </li>
 <li>getMetaSQLInsertReplaceHeader()
 : <a class="el" href="classripple_1_1STTx.html#a2ac2b7a11b5738dba3a4e03be1303da1">ripple::STTx</a>
@@ -1319,7 +1317,7 @@ $(function() {
 </li>
 <li>getPreferred()
 : <a class="el" href="classripple_1_1LedgerTrie.html#a3db8ef88a24566a57fe4711177e87da8">ripple::LedgerTrie&lt; Ledger &gt;</a>
-, <a class="el" href="classripple_1_1Validations.html#aeef036f0efc7d98bfbd99e00857e7269">ripple::Validations&lt; Adaptor &gt;</a>
+, <a class="el" href="classripple_1_1Validations.html#ad8cbed0563344b297789575879aae482">ripple::Validations&lt; Adaptor &gt;</a>
 </li>
 <li>getPreferredLCL()
 : <a class="el" href="classripple_1_1Validations.html#abe6526fada634c34ab78897b910840de">ripple::Validations&lt; Adaptor &gt;</a>
@@ -1654,11 +1652,6 @@ $(function() {
 , <a class="el" href="classripple_1_1STObject.html#aa6020d736e752379911874f968bd5ed3">ripple::STObject</a>
 , <a class="el" href="classripple_1_1STXChainBridge.html#a68ddab615119363b93f687ee31814158">ripple::STXChainBridge</a>
 </li>
-<li>getTimerDelay()
-: <a class="el" href="classripple_1_1RCLConsensus_1_1Adaptor.html#a09cadf9336be917f7f4450f3db204c87">ripple::RCLConsensus::Adaptor</a>
-, <a class="el" href="classripple_1_1RCLConsensus.html#a5f3541ee9a799c56fa37375336958cc6">ripple::RCLConsensus</a>
-, <a class="el" href="structripple_1_1test_1_1csf_1_1Peer.html#a19059b889c2b950dfadd6d00b9a782ca">ripple::test::csf::Peer</a>
-</li>
 <li>getTrackSize()
 : <a class="el" href="classripple_1_1TaggedCache.html#a10fb65444d213248bb86271e589821d6">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;</a>
 </li>
@@ -1694,7 +1687,7 @@ $(function() {
 : <a class="el" href="classripple_1_1Validations.html#a065935dcd0e0f1fa0d5ded9a65935e86">ripple::Validations&lt; Adaptor &gt;</a>
 </li>
 <li>getTrustedKey()
-: <a class="el" href="classripple_1_1ValidatorList.html#a15ca6b033b973fb438ca5d1b6a66b5b9">ripple::ValidatorList</a>
+: <a class="el" href="classripple_1_1ValidatorList.html#a0056ded6793baf9fda1c2f1fcffc535b">ripple::ValidatorList</a>
 </li>
 <li>getTrustedMasterKeys()
 : <a class="el" href="classripple_1_1ValidatorList.html#a22bb356f3dff23879344acd8121abbe3">ripple::ValidatorList</a>
@@ -1783,10 +1776,6 @@ $(function() {
 </li>
 <li>getValidatedRules()
 : <a class="el" href="classripple_1_1LedgerMaster.html#aae3e19890142deb54145b221105b81a7">ripple::LedgerMaster</a>
-</li>
-<li>getValidationDelay()
-: <a class="el" href="classripple_1_1RCLConsensus_1_1Adaptor.html#a8db05a978e03b455d21226343be944da">ripple::RCLConsensus::Adaptor</a>
-, <a class="el" href="structripple_1_1test_1_1csf_1_1Peer.html#a96571679ead34f0dc50cb99e39301d66">ripple::test::csf::Peer</a>
 </li>
 <li>getValidationPublicKey()
 : <a class="el" href="classripple_1_1Application.html#aabbd7327b28c6f6e032df5b63ac83cbc">ripple::Application</a>
@@ -1995,7 +1984,7 @@ $(function() {
 : <a class="el" href="classripple_1_1ApplicationImp.html#aaa5a296639a06900edc4fef16665a77d">ripple::ApplicationImp</a>
 </li>
 <li>GRPCServerImpl()
-: <a class="el" href="classripple_1_1GRPCServerImpl.html#a6a4a99f22eb3e56d5b136a4274c285b9">ripple::GRPCServerImpl</a>
+: <a class="el" href="classripple_1_1GRPCServerImpl.html#ac3c0b9eec602f93dd4e26e005becdcf4">ripple::GRPCServerImpl</a>
 </li>
 <li>GRPCTestClientBase()
 : <a class="el" href="structripple_1_1test_1_1GRPCTestClientBase.html#afed8c60c51a9ac107cb75415c4f8b15b">ripple::test::GRPCTestClientBase</a>

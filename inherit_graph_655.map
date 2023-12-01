@@ -1,6 +1,3 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1test_1_1AbstractClient.html" title=" " alt="" coords="5,31,197,57"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1JSONRPCClient.html" title=" " alt="" coords="245,5,441,32"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1WSClient.html" title=" " alt="" coords="264,56,423,83"/>
-<area shape="rect" id="node4" href="$classripple_1_1test_1_1WSClientImpl.html" title=" " alt="" coords="489,56,677,83"/>
+<area shape="rect" id="node1" href="$structripple_1_1test_1_1AccountTx__test_1_1NodeSanity.html" title=" " alt="" coords="5,5,173,47"/>
 </map>

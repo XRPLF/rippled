@@ -1,3 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1AsyncObject_1_1CompletionCounter.html" title="RAII container that maintains the count of pending I/O." alt="" coords="5,5,243,47"/>
+<area shape="rect" id="node1" href="$structripple_1_1Attestations_1_1AttestationBase.html" title=" " alt="" coords="5,39,152,80"/>
+<area shape="rect" id="node2" href="$structripple_1_1Attestations_1_1AttestationClaim.html" title=" " alt="" coords="225,5,372,47"/>
+<area shape="rect" id="node3" href="$structripple_1_1Attestations_1_1AttestationCreateAccount.html" title=" " alt="" coords="200,71,397,112"/>
 </map>
