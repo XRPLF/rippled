@@ -953,24 +953,9 @@ NetworkOPsImp::setTimer(
 void
 NetworkOPsImp::setHeartbeatTimer()
 {
-    // timerDelay is to optimize the timer interval such as for phase establish.
-    // Setting a max of ledgerGRANULARITY allows currently in-flight proposals
-    // to be accounted for at the very beginning of the phase.
-    std::chrono::milliseconds timerDelay;
-    auto td = mConsensus.getTimerDelay();
-    if (td)
-    {
-        timerDelay = std::min(*td, mConsensus.parms().ledgerGRANULARITY);
-        mConsensus.setTimerDelay();
-    }
-    else
-    {
-        timerDelay = mConsensus.parms().ledgerGRANULARITY;
-    }
-
     setTimer(
         heartbeatTimer_,
-        timerDelay,
+        mConsensus.parms().ledgerGRANULARITY,
         [this]() {
             m_job_queue.addJob(jtNETOP_TIMER, "NetOPs.heartbeat", [this]() {
                 processHeartbeatTimer();
@@ -2181,8 +2166,10 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (masterKey != signerPublic)
             jvObj[jss::master_key] = toBase58(TokenType::NodePublic, masterKey);
 
+        // NOTE *seq is a number, but old API versions used string. We replace
+        // number with a string using MultiApiJson near end of this function
         if (auto const seq = (*val)[~sfLedgerSequence])
-            jvObj[jss::ledger_index] = to_string(*seq);
+            jvObj[jss::ledger_index] = *seq;
 
         if (val->isFieldPresent(sfAmendments))
         {
@@ -2220,12 +2207,28 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
 
+        // NOTE Use MultiApiJson to publish two slightly different JSON objects
+        // for consumers supporting different API versions
+        MultiApiJson multiObj{jvObj};
+        visit<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(
+            multiObj,  //
+            [](Json::Value& jvTx, unsigned int apiVersion) {
+                // Type conversion for older API versions to string
+                if (jvTx.isMember(jss::ledger_index) && apiVersion < 2)
+                {
+                    jvTx[jss::ledger_index] =
+                        std::to_string(jvTx[jss::ledger_index].asUInt());
+                }
+            });
+
         for (auto i = mStreamMaps[sValidations].begin();
              i != mStreamMaps[sValidations].end();)
         {
             if (auto p = i->second.lock())
             {
-                p->send(jvObj, true);
+                p->send(
+                    multiObj.select(apiVersionSelector(p->getApiVersion())),
+                    true);
                 ++i;
             }
             else
@@ -3159,25 +3162,10 @@ NetworkOPsImp::transJson(
     }
 
     std::string const hash = to_string(transaction->getTransactionID());
-    MultiApiJson multiObj({jvObj, jvObj});
-    // Minimum supported API version must match index 0 in MultiApiJson
-    static_assert(apiVersionSelector(RPC::apiMinimumSupportedVersion)() == 0);
-    // Last valid (possibly beta) API ver. must match last index in MultiApiJson
-    static_assert(
-        apiVersionSelector(RPC::apiMaximumValidVersion)() + 1  //
-        == MultiApiJson::size);
-    for (unsigned apiVersion = RPC::apiMinimumSupportedVersion,
-                  lastIndex = MultiApiJson::size;
-         apiVersion <= RPC::apiMaximumValidVersion;
-         ++apiVersion)
-    {
-        unsigned const index = apiVersionSelector(apiVersion)();
-        assert(index < MultiApiJson::size);
-        if (index != lastIndex)
-        {
-            lastIndex = index;
-
-            Json::Value& jvTx = multiObj.val[index];
+    MultiApiJson multiObj{jvObj};
+    visit<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(
+        multiObj,  //
+        [&](Json::Value& jvTx, unsigned int apiVersion) {
             RPC::insertDeliverMax(
                 jvTx[jss::transaction], transaction->getTxnType(), apiVersion);
 
@@ -3190,8 +3178,7 @@ NetworkOPsImp::transJson(
             {
                 jvTx[jss::transaction][jss::hash] = hash;
             }
-        }
-    }
+        });
 
     return multiObj;
 }
