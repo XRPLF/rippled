@@ -2214,8 +2214,8 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         // for consumers supporting different API versions
         MultiApiJson multiObj{jvObj};
         multiObj.visit(
-            std::integral_constant<unsigned int, 1>{},
-            [](Json::Value& jvTx, auto) {
+            std::integral_constant<unsigned int, 1>{},  //
+            [](Json::Value& jvTx) {
                 // Type conversion for older API versions to string
                 if (jvTx.isMember(jss::ledger_index))
                 {
@@ -2231,7 +2231,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             {
                 multiObj.visit(
                     p->getApiVersion(),  //
-                    [&](Json::Value const& jv, auto) { p->send(jv, true); });
+                    [&](Json::Value const& jv) { p->send(jv, true); });
                 ++i;
             }
             else
@@ -2770,7 +2770,7 @@ NetworkOPsImp::pubProposedTransaction(
             {
                 jvObj.visit(
                     p->getApiVersion(),  //
-                    [&](Json::Value const& jv, auto) { p->send(jv, true); });
+                    [&](Json::Value const& jv) { p->send(jv, true); });
                 ++it;
             }
             else
@@ -3169,7 +3169,7 @@ NetworkOPsImp::transJson(
     MultiApiJson multiObj{jvObj};
     forAllApiVersions(
         multiObj.visit(),  //
-        [&](Json::Value& jvTx, unsigned int apiVersion) {
+        [&](Json::Value& jvTx, auto apiVersion) {
             RPC::insertDeliverMax(
                 jvTx[jss::transaction], transaction->getTxnType(), apiVersion);
 
@@ -3212,7 +3212,7 @@ NetworkOPsImp::pubValidatedTransaction(
             {
                 jvObj.visit(
                     p->getApiVersion(),  //
-                    [&](Json::Value const& jv, auto) { p->send(jv, true); });
+                    [&](Json::Value const& jv) { p->send(jv, true); });
                 ++it;
             }
             else
@@ -3229,7 +3229,7 @@ NetworkOPsImp::pubValidatedTransaction(
             {
                 jvObj.visit(
                     p->getApiVersion(),  //
-                    [&](Json::Value const& jv, auto) { p->send(jv, true); });
+                    [&](Json::Value const& jv) { p->send(jv, true); });
                 ++it;
             }
             else
@@ -3351,9 +3351,7 @@ NetworkOPsImp::pubAccountTransaction(
         {
             jvObj.visit(
                 isrListener->getApiVersion(),  //
-                [&](Json::Value const& jv, auto) {
-                    isrListener->send(jv, true);
-                });
+                [&](Json::Value const& jv) { isrListener->send(jv, true); });
         }
 
         if (last)
@@ -3372,9 +3370,7 @@ NetworkOPsImp::pubAccountTransaction(
 
             jvObj.visit(
                 info.sink_->getApiVersion(),  //
-                [&](Json::Value const& jv, auto) {
-                    info.sink_->send(jv, true);
-                });
+                [&](Json::Value const& jv) { info.sink_->send(jv, true); });
         }
     }
 }
@@ -3434,9 +3430,7 @@ NetworkOPsImp::pubProposedAccountTransaction(
         for (InfoSub::ref isrListener : notify)
             jvObj.visit(
                 isrListener->getApiVersion(),  //
-                [&](Json::Value const& jv, auto) {
-                    isrListener->send(jv, true);
-                });
+                [&](Json::Value const& jv) { isrListener->send(jv, true); });
 
         assert(
             jvObj.isMember(jss::account_history_tx_stream) ==
@@ -3449,9 +3443,7 @@ NetworkOPsImp::pubProposedAccountTransaction(
             jvObj.set(jss::account_history_tx_index, index->forwardTxIndex_++);
             jvObj.visit(
                 info.sink_->getApiVersion(),  //
-                [&](Json::Value const& jv, auto) {
-                    info.sink_->send(jv, true);
-                });
+                [&](Json::Value const& jv) { info.sink_->send(jv, true); });
         }
     }
 }
@@ -3659,9 +3651,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 {
                     jvObj.visit(
                         sptr->getApiVersion(),  //
-                        [&](Json::Value const& jv, auto) {
-                            sptr->send(jv, true);
-                        });
+                        [&](Json::Value const& jv) { sptr->send(jv, true); });
 
                     if (unsubscribe)
                         unsubAccountHistory(sptr, accountId, false);

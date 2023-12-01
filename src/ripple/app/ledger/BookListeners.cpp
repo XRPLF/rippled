@@ -55,8 +55,8 @@ BookListeners::publish(
             if (havePublished.emplace(p->getSeq()).second)
             {
                 jvObj.visit(
-                    p->getApiVersion(),
-                    [&](Json::Value const& jv, auto) { p->send(jv, true); });
+                    p->getApiVersion(),  //
+                    [&](Json::Value const& jv) { p->send(jv, true); });
             }
             ++it;
         }

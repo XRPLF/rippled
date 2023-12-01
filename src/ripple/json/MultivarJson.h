@@ -114,6 +114,23 @@ struct MultivarJson
                 json.val[index(Version)], version, std::forward<Args>(args)...);
         }
 
+        // Mutable Json only, integral_constant version
+        template <unsigned int Version, typename Fn>
+        auto
+        operator()(
+            MultivarJson& json,
+            std::integral_constant<unsigned int, Version> const,
+            Fn fn) const
+            -> std::invoke_result_t<Fn, Json::Value&> requires requires()
+        {
+            fn(json.val[index(Version)]);
+        }
+        {
+            static_assert(
+                valid(Version) && index(Version) >= 0 && index(Version) < size);
+            return fn(json.val[index(Version)]);
+        }
+
         // Immutable Json, integral_constant version
         template <unsigned int Version, typename... Args, typename Fn>
         auto
@@ -135,6 +152,23 @@ struct MultivarJson
                 valid(Version) && index(Version) >= 0 && index(Version) < size);
             return fn(
                 json.val[index(Version)], version, std::forward<Args>(args)...);
+        }
+
+        // Immutable Json only, integral_constant version
+        template <unsigned int Version, typename Fn>
+        auto
+        operator()(
+            MultivarJson const& json,
+            std::integral_constant<unsigned int, Version> const,
+            Fn fn) const
+            -> std::invoke_result_t<Fn, Json::Value const&> requires requires()
+        {
+            fn(json.val[index(Version)]);
+        }
+        {
+            static_assert(
+                valid(Version) && index(Version) >= 0 && index(Version) < size);
+            return fn(json.val[index(Version)]);
         }
 
         // Mutable Json, unsigned int version
@@ -160,6 +194,20 @@ struct MultivarJson
                 json.val[index(version)], version, std::forward<Args>(args)...);
         }
 
+        // Mutable Json only, unsigned int version
+        template <typename Fn>
+        auto
+        operator()(MultivarJson& json, unsigned int version, Fn fn) const
+            -> std::invoke_result_t<Fn, Json::Value&> requires requires()
+        {
+            fn(json.val[index(version)]);
+        }
+        {
+            assert(
+                valid(version) && index(version) >= 0 && index(version) < size);
+            return fn(json.val[index(version)]);
+        }
+
         // Immutable Json, unsigned int version
         template <typename... Args, typename Fn>
         auto
@@ -181,6 +229,20 @@ struct MultivarJson
                 valid(version) && index(version) >= 0 && index(version) < size);
             return fn(
                 json.val[index(version)], version, std::forward<Args>(args)...);
+        }
+
+        // Immutable Json only, unsigned int version
+        template <typename Fn>
+        auto
+        operator()(MultivarJson const& json, unsigned int version, Fn fn) const
+            -> std::invoke_result_t<Fn, Json::Value const&> requires requires()
+        {
+            fn(json.val[index(version)]);
+        }
+        {
+            assert(
+                valid(version) && index(version) >= 0 && index(version) < size);
+            return fn(json.val[index(version)]);
         }
     } visitor = {};
 

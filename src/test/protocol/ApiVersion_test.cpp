@@ -169,7 +169,6 @@ struct ApiVersion_test : beast::unit_test::suite
                         [](Json::Value&, auto) {});            // missing const
                 };
             }(std::as_const(s1)));
-
             static_assert([](auto&& v) {
                 return !requires
                 {
@@ -178,26 +177,75 @@ struct ApiVersion_test : beast::unit_test::suite
                         [](auto...) {});  // cannot bind rvalues
                 };
             }(std::move(s1)));
-
             static_assert([](auto&& v) {
                 return !requires
                 {
                     forAllApiVersions(
                         std::forward<decltype(v)>(v).visit(),  //
-                        [](auto) {});  // missing parameter
+                        [](auto...) {});  // cannot bind const rvalues
                 };
-            }(s1));
-
+            }(std::move(std::as_const(s1))));
             static_assert([](auto&& v) {
                 return !requires
                 {
                     forAllApiVersions(
                         std::forward<decltype(v)>(v).visit(),  //
-                        [](Json::Value const&) {});  // missing parameter
+                        [](Json::Value&) {});                  // missing const
+                };
+            }(std::as_const(s1)));
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        []() {});  // missing parameters
+                };
+            }(std::as_const(s1)));
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto) {},
+                        1);  // missing parameters
+                };
+            }(std::as_const(s1)));
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto, auto) {},
+                        1);  // missing parameters
+                };
+            }(std::as_const(s1)));
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto, auto, const char*) {},
+                        1);  // parameter type mismatch
                 };
             }(std::as_const(s1)));
 
             // Sanity checks
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto) {});
+                };
+            }(s1));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](Json::Value const&) {});
+                };
+            }(std::as_const(s1)));
             static_assert([](auto&& v) {
                 return requires
                 {
@@ -212,6 +260,30 @@ struct ApiVersion_test : beast::unit_test::suite
                     forAllApiVersions(
                         std::forward<decltype(v)>(v).visit(),  //
                         [](Json::Value const&, auto...) {});
+                };
+            }(std::as_const(s1)));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](Json::Value&, auto, auto, auto...) {},
+                        0,
+                        "");
+                };
+            }(s1));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        []<unsigned int Version>(
+                            Json::Value const&,
+                            std::integral_constant<unsigned int, Version>,
+                            int,
+                            const char*) {},
+                        0,
+                        "");
                 };
             }(std::as_const(s1)));
         }
