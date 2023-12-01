@@ -27,6 +27,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <sstream>
 
 namespace ripple {
 
@@ -318,6 +319,10 @@ Logs::format(
 
     output = to_string(std::chrono::system_clock::now());
 
+    output += " ";
+    std::stringstream ss;
+    ss << std::this_thread::get_id();
+    output += ss.view();
     output += " ";
     if (!partition.empty())
         output += partition + ":";

@@ -19,6 +19,7 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
+#include <ripple/peerclient/Log.h>
 #include <ripple/peerclient/MessageScheduler.h>
 
 #include <cassert>
@@ -198,6 +199,7 @@ MessageScheduler::disconnect(Peer::id_t peerId)
         request->timer.cancel();
         try
         {
+            BlockLog bl{journal_.info(), this, "onFailure(DISCONNECT)"};
             // This callback may call `schedule`
             // which is fine because we're not holding the lock.
             request->receiver->onFailure(request->id, FailureCode::DISCONNECT);
@@ -209,6 +211,33 @@ MessageScheduler::disconnect(Peer::id_t peerId)
         }
     }
 }
+
+struct MessageSchedulerLogger {
+    MessageScheduler& mscheduler_;
+    std::string_view label_;
+    signed long nsenders_;
+    signed long ntsenders_;
+    MessageSchedulerLogger(
+            MessageScheduler& mscheduler,
+            std::lock_guard<std::mutex> const&,
+            std::string_view label)
+    : mscheduler_(mscheduler), label_(label) {
+        nsenders_ = mscheduler_.senders_.size();
+        ntsenders_ = tsenders ? tsenders->size() : 0;
+    }
+    ~MessageSchedulerLogger() {
+        signed long nsenders = mscheduler_.senders_.size();
+        signed long ntsenders = tsenders ? tsenders->size() : 0;
+        signed long nulls = std::count_if(mscheduler_.senders_.begin(),
+            mscheduler_.senders_.end(),
+            [](auto const& sender) { return sender == nullptr; });
+        JLOG(mscheduler_.journal_.info())
+            << label_ << ", "
+            << "senders: " << nsenders_ << " + " << (nsenders - nsenders_) << " = " << nsenders
+            << ", nulls=" << nulls
+            << ", tsenders: " << ntsenders_ << " + " << (ntsenders - ntsenders_) << " = " << ntsenders;
+    }
+};
 
 bool
 MessageScheduler::schedule(Sender* sender)
@@ -231,14 +260,12 @@ MessageScheduler::schedule(Sender* sender)
     {
         return false;
     }
-    if (hasOpenChannels(lock))
-    {
-        push_value during_(during, "schedule");
-        assert(!tsenders);
-        SenderQueue senders{sender};
-        push_value tsenders_(tsenders, &senders);
-        negotiateNewSenders(lock);
-    }
+    MessageSchedulerLogger logger(*this, lock, "schedule");
+    push_value during_(during, "schedule");
+    assert(!tsenders);
+    SenderQueue senders{sender};
+    push_value tsenders_(tsenders, &senders);
+    negotiateNewSenders(lock);
     return true;
 }
 
@@ -315,28 +342,27 @@ MessageScheduler::negotiateNewPeers(
     std::lock_guard<std::mutex> const& lock,
     MetaPeerSet& peers)
 {
+    MessageSchedulerLogger logger(*this, lock, "negotiateNewPeers");
     assert(tsenders);
     assert(!senders_.empty());
     // `negotiate` will assert that `peers` is a non-empty set of open peers.
     negotiate(lock, peers, senders_);
-    if (tsenders->empty() || !this->hasOpenChannels(lock))
-    {
-        return;
-    }
     negotiateNewSenders(lock);
 }
 
 void
 MessageScheduler::negotiateNewSenders(std::lock_guard<std::mutex> const& lock)
 {
+    MessageSchedulerLogger logger(*this, lock, "negotiateNewSenders");
     assert(tsenders);
-    assert(!tsenders->empty());
-    MetaPeerSet peers{peers_};
-    std::erase_if(peers, [&lock](auto const& metaPeer) {
-        return !metaPeer->hasOpenChannels(lock);
-    });
-    // `negotiate` will assert that `peers` is a non-empty set of open peers.
-    negotiate(lock, peers, *tsenders);
+    if (!tsenders->empty() && this->hasOpenChannels(lock)) {
+        MetaPeerSet peers{peers_};
+        std::erase_if(peers, [&lock](auto const& metaPeer) {
+            return !metaPeer->hasOpenChannels(lock);
+        });
+        // `negotiate` will assert that `peers` is a non-empty set of open peers.
+        negotiate(lock, peers, *tsenders);
+    }
     senders_ += *tsenders;
     std::erase(senders_, nullptr);
 }
@@ -351,6 +377,7 @@ MessageScheduler::negotiate(
                            << ",peers=" << peers.size()
                            << ",nclosed=" << nclosed_ << "/" << nchannels_
                            << ",senders=" << senders.size();
+    MessageSchedulerLogger logger(*this, lock, "negotiate");
     assert(!senders.empty());
     assert(!peers.empty());
     assert(std::all_of(
@@ -370,6 +397,8 @@ MessageScheduler::negotiate(
         Courier courier{*this, lock, peers, limit};
         try
         {
+            BlockLog bl{journal_.info(), this, "onReady"};
+            JLOG(journal_.info()) << "sender=" << senders[i];
             senders[i]->onReady(courier);
         }
         catch (...)
@@ -569,6 +598,7 @@ MessageScheduler::reopen(
 
     try
     {
+        BlockLog bl{journal_.info(), this, "onSuccess/onFailure(TIMEOUT)"};
         // Non-trivial callbacks should just schedule a job.
         callback();
     }
@@ -598,6 +628,7 @@ MessageScheduler::stop()
     {
         try
         {
+            BlockLog bl{journal_.info(), this, "onFailure(SHUTDOWN)"};
             request->receiver->onFailure(id, FailureCode::SHUTDOWN);
         }
         catch (...)
@@ -611,6 +642,7 @@ MessageScheduler::stop()
     {
         try
         {
+            BlockLog bl{journal_.info(), this, "onDiscard"};
             sender->onDiscard();
         }
         catch (...)

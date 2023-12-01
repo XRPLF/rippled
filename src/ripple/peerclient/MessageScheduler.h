@@ -134,6 +134,8 @@ private:
     using Timer = boost::asio::basic_waitable_timer<Clock>;
     using Time = std::chrono::time_point<Clock>;
 
+    friend struct MessageSchedulerLogger;
+
     // An in-flight request.
     struct Request
     {
