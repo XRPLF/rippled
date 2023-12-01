@@ -840,33 +840,87 @@ struct MultivarJson_test : beast::unit_test::suite
                         [](Json::Value&) { return 0; },
                         [](auto...) { return 0; }}) == 3);
 
-            // Cannot bind rvalues, const or not
+            // Rvalue MultivarJson visitor only binds to regular reference
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    std::forward<decltype(v)>(v).visit(1, [](Json::Value&&) {});
+                };
+            }(std::move(s1)));
             static_assert([](auto&& v) {
                 return !requires
                 {
                     std::forward<decltype(v)>(v).visit(
-                        1, [](Json::Value&&, auto) {});
+                        1, [](Json::Value const&&) {});
+                };
+            }(std::move(s1)));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    std::forward<decltype(v)>(v).visit(1, [](Json::Value&) {});
+                };
+            }(std::move(s1)));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    std::forward<decltype(v)>(v).visit(
+                        1, [](Json::Value const&) {});
                 };
             }(std::move(s1)));
             static_assert([](auto&& v) {
                 return !requires
                 {
                     std::forward<decltype(v)>(v).visit()(
-                        1, [](Json::Value&&, auto) {});
+                        1, [](Json::Value&&) {});
+                };
+            }(std::move(s1)));
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    std::forward<decltype(v)>(v).visit()(
+                        1, [](Json::Value const&&) {});
+                };
+            }(std::move(s1)));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    std::forward<decltype(v)>(v).visit()(
+                        1, [](Json::Value&) {});
+                };
+            }(std::move(s1)));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    std::forward<decltype(v)>(v).visit()(
+                        1, [](Json::Value const&) {});
                 };
             }(std::move(s1)));
             static_assert([](auto&& v) {
                 return !requires
                 {
                     std::forward<decltype(v)>(v).visit(
-                        1, [](Json::Value const&&, auto) {});
+                        1, [](Json::Value const&&) {});
+                };
+            }(std::move(std::as_const(s1))));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    std::forward<decltype(v)>(v).visit(
+                        1, [](Json::Value const&) {});
                 };
             }(std::move(std::as_const(s1))));
             static_assert([](auto&& v) {
                 return !requires
                 {
                     std::forward<decltype(v)>(v).visit()(
-                        1, [](Json::Value const&&, auto) {});
+                        1, [](Json::Value const&&) {});
+                };
+            }(std::move(std::as_const(s1))));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    std::forward<decltype(v)>(v).visit()(
+                        1, [](Json::Value const&) {});
                 };
             }(std::move(std::as_const(s1))));
 

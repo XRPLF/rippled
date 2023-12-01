@@ -174,22 +174,6 @@ struct ApiVersion_test : beast::unit_test::suite
                 {
                     forAllApiVersions(
                         std::forward<decltype(v)>(v).visit(),  //
-                        [](auto...) {});  // cannot bind rvalues
-                };
-            }(std::move(s1)));
-            static_assert([](auto&& v) {
-                return !requires
-                {
-                    forAllApiVersions(
-                        std::forward<decltype(v)>(v).visit(),  //
-                        [](auto...) {});  // cannot bind const rvalues
-                };
-            }(std::move(std::as_const(s1))));
-            static_assert([](auto&& v) {
-                return !requires
-                {
-                    forAllApiVersions(
-                        std::forward<decltype(v)>(v).visit(),  //
                         [](Json::Value&) {});                  // missing const
                 };
             }(std::as_const(s1)));
@@ -286,6 +270,22 @@ struct ApiVersion_test : beast::unit_test::suite
                         "");
                 };
             }(std::as_const(s1)));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto...) {});
+                };
+            }(std::move(s1)));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto...) {});
+                };
+            }(std::move(std::as_const(s1))));
         }
     }
 };

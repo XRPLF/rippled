@@ -247,7 +247,7 @@ struct MultivarJson
     } visitor = {};
 
     auto
-    visit() &
+    visit()
     {
         return [self = this](auto... args) requires requires()
         {
@@ -261,7 +261,7 @@ struct MultivarJson
     }
 
     auto
-    visit() const&
+    visit() const
     {
         return [self = this](auto... args) requires requires()
         {
@@ -276,8 +276,8 @@ struct MultivarJson
 
     template <typename... Args>
         auto
-        visit(Args... args) & -> std::
-            invoke_result_t<visitor_t, MultivarJson&, Args...> requires(
+        visit(Args... args)
+            -> std::invoke_result_t<visitor_t, MultivarJson&, Args...> requires(
                 sizeof...(args) > 0) &&
         requires()
     {
@@ -289,7 +289,7 @@ struct MultivarJson
 
     template <typename... Args>
         auto
-        visit(Args... args) const& -> std::
+        visit(Args... args) const -> std::
             invoke_result_t<visitor_t, MultivarJson const&, Args...> requires(
                 sizeof...(args) > 0) &&
         requires()
@@ -299,11 +299,6 @@ struct MultivarJson
     {
         return visitor(*this, std::forward<decltype(args)>(args)...);
     }
-
-    void
-    visit(auto...) && = delete;
-    void
-    visit(auto...) const&& = delete;
 };
 
 }  // namespace ripple
