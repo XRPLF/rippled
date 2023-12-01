@@ -45,7 +45,7 @@ namespace ripple {
  * apiMinimumSupportedVersion when we stop supporting API
  * version 1.
  *
- * Command line Requests use apiMaximumSupportedVersion.
+ * Command line Requests use apiCommandLineVersion.
  */
 
 namespace RPC {
