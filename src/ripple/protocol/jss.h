@@ -72,6 +72,7 @@ JSS(ClearFlag);            // field.
 JSS(DID);                  // ledger type.
 JSS(DIDDelete);            // transaction type.
 JSS(DIDSet);               // transaction type.
+JSS(DeliverMax);           // out: alias to Amount
 JSS(DeliverMin);           // in: TransactionSign
 JSS(DepositPreauth);       // transaction and ledger type.
 JSS(Destination);          // in: TransactionSign; field.
@@ -229,6 +230,8 @@ JSS(close);                       // out: BookChanges
 JSS(close_flags);                 // out: LedgerToJson
 JSS(close_time);                  // in: Application, out: NetworkOPs,
                                   //      RCLCxPeerPos, LedgerToJson
+JSS(close_time_iso);              // out: Tx, NetworkOPs, TransactionEntry
+                                  //      AccountTx, LedgerToJson
 JSS(close_time_estimated);        // in: Application, out: LedgerToJson
 JSS(close_time_human);            // out: LedgerToJson
 JSS(close_time_offset);           // out: NetworkOPs
@@ -459,6 +462,7 @@ JSS(median_fee);                  // out: TxQ
 JSS(median_level);                // out: TxQ
 JSS(message);                     // error.
 JSS(meta);                        // out: NetworkOPs, AccountTx*, Tx
+JSS(meta_blob);                   // out: NetworkOPs, AccountTx*, Tx
 JSS(metaData);
 JSS(metadata);  // out: TransactionEntry
 JSS(method);    // RPC

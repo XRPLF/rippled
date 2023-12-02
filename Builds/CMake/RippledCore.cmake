@@ -217,6 +217,7 @@ install (
 install (
   FILES
     src/ripple/json/JsonPropertyStream.h
+    src/ripple/json/MultivarJson.h
     src/ripple/json/Object.h
     src/ripple/json/Output.h
     src/ripple/json/Writer.h
@@ -467,6 +468,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/misc/detail/impl/WorkSSL.cpp
   src/ripple/app/misc/impl/AccountTxPaging.cpp
   src/ripple/app/misc/impl/AmendmentTable.cpp
+  src/ripple/app/misc/impl/DeliverMax.cpp
   src/ripple/app/misc/impl/LoadFeeTrack.cpp
   src/ripple/app/misc/impl/Manifest.cpp
   src/ripple/app/misc/impl/Transaction.cpp
@@ -918,6 +920,7 @@ if (tests)
     src/test/json/Output_test.cpp
     src/test/json/Writer_test.cpp
     src/test/json/json_value_test.cpp
+    src/test/json/MultivarJson_test.cpp
     #[===============================[
        test sources:
          subdir: jtx
@@ -1059,6 +1062,7 @@ if (tests)
     src/test/rpc/KeyGeneration_test.cpp
     src/test/rpc/LedgerClosed_test.cpp
     src/test/rpc/LedgerData_test.cpp
+    src/test/rpc/LedgerHeader_test.cpp
     src/test/rpc/LedgerRPC_test.cpp
     src/test/rpc/LedgerRequestRPC_test.cpp
     src/test/rpc/ManifestRPC_test.cpp
@@ -1082,6 +1086,7 @@ if (tests)
     src/test/rpc/ValidatorInfo_test.cpp
     src/test/rpc/ValidatorRPC_test.cpp
     src/test/rpc/Version_test.cpp
+    src/test/rpc/Handler_test.cpp
     #[===============================[
        test sources:
          subdir: server

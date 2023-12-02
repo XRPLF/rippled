@@ -39,6 +39,7 @@ class AMMContext;
 enum class DebtDirection { issues, redeems };
 enum class QualityDirection { in, out };
 enum class StrandDirection { forward, reverse };
+enum OfferCrossing { no = 0, yes = 1, sell = 2 };
 
 inline bool
 redeems(DebtDirection dir)
@@ -398,7 +399,7 @@ toStrand(
     std::optional<Issue> const& sendMaxIssue,
     STPath const& path,
     bool ownerPaysTransferFee,
-    bool offerCrossing,
+    OfferCrossing offerCrossing,
     AMMContext& ammContext,
     beast::Journal j);
 
@@ -438,7 +439,7 @@ toStrands(
     STPathSet const& paths,
     bool addDefaultPath,
     bool ownerPaysTransferFee,
-    bool offerCrossing,
+    OfferCrossing offerCrossing,
     AMMContext& ammContext,
     beast::Journal j);
 
@@ -531,9 +532,10 @@ struct StrandContext
     bool const isFirst;               ///< true if Step is first in Strand
     bool const isLast = false;        ///< true if Step is last in Strand
     bool const ownerPaysTransferFee;  ///< true if owner, not sender, pays fee
-    bool const offerCrossing;         ///< true if offer crossing, not payment
-    bool const isDefaultPath;         ///< true if Strand is default path
-    size_t const strandSize;          ///< Length of Strand
+    OfferCrossing const
+        offerCrossing;         ///< Yes/Sell if offer crossing, not payment
+    bool const isDefaultPath;  ///< true if Strand is default path
+    size_t const strandSize;   ///< Length of Strand
     /** The previous step in the strand. Needed to check the no ripple
         constraint
      */
@@ -563,7 +565,7 @@ struct StrandContext
         std::optional<Quality> const& limitQuality_,
         bool isLast_,
         bool ownerPaysTransferFee_,
-        bool offerCrossing_,
+        OfferCrossing offerCrossing_,
         bool isDefaultPath_,
         std::array<boost::container::flat_set<Issue>, 2>&
             seenDirectIssues_,  ///< For detecting currency loops
