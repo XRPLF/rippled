@@ -212,6 +212,14 @@ Env::seq(Account const& account) const
     return sle->getFieldU32(sfSequence);
 }
 
+std::uint32_t
+Env::ownerCount(Account const& account) const
+{
+    if (auto const sleAcct = le(account))
+        return sleAcct->at(sfOwnerCount);
+    return 0;
+}
+
 std::shared_ptr<SLE const>
 Env::le(Account const& account) const
 {

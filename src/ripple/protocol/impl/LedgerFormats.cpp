@@ -74,6 +74,7 @@ LedgerFormats::LedgerFormats()
             {sfIndexNext,            soeOPTIONAL},
             {sfIndexPrevious,        soeOPTIONAL},
             {sfNFTokenID,            soeOPTIONAL},
+            {sfCFTokenIssuanceID,    soeOPTIONAL},
         },
         commonFields);
 
@@ -335,6 +336,36 @@ LedgerFormats::LedgerFormats()
             {sfURI,                  soeOPTIONAL},
             {sfData,          soeOPTIONAL},
             {sfOwnerNode,            soeREQUIRED},
+            {sfPreviousTxnID,        soeREQUIRED},
+            {sfPreviousTxnLgrSeq,    soeREQUIRED}
+        },
+        commonFields);
+
+    add(jss::CFTokenIssuance,
+        ltCFTOKEN_ISSUANCE,
+        {
+            {sfIssuer,               soeREQUIRED},
+            {sfTransferFee,          soeDEFAULT},
+            {sfOwnerNode,            soeREQUIRED},
+            {sfAssetScale,           soeDEFAULT},
+            {sfMaximumAmount,        soeOPTIONAL},
+            {sfOutstandingAmount,    soeREQUIRED},
+            {sfLockedAmount,         soeDEFAULT},
+            {sfCFTokenMetadata,      soeOPTIONAL},
+            {sfPreviousTxnID,        soeREQUIRED},
+            {sfPreviousTxnLgrSeq,    soeREQUIRED}
+        },
+        commonFields);
+
+    add(jss::CFToken,
+        ltCFTOKEN,
+        {
+            {sfAccount,           soeREQUIRED},
+            {sfCFTokenIssuanceID, soeREQUIRED},
+            {sfCFTAmount, soeREQUIRED},
+            {sfLockedAmount, soeDEFAULT},
+            {sfOwnerNode,            soeREQUIRED},
+            {sfCFTokenNode,            soeREQUIRED},
             {sfPreviousTxnID,        soeREQUIRED},
             {sfPreviousTxnLgrSeq,    soeREQUIRED}
         },

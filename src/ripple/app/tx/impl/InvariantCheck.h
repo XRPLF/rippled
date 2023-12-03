@@ -418,6 +418,30 @@ public:
         beast::Journal const&);
 };
 
+class ValidCFTIssuance
+{
+    std::uint32_t cftIssuancesCreated_ = 0;
+    std::uint32_t cftIssuancesDeleted_ = 0;
+
+    std::uint32_t cftokensCreated_ = 0;
+    std::uint32_t cftokensDeleted_ = 0;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -432,7 +456,8 @@ using InvariantChecks = std::tuple<
     ValidNewAccountRoot,
     ValidNFTokenPage,
     NFTokenCountTracking,
-    ValidClawback>;
+    ValidClawback,
+    ValidCFTIssuance>;
 
 /**
  * @brief get a tuple of all invariant checks
