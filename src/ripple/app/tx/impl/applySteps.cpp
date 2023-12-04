@@ -25,6 +25,7 @@
 #include <ripple/app/tx/impl/AMMVote.h>
 #include <ripple/app/tx/impl/AMMWithdraw.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
+#include <ripple/app/tx/impl/Batch.h>
 #include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CashCheck.h>
@@ -159,6 +160,8 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<DIDSet>();
         case ttDID_DELETE:
             return f.template operator()<DIDDelete>();
+        case ttBATCH:
+            return f.template operator()<Batch>();
         default:
             throw UnknownTxnType(txnType);
     }

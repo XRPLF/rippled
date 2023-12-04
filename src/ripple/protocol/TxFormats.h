@@ -208,6 +208,8 @@ enum TxType : std::uint16_t
         For details, see: https://xrpl.org/negative-unl.html
      */
     ttUNL_MODIFY = 102,
+
+    ttBATCH = 200,
 };
 // clang-format on
 

@@ -510,6 +510,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/AMMVote.cpp
   src/ripple/app/tx/impl/AMMWithdraw.cpp
   src/ripple/app/tx/impl/ApplyContext.cpp
+  src/ripple/app/tx/impl/Batch.cpp
   src/ripple/app/tx/impl/BookTip.cpp
   src/ripple/app/tx/impl/CancelCheck.cpp
   src/ripple/app/tx/impl/CancelOffer.cpp
@@ -782,6 +783,7 @@ if (tests)
     src/test/app/AMM_test.cpp
     src/test/app/AMMCalc_test.cpp
     src/test/app/AMMExtended_test.cpp
+    src/test/app/Batch_test.cpp
     src/test/app/Check_test.cpp
     src/test/app/Clawback_test.cpp
     src/test/app/CrossingLimits_test.cpp

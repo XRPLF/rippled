@@ -651,6 +651,7 @@ extern SField const sfNFTokens;
 extern SField const sfHooks;
 extern SField const sfVoteSlots;
 extern SField const sfAuthAccounts;
+extern SField const sfTransactions;
 
 // array of objects (uncommon)
 extern SField const sfMajorities;

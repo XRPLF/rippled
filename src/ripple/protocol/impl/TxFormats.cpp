@@ -483,6 +483,12 @@ TxFormats::TxFormats()
         commonFields);
 
     add(jss::DIDDelete, ttDID_DELETE, {}, commonFields);
+    add(jss::Batch,
+        ttBATCH,
+        {
+            {sfTransactions, soeREQUIRED},
+        },
+        commonFields);
 }
 
 TxFormats const&

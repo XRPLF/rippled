@@ -408,6 +408,7 @@ CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountAttestations,
                                                                         ARRAY,     22);
 // 23 and 24 are unused and available for use
 CONSTRUCT_UNTYPED_SFIELD(sfAuthAccounts,        "AuthAccounts",         ARRAY,     25);
+CONSTRUCT_UNTYPED_SFIELD(sfTransactions,        "Transactions",         ARRAY,     26);
 
 // clang-format on
 
