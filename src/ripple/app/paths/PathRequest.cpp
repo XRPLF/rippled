@@ -315,7 +315,7 @@ PathRequest::parseJson(Json::Value const& jvParams)
 
     convert_all_ = saDstAmount == STAmount(saDstAmount.issue(), 1u, 0, true);
 
-    if ((saDstAmount.getCurrency().isZero() &&
+    if ((saDstAmount.getCurrency().isXRP() &&
          saDstAmount.getIssuer().isNonZero()) ||
         (saDstAmount.getCurrency() == badCurrency()) ||
         (!convert_all_ && saDstAmount <= beast::zero))
@@ -335,7 +335,7 @@ PathRequest::parseJson(Json::Value const& jvParams)
 
         saSendMax.emplace();
         if (!amountFromJsonNoThrow(*saSendMax, jvParams[jss::send_max]) ||
-            (saSendMax->getCurrency().isZero() &&
+            (saSendMax->getCurrency().isXRP() &&
              saSendMax->getIssuer().isNonZero()) ||
             (saSendMax->getCurrency() == badCurrency()) ||
             (*saSendMax <= beast::zero &&

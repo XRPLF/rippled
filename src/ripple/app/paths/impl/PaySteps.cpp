@@ -62,6 +62,12 @@ checkNear(XRPAmount const& expected, XRPAmount const& actual)
     return expected == actual;
 };
 
+bool
+checkNear(CFTAmount const& expected, CFTAmount const& actual)
+{
+    return expected == actual;
+};
+
 static bool
 isXRPAccount(STPathElement const& pe)
 {
@@ -80,7 +86,7 @@ toStep(
     auto& j = ctx.j;
 
     if (ctx.isFirst && e1->isAccount() &&
-        (e1->getNodeType() & STPathElement::typeCurrency) &&
+        (e1->getNodeType() & STPathElement::typeAsset) &&
         isXRP(e1->getCurrency()))
     {
         return make_XRPEndpointStep(ctx, e1->getAccountID());
@@ -91,6 +97,9 @@ toStep(
 
     if (e1->isAccount() && e2->isAccount())
     {
+        if (curIssue.currency.isCFT())
+            return make_DirectStepCFT(
+                ctx, e1->getAccountID(), e2->getAccountID(), curIssue.currency);
         return make_DirectStepI(
             ctx, e1->getAccountID(), e2->getAccountID(), curIssue.currency);
     }
@@ -105,9 +114,9 @@ toStep(
     }
 
     assert(
-        (e2->getNodeType() & STPathElement::typeCurrency) ||
+        (e2->getNodeType() & STPathElement::typeAsset) ||
         (e2->getNodeType() & STPathElement::typeIssuer));
-    auto const outCurrency = e2->getNodeType() & STPathElement::typeCurrency
+    auto const outCurrency = e2->getNodeType() & STPathElement::typeAsset
         ? e2->getCurrency()
         : curIssue.currency;
     auto const outIssuer = e2->getNodeType() & STPathElement::typeIssuer
@@ -123,11 +132,43 @@ toStep(
     assert(e2->isOffer());
 
     if (isXRP(outCurrency))
+    {
+        if (curIssue.isCFT())
+        {
+            JLOG(j.info()) << "Found cft/xrp offer payment step";
+            return {temBAD_PATH, std::unique_ptr<Step>{}};
+        }
         return make_BookStepIX(ctx, curIssue);
+    }
 
     if (isXRP(curIssue.currency))
+    {
+        if (e2->isCft())
+        {
+            JLOG(j.info()) << "Found xrp/cft offer payment step";
+            return {temBAD_PATH, std::unique_ptr<Step>{}};
+        }
         return make_BookStepXI(ctx, {outCurrency, outIssuer});
+    }
 
+    // TODO, add CFT for CI or IC, once supported in BookStep
+    if (curIssue.isCFT() && !e2->isCft())
+    {
+        JLOG(j.info()) << "Found cft/iou offer payment step";
+        return {temBAD_PATH, std::unique_ptr<Step>{}};
+    }
+    if (!curIssue.isCFT() && e2->isCft())
+    {
+        JLOG(j.info()) << "Found iou/cft offer payment step";
+        return {temBAD_PATH, std::unique_ptr<Step>{}};
+    }
+
+    // TODO, add CFT for CC or II, once supported in BookStep
+    if (curIssue.isCFT())
+    {
+        JLOG(j.info()) << "Found cft/cft offer payment step";
+        return {temBAD_PATH, std::unique_ptr<Step>{}};
+    }
     return make_BookStepII(ctx, curIssue, {outCurrency, outIssuer});
 }
 
@@ -164,6 +205,7 @@ toStrand(
         bool const hasAccount = t & STPathElement::typeAccount;
         bool const hasIssuer = t & STPathElement::typeIssuer;
         bool const hasCurrency = t & STPathElement::typeCurrency;
+        bool const isCFT = t & STPathElement::typeCFT;
 
         if (hasAccount && (hasIssuer || hasCurrency))
             return {temBAD_PATH, Strand{}};
@@ -183,6 +225,9 @@ toStrand(
 
         if (hasAccount && (pe.getAccountID() == noAccount()))
             return {temBAD_PATH, Strand{}};
+
+        if (isCFT && (!hasIssuer || hasCurrency || hasAccount))
+            return {temBAD_PATH, Strand{}};
     }
 
     Issue curIssue = [&] {
@@ -194,7 +239,7 @@ toStrand(
     }();
 
     auto hasCurrency = [](STPathElement const pe) {
-        return pe.getNodeType() & STPathElement::typeCurrency;
+        return pe.getNodeType() & STPathElement::typeAsset;
     };
 
     std::vector<STPathElement> normPath;
@@ -202,9 +247,20 @@ toStrand(
     // sendmax and deliver.
     normPath.reserve(4 + path.size());
     {
-        normPath.emplace_back(
-            STPathElement::typeAll, src, curIssue.currency, curIssue.account);
+        // Implied step: sender of the transaction and either sendmax or deliver
+        // asset
+        auto const t = [&]() {
+            auto const t =
+                STPathElement::typeAccount | STPathElement::typeIssuer;
+            if (curIssue.isCFT())
+                return t | STPathElement::typeCFT;
+            return t | STPathElement::typeCurrency;
+        }();
+        normPath.emplace_back(t, src, curIssue.currency, curIssue.account);
 
+        // If transaction includes sendmax with the issuer, which is not
+        // the sender then the issuer is the second implied step, unless
+        // the path starts at address, which is the issuer of sendmax
         if (sendMaxIssue && sendMaxIssue->account != src &&
             (path.empty() || !path[0].isAccount() ||
              path[0].getAccountID() != sendMaxIssue->account))
@@ -301,12 +357,20 @@ toStrand(
         else if (cur->hasIssuer())
             curIssue.account = cur->getIssuerID();
 
-        if (cur->hasCurrency())
+        if (cur->hasCurrency() || cur->isCft())
         {
             curIssue.currency = cur->getCurrency();
             if (isXRP(curIssue.currency))
                 curIssue.account = xrpAccount();
         }
+
+        auto getImpliedStep = [&](AccountID const& src_,
+                                  AccountID const& dst_,
+                                  Asset const& currency_) {
+            if (currency_.isCFT())
+                return make_DirectStepCFT(ctx(), src_, dst_, currency_);
+            return make_DirectStepI(ctx(), src_, dst_, currency_);
+        };
 
         if (cur->isAccount() && next->isAccount())
         {
@@ -315,11 +379,8 @@ toStrand(
                 curIssue.account != next->getAccountID())
             {
                 JLOG(j.trace()) << "Inserting implied account";
-                auto msr = make_DirectStepI(
-                    ctx(),
-                    cur->getAccountID(),
-                    curIssue.account,
-                    curIssue.currency);
+                auto msr = getImpliedStep(
+                    cur->getAccountID(), curIssue.account, curIssue.currency);
                 if (msr.first != tesSUCCESS)
                     return {msr.first, Strand{}};
                 result.push_back(std::move(msr.second));
@@ -336,11 +397,8 @@ toStrand(
             if (curIssue.account != cur->getAccountID())
             {
                 JLOG(j.trace()) << "Inserting implied account before offer";
-                auto msr = make_DirectStepI(
-                    ctx(),
-                    cur->getAccountID(),
-                    curIssue.account,
-                    curIssue.currency);
+                auto msr = getImpliedStep(
+                    cur->getAccountID(), curIssue.account, curIssue.currency);
                 if (msr.first != tesSUCCESS)
                     return {msr.first, Strand{}};
                 result.push_back(std::move(msr.second));
@@ -374,8 +432,7 @@ toStrand(
                 else
                 {
                     JLOG(j.trace()) << "Inserting implied account after offer";
-                    auto msr = make_DirectStepI(
-                        ctx(),
+                    auto msr = getImpliedStep(
                         curIssue.account,
                         next->getAccountID(),
                         curIssue.currency);
@@ -387,7 +444,7 @@ toStrand(
             continue;
         }
 
-        if (!next->isOffer() && next->hasCurrency() &&
+        if (!next->isOffer() && (next->hasCurrency() || next->isCft()) &&
             next->getCurrency() != curIssue.currency)
         {
             // Should never happen

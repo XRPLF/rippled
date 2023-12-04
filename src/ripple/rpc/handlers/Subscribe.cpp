@@ -250,14 +250,16 @@ doSubscribe(RPC::JsonContext& context)
             Json::Value taker_pays = j[jss::taker_pays];
             Json::Value taker_gets = j[jss::taker_gets];
 
+            // TODO Add CFT once supported in OFFERS
             // Parse mandatory currency.
+            Currency inCurrency;
             if (!taker_pays.isMember(jss::currency) ||
-                !to_currency(
-                    book.in.currency, taker_pays[jss::currency].asString()))
+                !to_currency(inCurrency, taker_pays[jss::currency].asString()))
             {
                 JLOG(context.j.info()) << "Bad taker_pays currency.";
                 return rpcError(rpcSRC_CUR_MALFORMED);
             }
+            book.in.currency = inCurrency;
 
             // Parse optional issuer.
             if (((taker_pays.isMember(jss::issuer)) &&
@@ -265,7 +267,7 @@ doSubscribe(RPC::JsonContext& context)
                   !to_issuer(
                       book.in.account, taker_pays[jss::issuer].asString())))
                 // Don't allow illegal issuers.
-                || (!book.in.currency != !book.in.account) ||
+                || (!inCurrency != !book.in.account) ||
                 noAccount() == book.in.account)
             {
                 JLOG(context.j.info()) << "Bad taker_pays issuer.";
@@ -273,13 +275,14 @@ doSubscribe(RPC::JsonContext& context)
             }
 
             // Parse mandatory currency.
+            Currency outCurrency;
             if (!taker_gets.isMember(jss::currency) ||
-                !to_currency(
-                    book.out.currency, taker_gets[jss::currency].asString()))
+                !to_currency(outCurrency, taker_gets[jss::currency].asString()))
             {
                 JLOG(context.j.info()) << "Bad taker_gets currency.";
                 return rpcError(rpcDST_AMT_MALFORMED);
             }
+            book.out.currency = outCurrency;
 
             // Parse optional issuer.
             if (((taker_gets.isMember(jss::issuer)) &&
@@ -287,7 +290,7 @@ doSubscribe(RPC::JsonContext& context)
                   !to_issuer(
                       book.out.account, taker_gets[jss::issuer].asString())))
                 // Don't allow illegal issuers.
-                || (!book.out.currency != !book.out.account) ||
+                || (!outCurrency != !book.out.account) ||
                 noAccount() == book.out.account)
             {
                 JLOG(context.j.info()) << "Bad taker_gets issuer.";

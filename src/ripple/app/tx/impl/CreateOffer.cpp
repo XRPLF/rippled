@@ -1185,9 +1185,14 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     bool const bookExisted = static_cast<bool>(sb.peek(dir));
 
     auto const bookNode = sb.dirAppend(dir, offer_index, [&](SLE::ref sle) {
-        sle->setFieldH160(sfTakerPaysCurrency, saTakerPays.issue().currency);
+        // TODO add CFT once offers are supported for CFT
+        sle->setFieldH160(
+            sfTakerPaysCurrency,
+            static_cast<Currency>(saTakerPays.issue().currency));
         sle->setFieldH160(sfTakerPaysIssuer, saTakerPays.issue().account);
-        sle->setFieldH160(sfTakerGetsCurrency, saTakerGets.issue().currency);
+        sle->setFieldH160(
+            sfTakerGetsCurrency,
+            static_cast<Currency>(saTakerGets.issue().currency));
         sle->setFieldH160(sfTakerGetsIssuer, saTakerGets.issue().account);
         sle->setFieldU64(sfExchangeRate, uRate);
     });

@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_ISSUE_H_INCLUDED
 
 #include <ripple/json/json_value.h>
+#include <ripple/protocol/Asset.h>
 #include <ripple/protocol/UintTypes.h>
 
 #include <cassert>
@@ -29,16 +30,20 @@
 
 namespace ripple {
 
-/** A currency issued by an account.
+/** An asset issued by an account.
     @see Currency, AccountID, Issue, Book
 */
 class Issue
 {
 public:
-    Currency currency{};
+    Asset currency{};
     AccountID account{};
 
     Issue()
+    {
+    }
+
+    Issue(Asset const& asst, AccountID const& a) : currency(asst), account(a)
     {
     }
 
@@ -46,8 +51,24 @@ public:
     {
     }
 
+    Issue(uint256 const& u, AccountID const& a) : currency(u), account(a)
+    {
+    }
+
     std::string
     getText() const;
+
+    bool
+    isCFT() const
+    {
+        return currency.isCFT();
+    }
+
+    friend bool
+    isCFT(Issue const& i)
+    {
+        return i.isCFT();
+    }
 };
 
 bool
@@ -70,7 +91,9 @@ void
 hash_append(Hasher& h, Issue const& r)
 {
     using beast::hash_append;
-    hash_append(h, r.currency, r.account);
+    std::visit(
+        [&](auto&& arg) { hash_append(h, arg, r.account); },
+        r.currency.asset());
 }
 
 /** Equality comparison. */
@@ -88,13 +111,13 @@ operator==(Issue const& lhs, Issue const& rhs)
 [[nodiscard]] inline constexpr std::weak_ordering
 operator<=>(Issue const& lhs, Issue const& rhs)
 {
-    if (auto const c{lhs.currency <=> rhs.currency}; c != 0)
+    if (auto const c{lhs.currency.asset() <=> rhs.currency.asset()}; c != 0)
         return c;
 
-    if (isXRP(lhs.currency))
+    if (isXRP(lhs.currency) || isCFT(lhs))
         return std::weak_ordering::equivalent;
 
-    return (lhs.account <=> rhs.account);
+    return lhs.account <=> rhs.account;
 }
 /** @} */
 
@@ -113,6 +136,13 @@ inline Issue const&
 noIssue()
 {
     static Issue issue{noCurrency(), noAccount()};
+    return issue;
+}
+/** Returns an asset specifier that represents no account and no cft. */
+inline Issue const&
+noCftIssue()
+{
+    static Issue issue{noCft(), noAccount()};
     return issue;
 }
 

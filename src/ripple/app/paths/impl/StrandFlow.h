@@ -360,6 +360,15 @@ qualityUpperBound(ReadView const& v, Strand const& strand)
  * increases quality of AMM steps, increasing the strand's composite
  * quality as the result.
  */
+inline CFTAmount
+limitOut(
+    ReadView const& v,
+    Strand const& strand,
+    CFTAmount const& remainingOut,
+    Quality const& limitQuality)
+{
+    return remainingOut;
+}
 template <typename TOutAmt>
 inline TOutAmt
 limitOut(

@@ -178,10 +178,17 @@ doUnsubscribe(RPC::JsonContext& context)
 
             Book book;
 
+            auto toCurrency = [](Issue& iss, std::string const& curStr) {
+                Currency currency;
+                if (!to_currency(currency, curStr))
+                    return false;
+                iss.currency = currency;
+                return true;
+            };
+
             // Parse mandatory currency.
             if (!taker_pays.isMember(jss::currency) ||
-                !to_currency(
-                    book.in.currency, taker_pays[jss::currency].asString()))
+                !toCurrency(book.in, taker_pays[jss::currency].asString()))
             {
                 JLOG(context.j.info()) << "Bad taker_pays currency.";
                 return rpcError(rpcSRC_CUR_MALFORMED);
@@ -202,8 +209,7 @@ doUnsubscribe(RPC::JsonContext& context)
 
             // Parse mandatory currency.
             if (!taker_gets.isMember(jss::currency) ||
-                !to_currency(
-                    book.out.currency, taker_gets[jss::currency].asString()))
+                !toCurrency(book.out, taker_gets[jss::currency].asString()))
             {
                 JLOG(context.j.info()) << "Bad taker_gets currency.";
 

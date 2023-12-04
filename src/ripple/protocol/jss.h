@@ -227,6 +227,7 @@ JSS(build_path);                  // in: TransactionSign
 JSS(build_version);               // out: NetworkOPs
 JSS(cancel_after);                // out: AccountChannels
 JSS(can_delete);                  // out: CanDelete
+JSS(cft_asset);                   // in: Payment
 JSS(changes);                     // out: BookChanges
 JSS(channel_id);                  // out: AccountChannels
 JSS(channels);                    // out: AccountChannels

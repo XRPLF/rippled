@@ -203,10 +203,10 @@ bool
 isFrozen(
     ReadView const& view,
     AccountID const& account,
-    Currency const& currency,
+    Asset const& asset,
     AccountID const& issuer)
 {
-    if (isXRP(currency))
+    if (isXRP(asset) || asset.isCFT())
         return false;
     auto sle = view.read(keylet::account(issuer));
     if (sle && sle->isFlag(lsfGlobalFreeze))
@@ -214,7 +214,7 @@ isFrozen(
     if (issuer != account)
     {
         // Check if the issuer froze the line
-        sle = view.read(keylet::line(account, issuer, currency));
+        sle = view.read(keylet::line(account, issuer, asset));
         if (sle &&
             sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
             return true;
@@ -226,28 +226,39 @@ STAmount
 accountHolds(
     ReadView const& view,
     AccountID const& account,
-    Currency const& currency,
+    Asset const& asset,
     AccountID const& issuer,
     FreezeHandling zeroIfFrozen,
     beast::Journal j)
 {
     STAmount amount;
-    if (isXRP(currency))
+    if (isXRP(asset))
     {
         return {xrpLiquid(view, account, 0, j)};
     }
 
+    if (asset.isCFT())
+    {
+        Issue iss{asset, issuer};
+        if (auto const sle = view.read(keylet::cftoken(asset, account)))
+            return STAmount{
+                iss,
+                sle->getFieldU64(sfCFTAmount) -
+                    sle->getFieldU64(sfLockedAmount)};
+        return STAmount{iss, 0};
+    }
+
     // IOU: Return balance on trust line modulo freeze
-    auto const sle = view.read(keylet::line(account, issuer, currency));
+    auto const sle = view.read(keylet::line(account, issuer, asset));
     if (!sle)
     {
-        amount.clear({currency, issuer});
+        amount.clear({asset, issuer});
     }
     else if (
         (zeroIfFrozen == fhZERO_IF_FROZEN) &&
-        isFrozen(view, account, currency, issuer))
+        isFrozen(view, account, asset, issuer))
     {
-        amount.clear(Issue(currency, issuer));
+        amount.clear(Issue(asset, issuer));
     }
     else
     {
@@ -482,6 +493,18 @@ forEachItemAfter(
             currentIndex = keylet::page(root, uNodeNext);
         }
     }
+}
+
+Rate
+transferRateCFT(ReadView const& view, uint256 const& id)
+{
+    auto const sle = view.read(keylet::cftIssuance(id));
+
+    // fee is 0-50,000 (0-50%), rate is 1,000,000,000-2,000,000,000
+    if (sle && sle->isFieldPresent(sfTransferFee))
+        return Rate{1'000'000'000u + 10'000 * sle->getFieldU16(sfTransferFee)};
+
+    return parityRate;
 }
 
 Rate
@@ -1109,8 +1132,13 @@ rippleSend(
     if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
-        auto const ter =
-            rippleCredit(view, uSenderID, uReceiverID, saAmount, false, j);
+        auto const ter = [&]() {
+            if (saAmount.isCFT())
+                return rippleCFTCredit(
+                    view, uSenderID, uReceiverID, saAmount, j);
+            return rippleCredit(
+                view, uSenderID, uReceiverID, saAmount, false, j);
+        }();
         if (view.rules().enabled(featureDeletableAccounts) && ter != tesSUCCESS)
             return ter;
         saActual = saAmount;
@@ -1118,6 +1146,21 @@ rippleSend(
     }
 
     // Sending 3rd party IOUs: transit.
+    if (saAmount.isCFT())
+    {
+        if (auto const sle =
+                view.read(keylet::cftIssuance(saAmount.getCurrency())))
+        {
+            saActual = (waiveFee == WaiveTransferFee::Yes)
+                ? saAmount
+                : multiply(
+                      saAmount,
+                      transferRateCFT(
+                          view, static_cast<uint256>(saAmount.getCurrency())));
+            return rippleCFTCredit(view, uSenderID, uReceiverID, saActual, j);
+        }
+        return tecINTERNAL;
+    }
 
     // Calculate the amount to transfer accounting
     // for any transfer fees if the fee is not waived:
@@ -1512,6 +1555,20 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
 {
     if (isXRP(issue) || issue.account == account)
         return tesSUCCESS;
+    if (issue.isCFT())
+    {
+        auto const cftID = keylet::cftIssuance(issue.currency);
+        if (auto const sle = view.read(cftID);
+            sle && sle->getFieldU32(sfFlags) & lsfCFTRequireAuth)
+        {
+            auto const cftokenID = keylet::cftoken(cftID.key, account);
+            if (auto const tokSle = view.read(cftokenID))
+            {
+                // TODO no lsfAuthorized as in specs
+            }
+        }
+        return tesSUCCESS;
+    }
     if (auto const issuerAccount = view.read(keylet::account(issue.account));
         issuerAccount && (*issuerAccount)[sfFlags] & lsfRequireAuth)
     {
@@ -1649,6 +1706,65 @@ deleteAMMTrustLine(
 
     adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, -1, j);
 
+    return tesSUCCESS;
+}
+
+TER
+rippleCFTCredit(
+    ApplyView& view,
+    AccountID const& uSenderID,
+    AccountID const& uReceiverID,
+    STAmount saAmount,
+    beast::Journal j)
+{
+    auto const cftID = keylet::cftIssuance(saAmount.getCurrency());
+    if (uSenderID == saAmount.getIssuer())
+    {
+        if (auto sle = view.peek(cftID))
+        {
+            sle->setFieldU64(
+                sfOutstandingAmount,
+                sle->getFieldU64(sfOutstandingAmount) + saAmount.cft().cft());
+            view.update(sle);
+        }
+        else
+            return tecINTERNAL;
+    }
+    else
+    {
+        auto const cftokenID = keylet::cftoken(cftID.key, uSenderID);
+        if (auto sle = view.peek(cftokenID))
+        {
+            sle->setFieldU64(
+                sfCFTAmount,
+                sle->getFieldU64(sfCFTAmount) - saAmount.cft().cft());
+            view.update(sle);
+        }
+    }
+
+    if (uReceiverID == saAmount.getIssuer())
+    {
+        if (auto sle = view.peek(cftID))
+        {
+            sle->setFieldU64(
+                sfOutstandingAmount,
+                sle->getFieldU64(sfOutstandingAmount) - saAmount.cft().cft());
+            view.update(sle);
+        }
+        else
+            return tecINTERNAL;
+    }
+    else
+    {
+        auto const cftokenID = keylet::cftoken(cftID.key, uReceiverID);
+        if (auto sle = view.peek(cftokenID))
+        {
+            sle->setFieldU64(
+                sfCFTAmount,
+                sle->getFieldU64(sfCFTAmount) + saAmount.cft().cft());
+            view.update(sle);
+        }
+    }
     return tesSUCCESS;
 }
 

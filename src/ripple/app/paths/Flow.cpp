@@ -194,6 +194,25 @@ flow(
     }
 
     assert(!srcIsXRP && !dstIsXRP);
+    if (srcIssue.currency.isCFT())
+    {
+        assert(dstIssue.currency.isCFT());
+        return finishFlow(
+            sb,
+            srcIssue,
+            dstIssue,
+            flow<CFTAmount, CFTAmount>(
+                sb,
+                strands,
+                asDeliver.cft,
+                partialPayment,
+                offerCrossing,
+                limitQuality,
+                sendMax,
+                j,
+                ammContext,
+                flowDebugInfo));
+    }
     return finishFlow(
         sb,
         srcIssue,

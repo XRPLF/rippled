@@ -40,7 +40,7 @@ STIssue::STIssue(SField const& name) : STBase{name}
 
 STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
 {
-    issue_.currency = sit.get160();
+    issue_.currency = static_cast<Currency>(sit.get160());
     if (!isXRP(issue_.currency))
         issue_.account = sit.get160();
     else
@@ -79,7 +79,11 @@ Json::Value STIssue::getJson(JsonOptions) const
 void
 STIssue::add(Serializer& s) const
 {
-    s.addBitString(issue_.currency);
+    // TODO add BACKWARDS compatible serialization once CFT is supported
+    assert(!issue_.isCFT());
+    if (issue_.isCFT())
+        Throw<std::logic_error>("CFT is not supported in STIssue");
+    s.addBitString(static_cast<Currency>(issue_.currency));
     if (!isXRP(issue_.currency))
         s.addBitString(issue_.account);
 }

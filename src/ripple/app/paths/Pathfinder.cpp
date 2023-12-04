@@ -944,7 +944,7 @@ Pathfinder::addLink(
     auto const& uEndCurrency = pathEnd.getCurrency();
     auto const& uEndIssuer = pathEnd.getIssuerID();
     auto const& uEndAccount = pathEnd.getAccountID();
-    bool const bOnXRP = uEndCurrency.isZero();
+    bool const bOnXRP = uEndCurrency.isXRP();
 
     // Does pathfinding really need to get this to
     // a gateway (the issuer of the destination amount)
@@ -1149,7 +1149,7 @@ Pathfinder::addLink(
                 {
                     STPath newPath(currentPath);
 
-                    if (book.out.currency.isZero())
+                    if (book.out.currency.isXRP())
                     {  // to XRP
 
                         // add the order book itself
@@ -1159,7 +1159,7 @@ Pathfinder::addLink(
                             xrpCurrency(),
                             xrpAccount());
 
-                        if (mDstAmount.getCurrency().isZero())
+                        if (mDstAmount.getCurrency().isXRP())
                         {
                             // destination is XRP, add account and path is
                             // complete

@@ -143,7 +143,7 @@ Path::push_back(Issue const& iss)
 inline Path&
 Path::push_back(jtx::Account const& account)
 {
-    path.emplace_back(account.id(), beast::zero, beast::zero);
+    path.emplace_back(account.id(), Currency{beast::zero}, beast::zero);
     return *this;
 }
 

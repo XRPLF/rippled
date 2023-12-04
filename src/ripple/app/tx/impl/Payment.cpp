@@ -87,7 +87,7 @@ Payment::preflight(PreflightContext const& ctx)
     auto const& uDstCurrency = saDstAmount.getCurrency();
 
     // isZero() is XRP.  FIX!
-    bool const bXRPDirect = uSrcCurrency.isZero() && uDstCurrency.isZero();
+    bool const bXRPDirect = uSrcCurrency.isXRP() && uDstCurrency.isXRP();
 
     if (!isLegalNet(saDstAmount) || !isLegalNet(maxSourceAmount))
         return temBAD_AMOUNT;

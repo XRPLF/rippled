@@ -351,6 +351,75 @@ operator<<(std::ostream& os, IOU const& iou);
 
 //------------------------------------------------------------------------------
 
+/** Converts to CFT Issue or STAmount.
+
+    Examples:
+        CFT         Converts to the underlying Issue
+        CFT(10)     Returns STAmount of 10 of
+                        the underlying CFT
+*/
+class CFT
+{
+public:
+    Account account;
+    ripple::uint256 cftID;
+
+    CFT(Account const& account_, ripple::uint256 const& cftID_)
+        : account(account_), cftID(cftID_)
+    {
+    }
+
+    Issue
+    issue() const
+    {
+        return {cftID, account.id()};
+    }
+
+    /** Implicit conversion to Issue.
+
+        This allows passing an CFT
+        value where an Issue is expected.
+    */
+    operator Issue() const
+    {
+        return issue();
+    }
+
+    template <class T>
+    requires(sizeof(T) >= sizeof(int) && std::is_arithmetic_v<T>) PrettyAmount
+    operator()(T v) const
+    {
+        // VFALCO NOTE Should throw if the
+        //             representation of v is not exact.
+        return {amountFromString(issue(), std::to_string(v)), account.name()};
+    }
+
+    PrettyAmount operator()(epsilon_t) const;
+    PrettyAmount operator()(detail::epsilon_multiple) const;
+
+    // VFALCO TODO
+    // STAmount operator()(char const* s) const;
+
+    /** Returns None-of-Issue */
+    None operator()(none_t) const
+    {
+        return {issue()};
+    }
+
+    friend BookSpec
+    operator~(CFT const& cft)
+    {
+        assert(false);
+        Throw<std::logic_error>("CFT is not supported");
+        return BookSpec{beast::zero, noCurrency()};
+    }
+};
+
+std::ostream&
+operator<<(std::ostream& os, CFT const& cft);
+
+//------------------------------------------------------------------------------
+
 struct any_t
 {
     inline AnyAmount

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 #define RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 
+#include <ripple/basics/CFTAmount.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/LocalValue.h>
@@ -70,8 +71,10 @@ public:
 
     // Max native value on network.
     static const std::uint64_t cMaxNativeN = 100000000000000000ull;
-    static const std::uint64_t cNotNative = 0x8000000000000000ull;
-    static const std::uint64_t cPosNative = 0x4000000000000000ull;
+    static const std::uint64_t cIssuedCurrency = 0x8000000000000000ull;
+    static const std::uint64_t cPositive = 0x4000000000000000ull;
+    static const std::uint64_t cCFToken = 0x2000000000000000ull;
+    static const std::uint64_t cValueMask = ~(cPositive | cCFToken);
 
     static std::uint64_t const uRateOne;
 
@@ -148,6 +151,7 @@ public:
     // Legacy support for new-style amounts
     STAmount(IOUAmount const& amount, Issue const& issue);
     STAmount(XRPAmount const& amount);
+    STAmount(CFTAmount const& amount, Issue const& issue);
     operator Number() const;
 
     //--------------------------------------------------------------------------
@@ -163,6 +167,15 @@ public:
     native() const noexcept;
 
     bool
+    isCFT() const noexcept;
+
+    bool
+    isIOU() const noexcept;
+
+    std::string
+    getTypeName() const noexcept;
+
+    bool
     negative() const noexcept;
 
     std::uint64_t
@@ -172,7 +185,7 @@ public:
     issue() const;
 
     // These three are deprecated
-    Currency const&
+    Asset const&
     getCurrency() const;
 
     AccountID const&
@@ -265,6 +278,8 @@ public:
     xrp() const;
     IOUAmount
     iou() const;
+    CFTAmount
+    cft() const;
 
 private:
     static std::unique_ptr<STAmount>
@@ -335,6 +350,18 @@ STAmount::native() const noexcept
 }
 
 inline bool
+STAmount::isCFT() const noexcept
+{
+    return !mIsNative && mIssue.isCFT();
+}
+
+inline bool
+STAmount::isIOU() const noexcept
+{
+    return !mIsNative && !mIssue.isCFT();
+}
+
+inline bool
 STAmount::negative() const noexcept
 {
     return mIsNegative;
@@ -352,7 +379,7 @@ STAmount::issue() const
     return mIssue;
 }
 
-inline Currency const&
+inline Asset const&
 STAmount::getCurrency() const
 {
     return mIssue.currency;
@@ -385,6 +412,8 @@ inline STAmount::operator Number() const
 {
     if (mIsNative)
         return xrp();
+    if (mIssue.isCFT())
+        return cft();
     return iou();
 }
 
@@ -550,6 +579,12 @@ inline bool
 isXRP(STAmount const& amount)
 {
     return isXRP(amount.issue().currency);
+}
+
+inline bool
+isCFT(STAmount const& amount)
+{
+    return isCFT(amount.issue());
 }
 
 // Since `canonicalize` does not have access to a ledger, this is needed to put

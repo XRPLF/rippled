@@ -897,6 +897,28 @@ class CFToken_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testCFTInvalidInTx(FeatureBitset features)
+    {
+        testcase("CFT Amount Invalid in Transaction");
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice");  // issuer
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto const id = keylet::cftIssuance(alice.id(), env.seq(alice));
+
+        env(cft::create(alice));
+        env.close();
+
+        env(offer(alice, CFT(alice, id.key)(100), XRP(100)), ter(temINVALID));
+        env.close();
+
+        BEAST_EXPECT(expectOffers(env, alice, 0));
+    }
+
 public:
     void
     run() override
@@ -920,7 +942,11 @@ public:
         testSetValidation(all);
         testSetEnabled(all);
 
+        // Test Direct Payment
         testPayment(all);
+
+        // Test CFT Amount is invalid in non-Payment Tx
+        testCFTInvalidInTx(all);
     }
 };
 

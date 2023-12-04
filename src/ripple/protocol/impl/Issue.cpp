@@ -68,7 +68,10 @@ Json::Value
 to_json(Issue const& is)
 {
     Json::Value jv;
-    jv[jss::currency] = to_string(is.currency);
+    if (is.currency.isCFT())
+        jv[jss::cft_asset] = to_string(is.currency);
+    else
+        jv[jss::currency] = to_string(is.currency);
     if (!isXRP(is.currency))
         jv[jss::issuer] = toBase58(is.account);
     return jv;
@@ -83,22 +86,23 @@ issueFromJson(Json::Value const& v)
             "issueFromJson can only be specified with an 'object' Json value");
     }
 
-    Json::Value const curStr = v[jss::currency];
+    bool const isCFT = v.isMember(jss::cft_asset);
+
+    Json::Value const assetStr = isCFT ? v[jss::cft_asset] : v[jss::currency];
     Json::Value const issStr = v[jss::issuer];
 
-    if (!curStr.isString())
+    if (!assetStr.isString())
     {
-        Throw<Json::error>(
-            "issueFromJson currency must be a string Json value");
+        Throw<Json::error>("issueFromJson asset must be a string Json value");
     }
 
-    auto const currency = to_currency(curStr.asString());
-    if (currency == badCurrency() || currency == noCurrency())
+    Asset asset = to_currency(assetStr.asString());
+    if (asset == badCurrency() || asset == noCurrency())
     {
         Throw<Json::error>("issueFromJson currency must be a valid currency");
     }
 
-    if (isXRP(currency))
+    if (asset.isXRP())
     {
         if (!issStr.isNull())
         {
@@ -118,7 +122,7 @@ issueFromJson(Json::Value const& v)
         Throw<Json::error>("issueFromJson issuer must be a valid account");
     }
 
-    return Issue{currency, *issuer};
+    return Issue{asset, *issuer};
 }
 
 std::ostream&

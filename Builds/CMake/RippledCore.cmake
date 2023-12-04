@@ -489,6 +489,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/paths/impl/AMMOffer.cpp
   src/ripple/app/paths/impl/BookStep.cpp
   src/ripple/app/paths/impl/DirectStep.cpp
+  src/ripple/app/paths/impl/DirectStepCFT.cpp
   src/ripple/app/paths/impl/PaySteps.cpp
   src/ripple/app/paths/impl/XRPEndpointStep.cpp
   src/ripple/app/rdb/backend/detail/impl/Node.cpp

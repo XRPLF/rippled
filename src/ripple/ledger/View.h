@@ -101,7 +101,7 @@ isIndividualFrozen(
 isFrozen(
     ReadView const& view,
     AccountID const& account,
-    Currency const& currency,
+    Asset const& asset,
     AccountID const& issuer);
 
 [[nodiscard]] inline bool
@@ -112,12 +112,12 @@ isFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
 
 // Returns the amount an account can spend without going into debt.
 //
-// <-- saAmount: amount of currency held by account. May be negative.
+// <-- saAmount: amount of asset held by account. May be negative.
 [[nodiscard]] STAmount
 accountHolds(
     ReadView const& view,
     AccountID const& account,
-    Currency const& currency,
+    Asset const& asset,
     AccountID const& issuer,
     FreezeHandling zeroIfFrozen,
     beast::Journal j);
@@ -130,11 +130,11 @@ accountHolds(
     FreezeHandling zeroIfFrozen,
     beast::Journal j);
 
-// Returns the amount an account can spend of the currency type saDefault, or
-// returns saDefault if this account is the issuer of the currency in
+// Returns the amount an account can spend of the asset type saDefault, or
+// returns saDefault if this account is the issuer of the asset in
 // question. Should be used in favor of accountHolds when questioning how much
-// an account can spend while also allowing currency issuers to spend
-// unlimited amounts of their own currency (since they can always issue more).
+// an account can spend while also allowing asset issuers to spend
+// unlimited amounts of their own asset (since they can always issue more).
 [[nodiscard]] STAmount
 accountFunds(
     ReadView const& view,
@@ -492,6 +492,17 @@ deleteAMMTrustLine(
     std::shared_ptr<SLE> sleState,
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j);
+
+TER
+rippleCFTCredit(
+    ApplyView& view,
+    AccountID const& uSenderID,
+    AccountID const& uReceiverID,
+    STAmount saAmount,
+    beast::Journal j);
+
+Rate
+transferRateCFT(ReadView const& view, uint256 const& id);
 
 }  // namespace ripple
 
