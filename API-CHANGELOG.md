@@ -33,12 +33,9 @@ The `network_id` field was added in the `server_info` response in version 1.5.0 
 Additions are intended to be non-breaking (because they are purely additive).
 
 - `server_definitions`: A new RPC that generates a `definitions.json`-like output that can be used in XRPL libraries.
-- In `Payment` transactions, `DeliverMax` has been added. This is a replacement for the `Amount` field, which should be no longer used - instead, use `delivered_amount` in transaction metadata. To ease the transition, `DeliverMax` is present regardless of API version, since adding a field is non-breaking. The field `Amount` is no longer present in `Payment`s in API version 2.
+- In `Payment` transactions, `DeliverMax` has been added. This is a replacement for the `Amount` field, which should not be used. Typically, the `delivered_amount` (in transaction metadata) should be used. To ease the transition, `DeliverMax` is present regardless of API version, since adding a field is non-breaking.
+- API version 2 has been moved from beta to supported, meaning that it is generally available (regardless of the `beta_rpc_api` setting).
 
-#### In progress
-
-- Provide `ctid` in more responses. (https://github.com/XRPLF/rippled/pull/4738)
-- Add `DeliverMax` (alias for `Amount`). (https://github.com/XRPLF/rippled/pull/4733)
 
 ## XRP Ledger server version 1.12.0
 
@@ -183,8 +180,6 @@ When reading Payments, the `Amount` field should generally **not** be used. Inst
 - Using a `ledger_index_min` or `ledger_index_max` beyond the range of ledgers that the server has:
   - returns `lgrIdxMalformed` in API version 2. Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/issues/4288)
 - Attempting to use a non-boolean value (such as a string) for the `binary` or `forward` parameters returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4620)
-
-- Attempting to use a non-boolean value (such as a string) for the `binary` or `forward` parameters returns `invalidParams` (`rpcINVALID_PARAMS`). In API version 1, no error was returned. (<https://github.com/XRPLF/rippled/pull/4620>)
 
 #### Modifications to [noripple_check](https://xrpl.org/noripple_check.html#noripple_check) response
 
