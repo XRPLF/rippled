@@ -600,13 +600,6 @@ make_DirectStepI(
     Currency const& c);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_DirectStepCFT(
-    StrandContext const& ctx,
-    AccountID const& src,
-    AccountID const& dst,
-    uint256 const& a);
-
-std::pair<TER, std::unique_ptr<Step>>
 make_BookStepII(StrandContext const& ctx, Issue const& in, Issue const& out);
 
 std::pair<TER, std::unique_ptr<Step>>

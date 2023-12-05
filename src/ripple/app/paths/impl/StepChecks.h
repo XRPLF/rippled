@@ -33,12 +33,9 @@ checkFreeze(
     ReadView const& view,
     AccountID const& src,
     AccountID const& dst,
-    Asset const& currency)
+    Currency const& currency)
 {
     assert(src != dst);
-
-    if (currency.isCFT())  // TODO
-        return tesSUCCESS;
 
     // check freeze
     if (auto sle = view.read(keylet::account(dst)))

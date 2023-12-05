@@ -21,6 +21,7 @@
 #include <ripple/app/tx/impl/Payment.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/jss.h>
@@ -353,7 +354,8 @@ Payment::doApply()
 
     bool const depositPreauth = view().rules().enabled(featureDepositPreauth);
 
-    bool const bRipple = paths || sendMax || !saDstAmount.native();
+    bool const bRipple =
+        paths || sendMax || !(saDstAmount.native() || saDstAmount.isCFT());
 
     // If the destination has lsfDepositAuth set, then only direct XRP
     // payments (no intermediate steps) are allowed to the destination.
@@ -424,6 +426,14 @@ Payment::doApply()
         if (isTerRetry(terResult))
             terResult = tecPATH_DRY;
         return terResult;
+    }
+    else if (saDstAmount.isCFT())
+    {
+        PaymentSandbox pv(&view());
+        auto const res =
+            rippleCFTCredit(pv, account_, uDstAccountID, saDstAmount, j_);
+        pv.apply(ctx_.rawView());
+        return res;
     }
 
     assert(saDstAmount.native());

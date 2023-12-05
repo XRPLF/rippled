@@ -493,7 +493,7 @@ deleteAMMTrustLine(
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j);
 
-TER
+[[nodiscard]] TER
 rippleCFTCredit(
     ApplyView& view,
     AccountID const& uSenderID,

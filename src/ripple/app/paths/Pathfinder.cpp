@@ -944,7 +944,7 @@ Pathfinder::addLink(
     auto const& uEndCurrency = pathEnd.getCurrency();
     auto const& uEndIssuer = pathEnd.getIssuerID();
     auto const& uEndAccount = pathEnd.getAccountID();
-    bool const bOnXRP = uEndCurrency.isXRP();
+    bool const bOnXRP = isXRP(uEndCurrency);
 
     // Does pathfinding really need to get this to
     // a gateway (the issuer of the destination amount)
