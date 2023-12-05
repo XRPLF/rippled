@@ -429,11 +429,11 @@ run(int argc, char** argv)
         "including suite/case name (at start) and test log messages.")(
         "unittest,u",
         po::value<std::string>()->implicit_value(""),
-        "Perform unit tests. The optional argument specifies one or "
-        "more comma-separated selectors. Each selector specifies a suite name, "
-        "full-name (lib.module.suite), module, or library "
-        "(checked in that "
-        "order).")(
+        "Perform unit tests. The optional argument  "
+        "will be matched against the beginning of every test-suite name. If "
+        "there is an exact match, only that test-suite is executed. "
+        "Otherwise, all test suites with a matching prefix will be executed"
+        ".")(
         "unittest-arg",
         po::value<std::string>()->implicit_value(""),
         "Supplies an argument string to unit tests. If provided, this argument "

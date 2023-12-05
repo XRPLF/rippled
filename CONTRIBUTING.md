@@ -125,6 +125,19 @@ pip3 install pre-commit
 pre-commit install
 ```
 
+## Unit Tests
+To execute all unit tests: (Caution: This takes ~10 minutes on M1 MacOS)
+
+```rippled --unittest```
+
+To run a specific set of test suites:
+
+```
+rippled --unittest TestSuiteName
+```
+Note: here all tests with prefix TestSuiteName will be run, so if 
+TestSuiteName and TestSuiteName1 both exist, then both tests will run.
+
 ## Avoid
 
 1. Proliferation of nearly identical code.
