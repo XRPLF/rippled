@@ -38,7 +38,8 @@ NFTokenMint::preflight(PreflightContext const& ctx)
         return temDISABLED;
 
     if (!ctx.rules.enabled(featureNFTokenMintOffer) &&
-        (ctx.tx[sfAmount] || ctx.tx[~sfDestination] || ctx.tx[~sfExpiration]))
+        (ctx.tx.isFieldPresent(sfAmount) || ctx.tx.isFieldPresent(sfDestination) ||
+         ctx.tx.isFieldPresent(sfExpiration)))
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
@@ -85,24 +86,24 @@ NFTokenMint::preflight(PreflightContext const& ctx)
     }
 
     // Amount field should be set if Destination and/or Expiration is set
-    if (ctx.tx[~sfDestination] || ctx.tx[~sfExpiration])
+    if (ctx.tx.isFieldPresent(sfDestination) || ctx.tx.isFieldPresent(sfExpiration))
     {
         if (!ctx.tx.isFieldPresent(sfAmount))
             return temMALFORMED;
     }
 
-    if (STAmount const amount = ctx.tx[sfAmount])
+    if (auto const amount = ctx.tx[~sfAmount])
     {
-        if (amount.negative() && ctx.rules.enabled(fixNFTokenNegOffer))
+        if (amount->negative() && ctx.rules.enabled(fixNFTokenNegOffer))
             // An offer for a negative amount makes no sense.
             return temBAD_AMOUNT;
 
-        if (!isXRP(amount))
+        if (!isXRP(*amount))
         {
             if (ctx.tx.isFlag(tfOnlyXRP))
                 return temBAD_AMOUNT;
 
-            if (!amount)
+            if (!*amount)
                 return temBAD_AMOUNT;
         }
     }
@@ -173,35 +174,35 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
-    if (STAmount const amount = ctx.tx[sfAmount])
+    if (auto const amount = ctx.tx[~sfAmount])
     {
         if (hasExpired(ctx.view, ctx.tx[~sfExpiration]))
             return tecEXPIRED;
 
         if (!(ctx.tx.getFlags() & nft::flagCreateTrustLines) &&
-            !amount.native() && ctx.tx[~sfTransferFee])
+            !amount->native() && ctx.tx[~sfTransferFee])
         {
             auto const nftIssuer =
                 ctx.tx[~sfIssuer].value_or(ctx.tx[sfAccount]);
             if (!ctx.view.exists(keylet::account(nftIssuer)))
                 return tecNO_ISSUER;
 
-            if (!ctx.view.exists(keylet::line(nftIssuer, amount.issue())))
+            if (!ctx.view.exists(keylet::line(nftIssuer, amount->issue())))
                 return tecNO_LINE;
 
             if (isFrozen(
                     ctx.view,
                     nftIssuer,
-                    amount.getCurrency(),
-                    amount.getIssuer()))
+                    amount->getCurrency(),
+                    amount->getIssuer()))
                 return tecFROZEN;
         }
 
         if (isFrozen(
                 ctx.view,
                 ctx.tx[sfAccount],
-                amount.getCurrency(),
-                amount.getIssuer()))
+                amount->getCurrency(),
+                amount->getIssuer()))
             return tecFROZEN;
 
         if (auto const destination = ctx.tx[~sfDestination])
