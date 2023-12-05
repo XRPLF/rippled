@@ -88,6 +88,8 @@ Payment::preflight(PreflightContext const& ctx)
 
     // isZero() is XRP.  FIX!
     bool const bXRPDirect = uSrcCurrency.isXRP() && uDstCurrency.isXRP();
+    bool const bCFTDirect = uSrcCurrency.isCFT() && uDstCurrency.isCFT();
+    bool const bDirect = bXRPDirect || bCFTDirect;
 
     if (!isLegalNet(saDstAmount) || !isLegalNet(maxSourceAmount))
         return temBAD_AMOUNT;
@@ -128,39 +130,42 @@ Payment::preflight(PreflightContext const& ctx)
                         << to_string(uDstCurrency);
         return temREDUNDANT;
     }
-    if (bXRPDirect && bMax)
+    if (bDirect && bMax)
     {
         // Consistent but redundant transaction.
         JLOG(j.trace()) << "Malformed transaction: "
-                        << "SendMax specified for XRP to XRP.";
-        return temBAD_SEND_XRP_MAX;
+                        << "SendMax specified for XRP to XRP or CFT to CFT.";
+        return temBAD_SEND_XRP_MAX;  // TODO new err code here and below
     }
-    if (bXRPDirect && bPaths)
+    if (bDirect && bPaths)
     {
         // XRP is sent without paths.
         JLOG(j.trace()) << "Malformed transaction: "
-                        << "Paths specified for XRP to XRP.";
+                        << "Paths specified for XRP to XRP or CFT to CFT.";
         return temBAD_SEND_XRP_PATHS;
     }
-    if (bXRPDirect && partialPaymentAllowed)
+    if (bDirect && partialPaymentAllowed)
     {
         // Consistent but redundant transaction.
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "Partial payment specified for XRP to XRP.";
+        JLOG(j.trace())
+            << "Malformed transaction: "
+            << "Partial payment specified for XRP to XRP or CFT to CFT.";
         return temBAD_SEND_XRP_PARTIAL;
     }
-    if (bXRPDirect && limitQuality)
+    if (bDirect && limitQuality)
     {
         // Consistent but redundant transaction.
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "Limit quality specified for XRP to XRP.";
+        JLOG(j.trace())
+            << "Malformed transaction: "
+            << "Limit quality specified for XRP to XRP or CFT to CFT.";
         return temBAD_SEND_XRP_LIMIT;
     }
-    if (bXRPDirect && !defaultPathsAllowed)
+    if (bDirect && !defaultPathsAllowed)
     {
         // Consistent but redundant transaction.
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "No ripple direct specified for XRP to XRP.";
+        JLOG(j.trace())
+            << "Malformed transaction: "
+            << "No ripple direct specified for XRP to XRP or CFT to CFT.";
         return temBAD_SEND_XRP_NO_DIRECT;
     }
 
