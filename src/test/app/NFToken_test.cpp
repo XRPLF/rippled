@@ -6917,7 +6917,7 @@ public:
         static FeatureBitset const all{supported_amendments()};
         static FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
-        static std::array<FeatureBitset, 5> const feats{
+        static std::array<FeatureBitset, 6> const feats{
             all - fixNFTDir - fixNonFungibleTokensV1_2 - fixNFTokenRemint -
                 featureNFTokenMintOffer,
             all - disallowIncoming - fixNonFungibleTokensV1_2 -
