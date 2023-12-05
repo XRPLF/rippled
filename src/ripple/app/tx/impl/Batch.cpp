@@ -369,8 +369,6 @@ Batch::preclaim(PreclaimContext const& ctx)
         auto const txtype = safe_cast<TxType>(tt);
         auto const stx =
             STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
-        std::cout << "Batch::preclaim" << TERtoInt(preflightResponses[i])
-                  << "\n";
         PreclaimContext const pcctx(
             ctx.app, ctx.view, preflightResponses[i], stx, ctx.flags, ctx.j);
         auto const response = invoke_preclaim(pcctx);
@@ -399,7 +397,6 @@ Batch::doApply()
         auto const stx =
             STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
 
-        std::cout << "Batch::doApply" << TERtoInt(preclaimResponses[i]) << "\n";
         ApplyContext actx(
             ctx_.app,
             ctx_.base_,
