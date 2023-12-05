@@ -113,6 +113,23 @@ public:
         mDelivered = delivered;
     }
 
+    STArray const&
+    getBatchExecutions() const
+    {
+        return *mBatchExecutions;
+    }
+
+    void
+    setBatchExecutions(STArray const& batchExecutions)
+    {
+        mBatchExecutions = batchExecutions;
+    }
+    bool
+    hasBatchExecutions() const
+    {
+        return static_cast<bool>(mBatchExecutions);
+    }
+
     STAmount
     getDeliveredAmount() const
     {
@@ -133,6 +150,7 @@ private:
     int mResult;
 
     std::optional<STAmount> mDelivered;
+    std::optional<STArray> mBatchExecutions;
 
     STArray mNodes;
 };

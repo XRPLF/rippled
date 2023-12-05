@@ -661,6 +661,8 @@ extern SField const sfHookParameters;
 extern SField const sfHookGrants;
 extern SField const sfXChainClaimAttestations;
 extern SField const sfXChainCreateAccountAttestations;
+extern SField const sfBatchExecutions;
+extern SField const sfBatchExecution;
 
 //------------------------------------------------------------------------------
 

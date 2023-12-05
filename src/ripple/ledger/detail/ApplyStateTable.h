@@ -64,12 +64,23 @@ public:
     void
     apply(RawView& to) const;
 
+    std::pair<TxMeta, Mods>
+    generateTxMeta(
+        OpenView const& to,
+        STTx const& tx,
+        std::optional<STAmount> const& deliver,
+        std::vector<STObject> const& batchExecution,
+        std::vector<STObject> const& hookExecution,
+        std::vector<STObject> const& hookEmission,
+        beast::Journal j);
+
     void
     apply(
         OpenView& to,
         STTx const& tx,
         TER ter,
         std::optional<STAmount> const& deliver,
+        std::vector<STObject> const& batchExecution,
         beast::Journal j);
 
     bool

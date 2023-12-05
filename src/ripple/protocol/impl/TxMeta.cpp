@@ -43,6 +43,9 @@ TxMeta::TxMeta(
 
     if (obj.isFieldPresent(sfDeliveredAmount))
         setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
+
+    if (obj.isFieldPresent(sfBatchExecutions))
+        setBatchExecutions(obj.getFieldArray(sfBatchExecutions));
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
@@ -61,6 +64,9 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
 
     if (obj.isFieldPresent(sfDeliveredAmount))
         setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
+
+    if (obj.isFieldPresent(sfBatchExecutions))
+        setBatchExecutions(obj.getFieldArray(sfBatchExecutions));
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
@@ -205,6 +211,10 @@ TxMeta::getAsObject() const
     metaData.emplace_back(mNodes);
     if (hasDeliveredAmount())
         metaData.setFieldAmount(sfDeliveredAmount, getDeliveredAmount());
+
+    if (hasBatchExecutions())
+        metaData.setFieldArray(sfBatchExecutions, getBatchExecutions());
+
     return metaData;
 }
 

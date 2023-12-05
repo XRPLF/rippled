@@ -68,6 +68,21 @@ public:
         deliver_ = amount;
     }
 
+    TxMeta
+    generateProvisionalMeta(
+        OpenView const& to,
+        STTx const& tx,
+        beast::Journal j);
+
+    /* Set hook metadata for a hook execution
+     * Takes ownership / use std::move
+     */
+    void
+    addBatchExecutionMetaData(STObject&& batchExecution)
+    {
+        batchExecution_.push_back(std::move(batchExecution));
+    }
+
     /** Get the number of modified entries
      */
     std::size_t
@@ -86,6 +101,7 @@ public:
 
 private:
     std::optional<STAmount> deliver_;
+    std::vector<STObject> batchExecution_;
 };
 
 }  // namespace ripple

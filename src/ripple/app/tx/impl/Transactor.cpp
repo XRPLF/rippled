@@ -196,6 +196,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         return temBAD_FEE;
 
     auto const feePaid = ctx.tx[sfFee].xrp();
+    std::cout << "feePaid: " << feePaid << "\n";
     if (!isLegalAmount(feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
 
@@ -205,6 +206,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         auto const feeDue =
             minimumFee(ctx.app, baseFee, ctx.view.fees(), ctx.flags);
 
+        std::cout << "feeDue: " << feeDue << "\n";
         if (feePaid < feeDue)
         {
             JLOG(ctx.j.trace())

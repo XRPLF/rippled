@@ -42,6 +42,22 @@ checkValidity(
 {
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);
+
+    if (rules.enabled(featureBatch) && applyFlags == tapPREFLIGHT_BATCH)
+    {
+        auto const tt = tx.getFieldU16(sfTransactionType);
+        std::cout << "tt: " << tt << "\n";
+        // batched transactions do not contain signatures
+        if (tx.isFieldPresent(sfTxnSignature))
+            return {Validity::SigBad, "Batch txn contains signature."};
+
+        std::string reason;
+        if (!passesLocalChecks(tx, reason))
+            return {Validity::SigGoodOnly, reason};
+
+        return {Validity::Valid, ""};
+    }
+
     if (flags & SF_SIGBAD)
         // Signature is known bad
         return {Validity::SigBad, "Transaction has bad signature."};

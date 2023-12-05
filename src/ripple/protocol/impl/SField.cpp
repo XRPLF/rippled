@@ -379,6 +379,7 @@ CONSTRUCT_UNTYPED_SFIELD(sfXChainClaimAttestationCollectionElement,
 CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement,
                                                  "XChainCreateAccountAttestationCollectionElement",
                                                                         OBJECT,    31);
+CONSTRUCT_UNTYPED_SFIELD(sfBatchExecution,      "BatchExecution",       OBJECT,    32);
 
 // array of objects
 //                                                                            ARRAY/1 is reserved for end of array
@@ -409,6 +410,7 @@ CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountAttestations,
 // 23 and 24 are unused and available for use
 CONSTRUCT_UNTYPED_SFIELD(sfAuthAccounts,        "AuthAccounts",         ARRAY,     25);
 CONSTRUCT_UNTYPED_SFIELD(sfTransactions,        "Transactions",         ARRAY,     26);
+CONSTRUCT_UNTYPED_SFIELD(sfBatchExecutions,     "BatchExecutions",      ARRAY,     27);
 
 // clang-format on
 
