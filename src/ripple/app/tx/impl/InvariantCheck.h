@@ -22,6 +22,8 @@
 
 #include <ripple/basics/base_uint.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/plugin/invariantChecks.h>
+#include <ripple/plugin/ledgerObjects.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
@@ -418,6 +420,24 @@ public:
         beast::Journal const&);
 };
 
+class PluginInvariantChecks
+{
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -432,7 +452,17 @@ using InvariantChecks = std::tuple<
     ValidNewAccountRoot,
     ValidNFTokenPage,
     NFTokenCountTracking,
-    ValidClawback>;
+    ValidClawback,
+    PluginInvariantChecks>;
+
+void
+registerPluginXRPChangeFn(std::uint16_t type, visitEntryXRPChangePtr ptr);
+
+void
+registerPluginInvariantCheck(InvariantCheckExport invariantCheck);
+
+void
+resetPluginInvariantChecks();
 
 /**
  * @brief get a tuple of all invariant checks

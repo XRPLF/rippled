@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
 #include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/net/RPCErr.h>
@@ -28,6 +27,7 @@
 #include <ripple/protocol/nftPageMask.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
+#include <ripple/rpc/handlers/Handlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/Tuning.h>
 
@@ -35,6 +35,20 @@
 #include <string>
 
 namespace ripple {
+
+struct DeletionBlocker
+{
+    Json::StaticString name;
+    std::uint16_t type;
+};
+
+static std::vector<DeletionBlocker> pluginDeletionBlockers{};
+
+void
+registerPluginDeletionBlockers(char const* name, std::uint16_t type)
+{
+    pluginDeletionBlockers.push_back({Json::StaticString{name}, type});
+}
 
 /** General RPC command that can retrieve objects in the account root.
     {
@@ -183,16 +197,12 @@ doAccountObjects(RPC::JsonContext& context)
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
-    std::optional<std::vector<LedgerEntryType>> typeFilter;
+    std::optional<std::vector<std::uint16_t>> typeFilter;
 
     if (params.isMember(jss::deletion_blockers_only) &&
         params[jss::deletion_blockers_only].asBool())
     {
-        struct
-        {
-            Json::StaticString name;
-            LedgerEntryType type;
-        } static constexpr deletionBlockers[] = {
+        DeletionBlocker static constexpr originalDeletionBlockers[] = {
             {jss::check, ltCHECK},
             {jss::escrow, ltESCROW},
             {jss::nft_page, ltNFTOKEN_PAGE},
@@ -202,6 +212,22 @@ doAccountObjects(RPC::JsonContext& context)
             {jss::xchain_owned_create_account_claim_id,
              ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
             {jss::bridge, ltBRIDGE}};
+
+        static std::vector<DeletionBlocker> deletionBlockers = [&] {
+            std::vector<DeletionBlocker> temp{};
+            std::copy(
+                std::begin(originalDeletionBlockers),
+                std::end(originalDeletionBlockers),
+                std::back_inserter(temp));
+            if (!pluginDeletionBlockers.empty())
+            {
+                std::copy(
+                    pluginDeletionBlockers.begin(),
+                    pluginDeletionBlockers.end(),
+                    std::back_inserter(temp));
+            }
+            return temp;
+        }();
 
         typeFilter.emplace();
         typeFilter->reserve(std::size(deletionBlockers));
@@ -228,7 +254,7 @@ doAccountObjects(RPC::JsonContext& context)
         }
         else if (type != ltANY)
         {
-            typeFilter = std::vector<LedgerEntryType>({type});
+            typeFilter = std::vector<std::uint16_t>({type});
         }
     }
 

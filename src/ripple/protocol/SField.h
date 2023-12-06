@@ -22,6 +22,7 @@
 
 #include <ripple/basics/safe_cast.h>
 #include <ripple/json/json_value.h>
+#include <ripple/plugin/SField.h>
 
 #include <cstdint>
 #include <map>
@@ -49,8 +50,9 @@ template <int>
 class STBitString;
 template <class>
 class STInteger;
-class STXChainBridge;
+class STPluginType;
 class STVector256;
+class STXChainBridge;
 
 #pragma push_macro("XMACRO")
 #undef XMACRO
@@ -85,6 +87,7 @@ class STVector256;
     STYPE(STI_UINT512, 23)                        \
     STYPE(STI_ISSUE, 24)                          \
     STYPE(STI_XCHAIN_BRIDGE, 25)                  \
+    STYPE(STI_PLUGIN_TYPE, 26)                    \
                                                   \
     /* high-level types */                        \
     /* cannot be serialized inside other types */ \
@@ -114,16 +117,16 @@ static std::map<std::string, int> const sTypeMap = {XMACRO(TO_MAP)};
 
 // constexpr
 inline int
-field_code(SerializedTypeID id, int index)
+field_code(int id, int index)
 {
-    return (safe_cast<int>(id) << 16) | index;
+    return (id << 16) | index;
 }
 
 // constexpr
 inline int
-field_code(int id, int index)
+field_code(SerializedTypeID id, int index)
 {
-    return (id << 16) | index;
+    return field_code(safe_cast<int>(id), index);
 }
 
 /** Identifies fields.
@@ -153,9 +156,9 @@ public:
     enum class IsSigning : unsigned char { no, yes };
     static IsSigning const notSigning = IsSigning::no;
 
-    int const fieldCode;               // (type<<16)|index
-    SerializedTypeID const fieldType;  // STI_*
-    int const fieldValue;              // Code number for protocol
+    int const fieldCode;   // (type<<16)|index
+    int const fieldType;   // STI_*
+    int const fieldValue;  // Code number for protocol
     std::string const fieldName;
     int const fieldMeta;
     int const fieldNum;
@@ -170,17 +173,13 @@ public:
     operator=(SField&&) = delete;
 
 public:
-    struct private_access_tag_t;  // public, but still an implementation detail
-
-    // These constructors can only be called from SField.cpp
     SField(
-        private_access_tag_t,
-        SerializedTypeID tid,
+        int tid,
         int fv,
         const char* fn,
         int meta = sMD_Default,
         IsSigning signing = IsSigning::yes);
-    explicit SField(private_access_tag_t, int fc);
+    explicit SField(int fc);
 
     static const SField&
     getField(int fieldCode);
@@ -257,7 +256,7 @@ public:
     static int
     getNumFields()
     {
-        return num;
+        return knownCodeToField.size();
     }
 
     bool
@@ -288,6 +287,12 @@ public:
     static int
     compare(const SField& f1, const SField& f2);
 
+    static std::map<int, STypeFunctions> pluginSTypes;
+    static std::vector<int> pluginSFieldCodes;
+
+    static void
+    reset();
+
     static std::map<int, SField const*> const&
     getKnownCodeToField()
     {
@@ -306,7 +311,9 @@ struct TypedField : SField
     using type = T;
 
     template <class... Args>
-    explicit TypedField(private_access_tag_t pat, Args&&... args);
+    explicit TypedField(Args&&... args) : SField(std::forward<Args>(args)...)
+    {
+    }
 };
 
 /** Indicate std::optional field semantics. */
@@ -329,6 +336,12 @@ operator~(TypedField<T> const& f)
 
 //------------------------------------------------------------------------------
 
+void
+registerSField(SFieldExport const& sfield);
+
+void
+registerSType(STypeFunctions type);
+
 //------------------------------------------------------------------------------
 
 using SF_UINT8 = TypedField<STInteger<std::uint8_t>>;
@@ -347,6 +360,7 @@ using SF_ACCOUNT = TypedField<STAccount>;
 using SF_AMOUNT = TypedField<STAmount>;
 using SF_ISSUE = TypedField<STIssue>;
 using SF_VL = TypedField<STBlob>;
+using SF_PLUGINTYPE = TypedField<STPluginType>;
 using SF_VECTOR256 = TypedField<STVector256>;
 using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 

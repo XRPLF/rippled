@@ -30,21 +30,6 @@ SField::IsSigning const SField::notSigning;
 int SField::num = 0;
 std::map<int, SField const*> SField::knownCodeToField;
 
-// Give only this translation unit permission to construct SFields
-struct SField::private_access_tag_t
-{
-    explicit private_access_tag_t() = default;
-};
-
-static SField::private_access_tag_t access;
-
-template <class T>
-template <class... Args>
-TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
-    : SField(pat, std::forward<Args>(args)...)
-{
-}
-
 // Construct all compile-time SFields, and register them in the knownCodeToField
 // database:
 
@@ -57,8 +42,7 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 // path because then you cannot grep for the exact SField name and find
 // where it is constructed.  These macros allow that grep to succeed.
 #define CONSTRUCT_UNTYPED_SFIELD(sfName, txtName, stiSuffix, fieldValue, ...) \
-    SField const sfName(                                                      \
-        access, STI_##stiSuffix, fieldValue, txtName, ##__VA_ARGS__);         \
+    SField const sfName(STI_##stiSuffix, fieldValue, txtName, ##__VA_ARGS__); \
     static_assert(                                                            \
         std::string_view(#sfName) == "sf" txtName,                            \
         "Declaration of SField does not match its text name")
@@ -68,7 +52,7 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 
 #define CONSTRUCT_TYPED_SFIELD(sfName, txtName, stiSuffix, fieldValue, ...) \
     SF_##stiSuffix const sfName(                                            \
-        access, STI_##stiSuffix, fieldValue, txtName, ##__VA_ARGS__);       \
+        STI_##stiSuffix, fieldValue, txtName, ##__VA_ARGS__);               \
     static_assert(                                                          \
         std::string_view(#sfName) == "sf" txtName,                          \
         "Declaration of SField does not match its text name")
@@ -76,10 +60,10 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 // clang-format off
 
 // SFields which, for historical reasons, do not follow naming conventions.
-SField const sfInvalid(access, -1);
-SField const sfGeneric(access, 0);
-SField const sfHash(access, STI_UINT256, 257, "hash");
-SField const sfIndex(access, STI_UINT256, 258, "index");
+SField const sfInvalid(-1);
+SField const sfGeneric(0);
+SField const sfHash(STI_UINT256, 257, "hash");
+SField const sfIndex(STI_UINT256, 258, "index");
 
 // Untyped SFields
 CONSTRUCT_UNTYPED_SFIELD(sfLedgerEntry,         "LedgerEntry",          LEDGERENTRY, 257);
@@ -411,19 +395,124 @@ CONSTRUCT_UNTYPED_SFIELD(sfAuthAccounts,        "AuthAccounts",         ARRAY,  
 
 // clang-format on
 
+std::map<int, STypeFunctions> SField::pluginSTypes{};
+
+void
+registerSType(STypeFunctions type)
+{
+    if (auto const it = SField::pluginSTypes.find(type.typeId);
+        it != SField::pluginSTypes.end())
+    {
+        throw std::runtime_error(
+            "Type code " + std::to_string(type.typeId) + " already exists");
+    }
+    for (auto& it : sTypeMap)
+    {
+        if (it.second == type.typeId)
+        {
+            throw std::runtime_error(
+                "Type code " + std::to_string(type.typeId) + " already exists");
+        }
+    }
+    SField::pluginSTypes.insert({type.typeId, type});
+}
+
+std::vector<int> SField::pluginSFieldCodes{};
+
+void
+registerSField(SFieldExport const& sfield)
+{
+    if (SField const& field = SField::getField(sfield.txtName);
+        field != sfInvalid)
+    {
+        throw std::runtime_error(
+            "SField " + std::string(sfield.txtName) + " already exists");
+    }
+    if (SField const& field =
+            SField::getField(field_code(sfield.typeId, sfield.fieldValue));
+        field != sfInvalid)
+    {
+        throw std::runtime_error(
+            "SField (type " + std::to_string(sfield.typeId) + ", field value " +
+            std::to_string(sfield.fieldValue) + ") already exists");
+    }
+    SField::pluginSFieldCodes.push_back(
+        field_code(sfield.typeId, sfield.fieldValue));
+    // NOTE: there might be memory leak issues here
+    switch (sfield.typeId)
+    {
+        case STI_UINT16:
+            new SF_UINT16(STI_UINT16, sfield.fieldValue, sfield.txtName);
+            break;
+        case STI_UINT32:
+            new SF_UINT32(STI_UINT32, sfield.fieldValue, sfield.txtName);
+            break;
+        case STI_UINT64:
+            new SF_UINT64(STI_UINT64, sfield.fieldValue, sfield.txtName);
+            break;
+        case STI_UINT128:
+            new SF_UINT128(STI_UINT128, sfield.fieldValue, sfield.txtName);
+            break;
+        case STI_UINT256:
+            new SF_UINT256(STI_UINT256, sfield.fieldValue, sfield.txtName);
+            break;
+        case STI_UINT8:
+            new SF_UINT8(STI_UINT8, sfield.fieldValue, sfield.txtName);
+            break;
+        case STI_UINT160:
+            new SF_UINT160(STI_UINT160, sfield.fieldValue, sfield.txtName);
+            break;
+        case STI_UINT96:
+            new SF_UINT96(STI_UINT96, sfield.fieldValue, sfield.txtName);
+            break;
+        case STI_UINT192:
+            new SF_UINT192(STI_UINT192, sfield.fieldValue, sfield.txtName);
+            break;
+        case STI_UINT384:
+            new SF_UINT384(STI_UINT384, sfield.fieldValue, sfield.txtName);
+            break;
+        case STI_UINT512:
+            new SF_UINT512(STI_UINT512, sfield.fieldValue, sfield.txtName);
+            break;
+        case STI_AMOUNT:
+            new SF_AMOUNT(STI_AMOUNT, sfield.fieldValue, sfield.txtName);
+            break;
+        case STI_VL:
+            new SF_VL(STI_VL, sfield.fieldValue, sfield.txtName);
+            break;
+        case STI_ACCOUNT:
+            new SF_ACCOUNT(STI_ACCOUNT, sfield.fieldValue, sfield.txtName);
+            break;
+        case STI_OBJECT:
+            new SField(STI_OBJECT, sfield.fieldValue, sfield.txtName);
+            break;
+        case STI_ARRAY:
+            new SField(STI_ARRAY, sfield.fieldValue, sfield.txtName);
+            break;
+        default: {
+            if (auto const it = SField::pluginSTypes.find(sfield.typeId);
+                it != SField::pluginSTypes.end())
+            {
+                new SF_PLUGINTYPE(
+                    sfield.typeId, sfield.fieldValue, sfield.txtName);
+            }
+            else
+            {
+                throw std::runtime_error(
+                    "Do not recognize type ID " +
+                    std::to_string(sfield.typeId));
+            }
+        }
+    }
+}
+
 #undef CONSTRUCT_TYPED_SFIELD
 #undef CONSTRUCT_UNTYPED_SFIELD
 
 #pragma pop_macro("CONSTRUCT_TYPED_SFIELD")
 #pragma pop_macro("CONSTRUCT_UNTYPED_SFIELD")
 
-SField::SField(
-    private_access_tag_t,
-    SerializedTypeID tid,
-    int fv,
-    const char* fn,
-    int meta,
-    IsSigning signing)
+SField::SField(int tid, int fv, const char* fn, int meta, IsSigning signing)
     : fieldCode(field_code(tid, fv))
     , fieldType(tid)
     , fieldValue(fv)
@@ -436,7 +525,7 @@ SField::SField(
     knownCodeToField[fieldCode] = this;
 }
 
-SField::SField(private_access_tag_t, int fc)
+SField::SField(int fc)
     : fieldCode(fc)
     , fieldType(STI_UNKNOWN)
     , fieldValue(0)
@@ -486,6 +575,22 @@ SField::getField(std::string const& fieldName)
             return *f;
     }
     return sfInvalid;
+}
+
+void
+SField::reset()
+{
+    for (auto& code : pluginSFieldCodes)
+    {
+        if (auto const it = knownCodeToField.find(code);
+            it != knownCodeToField.end())
+        {
+            knownCodeToField.erase(code);
+        }
+    }
+    num -= pluginSFieldCodes.size();
+    pluginSFieldCodes.clear();
+    pluginSTypes.clear();
 }
 
 }  // namespace ripple

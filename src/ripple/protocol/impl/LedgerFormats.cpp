@@ -23,7 +23,28 @@
 
 namespace ripple {
 
-LedgerFormats::LedgerFormats()
+std::map<std::uint16_t, PluginLedgerFormat> pluginObjectsMap{};
+
+void
+registerLedgerObject(
+    std::uint16_t type,
+    char const* name,
+    Container<SOElementExport> format)
+{
+    auto const strName = std::string(name);
+    if (auto it = pluginObjectsMap.find(type); it != pluginObjectsMap.end())
+    {
+        if (it->second.objectName == strName)
+            return;
+        LogicError(
+            std::string("Duplicate key for plugin ledger object '") + strName +
+            "': already exists");
+    }
+    pluginObjectsMap.insert({type, {strName, convertToUniqueFields(format)}});
+}
+
+void
+LedgerFormats::initialize()
 {
     // clang-format off
     // Fields shared by all ledger formats:
@@ -340,13 +361,49 @@ LedgerFormats::LedgerFormats()
         },
         commonFields);
     // clang-format on
+    for (auto& e : pluginObjectsMap)
+    {
+        add(e.second.objectName.c_str(),
+            e.first,
+            e.second.uniqueFields,
+            commonFields);
+    }
+}
+
+LedgerFormats&
+LedgerFormats::getInstanceHelper()
+{
+    static LedgerFormats instance;
+    if (instance.cleared)
+    {
+        try
+        {
+            instance.initialize();
+        }
+        catch (...)
+        {
+            // If initialization errors, it shouldn't reset
+            instance.cleared = false;
+            throw;
+        }
+        instance.cleared = false;
+    }
+    return instance;
+}
+
+void
+LedgerFormats::reset()
+{
+    auto& instance = getInstanceHelper();
+    instance.clear();
+    instance.cleared = true;
+    pluginObjectsMap.clear();
 }
 
 LedgerFormats const&
 LedgerFormats::getInstance()
 {
-    static LedgerFormats instance;
-    return instance;
+    return getInstanceHelper();
 }
 
 }  // namespace ripple

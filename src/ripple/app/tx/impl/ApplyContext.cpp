@@ -19,7 +19,6 @@
 
 #include <ripple/app/tx/impl/ApplyContext.h>
 #include <ripple/app/tx/impl/InvariantCheck.h>
-#include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/basics/Log.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/Feature.h>

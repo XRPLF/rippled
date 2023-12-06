@@ -224,7 +224,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                 obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::CREATED);
             auto const blob = inDesired ? inDesired->slice() : inBase->slice();
             auto const objectType =
-                static_cast<LedgerEntryType>(blob[1] << 8 | blob[2]);
+                static_cast<std::uint16_t>(blob[1] << 8 | blob[2]);
 
             if (request.get_object_neighbors())
             {

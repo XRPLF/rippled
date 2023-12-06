@@ -196,7 +196,7 @@ class Invariants_test : public beast::unit_test::suite
 
                 // We don't use ltNICKNAME directly since it's marked deprecated
                 // to prevent accidental use elsewhere.
-                sleNew->type_ = static_cast<LedgerEntryType>('n');
+                sleNew->type_ = static_cast<std::uint16_t>('n');
                 ac.view().insert(sleNew);
                 return true;
             });

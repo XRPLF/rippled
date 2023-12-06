@@ -120,6 +120,14 @@ class FeatureCollections
     std::size_t upVotes = 0;
     std::size_t downVotes = 0;
     mutable std::atomic<bool> readOnly = false;
+    mutable std::atomic<bool> isPluginTest = false;
+    struct SavedAmendment
+    {
+        std::string name;
+        Supported support;
+        VoteBehavior vote;
+    };
+    std::vector<SavedAmendment> originalFeatures{};
 
     // These helper functions provide access to the features collection by name,
     // index, and uint256 feature identifier, so the details of
@@ -164,11 +172,16 @@ public:
     registerFeature(
         std::string const& name,
         Supported support,
-        VoteBehavior vote);
+        VoteBehavior vote,
+        bool isPlugin = false);
 
     /** Tell FeatureCollections when registration is complete. */
     bool
     registrationIsDone();
+
+    /** Reinitialize FeatureCollections for tests. */
+    bool
+    reinitialize();
 
     std::size_t
     featureToBitsetIndex(uint256 const& f) const;
@@ -213,7 +226,7 @@ FeatureCollections::FeatureCollections()
 std::optional<uint256>
 FeatureCollections::getRegisteredFeature(std::string const& name) const
 {
-    assert(readOnly);
+    assert(readOnly || isPluginTest);
     Feature const* feature = getByName(name);
     if (feature)
         return feature->feature;
@@ -231,7 +244,8 @@ uint256
 FeatureCollections::registerFeature(
     std::string const& name,
     Supported support,
-    VoteBehavior vote)
+    VoteBehavior vote,
+    bool isPlugin)
 {
     check(!readOnly, "Attempting to register a feature after startup.");
     check(
@@ -266,11 +280,16 @@ FeatureCollections::registerFeature(
         check(
             supported.size() <= features.size(),
             "More supported features than defined features");
+
+        if (!isPlugin)
+        {
+            originalFeatures.push_back({name, support, vote});
+        }
         return f;
     }
     else
         // Each feature should only be registered once
-        LogicError("Duplicate feature registration");
+        LogicError("Duplicate feature registration " + name);
 }
 
 /** Tell FeatureCollections when registration is complete. */
@@ -281,10 +300,29 @@ FeatureCollections::registrationIsDone()
     return true;
 }
 
+/** Reinitialize FeatureCollections for tests. */
+bool
+FeatureCollections::reinitialize()
+{
+    features = {};
+    features.reserve(ripple::detail::numFeatures);
+    supported = {};
+    upVotes = 0;
+    downVotes = 0;
+    readOnly = false;
+    isPluginTest = true;
+    for (auto amendment : originalFeatures)
+    {
+        registerFeature(
+            amendment.name, amendment.support, amendment.vote, true);
+    }
+    return true;
+}
+
 size_t
 FeatureCollections::featureToBitsetIndex(uint256 const& f) const
 {
-    assert(readOnly);
+    assert(readOnly || isPluginTest);
 
     Feature const* feature = getByFeature(f);
     if (!feature)
@@ -345,9 +383,13 @@ getRegisteredFeature(std::string const& name)
 }
 
 uint256
-registerFeature(std::string const& name, Supported support, VoteBehavior vote)
+registerFeature(
+    std::string const& name,
+    Supported support,
+    VoteBehavior vote,
+    bool isPlugin = false)
 {
-    return featureCollections.registerFeature(name, support, vote);
+    return featureCollections.registerFeature(name, support, vote, isPlugin);
 }
 
 // Retired features are in the ledger and have no code controlled by the
@@ -363,6 +405,13 @@ bool
 registrationIsDone()
 {
     return featureCollections.registrationIsDone();
+}
+
+/** Reinitialize FeatureCollections for tests. */
+bool
+reinitialize()
+{
+    return featureCollections.reinitialize();
 }
 
 size_t
@@ -381,6 +430,13 @@ std::string
 featureToName(uint256 const& f)
 {
     return featureCollections.featureToName(f);
+}
+
+uint256
+registerPluginAmendment(AmendmentExport amendment)
+{
+    Supported supported = amendment.supported ? Supported::yes : Supported::no;
+    return registerFeature(amendment.name, supported, amendment.vote, true);
 }
 
 #pragma push_macro("REGISTER_FEATURE")
@@ -511,7 +567,7 @@ uint256 const
 //
 // Use initialization of one final static variable to set
 // featureCollections::readOnly.
-[[maybe_unused]] static const bool readOnlySet =
-    featureCollections.registrationIsDone();
+// [[maybe_unused]] static const bool readOnlySet =
+//     featureCollections.registrationIsDone();
 
 }  // namespace ripple

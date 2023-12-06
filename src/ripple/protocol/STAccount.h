@@ -46,7 +46,7 @@ public:
     STAccount(SerialIter& sit, SField const& name);
     STAccount(SField const& n, AccountID const& v);
 
-    SerializedTypeID
+    int
     getSType() const override;
 
     std::string

@@ -621,7 +621,7 @@ ApplyStateTable::threadOwners(
     Mods& mods,
     beast::Journal j)
 {
-    LedgerEntryType const ledgerType{sle->getType()};
+    std::uint16_t const ledgerType{sle->getType()};
     switch (ledgerType)
     {
         case ltACCOUNT_ROOT: {

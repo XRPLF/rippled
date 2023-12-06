@@ -213,18 +213,38 @@ enum TxType : std::uint16_t
 
 /** Manages the list of known transaction formats.
  */
-class TxFormats : public KnownFormats<TxType, TxFormats>
+class TxFormats : public KnownFormats<std::uint16_t, TxFormats>
 {
 private:
+    void
+    initialize();
+
     /** Create the object.
         This will load the object with all the known transaction formats.
     */
-    TxFormats();
+    TxFormats()
+    {
+        initialize();
+    }
+
+    static TxFormats&
+    getInstanceHelper();
+
+    bool cleared = false;
 
 public:
     static TxFormats const&
     getInstance();
+
+    static void
+    reset();
 };
+
+void
+registerTxFormat(
+    std::uint16_t type,
+    char const* txName,
+    Container<SOElementExport> txFormat);
 
 }  // namespace ripple
 

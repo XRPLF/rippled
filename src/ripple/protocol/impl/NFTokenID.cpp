@@ -30,7 +30,7 @@ canHaveNFTokenID(
     if (!serializedTx)
         return false;
 
-    TxType const tt = serializedTx->getTxnType();
+    std::uint16_t const tt = serializedTx->getTxnType();
     if (tt != ttNFTOKEN_MINT && tt != ttNFTOKEN_ACCEPT_OFFER &&
         tt != ttNFTOKEN_CANCEL_OFFER)
         return false;

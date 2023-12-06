@@ -49,6 +49,7 @@
 #include <ripple/app/rdb/backend/PostgresDatabase.h>
 #include <ripple/app/reporting/ReportingETL.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/app/tx/impl/InvariantCheck.h>
 #include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/ResolverAsio.h>
@@ -65,12 +66,15 @@
 #include <ripple/overlay/PeerReservationTable.h>
 #include <ripple/overlay/PeerSet.h>
 #include <ripple/overlay/make_Overlay.h>
+#include <ripple/plugin/exports.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/InnerObjectFormats.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/ShardArchiveHandler.h>
+#include <ripple/rpc/handlers/Handlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/shamap/NodeFamily.h>
 #include <ripple/shamap/ShardFamily.h>
@@ -84,6 +88,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstring>
+#include <dlfcn.h>
 #include <iostream>
 #include <limits>
 #include <mutex>
@@ -1121,6 +1126,129 @@ private:
 
 //------------------------------------------------------------------------------
 
+void
+addPlugin(std::string libPath)
+{
+    struct stat buffer;
+    if (stat(libPath.c_str(), &buffer) != 0)
+    {
+        Throw<std::runtime_error>("Plugin at " + libPath + " doesn't exist.");
+    }
+#if __APPLE__
+    void* handle = dlopen(libPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
+#else
+    void* handle =
+        dlopen(libPath.c_str(), RTLD_NOW | RTLD_DEEPBIND | RTLD_GLOBAL);
+#endif
+
+    if (dlsym(handle, "getAmendments") != NULL)
+    {
+        auto const amendments =
+            ((getAmendmentsPtr)dlsym(handle, "getAmendments"))();
+        for (int i = 0; i < amendments.size; i++)
+        {
+            auto const amendment = *(amendments.data + i);
+            registerPluginAmendment(amendment);
+        }
+    }
+    if (dlsym(handle, "getSTypes") != NULL)
+    {
+        auto const sTypes = ((getSTypesPtr)dlsym(handle, "getSTypes"))();
+        for (int i = 0; i < sTypes.size; i++)
+        {
+            auto const stype = *(sTypes.data + i);
+            registerSType(
+                {stype.typeId,
+                 stype.toString,
+                 stype.toJson,
+                 stype.toSerializer,
+                 stype.fromSerialIter});
+            registerLeafType(stype.typeId, stype.parsePtr);
+        }
+    }
+    if (dlsym(handle, "getSFields") != NULL)
+    {
+        auto const sFields = ((getSFieldsPtr)dlsym(handle, "getSFields"))();
+        for (int i = 0; i < sFields.size; i++)
+        {
+            auto const sField = *(sFields.data + i);
+            registerSField(sField);
+        }
+    }
+    if (dlsym(handle, "getLedgerObjects") != NULL)
+    {
+        auto const ledgerObjects =
+            ((getLedgerObjectsPtr)dlsym(handle, "getLedgerObjects"))();
+        for (int i = 0; i < ledgerObjects.size; i++)
+        {
+            auto const ledgerObject = *(ledgerObjects.data + i);
+            registerLedgerObject(
+                ledgerObject.type, ledgerObject.name, ledgerObject.format);
+            RPC::registerPluginLedgerTypes(
+                ledgerObject.rpcName, ledgerObject.type);
+            if (ledgerObject.visitEntryXRPChange != NULL)
+            {
+                registerPluginXRPChangeFn(
+                    ledgerObject.type, ledgerObject.visitEntryXRPChange);
+            }
+            if (ledgerObject.isDeletionBlocker)
+            {
+                registerPluginDeletionBlockers(
+                    ledgerObject.rpcName, ledgerObject.type);
+            }
+            else
+            {
+                if (ledgerObject.deleteFn == NULL)
+                {
+                    Throw<std::runtime_error>(
+                        "Ledger object " + std::string(ledgerObject.name) +
+                        "  is not a deletion blocker and does not have a "
+                        "delete function.");
+                }
+            }
+        }
+    }
+    auto const transactors =
+        ((getTransactorsPtr)dlsym(handle, "getTransactors"))();
+    for (int i = 0; i < transactors.size; i++)
+    {
+        auto const transactor = *(transactors.data + i);
+        registerTxFormat(
+            transactor.txType, transactor.txName, transactor.txFormat);
+        registerTxFunctions(transactor);
+    }
+    if (dlsym(handle, "getTERcodes") != NULL)
+    {
+        auto const TERcodes = ((getTERcodesPtr)dlsym(handle, "getTERcodes"))();
+        for (int i = 0; i < TERcodes.size; i++)
+        {
+            auto const TERcode = *(TERcodes.data + i);
+            registerPluginTER(TERcode);
+        }
+    }
+    if (dlsym(handle, "getInvariantChecks") != NULL)
+    {
+        auto const invariantChecks =
+            ((getInvariantChecksPtr)dlsym(handle, "getInvariantChecks"))();
+        for (int i = 0; i < invariantChecks.size; i++)
+        {
+            auto const invariantCheck = *(invariantChecks.data + i);
+            registerPluginInvariantCheck(invariantCheck);
+        }
+    }
+    if (dlsym(handle, "getInnerObjectFormats") != NULL)
+    {
+        auto const innerObjectFormats = ((getInnerObjectFormatsPtr)dlsym(
+            handle, "getInnerObjectFormats"))();
+        for (int i = 0; i < innerObjectFormats.size; i++)
+        {
+            auto const innerObjectFormat = *(innerObjectFormats.data + i);
+            registerPluginInnerObjectFormat(innerObjectFormat);
+        }
+    }
+    dlclose(handle);
+}
+
 // TODO Break this up into smaller, more digestible initialization segments.
 bool
 ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
@@ -1174,6 +1302,23 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     // Optionally turn off logging to console.
     logs_->silent(config_->silent());
+
+    // Register plugin features with rippled
+    for (std::string plugin : config_->PLUGINS)
+    {
+        JLOG(m_journal.info()) << "Loading plugin from " << plugin;
+        addPlugin(plugin);
+    }
+    registrationIsDone();
+
+    for (std::string const& s : config_->rawFeatures)
+    {
+        if (auto const f = getRegisteredFeature(s))
+            config_->features.insert(*f);
+        else
+            Throw<std::runtime_error>(
+                "Unknown feature: " + s + "  in config file.");
+    }
 
     if (!initRelationalDatabase() || !initNodeStore())
         return false;
@@ -1565,6 +1710,21 @@ ApplicationImp::run()
     }
 
     JLOG(m_journal.debug()) << "Application stopping";
+
+    // stop plugins
+    {
+        for (std::string plugin : config_->PLUGINS)
+        {
+            void* handle = dlopen(plugin.c_str(), RTLD_LAZY);
+            if (dlsym(handle, "shutdownPlugin") != NULL)
+            {
+                JLOG(m_journal.info())
+                    << "Shutting down plugin from " << plugin;
+                ((shutdownPtr)dlsym(handle, "shutdownPlugin"))();
+            }
+            dlclose(handle);
+        }
+    }
 
     m_io_latency_sampler.cancel_async();
 

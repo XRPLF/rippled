@@ -43,7 +43,10 @@ namespace RPC {
  */
 
 void
-insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion);
+insertDeliverMax(
+    Json::Value& tx_json,
+    std::uint16_t txnType,
+    unsigned int apiVersion);
 
 /** @} */
 

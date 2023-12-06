@@ -31,6 +31,7 @@
 #include <ripple/protocol/STBase.h>
 #include <ripple/protocol/STIssue.h>
 #include <ripple/protocol/STPathSet.h>
+#include <ripple/protocol/STPluginType.h>
 #include <ripple/protocol/STVector256.h>
 #include <ripple/protocol/impl/STVar.h>
 #include <boost/iterator/transform_iterator.hpp>
@@ -129,7 +130,7 @@ public:
     bool
     set(SerialIter& u, int depth = 0);
 
-    SerializedTypeID
+    int
     getSType() const override;
 
     bool
@@ -233,6 +234,8 @@ public:
     getFieldAmount(SField const& field) const;
     STPathSet const&
     getFieldPathSet(SField const& field) const;
+    STPluginType const&
+    getFieldPluginType(SField const& field) const;
     const STVector256&
     getFieldV256(SField const& field) const;
     const STArray&
@@ -367,6 +370,8 @@ public:
     setFieldIssue(SField const& field, STIssue const&);
     void
     setFieldPathSet(SField const& field, STPathSet const&);
+    void
+    setFieldPluginType(SField const& field, STPluginType const&);
     void
     setFieldV256(SField const& field, STVector256 const& v);
     void
@@ -1067,7 +1072,7 @@ STObject::getFieldByValue(SField const& field) const
     if (!rf)
         throwFieldNotFound(field);
 
-    SerializedTypeID id = rf->getSType();
+    int id = rf->getSType();
 
     if (id == STI_NOTPRESENT)
         return V();  // optional field not present
@@ -1094,7 +1099,7 @@ STObject::getFieldByConstRef(SField const& field, V const& empty) const
     if (!rf)
         throwFieldNotFound(field);
 
-    SerializedTypeID id = rf->getSType();
+    int id = rf->getSType();
 
     if (id == STI_NOTPRESENT)
         return empty;  // optional field not present

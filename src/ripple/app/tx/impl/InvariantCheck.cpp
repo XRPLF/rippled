@@ -80,6 +80,14 @@ TransactionFeeCheck::finalize(
 
 //------------------------------------------------------------------------------
 
+static std::map<std::uint16_t, visitEntryXRPChangePtr> pluginXRPChangeFns{};
+
+void
+registerPluginXRPChangeFn(std::uint16_t type, visitEntryXRPChangePtr ptr)
+{
+    pluginXRPChangeFns.insert({type, ptr});
+}
+
 void
 XRPNotCreated::visitEntry(
     bool isDelete,
@@ -108,6 +116,11 @@ XRPNotCreated::visitEntry(
                 drops_ -= (*before)[sfAmount].xrp().drops();
                 break;
             default:
+                if (auto it = pluginXRPChangeFns.find(before->getType());
+                    it != pluginXRPChangeFns.end())
+                {
+                    drops_ += it->second(isDelete, before, true);
+                }
                 break;
         }
     }
@@ -130,6 +143,11 @@ XRPNotCreated::visitEntry(
                     drops_ += (*after)[sfAmount].xrp().drops();
                 break;
             default:
+                if (auto it = pluginXRPChangeFns.find(after->getType());
+                    it != pluginXRPChangeFns.end())
+                {
+                    drops_ += it->second(isDelete, after, false);
+                }
                 break;
         }
     }
@@ -394,6 +412,11 @@ LedgerEntryTypesMatch::visitEntry(
             case ltDID:
                 break;
             default:
+                if (pluginObjectsMap.find(after->getType()) !=
+                    pluginObjectsMap.end())
+                {
+                    break;
+                }
                 invalidTypeAdded_ = true;
                 break;
         }
@@ -663,7 +686,7 @@ NFTokenCountTracking::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (TxType const txType = tx.getTxnType();
+    if (std::uint16_t const txType = tx.getTxnType();
         txType != ttNFTOKEN_MINT && txType != ttNFTOKEN_BURN)
     {
         if (beforeMintedTotal != afterMintedTotal)
@@ -797,6 +820,52 @@ ValidClawback::finalize(
     }
 
     return true;
+}
+
+//------------------------------------------------------------------------------
+
+std::vector<InvariantCheckExport> pluginInvariantChecks{};
+
+void
+registerPluginInvariantCheck(InvariantCheckExport invariantCheck)
+{
+    pluginInvariantChecks.emplace_back(invariantCheck);
+}
+
+void
+resetPluginInvariantChecks()
+{
+    pluginInvariantChecks.clear();
+}
+
+void
+PluginInvariantChecks::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    for (InvariantCheckExport invariantCheck : pluginInvariantChecks)
+    {
+        invariantCheck.visitEntry(
+            static_cast<void*>(this), isDelete, before, after);
+    }
+}
+
+bool
+PluginInvariantChecks::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const fee,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    bool finalizeResult = true;
+    for (InvariantCheckExport invariantCheck : pluginInvariantChecks)
+    {
+        finalizeResult &= invariantCheck.finalize(
+            static_cast<void*>(this), tx, result, fee, view, j);
+    }
+    return finalizeResult;
 }
 
 }  // namespace ripple

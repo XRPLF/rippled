@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/plugin/plugin.h>
 #include <ripple/protocol/TxFormats.h>
 
 #include <ripple/protocol/SField.h>
@@ -25,7 +26,33 @@
 
 namespace ripple {
 
-TxFormats::TxFormats()
+struct PluginTxFormat
+{
+    std::string txName;
+    std::vector<SOElement> uniqueFields;
+};
+
+std::map<std::uint16_t, PluginTxFormat> pluginTxFormats{};
+
+void
+registerTxFormat(
+    std::uint16_t txType,
+    char const* txName,
+    Container<SOElementExport> txFormat)
+{
+    auto const strName = std::string(txName);
+    if (auto it = pluginTxFormats.find(txType); it != pluginTxFormats.end())
+    {
+        LogicError(
+            std::string("Duplicate key for plugin transactor '") + strName +
+            "': already exists");
+    }
+    pluginTxFormats.insert(
+        {txType, {strName, convertToUniqueFields(txFormat)}});
+}
+
+void
+TxFormats::initialize()
 {
     // Fields shared by all txFormats:
     static const std::initializer_list<SOElement> commonFields{
@@ -483,13 +510,50 @@ TxFormats::TxFormats()
         commonFields);
 
     add(jss::DIDDelete, ttDID_DELETE, {}, commonFields);
+
+    for (auto& e : pluginTxFormats)
+    {
+        add(e.second.txName.c_str(),
+            e.first,
+            e.second.uniqueFields,
+            commonFields);
+    }
+}
+
+TxFormats&
+TxFormats::getInstanceHelper()
+{
+    static TxFormats instance;
+    if (instance.cleared)
+    {
+        try
+        {
+            instance.initialize();
+        }
+        catch (...)
+        {
+            // If initialization errors, it shouldn't reset
+            instance.cleared = false;
+            throw;
+        }
+        instance.cleared = false;
+    }
+    return instance;
+}
+
+void
+TxFormats::reset()
+{
+    auto& instance = getInstanceHelper();
+    instance.clear();
+    instance.cleared = true;
+    pluginTxFormats.clear();
 }
 
 TxFormats const&
 TxFormats::getInstance()
 {
-    static TxFormats const instance;
-    return instance;
+    return getInstanceHelper();
 }
 
 }  // namespace ripple
