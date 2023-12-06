@@ -27,7 +27,7 @@
 namespace ripple {
 namespace test {
 
-class Offer0_test : public beast::unit_test::suite
+class OfferBaseUtil_test : public beast::unit_test::suite
 {
     XRPAmount
     reserve(jtx::Env& env, std::uint32_t count)
@@ -5371,52 +5371,52 @@ public:
     }
 };
 
-class Offer1_test : public Offer0_test
+class OfferWOFlowCross_test : public OfferBaseUtil_test
 {
     void
     run() override
     {
-        Offer0_test::run(1);
+        OfferBaseUtil_test::run(1);
     }
 };
 
-class Offer2_test : public Offer0_test
+class OfferWTakerDryOffer_test : public OfferBaseUtil_test
 {
     void
     run() override
     {
-        Offer0_test::run(2);
+        OfferBaseUtil_test::run(2);
     }
 };
 
-class Offer3_test : public Offer0_test
+class OfferWOSmallQOffers_test : public OfferBaseUtil_test
 {
     void
     run() override
     {
-        Offer0_test::run(3);
+        OfferBaseUtil_test::run(3);
     }
 };
 
-class Offer4_test : public Offer0_test
+class OfferWOFillOrKill_test : public OfferBaseUtil_test
 {
     void
     run() override
     {
-        Offer0_test::run(4);
+        OfferBaseUtil_test::run(4);
     }
 };
 
-class Offer5_test : public Offer0_test
+class OfferAllFeatures_test : public OfferBaseUtil_test
 {
     void
     run() override
     {
-        Offer0_test::run(5, true);
+        OfferBaseUtil_test::run(5, true);
     }
 };
 
-class Offer_manual_test : public Offer0_test
+class Offer_manual_test : public OfferBaseUtil_test
 {
     void
     run() override
@@ -5439,12 +5439,12 @@ class Offer_manual_test : public Offer0_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(Offer0, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(Offer1, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(Offer2, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(Offer3, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(Offer4, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(Offer5, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFlowCross, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWTakerDryOffer, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFillOrKill, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, tx, ripple, 4);
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, tx, ripple, 20);
 
 }  // namespace test
