@@ -33,21 +33,23 @@ namespace test {
 
 struct MultivarJson_test : beast::unit_test::suite
 {
+    static auto
+    makeJson(const char* key, int val)
+    {
+        Json::Value obj1(Json::objectValue);
+        obj1[key] = val;
+        return obj1;
+    };
+
     void
     run() override
     {
-        constexpr static Json::StaticString string1("string1");
-        static Json::Value const str1{string1};
+        Json::Value const obj1 = makeJson("value", 1);
+        Json::Value const obj2 = makeJson("value", 2);
+        Json::Value const obj3 = makeJson("value", 3);
+        Json::Value const jsonNull{};
 
-        static Json::Value const obj1{[]() {
-            Json::Value obj1(Json::objectValue);
-            obj1["one"] = 1;
-            return obj1;
-        }()};
-
-        static Json::Value const jsonNull{};
-
-        MultivarJson<3> const subject({str1, obj1});
+        MultivarJson<3> subject{};
         static_assert(sizeof(subject) == sizeof(subject.val));
         static_assert(subject.size == subject.val.size());
         static_assert(
@@ -55,13 +57,11 @@ struct MultivarJson_test : beast::unit_test::suite
 
         BEAST_EXPECT(subject.val.size() == 3);
         BEAST_EXPECT(
-            (subject.val == std::array<Json::Value, 3>{str1, obj1, jsonNull}));
-        BEAST_EXPECT(
-            (MultivarJson<3>({obj1, str1}).val ==
-             std::array<Json::Value, 3>{obj1, str1, jsonNull}));
-        BEAST_EXPECT(
-            (MultivarJson<3>({jsonNull, obj1, str1}).val ==
-             std::array<Json::Value, 3>{jsonNull, obj1, str1}));
+            (subject.val ==
+             std::array<Json::Value, 3>{jsonNull, jsonNull, jsonNull}));
+
+        subject.val[0] = obj1;
+        subject.val[1] = obj2;
 
         {
             testcase("default copy construction / assignment");
@@ -96,9 +96,9 @@ struct MultivarJson_test : beast::unit_test::suite
             testcase("select");
 
             BEAST_EXPECT(
-                subject.select([]() -> std::size_t { return 0; }) == str1);
+                subject.select([]() -> std::size_t { return 0; }) == obj1);
             BEAST_EXPECT(
-                subject.select([]() -> std::size_t { return 1; }) == obj1);
+                subject.select([]() -> std::size_t { return 1; }) == obj2);
             BEAST_EXPECT(
                 subject.select([]() -> std::size_t { return 2; }) == jsonNull);
 
@@ -144,12 +144,9 @@ struct MultivarJson_test : beast::unit_test::suite
         }
 
         {
-            struct foo_t final
-            {
-            };
             testcase("set");
 
-            auto x = MultivarJson<2>{{Json::objectValue, Json::objectValue}};
+            auto x = MultivarJson<2>{Json::objectValue};
             x.set("name1", 42);
             BEAST_EXPECT(x.val[0].isMember("name1"));
             BEAST_EXPECT(x.val[1].isMember("name1"));
@@ -193,6 +190,9 @@ struct MultivarJson_test : beast::unit_test::suite
             }(x));
 
             // Tests of requires clause - these are expected NOT to match
+            struct foo_t final
+            {
+            };
             static_assert([](auto&& v) {
                 return !requires
                 {
@@ -213,32 +213,29 @@ struct MultivarJson_test : beast::unit_test::suite
             // Well defined behaviour even if we have different types of members
             BEAST_EXPECT(subject.isMember("foo") == decltype(subject)::none);
 
-            auto const makeJson = [](const char* key, int val) {
-                Json::Value obj1(Json::objectValue);
-                obj1[key] = val;
-                return obj1;
-            };
-
             {
                 // All variants have element "One", none have element "Two"
-                MultivarJson<2> const s1{
-                    {makeJson("One", 12), makeJson("One", 42)}};
+                MultivarJson<2> s1{};
+                s1.val[0] = makeJson("One", 12);
+                s1.val[1] = makeJson("One", 42);
                 BEAST_EXPECT(s1.isMember("One") == decltype(s1)::all);
                 BEAST_EXPECT(s1.isMember("Two") == decltype(s1)::none);
             }
 
             {
                 // Some variants have element "One" and some have "Two"
-                MultivarJson<2> const s2{
-                    {makeJson("One", 12), makeJson("Two", 42)}};
+                MultivarJson<2> s2{};
+                s2.val[0] = makeJson("One", 12);
+                s2.val[1] = makeJson("Two", 42);
                 BEAST_EXPECT(s2.isMember("One") == decltype(s2)::some);
                 BEAST_EXPECT(s2.isMember("Two") == decltype(s2)::some);
             }
 
             {
                 // Not all variants have element "One", because last one is null
-                MultivarJson<3> const s3{
-                    {makeJson("One", 12), makeJson("One", 42), {}}};
+                MultivarJson<3> s3{};
+                s3.val[0] = makeJson("One", 12);
+                s3.val[1] = makeJson("One", 42);
                 BEAST_EXPECT(s3.isMember("One") == decltype(s3)::some);
                 BEAST_EXPECT(s3.isMember("Two") == decltype(s3)::none);
             }
@@ -248,8 +245,10 @@ struct MultivarJson_test : beast::unit_test::suite
             // NOTE It's fine to change this test when we change API versions
             testcase("apiVersionSelector");
 
-            static_assert(MultiApiJson::size == 2);
-            static MultiApiJson x{{obj1, str1}};
+            static_assert(MultiApiJson::size == 3);
+            static MultiApiJson x{obj1};
+            x.val[1] = obj2;
+            x.val[2] = obj3;
 
             static_assert(
                 std::is_same_v<decltype(apiVersionSelector(1)()), std::size_t>);
@@ -261,15 +260,16 @@ struct MultivarJson_test : beast::unit_test::suite
             }(x));
 
             BEAST_EXPECT(x.select(apiVersionSelector(0)) == obj1);
-            BEAST_EXPECT(x.select(apiVersionSelector(2)) == str1);
+            BEAST_EXPECT(x.select(apiVersionSelector(2)) == obj2);
 
             static_assert(apiVersionSelector(0)() == 0);
             static_assert(apiVersionSelector(1)() == 0);
             static_assert(apiVersionSelector(2)() == 1);
-            static_assert(apiVersionSelector(3)() == 1);
+            static_assert(apiVersionSelector(3)() == 2);
+            static_assert(apiVersionSelector(4)() == 2);
             static_assert(
                 apiVersionSelector(
-                    std::numeric_limits<unsigned int>::max())() == 1);
+                    std::numeric_limits<unsigned int>::max())() == 2);
         }
 
         {
@@ -283,6 +283,100 @@ struct MultivarJson_test : beast::unit_test::suite
                 == MultiApiJson::size);
 
             BEAST_EXPECT(MultiApiJson::size >= 1);
+        }
+
+        {
+            testcase("visit");
+
+            MultivarJson<3> s1{};
+            s1.val[0] = makeJson("value", 2);
+            s1.val[1] = makeJson("value", 3);
+            s1.val[2] = makeJson("value", 5);
+
+            int result = 1;
+            ripple::visit<1, 3>(
+                s1, [&](Json::Value& json, unsigned int i) -> void {
+                    if (BEAST_EXPECT(json.isObject() && json.isMember("value")))
+                    {
+                        auto const value = json["value"].asInt();
+                        BEAST_EXPECT(
+                            (value == 2 && i == 1) ||  //
+                            (value == 3 && i == 2) ||  //
+                            (value == 5 && i == 3));
+                        result *= value;
+                    }
+                });
+            BEAST_EXPECT(result == 30);
+
+            // Can use fn with constexpr functor
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    ripple::visit<1, 3>(
+                        v, [](Json::Value&, unsigned int) constexpr {});
+                };
+            }(s1));
+
+            // Can use fn with deduction over all parameters
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    ripple::visit<1, 3>(v, [](auto&, auto) constexpr {});
+                };
+            }(s1));
+
+            // Can use fn with conversion of version parameter
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    ripple::visit<1, 3>(v, [](auto&, std::size_t) constexpr {});
+                };
+            }(s1));
+
+            // Cannot use fn with const parameter
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    ripple::visit<1, 3>(
+                        v, [](Json::Value const&, auto) constexpr {});
+                };
+            }(const_cast<MultivarJson<3> const&>(s1)));
+
+            // Cannot call visit with size mismatch
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    ripple::visit<1, 2>(
+                        v, [](Json::Value&, unsigned int) constexpr {});
+                };
+            }(s1));
+
+            // Cannot call visit with version offset
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    ripple::visit<0, 2>(
+                        v, [](Json::Value&, unsigned int) constexpr {});
+                };
+            }(s1));
+
+            // Cannot call visit with size mismatch
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    ripple::visit<1, 4>(
+                        v, [](Json::Value&, unsigned int) constexpr {});
+                };
+            }(s1));
+
+            // Cannot call visit with wrong order of versions
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    ripple::visit<3, 1>(
+                        v, [](Json::Value&, unsigned int) constexpr {});
+                };
+            }(s1));
         }
     }
 };

@@ -63,6 +63,7 @@
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STParsedJSON.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/BookChanges.h>
@@ -74,6 +75,7 @@
 
 #include <algorithm>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -951,24 +953,9 @@ NetworkOPsImp::setTimer(
 void
 NetworkOPsImp::setHeartbeatTimer()
 {
-    // timerDelay is to optimize the timer interval such as for phase establish.
-    // Setting a max of ledgerGRANULARITY allows currently in-flight proposals
-    // to be accounted for at the very beginning of the phase.
-    std::chrono::milliseconds timerDelay;
-    auto td = mConsensus.getTimerDelay();
-    if (td)
-    {
-        timerDelay = std::min(*td, mConsensus.parms().ledgerGRANULARITY);
-        mConsensus.setTimerDelay();
-    }
-    else
-    {
-        timerDelay = mConsensus.parms().ledgerGRANULARITY;
-    }
-
     setTimer(
         heartbeatTimer_,
-        timerDelay,
+        mConsensus.parms().ledgerGRANULARITY,
         [this]() {
             m_job_queue.addJob(jtNETOP_TIMER, "NetOPs.heartbeat", [this]() {
                 processHeartbeatTimer();
@@ -2179,8 +2166,10 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (masterKey != signerPublic)
             jvObj[jss::master_key] = toBase58(TokenType::NodePublic, masterKey);
 
+        // NOTE *seq is a number, but old API versions used string. We replace
+        // number with a string using MultiApiJson near end of this function
         if (auto const seq = (*val)[~sfLedgerSequence])
-            jvObj[jss::ledger_index] = to_string(*seq);
+            jvObj[jss::ledger_index] = *seq;
 
         if (val->isFieldPresent(sfAmendments))
         {
@@ -2218,12 +2207,28 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
 
+        // NOTE Use MultiApiJson to publish two slightly different JSON objects
+        // for consumers supporting different API versions
+        MultiApiJson multiObj{jvObj};
+        visit<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(
+            multiObj,  //
+            [](Json::Value& jvTx, unsigned int apiVersion) {
+                // Type conversion for older API versions to string
+                if (jvTx.isMember(jss::ledger_index) && apiVersion < 2)
+                {
+                    jvTx[jss::ledger_index] =
+                        std::to_string(jvTx[jss::ledger_index].asUInt());
+                }
+            });
+
         for (auto i = mStreamMaps[sValidations].begin();
              i != mStreamMaps[sValidations].end();)
         {
             if (auto p = i->second.lock())
             {
-                p->send(jvObj, true);
+                p->send(
+                    multiObj.select(apiVersionSelector(p->getApiVersion())),
+                    true);
                 ++i;
             }
             else
@@ -3102,7 +3107,11 @@ NetworkOPsImp::transJson(
     transResultInfo(result, sToken, sHuman);
 
     jvObj[jss::type] = "transaction";
-    jvObj[jss::transaction] = transaction->getJson(JsonOptions::none);
+    // NOTE jvObj is not a finished object for either API version. After
+    // it's populated, we need to finish it for a specific API version. This is
+    // done in a loop, near the end of this function.
+    jvObj[jss::transaction] =
+        transaction->getJson(JsonOptions::disable_API_prior_V2, false);
 
     if (meta)
     {
@@ -3111,13 +3120,16 @@ NetworkOPsImp::transJson(
             jvObj[jss::meta], *ledger, transaction, meta->get());
     }
 
+    if (!ledger->open())
+        jvObj[jss::ledger_hash] = to_string(ledger->info().hash);
+
     if (validated)
     {
         jvObj[jss::ledger_index] = ledger->info().seq;
-        jvObj[jss::ledger_hash] = to_string(ledger->info().hash);
         jvObj[jss::transaction][jss::date] =
             ledger->info().closeTime.time_since_epoch().count();
         jvObj[jss::validated] = true;
+        jvObj[jss::close_time_iso] = to_string_iso(ledger->info().closeTime);
 
         // WRITEME: Put the account next seq here
     }
@@ -3150,29 +3162,24 @@ NetworkOPsImp::transJson(
         }
     }
 
-    MultiApiJson multiObj({jvObj, jvObj});
-    // Minimum supported API version must match index 0 in MultiApiJson
-    static_assert(apiVersionSelector(RPC::apiMinimumSupportedVersion)() == 0);
-    // Beta API version must match last index in MultiApiJson
-    static_assert(
-        apiVersionSelector(RPC::apiBetaVersion)() + 1  //
-        == MultiApiJson::size);
-    for (unsigned apiVersion = RPC::apiMinimumSupportedVersion,
-                  lastIndex = MultiApiJson::size;
-         apiVersion <= RPC::apiBetaVersion;
-         ++apiVersion)
-    {
-        unsigned const index = apiVersionSelector(apiVersion)();
-        assert(index < MultiApiJson::size);
-        if (index != lastIndex)
-        {
+    std::string const hash = to_string(transaction->getTransactionID());
+    MultiApiJson multiObj{jvObj};
+    visit<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(
+        multiObj,  //
+        [&](Json::Value& jvTx, unsigned int apiVersion) {
             RPC::insertDeliverMax(
-                multiObj.val[index][jss::transaction],
-                transaction->getTxnType(),
-                apiVersion);
-            lastIndex = index;
-        }
-    }
+                jvTx[jss::transaction], transaction->getTxnType(), apiVersion);
+
+            if (apiVersion > 1)
+            {
+                jvTx[jss::tx_json] = jvTx.removeMember(jss::transaction);
+                jvTx[jss::hash] = hash;
+            }
+            else
+            {
+                jvTx[jss::transaction][jss::hash] = hash;
+            }
+        });
 
     return multiObj;
 }

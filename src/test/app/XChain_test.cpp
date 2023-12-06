@@ -4210,6 +4210,73 @@ struct XChain_test : public beast::unit_test::suite,
     }
 
     void
+    testBadPublicKey()
+    {
+        using namespace jtx;
+
+        testcase("Bad attestations");
+        {
+            // Create a bridge and add an attestation with a bad public key
+            XEnv scEnv(*this, true);
+            std::uint32_t const claimID = 1;
+            std::optional<Account> dst{scBob};
+            auto const amt = XRP(1000);
+            scEnv.tx(create_bridge(Account::master, jvb))
+                .tx(jtx::signers(Account::master, quorum, signers))
+                .close();
+            scEnv.tx(xchain_create_claim_id(scAlice, jvb, reward, mcAlice))
+                .close();
+            auto jvAtt = claim_attestation(
+                scAttester,
+                jvb,
+                mcAlice,
+                amt,
+                payees[UT_XCHAIN_DEFAULT_QUORUM],
+                true,
+                claimID,
+                dst,
+                signers[UT_XCHAIN_DEFAULT_QUORUM]);
+            {
+                // Change to an invalid keytype
+                auto k = jvAtt["PublicKey"].asString();
+                k.at(1) = '9';
+                jvAtt["PublicKey"] = k;
+            }
+            scEnv.tx(jvAtt, ter(temMALFORMED)).close();
+        }
+        {
+            // Create a bridge and add an create account attestation with a bad
+            // public key
+            XEnv scEnv(*this, true);
+            std::uint32_t const createCount = 1;
+            Account dst{scBob};
+            auto const amt = XRP(1000);
+            auto const rewardAmt = XRP(1);
+            scEnv.tx(create_bridge(Account::master, jvb))
+                .tx(jtx::signers(Account::master, quorum, signers))
+                .close();
+            auto jvAtt = create_account_attestation(
+                scAttester,
+                jvb,
+                mcAlice,
+                amt,
+                rewardAmt,
+                payees[UT_XCHAIN_DEFAULT_QUORUM],
+                true,
+                createCount,
+                dst,
+                signers[UT_XCHAIN_DEFAULT_QUORUM]);
+            {
+                // Change to an invalid keytype
+                auto k = jvAtt["PublicKey"].asString();
+                k.at(1) = '9';
+                jvAtt["PublicKey"] = k;
+            }
+            scEnv.tx(jvAtt, ter(temMALFORMED)).close();
+        }
+    }
+
+    void
     run() override
     {
         testXChainBridgeExtraFields();
@@ -4226,6 +4293,7 @@ struct XChain_test : public beast::unit_test::suite,
         testXChainCreateAccount();
         testFeeDipsIntoReserve();
         testXChainDeleteDoor();
+        testBadPublicKey();
     }
 };
 

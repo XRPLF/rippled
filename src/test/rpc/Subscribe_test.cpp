@@ -20,6 +20,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/json/json_value.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
@@ -163,7 +164,7 @@ public:
     }
 
     void
-    testTransactions()
+    testTransactions_APIv1()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -305,6 +306,85 @@ public:
             BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
         }
         BEAST_EXPECT(jv[jss::status] == "success");
+    }
+
+    void
+    testTransactions_APIv2()
+    {
+        testcase("transactions API version 2");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env(*this);
+        auto wsc = makeWSClient(env.app().config());
+        Json::Value stream{Json::objectValue};
+
+        {
+            // RPC subscribe to transactions stream
+            stream[jss::api_version] = 2;
+            stream[jss::streams] = Json::arrayValue;
+            stream[jss::streams].append("transactions");
+            auto jv = wsc->invoke("subscribe", stream);
+            if (wsc->version() == 2)
+            {
+                BEAST_EXPECT(
+                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(
+                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+            }
+            BEAST_EXPECT(jv[jss::status] == "success");
+        }
+
+        {
+            env.fund(XRP(10000), "alice");
+            env.close();
+
+            // Check stream update for payment transaction
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]
+                         ["NewFields"][jss::Account]  //
+                    == Account("alice").human() &&
+                    jv[jss::close_time_iso]  //
+                    == "2000-01-01T00:00:10Z" &&
+                    jv[jss::validated] == true &&  //
+                    jv[jss::ledger_hash] ==
+                    "0F1A9E0C109ADEF6DA2BDE19217C12BBEC57174CBDBD212B0EBDC1CEDB"
+                    "853185" &&  //
+                    !jv[jss::inLedger] &&
+                    jv[jss::ledger_index] == 3 &&           //
+                    jv[jss::tx_json][jss::TransactionType]  //
+                    == jss::Payment &&
+                    jv[jss::tx_json][jss::DeliverMax]  //
+                    == "10000000010" &&
+                    !jv[jss::tx_json].isMember(jss::Amount) &&
+                    jv[jss::tx_json][jss::Fee]  //
+                    == "10" &&
+                    jv[jss::tx_json][jss::Sequence]  //
+                    == 1;
+            }));
+
+            // Check stream update for accountset transaction
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+                return jv[jss::meta]["AffectedNodes"][0u]["ModifiedNode"]
+                         ["FinalFields"][jss::Account] ==
+                    Account("alice").human();
+            }));
+        }
+
+        {
+            // RPC unsubscribe
+            auto jv = wsc->invoke("unsubscribe", stream);
+            if (wsc->version() == 2)
+            {
+                BEAST_EXPECT(
+                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(
+                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+            }
+            BEAST_EXPECT(jv[jss::status] == "success");
+        }
     }
 
     void
@@ -1222,7 +1302,8 @@ public:
 
         testServer();
         testLedger();
-        testTransactions();
+        testTransactions_APIv1();
+        testTransactions_APIv2();
         testManifests();
         testValidations(all - xrpFees);
         testValidations(all);

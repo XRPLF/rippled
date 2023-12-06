@@ -600,59 +600,6 @@ getLedger<>(
 template Status
 getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context&);
 
-bool
-isValidated(
-    LedgerMaster& ledgerMaster,
-    ReadView const& ledger,
-    Application& app)
-{
-    if (app.config().reporting())
-        return true;
-
-    if (ledger.open())
-        return false;
-
-    if (ledger.info().validated)
-        return true;
-
-    auto seq = ledger.info().seq;
-    try
-    {
-        // Use the skip list in the last validated ledger to see if ledger
-        // comes before the last validated ledger (and thus has been
-        // validated).
-        auto hash =
-            ledgerMaster.walkHashBySeq(seq, InboundLedger::Reason::GENERIC);
-
-        if (!hash || ledger.info().hash != *hash)
-        {
-            // This ledger's hash is not the hash of the validated ledger
-            if (hash)
-            {
-                assert(hash->isNonZero());
-                uint256 valHash =
-                    app.getRelationalDatabase().getHashByIndex(seq);
-                if (valHash == ledger.info().hash)
-                {
-                    // SQL database doesn't match ledger chain
-                    ledgerMaster.clearLedger(seq);
-                }
-            }
-            return false;
-        }
-    }
-    catch (SHAMapMissingNode const& mn)
-    {
-        auto stream = app.journal("RPCHandler").warn();
-        JLOG(stream) << "Ledger #" << seq << ": " << mn.what();
-        return false;
-    }
-
-    // Mark ledger as validated to save time if we see it again.
-    ledger.info().validated = true;
-    return true;
-}
-
 // The previous version of the lookupLedger command would accept the
 // "ledger_index" argument as a string and silently treat it as a request to
 // return the current ledger which, while not strictly wrong, could cause a lot
@@ -693,8 +640,7 @@ lookupLedger(
         result[jss::ledger_current_index] = info.seq;
     }
 
-    result[jss::validated] =
-        isValidated(context.ledgerMaster, *ledger, context.app);
+    result[jss::validated] = context.ledgerMaster.isValidated(*ledger);
     return Status::OK;
 }
 
