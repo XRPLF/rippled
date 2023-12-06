@@ -186,7 +186,7 @@ ApplyHandler::apply()
 //------------------------------------------------------------------------------
 
 static void
-removeUnfundedOffers(
+removeUnfundedOffers2(
     ApplyView& view,
     std::vector<uint256> const& offers,
     beast::Journal viewJ)
@@ -206,7 +206,7 @@ removeUnfundedOffers(
 }
 
 static void
-removeExpiredNFTokenOffers(
+removeExpiredNFTokenOffers2(
     ApplyView& view,
     std::vector<uint256> const& offers,
     beast::Journal viewJ)
@@ -380,11 +380,11 @@ ApplyHandler::operator()()
 
         // If necessary, remove any offers found unfunded during processing
         if ((result == tecOVERSIZE) || (result == tecKILLED))
-            removeUnfundedOffers(
+            removeUnfundedOffers2(
                 ctx.view(), removedOffers, ctx.app.journal("View"));
 
         if (result == tecEXPIRED)
-            removeExpiredNFTokenOffers(
+            removeExpiredNFTokenOffers2(
                 ctx.view(), expiredNFTokenOffers, ctx.app.journal("View"));
 
         applied = isTecClaim(result);
