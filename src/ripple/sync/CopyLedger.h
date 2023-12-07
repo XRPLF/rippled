@@ -143,10 +143,6 @@ public:
             return requested - received();
         }
 
-        /**
-         * We have to make this a method instead of a destructor
-         * because the logger is not global.
-         */
         void
         report(beast::Journal& journal)
         {
@@ -159,7 +155,7 @@ public:
             {
                 JLOG(journal.warn()) << "extra: " << extra;
             }
-            journal.info() << "missing: " << missing
+            JLOG(journal.trace()) << "missing: " << missing
                            << ", dreceived: " << dreceived
                            << ", searched: " << searched
                            << ", loaded: " << loaded

@@ -259,7 +259,7 @@ CopyLedger::finish(Metrics& metrics)
 
     auto requested = metrics.requested;
     auto received = metrics.received();
-    JLOG(journal_.trace()) << "requested = received + pending: " << requested
+    JLOG(journal_.debug()) << "requested = received + pending: " << requested
                            << " = " << received << " + " << metrics.pending();
 
     if (received < requested)
