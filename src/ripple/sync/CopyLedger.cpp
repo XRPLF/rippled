@@ -32,10 +32,11 @@ void
 CopyLedger::start_()
 {
     JLOG(journal_.info()) << digest_ << " start";
+    Metrics metrics;
     {
         // TODO: Should start with two GET_LEDGER requests for the top
         // 3 levels of the account and transaction trees.
-        ObjectRequester orequester{*this};
+        ObjectRequester orequester{*this, metrics};
         // Remember: this calls `schedule` if we are not yet scheduled.
         orequester.request(digest_);
     }
@@ -235,8 +236,9 @@ CopyLedger::receive(RequestPtr&& request, ResponsePtr const& response)
 void
 CopyLedger::receive(RequestPtr&& request, protocol::TMGetObjectByHash& response)
 {
+    Metrics metrics;
     {
-        ObjectRequester orequester{*this};
+        ObjectRequester orequester{*this, metrics};
         orequester.receive(request, response);
     }
 

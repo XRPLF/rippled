@@ -27,7 +27,7 @@
 namespace ripple {
 namespace sync {
 
-ObjectRequester::ObjectRequester(CopyLedger& copier) : copier_(copier)
+ObjectRequester::ObjectRequester(CopyLedger& copier, CopyLedger::Metrics& metrics) : copier_(copier), metrics_(metrics)
 {
     request_ = copier_.unsend();
 }

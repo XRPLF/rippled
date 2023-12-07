@@ -68,13 +68,14 @@ private:
     using RequestPtr = CopyLedger::RequestPtr;
 
     CopyLedger& copier_;
-    CopyLedger::Metrics metrics_;
+    // `metrics_` is an output parameter.
+    CopyLedger::Metrics& metrics_;
     // REVIEWER: Is it safe to cache a lookup of the full below cache
     // generation?
     RequestPtr request_;
 
 public:
-    ObjectRequester(CopyLedger&);
+    ObjectRequester(CopyLedger&, CopyLedger::Metrics&);
     ~ObjectRequester();
 
     /** Request an object for the first time. */
