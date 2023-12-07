@@ -206,20 +206,16 @@ ObjectRequester::_request(ObjectDigest const& digest, std::size_t requested)
 void
 ObjectRequester::_send()
 {
+    assert(request_);
     copier_.send(std::move(request_));
     assert(!request_);
 }
 
 ObjectRequester::~ObjectRequester()
 {
-    metrics_.report(copier_.journal_);
     if (request_)
     {
         _send();
-    }
-    {
-        std::lock_guard lock(copier_.metricsMutex_);
-        copier_.metrics_ += metrics_;
     }
 }
 

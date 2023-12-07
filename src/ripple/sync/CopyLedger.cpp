@@ -37,15 +37,11 @@ CopyLedger::start_()
         // TODO: Should start with two GET_LEDGER requests for the top
         // 3 levels of the account and transaction trees.
         ObjectRequester orequester{*this, metrics};
-        // Remember: this calls `schedule` if we are not yet scheduled.
+        // Calls `schedule` if we are not yet scheduled.
         orequester.request(digest_);
     }
-
-    // TODO: Technically there is a chance that the ledger is completely
-    // loaded here, without ever requesting a single object,
-    // which means `receive` is never called.
-    // In practice, that is virtually guaranteed to never happen,
-    // but we should handle the possibility anyway.
+    // Technically, there is a chance that the ledger was completely loaded.
+    finish(metrics);
 }
 
 void
@@ -241,25 +237,38 @@ CopyLedger::receive(RequestPtr&& request, protocol::TMGetObjectByHash& response)
         ObjectRequester orequester{*this, metrics};
         orequester.receive(request, response);
     }
-
-    std::size_t received = 0;
-    std::size_t requested = 0;
     {
         std::lock_guard lock(metricsMutex_);
         receiveMeter_.addMessage(response.ByteSizeLong());
         JLOG(journal_.trace()) << "download: " << receiveMeter_;
-        received = metrics_.received();
-        requested = metrics_.requested;
+    }
+    finish(metrics);
+}
+
+void
+CopyLedger::finish(Metrics& metrics)
+{
+    metrics.report(journal_);
+
+    {
+        std::lock_guard lock(metricsMutex_);
+        metrics_ += metrics;
+        metrics = metrics_;
     }
 
-    JLOG(journal_.trace()) << "requested = received + pending: " << requested
-                           << " = " << received << " + "
-                           << (requested - received);
+    auto requested = metrics.requested;
+    auto received = metrics.received();
+    JLOG(journal_.trace()) << "requested = received + pending: " 
+        << requested << " = " << received << " + " << metrics.pending();
+
     if (received < requested)
     {
         return;
     }
     assert(received == requested);
+
+    // Report the totals.
+    metrics.report(journal_);
 
     // Only need header and root nodes.
     auto objHeader = objectDatabase_.fetchNodeObject(digest_);

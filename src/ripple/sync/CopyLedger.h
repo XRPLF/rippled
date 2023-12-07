@@ -241,6 +241,8 @@ private:
     void
     receive(RequestPtr&& request, protocol::TMGetObjectByHash& response);
 
+    void finish(Metrics& metrics);
+
 public:
     void
     onReady(MessageScheduler::Courier& courier) override;
