@@ -323,12 +323,14 @@ void
 MessageScheduler::negotiateNewSenders(std::lock_guard<std::mutex> const& lock)
 {
     assert(tsenders);
-    if (!tsenders->empty() && this->hasOpenChannels(lock)) {
+    if (!tsenders->empty() && this->hasOpenChannels(lock))
+    {
         MetaPeerSet peers{peers_};
         std::erase_if(peers, [&lock](auto const& metaPeer) {
             return !metaPeer->hasOpenChannels(lock);
         });
-        // `negotiate` will assert that `peers` is a non-empty set of open peers.
+        // `negotiate` will assert that `peers` is a non-empty set of open
+        // peers.
         negotiate(lock, peers, *tsenders);
     }
     senders_ += *tsenders;

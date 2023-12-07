@@ -65,7 +65,8 @@ public:
      * We account in this way because `CopyLedger` knows it is finished
      * when received (direct and indirect) equals requested.
      */
-    struct Metrics {
+    struct Metrics
+    {
         /**
          * Number of objects requested at least once.
          */
@@ -108,27 +109,37 @@ public:
          */
         std::size_t loaded;
 
-        constexpr std::size_t unreceived() const {
+        constexpr std::size_t
+        unreceived() const
+        {
             return missing + errors;
         }
-        constexpr std::size_t received() const {
+        constexpr std::size_t
+        received() const
+        {
             return dreceived + ireceived;
         }
         /**
          * Number of times objects were re-requested, ignoring timeouts.
          * We would like this to be zero, but do not expect it.
          */
-        constexpr std::size_t rerequested() const {
+        constexpr std::size_t
+        rerequested() const
+        {
             return searched - loaded - requested;
         }
         /**
          * The number of objects found in the database
          * from a previous download.
          */
-        constexpr std::size_t carried() const {
+        constexpr std::size_t
+        carried() const
+        {
             return loaded - ireceived;
         }
-        constexpr std::size_t pending() const {
+        constexpr std::size_t
+        pending() const
+        {
             return requested - received();
         }
 
@@ -136,25 +147,31 @@ public:
          * We have to make this a method instead of a destructor
          * because the logger is not global.
          */
-        void report(beast::Journal& journal) {
+        void
+        report(beast::Journal& journal)
+        {
             assert(unreceived() == ireceived + rerequested());
-            if (errors != 0) {
+            if (errors != 0)
+            {
                 JLOG(journal.warn()) << "errors: " << errors;
             }
-            if (extra != 0) {
+            if (extra != 0)
+            {
                 JLOG(journal.warn()) << "extra: " << extra;
             }
             journal.info() << "missing: " << missing
-                << ", dreceived: " << dreceived
-                << ", searched: " << searched
-                << ", loaded: " << loaded
-                << ", ireceived: " << ireceived
-                << ", carried: " << carried()
-                << ", requested: " << requested
-                << ", rerequested: " << rerequested();
+                           << ", dreceived: " << dreceived
+                           << ", searched: " << searched
+                           << ", loaded: " << loaded
+                           << ", ireceived: " << ireceived
+                           << ", carried: " << carried()
+                           << ", requested: " << requested
+                           << ", rerequested: " << rerequested();
         }
 
-        friend Metrics& operator+= (Metrics& lhs, Metrics const& rhs) {
+        friend Metrics&
+        operator+=(Metrics& lhs, Metrics const& rhs)
+        {
             lhs.requested += rhs.requested;
             lhs.missing += rhs.missing;
             lhs.extra += rhs.extra;
@@ -241,7 +258,8 @@ private:
     void
     receive(RequestPtr&& request, protocol::TMGetObjectByHash& response);
 
-    void finish(Metrics& metrics);
+    void
+    finish(Metrics& metrics);
 
 public:
     void

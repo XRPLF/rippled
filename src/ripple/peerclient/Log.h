@@ -23,18 +23,23 @@
 
 namespace ripple {
 
-struct BlockLog {
+struct BlockLog
+{
     beast::Journal::Stream stream_;
     void* context_;
     std::string label_;
-    BlockLog(beast::Journal::Stream stream, void* context, std::string_view label)
+    BlockLog(
+        beast::Journal::Stream stream,
+        void* context,
+        std::string_view label)
         : stream_(stream), context_(context), label_(label)
     {
         JLOG(stream_) << " " << context_ << " " << label_ + " enter";
     }
-    ~BlockLog() {
+    ~BlockLog()
+    {
         JLOG(stream_) << " " << context_ << " " << label_ + " exit";
     }
 };
 
-}
+}  // namespace ripple

@@ -19,21 +19,26 @@
 
 #include <ripple/sync/ObjectRequester.h>
 
-#include <ripple/protocol/digest.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/LedgerHeader.h>
+#include <ripple/protocol/digest.h>
 #include <ripple/shamap/SHAMapInnerNode.h>
 
 namespace ripple {
 namespace sync {
 
-ObjectRequester::ObjectRequester(CopyLedger& copier, CopyLedger::Metrics& metrics) : copier_(copier), metrics_(metrics)
+ObjectRequester::ObjectRequester(
+    CopyLedger& copier,
+    CopyLedger::Metrics& metrics)
+    : copier_(copier), metrics_(metrics)
 {
     request_ = copier_.unsend();
 }
 
 void
-ObjectRequester::receive(RequestPtr const& request, protocol::TMGetObjectByHash const& response)
+ObjectRequester::receive(
+    RequestPtr const& request,
+    protocol::TMGetObjectByHash const& response)
 {
     // `i` is the index in the request. `j` is the index in the response.
     int i = 0;
@@ -47,14 +52,16 @@ ObjectRequester::receive(RequestPtr const& request, protocol::TMGetObjectByHash 
 
         if (!object.has_hash())
         {
-            JLOG(copier_.journal_.warn()) << copier_.digest_ << " object is missing digest";
+            JLOG(copier_.journal_.warn())
+                << copier_.digest_ << " object is missing digest";
             ++metrics_.errors;
             continue;
         }
 
         if (object.hash().size() != ObjectDigest::size())
         {
-            JLOG(copier_.journal_.warn()) << copier_.digest_ << " digest is wrong size";
+            JLOG(copier_.journal_.warn())
+                << copier_.digest_ << " digest is wrong size";
             ++metrics_.errors;
             continue;
         }

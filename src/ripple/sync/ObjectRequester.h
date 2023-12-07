@@ -86,7 +86,9 @@ public:
     }
 
     void
-    receive(RequestPtr const& request, protocol::TMGetObjectByHash const& response);
+    receive(
+        RequestPtr const& request,
+        protocol::TMGetObjectByHash const& response);
 
 private:
     /** Request an object for a subsequent time. */

@@ -226,7 +226,8 @@ CopyLedger::receive(RequestPtr&& request, ResponsePtr const& response)
         return receive(
             std::move(request),
             static_cast<protocol::TMGetObjectByHash&>(*response));
-    JLOG(journal_.warn()) << digest_ << " ignoring unknown message type " << type;
+    JLOG(journal_.warn()) << digest_ << " ignoring unknown message type "
+                          << type;
 }
 
 void
@@ -258,8 +259,8 @@ CopyLedger::finish(Metrics& metrics)
 
     auto requested = metrics.requested;
     auto received = metrics.received();
-    JLOG(journal_.trace()) << "requested = received + pending: " 
-        << requested << " = " << received << " + " << metrics.pending();
+    JLOG(journal_.trace()) << "requested = received + pending: " << requested
+                           << " = " << received << " + " << metrics.pending();
 
     if (received < requested)
     {
