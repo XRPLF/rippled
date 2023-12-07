@@ -82,11 +82,14 @@ private:
      * An object that is requested (because it was not found in the local
      * database), but not delivered in a response, and when re-requested is
      * found in the local database (because of some other workflow),
-     * is still received.
+     * is still received. In fact, we call this case "indirectly" received
+     * (as opposed to "directly" received in a response).
+     * `ObjectRequester` can only count indirect receives.
+     * Direct receives are counted in `CopyLedger::receive`.
      * We account in this way because we call the finish in `CopyLedger` when
-     * received equals requested.
+     * received (direct and indirect) equals requested.
      */
-    std::size_t received_ = 0;
+    std::size_t ireceived_ = 0;
     std::size_t requested_ = 0;
 
     /** The number of attempts to find an object. */

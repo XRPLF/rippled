@@ -78,7 +78,6 @@ private:
     std::size_t written_ = 0;
 
     friend class ObjectRequester;
-    friend struct CopyLedgerLogger;
 
 public:
     CopyLedger(

@@ -212,38 +212,9 @@ MessageScheduler::disconnect(Peer::id_t peerId)
     }
 }
 
-struct MessageSchedulerLogger {
-    MessageScheduler& mscheduler_;
-    std::string_view label_;
-    signed long nsenders_;
-    signed long ntsenders_;
-    MessageSchedulerLogger(
-            MessageScheduler& mscheduler,
-            std::lock_guard<std::mutex> const&,
-            std::string_view label)
-    : mscheduler_(mscheduler), label_(label) {
-        nsenders_ = mscheduler_.senders_.size();
-        ntsenders_ = tsenders ? tsenders->size() : 0;
-    }
-    ~MessageSchedulerLogger() {
-        signed long nsenders = mscheduler_.senders_.size();
-        signed long ntsenders = tsenders ? tsenders->size() : 0;
-        signed long nulls = std::count_if(mscheduler_.senders_.begin(),
-            mscheduler_.senders_.end(),
-            [](auto const& sender) { return sender == nullptr; });
-        JLOG(mscheduler_.journal_.info())
-            << label_ << ", "
-            << "senders: " << nsenders_ << " + " << (nsenders - nsenders_) << " = " << nsenders
-            << ", nulls=" << nulls
-            << ", tsenders: " << ntsenders_ << " + " << (ntsenders - ntsenders_) << " = " << ntsenders;
-    }
-};
-
 bool
 MessageScheduler::schedule(Sender* sender)
 {
-    // JLOG(journal_.trace()) << "schedule,during=" << during
-    //                        << ",sender=" << sender;
     if (tsenders)
     {
         // `mutex_` is already locked in this thread.
@@ -260,7 +231,6 @@ MessageScheduler::schedule(Sender* sender)
     {
         return false;
     }
-    // MessageSchedulerLogger logger(*this, lock, "schedule");
     push_value during_(during, "schedule");
     assert(!tsenders);
     SenderQueue senders{sender};
@@ -296,7 +266,7 @@ MessageScheduler::send(
     }
     auto requestId = nextId_();
     message.set_requestcookie(requestId);
-    // JLOG(journal_.trace()) << "send,type=get_ledger";
+    JLOG(journal_.debug()) << "send,type=get_ledger";
     return send_(
         lock,
         metaPeer,
@@ -324,8 +294,8 @@ MessageScheduler::send(
     auto requestId = nextId_();
     message.set_query(true);
     message.set_seq(requestId);
-    // JLOG(journal_.trace()) << "send,type=get_objects,count="
-    //                        << message.objects_size();
+    JLOG(journal_.debug()) << "send,type=get_objects,count="
+                           << message.objects_size();
     return send_(
         lock,
         metaPeer,
@@ -342,7 +312,6 @@ MessageScheduler::negotiateNewPeers(
     std::lock_guard<std::mutex> const& lock,
     MetaPeerSet& peers)
 {
-    // MessageSchedulerLogger logger(*this, lock, "negotiateNewPeers");
     assert(tsenders);
     assert(!senders_.empty());
     // `negotiate` will assert that `peers` is a non-empty set of open peers.
@@ -353,7 +322,6 @@ MessageScheduler::negotiateNewPeers(
 void
 MessageScheduler::negotiateNewSenders(std::lock_guard<std::mutex> const& lock)
 {
-    // MessageSchedulerLogger logger(*this, lock, "negotiateNewSenders");
     assert(tsenders);
     if (!tsenders->empty() && this->hasOpenChannels(lock)) {
         MetaPeerSet peers{peers_};
@@ -373,11 +341,6 @@ MessageScheduler::negotiate(
     MetaPeerSet& peers,
     SenderQueue& senders)
 {
-    // JLOG(journal_.trace()) << "negotiate,during=" << during
-    //                        << ",peers=" << peers.size()
-    //                        << ",nclosed=" << nclosed_ << "/" << nchannels_
-    //                        << ",senders=" << senders.size();
-    // MessageSchedulerLogger logger(*this, lock, "negotiate");
     assert(!senders.empty());
     assert(!peers.empty());
     assert(std::all_of(
@@ -466,9 +429,9 @@ MessageScheduler::send_(
     peer->send(packet);
     ++metaPeer->nclosed;
     ++nclosed_;
-    // JLOG(journal_.trace()) << "send,id=" << requestId
-    //                        << ",peerId=" << peer->id()
-    //                        << ",inflight=" << nrequests;
+    JLOG(journal_.debug()) << "send,id=" << requestId
+                           << ",peerId=" << peer->id()
+                           << ",inflight=" << nrequests;
     return requestId;
 }
 
@@ -476,8 +439,8 @@ void
 MessageScheduler::receive(
     std::shared_ptr<protocol::TMLedgerData> const& message)
 {
-    // JLOG(journal_.trace()) << "receive,type=ledger_data,count="
-    //                        << message->nodes().size();
+    JLOG(journal_.debug()) << "receive,type=ledger_data,count="
+                           << message->nodes().size();
     if (!message->has_requestcookie())
     {
         JLOG(journal_.warn()) << "LedgerData message missing request ID";
@@ -491,8 +454,8 @@ void
 MessageScheduler::receive(
     std::shared_ptr<protocol::TMGetObjectByHash> const& message)
 {
-    // JLOG(journal_.trace()) << "receive,type=get_objects,count="
-    //                        << message->objects().size();
+    JLOG(journal_.debug()) << "receive,type=get_objects,count="
+                           << message->objects().size();
     if (!message->has_seq())
     {
         JLOG(journal_.warn()) << "GetObjectByHash message missing request ID";
@@ -569,7 +532,7 @@ MessageScheduler::timeout_(RequestId requestId)
 
     requests_.erase(it);
 
-    // JLOG(journal_.trace()) << "timeout,id=" << requestId;
+    JLOG(journal_.warn()) << "timeout,id=" << requestId;
 
     reopen(lock, "timeout_", request->metaPeer, [&] {
         // Non-trivial callbacks should just schedule a job.

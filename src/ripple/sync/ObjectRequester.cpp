@@ -86,7 +86,7 @@ ObjectRequester::_request(ObjectDigest const& digest, std::size_t requested)
             // TODO: Load from disk in parallel, after loading a few hundred
             // with the same requester.
         }
-        received_ += requested;
+        ireceived_ += requested;
         deserialize(digest, object->getData());
         return;
     }
@@ -123,11 +123,11 @@ ObjectRequester::~ObjectRequester()
     {
         _send();
     }
-    if (requested_ || received_)
+    if (requested_ || ireceived_)
     {
         std::lock_guard lock(copier_.metricsMutex_);
         copier_.requested_ += requested_;
-        copier_.received_ += received_;
+        copier_.received_ += ireceived_;
     }
 }
 

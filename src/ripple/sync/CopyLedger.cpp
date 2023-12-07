@@ -58,36 +58,9 @@ CopyLedger::schedule()
     }
 }
 
-struct CopyLedgerLogger {
-    CopyLedger& copier_;
-    std::string_view label_;
-    signed long npartial_, nfull_;
-    bool scheduled_;
-    CopyLedgerLogger(
-            CopyLedger& copier,
-            std::lock_guard<std::mutex> const&,
-            std::string_view label)
-    : copier_(copier), label_(label) {
-        npartial_ = copier_.partialRequests_.size();
-        nfull_ = copier_.fullRequests_.size();
-        scheduled_ = copier_.scheduled_;
-    }
-    ~CopyLedgerLogger() {
-        signed long npartial = copier_.partialRequests_.size();
-        signed long nfull = copier_.fullRequests_.size();
-        bool scheduled = copier_.scheduled_;
-        JLOG(copier_.journal_.info())
-            << label_ << ", "
-            << "partial: " << npartial_ << " + " << (npartial - npartial_) << " = " << npartial
-            << ", full: " << nfull_ << " + " << (nfull - nfull_) << " = " << nfull
-            << ", scheduled: " << scheduled_ << " -> " << scheduled;
-    }
-};
-
 void
 CopyLedger::send(RequestPtr&& request)
 {
-    // JLOG(journal_.info()) << "send,nobjs=" << request->objects_size();
     auto queue = (request->objects_size() < MAX_OBJECTS_PER_MESSAGE)
         ? &CopyLedger::partialRequests_
         : &CopyLedger::fullRequests_;
@@ -95,7 +68,6 @@ CopyLedger::send(RequestPtr&& request)
     bool scheduled = true;
     {
         std::lock_guard lock(senderMutex_);
-        // CopyLedgerLogger logger(*this, lock, "send");
         (this->*queue).emplace_back(std::move(request));
         std::swap(scheduled, scheduled_);
         // Now it is the value it was.
@@ -114,7 +86,6 @@ CopyLedger::unsend()
     std::size_t after = 0;
     {
         std::lock_guard lock(senderMutex_);
-        // CopyLedgerLogger logger(*this, lock, "unsend");
         before = partialRequests_.size();
         auto& requests = partialRequests_;
         // Claw back the last non-full request.
@@ -125,7 +96,6 @@ CopyLedger::unsend()
         }
         after = partialRequests_.size();
     }
-    // JLOG(journal_.info()) << "unsend,nobjs=" << request ? request->objects_size() : 0;
     return request;
 }
 
@@ -180,7 +150,6 @@ CopyLedger::onReady(MessageScheduler::Courier& courier)
     std::size_t remaining = 0;
     {
         std::lock_guard lock(senderMutex_);
-        // CopyLedgerLogger logger(*this, lock, "onReady,enter");
         assert(scheduled_);
         remaining = partialRequests_.size() + fullRequests_.size();
         if (fullRequests_.empty())
@@ -194,10 +163,6 @@ CopyLedger::onReady(MessageScheduler::Courier& courier)
 
     assert(courier.closed() == 0);
     assert(courier.limit() > 0);
-    // JLOG(journal_.trace()) << "onReady,enter,closed=" << (int)courier.closed()
-    //                        << "/" << (int)courier.limit()
-    //                        << ",nreqs=" << remaining
-    //                        << ",nqueue=" << requests.size();
 
     auto blaster = Blaster(courier);
     auto requesti = requests.begin();
@@ -237,7 +202,6 @@ CopyLedger::onReady(MessageScheduler::Courier& courier)
     remaining = 0;
     {
         std::lock_guard lock(senderMutex_);
-        // CopyLedgerLogger logger(*this, lock, "onReady,exit");
         assert(scheduled_);
         std::move(
             requests.begin(), requests.end(), std::back_inserter(this->*queue));
@@ -256,10 +220,6 @@ CopyLedger::onReady(MessageScheduler::Courier& courier)
         // Make sure we leave the sender queue.
         courier.withdraw();
     }
-
-    // JLOG(journal_.trace()) << "onReady,exit,closed=" << (int)courier.closed()
-    //                        << "/" << (int)courier.limit()
-    //                        << ",nreqs=" << remaining;
 }
 
 void
@@ -271,7 +231,7 @@ CopyLedger::receive(RequestPtr&& request, ResponsePtr const& response)
         return receive(
             std::move(request),
             static_cast<protocol::TMGetObjectByHash&>(*response));
-    JLOG(journal_.warn()) << digest_ << " unknown message type " << type;
+    JLOG(journal_.warn()) << digest_ << " ignoring unknown message type " << type;
 }
 
 void
