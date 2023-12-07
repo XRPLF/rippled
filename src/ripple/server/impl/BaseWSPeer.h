@@ -53,11 +53,10 @@ private:
     boost::beast::multi_buffer rb_;
     boost::beast::multi_buffer wb_;
     std::list<std::shared_ptr<WSMsg>> wq_;
-    /// The next completion will close the socket. Don't send any more.
+    /// The socket has been closed, or will close after the next write
+    /// finishes. Do not do any more writes, and don't try to close
+    /// again.
     bool do_close_ = false;
-    /// async_close has been initiated, or will be soon. Don't send or
-    /// try to close again.
-    bool closing_ = false;
     boost::beast::websocket::close_reason cr_;
     waitable_timer timer_;
     bool close_on_timer_ = false;
@@ -228,7 +227,7 @@ BaseWSPeer<Handler, Impl>::send(std::shared_ptr<WSMsg> w)
             strand_,
             std::bind(
                 &BaseWSPeer::send, impl().shared_from_this(), std::move(w)));
-    if (closing_)
+    if (do_close_)
         return;
     if (wq_.size() > port().ws_queue_limit)
     {
@@ -261,9 +260,9 @@ BaseWSPeer<Handler, Impl>::close(
         return post(strand_, [self = impl().shared_from_this(), reason] {
             self->close(reason);
         });
-    if (closing_)
+    if (do_close_)
         return;
-    closing_ = true;
+    do_close_ = true;
     if (wq_.empty())
     {
         impl().ws_.async_close(
@@ -277,7 +276,6 @@ BaseWSPeer<Handler, Impl>::close(
     }
     else
     {
-        do_close_ = true;
         cr_ = reason;
     }
 }
@@ -357,7 +355,6 @@ BaseWSPeer<Handler, Impl>::on_write_fin(error_code const& ec)
     wq_.pop_front();
     if (do_close_)
     {
-        assert(closing_);
         impl().ws_.async_close(
             cr_,
             bind_executor(
