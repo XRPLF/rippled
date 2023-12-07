@@ -19,6 +19,7 @@
 
 #include <ripple/sync/ObjectRequester.h>
 
+#include <ripple/protocol/digest.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/LedgerHeader.h>
 #include <ripple/shamap/SHAMapInnerNode.h>
@@ -32,7 +33,103 @@ ObjectRequester::ObjectRequester(CopyLedger& copier) : copier_(copier)
 }
 
 void
-ObjectRequester::deserialize(ObjectDigest const& digest, Slice const& slice)
+ObjectRequester::receive(RequestPtr const& request, protocol::TMGetObjectByHash const& response)
+{
+    // `i` is the index in the request. `j` is the index in the response.
+    int i = 0;
+    for (int j = 0; j < response.objects_size(); ++j)
+    {
+        auto const& object = response.objects(j);
+
+        // For these first two tests,
+        // we can't even be sure what object was requested,
+        // so there is no fix.
+
+        if (!object.has_hash())
+        {
+            JLOG(copier_.journal_.warn()) << copier_.digest_ << " object is missing digest";
+            ++metrics_.errors;
+            continue;
+        }
+
+        if (object.hash().size() != ObjectDigest::size())
+        {
+            JLOG(copier_.journal_.warn()) << copier_.digest_ << " digest is wrong size";
+            ++metrics_.errors;
+            continue;
+        }
+
+        // We assume the response holds a subset of the objects requested,
+        // and that objects appear in the response in the same order as
+        // their digests appear in the request.
+        // Thus, if this object in the response does not match the next
+        // object requested, then we conclude the requested object is
+        // missing from the response, and repeat until we find a match.
+        while (true)
+        {
+            if (i >= request->objects_size())
+            {
+                // The remaining objects in the response are unrequested.
+                metrics_.extra += response.objects_size() - j;
+                return;
+            }
+            auto const& ihash = request->objects(i).hash();
+            ++i;
+            if (ihash == object.hash())
+            {
+                break;
+            }
+            auto idigest = ObjectDigest(ihash);
+            ++metrics_.missing;
+            _rerequest(idigest);
+        }
+
+        // For the remaining tests,
+        // if they fail,
+        // then we should request the object again
+        // (from a different peer).
+
+        // This copies. Sad.
+        auto digest = ObjectDigest(object.hash());
+
+        if (!object.has_data())
+        {
+            JLOG(copier_.journal_.warn()) << "missing data: " << digest;
+            ++metrics_.errors;
+            _rerequest(digest);
+            continue;
+        }
+
+        auto slice = makeSlice(object.data());
+
+        // REVIEWER: Can we get rid of this expensive check?
+        if (digest != sha512Half(slice))
+        {
+            JLOG(copier_.journal_.warn()) << "wrong digest";
+            ++metrics_.errors;
+            _rerequest(digest);
+            continue;
+        }
+
+        ++metrics_.dreceived;
+
+        _deserialize(digest, slice);
+
+        NodeObjectType type = NodeObjectType::hotUNKNOWN;
+        Blob blob(slice.begin(), slice.end());
+        std::uint32_t ledgerSeq = 0;
+        copier_.objectDatabase_.store(type, std::move(blob), digest, ledgerSeq);
+    }
+
+    metrics_.missing += request->objects_size() - i;
+    for (; i < request->objects_size(); ++i)
+    {
+        _rerequest(ObjectDigest(request->objects(i).hash()));
+    }
+}
+
+void
+ObjectRequester::_deserialize(ObjectDigest const& digest, Slice const& slice)
 {
     SerialIter sit(slice.data(), slice.size());
     auto prefix = safe_cast<HashPrefix>(sit.get32());
@@ -73,21 +170,21 @@ ObjectRequester::deserialize(ObjectDigest const& digest, Slice const& slice)
 void
 ObjectRequester::_request(ObjectDigest const& digest, std::size_t requested)
 {
-    ++searched_;
+    ++metrics_.searched;
 
     // TODO: Load in batches.
     auto object = copier_.objectDatabase_.fetchNodeObject(digest);
     if (object)
     {
-        ++loaded_;
-        if (loaded_ % 100000 == 0)
+        ++metrics_.loaded;
+        if (metrics_.loaded % 100000 == 0)
         {
-            JLOG(copier_.journal_.trace()) << "loaded: " << loaded_;
+            JLOG(copier_.journal_.trace()) << "loaded: " << metrics_.loaded;
             // TODO: Load from disk in parallel, after loading a few hundred
             // with the same requester.
         }
-        ireceived_ += requested;
-        deserialize(digest, object->getData());
+        metrics_.ireceived += requested;
+        _deserialize(digest, object->getData());
         return;
     }
 
@@ -98,7 +195,7 @@ ObjectRequester::_request(ObjectDigest const& digest, std::size_t requested)
     }
 
     request_->add_objects()->set_hash(digest.begin(), digest.size());
-    requested_ += 1 - requested;
+    metrics_.requested += 1 - requested;
 
     if (request_->objects_size() >= CopyLedger::MAX_OBJECTS_PER_MESSAGE)
     {
@@ -115,19 +212,14 @@ ObjectRequester::_send()
 
 ObjectRequester::~ObjectRequester()
 {
-    JLOG(copier_.journal_.trace())
-        << "searched = loaded + requested + rerequested: " << searched_ << " = "
-        << loaded_ << " + " << requested_ << " + "
-        << (searched_ - loaded_ - requested_);
+    metrics_.report(copier_.journal_);
     if (request_)
     {
         _send();
     }
-    if (requested_ || ireceived_)
     {
         std::lock_guard lock(copier_.metricsMutex_);
-        copier_.requested_ += requested_;
-        copier_.received_ += ireceived_;
+        copier_.metrics_ += metrics_;
     }
 }
 

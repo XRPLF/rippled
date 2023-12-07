@@ -43,12 +43,8 @@ namespace sync {
  * - `request`: Call with a digest the first time it is requested. This is
  *   mostly called by another public API method, `deserialize`. The only time
  *   it is called by `CopyLedger` is for the root object, the ledger header.
- * - `rerequest`: Call with a digest every time it is requested after the
- *   first. This is called by `CopyLedger` when it fails to find a requested
- *   object in a response (whether it is missing or invalid).
- * - `deserialize`: Call with an object the first time it is found. This is
- *   called by `CopyLedger` when it is reading responses, but also by
- *   `request` and `rerequest` when an object is found in the local database.
+ * - `receive`: Call with a request and its matching response. Zips through
+ *   both to store returned objects and queue requests for new ones.
  *
  * Each request can hold up to `MAX_OBJECTS_PER_MESSAGE` digests.
  * When it is constructed, `ObjectRequester` peels back the last queued
@@ -72,31 +68,10 @@ private:
     using RequestPtr = CopyLedger::RequestPtr;
 
     CopyLedger& copier_;
+    CopyLedger::Metrics metrics_;
     // REVIEWER: Is it safe to cache a lookup of the full below cache
     // generation?
     RequestPtr request_;
-
-    /**
-     * An object is requested if its digest ever appears in a request.
-     * An object is received if it is ever found after being requested.
-     * An object that is requested (because it was not found in the local
-     * database), but not delivered in a response, and when re-requested is
-     * found in the local database (because of some other workflow),
-     * is still received. In fact, we call this case "indirectly" received
-     * (as opposed to "directly" received in a response).
-     * `ObjectRequester` can only count indirect receives.
-     * Direct receives are counted in `CopyLedger::receive`.
-     * We account in this way because we call the finish in `CopyLedger` when
-     * received (direct and indirect) equals requested.
-     */
-    std::size_t ireceived_ = 0;
-    std::size_t requested_ = 0;
-
-    /** The number of attempts to find an object. */
-    std::size_t searched_ = 0;
-    /** The number of objects found in the database. */
-    std::size_t loaded_ = 0;
-    // searched = loaded + requested + rerequested
 
 public:
     ObjectRequester(CopyLedger&);
@@ -109,17 +84,20 @@ public:
         return _request(digest, 0);
     }
 
+    void
+    receive(RequestPtr const& request, protocol::TMGetObjectByHash const& response);
+
+private:
     /** Request an object for a subsequent time. */
     void
-    rerequest(ObjectDigest const& digest)
+    _rerequest(ObjectDigest const& digest)
     {
         return _request(digest, 1);
     }
 
     void
-    deserialize(ObjectDigest const& digest, Slice const& slice);
+    _deserialize(ObjectDigest const& digest, Slice const& slice);
 
-private:
     /**
      * @param requested The number of times this object has been requested
      * before.

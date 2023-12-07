@@ -23,9 +23,7 @@
 #include <ripple/core/JobQueue.h>
 #include <ripple/peerclient/Log.h>
 #include <ripple/protocol/LedgerHeader.h>
-#include <ripple/protocol/digest.h>
 #include <ripple/sync/ObjectRequester.h>
-#include "CopyLedger.h"
 
 namespace ripple {
 namespace sync {
@@ -238,131 +236,21 @@ void
 CopyLedger::receive(RequestPtr&& request, protocol::TMGetObjectByHash& response)
 {
     {
-        std::size_t requested = request->objects_size();
-        std::size_t returned = response.objects_size();
-        if (requested != returned)
-        {
-            JLOG(journal_.warn())
-                << digest_ << " missing " << requested - returned;
-        }
+        ObjectRequester orequester{*this};
+        orequester.receive(request, response);
     }
 
     std::size_t received = 0;
-    std::size_t written = 0;
-    {
-        ObjectRequester orequester{*this};
-        // `i` is the index in the request. `j` is the index in the response.
-        int i = 0;
-        for (int j = 0; j < response.objects_size(); ++j)
-        {
-            auto const& object = response.objects(j);
-
-            // For these first two tests,
-            // we can't even be sure what object was requested,
-            // so there is no fix.
-
-            if (!object.has_hash())
-            {
-                JLOG(journal_.warn()) << digest_ << " object is missing digest";
-                continue;
-            }
-
-            if (object.hash().size() != ObjectDigest::size())
-            {
-                JLOG(journal_.warn()) << digest_ << " digest is wrong size";
-                continue;
-            }
-
-            // We assume the response holds a subset of the objects requested,
-            // and that objects appear in the response in the same order as
-            // their digests appear in the request.
-            // Thus, if this object in the response does not match the next
-            // object requested, then we conclude the requested object is
-            // missing from the response, and repeat until we find a match.
-            while (true)
-            {
-                if (i >= request->objects_size())
-                {
-                    // The rest of the objects in this response are
-                    // unrequested.
-                    JLOG(journal_.warn()) << digest_ << " unrequested objects "
-                                          << response.objects_size() - j;
-                    // Break out of the outer loop,
-                    // past the point where we finish iterating the request.
-                    goto end_of_request;
-                }
-                auto const& ihash = request->objects(i).hash();
-                ++i;
-                if (ihash == object.hash())
-                {
-                    break;
-                }
-                auto idigest = ObjectDigest(ihash);
-                JLOG(journal_.warn())
-                    << digest_ << " missing object " << idigest;
-                orequester.rerequest(idigest);
-            }
-
-            // For the remaining tests,
-            // if they fail,
-            // then we should request the object again
-            // (from a different peer).
-
-            // This copies. Sad.
-            auto digest = ObjectDigest(object.hash());
-
-            if (!object.has_data())
-            {
-                JLOG(journal_.warn()) << "missing data: " << digest;
-                orequester.rerequest(digest);
-                continue;
-            }
-
-            auto slice = makeSlice(object.data());
-
-            // REVIEWER: Can we get rid of this expensive check?
-            if (digest != sha512Half(slice))
-            {
-                JLOG(journal_.warn()) << "wrong digest";
-                orequester.rerequest(digest);
-                continue;
-            }
-
-            ++received;
-
-            orequester.deserialize(digest, slice);
-
-            NodeObjectType type = NodeObjectType::hotUNKNOWN;
-            Blob blob(slice.begin(), slice.end());
-            std::uint32_t ledgerSeq = 0;
-            objectDatabase_.store(type, std::move(blob), digest, ledgerSeq);
-            ++written;
-        }
-
-        if (auto remaining = request->objects_size() - i)
-        {
-            JLOG(journal_.info()) << "still missing: " << remaining;
-        }
-        for (; i < request->objects_size(); ++i)
-        {
-            orequester.rerequest(ObjectDigest(request->objects(i).hash()));
-        }
-
-    end_of_request:;
-    }
-
     std::size_t requested = 0;
     {
         std::lock_guard lock(metricsMutex_);
         receiveMeter_.addMessage(response.ByteSizeLong());
         JLOG(journal_.trace()) << "download: " << receiveMeter_;
-        received_ += received;
-        written_ += written;
-        requested = requested_;
-        received = received_;
+        received = metrics_.received();
+        requested = metrics_.requested;
     }
 
-    JLOG(journal_.trace()) << "requested = received + remaining: " << requested
+    JLOG(journal_.trace()) << "requested = received + pending: " << requested
                            << " = " << received << " + "
                            << (requested - received);
     if (received < requested)

@@ -46,6 +46,127 @@ namespace sync {
 class CopyLedger : public Coroutine<ConstLedgerPtr>,
                    public MessageScheduler::Sender
 {
+public:
+    /**
+     * A set of numbers that we track both
+     * (a) individually for each step in the algorithm
+     * (represented by methods `start` and `receive`) and
+     * (b) collectively across all steps in the algorithm.
+     *
+     * An object is requested if its digest ever appears in a request.
+     * An object is received if it is ever found after being requested.
+     * An object that is requested (because it was not found in the local
+     * database), but not delivered in a response, and when re-requested is
+     * found in the local database (because of some other workflow),
+     * is still received. In fact, we call this case "indirectly" received
+     * (as opposed to "directly" received in a response).
+     * `ObjectRequester` can only count indirect receipts.
+     * Direct receipts are counted in `CopyLedger::receive`.
+     * We account in this way because `CopyLedger` knows it is finished
+     * when received (direct and indirect) equals requested.
+     */
+    struct Metrics {
+        /**
+         * Number of objects requested at least once.
+         */
+        std::size_t requested;
+        /**
+         * Number of times requested objects were missing in responses,
+         * ignoring timeouts.
+         * The same object will be counted multiple times
+         * when it is missing in multiple responses.
+         * We would like this to be zero, but do not expect it.
+         */
+        std::size_t missing;
+        /**
+         * Number of unrequested objects found in responses. Should be zero.
+         */
+        std::size_t extra;
+        /**
+         * Number of objects with bad data found in responses. Should be zero.
+         */
+        std::size_t errors;
+        /**
+         * Number of objects "directly" received,
+         * i.e. requested objects found in a response.
+         */
+        std::size_t dreceived;
+        /**
+         * Number of objects "indirectly" received,
+         * i.e. requested objects found in the database
+         * after missing one or more responses.
+         */
+        std::size_t ireceived;
+        /**
+         * Number of times the database was searched for an object.
+         * The same object will be counted multiple times
+         * when it is unreceived.
+         */
+        std::size_t searched;
+        /**
+         * Number of objects found in the database.
+         */
+        std::size_t loaded;
+
+        constexpr std::size_t unreceived() const {
+            return missing + errors;
+        }
+        constexpr std::size_t received() const {
+            return dreceived + ireceived;
+        }
+        /**
+         * Number of times objects were re-requested, ignoring timeouts.
+         * We would like this to be zero, but do not expect it.
+         */
+        constexpr std::size_t rerequested() const {
+            return searched - loaded - requested;
+        }
+        /**
+         * The number of objects found in the database
+         * from a previous download.
+         */
+        constexpr std::size_t carried() const {
+            return loaded - ireceived;
+        }
+        constexpr std::size_t pending() const {
+            return requested - received();
+        }
+
+        /**
+         * We have to make this a method instead of a destructor
+         * because the logger is not global.
+         */
+        void report(beast::Journal& journal) {
+            assert(unreceived() == ireceived + rerequested());
+            if (errors != 0) {
+                JLOG(journal.warn()) << "errors: " << errors;
+            }
+            if (extra != 0) {
+                JLOG(journal.warn()) << "extra: " << extra;
+            }
+            journal.info() << "missing: " << missing
+                << ", dreceived: " << dreceived
+                << ", searched: " << searched
+                << ", loaded: " << loaded
+                << ", ireceived: " << ireceived
+                << ", carried: " << carried()
+                << ", requested: " << requested
+                << ", rerequested: " << rerequested();
+        }
+
+        friend Metrics& operator+= (Metrics& lhs, Metrics const& rhs) {
+            lhs.requested += rhs.requested;
+            lhs.missing += rhs.missing;
+            lhs.extra += rhs.extra;
+            lhs.errors += rhs.errors;
+            lhs.dreceived += rhs.dreceived;
+            lhs.ireceived += rhs.ireceived;
+            lhs.searched += rhs.searched;
+            lhs.loaded += rhs.loaded;
+            return lhs;
+        }
+    };
+
 private:
     using Request = protocol::TMGetObjectByHash;
     using RequestPtr = std::unique_ptr<Request>;
@@ -73,9 +194,7 @@ private:
     // Metrics.
     std::mutex metricsMutex_;
     CommunicationMeter receiveMeter_;
-    std::size_t requested_ = 0;
-    std::size_t received_ = 0;
-    std::size_t written_ = 0;
+    Metrics metrics_;
 
     friend class ObjectRequester;
 
