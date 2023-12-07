@@ -46,6 +46,8 @@ doPathFind(RPC::JsonContext& context)
     if (!context.infoSub)
         return rpcError(rpcNO_EVENTS);
 
+    context.infoSub->setApiVersion(context.apiVersion);
+
     auto sSubCommand = context.params[jss::subcommand].asString();
 
     if (sSubCommand == "create")

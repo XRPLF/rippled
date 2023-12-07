@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2015 Ripple Labs Inc.
+    Copyright (c) 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,41 +17,26 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/basics/SubmitSync.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <ripple/rpc/impl/TransactionSign.h>
+#include <ripple/app/misc/DeliverMax.h>
+
+#include <ripple/protocol/jss.h>
 
 namespace ripple {
+namespace RPC {
 
-// {
-//   SigningAccounts <array>,
-//   tx_json: <object>,
-// }
-Json::Value
-doSubmitMultiSigned(RPC::JsonContext& context)
+void
+insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion)
 {
-    context.loadType = Resource::feeHighBurdenRPC;
-    auto const failHard = context.params[jss::fail_hard].asBool();
-    auto const failType = NetworkOPs::doFailHard(failHard);
-
-    auto const sync = RPC::getSubmitSyncMode(context.params);
-    if (!sync)
-        return sync.error();
-
-    return RPC::transactionSubmitMultiSigned(
-        context.params,
-        context.apiVersion,
-        failType,
-        context.role,
-        context.ledgerMaster.getValidatedLedgerAge(),
-        context.app,
-        RPC::getProcessTxnFn(context.netOps),
-        *sync);
+    if (tx_json.isMember(jss::Amount))
+    {
+        if (txnType == ttPAYMENT)
+        {
+            tx_json[jss::DeliverMax] = tx_json[jss::Amount];
+            if (apiVersion > 1)
+                tx_json.removeMember(jss::Amount);
+        }
+    }
 }
 
+}  // namespace RPC
 }  // namespace ripple

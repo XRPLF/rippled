@@ -19,8 +19,10 @@
 
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/TransactionMaster.h>
+#include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
 #include <ripple/basics/ToString.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -31,6 +33,7 @@
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
+
 #include <charconv>
 #include <regex>
 
@@ -54,6 +57,8 @@ struct TxResult
     std::variant<std::shared_ptr<TxMeta>, Blob> meta;
     bool validated = false;
     std::optional<std::string> ctid;
+    std::optional<NetClock::time_point> closeTime;
+    std::optional<uint256> ledgerHash;
     TxSearched searchedAll;
 };
 
@@ -139,6 +144,13 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
                     *(args.hash), res.txn->getLedger(), *meta);
             }
             res.validated = true;
+
+            auto const ledgerInfo =
+                context.app.getRelationalDatabase().getLedgerInfoByIndex(
+                    locator.getLedgerSequence());
+            res.closeTime = ledgerInfo->closeTime;
+            res.ledgerHash = ledgerInfo->hash;
+
             return {res, rpcSUCCESS};
         }
         else
@@ -256,6 +268,9 @@ doTxHelp(RPC::Context& context, TxArgs args)
     std::shared_ptr<Ledger const> ledger =
         context.ledgerMaster.getLedgerBySeq(txn->getLedger());
 
+    if (ledger && !ledger->open())
+        result.ledgerHash = ledger->info().hash;
+
     if (ledger && meta)
     {
         if (args.binary)
@@ -268,6 +283,9 @@ doTxHelp(RPC::Context& context, TxArgs args)
         }
         result.validated = isValidated(
             context.ledgerMaster, ledger->info().seq, ledger->info().hash);
+        if (result.validated)
+            result.closeTime =
+                context.ledgerMaster.getCloseTimeBySeq(txn->getLedger());
 
         // compute outgoing CTID
         uint32_t lgrSeq = ledger->info().seq;
@@ -310,13 +328,52 @@ populateJsonResponse(
     // no errors
     else if (result.txn)
     {
-        response = result.txn->getJson(JsonOptions::include_date, args.binary);
+        auto const& sttx = result.txn->getSTransaction();
+        if (context.apiVersion > 1)
+        {
+            constexpr auto optionsJson =
+                JsonOptions::include_date | JsonOptions::disable_API_prior_V2;
+            if (args.binary)
+                response[jss::tx_blob] = result.txn->getJson(optionsJson, true);
+            else
+            {
+                response[jss::tx_json] = result.txn->getJson(optionsJson);
+                RPC::insertDeliverMax(
+                    response[jss::tx_json],
+                    sttx->getTxnType(),
+                    context.apiVersion);
+            }
+
+            // Note, result.ledgerHash is only set in a closed or validated
+            // ledger - as seen in `doTxHelp` and `doTxPostgres`
+            if (result.ledgerHash)
+                response[jss::ledger_hash] = to_string(*result.ledgerHash);
+
+            response[jss::hash] = to_string(result.txn->getID());
+            if (result.validated)
+            {
+                response[jss::ledger_index] = result.txn->getLedger();
+                if (result.closeTime)
+                    response[jss::close_time_iso] =
+                        to_string_iso(*result.closeTime);
+            }
+        }
+        else
+        {
+            response =
+                result.txn->getJson(JsonOptions::include_date, args.binary);
+            if (!args.binary)
+                RPC::insertDeliverMax(
+                    response, sttx->getTxnType(), context.apiVersion);
+        }
 
         // populate binary metadata
         if (auto blob = std::get_if<Blob>(&result.meta))
         {
             assert(args.binary);
-            response[jss::meta] = strHex(makeSlice(*blob));
+            auto json_meta =
+                (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
+            response[json_meta] = strHex(makeSlice(*blob));
         }
         // populate meta data
         else if (auto m = std::get_if<std::shared_ptr<TxMeta>>(&result.meta))
@@ -327,8 +384,7 @@ populateJsonResponse(
                 response[jss::meta] = meta->getJson(JsonOptions::none);
                 insertDeliveredAmount(
                     response[jss::meta], context, result.txn, *meta);
-                insertNFTSyntheticInJson(
-                    response, result.txn->getSTransaction(), *meta);
+                insertNFTSyntheticInJson(response, sttx, *meta);
             }
         }
         response[jss::validated] = result.validated;

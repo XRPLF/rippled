@@ -44,7 +44,7 @@ struct FlowDebugInfo;
   @param partialPayment If the payment cannot deliver the entire
            requested amount, deliver as much as possible, given the constraints
   @param ownerPaysTransferFee If true then owner, not sender, pays fee
-  @param offerCrossing If true then flow is executing offer crossing, not
+  @param offerCrossing If Yes or Sell then flow is executing offer crossing, not
   payments
   @param limitQuality Do not use liquidity below this quality threshold
   @param sendMax Do not spend more than this amount
@@ -62,7 +62,7 @@ flow(
     bool defaultPaths,
     bool partialPayment,
     bool ownerPaysTransferFee,
-    bool offerCrossing,
+    OfferCrossing offerCrossing,
     std::optional<Quality> const& limitQuality,
     std::optional<STAmount> const& sendMax,
     beast::Journal j,
