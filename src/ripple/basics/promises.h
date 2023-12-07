@@ -294,8 +294,7 @@ struct ApplyState : public std::enable_shared_from_this<ApplyState<F, Args...>>
     }
 
     template <std::size_t... I>
-    R
-    invoke(std::index_sequence<I...>)
+    R invoke(std::index_sequence<I...>)
     {
         return std::invoke(
             std::move(function_), std::move(*std::get<I>(arguments_))...);
