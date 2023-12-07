@@ -155,14 +155,12 @@ public:
             {
                 JLOG(journal.warn()) << "extra: " << extra;
             }
-            JLOG(journal.trace()) << "missing: " << missing
-                           << ", dreceived: " << dreceived
-                           << ", searched: " << searched
-                           << ", loaded: " << loaded
-                           << ", ireceived: " << ireceived
-                           << ", carried: " << carried()
-                           << ", requested: " << requested
-                           << ", rerequested: " << rerequested();
+            JLOG(journal.trace())
+                << "missing: " << missing << ", dreceived: " << dreceived
+                << ", searched: " << searched << ", loaded: " << loaded
+                << ", ireceived: " << ireceived << ", carried: " << carried()
+                << ", requested: " << requested
+                << ", rerequested: " << rerequested();
         }
 
         friend Metrics&
