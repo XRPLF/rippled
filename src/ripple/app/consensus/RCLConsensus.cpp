@@ -212,7 +212,6 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
         proposal.prevLedger().begin(), proposal.prevLedger().size());
     prop.set_proposeseq(proposal.proposeSeq());
     prop.set_closetime(proposal.closeTime().time_since_epoch().count());
-    prop.set_ledgerseq(*proposal.ledgerSeq());
 
     if (!validatorKeys_.keys)
     {
