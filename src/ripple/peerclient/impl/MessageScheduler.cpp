@@ -19,7 +19,6 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/basics/chrono.h>
-#include <ripple/peerclient/Log.h>
 #include <ripple/peerclient/MessageScheduler.h>
 
 #include <cassert>
@@ -199,7 +198,6 @@ MessageScheduler::disconnect(Peer::id_t peerId)
         request->timer.cancel();
         try
         {
-            // BlockLog bl{journal_.info(), this, "onFailure(DISCONNECT)"};
             // This callback may call `schedule`
             // which is fine because we're not holding the lock.
             request->receiver->onFailure(request->id, FailureCode::DISCONNECT);
@@ -362,7 +360,6 @@ MessageScheduler::negotiate(
         Courier courier{*this, lock, peers, limit};
         try
         {
-            // BlockLog bl{journal_.info(), this, "onReady"};
             senders[i]->onReady(courier);
         }
         catch (...)
@@ -562,8 +559,8 @@ MessageScheduler::reopen(
 
     try
     {
-        // BlockLog bl{journal_.info(), this, "onSuccess/onFailure(TIMEOUT)"};
         // Non-trivial callbacks should just schedule a job.
+        // TODO: Warn when callbacks take too long.
         callback();
     }
     catch (...)
@@ -592,7 +589,6 @@ MessageScheduler::stop()
     {
         try
         {
-            // BlockLog bl{journal_.info(), this, "onFailure(SHUTDOWN)"};
             request->receiver->onFailure(id, FailureCode::SHUTDOWN);
         }
         catch (...)
@@ -606,7 +602,6 @@ MessageScheduler::stop()
     {
         try
         {
-            // BlockLog bl{journal_.info(), this, "onDiscard"};
             sender->onDiscard();
         }
         catch (...)

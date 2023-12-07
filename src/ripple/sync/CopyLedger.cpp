@@ -21,7 +21,6 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/core/JobQueue.h>
-#include <ripple/peerclient/Log.h>
 #include <ripple/protocol/LedgerHeader.h>
 #include <ripple/sync/ObjectRequester.h>
 
