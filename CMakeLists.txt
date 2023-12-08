@@ -28,9 +28,11 @@ if(Git_FOUND)
     endif()
 endif() #git
 
-include (CodeCoverage)
 include (ProcessorCount)
-include (RippledCov)
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  include (CodeCoverage)
+  include (RippledCov)
+endif()
 
 if(thread_safety_analysis)
   add_compile_options(-Wthread-safety -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS -DRIPPLE_ENABLE_THREAD_SAFETY_ANNOTATIONS)
