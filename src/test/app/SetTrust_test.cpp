@@ -30,6 +30,52 @@ class SetTrust_test : public beast::unit_test::suite
 
 public:
     void
+    testTrustLineWithOnlySetfAuthIsRemoved()
+    {
+        testcase("Trust line with lsf*Auth");
+        using namespace jtx;
+
+        Env env{*this};
+
+        // auth1 and auth2 are both issuers that require authorization.  They
+        // will create a (required) trust line so they can cross offers between
+        // themselves.
+        Account const auth1("auth1");
+        Account const auth2("auth2");
+        auto const USD1 = auth1["USD"];
+        auto const USD2 = auth2["USD"];
+
+        env.fund(XRP(100000), auth1, auth2);
+        env.close();
+        env.require(owners(auth1, 0), owners(auth2, 0));
+
+        // Trust lines to auth issuers must be authorized.
+        env(fset(auth1, asfRequireAuth));
+        env(fset(auth2, asfRequireAuth));
+        env.close();
+
+        // Since auth1 and auth2 have the asfRequireAuth flag set in their
+        // accounts, they must explicitly give permission to holders of
+        // their currencies.  This call creates a trust line with one of the
+        // lsf*Auth flags set.
+        env(trust(auth1, USD2(3), tfSetfAuth));
+        env.close();
+        // After creating the trust line we find this ledger entry as expected.
+        BEAST_EXPECT(
+            env.le(keylet::line(auth1.id(), auth2.id(), USD1.currency)));
+        env.require(owners(auth1, 1));
+
+        // Now, reset the limits of the trust line to zero (default setting)
+        env(trust(auth1, USD2(0), tfSetfAuth));
+        env.close();
+
+        // Since the trust line is in default settings state, it must be deleted
+        BEAST_EXPECT(
+            !env.le(keylet::line(auth1.id(), auth2.id(), USD1.currency)));
+        env.require(owners(auth1, 0));
+    }
+
+    void
     testFreeTrustlines(
         FeatureBitset features,
         bool thirdLineCreatesLE,
@@ -389,6 +435,7 @@ public:
     void
     testWithFeats(FeatureBitset features)
     {
+        testTrustLineWithOnlySetfAuthIsRemoved();
         testFreeTrustlines(features, true, false);
         testFreeTrustlines(features, false, true);
         testFreeTrustlines(features, false, true);
