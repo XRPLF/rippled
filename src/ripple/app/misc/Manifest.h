@@ -99,8 +99,6 @@ struct Manifest
 
     Manifest() = delete;
 
-    // If ehpemeral/signing key is not specified, then the masterKey is used
-    // as the signingKey
     Manifest(
         std::string const& serialized_,
         PublicKey const& masterKey_,

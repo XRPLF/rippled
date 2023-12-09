@@ -1920,7 +1920,7 @@ ValidatorList::updateTrusted(
         // manifests must contain a valid signingKey
         for (auto const& k : trustedMasterKeys_)
         {
-            std::optional<PublicKey> signingKey =
+            std::optional<PublicKey> const signingKey =
                 validatorManifests_.getSigningKey(k);
             assert(signingKey);
             trustedSigningKeys_.insert(*signingKey);

@@ -36,27 +36,20 @@ doValidatorInfo(RPC::JsonContext& context)
 
     Json::Value ret;
 
-    // this node has not been configured as a validator. Hence the
-    // localPublicKey has not been set
-    if (!validationPK)
-        return ret;
-
     // assume validationPK is ephemeral key, get master key
     auto const mk =
         context.app.validatorManifests().getMasterKey(*validationPK);
     ret[jss::master_key] = toBase58(TokenType::NodePublic, mk);
 
-    // validationPK is maskter key, eg no ephemeral key, eg no manifest, just
-    // return
+    // validationPK is master key, this implies that there is no ephemeral
+    // key, no manifest, hence return
     if (mk == validationPK)
         return ret;
 
     // lookup ephemeral key
     auto const ek = context.app.validatorManifests().getSigningKey(mk);
 
-    // the manifest must be revoked because it does not have a signingKey
-    if (!ek)
-        return ret;
+    assert(ek == validationPK);
 
     ret[jss::ephemeral_key] = toBase58(TokenType::NodePublic, *ek);
 

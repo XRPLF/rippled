@@ -339,7 +339,7 @@ public:
     void
     checkTracking(std::uint32_t seq1, std::uint32_t seq2);
 
-    PublicKey
+    PublicKey const&
     getNodePublic() const override
     {
         return publicKey_;

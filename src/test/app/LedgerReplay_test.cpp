@@ -191,7 +191,9 @@ enum class PeerFeature {
 class TestPeer : public Peer
 {
 public:
-    TestPeer(bool enableLedgerReplay) : ledgerReplayEnabled_(enableLedgerReplay)
+    TestPeer(bool enableLedgerReplay)
+        : ledgerReplayEnabled_(enableLedgerReplay)
+        , nodePublicKey_(derivePublicKey(KeyType::ed25519, randomSecretKey()))
     {
     }
 
@@ -228,10 +230,10 @@ public:
     {
         return 0;
     }
-    PublicKey
+    PublicKey const&
     getNodePublic() const override
     {
-        return derivePublicKey(KeyType::ed25519, randomSecretKey());
+        return nodePublicKey_;
     }
     Json::Value
     json() override
@@ -307,6 +309,7 @@ public:
     }
 
     bool ledgerReplayEnabled_;
+    PublicKey nodePublicKey_;
 };
 
 enum class PeerSetBehavior {

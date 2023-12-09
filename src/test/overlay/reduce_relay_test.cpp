@@ -58,6 +58,12 @@ static constexpr std::uint32_t MAX_MESSAGES = 200000;
 class PeerPartial : public Peer
 {
 public:
+    PeerPartial()
+        : nodePublicKey_(derivePublicKey(KeyType::ed25519, randomSecretKey()))
+    {
+    }
+
+    PublicKey nodePublicKey_;
     virtual ~PeerPartial()
     {
     }
@@ -100,10 +106,10 @@ public:
     {
         return 0;
     }
-    PublicKey
+    PublicKey const&
     getNodePublic() const override
     {
-        return derivePublicKey(KeyType::ed25519, randomSecretKey());
+        return nodePublicKey_;
     }
     Json::Value
     json() override

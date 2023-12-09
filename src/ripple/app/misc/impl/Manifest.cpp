@@ -116,7 +116,7 @@ deserializeManifest(Slice s, beast::Journal journal)
         bool const hasEphemeralKey = st.isFieldPresent(sfSigningPubKey);
         bool const hasEphemeralSig = st.isFieldPresent(sfSignature);
 
-        if (seq == std::numeric_limits<std::uint32_t>::max())
+        if (Manifest::revoked(seq))
         {
             // Revocation manifests should not specify a new signing key
             // or a signing key signature.
@@ -148,9 +148,7 @@ deserializeManifest(Slice s, beast::Journal journal)
                 return std::nullopt;
         }
 
-        // If the signingKey has not been specified, then the constructor
-        // of the Manifest class uses the masterKey as a fail-safe
-        // signingKey.
+        // If the manifest is revoked, then the signingKey will be unseated
         return Manifest(serialized, masterKey, signingKey, seq, domain);
     }
     catch (std::exception const& ex)
@@ -512,7 +510,9 @@ ManifestCache::applyManifest(Manifest m)
             m.sequence,
             iter->second.sequence);
 
-    assert(iter->second.signingKey || iter->second.revoked());
+    // Past this point, the manifest will be accepted. Hence, perform a
+    // sanity check
+    assert(iter->second.signingKey && !iter->second.revoked());
     signingToMasterKeys_.erase(*iter->second.signingKey);
 
     if (!revoked)
