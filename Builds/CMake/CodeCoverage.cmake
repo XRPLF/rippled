@@ -142,6 +142,32 @@ option(CODE_COVERAGE_VERBOSE "Verbose information" FALSE)
 # Check prereqs
 find_program( GCOVR_PATH gcovr PATHS ${CMAKE_SOURCE_DIR}/scripts/test)
 
+if (DEFINED CODE_COVERAGE_GCOV_TOOL)
+  set(GCOV_TOOL "${CODE_COVERAGE_GCOV_TOOL}")
+elseif (DEFINED ENV{CODE_COVERAGE_GCOV_TOOL})
+  set(GCOV_TOOL "$ENV{CODE_COVERAGE_GCOV_TOOL}")
+elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
+  if (APPLE)
+    execute_process( COMMAND xcrun -f llvm-cov
+      OUTPUT_VARIABLE LLVMCOV_PATH
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  else()
+    find_program( LLVMCOV_PATH llvm-cov )
+  endif()
+  if (NOT LLVMCOV_PATH)
+    message(FATAL_ERROR "llvm-cov tool not found! Aborting...")
+  endif()
+  set(GCOV_TOOL "${LLVMCOV_PATH} gcov")
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+  find_program( GCOV_PATH gcov )
+  set(GCOV_TOOL ${GCOV_PATH})
+endif()
+
+if(NOT GCOV_TOOL)
+  message(FATAL_ERROR "gcov tool not found! Aborting...")
+endif() # NOT GCOV_TOOL
+
 # Check supported compiler (Clang, GNU and Flang)
 get_property(LANGUAGES GLOBAL PROPERTY ENABLED_LANGUAGES)
 foreach(LANG ${LANGUAGES})
@@ -223,7 +249,6 @@ endif()
 # The user can set the variable GCOVR_ADDITIONAL_ARGS to supply additional flags to the
 # GCVOR command.
 function(setup_target_for_coverage_gcovr_xml)
-
     set(options NONE)
     set(oneValueArgs BASE_DIRECTORY NAME)
     set(multiValueArgs EXCLUDE EXECUTABLE EXECUTABLE_ARGS DEPENDENCIES)
@@ -264,8 +289,15 @@ function(setup_target_for_coverage_gcovr_xml)
     )
     # Running gcovr
     set(GCOVR_XML_CMD
-        ${GCOVR_PATH} --xml ${Coverage_NAME}.xml -r ${BASEDIR} ${GCOVR_ADDITIONAL_ARGS}
-        ${GCOVR_EXCLUDE_ARGS} --object-directory=${PROJECT_BINARY_DIR}
+        ${GCOVR_PATH}
+        --gcov-executable ${GCOV_TOOL}
+        --gcov-ignore-parse-errors=negative_hits.warn_once_per_file
+        --output ${Coverage_NAME}.xml
+        --xml
+        -r ${BASEDIR}
+        ${GCOVR_ADDITIONAL_ARGS}
+        ${GCOVR_EXCLUDE_ARGS}
+        --object-directory=${PROJECT_BINARY_DIR}
     )
 
     if(CODE_COVERAGE_VERBOSE)
@@ -315,7 +347,6 @@ endfunction() # setup_target_for_coverage_gcovr_xml
 # The user can set the variable GCOVR_ADDITIONAL_ARGS to supply additional flags to the
 # GCVOR command.
 function(setup_target_for_coverage_gcovr_html)
-
     set(options NONE)
     set(oneValueArgs BASE_DIRECTORY NAME)
     set(multiValueArgs EXCLUDE EXECUTABLE EXECUTABLE_ARGS DEPENDENCIES)
@@ -330,6 +361,13 @@ function(setup_target_for_coverage_gcovr_html)
         get_filename_component(BASEDIR ${Coverage_BASE_DIRECTORY} ABSOLUTE)
     else()
         set(BASEDIR ${PROJECT_SOURCE_DIR})
+    endif()
+
+    # Optionally set --html-details
+    if((NOT "--html-details" IN_LIST GCOVR_ADDITIONAL_ARGS)
+      AND (NOT "--html-nested" IN_LIST GCOVR_ADDITIONAL_ARGS)
+      AND (NOT "--html" IN_LIST GCOVR_ADDITIONAL_ARGS))
+      list(APPEND GCOVR_ADDITIONAL_ARGS --html-details)
     endif()
 
     # Collect excludes (CMake 3.4+: Also compute absolute paths)
@@ -360,8 +398,15 @@ function(setup_target_for_coverage_gcovr_html)
     )
     # Running gcovr
     set(GCOVR_HTML_CMD
-        ${GCOVR_PATH} --html ${Coverage_NAME}/index.html --html-details -r ${BASEDIR} ${GCOVR_ADDITIONAL_ARGS}
-        ${GCOVR_EXCLUDE_ARGS} --object-directory=${PROJECT_BINARY_DIR}
+        ${GCOVR_PATH}
+        --gcov-executable ${GCOV_TOOL}
+        --gcov-ignore-parse-errors=negative_hits.warn_once_per_file
+        --output ${Coverage_NAME}/index.html
+        --html
+        -r ${BASEDIR}
+        ${GCOVR_ADDITIONAL_ARGS}
+        ${GCOVR_EXCLUDE_ARGS}
+        --object-directory=${PROJECT_BINARY_DIR}
     )
 
     if(CODE_COVERAGE_VERBOSE)
