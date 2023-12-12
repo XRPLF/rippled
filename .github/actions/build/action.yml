@@ -10,6 +10,10 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: update path for clang-14
+      shell: bash
+      run: |
+        echo "/usr/lib/llvm-14/bin/" >> $GITHUB_PATH
     - name: configure
       shell: bash
       run: |
