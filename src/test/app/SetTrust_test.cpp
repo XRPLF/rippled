@@ -30,49 +30,72 @@ class SetTrust_test : public beast::unit_test::suite
 
 public:
     void
-    testTrustLineWithOnlySetfAuthIsRemoved()
+    testTrustLineResetWithAuthFlag()
     {
-        testcase("Trust line with lsf*Auth");
+        testcase(
+            "Reset trust line limit with Authorised Lines: Verify "
+            "deletion of trust lines");
+
         using namespace jtx;
+        Env env(*this);
 
-        Env env{*this};
+        Account const alice = Account{"alice"};
+        Account const becky = Account{"becky"};
 
-        // auth1 and auth2 are both issuers that require authorization.  They
-        // will create a (required) trust line so they can cross offers between
-        // themselves.
-        Account const auth1("auth1");
-        Account const auth2("auth2");
-        auto const USD1 = auth1["USD"];
-        auto const USD2 = auth2["USD"];
-
-        env.fund(XRP(100000), auth1, auth2);
-        env.close();
-        env.require(owners(auth1, 0), owners(auth2, 0));
-
-        // Trust lines to auth issuers must be authorized.
-        env(fset(auth1, asfRequireAuth));
-        env(fset(auth2, asfRequireAuth));
+        env.fund(XRP(10000), becky, alice);
         env.close();
 
-        // Since auth1 and auth2 have the asfRequireAuth flag set in their
-        // accounts, they must explicitly give permission to holders of
-        // their currencies.  This call creates a trust line with one of the
-        // lsf*Auth flags set.
-        env(trust(auth1, USD2(3), tfSetfAuth));
-        env.close();
-        // After creating the trust line we find this ledger entry as expected.
-        BEAST_EXPECT(
-            env.le(keylet::line(auth1.id(), auth2.id(), USD1.currency)));
-        env.require(owners(auth1, 1));
-
-        // Now, reset the limits of the trust line to zero (default setting)
-        env(trust(auth1, USD2(0), tfSetfAuth));
+        // alice wants to ensure that all holders of her tokens are authorised
+        env(fset(alice, asfRequireAuth));
         env.close();
 
-        // Since the trust line is in default settings state, it must be deleted
-        BEAST_EXPECT(
-            !env.le(keylet::line(auth1.id(), auth2.id(), USD1.currency)));
-        env.require(owners(auth1, 0));
+        // becky wants to hold at most 50 tokens of alice["USD"]
+        // becky is the customer, alice is the issuer
+        // becky can be sent at most 50 tokens of alice's USD
+        env(trust(becky, alice["USD"](50)));
+        env.close();
+
+        // alice authorizes becky to hold alice["USD"] tokens
+        env(trust(alice, alice["USD"](0), becky, tfSetfAuth));
+        env.close();
+
+        // Since the settings of the trust lines are non-default for both
+        // alice and becky, both of them will be charged an owner reserve
+        // Irrespective of whether the issuer or the customer initiated
+        // the trust-line creation, both will be charged
+        env.require(lines(alice, 1));
+        env.require(lines(becky, 1));
+
+        // Fetch the trust-lines via RPC for verification
+        Json::Value jv;
+        jv["account"] = becky.human();
+        auto beckyLines = env.rpc("json", "account_lines", to_string(jv));
+
+        jv["account"] = alice.human();
+        auto aliceLines = env.rpc("json", "account_lines", to_string(jv));
+
+        BEAST_EXPECT(aliceLines[jss::result][jss::lines].size() == 1);
+        BEAST_EXPECT(beckyLines[jss::result][jss::lines].size() == 1);
+
+        //         reset the trust line limits to zero
+        env(trust(becky, alice["USD"](0)));
+        env.close();
+
+        // the reset of the trust line limits deletes the trust-line
+        // this occurs despite the authorization of the trust-line by the
+        // issuer(alice, in this unit test)
+        env.require(lines(becky, 0));
+        env.require(lines(alice, 0));
+
+        // second verification check via RPC calls
+        jv["account"] = becky.human();
+        beckyLines = env.rpc("json", "account_lines", to_string(jv));
+
+        jv["account"] = alice.human();
+        aliceLines = env.rpc("json", "account_lines", to_string(jv));
+
+        BEAST_EXPECT(aliceLines[jss::result][jss::lines].size() == 0);
+        BEAST_EXPECT(beckyLines[jss::result][jss::lines].size() == 0);
     }
 
     void
@@ -435,7 +458,6 @@ public:
     void
     testWithFeats(FeatureBitset features)
     {
-        testTrustLineWithOnlySetfAuthIsRemoved();
         testFreeTrustlines(features, true, false);
         testFreeTrustlines(features, false, true);
         testFreeTrustlines(features, false, true);
@@ -449,6 +471,7 @@ public:
         testModifyQualityOfTrustline(features, true, false);
         testModifyQualityOfTrustline(features, true, true);
         testDisallowIncoming(features);
+        testTrustLineResetWithAuthFlag();
     }
 
 public:
