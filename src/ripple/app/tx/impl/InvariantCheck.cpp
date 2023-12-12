@@ -143,7 +143,7 @@ XRPNotCreated::finalize(
     ReadView const&,
     beast::Journal const& j)
 {
-    if (tt == ttBATCH)
+    if (tx.getTxnType() == ttBATCH)
         return true;
 
     // The net change should never be positive, as this would mean that the

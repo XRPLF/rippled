@@ -63,6 +63,7 @@ JSS(Asset2);               // in: AMM Asset2
 JSS(AuthAccount);          // in: AMM Auction Slot
 JSS(AuthAccounts);         // in: AMM Auction Slot
 JSS(Batch);                // transaction type
+JSS(BatchTransaction);     // in: Batch
 JSS(Bridge);               // ledger type.
 JSS(Check);                // ledger type.
 JSS(CheckCancel);          // transaction type.

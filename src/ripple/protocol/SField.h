@@ -636,6 +636,8 @@ extern SField const sfXChainClaimProofSig;
 extern SField const sfXChainCreateAccountProofSig;
 extern SField const sfXChainClaimAttestationCollectionElement;
 extern SField const sfXChainCreateAccountAttestationCollectionElement;
+extern SField const sfBatchTransaction;
+extern SField const sfBatchExecution;
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array
@@ -662,7 +664,6 @@ extern SField const sfHookGrants;
 extern SField const sfXChainClaimAttestations;
 extern SField const sfXChainCreateAccountAttestations;
 extern SField const sfBatchExecutions;
-extern SField const sfBatchExecution;
 
 //------------------------------------------------------------------------------
 

@@ -64,7 +64,8 @@ checkValidity(
     HashRouter& router,
     STTx const& tx,
     Rules const& rules,
-    Config const& config);
+    Config const& config,
+    ApplyFlags const& applyFlags = tapNONE);
 
 /** Sets the validity of a given transaction in the cache.
 

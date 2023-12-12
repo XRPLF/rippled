@@ -124,7 +124,12 @@ ApplyStateTable::generateTxMeta(
         meta.setDeliveredAmount(*deliver);
 
     if (!batchExecution.empty())
-        meta.setBatchExecutions(STArray{batchExecution, sfBatchExecutions});
+    {
+        auto array = STArray{sfBatchExecutions};
+        for (auto element : batchExecution)
+            array.push_back(element);
+        meta.setBatchExecutions(array);
+    }
 
     Mods newMod;
     for (auto& item : items_)
@@ -263,8 +268,8 @@ ApplyStateTable::apply(
     if (!to.open())
     {
         // generate meta
-        auto [meta, newMod] = generateTxMeta(
-            to, tx, deliver, batchExecution, hookExecution, hookEmission, j);
+        auto [meta, newMod] =
+            generateTxMeta(to, tx, deliver, batchExecution, j);
 
         // add any new modified nodes to the modification set
         for (auto& mod : newMod)

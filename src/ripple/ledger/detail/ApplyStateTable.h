@@ -61,6 +61,8 @@ public:
     ApplyStateTable&
     operator=(ApplyStateTable const&) = delete;
 
+    using Mods = hash_map<key_type, std::shared_ptr<SLE>>;
+
     void
     apply(RawView& to) const;
 
@@ -70,8 +72,6 @@ public:
         STTx const& tx,
         std::optional<STAmount> const& deliver,
         std::vector<STObject> const& batchExecution,
-        std::vector<STObject> const& hookExecution,
-        std::vector<STObject> const& hookEmission,
         beast::Journal j);
 
     void
@@ -136,8 +136,6 @@ public:
     }
 
 private:
-    using Mods = hash_map<key_type, std::shared_ptr<SLE>>;
-
     static void
     threadItem(TxMeta& meta, std::shared_ptr<SLE> const& to);
 

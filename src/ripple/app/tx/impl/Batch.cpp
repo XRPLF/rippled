@@ -18,15 +18,23 @@
 //==============================================================================
 
 #include <ripple/app/tx/applySteps.h>
+#include <ripple/app/tx/impl/AMMBid.h>
+#include <ripple/app/tx/impl/AMMCreate.h>
+#include <ripple/app/tx/impl/AMMDelete.h>
+#include <ripple/app/tx/impl/AMMDeposit.h>
+#include <ripple/app/tx/impl/AMMVote.h>
+#include <ripple/app/tx/impl/AMMWithdraw.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
 #include <ripple/app/tx/impl/Batch.h>
 #include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CashCheck.h>
 #include <ripple/app/tx/impl/Change.h>
+#include <ripple/app/tx/impl/Clawback.h>
 #include <ripple/app/tx/impl/CreateCheck.h>
 #include <ripple/app/tx/impl/CreateOffer.h>
 #include <ripple/app/tx/impl/CreateTicket.h>
+#include <ripple/app/tx/impl/DID.h>
 #include <ripple/app/tx/impl/DeleteAccount.h>
 #include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/Escrow.h>
@@ -41,6 +49,7 @@
 #include <ripple/app/tx/impl/SetRegularKey.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
 #include <ripple/app/tx/impl/SetTrust.h>
+#include <ripple/app/tx/impl/XChainBridge.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
@@ -65,109 +74,101 @@ template <class F>
 auto
 with_txn_type(TxType txnType, F&& f)
 {
-    template <class F>
-    auto with_txn_type(TxType txnType, F && f)
+    switch (txnType)
     {
-        switch (txnType)
-        {
-            case ttACCOUNT_DELETE:
-                return f.template operator()<DeleteAccount>();
-            case ttACCOUNT_SET:
-                return f.template operator()<SetAccount>();
-            case ttCHECK_CANCEL:
-                return f.template operator()<CancelCheck>();
-            case ttCHECK_CASH:
-                return f.template operator()<CashCheck>();
-            case ttCHECK_CREATE:
-                return f.template operator()<CreateCheck>();
-            case ttDEPOSIT_PREAUTH:
-                return f.template operator()<DepositPreauth>();
-            case ttOFFER_CANCEL:
-                return f.template operator()<CancelOffer>();
-            case ttOFFER_CREATE:
-                return f.template operator()<CreateOffer>();
-            case ttESCROW_CREATE:
-                return f.template operator()<EscrowCreate>();
-            case ttESCROW_FINISH:
-                return f.template operator()<EscrowFinish>();
-            case ttESCROW_CANCEL:
-                return f.template operator()<EscrowCancel>();
-            case ttPAYCHAN_CLAIM:
-                return f.template operator()<PayChanClaim>();
-            case ttPAYCHAN_CREATE:
-                return f.template operator()<PayChanCreate>();
-            case ttPAYCHAN_FUND:
-                return f.template operator()<PayChanFund>();
-            case ttPAYMENT:
-                return f.template operator()<Payment>();
-            case ttREGULAR_KEY_SET:
-                return f.template operator()<SetRegularKey>();
-            case ttSIGNER_LIST_SET:
-                return f.template operator()<SetSignerList>();
-            case ttTICKET_CREATE:
-                return f.template operator()<CreateTicket>();
-            case ttTRUST_SET:
-                return f.template operator()<SetTrust>();
-            case ttAMENDMENT:
-            case ttFEE:
-            case ttUNL_MODIFY:
-                return f.template operator()<Change>();
-            case ttNFTOKEN_MINT:
-                return f.template operator()<NFTokenMint>();
-            case ttNFTOKEN_BURN:
-                return f.template operator()<NFTokenBurn>();
-            case ttNFTOKEN_CREATE_OFFER:
-                return f.template operator()<NFTokenCreateOffer>();
-            case ttNFTOKEN_CANCEL_OFFER:
-                return f.template operator()<NFTokenCancelOffer>();
-            case ttNFTOKEN_ACCEPT_OFFER:
-                return f.template operator()<NFTokenAcceptOffer>();
-            case ttCLAWBACK:
-                return f.template operator()<Clawback>();
-            case ttAMM_CREATE:
-                return f.template operator()<AMMCreate>();
-            case ttAMM_DEPOSIT:
-                return f.template operator()<AMMDeposit>();
-            case ttAMM_WITHDRAW:
-                return f.template operator()<AMMWithdraw>();
-            case ttAMM_VOTE:
-                return f.template operator()<AMMVote>();
-            case ttAMM_BID:
-                return f.template operator()<AMMBid>();
-            case ttAMM_DELETE:
-                return f.template operator()<AMMDelete>();
-            case ttXCHAIN_CREATE_BRIDGE:
-                return f.template operator()<XChainCreateBridge>();
-            case ttXCHAIN_MODIFY_BRIDGE:
-                return f.template operator()<BridgeModify>();
-            case ttXCHAIN_CREATE_CLAIM_ID:
-                return f.template operator()<XChainCreateClaimID>();
-            case ttXCHAIN_COMMIT:
-                return f.template operator()<XChainCommit>();
-            case ttXCHAIN_CLAIM:
-                return f.template operator()<XChainClaim>();
-            case ttXCHAIN_ADD_CLAIM_ATTESTATION:
-                return f.template operator()<XChainAddClaimAttestation>();
-            case ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION:
-                return f
-                    .template operator()<XChainAddAccountCreateAttestation>();
-            case ttXCHAIN_ACCOUNT_CREATE_COMMIT:
-                return f.template operator()<XChainCreateAccountCommit>();
-            case ttDID_SET:
-                return f.template operator()<DIDSet>();
-            case ttDID_DELETE:
-                return f.template operator()<DIDDelete>();
-            case ttBATCH:
-                return f.template operator()<Batch>();
-            default:
-                throw UnknownTxnType(txnType);
-        }
+        case ttACCOUNT_DELETE:
+            return f.template operator()<DeleteAccount>();
+        case ttACCOUNT_SET:
+            return f.template operator()<SetAccount>();
+        case ttCHECK_CANCEL:
+            return f.template operator()<CancelCheck>();
+        case ttCHECK_CASH:
+            return f.template operator()<CashCheck>();
+        case ttCHECK_CREATE:
+            return f.template operator()<CreateCheck>();
+        case ttDEPOSIT_PREAUTH:
+            return f.template operator()<DepositPreauth>();
+        case ttOFFER_CANCEL:
+            return f.template operator()<CancelOffer>();
+        case ttOFFER_CREATE:
+            return f.template operator()<CreateOffer>();
+        case ttESCROW_CREATE:
+            return f.template operator()<EscrowCreate>();
+        case ttESCROW_FINISH:
+            return f.template operator()<EscrowFinish>();
+        case ttESCROW_CANCEL:
+            return f.template operator()<EscrowCancel>();
+        case ttPAYCHAN_CLAIM:
+            return f.template operator()<PayChanClaim>();
+        case ttPAYCHAN_CREATE:
+            return f.template operator()<PayChanCreate>();
+        case ttPAYCHAN_FUND:
+            return f.template operator()<PayChanFund>();
+        case ttPAYMENT:
+            return f.template operator()<Payment>();
+        case ttREGULAR_KEY_SET:
+            return f.template operator()<SetRegularKey>();
+        case ttSIGNER_LIST_SET:
+            return f.template operator()<SetSignerList>();
+        case ttTICKET_CREATE:
+            return f.template operator()<CreateTicket>();
+        case ttTRUST_SET:
+            return f.template operator()<SetTrust>();
+        case ttAMENDMENT:
+        case ttFEE:
+        case ttUNL_MODIFY:
+            return f.template operator()<Change>();
+        case ttNFTOKEN_MINT:
+            return f.template operator()<NFTokenMint>();
+        case ttNFTOKEN_BURN:
+            return f.template operator()<NFTokenBurn>();
+        case ttNFTOKEN_CREATE_OFFER:
+            return f.template operator()<NFTokenCreateOffer>();
+        case ttNFTOKEN_CANCEL_OFFER:
+            return f.template operator()<NFTokenCancelOffer>();
+        case ttNFTOKEN_ACCEPT_OFFER:
+            return f.template operator()<NFTokenAcceptOffer>();
+        case ttCLAWBACK:
+            return f.template operator()<Clawback>();
+        case ttAMM_CREATE:
+            return f.template operator()<AMMCreate>();
+        case ttAMM_DEPOSIT:
+            return f.template operator()<AMMDeposit>();
+        case ttAMM_WITHDRAW:
+            return f.template operator()<AMMWithdraw>();
+        case ttAMM_VOTE:
+            return f.template operator()<AMMVote>();
+        case ttAMM_BID:
+            return f.template operator()<AMMBid>();
+        case ttAMM_DELETE:
+            return f.template operator()<AMMDelete>();
+        case ttXCHAIN_CREATE_BRIDGE:
+            return f.template operator()<XChainCreateBridge>();
+        case ttXCHAIN_MODIFY_BRIDGE:
+            return f.template operator()<BridgeModify>();
+        case ttXCHAIN_CREATE_CLAIM_ID:
+            return f.template operator()<XChainCreateClaimID>();
+        case ttXCHAIN_COMMIT:
+            return f.template operator()<XChainCommit>();
+        case ttXCHAIN_CLAIM:
+            return f.template operator()<XChainClaim>();
+        case ttXCHAIN_ADD_CLAIM_ATTESTATION:
+            return f.template operator()<XChainAddClaimAttestation>();
+        case ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION:
+            return f.template operator()<XChainAddAccountCreateAttestation>();
+        case ttXCHAIN_ACCOUNT_CREATE_COMMIT:
+            return f.template operator()<XChainCreateAccountCommit>();
+        case ttDID_SET:
+            return f.template operator()<DIDSet>();
+        case ttDID_DELETE:
+            return f.template operator()<DIDDelete>();
+        case ttBATCH:
+            return f.template operator()<Batch>();
+        default:
+            throw UnknownTxnType(txnType);
     }
-    default:
-        throw UnknownTxnType(txnType);
 }
 }  // namespace
-}  // namespace ripple
 
 // clang-format off
 // Current formatter for rippled is based on clang-10, which does not handle `requires` clauses
@@ -330,7 +331,6 @@ Batch::preflight(PreflightContext const& ctx)
 
         auto const tt = txn.getFieldU16(sfTransactionType);
         auto const txtype = safe_cast<TxType>(tt);
-        auto const account = txn.getAccountID(sfAccount);
         auto const stx =
             STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
         PreflightContext const pfctx(
@@ -351,7 +351,7 @@ std::vector<TER> preclaimResponses;
 TER
 Batch::preclaim(PreclaimContext const& ctx)
 {
-    if (!ctx.view.rules().enabled(featureHooks))
+    if (!ctx.view.rules().enabled(featureBatch))
         return temDISABLED;
 
     auto const& txns = ctx.tx.getFieldArray(sfTransactions);

@@ -56,58 +56,62 @@ class Batch_test : public beast::unit_test::suite
         jv[jss::Account] = alice.human();
         jv[sfTransactions.jsonName] = Json::Value{Json::arrayValue};
         jv[sfTransactions.jsonName][0U] = Json::Value{};
-        jv[sfTransactions.jsonName][0U][jss::EmittedTxn] = Json::Value{};
-        jv[sfTransactions.jsonName][0U][jss::EmittedTxn][jss::TransactionType] =
-            jss::Invoke;
-        jv[sfTransactions.jsonName][0U][jss::EmittedTxn][sfAccount.jsonName] =
-            alice.human();
-        jv[sfTransactions.jsonName][0U][jss::EmittedTxn]
+        jv[sfTransactions.jsonName][0U][jss::BatchTransaction] = Json::Value{};
+        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
+          [jss::TransactionType] = jss::AccountSet;
+        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
+          [sfAccount.jsonName] = alice.human();
+        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
           [sfDestination.jsonName] = bob.human();
-        jv[sfTransactions.jsonName][0U][jss::EmittedTxn][sfFee.jsonName] =
+        jv[sfTransactions.jsonName][0U][jss::BatchTransaction][sfFee.jsonName] =
             "1000000";
-        jv[sfTransactions.jsonName][0U][jss::EmittedTxn][jss::Sequence] =
+        jv[sfTransactions.jsonName][0U][jss::BatchTransaction][jss::Sequence] =
             seq + 1;
-        jv[sfTransactions.jsonName][0U][jss::EmittedTxn][jss::SigningPubKey] =
-            strHex(alice.pk());
+        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
+          [jss::SigningPubKey] = strHex(alice.pk());
         jv[sfTransactions.jsonName][1U] = Json::Value{};
-        jv[sfTransactions.jsonName][1U][jss::EmittedTxn] = Json::Value{};
-        jv[sfTransactions.jsonName][1U][jss::EmittedTxn][jss::TransactionType] =
-            jss::Invoke;
-        jv[sfTransactions.jsonName][1U][jss::EmittedTxn][sfAccount.jsonName] =
-            alice.human();
-        jv[sfTransactions.jsonName][1U][jss::EmittedTxn]
+        jv[sfTransactions.jsonName][1U][jss::BatchTransaction] = Json::Value{};
+        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
+          [jss::TransactionType] = jss::AccountSet;
+        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
+          [sfAccount.jsonName] = alice.human();
+        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
           [sfDestination.jsonName] = carol.human();
-        jv[sfTransactions.jsonName][1U][jss::EmittedTxn][sfFee.jsonName] =
+        jv[sfTransactions.jsonName][1U][jss::BatchTransaction][sfFee.jsonName] =
             "1000000";
-        jv[sfTransactions.jsonName][1U][jss::EmittedTxn][jss::Sequence] =
+        jv[sfTransactions.jsonName][1U][jss::BatchTransaction][jss::Sequence] =
             seq + 2;
-        jv[sfTransactions.jsonName][1U][jss::EmittedTxn][jss::SigningPubKey] =
-            strHex(alice.pk());
+        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
+          [jss::SigningPubKey] = strHex(alice.pk());
         env(jv, fee(XRP(3)), ter(tesSUCCESS));
-        jv[sfTransactions.jsonName][0U][jss::EmittedTxn][jss::TransactionType] =
-            jss::Invoke;
-        jv[sfTransactions.jsonName][0U][jss::EmittedTxn][sfAccount.jsonName] =
-            alice.human();
-        jv[sfTransactions.jsonName][0U][jss::EmittedTxn]
+        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
+          [jss::TransactionType] = jss::AccountSet;
+        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
+          [sfAccount.jsonName] = alice.human();
+        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
           [sfDestination.jsonName] = bob.human();
-        jv[sfTransactions.jsonName][0U][jss::EmittedTxn][sfFee.jsonName] = "10";
-        jv[sfTransactions.jsonName][0U][jss::EmittedTxn][jss::Sequence] = seq;
-        jv[sfTransactions.jsonName][0U][jss::EmittedTxn][jss::SigningPubKey] =
-            strHex(alice.pk());
+        jv[sfTransactions.jsonName][0U][jss::BatchTransaction][sfFee.jsonName] =
+            "10";
+        jv[sfTransactions.jsonName][0U][jss::BatchTransaction][jss::Sequence] =
+            seq;
+        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
+          [jss::SigningPubKey] = strHex(alice.pk());
         jv[sfTransactions.jsonName][1U] = Json::Value{};
-        jv[sfTransactions.jsonName][1U][jss::EmittedTxn] = Json::Value{};
-        jv[sfTransactions.jsonName][1U][jss::EmittedTxn][jss::TransactionType] =
-            jss::Payment;
-        jv[sfTransactions.jsonName][1U][jss::EmittedTxn][sfAccount.jsonName] =
-            alice.human();
-        jv[sfTransactions.jsonName][1U][jss::EmittedTxn]
+        jv[sfTransactions.jsonName][1U][jss::BatchTransaction] = Json::Value{};
+        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
+          [jss::TransactionType] = jss::Payment;
+        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
+          [sfAccount.jsonName] = alice.human();
+        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
           [sfDestination.jsonName] = carol.human();
-        jv[sfTransactions.jsonName][1U][jss::EmittedTxn][sfAmount.jsonName] =
-            "1000000";
-        jv[sfTransactions.jsonName][1U][jss::EmittedTxn][sfFee.jsonName] = "10";
-        jv[sfTransactions.jsonName][1U][jss::EmittedTxn][jss::Sequence] = seq;
-        jv[sfTransactions.jsonName][1U][jss::EmittedTxn][jss::SigningPubKey] =
-            strHex(alice.pk());
+        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
+          [sfAmount.jsonName] = "1000000";
+        jv[sfTransactions.jsonName][1U][jss::BatchTransaction][sfFee.jsonName] =
+            "10";
+        jv[sfTransactions.jsonName][1U][jss::BatchTransaction][jss::Sequence] =
+            seq;
+        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
+          [jss::SigningPubKey] = strHex(alice.pk());
         env(jv, fee(drops(10)), ter(tesSUCCESS));
         env.close();
     }
@@ -120,7 +124,7 @@ class Batch_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        test::jtx::Env env{*this, network::makeNetworkConfig(21337)};
+        test::jtx::Env env{*this};
 
         auto const alice = Account("alice");
         auto const bob = Account("bob");
@@ -128,9 +132,8 @@ class Batch_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice, bob, carol);
         env.close();
 
-        auto const seq = env.seq("alice");
         Json::Value jv;
-        jv[jss::TransactionType] = jss::Invoke;
+        jv[jss::TransactionType] = jss::AccountSet;
         jv[jss::Account] = alice.human();
         jv[jss::Destination] = bob.human();
         jv[sfFee.jsonName] = "10";

@@ -41,10 +41,7 @@ enum ApplyFlags : std::uint32_t {
     tapUNLIMITED = 0x400,
 
     // Transaction is being tested against preflight before emission
-    tapPREFLIGHT_EMIT = 0x800,
-
-    // Transaction is being tested against preflight before emission
-    tapPREFLIGHT_BATCH = 0x120,
+    tapPREFLIGHT_BATCH = 0x800,
 };
 
 constexpr ApplyFlags

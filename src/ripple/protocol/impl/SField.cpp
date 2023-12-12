@@ -379,7 +379,8 @@ CONSTRUCT_UNTYPED_SFIELD(sfXChainClaimAttestationCollectionElement,
 CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement,
                                                  "XChainCreateAccountAttestationCollectionElement",
                                                                         OBJECT,    31);
-CONSTRUCT_UNTYPED_SFIELD(sfBatchExecution,      "BatchExecution",       OBJECT,    32);
+CONSTRUCT_UNTYPED_SFIELD(sfBatchTransaction,    "BatchTransaction",     OBJECT,    32);
+CONSTRUCT_UNTYPED_SFIELD(sfBatchExecution,      "BatchExecution",       OBJECT,    33);
 
 // array of objects
 //                                                                            ARRAY/1 is reserved for end of array
