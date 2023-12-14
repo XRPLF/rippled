@@ -1,5 +1,6 @@
-
-codecov:
-  ci:
-    - !appveyor
-    - travis
+coverage:
+  status:
+    project:
+      default:
+        target: 70%
+        threshold: 2%
