@@ -219,3 +219,11 @@ jobs:
           name: coverage-report.xml
           path: .build/coverage_report.xml
           retention-days: 30
+      - name: upload coverage report
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: .build/coverage_report.xml
+          fail_ci_if_error: true
+          verbose: true
