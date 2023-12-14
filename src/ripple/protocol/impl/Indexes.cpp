@@ -24,6 +24,7 @@
 #include <ripple/protocol/SeqProxy.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/nftPageMask.h>
+#include <ripple/protocol/cft.h>
 
 #include <algorithm>
 #include <cassert>
@@ -448,23 +449,25 @@ did(AccountID const& account) noexcept
 }
 
 Keylet
-cftIssuance(AccountID const& issuer, std::uint32_t seq) noexcept
+cftIssuance(uint192 const& issuanceID) noexcept
 {
+    uint32_t const sequence = cft::getSequence(issuanceID);
+    AccountID const issuer = cft::getIssuer(issuanceID);
     return {
         ltCFTOKEN_ISSUANCE,
-        indexHash(LedgerNameSpace::CFTOKEN_ISSUANCE, issuer, seq)};
+        indexHash(LedgerNameSpace::CFTOKEN_ISSUANCE, sequence, issuer)};
 }
 
 Keylet
-cftoken(uint256 const& issuanceID, AccountID const& holder) noexcept
+cftoken(uint192 const& issuanceID, AccountID const& holder) noexcept
 {
     return {ltCFTOKEN, indexHash(LedgerNameSpace::CFTOKEN, issuanceID, holder)};
 }
 
 Keylet
-cft_dir(uint256 const& id) noexcept
+cft_dir(uint192 const& issuanceID) noexcept
 {
-    return {ltDIR_NODE, indexHash(LedgerNameSpace::CFT_DIR, id)};
+    return {ltDIR_NODE, indexHash(LedgerNameSpace::CFT_DIR, issuanceID)};
 }
 }  // namespace keylet
 

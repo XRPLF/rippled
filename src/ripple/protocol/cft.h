@@ -17,58 +17,52 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_CFT_H_INCLUDED
-#define RIPPLE_TEST_JTX_CFT_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_CFT_H_INCLUDED
+#define RIPPLE_PROTOCOL_CFT_H_INCLUDED
 
-#include <test/jtx/Account.h>
-
-#include <ripple/protocol/UintTypes.h>
+#include <ripple/basics/base_uint.h>
+#include <string_view>
 
 namespace ripple {
-namespace test {
-namespace jtx {
-
 namespace cft {
 
-uint192
-getCFTokenIssuanceID(
+inline std::uint32_t
+getSequence(uint192 const& issuanceID)
+{
+    std::uint32_t seq;
+    memcpy(&seq, issuanceID.begin(), 4);
+    return boost::endian::big_to_native(seq);
+}
+
+inline AccountID
+getIssuer(uint192 const& issuanceID)
+{
+    return AccountID::fromVoid(issuanceID.data() + 4);
+}
+
+
+inline uint192
+createCFTokenIssuanceID(
     std::uint32_t sequence,
-    AccountID const& issuer);
+    AccountID const& issuer)
+{
+    sequence = boost::endian::native_to_big(sequence);
 
+    std::array<std::uint8_t, 24> buf{};
 
-/** Issue a CFT with default fields. */
-Json::Value
-create(jtx::Account const& account);
+    auto ptr = buf.data();
 
-/** Issue a CFT with user-defined fields. */
-Json::Value
-create(
-    jtx::Account const& account,
-    std::uint32_t const maxAmt,
-    std::uint8_t const assetScale,
-    std::uint16_t transferFee,
-    std::string metadata);
+    std::memcpy(ptr, &sequence, sizeof(sequence));
+    ptr += sizeof(sequence);
 
-/** Destroy a CFT. */
-Json::Value
-destroy(jtx::Account const& account, ripple::uint192 const& id);
+    std::memcpy(ptr, issuer.data(), issuer.size());
+    ptr += issuer.size();
+    assert(std::distance(buf.data(), ptr) == buf.size());
 
-/** Authorize a CFT. */
-Json::Value
-authorize(
-    jtx::Account const& account,
-    ripple::uint192 const& issuanceID,
-    std::optional<jtx::Account> const& holder);
+    return uint192::fromVoid(buf.data());
+}
 
-/** Set a CFT. */
-Json::Value
-set(jtx::Account const& account,
-    ripple::uint192 const& issuanceID,
-    std::optional<jtx::Account> const& holder);
 }  // namespace cft
-
-}  // namespace jtx
-}  // namespace test
 }  // namespace ripple
 
 #endif

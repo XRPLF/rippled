@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/cft.h>
+#include <ripple/protocol/cft.h>
 
 #include <ripple/protocol/jss.h>
 
@@ -26,6 +27,14 @@ namespace test {
 namespace jtx {
 
 namespace cft {
+
+uint192
+getCFTokenIssuanceID(
+    std::uint32_t sequence,
+    AccountID const& issuer)
+{
+    return ripple::cft::createCFTokenIssuanceID(sequence, issuer);
+}
 
 Json::Value
 create(jtx::Account const& account)
@@ -55,7 +64,7 @@ create(
 }
 
 Json::Value
-destroy(jtx::Account const& account, ripple::uint256 const& id)
+destroy(jtx::Account const& account, ripple::uint192 const& id)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
@@ -67,7 +76,7 @@ destroy(jtx::Account const& account, ripple::uint256 const& id)
 Json::Value
 authorize(
     jtx::Account const& account,
-    ripple::uint256 const& issuanceID,
+    ripple::uint192 const& issuanceID,
     std::optional<jtx::Account> const& holder)
 {
     Json::Value jv;
@@ -82,7 +91,7 @@ authorize(
 
 Json::Value
 set(jtx::Account const& account,
-    ripple::uint256 const& issuanceID,
+    ripple::uint192 const& issuanceID,
     std::optional<jtx::Account> const& holder)
 {
     Json::Value jv;

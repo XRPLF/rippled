@@ -204,6 +204,8 @@ CONSTRUCT_TYPED_SFIELD(sfTakerPaysIssuer,       "TakerPaysIssuer",      UINT160,
 CONSTRUCT_TYPED_SFIELD(sfTakerGetsCurrency,     "TakerGetsCurrency",    UINT160,    3);
 CONSTRUCT_TYPED_SFIELD(sfTakerGetsIssuer,       "TakerGetsIssuer",      UINT160,    4);
 
+CONSTRUCT_TYPED_SFIELD(sfCFTokenIssuanceID,     "CFTokenIssuanceID",    UINT192,    1);
+
 // 256-bit (common)
 CONSTRUCT_TYPED_SFIELD(sfLedgerHash,            "LedgerHash",           UINT256,    1);
 CONSTRUCT_TYPED_SFIELD(sfParentHash,            "ParentHash",           UINT256,    2);
@@ -219,7 +221,6 @@ CONSTRUCT_TYPED_SFIELD(sfEmitParentTxnID,       "EmitParentTxnID",      UINT256,
 CONSTRUCT_TYPED_SFIELD(sfEmitNonce,             "EmitNonce",            UINT256,   12);
 CONSTRUCT_TYPED_SFIELD(sfEmitHookHash,          "EmitHookHash",         UINT256,   13);
 CONSTRUCT_TYPED_SFIELD(sfAMMID,                 "AMMID",                UINT256,   14);
-CONSTRUCT_TYPED_SFIELD(sfCFTokenIssuanceID,     "CFTokenIssuanceID",    UINT256,   15);
 
 // 256-bit (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfBookDirectory,         "BookDirectory",        UINT256,   16);

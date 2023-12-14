@@ -222,6 +222,8 @@ public:
 
     uint160
     getFieldH160(SField const& field) const;
+    uint192
+    getFieldH192(SField const& field) const;
     uint256
     getFieldH256(SField const& field) const;
     AccountID
@@ -351,6 +353,8 @@ public:
     setFieldU64(SField const& field, std::uint64_t);
     void
     setFieldH128(SField const& field, uint128 const&);
+    void
+    setFieldH192(SField const& field, uint192 const&);
     void
     setFieldH256(SField const& field, uint256 const&);
     void

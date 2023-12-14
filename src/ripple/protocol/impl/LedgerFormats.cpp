@@ -345,6 +345,7 @@ LedgerFormats::LedgerFormats()
         ltCFTOKEN_ISSUANCE,
         {
             {sfIssuer,               soeREQUIRED},
+            {sfSequence,             soeREQUIRED},
             {sfTransferFee,          soeDEFAULT},
             {sfOwnerNode,            soeREQUIRED},
             {sfAssetScale,           soeDEFAULT},
