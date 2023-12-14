@@ -2,6 +2,8 @@ name: dependencies
 inputs:
   configuration:
     required: true
+  coverage:
+    default: "False"
 # An implicit input is the environment variable `build_dir`.
 runs:
   using: composite
@@ -23,4 +25,5 @@ runs:
           --output-folder . \
           --build missing \
           --settings build_type=${{ inputs.configuration }} \
+          --options coverage=${{ inputs.coverage }} \
           ..

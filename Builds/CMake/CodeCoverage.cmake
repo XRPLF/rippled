@@ -87,6 +87,14 @@
 #     - fix append_coverage_compiler_flags_to_target to correctly add flags
 #     - replace "-fprofile-arcs -ftest-coverage" with "--coverage" (equivalent)
 #
+# 2023-12-15, Bronek Kozicki
+#     - remove setup_target_for_coverage_lcov (slow) and setup_target_for_coverage_fastcov (no support for Clang)
+#     - fix Clang support by adding find_program( ... llvm-cov )
+#     - add Apple Clang support by adding execute_process( COMMAND xcrun -f llvm-cov ... )
+#     - add CODE_COVERAGE_GCOV_TOOL to explicitly select gcov tool and disable find_program
+#     - replace both functions setup_target_for_coverage_gcovr_* with single setup_target_for_coverage_gcovr
+#     - add support for all gcovr output formats
+#
 # USAGE:
 #
 # 1. Copy this file into your cmake modules path.
@@ -111,7 +119,7 @@
 #          '/path/to/my/src/dir2/*')
 #    Or, use the EXCLUDE argument to setup_target_for_coverage_*().
 #    Example:
-#      setup_target_for_coverage_lcov(
+#      setup_target_for_coverage_gcovr(
 #          NAME coverage
 #          EXECUTABLE testrunner
 #          EXCLUDE "${PROJECT_SOURCE_DIR}/src/dir1/*" "/path/to/my/src/dir2/*")
@@ -120,11 +128,21 @@
 #     relative to the BASE_DIRECTORY (default: PROJECT_SOURCE_DIR)
 #     Example:
 #       set(COVERAGE_EXCLUDES "dir1/*")
-#       setup_target_for_coverage_gcovr_html(
+#       setup_target_for_coverage_gcovr(
 #           NAME coverage
 #           EXECUTABLE testrunner
+#           FORMAT html-details
 #           BASE_DIRECTORY "${PROJECT_SOURCE_DIR}/src"
 #           EXCLUDE "dir2/*")
+#
+# 4.b If you need to pass specific options to gcovr, specify them in
+#     GCOVR_ADDITIONAL_ARGS variable.
+#     Example:
+#       set (GCOVR_ADDITIONAL_ARGS --exclude-throw-branches --exclude-noncode-lines -s)
+#       setup_target_for_coverage_gcovr(
+#           NAME coverage
+#           EXECUTABLE testrunner
+#           EXCLUDE "src/dir1" "src/dir2")
 #
 # 5. Use the functions described below to create a custom make target which
 #    runs your test executable and produces a code coverage report.
@@ -133,7 +151,6 @@
 #      cmake -DCMAKE_BUILD_TYPE=Debug ..
 #      make
 #      make my_coverage_target
-#
 
 include(CMakeParseArguments)
 
@@ -155,18 +172,13 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
   else()
     find_program( LLVMCOV_PATH llvm-cov )
   endif()
-  if (NOT LLVMCOV_PATH)
-    message(FATAL_ERROR "llvm-cov tool not found! Aborting...")
+  if(LLVMCOV_PATH)
+    set(GCOV_TOOL "${LLVMCOV_PATH} gcov")
   endif()
-  set(GCOV_TOOL "${LLVMCOV_PATH} gcov")
 elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
   find_program( GCOV_PATH gcov )
-  set(GCOV_TOOL ${GCOV_PATH})
+  set(GCOV_TOOL "${GCOV_PATH}")
 endif()
-
-if(NOT GCOV_TOOL)
-  message(FATAL_ERROR "gcov tool not found! Aborting...")
-endif() # NOT GCOV_TOOL
 
 # Check supported compiler (Clang, GNU and Flang)
 get_property(LANGUAGES GLOBAL PROPERTY ENABLED_LANGUAGES)
@@ -237,32 +249,102 @@ endif()
 # NOTE! The executable should always have a ZERO as exit code otherwise
 # the coverage generation will not complete.
 #
-# setup_target_for_coverage_gcovr_xml(
+# setup_target_for_coverage_gcovr(
 #     NAME ctest_coverage                    # New target name
 #     EXECUTABLE ctest -j ${PROCESSOR_COUNT} # Executable in PROJECT_BINARY_DIR
 #     DEPENDENCIES executable_target         # Dependencies to build first
 #     BASE_DIRECTORY "../"                   # Base directory for report
 #                                            #  (defaults to PROJECT_SOURCE_DIR)
+#     FORMAT "cobertura"                     # Output format, one of:
+#                                            #  xml cobertura sonarqube json-summary
+#                                            #  json-details coveralls csv txt
+#                                            #  html-single html-nested html-details
+#                                            #  (xml is an alias to cobertura;
+#                                            #  if no format is set, defaults to xml;
+#                                            #  if any of the supported formats is
+#                                            #  set in GCOVR_ADDITIONAL_ARGS options
+#                                            #  it will always take priority)
 #     EXCLUDE "src/dir1/*" "src/dir2/*"      # Patterns to exclude (can be relative
 #                                            #  to BASE_DIRECTORY, with CMake 3.4+)
 # )
 # The user can set the variable GCOVR_ADDITIONAL_ARGS to supply additional flags to the
 # GCVOR command.
-function(setup_target_for_coverage_gcovr_xml)
+function(setup_target_for_coverage_gcovr)
     set(options NONE)
-    set(oneValueArgs BASE_DIRECTORY NAME)
+    set(oneValueArgs BASE_DIRECTORY NAME FORMAT)
     set(multiValueArgs EXCLUDE EXECUTABLE EXECUTABLE_ARGS DEPENDENCIES)
     cmake_parse_arguments(Coverage "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
+    if(NOT GCOV_TOOL)
+        message(FATAL_ERROR "Could not find gcov or llvm-cov tool! Aborting...")
+    endif()
+
     if(NOT GCOVR_PATH)
-        message(FATAL_ERROR "gcovr not found! Aborting...")
-    endif() # NOT GCOVR_PATH
+        message(FATAL_ERROR "Could not find gcovr tool! Aborting...")
+    endif()
 
     # Set base directory (as absolute path), or default to PROJECT_SOURCE_DIR
     if(DEFINED Coverage_BASE_DIRECTORY)
         get_filename_component(BASEDIR ${Coverage_BASE_DIRECTORY} ABSOLUTE)
     else()
         set(BASEDIR ${PROJECT_SOURCE_DIR})
+    endif()
+
+    if(NOT DEFINED Coverage_FORMAT)
+        set(Coverage_FORMAT xml)
+    endif()
+
+    if("--output" IN_LIST GCOVR_ADDITIONAL_ARGS)
+        message(FATAL_ERROR "Unsupported --output option detected in GCOVR_ADDITIONAL_ARGS! Aborting...")
+    else()
+        if((Coverage_FORMAT STREQUAL "html-details")
+            OR (Coverage_FORMAT STREQUAL "html-nested"))
+            set(GCOVR_OUTPUT_FILE ${PROJECT_BINARY_DIR}/${Coverage_NAME}/index.html)
+            set(GCOVR_CREATE_FOLDER ${PROJECT_BINARY_DIR}/${Coverage_NAME})
+        elseif(Coverage_FORMAT STREQUAL "html-single")
+            set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.html)
+        elseif((Coverage_FORMAT STREQUAL "json-summary")
+            OR (Coverage_FORMAT STREQUAL "json-details")
+            OR (Coverage_FORMAT STREQUAL "coveralls"))
+            set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.json)
+        elseif(Coverage_FORMAT STREQUAL "txt")
+            set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.txt)
+        elseif(Coverage_FORMAT STREQUAL "csv")
+            set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.csv)
+        else()
+            set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.xml)
+        endif()
+    endif()
+
+    if ((Coverage_FORMAT STREQUAL "cobertura")
+        OR (Coverage_FORMAT STREQUAL "xml"))
+        list(APPEND GCOVR_ADDITIONAL_ARGS --cobertura "${GCOVR_OUTPUT_FILE}" )
+        list(APPEND GCOVR_ADDITIONAL_ARGS --cobertura-pretty )
+        set(Coverage_FORMAT cobertura) # overwrite xml
+    elseif(Coverage_FORMAT STREQUAL "sonarqube")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --sonarqube "${GCOVR_OUTPUT_FILE}" )
+    elseif(Coverage_FORMAT STREQUAL "json-summary")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --json-summary "${GCOVR_OUTPUT_FILE}" )
+        list(APPEND GCOVR_ADDITIONAL_ARGS --json-summary-pretty)
+    elseif(Coverage_FORMAT STREQUAL "json-details")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --json "${GCOVR_OUTPUT_FILE}" )
+        list(APPEND GCOVR_ADDITIONAL_ARGS --json-pretty)
+    elseif(Coverage_FORMAT STREQUAL "coveralls")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --coveralls "${GCOVR_OUTPUT_FILE}" )
+        list(APPEND GCOVR_ADDITIONAL_ARGS --coveralls-pretty)
+    elseif(Coverage_FORMAT STREQUAL "csv")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --csv "${GCOVR_OUTPUT_FILE}" )
+    elseif(Coverage_FORMAT STREQUAL "txt")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --txt "${GCOVR_OUTPUT_FILE}" )
+    elseif(Coverage_FORMAT STREQUAL "html-single")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --html "${GCOVR_OUTPUT_FILE}" )
+        list(APPEND GCOVR_ADDITIONAL_ARGS --html-self-contained)
+    elseif(Coverage_FORMAT STREQUAL "html-nested")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --html-nested "${GCOVR_OUTPUT_FILE}" )
+    elseif(Coverage_FORMAT STREQUAL "html-details")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --html-details "${GCOVR_OUTPUT_FILE}" )
+    else()
+        message(FATAL_ERROR "Unsupported output style ${Coverage_FORMAT}! Aborting...")
     endif()
 
     # Collect excludes (CMake 3.4+: Also compute absolute paths)
@@ -284,125 +366,23 @@ function(setup_target_for_coverage_gcovr_xml)
 
     # Set up commands which will be run to generate coverage data
     # Run tests
-    set(GCOVR_XML_EXEC_TESTS_CMD
+    set(GCOVR_EXEC_TESTS_CMD
         ${Coverage_EXECUTABLE} ${Coverage_EXECUTABLE_ARGS}
     )
-    # Running gcovr
-    set(GCOVR_XML_CMD
-        ${GCOVR_PATH}
-        --gcov-executable ${GCOV_TOOL}
-        --gcov-ignore-parse-errors=negative_hits.warn_once_per_file
-        --output ${Coverage_NAME}.xml
-        --xml
-        -r ${BASEDIR}
-        ${GCOVR_ADDITIONAL_ARGS}
-        ${GCOVR_EXCLUDE_ARGS}
-        --object-directory=${PROJECT_BINARY_DIR}
-    )
 
-    if(CODE_COVERAGE_VERBOSE)
-        message(STATUS "Executed command report")
-
-        message(STATUS "Command to run tests: ")
-        string(REPLACE ";" " " GCOVR_XML_EXEC_TESTS_CMD_SPACED "${GCOVR_XML_EXEC_TESTS_CMD}")
-        message(STATUS "${GCOVR_XML_EXEC_TESTS_CMD_SPACED}")
-
-        message(STATUS "Command to generate gcovr XML coverage data: ")
-        string(REPLACE ";" " " GCOVR_XML_CMD_SPACED "${GCOVR_XML_CMD}")
-        message(STATUS "${GCOVR_XML_CMD_SPACED}")
-    endif()
-
-    add_custom_target(${Coverage_NAME}
-        COMMAND ${GCOVR_XML_EXEC_TESTS_CMD}
-        COMMAND ${GCOVR_XML_CMD}
-
-        BYPRODUCTS ${Coverage_NAME}.xml
-        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
-        DEPENDS ${Coverage_DEPENDENCIES}
-        VERBATIM # Protect arguments to commands
-        COMMENT "Running gcovr to produce Cobertura code coverage report."
-    )
-
-    # Show info where to find the report
-    add_custom_command(TARGET ${Coverage_NAME} POST_BUILD
-        COMMAND ;
-        COMMENT "Cobertura code coverage report saved in ${Coverage_NAME}.xml."
-    )
-endfunction() # setup_target_for_coverage_gcovr_xml
-
-# Defines a target for running and collection code coverage information
-# Builds dependencies, runs the given executable and outputs reports.
-# NOTE! The executable should always have a ZERO as exit code otherwise
-# the coverage generation will not complete.
-#
-# setup_target_for_coverage_gcovr_html(
-#     NAME ctest_coverage                    # New target name
-#     EXECUTABLE ctest -j ${PROCESSOR_COUNT} # Executable in PROJECT_BINARY_DIR
-#     DEPENDENCIES executable_target         # Dependencies to build first
-#     BASE_DIRECTORY "../"                   # Base directory for report
-#                                            #  (defaults to PROJECT_SOURCE_DIR)
-#     EXCLUDE "src/dir1/*" "src/dir2/*"      # Patterns to exclude (can be relative
-#                                            #  to BASE_DIRECTORY, with CMake 3.4+)
-# )
-# The user can set the variable GCOVR_ADDITIONAL_ARGS to supply additional flags to the
-# GCVOR command.
-function(setup_target_for_coverage_gcovr_html)
-    set(options NONE)
-    set(oneValueArgs BASE_DIRECTORY NAME)
-    set(multiValueArgs EXCLUDE EXECUTABLE EXECUTABLE_ARGS DEPENDENCIES)
-    cmake_parse_arguments(Coverage "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-
-    if(NOT GCOVR_PATH)
-        message(FATAL_ERROR "gcovr not found! Aborting...")
-    endif() # NOT GCOVR_PATH
-
-    # Set base directory (as absolute path), or default to PROJECT_SOURCE_DIR
-    if(DEFINED Coverage_BASE_DIRECTORY)
-        get_filename_component(BASEDIR ${Coverage_BASE_DIRECTORY} ABSOLUTE)
-    else()
-        set(BASEDIR ${PROJECT_SOURCE_DIR})
-    endif()
-
-    # Optionally set --html-details
-    if((NOT "--html-details" IN_LIST GCOVR_ADDITIONAL_ARGS)
-      AND (NOT "--html-nested" IN_LIST GCOVR_ADDITIONAL_ARGS)
-      AND (NOT "--html" IN_LIST GCOVR_ADDITIONAL_ARGS))
-      list(APPEND GCOVR_ADDITIONAL_ARGS --html-details)
-    endif()
-
-    # Collect excludes (CMake 3.4+: Also compute absolute paths)
-    set(GCOVR_EXCLUDES "")
-    foreach(EXCLUDE ${Coverage_EXCLUDE} ${COVERAGE_EXCLUDES} ${COVERAGE_GCOVR_EXCLUDES})
-        if(CMAKE_VERSION VERSION_GREATER 3.4)
-            get_filename_component(EXCLUDE ${EXCLUDE} ABSOLUTE BASE_DIR ${BASEDIR})
-        endif()
-        list(APPEND GCOVR_EXCLUDES "${EXCLUDE}")
-    endforeach()
-    list(REMOVE_DUPLICATES GCOVR_EXCLUDES)
-
-    # Combine excludes to several -e arguments
-    set(GCOVR_EXCLUDE_ARGS "")
-    foreach(EXCLUDE ${GCOVR_EXCLUDES})
-        list(APPEND GCOVR_EXCLUDE_ARGS "-e")
-        list(APPEND GCOVR_EXCLUDE_ARGS "${EXCLUDE}")
-    endforeach()
-
-    # Set up commands which will be run to generate coverage data
-    # Run tests
-    set(GCOVR_HTML_EXEC_TESTS_CMD
-        ${Coverage_EXECUTABLE} ${Coverage_EXECUTABLE_ARGS}
-    )
     # Create folder
-    set(GCOVR_HTML_FOLDER_CMD
-        ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/${Coverage_NAME}
-    )
+    if(DEFINED GCOVR_CREATE_FOLDER)
+        set(GCOVR_FOLDER_CMD
+            ${CMAKE_COMMAND} -E make_directory ${GCOVR_CREATE_FOLDER})
+    else()
+        set(GCOVR_FOLDER_CMD echo) # dummy
+    endif()
+
     # Running gcovr
-    set(GCOVR_HTML_CMD
+    set(GCOVR_CMD
         ${GCOVR_PATH}
         --gcov-executable ${GCOV_TOOL}
         --gcov-ignore-parse-errors=negative_hits.warn_once_per_file
-        --output ${Coverage_NAME}/index.html
-        --html
         -r ${BASEDIR}
         ${GCOVR_ADDITIONAL_ARGS}
         ${GCOVR_EXCLUDE_ARGS}
@@ -413,37 +393,38 @@ function(setup_target_for_coverage_gcovr_html)
         message(STATUS "Executed command report")
 
         message(STATUS "Command to run tests: ")
-        string(REPLACE ";" " " GCOVR_HTML_EXEC_TESTS_CMD_SPACED "${GCOVR_HTML_EXEC_TESTS_CMD}")
-        message(STATUS "${GCOVR_HTML_EXEC_TESTS_CMD_SPACED}")
+        string(REPLACE ";" " " GCOVR_EXEC_TESTS_CMD_SPACED "${GCOVR_EXEC_TESTS_CMD}")
+        message(STATUS "${GCOVR_EXEC_TESTS_CMD_SPACED}")
 
-        message(STATUS "Command to create a folder: ")
-        string(REPLACE ";" " " GCOVR_HTML_FOLDER_CMD_SPACED "${GCOVR_HTML_FOLDER_CMD}")
-        message(STATUS "${GCOVR_HTML_FOLDER_CMD_SPACED}")
+        if(NOT GCOVR_FOLDER_CMD STREQUAL "echo")
+            message(STATUS "Command to create a folder: ")
+            string(REPLACE ";" " " GCOVR_FOLDER_CMD_SPACED "${GCOVR_FOLDER_CMD}")
+            message(STATUS "${GCOVR_FOLDER_CMD_SPACED}")
+        endif()
 
-        message(STATUS "Command to generate gcovr HTML coverage data: ")
-        string(REPLACE ";" " " GCOVR_HTML_CMD_SPACED "${GCOVR_HTML_CMD}")
-        message(STATUS "${GCOVR_HTML_CMD_SPACED}")
+        message(STATUS "Command to generate gcovr coverage data: ")
+        string(REPLACE ";" " " GCOVR_CMD_SPACED "${GCOVR_CMD}")
+        message(STATUS "${GCOVR_CMD_SPACED}")
     endif()
 
     add_custom_target(${Coverage_NAME}
-        COMMAND ${GCOVR_HTML_EXEC_TESTS_CMD}
-        COMMAND ${GCOVR_HTML_FOLDER_CMD}
-        COMMAND ${GCOVR_HTML_CMD}
+        COMMAND ${GCOVR_EXEC_TESTS_CMD}
+        COMMAND ${GCOVR_FOLDER_CMD}
+        COMMAND ${GCOVR_CMD}
 
-        BYPRODUCTS ${PROJECT_BINARY_DIR}/${Coverage_NAME}/index.html  # report directory
+        BYPRODUCTS ${GCOVR_OUTPUT_FILE}
         WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
         DEPENDS ${Coverage_DEPENDENCIES}
         VERBATIM # Protect arguments to commands
-        COMMENT "Running gcovr to produce HTML code coverage report."
+        COMMENT "Running gcovr to produce code coverage report."
     )
 
     # Show info where to find the report
     add_custom_command(TARGET ${Coverage_NAME} POST_BUILD
         COMMAND ;
-        COMMENT "Open ./${Coverage_NAME}/index.html in your browser to view the coverage report."
+        COMMENT "Code coverage report saved in ${GCOVR_OUTPUT_FILE} formatted as ${Coverage_FORMAT}"
     )
-
-endfunction() # setup_target_for_coverage_gcovr_html
+endfunction() # setup_target_for_coverage_gcovr
 
 function(append_coverage_compiler_flags)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COVERAGE_COMPILER_FLAGS}" PARENT_SCOPE)

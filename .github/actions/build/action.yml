@@ -6,14 +6,12 @@ inputs:
     required: true
   cmake-args:
     default: null
+  cmake-target:
+    default: all
 # An implicit input is the environment variable `build_dir`.
 runs:
   using: composite
   steps:
-    - name: update path for clang-14
-      shell: bash
-      run: |
-        echo "/usr/lib/llvm-14/bin/" >> $GITHUB_PATH
     - name: configure
       shell: bash
       run: |
@@ -22,6 +20,7 @@ runs:
           ${{ inputs.generator && format('-G "{0}"', inputs.generator) || '' }} \
           -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
           -DCMAKE_BUILD_TYPE=${{ inputs.configuration }} \
+          -DCODE_COVERAGE_GCOV_TOOL=/usr/bin/gcov \
           ${{ inputs.cmake-args }} \
           ..
     - name: build
@@ -30,4 +29,5 @@ runs:
         cmake \
           --build ${build_dir} \
           --config ${{ inputs.configuration }} \
-          --parallel ${NUM_PROCESSORS:-$(nproc)}
+          --parallel ${NUM_PROCESSORS:-$(nproc)} \
+          --target ${{ inputs.cmake-target }}
