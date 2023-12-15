@@ -262,7 +262,6 @@ It patches their CMake to correctly import its dependencies.
    generator. Pass `--help` to see the rest of the command line options.
 
 
-
 ### Coverage report
 
 Coverage report is an additional feature intended for compilers GCC and Clang
