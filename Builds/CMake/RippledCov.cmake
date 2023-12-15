@@ -17,7 +17,14 @@ if (coverage)
     set(CODE_COVERAGE_FORMAT html-details)
   endif()
 
-  set (GCOVR_ADDITIONAL_ARGS
+  if (DEFINED CODE_COVERAGE_EXTRA_ARGS)
+    set(GCOVR_ADDITIONAL_ARGS ${CODE_COVERAGE_EXTRA_ARGS})
+    separate_arguments(GCOVR_ADDITIONAL_ARGS)
+  else()
+    set(GCOVR_ADDITIONAL_ARGS "")
+  endif()
+
+  list (APPEND GCOVR_ADDITIONAL_ARGS
     --exclude-throw-branches
     --exclude-noncode-lines
     --exclude-unreachable-branches -s )
