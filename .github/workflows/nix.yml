@@ -49,7 +49,7 @@ jobs:
               cc: /usr/bin/clang-14
               cxx: /usr/bin/clang++-14
     runs-on: [self-hosted, heavy]
-    container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
+    container: rippleci/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
     steps:
@@ -125,7 +125,7 @@ jobs:
           - "-Dunity=ON"
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
+    container: rippleci/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
     steps:
@@ -173,7 +173,7 @@ jobs:
           - Debug
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
+    container: rippleci/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
     steps:
@@ -185,9 +185,6 @@ jobs:
         run: |
           mkdir -p ~/.conan
           tar -xzf conan.tar -C ~/.conan
-      - name: install gcovr
-        run: |
-          pip install 'gcovr<7'
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
@@ -213,17 +210,18 @@ jobs:
             -DCMAKE_CXX_FLAGS="-O0"
             -DCMAKE_C_FLAGS="-O0"
           cmake-target: coverage_report
-      - name: archive coverage results
+          output: coverage_report.xml
+      - name: archive coverage reports
         uses: actions/upload-artifact@v3
         with:
           name: coverage-report.xml
-          path: .build/coverage_report.xml
+          path: coverage_report.xml
           retention-days: 30
       - name: upload coverage report
         uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
-          files: .build/coverage_report.xml
+          files: coverage_report.xml
           fail_ci_if_error: true
           verbose: true

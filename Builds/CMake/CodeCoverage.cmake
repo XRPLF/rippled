@@ -260,10 +260,7 @@ endif()
 #                                            #  json-details coveralls csv txt
 #                                            #  html-single html-nested html-details
 #                                            #  (xml is an alias to cobertura;
-#                                            #  if no format is set, defaults to xml;
-#                                            #  if any of the supported formats is
-#                                            #  set in GCOVR_ADDITIONAL_ARGS options
-#                                            #  it will always take priority)
+#                                            #  if no format is set, defaults to xml)
 #     EXCLUDE "src/dir1/*" "src/dir2/*"      # Patterns to exclude (can be relative
 #                                            #  to BASE_DIRECTORY, with CMake 3.4+)
 # )

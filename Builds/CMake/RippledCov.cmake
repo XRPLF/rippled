@@ -17,7 +17,10 @@ if (coverage)
     set(CODE_COVERAGE_FORMAT html-details)
   endif()
 
-  set (GCOVR_ADDITIONAL_ARGS --exclude-throw-branches --exclude-noncode-lines --exclude-unreachable-branches -s)
+  set (GCOVR_ADDITIONAL_ARGS
+    --exclude-throw-branches
+    --exclude-noncode-lines
+    --exclude-unreachable-branches -s )
 
   setup_target_for_coverage_gcovr(
       NAME coverage_report

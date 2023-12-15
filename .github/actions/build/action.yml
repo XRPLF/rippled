@@ -8,6 +8,8 @@ inputs:
     default: null
   cmake-target:
     default: all
+  output:
+    default: null
 # An implicit input is the environment variable `build_dir`.
 runs:
   using: composite
@@ -15,14 +17,18 @@ runs:
     - name: configure
       shell: bash
       run: |
-        cd ${build_dir}
+        pushd ${build_dir}
         cmake \
           ${{ inputs.generator && format('-G "{0}"', inputs.generator) || '' }} \
           -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
           -DCMAKE_BUILD_TYPE=${{ inputs.configuration }} \
-          -DCODE_COVERAGE_GCOV_TOOL=/usr/bin/gcov \
           ${{ inputs.cmake-args }} \
           ..
+        popd
+        [[ -n "${{ inputs.output }}" ]] \
+          && [[ -e "${build_dir}/${{ inputs.output }}" ]] \
+          && mv "${build_dir}/${{ inputs.output }}" ./ \
+          || echo "Output ignored"
     - name: build
       shell: bash
       run: |
