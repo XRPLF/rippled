@@ -199,7 +199,6 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
-          coverage: "True"
       - name: build
         uses: ./.github/actions/build
         with:
@@ -209,6 +208,7 @@ jobs:
             -DCODE_COVERAGE_REPORT_FORMAT=xml
             -DCMAKE_CXX_FLAGS="-O0"
             -DCMAKE_C_FLAGS="-O0"
+            -Dcoverage=ON
           cmake-target: coverage_report
           output: coverage_report.xml
       - name: archive coverage reports
