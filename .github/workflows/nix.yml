@@ -210,8 +210,8 @@ jobs:
             -DCMAKE_C_FLAGS="-O0"
             -Dcoverage=ON
           cmake-target: coverage_report
-          output: coverage_report.xml
-      - name: archive coverage reports
+          artifact: coverage_report.xml
+      - name: archive coverage report
         uses: actions/upload-artifact@v3
         with:
           name: coverage-report.xml

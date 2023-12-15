@@ -8,7 +8,7 @@ inputs:
     default: null
   cmake-target:
     default: all
-  output:
+  artifact:
     default: null
 # An implicit input is the environment variable `build_dir`.
 runs:
@@ -17,18 +17,13 @@ runs:
     - name: configure
       shell: bash
       run: |
-        pushd ${build_dir}
+        cd ${build_dir}
         cmake \
           ${{ inputs.generator && format('-G "{0}"', inputs.generator) || '' }} \
           -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
           -DCMAKE_BUILD_TYPE=${{ inputs.configuration }} \
           ${{ inputs.cmake-args }} \
           ..
-        popd
-        [[ -n "${{ inputs.output }}" ]] \
-          && [[ -e "${build_dir}/${{ inputs.output }}" ]] \
-          && mv "${build_dir}/${{ inputs.output }}" ./ \
-          || echo "Output ignored"
     - name: build
       shell: bash
       run: |
@@ -37,3 +32,7 @@ runs:
           --config ${{ inputs.configuration }} \
           --parallel ${NUM_PROCESSORS:-$(nproc)} \
           --target ${{ inputs.cmake-target }}
+        [[ -n "${{ inputs.artifact }}" ]] \
+          && [[ -e "${build_dir}/${{ inputs.artifact }}" ]] \
+          && mv "${build_dir}/${{ inputs.artifact }}" ./ \
+          || echo
