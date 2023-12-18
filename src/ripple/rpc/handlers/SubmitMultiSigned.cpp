@@ -18,12 +18,10 @@
 //==============================================================================
 
 #include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/basics/SubmitSync.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/TransactionSign.h>
 
 namespace ripple {
@@ -39,10 +37,6 @@ doSubmitMultiSigned(RPC::JsonContext& context)
     auto const failHard = context.params[jss::fail_hard].asBool();
     auto const failType = NetworkOPs::doFailHard(failHard);
 
-    auto const sync = RPC::getSubmitSyncMode(context.params);
-    if (!sync)
-        return sync.error();
-
     return RPC::transactionSubmitMultiSigned(
         context.params,
         context.apiVersion,
@@ -50,8 +44,7 @@ doSubmitMultiSigned(RPC::JsonContext& context)
         context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app,
-        RPC::getProcessTxnFn(context.netOps),
-        *sync);
+        RPC::getProcessTxnFn(context.netOps));
 }
 
 }  // namespace ripple
