@@ -192,6 +192,18 @@ enum LedgerEntryType : std::uint16_t
     */
     ltDID = 0x0049,
 
+    /** A ledger object representing an individual CFToken asset type, but not
+     * any balances of that asset itself.
+
+        \sa keylet::cftIssuance
+     */
+    ltCFTOKEN_ISSUANCE = 0x007e,
+
+    /** A ledger object representing an individual CFToken balance.
+
+        \sa keylet::cftoken
+     */
+    ltCFTOKEN = 0x007f,
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 
@@ -303,6 +315,18 @@ enum LedgerSpecificFlags {
 
     // ltNFTOKEN_OFFER
     lsfSellNFToken = 0x00000001,
+
+    // ltCFTOKEN_ISSUANCE
+    lsfCFTLocked = 0x00000001, // Also used in ltCFTOKEN
+    lsfCFTCanLock = 0x00000002,
+    lsfCFTRequireAuth = 0x00000004,
+    lsfCFTCanEscrow = 0x00000008,
+    lsfCFTCanTrade = 0x00000010,
+    lsfCFTCanTransfer = 0x00000020,
+    lsfCFTCanClawback = 0x00000040,
+
+    // ltCFTOKEN
+    lsfCFTAuthorized = 0x00000002,
 };
 
 //------------------------------------------------------------------------------

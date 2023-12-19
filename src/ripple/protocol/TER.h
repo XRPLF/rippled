@@ -124,6 +124,7 @@ enum TEMcodes : TERUnderlyingType {
 
     temSEQ_AND_TICKET,
     temBAD_NFTOKEN_TRANSFER_FEE,
+    temBAD_CFTOKEN_TRANSFER_FEE,
 
     temBAD_AMM_TOKENS,
 
@@ -331,7 +332,9 @@ enum TECcodes : TERUnderlyingType {
     tecXCHAIN_SELF_COMMIT = 184,
     tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR = 185,
     tecXCHAIN_CREATE_ACCOUNT_DISABLED = 186,
-    tecEMPTY_DID = 187
+    tecEMPTY_DID = 187,
+    tecCFTOKEN_EXISTS = 188
+
 };
 
 //------------------------------------------------------------------------------
