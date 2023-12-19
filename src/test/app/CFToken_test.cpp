@@ -864,6 +864,39 @@ class CFToken_test : public beast::unit_test::suite
         BEAST_EXPECT(checkCFTokenFlags(env, id, bob, 0));
     }
 
+    void
+    testCFTokenIssuanceID(FeatureBitset features)
+    {
+        // Test that one can construct CFTokenIssuanceID from the sequence and issuer fields in
+        // CFTokenIssuance object
+        testcase("CFTIssuance ID");
+
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");  // issuer
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+        for (size_t i = 0; i < 10; i++){
+            auto const id = cft::getCFTokenIssuanceID(env.seq(alice), alice.id());
+            env(cft::create(alice));
+            env.close();
+
+            auto const sleCftIssuance = env.le(keylet::cftIssuance(id));
+            BEAST_EXPECT(sleCftIssuance);
+
+            uint32_t const sequence = sleCftIssuance->getFieldU32(sfSequence);
+            AccountID const issuer = sleCftIssuance->getAccountID(sfIssuer);
+            BEAST_EXPECT(id == cft::getCFTokenIssuanceID(sequence, issuer));            
+        }
+
+        BEAST_EXPECT(env.ownerCount(alice) == 10);
+    }
+
 public:
     void
     run() override
@@ -886,6 +919,9 @@ public:
         // CFTokenIssuanceSet
         testSetValidation(all);
         testSetEnabled(all);
+
+        // Test CFTokenIssuanceID construct
+        testCFTokenIssuanceID(all);
     }
 };
 
