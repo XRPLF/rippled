@@ -526,9 +526,6 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPStream.html">HTTPStream</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundHandoff.html">InboundHandoff</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sends HTTP response.  <a href="classripple_1_1InboundHandoff.html#details">More...</a><br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedger.html">InboundLedger</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1InboundLedgers.html">InboundLedgers</a></td></tr>
@@ -1925,8 +1922,7 @@ Enumerations</h2></td></tr>
 <tr class="separator:a63a883cebf81b764433e67d90d4470d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3b423ad1ba6341f945c08c13fe141150"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150">ProtocolFeature</a> { <a class="el" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150a9a32e2a438c197a712d352ca4e69b65b">ProtocolFeature::ValidatorListPropagation</a>, 
 <a class="el" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150abbd68b30711cfd4adc8abd9b5519abe1">ProtocolFeature::ValidatorList2Propagation</a>, 
-<a class="el" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150a955e673a299bbf8322d01b7b5e88be4e">ProtocolFeature::LedgerReplay</a>, 
-<a class="el" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150a9e506f9635ffceab87f4f6e2f9825653">ProtocolFeature::StartProtocol</a>
+<a class="el" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150a955e673a299bbf8322d01b7b5e88be4e">ProtocolFeature::LedgerReplay</a>
  }</td></tr>
 <tr class="separator:a3b423ad1ba6341f945c08c13fe141150"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32d6d3ce1a48272b677d2c88b1d30932"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932">error_code_i</a> { <br />
@@ -3705,8 +3701,6 @@ Functions</h2></td></tr>
 <tr class="memitem:afe217b6314ac671b777edb7917d8074d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Overlay.html">Overlay</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afe217b6314ac671b777edb7917d8074d">make_Overlay</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="structripple_1_1Overlay_1_1Setup.html">Overlay::Setup</a> const  &amp;setup, <a class="el" href="classripple_1_1ServerHandler.html">ServerHandler</a> &amp;serverHandler, <a class="el" href="classripple_1_1Resource_1_1Manager.html">Resource::Manager</a> &amp;resourceManager, <a class="el" href="classripple_1_1Resolver.html">Resolver</a> &amp;resolver, boost::asio::io_service &amp;io_service, <a class="el" href="classripple_1_1BasicConfig.html">BasicConfig</a> const  &amp;config, <a class="el" href="classbeast_1_1insight_1_1Collector.html#ad1677ecd39a09b6a8bb8f2e073266bc4">beast::insight::Collector::ptr</a> const  &amp;collector)</td></tr>
 <tr class="memdesc:afe217b6314ac671b777edb7917d8074d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates the implementation of <a class="el" href="classripple_1_1Overlay.html" title="Manages the set of connected peers.">Overlay</a>.  <a href="namespaceripple.html#afe217b6314ac671b777edb7917d8074d">More...</a><br /></td></tr>
 <tr class="separator:afe217b6314ac671b777edb7917d8074d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa1b13b520ba4398683f0f47af3047ff2"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa1b13b520ba4398683f0f47af3047ff2">closeReasonToString</a> (protocol::TMCloseReason reason)</td></tr>
-<tr class="separator:aa1b13b520ba4398683f0f47af3047ff2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a56ea3162e3d91377dcbcdfa7a65fbd77"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a56ea3162e3d91377dcbcdfa7a65fbd77">stringIsUint256Sized</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;pBuffStr)</td></tr>
 <tr class="separator:a56ea3162e3d91377dcbcdfa7a65fbd77"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6aaf94fd8114f049f54546e4c6dd7e12"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1PeerImp.html">PeerImp</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6aaf94fd8114f049f54546e4c6dd7e12">getPeerWithTree</a> (<a class="el" href="classripple_1_1OverlayImpl.html">OverlayImpl</a> &amp;ov, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;rootHash, <a class="el" href="classripple_1_1PeerImp.html">PeerImp</a> const *skip)</td></tr>
@@ -9082,7 +9076,6 @@ template&lt;class Value , class Hash  = hardened_hash&lt;strong_hash&gt;, class 
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a3b423ad1ba6341f945c08c13fe141150a9a32e2a438c197a712d352ca4e69b65b"></a>ValidatorListPropagation&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a3b423ad1ba6341f945c08c13fe141150abbd68b30711cfd4adc8abd9b5519abe1"></a>ValidatorList2Propagation&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a3b423ad1ba6341f945c08c13fe141150a955e673a299bbf8322d01b7b5e88be4e"></a>LedgerReplay&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a3b423ad1ba6341f945c08c13fe141150a9e506f9635ffceab87f4f6e2f9825653"></a>StartProtocol&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
 <p class="definition">Definition at line <a class="el" href="ripple_2overlay_2Peer_8h_source.html#l00038">38</a> of file <a class="el" href="ripple_2overlay_2Peer_8h_source.html">ripple/overlay/Peer.h</a>.</p>
@@ -28138,7 +28131,7 @@ template&lt;typename headers &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="OverlayImpl_8cpp_source.html#l01438">1438</a> of file <a class="el" href="OverlayImpl_8cpp_source.html">OverlayImpl.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OverlayImpl_8cpp_source.html#l01445">1445</a> of file <a class="el" href="OverlayImpl_8cpp_source.html">OverlayImpl.cpp</a>.</p>
 
 </div>
 </div>
@@ -28158,7 +28151,7 @@ template&lt;typename headers &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="OverlayImpl_8cpp_source.html#l01530">1530</a> of file <a class="el" href="OverlayImpl_8cpp_source.html">OverlayImpl.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OverlayImpl_8cpp_source.html#l01537">1537</a> of file <a class="el" href="OverlayImpl_8cpp_source.html">OverlayImpl.cpp</a>.</p>
 
 </div>
 </div>
@@ -28226,27 +28219,7 @@ template&lt;typename headers &gt; </div>
 
 <p>Creates the implementation of <a class="el" href="classripple_1_1Overlay.html" title="Manages the set of connected peers.">Overlay</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="OverlayImpl_8cpp_source.html#l01635">1635</a> of file <a class="el" href="OverlayImpl_8cpp_source.html">OverlayImpl.cpp</a>.</p>
-
-</div>
-</div>
-<a id="aa1b13b520ba4398683f0f47af3047ff2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa1b13b520ba4398683f0f47af3047ff2">&#9670;&nbsp;</a></span>closeReasonToString()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::closeReasonToString </td>
-          <td>(</td>
-          <td class="paramtype">protocol::TMCloseReason&#160;</td>
-          <td class="paramname"><em>reason</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l00069">69</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="OverlayImpl_8cpp_source.html#l01642">1642</a> of file <a class="el" href="OverlayImpl_8cpp_source.html">OverlayImpl.cpp</a>.</p>
 
 </div>
 </div>
@@ -28274,7 +28247,7 @@ template&lt;typename headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l00182">182</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l00153">153</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -28318,7 +28291,7 @@ template&lt;typename headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l03276">3276</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l03219">3219</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -28368,7 +28341,7 @@ template&lt;typename headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l03300">3300</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l03243">3243</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -28545,7 +28518,7 @@ template&lt;class Buffers , class Handler &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The number of bytes consumed, or the error code if any. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00346">346</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00342">342</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
 
 </div>
 </div>
@@ -28567,7 +28540,7 @@ template&lt;class Buffers , class Handler &gt; </div>
 
 <p>Print a protocol version a human-readable string. </p>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00073">73</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00072">72</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
 
 </div>
 </div>
@@ -28592,7 +28565,7 @@ template&lt;class Buffers , class Handler &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>A list of all apparently valid protocol versions.</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>The returned list of protocol versions is guaranteed to contain no duplicates and will be sorted in ascending protocol order. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00079">79</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00078">78</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
 
 </div>
 </div>
@@ -28614,7 +28587,7 @@ template&lt;class Buffers , class Handler &gt; </div>
 
 <p>Given a list of supported protocol versions, choose the one we prefer. </p>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00126">126</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00125">125</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
 
 </div>
 </div>
@@ -28636,7 +28609,7 @@ template&lt;class Buffers , class Handler &gt; </div>
 
 <p>Given a list of supported protocol versions, choose the one we prefer. </p>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00149">149</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00148">148</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
 
 </div>
 </div>
@@ -28657,7 +28630,7 @@ template&lt;class Buffers , class Handler &gt; </div>
 
 <p>The list of all the protocol versions we support. </p>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00157">157</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00156">156</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
 
 </div>
 </div>
@@ -28679,7 +28652,7 @@ template&lt;class Buffers , class Handler &gt; </div>
 
 <p>Determine whether we support a specific protocol version. </p>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00175">175</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00174">174</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
 
 </div>
 </div>
@@ -56395,8 +56368,7 @@ template&lt;class Dest , class Src &gt; </div>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">{</div>
 <div class="line">    {2, 1},</div>
-<div class="line">    {2, 2},</div>
-<div class="line">    {2, 3}</div>
+<div class="line">    {2, 2}</div>
 <div class="line">}</div>
 </div><!-- fragment -->
 <p>The list of protocol versions we speak and we prefer to use. </p>
