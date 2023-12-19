@@ -204,6 +204,7 @@ CONSTRUCT_TYPED_SFIELD(sfTakerPaysIssuer,       "TakerPaysIssuer",      UINT160,
 CONSTRUCT_TYPED_SFIELD(sfTakerGetsCurrency,     "TakerGetsCurrency",    UINT160,    3);
 CONSTRUCT_TYPED_SFIELD(sfTakerGetsIssuer,       "TakerGetsIssuer",      UINT160,    4);
 
+// 192-bit (common)
 CONSTRUCT_TYPED_SFIELD(sfCFTokenIssuanceID,     "CFTokenIssuanceID",    UINT192,    1);
 
 // 256-bit (common)
