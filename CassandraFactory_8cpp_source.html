@@ -847,7 +847,7 @@ $(function() {
 <div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;    }</div>
 <div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160; </div>
 <div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;    <a class="code" href="namespaceripple_1_1RPC.html#a33378ee5e4181cef672fc56627fc0551a63ad9d34f3503826e5f649ae6b7ac92c">sync</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;    sync()<span class="keyword"> override</span></div>
 <div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;<span class="keyword">    </span>{</div>
 <div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock&lt;std::mutex&gt;</a> lck(syncMutex_);</div>
 <div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160; </div>
@@ -988,7 +988,7 @@ $(function() {
 <div class="line"><a name="l00917"></a><span class="lineno">  917</span>&#160;            &lt;&lt; cass_error_desc(rc) &lt;&lt; <span class="stringliteral">&quot;, retrying &quot;</span>;</div>
 <div class="line"><a name="l00918"></a><span class="lineno">  918</span>&#160;        ++requestParams.totalWriteRetries;</div>
 <div class="line"><a name="l00919"></a><span class="lineno">  919</span>&#160;        <span class="comment">// exponential backoff with a max wait of 2^10 ms (about 1 second)</span></div>
-<div class="line"><a name="l00920"></a><span class="lineno">  920</span>&#160;        <span class="keyword">auto</span> <a class="code" href="namespaceripple_1_1RPC.html#a33378ee5e4181cef672fc56627fc0551a49256b9819abacbb8e6e031a03abe81b">wait</a> = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>(</div>
+<div class="line"><a name="l00920"></a><span class="lineno">  920</span>&#160;        <span class="keyword">auto</span> wait = <a class="codeRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>(</div>
 <div class="line"><a name="l00921"></a><span class="lineno">  921</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/numeric/math/round.html">lround</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/numeric/math/pow.html">std::pow</a>(2, <a class="codeRef" href="http://en.cppreference.com/w/cpp/algorithm/min.html">std::min</a>(10u, requestParams.currentRetries))));</div>
 <div class="line"><a name="l00922"></a><span class="lineno">  922</span>&#160;        ++requestParams.currentRetries;</div>
 <div class="line"><a name="l00923"></a><span class="lineno">  923</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;boost::asio::steady_timer&gt;</a> timer =</div>
@@ -1102,14 +1102,12 @@ $(function() {
 <div class="ttc" id="await_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/condition_variable/wait.html">std::condition_variable::wait</a></div><div class="ttdeci">T wait(T... args)</div></div>
 <div class="ttc" id="aatomic_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/atomic.html">atomic</a></div></div>
 <div class="ttc" id="aistreambuf_iterator_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/istreambuf_iterator.html">std::istreambuf_iterator</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a33378ee5e4181cef672fc56627fc0551a63ad9d34f3503826e5f649ae6b7ac92c"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a33378ee5e4181cef672fc56627fc0551a63ad9d34f3503826e5f649ae6b7ac92c">ripple::RPC::SubmitSync::sync</a></div><div class="ttdeci">@ sync</div></div>
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
 <div class="ttc" id="amin_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/min.html">std::min</a></div><div class="ttdeci">T min(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_1_1NodeStore_html_af127c2e4fc73b5d35647147ef45b350c"><div class="ttname"><a href="namespaceripple_1_1NodeStore.html#af127c2e4fc73b5d35647147ef45b350c">ripple::NodeStore::Status</a></div><div class="ttdeci">Status</div><div class="ttdoc">Return codes from Backend operations.</div><div class="ttdef"><b>Definition:</b> <a href="nodestore_2Types_8h_source.html#l00045">nodestore/Types.h:45</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="around_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/numeric/math/round.html">std::lround</a></div><div class="ttdeci">T lround(T... args)</div></div>
 <div class="ttc" id="aendl_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a></div><div class="ttdeci">T endl(T... args)</div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a33378ee5e4181cef672fc56627fc0551a49256b9819abacbb8e6e031a03abe81b"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a33378ee5e4181cef672fc56627fc0551a49256b9819abacbb8e6e031a03abe81b">ripple::RPC::SubmitSync::wait</a></div><div class="ttdeci">@ wait</div></div>
 <div class="ttc" id="abegin_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/begin.html">std::begin</a></div><div class="ttdeci">T begin(T... args)</div></div>
 <div class="ttc" id="acassert_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cassert.html">cassert</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a786c40cb27211e1704047accb2ca26bda1e5e1f9aa3cae812e41b2cf743bcfec0"><div class="ttname"><a href="namespaceripple.html#a786c40cb27211e1704047accb2ca26bda1e5e1f9aa3cae812e41b2cf743bcfec0">ripple::no</a></div><div class="ttdeci">@ no</div><div class="ttdef"><b>Definition:</b> <a href="Steps_8h_source.html#l00042">Steps.h:42</a></div></div>
