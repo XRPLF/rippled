@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <ripple/app/ledger/TransactionMaster.h>
+
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/Transaction.h>
+#include <ripple/basics/TaggedCache.ipp>
 #include <ripple/basics/chrono.h>
 #include <ripple/protocol/STTx.h>
 

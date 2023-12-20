@@ -24,6 +24,7 @@
 #include <ripple/app/misc/SHAMapStore.h>
 #include <ripple/app/rdb/RelationalDatabase.h>
 #include <ripple/app/rdb/State.h>
+#include <ripple/basics/TaggedCache.ipp>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/DatabaseRotating.h>
 

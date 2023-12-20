@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/LedgerMaster.h>
+
 #include <ripple/app/consensus/RCLValidations.h>
 #include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerReplayer.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/ledger/OrderBookDB.h>
@@ -38,7 +39,7 @@
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/MathUtilities.h>
-#include <ripple/basics/TaggedCache.h>
+#include <ripple/basics/TaggedCache.ipp>
 #include <ripple/basics/UptimeClock.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>

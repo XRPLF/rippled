@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <ripple/basics/TaggedCache.h>
+#include <ripple/basics/TaggedCache.ipp>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/clock/manual_clock.h>
 #include <ripple/beast/unit_test.h>

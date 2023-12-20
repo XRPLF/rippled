@@ -58,6 +58,8 @@ template <
     class Key,
     class T,
     bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
     class Hash,
     class KeyEqual,
     class Mutex>

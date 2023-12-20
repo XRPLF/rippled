@@ -23,6 +23,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/rdb/State.h>
 #include <ripple/app/rdb/backend/SQLiteDatabase.h>
+#include <ripple/basics/TaggedCache.ipp>
 #include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/core/Pg.h>

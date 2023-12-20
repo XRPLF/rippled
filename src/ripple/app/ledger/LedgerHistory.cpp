@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <ripple/app/ledger/LedgerHistory.h>
+
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/TaggedCache.ipp>
 #include <ripple/basics/chrono.h>
 #include <ripple/basics/contract.h>
 #include <ripple/json/to_string.h>

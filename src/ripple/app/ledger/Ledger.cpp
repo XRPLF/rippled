@@ -50,7 +50,9 @@
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
+
 #include <boost/optional.hpp>
+
 #include <cassert>
 #include <utility>
 #include <vector>

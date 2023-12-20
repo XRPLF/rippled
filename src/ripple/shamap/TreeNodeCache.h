@@ -20,11 +20,18 @@
 #ifndef RIPPLE_SHAMAP_TREENODECACHE_H_INCLUDED
 #define RIPPLE_SHAMAP_TREENODECACHE_H_INCLUDED
 
+#include <ripple/basics/IntrusivePointer.h>
+#include <ripple/basics/TaggedCache.h>
 #include <ripple/shamap/SHAMapTreeNode.h>
 
 namespace ripple {
 
-using TreeNodeCache = TaggedCache<uint256, SHAMapTreeNode>;
+using TreeNodeCache = TaggedCache<
+    uint256,
+    SHAMapTreeNode,
+    /*IsKeyCache*/ false,
+    SharedWeakUnion<SHAMapTreeNode>,
+    SharedIntrusive<SHAMapTreeNode>>;
 
 }  // namespace ripple
 
