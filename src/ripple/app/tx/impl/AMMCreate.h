@@ -27,7 +27,7 @@ namespace ripple {
 /** AMMCreate implements Automatic Market Maker(AMM) creation Transactor.
  *  It creates a new AMM instance with two tokens. Any trader, or Liquidity
  *  Provider (LP), can create the AMM instance and receive in return shares
- *  of the AMM pool in the form on LPTokens. The number of tokens that LP gets
+ *  of the AMM pool in the form of LPTokens. The number of tokens that LP gets
  *  are determined by LPTokens = sqrt(A * B), where A and B is the current
  *  composition of the AMM pool. LP can add (AMMDeposit) or withdraw
  *  (AMMWithdraw) tokens from AMM and
