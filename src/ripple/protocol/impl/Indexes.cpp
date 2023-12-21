@@ -490,9 +490,9 @@ cftoken(CFT const& cftID, AccountID const& holder) noexcept
 }
 
 Keylet
-cftoken(uint256 const& issuanceID, AccountID const& holder) noexcept
+cftoken(uint256 const& issuanceKey, AccountID const& holder) noexcept
 {
-    return {ltCFTOKEN, indexHash(LedgerNameSpace::CFTOKEN, issuanceID, holder)};
+    return {ltCFTOKEN, indexHash(LedgerNameSpace::CFTOKEN, issuanceKey, holder)};
 }
 
 Keylet

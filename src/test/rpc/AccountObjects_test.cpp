@@ -600,6 +600,8 @@ public:
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::ticket), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::amm), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::did), 0));
+        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::cft_issuance), 0));
+        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::cftoken), 0));
 
         // gw mints an NFT so we can find it.
         uint256 const nftID{token::getNextID(env, gw, 0u, tfTransferable)};
@@ -875,6 +877,45 @@ public:
             BEAST_EXPECT(did[sfAccount.jsonName] == gw.human());
             BEAST_EXPECT(did[sfURI.jsonName] == strHex(std::string{"uri"}));
         }
+        {
+            // gw creates a CFTokenIssuance that we can look for in the ledger.
+            Json::Value jvCFTIssuance;
+            jvCFTIssuance[jss::TransactionType] = jss::CFTokenIssuanceCreate;
+            jvCFTIssuance[jss::Flags] = tfUniversal;
+            jvCFTIssuance[jss::Account] = gw.human();
+            jvCFTIssuance[sfCFTokenMetadata.jsonName] = strHex(std::string{"metadata"});
+            env(jvCFTIssuance);
+            env.close();
+        }
+        {
+            // Find the CFTokenIssuance.
+            Json::Value const resp = acct_objs(gw, jss::cft_issuance);
+            BEAST_EXPECT(acct_objs_is_size(resp, 1));
+
+            auto const& cftIssuance = resp[jss::result][jss::account_objects][0u];
+            BEAST_EXPECT(cftIssuance[sfIssuer.jsonName] == gw.human());
+            BEAST_EXPECT(cftIssuance[sfCFTokenMetadata.jsonName] == strHex(std::string{"metadata"}));
+        }
+        {
+            // alice creates CFToken that is going to be used by gw
+            auto const issuanceID = getCftID(alice, env.seq(alice));
+            env(cft::create(alice));
+            env.close();
+
+            // gw creates a CFToken that we can look for in the ledger.
+            Json::Value jvCFToken;
+            jvCFToken[jss::TransactionType] = jss::CFTokenAuthorize;
+            jvCFToken[jss::CFTokenIssuanceID] = to_string(issuanceID);
+            jvCFToken[jss::Account] = gw.human();
+            env(jvCFToken);
+            env.close();
+
+            // Find the CFToken.
+            Json::Value const resp = acct_objs(gw, jss::cftoken);
+            BEAST_EXPECT(acct_objs_is_size(resp, 1));
+            auto const& cftoken = resp[jss::result][jss::account_objects][0u];
+            BEAST_EXPECT(cftoken[sfCFTokenIssuanceID.jsonName] == to_string(issuanceID));
+        }
         // Make gw multisigning by adding a signerList.
         env(jtx::signers(gw, 6, {{alice, 7}}));
         env.close();
@@ -902,7 +943,7 @@ public:
             auto const& ticket = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(ticket[sfAccount.jsonName] == gw.human());
             BEAST_EXPECT(ticket[sfLedgerEntryType.jsonName] == jss::Ticket);
-            BEAST_EXPECT(ticket[sfTicketSequence.jsonName].asUInt() == 14);
+            BEAST_EXPECT(ticket[sfTicketSequence.jsonName].asUInt() == 16);
         }
         {
             // See how "deletion_blockers_only" handles gw's directory.
@@ -917,7 +958,9 @@ public:
                     jss::Check.c_str(),
                     jss::NFTokenPage.c_str(),
                     jss::RippleState.c_str(),
-                    jss::PayChannel.c_str()};
+                    jss::PayChannel.c_str(),
+                    jss::CFTokenIssuance.c_str(),
+                    jss::CFToken.c_str()};
                 std::sort(v.begin(), v.end());
                 return v;
             }();

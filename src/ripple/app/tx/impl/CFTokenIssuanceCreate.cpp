@@ -74,25 +74,26 @@ CFTokenIssuanceCreate::doApply()
     if (mPriorBalance < view().fees().accountReserve((*acct)[sfOwnerCount] + 1))
         return tecINSUFFICIENT_RESERVE;
 
-    auto const cftIssuanceID =
+    auto const cftIssuanceKeylet =
         keylet::cftIssuance(account_, ctx_.tx.getSeqProxy().value());
 
     // create the CFTokenIssuance
     {
         auto const ownerNode = view().dirInsert(
             keylet::ownerDir(account_),
-            cftIssuanceID,
+            cftIssuanceKeylet,
             describeOwnerDir(account_));
 
         if (!ownerNode)
             return tecDIR_FULL;
 
-        auto cftIssuance = std::make_shared<SLE>(cftIssuanceID);
+        auto cftIssuance = std::make_shared<SLE>(cftIssuanceKeylet);
         (*cftIssuance)[sfFlags] = ctx_.tx.getFlags() & ~tfUniversal;
         (*cftIssuance)[sfIssuer] = account_;
         (*cftIssuance)[sfOutstandingAmount] = 0;
         (*cftIssuance)[sfOwnerNode] = *ownerNode;
-
+        (*cftIssuance)[sfSequence] = ctx_.tx.getSeqProxy().value();
+        
         if (auto const max = ctx_.tx[~sfMaximumAmount])
             (*cftIssuance)[sfMaximumAmount] = *max;
 

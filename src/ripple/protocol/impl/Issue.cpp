@@ -75,7 +75,7 @@ to_json(Issue const& is)
 {
     Json::Value jv;
     if (is.asset().isCFT())
-        jv[jss::cft_asset_id] = to_string(is.asset());
+        jv[jss::cft_issuance_id] = to_string(is.asset());
     else
         jv[jss::currency] = to_string(is.asset());
     if (!isXRP(is.asset()) && !is.asset().isCFT())
@@ -92,10 +92,10 @@ issueFromJson(Json::Value const& v)
             "issueFromJson can only be specified with an 'object' Json value");
     }
 
-    bool const isCFT = v.isMember(jss::cft_asset_id);
+    bool const isCFT = v.isMember(jss::cft_issuance_id);
 
     Json::Value const assetStr =
-        isCFT ? v[jss::cft_asset_id] : v[jss::currency];
+        isCFT ? v[jss::cft_issuance_id] : v[jss::currency];
     Json::Value const issStr = v[jss::issuer];
 
     if (!assetStr.isString())

@@ -285,7 +285,11 @@ getAccountObjects(
             if (!typeFilter.has_value() ||
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
-                jvObjects.append(sleNode->getJson(JsonOptions::none));
+                auto sleJson = sleNode->getJson(JsonOptions::none);
+                if (sleNode->getType() == ltCFTOKEN_ISSUANCE)
+                    sleJson[jss::cft_issuance_id] = to_string(getCftID(sleNode->getAccountID(sfIssuer), (*sleNode)[sfSequence]));
+                    
+                jvObjects.append(sleJson);
             }
 
             if (++i == mlimit)
@@ -934,7 +938,7 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 20>
+        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 22>
             types{
                 {{jss::account, ltACCOUNT_ROOT},
                  {jss::amendments, ltAMENDMENTS},
@@ -956,7 +960,9 @@ chooseLedgerEntryType(Json::Value const& params)
                  {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
                  {jss::xchain_owned_create_account_claim_id,
                   ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
-                 {jss::did, ltDID}}};
+                 {jss::did, ltDID},
+                 {jss::cft_issuance, ltCFTOKEN_ISSUANCE},
+                 {jss::cftoken, ltCFTOKEN}}};
 
         auto const& p = params[jss::type];
         if (!p.isString())

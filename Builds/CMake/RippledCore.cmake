@@ -683,6 +683,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/BlackList.cpp
   src/ripple/rpc/handlers/BookOffers.cpp
   src/ripple/rpc/handlers/CanDelete.cpp
+  src/ripple/rpc/handlers/CFTHolders.cpp
   src/ripple/rpc/handlers/Connect.cpp
   src/ripple/rpc/handlers/ConsensusInfo.cpp
   src/ripple/rpc/handlers/CrawlShards.cpp
@@ -737,6 +738,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/ValidatorListSites.cpp
   src/ripple/rpc/handlers/Validators.cpp
   src/ripple/rpc/handlers/WalletPropose.cpp
+  src/ripple/rpc/impl/CFTokenIssuanceID.cpp
   src/ripple/rpc/impl/DeliveredAmount.cpp
   src/ripple/rpc/impl/Handler.cpp
   src/ripple/rpc/impl/LegacyPathFind.cpp

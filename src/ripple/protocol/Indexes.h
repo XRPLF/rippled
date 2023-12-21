@@ -304,8 +304,14 @@ cftoken(CFT const& issuanceID, AccountID const& holder) noexcept;
 Keylet
 cftoken(uint192 const& issuanceID, AccountID const& holder) noexcept;
 
+inline Keylet
+cftoken(uint256 const& cftokenKey)
+{
+    return {ltCFTOKEN, cftokenKey};
+}
+
 Keylet
-cftoken(uint256 const& issuanceID, AccountID const& holder) noexcept;
+cftoken(uint256 const& issuanceKey, AccountID const& holder) noexcept;
 
 Keylet
 cft_dir(uint192 const& id) noexcept;

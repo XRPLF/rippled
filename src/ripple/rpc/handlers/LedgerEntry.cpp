@@ -598,6 +598,26 @@ doLedgerEntry(RPC::JsonContext& context)
             else
                 uNodeIndex = keylet::did(*account).key;
         }
+        else if (context.params.isMember(jss::cft_issuance_id))
+        {
+            expectedType = ltCFTOKEN_ISSUANCE;
+            auto const unparsedCFTIssuanceID = context.params[jss::cft_issuance_id];
+            if (unparsedCFTIssuanceID.isString())
+            {
+                uint192 cftIssuanceID;
+                if (!cftIssuanceID.parseHex(unparsedCFTIssuanceID.asString()))
+                {
+                    uNodeIndex = beast::zero;
+                    jvResult[jss::error] = "malformedRequest";
+                }
+                else
+                    uNodeIndex = keylet::cftIssuance(cftIssuanceID).key;
+            }
+            else
+            {
+                jvResult[jss::error] = "malformedRequest";
+            }
+        }
         else
         {
             if (context.params.isMember("params") &&

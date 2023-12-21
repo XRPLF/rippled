@@ -598,7 +598,7 @@ STAmount::setJson(Json::Value& elem) const
         // json.
         elem[jss::value] = getText();
         if (mIssue.isCFT())
-            elem[jss::cft_asset_id] = to_string(mIssue.asset());
+            elem[jss::cft_issuance_id] = to_string(mIssue.asset());
         else
         {
             elem[jss::currency] = to_string(mIssue.asset());
@@ -1033,10 +1033,10 @@ amountFromJson(SField const& name, Json::Value const& v)
     else if (v.isObject())
     {
         value = v[jss::value];
-        if (v.isMember(jss::cft_asset_id))
+        if (v.isMember(jss::cft_issuance_id))
         {
             isCFT = true;
-            asset = v[jss::cft_asset_id];
+            asset = v[jss::cft_issuance_id];
         }
         else
         {
