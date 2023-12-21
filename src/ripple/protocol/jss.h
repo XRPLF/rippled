@@ -227,6 +227,11 @@ JSS(build_path);                  // in: TransactionSign
 JSS(build_version);               // out: NetworkOPs
 JSS(cancel_after);                // out: AccountChannels
 JSS(can_delete);                  // out: CanDelete
+JSS(cft_amount);                  // out: cft_holders
+JSS(cft_issuance);                // in: LedgerEntry, AccountObjects
+JSS(cft_issuance_id);             // in: cft_holders
+JSS(cftoken);                     // in: LedgerEntry, AccountObjects
+JSS(cftoken_index);               // out: cft_holders
 JSS(changes);                     // out: BookChanges
 JSS(channel_id);                  // out: AccountChannels
 JSS(channels);                    // out: AccountChannels
@@ -358,6 +363,7 @@ JSS(high);                  // out: BookChanges
 JSS(highest_sequence);      // out: AccountInfo
 JSS(highest_ticket);        // out: AccountInfo
 JSS(historical_perminute);  // historical_perminute.
+JSS(holders);               // out: CFTHolders
 JSS(hostid);                // out: NetworkOPs
 JSS(hotwallet);             // in: GatewayBalances
 JSS(id);                    // websocket.
@@ -445,6 +451,7 @@ JSS(load_fee);                    // out: LoadFeeTrackImp, NetworkOPs
 JSS(local);                       // out: resource/Logic.h
 JSS(local_txs);                   // out: GetCounts
 JSS(local_static_keys);           // out: ValidatorList
+JSS(locked_amount);               // out: CFTHolders
 JSS(low);                         // out: BookChanges
 JSS(lowest_sequence);             // out: AccountInfo
 JSS(lowest_ticket);               // out: AccountInfo

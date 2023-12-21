@@ -289,6 +289,12 @@ cftIssuance(uint192 const& issuanceID) noexcept;
 Keylet
 cftoken(uint192 const& issuanceID, AccountID const& holder) noexcept;
 
+inline Keylet
+cftoken(uint256 const& cftokenKey)
+{
+    return {ltNFTOKEN_OFFER, cftokenKey};
+}
+
 Keylet
 cft_dir(uint192 const& issuanceID) noexcept;
 }  // namespace keylet
