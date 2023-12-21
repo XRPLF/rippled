@@ -122,7 +122,7 @@ HashRouter::shouldRelay(uint256 const& key)
 
     auto& s = emplace(key).first;
 
-    if (!s.shouldRelay(suppressionMap_.clock().now(), holdTime_))
+    if (!s.shouldRelay(suppressionMap_.clock().now(), relayTime_))
         return {};
 
     return s.releasePeerSet();

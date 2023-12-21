@@ -31,7 +31,7 @@ class HashRouter_test : public beast::unit_test::suite
     {
         using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, 2s);
+        HashRouter router(stopwatch, 2s, 1s);
 
         uint256 const key1(1);
         uint256 const key2(2);
@@ -68,7 +68,7 @@ class HashRouter_test : public beast::unit_test::suite
     {
         using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, 2s);
+        HashRouter router(stopwatch, 2s, 1s);
 
         uint256 const key1(1);
         uint256 const key2(2);
@@ -146,7 +146,7 @@ class HashRouter_test : public beast::unit_test::suite
         // Normal HashRouter
         using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, 2s);
+        HashRouter router(stopwatch, 2s, 1s);
 
         uint256 const key1(1);
         uint256 const key2(2);
@@ -174,7 +174,7 @@ class HashRouter_test : public beast::unit_test::suite
     {
         using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, 2s);
+        HashRouter router(stopwatch, 2s, 1s);
 
         uint256 const key1(1);
         BEAST_EXPECT(router.setFlags(key1, 10));
@@ -187,7 +187,7 @@ class HashRouter_test : public beast::unit_test::suite
     {
         using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, 1s);
+        HashRouter router(stopwatch, 50s, 1s);
 
         uint256 const key1(1);
 
@@ -230,7 +230,7 @@ class HashRouter_test : public beast::unit_test::suite
     {
         using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, 5s);
+        HashRouter router(stopwatch, 5s, 1s);
         uint256 const key(1);
         HashRouter::PeerShortID peer = 1;
         int flags;

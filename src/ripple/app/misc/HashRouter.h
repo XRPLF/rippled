@@ -143,8 +143,21 @@ public:
         return 300s;
     }
 
-    HashRouter(Stopwatch& clock, std::chrono::seconds entryHoldTimeInSeconds)
-        : suppressionMap_(clock), holdTime_(entryHoldTimeInSeconds)
+    static inline std::chrono::seconds
+    getDefaultRelayTime()
+    {
+        using namespace std::chrono;
+
+        return 30s;
+    }
+
+    HashRouter(
+        Stopwatch& clock,
+        std::chrono::seconds entryHoldTime,
+        std::chrono::seconds entryRelayTime)
+        : suppressionMap_(clock)
+        , holdTime_(entryHoldTime)
+        , relayTime_(entryRelayTime)
     {
     }
 
@@ -195,11 +208,11 @@ public:
         Effects:
 
             If the item should be relayed, this function will not
-            return `true` again until the hold time has expired.
+            return a seated optional again until the relay time has expired.
             The internal set of peers will also be reset.
 
         @return A `std::optional` set of peers which do not need to be
-            relayed to. If the result is uninitialized, the item should
+            relayed to. If the result is unseated, the item should
             _not_ be relayed.
     */
     std::optional<std::set<PeerShortID>>
@@ -221,6 +234,7 @@ private:
         suppressionMap_;
 
     std::chrono::seconds const holdTime_;
+    std::chrono::seconds const relayTime_;
 };
 
 }  // namespace ripple
