@@ -845,9 +845,9 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn0, tx, ripple, 3);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn1, tx, ripple, 3);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn2, tx, ripple, 3);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn3, tx, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn0, app, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn1, app, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn2, app, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn3, app, ripple, 3);
 
 }  // namespace ripple

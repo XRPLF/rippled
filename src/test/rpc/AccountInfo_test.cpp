@@ -652,7 +652,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountInfo, app, ripple);
+BEAST_DEFINE_TESTSUITE(AccountInfo, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

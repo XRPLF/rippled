@@ -1474,7 +1474,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountLinesRPC, app, ripple);
+BEAST_DEFINE_TESTSUITE(AccountLinesRPC, rpc, ripple);
 
 }  // namespace RPC
 }  // namespace ripple

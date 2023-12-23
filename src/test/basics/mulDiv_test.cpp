@@ -56,7 +56,7 @@ struct mulDiv_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(mulDiv, ripple_basics, ripple);
+BEAST_DEFINE_TESTSUITE(mulDiv, basics, ripple);
 
 }  // namespace test
 }  // namespace ripple

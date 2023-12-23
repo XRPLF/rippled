@@ -230,7 +230,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AMMInfo, app, ripple);
+BEAST_DEFINE_TESTSUITE(AMMInfo, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

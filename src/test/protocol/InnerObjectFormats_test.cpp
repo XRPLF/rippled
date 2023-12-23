@@ -201,6 +201,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(InnerObjectFormatsParsedJSON, ripple_app, ripple);
+BEAST_DEFINE_TESTSUITE(InnerObjectFormatsParsedJSON, protocol, ripple);
 
 }  // namespace ripple

@@ -80,7 +80,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Histogram, test, ripple);
+BEAST_DEFINE_TESTSUITE(Histogram, csf, ripple);
 
 }  // namespace test
 }  // namespace ripple

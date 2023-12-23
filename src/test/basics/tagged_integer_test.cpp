@@ -251,7 +251,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(tagged_integer, ripple_basics, ripple);
+BEAST_DEFINE_TESTSUITE(tagged_integer, basics, ripple);
 
 }  // namespace test
 }  // namespace ripple

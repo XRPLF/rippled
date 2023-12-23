@@ -6899,10 +6899,10 @@ class NFToken4_test : public NFToken0_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken0, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken1, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken2, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken3, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken4, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFToken0, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFToken1, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFToken2, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFToken3, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFToken4, app, ripple, 2);
 
 }  // namespace ripple

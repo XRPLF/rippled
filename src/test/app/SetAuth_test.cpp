@@ -78,7 +78,7 @@ struct SetAuth_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SetAuth, test, ripple);
+BEAST_DEFINE_TESTSUITE(SetAuth, app, ripple);
 
 }  // namespace test
 }  // namespace ripple

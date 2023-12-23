@@ -699,7 +699,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(ShardArchiveHandler, app, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(ShardArchiveHandler, rpc, ripple, 3);
 
 }  // namespace test
 }  // namespace ripple

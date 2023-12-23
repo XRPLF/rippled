@@ -63,6 +63,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerClosed, app, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerClosed, rpc, ripple);
 
 }  // namespace ripple

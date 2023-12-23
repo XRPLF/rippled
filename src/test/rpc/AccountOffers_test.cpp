@@ -326,7 +326,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountOffers, app, ripple);
+BEAST_DEFINE_TESTSUITE(AccountOffers, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

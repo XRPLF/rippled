@@ -1133,7 +1133,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(ReportingETL, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(ReportingETL, rpc, ripple, 2);
 
 }  // namespace test
 }  // namespace ripple
