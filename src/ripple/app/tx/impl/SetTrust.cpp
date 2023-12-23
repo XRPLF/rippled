@@ -57,7 +57,7 @@ SetTrust::preflight(PreflightContext const& ctx)
         return temBAD_LIMIT;
     }
 
-    if (badCurrency() == saLimitAmount.getCurrency())
+    if (badCurrency() == saLimitAmount.getAsset())
     {
         JLOG(j.trace()) << "Malformed transaction: specifies XRP as IOU";
         return temBAD_CURRENCY;
@@ -102,7 +102,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
 
     auto const saLimitAmount = ctx.tx[sfLimitAmount];
 
-    auto const currency = saLimitAmount.getCurrency();
+    auto const currency = saLimitAmount.getAsset();
     auto const uDstAccountID = saLimitAmount.getIssuer();
 
     if (ctx.view.rules().enabled(fixTrustLinesToSelf))
@@ -174,7 +174,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
                         ammSle->getFieldAmount(sfLPTokenBalance);
                     lpTokens == beast::zero)
                     return tecAMM_EMPTY;
-                else if (lpTokens.getCurrency() != saLimitAmount.getCurrency())
+                else if (lpTokens.getAsset() != saLimitAmount.getAsset())
                     return tecNO_PERMISSION;
             }
             else
@@ -194,7 +194,7 @@ SetTrust::doApply()
     bool const bQualityIn(ctx_.tx.isFieldPresent(sfQualityIn));
     bool const bQualityOut(ctx_.tx.isFieldPresent(sfQualityOut));
 
-    Currency const currency(saLimitAmount.getCurrency());
+    Currency const currency(saLimitAmount.getAsset());
     AccountID uDstAccountID(saLimitAmount.getIssuer());
 
     // true, iff current is high account.

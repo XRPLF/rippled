@@ -28,7 +28,8 @@ bool
 checkIssuers(ReadView const& view, Book const& book)
 {
     auto issuerExists = [](ReadView const& view, Issue const& iss) -> bool {
-        return isXRP(iss.account) || view.read(keylet::account(iss.account));
+        return isXRP(iss.account()) ||
+            view.read(keylet::account(iss.account()));
     };
     return issuerExists(view, book.in) && issuerExists(view, book.out);
 }
@@ -112,12 +113,12 @@ accountFundsHelper(
     FreezeHandling freezeHandling,
     beast::Journal j)
 {
-    if (issue.account == id)
+    if (issue.account() == id)
         // self funded
         return amtDefault;
 
     return toAmount<IOUAmount>(accountHolds(
-        view, id, issue.currency, issue.account, freezeHandling, j));
+        view, id, issue.asset(), issue.account(), freezeHandling, j));
 }
 
 static XRPAmount
@@ -130,7 +131,7 @@ accountFundsHelper(
     beast::Journal j)
 {
     return toAmount<XRPAmount>(accountHolds(
-        view, id, issue.currency, issue.account, freezeHandling, j));
+        view, id, issue.asset(), issue.account(), freezeHandling, j));
 }
 
 template <class TIn, class TOut>
@@ -185,7 +186,7 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     bool const fixReduced = view_.rules().enabled(fixReducedOffersV1);
 
     auto const effectiveAmounts = [&] {
-        if (offer_.owner() != offer_.issueOut().account &&
+        if (offer_.owner() != offer_.issueOut().account() &&
             ownerFunds < ofrAmts.out)
         {
             // adjust the amounts by owner funds.

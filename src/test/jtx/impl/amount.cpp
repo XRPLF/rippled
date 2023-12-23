@@ -94,7 +94,7 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
     else
     {
         os << amount.value().getText() << "/"
-           << to_string(amount.value().issue().currency) << "(" << amount.name()
+           << to_string(amount.value().issue().asset()) << "(" << amount.name()
            << ")";
     }
     return os;
@@ -119,7 +119,7 @@ IOU::operator()(detail::epsilon_multiple m) const
 std::ostream&
 operator<<(std::ostream& os, IOU const& iou)
 {
-    os << to_string(iou.issue().currency) << "(" << iou.account.name() << ")";
+    os << to_string(iou.issue().asset()) << "(" << iou.account.name() << ")";
     return os;
 }
 

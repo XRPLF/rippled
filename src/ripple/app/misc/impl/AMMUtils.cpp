@@ -127,8 +127,8 @@ ammLPHolds(
 {
     return ammLPHolds(
         view,
-        ammSle[sfAsset].currency,
-        ammSle[sfAsset2].currency,
+        ammSle[sfAsset].asset(),
+        ammSle[sfAsset2].asset(),
         ammSle[sfAccount],
         lpAccount,
         j);
@@ -174,14 +174,14 @@ ammAccountHolds(
             return (*sle)[sfBalance];
     }
     else if (auto const sle = view.read(
-                 keylet::line(ammAccountID, issue.account, issue.currency));
+                 keylet::line(ammAccountID, issue.account(), issue.asset()));
              sle &&
-             !isFrozen(view, ammAccountID, issue.currency, issue.account))
+             !isFrozen(view, ammAccountID, issue.asset(), issue.account()))
     {
         auto amount = (*sle)[sfBalance];
-        if (ammAccountID > issue.account)
+        if (ammAccountID > issue.account())
             amount.negate();
-        amount.setIssuer(issue.account);
+        amount.setIssuer(issue.account());
         return amount;
     }
 

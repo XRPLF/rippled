@@ -475,6 +475,9 @@ extern SF_UINT160 const sfTakerPaysIssuer;
 extern SF_UINT160 const sfTakerGetsCurrency;
 extern SF_UINT160 const sfTakerGetsIssuer;
 
+// 192-bit (common)
+extern SF_UINT192 const sfCFTokenIssuanceID;
+
 // 256-bit (common)
 extern SF_UINT256 const sfLedgerHash;
 extern SF_UINT256 const sfParentHash;
@@ -490,7 +493,6 @@ extern SF_UINT256 const sfEmitParentTxnID;
 extern SF_UINT256 const sfEmitNonce;
 extern SF_UINT256 const sfEmitHookHash;
 extern SF_UINT256 const sfAMMID;
-extern SF_UINT256 const sfCFTokenIssuanceID;
 
 // 256-bit (uncommon)
 extern SF_UINT256 const sfBookDirectory;

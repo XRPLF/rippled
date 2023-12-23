@@ -100,7 +100,7 @@ STIssue::value() const noexcept
 inline void
 STIssue::setIssue(Issue const& issue)
 {
-    if (isXRP(issue_.currency) != isXRP(issue_.account))
+    if (isXRP(issue_.asset()) != isXRP(issue_.account()))
         Throw<std::runtime_error>(
             "invalid issue: currency and account native mismatch");
 

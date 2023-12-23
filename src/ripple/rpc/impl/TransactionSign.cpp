@@ -244,8 +244,8 @@ checkPayment(
                         ledger, app.journal("RippleLineCache")),
                     srcAddressID,
                     *dstAccountID,
-                    sendMax.issue().currency,
-                    sendMax.issue().account,
+                    sendMax.issue().asset(),
+                    sendMax.issue().account(),
                     amount,
                     std::nullopt,
                     app);
@@ -256,7 +256,7 @@ checkPayment(
                     STPath fullLiquidityPath;
                     STPathSet paths;
                     result = pf.getBestPaths(
-                        4, fullLiquidityPath, paths, sendMax.issue().account);
+                        4, fullLiquidityPath, paths, sendMax.issue().account());
                 }
             }
 

@@ -35,24 +35,98 @@ namespace ripple {
 */
 class Issue
 {
-public:
-    Asset currency{};
-    AccountID account{};
+private:
+    // using IOU = std::pair<Currency, AccountID>;
+    // std::variant<CFT, IOU> issue_;
+    Asset asset_{};
+    std::optional<AccountID> account_{std::nullopt};
 
+public:
     Issue()
     {
     }
 
-    Issue(Asset const& asst, AccountID const& a) : currency(asst), account(a)
+    Issue(Issue const& iss) : asset_(iss.asset_), account_(iss.account_)
     {
     }
 
-    Issue(Currency const& c, AccountID const& a) : currency(c), account(a)
+    Issue(Asset const& asset, AccountID const& account)
     {
+        *this = std::make_pair(asset, account);
     }
 
-    Issue(uint256 const& u, AccountID const& a) : currency(u), account(a)
+    Issue(CFT const& u) : asset_(u)
     {
+        account_ = std::nullopt;
+    }
+
+    Issue&
+    operator=(Issue const& issue)
+    {
+        asset_ = issue.asset_;
+        account_ = issue.account_;
+        return *this;
+    }
+    Issue&
+    operator=(std::pair<Asset, AccountID> const& pair)
+    {
+        if (pair.first.isCFT())
+        {
+            if (pair.second != std::get<CFT>(pair.first.asset()).second)
+                Throw<std::logic_error>("Issue, invalid Asset/Account");
+            account_ = std::nullopt;
+        }
+        else
+        {
+            account_ = pair.second;
+        }
+        asset_ = pair.first;
+        return *this;
+    }
+    Issue&
+    operator=(CFT const& cft)
+    {
+        asset_ = cft;
+        account_ = std::nullopt;
+        return *this;
+    }
+    Issue&
+    operator=(uint192 const& cftid)
+    {
+        std::uint32_t sequence;
+        std::memcpy(&sequence, cftid.data(), sizeof(sequence));
+        sequence = boost::endian::big_to_native(sequence);
+        AccountID account;
+        std::memcpy(
+            account.begin(), cftid.begin() + sizeof(sequence), sizeof(account));
+        asset_ = std::make_pair(sequence, account);
+        account_ = std::nullopt;
+        return *this;
+    }
+
+    Asset const&
+    asset() const
+    {
+        return asset_;
+    }
+    AccountID const&
+    account() const
+    {
+        if (asset_.isCurrency())
+            return *account_;
+        return std::get<CFT>(asset_.asset()).second;
+    }
+
+    void
+    setIssuer(AccountID const& issuer)
+    {
+        if (asset_.isCurrency())
+            account_ = issuer;
+        else
+        {
+            if (issuer != static_cast<CFT>(asset_).second)
+                Throw<std::logic_error>("Invalid issuer for CFT");
+        }
     }
 
     std::string
@@ -61,7 +135,7 @@ public:
     bool
     isCFT() const
     {
-        return currency.isCFT();
+        return asset_.isCFT();
     }
 
     friend bool
@@ -73,6 +147,9 @@ public:
 
 bool
 isConsistent(Issue const& ac);
+
+bool
+isConsistent(Asset const& asset, AccountID const& account);
 
 std::string
 to_string(Issue const& ac);
@@ -92,17 +169,17 @@ hash_append(Hasher& h, Issue const& r)
 {
     using beast::hash_append;
     std::visit(
-        [&](auto&& arg) { hash_append(h, arg, r.account); },
-        r.currency.asset());
+        [&](auto&& arg) { hash_append(h, arg, r.account()); },
+        r.asset().asset());
 }
 
 /** Equality comparison. */
 /** @{ */
-[[nodiscard]] inline constexpr bool
+[[nodiscard]] inline bool
 operator==(Issue const& lhs, Issue const& rhs)
 {
-    return (lhs.currency == rhs.currency) &&
-        (isXRP(lhs.currency) || lhs.account == rhs.account);
+    return (lhs.asset() == rhs.asset()) &&
+        (isXRP(lhs.asset()) || lhs.account() == rhs.account());
 }
 /** @} */
 
@@ -111,13 +188,13 @@ operator==(Issue const& lhs, Issue const& rhs)
 [[nodiscard]] inline constexpr std::weak_ordering
 operator<=>(Issue const& lhs, Issue const& rhs)
 {
-    if (auto const c{lhs.currency.asset() <=> rhs.currency.asset()}; c != 0)
+    if (auto const c{lhs.asset().asset() <=> rhs.asset().asset()}; c != 0)
         return c;
 
-    if (isXRP(lhs.currency) || isCFT(lhs))
+    if (isXRP(lhs.asset()) || isCFT(lhs))
         return std::weak_ordering::equivalent;
 
-    return lhs.account <=> rhs.account;
+    return lhs.account() <=> rhs.account();
 }
 /** @} */
 
@@ -142,7 +219,7 @@ noIssue()
 inline Issue const&
 noCftIssue()
 {
-    static Issue issue{noCft(), noAccount()};
+    static Issue issue{noCFT()};
     return issue;
 }
 

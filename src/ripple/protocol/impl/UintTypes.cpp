@@ -125,6 +125,13 @@ noCurrency()
     return currency;
 }
 
+CFT const&
+noCFT()
+{
+    static CFT const cft{0, noAccount()};
+    return cft;
+}
+
 Currency const&
 badCurrency()
 {

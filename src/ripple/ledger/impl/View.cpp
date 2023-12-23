@@ -286,7 +286,7 @@ accountHolds(
     beast::Journal j)
 {
     return accountHolds(
-        view, account, issue.currency, issue.account, zeroIfFrozen, j);
+        view, account, issue.asset(), issue.account(), zeroIfFrozen, j);
 }
 
 STAmount
@@ -303,7 +303,7 @@ accountFunds(
     return accountHolds(
         view,
         id,
-        saDefault.getCurrency(),
+        saDefault.getAsset(),
         saDefault.getIssuer(),
         freezeHandling,
         j);
@@ -496,7 +496,7 @@ forEachItemAfter(
 }
 
 Rate
-transferRateCFT(ReadView const& view, uint256 const& id)
+transferRateCFT(ReadView const& view, CFT const& id)
 {
     auto const sle = view.read(keylet::cftIssuance(id));
 
@@ -844,8 +844,7 @@ trustCreate(
     sleRippleState->setFieldAmount(
         bSetHigh ? sfLowLimit : sfHighLimit,
         STAmount(
-            {saBalance.getCurrency(),
-             bSetDst ? uSrcAccountID : uDstAccountID}));
+            {saBalance.getAsset(), bSetDst ? uSrcAccountID : uDstAccountID}));
 
     if (uQualityIn)
         sleRippleState->setFieldU32(
@@ -979,7 +978,7 @@ rippleCredit(
     beast::Journal j)
 {
     AccountID const& issuer = saAmount.getIssuer();
-    Currency const& currency = saAmount.getCurrency();
+    Currency const& currency = saAmount.getAsset();
 
     // Make sure issuer is involved.
     assert(!bCheckIssuer || uSenderID == issuer || uReceiverID == issuer);
@@ -1149,14 +1148,14 @@ rippleSend(
     if (saAmount.isCFT())
     {
         if (auto const sle =
-                view.read(keylet::cftIssuance(saAmount.getCurrency())))
+                view.read(keylet::cftIssuance(saAmount.getAsset())))
         {
             saActual = (waiveFee == WaiveTransferFee::Yes)
                 ? saAmount
                 : multiply(
                       saAmount,
                       transferRateCFT(
-                          view, static_cast<uint256>(saAmount.getCurrency())));
+                          view, static_cast<CFT>(saAmount.getAsset())));
             return rippleCFTCredit(view, uSenderID, uReceiverID, saActual, j);
         }
         return tecINTERNAL;
@@ -1350,20 +1349,20 @@ issueIOU(
     Issue const& issue,
     beast::Journal j)
 {
-    assert(!isXRP(account) && !isXRP(issue.account));
+    assert(!isXRP(account) && !isXRP(issue.account()));
 
     // Consistency check
     assert(issue == amount.issue());
 
     // Can't send to self!
-    assert(issue.account != account);
+    assert(issue.account() != account);
 
     JLOG(j.trace()) << "issueIOU: " << to_string(account) << ": "
                     << amount.getFullText();
 
-    bool bSenderHigh = issue.account > account;
+    bool bSenderHigh = issue.account() > account;
 
-    auto const index = keylet::line(issue.account, account, issue.currency);
+    auto const index = keylet::line(issue.account(), account, issue.asset());
 
     if (auto state = view.peek(index))
     {
@@ -1380,12 +1379,12 @@ issueIOU(
             view,
             state,
             bSenderHigh,
-            issue.account,
+            issue.account(),
             start_balance,
             final_balance,
             j);
 
-        view.creditHook(issue.account, account, amount, start_balance);
+        view.creditHook(issue.account(), account, amount, start_balance);
 
         if (bSenderHigh)
             final_balance.negate();
@@ -1398,8 +1397,8 @@ issueIOU(
             return trustDelete(
                 view,
                 state,
-                bSenderHigh ? account : issue.account,
-                bSenderHigh ? issue.account : account,
+                bSenderHigh ? account : issue.account(),
+                bSenderHigh ? issue.account() : account,
                 j);
 
         view.update(state);
@@ -1410,7 +1409,7 @@ issueIOU(
     // NIKB TODO: The limit uses the receiver's account as the issuer and
     // this is unnecessarily inefficient as copying which could be avoided
     // is now required. Consider available options.
-    STAmount const limit({issue.currency, account});
+    STAmount const limit({issue.asset(), account});
     STAmount final_balance = amount;
 
     final_balance.setIssuer(noAccount());
@@ -1424,7 +1423,7 @@ issueIOU(
     return trustCreate(
         view,
         bSenderHigh,
-        issue.account,
+        issue.account(),
         account,
         index.key,
         receiverAccount,
@@ -1446,21 +1445,21 @@ redeemIOU(
     Issue const& issue,
     beast::Journal j)
 {
-    assert(!isXRP(account) && !isXRP(issue.account));
+    assert(!isXRP(account) && !isXRP(issue.account()));
 
     // Consistency check
     assert(issue == amount.issue());
 
     // Can't send to self!
-    assert(issue.account != account);
+    assert(issue.account() != account);
 
     JLOG(j.trace()) << "redeemIOU: " << to_string(account) << ": "
                     << amount.getFullText();
 
-    bool bSenderHigh = account > issue.account;
+    bool bSenderHigh = account > issue.account();
 
     if (auto state =
-            view.peek(keylet::line(account, issue.account, issue.currency)))
+            view.peek(keylet::line(account, issue.account(), issue.asset())))
     {
         STAmount final_balance = state->getFieldAmount(sfBalance);
 
@@ -1474,7 +1473,7 @@ redeemIOU(
         auto const must_delete = updateTrustLine(
             view, state, bSenderHigh, account, start_balance, final_balance, j);
 
-        view.creditHook(account, issue.account, amount, start_balance);
+        view.creditHook(account, issue.account(), amount, start_balance);
 
         if (bSenderHigh)
             final_balance.negate();
@@ -1489,8 +1488,8 @@ redeemIOU(
             return trustDelete(
                 view,
                 state,
-                bSenderHigh ? issue.account : account,
-                bSenderHigh ? account : issue.account,
+                bSenderHigh ? issue.account() : account,
+                bSenderHigh ? account : issue.account(),
                 j);
         }
 
@@ -1553,11 +1552,11 @@ transferXRP(
 TER
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
 {
-    if (isXRP(issue) || issue.account == account)
+    if (isXRP(issue) || issue.account() == account)
         return tesSUCCESS;
     if (issue.isCFT())
     {
-        auto const cftID = keylet::cftIssuance(issue.currency);
+        auto const cftID = keylet::cftIssuance(issue.asset());
         if (auto const sle = view.read(cftID);
             sle && sle->getFieldU32(sfFlags) & lsfCFTRequireAuth)
         {
@@ -1569,13 +1568,13 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
         }
         return tesSUCCESS;
     }
-    if (auto const issuerAccount = view.read(keylet::account(issue.account));
+    if (auto const issuerAccount = view.read(keylet::account(issue.account()));
         issuerAccount && (*issuerAccount)[sfFlags] & lsfRequireAuth)
     {
-        if (auto const trustLine =
-                view.read(keylet::line(account, issue.account, issue.currency)))
+        if (auto const trustLine = view.read(
+                keylet::line(account, issue.account(), issue.asset())))
             return ((*trustLine)[sfFlags] &
-                    ((account > issue.account) ? lsfLowAuth : lsfHighAuth))
+                    ((account > issue.account()) ? lsfLowAuth : lsfHighAuth))
                 ? tesSUCCESS
                 : TER{tecNO_AUTH};
         return TER{tecNO_LINE};
@@ -1717,7 +1716,7 @@ rippleCFTCredit(
     STAmount saAmount,
     beast::Journal j)
 {
-    auto const cftID = keylet::cftIssuance(saAmount.getCurrency());
+    auto const cftID = keylet::cftIssuance(saAmount.getAsset());
     if (uSenderID == saAmount.getIssuer())
     {
         if (auto sle = view.peek(cftID))

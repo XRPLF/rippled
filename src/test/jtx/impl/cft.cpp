@@ -55,7 +55,7 @@ create(
 }
 
 Json::Value
-destroy(jtx::Account const& account, ripple::uint256 const& id)
+destroy(jtx::Account const& account, uint192 const& id)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
@@ -67,7 +67,7 @@ destroy(jtx::Account const& account, ripple::uint256 const& id)
 Json::Value
 authorize(
     jtx::Account const& account,
-    ripple::uint256 const& issuanceID,
+    uint192 const& issuanceID,
     std::optional<jtx::Account> const& holder)
 {
     Json::Value jv;
@@ -82,7 +82,7 @@ authorize(
 
 Json::Value
 set(jtx::Account const& account,
-    ripple::uint256 const& issuanceID,
+    uint192 const& issuanceID,
     std::optional<jtx::Account> const& holder)
 {
     Json::Value jv;

@@ -73,8 +73,8 @@ AMM::AMM(
     , fee_(fee)
     , ammAccount_(create(tfee, flags, seq, ter))
     , lptIssue_(ripple::ammLPTIssue(
-          asset1_.issue().currency,
-          asset2_.issue().currency,
+          asset1_.issue().asset(),
+          asset2_.issue().asset(),
           ammAccount_))
 {
 }

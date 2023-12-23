@@ -48,8 +48,8 @@ balance::operator()(Env& env) const
         else if (env.test.expect(sle))
         {
             auto amount = sle->getFieldAmount(sfBalance);
-            amount.setIssuer(value_.issue().account);
-            if (account_.id() > value_.issue().account)
+            amount.setIssuer(value_.issue().account());
+            if (account_.id() > value_.issue().account())
                 amount.negate();
             env.test.expect(amount == value_);
         }

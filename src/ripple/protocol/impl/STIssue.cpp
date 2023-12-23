@@ -40,21 +40,24 @@ STIssue::STIssue(SField const& name) : STBase{name}
 
 STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
 {
-    issue_.currency = static_cast<Currency>(sit.get160());
-    if (!isXRP(issue_.currency))
-        issue_.account = sit.get160();
+    Currency currency;
+    AccountID account;
+    currency = static_cast<Currency>(sit.get160());
+    if (!isXRP(currency))
+        account = sit.get160();
     else
-        issue_.account = xrpAccount();
+        account = xrpAccount();
 
-    if (isXRP(issue_.currency) != isXRP(issue_.account))
+    if (isXRP(currency) != isXRP(account))
         Throw<std::runtime_error>(
             "invalid issue: currency and account native mismatch");
+    issue_ = std::make_pair(currency, account);
 }
 
 STIssue::STIssue(SField const& name, Issue const& issue)
     : STBase{name}, issue_{issue}
 {
-    if (isXRP(issue_.currency) != isXRP(issue_.account))
+    if (isXRP(issue_.asset()) != isXRP(issue_.account()))
         Throw<std::runtime_error>(
             "invalid issue: currency and account native mismatch");
 }
@@ -83,9 +86,9 @@ STIssue::add(Serializer& s) const
     assert(!issue_.isCFT());
     if (issue_.isCFT())
         Throw<std::logic_error>("CFT is not supported in STIssue");
-    s.addBitString(static_cast<Currency>(issue_.currency));
-    if (!isXRP(issue_.currency))
-        s.addBitString(issue_.account);
+    s.addBitString(static_cast<Currency>(issue_.asset()));
+    if (!isXRP(issue_.asset()))
+        s.addBitString(issue_.account());
 }
 
 bool

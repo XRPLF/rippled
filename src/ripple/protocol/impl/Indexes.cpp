@@ -97,10 +97,10 @@ getBookBase(Book const& book)
 
     auto const index = indexHash(
         LedgerNameSpace::BOOK_DIR,
-        book.in.currency,
-        book.out.currency,
-        book.in.account,
-        book.out.account);
+        book.in.asset(),
+        book.out.asset(),
+        book.in.account(),
+        book.out.account());
 
     // Return with quality 0.
     auto k = keylet::quality({ltDIR_NODE, index}, 0);
@@ -135,6 +135,16 @@ getTicketIndex(AccountID const& account, SeqProxy ticketSeq)
 {
     assert(ticketSeq.isTicket());
     return getTicketIndex(account, ticketSeq.value());
+}
+
+uint192
+getCftID(AccountID const& account, std::uint32_t sequence)
+{
+    uint192 u;
+    sequence = boost::endian::native_to_big(sequence);
+    memcpy(u.data(), &sequence, sizeof(sequence));
+    memcpy(u.data() + sizeof(sequence), account.data(), sizeof(account));
+    return u;
 }
 
 //------------------------------------------------------------------------------
@@ -388,10 +398,10 @@ amm(Issue const& issue1, Issue const& issue2) noexcept
     auto const& [minI, maxI] = std::minmax(issue1, issue2);
     return amm(indexHash(
         LedgerNameSpace::AMM,
-        minI.account,
-        minI.currency,
-        maxI.account,
-        maxI.currency));
+        minI.account(),
+        minI.asset(),
+        maxI.account(),
+        maxI.asset()));
 }
 
 Keylet
@@ -410,7 +420,7 @@ bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType)
     return {
         ltBRIDGE,
         indexHash(
-            LedgerNameSpace::BRIDGE, bridge.door(chainType), issue.currency)};
+            LedgerNameSpace::BRIDGE, bridge.door(chainType), issue.asset())};
 }
 
 Keylet
@@ -450,15 +460,46 @@ did(AccountID const& account) noexcept
 Keylet
 cftIssuance(AccountID const& issuer, std::uint32_t seq) noexcept
 {
+    return cftIssuance(getCftID(issuer, seq));
+}
+
+Keylet
+cftIssuance(ripple::CFT const& cft) noexcept
+{
+    return cftIssuance(cft.second, cft.first);
+}
+
+Keylet
+cftIssuance(uint192 const& cft) noexcept
+{
     return {
-        ltCFTOKEN_ISSUANCE,
-        indexHash(LedgerNameSpace::CFTOKEN_ISSUANCE, issuer, seq)};
+        ltCFTOKEN_ISSUANCE, indexHash(LedgerNameSpace::CFTOKEN_ISSUANCE, cft)};
+}
+
+Keylet
+cftoken(uint192 const& issuanceID, AccountID const& holder) noexcept
+{
+    return cftoken(cftIssuance(issuanceID).key, holder);
+}
+
+Keylet
+cftoken(CFT const& cftID, AccountID const& holder) noexcept
+{
+    return cftoken(
+        cftIssuance(getCftID(cftID.second, cftID.first)).key, holder);
 }
 
 Keylet
 cftoken(uint256 const& issuanceID, AccountID const& holder) noexcept
 {
     return {ltCFTOKEN, indexHash(LedgerNameSpace::CFTOKEN, issuanceID, holder)};
+}
+
+Keylet
+cft_dir(uint192 const& id) noexcept
+{
+    return {
+        ltDIR_NODE, indexHash(LedgerNameSpace::CFT_DIR, cftIssuance(id).key)};
 }
 
 Keylet

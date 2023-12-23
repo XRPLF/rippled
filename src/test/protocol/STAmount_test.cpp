@@ -106,7 +106,7 @@ public:
 
         BEAST_EXPECT(!cmp.native());
 
-        BEAST_EXPECT(cmp.issue().currency == res.issue().currency);
+        BEAST_EXPECT(cmp.issue().asset() == res.issue().asset());
 
         if (res != cmp)
         {

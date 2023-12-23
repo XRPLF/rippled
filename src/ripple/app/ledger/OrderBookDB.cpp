@@ -115,12 +115,16 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
             {
                 Book book;
                 // TODO update for CFT once supported in the offers
-                book.in.currency = static_cast<Currency>(
+                Currency currency;
+                AccountID account;
+                currency = static_cast<Currency>(
                     sle->getFieldH160(sfTakerPaysCurrency));
-                book.in.account = sle->getFieldH160(sfTakerPaysIssuer);
-                book.out.currency = static_cast<Currency>(
+                account = sle->getFieldH160(sfTakerPaysIssuer);
+                book.in = std::make_pair(currency, account);
+                currency = static_cast<Currency>(
                     sle->getFieldH160(sfTakerGetsCurrency));
-                book.out.account = sle->getFieldH160(sfTakerGetsIssuer);
+                account = sle->getFieldH160(sfTakerGetsIssuer);
+                book.out = std::make_pair(currency, account);
 
                 allBooks[book.in].insert(book.out);
 

@@ -361,18 +361,18 @@ operator<<(std::ostream& os, IOU const& iou);
 class CFT
 {
 public:
-    Account account;
-    ripple::uint256 cftID;
+    std::string name;
+    ripple::CFT cftID;
 
-    CFT(Account const& account_, ripple::uint256 const& cftID_)
-        : account(account_), cftID(cftID_)
+    CFT(std::string const& n, ripple::CFT const& cftID_)
+        : name(n), cftID(cftID_)
     {
     }
 
     Issue
     issue() const
     {
-        return {cftID, account.id()};
+        return {cftID};
     }
 
     /** Implicit conversion to Issue.
@@ -391,7 +391,7 @@ public:
     {
         // VFALCO NOTE Should throw if the
         //             representation of v is not exact.
-        return {amountFromString(issue(), std::to_string(v)), account.name()};
+        return {amountFromString(issue(), std::to_string(v)), name};
     }
 
     PrettyAmount operator()(epsilon_t) const;

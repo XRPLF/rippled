@@ -63,7 +63,7 @@ fund(
         for (auto const& amt : amts)
         {
             env.trust(amt + amt, account);
-            env(pay(amt.issue().account, account, amt));
+            env(pay(amt.issue().account(), account, amt));
         }
     }
     env.close();

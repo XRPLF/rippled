@@ -129,7 +129,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
             return false;
 
         if (auto const issuerAccount =
-                view.read(keylet::account(issue.account)))
+                view.read(keylet::account(issue.account())))
             return (issuerAccount->getFlags() & lsfDefaultRipple) == 0;
 
         return false;
@@ -154,7 +154,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto insufficientBalance = [&](STAmount const& asset) {
         if (isXRP(asset))
             return xrpBalance < asset;
-        return accountID != asset.issue().account &&
+        return accountID != asset.issue().account() &&
             accountHolds(
                 ctx.view,
                 accountID,
@@ -172,7 +172,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
 
     auto isLPToken = [&](STAmount const& amount) -> bool {
         if (auto const sle =
-                ctx.view.read(keylet::account(amount.issue().account)))
+                ctx.view.read(keylet::account(amount.issue().account())))
             return sle->isFieldPresent(sfAMMID);
         return false;
     };
@@ -188,7 +188,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto clawbackDisabled = [&](Issue const& issue) -> TER {
         if (isXRP(issue))
             return tesSUCCESS;
-        if (auto const sle = ctx.view.read(keylet::account(issue.account));
+        if (auto const sle = ctx.view.read(keylet::account(issue.account()));
             !sle)
             return tecINTERNAL;
         else if (sle->getFlags() & lsfAllowTrustLineClawback)
@@ -235,7 +235,7 @@ applyCreate(
 
     // LP Token already exists. (should not happen)
     auto const lptIss = ammLPTIssue(
-        amount.issue().currency, amount2.issue().currency, *ammAccount);
+        amount.issue().asset(), amount2.issue().asset(), *ammAccount);
     if (sb.read(keylet::line(*ammAccount, lptIss)))
     {
         JLOG(j_.error()) << "AMM Instance: LP Token already exists.";

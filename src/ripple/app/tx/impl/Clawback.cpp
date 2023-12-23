@@ -75,7 +75,7 @@ Clawback::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     auto const sleRippleState =
-        ctx.view.read(keylet::line(holder, issuer, clawAmount.getCurrency()));
+        ctx.view.read(keylet::line(holder, issuer, clawAmount.getAsset()));
     if (!sleRippleState)
         return tecNO_LINE;
 
@@ -101,7 +101,7 @@ Clawback::preclaim(PreclaimContext const& ctx)
     if (accountHolds(
             ctx.view,
             holder,
-            clawAmount.getCurrency(),
+            clawAmount.getAsset(),
             issuer,
             fhIGNORE_FREEZE,
             ctx.j) <= beast::zero)
@@ -126,7 +126,7 @@ Clawback::doApply()
     STAmount const spendableAmount = accountHolds(
         view(),
         holder,
-        clawAmount.getCurrency(),
+        clawAmount.getAsset(),
         clawAmount.getIssuer(),
         fhIGNORE_FREEZE,
         j_);

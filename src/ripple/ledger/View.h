@@ -94,7 +94,7 @@ isIndividualFrozen(
     AccountID const& account,
     Issue const& issue)
 {
-    return isIndividualFrozen(view, account, issue.currency, issue.account);
+    return isIndividualFrozen(view, account, issue.asset(), issue.account());
 }
 
 [[nodiscard]] bool
@@ -107,7 +107,7 @@ isFrozen(
 [[nodiscard]] inline bool
 isFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
 {
-    return isFrozen(view, account, issue.currency, issue.account);
+    return isFrozen(view, account, issue.asset(), issue.account());
 }
 
 // Returns the amount an account can spend without going into debt.
@@ -502,7 +502,7 @@ rippleCFTCredit(
     beast::Journal j);
 
 Rate
-transferRateCFT(ReadView const& view, uint256 const& id);
+transferRateCFT(ReadView const& view, CFT const& id);
 
 }  // namespace ripple
 

@@ -454,6 +454,30 @@ parseLeaf(
             break;
         }
 
+        case STI_UINT192: {
+            if (!value.isString())
+            {
+                error = bad_type(json_name, fieldName);
+                return ret;
+            }
+
+            uint192 num;
+
+            if (auto const s = value.asString(); !num.parseHex(s))
+            {
+                if (!s.empty())
+                {
+                    error = invalid_data(json_name, fieldName);
+                    return ret;
+                }
+
+                num.zero();
+            }
+
+            ret = detail::make_stvar<STUInt192>(field, num);
+            break;
+        }
+
         case STI_UINT160: {
             if (!value.isString())
             {

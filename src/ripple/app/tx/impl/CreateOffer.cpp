@@ -98,10 +98,10 @@ CreateOffer::preflight(PreflightContext const& ctx)
     }
 
     auto const& uPaysIssuerID = saTakerPays.getIssuer();
-    auto const& uPaysCurrency = saTakerPays.getCurrency();
+    auto const& uPaysCurrency = saTakerPays.getAsset();
 
     auto const& uGetsIssuerID = saTakerGets.getIssuer();
-    auto const& uGetsCurrency = saTakerGets.getCurrency();
+    auto const& uGetsCurrency = saTakerGets.getAsset();
 
     if (uPaysCurrency == uGetsCurrency && uPaysIssuerID == uGetsIssuerID)
     {
@@ -134,7 +134,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     auto saTakerGets = ctx.tx[sfTakerGets];
 
     auto const& uPaysIssuerID = saTakerPays.getIssuer();
-    auto const& uPaysCurrency = saTakerPays.getCurrency();
+    auto const& uPaysCurrency = saTakerPays.getAsset();
 
     auto const& uGetsIssuerID = saTakerGets.getIssuer();
 
@@ -210,15 +210,15 @@ CreateOffer::checkAcceptAsset(
     Issue const& issue)
 {
     // Only valid for custom currencies
-    assert(!isXRP(issue.currency));
+    assert(!isXRP(issue.asset()));
 
-    auto const issuerAccount = view.read(keylet::account(issue.account));
+    auto const issuerAccount = view.read(keylet::account(issue.account()));
 
     if (!issuerAccount)
     {
         JLOG(j.debug())
             << "delay: can't receive IOUs from non-existent issuer: "
-            << to_string(issue.account);
+            << to_string(issue.account());
 
         return (flags & tapRETRY) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
     }
@@ -226,14 +226,14 @@ CreateOffer::checkAcceptAsset(
     // This code is attached to the DepositPreauth amendment as a matter of
     // convenience.  The change is not significant enough to deserve its
     // own amendment.
-    if (view.rules().enabled(featureDepositPreauth) && (issue.account == id))
+    if (view.rules().enabled(featureDepositPreauth) && (issue.account() == id))
         // An account can always accept its own issuance.
         return tesSUCCESS;
 
     if ((*issuerAccount)[sfFlags] & lsfRequireAuth)
     {
         auto const trustLine =
-            view.read(keylet::line(id, issue.account, issue.currency));
+            view.read(keylet::line(id, issue.account(), issue.asset()));
 
         if (!trustLine)
         {
@@ -243,7 +243,7 @@ CreateOffer::checkAcceptAsset(
         // Entries have a canonical representation, determined by a
         // lexicographical "greater than" comparison employing strict weak
         // ordering. Determine which entry we need to access.
-        bool const canonical_gt(id > issue.account);
+        bool const canonical_gt(id > issue.account());
 
         bool const is_authorized(
             (*trustLine)[sfFlags] & (canonical_gt ? lsfLowAuth : lsfHighAuth));
@@ -894,7 +894,7 @@ CreateOffer::format_amount(STAmount const& amount)
 {
     std::string txt = amount.getText();
     txt += "/";
-    txt += to_string(amount.issue().currency);
+    txt += to_string(amount.issue().asset());
     return txt;
 }
 
@@ -1188,12 +1188,12 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // TODO add CFT once offers are supported for CFT
         sle->setFieldH160(
             sfTakerPaysCurrency,
-            static_cast<Currency>(saTakerPays.issue().currency));
-        sle->setFieldH160(sfTakerPaysIssuer, saTakerPays.issue().account);
+            static_cast<Currency>(saTakerPays.issue().asset()));
+        sle->setFieldH160(sfTakerPaysIssuer, saTakerPays.issue().account());
         sle->setFieldH160(
             sfTakerGetsCurrency,
-            static_cast<Currency>(saTakerGets.issue().currency));
-        sle->setFieldH160(sfTakerGetsIssuer, saTakerGets.issue().account);
+            static_cast<Currency>(saTakerGets.issue().asset()));
+        sle->setFieldH160(sfTakerGetsIssuer, saTakerGets.issue().account());
         sle->setFieldU64(sfExchangeRate, uRate);
     });
 

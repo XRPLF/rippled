@@ -98,7 +98,7 @@ static bool
 areComparable(STAmount const& v1, STAmount const& v2)
 {
     return (v1.native() == v2.native() || v1.isCFT() == v2.isCFT()) &&
-        v1.issue().currency == v2.issue().currency;
+        v1.issue().asset() == v2.issue().asset();
 }
 
 STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
@@ -114,8 +114,8 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
     {
         if (isCFT)
         {
-            mIssue.currency = sit.get256();
-            mIssue.account = sit.get160();
+            mIssue = std::make_pair(
+                sit.get32(), static_cast<AccountID>(sit.get160()));
         }
         else
             mIssue = xrpIssue();
@@ -141,14 +141,14 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
     }
 
     Issue issue;
-    issue.currency = static_cast<Currency>(sit.get160());
+    Currency currency = static_cast<Currency>(sit.get160());
 
-    if (isXRP(issue.currency))
+    if (isXRP(currency))
         Throw<std::runtime_error>("invalid native currency");
 
-    issue.account = sit.get160();
+    issue = std::make_pair(currency, static_cast<AccountID>(sit.get160()));
 
-    if (isXRP(issue.account))
+    if (isXRP(issue.account()))
         Throw<std::runtime_error>("invalid native account");
 
     // 10 bits for the offset, sign and "not native" flag
@@ -598,10 +598,12 @@ STAmount::setJson(Json::Value& elem) const
         // json.
         elem[jss::value] = getText();
         if (mIssue.isCFT())
-            elem[jss::cft_asset] = to_string(mIssue.currency);
+            elem[jss::cft_asset_id] = to_string(mIssue.asset());
         else
-            elem[jss::currency] = to_string(mIssue.currency);
-        elem[jss::issuer] = to_string(mIssue.account);
+        {
+            elem[jss::currency] = to_string(mIssue.asset());
+            elem[jss::issuer] = to_string(mIssue.account());
+        }
     }
     else
     {
@@ -744,6 +746,7 @@ STAmount::add(Serializer& s) const
                 s.add64(mValue | cCFToken);
             else
                 s.add64(mValue | cCFToken | cPositive);
+            s.add32(std::get<CFT>(mIssue.asset().asset()).first);
         }
         else
         {
@@ -759,10 +762,9 @@ STAmount::add(Serializer& s) const
                     mValue |
                     (static_cast<std::uint64_t>(mOffset + 512 + 256 + 97)
                      << (64 - 10)));
+            s.addBitString(std::get<Currency>(mIssue.asset().asset()));
         }
-        std::visit(
-            [&](auto&& arg) { s.addBitString(arg); }, mIssue.currency.asset());
-        s.addBitString(mIssue.account);
+        s.addBitString(mIssue.account());
     }
 }
 
@@ -1031,16 +1033,16 @@ amountFromJson(SField const& name, Json::Value const& v)
     else if (v.isObject())
     {
         value = v[jss::value];
-        if (v.isMember(jss::cft_asset))
+        if (v.isMember(jss::cft_asset_id))
         {
             isCFT = true;
-            asset = v[jss::cft_asset];
+            asset = v[jss::cft_asset_id];
         }
         else
         {
             asset = v[jss::currency];
+            issuer = v[jss::issuer];
         }
-        issuer = v[jss::issuer];
     }
     else if (v.isArray())
     {
@@ -1081,25 +1083,25 @@ amountFromJson(SField const& name, Json::Value const& v)
     }
     else
     {
-        // non-XRP
-        issue.currency = [&]() -> Asset {
-            if (isCFT)
-            {
-                uint256 u;
-                if (!u.parseHex(asset.asString()))
-                    Throw<std::runtime_error>("invalid CFTokenIssuanceID");
-                return u;
-            }
-            Currency c;
-            if (!to_currency(c, asset.asString()))
+        if (isCFT)
+        {
+            // sequence (32 bits) + account (160 bits)
+            uint192 u;
+            if (!u.parseHex(asset.asString()))
+                Throw<std::runtime_error>("invalid CFTokenIssuanceID");
+            issue = u;
+        }
+        else
+        {
+            Currency currency;
+            if (!to_currency(currency, asset.asString()))
                 Throw<std::runtime_error>("invalid currency");
-            return c;
-        }();
-
-        if (!issuer.isString() || !to_issuer(issue.account, issuer.asString()))
-            Throw<std::runtime_error>("invalid issuer");
-
-        if (isXRP(issue.currency))
+            AccountID account;
+            if (!issuer.isString() || !to_issuer(account, issuer.asString()))
+                Throw<std::runtime_error>("invalid issuer");
+            issue = std::make_pair(currency, account);
+        }
+        if (isXRP(issue))
             Throw<std::runtime_error>("invalid issuer");
     }
 

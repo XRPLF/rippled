@@ -118,7 +118,7 @@ line(
 inline Keylet
 line(AccountID const& id, Issue const& issue) noexcept
 {
-    return line(id, issue.account, issue.currency);
+    return line(id, issue.account(), issue.asset());
 }
 /** @} */
 
@@ -286,6 +286,12 @@ did(AccountID const& account) noexcept;
 Keylet
 cftIssuance(AccountID const& issuer, std::uint32_t seq) noexcept;
 
+Keylet
+cftIssuance(uint192 const& cft) noexcept;
+
+Keylet
+cftIssuance(ripple::CFT const& cft) noexcept;
+
 inline Keylet
 cftIssuance(uint256 const& issuance)
 {
@@ -293,7 +299,16 @@ cftIssuance(uint256 const& issuance)
 }
 
 Keylet
+cftoken(CFT const& issuanceID, AccountID const& holder) noexcept;
+
+Keylet
+cftoken(uint192 const& issuanceID, AccountID const& holder) noexcept;
+
+Keylet
 cftoken(uint256 const& issuanceID, AccountID const& holder) noexcept;
+
+Keylet
+cft_dir(uint192 const& id) noexcept;
 
 Keylet
 cft_dir(uint256 const& id) noexcept;
@@ -316,6 +331,9 @@ getTicketIndex(AccountID const& account, std::uint32_t uSequence);
 
 uint256
 getTicketIndex(AccountID const& account, SeqProxy ticketSeq);
+
+uint192
+getCftID(AccountID const& account, std::uint32_t sequence);
 
 }  // namespace ripple
 

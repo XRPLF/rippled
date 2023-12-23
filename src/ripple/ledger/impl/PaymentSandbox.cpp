@@ -52,7 +52,7 @@ DeferredCredits::credit(
     assert(sender != receiver);
     assert(!amount.negative());
 
-    auto const k = makeKey(sender, receiver, amount.getCurrency());
+    auto const k = makeKey(sender, receiver, amount.getAsset());
     auto i = credits_.find(k);
     if (i == credits_.end())
     {
@@ -185,7 +185,7 @@ PaymentSandbox::balanceHook(
     magnitudes, (B+C)-C may not equal B.
     */
 
-    auto const currency = amount.getCurrency();
+    auto const currency = amount.getAsset();
 
     auto delta = amount.zeroed();
     auto lastBal = amount;
@@ -368,7 +368,7 @@ PaymentSandbox::balanceChanges(ReadView const& view) const
         }
         // The following are now set, put them in the map
         auto delta = newBalance - oldBalance;
-        auto const cur = newBalance.getCurrency();
+        auto const cur = newBalance.getAsset();
         result[std::make_tuple(lowID, highID, cur)] = delta;
         auto r = result.emplace(std::make_tuple(lowID, lowID, cur), delta);
         if (r.second)

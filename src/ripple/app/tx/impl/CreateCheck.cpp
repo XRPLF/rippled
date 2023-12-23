@@ -60,7 +60,7 @@ CreateCheck::preflight(PreflightContext const& ctx)
             return temBAD_AMOUNT;
         }
 
-        if (badCurrency() == sendMax.getCurrency())
+        if (badCurrency() == sendMax.getAsset())
         {
             JLOG(ctx.j.warn()) << "Malformed transaction: Bad currency.";
             return temBAD_CURRENCY;
@@ -130,7 +130,7 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
             {
                 // Check if the issuer froze the line
                 auto const sleTrust = ctx.view.read(
-                    keylet::line(srcId, issuerId, sendMax.getCurrency()));
+                    keylet::line(srcId, issuerId, sendMax.getAsset()));
                 if (sleTrust &&
                     sleTrust->isFlag(
                         (issuerId > srcId) ? lsfHighFreeze : lsfLowFreeze))
@@ -144,7 +144,7 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
             {
                 // Check if dst froze the line.
                 auto const sleTrust = ctx.view.read(
-                    keylet::line(issuerId, dstId, sendMax.getCurrency()));
+                    keylet::line(issuerId, dstId, sendMax.getAsset()));
                 if (sleTrust &&
                     sleTrust->isFlag(
                         (dstId > issuerId) ? lsfHighFreeze : lsfLowFreeze))

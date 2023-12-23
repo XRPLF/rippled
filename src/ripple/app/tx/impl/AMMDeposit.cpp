@@ -222,14 +222,14 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             auto const lpIssue = (*ammSle)[sfLPTokenBalance].issue();
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle = ctx.view.read(
-                keylet::line(accountID, lpIssue.account, lpIssue.currency));
+                keylet::line(accountID, lpIssue.account(), lpIssue.asset()));
             if (xrpLiquid(ctx.view, accountID, !sle, ctx.j) >= deposit)
                 return TER(tesSUCCESS);
             if (sle)
                 return tecUNFUNDED_AMM;
             return tecINSUF_RESERVE_LINE;
         }
-        return (accountID == deposit.issue().account ||
+        return (accountID == deposit.issue().account() ||
                 accountHolds(
                     ctx.view,
                     accountID,
@@ -272,7 +272,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             {
                 JLOG(ctx.j.debug()) << "AMM Deposit: account is frozen, "
                                     << to_string(accountID) << " "
-                                    << to_string(amount->issue().currency);
+                                    << to_string(amount->issue().asset());
                 return tecFROZEN;
             }
             if (checkBalance)
@@ -479,12 +479,12 @@ AMMDeposit::deposit(
             auto const& lpIssue = lpTokensDeposit.issue();
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle = view.read(
-                keylet::line(account_, lpIssue.account, lpIssue.currency));
+                keylet::line(account_, lpIssue.account(), lpIssue.asset()));
             if (xrpLiquid(view, account_, !sle, j_) >= depositAmount)
                 return tesSUCCESS;
         }
         else if (
-            account_ == depositAmount.issue().account ||
+            account_ == depositAmount.issue().account() ||
             accountHolds(
                 view,
                 account_,

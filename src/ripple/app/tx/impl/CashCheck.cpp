@@ -70,7 +70,7 @@ CashCheck::preflight(PreflightContext const& ctx)
         return temBAD_AMOUNT;
     }
 
-    if (badCurrency() == value.getCurrency())
+    if (badCurrency() == value.getAsset())
     {
         JLOG(ctx.j.warn()) << "Malformed transaction: Bad currency.";
         return temBAD_CURRENCY;
@@ -141,8 +141,8 @@ CashCheck::preclaim(PreclaimContext const& ctx)
         }(ctx.tx)};
 
         STAmount const sendMax = sleCheck->at(sfSendMax);
-        Currency const currency{value.getCurrency()};
-        if (currency != sendMax.getCurrency())
+        Currency const currency{value.getAsset()};
+        if (currency != sendMax.getAsset())
         {
             JLOG(ctx.j.warn()) << "Check cash does not match check currency.";
             return temMALFORMED;
@@ -377,7 +377,7 @@ CashCheck::doApply()
                     return tecNO_LINE_INSUF_RESERVE;
                 }
 
-                Currency const currency = flowDeliver.getCurrency();
+                Currency const currency = flowDeliver.getAsset();
                 STAmount initialBalance(flowDeliver.issue());
                 initialBalance.setIssuer(noAccount());
 

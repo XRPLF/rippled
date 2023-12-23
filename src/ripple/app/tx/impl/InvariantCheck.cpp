@@ -779,7 +779,7 @@ ValidClawback::finalize(
         STAmount const amount = tx.getFieldAmount(sfAmount);
         AccountID const& holder = amount.getIssuer();
         STAmount const holderBalance = accountHolds(
-            view, holder, amount.getCurrency(), issuer, fhIGNORE_FREEZE, j);
+            view, holder, amount.getAsset(), issuer, fhIGNORE_FREEZE, j);
 
         if (holderBalance.signum() < 0)
         {

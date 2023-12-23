@@ -236,10 +236,10 @@ doAMMInfo(RPC::JsonContext& context)
 
     if (!isXRP(asset1Balance))
         ammResult[jss::asset_frozen] =
-            isFrozen(*ledger, ammAccountID, issue1.currency, issue1.account);
+            isFrozen(*ledger, ammAccountID, issue1.asset(), issue1.account());
     if (!isXRP(asset2Balance))
         ammResult[jss::asset2_frozen] =
-            isFrozen(*ledger, ammAccountID, issue2.currency, issue2.account);
+            isFrozen(*ledger, ammAccountID, issue2.asset(), issue2.account());
 
     result[jss::amm] = std::move(ammResult);
     if (!result.isMember(jss::ledger_index) &&

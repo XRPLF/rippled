@@ -190,10 +190,10 @@ protected:
     {
         std::ostringstream ostr;
         ostr << name << ": "
-             << "\ninIss: " << book_.in.account
-             << "\noutIss: " << book_.out.account
-             << "\ninCur: " << book_.in.currency
-             << "\noutCur: " << book_.out.currency;
+             << "\ninIss: " << book_.in.account()
+             << "\noutIss: " << book_.out.account()
+             << "\ninCur: " << book_.in.asset()
+             << "\noutCur: " << book_.out.asset();
         return ostr.str();
     }
 
@@ -334,12 +334,12 @@ public:
         };
 
         auto const trIn =
-            redeems(prevStepDir) ? rate(this->book_.in.account) : parityRate;
+            redeems(prevStepDir) ? rate(this->book_.in.account()) : parityRate;
         // Always charge the transfer fee, even if the owner is the issuer,
         // unless the fee is waived
         auto const trOut =
             (this->ownerPaysTransferFee_ && waiveFee == WaiveTransferFee::No)
-            ? rate(this->book_.out.account)
+            ? rate(this->book_.out.account())
             : parityRate;
 
         Quality const q1{getRate(STAmount(trOut.value), STAmount(trIn.value))};
@@ -652,10 +652,10 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     };
 
     std::uint32_t const trIn =
-        redeems(prevStepDir) ? rate(book_.in.account) : QUALITY_ONE;
+        redeems(prevStepDir) ? rate(book_.in.account()) : QUALITY_ONE;
     // Always charge the transfer fee, even if the owner is the issuer
     std::uint32_t const trOut =
-        ownerPaysTransferFee_ ? rate(book_.out.account) : QUALITY_ONE;
+        ownerPaysTransferFee_ ? rate(book_.out.account()) : QUALITY_ONE;
 
     typename FlowOfferStream<TIn, TOut>::StepCounter counter(
         maxOffersToConsume_, j_);
@@ -681,10 +681,10 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
         // Make sure offer owner has authorization to own IOUs from issuer.
         // An account can always own XRP or their own IOUs.
-        if (flowCross && (!isXRP(offer.issueIn().currency)) &&
-            (offer.owner() != offer.issueIn().account))
+        if (flowCross && (!isXRP(offer.issueIn().asset())) &&
+            (offer.owner() != offer.issueIn().account()))
         {
-            auto const& issuerID = offer.issueIn().account;
+            auto const& issuerID = offer.issueIn().account();
             auto const issuer = afView.read(keylet::account(issuerID));
             if (issuer && ((*issuer)[sfFlags] & lsfRequireAuth))
             {
@@ -694,7 +694,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                     issuerID > ownerID ? lsfHighAuth : lsfLowAuth;
 
                 auto const line = afView.read(
-                    keylet::line(ownerID, issuerID, offer.issueIn().currency));
+                    keylet::line(ownerID, issuerID, offer.issueIn().asset()));
 
                 if (!line || (((*line)[sfFlags] & authFlag) == 0))
                 {
@@ -798,7 +798,7 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
     {
         auto const dr = offer.send(
             sb,
-            book_.in.account,
+            book_.in.account(),
             offer.owner(),
             toSTAmount(ofrAmt.in, book_.in),
             j_);
@@ -812,7 +812,7 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
         auto const cr = offer.send(
             sb,
             offer.owner(),
-            book_.out.account,
+            book_.out.account(),
             toSTAmount(ownerGives, book_.out),
             j_);
         if (cr != tesSUCCESS)
@@ -1253,7 +1253,8 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
     }
 
     auto issuerExists = [](ReadView const& view, Issue const& iss) -> bool {
-        return isXRP(iss.account) || view.read(keylet::account(iss.account));
+        return isXRP(iss.account()) ||
+            view.read(keylet::account(iss.account()));
     };
 
     if (!issuerExists(ctx.view, book_.in) || !issuerExists(ctx.view, book_.out))
@@ -1267,9 +1268,9 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
         if (auto const prev = ctx.prevStep->directStepSrcAcct())
         {
             auto const& view = ctx.view;
-            auto const& cur = book_.in.account;
+            auto const& cur = book_.in.account();
 
-            auto sle = view.read(keylet::line(*prev, cur, book_.in.currency));
+            auto sle = view.read(keylet::line(*prev, cur, book_.in.asset()));
             if (!sle)
                 return terNO_LINE;
             if ((*sle)[sfFlags] &
@@ -1298,8 +1299,8 @@ equalHelper(Step const& step, ripple::Book const& book)
 bool
 bookStepEqual(Step const& step, ripple::Book const& book)
 {
-    bool const inXRP = isXRP(book.in.currency);
-    bool const outXRP = isXRP(book.out.currency);
+    bool const inXRP = isXRP(book.in.asset());
+    bool const outXRP = isXRP(book.out.asset());
     if (inXRP && outXRP)
     {
         assert(0);

@@ -186,7 +186,7 @@ public:
 
     // These three are deprecated
     Asset const&
-    getCurrency() const;
+    getAsset() const;
 
     AccountID const&
     getIssuer() const;
@@ -380,15 +380,15 @@ STAmount::issue() const
 }
 
 inline Asset const&
-STAmount::getCurrency() const
+STAmount::getAsset() const
 {
-    return mIssue.currency;
+    return mIssue.asset();
 }
 
 inline AccountID const&
 STAmount::getIssuer() const
 {
-    return mIssue.account;
+    return mIssue.account();
 }
 
 inline int
@@ -464,7 +464,7 @@ STAmount::clear(Issue const& issue)
 inline void
 STAmount::setIssuer(AccountID const& uIssuer)
 {
-    mIssue.account = uIssuer;
+    mIssue.setIssuer(uIssuer);
     setIssue(mIssue);
 }
 
@@ -578,7 +578,7 @@ getRate(STAmount const& offerOut, STAmount const& offerIn);
 inline bool
 isXRP(STAmount const& amount)
 {
-    return isXRP(amount.issue().currency);
+    return isXRP(amount.issue().asset());
 }
 
 inline bool

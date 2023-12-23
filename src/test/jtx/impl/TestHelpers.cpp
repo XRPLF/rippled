@@ -67,7 +67,7 @@ stpath_append_one(STPath& st, STPathElement const& pe)
 bool
 equal(STAmount const& sa1, STAmount const& sa2)
 {
-    return sa1 == sa2 && sa1.issue().account == sa2.issue().account;
+    return sa1 == sa2 && sa1.issue().account() == sa2.issue().account();
 }
 
 // Issue path element
@@ -77,8 +77,8 @@ IPE(Issue const& iss)
     return STPathElement(
         STPathElement::typeCurrency | STPathElement::typeIssuer,
         xrpAccount(),
-        iss.currency,
-        iss.account);
+        iss.asset(),
+        iss.account());
 }
 
 /******************************************************************************/
@@ -106,7 +106,7 @@ expectLine(
     if (auto const sle = env.le(keylet::line(account, value.issue())))
     {
         Issue const issue = value.issue();
-        bool const accountLow = account < issue.account;
+        bool const accountLow = account < issue.account();
 
         bool expectDefaultTrustLine = true;
         if (defaultLimits)
@@ -114,15 +114,15 @@ expectLine(
             STAmount low{issue};
             STAmount high{issue};
 
-            low.setIssuer(accountLow ? account : issue.account);
-            high.setIssuer(accountLow ? issue.account : account);
+            low.setIssuer(accountLow ? account : issue.account());
+            high.setIssuer(accountLow ? issue.account() : account);
 
             expectDefaultTrustLine = sle->getFieldAmount(sfLowLimit) == low &&
                 sle->getFieldAmount(sfHighLimit) == high;
         }
 
         auto amount = sle->getFieldAmount(sfBalance);
-        amount.setIssuer(value.issue().account);
+        amount.setIssuer(value.issue().account());
         if (!accountLow)
             amount.negate();
         return amount == value && expectDefaultTrustLine;
@@ -379,8 +379,8 @@ allpe(AccountID const& a, Issue const& iss)
         STPathElement::typeAccount | STPathElement::typeCurrency |
             STPathElement::typeIssuer,
         a,
-        iss.currency,
-        iss.account);
+        iss.asset(),
+        iss.account());
 };
 
 }  // namespace jtx

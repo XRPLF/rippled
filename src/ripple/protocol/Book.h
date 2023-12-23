@@ -67,7 +67,7 @@ reversed(Book const& book);
 
 /** Equality comparison. */
 /** @{ */
-[[nodiscard]] inline constexpr bool
+[[nodiscard]] inline bool
 operator==(Book const& lhs, Book const& rhs)
 {
     return (lhs.in == rhs.in) && (lhs.out == rhs.out);
@@ -111,10 +111,10 @@ public:
     value_type
     operator()(argument_type const& value) const
     {
-        value_type result(currency_hash_type::member(value.currency));
-        if (!isXRP(value.currency))
+        value_type result(currency_hash_type::member(value.asset()));
+        if (!isXRP(value.asset()))
             boost::hash_combine(
-                result, issuer_hash_type::member(value.account));
+                result, issuer_hash_type::member(value.account()));
         return result;
     }
 };

@@ -177,7 +177,7 @@ class AMMCalc_test : public beast::unit_test::suite
     toString(STAmount const& a)
     {
         std::stringstream str;
-        str << a.getText() << "/" << to_string(a.issue().currency);
+        str << a.getText() << "/" << to_string(a.issue().asset());
         return str.str();
     }
 
@@ -204,7 +204,7 @@ class AMMCalc_test : public beast::unit_test::suite
         int limitingStep = vp.size();
         STAmount limitStepOut{};
         auto trate = [&](auto const& amt) {
-            auto const currency = to_string(amt.issue().currency);
+            auto const currency = to_string(amt.issue().asset());
             return rates.find(currency) != rates.end() ? rates.at(currency)
                                                        : QUALITY_ONE;
         };
@@ -269,7 +269,7 @@ class AMMCalc_test : public beast::unit_test::suite
         int limitingStep = 0;
         STAmount limitStepIn{};
         auto trate = [&](auto const& amt) {
-            auto const currency = to_string(amt.issue().currency);
+            auto const currency = to_string(amt.issue().asset());
             return rates.find(currency) != rates.end() ? rates.at(currency)
                                                        : QUALITY_ONE;
         };

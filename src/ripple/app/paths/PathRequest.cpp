@@ -315,9 +315,9 @@ PathRequest::parseJson(Json::Value const& jvParams)
 
     convert_all_ = saDstAmount == STAmount(saDstAmount.issue(), 1u, 0, true);
 
-    if ((saDstAmount.getCurrency().isXRP() &&
+    if ((saDstAmount.getAsset().isXRP() &&
          saDstAmount.getIssuer().isNonZero()) ||
-        (saDstAmount.getCurrency() == badCurrency()) ||
+        (saDstAmount.getAsset() == badCurrency()) ||
         (!convert_all_ && saDstAmount <= beast::zero))
     {
         jvStatus = rpcError(rpcDST_AMT_MALFORMED);
@@ -335,9 +335,9 @@ PathRequest::parseJson(Json::Value const& jvParams)
 
         saSendMax.emplace();
         if (!amountFromJsonNoThrow(*saSendMax, jvParams[jss::send_max]) ||
-            (saSendMax->getCurrency().isXRP() &&
+            (saSendMax->getAsset().isXRP() &&
              saSendMax->getIssuer().isNonZero()) ||
-            (saSendMax->getCurrency() == badCurrency()) ||
+            (saSendMax->getAsset() == badCurrency()) ||
             (*saSendMax <= beast::zero &&
              *saSendMax != STAmount(saSendMax->issue(), 1u, 0, true)))
         {
@@ -396,7 +396,7 @@ PathRequest::parseJson(Json::Value const& jvParams)
             if (saSendMax)
             {
                 // If the currencies don't match, ignore the source currency.
-                if (srcCurrencyID == saSendMax->getCurrency())
+                if (srcCurrencyID == saSendMax->getAsset())
                 {
                     // If neither is the source and they are not equal, then the
                     // source issuer is illegal.
@@ -509,7 +509,7 @@ PathRequest::findPaths(
         bool const sameAccount = *raSrcAccount == *raDstAccount;
         for (auto const& c : currencies)
         {
-            if (!sameAccount || c != saDstAmount.getCurrency())
+            if (!sameAccount || c != saDstAmount.getAsset())
             {
                 if (sourceCurrencies.size() >= RPC::Tuning::max_auto_src_cur)
                     return false;
@@ -532,7 +532,7 @@ PathRequest::findPaths(
         auto& pathfinder = getPathFinder(
             cache,
             currency_map,
-            issue.currency,
+            issue.asset(),
             dst_amount,
             level,
             continueCallback);
@@ -547,22 +547,22 @@ PathRequest::findPaths(
             max_paths_,
             fullLiquidityPath,
             mContext[issue],
-            issue.account,
+            issue.account(),
             continueCallback);
         mContext[issue] = ps;
 
         auto const& sourceAccount = [&] {
-            if (!isXRP(issue.account))
-                return issue.account;
+            if (!isXRP(issue.account()))
+                return issue.account();
 
-            if (isXRP(issue.currency))
+            if (isXRP(issue.asset()))
                 return xrpAccount();
 
             return *raSrcAccount;
         }();
 
         STAmount saMaxAmount = saSendMax.value_or(
-            STAmount({issue.currency, sourceAccount}, 1u, 0, true));
+            STAmount({issue.asset(), sourceAccount}, 1u, 0, true));
 
         JLOG(m_journal.debug())
             << iIdentifier << " Paths found, calling rippleCalc";

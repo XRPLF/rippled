@@ -2082,8 +2082,8 @@ private:
                     return STPathElement(
                         STPathElement::typeCurrency | STPathElement::typeIssuer,
                         xrpAccount(),
-                        iss.currency,
-                        iss.account);
+                        iss.asset(),
+                        iss.account());
                 };
                 {
                     // BTC -> USD

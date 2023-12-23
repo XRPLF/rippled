@@ -79,13 +79,13 @@ Payment::preflight(PreflightContext const& ctx)
         maxSourceAmount = saDstAmount;
     else
         maxSourceAmount = STAmount(
-            {saDstAmount.getCurrency(), account},
+            {saDstAmount.getAsset(), account},
             saDstAmount.mantissa(),
             saDstAmount.exponent(),
             saDstAmount < beast::zero);
 
-    auto const& uSrcCurrency = maxSourceAmount.getCurrency();
-    auto const& uDstCurrency = saDstAmount.getCurrency();
+    auto const& uSrcCurrency = maxSourceAmount.getAsset();
+    auto const& uDstCurrency = saDstAmount.getAsset();
 
     // isZero() is XRP.  FIX!
     bool const bXRPDirect = uSrcCurrency.isXRP() && uDstCurrency.isXRP();
@@ -315,7 +315,7 @@ Payment::doApply()
         maxSourceAmount = saDstAmount;
     else
         maxSourceAmount = STAmount(
-            {saDstAmount.getCurrency(), account_},
+            {saDstAmount.getAsset(), account_},
             saDstAmount.mantissa(),
             saDstAmount.exponent(),
             saDstAmount < beast::zero);

@@ -203,7 +203,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             accountHolds(
                 ctx.view,
                 (*bo)[sfOwner],
-                needed.getCurrency(),
+                needed.getAsset(),
                 needed.getIssuer(),
                 fhZERO_IF_FROZEN,
                 ctx.j) < needed)
@@ -240,7 +240,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             if (accountHolds(
                     ctx.view,
                     ctx.tx[sfAccount],
-                    needed.getCurrency(),
+                    needed.getAsset(),
                     needed.getIssuer(),
                     fhZERO_IF_FROZEN,
                     ctx.j) < needed)

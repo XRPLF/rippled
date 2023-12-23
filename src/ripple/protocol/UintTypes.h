@@ -46,6 +46,12 @@ public:
     explicit NodeIDTag() = default;
 };
 
+class CFTTag
+{
+public:
+    explicit CFTTag() = default;
+};
+
 }  // namespace detail
 
 /** Directory is an index into the directory of offer books.
@@ -58,6 +64,9 @@ using Currency = base_uint<160, detail::CurrencyTag>;
 /** NodeID is a 160-bit hash representing one node. */
 using NodeID = base_uint<160, detail::NodeIDTag>;
 
+/** CFT is a 192-bit hash representing CFTID. */
+using CFT = std::pair<std::uint32_t, AccountID>;
+
 /** XRP currency. */
 Currency const&
 xrpCurrency();
@@ -65,6 +74,10 @@ xrpCurrency();
 /** A placeholder for empty currencies. */
 Currency const&
 noCurrency();
+
+/** A placeholder for empty CFTID. */
+CFT const&
+noCFT();
 
 /** We deliberately disallow the currency that looks like "XRP" because too
     many people were using it instead of the correct XRP currency. */

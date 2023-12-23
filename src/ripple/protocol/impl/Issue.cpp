@@ -32,18 +32,18 @@ Issue::getText() const
     std::string ret;
 
     ret.reserve(64);
-    ret = to_string(currency);
+    ret = to_string(asset_);
 
-    if (!isXRP(currency))
+    if (!isXRP(asset_))
     {
         ret += "/";
 
-        if (isXRP(account))
+        if (isXRP(account()))
             ret += "0";
-        else if (account == noAccount())
+        else if (account() == noAccount())
             ret += "1";
         else
-            ret += to_string(account);
+            ret += to_string(account());
     }
 
     return ret;
@@ -52,28 +52,34 @@ Issue::getText() const
 bool
 isConsistent(Issue const& ac)
 {
-    return isXRP(ac.currency) == isXRP(ac.account);
+    return isXRP(ac.asset()) == isXRP(ac.account());
+}
+
+bool
+isConsistent(Asset const& asset, AccountID const& account)
+{
+    return isXRP(asset) == isXRP(account);
 }
 
 std::string
 to_string(Issue const& ac)
 {
-    if (isXRP(ac.account))
-        return to_string(ac.currency);
+    if (isXRP(ac.account()))
+        return to_string(ac.asset());
 
-    return to_string(ac.account) + "/" + to_string(ac.currency);
+    return to_string(ac.account()) + "/" + to_string(ac.asset());
 }
 
 Json::Value
 to_json(Issue const& is)
 {
     Json::Value jv;
-    if (is.currency.isCFT())
-        jv[jss::cft_asset] = to_string(is.currency);
+    if (is.asset().isCFT())
+        jv[jss::cft_asset_id] = to_string(is.asset());
     else
-        jv[jss::currency] = to_string(is.currency);
-    if (!isXRP(is.currency))
-        jv[jss::issuer] = toBase58(is.account);
+        jv[jss::currency] = to_string(is.asset());
+    if (!isXRP(is.asset()) && !is.asset().isCFT())
+        jv[jss::issuer] = toBase58(is.account());
     return jv;
 }
 
@@ -86,9 +92,10 @@ issueFromJson(Json::Value const& v)
             "issueFromJson can only be specified with an 'object' Json value");
     }
 
-    bool const isCFT = v.isMember(jss::cft_asset);
+    bool const isCFT = v.isMember(jss::cft_asset_id);
 
-    Json::Value const assetStr = isCFT ? v[jss::cft_asset] : v[jss::currency];
+    Json::Value const assetStr =
+        isCFT ? v[jss::cft_asset_id] : v[jss::currency];
     Json::Value const issStr = v[jss::issuer];
 
     if (!assetStr.isString())

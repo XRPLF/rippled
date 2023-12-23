@@ -28,7 +28,7 @@ format_amount(STAmount const& amount)
 {
     std::string txt = amount.getText();
     txt += "/";
-    txt += to_string(amount.issue().currency);
+    txt += to_string(amount.issue().asset());
     return txt;
 }
 
@@ -89,8 +89,8 @@ BasicTaker::effective_rate(
     // If there's a transfer rate, the issuer is not involved
     // and the sender isn't the same as the recipient, return
     // the actual transfer rate.
-    if (rate != parityRate && from != to && from != issue.account &&
-        to != issue.account)
+    if (rate != parityRate && from != to && from != issue.account() &&
+        to != issue.account())
     {
         return rate;
     }
@@ -570,13 +570,13 @@ Taker::Taker(
             stream << "   Offer in: " << format_amount(offer.in);
         else
             stream << "   Offer in: " << format_amount(offer.in)
-                   << " (issuer: " << issue_in().account << ")";
+                   << " (issuer: " << issue_in().account() << ")";
 
         if (isXRP(issue_out()))
             stream << "  Offer out: " << format_amount(offer.out);
         else
             stream << "  Offer out: " << format_amount(offer.out)
-                   << " (issuer: " << issue_out().account << ")";
+                   << " (issuer: " << issue_out().account() << ")";
 
         stream << "    Balance: "
                << format_amount(get_funds(account, offer.in));
@@ -639,7 +639,7 @@ Taker::redeemIOU(
     if (isXRP(amount))
         Throw<std::logic_error>("Using redeemIOU with XRP");
 
-    if (account == issue.account)
+    if (account == issue.account())
         return tesSUCCESS;
 
     // Transferring zero is equivalent to not doing a transfer
@@ -668,7 +668,7 @@ Taker::issueIOU(
     if (isXRP(amount))
         Throw<std::logic_error>("Using issueIOU with XRP");
 
-    if (account == issue.account)
+    if (account == issue.account())
         return tesSUCCESS;
 
     // Transferring zero is equivalent to not doing a transfer

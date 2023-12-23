@@ -74,8 +74,8 @@ flow(
     Issue const srcIssue = [&] {
         if (sendMax)
             return sendMax->issue();
-        if (!isXRP(deliver.issue().currency))
-            return Issue(deliver.issue().currency, src);
+        if (!isXRP(deliver.issue().asset()))
+            return Issue(deliver.issue().asset(), src);
         return xrpIssue();
     }();
 
@@ -128,8 +128,8 @@ flow(
         }
     }
 
-    const bool srcIsXRP = isXRP(srcIssue.currency);
-    const bool dstIsXRP = isXRP(dstIssue.currency);
+    const bool srcIsXRP = isXRP(srcIssue.asset());
+    const bool dstIsXRP = isXRP(dstIssue.asset());
 
     auto const asDeliver = toAmountSpec(deliver);
 

@@ -64,9 +64,9 @@ doAccountCurrencies(RPC::JsonContext& context)
         STAmount const& saBalance = rspEntry.getBalance();
 
         if (saBalance < rspEntry.getLimit())
-            receive.insert(saBalance.getCurrency());
+            receive.insert(saBalance.getAsset());
         if ((-saBalance) < rspEntry.getLimitPeer())
-            send.insert(saBalance.getCurrency());
+            send.insert(saBalance.getAsset());
     }
 
     send.erase(badCurrency());

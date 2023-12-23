@@ -191,16 +191,16 @@ Env::balance(Account const& account) const
 PrettyAmount
 Env::balance(Account const& account, Issue const& issue) const
 {
-    if (isXRP(issue.currency))
+    if (isXRP(issue.asset()))
         return balance(account);
     auto const sle = le(keylet::line(account.id(), issue));
     if (!sle)
         return {STAmount(issue, 0), account.name()};
     auto amount = sle->getFieldAmount(sfBalance);
-    amount.setIssuer(issue.account);
-    if (account.id() > issue.account)
+    amount.setIssuer(issue.account());
+    if (account.id() > issue.account())
         amount.negate();
-    return {amount, lookup(issue.account).name()};
+    return {amount, lookup(issue.account()).name()};
 }
 
 std::uint32_t

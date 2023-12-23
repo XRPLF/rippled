@@ -43,7 +43,7 @@ creditLimit(
     }
 
     assert(result.getIssuer() == account);
-    assert(result.getCurrency() == currency);
+    assert(result.getAsset() == currency);
     return result;
 }
 
@@ -77,7 +77,7 @@ creditBalance(
     }
 
     assert(result.getIssuer() == account);
-    assert(result.getCurrency() == currency);
+    assert(result.getAsset() == currency);
     return result;
 }
 

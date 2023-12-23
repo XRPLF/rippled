@@ -238,7 +238,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
             {
                 JLOG(ctx.j.debug()) << "AMM Withdraw: account is frozen, "
                                     << to_string(accountID) << " "
-                                    << to_string(amount->issue().currency);
+                                    << to_string(amount->issue().asset());
                 return tecFROZEN;
             }
         }

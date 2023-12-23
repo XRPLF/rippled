@@ -216,8 +216,8 @@ toAmountSpec(STAmount const& amt)
             result.cft = CFTAmount(sMant);
         else
             result.iou = IOUAmount(sMant, amt.exponent());
-        result.issuer = amt.issue().account;
-        result.currency = amt.issue().currency;
+        result.issuer = amt.issue().account();
+        result.currency = amt.issue().asset();
     }
 
     return result;

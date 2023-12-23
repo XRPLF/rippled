@@ -259,20 +259,19 @@ doSubscribe(RPC::JsonContext& context)
                 JLOG(context.j.info()) << "Bad taker_pays currency.";
                 return rpcError(rpcSRC_CUR_MALFORMED);
             }
-            book.in.currency = inCurrency;
 
             // Parse optional issuer.
+            AccountID inAccount;
             if (((taker_pays.isMember(jss::issuer)) &&
                  (!taker_pays[jss::issuer].isString() ||
-                  !to_issuer(
-                      book.in.account, taker_pays[jss::issuer].asString())))
+                  !to_issuer(inAccount, taker_pays[jss::issuer].asString())))
                 // Don't allow illegal issuers.
-                || (!inCurrency != !book.in.account) ||
-                noAccount() == book.in.account)
+                || (!inCurrency != !inAccount) || noAccount() == inAccount)
             {
                 JLOG(context.j.info()) << "Bad taker_pays issuer.";
                 return rpcError(rpcSRC_ISR_MALFORMED);
             }
+            book.in = std::make_pair(inCurrency, inAccount);
 
             // Parse mandatory currency.
             Currency outCurrency;
@@ -282,23 +281,22 @@ doSubscribe(RPC::JsonContext& context)
                 JLOG(context.j.info()) << "Bad taker_gets currency.";
                 return rpcError(rpcDST_AMT_MALFORMED);
             }
-            book.out.currency = outCurrency;
 
             // Parse optional issuer.
+            AccountID outAccount;
             if (((taker_gets.isMember(jss::issuer)) &&
                  (!taker_gets[jss::issuer].isString() ||
-                  !to_issuer(
-                      book.out.account, taker_gets[jss::issuer].asString())))
+                  !to_issuer(outAccount, taker_gets[jss::issuer].asString())))
                 // Don't allow illegal issuers.
-                || (!outCurrency != !book.out.account) ||
-                noAccount() == book.out.account)
+                || (!outCurrency != !outAccount) || noAccount() == outAccount)
             {
                 JLOG(context.j.info()) << "Bad taker_gets issuer.";
                 return rpcError(rpcDST_ISR_MALFORMED);
             }
+            book.out = std::make_pair(outCurrency, outAccount);
 
-            if (book.in.currency == book.out.currency &&
-                book.in.account == book.out.account)
+            if (book.in.asset() == book.out.asset() &&
+                book.in.account() == book.out.account())
             {
                 JLOG(context.j.info()) << "taker_gets same as taker_pays.";
                 return rpcError(rpcBAD_MARKET);

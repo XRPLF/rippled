@@ -189,9 +189,9 @@ public:
                         auctionSlot[jss::price][jss::value].asString() ==
                             "5600" &&
                         auctionSlot[jss::price][jss::currency].asString() ==
-                            to_string(ammAlice.lptIssue().currency) &&
+                            to_string(ammAlice.lptIssue().asset()) &&
                         auctionSlot[jss::price][jss::issuer].asString() ==
-                            to_string(ammAlice.lptIssue().account));
+                            to_string(ammAlice.lptIssue().account()));
                 }
                 catch (std::exception const& e)
                 {

@@ -27,16 +27,10 @@
 
 namespace ripple {
 
-inline uint256
-noCft()
-{
-    return uint256{0};
-}
-
 class Asset
 {
-    inline static uint256 none = noCft();
-    using asset_type = std::variant<Currency, uint256>;
+    inline static CFT none = noCFT();
+    using asset_type = std::variant<Currency, CFT>;
 
 private:
     asset_type asset_;
@@ -48,7 +42,7 @@ public:
     Asset(Currency const& c) : asset_(c)
     {
     }
-    Asset(uint256 const& u) : asset_(u)
+    Asset(CFT const& u) : asset_(u)
     {
     }
     Asset&
@@ -58,7 +52,7 @@ public:
         return *this;
     }
     Asset&
-    operator=(uint256 const& u)
+    operator=(CFT const& u)
     {
         asset_ = u;
         return *this;
@@ -73,7 +67,7 @@ public:
     bool
     isCFT() const
     {
-        return std::holds_alternative<uint256>(asset_);
+        return std::holds_alternative<CFT>(asset_);
     }
     bool
     isCurrency() const
@@ -89,14 +83,20 @@ public:
     void
     addBitString(Serializer& s) const
     {
-        std::visit([&](auto&& a) { s.addBitString(a); }, asset_);
+        if (isCurrency())
+            s.addBitString(std::get<Currency>(asset_));
+        else
+        {
+            s.add32(std::get<CFT>(asset_).first);
+            s.addBitString(std::get<CFT>(asset_).second);
+        }
     }
 
     bool
     empty() const
     {
-        return std::holds_alternative<uint256>(asset_) &&
-            std::get<uint256>(asset_) == none;
+        return std::holds_alternative<CFT>(asset_) &&
+            std::get<CFT>(asset_) == none;
     }
 
     template <typename Hasher>
@@ -107,15 +107,15 @@ public:
     }
 
     template <typename T>
-    requires(std::is_same_v<T, Currency> || std::is_same_v<T, uint256>)
+    requires(std::is_same_v<T, Currency> || std::is_same_v<T, CFT>)
         T const* get() const
     {
         return std::get_if<T>(asset_);
     }
 
     template <typename T>
-    requires(std::is_same_v<T, Currency> || std::is_same_v<T, uint256>)
-    operator T const &() const
+    requires(std::is_same_v<T, Currency> || std::is_same_v<T, CFT>) operator T
+        const &() const
     {
         assert(std::holds_alternative<T>(asset_));
         if (!std::holds_alternative<T>(asset_))
@@ -174,7 +174,14 @@ public:
     {
         if (a.isCurrency())
             return to_string((Currency&)a);
-        return to_string((uint256&)a);
+        // TODO, common getCftID()
+        uint192 u;
+        auto const sequence =
+            boost::endian::native_to_big(std::get<CFT>(a.asset_).first);
+        auto const& account = std::get<CFT>(a.asset_).second;
+        memcpy(u.data(), &sequence, sizeof(sequence));
+        memcpy(u.data() + sizeof(sequence), account.data(), sizeof(account));
+        return to_string(u);
     }
     friend bool
     isXRP(Asset const& a)
