@@ -167,7 +167,9 @@ negotiateProtocolVersion(
 std::string const&
 supportedProtocolVersions()
 {
-    return toProtocolVersionStr(supportedProtocolList);
+    static std::string const supported =
+        toProtocolVersionStr(supportedProtocolList);
+    return supported;
 }
 
 bool

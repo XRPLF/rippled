@@ -79,22 +79,18 @@ std::string const&
 supportedProtocolVersions();
 
 template <typename T>
-std::string const&
+std::string
 toProtocolVersionStr(T const& list)
 {
-    static std::string const supported = [&]() {
-        std::string ret;
-        for (auto const& v : list)
-        {
-            if (!ret.empty())
-                ret += ", ";
-            ret += to_string(v);
-        }
+    std::string ret = "";
+    for (auto const& v : list)
+    {
+        if (!ret.empty())
+            ret += ", ";
+        ret += to_string(v);
+    }
 
-        return ret;
-    }();
-
-    return supported;
+    return ret;
 }
 
 /** Determine whether we support a specific protocol version. */

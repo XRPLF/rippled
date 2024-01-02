@@ -461,6 +461,8 @@ JSS(max_spend_drops_total);       // out: AccountInfo
 JSS(median_fee);                  // out: TxQ
 JSS(median_level);                // out: TxQ
 JSS(message);                     // error.
+JSS(message_type_sent);           // out: Peers
+JSS(message_type_recv);           // out: Peers
 JSS(meta);                        // out: NetworkOPs, AccountTx*, Tx
 JSS(meta_blob);                   // out: NetworkOPs, AccountTx*, Tx
 JSS(metaData);

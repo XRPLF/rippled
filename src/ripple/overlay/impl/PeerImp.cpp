@@ -516,6 +516,12 @@ PeerImp::json()
         std::to_string(metrics_.recv.average_bytes());
     ret[jss::metrics][jss::avg_bps_sent] =
         std::to_string(metrics_.sent.average_bytes());
+    for (auto const& [t, n] : metrics_.sent.mtype())
+        ret[jss::metrics][jss::message_type_sent][std::to_string(t)] =
+            to_string(n);
+    for (auto const& [t, n] : metrics_.recv.mtype())
+        ret[jss::metrics][jss::message_type_recv][std::to_string(t)] =
+            to_string(n);
 
     return ret;
 }
@@ -905,7 +911,8 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
     while (read_buffer_.size() > 0)
     {
         std::size_t bytes_consumed;
-        std::tie(bytes_consumed, ec) =
+        std::uint16_t message_type;
+        std::tie(bytes_consumed, message_type, ec) =
             invokeProtocolMessage(read_buffer_.data(), *this, hint);
         if (ec)
             return fail("onReadMessage", ec);
@@ -916,6 +923,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
         if (bytes_consumed == 0)
             break;
         read_buffer_.consume(bytes_consumed);
+        metrics_.recv.add_message_type(message_type);
     }
 
     // Timeout on writes only
@@ -954,6 +962,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
     metrics_.sent.add_message(bytes_transferred);
 
     assert(!send_queue_.empty());
+    metrics_.sent.add_message_type(send_queue_.front()->getType());
     if (send_queue_.front()->getType() == protocol::mtGRACEFUL_CLOSE)
     {
         close();
@@ -3754,6 +3763,12 @@ PeerImp::Metrics::add_message(std::uint64_t bytes)
     }
 }
 
+void
+PeerImp::Metrics::add_message_type(std::uint16_t type)
+{
+    mtype_[type]++;
+}
+
 std::uint64_t
 PeerImp::Metrics::average_bytes() const
 {
@@ -3766,6 +3781,12 @@ PeerImp::Metrics::total_bytes() const
 {
     std::shared_lock lock{mutex_};
     return totalBytes_;
+}
+
+std::unordered_map<std::uint16_t, std::uint64_t> const&
+PeerImp::Metrics::mtype() const
+{
+    return mtype_;
 }
 
 }  // namespace ripple

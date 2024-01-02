@@ -16,10 +16,12 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+#include <ripple/basics/random.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/ConfigSections.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/impl/ProtocolVersion.h>
+#include <ripple/protocol/messages.h>
 #include <ripple/rpc/ServerHandler.h>
 #include <test/jtx.h>
 
@@ -28,7 +30,21 @@ namespace test {
 
 class ProtocolStart_test : public beast::unit_test::suite
 {
+    // received/sent message statistics
+    struct MSG
+    {
+        std::uint16_t start = 0;
+        std::uint16_t ping = 0;
+    };
+    struct STATS
+    {
+        MSG sent;
+        MSG recv;
+    };
+
 public:
+    /* set Config parameters
+     */
     std::unique_ptr<ripple::Config>
     getConfig(
         std::string const& addr,
@@ -72,52 +88,74 @@ public:
         return cfg;
     }
 
+    /* send mtPING message
+     */
+    void
+    sendPing(jtx::Env& env)
+    {
+        env.app().overlay().foreach([](std::shared_ptr<Peer> const& peer) {
+            protocol::TMPing message;
+            message.set_type(protocol::TMPing::ptPING);
+            message.set_seq(rand_int<std::uint32_t>());
+            peer->send(std::make_shared<Message>(message, protocol::mtPING));
+        });
+    }
+
+    /* check the negotiated protocol matches the expected protocol
+       return number of sent/recv mtSTART_PROTOCOL and mtPING messages
+     */
+    STATS
+    getMetrics(jtx::Env& env, std::string const& expProtocol)
+    {
+        static const std::string mstart(
+            std::to_string(protocol::mtSTART_PROTOCOL));
+        static const std::string mping(std::to_string(protocol::mtPING));
+        STATS stats;
+        env.app().overlay().foreach([&](std::shared_ptr<Peer> const& peer) {
+            auto const& j = peer->json();
+            BEAST_EXPECT(j[jss::protocol].asString() == expProtocol);
+            auto collect = [&](MSG& msg, Json::Value const& types) {
+                if (types.isMember(mstart))
+                    msg.start = std::atoi(types[mstart].asCString());
+                if (types.isMember(mping))
+                    msg.ping = std::atoi(types[mping].asCString());
+            };
+            collect(stats.sent, j[jss::metrics][jss::message_type_sent]);
+            collect(stats.recv, j[jss::metrics][jss::message_type_recv]);
+        });
+        return stats;
+    }
+
     void
     testProtocolStart()
     {
         using namespace jtx;
-        using PVS = std::optional<std::vector<ProtocolVersion>>;
+        using PVS = std::vector<ProtocolVersion>;
 
         // this lambda establishes an overlay with two virtual nodes and
-        // verifies that the ping messages are sent/received by both peers
-        auto doTest = [&](PVS const& pvs,
+        // verifies that start protocol messages are sent/received if
+        // the negotiated protocol supports it and that
+        // ping messages can be sent/received by both peers once the peers
+        // are connected
+        auto doTest = [&](std::uint16_t port,
+                          std::uint16_t port1,
+                          PVS const& pvs,
                           PVS const& pvs1,
-                          std::string const& expProtocol) {
+                          std::string const& expProtocol,
+                          bool expectStart) {
             std::stringstream str;
-            str << "Protocol Start: "
-                << (pvs ? toProtocolVersionStr(*pvs) : "2.1-2.3") << " - "
-                << (pvs1 ? toProtocolVersionStr(*pvs1) : "2.1-2.3");
+            str << "Protocol Start: " << toProtocolVersionStr(pvs) << " - "
+                << toProtocolVersionStr(pvs1);
             testcase(str.str());
-            auto cfg = getConfig("127.0.0.1", 8000, {}, pvs);
+            str.str("");
+            auto cfg = getConfig("127.0.0.1", port, {}, pvs);
+            // inbound virtual peer
             Env env(*this, std::move(cfg));
 
-            cfg = getConfig("0.0.0.0", 9000, {"127.0.0.1 8000"}, pvs1);
+            str << "127.0.0.1 " << port;
+            cfg = getConfig("0.0.0.0", port1, {str.str()}, pvs1);
+            // outbound virtual peer
             Env env1(*this, std::move(cfg));
-
-            auto ping = [&](Env& env) {
-                env.app().overlay().foreach(
-                    [](std::shared_ptr<Peer> const& peer) {
-                        protocol::TMPing message;
-                        message.set_type(protocol::TMPing::ptPING);
-                        message.set_seq(rand_int<std::uint32_t>());
-                        peer->send(std::make_shared<Message>(
-                            message, protocol::mtPING));
-                    });
-            };
-
-            auto metrics =
-                [&](Env& env) -> std::pair<std::uint16_t, std::uint16_t> {
-                std::uint16_t recv = 0;
-                std::uint16_t sent = 0;
-                env.app().overlay().foreach(
-                    [&](std::shared_ptr<Peer> const& peer) {
-                        auto const& j = peer->json();
-                        BEAST_EXPECT(j["protocol"].asString() == expProtocol);
-                        recv = j["metrics"]["total_bytes_recv"].asUInt();
-                        sent = j["metrics"]["total_bytes_sent"].asUInt();
-                    });
-                return {recv, sent};
-            };
 
             bool havePeers = false;
             // timeout after 5 sec (5000 msec)
@@ -137,29 +175,75 @@ public:
 
             if (havePeers)
             {
-                auto const before = metrics(env);
-                auto const before1 = metrics(env1);
-                ping(env);
-                ping(env1);
+                auto const before = getMetrics(env, expProtocol);
+                auto const before1 = getMetrics(env1, expProtocol);
+                // inbound receives start protocol if supported
+                BEAST_EXPECT(before.recv.start == expectStart);
+                // inbound never sends start protocol
+                BEAST_EXPECT(before.sent.start == 0);
+                // outbound sends start protocol if supported
+                BEAST_EXPECT(before1.sent.start == expectStart);
+                // outbound never receives start protocol
+                BEAST_EXPECT(before1.recv.start == 0);
+                // no ping initially
+                BEAST_EXPECT(before.sent.ping == 0 && before.recv.ping == 0);
+                BEAST_EXPECT(before1.sent.ping == 0 && before1.recv.ping == 0);
+                sendPing(env);
+                sendPing(env1);
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                auto const after = metrics(env);
-                auto const after1 = metrics(env1);
-                auto gt = [](auto const& p1, auto const& p2) {
-                    return p1.first > p2.first && p1.second > p2.second;
-                };
-                // verify protocol messages are sent and received
-                BEAST_EXPECT(gt(after, before) && gt(after1, before1));
+                auto const after = getMetrics(env, expProtocol);
+                auto const after1 = getMetrics(env1, expProtocol);
+                // protocol messages are sent and received
+                BEAST_EXPECT(after.sent.ping > 0 && after.recv.ping > 0);
+                BEAST_EXPECT(after1.sent.ping > 0 && after1.recv.ping > 0);
             }
 
             BEAST_EXPECT(havePeers);
         };
 
-        // peers have the same protocol: 2.3 - 2.3, negotiate 2.3
-        doTest(std::nullopt, std::nullopt, "XRPL/2.3");
-        // inbound peer has 2.2 and outbound peer has 2.3, negotiate 2.2
-        doTest({{{2, 1}, {2, 2}}}, std::nullopt, "XRPL/2.2");
-        // outbound peer has 2.3 and inbound peer has 2.2, negotiate 2.2
-        doTest(std::nullopt, {{{2, 1}, {2, 2}}}, "XRPL/2.2");
+        // latest protocols support start protocol
+        auto const supportedProtocols =
+            parseProtocolVersions(supportedProtocolVersions());
+        // old protocols don't support start protocol
+        auto const oldProtocols = PVS{{2, 1}, {2, 2}};
+        // largest supported protocol
+        auto const negotiateProtocol = [](PVS const& pvs, PVS const& pvs1) {
+            if (auto const negotiated =
+                    negotiateProtocolVersion(toProtocolVersionStr(pvs), pvs1))
+            {
+                std::stringstream str;
+                str << "XRPL/" << negotiated->first << "."
+                    << negotiated->second;
+                return str.str();
+            }
+            return std::string("");
+        };
+
+        // both peers have the latest protocol: supported - supported,
+        // negotiate supported
+        doTest(
+            9000,
+            10000,
+            supportedProtocols,
+            supportedProtocols,
+            negotiateProtocol(supportedProtocols, supportedProtocols),
+            true);
+        // inbound peer has 2.2 and outbound peer has the latest, negotiate 2.2
+        doTest(
+            9100,
+            10100,
+            oldProtocols,
+            supportedProtocols,
+            negotiateProtocol(oldProtocols, supportedProtocols),
+            false);
+        // outbound peer has the latest and inbound peer has 2.2, negotiate 2.2
+        doTest(
+            9200,
+            10200,
+            supportedProtocols,
+            oldProtocols,
+            negotiateProtocol(supportedProtocols, oldProtocols),
+            false);
     }
 
     void

@@ -198,10 +198,14 @@ private:
 
         void
         add_message(std::uint64_t bytes);
+        void
+        add_message_type(std::uint16_t mtype);
         std::uint64_t
         average_bytes() const;
         std::uint64_t
         total_bytes() const;
+        std::unordered_map<std::uint16_t, std::uint64_t> const&
+        mtype() const;
 
     private:
         boost::shared_mutex mutable mutex_;
@@ -210,6 +214,7 @@ private:
         std::uint64_t totalBytes_{0};
         std::uint64_t accumBytes_{0};
         std::uint64_t rollingAvgBytes_{0};
+        std::unordered_map<std::uint16_t, std::uint64_t> mtype_;
     };
 
     struct
