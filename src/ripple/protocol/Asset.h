@@ -58,23 +58,23 @@ public:
         return *this;
     }
 
-    asset_type const&
+    asset_type constexpr const&
     asset() const
     {
         return asset_;
     }
 
-    bool
+    bool constexpr
     isCFT() const
     {
         return std::holds_alternative<CFT>(asset_);
     }
-    bool
+    bool constexpr
     isCurrency() const
     {
         return std::holds_alternative<Currency>(asset_);
     }
-    bool
+    bool constexpr
     isXRP() const
     {
         return isCurrency() && ripple::isXRP(std::get<Currency>(asset_));
@@ -113,14 +113,20 @@ public:
         return std::get_if<T>(asset_);
     }
 
-    template <typename T>
-    requires(std::is_same_v<T, Currency> || std::is_same_v<T, CFT>) operator T
-        const &() const
+    operator Currency const&() const
     {
-        assert(std::holds_alternative<T>(asset_));
-        if (!std::holds_alternative<T>(asset_))
-            Throw<std::logic_error>("Invalid Asset cast");
-        return std::get<T>(asset_);
+        assert(std::holds_alternative<Currency>(asset_));
+        if (!std::holds_alternative<Currency>(asset_))
+            Throw<std::logic_error>("Invalid Currency cast");
+        return std::get<Currency>(asset_);
+    }
+
+    operator CFT const&() const
+    {
+        assert(std::holds_alternative<CFT>(asset_));
+        if (!std::holds_alternative<CFT>(asset_))
+            Throw<std::logic_error>("Invalid CFT cast");
+        return std::get<CFT>(asset_);
     }
 
     friend bool
@@ -168,6 +174,23 @@ public:
     operator>=(Asset const& a1, Asset const& a2) noexcept
     {
         return !(a1 < a2);
+    }
+    friend inline constexpr std::weak_ordering
+    operator<=>(Asset const& lhs, Asset const& rhs)
+    {
+        assert(lhs.isCurrency() == rhs.isCurrency());
+        if (lhs.isCurrency() != rhs.isCurrency())
+            Throw<std::logic_error>("Invalid Asset comparison");
+        if (lhs.isCurrency())
+            return std::get<Currency>(lhs.asset_) <=>
+                std::get<Currency>(rhs.asset_);
+        if (auto const c{
+                std::get<CFT>(lhs.asset_).second <=>
+                std::get<CFT>(rhs.asset_).second};
+            c != 0)
+            return c;
+        return std::get<CFT>(lhs.asset_).first <=>
+            std::get<CFT>(rhs.asset_).first;
     }
     friend std::string
     to_string(Asset const& a)
