@@ -26,8 +26,6 @@
 
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/TxQ.h>
-#include <ripple/basics/Expected.h>
-#include <ripple/basics/SubmitSync.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/Status.h>
@@ -168,12 +166,6 @@ ledgerFromSpecifier(
     org::xrpl::rpc::v1::LedgerSpecifier const& specifier,
     Context& context);
 
-bool
-isValidated(
-    LedgerMaster& ledgerMaster,
-    ReadView const& ledger,
-    Application& app);
-
 hash_set<AccountID>
 parseAccountIds(Json::Value const& jvArray);
 
@@ -240,12 +232,15 @@ extern beast::SemanticVersion const lastVersion;
 constexpr unsigned int apiInvalidVersion = 0;
 constexpr unsigned int apiVersionIfUnspecified = 1;
 constexpr unsigned int apiMinimumSupportedVersion = 1;
-constexpr unsigned int apiMaximumSupportedVersion = 1;
-constexpr unsigned int apiBetaVersion = 2;
+constexpr unsigned int apiMaximumSupportedVersion = 2;
+constexpr unsigned int apiCommandLineVersion = 1;  // TODO Bump to 2 later
+constexpr unsigned int apiBetaVersion = 3;
+constexpr unsigned int apiMaximumValidVersion = apiBetaVersion;
 
 static_assert(apiMinimumSupportedVersion >= apiVersionIfUnspecified);
 static_assert(apiMaximumSupportedVersion >= apiMinimumSupportedVersion);
 static_assert(apiBetaVersion >= apiMaximumSupportedVersion);
+static_assert(apiMaximumValidVersion >= apiMaximumSupportedVersion);
 
 template <class Object>
 void
@@ -297,14 +292,6 @@ keypairForSignature(
     Json::Value const& params,
     Json::Value& error,
     unsigned int apiVersion = apiVersionIfUnspecified);
-/** Helper to parse submit_mode parameter to RPC submit.
- *
- * @param params RPC parameters
- * @return Either the mode or an error object.
- */
-ripple::Expected<RPC::SubmitSync, Json::Value>
-getSubmitSyncMode(Json::Value const& params);
-
 }  // namespace RPC
 }  // namespace ripple
 

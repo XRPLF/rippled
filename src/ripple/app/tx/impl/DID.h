@@ -17,30 +17,56 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_SNTPCLOCK_H_INCLUDED
-#define RIPPLE_NET_SNTPCLOCK_H_INCLUDED
+#ifndef RIPPLE_TX_DID_H_INCLUDED
+#define RIPPLE_TX_DID_H_INCLUDED
 
-#include <ripple/beast/clock/abstract_clock.h>
-#include <ripple/beast/utility/Journal.h>
-#include <chrono>
-#include <memory>
-#include <string>
-#include <vector>
+#include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
 
-/** A clock based on system_clock and adjusted for SNTP. */
-class SNTPClock : public beast::abstract_clock<std::chrono::system_clock>
+class DIDSet : public Transactor
 {
 public:
-    virtual void
-    run(std::vector<std::string> const& servers) = 0;
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    virtual duration
-    offset() const = 0;
+    explicit DIDSet(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    TER
+    doApply() override;
 };
 
-extern std::unique_ptr<SNTPClock> make_SNTPClock(beast::Journal);
+//------------------------------------------------------------------------------
+
+class DIDDelete : public Transactor
+{
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
+    explicit DIDDelete(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static TER
+    deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner);
+
+    static TER
+    deleteSLE(
+        ApplyView& view,
+        std::shared_ptr<SLE> sle,
+        AccountID const owner,
+        beast::Journal j);
+
+    TER
+    doApply() override;
+};
 
 }  // namespace ripple
 

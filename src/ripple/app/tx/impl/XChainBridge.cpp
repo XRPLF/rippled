@@ -505,7 +505,7 @@ transferHelper(
         /*default path*/ true,
         /*partial payment*/ false,
         /*owner pays transfer fee*/ true,
-        /*offer crossing*/ false,
+        /*offer crossing*/ OfferCrossing::no,
         /*limit quality*/ std::nullopt,
         /*sendmax*/ std::nullopt,
         j);
@@ -1211,6 +1211,9 @@ attestationPreflight(PreflightContext const& ctx)
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
+    if (!publicKeyType(ctx.tx[sfPublicKey]))
+        return temMALFORMED;
+
     auto const att = toClaim<TAttestation>(ctx.tx);
     if (!att)
         return temMALFORMED;
@@ -1452,13 +1455,19 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
-
     STXChainBridge::ChainType const chainType =
         STXChainBridge::srcChain(account == bridgeSpec.lockingChainDoor());
 
-    if (ctx.view.read(keylet::bridge(bridgeSpec, chainType)))
     {
-        return tecDUPLICATE;
+        auto hasBridge = [&](STXChainBridge::ChainType ct) -> bool {
+            return ctx.view.exists(keylet::bridge(bridgeSpec, ct));
+        };
+
+        if (hasBridge(STXChainBridge::ChainType::issuing) ||
+            hasBridge(STXChainBridge::ChainType::locking))
+        {
+            return tecDUPLICATE;
+        }
     }
 
     if (!isXRP(bridgeSpec.issue(chainType)))

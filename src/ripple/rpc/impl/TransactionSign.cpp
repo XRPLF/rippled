@@ -20,6 +20,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/TxQ.h>
@@ -166,6 +167,22 @@ checkPayment(
     // Only path find for Payments.
     if (tx_json[jss::TransactionType].asString() != jss::Payment)
         return Json::Value();
+
+    // DeliverMax is an alias to Amount and we use Amount internally
+    if (tx_json.isMember(jss::DeliverMax))
+    {
+        if (tx_json.isMember(jss::Amount))
+        {
+            if (tx_json[jss::DeliverMax] != tx_json[jss::Amount])
+                return RPC::make_error(
+                    rpcINVALID_PARAMS,
+                    "Cannot specify differing 'Amount' and 'DeliverMax'");
+        }
+        else
+            tx_json[jss::Amount] = tx_json[jss::DeliverMax];
+
+        tx_json.removeMember(jss::DeliverMax);
+    }
 
     if (!tx_json.isMember(jss::Amount))
         return RPC::missing_field_error("tx_json.Amount");
@@ -629,12 +646,25 @@ transactionConstructImpl(
 }
 
 static Json::Value
-transactionFormatResultImpl(Transaction::pointer tpTrans)
+transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 {
     Json::Value jvResult;
     try
     {
-        jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
+        if (apiVersion > 1)
+        {
+            jvResult[jss::tx_json] =
+                tpTrans->getJson(JsonOptions::disable_API_prior_V2);
+            jvResult[jss::hash] = to_string(tpTrans->getID());
+        }
+        else
+            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
+
+        RPC::insertDeliverMax(
+            jvResult[jss::tx_json],
+            tpTrans->getSTransaction()->getTxnType(),
+            apiVersion);
+
         jvResult[jss::tx_blob] =
             strHex(tpTrans->getSTransaction()->getSerializer().peekData());
 
@@ -761,6 +791,7 @@ checkFee(
 Json::Value
 transactionSign(
     Json::Value jvRequest,
+    unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
@@ -791,19 +822,19 @@ transactionSign(
     if (!txn.second)
         return txn.first;
 
-    return transactionFormatResultImpl(txn.second);
+    return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
 /** Returns a Json::objectValue. */
 Json::Value
 transactionSubmit(
     Json::Value jvRequest,
+    unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    ProcessTransactionFn const& processTransaction,
-    RPC::SubmitSync sync)
+    ProcessTransactionFn const& processTransaction)
 {
     using namespace detail;
 
@@ -829,7 +860,8 @@ transactionSubmit(
     // Finally, submit the transaction.
     try
     {
-        processTransaction(txn.second, isUnlimited(role), sync, failType);
+        // FIXME: For performance, should use asynch interface
+        processTransaction(txn.second, isUnlimited(role), true, failType);
     }
     catch (std::exception&)
     {
@@ -837,7 +869,7 @@ transactionSubmit(
             rpcINTERNAL, "Exception occurred during transaction submission.");
     }
 
-    return transactionFormatResultImpl(txn.second);
+    return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
 namespace detail {
@@ -927,6 +959,7 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
 Json::Value
 transactionSignFor(
     Json::Value jvRequest,
+    unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
@@ -1027,19 +1060,19 @@ transactionSignFor(
     if (!txn.second)
         return txn.first;
 
-    return transactionFormatResultImpl(txn.second);
+    return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
 /** Returns a Json::objectValue. */
 Json::Value
 transactionSubmitMultiSigned(
     Json::Value jvRequest,
+    unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    ProcessTransactionFn const& processTransaction,
-    RPC::SubmitSync sync)
+    ProcessTransactionFn const& processTransaction)
 {
     auto const& ledger = app.openLedger().current();
     auto j = app.journal("RPCHandler");
@@ -1212,7 +1245,7 @@ transactionSubmitMultiSigned(
     try
     {
         // FIXME: For performance, should use asynch interface
-        processTransaction(txn.second, isUnlimited(role), sync, failType);
+        processTransaction(txn.second, isUnlimited(role), true, failType);
     }
     catch (std::exception&)
     {
@@ -1220,7 +1253,7 @@ transactionSubmitMultiSigned(
             rpcINTERNAL, "Exception occurred during transaction submission.");
     }
 
-    return transactionFormatResultImpl(txn.second);
+    return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
 }  // namespace RPC

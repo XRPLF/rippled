@@ -17,25 +17,26 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_SUBMITSYNC_H_INCLUDED
-#define RIPPLE_BASICS_SUBMITSYNC_H_INCLUDED
+#include <ripple/app/misc/DeliverMax.h>
+
+#include <ripple/protocol/jss.h>
 
 namespace ripple {
 namespace RPC {
 
-/**
- * Possible values for defining synchronous behavior of the transaction
- * submission API.
- *   1) sync (default): Process transactions in a batch immediately,
- *       and return only once the transaction has been processed.
- *   2) async: Put transaction into the batch for the next processing
- *       interval and return immediately.
- *   3) wait: Put transaction into the batch for the next processing
- *       interval and return only after it is processed.
- */
-enum class SubmitSync { sync, async, wait };
+void
+insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion)
+{
+    if (tx_json.isMember(jss::Amount))
+    {
+        if (txnType == ttPAYMENT)
+        {
+            tx_json[jss::DeliverMax] = tx_json[jss::Amount];
+            if (apiVersion > 1)
+                tx_json.removeMember(jss::Amount);
+        }
+    }
+}
 
 }  // namespace RPC
 }  // namespace ripple
-
-#endif

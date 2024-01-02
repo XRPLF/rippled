@@ -21,6 +21,7 @@
 #define RIPPLE_CONSENSUS_CONSENSUS_TYPES_H_INCLUDED
 
 #include <ripple/basics/chrono.h>
+#include <ripple/consensus/ConsensusProposal.h>
 #include <ripple/consensus/DisputedTx.h>
 #include <chrono>
 #include <map>
@@ -188,8 +189,6 @@ enum class ConsensusState {
     Yes       //!< We have consensus along with the network
 };
 
-template <class NodeID_t, class LedgerID_t, class Position_t, class Seq>
-class ConsensusProposal;
 /** Encapsulates the result of consensus.
 
     Stores all relevant data for the outcome of consensus on a single
@@ -209,8 +208,7 @@ struct ConsensusResult
     using Proposal_t = ConsensusProposal<
         NodeID_t,
         typename Ledger_t::ID,
-        typename TxSet_t::ID,
-        typename Ledger_t::Seq>;
+        typename TxSet_t::ID>;
     using Dispute_t = DisputedTx<Tx_t, NodeID_t>;
 
     ConsensusResult(TxSet_t&& s, Proposal_t&& p)

@@ -149,9 +149,11 @@ public:
     bool nodeToShard = false;
     bool ELB_SUPPORT = false;
 
-    std::vector<std::string> IPS;           // Peer IPs from rippled.cfg.
-    std::vector<std::string> IPS_FIXED;     // Fixed Peer IPs from rippled.cfg.
-    std::vector<std::string> SNTP_SERVERS;  // SNTP servers from rippled.cfg.
+    // Entries from [ips] config stanza
+    std::vector<std::string> IPS;
+
+    // Entries from [ips_fixed] config stanza
+    std::vector<std::string> IPS_FIXED;
 
     enum StartUpType { FRESH, NORMAL, LOAD, LOAD_FILE, REPLAY, NETWORK };
     StartUpType START_UP = NORMAL;
@@ -213,7 +215,7 @@ public:
 
     // Node storage configuration
     std::uint32_t LEDGER_HISTORY = 256;
-    std::uint32_t FETCH_DEPTH = 1'000'000'000;
+    std::uint32_t FETCH_DEPTH = 1000000000;
 
     // Tunable that adjusts various parameters, typically associated
     // with hardware parameters (RAM size and CPU cores). The default
@@ -230,11 +232,10 @@ public:
     // Enable the experimental Ledger Replay functionality
     bool LEDGER_REPLAY = false;
 
-    // Work queue limits. 10000 transactions is 2 full seconds of slowdown at
-    // 5000/s.
-    int MAX_TRANSACTIONS = 10'000;
-    static constexpr int MAX_JOB_QUEUE_TX = 100'000;
-    static constexpr int MIN_JOB_QUEUE_TX = 1'000;
+    // Work queue limits
+    int MAX_TRANSACTIONS = 250;
+    static constexpr int MAX_JOB_QUEUE_TX = 1000;
+    static constexpr int MIN_JOB_QUEUE_TX = 100;
 
     // Amendment majority time
     std::chrono::seconds AMENDMENT_MAJORITY_TIME = defaultAmendmentMajorityTime;

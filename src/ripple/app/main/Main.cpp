@@ -169,6 +169,7 @@ printHelp(const po::options_description& desc)
            "     peer_reservations_list\n"
            "     ripple ...\n"
            "     ripple_path_find <json> [<ledger>]\n"
+           "     server_definitions [<hash>]\n"
            "     server_info [counters]\n"
            "     server_state [counters]\n"
            "     sign <private_key> <tx_json> [offline]\n"
@@ -803,10 +804,8 @@ run(int argc, char** argv)
         if (vm.count("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::severities::kTrace));
 
-        auto timeKeeper = make_TimeKeeper(logs->journal("TimeKeeper"));
-
         auto app = make_Application(
-            std::move(config), std::move(logs), std::move(timeKeeper));
+            std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
 
         if (!app->setup(vm))
             return -1;

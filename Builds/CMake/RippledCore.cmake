@@ -201,7 +201,6 @@ install (
     src/ripple/basics/StringUtilities.h
     src/ripple/basics/TaggedCache.h
     src/ripple/basics/tagged_integer.h
-    src/ripple/basics/SubmitSync.h
     src/ripple/basics/ThreadSafetyAnalysis.h
     src/ripple/basics/ToString.h
     src/ripple/basics/UnorderedContainers.h
@@ -217,6 +216,7 @@ install (
 install (
   FILES
     src/ripple/json/JsonPropertyStream.h
+    src/ripple/json/MultivarJson.h
     src/ripple/json/Object.h
     src/ripple/json/Output.h
     src/ripple/json/Writer.h
@@ -467,6 +467,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/misc/detail/impl/WorkSSL.cpp
   src/ripple/app/misc/impl/AccountTxPaging.cpp
   src/ripple/app/misc/impl/AmendmentTable.cpp
+  src/ripple/app/misc/impl/DeliverMax.cpp
   src/ripple/app/misc/impl/LoadFeeTrack.cpp
   src/ripple/app/misc/impl/Manifest.cpp
   src/ripple/app/misc/impl/Transaction.cpp
@@ -519,6 +520,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/CreateTicket.cpp
   src/ripple/app/tx/impl/DeleteAccount.cpp
   src/ripple/app/tx/impl/DepositPreauth.cpp
+  src/ripple/app/tx/impl/DID.cpp
   src/ripple/app/tx/impl/Escrow.cpp
   src/ripple/app/tx/impl/InvariantCheck.cpp
   src/ripple/app/tx/impl/NFTokenAcceptOffer.cpp
@@ -568,9 +570,7 @@ target_sources (rippled PRIVATE
   src/ripple/core/impl/JobQueue.cpp
   src/ripple/core/impl/LoadEvent.cpp
   src/ripple/core/impl/LoadMonitor.cpp
-  src/ripple/core/impl/SNTPClock.cpp
   src/ripple/core/impl/SociDB.cpp
-  src/ripple/core/impl/TimeKeeper.cpp
   src/ripple/core/impl/Workers.cpp
   src/ripple/core/Pg.cpp
   #[===============================[
@@ -787,6 +787,7 @@ if (tests)
     src/test/app/DeliverMin_test.cpp
     src/test/app/DepositAuth_test.cpp
     src/test/app/Discrepancy_test.cpp
+    src/test/app/DID_test.cpp
     src/test/app/DNS_test.cpp
     src/test/app/Escrow_test.cpp
     src/test/app/FeeVote_test.cpp
@@ -918,6 +919,7 @@ if (tests)
     src/test/json/Output_test.cpp
     src/test/json/Writer_test.cpp
     src/test/json/json_value_test.cpp
+    src/test/json/MultivarJson_test.cpp
     #[===============================[
        test sources:
          subdir: jtx
@@ -929,7 +931,6 @@ if (tests)
     src/test/jtx/impl/AMMTest.cpp
     src/test/jtx/impl/Env.cpp
     src/test/jtx/impl/JSONRPCClient.cpp
-    src/test/jtx/impl/ManualTimeKeeper.cpp
     src/test/jtx/impl/TestHelpers.cpp
     src/test/jtx/impl/WSClient.cpp
     src/test/jtx/impl/acctdelete.cpp
@@ -940,6 +941,7 @@ if (tests)
     src/test/jtx/impl/check.cpp
     src/test/jtx/impl/delivermin.cpp
     src/test/jtx/impl/deposit.cpp
+    src/test/jtx/impl/did.cpp
     src/test/jtx/impl/envconfig.cpp
     src/test/jtx/impl/fee.cpp
     src/test/jtx/impl/flags.cpp
@@ -1060,6 +1062,7 @@ if (tests)
     src/test/rpc/KeyGeneration_test.cpp
     src/test/rpc/LedgerClosed_test.cpp
     src/test/rpc/LedgerData_test.cpp
+    src/test/rpc/LedgerHeader_test.cpp
     src/test/rpc/LedgerRPC_test.cpp
     src/test/rpc/LedgerRequestRPC_test.cpp
     src/test/rpc/ManifestRPC_test.cpp
@@ -1083,6 +1086,7 @@ if (tests)
     src/test/rpc/ValidatorInfo_test.cpp
     src/test/rpc/ValidatorRPC_test.cpp
     src/test/rpc/Version_test.cpp
+    src/test/rpc/Handler_test.cpp
     #[===============================[
        test sources:
          subdir: server
