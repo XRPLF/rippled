@@ -185,7 +185,7 @@ operator==(Issue const& lhs, Issue const& rhs)
 
 /** Strict weak ordering. */
 /** @{ */
-[[nodiscard]] inline constexpr std::weak_ordering
+[[nodiscard]] inline std::weak_ordering
 operator<=>(Issue const& lhs, Issue const& rhs)
 {
     if (auto const c{lhs.asset().asset() <=> rhs.asset().asset()}; c != 0)

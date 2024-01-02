@@ -76,7 +76,7 @@ operator==(Book const& lhs, Book const& rhs)
 
 /** Strict weak ordering. */
 /** @{ */
-[[nodiscard]] inline constexpr std::weak_ordering
+[[nodiscard]] inline std::weak_ordering
 operator<=>(Book const& lhs, Book const& rhs)
 {
     if (auto const c{lhs.in <=> rhs.in}; c != 0)
