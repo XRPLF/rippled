@@ -100,6 +100,8 @@ verifyHandshake(
    enabled
    @param vpReduceRelayEnabled if true then validation/proposal reduce-relay
    feature is enabled
+   @param pvs is optional protocol versions to use instead of supported
+   protocol versions
    @return http request with empty body
  */
 request_type
@@ -108,7 +110,8 @@ makeRequest(
     bool comprEnabled,
     bool ledgerReplayEnabled,
     bool txReduceRelayEnabled,
-    bool vpReduceRelayEnabled);
+    bool vpReduceRelayEnabled,
+    std::optional<std::vector<ProtocolVersion>> const& pvs = std::nullopt);
 
 /** Make http response
 

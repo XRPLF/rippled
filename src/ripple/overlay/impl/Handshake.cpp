@@ -369,14 +369,18 @@ makeRequest(
     bool comprEnabled,
     bool ledgerReplayEnabled,
     bool txReduceRelayEnabled,
-    bool vpReduceRelayEnabled) -> request_type
+    bool vpReduceRelayEnabled,
+    std::optional<std::vector<ProtocolVersion>> const& pvs) -> request_type
 {
     request_type m;
     m.method(boost::beast::http::verb::get);
     m.target("/");
     m.version(11);
     m.insert("User-Agent", BuildInfo::getFullVersionString());
-    m.insert("Upgrade", supportedProtocolVersions());
+    if (pvs)
+        m.insert("Upgrade", toProtocolVersionStr(*pvs));
+    else
+        m.insert("Upgrade", supportedProtocolVersions());
     m.insert("Connection", "Upgrade");
     m.insert("Connect-As", "Peer");
     m.insert("Crawl", crawlPublic ? "public" : "private");

@@ -307,6 +307,15 @@ public:
     std::optional<std::pair<std::uint32_t, std::uint32_t>>
         FORCED_LEDGER_RANGE_PRESENT;
 
+    // Allow the overlay network. This is used in the overlay debugging.
+    // There is no corresponding configuration setting in rippled.cfg.
+    bool ALLOW_OVERLAY = false;
+
+    // Force the protocol versions. This is used in the overlay debugging.
+    // There is no corresponding configuration setting in rippled.cfg.
+    std::optional<std::vector<std::pair<std::uint16_t, std::uint16_t>>>
+        PROTOCOL_VERSIONS = std::nullopt;
+
 public:
     Config();
 

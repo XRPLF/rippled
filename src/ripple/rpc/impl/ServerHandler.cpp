@@ -1155,7 +1155,7 @@ parse_Ports(Config const& config, std::ostream& log)
         result.push_back(to_Port(parsed, log));
     }
 
-    if (config.standalone())
+    if (config.standalone() && !config.ALLOW_OVERLAY)
     {
         auto it = result.begin();
 

@@ -206,7 +206,8 @@ ConnectAttempt::onHandshake(error_code ec)
         app_.config().COMPRESSION,
         app_.config().LEDGER_REPLAY,
         app_.config().TX_REDUCE_RELAY_ENABLE,
-        app_.config().VP_REDUCE_RELAY_ENABLE);
+        app_.config().VP_REDUCE_RELAY_ENABLE,
+        app_.config().PROTOCOL_VERSIONS);
 
     buildHandshake(
         req_,

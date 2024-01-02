@@ -221,7 +221,8 @@ OverlayImpl::onHandoff(
         }
     }
 
-    auto const negotiatedVersion = negotiateProtocolVersion(request["Upgrade"]);
+    auto const negotiatedVersion = negotiateProtocolVersion(
+        request["Upgrade"], app_.config().PROTOCOL_VERSIONS);
     if (!negotiatedVersion)
     {
         m_peerFinder->on_closed(slot);

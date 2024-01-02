@@ -62,15 +62,40 @@ parseProtocolVersions(boost::beast::string_view const& s);
 
 /** Given a list of supported protocol versions, choose the one we prefer. */
 std::optional<ProtocolVersion>
-negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions);
+negotiateProtocolVersion(
+    std::vector<ProtocolVersion> const& versions,
+    std::optional<std::vector<ProtocolVersion>> const& supported =
+        std::nullopt);
 
 /** Given a list of supported protocol versions, choose the one we prefer. */
 std::optional<ProtocolVersion>
-negotiateProtocolVersion(boost::beast::string_view const& versions);
+negotiateProtocolVersion(
+    boost::beast::string_view const& versions,
+    std::optional<std::vector<ProtocolVersion>> const& supported =
+        std::nullopt);
 
 /** The list of all the protocol versions we support. */
 std::string const&
 supportedProtocolVersions();
+
+template <typename T>
+std::string const&
+toProtocolVersionStr(T const& list)
+{
+    static std::string const supported = [&]() {
+        std::string ret;
+        for (auto const& v : list)
+        {
+            if (!ret.empty())
+                ret += ", ";
+            ret += to_string(v);
+        }
+
+        return ret;
+    }();
+
+    return supported;
+}
 
 /** Determine whether we support a specific protocol version. */
 bool
