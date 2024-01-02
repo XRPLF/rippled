@@ -997,6 +997,7 @@ if (tests)
        test sources:
          subdir: overlay
     #]===============================]
+    src/test/overlay/ProtocolStart_test.cpp
     src/test/overlay/ProtocolVersion_test.cpp
     src/test/overlay/cluster_test.cpp
     src/test/overlay/short_read_test.cpp
