@@ -825,6 +825,37 @@ transactionSign(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
+std::variant<Json::Value, Transaction::pointer>
+getTxnPtr(
+    Json::Value jvRequest,
+    Role role,
+    std::chrono::seconds validatedLedgerAge,
+    Application& app)
+{
+    using namespace detail;
+
+    auto const& ledger = app.openLedger().current();
+    auto j = app.journal("RPCHandler");
+    JLOG(j.debug()) << "getTxnPtr: " << jvRequest;
+
+    // Add and amend fields based on the transaction type.
+    SigningForParams signForParams;
+    transactionPreProcessResult preprocResult = transactionPreProcessImpl(
+        jvRequest, role, signForParams, validatedLedgerAge, app);
+
+    if (!preprocResult.second)
+        return preprocResult.first;
+
+    // Make sure the STTx makes a legitimate Transaction.
+    std::pair<Json::Value, Transaction::pointer> txn =
+        transactionConstructImpl(preprocResult.second, ledger->rules(), app);
+
+    if (!txn.second)
+        return txn.first;
+
+    return txn.second;
+}
+
 /** Returns a Json::objectValue. */
 Json::Value
 transactionSubmit(
