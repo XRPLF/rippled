@@ -798,31 +798,20 @@ transactionSign(
     Application& app)
 {
     using namespace detail;
+    std::variant<Json::Value, Transaction::pointer> sanitizeRequest =
+        getTxnPtr(jvRequest, role, validatedLedgerAge, app);
 
-    auto j = app.journal("RPCHandler");
-    JLOG(j.debug()) << "transactionSign: " << jvRequest;
+    Transaction::pointer ptrTxn;
+    try
+    {
+        ptrTxn = std::get<Transaction::pointer>(sanitizeRequest);
+    }
+    catch (std::bad_variant_access const& ex)
+    {
+        return std::get<Json::Value>(sanitizeRequest);
+    }
 
-    // Add and amend fields based on the transaction type.
-    SigningForParams signForParams;
-    transactionPreProcessResult preprocResult = transactionPreProcessImpl(
-        jvRequest, role, signForParams, validatedLedgerAge, app);
-
-    if (!preprocResult.second)
-        return preprocResult.first;
-
-    std::shared_ptr<const ReadView> ledger;
-    if (app.config().reporting())
-        ledger = app.getLedgerMaster().getValidatedLedger();
-    else
-        ledger = app.openLedger().current();
-    // Make sure the STTx makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl(preprocResult.second, ledger->rules(), app);
-
-    if (!txn.second)
-        return txn.first;
-
-    return transactionFormatResultImpl(txn.second, apiVersion);
+    return transactionFormatResultImpl(ptrTxn, apiVersion);
 }
 
 std::variant<Json::Value, Transaction::pointer>
@@ -868,31 +857,24 @@ transactionSubmit(
     ProcessTransactionFn const& processTransaction)
 {
     using namespace detail;
+    std::variant<Json::Value, Transaction::pointer> sanitizeRequest =
+        getTxnPtr(jvRequest, role, validatedLedgerAge, app);
 
-    auto const& ledger = app.openLedger().current();
-    auto j = app.journal("RPCHandler");
-    JLOG(j.debug()) << "transactionSubmit: " << jvRequest;
-
-    // Add and amend fields based on the transaction type.
-    SigningForParams signForParams;
-    transactionPreProcessResult preprocResult = transactionPreProcessImpl(
-        jvRequest, role, signForParams, validatedLedgerAge, app);
-
-    if (!preprocResult.second)
-        return preprocResult.first;
-
-    // Make sure the STTx makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl(preprocResult.second, ledger->rules(), app);
-
-    if (!txn.second)
-        return txn.first;
+    Transaction::pointer ptrTxn;
+    try
+    {
+        ptrTxn = std::get<Transaction::pointer>(sanitizeRequest);
+    }
+    catch (std::bad_variant_access const& ex)
+    {
+        return std::get<Json::Value>(sanitizeRequest);
+    }
 
     // Finally, submit the transaction.
     try
     {
         // FIXME: For performance, should use asynch interface
-        processTransaction(txn.second, isUnlimited(role), true, failType);
+        processTransaction(ptrTxn, isUnlimited(role), true, failType);
     }
     catch (std::exception&)
     {
@@ -900,7 +882,7 @@ transactionSubmit(
             rpcINTERNAL, "Exception occurred during transaction submission.");
     }
 
-    return transactionFormatResultImpl(txn.second, apiVersion);
+    return transactionFormatResultImpl(ptrTxn, apiVersion);
 }
 
 namespace detail {
