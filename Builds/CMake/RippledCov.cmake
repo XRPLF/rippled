@@ -18,7 +18,8 @@ endif()
 list(APPEND GCOVR_ADDITIONAL_ARGS
   --exclude-throw-branches
   --exclude-noncode-lines
-  --exclude-unreachable-branches -s)
+  --exclude-unreachable-branches -s
+  -j ${coverage_test_parallelism})
 
 setup_target_for_coverage_gcovr(
   NAME coverage
