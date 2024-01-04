@@ -271,7 +271,7 @@ which is only enabled when `coverage` option is set, e.g. with
 
 Prerequisites for the coverage report:
 
-- [gcovr tool][8] (can be installed e.g. with [pip][9])
+- [gcovr tool][gcovr] (can be installed e.g. with [pip][python-pip])
 - `gcov` for GCC (installed with the compiler by default) or
 - `llvm-cov` for Clang (installed with the compiler by default)
 - `Debug` build type
@@ -305,12 +305,12 @@ By default, the code coverage tool runs parallel unit tests with `--unittest-job
 errors on Apple. Developers can override the number of unit test jobs with
 `coverage_test_parallelism` variable in `cmake`.
 
-Example use with all cmake variables set:
+Example use with cmake variables set:
 
 ```
 cd .build
 conan install .. --output-folder . --build missing --settings build_type=Debug
-cmake -DCMAKE_BUILD_TYPE=Debug -Dcoverage=ON -Dcoverage_test=JSONRPC -Dcoverage_test_parallelism=1 -Dcoverage_format=html-details -Dcoverage_extra_args="--json coverage_report.json --json-pretty --txt coverage_report.txt" -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
+cmake -DCMAKE_BUILD_TYPE=Debug -Dcoverage=ON -Dcoverage_test_parallelism=2 -Dcoverage_format=html-details -Dcoverage_extra_args="--json coverage_report.json" -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
 cmake --build . --target coverage_report
 ```
 
@@ -422,8 +422,8 @@ If you want to experiment with a new package, follow these steps:
 [5]: https://en.wikipedia.org/wiki/Unity_build
 [6]: https://github.com/boostorg/beast/issues/2648
 [7]: https://github.com/boostorg/beast/issues/2661
-[8]: https://gcovr.com/en/stable/getting-started.html
-[9]: https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/
+[gcovr]: https://gcovr.com/en/stable/getting-started.html
+[python-pip]: https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/
 [build_type]: https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html
 [runtime]: https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html
 [toolchain]: https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html
