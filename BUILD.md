@@ -271,7 +271,7 @@ which is only enabled when `coverage` option is set, e.g. with
 
 Prerequisites for the coverage report:
 
-- [gcovr tool][5] (can be installed e.g. with [pip][6])
+- [gcovr tool][8] (can be installed e.g. with [pip][9])
 - `gcov` for GCC (installed with the compiler by default) or
 - `llvm-cov` for Clang (installed with the compiler by default)
 - `Debug` build type
@@ -289,26 +289,28 @@ Above steps are automated into a single target `coverage_report`. The instrument
 the cost of extra disk space utilisation and a small performance hit
 (to store coverage capture). In case of a spurious failure of unit tests, it is
 possile to re-run `coverage_report` target without rebuilding the `rippled` binary
-(since it is simply a dependency of the coverage report target).
+(since it is simply a dependency of the coverage report target). It is also possible
+to select only specific tests for the purpose of coverage report, by setting `coverage_test`
+variable in `cmake`
 
 The default coverage report format is `html-details`, but the user
 can override it to any of the formats listed in `Builds/CMake/CodeCoverage.cmake`
-by setting `CODE_COVERAGE_REPORT_FORMAT` variable in `cmake`. It is also possible
-to generate more than one format at a time by setting `CODE_COVERAGE_EXTRA_ARGS`
+by setting `coverage_format` variable in `cmake`. It is also possible
+to generate more than one format at a time by setting `coverage_extra_args`
 variable in `cmake`. The specific command line used to run the `gcovr` tool will be
 displayed if `CODE_COVERAGE_VERBOSE` variable is set.
 
 By default, the code coverage tool runs parallel unit tests with `--unittest-jobs`
  set to the number of available CPU cores. This may cause spurious test
 errors on Apple. Developers can override the number of unit test jobs with
-`CODE_COVERAGE_TEST_PARALLELISM` variable in `cmake`.
+`coverage_test_parallelism` variable in `cmake`.
 
 Example use with all cmake variables set:
 
 ```
 cd .build
 conan install .. --output-folder . --build missing --settings build_type=Debug
-cmake -DCMAKE_BUILD_TYPE=Debug -Dcoverage=ON -DCODE_COVERAGE_REPORT_FORMAT=html-details -DCODE_COVERAGE_EXTRA_ARGS="--json coverage_report.json --json-pretty --txt coverage_report.txt"  -DCODE_COVERAGE_VERBOSE=ON -DCODE_COVERAGE_TEST_PARALLELISM=2 -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
+cmake -DCMAKE_BUILD_TYPE=Debug -Dcoverage=ON -Dcoverage_test=JSONRPC -Dcoverage_test_parallelism=1 -Dcoverage_format=html-details -Dcoverage_extra_args="--json coverage_report.json --json-pretty --txt coverage_report.txt" -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
 cmake --build . --target coverage_report
 ```
 
@@ -330,7 +332,7 @@ stored inside the build directory, as either of:
 | `unity` | ON | Configure a unity build. |
 | `san` | N/A | Enable a sanitizer with Clang. Choices are `thread` and `address`. |
 
-[Unity builds][7] may be faster for the first build
+[Unity builds][5] may be faster for the first build
 (at the cost of much more memory) since they concatenate sources into fewer
 translation units. Non-unity builds may be faster for incremental builds,
 and can be helpful for detecting `#include` omissions.
@@ -369,8 +371,8 @@ conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_R
 ### call to 'async_teardown' is ambiguous
 
 If you are compiling with an early version of Clang 16, then you might hit
-a [regression][8] when compiling C++20 that manifests as an [error in a Boost
-header][9]. You can workaround it by adding this preprocessor definition:
+a [regression][6] when compiling C++20 that manifests as an [error in a Boost
+header][7]. You can workaround it by adding this preprocessor definition:
 
 ```
 conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_DISABLE_CONCEPTS"' default
@@ -417,11 +419,11 @@ If you want to experiment with a new package, follow these steps:
 [1]: https://github.com/conan-io/conan-center-index/issues/13168
 [2]: https://en.cppreference.com/w/cpp/compiler_support/20
 [3]: https://docs.conan.io/en/latest/getting_started.html
-[5]: https://gcovr.com/en/stable/getting-started.html
-[6]: https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/
-[7]: https://en.wikipedia.org/wiki/Unity_build
-[8]: https://github.com/boostorg/beast/issues/2648
-[9]: https://github.com/boostorg/beast/issues/2661
+[5]: https://en.wikipedia.org/wiki/Unity_build
+[6]: https://github.com/boostorg/beast/issues/2648
+[7]: https://github.com/boostorg/beast/issues/2661
+[8]: https://gcovr.com/en/stable/getting-started.html
+[9]: https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/
 [build_type]: https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html
 [runtime]: https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html
 [toolchain]: https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html

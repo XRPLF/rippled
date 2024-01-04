@@ -32,7 +32,6 @@ runs:
           --config ${{ inputs.configuration }} \
           --parallel ${NUM_PROCESSORS:-$(nproc)} \
           --target ${{ inputs.cmake-target }}
-        [[ -n "${{ inputs.artifact }}" ]] \
-          && [[ -e "${build_dir}/${{ inputs.artifact }}" ]] \
-          && mv "${build_dir}/${{ inputs.artifact }}" ./ \
-          || echo
+        if [[ -n "${{ inputs.artifact }}" ]]; then \
+          mv "${build_dir}/${{ inputs.artifact }}" ./ ;\
+        fi

@@ -205,10 +205,11 @@ jobs:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
           cmake-args: >-
-            -DCODE_COVERAGE_REPORT_FORMAT=xml
+            -Dcoverage=ON
+            -Dcoverage_format=xml
+            -DCODE_COVERAGE_VERBOSE=ON
             -DCMAKE_CXX_FLAGS="-O0"
             -DCMAKE_C_FLAGS="-O0"
-            -Dcoverage=ON
           cmake-target: coverage_report
           artifact: coverage_report.xml
       - name: archive coverage report

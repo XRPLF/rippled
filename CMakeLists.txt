@@ -29,10 +29,6 @@ if(Git_FOUND)
 endif() #git
 
 include (ProcessorCount)
-if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-  include (CodeCoverage)
-  include (RippledCov)
-endif()
 
 if(thread_safety_analysis)
   add_compile_options(-Wthread-safety -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS -DRIPPLE_ENABLE_THREAD_SAFETY_ANNOTATIONS)
@@ -129,6 +125,11 @@ if(reporting)
     cassandra-cpp-driver::cassandra-cpp-driver
     PostgreSQL::PostgreSQL
   )
+endif()
+
+if (coverage)
+  include (CodeCoverage)
+  include (RippledCov)
 endif()
 
 ###
