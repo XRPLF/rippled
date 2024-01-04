@@ -33,19 +33,21 @@ CachedViewImpl::exists(Keylet const& k) const
 std::shared_ptr<SLE const>
 CachedViewImpl::read(Keylet const& k) const
 {
-    static CountedObjects::Counter hits{"CachedView::cache_hit"};
-    static CountedObjects::Counter hitsexpired{"CachedView::cache_hit_expired"};
-    static CountedObjects::Counter misses{"CachedView::cache_miss"};
+    static CountedObjects::Counter hits{"CachedView::hit"};
+    static CountedObjects::Counter hitsexpired{"CachedView::hitExpired"};
+    static CountedObjects::Counter misses{"CachedView::Miss"};
     bool cacheHit = false;
     bool baseRead = false;
 
     auto const digest = [&]() -> std::optional<uint256> {
-        std::lock_guard lock(mutex_);
-        auto const iter = map_.find(k.key);
-        if (iter != map_.end())
         {
-            cacheHit = true;
-            return iter->second;
+            std::lock_guard lock(mutex_);
+            auto const iter = map_.find(k.key);
+            if (iter != map_.end())
+            {
+                cacheHit = true;
+                return iter->second;
+            }
         }
         return base_.digest(k.key);
     }();
