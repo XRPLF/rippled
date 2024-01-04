@@ -8,8 +8,6 @@ inputs:
     default: null
   cmake-target:
     default: all
-  artifact:
-    default: null
 # An implicit input is the environment variable `build_dir`.
 runs:
   using: composite
@@ -32,6 +30,3 @@ runs:
           --config ${{ inputs.configuration }} \
           --parallel ${NUM_PROCESSORS:-$(nproc)} \
           --target ${{ inputs.cmake-target }}
-        if [[ -n "${{ inputs.artifact }}" ]]; then \
-          mv "${build_dir}/${{ inputs.artifact }}" ./ ;\
-        fi

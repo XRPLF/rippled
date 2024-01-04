@@ -87,12 +87,12 @@
 #     - fix append_coverage_compiler_flags_to_target to correctly add flags
 #     - replace "-fprofile-arcs -ftest-coverage" with "--coverage" (equivalent)
 #
-# 2023-12-15, Bronek Kozicki
+# 2024-01-04, Bronek Kozicki
 #     - remove setup_target_for_coverage_lcov (slow) and setup_target_for_coverage_fastcov (no support for Clang)
 #     - fix Clang support by adding find_program( ... llvm-cov )
 #     - add Apple Clang support by adding execute_process( COMMAND xcrun -f llvm-cov ... )
 #     - add CODE_COVERAGE_GCOV_TOOL to explicitly select gcov tool and disable find_program
-#     - replace both functions setup_target_for_coverage_gcovr_* with single setup_target_for_coverage_gcovr
+#     - replace both functions setup_target_for_coverage_gcovr_* with a single setup_target_for_coverage_gcovr
 #     - add support for all gcovr output formats
 #
 # USAGE:
@@ -159,12 +159,12 @@ option(CODE_COVERAGE_VERBOSE "Verbose information" FALSE)
 # Check prereqs
 find_program( GCOVR_PATH gcovr PATHS ${CMAKE_SOURCE_DIR}/scripts/test)
 
-if (DEFINED CODE_COVERAGE_GCOV_TOOL)
+if(DEFINED CODE_COVERAGE_GCOV_TOOL)
   set(GCOV_TOOL "${CODE_COVERAGE_GCOV_TOOL}")
-elseif (DEFINED ENV{CODE_COVERAGE_GCOV_TOOL})
+elseif(DEFINED ENV{CODE_COVERAGE_GCOV_TOOL})
   set(GCOV_TOOL "$ENV{CODE_COVERAGE_GCOV_TOOL}")
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
-  if (APPLE)
+  if(APPLE)
     execute_process( COMMAND xcrun -f llvm-cov
       OUTPUT_VARIABLE LLVMCOV_PATH
       OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -175,7 +175,7 @@ elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "(Apple)?[Cc]lang")
   if(LLVMCOV_PATH)
     set(GCOV_TOOL "${LLVMCOV_PATH} gcov")
   endif()
-elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
   find_program( GCOV_PATH gcov )
   set(GCOV_TOOL "${GCOV_PATH}")
 endif()
@@ -313,7 +313,7 @@ function(setup_target_for_coverage_gcovr)
         endif()
     endif()
 
-    if ((Coverage_FORMAT STREQUAL "cobertura")
+    if((Coverage_FORMAT STREQUAL "cobertura")
         OR (Coverage_FORMAT STREQUAL "xml"))
         list(APPEND GCOVR_ADDITIONAL_ARGS --cobertura "${GCOVR_OUTPUT_FILE}" )
         list(APPEND GCOVR_ADDITIONAL_ARGS --cobertura-pretty )

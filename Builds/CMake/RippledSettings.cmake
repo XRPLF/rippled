@@ -2,6 +2,8 @@
    declare user options/settings
 #]===================================================================]
 
+include(ProcessorCount)
+
 ProcessorCount(PROCESSOR_COUNT)
 
 option (assert "Enables asserts, even in release builds" OFF)

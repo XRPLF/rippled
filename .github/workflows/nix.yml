@@ -210,18 +210,21 @@ jobs:
             -DCODE_COVERAGE_VERBOSE=ON
             -DCMAKE_CXX_FLAGS="-O0"
             -DCMAKE_C_FLAGS="-O0"
-          cmake-target: coverage_report
-          artifact: coverage_report.xml
+          cmake-target: coverage
+      - name: build
+        shell: bash
+        run: |
+          mv "${build_dir}/coverage.xml" ./
       - name: archive coverage report
         uses: actions/upload-artifact@v3
         with:
-          name: coverage-report.xml
-          path: coverage_report.xml
+          name: coverage.xml
+          path: coverage.xml
           retention-days: 30
       - name: upload coverage report
         uses: codecov/codecov-action@v3
         with:
-          files: coverage_report.xml
+          files: coverage.xml
           fail_ci_if_error: true
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}

@@ -2,6 +2,8 @@
    convenience variables and sanity checks
 #]===================================================================]
 
+include(ProcessorCount)
+
 if (NOT ep_procs)
   ProcessorCount(ep_procs)
   if (ep_procs GREATER 1)

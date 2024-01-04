@@ -28,8 +28,6 @@ if(Git_FOUND)
     endif()
 endif() #git
 
-include (ProcessorCount)
-
 if(thread_safety_analysis)
   add_compile_options(-Wthread-safety -D_LIBCPP_ENABLE_THREAD_SAFETY_ANNOTATIONS -DRIPPLE_ENABLE_THREAD_SAFETY_ANNOTATIONS)
   add_compile_options("-stdlib=libc++")
@@ -127,9 +125,9 @@ if(reporting)
   )
 endif()
 
-if (coverage)
-  include (CodeCoverage)
-  include (RippledCov)
+if(coverage)
+  include(CodeCoverage)
+  include(RippledCov)
 endif()
 
 ###
