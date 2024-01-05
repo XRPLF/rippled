@@ -201,7 +201,6 @@ install (
     src/ripple/basics/StringUtilities.h
     src/ripple/basics/TaggedCache.h
     src/ripple/basics/tagged_integer.h
-    src/ripple/basics/SubmitSync.h
     src/ripple/basics/ThreadSafetyAnalysis.h
     src/ripple/basics/ToString.h
     src/ripple/basics/UnorderedContainers.h
@@ -637,7 +636,6 @@ target_sources (rippled PRIVATE
   src/ripple/overlay/impl/Cluster.cpp
   src/ripple/overlay/impl/ConnectAttempt.cpp
   src/ripple/overlay/impl/Handshake.cpp
-  src/ripple/overlay/impl/InboundHandoff.cpp
   src/ripple/overlay/impl/Message.cpp
   src/ripple/overlay/impl/OverlayImpl.cpp
   src/ripple/overlay/impl/PeerImp.cpp
