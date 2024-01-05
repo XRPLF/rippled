@@ -798,20 +798,31 @@ transactionSign(
     Application& app)
 {
     using namespace detail;
-    std::variant<Json::Value, Transaction::pointer> sanitizeRequest =
-        getTxnPtr(jvRequest, role, validatedLedgerAge, app);
 
-    Transaction::pointer ptrTxn;
-    try
-    {
-        ptrTxn = std::get<Transaction::pointer>(sanitizeRequest);
-    }
-    catch (std::bad_variant_access const& ex)
-    {
-        return std::get<Json::Value>(sanitizeRequest);
-    }
+    auto j = app.journal("RPCHandler");
+    JLOG(j.debug()) << "transactionSign: " << jvRequest;
 
-    return transactionFormatResultImpl(ptrTxn, apiVersion);
+    // Add and amend fields based on the transaction type.
+    SigningForParams signForParams;
+    transactionPreProcessResult preprocResult = transactionPreProcessImpl(
+        jvRequest, role, signForParams, validatedLedgerAge, app);
+
+    if (!preprocResult.second)
+        return preprocResult.first;
+
+    std::shared_ptr<const ReadView> ledger;
+    if (app.config().reporting())
+        ledger = app.getLedgerMaster().getValidatedLedger();
+    else
+        ledger = app.openLedger().current();
+    // Make sure the STTx makes a legitimate Transaction.
+    std::pair<Json::Value, Transaction::pointer> txn =
+        transactionConstructImpl(preprocResult.second, ledger->rules(), app);
+
+    if (!txn.second)
+        return txn.first;
+
+    return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
 std::variant<Json::Value, Transaction::pointer>
@@ -857,6 +868,9 @@ transactionSubmit(
     ProcessTransactionFn const& processTransaction)
 {
     using namespace detail;
+    auto j = app.journal("RPCHandler");
+    JLOG(j.debug()) << "transactionSubmit: " << jvRequest;
+
     std::variant<Json::Value, Transaction::pointer> sanitizeRequest =
         getTxnPtr(jvRequest, role, validatedLedgerAge, app);
 
