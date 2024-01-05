@@ -35,7 +35,7 @@ CachedViewImpl::read(Keylet const& k) const
 {
     static CountedObjects::Counter hits{"CachedView::hit"};
     static CountedObjects::Counter hitsexpired{"CachedView::hitExpired"};
-    static CountedObjects::Counter misses{"CachedView::Miss"};
+    static CountedObjects::Counter misses{"CachedView::miss"};
     bool cacheHit = false;
     bool baseRead = false;
 
