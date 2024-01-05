@@ -215,6 +215,8 @@ public:
     void
     clearLedger(std::uint32_t seq);
     bool
+    isValidated(ReadView const& ledger);
+    bool
     getValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal);
     bool
     getFullValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal);
@@ -291,27 +293,6 @@ public:
     // Returns the minimum ledger sequence in SQL database, if any.
     std::optional<LedgerIndex>
     minSqlSeq();
-
-    //! Whether we are in standalone mode.
-    bool
-    standalone() const
-    {
-        return standalone_;
-    }
-
-    /** Wait up to a specified duration for the next validated ledger.
-     *
-     * @tparam Rep std::chrono duration Rep.
-     * @tparam Period std::chrono duration Period.
-     * @param dur Duration to wait.
-     */
-    template <class Rep, class Period>
-    void
-    waitForValidated(std::chrono::duration<Rep, Period> const& dur)
-    {
-        std::unique_lock<std::mutex> lock(validMutex_);
-        validCond_.wait_for(lock, dur);
-    }
 
     // Iff a txn exists at the specified ledger and offset then return its txnid
     std::optional<uint256>
@@ -433,10 +414,7 @@ private:
     // Time that the previous upgrade warning was issued.
     TimeKeeper::time_point upgradeWarningPrevTime_{};
 
-    // mutex and condition variable for waiting for next validated ledger
-    std::mutex validMutex_;
-    std::condition_variable validCond_;
-
+private:
     struct Stats
     {
         template <class Handler>
@@ -458,6 +436,7 @@ private:
 
     Stats m_stats;
 
+private:
     void
     collect_metrics()
     {

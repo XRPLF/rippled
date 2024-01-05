@@ -21,7 +21,6 @@
 #define RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
 
 #include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/basics/SubmitSync.h>
 #include <ripple/ledger/ApplyView.h>
 #include <ripple/rpc/Role.h>
 
@@ -76,7 +75,7 @@ checkFee(
 using ProcessTransactionFn = std::function<void(
     std::shared_ptr<Transaction>& transaction,
     bool bUnlimited,
-    RPC::SubmitSync sync,
+    bool bLocal,
     NetworkOPs::FailHard failType)>;
 
 inline ProcessTransactionFn
@@ -85,10 +84,9 @@ getProcessTxnFn(NetworkOPs& netOPs)
     return [&netOPs](
                std::shared_ptr<Transaction>& transaction,
                bool bUnlimited,
-               RPC::SubmitSync sync,
+               bool bLocal,
                NetworkOPs::FailHard failType) {
-        netOPs.processTransaction(
-            transaction, bUnlimited, sync, true, failType);
+        netOPs.processTransaction(transaction, bUnlimited, bLocal, failType);
     };
 }
 
@@ -96,6 +94,7 @@ getProcessTxnFn(NetworkOPs& netOPs)
 Json::Value
 transactionSign(
     Json::Value params,  // Passed by value so it can be modified locally.
+    unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
@@ -105,17 +104,18 @@ transactionSign(
 Json::Value
 transactionSubmit(
     Json::Value params,  // Passed by value so it can be modified locally.
+    unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    ProcessTransactionFn const& processTransaction,
-    RPC::SubmitSync sync);
+    ProcessTransactionFn const& processTransaction);
 
 /** Returns a Json::objectValue. */
 Json::Value
 transactionSignFor(
     Json::Value params,  // Passed by value so it can be modified locally.
+    unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
@@ -125,12 +125,12 @@ transactionSignFor(
 Json::Value
 transactionSubmitMultiSigned(
     Json::Value params,  // Passed by value so it can be modified locally.
+    unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    ProcessTransactionFn const& processTransaction,
-    RPC::SubmitSync sync);
+    ProcessTransactionFn const& processTransaction);
 
 }  // namespace RPC
 }  // namespace ripple

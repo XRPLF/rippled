@@ -21,7 +21,6 @@
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/tx/apply.h>
-#include <ripple/basics/SubmitSync.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Fees.h>
@@ -49,10 +48,6 @@ doSubmit(RPC::JsonContext& context)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
 
-    auto const sync = RPC::getSubmitSyncMode(context.params);
-    if (!sync)
-        return sync.error();
-
     if (!context.params.isMember(jss::tx_blob))
     {
         auto const failType = getFailHard(context);
@@ -63,12 +58,12 @@ doSubmit(RPC::JsonContext& context)
 
         auto ret = RPC::transactionSubmit(
             context.params,
+            context.apiVersion,
             failType,
             context.role,
             context.ledgerMaster.getValidatedLedgerAge(),
             context.app,
-            RPC::getProcessTxnFn(context.netOps),
-            *sync);
+            RPC::getProcessTxnFn(context.netOps));
 
         ret[jss::deprecated] =
             "Signing support in the 'submit' command has been "
@@ -137,7 +132,7 @@ doSubmit(RPC::JsonContext& context)
         auto const failType = getFailHard(context);
 
         context.netOps.processTransaction(
-            tpTrans, isUnlimited(context.role), *sync, true, failType);
+            tpTrans, isUnlimited(context.role), true, failType);
     }
     catch (std::exception& e)
     {

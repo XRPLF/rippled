@@ -1,8 +1,8 @@
-/**********************************************************************
- * Copyright (c) 2013-2014 Diederik Huys, Pieter Wuille               *
- * Distributed under the MIT software license, see the accompanying   *
- * file COPYING or http://www.opensource.org/licenses/mit-license.php.*
- **********************************************************************/
+/***********************************************************************
+ * Copyright (c) 2013-2014 Diederik Huys, Pieter Wuille                *
+ * Distributed under the MIT software license, see the accompanying    *
+ * file COPYING or https://www.opensource.org/licenses/mit-license.php.*
+ ***********************************************************************/
 
 /**
  * Changelog:
@@ -11,8 +11,10 @@
  * - December 2014, Pieter Wuille: converted from YASM to GCC inline assembly
  */
 
-#ifndef _SECP256K1_FIELD_INNER5X52_IMPL_H_
-#define _SECP256K1_FIELD_INNER5X52_IMPL_H_
+#ifndef SECP256K1_FIELD_INNER5X52_IMPL_H
+#define SECP256K1_FIELD_INNER5X52_IMPL_H
+
+#include "util.h"
 
 SECP256K1_INLINE static void secp256k1_fe_mul_inner(uint64_t *r, const uint64_t *a, const uint64_t * SECP256K1_RESTRICT b) {
 /**
@@ -278,7 +280,7 @@ __asm__ __volatile__(
     "addq %%rsi,%%r8\n"
     /* r[4] = c */
     "movq %%r8,32(%%rdi)\n"
-: "+S"(a), "=m"(tmp1), "=m"(tmp2), "=m"(tmp3)
+: "+S"(a), "=&m"(tmp1), "=&m"(tmp2), "=&m"(tmp3)
 : "b"(b), "D"(r)
 : "%rax", "%rcx", "%rdx", "%r8", "%r9", "%r10", "%r11", "%r12", "%r13", "%r14", "%r15", "cc", "memory"
 );
@@ -493,10 +495,10 @@ __asm__ __volatile__(
     "addq %%rsi,%%r8\n"
     /* r[4] = c */
     "movq %%r8,32(%%rdi)\n"
-: "+S"(a), "=m"(tmp1), "=m"(tmp2), "=m"(tmp3)
+: "+S"(a), "=&m"(tmp1), "=&m"(tmp2), "=&m"(tmp3)
 : "D"(r)
 : "%rax", "%rbx", "%rcx", "%rdx", "%r8", "%r9", "%r10", "%r11", "%r12", "%r13", "%r14", "%r15", "cc", "memory"
 );
 }
 
-#endif
+#endif /* SECP256K1_FIELD_INNER5X52_IMPL_H */

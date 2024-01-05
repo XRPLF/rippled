@@ -20,13 +20,10 @@
 #include <ripple/protocol/TER.h>
 #include <boost/range/adaptor/transformed.hpp>
 #include <type_traits>
-#include <unordered_map>
 
 namespace ripple {
 
-namespace detail {
-
-static std::unordered_map<
+std::unordered_map<
     TERUnderlyingType,
     std::pair<char const* const, char const* const>> const&
 transResults()
@@ -96,6 +93,24 @@ transResults()
         MAKE_ERROR(tecOBJECT_NOT_FOUND,              "A requested object could not be located."),
         MAKE_ERROR(tecINSUFFICIENT_PAYMENT,          "The payment is not sufficient."),
         MAKE_ERROR(tecINCOMPLETE,                    "Some work was completed, but more submissions required to finish."),
+        MAKE_ERROR(tecXCHAIN_BAD_TRANSFER_ISSUE,     "Bad xchain transfer issue."),
+        MAKE_ERROR(tecXCHAIN_NO_CLAIM_ID,            "No such xchain claim id."),
+        MAKE_ERROR(tecXCHAIN_BAD_CLAIM_ID,           "Bad xchain claim id."),
+        MAKE_ERROR(tecXCHAIN_CLAIM_NO_QUORUM,        "Quorum was not reached on the xchain claim."),
+        MAKE_ERROR(tecXCHAIN_PROOF_UNKNOWN_KEY,      "Unknown key for the xchain proof."),
+        MAKE_ERROR(tecXCHAIN_CREATE_ACCOUNT_NONXRP_ISSUE, "Only XRP may be used for xchain create account."),
+        MAKE_ERROR(tecXCHAIN_WRONG_CHAIN,            "XChain Transaction was submitted to the wrong chain."),
+        MAKE_ERROR(tecXCHAIN_REWARD_MISMATCH,        "The reward amount must match the reward specified in the xchain bridge."),
+        MAKE_ERROR(tecXCHAIN_NO_SIGNERS_LIST,        "The account did not have a signers list."),
+        MAKE_ERROR(tecXCHAIN_SENDING_ACCOUNT_MISMATCH,"The sending account did not match the expected sending account."),
+        MAKE_ERROR(tecXCHAIN_INSUFF_CREATE_AMOUNT,   "Insufficient amount to create an account."),
+        MAKE_ERROR(tecXCHAIN_ACCOUNT_CREATE_PAST,    "The account create count has already passed."),
+        MAKE_ERROR(tecXCHAIN_ACCOUNT_CREATE_TOO_MANY, "There are too many pending account create transactions to submit a new one."),
+        MAKE_ERROR(tecXCHAIN_PAYMENT_FAILED,         "Failed to transfer funds in a xchain transaction."),
+        MAKE_ERROR(tecXCHAIN_SELF_COMMIT,            "Account cannot commit funds to itself."),
+        MAKE_ERROR(tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR, "Bad public key account pair in an xchain transaction."),
+        MAKE_ERROR(tecXCHAIN_CREATE_ACCOUNT_DISABLED, "This bridge does not support account creation."),
+        MAKE_ERROR(tecEMPTY_DID,                     "The DID object did not have a URI or DIDDocument field."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
@@ -162,6 +177,7 @@ transResults()
         MAKE_ERROR(temBAD_WEIGHT,                "Malformed: Weight must be a positive value."),
         MAKE_ERROR(temDST_IS_SRC,                "Destination may not be source."),
         MAKE_ERROR(temDST_NEEDED,                "Destination not specified."),
+        MAKE_ERROR(temEMPTY_DID,                 "Malformed: No DID data provided."),
         MAKE_ERROR(temINVALID,                   "The transaction is ill-formed."),
         MAKE_ERROR(temINVALID_FLAG,              "The transaction has an invalid flag."),
         MAKE_ERROR(temREDUNDANT,                 "The transaction is redundant."),
@@ -175,6 +191,12 @@ transResults()
         MAKE_ERROR(temINVALID_COUNT,             "Malformed: Count field outside valid range."),
         MAKE_ERROR(temSEQ_AND_TICKET,            "Transaction contains a TicketSequence and a non-zero Sequence."),
         MAKE_ERROR(temBAD_NFTOKEN_TRANSFER_FEE,  "Malformed: The NFToken transfer fee must be between 1 and 5000, inclusive."),
+        MAKE_ERROR(temXCHAIN_EQUAL_DOOR_ACCOUNTS,       "Malformed: Bridge must have unique door accounts."),
+        MAKE_ERROR(temXCHAIN_BAD_PROOF,          "Malformed: Bad cross-chain claim proof."),
+        MAKE_ERROR(temXCHAIN_BRIDGE_BAD_ISSUES,      "Malformed: Bad bridge issues."),
+        MAKE_ERROR(temXCHAIN_BRIDGE_NONDOOR_OWNER,   "Malformed: Bridge owner must be one of the door accounts."),
+        MAKE_ERROR(temXCHAIN_BRIDGE_BAD_MIN_ACCOUNT_CREATE_AMOUNT,   "Malformed: Bad min account create amount."),
+        MAKE_ERROR(temXCHAIN_BRIDGE_BAD_REWARD_AMOUNT, "Malformed: Bad reward amount."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),
@@ -189,7 +211,6 @@ transResults()
         MAKE_ERROR(terQUEUED,                 "Held until escalated fee drops."),
         MAKE_ERROR(terPRE_TICKET,             "Ticket is not yet in ledger."),
         MAKE_ERROR(terNO_AMM,                 "AMM doesn't exist for the asset pair."),
-        MAKE_ERROR(terSUBMITTED,              "Transaction has been submitted."),
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
     };
@@ -200,12 +221,10 @@ transResults()
     return results;
 }
 
-}  // namespace detail
-
 bool
 transResultInfo(TER code, std::string& token, std::string& text)
 {
-    auto& results = detail::transResults();
+    auto& results = transResults();
 
     auto const r = results.find(TERtoInt(code));
 
@@ -239,7 +258,7 @@ std::optional<TER>
 transCode(std::string const& token)
 {
     static auto const results = [] {
-        auto& byTer = detail::transResults();
+        auto& byTer = transResults();
         auto range = boost::make_iterator_range(byTer.begin(), byTer.end());
         auto tRange = boost::adaptors::transform(range, [](auto const& r) {
             return std::make_pair(r.second.first, r.first);

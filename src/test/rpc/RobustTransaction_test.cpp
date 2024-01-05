@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/protocol/jss.h>
@@ -89,8 +88,7 @@ public:
             }
             BEAST_EXPECT(jv[jss::result][jss::engine_result] == "tefPAST_SEQ");
 
-            // Submit future sequence transaction -- this transaction should be
-            // held until the sequence gap is closed.
+            // Submit future sequence transaction
             payment[jss::tx_json][sfSequence.fieldName] = env.seq("alice") + 1;
             jv = wsc->invoke("submit", payment);
             if (wsc->version() == 2)
@@ -116,8 +114,6 @@ public:
             }
             BEAST_EXPECT(jv[jss::result][jss::engine_result] == "tesSUCCESS");
 
-            // Apply held transactions.
-            env.app().getOPs().transactionBatch(true);
             // Wait for the jobqueue to process everything
             env.app().getJobQueue().rendezvous();
 

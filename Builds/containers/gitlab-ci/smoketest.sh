@@ -16,7 +16,7 @@ case ${ID} in
     ubuntu|debian)
         pkgtype="dpkg"
         ;;
-    fedora|centos|rhel|scientific|rocky)
+    fedora|centos|rhel|scientific|rocky|almalinux)
         pkgtype="rpm"
         ;;
     *)
@@ -62,9 +62,10 @@ else
     yum -y update
     if [ "${install_from}" = "repo" ] ; then
         pkgs=("yum-utils coreutils util-linux")
-        if [ "$ID" = "rocky" ]; then
-            pkgs="${pkgs[@]/coreutils}"
-        fi
+        case "$ID" in
+            rocky|almalinux)
+                pkgs="${pkgs[@]/coreutils}"
+        esac
         yum install -y $pkgs
         REPOFILE="/etc/yum.repos.d/artifactory.repo"
         echo "[Artifactory]" > ${REPOFILE}
@@ -79,16 +80,8 @@ else
         # yum --showduplicates list rippled
         yum -y install ${rpm_version_release}
     elif [ "${install_from}" = "local" ] ; then
-        # cached pkg install
-        pkgs=("yum-utils openssl-static zlib-static")
-        if [[ "$ID" =~ rocky|fedora ]]; then
-            if [[ "$ID" =~ "rocky" ]]; then
-                sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/Rocky-PowerTools.repo
-            fi
-            pkgs="${pkgs[@]/openssl-static}"
-        fi
-        yum install -y $pkgs
         rm -f build/rpm/packages/rippled-debug*.rpm
+        rm -f build/rpm/packages/rippled-devel*.rpm
         rm -f build/rpm/packages/*.src.rpm
         rpm -i build/rpm/packages/*.rpm
     else

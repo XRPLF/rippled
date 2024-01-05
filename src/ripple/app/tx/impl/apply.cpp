@@ -134,7 +134,7 @@ applyTransaction(
     if (retryAssured)
         flags = flags | tapRETRY;
 
-    JLOG(j.trace()) << "TXN " << txn.getTransactionID()
+    JLOG(j.debug()) << "TXN " << txn.getTransactionID()
                     << (retryAssured ? "/retry" : "/final");
 
     try
@@ -142,7 +142,7 @@ applyTransaction(
         auto const result = apply(app, view, txn, flags, j);
         if (result.second)
         {
-            JLOG(j.trace())
+            JLOG(j.debug())
                 << "Transaction applied: " << transHuman(result.first);
             return ApplyResult::Success;
         }
@@ -151,17 +151,17 @@ applyTransaction(
             isTelLocal(result.first))
         {
             // failure
-            JLOG(j.trace())
+            JLOG(j.debug())
                 << "Transaction failure: " << transHuman(result.first);
             return ApplyResult::Fail;
         }
 
-        JLOG(j.trace()) << "Transaction retry: " << transHuman(result.first);
+        JLOG(j.debug()) << "Transaction retry: " << transHuman(result.first);
         return ApplyResult::Retry;
     }
     catch (std::exception const& ex)
     {
-        JLOG(j.trace()) << "Throws: " << ex.what();
+        JLOG(j.warn()) << "Throws: " << ex.what();
         return ApplyResult::Fail;
     }
 }

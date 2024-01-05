@@ -25,6 +25,7 @@
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
+
 #include <cstdint>
 #include <map>
 #include <tuple>
@@ -300,7 +301,7 @@ public:
 class ValidNewAccountRoot
 {
     std::uint32_t accountsCreated_ = 0;
-    std::uint32_t accountSeq_ = 0;  // Only meaningful if accountsCreated_ > 0
+    std::uint32_t accountSeq_ = 0;
 
 public:
     void

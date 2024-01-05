@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/app/main/BasicApp.h>
-#include <ripple/basics/ThreadUtilities.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 
 BasicApp::BasicApp(std::size_t numberOfThreads)
 {
@@ -28,7 +28,7 @@ BasicApp::BasicApp(std::size_t numberOfThreads)
     while (numberOfThreads--)
     {
         threads_.emplace_back([this, numberOfThreads]() {
-            ripple::this_thread::set_name(
+            beast::setCurrentThreadName(
                 "io svc #" + std::to_string(numberOfThreads));
             this->io_service_.run();
         });

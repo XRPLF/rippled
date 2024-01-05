@@ -11,6 +11,8 @@ concurrency:
 jobs:
   job:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     container:
       image: docker://rippleci/rippled-ci-builder:2944b78d22db
     steps:

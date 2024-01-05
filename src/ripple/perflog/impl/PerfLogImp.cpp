@@ -20,7 +20,7 @@
 #include <ripple/perflog/impl/PerfLogImp.h>
 
 #include <ripple/basics/BasicConfig.h>
-#include <ripple/basics/ThreadUtilities.h>
+#include <ripple/beast/core/CurrentThreadName.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/core/JobTypes.h>
 #include <ripple/json/json_writer.h>
@@ -43,7 +43,7 @@ namespace ripple {
 namespace perf {
 
 PerfLogImp::Counters::Counters(
-    std::vector<char const*> const& labels,
+    std::set<char const*> const& labels,
     JobTypes const& jobTypes)
 {
     {
@@ -255,7 +255,7 @@ PerfLogImp::openLog()
 void
 PerfLogImp::run()
 {
-    this_thread::set_name("perflog");
+    beast::setCurrentThreadName("perflog");
     lastLog_ = system_clock::now();
 
     while (true)
