@@ -26,8 +26,6 @@
 
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/TxQ.h>
-#include <ripple/basics/Expected.h>
-#include <ripple/basics/SubmitSync.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/Status.h>
@@ -302,7 +300,6 @@ keypairForSignature(
  */
 ripple::Expected<RPC::SubmitSync, Json::Value>
 getSubmitSyncMode(Json::Value const& params);
-
 }  // namespace RPC
 }  // namespace ripple
 
