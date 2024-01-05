@@ -70,7 +70,7 @@ public:
         /**
          * Number of objects requested at least once.
          */
-        std::size_t requested;
+        std::size_t requested = 0;
         /**
          * Number of times requested objects were missing in responses,
          * ignoring timeouts.
@@ -78,36 +78,36 @@ public:
          * when it is missing in multiple responses.
          * We would like this to be zero, but do not expect it.
          */
-        std::size_t missing;
+        std::size_t missing = 0;
         /**
          * Number of unrequested objects found in responses. Should be zero.
          */
-        std::size_t extra;
+        std::size_t extra = 0;
         /**
          * Number of objects with bad data found in responses. Should be zero.
          */
-        std::size_t errors;
+        std::size_t errors = 0;
         /**
          * Number of objects "directly" received,
          * i.e. requested objects found in a response.
          */
-        std::size_t dreceived;
+        std::size_t dreceived = 0;
         /**
          * Number of objects "indirectly" received,
          * i.e. requested objects found in the database
          * after missing one or more responses.
          */
-        std::size_t ireceived;
+        std::size_t ireceived = 0;
         /**
          * Number of times the database was searched for an object.
          * The same object will be counted multiple times
          * when it is unreceived.
          */
-        std::size_t searched;
+        std::size_t searched = 0;
         /**
          * Number of objects found in the database.
          */
-        std::size_t loaded;
+        std::size_t loaded = 0;
 
         constexpr std::size_t
         unreceived() const
