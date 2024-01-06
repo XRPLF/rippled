@@ -160,7 +160,7 @@ PeerImp::run()
         return post(strand_, std::bind(&PeerImp::run, shared_from_this()));
 
     auto parseLedgerHash =
-        [](std::string const& value) -> std::optional<uint256> {
+        [](std::string_view const& value) -> std::optional<uint256> {
         if (uint256 ret; ret.parseHex(value))
             return ret;
 
@@ -176,7 +176,7 @@ PeerImp::run()
     if (auto const iter = headers_.find("Closed-Ledger");
         iter != headers_.end())
     {
-        closed = parseLedgerHash(std::string{iter->value()});
+        closed = parseLedgerHash(std::string_view{iter->value()});
 
         if (!closed)
             fail("Malformed handshake data (1)");
@@ -185,7 +185,7 @@ PeerImp::run()
     if (auto const iter = headers_.find("Previous-Ledger");
         iter != headers_.end())
     {
-        previous = parseLedgerHash(std::string{iter->value()});
+        previous = parseLedgerHash(std::string_view{iter->value()});
 
         if (!previous)
             fail("Malformed handshake data (2)");
