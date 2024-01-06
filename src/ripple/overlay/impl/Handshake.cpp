@@ -233,7 +233,7 @@ verifyHandshake(
 {
     if (auto const iter = headers.find("Server-Domain"); iter != headers.end())
     {
-        if (!isProperlyFormedTomlDomain(std::string{iter->value()}))
+        if (!isProperlyFormedTomlDomain(iter->value()))
             throw std::runtime_error("Invalid server domain");
     }
 

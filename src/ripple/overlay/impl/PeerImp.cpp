@@ -368,12 +368,12 @@ PeerImp::cluster() const
     return static_cast<bool>(app_.cluster().member(publicKey_));
 }
 
-std::string
+std::string_view
 PeerImp::getVersion() const
 {
     if (inbound_)
-        return std::string{headers_["User-Agent"]};
-    return std::string{headers_["Server"]};
+        return headers_["User-Agent"];
+    return headers_["Server"];
 }
 
 Json::Value
@@ -397,7 +397,7 @@ PeerImp::json()
     }
 
     if (auto const d = domain(); !d.empty())
-        ret[jss::server_domain] = domain();
+        ret[jss::server_domain] = std::string{domain()};
 
     if (auto const nid = headers_["Network-ID"]; !nid.empty())
         ret[jss::network_id] = std::string{nid};
@@ -405,7 +405,7 @@ PeerImp::json()
     ret[jss::load] = usage_.balance();
 
     if (auto const version = getVersion(); !version.empty())
-        ret[jss::version] = version;
+        ret[jss::version] = std::string{version};
 
     ret[jss::protocol] = to_string(protocol_);
 
@@ -836,10 +836,10 @@ PeerImp::name() const
     return name_;
 }
 
-std::string
+std::string_view
 PeerImp::domain() const
 {
-    return std::string{headers_["Server-Domain"]};
+    return headers_["Server-Domain"];
 }
 
 //------------------------------------------------------------------------------

@@ -344,7 +344,7 @@ public:
     }
 
     /** Return the version of rippled that the peer is running, if reported. */
-    std::string
+    std::string_view
     getVersion() const;
 
     // Return the connection elapsed time.
@@ -464,7 +464,7 @@ private:
     std::string
     name() const;
 
-    std::string
+    std::string_view
     domain() const;
 
     //
