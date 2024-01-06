@@ -213,7 +213,8 @@ ValidatorList::load(
             return false;
         }
 
-        auto const id = parseBase58<PublicKey>(TokenType::NodePublic, match[1]);
+        auto const id =
+            parseBase58<PublicKey>(TokenType::NodePublic, match[1].str());
 
         if (!id)
         {

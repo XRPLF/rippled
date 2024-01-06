@@ -286,7 +286,7 @@ verifyHandshake(
         if (auto const iter = headers.find("Public-Key"); iter != headers.end())
         {
             auto pk = parseBase58<PublicKey>(
-                TokenType::NodePublic, std::string{iter->value()});
+                TokenType::NodePublic, std::string_view{iter->value()});
 
             if (pk)
             {

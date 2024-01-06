@@ -43,7 +43,7 @@ parseBase58(std::string const& s);
 
 template <class T>
 std::optional<T>
-parseBase58(TokenType type, std::string const& s);
+parseBase58(TokenType type, std::string_view const& s);
 
 /** Encode data in Base58Check format using XRPL alphabet
 
@@ -68,7 +68,7 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size);
     the type or checksum. And empty string otherwise.
 */
 std::string
-decodeBase58Token(std::string const& s, TokenType type);
+decodeBase58Token(std::string_view const& s, TokenType type);
 
 }  // namespace ripple
 
