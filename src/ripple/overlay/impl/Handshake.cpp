@@ -241,7 +241,7 @@ verifyHandshake(
     {
         std::uint32_t nid;
 
-        if (!beast::lexicalCastChecked(nid, std::string{iter->value()}))
+        if (!beast::lexicalCastChecked(nid, std::string_view{iter->value()}))
             throw std::runtime_error("Invalid peer network identifier");
 
         if (networkID && nid != *networkID)
@@ -253,11 +253,7 @@ verifyHandshake(
         auto const netTime = [str = iter->value()]() -> TimeKeeper::time_point {
             TimeKeeper::duration::rep val;
 
-            // boost::LexicalCast does not have a specialization for <Out,
-            // std::string_view>. It's not obvious if such an instantiation
-            // is technically feasible. This necessitates the conversion
-            // from std::string_view to std::string
-            if (beast::lexicalCastChecked(val, std::string{str}))
+            if (beast::lexicalCastChecked(val, std::string_view{str}))
                 return TimeKeeper::time_point{TimeKeeper::duration{val}};
 
             // It's not an error for the header field to not be present but if
