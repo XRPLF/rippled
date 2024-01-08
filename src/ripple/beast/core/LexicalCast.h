@@ -80,10 +80,6 @@ struct LexicalCast<Out, std::string_view>
         bool>
     operator()(Integral& out, std::string_view const& in) const
     {
-        // the underlying data of the std::string_view is no longer alive
-        if (in.empty())
-            return false;
-
         auto first = in.data();
         auto last = in.data() + in.size();
 
@@ -98,10 +94,6 @@ struct LexicalCast<Out, std::string_view>
     bool
     operator()(bool& out, std::string_view const& in) const
     {
-        // the underlying data of the std::string_view is no longer alive
-        if (in.empty())
-            return false;
-
         std::string result;
 
         // Convert the input to lowercase
@@ -149,7 +141,7 @@ struct LexicalCast<Out, char const*>
     bool
     operator()(Out& out, char const* in) const
     {
-        assert(in != 0);
+        assert(in);
         return LexicalCast<Out, std::string_view>()(out, in);
     }
 };
@@ -164,7 +156,7 @@ struct LexicalCast<Out, char*>
     bool
     operator()(Out& out, char* in) const
     {
-        assert(in != 0);
+        assert(in);
         return LexicalCast<Out, std::string_view>()(out, in);
     }
 };
