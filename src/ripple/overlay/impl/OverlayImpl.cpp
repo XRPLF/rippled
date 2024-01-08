@@ -39,7 +39,6 @@
 #include <ripple/server/SimpleWriter.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/utility/in_place_factory.hpp>
 
 namespace ripple {
 

@@ -33,7 +33,6 @@
 #include <boost/regex.hpp>
 
 #include <cmath>
-#include <mutex>
 #include <numeric>
 #include <shared_mutex>
 

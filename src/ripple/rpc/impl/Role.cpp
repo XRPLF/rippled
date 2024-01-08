@@ -18,9 +18,7 @@
 //==============================================================================
 
 #include <ripple/rpc/Role.h>
-#include <boost/beast/core/string.hpp>
 #include <boost/beast/http/field.hpp>
-#include <boost/beast/http/rfc7230.hpp>
 #include <boost/utility/string_view.hpp>
 #include <algorithm>
 #include <tuple>
