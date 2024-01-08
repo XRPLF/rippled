@@ -25,7 +25,9 @@
 #include <ripple/beast/rfc2616.h>
 #include <ripple/overlay/impl/Handshake.h>
 #include <ripple/protocol/digest.h>
+#include <boost/beast/core/string.hpp>
 #include <boost/regex.hpp>
+// #include <boost/utility/string_view.hpp>
 #include <algorithm>
 #include <chrono>
 
@@ -285,8 +287,8 @@ verifyHandshake(
     PublicKey const publicKey = [&headers] {
         if (auto const iter = headers.find("Public-Key"); iter != headers.end())
         {
-            auto pk = parseBase58<PublicKey>(
-                TokenType::NodePublic, std::string_view{iter->value()});
+            auto pk =
+                parseBase58<PublicKey>(TokenType::NodePublic, iter->value());
 
             if (pk)
             {
@@ -312,7 +314,7 @@ verifyHandshake(
         if (iter == headers.end())
             throw std::runtime_error("No session signature specified");
 
-        auto sig = base64_decode(std::string{iter->value()});
+        auto sig = base64_decode(iter->value());
 
         if (!verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
             throw std::runtime_error("Failed to verify session");
@@ -324,8 +326,8 @@ verifyHandshake(
     if (auto const iter = headers.find("Local-IP"); iter != headers.end())
     {
         boost::system::error_code ec;
-        auto const local_ip = boost::asio::ip::address::from_string(
-            std::string{iter->value()}, ec);
+        auto const local_ip =
+            boost::asio::ip::address::from_string(iter->value(), ec);
 
         if (ec)
             throw std::runtime_error("Invalid Local-IP");
@@ -339,8 +341,8 @@ verifyHandshake(
     if (auto const iter = headers.find("Remote-IP"); iter != headers.end())
     {
         boost::system::error_code ec;
-        auto const remote_ip = boost::asio::ip::address::from_string(
-            std::string{iter->value()}, ec);
+        auto const remote_ip =
+            boost::asio::ip::address::from_string(iter->value(), ec);
 
         if (ec)
             throw std::runtime_error("Invalid Remote-IP");

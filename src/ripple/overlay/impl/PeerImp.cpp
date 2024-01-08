@@ -176,7 +176,7 @@ PeerImp::run()
     if (auto const iter = headers_.find("Closed-Ledger");
         iter != headers_.end())
     {
-        closed = parseLedgerHash(std::string_view{iter->value()});
+        closed = parseLedgerHash(iter->value());
 
         if (!closed)
             fail("Malformed handshake data (1)");
@@ -185,7 +185,7 @@ PeerImp::run()
     if (auto const iter = headers_.find("Previous-Ledger");
         iter != headers_.end())
     {
-        previous = parseLedgerHash(std::string_view{iter->value()});
+        previous = parseLedgerHash(iter->value());
 
         if (!previous)
             fail("Malformed handshake data (2)");
@@ -397,7 +397,7 @@ PeerImp::json()
     }
 
     if (auto const d = domain(); !d.empty())
-        ret[jss::server_domain] = std::string{domain()};
+        ret[jss::server_domain] = std::string{d};
 
     if (auto const nid = headers_["Network-ID"]; !nid.empty())
         ret[jss::network_id] = std::string{nid};

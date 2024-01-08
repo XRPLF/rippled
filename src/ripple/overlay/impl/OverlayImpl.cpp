@@ -997,12 +997,7 @@ OverlayImpl::processValidatorList(
         return true;
     };
 
-    // Convert the boost::string_view, returned by
-    // boost::http::request::target(), into a std::string_view.
-    std::string_view key = [&req, &prefix]() {
-        boost::string_view const key = req.target().substr(prefix.size());
-        return std::string_view(key.data(), key.length());
-    }();
+    std::string_view key = req.target().substr(prefix.size());
 
     if (auto slash = key.find('/'); slash != std::string_view::npos)
     {

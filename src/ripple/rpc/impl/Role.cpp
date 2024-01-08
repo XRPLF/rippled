@@ -304,10 +304,7 @@ forwardedFor(http_request_type const& request)
         std::size_t found = it->value().find(',');
         if (found == boost::string_view::npos)
             found = it->value().length();
-        // http_request_type has a dependency on boost. Explicitly convert such
-        // boost::string_view into std::string_view
-        return extractIpAddrFromField(
-            std::string_view{it->value().data(), found});
+        return extractIpAddrFromField(it->value().substr(0, found));
     }
 
     return {};
