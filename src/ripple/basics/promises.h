@@ -21,6 +21,7 @@
 #define RIPPLE_BASICS_PROMISES_H_INCLUDED
 
 #include <atomic>
+#include <cstdlib>
 #include <exception>
 #include <functional>
 #include <iterator>
@@ -33,8 +34,10 @@
 
 namespace ripple {
 
+#define TO_STRING0(x) #x
+#define TO_STRING(x) TO_STRING0(x)
 #define ASSERT_OP(op, x, y) \
-    if (x op y) { std::cerr << #x " == " << x << " " #op " " << y << " == " #y; }
+    if (x op y) { std::cerr << __FILE__ ":" TO_STRING(__LINE__) ": " #x " == " << x << " " #op " " << y << " == " #y << std::endl; std::abort(); }
 #define ASSERT_EQ(x, y) ASSERT_OP(!=, x, y)
 #define ASSERT_NE(x, y) ASSERT_OP(==, x, y)
 
