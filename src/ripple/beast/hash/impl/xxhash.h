@@ -1,3 +1,12 @@
+// The below source code pertains to the xxHash v0.8.2 project. The source
+// code hs been retained as-is, except for prefixing all "XXH_<>" macros
+// definitions with "XRPL_XXH<>". This prevents the pollution of the global
+// namespace.
+//
+// P.S.: As of 9 Jan 2024, NuDB uses v0.6.2 of the xxHash codebase. Updates
+// to the below code could cause conflicts with NuDB, if the macros
+// are not managed separately.
+
 /*
  * xxHash - Extremely Fast Hash algorithm
  * Header File
