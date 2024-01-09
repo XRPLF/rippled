@@ -21,10 +21,10 @@
 #define RIPPLE_BASICS_PROMISES_H_INCLUDED
 
 #include <atomic>
-#include <cassert>
 #include <exception>
 #include <functional>
 #include <iterator>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -32,6 +32,11 @@
 #include <vector>
 
 namespace ripple {
+
+#define ASSERT_OP(op, x, y) \
+    if (x op y) { std::cerr << #x " == " << x << " " #op " " << y << " == " #y; }
+#define ASSERT_EQ(x, y) ASSERT_OP(!=, x, y)
+#define ASSERT_NE(x, y) ASSERT_OP(==, x, y)
 
 template <std::size_t I, typename... Ts>
 struct nth_type : public std::tuple_element<I, std::tuple<Ts...>>
@@ -327,7 +332,7 @@ struct ApplyState : public std::enable_shared_from_this<ApplyState<F, Args...>>
         }
         else
         {
-            assert(state == FULFILLED);
+            ASSERT_EQ(state, FULFILLED);
             std::get<I>(arguments_) = p->value_ptr();
         }
         auto count = 1 + count_.fetch_add(1, std::memory_order_seq_cst);
@@ -433,7 +438,7 @@ public:
     ~AsyncPromise()
     {
         auto status = state_();
-        assert(status != WRITING);
+        ASSERT_NE(status, WRITING);
         if (status == PENDING || status == LOCKED)
         {
             std::destroy_at(&storage_.callbacks_);
@@ -448,7 +453,7 @@ public:
         }
         else
         {
-            assert(status == REJECTED);
+            ASSERT_EQ(status, REJECTED);
             std::destroy_at(&storage_.error_);
         }
     }
@@ -644,7 +649,7 @@ public:
             {
                 std::rethrow_exception(p->error());
             }
-            assert(state == FULFILLED);
+            ASSERT_EQ(state, FULFILLED);
             return f(p->value());
         });
     }
@@ -669,7 +674,7 @@ public:
     value() const
     {
         auto self = follow();
-        assert(self->state_() == FULFILLED);
+        ASSERT_EQ(self->state_(), FULFILLED);
         return self->value_();
     }
 
@@ -677,7 +682,7 @@ public:
     value()
     {
         auto self = follow();
-        assert(self->state_() == FULFILLED);
+        ASSERT_EQ(self->state_(), FULFILLED);
         return self->value_();
     }
 
@@ -701,7 +706,7 @@ public:
     error() const
     {
         auto self = follow();
-        assert(self->state_() == REJECTED);
+        ASSERT_EQ(self->state_(), REJECTED);
         return self->error_();
     }
 
@@ -709,7 +714,7 @@ public:
     error()
     {
         auto self = follow();
-        assert(self->state_() == REJECTED);
+        ASSERT_EQ(self->state_(), REJECTED);
         return self->error_();
     }
 
@@ -883,7 +888,7 @@ private:
             // This should be unreachable unless `previous == CANCELLED`.
             // Only one thread should ever call `settle`,
             // but it does not have to check for cancellation.
-            assert(previous == CANCELLED);
+            ASSERT_EQ(previous, CANCELLED);
             return false;
         }
         auto callbacks = std::move(self->storage_.callbacks_);
