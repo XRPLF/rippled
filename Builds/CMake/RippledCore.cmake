@@ -26,7 +26,6 @@ target_sources (xrpl_core PRIVATE
   src/ripple/beast/clock/basic_seconds_clock.cpp
   src/ripple/beast/core/CurrentThreadName.cpp
   src/ripple/beast/core/SemanticVersion.cpp
-  src/ripple/beast/hash/impl/xxhash.cpp
   src/ripple/beast/insight/impl/Collector.cpp
   src/ripple/beast/insight/impl/Groups.cpp
   src/ripple/beast/insight/impl/Hook.cpp
