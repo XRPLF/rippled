@@ -3169,11 +3169,12 @@ NetworkOPsImp::transJson(
     MultiApiJson multiObj{jvObj};
     forAllApiVersions(
         multiObj.visit(),  //
-        [&](Json::Value& jvTx, auto apiVersion) {
+        [&]<unsigned Version>(
+            Json::Value& jvTx, std::integral_constant<unsigned, Version>) {
             RPC::insertDeliverMax(
-                jvTx[jss::transaction], transaction->getTxnType(), apiVersion);
+                jvTx[jss::transaction], transaction->getTxnType(), Version);
 
-            if (apiVersion > 1)
+            if constexpr (Version > 1)
             {
                 jvTx[jss::tx_json] = jvTx.removeMember(jss::transaction);
                 jvTx[jss::hash] = hash;
