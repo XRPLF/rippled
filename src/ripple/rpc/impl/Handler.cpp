@@ -17,10 +17,13 @@
 */
 //==============================================================================
 
+#include <ripple/basics/contract.h>
 #include <ripple/rpc/handlers/Handlers.h>
 #include <ripple/rpc/handlers/Version.h>
 #include <ripple/rpc/impl/Handler.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
+
+#include <map>
 
 namespace ripple {
 namespace RPC {
@@ -47,6 +50,9 @@ template <class Object, class HandlerImpl>
 Status
 handle(JsonContext& context, Object& object)
 {
+    assert(
+        context.apiVersion >= HandlerImpl::minApiVer &&
+        context.apiVersion <= HandlerImpl::maxApiVer);
     HandlerImpl handler(context);
 
     auto status = handler.check();
@@ -55,7 +61,20 @@ handle(JsonContext& context, Object& object)
     else
         handler.writeResult(object);
     return status;
-};
+}
+
+template <typename HandlerImpl>
+Handler
+handlerFrom()
+{
+    return {
+        HandlerImpl::name,
+        &handle<Json::Value, HandlerImpl>,
+        HandlerImpl::role,
+        HandlerImpl::condition,
+        HandlerImpl::minApiVer,
+        HandlerImpl::maxApiVer};
+}
 
 Handler const handlerArray[]{
     // Some handlers not specified here are added to the table via addHandler()
@@ -80,6 +99,7 @@ Handler const handlerArray[]{
     {"channel_verify", byRef(&doChannelVerify), Role::USER, NO_CONDITION},
     {"connect", byRef(&doConnect), Role::ADMIN, NO_CONDITION},
     {"consensus_info", byRef(&doConsensusInfo), Role::ADMIN, NO_CONDITION},
+    {"crawl_shards", byRef(&doCrawlShards), Role::ADMIN, NO_CONDITION},
     {"deposit_authorized",
      byRef(&doDepositAuthorized),
      Role::USER,
@@ -109,7 +129,7 @@ Handler const handlerArray[]{
      NEEDS_CURRENT_LEDGER},
     {"ledger_data", byRef(&doLedgerData), Role::USER, NO_CONDITION},
     {"ledger_entry", byRef(&doLedgerEntry), Role::USER, NO_CONDITION},
-    {"ledger_header", byRef(&doLedgerHeader), Role::USER, NO_CONDITION},
+    {"ledger_header", byRef(&doLedgerHeader), Role::USER, NO_CONDITION, 1, 1},
     {"ledger_request", byRef(&doLedgerRequest), Role::ADMIN, NO_CONDITION},
     {"log_level", byRef(&doLogLevel), Role::ADMIN, NO_CONDITION},
     {"logrotate", byRef(&doLogRotate), Role::ADMIN, NO_CONDITION},
@@ -139,20 +159,23 @@ Handler const handlerArray[]{
      Role::ADMIN,
      NO_CONDITION},
     {"ripple_path_find", byRef(&doRipplePathFind), Role::USER, NO_CONDITION},
+    {"server_definitions",
+     byRef(&doServerDefinitions),
+     Role::USER,
+     NO_CONDITION},
+    {"server_info", byRef(&doServerInfo), Role::USER, NO_CONDITION},
+    {"server_state", byRef(&doServerState), Role::USER, NO_CONDITION},
     {"sign", byRef(&doSign), Role::USER, NO_CONDITION},
     {"sign_for", byRef(&doSignFor), Role::USER, NO_CONDITION},
+    {"stop", byRef(&doStop), Role::ADMIN, NO_CONDITION},
     {"submit", byRef(&doSubmit), Role::USER, NEEDS_CURRENT_LEDGER},
     {"submit_multisigned",
      byRef(&doSubmitMultiSigned),
      Role::USER,
      NEEDS_CURRENT_LEDGER},
-    {"server_info", byRef(&doServerInfo), Role::USER, NO_CONDITION},
-    {"server_state", byRef(&doServerState), Role::USER, NO_CONDITION},
-    {"crawl_shards", byRef(&doCrawlShards), Role::ADMIN, NO_CONDITION},
-    {"stop", byRef(&doStop), Role::ADMIN, NO_CONDITION},
     {"transaction_entry", byRef(&doTransactionEntry), Role::USER, NO_CONDITION},
     {"tx", byRef(&doTxJson), Role::USER, NEEDS_NETWORK_CONNECTION},
-    {"tx_history", byRef(&doTxHistory), Role::USER, NO_CONDITION},
+    {"tx_history", byRef(&doTxHistory), Role::USER, NO_CONDITION, 1, 1},
     {"tx_reduce_relay", byRef(&doTxReduceRelay), Role::USER, NO_CONDITION},
     {"unl_list", byRef(&doUnlList), Role::ADMIN, NO_CONDITION},
     {"validation_create",
@@ -174,14 +197,42 @@ Handler const handlerArray[]{
 class HandlerTable
 {
 private:
+    using handler_table_t = std::multimap<std::string, Handler>;
+
+    // Use with equal_range to enforce that API range of a newly added handler
+    // does not overlap with API range of an existing handler with same name
+    [[nodiscard]] bool
+    overlappingApiVersion(
+        std::pair<handler_table_t::iterator, handler_table_t::iterator> range,
+        unsigned minVer,
+        unsigned maxVer)
+    {
+        assert(minVer <= maxVer);
+        assert(maxVer <= RPC::apiMaximumValidVersion);
+
+        return std::any_of(
+            range.first,
+            range.second,  //
+            [minVer, maxVer](auto const& item) {
+                return item.second.minApiVer_ <= maxVer &&
+                    item.second.maxApiVer_ >= minVer;
+            });
+    }
+
     template <std::size_t N>
     explicit HandlerTable(const Handler (&entries)[N])
     {
-        for (std::size_t i = 0; i < N; ++i)
+        for (auto const& entry : entries)
         {
-            auto const& entry = entries[i];
-            assert(table_.find(entry.name_) == table_.end());
-            table_[entry.name_] = entry;
+            if (overlappingApiVersion(
+                    table_.equal_range(entry.name_),
+                    entry.minApiVer_,
+                    entry.maxApiVer_))
+                LogicError(
+                    std::string("Handler for ") + entry.name_ +
+                    " overlaps with an existing handler");
+
+            table_.insert({entry.name_, entry});
         }
 
         // This is where the new-style handlers are added.
@@ -197,7 +248,7 @@ public:
         return handlerTable;
     }
 
-    Handler const*
+    [[nodiscard]] Handler const*
     getHandler(unsigned version, bool betaEnabled, std::string const& name)
         const
     {
@@ -205,36 +256,48 @@ public:
             version > (betaEnabled ? RPC::apiBetaVersion
                                    : RPC::apiMaximumSupportedVersion))
             return nullptr;
-        auto i = table_.find(name);
-        return i == table_.end() ? nullptr : &i->second;
+
+        auto const range = table_.equal_range(name);
+        auto const i = std::find_if(
+            range.first, range.second, [version](auto const& entry) {
+                return entry.second.minApiVer_ <= version &&
+                    version <= entry.second.maxApiVer_;
+            });
+
+        return i == range.second ? nullptr : &i->second;
     }
 
-    std::vector<char const*>
+    [[nodiscard]] std::set<char const*>
     getHandlerNames() const
     {
-        std::vector<char const*> ret;
-        ret.reserve(table_.size());
+        std::set<char const*> ret;
         for (auto const& i : table_)
-            ret.push_back(i.second.name_);
+            ret.insert(i.second.name_);
+
         return ret;
     }
 
 private:
-    std::map<std::string, Handler> table_;
+    handler_table_t table_;
 
     template <class HandlerImpl>
     void
     addHandler()
     {
-        assert(table_.find(HandlerImpl::name()) == table_.end());
+        static_assert(HandlerImpl::minApiVer <= HandlerImpl::maxApiVer);
+        static_assert(HandlerImpl::maxApiVer <= RPC::apiMaximumValidVersion);
+        static_assert(
+            RPC::apiMinimumSupportedVersion <= HandlerImpl::minApiVer);
 
-        Handler h;
-        h.name_ = HandlerImpl::name();
-        h.valueMethod_ = &handle<Json::Value, HandlerImpl>;
-        h.role_ = HandlerImpl::role();
-        h.condition_ = HandlerImpl::condition();
+        if (overlappingApiVersion(
+                table_.equal_range(HandlerImpl::name),
+                HandlerImpl::minApiVer,
+                HandlerImpl::maxApiVer))
+            LogicError(
+                std::string("Handler for ") + HandlerImpl::name +
+                " overlaps with an existing handler");
 
-        table_[HandlerImpl::name()] = h;
+        table_.insert({HandlerImpl::name, handlerFrom<HandlerImpl>()});
     }
 };
 
@@ -246,11 +309,11 @@ getHandler(unsigned version, bool betaEnabled, std::string const& name)
     return HandlerTable::instance().getHandler(version, betaEnabled, name);
 }
 
-std::vector<char const*>
+std::set<char const*>
 getHandlerNames()
 {
     return HandlerTable::instance().getHandlerNames();
-};
+}
 
 }  // namespace RPC
 }  // namespace ripple

@@ -26,6 +26,7 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <unordered_map>
 
 namespace ripple {
 
@@ -132,6 +133,8 @@ enum TEMcodes : TERUnderlyingType {
     temXCHAIN_BRIDGE_NONDOOR_OWNER,
     temXCHAIN_BRIDGE_BAD_MIN_ACCOUNT_CREATE_AMOUNT,
     temXCHAIN_BRIDGE_BAD_REWARD_AMOUNT,
+
+    temEMPTY_DID,
 };
 
 //------------------------------------------------------------------------------
@@ -215,7 +218,6 @@ enum TERcodes : TERUnderlyingType {
     terQUEUED,       // Transaction is being held in TxQ until fee drops
     terPRE_TICKET,   // Ticket is not yet in ledger but might be on its way
     terNO_AMM,       // AMM doesn't exist for the asset pair
-    terSUBMITTED     // Has been submitted async.
 };
 
 //------------------------------------------------------------------------------
@@ -294,7 +296,7 @@ enum TECcodes : TERUnderlyingType {
     tecKILLED = 150,
     tecHAS_OBLIGATIONS = 151,
     tecTOO_SOON = 152,
-    tecHOOK_ERROR [[maybe_unused]] = 153,
+    tecHOOK_REJECTED [[maybe_unused]] = 153,
     tecMAX_SEQUENCE_REACHED = 154,
     tecNO_SUITABLE_NFTOKEN_PAGE = 155,
     tecNFTOKEN_BUY_SELL_MISMATCH = 156,
@@ -328,6 +330,7 @@ enum TECcodes : TERUnderlyingType {
     tecXCHAIN_SELF_COMMIT = 184,
     tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR = 185,
     tecXCHAIN_CREATE_ACCOUNT_DISABLED = 186,
+    tecEMPTY_DID = 187
 };
 
 //------------------------------------------------------------------------------
@@ -640,6 +643,11 @@ isTecClaim(TER x)
 {
     return ((x) >= tecCLAIM);
 }
+
+std::unordered_map<
+    TERUnderlyingType,
+    std::pair<char const* const, char const* const>> const&
+transResults();
 
 bool
 transResultInfo(TER code, std::string& token, std::string& text);
