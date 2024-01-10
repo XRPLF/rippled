@@ -137,11 +137,6 @@ public:
         {
             return loaded - ireceived;
         }
-        constexpr std::size_t
-        pending() const
-        {
-            return requested - received();
-        }
 
         void
         report(beast::Journal& journal)
@@ -197,13 +192,16 @@ private:
     LedgerDigest digest_;
 
     // Request queue.
-    std::mutex senderMutex_;
+    std::mutex mutex_;
     std::vector<RequestPtr> partialRequests_;
     std::vector<RequestPtr> fullRequests_;
     bool scheduled_ = false;
 
     // Metrics.
-    std::mutex metricsMutex_;
+    // The number of sent (or queued, really) requests and received responses.
+    // We're done when these numbers match at the comparison in `finish`.
+    std::size_t nsent_ = 0;
+    std::size_t nreceived_ = 0;
     CommunicationMeter receiveMeter_;
     Metrics metrics_;
 
@@ -236,9 +234,23 @@ private:
      *
      * Adds the request to either the partial or full queue based on its size.
      * Calls `schedule` only if this sender is not already scheduled.
+     * Adds `nsent` to the count of sent requests.
      */
     void
-    send(RequestPtr&& request);
+    send(RequestPtr&& request, std::size_t nsent);
+
+    /** Send a new request that should be counted.
+     */
+    void
+    send(RequestPtr&& request) {
+        return send(std::move(request), 1);
+    }
+
+    /** Re-send an old request that should not be double counted. */
+    void
+    resend(RequestPtr&& request) {
+        return send(std::move(request), 0);
+    }
 
     /** Remove and return one non-full request, if any, from the queue.
      *
@@ -253,7 +265,7 @@ private:
     receive(RequestPtr&& request, protocol::TMGetObjectByHash& response);
 
     void
-    finish(Metrics& metrics);
+    finish(Metrics& metrics, std::size_t nreceived);
 
 public:
     void

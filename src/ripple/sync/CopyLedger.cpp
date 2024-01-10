@@ -40,7 +40,7 @@ CopyLedger::start_()
         orequester.request(digest_);
     }
     // Technically, there is a chance that the ledger was completely loaded.
-    finish(metrics);
+    finish(metrics, 0);
 }
 
 void
@@ -53,7 +53,7 @@ CopyLedger::schedule()
 }
 
 void
-CopyLedger::send(RequestPtr&& request)
+CopyLedger::send(RequestPtr&& request, std::size_t nsent)
 {
     auto queue = (request->objects_size() < MAX_OBJECTS_PER_MESSAGE)
         ? &CopyLedger::partialRequests_
@@ -61,8 +61,9 @@ CopyLedger::send(RequestPtr&& request)
     // This is the value we want it to be.
     bool scheduled = true;
     {
-        std::lock_guard lock(senderMutex_);
+        std::lock_guard lock(mutex_);
         (this->*queue).emplace_back(std::move(request));
+        nsent_ += nsent;
         std::swap(scheduled, scheduled_);
         // Now it is the value it was.
     }
@@ -79,7 +80,7 @@ CopyLedger::unsend()
     std::size_t before = 0;
     std::size_t after = 0;
     {
-        std::lock_guard lock(senderMutex_);
+        std::lock_guard lock(mutex_);
         before = partialRequests_.size();
         auto& requests = partialRequests_;
         // Claw back the last non-full request.
@@ -87,6 +88,7 @@ CopyLedger::unsend()
         {
             request = std::move(requests.back());
             requests.pop_back();
+            --nsent_;
         }
         after = partialRequests_.size();
     }
@@ -129,7 +131,7 @@ CopyLedger::onReady(MessageScheduler::Courier& courier)
             copier_.jscheduler_.schedule(
                 [receiver = std::move(receiver)]() mutable {
                     // Re-send the request.
-                    receiver->copier_.send(std::move(receiver->request_));
+                    receiver->copier_.resend(std::move(receiver->request_));
                 });
         }
     };
@@ -143,7 +145,7 @@ CopyLedger::onReady(MessageScheduler::Courier& courier)
     std::vector<RequestPtr> requests;
     std::size_t remaining = 0;
     {
-        std::lock_guard lock(senderMutex_);
+        std::lock_guard lock(mutex_);
         assert(scheduled_);
         remaining = partialRequests_.size() + fullRequests_.size();
         if (fullRequests_.empty())
@@ -195,7 +197,7 @@ CopyLedger::onReady(MessageScheduler::Courier& courier)
     // `MessageScheduler::schedule`.
     remaining = 0;
     {
-        std::lock_guard lock(senderMutex_);
+        std::lock_guard lock(mutex_);
         assert(scheduled_);
         std::move(
             requests.begin(), requests.end(), std::back_inserter(this->*queue));
@@ -238,34 +240,32 @@ CopyLedger::receive(RequestPtr&& request, protocol::TMGetObjectByHash& response)
         orequester.receive(request, response);
     }
     {
-        std::lock_guard lock(metricsMutex_);
+        std::lock_guard lock(mutex_);
         receiveMeter_.addMessage(response.ByteSizeLong());
         JLOG(journal_.trace()) << "download: " << receiveMeter_;
     }
-    finish(metrics);
+    finish(metrics, 1);
 }
 
 void
-CopyLedger::finish(Metrics& metrics)
+CopyLedger::finish(Metrics& metrics, std::size_t nreceived)
 {
     metrics.report(journal_);
 
+    bool done = false;
     {
-        std::lock_guard lock(metricsMutex_);
+        std::lock_guard lock(mutex_);
         metrics_ += metrics;
         metrics = metrics_;
+        nreceived_ += nreceived;
+        done = nsent_ == nreceived_;
     }
 
-    auto requested = metrics.requested;
-    auto received = metrics.received();
-    JLOG(journal_.debug()) << "requested = received + pending: " << requested
-                           << " = " << received << " + " << metrics.pending();
-
-    if (received < requested)
+    if (!done)
     {
         return;
     }
-    assert(received == requested);
+    assert(metrics.requested == metrics.received());
 
     // Report the totals.
     metrics.report(journal_);

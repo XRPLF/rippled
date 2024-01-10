@@ -70,8 +70,6 @@ private:
     CopyLedger& copier_;
     // `metrics_` is an output parameter.
     CopyLedger::Metrics& metrics_;
-    // REVIEWER: Is it safe to cache a lookup of the full below cache
-    // generation?
     RequestPtr request_;
 
 public:

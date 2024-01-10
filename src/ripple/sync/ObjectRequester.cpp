@@ -214,6 +214,7 @@ void
 ObjectRequester::_send()
 {
     assert(request_);
+    assert(request_->objects_size() > 0);
     copier_.send(std::move(request_));
     assert(!request_);
 }
