@@ -315,12 +315,12 @@ struct MultivarJson_test : beast::unit_test::suite
             BEAST_EXPECT(
                 s1.visitor(
                     s1,  //
-                    3,
+                    3u,
                     Overload{
                         [](Json::Value& v, unsigned) {
                             return v["value"].asInt();
                         },
-                        [](Json::Value const&, auto) { return 0; },
+                        [](Json::Value const&, unsigned) { return 0; },
                         [](auto, auto) { return 0; }}) == 5);
 
             static_assert([](auto&& v) {
@@ -347,12 +347,12 @@ struct MultivarJson_test : beast::unit_test::suite
             BEAST_EXPECT(
                 s1.visitor(
                     std::as_const(s1),  //
-                    2,
+                    2u,
                     Overload{
                         [](Json::Value const& v, unsigned) {
                             return v["value"].asInt();
                         },
-                        [](Json::Value&, auto) { return 0; },
+                        [](Json::Value const&, auto) { return 0; },
                         [](auto, auto) { return 0; }}) == 3);
 
             static_assert([](auto&& v) {
@@ -732,12 +732,13 @@ struct MultivarJson_test : beast::unit_test::suite
             }(s1));
             BEAST_EXPECT(
                 s1.visit(
-                    3,
+                    3u,
                     Overload{
                         [](Json::Value& v, unsigned) {
                             return v["value"].asInt();
                         },
-                        [](Json::Value const&, auto) { return 0; },
+                        [](Json::Value const&, unsigned) { return 0; },
+                        [](Json::Value&, auto) { return 0; },
                         [](auto, auto) { return 0; }}) == 5);
             static_assert([](auto&& v) {
                 return requires
@@ -747,12 +748,13 @@ struct MultivarJson_test : beast::unit_test::suite
             }(s1));
             BEAST_EXPECT(
                 s1.visit()(
-                    3,
+                    3u,
                     Overload{
                         [](Json::Value& v, unsigned) {
                             return v["value"].asInt();
                         },
-                        [](Json::Value const&, auto) { return 0; },
+                        [](Json::Value const&, unsigned) { return 0; },
+                        [](Json::Value&, auto) { return 0; },
                         [](auto, auto) { return 0; }}) == 5);
 
             static_assert([](auto&& v) {
@@ -790,12 +792,13 @@ struct MultivarJson_test : beast::unit_test::suite
             }(std::as_const(s1)));
             BEAST_EXPECT(
                 std::as_const(s1).visit(
-                    2,
+                    2u,
                     Overload{
                         [](Json::Value const& v, unsigned) {
                             return v["value"].asInt();
                         },
-                        [](Json::Value&, auto) { return 0; },
+                        [](Json::Value const&, auto) { return 0; },
+                        [](Json::Value&, unsigned) { return 0; },
                         [](auto, auto) { return 0; }}) == 3);
             static_assert([](auto&& v) {
                 return requires
@@ -805,12 +808,13 @@ struct MultivarJson_test : beast::unit_test::suite
             }(std::as_const(s1)));
             BEAST_EXPECT(
                 std::as_const(s1).visit()(
-                    2,
+                    2u,
                     Overload{
                         [](Json::Value const& v, unsigned) {
                             return v["value"].asInt();
                         },
-                        [](Json::Value&, auto) { return 0; },
+                        [](Json::Value const&, auto) { return 0; },
+                        [](Json::Value&, unsigned) { return 0; },
                         [](auto, auto) { return 0; }}) == 3);
 
             static_assert([](auto&& v) {

@@ -33,6 +33,25 @@
 
 namespace ripple {
 
+namespace detail {
+template <typename T>
+constexpr bool is_integral_constant = false;
+template <typename I, auto A>
+constexpr bool is_integral_constant<std::integral_constant<I, A>> = true;
+template <typename I, auto A>
+constexpr bool is_integral_constant<std::integral_constant<I, A>&> = true;
+template <typename I, auto A>
+constexpr bool is_integral_constant<std::integral_constant<I, A> const&> = true;
+template <typename I, auto A>
+constexpr bool is_integral_constant<std::integral_constant<I, A>&&> = true;
+template <typename I, auto A>
+constexpr bool is_integral_constant<std::integral_constant<I, A> const&&> =
+    true;
+}  // namespace detail
+
+template <typename T>
+concept some_integral_constant = detail::is_integral_constant<T>;
+
 // This class is designed to wrap a collection of _almost_ identical Json::Value
 // objects, indexed by version (i.e. there is some mapping of version to object
 // index). It is used e.g. when we need to publish JSON data to users supporting
@@ -172,17 +191,18 @@ struct MultivarJson
         }
 
         // Mutable Json, unsigned int version
-        template <typename... Args, typename Fn>
-        auto
-        operator()(
-            MultivarJson& json,
-            unsigned int version,
-            Fn fn,
-            Args&&... args) const
+        template <typename Version, typename... Args, typename Fn>
+            requires(!some_integral_constant<Version>) &&
+            std::convertible_to<Version, unsigned> auto
+            operator()(
+                MultivarJson& json,
+                Version version,
+                Fn fn,
+                Args&&... args) const
             -> std::invoke_result_t<
                 Fn,
                 Json::Value&,
-                unsigned int,
+                Version,
                 Args&&...> requires requires()
         {
             fn(json.val[index(version)], version, std::forward<Args>(args)...);
@@ -195,9 +215,10 @@ struct MultivarJson
         }
 
         // Mutable Json only, unsigned int version
-        template <typename Fn>
-        auto
-        operator()(MultivarJson& json, unsigned int version, Fn fn) const
+        template <typename Version, typename Fn>
+            requires(!some_integral_constant<Version>) &&
+            std::convertible_to<Version, unsigned> auto
+            operator()(MultivarJson& json, Version version, Fn fn) const
             -> std::invoke_result_t<Fn, Json::Value&> requires requires()
         {
             fn(json.val[index(version)]);
@@ -209,17 +230,18 @@ struct MultivarJson
         }
 
         // Immutable Json, unsigned int version
-        template <typename... Args, typename Fn>
-        auto
-        operator()(
-            MultivarJson const& json,
-            unsigned int version,
-            Fn fn,
-            Args&&... args) const
+        template <typename Version, typename... Args, typename Fn>
+            requires(!some_integral_constant<Version>) &&
+            std::convertible_to<Version, unsigned> auto
+            operator()(
+                MultivarJson const& json,
+                Version version,
+                Fn fn,
+                Args&&... args) const
             -> std::invoke_result_t<
                 Fn,
                 Json::Value const&,
-                unsigned int,
+                Version,
                 Args&&...> requires requires()
         {
             fn(json.val[index(version)], version, std::forward<Args>(args)...);
@@ -232,9 +254,10 @@ struct MultivarJson
         }
 
         // Immutable Json only, unsigned int version
-        template <typename Fn>
-        auto
-        operator()(MultivarJson const& json, unsigned int version, Fn fn) const
+        template <typename Version, typename Fn>
+            requires(!some_integral_constant<Version>) &&
+            std::convertible_to<Version, unsigned> auto
+            operator()(MultivarJson const& json, Version version, Fn fn) const
             -> std::invoke_result_t<Fn, Json::Value const&> requires requires()
         {
             fn(json.val[index(version)]);
