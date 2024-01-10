@@ -260,8 +260,8 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttAMM_WITHDRAW, [](STObject& tx) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                // Preclose callback to create the AMM which will be deleted in
-                // the Precheck callback above.
+                // Preclose callback to create the AMM which will be partially
+                // deleted in the Precheck callback above.
                 AMM const amm(env, A1, XRP(100), A1["USD"](50));
                 ammAcctID = amm.ammAccount();
                 ammKey = amm.ammID();
@@ -271,8 +271,9 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"account deletion left behind a AMM object"}},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                // Delete the AMM account, cleaning up the directory, but
-                // without deleting the AMM object
+                // Delete all the AMM's trust lines, remove the AMM from the AMM
+                // account's directory (this deletes the directory), and delete
+                // the AMM account. Do not delete the AMM object.
                 auto const sle = ac.view().peek(keylet::account(ammAcctID));
                 if (!sle)
                     return false;
@@ -321,8 +322,8 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttAMM_WITHDRAW, [](STObject& tx) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& A1, Account const& A2, Env& env) {
-                // Delete the AMM account, cleaning up the directory, but
-                // without deleting the AMM object
+                // Preclose callback to create the AMM which will be partially
+                // deleted in the Precheck callback above.
                 AMM const amm(env, A1, XRP(100), A1["USD"](50));
                 ammAcctID = amm.ammAccount();
                 ammKey = amm.ammID();
