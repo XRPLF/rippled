@@ -24,8 +24,8 @@
 #include <cstdlib>
 #include <exception>
 #include <functional>
-#include <iterator>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -36,8 +36,13 @@ namespace ripple {
 
 #define TO_STRING0(x) #x
 #define TO_STRING(x) TO_STRING0(x)
-#define ASSERT_OP(op, x, y) \
-    if (x op y) { std::cerr << __FILE__ ":" TO_STRING(__LINE__) ": " #x " == " << x << " " #op " " << y << " == " #y << std::endl; std::abort(); }
+#define ASSERT_OP(op, x, y)                                               \
+    if (x op y)                                                           \
+    {                                                                     \
+        std::cerr << __FILE__ ":" TO_STRING(__LINE__) ": " #x " == " << x \
+                  << " " #op " " << y << " == " #y << std::endl;          \
+        std::abort();                                                     \
+    }
 #define ASSERT_EQ(x, y) ASSERT_OP(!=, x, y)
 #define ASSERT_NE(x, y) ASSERT_OP(==, x, y)
 
@@ -303,7 +308,8 @@ struct ApplyState : public std::enable_shared_from_this<ApplyState<F, Args...>>
     }
 
     template <std::size_t... I>
-    R invoke(std::index_sequence<I...>)
+    R
+    invoke(std::index_sequence<I...>)
     {
         return std::invoke(
             std::move(function_), std::move(*std::get<I>(arguments_))...);

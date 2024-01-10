@@ -242,13 +242,15 @@ private:
     /** Send a new request that should be counted.
      */
     void
-    send(RequestPtr&& request) {
+    send(RequestPtr&& request)
+    {
         return send(std::move(request), 1);
     }
 
     /** Re-send an old request that should not be double counted. */
     void
-    resend(RequestPtr&& request) {
+    resend(RequestPtr&& request)
+    {
         return send(std::move(request), 0);
     }
 
