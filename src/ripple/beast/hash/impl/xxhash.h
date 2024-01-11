@@ -190,6 +190,96 @@
 
 #  define XRPL_XXH_INLINE_ALL
 
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L) /* >= C11 */
+#  include <stdalign.h>
+#  define XRPL_XXH_ALIGN(n)      alignas(n)
+#elif defined(__cplusplus) && (__cplusplus >= 201103L) /* >= C++11 */
+/* In C++ alignas() is a keyword */
+#  define XRPL_XXH_ALIGN(n)      alignas(n)
+#elif defined(__GNUC__)
+#  define XRPL_XXH_ALIGN(n)      __attribute__ ((aligned(n)))
+#elif defined(_MSC_VER)
+#  define XRPL_XXH_ALIGN(n)      __declspec(align(n))
+#else
+#  define XRPL_XXH_ALIGN(n)   /* disabled */
+#endif
+
+/* ===   Compiler specifics   === */
+
+#if ((defined(sun) || defined(__sun)) && __cplusplus) /* Solaris includes __STDC_VERSION__ with C++. Tested with GCC 5.5 */
+#  define XRPL_XXH_RESTRICT   /* disable */
+#elif defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L   /* >= C99 */
+#  define XRPL_XXH_RESTRICT   restrict
+#elif (defined (__GNUC__) && ((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))) \
+   || (defined (__clang__)) \
+   || (defined (_MSC_VER) && (_MSC_VER >= 1400)) \
+   || (defined (__INTEL_COMPILER) && (__INTEL_COMPILER >= 1300))
+/*
+ * There are a LOT more compilers that recognize __restrict but this
+ * covers the major ones.
+ */
+#  define XRPL_XXH_RESTRICT   __restrict
+#else
+#  define XRPL_XXH_RESTRICT   /* disable */
+#endif
+
+#if (defined(__GNUC__) && (__GNUC__ >= 3))  \
+  || (defined(__INTEL_COMPILER) && (__INTEL_COMPILER >= 800)) \
+  || defined(__clang__)
+#    define XRPL_XXH_likely(x) __builtin_expect(x, 1)
+#    define XRPL_XXH_unlikely(x) __builtin_expect(x, 0)
+#else
+#    define XRPL_XXH_likely(x) (x)
+#    define XRPL_XXH_unlikely(x) (x)
+#endif
+
+#ifndef XRPL_XXH_HAS_INCLUDE
+#  ifdef __has_include
+#    define XRPL_XXH_HAS_INCLUDE(x) __has_include(x)
+#  else
+#    define XRPL_XXH_HAS_INCLUDE(x) 0
+#  endif
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#  if defined(__ARM_FEATURE_SVE)
+#    include <arm_sve.h>
+#  endif
+#  if defined(__ARM_NEON__) || defined(__ARM_NEON) \
+   || (defined(_M_ARM) && _M_ARM >= 7) \
+   || defined(_M_ARM64) || defined(_M_ARM64EC) \
+   || (defined(__wasm_simd128__) && XRPL_XXH_HAS_INCLUDE(<arm_neon.h>)) /* WASM SIMD128 via SIMDe */
+#    define inline __inline__  /* circumvent a clang bug */
+#    include <arm_neon.h>
+#    undef inline
+#  elif defined(__AVX2__)
+#    include <immintrin.h>
+#  elif defined(__SSE2__)
+#    include <emmintrin.h>
+#  endif
+#endif
+
+#if defined(_MSC_VER)
+#  include <intrin.h>
+#endif
+
+/* prefetch
+ * can be disabled, by declaring XRPL_XXH_NO_PREFETCH build macro */
+#if defined(XRPL_XXH_NO_PREFETCH)
+#  define XRPL_XXH_PREFETCH(ptr)  (void)(ptr)  /* disabled */
+#else
+#  if XRPL_XXH_SIZE_OPT >= 1
+#    define XRPL_XXH_PREFETCH(ptr) (void)(ptr)
+#  elif defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86))  /* _mm_prefetch() not defined outside of x86/x64 */
+#    include <mmintrin.h>   /* https://msdn.microsoft.com/fr-fr/library/84szxsww(v=vs.90).aspx */
+#    define XRPL_XXH_PREFETCH(ptr)  _mm_prefetch((const char*)(ptr), _MM_HINT_T0)
+#  elif defined(__GNUC__) && ( (__GNUC__ >= 4) || ( (__GNUC__ == 3) && (__GNUC_MINOR__ >= 1) ) )
+#    define XRPL_XXH_PREFETCH(ptr)  __builtin_prefetch((ptr), 0 /* rw==read */, 3 /* locality */)
+#  else
+#    define XRPL_XXH_PREFETCH(ptr) (void)(ptr)  /* disabled */
+#  endif
+#endif  /* XRPL_XXH_NO_PREFETCH */
+
 namespace beast {
 namespace detail {
 
@@ -1491,20 +1581,6 @@ struct XRPL_XXH64_state_s {
 };   /* typedef'd to XRPL_XXH64_state_t */
 
 #ifndef XRPL_XXH_NO_XRPL_XXH3
-
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L) /* >= C11 */
-#  include <stdalign.h>
-#  define XRPL_XXH_ALIGN(n)      alignas(n)
-#elif defined(__cplusplus) && (__cplusplus >= 201103L) /* >= C++11 */
-/* In C++ alignas() is a keyword */
-#  define XRPL_XXH_ALIGN(n)      alignas(n)
-#elif defined(__GNUC__)
-#  define XRPL_XXH_ALIGN(n)      __attribute__ ((aligned(n)))
-#elif defined(_MSC_VER)
-#  define XRPL_XXH_ALIGN(n)      __declspec(align(n))
-#else
-#  define XRPL_XXH_ALIGN(n)   /* disabled */
-#endif
 
 /* Old GCC versions only accept the attribute after the type in structures. */
 #if !(defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L))   /* C11+ */ \
@@ -3405,65 +3481,6 @@ XRPL_XXH_PUBLIC_API XRPL_XXH64_hash_t XRPL_XXH64_hashFromCanonical(XRPL_XXH_NOES
  * @{
  */
 
-/* ===   Compiler specifics   === */
-
-#if ((defined(sun) || defined(__sun)) && __cplusplus) /* Solaris includes __STDC_VERSION__ with C++. Tested with GCC 5.5 */
-#  define XRPL_XXH_RESTRICT   /* disable */
-#elif defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L   /* >= C99 */
-#  define XRPL_XXH_RESTRICT   restrict
-#elif (defined (__GNUC__) && ((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))) \
-   || (defined (__clang__)) \
-   || (defined (_MSC_VER) && (_MSC_VER >= 1400)) \
-   || (defined (__INTEL_COMPILER) && (__INTEL_COMPILER >= 1300))
-/*
- * There are a LOT more compilers that recognize __restrict but this
- * covers the major ones.
- */
-#  define XRPL_XXH_RESTRICT   __restrict
-#else
-#  define XRPL_XXH_RESTRICT   /* disable */
-#endif
-
-#if (defined(__GNUC__) && (__GNUC__ >= 3))  \
-  || (defined(__INTEL_COMPILER) && (__INTEL_COMPILER >= 800)) \
-  || defined(__clang__)
-#    define XRPL_XXH_likely(x) __builtin_expect(x, 1)
-#    define XRPL_XXH_unlikely(x) __builtin_expect(x, 0)
-#else
-#    define XRPL_XXH_likely(x) (x)
-#    define XRPL_XXH_unlikely(x) (x)
-#endif
-
-#ifndef XRPL_XXH_HAS_INCLUDE
-#  ifdef __has_include
-#    define XRPL_XXH_HAS_INCLUDE(x) __has_include(x)
-#  else
-#    define XRPL_XXH_HAS_INCLUDE(x) 0
-#  endif
-#endif
-
-#if defined(__GNUC__) || defined(__clang__)
-#  if defined(__ARM_FEATURE_SVE)
-#    include <arm_sve.h>
-#  endif
-#  if defined(__ARM_NEON__) || defined(__ARM_NEON) \
-   || (defined(_M_ARM) && _M_ARM >= 7) \
-   || defined(_M_ARM64) || defined(_M_ARM64EC) \
-   || (defined(__wasm_simd128__) && XRPL_XXH_HAS_INCLUDE(<arm_neon.h>)) /* WASM SIMD128 via SIMDe */
-#    define inline __inline__  /* circumvent a clang bug */
-#    include <arm_neon.h>
-#    undef inline
-#  elif defined(__AVX2__)
-#    include <immintrin.h>
-#  elif defined(__SSE2__)
-#    include <emmintrin.h>
-#  endif
-#endif
-
-#if defined(_MSC_VER)
-#  include <intrin.h>
-#endif
-
 /*
  * One goal of XRPL_XXH3 is to make it fast on both 32-bit and 64-bit, while
  * remaining a true 64-bit/128-bit hash function.
@@ -3963,22 +3980,6 @@ do { \
 } while (0)
 #endif /* XRPL_XXH_VECTOR == XRPL_XXH_SVE */
 
-/* prefetch
- * can be disabled, by declaring XRPL_XXH_NO_PREFETCH build macro */
-#if defined(XRPL_XXH_NO_PREFETCH)
-#  define XRPL_XXH_PREFETCH(ptr)  (void)(ptr)  /* disabled */
-#else
-#  if XRPL_XXH_SIZE_OPT >= 1
-#    define XRPL_XXH_PREFETCH(ptr) (void)(ptr)
-#  elif defined(_MSC_VER) && (defined(_M_X64) || defined(_M_IX86))  /* _mm_prefetch() not defined outside of x86/x64 */
-#    include <mmintrin.h>   /* https://msdn.microsoft.com/fr-fr/library/84szxsww(v=vs.90).aspx */
-#    define XRPL_XXH_PREFETCH(ptr)  _mm_prefetch((const char*)(ptr), _MM_HINT_T0)
-#  elif defined(__GNUC__) && ( (__GNUC__ >= 4) || ( (__GNUC__ == 3) && (__GNUC_MINOR__ >= 1) ) )
-#    define XRPL_XXH_PREFETCH(ptr)  __builtin_prefetch((ptr), 0 /* rw==read */, 3 /* locality */)
-#  else
-#    define XRPL_XXH_PREFETCH(ptr) (void)(ptr)  /* disabled */
-#  endif
-#endif  /* XRPL_XXH_NO_PREFETCH */
 
 
 /* ==========================================
