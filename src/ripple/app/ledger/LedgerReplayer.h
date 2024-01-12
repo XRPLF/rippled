@@ -125,6 +125,27 @@ public:
     void
     stop();
 
+    std::size_t
+    tasksSize() const
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        return tasks_.size();
+    }
+
+    std::size_t
+    deltasSize() const
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        return deltas_.size();
+    }
+
+    std::size_t
+    skipListsSize() const
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        return skipLists_.size();
+    }
+
 private:
     mutable std::mutex mtx_;
     std::vector<std::shared_ptr<LedgerReplayTask>> tasks_;
