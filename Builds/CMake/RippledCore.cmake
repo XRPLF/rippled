@@ -562,6 +562,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/DID.cpp
   src/ripple/app/tx/impl/Escrow.cpp
   src/ripple/app/tx/impl/InvariantCheck.cpp
+  src/ripple/app/tx/impl/LedgerStateFix.cpp
   src/ripple/app/tx/impl/NFTokenAcceptOffer.cpp
   src/ripple/app/tx/impl/NFTokenBurn.cpp
   src/ripple/app/tx/impl/NFTokenCancelOffer.cpp
@@ -831,6 +832,7 @@ if (tests)
     src/test/app/DNS_test.cpp
     src/test/app/Escrow_test.cpp
     src/test/app/FeeVote_test.cpp
+    src/test/app/FixNFTokenPageLinks_test.cpp
     src/test/app/Flow_test.cpp
     src/test/app/Freeze_test.cpp
     src/test/app/HashRouter_test.cpp
@@ -991,6 +993,7 @@ if (tests)
     src/test/jtx/impl/invoice_id.cpp
     src/test/jtx/impl/jtx_json.cpp
     src/test/jtx/impl/last_ledger_sequence.cpp
+    src/test/jtx/impl/ledgerStateFix.cpp
     src/test/jtx/impl/memo.cpp
     src/test/jtx/impl/multisign.cpp
     src/test/jtx/impl/offer.cpp

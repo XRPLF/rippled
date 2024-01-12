@@ -388,6 +388,7 @@ extern SF_UINT16 const sfHookEmitCount;
 extern SF_UINT16 const sfHookExecutionIndex;
 extern SF_UINT16 const sfHookApiVersion;
 extern SF_UINT16 const sfDiscountedFee;
+extern SF_UINT16 const sfLedgerFixType;
 
 // 32-bit integers (common)
 extern SF_UINT32 const sfNetworkID;

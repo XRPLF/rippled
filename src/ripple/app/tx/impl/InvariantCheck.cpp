@@ -527,6 +527,10 @@ ValidNFTokenPage::visitEntry(
     static constexpr uint256 const& pageBits = nft::pageMask;
     static constexpr uint256 const accountBits = ~pageBits;
 
+    if ((before && before->getType() != ltNFTOKEN_PAGE) ||
+        (after && after->getType() != ltNFTOKEN_PAGE))
+        return;
+
     auto check = [this, isDelete](std::shared_ptr<SLE const> const& sle) {
         uint256 const account = sle->key() & accountBits;
         uint256 const hiLimit = sle->key() & pageBits;
@@ -588,11 +592,37 @@ ValidNFTokenPage::visitEntry(
         }
     };
 
-    if (before && before->getType() == ltNFTOKEN_PAGE)
+    if (before)
+    {
         check(before);
 
-    if (after && after->getType() == ltNFTOKEN_PAGE)
+        // While an account's NFToken directory contains any NFTokens, the last
+        // NFTokenPage (with 96 bits of 1 in the low part of the index) should
+        // never be deleted.
+        if (isDelete && (before->key() & nft::pageMask) == nft::pageMask &&
+            before->isFieldPresent(sfPreviousPageMin))
+        {
+            deletedFinalPage_ = true;
+        }
+    }
+
+    if (after)
         check(after);
+
+    if (!isDelete && before && after)
+    {
+        // If the NFTokenPage
+        //  1. Has a NextMinPage field in before, but loses it in after, and
+        //  2. This is not the last page in the directory
+        // Then we have identified a corruption in the links between the
+        // NFToken pages in the NFToken directory.
+        if ((before->key() & nft::pageMask) != nft::pageMask &&
+            before->isFieldPresent(sfNextPageMin) &&
+            !after->isFieldPresent(sfNextPageMin))
+        {
+            deletedLink_ = true;
+        }
+    }
 }
 
 bool
@@ -631,6 +661,22 @@ ValidNFTokenPage::finalize(
     {
         JLOG(j.fatal()) << "Invariant failed: NFT page has invalid size.";
         return false;
+    }
+
+    // Only enforce these invariants if fixNFTokenPageLinks is enabled.
+    if (view.rules().enabled(fixNFTokenPageLinks))
+    {
+        if (deletedFinalPage_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Last NFT page deleted with "
+                               "non-empty directory.";
+            return false;
+        }
+        if (deletedLink_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Lost NextMinPage link.";
+            return false;
+        }
     }
 
     return true;

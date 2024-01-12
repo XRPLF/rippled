@@ -181,6 +181,7 @@ enum TEFcodes : TERUnderlyingType {
     tefTOO_BIG,
     tefNO_TICKET,
     tefNFTOKEN_IS_NOT_TRANSFERABLE,
+    tefINVALID_LEDGER_FIX_TYPE,
 };
 
 //------------------------------------------------------------------------------

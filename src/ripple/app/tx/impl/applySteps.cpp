@@ -38,6 +38,7 @@
 #include <ripple/app/tx/impl/DeleteOracle.h>
 #include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/Escrow.h>
+#include <ripple/app/tx/impl/LedgerStateFix.h>
 #include <ripple/app/tx/impl/NFTokenAcceptOffer.h>
 #include <ripple/app/tx/impl/NFTokenBurn.h>
 #include <ripple/app/tx/impl/NFTokenCancelOffer.h>
@@ -97,6 +98,8 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<EscrowFinish>();
         case ttESCROW_CANCEL:
             return f.template operator()<EscrowCancel>();
+        case ttLEDGER_STATE_FIX:
+            return f.template operator()<LedgerStateFix>();
         case ttPAYCHAN_CLAIM:
             return f.template operator()<PayChanClaim>();
         case ttPAYCHAN_CREATE:
