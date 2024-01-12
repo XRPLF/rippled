@@ -29,6 +29,7 @@
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/websocket.hpp>
+
 #include <cassert>
 #include <functional>
 
@@ -52,6 +53,9 @@ private:
     boost::beast::multi_buffer rb_;
     boost::beast::multi_buffer wb_;
     std::list<std::shared_ptr<WSMsg>> wq_;
+    /// The socket has been closed, or will close after the next write
+    /// finishes. Do not do any more writes, and don't try to close
+    /// again.
     bool do_close_ = false;
     boost::beast::websocket::close_reason cr_;
     waitable_timer timer_;
@@ -256,6 +260,8 @@ BaseWSPeer<Handler, Impl>::close(
         return post(strand_, [self = impl().shared_from_this(), reason] {
             self->close(reason);
         });
+    if (do_close_)
+        return;
     do_close_ = true;
     if (wq_.empty())
     {
@@ -348,6 +354,7 @@ BaseWSPeer<Handler, Impl>::on_write_fin(error_code const& ec)
         return fail(ec, "write_fin");
     wq_.pop_front();
     if (do_close_)
+    {
         impl().ws_.async_close(
             cr_,
             bind_executor(
@@ -356,6 +363,7 @@ BaseWSPeer<Handler, Impl>::on_write_fin(error_code const& ec)
                     &BaseWSPeer::on_close,
                     impl().shared_from_this(),
                     std::placeholders::_1)));
+    }
     else if (!wq_.empty())
         on_write({});
 }
