@@ -91,174 +91,175 @@ $(function() {
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#ifndef RIPPLE_PROTOCOL_STINTEGER_H_INCLUDED</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#define RIPPLE_PROTOCOL_STINTEGER_H_INCLUDED</span></div>
 <div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160; </div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STBase.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">class </span>STInteger : <span class="keyword">public</span> STBase</div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;{</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">   31</a></span>&#160;    <span class="keyword">using</span> <a class="code" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">value_type</a> = Integer;</div>
-<div class="line"><a name="l00032"></a><span class="lineno">   32</span>&#160; </div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;<span class="keyword">private</span>:</div>
-<div class="line"><a name="l00034"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a8f5a481a9f8cca7b0b607bb7707a14de">   34</a></span>&#160;    Integer <a class="code" href="classripple_1_1STInteger.html#a8f5a481a9f8cca7b0b607bb7707a14de">value_</a>;</div>
-<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classripple_1_1STInteger.html#a28c143e7620ec2cb6a10505335fa7309">STInteger</a>(Integer v);</div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a28c143e7620ec2cb6a10505335fa7309">STInteger</a>(<a class="code" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; n, Integer v = 0);</div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a28c143e7620ec2cb6a10505335fa7309">STInteger</a>(<a class="code" href="classripple_1_1SerialIter.html">SerialIter</a>&amp; sit, <a class="code" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; name);</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160; </div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <a class="code" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fc">SerializedTypeID</a></div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#ab1066b6733ce6f94cb1d7061592f437c">getSType</a>() <span class="keyword">const override</span>;</div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <a class="code" href="classripple_1_1STInteger.html#a2d690262f59133fe59e938b2097920f3">getJson</a>(<a class="code" href="structripple_1_1JsonOptions.html">JsonOptions</a>) <span class="keyword">const override</span>;</div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a67a06dfeba31ce3fad2bd10079d111fb">getText</a>() <span class="keyword">const override</span>;</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160; </div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a3af7697b660a5a8d525d3420fa6a6568">add</a>(<a class="code" href="classripple_1_1Serializer.html">Serializer</a>&amp; s) <span class="keyword">const override</span>;</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#af38ade5435e47164c140f74a361c7189">isDefault</a>() <span class="keyword">const override</span>;</div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160; </div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;    <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#ab5a1f692c849e2df150533f1758da7a2">isEquivalent</a>(<span class="keyword">const</span> <a class="code" href="classripple_1_1STBase.html">STBase</a>&amp; t) <span class="keyword">const override</span>;</div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160; </div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;    <a class="code" href="classripple_1_1STInteger.html">STInteger</a>&amp;</div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a4d0976394d28114accdef79464358f8f">operator=</a>(<a class="code" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">value_type</a> <span class="keyword">const</span>&amp; v);</div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160; </div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">value_type</a></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a7db20a6a442a8febb5332200673f5507">value</a>() const noexcept;</div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160; </div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#ae8b01d91a90a3b2510b73667a1403d78">setValue</a>(Integer v);</div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160; </div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;    operator Integer() const;</div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160; </div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;private:</div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;    <a class="code" href="classripple_1_1STBase.html">STBase</a>*</div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a8175096a15b76b857b33f35a17224479">copy</a>(<a class="code" href="namespacestd.html">std</a>::<span class="keywordtype">size_t</span> n, <span class="keywordtype">void</span>* buf) const override;</div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <a class="code" href="classripple_1_1STBase.html">STBase</a>*</div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a6026d10b82d322c570bb536030514e0b">move</a>(<a class="code" href="namespacestd.html">std</a>::<span class="keywordtype">size_t</span> n, <span class="keywordtype">void</span>* buf) override;</div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160; </div>
-<div class="line"><a name="l00075"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#aa19bf94528b7060c0be2bce480531c68">   75</a></span>&#160;    friend class <a class="code" href="namespaceripple.html">ripple</a>::detail::STVar;</div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;};</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160; </div>
-<div class="line"><a name="l00078"></a><span class="lineno"><a class="line" href="namespaceripple.html#a07034f1ce2f4388499f464d6ea375fd6">   78</a></span>&#160;using <a class="code" href="classripple_1_1STInteger.html">STUInt8</a> = <a class="code" href="classripple_1_1STInteger.html">STInteger</a>&lt;<span class="keywordtype">unsigned</span> <span class="keywordtype">char</span>&gt;;</div>
-<div class="line"><a name="l00079"></a><span class="lineno"><a class="line" href="namespaceripple.html#a5364091d6d6b2e5211bb8d83b9017021">   79</a></span>&#160;using <a class="code" href="classripple_1_1STInteger.html">STUInt16</a> = <a class="code" href="classripple_1_1STInteger.html">STInteger</a>&lt;<a class="code" href="namespacestd.html">std</a>::uint16_t&gt;;</div>
-<div class="line"><a name="l00080"></a><span class="lineno"><a class="line" href="namespaceripple.html#afe4a518d4dbda10e150b7400cfc0bf89">   80</a></span>&#160;using <a class="code" href="classripple_1_1STInteger.html">STUInt32</a> = <a class="code" href="classripple_1_1STInteger.html">STInteger</a>&lt;<a class="code" href="namespacestd.html">std</a>::uint32_t&gt;;</div>
-<div class="line"><a name="l00081"></a><span class="lineno"><a class="line" href="namespaceripple.html#a9876005f287226b27b69f199da4f1695">   81</a></span>&#160;using <a class="code" href="classripple_1_1STInteger.html">STUInt64</a> = <a class="code" href="classripple_1_1STInteger.html">STInteger</a>&lt;<a class="code" href="namespacestd.html">std</a>::uint64_t&gt;;</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160; </div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;template &lt;typename Integer&gt;</div>
-<div class="line"><a name="l00084"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a28c143e7620ec2cb6a10505335fa7309">   84</a></span>&#160;inline <a class="code" href="classripple_1_1STInteger.html">STInteger</a>&lt;Integer&gt;::<a class="code" href="classripple_1_1STInteger.html">STInteger</a>(Integer v) : <a class="code" href="classripple_1_1STInteger.html#a8f5a481a9f8cca7b0b607bb7707a14de">value_</a>(v)</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;{</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;}</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
-<div class="line"><a name="l00089"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#aba0b4ea55c452591d1081a0b2735fcda">   89</a></span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1STInteger.html#a28c143e7620ec2cb6a10505335fa7309">STInteger&lt;Integer&gt;::STInteger</a>(<a class="code" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; n, Integer v)</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    : <a class="code" href="classripple_1_1STBase.html">STBase</a>(n), <a class="code" href="classripple_1_1STInteger.html#a8f5a481a9f8cca7b0b607bb7707a14de">value_</a>(v)</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;{</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;}</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1STBase.html">STBase</a>*</div>
-<div class="line"><a name="l00096"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a8175096a15b76b857b33f35a17224479">   96</a></span>&#160;<a class="code" href="classripple_1_1STInteger.html#a8175096a15b76b857b33f35a17224479">STInteger&lt;Integer&gt;::copy</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, <span class="keywordtype">void</span>* buf)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;    <span class="keywordflow">return</span> emplace(n, buf, *<span class="keyword">this</span>);</div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;}</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160; </div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1STBase.html">STBase</a>*</div>
-<div class="line"><a name="l00103"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a6026d10b82d322c570bb536030514e0b">  103</a></span>&#160;<a class="code" href="classripple_1_1STInteger.html#a6026d10b82d322c570bb536030514e0b">STInteger&lt;Integer&gt;::move</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, <span class="keywordtype">void</span>* buf)</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;{</div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;    <span class="keywordflow">return</span> emplace(n, buf, std::move(*<span class="keyword">this</span>));</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;}</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160; </div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00110"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a3af7697b660a5a8d525d3420fa6a6568">  110</a></span>&#160;<a class="code" href="classripple_1_1STInteger.html#a3af7697b660a5a8d525d3420fa6a6568">STInteger&lt;Integer&gt;::add</a>(<a class="code" href="classripple_1_1Serializer.html">Serializer</a>&amp; s)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;    assert(getFName().isBinary());</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    assert(getFName().fieldType == getSType());</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    s.<a class="code" href="classripple_1_1Serializer.html#a8a2cd38d9db4751a438d7de628ece6a8">addInteger</a>(value_);</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;}</div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00119"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#af38ade5435e47164c140f74a361c7189">  119</a></span>&#160;<a class="code" href="classripple_1_1STInteger.html#af38ade5435e47164c140f74a361c7189">STInteger&lt;Integer&gt;::isDefault</a>()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;    <span class="keywordflow">return</span> value_ == 0;</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;}</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160; </div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a name="l00126"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#ab5a1f692c849e2df150533f1758da7a2">  126</a></span>&#160;<a class="code" href="classripple_1_1STInteger.html#ab5a1f692c849e2df150533f1758da7a2">STInteger&lt;Integer&gt;::isEquivalent</a>(<span class="keyword">const</span> <a class="code" href="classripple_1_1STBase.html">STBase</a>&amp; t)<span class="keyword"> const</span></div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;    <span class="keyword">const</span> <a class="code" href="classripple_1_1STInteger.html">STInteger</a>* v = <span class="keyword">dynamic_cast&lt;</span><span class="keyword">const </span><a class="code" href="classripple_1_1STInteger.html">STInteger</a>*<span class="keyword">&gt;</span>(&amp;t);</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <span class="keywordflow">return</span> v &amp;&amp; (value_ == v-&gt;value_);</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;}</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160; </div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1STInteger.html">STInteger&lt;Integer&gt;</a>&amp;</div>
-<div class="line"><a name="l00134"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a4d0976394d28114accdef79464358f8f">  134</a></span>&#160;<a class="code" href="classripple_1_1STInteger.html#a4d0976394d28114accdef79464358f8f">STInteger&lt;Integer&gt;::operator=</a>(<a class="code" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">value_type</a> <span class="keyword">const</span>&amp; v)</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;{</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;    value_ = v;</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    <span class="keywordflow">return</span> *<span class="keyword">this</span>;</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;}</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160; </div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;<span class="keyword">inline</span> <span class="keyword">typename</span> <a class="code" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">STInteger&lt;Integer&gt;::value_type</a></div>
-<div class="line"><a name="l00142"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a7db20a6a442a8febb5332200673f5507">  142</a></span>&#160;<a class="code" href="classripple_1_1STInteger.html#a7db20a6a442a8febb5332200673f5507">STInteger&lt;Integer&gt;::value</a>() const noexcept</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;{</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;    <span class="keywordflow">return</span> value_;</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;}</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160; </div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00149"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#ae8b01d91a90a3b2510b73667a1403d78">  149</a></span>&#160;<a class="code" href="classripple_1_1STInteger.html#ae8b01d91a90a3b2510b73667a1403d78">STInteger&lt;Integer&gt;::setValue</a>(Integer v)</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;{</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    value_ = v;</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;}</div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160; </div>
-<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
-<div class="line"><a name="l00155"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a44015589da51b8c90546f77cb8a5b663">  155</a></span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1STInteger.html">STInteger&lt;Integer&gt;::operator</a> Integer()<span class="keyword"> const</span></div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;<span class="keyword"></span>{</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;    <span class="keywordflow">return</span> value_;</div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;}</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160; </div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160; </div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/basics/CountedObject.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/STBase.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">class </span>STInteger : <span class="keyword">public</span> STBase, <span class="keyword">public</span> CountedObject&lt;STInteger&lt;Integer&gt;&gt;</div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;{</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">   32</a></span>&#160;    <span class="keyword">using</span> <a class="code" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">value_type</a> = Integer;</div>
+<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160; </div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;<span class="keyword">private</span>:</div>
+<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a8f5a481a9f8cca7b0b607bb7707a14de">   35</a></span>&#160;    Integer <a class="code" href="classripple_1_1STInteger.html#a8f5a481a9f8cca7b0b607bb7707a14de">value_</a>;</div>
+<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160; </div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="keyword">explicit</span> <a class="code" href="classripple_1_1STInteger.html#a28c143e7620ec2cb6a10505335fa7309">STInteger</a>(Integer v);</div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a28c143e7620ec2cb6a10505335fa7309">STInteger</a>(<a class="code" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; n, Integer v = 0);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a28c143e7620ec2cb6a10505335fa7309">STInteger</a>(<a class="code" href="classripple_1_1SerialIter.html">SerialIter</a>&amp; sit, <a class="code" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; name);</div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160; </div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <a class="code" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fc">SerializedTypeID</a></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#ab1066b6733ce6f94cb1d7061592f437c">getSType</a>() <span class="keyword">const override</span>;</div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160; </div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <a class="code" href="classripple_1_1STInteger.html#a2d690262f59133fe59e938b2097920f3">getJson</a>(<a class="code" href="structripple_1_1JsonOptions.html">JsonOptions</a>) <span class="keyword">const override</span>;</div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
+<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a67a06dfeba31ce3fad2bd10079d111fb">getText</a>() <span class="keyword">const override</span>;</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160; </div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a3af7697b660a5a8d525d3420fa6a6568">add</a>(<a class="code" href="classripple_1_1Serializer.html">Serializer</a>&amp; s) <span class="keyword">const override</span>;</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160; </div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#af38ade5435e47164c140f74a361c7189">isDefault</a>() <span class="keyword">const override</span>;</div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#ab5a1f692c849e2df150533f1758da7a2">isEquivalent</a>(<span class="keyword">const</span> <a class="code" href="classripple_1_1STBase.html">STBase</a>&amp; t) <span class="keyword">const override</span>;</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160; </div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;    <a class="code" href="classripple_1_1STInteger.html">STInteger</a>&amp;</div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a4d0976394d28114accdef79464358f8f">operator=</a>(<a class="code" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">value_type</a> <span class="keyword">const</span>&amp; v);</div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">value_type</a></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a7db20a6a442a8febb5332200673f5507">value</a>() const noexcept;</div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160; </div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#ae8b01d91a90a3b2510b73667a1403d78">setValue</a>(Integer v);</div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160; </div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;    operator Integer() const;</div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160; </div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;private:</div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;    <a class="code" href="classripple_1_1STBase.html">STBase</a>*</div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a8175096a15b76b857b33f35a17224479">copy</a>(<a class="code" href="namespacestd.html">std</a>::<span class="keywordtype">size_t</span> n, <span class="keywordtype">void</span>* buf) const override;</div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;    <a class="code" href="classripple_1_1STBase.html">STBase</a>*</div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;    <a class="code" href="classripple_1_1STInteger.html#a6026d10b82d322c570bb536030514e0b">move</a>(<a class="code" href="namespacestd.html">std</a>::<span class="keywordtype">size_t</span> n, <span class="keywordtype">void</span>* buf) override;</div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
+<div class="line"><a name="l00076"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#aa19bf94528b7060c0be2bce480531c68">   76</a></span>&#160;    friend class <a class="code" href="namespaceripple.html">ripple</a>::detail::STVar;</div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;};</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
+<div class="line"><a name="l00079"></a><span class="lineno"><a class="line" href="namespaceripple.html#a07034f1ce2f4388499f464d6ea375fd6">   79</a></span>&#160;using <a class="code" href="classripple_1_1STInteger.html">STUInt8</a> = <a class="code" href="classripple_1_1STInteger.html">STInteger</a>&lt;<span class="keywordtype">unsigned</span> <span class="keywordtype">char</span>&gt;;</div>
+<div class="line"><a name="l00080"></a><span class="lineno"><a class="line" href="namespaceripple.html#a5364091d6d6b2e5211bb8d83b9017021">   80</a></span>&#160;using <a class="code" href="classripple_1_1STInteger.html">STUInt16</a> = <a class="code" href="classripple_1_1STInteger.html">STInteger</a>&lt;<a class="code" href="namespacestd.html">std</a>::uint16_t&gt;;</div>
+<div class="line"><a name="l00081"></a><span class="lineno"><a class="line" href="namespaceripple.html#afe4a518d4dbda10e150b7400cfc0bf89">   81</a></span>&#160;using <a class="code" href="classripple_1_1STInteger.html">STUInt32</a> = <a class="code" href="classripple_1_1STInteger.html">STInteger</a>&lt;<a class="code" href="namespacestd.html">std</a>::uint32_t&gt;;</div>
+<div class="line"><a name="l00082"></a><span class="lineno"><a class="line" href="namespaceripple.html#a9876005f287226b27b69f199da4f1695">   82</a></span>&#160;using <a class="code" href="classripple_1_1STInteger.html">STUInt64</a> = <a class="code" href="classripple_1_1STInteger.html">STInteger</a>&lt;<a class="code" href="namespacestd.html">std</a>::uint64_t&gt;;</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;template &lt;typename Integer&gt;</div>
+<div class="line"><a name="l00085"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a28c143e7620ec2cb6a10505335fa7309">   85</a></span>&#160;inline <a class="code" href="classripple_1_1STInteger.html">STInteger</a>&lt;Integer&gt;::<a class="code" href="classripple_1_1STInteger.html">STInteger</a>(Integer v) : <a class="code" href="classripple_1_1STInteger.html#a8f5a481a9f8cca7b0b607bb7707a14de">value_</a>(v)</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;{</div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;}</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160; </div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
+<div class="line"><a name="l00090"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#aba0b4ea55c452591d1081a0b2735fcda">   90</a></span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1STInteger.html#a28c143e7620ec2cb6a10505335fa7309">STInteger&lt;Integer&gt;::STInteger</a>(<a class="code" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; n, Integer v)</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    : <a class="code" href="classripple_1_1STBase.html">STBase</a>(n), <a class="code" href="classripple_1_1STInteger.html#a8f5a481a9f8cca7b0b607bb7707a14de">value_</a>(v)</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;{</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;}</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1STBase.html">STBase</a>*</div>
+<div class="line"><a name="l00097"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a8175096a15b76b857b33f35a17224479">   97</a></span>&#160;<a class="code" href="classripple_1_1STInteger.html#a8175096a15b76b857b33f35a17224479">STInteger&lt;Integer&gt;::copy</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, <span class="keywordtype">void</span>* buf)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;    <span class="keywordflow">return</span> emplace(n, buf, *<span class="keyword">this</span>);</div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;}</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160; </div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1STBase.html">STBase</a>*</div>
+<div class="line"><a name="l00104"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a6026d10b82d322c570bb536030514e0b">  104</a></span>&#160;<a class="code" href="classripple_1_1STInteger.html#a6026d10b82d322c570bb536030514e0b">STInteger&lt;Integer&gt;::move</a>(<a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, <span class="keywordtype">void</span>* buf)</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;{</div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;    <span class="keywordflow">return</span> emplace(n, buf, std::move(*<span class="keyword">this</span>));</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;}</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160; </div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00111"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a3af7697b660a5a8d525d3420fa6a6568">  111</a></span>&#160;<a class="code" href="classripple_1_1STInteger.html#a3af7697b660a5a8d525d3420fa6a6568">STInteger&lt;Integer&gt;::add</a>(<a class="code" href="classripple_1_1Serializer.html">Serializer</a>&amp; s)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;    assert(getFName().isBinary());</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;    assert(getFName().fieldType == getSType());</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;    s.<a class="code" href="classripple_1_1Serializer.html#a8a2cd38d9db4751a438d7de628ece6a8">addInteger</a>(value_);</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;}</div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160; </div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00120"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#af38ade5435e47164c140f74a361c7189">  120</a></span>&#160;<a class="code" href="classripple_1_1STInteger.html#af38ade5435e47164c140f74a361c7189">STInteger&lt;Integer&gt;::isDefault</a>()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;    <span class="keywordflow">return</span> value_ == 0;</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;}</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a name="l00127"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#ab5a1f692c849e2df150533f1758da7a2">  127</a></span>&#160;<a class="code" href="classripple_1_1STInteger.html#ab5a1f692c849e2df150533f1758da7a2">STInteger&lt;Integer&gt;::isEquivalent</a>(<span class="keyword">const</span> <a class="code" href="classripple_1_1STBase.html">STBase</a>&amp; t)<span class="keyword"> const</span></div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;    <span class="keyword">const</span> <a class="code" href="classripple_1_1STInteger.html">STInteger</a>* v = <span class="keyword">dynamic_cast&lt;</span><span class="keyword">const </span><a class="code" href="classripple_1_1STInteger.html">STInteger</a>*<span class="keyword">&gt;</span>(&amp;t);</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;    <span class="keywordflow">return</span> v &amp;&amp; (value_ == v-&gt;value_);</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;}</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160; </div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1STInteger.html">STInteger&lt;Integer&gt;</a>&amp;</div>
+<div class="line"><a name="l00135"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a4d0976394d28114accdef79464358f8f">  135</a></span>&#160;<a class="code" href="classripple_1_1STInteger.html#a4d0976394d28114accdef79464358f8f">STInteger&lt;Integer&gt;::operator=</a>(<a class="code" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">value_type</a> <span class="keyword">const</span>&amp; v)</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;{</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;    value_ = v;</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;    <span class="keywordflow">return</span> *<span class="keyword">this</span>;</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;}</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160; </div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;<span class="keyword">inline</span> <span class="keyword">typename</span> <a class="code" href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">STInteger&lt;Integer&gt;::value_type</a></div>
+<div class="line"><a name="l00143"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a7db20a6a442a8febb5332200673f5507">  143</a></span>&#160;<a class="code" href="classripple_1_1STInteger.html#a7db20a6a442a8febb5332200673f5507">STInteger&lt;Integer&gt;::value</a>() const noexcept</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;{</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;    <span class="keywordflow">return</span> value_;</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;}</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160; </div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;<span class="keyword">inline</span> <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00150"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#ae8b01d91a90a3b2510b73667a1403d78">  150</a></span>&#160;<a class="code" href="classripple_1_1STInteger.html#ae8b01d91a90a3b2510b73667a1403d78">STInteger&lt;Integer&gt;::setValue</a>(Integer v)</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;{</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    value_ = v;</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;}</div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160; </div>
+<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;<span class="keyword">template</span> &lt;<span class="keyword">typename</span> Integer&gt;</div>
+<div class="line"><a name="l00156"></a><span class="lineno"><a class="line" href="classripple_1_1STInteger.html#a44015589da51b8c90546f77cb8a5b663">  156</a></span>&#160;<span class="keyword">inline</span> <a class="code" href="classripple_1_1STInteger.html">STInteger&lt;Integer&gt;::operator</a> Integer()<span class="keyword"> const</span></div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;<span class="keyword"></span>{</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;    <span class="keywordflow">return</span> value_;</div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;}</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160; </div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160; </div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1STInteger_html_a3af7697b660a5a8d525d3420fa6a6568"><div class="ttname"><a href="classripple_1_1STInteger.html#a3af7697b660a5a8d525d3420fa6a6568">ripple::STInteger::add</a></div><div class="ttdeci">void add(Serializer &amp;s) const override</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00110">STInteger.h:110</a></div></div>
+<div class="ttc" id="aclassripple_1_1STInteger_html_a3af7697b660a5a8d525d3420fa6a6568"><div class="ttname"><a href="classripple_1_1STInteger.html#a3af7697b660a5a8d525d3420fa6a6568">ripple::STInteger::add</a></div><div class="ttdeci">void add(Serializer &amp;s) const override</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00111">STInteger.h:111</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1Serializer_html_a8a2cd38d9db4751a438d7de628ece6a8"><div class="ttname"><a href="classripple_1_1Serializer.html#a8a2cd38d9db4751a438d7de628ece6a8">ripple::Serializer::addInteger</a></div><div class="ttdeci">int addInteger(Integer)</div></div>
 <div class="ttc" id="anamespaceripple_html_a3e7e3f29aef85bcca06706da54e950fc"><div class="ttname"><a href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fc">ripple::SerializedTypeID</a></div><div class="ttdeci">SerializedTypeID</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00104">SField.h:104</a></div></div>
 <div class="ttc" id="aclassripple_1_1STInteger_html_a2d690262f59133fe59e938b2097920f3"><div class="ttname"><a href="classripple_1_1STInteger.html#a2d690262f59133fe59e938b2097920f3">ripple::STInteger::getJson</a></div><div class="ttdeci">Json::Value getJson(JsonOptions) const override</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8cpp_source.html#l00064">STInteger.cpp:64</a></div></div>
-<div class="ttc" id="aclassripple_1_1STInteger_html_af38ade5435e47164c140f74a361c7189"><div class="ttname"><a href="classripple_1_1STInteger.html#af38ade5435e47164c140f74a361c7189">ripple::STInteger::isDefault</a></div><div class="ttdeci">bool isDefault() const override</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00119">STInteger.h:119</a></div></div>
-<div class="ttc" id="aclassripple_1_1STInteger_html_a7db20a6a442a8febb5332200673f5507"><div class="ttname"><a href="classripple_1_1STInteger.html#a7db20a6a442a8febb5332200673f5507">ripple::STInteger::value</a></div><div class="ttdeci">value_type value() const noexcept</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00142">STInteger.h:142</a></div></div>
+<div class="ttc" id="aclassripple_1_1STInteger_html_af38ade5435e47164c140f74a361c7189"><div class="ttname"><a href="classripple_1_1STInteger.html#af38ade5435e47164c140f74a361c7189">ripple::STInteger::isDefault</a></div><div class="ttdeci">bool isDefault() const override</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00120">STInteger.h:120</a></div></div>
+<div class="ttc" id="aclassripple_1_1STInteger_html_a7db20a6a442a8febb5332200673f5507"><div class="ttname"><a href="classripple_1_1STInteger.html#a7db20a6a442a8febb5332200673f5507">ripple::STInteger::value</a></div><div class="ttdeci">value_type value() const noexcept</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00143">STInteger.h:143</a></div></div>
 <div class="ttc" id="aclassripple_1_1SerialIter_html"><div class="ttname"><a href="classripple_1_1SerialIter.html">ripple::SerialIter</a></div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00311">Serializer.h:311</a></div></div>
 <div class="ttc" id="aclassripple_1_1STInteger_html"><div class="ttname"><a href="classripple_1_1STInteger.html">ripple::STInteger</a></div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00051">SField.h:51</a></div></div>
-<div class="ttc" id="aclassripple_1_1STInteger_html_a6026d10b82d322c570bb536030514e0b"><div class="ttname"><a href="classripple_1_1STInteger.html#a6026d10b82d322c570bb536030514e0b">ripple::STInteger::move</a></div><div class="ttdeci">STBase * move(std::size_t n, void *buf) override</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00103">STInteger.h:103</a></div></div>
-<div class="ttc" id="aclassripple_1_1STInteger_html_a4d0976394d28114accdef79464358f8f"><div class="ttname"><a href="classripple_1_1STInteger.html#a4d0976394d28114accdef79464358f8f">ripple::STInteger::operator=</a></div><div class="ttdeci">STInteger &amp; operator=(value_type const &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00134">STInteger.h:134</a></div></div>
+<div class="ttc" id="aclassripple_1_1STInteger_html_a6026d10b82d322c570bb536030514e0b"><div class="ttname"><a href="classripple_1_1STInteger.html#a6026d10b82d322c570bb536030514e0b">ripple::STInteger::move</a></div><div class="ttdeci">STBase * move(std::size_t n, void *buf) override</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00104">STInteger.h:104</a></div></div>
+<div class="ttc" id="aclassripple_1_1STInteger_html_a4d0976394d28114accdef79464358f8f"><div class="ttname"><a href="classripple_1_1STInteger.html#a4d0976394d28114accdef79464358f8f">ripple::STInteger::operator=</a></div><div class="ttdeci">STInteger &amp; operator=(value_type const &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00135">STInteger.h:135</a></div></div>
 <div class="ttc" id="aclassripple_1_1Serializer_html"><div class="ttname"><a href="classripple_1_1Serializer.html">ripple::Serializer</a></div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00040">Serializer.h:40</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="astructripple_1_1JsonOptions_html"><div class="ttname"><a href="structripple_1_1JsonOptions.html">ripple::JsonOptions</a></div><div class="ttdoc">Note, should be treated as flags that can be | and &amp;.</div><div class="ttdef"><b>Definition:</b> <a href="STBase_8h_source.html#l00035">STBase.h:35</a></div></div>
-<div class="ttc" id="aclassripple_1_1STInteger_html_a6bff31f81f7ffd0f25f4933a1cdf3e9f"><div class="ttname"><a href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">ripple::STInteger::value_type</a></div><div class="ttdeci">Integer value_type</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00031">STInteger.h:31</a></div></div>
-<div class="ttc" id="aclassripple_1_1STInteger_html_a8175096a15b76b857b33f35a17224479"><div class="ttname"><a href="classripple_1_1STInteger.html#a8175096a15b76b857b33f35a17224479">ripple::STInteger::copy</a></div><div class="ttdeci">STBase * copy(std::size_t n, void *buf) const override</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00096">STInteger.h:96</a></div></div>
+<div class="ttc" id="aclassripple_1_1STInteger_html_a6bff31f81f7ffd0f25f4933a1cdf3e9f"><div class="ttname"><a href="classripple_1_1STInteger.html#a6bff31f81f7ffd0f25f4933a1cdf3e9f">ripple::STInteger::value_type</a></div><div class="ttdeci">Integer value_type</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00032">STInteger.h:32</a></div></div>
+<div class="ttc" id="aclassripple_1_1STInteger_html_a8175096a15b76b857b33f35a17224479"><div class="ttname"><a href="classripple_1_1STInteger.html#a8175096a15b76b857b33f35a17224479">ripple::STInteger::copy</a></div><div class="ttdeci">STBase * copy(std::size_t n, void *buf) const override</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00097">STInteger.h:97</a></div></div>
 <div class="ttc" id="aclassripple_1_1SField_html"><div class="ttname"><a href="classripple_1_1SField.html">ripple::SField</a></div><div class="ttdoc">Identifies fields.</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00139">SField.h:139</a></div></div>
 <div class="ttc" id="aclassripple_1_1STBase_html"><div class="ttname"><a href="classripple_1_1STBase.html">ripple::STBase</a></div><div class="ttdoc">A type which can be exported to a well known binary format.</div><div class="ttdef"><b>Definition:</b> <a href="STBase_8h_source.html#l00121">STBase.h:121</a></div></div>
-<div class="ttc" id="aclassripple_1_1STInteger_html_ae8b01d91a90a3b2510b73667a1403d78"><div class="ttname"><a href="classripple_1_1STInteger.html#ae8b01d91a90a3b2510b73667a1403d78">ripple::STInteger::setValue</a></div><div class="ttdeci">void setValue(Integer v)</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00149">STInteger.h:149</a></div></div>
+<div class="ttc" id="aclassripple_1_1STInteger_html_ae8b01d91a90a3b2510b73667a1403d78"><div class="ttname"><a href="classripple_1_1STInteger.html#ae8b01d91a90a3b2510b73667a1403d78">ripple::STInteger::setValue</a></div><div class="ttdeci">void setValue(Integer v)</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00150">STInteger.h:150</a></div></div>
 <div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdoc">STL namespace.</div></div>
 <div class="ttc" id="aclassripple_1_1STInteger_html_a67a06dfeba31ce3fad2bd10079d111fb"><div class="ttname"><a href="classripple_1_1STInteger.html#a67a06dfeba31ce3fad2bd10079d111fb">ripple::STInteger::getText</a></div><div class="ttdeci">std::string getText() const override</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8cpp_source.html#l00047">STInteger.cpp:47</a></div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
-<div class="ttc" id="aclassripple_1_1STInteger_html_a28c143e7620ec2cb6a10505335fa7309"><div class="ttname"><a href="classripple_1_1STInteger.html#a28c143e7620ec2cb6a10505335fa7309">ripple::STInteger::STInteger</a></div><div class="ttdeci">STInteger(Integer v)</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00084">STInteger.h:84</a></div></div>
-<div class="ttc" id="aclassripple_1_1STInteger_html_ab5a1f692c849e2df150533f1758da7a2"><div class="ttname"><a href="classripple_1_1STInteger.html#ab5a1f692c849e2df150533f1758da7a2">ripple::STInteger::isEquivalent</a></div><div class="ttdeci">bool isEquivalent(const STBase &amp;t) const override</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00126">STInteger.h:126</a></div></div>
+<div class="ttc" id="aclassripple_1_1STInteger_html_a28c143e7620ec2cb6a10505335fa7309"><div class="ttname"><a href="classripple_1_1STInteger.html#a28c143e7620ec2cb6a10505335fa7309">ripple::STInteger::STInteger</a></div><div class="ttdeci">STInteger(Integer v)</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00085">STInteger.h:85</a></div></div>
+<div class="ttc" id="aclassripple_1_1STInteger_html_ab5a1f692c849e2df150533f1758da7a2"><div class="ttname"><a href="classripple_1_1STInteger.html#ab5a1f692c849e2df150533f1758da7a2">ripple::STInteger::isEquivalent</a></div><div class="ttdeci">bool isEquivalent(const STBase &amp;t) const override</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00127">STInteger.h:127</a></div></div>
 <div class="ttc" id="aclassripple_1_1STInteger_html_ab1066b6733ce6f94cb1d7061592f437c"><div class="ttname"><a href="classripple_1_1STInteger.html#ab1066b6733ce6f94cb1d7061592f437c">ripple::STInteger::getSType</a></div><div class="ttdeci">SerializedTypeID getSType() const override</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8cpp_source.html#l00040">STInteger.cpp:40</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00145">json_value.h:145</a></div></div>
-<div class="ttc" id="aclassripple_1_1STInteger_html_a8f5a481a9f8cca7b0b607bb7707a14de"><div class="ttname"><a href="classripple_1_1STInteger.html#a8f5a481a9f8cca7b0b607bb7707a14de">ripple::STInteger::value_</a></div><div class="ttdeci">Integer value_</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00034">STInteger.h:34</a></div></div>
+<div class="ttc" id="aclassripple_1_1STInteger_html_a8f5a481a9f8cca7b0b607bb7707a14de"><div class="ttname"><a href="classripple_1_1STInteger.html#a8f5a481a9f8cca7b0b607bb7707a14de">ripple::STInteger::value_</a></div><div class="ttdeci">Integer value_</div><div class="ttdef"><b>Definition:</b> <a href="STInteger_8h_source.html#l00035">STInteger.h:35</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">

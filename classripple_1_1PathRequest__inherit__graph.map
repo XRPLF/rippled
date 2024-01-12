@@ -1,6 +1,7 @@
 <map id="ripple::PathRequest" name="ripple::PathRequest">
-<area shape="rect" id="node1" title=" " alt="" coords="255,64,401,91"/>
-<area shape="rect" id="node2" href="$classripple_1_1InfoSubRequest.html" title=" " alt="" coords="22,5,190,32"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,57,207,98"/>
-<area shape="rect" id="node4" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="25,122,187,163"/>
+<area shape="rect" id="node1" title=" " alt="" coords="465,71,612,98"/>
+<area shape="rect" id="node2" href="$classripple_1_1InfoSubRequest.html" title=" " alt="" coords="233,13,401,39"/>
+<area shape="rect" id="node3" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,168,47"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="216,64,417,105"/>
+<area shape="rect" id="node5" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="235,129,398,171"/>
 </map>

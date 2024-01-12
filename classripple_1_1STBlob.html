@@ -70,6 +70,7 @@ $(function() {
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
+<a href="#pri-static-methods">Static Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="#friends">Friends</a> &#124;
 <a href="classripple_1_1STBlob-members.html">List of all members</a>  </div>
@@ -82,8 +83,9 @@ Inheritance diagram for ripple::STBlob:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1STBlob__inherit__graph.png" border="0" usemap="#ripple_1_1STBlob_inherit__map" alt="Inheritance graph"/></div>
 <map name="ripple_1_1STBlob_inherit__map" id="ripple_1_1STBlob_inherit__map">
-<area shape="rect" title=" " alt="" coords="7,80,119,107"/>
-<area shape="rect" href="classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="5,5,120,32"/>
+<area shape="rect" title=" " alt="" coords="88,95,200,121"/>
+<area shape="rect" href="classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="5,13,120,39"/>
+<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="144,5,307,47"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
@@ -91,16 +93,17 @@ Collaboration diagram for ripple::STBlob:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1STBlob__coll__graph.png" border="0" usemap="#ripple_1_1STBlob_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1STBlob_coll__map" id="ripple_1_1STBlob_coll__map">
-<area shape="rect" title=" " alt="" coords="164,303,276,329"/>
+<area shape="rect" title=" " alt="" coords="351,303,463,329"/>
 <area shape="rect" href="classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="5,206,120,233"/>
-<area shape="rect" href="classripple_1_1SField.html" title="Identifies fields." alt="" coords="86,102,191,129"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/map.html" title=" " alt="" coords="153,199,309,240"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="19,5,106,32"/>
-<area shape="rect" href="classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="130,5,262,32"/>
-<area shape="rect" href="classripple_1_1Buffer.html" title="Like std::vector&lt;char&gt; but better." alt="" coords="337,206,444,233"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="265,95,420,136"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="295,5,390,32"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="444,102,532,129"/>
+<area shape="rect" href="classripple_1_1SField.html" title="Identifies fields." alt="" coords="90,102,195,129"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/map.html" title=" " alt="" coords="145,199,301,240"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="33,5,119,32"/>
+<area shape="rect" href="classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="143,5,275,32"/>
+<area shape="rect" href="classripple_1_1CountedObject.html" title=" " alt="" coords="325,199,488,240"/>
+<area shape="rect" href="classripple_1_1Buffer.html" title="Like std::vector&lt;char&gt; but better." alt="" coords="512,206,619,233"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="391,95,545,136"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="421,5,515,32"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="569,102,657,129"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -180,6 +183,11 @@ Private Member Functions</h2></td></tr>
 <tr class="memitem:a8377db7f7dd827bdcf41b139b4c93e10"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#a8377db7f7dd827bdcf41b139b4c93e10">move</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n, void *buf) override</td></tr>
 <tr class="separator:a8377db7f7dd827bdcf41b139b4c93e10"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
+Static Private Member Functions</h2></td></tr>
+<tr class="memitem:acde6c67ea432f6bb32d2ecb5db786ce8"><td class="memItemLeft" align="right" valign="top">static auto &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1CountedObject.html#acde6c67ea432f6bb32d2ecb5db786ce8">getCounter</a> () noexcept</td></tr>
+<tr class="separator:acde6c67ea432f6bb32d2ecb5db786ce8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
 <tr class="memitem:acae25162f3374e5f1f850d160546c03a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Buffer.html">Buffer</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBlob.html#acae25162f3374e5f1f850d160546c03a">value_</a></td></tr>
@@ -194,7 +202,7 @@ Friends</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00033">33</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00035">35</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a7ebe043c880148cacd1f48c4d8d8d8ff"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7ebe043c880148cacd1f48c4d8d8d8ff">&#9670;&nbsp;</a></span>value_type</h2>
@@ -208,7 +216,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00038">38</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00040">40</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -254,7 +262,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00090">90</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00092">92</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -290,7 +298,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00095">95</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00097">97</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -320,7 +328,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00100">100</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00102">102</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -340,7 +348,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00105">105</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00107">107</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -390,7 +398,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00110">110</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00112">112</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -409,7 +417,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00116">116</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00118">118</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -576,7 +584,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00122">122</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00124">124</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -603,7 +611,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00129">129</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00131">131</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -623,7 +631,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00135">135</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00137">137</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -643,7 +651,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00142">142</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00144">144</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -1026,6 +1034,30 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
+<a id="acde6c67ea432f6bb32d2ecb5db786ce8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acde6c67ea432f6bb32d2ecb5db786ce8">&#9670;&nbsp;</a></span>getCounter()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static auto&amp; <a class="el" href="classripple_1_1CountedObject.html">ripple::CountedObject</a>&lt; <a class="el" href="classripple_1_1STBlob.html">STBlob</a>  &gt;::getCounter</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span><span class="mlabel">noexcept</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="CountedObject_8h_source.html#l00128">128</a> of file <a class="el" href="CountedObject_8h_source.html">CountedObject.h</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Friends And Related Function Documentation</h2>
 <a id="a5e49bd8b743617d1af92ffed7ac6b665"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5e49bd8b743617d1af92ffed7ac6b665">&#9670;&nbsp;</a></span>detail::STVar</h2>
@@ -1047,7 +1079,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00087">87</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00089">89</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>
@@ -1072,7 +1104,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00035">35</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STBlob_8h_source.html#l00037">37</a> of file <a class="el" href="STBlob_8h_source.html">STBlob.h</a>.</p>
 
 </div>
 </div>

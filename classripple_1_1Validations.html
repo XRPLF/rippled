@@ -179,6 +179,14 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a67e7951c10601258af0fd960ca6f1b3a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a67e7951c10601258af0fd960ca6f1b3a">laggards</a> (<a class="el" href="classripple_1_1Validations.html#a1bb85550f592de56d2b1ae0c15938162">Seq</a> const seq, <a class="el" href="namespaceripple.html#a7750eec5e079354285f1d60cfd0247ca">hash_set</a>&lt; <a class="el" href="classripple_1_1Validations.html#a478fe0e878e729d04eaad7b4c6897e26">NodeKey</a> &gt; &amp;trustedKeys)</td></tr>
 <tr class="memdesc:a67e7951c10601258af0fd960ca6f1b3a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return quantity of lagging proposers, and remove online proposers for purposes of evaluating whether to pause.  <a href="classripple_1_1Validations.html#a67e7951c10601258af0fd960ca6f1b3a">More...</a><br /></td></tr>
 <tr class="separator:a67e7951c10601258af0fd960ca6f1b3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4175ef5da47e84d4b81425f792d4093c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a4175ef5da47e84d4b81425f792d4093c">sizeOfCurrentCache</a> () const</td></tr>
+<tr class="separator:a4175ef5da47e84d4b81425f792d4093c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf30fbb02212128d406e04f75043fbae"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#abf30fbb02212128d406e04f75043fbae">sizeOfSeqEnforcersCache</a> () const</td></tr>
+<tr class="separator:abf30fbb02212128d406e04f75043fbae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a104cdf558a8bbf13f9d02279ca8206a1"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#a104cdf558a8bbf13f9d02279ca8206a1">sizeOfByLedgerCache</a> () const</td></tr>
+<tr class="separator:a104cdf558a8bbf13f9d02279ca8206a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb11cc41b8cf2734541e9abf41fbe23f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Validations.html#adb11cc41b8cf2734541e9abf41fbe23f">sizeOfBySequenceCache</a> () const</td></tr>
+<tr class="separator:adb11cc41b8cf2734541e9abf41fbe23f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-types"></a>
 Private Types</h2></td></tr>
@@ -1601,6 +1609,90 @@ template&lt;class Adaptor &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>Quantity of laggards. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01125">1125</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+
+</div>
+</div>
+<a id="a4175ef5da47e84d4b81425f792d4093c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4175ef5da47e84d4b81425f792d4093c">&#9670;&nbsp;</a></span>sizeOfCurrentCache()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Adaptor &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <a class="el" href="classripple_1_1Validations.html">ripple::Validations</a>&lt; Adaptor &gt;::sizeOfCurrentCache </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01147">1147</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+
+</div>
+</div>
+<a id="abf30fbb02212128d406e04f75043fbae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abf30fbb02212128d406e04f75043fbae">&#9670;&nbsp;</a></span>sizeOfSeqEnforcersCache()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Adaptor &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <a class="el" href="classripple_1_1Validations.html">ripple::Validations</a>&lt; Adaptor &gt;::sizeOfSeqEnforcersCache </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01154">1154</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+
+</div>
+</div>
+<a id="a104cdf558a8bbf13f9d02279ca8206a1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a104cdf558a8bbf13f9d02279ca8206a1">&#9670;&nbsp;</a></span>sizeOfByLedgerCache()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Adaptor &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <a class="el" href="classripple_1_1Validations.html">ripple::Validations</a>&lt; Adaptor &gt;::sizeOfByLedgerCache </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01161">1161</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
+
+</div>
+</div>
+<a id="adb11cc41b8cf2734541e9abf41fbe23f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adb11cc41b8cf2734541e9abf41fbe23f">&#9670;&nbsp;</a></span>sizeOfBySequenceCache()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Adaptor &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <a class="el" href="classripple_1_1Validations.html">ripple::Validations</a>&lt; Adaptor &gt;::sizeOfBySequenceCache </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Validations_8h_source.html#l01168">1168</a> of file <a class="el" href="Validations_8h_source.html">Validations.h</a>.</p>
 
 </div>
 </div>

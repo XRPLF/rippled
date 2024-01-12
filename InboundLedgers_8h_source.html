@@ -148,26 +148,30 @@ $(function() {
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keyword">virtual</span> <span class="keywordtype">void</span></div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#a5619c1c0ea5b6e666d33da64f8203a5a">stop</a>() = 0;</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;};</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160; </div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;InboundLedgers&gt;</a></div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;<a class="code" href="namespaceripple.html#a8b5946ffccf0e2dd8c6c5a40f5e6c979">make_InboundLedgers</a>(</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;    <a class="code" href="classripple_1_1Application.html">Application</a>&amp; app,</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;    <a class="code" href="classbeast_1_1abstract__clock.html">InboundLedgers::clock_type</a>&amp; clock,</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">beast::insight::Collector::ptr</a> <span class="keyword">const</span>&amp; collector);</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160; </div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;<span class="preprocessor">#endif</span></div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;    <span class="keyword">virtual</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    <a class="code" href="classripple_1_1InboundLedgers.html#a6091914913a7c97f83a790b217f068e4">cacheSize</a>() = 0;</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;};</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160; </div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;<a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;InboundLedgers&gt;</a></div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;<a class="code" href="namespaceripple.html#a8b5946ffccf0e2dd8c6c5a40f5e6c979">make_InboundLedgers</a>(</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;    <a class="code" href="classripple_1_1Application.html">Application</a>&amp; app,</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;    <a class="code" href="classbeast_1_1abstract__clock.html">InboundLedgers::clock_type</a>&amp; clock,</div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">beast::insight::Collector::ptr</a> <span class="keyword">const</span>&amp; collector);</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160; </div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;<span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassripple_1_1Application_html"><div class="ttname"><a href="classripple_1_1Application.html">ripple::Application</a></div><div class="ttdef"><b>Definition:</b> <a href="Application_8h_source.html#l00116">Application.h:116</a></div></div>
 <div class="ttc" id="aclassripple_1_1InboundLedgers_html_a5619c1c0ea5b6e666d33da64f8203a5a"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#a5619c1c0ea5b6e666d33da64f8203a5a">ripple::InboundLedgers::stop</a></div><div class="ttdeci">virtual void stop()=0</div></div>
 <div class="ttc" id="aclassripple_1_1InboundLedgers_html_a51a2b07c207e628f159aa89e6402250d"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#a51a2b07c207e628f159aa89e6402250d">ripple::InboundLedgers::getInfo</a></div><div class="ttdeci">virtual Json::Value getInfo()=0</div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1InboundLedgers_html_aa8e8fceb23a3f9bf00b604c9c0a69d87"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#aa8e8fceb23a3f9bf00b604c9c0a69d87">ripple::InboundLedgers::fetchRate</a></div><div class="ttdeci">virtual std::size_t fetchRate()=0</div><div class="ttdoc">Returns the rate of historical ledger fetches per minute.</div></div>
-<div class="ttc" id="anamespaceripple_html_a8b5946ffccf0e2dd8c6c5a40f5e6c979"><div class="ttname"><a href="namespaceripple.html#a8b5946ffccf0e2dd8c6c5a40f5e6c979">ripple::make_InboundLedgers</a></div><div class="ttdeci">std::unique_ptr&lt; InboundLedgers &gt; make_InboundLedgers(Application &amp;app, InboundLedgers::clock_type &amp;clock, beast::insight::Collector::ptr const &amp;collector)</div><div class="ttdef"><b>Definition:</b> <a href="InboundLedgers_8cpp_source.html#l00434">InboundLedgers.cpp:434</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a8b5946ffccf0e2dd8c6c5a40f5e6c979"><div class="ttname"><a href="namespaceripple.html#a8b5946ffccf0e2dd8c6c5a40f5e6c979">ripple::make_InboundLedgers</a></div><div class="ttdeci">std::unique_ptr&lt; InboundLedgers &gt; make_InboundLedgers(Application &amp;app, InboundLedgers::clock_type &amp;clock, beast::insight::Collector::ptr const &amp;collector)</div><div class="ttdef"><b>Definition:</b> <a href="InboundLedgers_8cpp_source.html#l00441">InboundLedgers.cpp:441</a></div></div>
 <div class="ttc" id="aclassripple_1_1InboundLedgers_html_a2bb3b2c716ef8839a360493277a0c53d"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#a2bb3b2c716ef8839a360493277a0c53d">ripple::InboundLedgers::sweep</a></div><div class="ttdeci">virtual void sweep()=0</div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 256 &gt;</a></div></div>
+<div class="ttc" id="aclassripple_1_1InboundLedgers_html_a6091914913a7c97f83a790b217f068e4"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#a6091914913a7c97f83a790b217f068e4">ripple::InboundLedgers::cacheSize</a></div><div class="ttdeci">virtual std::size_t cacheSize()=0</div></div>
 <div class="ttc" id="aclassripple_1_1InboundLedgers_html_ac03c12b9aad2af653f21f72411205d1e"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#ac03c12b9aad2af653f21f72411205d1e">ripple::InboundLedgers::gotFetchPack</a></div><div class="ttdeci">virtual void gotFetchPack()=0</div></div>
 <div class="ttc" id="aclassripple_1_1InboundLedgers_html_a69b145089704c611f56786ace0262abd"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#a69b145089704c611f56786ace0262abd">ripple::InboundLedgers::~InboundLedgers</a></div><div class="ttdeci">virtual ~InboundLedgers()=default</div></div>
 <div class="ttc" id="aclassripple_1_1InboundLedgers_html_ad346b5eb8ce7d749218ad3fb1ef45530"><div class="ttname"><a href="classripple_1_1InboundLedgers.html#ad346b5eb8ce7d749218ad3fb1ef45530">ripple::InboundLedgers::acquire</a></div><div class="ttdeci">virtual std::shared_ptr&lt; Ledger const  &gt; acquire(uint256 const &amp;hash, std::uint32_t seq, InboundLedger::Reason)=0</div></div>
