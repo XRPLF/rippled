@@ -33,25 +33,40 @@ CachedViewImpl::exists(Keylet const& k) const
 std::shared_ptr<SLE const>
 CachedViewImpl::read(Keylet const& k) const
 {
-    {
-        std::lock_guard lock(mutex_);
-        auto const iter = map_.find(k.key);
-        if (iter != map_.end())
+    static CountedObjects::Counter hits{"CachedView::hit"};
+    static CountedObjects::Counter hitsexpired{"CachedView::hitExpired"};
+    static CountedObjects::Counter misses{"CachedView::miss"};
+    bool cacheHit = false;
+    bool baseRead = false;
+
+    auto const digest = [&]() -> std::optional<uint256> {
         {
-            if (!iter->second || !k.check(*iter->second))
-                return nullptr;
-            return iter->second;
+            std::lock_guard lock(mutex_);
+            auto const iter = map_.find(k.key);
+            if (iter != map_.end())
+            {
+                cacheHit = true;
+                return iter->second;
+            }
         }
-    }
-    auto const digest = base_.digest(k.key);
+        return base_.digest(k.key);
+    }();
     if (!digest)
         return nullptr;
-    auto sle = cache_.fetch(*digest, [&]() { return base_.read(k); });
+    auto sle = cache_.fetch(*digest, [&]() {
+        baseRead = true;
+        return base_.read(k);
+    });
+    if (cacheHit && baseRead)
+        hitsexpired.increment();
+    else if (cacheHit)
+        hits.increment();
+    else
+        misses.increment();
     std::lock_guard lock(mutex_);
-    auto const er = map_.emplace(k.key, sle);
-    auto const& iter = er.first;
+    auto const er = map_.emplace(k.key, *digest);
     bool const inserted = er.second;
-    if (iter->second && !k.check(*iter->second))
+    if (sle && !k.check(*sle))
     {
         if (!inserted)
         {
@@ -62,7 +77,7 @@ CachedViewImpl::read(Keylet const& k) const
         }
         return nullptr;
     }
-    return iter->second;
+    return sle;
 }
 
 }  // namespace detail

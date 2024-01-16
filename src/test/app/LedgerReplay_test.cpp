@@ -173,6 +173,12 @@ public:
     {
     }
 
+    virtual size_t
+    cacheSize() override
+    {
+        return 0;
+    }
+
     LedgerMaster& ledgerSource;
     LedgerMaster& ledgerSink;
     InboundLedgersBehavior bhvr;

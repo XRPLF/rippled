@@ -411,6 +411,13 @@ public:
         mRecentFailures.clear();
     }
 
+    std::size_t
+    cacheSize() override
+    {
+        ScopedLockType lock(mLock);
+        return mLedgers.size();
+    }
+
 private:
     clock_type& m_clock;
 
