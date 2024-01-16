@@ -20,6 +20,7 @@
 #ifndef BEAST_MODULE_CORE_TEXT_LEXICALCAST_H_INCLUDED
 #define BEAST_MODULE_CORE_TEXT_LEXICALCAST_H_INCLUDED
 
+#include <boost/core/detail/string_view.hpp>
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
@@ -118,6 +119,23 @@ struct LexicalCast<Out, std::string_view>
     }
 };
 //------------------------------------------------------------------------------
+
+// Parse boost library's string_view to number or boolean value
+// Note: As of Jan 2024, Boost contains three different types of string_view
+// (boost::core::basic_string_view<char>, boost::string_ref and
+// boost::string_view). The below template specialization is included because
+// it is used in the handshake.cpp file
+template <class Out>
+struct LexicalCast<Out, boost::core::basic_string_view<char>>
+{
+    explicit LexicalCast() = default;
+
+    bool
+    operator()(Out& out, boost::core::basic_string_view<char> in) const
+    {
+        return LexicalCast<Out, std::string_view>()(out, in);
+    }
+};
 
 // Parse std::string to number or boolean value
 template <class Out>

@@ -239,7 +239,7 @@ verifyHandshake(
     {
         std::uint32_t nid;
 
-        if (!beast::lexicalCastChecked(nid, std::string_view{iter->value()}))
+        if (!beast::lexicalCastChecked(nid, iter->value()))
             throw std::runtime_error("Invalid peer network identifier");
 
         if (networkID && nid != *networkID)
@@ -251,7 +251,7 @@ verifyHandshake(
         auto const netTime = [str = iter->value()]() -> TimeKeeper::time_point {
             TimeKeeper::duration::rep val;
 
-            if (beast::lexicalCastChecked(val, std::string_view{str}))
+            if (beast::lexicalCastChecked(val, str))
                 return TimeKeeper::time_point{TimeKeeper::duration{val}};
 
             // It's not an error for the header field to not be present but if
