@@ -33,7 +33,7 @@ namespace ripple {
 // Operations that clients may wish to perform against the network
 // Master operational handler, server sequencer, network tracker
 
-class InfoSubRequest
+class InfoSubRequest : public CountedObject<InfoSubRequest>
 {
 public:
     using pointer = std::shared_ptr<InfoSubRequest>;
