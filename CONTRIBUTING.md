@@ -126,17 +126,20 @@ pre-commit install
 ```
 
 ## Unit Tests
-To execute all unit tests: (Caution: This takes ~10 minutes on M1 MacOS)
+To execute all unit tests:
 
-```rippled --unittest```
+```rippled --unittest --unittest-jobs=<number of cores>```
 
 To run a specific set of test suites:
 
 ```
 rippled --unittest TestSuiteName
 ```
-Note: here all tests with prefix TestSuiteName will be run, so if 
-TestSuiteName and TestSuiteName1 both exist, then both tests will run.
+Note: In this example, all tests with prefix `TestSuiteName` will be run, so if
+`TestSuiteName1` and `TestSuiteName2` both exist, then both tests will run. 
+Alternatively, if the unit test name finds an exact match, it will stop 
+doing partial matches, i.e. if a unit test with a title of `TestSuiteName` 
+exists, then no other unit test will be executed, apart from `TestSuiteName`.
 
 ## Avoid
 
