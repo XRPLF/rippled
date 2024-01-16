@@ -19,7 +19,6 @@
 
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/TxQ.h>
-#include <ripple/basics/SubmitSync.h>
 #include <ripple/basics/contract.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/ConfigSections.h>
@@ -2499,7 +2498,7 @@ public:
     fakeProcessTransaction(
         std::shared_ptr<Transaction>&,
         bool,
-        SubmitSync,
+        bool,
         NetworkOPs::FailHard)
     {
         ;
@@ -2549,8 +2548,7 @@ public:
             Role role,
             std::chrono::seconds validatedLedgerAge,
             Application& app,
-            ProcessTransactionFn const& processTransaction,
-            RPC::SubmitSync sync);
+            ProcessTransactionFn const& processTransaction);
 
         using TestStuff =
             std::tuple<signFunc, submitFunc, char const*, unsigned int>;
@@ -2605,8 +2603,7 @@ public:
                             testRole,
                             1s,
                             env.app(),
-                            processTxn,
-                            RPC::SubmitSync::sync);
+                            processTxn);
                     }
 
                     std::string errStr;
