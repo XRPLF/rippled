@@ -1135,9 +1135,29 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
 bool
 OverlayImpl::processRequest(http_request_type const& req, Handoff& handoff)
 {
-    // Take advantage of || short-circuiting
-    return processCrawl(req, handoff) || processValidatorList(req, handoff) ||
-        processHealth(req, handoff);
+    if (processCrawl(req, handoff))
+        return true;
+
+    if (processValidatorList(req, handoff))
+        return true;
+
+    if (processHealth(req, handoff))
+        return true;
+
+    if (!app_.config().BROWSER_REDIRECT.empty())
+    {
+        boost::beast::http::response<boost::beast::http::empty_body> msg;
+        msg.version(req.version());
+        msg.result(boost::beast::http::status::temporary_redirect);
+        msg.insert("Server", BuildInfo::getFullVersionString());
+        msg.insert("Location", app_.config().BROWSER_REDIRECT);
+        msg.insert("Connection", "close");
+        msg.prepare_payload();
+        handoff.response = std::make_shared<SimpleWriter>(msg);
+        return true;
+    }
+
+    return false;
 }
 
 Overlay::PeerSequence

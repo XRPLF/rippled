@@ -308,6 +308,9 @@ public:
     std::optional<std::pair<std::uint32_t, std::uint32_t>>
         FORCED_LEDGER_RANGE_PRESENT;
 
+    // Redirect location for HTTPS requests
+    std::string BROWSER_REDIRECT;
+
 public:
     Config();
 
