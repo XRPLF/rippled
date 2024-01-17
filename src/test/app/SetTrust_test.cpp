@@ -30,6 +30,75 @@ class SetTrust_test : public beast::unit_test::suite
 
 public:
     void
+    testTrustLineDelete()
+    {
+        testcase(
+            "Test deletion of trust lines: revert trust line limit to zero");
+
+        using namespace jtx;
+        Env env(*this);
+
+        Account const alice = Account{"alice"};
+        Account const becky = Account{"becky"};
+
+        env.fund(XRP(10000), becky, alice);
+        env.close();
+
+        // becky wants to hold at most 50 tokens of alice["USD"]
+        // becky is the customer, alice is the issuer
+        // becky can be sent at most 50 tokens of alice's USD
+        env(trust(becky, alice["USD"](50)));
+        env.close();
+
+        // Since the settings of the trust lines are non-default for both
+        // alice and becky, both of them will be charged an owner reserve
+        // Irrespective of whether the issuer or the customer initiated
+        // the trust-line creation, both will be charged
+        env.require(lines(alice, 1));
+        env.require(lines(becky, 1));
+
+        // Fetch the trust-lines via RPC for verification
+        Json::Value jv;
+        jv["account"] = becky.human();
+        auto beckyLines = env.rpc("json", "account_lines", to_string(jv));
+
+        jv["account"] = alice.human();
+        auto aliceLines = env.rpc("json", "account_lines", to_string(jv));
+
+        BEAST_EXPECT(aliceLines[jss::result][jss::lines].size() == 1);
+        BEAST_EXPECT(beckyLines[jss::result][jss::lines].size() == 1);
+
+        //         reset the trust line limits to zero
+        env(trust(becky, alice["USD"](0)));
+        env.close();
+
+        // the reset of the trust line limits deletes the trust-line
+        // this occurs despite the authorization of the trust-line by the
+        // issuer(alice, in this unit test)
+        env.require(lines(becky, 0));
+        env.require(lines(alice, 0));
+
+        // second verification check via RPC calls
+        jv["account"] = becky.human();
+        beckyLines = env.rpc("json", "account_lines", to_string(jv));
+
+        jv["account"] = alice.human();
+        aliceLines = env.rpc("json", "account_lines", to_string(jv));
+
+        BEAST_EXPECT(aliceLines[jss::result][jss::lines].size() == 0);
+        BEAST_EXPECT(beckyLines[jss::result][jss::lines].size() == 0);
+
+        // additionally, verify that account_objects is an empty array
+        jv["account"] = becky.human();
+        auto const beckyObj = env.rpc("json", "account_objects", to_string(jv));
+        BEAST_EXPECT(beckyObj[jss::result][jss::account_objects].size() == 0);
+
+        jv["account"] = alice.human();
+        auto const aliceObj = env.rpc("json", "account_objects", to_string(jv));
+        BEAST_EXPECT(aliceObj[jss::result][jss::account_objects].size() == 0);
+    }
+
+    void
     testTrustLineResetWithAuthFlag()
     {
         testcase(
@@ -472,6 +541,7 @@ public:
         testModifyQualityOfTrustline(features, true, true);
         testDisallowIncoming(features);
         testTrustLineResetWithAuthFlag();
+        testTrustLineDelete();
     }
 
 public:
