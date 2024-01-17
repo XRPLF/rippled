@@ -1142,6 +1142,34 @@ public:
 
         return laggards;
     }
+
+    std::size_t
+    sizeOfCurrentCache() const
+    {
+        std::lock_guard lock{mutex_};
+        return current_.size();
+    }
+
+    std::size_t
+    sizeOfSeqEnforcersCache() const
+    {
+        std::lock_guard lock{mutex_};
+        return seqEnforcers_.size();
+    }
+
+    std::size_t
+    sizeOfByLedgerCache() const
+    {
+        std::lock_guard lock{mutex_};
+        return byLedger_.size();
+    }
+
+    std::size_t
+    sizeOfBySequenceCache() const
+    {
+        std::lock_guard lock{mutex_};
+        return bySequence_.size();
+    }
 };
 
 }  // namespace ripple
