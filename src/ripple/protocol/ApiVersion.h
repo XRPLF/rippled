@@ -72,9 +72,8 @@ static_assert(apiMaximumValidVersion >= apiMaximumSupportedVersion);
 template <unsigned minVer, unsigned maxVer, typename Fn, typename... Args>
     requires(maxVer >= minVer) &&                   //
     (minVer >= RPC::apiMinimumSupportedVersion) &&  //
-    (RPC::apiMaximumValidVersion >= maxVer) void forApiVersions(
-        Fn const& fn,
-        Args&&... args) requires requires()
+    (RPC::apiMaximumValidVersion >=
+     maxVer) void forApiVersions(Fn const& fn, Args&&... args) requires requires
 {
     fn(std::integral_constant<unsigned int, minVer>{},
        std::forward<Args>(args)...);
