@@ -130,6 +130,9 @@ To execute all unit tests:
 
 ```rippled --unittest --unittest-jobs=<number of cores>```
 
+(Note: Using multiple cores on a Mac M1 can cause spurious test failures. The 
+cause is still under investigation. If you observe this problem, try specifying fewer jobs.)
+
 To run a specific set of test suites:
 
 ```
