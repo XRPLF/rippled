@@ -69,14 +69,14 @@ struct TxnTestData
 
 static constexpr TxnTestData txnTestArray[] = {
 
-    {"Minimal payment.",
+    {"Minimal payment, no Amount only DeliverMax",
      __LINE__,
      R"({
     "command": "doesnt_matter",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-        "Amount": "1000000000",
+        "DeliverMax": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "TransactionType": "Payment"
     }
@@ -86,7 +86,7 @@ static constexpr TxnTestData txnTestArray[] = {
        "Missing field 'account'.",
        "Missing field 'tx_json.Sequence'."}}},
 
-    {"Pass in Fee with minimal payment.",
+    {"Pass in Fee with minimal payment, both Amount and DeliverMax.",
      __LINE__,
      R"({
     "command": "doesnt_matter",
@@ -96,6 +96,7 @@ static constexpr TxnTestData txnTestArray[] = {
         "Fee": 10,
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
+        "DeliverMax": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "TransactionType": "Payment"
     }
@@ -105,7 +106,7 @@ static constexpr TxnTestData txnTestArray[] = {
        "Missing field 'tx_json.Sequence'.",
        "Missing field 'tx_json.Sequence'."}}},
 
-    {"Pass in Sequence.",
+    {"Pass in Sequence, no Amount only DeliverMax",
      __LINE__,
      R"({
     "command": "doesnt_matter",
@@ -114,7 +115,7 @@ static constexpr TxnTestData txnTestArray[] = {
     "tx_json": {
         "Sequence": 0,
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-        "Amount": "1000000000",
+        "DeliverMax": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "TransactionType": "Payment"
     }
@@ -124,7 +125,8 @@ static constexpr TxnTestData txnTestArray[] = {
        "Missing field 'tx_json.Fee'.",
        "Missing field 'tx_json.SigningPubKey'."}}},
 
-    {"Pass in Sequence and Fee with minimal payment.",
+    {"Pass in Sequence and Fee with minimal payment, both Amount and "
+     "DeliverMax.",
      __LINE__,
      R"({
     "command": "doesnt_matter",
@@ -135,6 +137,7 @@ static constexpr TxnTestData txnTestArray[] = {
         "Fee": 10,
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
+        "DeliverMax": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "TransactionType": "Payment"
     }
