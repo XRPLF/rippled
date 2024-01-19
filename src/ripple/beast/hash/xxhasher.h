@@ -34,7 +34,7 @@ private:
     // requires 64-bit std::size_t
     static_assert(sizeof(std::size_t) == 8, "");
 
-    XXH64_state_t* state_;
+    XXH3_state_t* state_;
 
 public:
     using result_type = std::size_t;
@@ -47,13 +47,13 @@ public:
 
     xxhasher() noexcept
     {
-        state_ = XXH64_createState();
-        XXH64_reset(state_, 1);
+        state_ = XXH3_createState();
+        XXH3_64bits_reset(state_);
     }
 
     ~xxhasher() noexcept
     {
-        XXH64_freeState(state_);
+        XXH3_freeState(state_);
     }
 
     template <
@@ -61,8 +61,8 @@ public:
         std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     explicit xxhasher(Seed seed)
     {
-        state_ = XXH64_createState();
-        XXH64_reset(state_, seed);
+        state_ = XXH3_createState();
+        XXH3_64bits_reset_withSeed(state_, seed);
     }
 
     template <
@@ -70,19 +70,19 @@ public:
         std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     xxhasher(Seed seed, Seed)
     {
-        state_ = XXH64_createState();
-        XXH64_reset(state_, seed);
+        state_ = XXH3_createState();
+        XXH3_64bits_reset_withSeed(state_, seed);
     }
 
     void
     operator()(void const* key, std::size_t len) noexcept
     {
-        XXH64_update(state_, key, len);
+        XXH3_64bits_update(state_, key, len);
     }
 
     explicit operator std::size_t() noexcept
     {
-        return XXH64_digest(state_);
+        return XXH3_64bits_digest(state_);
     }
 };
 
