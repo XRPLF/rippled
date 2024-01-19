@@ -59,11 +59,11 @@ if [ "${pkgtype}" = "dpkg" ] ; then
         exit 1
     fi
 else
-platform=(${PLATFORM_ID//:/ })
-version=${platform[1]}
-if [ "$ID" = "almalinux" ] &&  [ "$version" = "el8" ]; then
-    rpm --import https://repo.almalinux.org/almalinux/RPM-GPG-KEY-AlmaLinux
-fi 
+    platform=(${PLATFORM_ID//:/ })
+    version=${platform[1]}
+    if [ "$ID" = "almalinux" ] &&  [ "$version" = "el8" ]; then
+        rpm --import https://repo.almalinux.org/almalinux/RPM-GPG-KEY-AlmaLinux
+    fi 
     yum -y update
     if [ "${install_from}" = "repo" ] ; then
         pkgs=("yum-utils coreutils util-linux")
