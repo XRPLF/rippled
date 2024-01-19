@@ -59,7 +59,9 @@ class Invariants_test : public beast::unit_test::suite
         Preclose const& preclose = {})
     {
         using namespace test::jtx;
-        Env env{*this};
+        FeatureBitset amendments =
+            supported_amendments() | featureInvariantsV1_1;
+        Env env{*this, amendments};
 
         Account const A1{"A1"};
         Account const A2{"A2"};
