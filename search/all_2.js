@@ -125,7 +125,7 @@ var searchData=
   ['basicvalue_874',['BasicValue',['../structripple_1_1detail_1_1LocalValues_1_1BasicValue.html',1,'ripple::detail::LocalValues']]],
   ['basicwork_875',['BasicWork',['../classripple_1_1PeerFinder_1_1Sim_1_1FunctionQueue_1_1BasicWork.html',1,'ripple::PeerFinder::Sim::FunctionQueue']]],
   ['batch_876',['batch',['../classripple_1_1NodeStore_1_1Sequence.html#ab267ca44812dd4f5440a9b4746180de5',1,'ripple::NodeStore::Sequence::batch()'],['../namespaceripple_1_1NodeStore.html#ae0e4b79f8eb3ffa0bf8fcaf848643202',1,'ripple::NodeStore::Batch()']]],
-  ['batch_5f_877',['batch_',['../classripple_1_1DatabaseBody_1_1value__type.html#ab680facb7493a5159db17891007abb52',1,'ripple::DatabaseBody::value_type::batch_()'],['../classripple_1_1NodeStore_1_1NuDBBackend.html#a75e3f36e16656954dbbe33df374d0ed1',1,'ripple::NodeStore::NuDBBackend::batch_()']]],
+  ['batch_5f_877',['batch_',['../classripple_1_1DatabaseBody_1_1value__type.html#ab680facb7493a5159db17891007abb52',1,'ripple::DatabaseBody::value_type']]],
   ['batchwritelimitsize_878',['batchWriteLimitSize',['../namespaceripple_1_1NodeStore.html#ab026118fd22b5e7db14b5dea6938aaa8a03b8818e1ee729cf3a62bf6697aff257',1,'ripple::NodeStore']]],
   ['batchwritepreallocationsize_879',['batchWritePreallocationSize',['../namespaceripple_1_1NodeStore.html#ab026118fd22b5e7db14b5dea6938aaa8a3e7cbb590a2149da2328925f4ac5978a',1,'ripple::NodeStore']]],
   ['batchwriter_880',['BatchWriter',['../classripple_1_1NodeStore_1_1BatchWriter.html',1,'ripple::NodeStore::BatchWriter'],['../classripple_1_1NodeStore_1_1BatchWriter.html#ad2bd82080d5ae1a6f10eac76d6ef7874',1,'ripple::NodeStore::BatchWriter::BatchWriter()']]],
