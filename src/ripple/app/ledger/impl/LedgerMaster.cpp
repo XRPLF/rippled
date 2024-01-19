@@ -1543,6 +1543,7 @@ LedgerMaster::updatePaths()
         if (app_.getOPs().isNeedNetworkLedger())
         {
             --mPathFindThread;
+            mPathLedger.reset();
             JLOG(m_journal.debug()) << "Need network ledger for updating paths";
             return;
         }
@@ -1568,6 +1569,7 @@ LedgerMaster::updatePaths()
             else
             {  // Nothing to do
                 --mPathFindThread;
+                mPathLedger.reset();
                 JLOG(m_journal.debug()) << "Nothing to do for updating paths";
                 return;
             }
@@ -1584,6 +1586,7 @@ LedgerMaster::updatePaths()
                     << "Published ledger too old for updating paths";
                 std::lock_guard ml(m_mutex);
                 --mPathFindThread;
+                mPathLedger.reset();
                 return;
             }
         }
@@ -1596,6 +1599,7 @@ LedgerMaster::updatePaths()
                 if (!pathRequests.requestsPending())
                 {
                     --mPathFindThread;
+                    mPathLedger.reset();
                     JLOG(m_journal.debug())
                         << "No path requests found. Nothing to do for updating "
                            "paths. "
@@ -1613,6 +1617,7 @@ LedgerMaster::updatePaths()
                     << "No path requests left. No need for further updating "
                        "paths";
                 --mPathFindThread;
+                mPathLedger.reset();
                 return;
             }
         }
