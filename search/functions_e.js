@@ -70,7 +70,7 @@ var searchData=
   ['nflags_20140',['nflags',['../classripple_1_1test_1_1jtx_1_1nflags.html#a0d9e1caae6ca675ef15824f5451e5b94',1,'ripple::test::jtx::nflags']]],
   ['nft_5fbuys_20141',['nft_buys',['../namespaceripple_1_1keylet.html#a46b3edff074ddb69e14bda5b00cf8e26',1,'ripple::keylet']]],
   ['nft_5fsells_20142',['nft_sells',['../namespaceripple_1_1keylet.html#a7bdef766607c687f8d05c699c5fb478f',1,'ripple::keylet']]],
-  ['nftcount_20143',['nftCount',['../classripple_1_1NFToken0__test.html#a46ab181cf6f4ec79cf9a83d8432cc08a',1,'ripple::NFToken0_test::nftCount()'],['../classripple_1_1NFTokenBurn0__test.html#a4351e3d4f1bd7389ce5d37f57753d78e',1,'ripple::NFTokenBurn0_test::nftCount()']]],
+  ['nftcount_20143',['nftCount',['../classripple_1_1NFTokenBaseUtil__test.html#aaedc65302935c4b44bbbfe9961ba3a14',1,'ripple::NFTokenBaseUtil_test::nftCount()'],['../classripple_1_1NFTokenBurnBaseUtil__test.html#a27256064b7312d1ffaedcc6f03777fd5',1,'ripple::NFTokenBurnBaseUtil_test::nftCount()']]],
   ['nftoffer_20144',['nftoffer',['../namespaceripple_1_1keylet.html#af22d78dcae7bfcc9d36e53f2223875f4',1,'ripple::keylet::nftoffer(AccountID const  &amp;owner, std::uint32_t seq)'],['../namespaceripple_1_1keylet.html#ada3df754038ddddc5e14d0475d5224eb',1,'ripple::keylet::nftoffer(uint256 const &amp;offer)']]],
   ['nftokenacceptoffer_20145',['NFTokenAcceptOffer',['../classripple_1_1NFTokenAcceptOffer.html#a0ac085658c263b83756dd6b736704015',1,'ripple::NFTokenAcceptOffer']]],
   ['nftokenburn_20146',['NFTokenBurn',['../classripple_1_1NFTokenBurn.html#a46d6a746a45ad8262b858707712aee5c',1,'ripple::NFTokenBurn']]],

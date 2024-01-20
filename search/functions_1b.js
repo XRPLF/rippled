@@ -340,7 +340,7 @@ var searchData=
   ['_7ewfilebuf_23867',['~wfilebuf',['http://en.cppreference.com/w/cpp/io/basic_filebuf/~basic_filebuf.html',1,'std::wfilebuf']]],
   ['_7ewiostream_23868',['~wiostream',['http://en.cppreference.com/w/cpp/io/basic_iostream/~basic_iostream.html',1,'std::wiostream']]],
   ['_7ewistream_23869',['~wistream',['http://en.cppreference.com/w/cpp/io/basic_istream/~basic_istream.html',1,'std::wistream']]],
-  ['_7ework_23870',['~work',['../classripple_1_1io__list_1_1work.html#aa831e509b3e85300654d054c29ab1a30',1,'ripple::io_list::work::~work()'],['../classripple_1_1detail_1_1Work.html#a9a030009a5e1b80afc95774d504a397a',1,'ripple::detail::Work::~Work()']]],
+  ['_7ework_23870',['~Work',['../classripple_1_1detail_1_1Work.html#a9a030009a5e1b80afc95774d504a397a',1,'ripple::detail::Work::~Work()'],['../classripple_1_1io__list_1_1work.html#aa831e509b3e85300654d054c29ab1a30',1,'ripple::io_list::work::~work()']]],
   ['_7eworkbase_23871',['~WorkBase',['../classripple_1_1detail_1_1WorkBase.html#a735ddebc31fd24fd34e9923e9bc3e6a2',1,'ripple::detail::WorkBase']]],
   ['_7eworker_23872',['~Worker',['../classripple_1_1Workers_1_1Worker.html#a5ff8ef7855ae89cc306ebb5a04665615',1,'ripple::Workers::Worker']]],
   ['_7eworkers_23873',['~Workers',['../classripple_1_1Workers.html#a780ec448fd8944839c8baec628db5560',1,'ripple::Workers']]],

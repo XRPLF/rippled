@@ -66,7 +66,7 @@ var searchData=
   ['initbridge_19147',['initBridge',['../structripple_1_1test_1_1BridgeDef.html#a211464c421a44ee9b2e665ba74192b83',1,'ripple::test::BridgeDef']]],
   ['initconfig_19148',['initConfig',['../classripple_1_1NodeStore_1_1DatabaseShardImp.html#a306ac80444859469d2c342f7acd008e4',1,'ripple::NodeStore::DatabaseShardImp']]],
   ['initcounting_19149',['initCounting',['../classripple_1_1reduce__relay_1_1Slot.html#a52bf534e6af227e1e76495d3d6d484a7',1,'ripple::reduce_relay::Slot']]],
-  ['initfee_19150',['initFee',['../classripple_1_1test_1_1TxQ1__test.html#a02fd82fd32efe8030952aaba3d713be4',1,'ripple::test::TxQ1_test']]],
+  ['initfee_19150',['initFee',['../classripple_1_1test_1_1TxQPosNegFlows__test.html#a9eed26dba5e7b3709a65ad6107943007',1,'ripple::test::TxQPosNegFlows_test']]],
   ['initfromdb_19151',['initFromDB',['../classripple_1_1RPC_1_1ShardArchiveHandler.html#a591ad0b890e673e40ea9c5cdd029e7c8',1,'ripple::RPC::ShardArchiveHandler']]],
   ['initfromfeatures_19152',['initFromFeatures',['../classripple_1_1FeatureBitset.html#a60dff3c8445bde53f6ea1a84386ed8b0',1,'ripple::FeatureBitset']]],
   ['initialfetch_19153',['initialFetch',['../classripple_1_1TaggedCache.html#a4ef56975db8e01e222f08361b6d29b87',1,'ripple::TaggedCache']]],

@@ -108,7 +108,7 @@ var searchData=
   ['getbookbase_18474',['getBookBase',['../namespaceripple.html#aeb5ef72b34cf7a324641e7a7f696d4cc',1,'ripple']]],
   ['getbookdir_18475',['getBookDir',['../classripple_1_1test_1_1Book__test.html#a3c6530e6e7eea726142d2c4b56e514a4',1,'ripple::test::Book_test']]],
   ['getbooklisteners_18476',['getBookListeners',['../classripple_1_1OrderBookDB.html#a07b062a83bd42b8df4197fde7dfdcae7',1,'ripple::OrderBookDB']]],
-  ['getbookoffers_18477',['getBookOffers',['../classripple_1_1test_1_1Offer0__test.html#a6640b0f6007207323e78e8782f0a73b8',1,'ripple::test::Offer0_test']]],
+  ['getbookoffers_18477',['getBookOffers',['../classripple_1_1test_1_1OfferBaseUtil__test.html#abc0448b7b7b4e2cfc5e9adb7a5dd397d',1,'ripple::test::OfferBaseUtil_test']]],
   ['getbookpage_18478',['getBookPage',['../classripple_1_1NetworkOPsImp.html#a3e432b1f1c598c99abbb123481fe7b92',1,'ripple::NetworkOPsImp::getBookPage()'],['../classripple_1_1NetworkOPs.html#aef72d5d8b2687f3fdbdfba3fa87b2e8f',1,'ripple::NetworkOPs::getBookPage()']]],
   ['getbooksbytakerpays_18479',['getBooksByTakerPays',['../classripple_1_1OrderBookDB.html#a978133f17fa4f61cac070f9ada073529',1,'ripple::OrderBookDB']]],
   ['getbooksize_18480',['getBookSize',['../classripple_1_1OrderBookDB.html#aaccb8e34048b89f4d94c79e63c12223b',1,'ripple::OrderBookDB']]],
