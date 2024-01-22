@@ -6,6 +6,8 @@ inputs:
     required: true
   cmake-args:
     default: null
+  cmake-target:
+    default: all
 # An implicit input is the environment variable `build_dir`.
 runs:
   using: composite
@@ -26,4 +28,5 @@ runs:
         cmake \
           --build ${build_dir} \
           --config ${{ inputs.configuration }} \
-          --parallel ${NUM_PROCESSORS:-$(nproc)}
+          --parallel ${NUM_PROCESSORS:-$(nproc)} \
+          --target ${{ inputs.cmake-target }}
