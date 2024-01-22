@@ -90,6 +90,7 @@ jobs:
           configuration: ${{ matrix.configuration }}
           # Hard code for now. Move to the matrix if varied options are needed
           cmake-args: '-Dassert=ON -Dreporting=OFF -Dunity=ON'
+          cmake-target: install
       - name: test (permitted to silently fail)
         shell: bash
         # Github runners are resource limited, which causes unit tests to fail
