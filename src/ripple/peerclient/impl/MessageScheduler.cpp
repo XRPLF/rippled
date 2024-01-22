@@ -142,7 +142,7 @@ operator+=(std::vector<T>& lhs, std::vector<U>& rhs)
 }
 
 void
-MessageScheduler::disconnect(Peer::id_t peerId)
+MessageScheduler::disconnect(PeerId peerId)
 {
     JLOG(journal_.warn()) << "disconnect,id=" << peerId;
     push_value during_(during, "disconnect");

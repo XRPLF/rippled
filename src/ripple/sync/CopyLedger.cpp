@@ -126,12 +126,13 @@ CopyLedger::onReady(MessageScheduler::Courier& courier)
             MessageScheduler::FailureCode code) override
         {
             auto receiver = std::shared_ptr<Receiver>(this);
-            JLOG(copier_.journal_.warn())
-                << copier_.digest_ << " onFailure " << code;
             copier_.jscheduler_.schedule(
-                [receiver = std::move(receiver)]() mutable {
+                [receiver = std::move(receiver), code]() mutable {
+                    auto& copier = receiver->copier_;
+                    JLOG(copier.journal_.warn())
+                        << copier.digest_ << " onFailure " << code;
                     // Re-send the request.
-                    receiver->copier_.resend(std::move(receiver->request_));
+                    copier.resend(std::move(receiver->request_));
                 });
         }
     };

@@ -44,6 +44,7 @@
 
 namespace ripple {
 
+using PeerId = Peer::id_t;
 using PeerPtr = std::shared_ptr<Peer>;
 
 using ChannelCnt = std::uint16_t;
@@ -60,7 +61,7 @@ using ChannelCnt = std::uint16_t;
 struct MetaPeer
 {
     std::weak_ptr<Peer> peer;
-    Peer::id_t id;
+    PeerId id;
     ChannelCnt nchannels;
     /** Number of channels that are closed. May exceed `nchannels`. */
     ChannelCnt nclosed;
@@ -194,7 +195,7 @@ public:
      * offer them the other channels in the pool.
      */
     void
-    disconnect(Peer::id_t peerId);
+    disconnect(PeerId peerId);
 
     /**
      * @return True if the sender was scheduled, guaranteeing that one of its
@@ -538,6 +539,12 @@ public:
         // Limit is assumed to be no greater than number of open channels,
         // implying there should be no possibility of an infinite loop.
         return index_ < peers_.size() && courier_.limit() > courier_.closed();
+    }
+
+    PeerId
+    peer() const
+    {
+        return peers_[index_]->id;
     }
 
     template <typename Message, typename Duration>
