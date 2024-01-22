@@ -126,7 +126,6 @@ if(reporting)
 endif()
 
 if(coverage)
-  include(CodeCoverage)
   include(RippledCov)
 endif()
 

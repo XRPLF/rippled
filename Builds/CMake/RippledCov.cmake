@@ -9,6 +9,8 @@ endif()
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   message(WARNING "Code coverage on Windows is not supported, ignoring 'coverage' flag")
 else()
+  include(CodeCoverage)
+
   # The instructions for these commands come from the `CodeCoverage` module,
   # which was copied from https://github.com/bilke/cmake-modules, commit fb7d2a3,
   # then locally changed (see CHANGES: section in `CodeCoverage.cmake`)
