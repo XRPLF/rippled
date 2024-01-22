@@ -27,7 +27,7 @@
 
 namespace ripple {
 
-class NFToken0_test : public beast::unit_test::suite
+class NFTokenBaseUtil_test : public beast::unit_test::suite
 {
     FeatureBitset const disallowIncoming{featureDisallowIncoming};
 
@@ -7181,55 +7181,56 @@ public:
     }
 };
 
-class NFToken1_test : public NFToken0_test
+class NFTokenDisallowIncoming_test : public NFTokenBaseUtil_test
 {
     void
     run() override
     {
-        NFToken0_test::run(1);
+        NFTokenBaseUtil_test::run(1);
     }
 };
 
-class NFToken2_test : public NFToken0_test
+class NFTokenWOfixV1_test : public NFTokenBaseUtil_test
 {
     void
     run() override
     {
-        NFToken0_test::run(2);
+        NFTokenBaseUtil_test::run(2);
     }
 };
 
-class NFToken3_test : public NFToken0_test
+class NFTokenWOTokenRemint_test : public NFTokenBaseUtil_test
 {
     void
     run() override
     {
-        NFToken0_test::run(3);
+        NFTokenBaseUtil_test::run(3);
     }
 };
 
-class NFToken4_test : public NFToken0_test
+class NFTokenWOTokenReserve_test : public NFTokenBaseUtil_test
 {
     void
     run() override
     {
-        NFToken0_test::run(4);
-    }
-};
-class NFToken5_test : public NFToken0_test
-{
-    void
-    run() override
-    {
-        NFToken0_test::run(5, true);
+        NFTokenBaseUtil_test::run(4);
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken0, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken1, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken2, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken3, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken4, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken5, tx, ripple, 2);
+class NFTokenAllFeatures_test : public NFTokenBaseUtil_test
+{
+    void
+    run() override
+    {
+        NFTokenBaseUtil_test::run(5, true);
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBaseUtil, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDisallowIncoming, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOfixV1, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenRemint, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenReserve, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAllFeatures, tx, ripple, 2);
 
 }  // namespace ripple
