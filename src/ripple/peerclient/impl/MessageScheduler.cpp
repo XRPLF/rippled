@@ -398,15 +398,13 @@ MessageScheduler::send_(
     // TODO: Add a factory method to Message for this pattern.
     // It will let us remove the template function `send_`.
     auto packet = std::make_shared<Message>(message, requestType);
-    // C++20: Switch to make_unique<Request>(...)?
-    // https://stackoverflow.com/a/55144743/618906
-    auto request = std::unique_ptr<Request>(new Request{
+    auto request = std::make_unique<Request>(
         requestId,
         responseType,
         metaPeer,
         receiver,
         Timer(io_service_),
-        Clock::now()});
+        Clock::now());
     request->timer.expires_after(timeout);
     request->timer.async_wait(
         [this, requestId](boost::system::error_code const& error) {
@@ -503,7 +501,9 @@ MessageScheduler::receive_(
         auto duration = Clock::now() - request->sent;
         auto duration_ms =
             std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-        stream << "receive,id=" << requestId << ",time=" << duration_ms.count()
+        stream << "receive,id=" << requestId
+               << ",peer" << request->metaPeer->id
+               << ",time=" << duration_ms.count()
                << "ms,size=" << message->ByteSizeLong()
                << ",inflight=" << requests_.size();
     }
@@ -531,7 +531,15 @@ MessageScheduler::timeout_(RequestId requestId)
 
     requests_.erase(it);
 
-    JLOG(journal_.warn()) << "timeout,id=" << requestId;
+    if (auto stream = journal_.warn())
+    {
+        auto duration = Clock::now() - request->sent;
+        auto duration_ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        stream << "timeout,id=" << requestId
+            << ",peer" << request->metaPeer->id
+            << ",time=" << duration_ms << "ms";
+    }
 
     reopen(lock, "timeout_", request->metaPeer, [&] {
         // Non-trivial callbacks should just schedule a job.

@@ -151,14 +151,14 @@ private:
     boost::asio::io_service& io_service_;
     beast::Journal journal_;
 
-    // This mutex protects all members, including `MetaPeer`s and `Request`s.
+    // This mutex protects all members, including peers and requests.
     std::mutex mutex_;
     // This set owns the metapeers.
     MetaPeerSet peers_;
     // The sum, across all connected peers, of all channels.
     ChannelCnt nchannels_ = 0;
     SenderQueue senders_;
-    // `stopped` is used to block new senders.
+    // Once the scheduler is stopped, new senders must be rejected.
     bool stopped_ = false;
 
     // Randomize the first ID to avoid collisions after a restart.
