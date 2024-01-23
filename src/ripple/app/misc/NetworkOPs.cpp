@@ -2156,7 +2156,6 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (auto const netid = app_.overlay().networkID())
             jvObj[jss::network_id] = static_cast<Json::UInt>(*netid);
 
-
         if (auto version = (*val)[~sfServerVersion])
             jvObj[jss::server_version] = std::to_string(*version);
 
