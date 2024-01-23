@@ -22,12 +22,14 @@
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/net/RPCErr.h>
+#include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/TransactionSign.h>
+#include <string>
 
 namespace ripple {
 
@@ -37,6 +39,33 @@ getFailHard(RPC::JsonContext const& context)
     return NetworkOPs::doFailHard(
         context.params.isMember("fail_hard") &&
         context.params["fail_hard"].asBool());
+}
+
+// This is helper function that is used to calculate the CheckID field in a
+// CheckCreate transaction.
+// returns false if an error occurs in the parsing of the input transaction
+// otherwise, true is returned and appropriate CheckID is populated in the
+// response
+bool
+populateCheckID(Json::Value& result, Json::Value const& ctx, std::uint32_t seq)
+{
+    if (ctx[jss::TransactionType] == jss::CheckCreate)
+    {
+        auto acctID = parseBase58<AccountID>(ctx[jss::Account].asString());
+
+        if (!acctID)
+        {
+            result[jss::error] =
+                "Unable to parse AccountID from the "
+                "input: " +
+                ctx[jss::Account].asString() + "\n";
+            return false;
+        }
+
+        result["CheckID"] = to_string(keylet::check(*acctID, seq).key);
+    }
+
+    return true;
 }
 
 // {
@@ -53,6 +82,12 @@ doSubmit(RPC::JsonContext& context)
         if (context.role != Role::ADMIN && !context.app.config().canSign())
             return RPC::make_error(
                 rpcNOT_SUPPORTED, "Signing is not supported by this server.");
+
+        Json::Value result;
+        // CK TODO: Find out the sequence number from tx_json
+        //        if(!populateCheckID(result, context.params[jss::tx_json],
+        //                             seq)))
+        //            return result;
 
         auto sanitizeRequest = RPC::getTxnPtr(
             context.params,
@@ -195,12 +230,17 @@ doSubmit(RPC::JsonContext& context)
             }
         }
 
-        if (!context.params.isMember(jss::tx_blob))
-            jvResult[jss::deprecated] =
-                "Signing support in the 'submit' command has been "
-                "deprecated and will be removed in a future version "
-                "of the server. Please migrate to a standalone "
-                "signing tool.";
+        jvResult[jss::deprecated] =
+            "Signing support in the 'submit' command has been "
+            "deprecated and will be removed in a future version "
+            "of the server. Please migrate to a standalone "
+            "signing tool.";
+
+        if (!populateCheckID(
+                jvResult,
+                context.params[jss::tx_json],
+                tpTrans->getSTransaction()->getSeqProxy().value()))
+            return jvResult;
 
         return jvResult;
     }
