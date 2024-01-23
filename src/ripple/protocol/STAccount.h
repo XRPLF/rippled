@@ -20,13 +20,15 @@
 #ifndef RIPPLE_PROTOCOL_STACCOUNT_H_INCLUDED
 #define RIPPLE_PROTOCOL_STACCOUNT_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/STBase.h>
+
 #include <string>
 
 namespace ripple {
 
-class STAccount final : public STBase
+class STAccount final : public STBase, public CountedObject<STAccount>
 {
 private:
     // The original implementation of STAccount kept the value in an STBlob.
