@@ -125,6 +125,25 @@ pip3 install pre-commit
 pre-commit install
 ```
 
+## Unit Tests
+To execute all unit tests:
+
+```rippled --unittest --unittest-jobs=<number of cores>```
+
+(Note: Using multiple cores on a Mac M1 can cause spurious test failures. The 
+cause is still under investigation. If you observe this problem, try specifying fewer jobs.)
+
+To run a specific set of test suites:
+
+```
+rippled --unittest TestSuiteName
+```
+Note: In this example, all tests with prefix `TestSuiteName` will be run, so if
+`TestSuiteName1` and `TestSuiteName2` both exist, then both tests will run. 
+Alternatively, if the unit test name finds an exact match, it will stop 
+doing partial matches, i.e. if a unit test with a title of `TestSuiteName` 
+exists, then no other unit test will be executed, apart from `TestSuiteName`.
+
 ## Avoid
 
 1. Proliferation of nearly identical code.
