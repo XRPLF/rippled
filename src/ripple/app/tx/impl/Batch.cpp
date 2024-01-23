@@ -314,9 +314,9 @@ Batch::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    if (txns.size() > 400)
+    if (txns.size() > 8)
     {
-        JLOG(ctx.j.warn()) << "Batch: txns array exceeds 400 entries.";
+        JLOG(ctx.j.warn()) << "Batch: txns array exceeds 8 entries.";
         return temMALFORMED;
     }
 
@@ -333,13 +333,9 @@ Batch::preflight(PreflightContext const& ctx)
         auto const txtype = safe_cast<TxType>(tt);
         auto const stx =
             STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
-        PreflightContext const pfctx(
-            ctx.app,
-            stx,
-            ctx.rules,
-            ripple::ApplyFlags::tapPREFLIGHT_BATCH,
-            ctx.j);
-        auto const response = invoke_preflight(pfctx);
+        PreflightContext const preflightContext(
+            ctx.app, stx, ctx.rules, tapPREFLIGHT_BATCH, ctx.j);
+        auto const response = invoke_preflight(preflightContext);
         preflightResponses.push_back(response.first);
     }
 

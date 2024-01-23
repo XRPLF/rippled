@@ -100,19 +100,43 @@ preflight1(PreflightContext const& ctx)
     }
 
     // No point in going any further if the transaction fee is malformed.
-    auto const fee = ctx.tx.getFieldAmount(sfFee);
-    if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
+    if (ctx.flags == tapPREFLIGHT_BATCH)
     {
-        JLOG(ctx.j.debug()) << "preflight1: invalid fee";
-        return temBAD_FEE;
+        if (ctx.tx.isFieldPresent(sfFee))
+        {
+            JLOG(ctx.j.debug()) << "preflight1: batch tx contains sfFee";
+            return temMALFORMED;
+        }
+    }
+    else
+    {
+        auto const fee = ctx.tx.getFieldAmount(sfFee);
+        if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
+        {
+            JLOG(ctx.j.debug()) << "preflight1: invalid fee";
+            return temBAD_FEE;
+        }
     }
 
-    auto const spk = ctx.tx.getSigningPubKey();
-
-    if (!spk.empty() && !publicKeyType(makeSlice(spk)))
+    // check public key validity
+    if (ctx.flags == tapPREFLIGHT_BATCH)
     {
-        JLOG(ctx.j.debug()) << "preflight1: invalid signing key";
-        return temBAD_SIGNATURE;
+        if (ctx.tx.isFieldPresent(sfSigningPubKey))
+        {
+            JLOG(ctx.j.debug())
+                << "preflight1: batch tx contains sfSigningPubKey";
+            return temMALFORMED;
+        }
+    }
+    else
+    {
+        auto const spk = ctx.tx.getSigningPubKey();
+
+        if (!spk.empty() && !publicKeyType(makeSlice(spk)))
+        {
+            JLOG(ctx.j.debug()) << "preflight1: invalid signing key";
+            return temBAD_SIGNATURE;
+        }
     }
 
     // An AccountTxnID field constrains transaction ordering more than the
