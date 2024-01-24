@@ -67,6 +67,7 @@ JSS(Check);                // ledger type.
 JSS(CheckCancel);          // transaction type.
 JSS(CheckCash);            // transaction type.
 JSS(CheckCreate);          // transaction type.
+JSS(CheckID);              // out: CheckCreate transaction response
 JSS(Clawback);             // transaction type.
 JSS(ClearFlag);            // field.
 JSS(DID);                  // ledger type.
