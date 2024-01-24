@@ -257,7 +257,9 @@ class Check_test : public beast::unit_test::suite
         // CheckID must be returned upon successful creation of a Check object
         BEAST_EXPECT(jr.has_value());
         BEAST_EXPECT((*jr)["result"].isMember(jss::CheckID));
-        BEAST_EXPECT((*jr)["result"][jss::CheckID] == "DE86D4F9A732A12247B774C34175B3DD0E51D4D7407A34F67ADA2C398359289F");
+        BEAST_EXPECT(
+            (*jr)["result"][jss::CheckID] ==
+            "DE86D4F9A732A12247B774C34175B3DD0E51D4D7407A34F67ADA2C398359289F");
 
         env(check::create(alice, bob, USD(50)), source_tag(2));
         env.close();

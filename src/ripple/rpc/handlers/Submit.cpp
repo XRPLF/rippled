@@ -42,7 +42,7 @@ getFailHard(RPC::JsonContext const& context)
 
 // This is helper function that is used to calculate the CheckID field in a
 // CheckCreate transaction.
-// The function returns false, if an error occurs in the parsing of the input
+// The function returns false, if an error occurs whilst parsing the input
 // transaction.
 // Otherwise, true is returned and appropriate CheckID is populated in the
 // response
@@ -65,7 +65,7 @@ populateCheckID(
         return false;
     }
 
-    if(result[jss::engine_result] == "tesSUCCESS")
+    if (result[jss::engine_result] == "tesSUCCESS")
         result[jss::CheckID] = to_string(keylet::check(*acctID, seq).key);
 
     return true;

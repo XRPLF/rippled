@@ -498,6 +498,9 @@ public:
 
     /** Submit an existing JTx.
         This calls postconditions.
+
+        If the input is parsed successfully, then the RPC response is returned.
+        Otherwise, the return value optional is not set
     */
     virtual std::optional<Json::Value>
     submit(JTx const& jt);
@@ -514,7 +517,8 @@ public:
     void
     postconditions(JTx const& jt, TER ter, bool didApply);
 
-    /** Apply funclets and submit. */
+    /** Apply funclets and submit. If the RPC command is sucessful, the
+     * response is returned.*/
     /** @{ */
     template <class JsonValue, class... FN>
     std::optional<Json::Value>
