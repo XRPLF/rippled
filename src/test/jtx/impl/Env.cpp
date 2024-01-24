@@ -284,18 +284,19 @@ Env::parseResult(Json::Value const& jr)
     return std::make_pair(ter, isTesSuccess(ter) || isTecClaim(ter));
 }
 
-void
+std::optional<Json::Value>
 Env::submit(JTx const& jt)
 {
     bool didApply;
+    std::optional<Json::Value> jr;
     if (jt.stx)
     {
         txid_ = jt.stx->getTransactionID();
         Serializer s;
         jt.stx->add(s);
-        auto const jr = rpc("submit", strHex(s.slice()));
+        jr = rpc("submit", strHex(s.slice()));
 
-        std::tie(ter_, didApply) = parseResult(jr);
+        std::tie(ter_, didApply) = parseResult(*jr);
     }
     else
     {
@@ -304,7 +305,9 @@ Env::submit(JTx const& jt)
         ter_ = temMALFORMED;
         didApply = false;
     }
-    return postconditions(jt, ter_, didApply);
+    postconditions(jt, ter_, didApply);
+
+    return jr;
 }
 
 void

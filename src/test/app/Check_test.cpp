@@ -250,8 +250,13 @@ class Check_test : public beast::unit_test::suite
         using namespace std::chrono_literals;
         std::size_t const aliceCount{checksOnAccount(env, alice).size()};
         std::size_t const bobCount{checksOnAccount(env, bob).size()};
-        env(check::create(alice, bob, USD(50)), expiration(env.now() + 1s));
+        auto const jr =
+            env(check::create(alice, bob, USD(50)), expiration(env.now() + 1s));
         env.close();
+
+        BEAST_EXPECT(jr.has_value());
+        BEAST_EXPECT((*jr)["result"].isMember("CheckID"));
+        BEAST_EXPECT((*jr)["result"]["CheckID"] == "hello world");
 
         env(check::create(alice, bob, USD(50)), source_tag(2));
         env.close();
@@ -409,10 +414,13 @@ class Check_test : public beast::unit_test::suite
         env.fund(startBalance, gw1, gwF, alice, bob);
 
         // Bad fee.
-        env(check::create(alice, bob, USD(50)),
-            fee(drops(-10)),
-            ter(temBAD_FEE));
+        auto const jr =
+            env(check::create(alice, bob, USD(50)),
+                fee(drops(-10)),
+                ter(temBAD_FEE));
         env.close();
+
+        BEAST_EXPECT(!jr);
 
         // Bad flags.
         env(check::create(alice, bob, USD(50)),
