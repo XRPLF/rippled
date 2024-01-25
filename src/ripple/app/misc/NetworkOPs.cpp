@@ -1401,15 +1401,20 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     << "Transaction is now included in open ledger";
                 e.transaction->setStatus(INCLUDED);
 
+                // Pop as many "reasonable" transactions for this account as
+                // possible. "Reasonable" means they have sequential sequence
+                // numbers, or use tickets.
                 auto const& txCur = e.transaction->getSTransaction();
-                auto const txNext = m_ledgerMaster.popAcctTransaction(txCur);
-                if (txNext)
+                auto txNext = m_ledgerMaster.popAcctTransaction(txCur);
+                while (txNext)
                 {
                     std::string reason;
                     auto const trans = sterilize(*txNext);
                     auto t = std::make_shared<Transaction>(trans, reason, app_);
                     submit_held.emplace_back(t, false, false, FailHard::no);
                     t->setApplying();
+
+                    txNext = m_ledgerMaster.popAcctTransaction(trans);
                 }
             }
             else if (e.result == tefPAST_SEQ)

@@ -33,7 +33,7 @@ namespace ripple {
 // TODO convert these macros to int constants or an enum
 #define SF_BAD 0x02  // Temporarily bad
 #define SF_SAVED 0x04
-#define SF_HELD 0x08    // Held by LedgerMaster after potential processing failure
+#define SF_HELD 0x08  // Held by LedgerMaster after potential processing failure
 #define SF_TRUSTED 0x10  // comes from trusted source
 
 // Private flags, used internally in apply.cpp.
