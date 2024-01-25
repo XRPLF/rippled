@@ -126,7 +126,7 @@ To download the patch file:
 1. Next to `clang-format / check (pull_request) Failing after #s` -> click **Details** to open the details page.
 2. Left menu -> click **Summary**
 3. Scroll down to near the bottom-right under `Artifacts` -> click **clang-format.patch**
-4. Download the file to your local git repository and run `git apply [patch-file-name]`.
+4. Download the zip file and extract it to your local git repository. Run `git apply [patch-file-name]`.
 5. Commit and push.
 
 You can install a pre-commit hook to automatically run `clang-format` before every commit:
