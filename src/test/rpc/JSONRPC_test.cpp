@@ -69,14 +69,14 @@ struct TxnTestData
 
 static constexpr TxnTestData txnTestArray[] = {
 
-    {"Minimal payment.",
+    {"Minimal payment, no Amount only DeliverMax",
      __LINE__,
      R"({
     "command": "doesnt_matter",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-        "Amount": "1000000000",
+        "DeliverMax": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "TransactionType": "Payment"
     }
@@ -86,7 +86,7 @@ static constexpr TxnTestData txnTestArray[] = {
        "Missing field 'account'.",
        "Missing field 'tx_json.Sequence'."}}},
 
-    {"Pass in Fee with minimal payment.",
+    {"Pass in Fee with minimal payment, both Amount and DeliverMax.",
      __LINE__,
      R"({
     "command": "doesnt_matter",
@@ -96,6 +96,7 @@ static constexpr TxnTestData txnTestArray[] = {
         "Fee": 10,
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
+        "DeliverMax": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "TransactionType": "Payment"
     }
@@ -105,7 +106,7 @@ static constexpr TxnTestData txnTestArray[] = {
        "Missing field 'tx_json.Sequence'.",
        "Missing field 'tx_json.Sequence'."}}},
 
-    {"Pass in Sequence.",
+    {"Pass in Sequence, no Amount only DeliverMax",
      __LINE__,
      R"({
     "command": "doesnt_matter",
@@ -114,7 +115,7 @@ static constexpr TxnTestData txnTestArray[] = {
     "tx_json": {
         "Sequence": 0,
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-        "Amount": "1000000000",
+        "DeliverMax": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "TransactionType": "Payment"
     }
@@ -124,7 +125,8 @@ static constexpr TxnTestData txnTestArray[] = {
        "Missing field 'tx_json.Fee'.",
        "Missing field 'tx_json.SigningPubKey'."}}},
 
-    {"Pass in Sequence and Fee with minimal payment.",
+    {"Pass in Sequence and Fee with minimal payment, both Amount and "
+     "DeliverMax.",
      __LINE__,
      R"({
     "command": "doesnt_matter",
@@ -135,6 +137,7 @@ static constexpr TxnTestData txnTestArray[] = {
         "Fee": 10,
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
+        "DeliverMax": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "TransactionType": "Payment"
     }
@@ -1034,6 +1037,26 @@ static constexpr TxnTestData txnTestArray[] = {
        "Missing field 'tx_json.Destination'.",
        "Missing field 'tx_json.Destination'."}}},
 
+    {"Missing 'Destination' in sign_for, use DeliverMax",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "DeliverMax": "1000000000",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+     {{"Missing field 'tx_json.Destination'.",
+       "Missing field 'tx_json.Destination'.",
+       "Missing field 'tx_json.Destination'.",
+       "Missing field 'tx_json.Destination'."}}},
+
     {"Missing 'Fee' in sign_for.",
      __LINE__,
      R"({
@@ -1691,6 +1714,34 @@ static constexpr TxnTestData txnTestArray[] = {
        "Missing field 'account'.",
        "Invalid field 'tx_json.Amount'."}}},
 
+    {"Invalid DeliverMax in submit_multisigned Payment.",
+     __LINE__,
+     R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "DeliverMax": "NotANumber",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+            {
+                "Signer": {
+                    "Account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+                    "TxnSignature": "3045022100F9ED357606932697A4FAB2BE7F222C21DD93CA4CFDD90357AADD07465E8457D6022038173193E3DFFFB5D78DD738CC0905395F885DA65B98FDB9793901FE3FD26ECE",
+                    "SigningPubKey": "02FE36A690D6973D55F88553F5D2C4202DE75F2CF8A6D0E17C70AC223F044501F8"
+                }
+            }
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "Invalid field 'tx_json.Amount'."}}},
+
     {"No build_path in submit_multisigned.",
      __LINE__,
      R"({
@@ -1903,6 +1954,72 @@ static constexpr TxnTestData txnTestArray[] = {
        "Missing field 'account'.",
        "A Signer may not be the transaction's Account "
        "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh)."}}},
+
+    {"Empty Signers array in submit_multisigned, use DeliverMax",
+     __LINE__,
+     R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "DeliverMax": "10000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "tx_json.Signers array may not be empty."}}},
+
+    {"Empty Signers array in submit_multisigned, use DeliverMax and Amount",
+     __LINE__,
+     R"({
+    "command": "submit_multisigned",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "10000000",
+        "DeliverMax": "10000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "Signers": [
+        ],
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+     {{"Missing field 'secret'.",
+       "Missing field 'secret'.",
+       "Missing field 'account'.",
+       "tx_json.Signers array may not be empty."}}},
+
+    {"Payment cannot specify different DeliverMax and Amount.",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "debug_signing": 0,
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "DeliverMax": "1000000020",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment"
+    }
+})",
+     {{"Cannot specify differing 'Amount' and 'DeliverMax'",
+       "Cannot specify differing 'Amount' and 'DeliverMax'",
+       "Cannot specify differing 'Amount' and 'DeliverMax'",
+       "Cannot specify differing 'Amount' and 'DeliverMax'"}}},
 
 };
 
@@ -2421,17 +2538,19 @@ public:
         // A list of all the functions we want to test.
         using signFunc = Json::Value (*)(
             Json::Value params,
+            unsigned int apiVersion,
             NetworkOPs::FailHard failType,
             Role role,
             std::chrono::seconds validatedLedgerAge,
-            Application & app);
+            Application& app);
 
         using submitFunc = Json::Value (*)(
             Json::Value params,
+            unsigned int apiVersion,
             NetworkOPs::FailHard failType,
             Role role,
             std::chrono::seconds validatedLedgerAge,
-            Application & app,
+            Application& app,
             ProcessTransactionFn const& processTransaction);
 
         using TestStuff =
@@ -2470,6 +2589,7 @@ public:
                         assert(get<1>(testFunc) == nullptr);
                         result = signFn(
                             req,
+                            1,
                             NetworkOPs::FailHard::yes,
                             testRole,
                             1s,
@@ -2481,6 +2601,7 @@ public:
                         assert(submitFn != nullptr);
                         result = submitFn(
                             req,
+                            1,
                             NetworkOPs::FailHard::yes,
                             testRole,
                             1s,

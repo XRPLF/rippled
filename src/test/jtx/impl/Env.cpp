@@ -415,6 +415,11 @@ Env::autofill(JTx& jt)
         jtx::fill_fee(jv, *current());
     if (jt.fill_seq)
         jtx::fill_seq(jv, *current());
+
+    uint32_t networkID = app().config().NETWORK_ID;
+    if (!jv.isMember(jss::NetworkID) && networkID > 1024)
+        jv[jss::NetworkID] = std::to_string(networkID);
+
     // Must come last
     try
     {
@@ -455,10 +460,12 @@ Env::st(JTx const& jt)
 
 Json::Value
 Env::do_rpc(
+    unsigned apiVersion,
     std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)
 {
-    return rpcClient(args, app().config(), app().logs(), headers).second;
+    return rpcClient(args, app().config(), app().logs(), apiVersion, headers)
+        .second;
 }
 
 void

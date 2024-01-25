@@ -19,22 +19,25 @@
 
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/TransactionMaster.h>
+#include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/Transaction.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
 #include <ripple/basics/ToString.h>
 #include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/NFTSyntheticSerializer.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/rpc/CTID.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
-namespace ripple {
+#include <charconv>
+#include <regex>
 
-// {
-//   transaction: <hex>
-// }
+namespace ripple {
 
 static bool
 isValidated(LedgerMaster& ledgerMaster, std::uint32_t seq, uint256 const& hash)
@@ -53,12 +56,16 @@ struct TxResult
     Transaction::pointer txn;
     std::variant<std::shared_ptr<TxMeta>, Blob> meta;
     bool validated = false;
+    std::optional<std::string> ctid;
+    std::optional<NetClock::time_point> closeTime;
+    std::optional<uint256> ledgerHash;
     TxSearched searchedAll;
 };
 
 struct TxArgs
 {
-    uint256 hash;
+    std::optional<uint256> hash;
+    std::optional<std::pair<uint32_t, uint16_t>> ctid;
     bool binary = false;
     std::optional<std::pair<uint32_t, uint32_t>> ledgerRange;
 };
@@ -72,11 +79,19 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
         Throw<std::runtime_error>(
             "Called doTxPostgres yet not in reporting mode");
     }
+
     TxResult res;
     res.searchedAll = TxSearched::unknown;
 
+    if (!args.hash)
+        return {
+            res,
+            {rpcNOT_IMPL,
+             "Use of CTIDs on reporting mode is not currently supported."}};
+
     JLOG(context.j.debug()) << "Fetching from postgres";
-    Transaction::Locator locator = Transaction::locate(args.hash, context.app);
+    Transaction::Locator locator =
+        Transaction::locate(*(args.hash), context.app);
 
     std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
         pair;
@@ -126,9 +141,16 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
             else
             {
                 res.meta = std::make_shared<TxMeta>(
-                    args.hash, res.txn->getLedger(), *meta);
+                    *(args.hash), res.txn->getLedger(), *meta);
             }
             res.validated = true;
+
+            auto const ledgerInfo =
+                context.app.getRelationalDatabase().getLedgerInfoByIndex(
+                    locator.getLedgerSequence());
+            res.closeTime = ledgerInfo->closeTime;
+            res.ledgerHash = ledgerInfo->hash;
+
             return {res, rpcSUCCESS};
         }
         else
@@ -167,7 +189,7 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
 }
 
 std::pair<TxResult, RPC::Status>
-doTxHelp(RPC::Context& context, TxArgs const& args)
+doTxHelp(RPC::Context& context, TxArgs args)
 {
     if (context.app.config().reporting())
         return doTxPostgres(context, args);
@@ -195,15 +217,28 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
     result.searchedAll = TxSearched::unknown;
-
     std::variant<TxPair, TxSearched> v;
+
+    if (args.ctid)
+    {
+        args.hash = context.app.getLedgerMaster().txnIdFromIndex(
+            args.ctid->first, args.ctid->second);
+
+        if (args.hash)
+            range =
+                ClosedInterval<uint32_t>(args.ctid->first, args.ctid->second);
+    }
+
+    if (!args.hash)
+        return {result, rpcTXN_NOT_FOUND};
+
     if (args.ledgerRange)
     {
-        v = context.app.getMasterTransaction().fetch(args.hash, range, ec);
+        v = context.app.getMasterTransaction().fetch(*(args.hash), range, ec);
     }
     else
     {
-        v = context.app.getMasterTransaction().fetch(args.hash, ec);
+        v = context.app.getMasterTransaction().fetch(*(args.hash), ec);
     }
 
     if (auto e = std::get_if<TxSearched>(&v))
@@ -233,6 +268,9 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
     std::shared_ptr<Ledger const> ledger =
         context.ledgerMaster.getLedgerBySeq(txn->getLedger());
 
+    if (ledger && !ledger->open())
+        result.ledgerHash = ledger->info().hash;
+
     if (ledger && meta)
     {
         if (args.binary)
@@ -245,6 +283,18 @@ doTxHelp(RPC::Context& context, TxArgs const& args)
         }
         result.validated = isValidated(
             context.ledgerMaster, ledger->info().seq, ledger->info().hash);
+        if (result.validated)
+            result.closeTime =
+                context.ledgerMaster.getCloseTimeBySeq(txn->getLedger());
+
+        // compute outgoing CTID
+        uint32_t lgrSeq = ledger->info().seq;
+        uint32_t txnIdx = meta->getAsObject().getFieldU32(sfTransactionIndex);
+        uint32_t netID = context.app.config().NETWORK_ID;
+
+        if (txnIdx <= 0xFFFFU && netID < 0xFFFFU && lgrSeq < 0x0FFF'FFFFUL)
+            result.ctid =
+                RPC::encodeCTID(lgrSeq, (uint16_t)txnIdx, (uint16_t)netID);
     }
 
     return {result, rpcSUCCESS};
@@ -278,13 +328,52 @@ populateJsonResponse(
     // no errors
     else if (result.txn)
     {
-        response = result.txn->getJson(JsonOptions::include_date, args.binary);
+        auto const& sttx = result.txn->getSTransaction();
+        if (context.apiVersion > 1)
+        {
+            constexpr auto optionsJson =
+                JsonOptions::include_date | JsonOptions::disable_API_prior_V2;
+            if (args.binary)
+                response[jss::tx_blob] = result.txn->getJson(optionsJson, true);
+            else
+            {
+                response[jss::tx_json] = result.txn->getJson(optionsJson);
+                RPC::insertDeliverMax(
+                    response[jss::tx_json],
+                    sttx->getTxnType(),
+                    context.apiVersion);
+            }
+
+            // Note, result.ledgerHash is only set in a closed or validated
+            // ledger - as seen in `doTxHelp` and `doTxPostgres`
+            if (result.ledgerHash)
+                response[jss::ledger_hash] = to_string(*result.ledgerHash);
+
+            response[jss::hash] = to_string(result.txn->getID());
+            if (result.validated)
+            {
+                response[jss::ledger_index] = result.txn->getLedger();
+                if (result.closeTime)
+                    response[jss::close_time_iso] =
+                        to_string_iso(*result.closeTime);
+            }
+        }
+        else
+        {
+            response =
+                result.txn->getJson(JsonOptions::include_date, args.binary);
+            if (!args.binary)
+                RPC::insertDeliverMax(
+                    response, sttx->getTxnType(), context.apiVersion);
+        }
 
         // populate binary metadata
         if (auto blob = std::get_if<Blob>(&result.meta))
         {
             assert(args.binary);
-            response[jss::meta] = strHex(makeSlice(*blob));
+            auto json_meta =
+                (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
+            response[json_meta] = strHex(makeSlice(*blob));
         }
         // populate meta data
         else if (auto m = std::get_if<std::shared_ptr<TxMeta>>(&result.meta))
@@ -295,9 +384,13 @@ populateJsonResponse(
                 response[jss::meta] = meta->getJson(JsonOptions::none);
                 insertDeliveredAmount(
                     response[jss::meta], context, result.txn, *meta);
+                insertNFTSyntheticInJson(response, sttx, *meta);
             }
         }
         response[jss::validated] = result.validated;
+
+        if (result.ctid)
+            response[jss::ctid] = *(result.ctid);
     }
     return response;
 }
@@ -310,13 +403,39 @@ doTxJson(RPC::JsonContext& context)
 
     // Deserialize and validate JSON arguments
 
-    if (!context.params.isMember(jss::transaction))
-        return rpcError(rpcINVALID_PARAMS);
-
     TxArgs args;
 
-    if (!args.hash.parseHex(context.params[jss::transaction].asString()))
-        return rpcError(rpcNOT_IMPL);
+    if (context.params.isMember(jss::transaction) &&
+        context.params.isMember(jss::ctid))
+        // specifying both is ambiguous
+        return rpcError(rpcINVALID_PARAMS);
+
+    if (context.params.isMember(jss::transaction))
+    {
+        uint256 hash;
+        if (!hash.parseHex(context.params[jss::transaction].asString()))
+            return rpcError(rpcNOT_IMPL);
+        args.hash = hash;
+    }
+    else if (context.params.isMember(jss::ctid))
+    {
+        auto ctid = RPC::decodeCTID(context.params[jss::ctid].asString());
+        if (!ctid)
+            return rpcError(rpcINVALID_PARAMS);
+
+        auto const [lgr_seq, txn_idx, net_id] = *ctid;
+        if (net_id != context.app.config().NETWORK_ID)
+        {
+            std::stringstream out;
+            out << "Wrong network. You should submit this request to a node "
+                   "running on NetworkID: "
+                << net_id;
+            return RPC::make_error(rpcWRONG_NETWORK, out.str());
+        }
+        args.ctid = {lgr_seq, txn_idx};
+    }
+    else
+        return rpcError(rpcINVALID_PARAMS);
 
     args.binary = context.params.isMember(jss::binary) &&
         context.params[jss::binary].asBool();

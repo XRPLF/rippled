@@ -34,6 +34,7 @@
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/algorithm/string/case_conv.hpp>
+#include <regex>
 
 namespace ripple {
 namespace RPC {
@@ -599,59 +600,6 @@ getLedger<>(
 template Status
 getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context&);
 
-bool
-isValidated(
-    LedgerMaster& ledgerMaster,
-    ReadView const& ledger,
-    Application& app)
-{
-    if (app.config().reporting())
-        return true;
-
-    if (ledger.open())
-        return false;
-
-    if (ledger.info().validated)
-        return true;
-
-    auto seq = ledger.info().seq;
-    try
-    {
-        // Use the skip list in the last validated ledger to see if ledger
-        // comes before the last validated ledger (and thus has been
-        // validated).
-        auto hash =
-            ledgerMaster.walkHashBySeq(seq, InboundLedger::Reason::GENERIC);
-
-        if (!hash || ledger.info().hash != *hash)
-        {
-            // This ledger's hash is not the hash of the validated ledger
-            if (hash)
-            {
-                assert(hash->isNonZero());
-                uint256 valHash =
-                    app.getRelationalDatabase().getHashByIndex(seq);
-                if (valHash == ledger.info().hash)
-                {
-                    // SQL database doesn't match ledger chain
-                    ledgerMaster.clearLedger(seq);
-                }
-            }
-            return false;
-        }
-    }
-    catch (SHAMapMissingNode const& mn)
-    {
-        auto stream = app.journal("RPCHandler").warn();
-        JLOG(stream) << "Ledger #" << seq << ": " << mn.what();
-        return false;
-    }
-
-    // Mark ledger as validated to save time if we see it again.
-    ledger.info().validated = true;
-    return true;
-}
-
 // The previous version of the lookupLedger command would accept the
 // "ledger_index" argument as a string and silently treat it as a request to
 // return the current ledger which, while not strictly wrong, could cause a lot
@@ -692,8 +640,7 @@ lookupLedger(
         result[jss::ledger_current_index] = info.seq;
     }
 
-    result[jss::validated] =
-        isValidated(context.ledgerMaster, *ledger, context.app);
+    result[jss::validated] = context.ledgerMaster.isValidated(*ledger);
     return Status::OK;
 }
 
@@ -846,7 +793,10 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
 }
 
 std::pair<PublicKey, SecretKey>
-keypairForSignature(Json::Value const& params, Json::Value& error)
+keypairForSignature(
+    Json::Value const& params,
+    Json::Value& error,
+    unsigned int apiVersion)
 {
     bool const has_key_type = params.isMember(jss::key_type);
 
@@ -900,7 +850,10 @@ keypairForSignature(Json::Value const& params, Json::Value& error)
 
         if (!keyType)
         {
-            error = RPC::invalid_field_error(jss::key_type);
+            if (apiVersion > 1u)
+                error = RPC::make_error(rpcBAD_KEY_TYPE);
+            else
+                error = RPC::invalid_field_error(jss::key_type);
             return {};
         }
 
@@ -981,7 +934,7 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 15>
+        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 20>
             types{
                 {{jss::account, ltACCOUNT_ROOT},
                  {jss::amendments, ltAMENDMENTS},
@@ -997,7 +950,13 @@ chooseLedgerEntryType(Json::Value const& params)
                  {jss::state, ltRIPPLE_STATE},
                  {jss::ticket, ltTICKET},
                  {jss::nft_offer, ltNFTOKEN_OFFER},
-                 {jss::nft_page, ltNFTOKEN_PAGE}}};
+                 {jss::nft_page, ltNFTOKEN_PAGE},
+                 {jss::amm, ltAMM},
+                 {jss::bridge, ltBRIDGE},
+                 {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
+                 {jss::xchain_owned_create_account_claim_id,
+                  ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
+                 {jss::did, ltDID}}};
 
         auto const& p = params[jss::type];
         if (!p.isString())
@@ -1101,11 +1060,13 @@ getLedgerByContext(RPC::JsonContext& context)
             return RPC::make_param_error("Ledger index too small");
 
         auto const j = context.app.journal("RPCHandler");
-        // Try to get the hash of the desired ledger from the validated ledger
+        // Try to get the hash of the desired ledger from the validated
+        // ledger
         auto neededHash = hashOfSeq(*ledger, ledgerIndex, j);
         if (!neededHash)
         {
-            // Find a ledger more likely to have the hash of the desired ledger
+            // Find a ledger more likely to have the hash of the desired
+            // ledger
             auto const refIndex = getCandidateLedger(ledgerIndex);
             auto refHash = hashOfSeq(*ledger, refIndex, j);
             assert(refHash);
@@ -1113,8 +1074,8 @@ getLedgerByContext(RPC::JsonContext& context)
             ledger = ledgerMaster.getLedgerByHash(*refHash);
             if (!ledger)
             {
-                // We don't have the ledger we need to figure out which ledger
-                // they want. Try to get it.
+                // We don't have the ledger we need to figure out which
+                // ledger they want. Try to get it.
 
                 if (auto il = context.app.getInboundLedgers().acquire(
                         *refHash, refIndex, InboundLedger::Reason::GENERIC))

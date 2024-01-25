@@ -58,6 +58,7 @@ doSubmit(RPC::JsonContext& context)
 
         auto ret = RPC::transactionSubmit(
             context.params,
+            context.apiVersion,
             failType,
             context.role,
             context.ledgerMaster.getValidatedLedgerAge(),

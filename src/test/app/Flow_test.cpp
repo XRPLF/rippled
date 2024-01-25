@@ -49,14 +49,6 @@ getNoRippleFlag(
     return false;  // silence warning
 }
 
-jtx::PrettyAmount
-xrpMinusFee(jtx::Env const& env, std::int64_t xrpAmount)
-{
-    using namespace jtx;
-    auto feeDrops = env.current()->fees().base;
-    return drops(dropsPerXRP * xrpAmount - feeDrops);
-};
-
 struct Flow_test : public beast::unit_test::suite
 {
     void
@@ -481,7 +473,7 @@ struct Flow_test : public beast::unit_test::suite
                     false,
                     false,
                     true,
-                    false,
+                    OfferCrossing::no,
                     std::nullopt,
                     smax,
                     flowJournal);

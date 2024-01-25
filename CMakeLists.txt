@@ -19,7 +19,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # make GIT_COMMIT_HASH define available to all sources
 find_package(Git)
 if(Git_FOUND)
-    execute_process(COMMAND ${GIT_EXECUTABLE} describe --always --abbrev=40
+    execute_process(COMMAND ${GIT_EXECUTABLE} --git-dir=${CMAKE_CURRENT_SOURCE_DIR}/.git describe --always --abbrev=40
         OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE gch)
     if(gch)
         set(GIT_COMMIT_HASH "${gch}")
@@ -38,7 +38,6 @@ include (CheckCXXCompilerFlag)
 include (FetchContent)
 include (ExternalProject)
 include (CMakeFuncs) # must come *after* ExternalProject b/c it overrides one function in EP
-include (ProcessorCount)
 if (target)
   message (FATAL_ERROR "The target option has been removed - use native cmake options to control build")
 endif ()
@@ -71,7 +70,9 @@ find_package(OpenSSL 1.1.1 REQUIRED)
 set_target_properties(OpenSSL::SSL PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS OPENSSL_NO_SSL2
 )
+set(SECP256K1_INSTALL TRUE)
 add_subdirectory(src/secp256k1)
+add_library(secp256k1::secp256k1 ALIAS secp256k1)
 add_subdirectory(src/ed25519-donna)
 find_package(lz4 REQUIRED)
 # Target names with :: are not allowed in a generator expression.
@@ -93,22 +94,27 @@ endif()
 
 find_package(nudb REQUIRED)
 find_package(date REQUIRED)
-include(deps/Protobuf)
-include(deps/gRPC)
 
 target_link_libraries(ripple_libs INTERFACE
   ed25519::ed25519
   LibArchive::LibArchive
   lz4::lz4
-  nudb::core
   OpenSSL::Crypto
   OpenSSL::SSL
-  Ripple::grpc_pbufs
-  Ripple::pbufs
   secp256k1::secp256k1
   soci::soci
   SQLite::SQLite3
 )
+
+# Work around changes to Conan recipe for now.
+if(TARGET nudb::core)
+  set(nudb nudb::core)
+elseif(TARGET NuDB::nudb)
+  set(nudb NuDB::nudb)
+else()
+  message(FATAL_ERROR "unknown nudb target")
+endif()
+target_link_libraries(ripple_libs INTERFACE ${nudb})
 
 if(reporting)
   find_package(cassandra-cpp-driver REQUIRED)
@@ -119,10 +125,15 @@ if(reporting)
   )
 endif()
 
+if(coverage)
+  include(RippledCov)
+endif()
+
 ###
 
 include(RippledCore)
+include(deps/Protobuf)
+include(deps/gRPC)
 include(RippledInstall)
-include(RippledCov)
 include(RippledMultiConfig)
 include(RippledValidatorKeys)

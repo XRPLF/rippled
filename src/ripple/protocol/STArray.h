@@ -61,7 +61,7 @@ public:
     STArray&
     operator=(STArray&&);
 
-    STArray(SField const& f, int n);
+    STArray(SField const& f, std::size_t n);
     STArray(SerialIter& sit, SField const& f, int depth = 0);
     explicit STArray(int n);
     explicit STArray(SField const& f);

@@ -69,7 +69,7 @@ compiler and linker options for all dependencies _and_ this project.
 However, that is very tedious and error-prone, which is why we lean on tools
 like Conan.
 
-We have written a Conan configuration file ([`conanfile.py`](./conanfile.py))
+We have written a Conan configuration file ([`conanfile.py`](../../conanfile.py))
 so that Conan can be used to correctly download, configure, build, and install
 all of the dependencies for this project,
 using a single set of compiler and linker options for all of them.
@@ -109,6 +109,16 @@ For options, each package recipe defines its own defaults.
 You can pass every parameter to Conan on the command line,
 but it is more convenient to put them in a configuration file, once, that
 Conan can read every time it is configured.
-For Conan, that file is a [profile][profile].
+For Conan, that file is a [profile][].
 **All we must do to properly configure Conan is edit and pass the profile.**
 By default, Conan will use the profile named "default".
+
+[build_type]: https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html
+[find_package]: https://cmake.org/cmake/help/latest/command/find_package.html
+[pcf]: https://cmake.org/cmake/help/latest/manual/cmake-packages.7.html#package-configuration-file
+[prefix_path]: https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html
+[profile]: https://docs.conan.io/en/latest/reference/profiles.html
+[pvf]: https://cmake.org/cmake/help/latest/manual/cmake-packages.7.html#package-version-file
+[runtime]: https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html
+[search]: https://cmake.org/cmake/help/latest/command/find_package.html#search-procedure
+[toolchain]: https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html

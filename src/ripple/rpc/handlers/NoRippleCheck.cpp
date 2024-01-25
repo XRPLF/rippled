@@ -50,7 +50,7 @@ fillTransaction(
 }
 
 // {
-//   account: <account>|<account_public_key>
+//   account: <account>
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 //   limit: integer                 // optional, number of problems
@@ -83,6 +83,16 @@ doNoRippleCheck(RPC::JsonContext& context)
     if (params.isMember(jss::transactions))
         transactions = params["transactions"].asBool();
 
+    // The document[https://xrpl.org/noripple_check.html#noripple_check] states
+    // that transactions params is a boolean value, however, assigning any
+    // string value works. Do not allow this. This check is for api Version 2
+    // onwards only
+    if (context.apiVersion > 1u && params.isMember(jss::transactions) &&
+        !params[jss::transactions].isBool())
+    {
+        return rpcError(rpcINVALID_PARAMS);
+    }
+
     std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger(ledger, context);
     if (!ledger)
@@ -92,17 +102,13 @@ doNoRippleCheck(RPC::JsonContext& context)
     Json::Value& jvTransactions =
         transactions ? (result[jss::transactions] = Json::arrayValue) : dummy;
 
-    std::string strIdent(params[jss::account].asString());
-    AccountID accountID;
-
-    if (auto jv = RPC::accountFromString(accountID, strIdent))
+    auto id = parseBase58<AccountID>(params[jss::account].asString());
+    if (!id)
     {
-        for (auto it(jv.begin()); it != jv.end(); ++it)
-            result[it.memberName()] = *it;
-
+        RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-
+    auto const accountID{std::move(id.value())};
     auto const sle = ledger->read(keylet::account(accountID));
     if (!sle)
         return rpcError(rpcACT_NOT_FOUND);

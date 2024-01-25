@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/tx/impl/DID.h>
 #include <ripple/app/tx/impl/DeleteAccount.h>
 #include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
@@ -133,6 +134,18 @@ removeNFTokenOfferFromLedger(
     return tesSUCCESS;
 }
 
+TER
+removeDIDFromLedger(
+    Application& app,
+    ApplyView& view,
+    AccountID const& account,
+    uint256 const& delIndex,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal j)
+{
+    return DIDDelete::deleteSLE(view, sleDel, account, j);
+}
+
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -151,6 +164,8 @@ nonObligationDeleter(LedgerEntryType t)
             return removeDepositPreauthFromLedger;
         case ltNFTOKEN_OFFER:
             return removeNFTokenOfferFromLedger;
+        case ltDID:
+            return removeDIDFromLedger;
         default:
             return nullptr;
     }
@@ -292,76 +307,29 @@ DeleteAccount::doApply()
     if (!src || !dst)
         return tefBAD_LEDGER;
 
-    // Delete all of the entries in the account directory.
     Keylet const ownerDirKeylet{keylet::ownerDir(account_)};
-    std::shared_ptr<SLE> sleDirNode{};
-    unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::zero};
-
-    if (view().exists(ownerDirKeylet) &&
-        dirFirst(view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
-    {
-        do
-        {
-            // Choose the right way to delete each directory node.
-            auto sleItem = view().peek(keylet::child(dirEntry));
-            if (!sleItem)
-            {
-                // Directory node has an invalid index.  Bail out.
-                JLOG(j_.fatal())
-                    << "DeleteAccount: Directory node in ledger "
-                    << view().seq() << " has index to object that is missing: "
-                    << to_string(dirEntry);
-                return tefBAD_LEDGER;
-            }
-
-            LedgerEntryType const nodeType{safe_cast<LedgerEntryType>(
-                sleItem->getFieldU16(sfLedgerEntryType))};
-
+    auto const ter = cleanupOnAccountDelete(
+        view(),
+        ownerDirKeylet,
+        [&](LedgerEntryType nodeType,
+            uint256 const& dirEntry,
+            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
             if (auto deleter = nonObligationDeleter(nodeType))
             {
                 TER const result{
                     deleter(ctx_.app, view(), account_, dirEntry, sleItem, j_)};
 
-                if (!isTesSuccess(result))
-                    return result;
-            }
-            else
-            {
-                assert(!"Undeletable entry should be found in preclaim.");
-                JLOG(j_.error())
-                    << "DeleteAccount undeletable item not found in preclaim.";
-                return tecHAS_OBLIGATIONS;
+                return {result, SkipEntry::No};
             }
 
-            // dirFirst() and dirNext() are like iterators with exposed
-            // internal state.  We'll take advantage of that exposed state
-            // to solve a common C++ problem: iterator invalidation while
-            // deleting elements from a container.
-            //
-            // We have just deleted one directory entry, which means our
-            // "iterator state" is invalid.
-            //
-            //  1. During the process of getting an entry from the
-            //     directory uDirEntry was incremented from 0 to 1.
-            //
-            //  2. We then deleted the entry at index 0, which means the
-            //     entry that was at 1 has now moved to 0.
-            //
-            //  3. So we verify that uDirEntry is indeed 1.  Then we jam it
-            //     back to zero to "un-invalidate" the iterator.
-            assert(uDirEntry == 1);
-            if (uDirEntry != 1)
-            {
-                JLOG(j_.error())
-                    << "DeleteAccount iterator re-validation failed.";
-                return tefBAD_LEDGER;
-            }
-            uDirEntry = 0;
-
-        } while (dirNext(
-            view(), ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
-    }
+            assert(!"Undeletable entry should be found in preclaim.");
+            JLOG(j_.error()) << "DeleteAccount undeletable item not "
+                                "found in preclaim.";
+            return {tecHAS_OBLIGATIONS, SkipEntry::No};
+        },
+        ctx_.journal);
+    if (ter != tesSUCCESS)
+        return ter;
 
     // Transfer any XRP remaining after the fee is paid to the destination:
     (*dst)[sfBalance] = (*dst)[sfBalance] + mSourceBalance;

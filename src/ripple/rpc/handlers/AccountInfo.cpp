@@ -34,8 +34,6 @@ namespace ripple {
 
 // {
 //   account: <ident>,
-//   strict: <bool>        // optional (default false)
-//                         //   if true only allow public keys and addresses.
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 //   signer_lists : <bool> // optional (default false)
@@ -67,15 +65,14 @@ doAccountInfo(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    bool bStrict = params.isMember(jss::strict) && params[jss::strict].asBool();
-    AccountID accountID;
-
     // Get info on account.
-
-    auto jvAccepted = RPC::accountFromString(accountID, strIdent, bStrict);
-
-    if (jvAccepted)
-        return jvAccepted;
+    auto id = parseBase58<AccountID>(strIdent);
+    if (!id)
+    {
+        RPC::inject_error(rpcACT_MALFORMED, result);
+        return result;
+    }
+    auto const accountID{std::move(id.value())};
 
     static constexpr std::
         array<std::pair<std::string_view, LedgerSpecificFlags>, 9>
@@ -99,6 +96,10 @@ doAccountInfo(RPC::JsonContext& context)
                  {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
                  {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
 
+    static constexpr std::pair<std::string_view, LedgerSpecificFlags>
+        allowTrustLineClawbackFlag{
+            "allowTrustLineClawback", lsfAllowTrustLineClawback};
+
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
     {
@@ -113,6 +114,7 @@ doAccountInfo(RPC::JsonContext& context)
             return result;
         }
 
+        Json::Value jvAccepted(Json::objectValue);
         RPC::injectSLE(jvAccepted, *sleAccepted);
         result[jss::account_data] = jvAccepted;
 
@@ -125,7 +127,23 @@ doAccountInfo(RPC::JsonContext& context)
             for (auto const& lsf : disallowIncomingFlags)
                 acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
         }
+
+        if (ledger->rules().enabled(featureClawback))
+            acctFlags[allowTrustLineClawbackFlag.first.data()] =
+                sleAccepted->isFlag(allowTrustLineClawbackFlag.second);
+
         result[jss::account_flags] = std::move(acctFlags);
+
+        // The document[https://xrpl.org/account_info.html#account_info] states
+        // that signer_lists is a bool, however assigning any string value
+        // works. Do not allow this. This check is for api Version 2 onwards
+        // only
+        if (context.apiVersion > 1u && params.isMember(jss::signer_lists) &&
+            !params[jss::signer_lists].isBool())
+        {
+            RPC::inject_error(rpcINVALID_PARAMS, result);
+            return result;
+        }
 
         // Return SignerList(s) if that is requested.
         if (params.isMember(jss::signer_lists) &&

@@ -47,8 +47,8 @@ enum error_code_i {
     rpcJSON_RPC = 2,
     rpcFORBIDDEN = 3,
 
+    rpcWRONG_NETWORK = 4,
     // Misc failure
-    // unused                  4,
     // unused                  5,
     rpcNO_PERMISSION = 6,
     rpcNO_EVENTS = 7,
@@ -78,7 +78,7 @@ enum error_code_i {
     // unused                  27,
     // unused                  28,
     rpcTXN_NOT_FOUND = 29,
-    // unused                  30,
+    rpcINVALID_HOTWALLET = 30,
 
     // Malformed command
     rpcINVALID_PARAMS = 31,
@@ -142,8 +142,10 @@ enum error_code_i {
 
     rpcOBJECT_NOT_FOUND = 92,
 
-    rpcLAST =
-        rpcOBJECT_NOT_FOUND  // rpcLAST should always equal the last code.=
+    // AMM
+    rpcISSUE_MALFORMED = 93,
+
+    rpcLAST = rpcISSUE_MALFORMED  // rpcLAST should always equal the last code.=
 };
 
 /** Codes returned in the `warnings` array of certain RPC commands.

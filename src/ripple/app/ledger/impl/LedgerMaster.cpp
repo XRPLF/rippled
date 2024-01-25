@@ -598,6 +598,54 @@ LedgerMaster::clearLedger(std::uint32_t seq)
     mCompleteLedgers.erase(seq);
 }
 
+bool
+LedgerMaster::isValidated(ReadView const& ledger)
+{
+    if (app_.config().reporting())
+        return true;  // Reporting mode only supports validated ledger
+
+    if (ledger.open())
+        return false;
+
+    if (ledger.info().validated)
+        return true;
+
+    auto const seq = ledger.info().seq;
+    try
+    {
+        // Use the skip list in the last validated ledger to see if ledger
+        // comes before the last validated ledger (and thus has been
+        // validated).
+        auto const hash = walkHashBySeq(seq, InboundLedger::Reason::GENERIC);
+
+        if (!hash || ledger.info().hash != *hash)
+        {
+            // This ledger's hash is not the hash of the validated ledger
+            if (hash)
+            {
+                assert(hash->isNonZero());
+                uint256 valHash =
+                    app_.getRelationalDatabase().getHashByIndex(seq);
+                if (valHash == ledger.info().hash)
+                {
+                    // SQL database doesn't match ledger chain
+                    clearLedger(seq);
+                }
+            }
+            return false;
+        }
+    }
+    catch (SHAMapMissingNode const& mn)
+    {
+        JLOG(m_journal.warn()) << "Ledger #" << seq << ": " << mn.what();
+        return false;
+    }
+
+    // Mark ledger as validated to save time if we see it again.
+    ledger.info().validated = true;
+    return true;
+}
+
 // returns Ledgers we have all the nodes for
 bool
 LedgerMaster::getFullValidatedRange(
@@ -1495,6 +1543,7 @@ LedgerMaster::updatePaths()
         if (app_.getOPs().isNeedNetworkLedger())
         {
             --mPathFindThread;
+            mPathLedger.reset();
             JLOG(m_journal.debug()) << "Need network ledger for updating paths";
             return;
         }
@@ -1520,6 +1569,7 @@ LedgerMaster::updatePaths()
             else
             {  // Nothing to do
                 --mPathFindThread;
+                mPathLedger.reset();
                 JLOG(m_journal.debug()) << "Nothing to do for updating paths";
                 return;
             }
@@ -1536,6 +1586,7 @@ LedgerMaster::updatePaths()
                     << "Published ledger too old for updating paths";
                 std::lock_guard ml(m_mutex);
                 --mPathFindThread;
+                mPathLedger.reset();
                 return;
             }
         }
@@ -1548,6 +1599,7 @@ LedgerMaster::updatePaths()
                 if (!pathRequests.requestsPending())
                 {
                     --mPathFindThread;
+                    mPathLedger.reset();
                     JLOG(m_journal.debug())
                         << "No path requests found. Nothing to do for updating "
                            "paths. "
@@ -1565,6 +1617,7 @@ LedgerMaster::updatePaths()
                     << "No path requests left. No need for further updating "
                        "paths";
                 --mPathFindThread;
+                mPathLedger.reset();
                 return;
             }
         }
@@ -2367,6 +2420,27 @@ std::optional<LedgerIndex>
 LedgerMaster::minSqlSeq()
 {
     return app_.getRelationalDatabase().getMinLedgerSeq();
+}
+
+std::optional<uint256>
+LedgerMaster::txnIdFromIndex(uint32_t ledgerSeq, uint32_t txnIndex)
+{
+    uint32_t first = 0, last = 0;
+
+    if (!getValidatedRange(first, last) || last < ledgerSeq)
+        return {};
+
+    auto const lgr = getLedgerBySeq(ledgerSeq);
+    if (!lgr || lgr->txs.empty())
+        return {};
+
+    for (auto it = lgr->txs.begin(); it != lgr->txs.end(); ++it)
+        if (it->first && it->second &&
+            it->second->isFieldPresent(sfTransactionIndex) &&
+            it->second->getFieldU32(sfTransactionIndex) == txnIndex)
+            return it->first->getTransactionID();
+
+    return {};
 }
 
 }  // namespace ripple

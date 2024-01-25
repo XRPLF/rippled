@@ -22,7 +22,6 @@
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/mulDiv.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/protocol/st.h>
@@ -36,7 +35,7 @@ namespace ripple {
 
 namespace test {
 
-class TxQ1_test : public beast::unit_test::suite
+class TxQPosNegFlows_test : public beast::unit_test::suite
 {
     void
     checkMetrics(
@@ -4844,13 +4843,13 @@ public:
                     drops[jss::base_fee] == "0");
                 BEAST_EXPECT(
                     drops.isMember(jss::median_fee) &&
-                    drops[jss::base_fee] == "0");
+                    drops[jss::median_fee] == "0");
                 BEAST_EXPECT(
                     drops.isMember(jss::minimum_fee) &&
-                    drops[jss::base_fee] == "0");
+                    drops[jss::minimum_fee] == "0");
                 BEAST_EXPECT(
                     drops.isMember(jss::open_ledger_fee) &&
-                    drops[jss::base_fee] == "0");
+                    drops[jss::open_ledger_fee] == "0");
             }
         }
 
@@ -4950,7 +4949,7 @@ public:
     }
 
     void
-    run2()
+    runMetaInfo()
     {
         testAcctInQueueButEmpty();
         testRPC();
@@ -4971,17 +4970,17 @@ public:
     }
 };
 
-class TxQ2_test : public TxQ1_test
+class TxQMetaInfo_test : public TxQPosNegFlows_test
 {
     void
     run() override
     {
-        run2();
+        runMetaInfo();
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(TxQ1, app, ripple, 1);
-BEAST_DEFINE_TESTSUITE_PRIO(TxQ2, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(TxQPosNegFlows, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(TxQMetaInfo, app, ripple, 1);
 
 }  // namespace test
 }  // namespace ripple

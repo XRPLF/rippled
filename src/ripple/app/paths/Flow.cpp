@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/paths/AMMContext.h>
 #include <ripple/app/paths/Credit.h>
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/impl/AmountSpec.h>
@@ -64,7 +65,7 @@ flow(
     bool defaultPaths,
     bool partialPayment,
     bool ownerPaysTransferFee,
-    bool offerCrossing,
+    OfferCrossing offerCrossing,
     std::optional<Quality> const& limitQuality,
     std::optional<STAmount> const& sendMax,
     beast::Journal j,
@@ -84,6 +85,8 @@ flow(
     if (sendMax)
         sendMaxIssue = sendMax->issue();
 
+    AMMContext ammContext(src, false);
+
     // convert the paths to a collection of strands. Each strand is the
     // collection of account->account steps and book steps that may be used in
     // this payment.
@@ -98,6 +101,7 @@ flow(
         defaultPaths,
         ownerPaysTransferFee,
         offerCrossing,
+        ammContext,
         j);
 
     if (toStrandsTer != tesSUCCESS)
@@ -106,6 +110,8 @@ flow(
         result.setResult(toStrandsTer);
         return result;
     }
+
+    ammContext.setMultiPath(strands.size() > 1);
 
     if (j.trace())
     {
@@ -145,6 +151,7 @@ flow(
                 limitQuality,
                 sendMax,
                 j,
+                ammContext,
                 flowDebugInfo));
     }
 
@@ -163,6 +170,7 @@ flow(
                 limitQuality,
                 sendMax,
                 j,
+                ammContext,
                 flowDebugInfo));
     }
 
@@ -181,6 +189,7 @@ flow(
                 limitQuality,
                 sendMax,
                 j,
+                ammContext,
                 flowDebugInfo));
     }
 
@@ -198,6 +207,7 @@ flow(
             limitQuality,
             sendMax,
             j,
+            ammContext,
             flowDebugInfo));
 }
 

@@ -21,6 +21,7 @@
 #define RIPPLE_RPC_RPCHELPERS_H_INCLUDED
 
 #include <ripple/beast/core/SemanticVersion.h>
+#include <ripple/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
 #include <ripple/protocol/TxMeta.h>
 
 #include <ripple/app/misc/NetworkOPs.h>
@@ -30,7 +31,6 @@
 #include <ripple/rpc/Status.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <optional>
-#include <org/xrpl/rpc/v1/xrp_ledger.pb.h>
 #include <variant>
 
 namespace Json {
@@ -166,12 +166,6 @@ ledgerFromSpecifier(
     org::xrpl::rpc::v1::LedgerSpecifier const& specifier,
     Context& context);
 
-bool
-isValidated(
-    LedgerMaster& ledgerMaster,
-    ReadView const& ledger,
-    Application& app);
-
 hash_set<AccountID>
 parseAccountIds(Json::Value const& jvArray);
 
@@ -206,9 +200,6 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error);
 std::optional<Seed>
 parseRippleLibSeed(Json::Value const& params);
 
-std::pair<PublicKey, SecretKey>
-keypairForSignature(Json::Value const& params, Json::Value& error);
-
 /**
  * API version numbers used in API version 1
  */
@@ -241,12 +232,15 @@ extern beast::SemanticVersion const lastVersion;
 constexpr unsigned int apiInvalidVersion = 0;
 constexpr unsigned int apiVersionIfUnspecified = 1;
 constexpr unsigned int apiMinimumSupportedVersion = 1;
-constexpr unsigned int apiMaximumSupportedVersion = 1;
-constexpr unsigned int apiBetaVersion = 2;
+constexpr unsigned int apiMaximumSupportedVersion = 2;
+constexpr unsigned int apiCommandLineVersion = 1;  // TODO Bump to 2 later
+constexpr unsigned int apiBetaVersion = 3;
+constexpr unsigned int apiMaximumValidVersion = apiBetaVersion;
 
 static_assert(apiMinimumSupportedVersion >= apiVersionIfUnspecified);
 static_assert(apiMaximumSupportedVersion >= apiMinimumSupportedVersion);
 static_assert(apiBetaVersion >= apiMaximumSupportedVersion);
+static_assert(apiMaximumValidVersion >= apiMaximumSupportedVersion);
 
 template <class Object>
 void
@@ -293,6 +287,11 @@ getAPIVersionNumber(const Json::Value& value, bool betaEnabled);
 std::variant<std::shared_ptr<Ledger const>, Json::Value>
 getLedgerByContext(RPC::JsonContext& context);
 
+std::pair<PublicKey, SecretKey>
+keypairForSignature(
+    Json::Value const& params,
+    Json::Value& error,
+    unsigned int apiVersion = apiVersionIfUnspecified);
 }  // namespace RPC
 }  // namespace ripple
 
