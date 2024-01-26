@@ -150,7 +150,7 @@ to_uint64(std::string const& s);
     doesn't check whether the TLD is valid.
  */
 bool
-isProperlyFormedTomlDomain(std::string_view const& domain);
+isProperlyFormedTomlDomain(std::string_view domain);
 
 }  // namespace ripple
 

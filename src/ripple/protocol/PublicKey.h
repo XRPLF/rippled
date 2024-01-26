@@ -192,7 +192,7 @@ toBase58(TokenType type, PublicKey const& pk)
 
 template <>
 std::optional<PublicKey>
-parseBase58(TokenType type, std::string_view const& s);
+parseBase58(TokenType type, std::string_view s);
 
 enum class ECDSACanonicality { canonical, fullyCanonical };
 

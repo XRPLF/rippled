@@ -373,7 +373,7 @@ randomKeyPair(KeyType type)
 
 template <>
 std::optional<SecretKey>
-parseBase58(TokenType type, std::string_view const& s)
+parseBase58(TokenType type, std::string_view s)
 {
     auto const result = decodeBase58Token(s, type);
     if (result.empty())

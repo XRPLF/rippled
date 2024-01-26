@@ -147,7 +147,7 @@ encodeBase58(
 }
 
 static std::string
-decodeBase58(std::string_view const& s)
+decodeBase58(std::string_view s)
 {
     auto psz = reinterpret_cast<unsigned char const*>(s.data());
     auto remain = s.size();
@@ -220,7 +220,7 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
 }
 
 std::string
-decodeBase58Token(std::string_view const& s, TokenType type)
+decodeBase58Token(std::string_view s, TokenType type)
 {
     std::string const ret = detail::decodeBase58(s);
 

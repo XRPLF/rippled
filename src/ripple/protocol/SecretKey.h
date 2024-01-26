@@ -114,7 +114,7 @@ operator!=(SecretKey const& lhs, SecretKey const& rhs)
 /** Parse a secret key */
 template <>
 std::optional<SecretKey>
-parseBase58(TokenType type, std::string_view const& s);
+parseBase58(TokenType type, std::string_view s);
 
 inline std::string
 toBase58(TokenType type, SecretKey const& sk)

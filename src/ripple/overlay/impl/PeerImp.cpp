@@ -158,7 +158,7 @@ PeerImp::run()
         return post(strand_, std::bind(&PeerImp::run, shared_from_this()));
 
     auto parseLedgerHash =
-        [](std::string_view const& value) -> std::optional<uint256> {
+        [](std::string_view value) -> std::optional<uint256> {
         if (uint256 ret; ret.parseHex(value))
             return ret;
 

@@ -79,7 +79,7 @@ struct LexicalCast<Out, std::string_view>
     std::enable_if_t<
         std::is_integral_v<Integral> && !std::is_same_v<Integral, bool>,
         bool>
-    operator()(Integral& out, std::string_view const& in) const
+    operator()(Integral& out, std::string_view in) const
     {
         auto first = in.data();
         auto last = in.data() + in.size();
@@ -93,7 +93,7 @@ struct LexicalCast<Out, std::string_view>
     }
 
     bool
-    operator()(bool& out, std::string_view const& in) const
+    operator()(bool& out, std::string_view in) const
     {
         std::string result;
 
