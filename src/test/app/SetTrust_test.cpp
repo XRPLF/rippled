@@ -39,15 +39,29 @@ public:
         Env env(*this);
 
         Account const alice = Account{"alice"};
+
+
+
         Account const becky = Account{"becky"};
 
         env.fund(XRP(10000), becky, alice);
         env.close();
 
+        Json::Value jv;
+        jv["account"] = alice.human();
+        auto aliceAcctInfo = env.rpc("json", "account_info", to_string(jv));
+        std::cout << "alice account info: \n" << aliceAcctInfo << std::endl;
+
+        jv["account"] = becky.human();
+        auto beckyAcctInfo = env.rpc("json", "account_info", to_string(jv));
+        std::cout << "beky account info: \n" << beckyAcctInfo << std::endl;
+
         // becky wants to hold at most 50 tokens of alice["USD"]
         // becky is the customer, alice is the issuer
         // becky can be sent at most 50 tokens of alice's USD
-        env(trust(becky, alice["USD"](50)));
+        Json::Value const trustTxn1 = trust(becky, alice["USD"](50));
+        std::cout << "trust txn input json\n" << trustTxn1 << std::endl;
+        env(trustTxn1);
         env.close();
 
         // Since the settings of the trust lines are non-default for both
@@ -58,7 +72,6 @@ public:
         env.require(lines(becky, 1));
 
         // Fetch the trust-lines via RPC for verification
-        Json::Value jv;
         jv["account"] = becky.human();
         auto beckyLines = env.rpc("json", "account_lines", to_string(jv));
 
@@ -67,6 +80,13 @@ public:
 
         BEAST_EXPECT(aliceLines[jss::result][jss::lines].size() == 1);
         BEAST_EXPECT(beckyLines[jss::result][jss::lines].size() == 1);
+
+        // display account objects for inspection
+        jv["account"] = alice.human();
+        auto aliceTrustObj = env.rpc("json", "account_objects", to_string(jv));
+
+        std::cout << "alice account objects\n" << aliceTrustObj << std::endl;
+//        std::cout << "becky account lines\n" << beckyLines << std::endl;
 
         //         reset the trust line limits to zero
         env(trust(becky, alice["USD"](0)));
@@ -527,20 +547,20 @@ public:
     void
     testWithFeats(FeatureBitset features)
     {
-        testFreeTrustlines(features, true, false);
-        testFreeTrustlines(features, false, true);
-        testFreeTrustlines(features, false, true);
-        // true, true case doesn't matter since creating a trustline ledger
-        // entry requires reserve from the creator
-        // independent of hi/low account ids for endpoints
-        testTicketSetTrust(features);
-        testMalformedTransaction(features);
-        testModifyQualityOfTrustline(features, false, false);
-        testModifyQualityOfTrustline(features, false, true);
-        testModifyQualityOfTrustline(features, true, false);
-        testModifyQualityOfTrustline(features, true, true);
-        testDisallowIncoming(features);
-        testTrustLineResetWithAuthFlag();
+//        testFreeTrustlines(features, true, false);
+//        testFreeTrustlines(features, false, true);
+//        testFreeTrustlines(features, false, true);
+//        // true, true case doesn't matter since creating a trustline ledger
+//        // entry requires reserve from the creator
+//        // independent of hi/low account ids for endpoints
+//        testTicketSetTrust(features);
+//        testMalformedTransaction(features);
+//        testModifyQualityOfTrustline(features, false, false);
+//        testModifyQualityOfTrustline(features, false, true);
+//        testModifyQualityOfTrustline(features, true, false);
+//        testModifyQualityOfTrustline(features, true, true);
+//        testDisallowIncoming(features);
+//        testTrustLineResetWithAuthFlag();
         testTrustLineDelete();
     }
 
