@@ -197,12 +197,11 @@ existing maintainer without a vote.
 
 ## Current Maintainers
 
-Maintainers are users with admin access to the repo. Maintainers do not approve or deny pull requests.
+Maintainers are users with admin access to the repo. Maintainers do not typically approve or deny pull requests.
 
 * [intelliot](https://github.com/intelliot) (Ripple)
 * [JoelKatz](https://github.com/JoelKatz) (Ripple)
 * [nixer89](https://github.com/nixer89) (XRP Ledger Foundation)
-* [RichardAH](https://github.com/RichardAH) (XRPL Labs + XRP Ledger Foundation)
 * [Silkjaer](https://github.com/Silkjaer) (XRP Ledger Foundation)
 * [WietseWind](https://github.com/WietseWind) (XRPL Labs + XRP Ledger Foundation)
 
