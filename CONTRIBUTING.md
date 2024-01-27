@@ -212,14 +212,13 @@ Code Reviewers are developers who have the ability to review and approve source 
 ### Main Reviewers
 
 * [HowardHinnant](https://github.com/HowardHinnant) (Ripple)
-* [thejohnfreeman](https://github.com/thejohnfreeman) (Ripple)
 * [scottschurr](https://github.com/scottschurr) (Ripple)
 * [seelabs](https://github.com/seelabs) (Ripple)
 * [Ed Hennis](https://github.com/ximinez) (Ripple)
-* [sophiax851](https://github.com/sophiax851) (Ripple)
 
 ### Other Reviewers
 * [mvadari](https://github.com/mvadari) (Ripple)
+* [thejohnfreeman](https://github.com/thejohnfreeman) (Ripple)
 * [Bronek](https://github.com/Bronek) (Ripple)
 * [manojsdoshi](https://github.com/manojsdoshi) (Ripple)
 * [godexsoft](https://github.com/godexsoft) (Ripple)
