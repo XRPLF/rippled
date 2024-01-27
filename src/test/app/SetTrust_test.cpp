@@ -40,8 +40,6 @@ public:
 
         Account const alice = Account{"alice"};
 
-
-
         Account const becky = Account{"becky"};
 
         env.fund(XRP(10000), becky, alice);
@@ -86,7 +84,8 @@ public:
         auto aliceTrustObj = env.rpc("json", "account_objects", to_string(jv));
 
         std::cout << "alice account objects\n" << aliceTrustObj << std::endl;
-//        std::cout << "becky account lines\n" << beckyLines << std::endl;
+        //        std::cout << "becky account lines\n" << beckyLines <<
+        //        std::endl;
 
         //         reset the trust line limits to zero
         env(trust(becky, alice["USD"](0)));
@@ -362,6 +361,100 @@ public:
     }
 
     void
+    testExceedTrustLineLimit()
+    {
+        testcase(
+            "Ensure that trust line limits are respected in payment "
+            "transactions");
+
+        using namespace jtx;
+        Env env{*this};
+
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        env.fund(XRP(10000), gw, alice);
+
+        // alice wants to hold at most 100 of gw's USD tokens
+        env(trust(alice, gw["USD"](100)));
+        env.close();
+
+        // send a payment for a large quantity through the trust line
+        env(pay(gw, alice, gw["USD"](200)), ter(tecPATH_PARTIAL));
+        env.close();
+
+        // on the other hand, smaller payments should succeed
+        env(pay(gw, alice, gw["USD"](20)));
+        env.close();
+    }
+
+    void
+    testAuthFlagTrustLines()
+    {
+        testcase(
+            "Ensure that authorised trust lines do not allow payments "
+            "from unauthorised counter-parties");
+
+        using namespace jtx;
+        Env env{*this};
+
+        auto const bob = Account{"bob"};
+        auto const alice = Account{"alice"};
+        env.fund(XRP(10000), bob, alice);
+
+        // alice wants to ensure that all holders of her tokens are authorised
+        env(fset(alice, asfRequireAuth));
+        env.close();
+
+        // create a trust line from bob to alice. bob wants to hold at most
+        // 100 of alice's USD tokens. Note: alice hasn't authorised this
+        // trust line yet.
+        env(trust(bob, alice["USD"](100)));
+        env.close();
+
+        // send a payment from alice to bob, validate that the payment fails
+        env(pay(alice, bob, alice["USD"](10)), ter(tecPATH_DRY));
+        env.close();
+    }
+
+    void
+    testTrustLineLimitsWithRippling()
+    {
+        testcase(
+            "Check that trust line limits are respected in conjunction "
+            "with rippling feature");
+
+        using namespace jtx;
+        Env env{*this};
+
+        auto const bob = Account{"bob"};
+        auto const alice = Account{"alice"};
+        env.fund(XRP(10000), bob, alice);
+
+        // create a trust line from bob to alice. bob wants to hold at most
+        // 100 of alice's USD tokens.
+        env(trust(bob, alice["USD"](100)));
+        env.close();
+
+        // archetypical payment transaction from alice to bob must succeed
+        env(pay(alice, bob, alice["USD"](20)), ter(tesSUCCESS));
+        env.close();
+
+        // Issued tokens are fungible. i.e. alice's USD is identical to bob's
+        // USD
+        env(pay(bob, alice, bob["USD"](10)), ter(tesSUCCESS));
+        env.close();
+
+        // bob cannot place alice in his debt i.e. alice's balance of the USD
+        // tokens cannot go below zero.
+        env(pay(bob, alice, bob["USD"](11)), ter(tecPATH_PARTIAL));
+        env.close();
+
+        // payments that respect the trust line limits of alice should succeed
+        env(pay(bob, alice, bob["USD"](10)), ter(tesSUCCESS));
+        env.close();
+    }
+
+    void
     testModifyQualityOfTrustline(
         FeatureBitset features,
         bool createQuality,
@@ -547,21 +640,24 @@ public:
     void
     testWithFeats(FeatureBitset features)
     {
-//        testFreeTrustlines(features, true, false);
-//        testFreeTrustlines(features, false, true);
-//        testFreeTrustlines(features, false, true);
-//        // true, true case doesn't matter since creating a trustline ledger
-//        // entry requires reserve from the creator
-//        // independent of hi/low account ids for endpoints
-//        testTicketSetTrust(features);
-//        testMalformedTransaction(features);
-//        testModifyQualityOfTrustline(features, false, false);
-//        testModifyQualityOfTrustline(features, false, true);
-//        testModifyQualityOfTrustline(features, true, false);
-//        testModifyQualityOfTrustline(features, true, true);
-//        testDisallowIncoming(features);
-//        testTrustLineResetWithAuthFlag();
+        testFreeTrustlines(features, true, false);
+        testFreeTrustlines(features, false, true);
+        testFreeTrustlines(features, false, true);
+        // true, true case doesn't matter since creating a trustline ledger
+        // entry requires reserve from the creator
+        // independent of hi/low account ids for endpoints
+        testTicketSetTrust(features);
+        testMalformedTransaction(features);
+        testModifyQualityOfTrustline(features, false, false);
+        testModifyQualityOfTrustline(features, false, true);
+        testModifyQualityOfTrustline(features, true, false);
+        testModifyQualityOfTrustline(features, true, true);
+        testDisallowIncoming(features);
+        testTrustLineResetWithAuthFlag();
         testTrustLineDelete();
+        testExceedTrustLineLimit();
+        testAuthFlagTrustLines();
+        testTrustLineLimitsWithRippling();
     }
 
 public:
