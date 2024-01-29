@@ -57,7 +57,8 @@ AMM::AMM(
     std::optional<std::uint32_t> flags,
     std::optional<jtx::seq> seq,
     std::optional<jtx::msig> ms,
-    std::optional<ter> const& ter)
+    std::optional<ter> const& ter,
+    bool close)
     : env_(env)
     , creatorAccount_(account)
     , asset1_(asset1)
@@ -65,7 +66,7 @@ AMM::AMM(
     , ammID_(keylet::amm(asset1_.issue(), asset2_.issue()).key)
     , initialLPTokens_(initialTokens(asset1, asset2))
     , log_(log)
-    , doClose_(true)
+    , doClose_(close)
     , lastPurchasePrice_(0)
     , bidMin_()
     , bidMax_()
@@ -85,7 +86,8 @@ AMM::AMM(
     STAmount const& asset1,
     STAmount const& asset2,
     ter const& ter,
-    bool log)
+    bool log,
+    bool close)
     : AMM(env,
           account,
           asset1,
@@ -96,7 +98,29 @@ AMM::AMM(
           std::nullopt,
           std::nullopt,
           std::nullopt,
-          ter)
+          ter,
+          close)
+{
+}
+
+AMM::AMM(
+    Env& env,
+    Account const& account,
+    STAmount const& asset1,
+    STAmount const& asset2,
+    CreateArg const& arg)
+    : AMM(env,
+          account,
+          asset1,
+          asset2,
+          arg.log,
+          arg.tfee,
+          arg.fee,
+          arg.flags,
+          arg.seq,
+          arg.ms,
+          arg.ter,
+          arg.close)
 {
 }
 

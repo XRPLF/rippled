@@ -57,6 +57,18 @@ public:
     }
 };
 
+struct CreateArg
+{
+    bool log = false;
+    std::uint16_t tfee = 0;
+    std::uint32_t fee = 0;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<jtx::seq> seq = std::nullopt;
+    std::optional<jtx::msig> ms = std::nullopt;
+    std::optional<ter> ter = std::nullopt;
+    bool close = true;
+};
+
 /** Convenience class to test AMM functionality.
  */
 class AMM
@@ -91,13 +103,20 @@ public:
         std::optional<std::uint32_t> flags = std::nullopt,
         std::optional<jtx::seq> seq = std::nullopt,
         std::optional<jtx::msig> ms = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<ter> const& ter = std::nullopt,
+        bool close = true);
     AMM(Env& env,
         Account const& account,
         STAmount const& asset1,
         STAmount const& asset2,
         ter const& ter,
-        bool log = false);
+        bool log = false,
+        bool close = true);
+    AMM(Env& env,
+        Account const& account,
+        STAmount const& asset1,
+        STAmount const& asset2,
+        CreateArg const& arg);
 
     /** Send amm_info RPC command
      */
@@ -200,14 +219,15 @@ public:
     IOUAmount
     withdrawAll(
         std::optional<Account> const& account,
-        std::optional<STAmount> const& asset1OutDetails = std::nullopt)
+        std::optional<STAmount> const& asset1OutDetails = std::nullopt,
+        std::optional<ter> const& ter = std::nullopt)
     {
         return withdraw(
             account,
             std::nullopt,
             asset1OutDetails,
             asset1OutDetails ? tfOneAssetWithdrawAll : tfWithdrawAll,
-            std::nullopt);
+            ter);
     }
 
     IOUAmount

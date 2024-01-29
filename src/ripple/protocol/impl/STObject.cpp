@@ -35,6 +35,18 @@ STObject::STObject(SField const& name) : STBase(name), mType(nullptr)
 {
 }
 
+STObject::STObject(SField const& name, bool fixInnerObjTemplateEnabled)
+    : STBase(name), mType(nullptr)
+{
+    if (fixInnerObjTemplateEnabled)
+    {
+        SOTemplate const* elements =
+            InnerObjectFormats::getInstance().findSOTemplateBySField(name);
+        if (elements)
+            set(*elements);
+    }
+}
+
 STObject::STObject(SOTemplate const& type, SField const& name) : STBase(name)
 {
     set(type);
@@ -629,6 +641,12 @@ STObject::getFieldArray(SField const& field) const
 
 void
 STObject::set(std::unique_ptr<STBase> v)
+{
+    set(v.get());
+}
+
+void
+STObject::set(STBase* v)
 {
     auto const i = getFieldIndex(v->getFName());
     if (i != -1)

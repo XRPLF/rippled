@@ -101,6 +101,7 @@ public:
     STObject(SerialIter& sit, SField const& name, int depth = 0);
     STObject(SerialIter&& sit, SField const& name);
     explicit STObject(SField const& name);
+    STObject(SField const& name, bool fixInnerObjTemplateEnabled);
 
     iterator
     begin() const;

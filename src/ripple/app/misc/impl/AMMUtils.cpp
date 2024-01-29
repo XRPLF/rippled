@@ -287,9 +287,10 @@ initializeFeeAuctionVote(
     Issue const& lptIssue,
     std::uint16_t tfee)
 {
+    bool fixInnerObj(view.rules().enabled(fixInnerObjTemplate));
     // AMM creator gets the voting slot.
     STArray voteSlots;
-    STObject voteEntry{sfVoteEntry};
+    STObject voteEntry{sfVoteEntry, fixInnerObj};
     if (tfee != 0)
         voteEntry.setFieldU16(sfTradingFee, tfee);
     voteEntry.setFieldU32(sfVoteWeight, VOTE_WEIGHT_SCALE_FACTOR);
@@ -297,7 +298,7 @@ initializeFeeAuctionVote(
     voteSlots.push_back(voteEntry);
     ammSle->setFieldArray(sfVoteSlots, voteSlots);
     // AMM creator gets the auction slot for free.
-    auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
+    STObject auctionSlot{sfAuctionSlot, fixInnerObj};
     auctionSlot.setAccountID(sfAccount, account);
     // current + sec in 24h
     auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(
@@ -315,6 +316,7 @@ initializeFeeAuctionVote(
         auctionSlot.setFieldU16(sfDiscountedFee, dfee);
     else if (auctionSlot.isFieldPresent(sfDiscountedFee))
         auctionSlot.makeFieldAbsent(sfDiscountedFee);
+    ammSle->set(&auctionSlot);
 }
 
 }  // namespace ripple
