@@ -119,7 +119,7 @@ AMM::AMM(
           arg.flags,
           arg.seq,
           arg.ms,
-          arg.ter,
+          arg.err,
           arg.close)
 {
 }

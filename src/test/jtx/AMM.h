@@ -65,7 +65,7 @@ struct CreateArg
     std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<jtx::seq> seq = std::nullopt;
     std::optional<jtx::msig> ms = std::nullopt;
-    std::optional<ter> ter = std::nullopt;
+    std::optional<ter> err = std::nullopt;
     bool close = true;
 };
 
