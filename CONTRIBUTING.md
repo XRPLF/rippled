@@ -209,14 +209,10 @@ Maintainers are users with admin access to the repo. Maintainers do not typicall
 
 Code Reviewers are developers who have the ability to review and approve source code changes.
 
-### Main Reviewers
-
 * [HowardHinnant](https://github.com/HowardHinnant) (Ripple)
 * [scottschurr](https://github.com/scottschurr) (Ripple)
 * [seelabs](https://github.com/seelabs) (Ripple)
 * [Ed Hennis](https://github.com/ximinez) (Ripple)
-
-### Other Reviewers
 * [mvadari](https://github.com/mvadari) (Ripple)
 * [thejohnfreeman](https://github.com/thejohnfreeman) (Ripple)
 * [Bronek](https://github.com/Bronek) (Ripple)
@@ -227,6 +223,8 @@ Code Reviewers are developers who have the ability to review and approve source 
 * [arihantkothari](https://github.com/arihantkothari) (Ripple)
 * [pwang200](https://github.com/pwang200) (Ripple)
 * [sophiax851](https://github.com/sophiax851) (Ripple)
+* [shawnxie999](https://github.com/shawnxie999) (Ripple)
+* [gregtatcam](https://github.com/gregtatcam) (Ripple)
 * [mtrippled](https://github.com/mtrippled) (Ripple)
 * [ckeshava](https://github.com/ckeshava) (Ripple)
 * [nbougalis](https://github.com/nbougalis) None
