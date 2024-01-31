@@ -425,11 +425,4 @@ If you want to experiment with a new package, follow these steps:
 [gcovr]: https://gcovr.com/en/stable/getting-started.html
 [python-pip]: https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/
 [build_type]: https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html
-[runtime]: https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html
-[toolchain]: https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html
-[pcf]: https://cmake.org/cmake/help/latest/manual/cmake-packages.7.html#package-configuration-file
-[pvf]: https://cmake.org/cmake/help/latest/manual/cmake-packages.7.html#package-version-file
-[find_package]: https://cmake.org/cmake/help/latest/command/find_package.html
-[search]: https://cmake.org/cmake/help/latest/command/find_package.html#search-procedure
-[prefix_path]: https://cmake.org/cmake/help/latest/variable/CMAKE_PREFIX_PATH.html
 [profile]: https://docs.conan.io/en/latest/reference/profiles.html
