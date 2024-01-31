@@ -1019,6 +1019,9 @@ public:
         // Fail in preflight
         env(pay(alice, bob, XRP(-1000)), ter(temBAD_AMOUNT));
 
+        // Fail in preflight
+        env(pay(alice, alice, XRP(100)), ter(temREDUNDANT));
+
         // Fail in preclaim
         env(noop(alice), fee(XRP(100000)), ter(terINSUF_FEE_B));
     }
