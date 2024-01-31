@@ -38,7 +38,8 @@ NFTokenMint::preflight(PreflightContext const& ctx)
         return temDISABLED;
 
     if (!ctx.rules.enabled(featureNFTokenMintOffer) &&
-        (ctx.tx.isFieldPresent(sfAmount) || ctx.tx.isFieldPresent(sfDestination) ||
+        (ctx.tx.isFieldPresent(sfAmount) ||
+         ctx.tx.isFieldPresent(sfDestination) ||
          ctx.tx.isFieldPresent(sfExpiration)))
         return temDISABLED;
 
@@ -86,7 +87,8 @@ NFTokenMint::preflight(PreflightContext const& ctx)
     }
 
     // Amount field should be set if Destination and/or Expiration is set
-    if (ctx.tx.isFieldPresent(sfDestination) || ctx.tx.isFieldPresent(sfExpiration))
+    if (ctx.tx.isFieldPresent(sfDestination) ||
+        ctx.tx.isFieldPresent(sfExpiration))
     {
         if (!ctx.tx.isFieldPresent(sfAmount))
             return temMALFORMED;
@@ -106,6 +108,16 @@ NFTokenMint::preflight(PreflightContext const& ctx)
             if (!*amount)
                 return temBAD_AMOUNT;
         }
+    }
+
+    if (auto exp = ctx.tx[~sfExpiration]; exp == 0)
+        return temBAD_EXPIRATION;
+
+    if (auto dest = ctx.tx[~sfDestination])
+    {
+        // The destination can't be the account executing the transaction.
+        if (dest == ctx.tx[sfAccount])
+            return temMALFORMED;
     }
 
     return preflight2(ctx);
@@ -344,7 +356,7 @@ NFTokenMint::doApply()
         // Create the offer:
         {
             // Token offers are always added to the owner's owner directory:
-            auto const ownerNode = view().dirInsert(
+            auto const ownerNode = ctx_.view().dirInsert(
                 keylet::ownerDir(account_),
                 offerID,
                 describeOwnerDir(account_));
@@ -352,11 +364,9 @@ NFTokenMint::doApply()
             if (!ownerNode)
                 return tecDIR_FULL;
 
-            bool const isSellOffer = true;
-
-            // Token offers are also added to the token's buy or sell offer
+            // Token offers are also added to the token's sell offer
             // directory
-            auto const offerNode = view().dirInsert(
+            auto const offerNode = ctx_.view().dirInsert(
                 keylet::nft_sells(nftokenID),
                 offerID,
                 [&nftokenID](std::shared_ptr<SLE> const& sle) {
@@ -367,10 +377,8 @@ NFTokenMint::doApply()
             if (!offerNode)
                 return tecDIR_FULL;
 
-            std::uint32_t sleFlags = 0;
-
-            if (isSellOffer)
-                sleFlags |= lsfSellNFToken;
+            // Only sell offer are supported at NFTokenMint.
+            std::uint32_t sleFlags = lsfSellNFToken;
 
             auto offer = std::make_shared<SLE>(offerID);
             (*offer)[sfOwner] = account_;
@@ -386,7 +394,13 @@ NFTokenMint::doApply()
             if (auto const destination = ctx_.tx[~sfDestination])
                 (*offer)[sfDestination] = *destination;
 
-            view().insert(offer);
+            ctx_.view().insert(offer);
+
+            adjustOwnerCount(
+                ctx_.view(),
+                ctx_.view().peek(keylet::account(account_)),
+                1,
+                j_);
         }
     }
 

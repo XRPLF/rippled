@@ -6567,9 +6567,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     }
 
     void
-    testFeatNFTokenMintAndOffer(FeatureBitset features)
+    testFeatMintWithOffer(FeatureBitset features)
     {
-        testcase("NFTokenMint and Create NFTokenOffer");
+        testcase("NFTokenMint with Create NFTokenOffer");
 
         using namespace test::jtx;
 
@@ -6591,53 +6591,111 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             Env env{*this, features};
             Account const alice("alice");
+            Account const buyer{"buyer"};
             Account const becky("becky");
 
-            env.fund(XRP(10000), alice, becky);
+            env.fund(XRP(10000), alice, buyer);
             env.close();
 
+          {
             // Destination field specified but Amount field not specified
             env(token::mint(alice),
-                token::destination(becky),
+                token::destination(buyer),
                 ter(temMALFORMED));
             env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
 
             // Expiration field specified but Amount field not specified
             env(token::mint(alice),
                 token::expiration(lastClose(env) + 25),
                 ter(temMALFORMED));
             env.close();
+            BEAST_EXPECT(ownerCount(env, buyer) == 0);
+          }
 
-            // Amount field specified
-            BEAST_EXPECT(ownerCount(env, alice) == 1);
-            env(token::mint(alice), token::amount(XRP(10)));
-            BEAST_EXPECT(ownerCount(env, alice) == 2);
-            env.close();
-
-            // Amount field and Destination field, Expiration field specified
+          {
+            // The destination may not be the account submitting the
+            // transaction.
             env(token::mint(alice),
-                token::amount(XRP(10)),
-                token::destination(becky),
-                token::expiration(lastClose(env) + 25));
-            env.close();
-
-            env(token::mint(alice),
-                token::amount(XRP(10)),
-                token::destination(becky),
-                token::expiration(lastClose(env) + 25));
-            uint256 const offerAliceSellsToBecky =
-                keylet::nftoffer(alice, env.seq(alice)).key;
-            env(token::cancelOffer(alice, {offerAliceSellsToBecky}));
-            env.close();
-
-            env(token::mint(becky),
-                token::amount(XRP(10)),
+                token::amount(XRP(1000)),
                 token::destination(alice),
-                token::expiration(lastClose(env) + 25));
-            uint256 const offerBeckySellsToAlice =
-                keylet::nftoffer(becky, env.seq(becky)).key;
-            env(token::cancelOffer(alice, {offerBeckySellsToAlice}));
+                ter(temMALFORMED));
             env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+            // The destination must be an account already established in the
+            // ledger.
+            env(token::mint(alice),
+                token::amount(XRP(1000)),
+                token::destination(Account("demon")),
+                ter(tecNO_DST));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+          }
+
+          {
+            // Set a bad expiration.
+            env(token::mint(alice),
+                token::amount(XRP(1000)),
+                token::expiration(0),
+                ter(temBAD_EXPIRATION));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+            // The new NFTokenOffer may not have passed its expiration time.
+            env(token::mint(alice),
+                token::amount(XRP(1000)),
+                token::expiration(lastClose(env)),
+                ter(tecEXPIRED));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+          }
+
+          {
+            // Set an invalid amount.
+            env(token::mint(alice),
+                token::amount(buyer["USD"](1)),
+                txflags(tfOnlyXRP),
+                ter(temBAD_AMOUNT));
+            env(token::mint(alice),
+                token::amount(buyer["USD"](0)),
+                ter(temBAD_AMOUNT));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+          }
+
+          // Amount field specified
+          BEAST_EXPECT(ownerCount(env, alice) == 0);
+          env(token::mint(alice), token::amount(XRP(10)));
+          BEAST_EXPECT(ownerCount(env, alice) == 2);
+          env.close();
+
+          // Amount field and Destination field, Expiration field specified
+          env(token::mint(alice),
+              token::amount(XRP(10)),
+              token::destination(buyer),
+              token::expiration(lastClose(env) + 25));
+          env.close();
+
+          // Can be canceled by the issuer.
+          env(token::mint(alice),
+              token::amount(XRP(10)),
+              token::destination(buyer),
+              token::expiration(lastClose(env) + 25));
+          uint256 const offerAliceSellsToBuyer =
+              keylet::nftoffer(alice, env.seq(alice)).key;
+          env(token::cancelOffer(alice, {offerAliceSellsToBuyer}));
+          env.close();
+
+          // Can be canceled by the buyer.
+          env(token::mint(buyer),
+              token::amount(XRP(10)),
+              token::destination(alice),
+              token::expiration(lastClose(env) + 25));
+          uint256 const offerBuyerSellsToAlice =
+              keylet::nftoffer(buyer, env.seq(buyer)).key;
+          env(token::cancelOffer(alice, {offerBuyerSellsToAlice}));
+          env.close();
         }
     }
 
@@ -6871,6 +6929,15 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
             verifyNFTokenIDsInCancelOffer({nftId});
         }
+
+        if (features[featureNFTokenMintOffer]) {
+            uint256 const aliceMintWithOfferIndex1 =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::mint(alice),
+                token::amount(XRP(0)));
+            env.close();
+            verifyNFTokenOfferID(aliceMintWithOfferIndex1);
+        }
     }
 
     void
@@ -6905,8 +6972,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         testIOUWithTransferFee(features);
         testBrokeredSaleToSelf(features);
         testFixNFTokenRemint(features);
+        testFeatMintWithOffer(features);
         testTxJsonMetaFields(features);
-        testFeatNFTokenMintAndOffer(features);
     }
 
 public:
@@ -6969,12 +7036,21 @@ class NFTokenWOTokenRemint_test : public NFTokenBaseUtil_test
     }
 };
 
+class NFTokenWOMintOffer_test : public NFTokenBaseUtil_test
+{
+    void
+    run() override
+    {
+        NFTokenBaseUtil_test::run(4);
+    }
+};
+
 class NFTokenAllFeatures_test : public NFTokenBaseUtil_test
 {
     void
     run() override
     {
-        NFTokenBaseUtil_test::run(4, true);
+        NFTokenBaseUtil_test::run(5, true);
     }
 };
 
@@ -6982,6 +7058,7 @@ BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBaseUtil, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDisallowIncoming, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOfixV1, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenRemint, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOMintOffer, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAllFeatures, tx, ripple, 2);
 
 }  // namespace ripple
