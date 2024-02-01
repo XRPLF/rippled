@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/beast/unit_test.h>
-#include <ripple/json/MultivarJson.h>
+#include <ripple/protocol/MultivarJson.h>
 
 #include <cstdint>
 #include <limits>
@@ -975,7 +975,7 @@ struct MultivarJson_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(MultivarJson, ripple_basics, ripple);
+BEAST_DEFINE_TESTSUITE(MultivarJson, protocol, ripple);
 
 }  // namespace test
 }  // namespace ripple

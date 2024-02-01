@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_APIVERSION_H_INCLUDED
 #define RIPPLE_PROTOCOL_APIVERSION_H_INCLUDED
 
-#include <ripple/json/MultivarJson.h>
+#include <ripple/protocol/MultivarJson.h>
 
 #include <functional>
 #include <type_traits>

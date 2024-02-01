@@ -18,9 +18,9 @@
 //==============================================================================
 
 #include <ripple/beast/unit_test.h>
+#include <ripple/beast/unit_test/suite.hpp>
 #include <ripple/protocol/ApiVersion.h>
 
-#include "ripple/beast/unit_test/suite.hpp"
 #include <array>
 #include <cstdint>
 #include <limits>
