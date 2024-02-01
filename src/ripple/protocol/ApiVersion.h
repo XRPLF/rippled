@@ -56,15 +56,21 @@ template <unsigned int Version>
 constexpr static std::integral_constant<unsigned, Version> apiVersion = {};
 
 constexpr static auto apiInvalidVersion = apiVersion<0>;
-constexpr static auto apiVersionIfUnspecified = apiVersion<1>;
 constexpr static auto apiMinimumSupportedVersion = apiVersion<1>;
 constexpr static auto apiMaximumSupportedVersion = apiVersion<2>;
+constexpr static auto apiVersionIfUnspecified = apiVersion<1>;
 constexpr static auto apiCommandLineVersion =
     apiVersion<1>;  // TODO Bump to 2 later
 constexpr static auto apiBetaVersion = apiVersion<3>;
 constexpr static auto apiMaximumValidVersion = apiBetaVersion;
 
-static_assert(apiMinimumSupportedVersion >= apiVersionIfUnspecified);
+static_assert(apiInvalidVersion < apiMinimumSupportedVersion);
+static_assert(
+    apiVersionIfUnspecified >= apiMinimumSupportedVersion &&
+    apiVersionIfUnspecified <= apiMaximumSupportedVersion);
+static_assert(
+    apiCommandLineVersion >= apiMinimumSupportedVersion &&
+    apiCommandLineVersion <= apiMaximumSupportedVersion);
 static_assert(apiMaximumSupportedVersion >= apiMinimumSupportedVersion);
 static_assert(apiBetaVersion >= apiMaximumSupportedVersion);
 static_assert(apiMaximumValidVersion >= apiMaximumSupportedVersion);
