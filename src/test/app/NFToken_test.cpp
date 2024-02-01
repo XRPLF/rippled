@@ -3171,6 +3171,25 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 ter(tecNO_PERMISSION));
             env.close();
         }
+
+        // minter mint and offer to buyer
+        if (features[featureNFTokenMintOffer])
+        {
+            // a sell offer from the minter to the buyer should be rejected
+            env(token::mint(minter),
+                token::amount(drops(1)),
+                token::destination(buyer),
+                ter(tecNO_PERMISSION));
+            env.close();
+        }
+        else
+        {
+            env(token::mint(minter),
+                token::amount(drops(1)),
+                token::destination(buyer),
+                ter(temDISABLED));
+            env.close();
+        }
     }
 
     void
@@ -6577,14 +6596,25 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             Env env{*this, features};
             Account const alice("alice");
-            Account const becky("becky");
+            Account const buyer("buyer");
 
-            env.fund(XRP(10000), alice, becky);
+            env.fund(XRP(10000), alice, buyer);
             env.close();
 
             env(token::mint(alice),
                 token::amount(XRP(10000)),
                 ter(temDISABLED));
+            env.close();
+
+            env(token::mint(alice),
+                token::destination("buyer"),
+                ter(temDISABLED));
+            env.close();
+
+            env(token::mint(alice),
+                token::expiration(lastClose(env) + 25),
+                ter(temDISABLED));
+            env.close();
         }
 
         if (features[featureNFTokenMintOffer])
@@ -6592,9 +6622,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             Env env{*this, features};
             Account const alice("alice");
             Account const buyer{"buyer"};
-            Account const becky("becky");
+            Account const gw("gw");
+            Account const issuer("issuer");
+            Account const minter("minter");
+            IOU const gwAUD(gw["AUD"]);
 
-            env.fund(XRP(10000), alice, buyer);
+            env.fund(XRP(10000), alice, buyer, gw, issuer, minter);
             env.close();
 
             {
@@ -6662,6 +6695,40 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     ter(temBAD_AMOUNT));
                 env.close();
                 BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // Issuer (alice) must have a trust line for the offered funds.
+                env(token::mint(alice),
+                    token::amount(gwAUD(1000)),
+                    txflags(tfTransferable),
+                    token::xferFee(10),
+                    ter(tecNO_LINE));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // Give alice the needed trust line, but freeze it.
+                env(trust(gw, alice["AUD"](999), tfSetFreeze));
+                env.close();
+
+                // Issuer (alice) must have a trust line for the offered funds
+                // and the trust line may not be frozen.
+                env(token::mint(alice),
+                    token::amount(gwAUD(1000)),
+                    txflags(tfTransferable),
+                    token::xferFee(10),
+                    ter(tecFROZEN));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // Seller (alice) must have a trust line may not be frozen.
+                env(token::mint(alice),
+                    token::amount(gwAUD(1000)),
+                    ter(tecFROZEN));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // Unfreeze alice's trustline.
+                env(trust(gw, alice["AUD"](999), tfClearFreeze));
+                env.close();
             }
 
             // Amount field specified
@@ -6675,6 +6742,17 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 token::amount(XRP(10)),
                 token::destination(buyer),
                 token::expiration(lastClose(env) + 25));
+            env.close();
+
+            // With TransferFee field
+            env(trust(alice, gwAUD(1000)));
+            env.close();
+            env(token::mint(alice),
+                token::amount(gwAUD(1)),
+                token::destination(buyer),
+                token::expiration(lastClose(env) + 25),
+                txflags(tfTransferable),
+                token::xferFee(10));
             env.close();
 
             // Can be canceled by the issuer.
@@ -6696,6 +6774,44 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 keylet::nftoffer(buyer, env.seq(buyer)).key;
             env(token::cancelOffer(alice, {offerBuyerSellsToAlice}));
             env.close();
+
+            env(token::setMinter(issuer, minter));
+            env.close();
+
+            // Minter will have offer not issuer
+            BEAST_EXPECT(ownerCount(env, minter) == 0);
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            env(token::mint(minter),
+                token::issuer(issuer),
+                token::amount(drops(1)));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, minter) == 2);
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+        }
+
+        // Test sell offers with a destination with and without
+        // fixNFTokenNegOffer.
+        if (features[featureNFTokenMintOffer])
+        {
+            for (auto const& tweakedFeatures :
+                 {features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1,
+                  features | fixNFTokenNegOffer})
+            {
+                Env env{*this, tweakedFeatures};
+                Account const alice("alice");
+
+                env.fund(XRP(1000000), alice);
+
+                TER const offerCreateTER = tweakedFeatures[fixNFTokenNegOffer]
+                    ? static_cast<TER>(temBAD_AMOUNT)
+                    : static_cast<TER>(tesSUCCESS);
+
+                // Make offers with negative amounts for the NFTs
+                env(token::mint(alice),
+                    token::amount(XRP(-2)),
+                    ter(offerCreateTER));
+                env.close();
+            }
         }
     }
 
