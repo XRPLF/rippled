@@ -196,8 +196,6 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
         {
             auto const nftIssuer =
                 ctx.tx[~sfIssuer].value_or(ctx.tx[sfAccount]);
-            if (!ctx.view.exists(keylet::account(nftIssuer)))
-                return tecNO_ISSUER;
 
             if (!ctx.view.exists(keylet::line(nftIssuer, amount->issue())))
                 return tecNO_LINE;

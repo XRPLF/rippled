@@ -3175,19 +3175,20 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // minter mint and offer to buyer
         if (features[featureNFTokenMintOffer])
         {
+            // enable flag
+            env(fset(buyer, asfDisallowIncomingNFTokenOffer));
             // a sell offer from the minter to the buyer should be rejected
             env(token::mint(minter),
                 token::amount(drops(1)),
                 token::destination(buyer),
                 ter(tecNO_PERMISSION));
             env.close();
-        }
-        else
-        {
+
+            // disable flag
+            env(fclear(buyer, asfDisallowIncomingNFTokenOffer));
             env(token::mint(minter),
                 token::amount(drops(1)),
-                token::destination(buyer),
-                ter(temDISABLED));
+                token::destination(buyer));
             env.close();
         }
     }
