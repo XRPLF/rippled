@@ -183,7 +183,7 @@ struct MultivarJson
     auto
     visit()
     {
-        return [self = this](auto... args) requires requires()
+        return [self = this](auto... args) requires requires
         {
             visitor(
                 std::declval<MultivarJson&>(),
@@ -197,7 +197,7 @@ struct MultivarJson
     auto
     visit() const
     {
-        return [self = this](auto... args) requires requires()
+        return [self = this](auto... args) requires requires
         {
             visitor(
                 std::declval<MultivarJson const&>(),
@@ -213,7 +213,7 @@ struct MultivarJson
         visit(Args... args)
             -> std::invoke_result_t<visitor_t, MultivarJson&, Args...> requires(
                 sizeof...(args) > 0) &&
-        requires()
+        requires
     {
         visitor(*this, std::forward<decltype(args)>(args)...);
     }
@@ -226,7 +226,7 @@ struct MultivarJson
         visit(Args... args) const -> std::
             invoke_result_t<visitor_t, MultivarJson const&, Args...> requires(
                 sizeof...(args) > 0) &&
-        requires()
+        requires
     {
         visitor(*this, std::forward<decltype(args)>(args)...);
     }
