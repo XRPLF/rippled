@@ -52,20 +52,16 @@ struct MultivarJson_test : beast::unit_test::suite
         return obj1;
     }
 
-    template <std::size_t Size>
-    struct Helper final
+    constexpr static auto index =
+        [](unsigned int v) constexpr noexcept -> std::size_t
     {
-        constexpr static std::size_t size = Size;
-        constexpr static auto
-        index(unsigned int v) noexcept -> std::size_t
-        {
-            return v - 1;
-        }
-        constexpr static auto
-        valid(unsigned int v) noexcept -> bool
-        {
-            return v > 0 && v <= size;
-        }
+        return v - 1;
+    };
+
+    template <int size>
+    constexpr static auto valid = [](unsigned int v) constexpr noexcept -> bool
+    {
+        return v > 0 && v <= size;
     };
 
     void
@@ -76,7 +72,7 @@ struct MultivarJson_test : beast::unit_test::suite
         Json::Value const obj3 = makeJson("value", 3);
         Json::Value const jsonNull{};
 
-        MultivarJson<Helper<3>> subject{};
+        MultivarJson<3, index, valid<3>> subject{};
         static_assert(sizeof(subject) == sizeof(subject.val));
         static_assert(subject.size == subject.val.size());
         static_assert(
@@ -93,7 +89,7 @@ struct MultivarJson_test : beast::unit_test::suite
         {
             testcase("default copy construction / assignment");
 
-            MultivarJson<Helper<3>> x{subject};
+            MultivarJson<3, index, valid<3>> x{subject};
 
             BEAST_EXPECT(x.val.size() == subject.val.size());
             BEAST_EXPECT(x.val[0] == subject.val[0]);
@@ -104,7 +100,7 @@ struct MultivarJson_test : beast::unit_test::suite
             BEAST_EXPECT(&x.val[1] != &subject.val[1]);
             BEAST_EXPECT(&x.val[2] != &subject.val[2]);
 
-            MultivarJson<Helper<3>> y;
+            MultivarJson<3, index, valid<3>> y;
             BEAST_EXPECT((y.val == std::array<Json::Value, 3>{}));
             y = subject;
             BEAST_EXPECT(y.val == subject.val);
@@ -122,7 +118,7 @@ struct MultivarJson_test : beast::unit_test::suite
         {
             testcase("set");
 
-            auto x = MultivarJson<Helper<2>>{Json::objectValue};
+            auto x = MultivarJson<2, index, valid<2>>{Json::objectValue};
             x.set("name1", 42);
             BEAST_EXPECT(x.val[0].isMember("name1"));
             BEAST_EXPECT(x.val[1].isMember("name1"));
@@ -191,7 +187,7 @@ struct MultivarJson_test : beast::unit_test::suite
 
             {
                 // All variants have element "One", none have element "Two"
-                MultivarJson<Helper<2>> s1{};
+                MultivarJson<2, index, valid<2>> s1{};
                 s1.val[0] = makeJson("One", 12);
                 s1.val[1] = makeJson("One", 42);
                 BEAST_EXPECT(s1.isMember("One") == decltype(s1)::all);
@@ -200,7 +196,7 @@ struct MultivarJson_test : beast::unit_test::suite
 
             {
                 // Some variants have element "One" and some have "Two"
-                MultivarJson<Helper<2>> s2{};
+                MultivarJson<2, index, valid<2>> s2{};
                 s2.val[0] = makeJson("One", 12);
                 s2.val[1] = makeJson("Two", 42);
                 BEAST_EXPECT(s2.isMember("One") == decltype(s2)::some);
@@ -209,7 +205,7 @@ struct MultivarJson_test : beast::unit_test::suite
 
             {
                 // Not all variants have element "One", because last one is null
-                MultivarJson<Helper<3>> s3{};
+                MultivarJson<3, index, valid<3>> s3{};
                 s3.val[0] = makeJson("One", 12);
                 s3.val[1] = makeJson("One", 42);
                 BEAST_EXPECT(s3.isMember("One") == decltype(s3)::some);
@@ -220,7 +216,7 @@ struct MultivarJson_test : beast::unit_test::suite
         {
             testcase("visitor");
 
-            MultivarJson<Helper<3>> s1{};
+            MultivarJson<3, index, valid<3>> s1{};
             s1.val[0] = makeJson("value", 2);
             s1.val[1] = makeJson("value", 3);
             s1.val[2] = makeJson("value", 5);
@@ -578,7 +574,7 @@ struct MultivarJson_test : beast::unit_test::suite
         {
             testcase("visit");
 
-            MultivarJson<Helper<3>> s1{};
+            MultivarJson<3, index, valid<3>> s1{};
             s1.val[0] = makeJson("value", 2);
             s1.val[1] = makeJson("value", 3);
             s1.val[2] = makeJson("value", 5);

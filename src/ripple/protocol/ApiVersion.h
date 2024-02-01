@@ -116,27 +116,32 @@ forAllApiVersions(Fn const& fn, Args&&... args) requires requires
         RPC::apiMaximumValidVersion>(fn, std::forward<Args>(args)...);
 }
 
-struct ApiVersionHelper final
+namespace detail {
+constexpr struct Index final
 {
-    constexpr static std::size_t size =
-        RPC::apiMaximumValidVersion + 1 - RPC::apiMinimumSupportedVersion;
-
-    constexpr static auto
-    index(unsigned int v) noexcept -> std::size_t
+    constexpr auto
+    operator()(unsigned int v) const noexcept -> std::size_t
     {
         return static_cast<std::size_t>(v <= 1 ? 0 : (v <= 2 ? 1 : 2));
     }
+} index = {};
 
-    constexpr static auto
-    valid(unsigned int v) noexcept -> bool
+constexpr struct Valid final
+{
+    constexpr auto
+    operator()(unsigned int v) const noexcept -> bool
     {
         return v >= RPC::apiMinimumSupportedVersion &&
             v <= RPC::apiMaximumValidVersion;
     }
-};
+} valid = {};
+}  // namespace detail
 
 // Wrapper for Json for all supported API versions.
-using MultiApiJson = MultivarJson<ApiVersionHelper>;
+using MultiApiJson = MultivarJson<
+    RPC::apiMaximumValidVersion + 1 - RPC::apiMinimumSupportedVersion,
+    detail::index,
+    detail::valid>;
 }  // namespace ripple
 
 #endif

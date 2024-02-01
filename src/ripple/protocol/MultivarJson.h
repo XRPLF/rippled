@@ -53,21 +53,12 @@ concept some_integral_constant = detail::is_integral_constant<T&>;
 // of an object selected by the user by version, using `visitor_t` nested type.
 //
 // It is used to define `MultiApiJson` type in API versions header.
-template <typename Helper>
+template <std::size_t Size, auto Index, auto Valid>
 struct MultivarJson
 {
-    constexpr static std::size_t size = Helper::size;
-    constexpr static auto
-    index(unsigned int v) noexcept -> std::size_t
-    {
-        return Helper::index(v);
-    }
-    constexpr static auto
-    valid(unsigned int v) noexcept -> bool
-    {
-        return Helper::valid(v);
-    }
-
+    constexpr static std::size_t size = Size;
+    constexpr static auto index = Index;
+    constexpr static auto valid = Valid;
     std::array<Json::Value, size> val = {};
 
     explicit MultivarJson(Json::Value const& init = {})
