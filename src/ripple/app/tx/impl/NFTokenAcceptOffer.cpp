@@ -27,6 +27,7 @@
 
 namespace ripple {
 
+
 NotTEC
 NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 {

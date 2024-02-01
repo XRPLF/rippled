@@ -238,6 +238,22 @@ compareTokens(uint256 const& a, uint256 const& b)
     return a < b;
 }
 
+
+TER 
+updateToken(ApplyView& view, AccountID const& owner, STObject&& nft, std::shared_ptr<SLE>&& page)
+{
+    // Remove the old token from the owner's directory
+    if (auto const ret = nft::removeToken(view, owner, nft.getFieldH256(sfNFTokenID), std::move(page)); !isTesSuccess(ret))
+        return ret;
+
+    // Insert the updated token into the owner's directory
+    if (auto const ret = nft::insertToken(view, owner, std::move(nft)); !isTesSuccess(ret))
+        return ret;
+
+    return tesSUCCESS;
+}
+
+
 /** Insert the token in the owner's token directory. */
 TER
 insertToken(ApplyView& view, AccountID owner, STObject&& nft)
