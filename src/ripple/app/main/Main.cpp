@@ -431,9 +431,8 @@ run(int argc, char** argv)
         po::value<std::string>()->implicit_value(""),
         "Perform unit tests. The optional argument specifies one or "
         "more comma-separated selectors. Each selector specifies a suite name, "
-        "full-name (lib.module.suite), module, or library "
-        "(checked in that "
-        "order).")(
+        "suite name prefix, full-name (lib.module.suite), module, or library "
+        "(checked in that order).")(
         "unittest-arg",
         po::value<std::string>()->implicit_value(""),
         "Supplies an argument string to unit tests. If provided, this argument "

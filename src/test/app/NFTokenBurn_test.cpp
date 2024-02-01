@@ -26,7 +26,7 @@
 
 namespace ripple {
 
-class NFTokenBurn0_test : public beast::unit_test::suite
+class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
 {
     // Helper function that returns the owner count of an account root.
     static std::uint32_t
@@ -815,39 +815,39 @@ public:
     }
 };
 
-class NFTokenBurn1_test : public NFTokenBurn0_test
+class NFTokenBurnWOfixFungTokens_test : public NFTokenBurnBaseUtil_test
 {
 public:
     void
     run() override
     {
-        NFTokenBurn0_test::run(1);
+        NFTokenBurnBaseUtil_test::run(1);
     }
 };
 
-class NFTokenBurn2_test : public NFTokenBurn0_test
+class NFTokenBurnWOFixTokenRemint_test : public NFTokenBurnBaseUtil_test
 {
 public:
     void
     run() override
     {
-        NFTokenBurn0_test::run(2);
+        NFTokenBurnBaseUtil_test::run(2);
     }
 };
 
-class NFTokenBurn3_test : public NFTokenBurn0_test
+class NFTokenBurnAllFeatures_test : public NFTokenBurnBaseUtil_test
 {
 public:
     void
     run() override
     {
-        NFTokenBurn0_test::run(3, true);
+        NFTokenBurnBaseUtil_test::run(3, true);
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn0, tx, ripple, 3);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn1, tx, ripple, 3);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn2, tx, ripple, 3);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn3, tx, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnBaseUtil, tx, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnWOfixFungTokens, tx, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnWOFixTokenRemint, tx, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnAllFeatures, tx, ripple, 3);
 
 }  // namespace ripple
