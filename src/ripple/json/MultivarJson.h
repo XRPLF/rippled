@@ -37,20 +37,13 @@ namespace detail {
 template <typename T>
 constexpr bool is_integral_constant = false;
 template <typename I, auto A>
-constexpr bool is_integral_constant<std::integral_constant<I, A>> = true;
-template <typename I, auto A>
 constexpr bool is_integral_constant<std::integral_constant<I, A>&> = true;
 template <typename I, auto A>
 constexpr bool is_integral_constant<std::integral_constant<I, A> const&> = true;
-template <typename I, auto A>
-constexpr bool is_integral_constant<std::integral_constant<I, A>&&> = true;
-template <typename I, auto A>
-constexpr bool is_integral_constant<std::integral_constant<I, A> const&&> =
-    true;
 }  // namespace detail
 
 template <typename T>
-concept some_integral_constant = detail::is_integral_constant<T>;
+concept some_integral_constant = detail::is_integral_constant<T&>;
 
 // This class is designed to wrap a collection of _almost_ identical Json::Value
 // objects, indexed by version (i.e. there is some mapping of version to object
@@ -110,162 +103,80 @@ struct MultivarJson
 
     static constexpr struct visitor_t final
     {
-        // Mutable Json, integral_constant version
-        template <unsigned int Version, typename... Args, typename Fn>
-        auto
+        // integral_constant version, extra arguments
+        template <
+            typename Json,
+            unsigned int Version,
+            typename... Args,
+            typename Fn>
+        requires std::same_as<std::remove_cvref_t<Json>, MultivarJson> auto
         operator()(
-            MultivarJson& json,
+            Json& json,
             std::integral_constant<unsigned int, Version> const version,
             Fn fn,
             Args&&... args) const
             -> std::invoke_result_t<
                 Fn,
-                Json::Value&,
+                decltype(json.val[0]),
                 std::integral_constant<unsigned int, Version>,
-                Args&&...> requires requires()
-        {
-            fn(json.val[index(Version)], version, std::forward<Args>(args)...);
-        }
+                Args&&...>
         {
             static_assert(
                 valid(Version) && index(Version) >= 0 && index(Version) < size);
-            return fn(
-                json.val[index(Version)], version, std::forward<Args>(args)...);
+            return std::invoke(
+                fn,
+                json.val[index(Version)],
+                version,
+                std::forward<Args>(args)...);
         }
 
-        // Mutable Json only, integral_constant version
-        template <unsigned int Version, typename Fn>
-        auto
+        // integral_constant version, Json only
+        template <typename Json, unsigned int Version, typename Fn>
+        requires std::same_as<std::remove_cvref_t<Json>, MultivarJson> auto
         operator()(
-            MultivarJson& json,
+            Json& json,
             std::integral_constant<unsigned int, Version> const,
-            Fn fn) const
-            -> std::invoke_result_t<Fn, Json::Value&> requires requires()
-        {
-            fn(json.val[index(Version)]);
-        }
+            Fn fn) const -> std::invoke_result_t<Fn, decltype(json.val[0])>
         {
             static_assert(
                 valid(Version) && index(Version) >= 0 && index(Version) < size);
-            return fn(json.val[index(Version)]);
+            return std::invoke(fn, json.val[index(Version)]);
         }
 
-        // Immutable Json, integral_constant version
-        template <unsigned int Version, typename... Args, typename Fn>
-        auto
-        operator()(
-            MultivarJson const& json,
-            std::integral_constant<unsigned int, Version> const version,
-            Fn fn,
-            Args&&... args) const
-            -> std::invoke_result_t<
-                Fn,
-                Json::Value const&,
-                std::integral_constant<unsigned int, Version>,
-                Args&&...> requires requires()
-        {
-            fn(json.val[index(Version)], version, std::forward<Args>(args)...);
-        }
-        {
-            static_assert(
-                valid(Version) && index(Version) >= 0 && index(Version) < size);
-            return fn(
-                json.val[index(Version)], version, std::forward<Args>(args)...);
-        }
-
-        // Immutable Json only, integral_constant version
-        template <unsigned int Version, typename Fn>
-        auto
-        operator()(
-            MultivarJson const& json,
-            std::integral_constant<unsigned int, Version> const,
-            Fn fn) const
-            -> std::invoke_result_t<Fn, Json::Value const&> requires requires()
-        {
-            fn(json.val[index(Version)]);
-        }
-        {
-            static_assert(
-                valid(Version) && index(Version) >= 0 && index(Version) < size);
-            return fn(json.val[index(Version)]);
-        }
-
-        // Mutable Json, unsigned int version
-        template <typename Version, typename... Args, typename Fn>
+        // unsigned int version, extra arguments
+        template <
+            typename Json,
+            typename Version,
+            typename... Args,
+            typename Fn>
             requires(!some_integral_constant<Version>) &&
-            std::convertible_to<Version, unsigned> auto
-            operator()(
-                MultivarJson& json,
-                Version version,
-                Fn fn,
-                Args&&... args) const
-            -> std::invoke_result_t<
-                Fn,
-                Json::Value&,
-                Version,
-                Args&&...> requires requires()
-        {
-            fn(json.val[index(version)], version, std::forward<Args>(args)...);
-        }
+            std::convertible_to<Version, unsigned>&& std::same_as<
+                std::remove_cvref_t<Json>,
+                MultivarJson> auto
+            operator()(Json& json, Version version, Fn fn, Args&&... args) const
+            -> std::
+                invoke_result_t<Fn, decltype(json.val[0]), Version, Args&&...>
         {
             assert(
                 valid(version) && index(version) >= 0 && index(version) < size);
-            return fn(
-                json.val[index(version)], version, std::forward<Args>(args)...);
+            return std::invoke(
+                fn,
+                json.val[index(version)],
+                version,
+                std::forward<Args>(args)...);
         }
 
-        // Mutable Json only, unsigned int version
-        template <typename Version, typename Fn>
+        // unsigned int version, Json only
+        template <typename Json, typename Version, typename Fn>
             requires(!some_integral_constant<Version>) &&
-            std::convertible_to<Version, unsigned> auto
-            operator()(MultivarJson& json, Version version, Fn fn) const
-            -> std::invoke_result_t<Fn, Json::Value&> requires requires()
-        {
-            fn(json.val[index(version)]);
-        }
+            std::convertible_to<Version, unsigned>&& std::
+                same_as<std::remove_cvref_t<Json>, MultivarJson> auto
+                operator()(Json& json, Version version, Fn fn) const
+            -> std::invoke_result_t<Fn, decltype(json.val[0])>
         {
             assert(
                 valid(version) && index(version) >= 0 && index(version) < size);
-            return fn(json.val[index(version)]);
-        }
-
-        // Immutable Json, unsigned int version
-        template <typename Version, typename... Args, typename Fn>
-            requires(!some_integral_constant<Version>) &&
-            std::convertible_to<Version, unsigned> auto
-            operator()(
-                MultivarJson const& json,
-                Version version,
-                Fn fn,
-                Args&&... args) const
-            -> std::invoke_result_t<
-                Fn,
-                Json::Value const&,
-                Version,
-                Args&&...> requires requires()
-        {
-            fn(json.val[index(version)], version, std::forward<Args>(args)...);
-        }
-        {
-            assert(
-                valid(version) && index(version) >= 0 && index(version) < size);
-            return fn(
-                json.val[index(version)], version, std::forward<Args>(args)...);
-        }
-
-        // Immutable Json only, unsigned int version
-        template <typename Version, typename Fn>
-            requires(!some_integral_constant<Version>) &&
-            std::convertible_to<Version, unsigned> auto
-            operator()(MultivarJson const& json, Version version, Fn fn) const
-            -> std::invoke_result_t<Fn, Json::Value const&> requires requires()
-        {
-            fn(json.val[index(version)]);
-        }
-        {
-            assert(
-                valid(version) && index(version) >= 0 && index(version) < size);
-            return fn(json.val[index(version)]);
+            return std::invoke(fn, json.val[index(version)]);
         }
     } visitor = {};
 

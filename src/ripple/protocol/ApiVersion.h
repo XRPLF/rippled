@@ -23,6 +23,8 @@
 #include <ripple/json/MultivarJson.h>
 
 #include <functional>
+#include <type_traits>
+#include <utility>
 
 namespace ripple {
 
@@ -70,10 +72,12 @@ static_assert(apiMaximumValidVersion >= apiMaximumSupportedVersion);
 }  // namespace RPC
 
 template <unsigned minVer, unsigned maxVer, typename Fn, typename... Args>
-    requires(maxVer >= minVer) &&                   //
-    (minVer >= RPC::apiMinimumSupportedVersion) &&  //
-    (RPC::apiMaximumValidVersion >=
-     maxVer) void forApiVersions(Fn const& fn, Args&&... args) requires requires
+    void
+    forApiVersions(Fn const& fn, Args&&... args) requires  //
+    (maxVer >= minVer) &&                                  //
+    (minVer >= RPC::apiMinimumSupportedVersion) &&         //
+    (RPC::apiMaximumValidVersion >= maxVer) &&
+    requires
 {
     fn(std::integral_constant<unsigned int, minVer>{},
        std::forward<Args>(args)...);
@@ -94,7 +98,7 @@ template <unsigned minVer, unsigned maxVer, typename Fn, typename... Args>
 
 template <typename Fn, typename... Args>
 void
-forAllApiVersions(Fn const& fn, Args&&... args) requires requires()
+forAllApiVersions(Fn const& fn, Args&&... args) requires requires
 {
     forApiVersions<
         RPC::apiMinimumSupportedVersion,
