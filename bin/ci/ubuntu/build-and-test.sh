@@ -44,7 +44,7 @@ if [[ ${NINJA_BUILD:-} == true ]]; then
 fi
 
 coverage=false
-if [[ "${TARGET}" == "coverage_report" ]] ; then
+if [[ "${TARGET}" == "coverage" ]] ; then
     echo "coverage option detected."
     coverage=true
 fi

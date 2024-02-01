@@ -90,11 +90,8 @@ jobs:
           configuration: ${{ matrix.configuration }}
           # Hard code for now. Move to the matrix if varied options are needed
           cmake-args: '-Dassert=ON -Dreporting=OFF -Dunity=ON'
-      - name: test (permitted to silently fail)
+          cmake-target: install
+      - name: test
         shell: bash
-        # Github runners are resource limited, which causes unit tests to fail
-        # (e.g. OOM). To allow forward progress until self-hosted runners are
-        # up and running reliably, allow the job to succeed even if tests fail.
-        continue-on-error: true
         run: |
           ${build_dir}/${{ matrix.configuration }}/rippled --unittest --unittest-jobs $(nproc)

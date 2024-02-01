@@ -38,7 +38,6 @@ include (CheckCXXCompilerFlag)
 include (FetchContent)
 include (ExternalProject)
 include (CMakeFuncs) # must come *after* ExternalProject b/c it overrides one function in EP
-include (ProcessorCount)
 if (target)
   message (FATAL_ERROR "The target option has been removed - use native cmake options to control build")
 endif ()
@@ -126,12 +125,15 @@ if(reporting)
   )
 endif()
 
+if(coverage)
+  include(RippledCov)
+endif()
+
 ###
 
 include(RippledCore)
 include(deps/Protobuf)
 include(deps/gRPC)
 include(RippledInstall)
-include(RippledCov)
 include(RippledMultiConfig)
 include(RippledValidatorKeys)

@@ -636,7 +636,6 @@ JSS(sub_index);             // in: LedgerEntry
 JSS(subcommand);            // in: PathFind
 JSS(success);               // rpc
 JSS(supported);             // out: AmendmentTableImpl
-JSS(sync_mode);             // in: Submit
 JSS(system_time_offset);    // out: NetworkOPs
 JSS(tag);                   // out: Peers
 JSS(taker);                 // in: Subscribe, BookOffers
