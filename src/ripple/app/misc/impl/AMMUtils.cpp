@@ -287,10 +287,10 @@ initializeFeeAuctionVote(
     Issue const& lptIssue,
     std::uint16_t tfee)
 {
-    bool fixInnerObj(view.rules().enabled(fixInnerObjTemplate));
+    auto const& rules = view.rules();
     // AMM creator gets the voting slot.
     STArray voteSlots;
-    STObject voteEntry{sfVoteEntry, fixInnerObj};
+    STObject voteEntry = STObject::makeInnerObject(sfVoteEntry, rules);
     if (tfee != 0)
         voteEntry.setFieldU16(sfTradingFee, tfee);
     voteEntry.setFieldU32(sfVoteWeight, VOTE_WEIGHT_SCALE_FACTOR);
@@ -298,7 +298,7 @@ initializeFeeAuctionVote(
     voteSlots.push_back(voteEntry);
     ammSle->setFieldArray(sfVoteSlots, voteSlots);
     // AMM creator gets the auction slot for free.
-    STObject auctionSlot{sfAuctionSlot, fixInnerObj};
+    STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot, rules);
     auctionSlot.setAccountID(sfAccount, account);
     // current + sec in 24h
     auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(

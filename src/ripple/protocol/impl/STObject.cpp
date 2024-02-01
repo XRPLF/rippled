@@ -19,6 +19,8 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/InnerObjectFormats.h>
+#include <ripple/protocol/Feature.h>
+#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STBlob.h>
@@ -33,18 +35,6 @@ STObject::STObject(STObject&& other)
 
 STObject::STObject(SField const& name) : STBase(name), mType(nullptr)
 {
-}
-
-STObject::STObject(SField const& name, bool fixInnerObjTemplateEnabled)
-    : STBase(name), mType(nullptr)
-{
-    if (fixInnerObjTemplateEnabled)
-    {
-        SOTemplate const* elements =
-            InnerObjectFormats::getInstance().findSOTemplateBySField(name);
-        if (elements)
-            set(*elements);
-    }
 }
 
 STObject::STObject(SOTemplate const& type, SField const& name) : STBase(name)
@@ -67,6 +57,20 @@ STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(
     if (depth > 10)
         Throw<std::runtime_error>("Maximum nesting depth of STObject exceeded");
     set(sit, depth);
+}
+
+STObject
+STObject::makeInnerObject(SField const& name, Rules const& rules)
+{
+    STObject obj{name};
+    if (rules.enabled(fixInnerObjTemplate))
+    {
+        SOTemplate const* elements =
+            InnerObjectFormats::getInstance().findSOTemplateBySField(name);
+        if (elements)
+            obj.set(*elements);
+    }
+    return obj;
 }
 
 STBase*

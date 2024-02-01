@@ -35,11 +35,8 @@ enum SOEStyle {
     soeREQUIRED = 0,  // required
     soeOPTIONAL = 1,  // optional, may be present with default value
     soeDEFAULT = 2,   // optional, if present, must not have default value
-                      // inner objects with the default fields have to
-                      // explicitly initialize SOTemplate by having
-                      // fixInnerObjTemplateEnabled set to true in STObject
-                      // constructor if fixInnerObjTemplate amendment
-                      // is enabled
+                      // inner object with the default fields has to be
+                      // constructed with STObject::makeInnerObject()
 };
 
 //------------------------------------------------------------------------------

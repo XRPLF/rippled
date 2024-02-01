@@ -43,6 +43,7 @@
 namespace ripple {
 
 class STArray;
+class Rules;
 
 inline void
 throwFieldNotFound(SField const& field)
@@ -101,7 +102,9 @@ public:
     STObject(SerialIter& sit, SField const& name, int depth = 0);
     STObject(SerialIter&& sit, SField const& name);
     explicit STObject(SField const& name);
-    STObject(SField const& name, bool fixInnerObjTemplateEnabled);
+
+    static STObject
+    makeInnerObject(SField const& name, Rules const& rules);
 
     iterator
     begin() const;
