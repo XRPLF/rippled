@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <ripple/basics/Log.h>
-#include <ripple/protocol/InnerObjectFormats.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/InnerObjectFormats.h>
 #include <ripple/protocol/Rules.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>
