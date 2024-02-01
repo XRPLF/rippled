@@ -65,9 +65,8 @@ STObject::makeInnerObject(SField const& name, Rules const& rules)
     STObject obj{name};
     if (rules.enabled(fixInnerObjTemplate))
     {
-        SOTemplate const* elements =
-            InnerObjectFormats::getInstance().findSOTemplateBySField(name);
-        if (elements)
+        if (SOTemplate const* elements =
+                InnerObjectFormats::getInstance().findSOTemplateBySField(name))
             obj.set(*elements);
     }
     return obj;
@@ -652,6 +651,7 @@ STObject::set(std::unique_ptr<STBase> v)
 void
 STObject::set(STBase* v)
 {
+    assert(v);
     auto const i = getFieldIndex(v->getFName());
     if (i != -1)
     {
