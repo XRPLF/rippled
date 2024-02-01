@@ -26,6 +26,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/InnerObjectFormats.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/TxFlags.h>
@@ -66,4 +67,21 @@ getAmendments()
     static AmendmentExport list[] = {amendment};
     AmendmentExport* ptr = list;
     return {ptr, 1};
+}
+
+extern "C" void
+setPluginPointers(
+    std::map<std::uint16_t, PluginTxFormat>* pluginTxFormatPtr,
+    std::map<std::uint16_t, PluginLedgerFormat>* pluginObjectsMapPtr,
+    std::map<std::uint16_t, PluginInnerObjectFormat>*
+        pluginInnerObjectFormatsPtr,
+    std::map<int, SField const*>* knownCodeToFieldPtr,
+    std::vector<int>* pluginSFieldCodesPtr,
+    std::map<int, STypeFunctions>* pluginSTypesPtr)
+{
+    registerTxFormats(pluginTxFormatPtr);
+    registerLedgerObjects(pluginObjectsMapPtr);
+    registerPluginInnerObjectFormats(pluginInnerObjectFormatsPtr);
+    registerSFields(knownCodeToFieldPtr, pluginSFieldCodesPtr);
+    registerSTypes(pluginSTypesPtr);
 }

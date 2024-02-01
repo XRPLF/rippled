@@ -256,7 +256,7 @@ public:
     static int
     getNumFields()
     {
-        return knownCodeToField.size();
+        return knownCodeToFieldPtr->size();
     }
 
     bool
@@ -287,21 +287,26 @@ public:
     static int
     compare(const SField& f1, const SField& f2);
 
-    static std::map<int, STypeFunctions> pluginSTypes;
-    static std::vector<int> pluginSFieldCodes;
+    static std::map<int, STypeFunctions>* pluginSTypesPtr;
 
     static void
     reset();
 
-    static std::map<int, SField const*> const&
+    static std::map<int, SField const*>*
     getKnownCodeToField()
     {
-        return knownCodeToField;
+        return knownCodeToFieldPtr;
+    }
+
+    static void
+    setKnownCodeToField(std::map<int, SField const*>* newPtr)
+    {
+        knownCodeToFieldPtr = newPtr;
     }
 
 private:
     static int num;
-    static std::map<int, SField const*> knownCodeToField;
+    static std::map<int, SField const*>* knownCodeToFieldPtr;
 };
 
 /** A field with a type known at compile time. */
@@ -337,10 +342,12 @@ operator~(TypedField<T> const& f)
 //------------------------------------------------------------------------------
 
 void
-registerSField(SFieldExport const& sfield);
+registerSFields(
+    std::map<int, SField const*>* knownCodeToFieldPtr,
+    std::vector<int>* pluginSFieldCodes);
 
 void
-registerSType(STypeFunctions type);
+registerSTypes(std::map<int, STypeFunctions>* pluginSTypes);
 
 //------------------------------------------------------------------------------
 

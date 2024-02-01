@@ -23,24 +23,14 @@
 
 namespace ripple {
 
-std::map<std::uint16_t, PluginLedgerFormat> pluginObjectsMap{};
+std::map<std::uint16_t, PluginLedgerFormat>* pluginObjectsMapPtr;
 
 void
-registerLedgerObject(
-    std::uint16_t type,
-    char const* name,
-    Container<SOElementExport> format)
+registerLedgerObjects(
+    std::map<std::uint16_t, PluginLedgerFormat>* pluginObjectsMap)
 {
-    auto const strName = std::string(name);
-    if (auto it = pluginObjectsMap.find(type); it != pluginObjectsMap.end())
-    {
-        if (it->second.objectName == strName)
-            return;
-        LogicError(
-            std::string("Duplicate key for plugin ledger object '") + strName +
-            "': already exists");
-    }
-    pluginObjectsMap.insert({type, {strName, convertToUniqueFields(format)}});
+    pluginObjectsMapPtr = pluginObjectsMap;
+    LedgerFormats::reset();
 }
 
 void
@@ -361,7 +351,7 @@ LedgerFormats::initialize()
         },
         commonFields);
     // clang-format on
-    for (auto& e : pluginObjectsMap)
+    for (auto& e : *pluginObjectsMapPtr)
     {
         add(e.second.objectName.c_str(),
             e.first,
@@ -397,7 +387,6 @@ LedgerFormats::reset()
     auto& instance = getInstanceHelper();
     instance.clear();
     instance.cleared = true;
-    pluginObjectsMap.clear();
 }
 
 LedgerFormats const&

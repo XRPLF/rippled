@@ -240,11 +240,14 @@ public:
     reset();
 };
 
+struct PluginTxFormat
+{
+    std::string txName;
+    std::vector<SOElement> uniqueFields;
+};
+
 void
-registerTxFormat(
-    std::uint16_t type,
-    char const* txName,
-    Container<SOElementExport> txFormat);
+registerTxFormats(std::map<std::uint16_t, PluginTxFormat>* pluginTxFormats);
 
 }  // namespace ripple
 

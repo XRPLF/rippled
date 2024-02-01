@@ -56,8 +56,15 @@ public:
     reset();
 };
 
+struct PluginInnerObjectFormat
+{
+    std::string name;
+    std::vector<SOElement> uniqueFields;
+};
+
 void
-registerPluginInnerObjectFormat(InnerObjectExport innerObject);
+registerPluginInnerObjectFormats(
+    std::map<std::uint16_t, PluginInnerObjectFormat>* pluginInnerObjectFormats);
 
 }  // namespace ripple
 

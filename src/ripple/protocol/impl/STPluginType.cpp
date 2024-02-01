@@ -26,8 +26,8 @@ namespace ripple {
 STPluginType::STPluginType(SerialIter& st, SField const& name) : STBase(name)
 {
     int type = name.fieldType;
-    if (auto const it = SField::pluginSTypes.find(type);
-        it != SField::pluginSTypes.end())
+    if (auto const it = SField::pluginSTypesPtr->find(type);
+        it != SField::pluginSTypesPtr->end())
     {
         value_ = it->second.fromSerialIter(type, st);
     }
@@ -60,8 +60,8 @@ std::string
 STPluginType::getText() const
 {
     int type = getSType();
-    if (auto const it = SField::pluginSTypes.find(type);
-        it != SField::pluginSTypes.end())
+    if (auto const it = SField::pluginSTypesPtr->find(type);
+        it != SField::pluginSTypesPtr->end())
     {
         return it->second.toString(type, value_);
     }
@@ -72,8 +72,8 @@ STPluginType::getText() const
 Json::Value STPluginType::getJson(JsonOptions /*options*/) const
 {
     int type = getSType();
-    if (auto const it = SField::pluginSTypes.find(type);
-        it != SField::pluginSTypes.end())
+    if (auto const it = SField::pluginSTypesPtr->find(type);
+        it != SField::pluginSTypesPtr->end())
     {
         if (it->second.toJson != NULL)
         {
@@ -89,8 +89,8 @@ void
 STPluginType::add(Serializer& s) const
 {
     int type = getSType();
-    if (auto const it = SField::pluginSTypes.find(type);
-        it != SField::pluginSTypes.end())
+    if (auto const it = SField::pluginSTypesPtr->find(type);
+        it != SField::pluginSTypesPtr->end())
     {
         return it->second.toSerializer(type, value_, s);
     }

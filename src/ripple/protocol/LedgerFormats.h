@@ -343,10 +343,10 @@ struct PluginLedgerFormat
     std::vector<SOElement> uniqueFields;
 };
 
-extern std::map<std::uint16_t, PluginLedgerFormat> pluginObjectsMap;
+extern std::map<std::uint16_t, PluginLedgerFormat>* pluginObjectsMapPtr;
 
 void
-registerLedgerObject(std::uint16_t type, char const* name, Container<SOElementExport> format);
+registerLedgerObjects(std::map<std::uint16_t, PluginLedgerFormat>* pluginObjectsMap);
 
 }  // namespace ripple
 

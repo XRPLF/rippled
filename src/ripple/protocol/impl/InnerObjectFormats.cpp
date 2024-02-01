@@ -23,43 +23,14 @@
 
 namespace ripple {
 
-struct PluginInnerObjectFormat
-{
-    std::string name;
-    std::vector<SOElement> uniqueFields;
-};
-
-std::map<std::uint16_t, PluginInnerObjectFormat> pluginInnerObjectFormats{};
+std::map<std::uint16_t, PluginInnerObjectFormat>* pluginInnerObjectFormatsPtr;
 
 void
-registerPluginInnerObjectFormat(InnerObjectExport innerObject)
+registerPluginInnerObjectFormats(
+    std::map<std::uint16_t, PluginInnerObjectFormat>* pluginInnerObjectFormats)
 {
-    SField const& field = SField::getField(innerObject.name);
-    if (field == sfInvalid)
-    {
-        throw std::runtime_error(
-            "Inner object SField " + std::string(innerObject.name) +
-            " does not exist");
-    }
-    if (field.fieldType != STI_OBJECT)
-    {
-        throw std::runtime_error(
-            "Inner object SField " + std::string(innerObject.name) +
-            " is not an STObject");
-    }
-    auto const strName = std::string(innerObject.name);
-    if (auto it = pluginInnerObjectFormats.find(innerObject.code);
-        it != pluginInnerObjectFormats.end())
-    {
-        if (it->second.name == strName)
-            return;
-        LogicError(
-            std::string("Duplicate key for plugin inner object '") + strName +
-            "': already exists");
-    }
-    pluginInnerObjectFormats.insert(
-        {innerObject.code,
-         {strName, convertToUniqueFields(innerObject.format)}});
+    pluginInnerObjectFormatsPtr = pluginInnerObjectFormats;
+    InnerObjectFormats::reset();
 }
 
 void
@@ -204,7 +175,6 @@ InnerObjectFormats::reset()
     auto& instance = getInstanceHelper();
     instance.clear();
     instance.cleared = true;
-    pluginInnerObjectFormats.clear();
 }
 
 InnerObjectFormats const&

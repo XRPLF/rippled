@@ -26,29 +26,13 @@
 
 namespace ripple {
 
-struct PluginTxFormat
-{
-    std::string txName;
-    std::vector<SOElement> uniqueFields;
-};
-
-std::map<std::uint16_t, PluginTxFormat> pluginTxFormats{};
+std::map<std::uint16_t, PluginTxFormat>* pluginTxFormatsPtr;
 
 void
-registerTxFormat(
-    std::uint16_t txType,
-    char const* txName,
-    Container<SOElementExport> txFormat)
+registerTxFormats(std::map<std::uint16_t, PluginTxFormat>* pluginTxFormats)
 {
-    auto const strName = std::string(txName);
-    if (auto it = pluginTxFormats.find(txType); it != pluginTxFormats.end())
-    {
-        LogicError(
-            std::string("Duplicate key for plugin transactor '") + strName +
-            "': already exists");
-    }
-    pluginTxFormats.insert(
-        {txType, {strName, convertToUniqueFields(txFormat)}});
+    pluginTxFormatsPtr = pluginTxFormats;
+    TxFormats::reset();
 }
 
 void
@@ -511,7 +495,7 @@ TxFormats::initialize()
 
     add(jss::DIDDelete, ttDID_DELETE, {}, commonFields);
 
-    for (auto& e : pluginTxFormats)
+    for (auto& e : *pluginTxFormatsPtr)
     {
         add(e.second.txName.c_str(),
             e.first,
@@ -547,7 +531,6 @@ TxFormats::reset()
     auto& instance = getInstanceHelper();
     instance.clear();
     instance.cleared = true;
-    pluginTxFormats.clear();
 }
 
 TxFormats const&

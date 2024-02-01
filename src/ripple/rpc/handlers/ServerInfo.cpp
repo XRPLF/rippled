@@ -235,7 +235,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         defs_[jss::FIELDS][i++] = a;
     }
 
-    for (auto const& [code, f] : ripple::SField::getKnownCodeToField())
+    for (auto const& [code, f] : *ripple::SField::getKnownCodeToField())
     {
         if (f->fieldName == "")
             continue;

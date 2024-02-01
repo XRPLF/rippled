@@ -26,6 +26,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/InnerObjectFormats.h>
 #include <ripple/protocol/Quality.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/TxFlags.h>
@@ -654,7 +655,7 @@ getTransactors()
 {
     static SOElementExport format[] = {
         {sfLimitAmount.getCode(), soeOPTIONAL},
-        {sfQualityIn2().getCode(), soeOPTIONAL},
+        {field_code(STI_UINT32_2, 1), soeOPTIONAL},
         {sfQualityOut.getCode(), soeOPTIONAL},
         {sfFakeArray().getCode(), soeOPTIONAL},
         {sfFakeElement().getCode(), soeOPTIONAL},
@@ -682,7 +683,6 @@ extern "C" Container<STypeExport>
 getSTypes()
 {
     reinitialize();
-    resetPlugins();
     static STypeExport exports[] = {
         {
             STI_UINT32_2,
@@ -696,12 +696,12 @@ getSTypes()
     for (int i = 0; i < sizeof(exports) / sizeof(exports[0]); i++)
     {
         auto const stype = exports[i];
-        registerSType(
-            {stype.typeId,
-             stype.toString,
-             stype.toJson,
-             stype.toSerializer,
-             stype.fromSerialIter});
+        // registerSType(
+        //     {stype.typeId,
+        //      stype.toString,
+        //      stype.toJson,
+        //      stype.toSerializer,
+        //      stype.fromSerialIter});
         registerLeafType(stype.typeId, stype.parsePtr);
     }
     STypeExport* ptr = exports;
@@ -711,19 +711,10 @@ getSTypes()
 extern "C" Container<SFieldExport>
 getSFields()
 {
-    auto const& qualityIn = sfQualityIn2();
-    auto const& fakeArray = sfFakeArray();
-    auto const& fakeElement = sfFakeElement();
     static SFieldExport sfields[] = {
-        {qualityIn.fieldType,
-         qualityIn.fieldValue,
-         qualityIn.fieldName.c_str()},
-        {fakeArray.fieldType,
-         fakeArray.fieldValue,
-         fakeArray.fieldName.c_str()},
-        {fakeElement.fieldType,
-         fakeElement.fieldValue,
-         fakeElement.fieldName.c_str()},
+        {STI_UINT32_2, 1, "QualityIn2"},
+        {STI_ARRAY, 30, "FakeArray"},
+        {STI_OBJECT, 17, "FakeElement"},
     };
     SFieldExport* ptr = sfields;
     return {ptr, 3};
@@ -768,4 +759,21 @@ getAmendments()
     static AmendmentExport list[] = {amendment};
     AmendmentExport* ptr = list;
     return {ptr, 1};
+}
+
+extern "C" void
+setPluginPointers(
+    std::map<std::uint16_t, PluginTxFormat>* pluginTxFormatPtr,
+    std::map<std::uint16_t, PluginLedgerFormat>* pluginObjectsMapPtr,
+    std::map<std::uint16_t, PluginInnerObjectFormat>*
+        pluginInnerObjectFormatsPtr,
+    std::map<int, SField const*>* knownCodeToFieldPtr,
+    std::vector<int>* pluginSFieldCodesPtr,
+    std::map<int, STypeFunctions>* pluginSTypesPtr)
+{
+    registerTxFormats(pluginTxFormatPtr);
+    registerLedgerObjects(pluginObjectsMapPtr);
+    registerPluginInnerObjectFormats(pluginInnerObjectFormatsPtr);
+    registerSFields(knownCodeToFieldPtr, pluginSFieldCodesPtr);
+    registerSTypes(pluginSTypesPtr);
 }

@@ -30,10 +30,6 @@ namespace ripple {
 void
 resetPlugins()
 {
-    SField::reset();
-    TxFormats::reset();
-    LedgerFormats::reset();
-    InnerObjectFormats::reset();
     resetPluginInvariantChecks();
     resetPluginTERcodes();
 }

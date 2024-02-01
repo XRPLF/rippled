@@ -158,8 +158,8 @@ STVar::STVar(SerialIter& sit, SField const& name, int depth)
             construct<STXChainBridge>(sit, name);
             return;
         default:
-            if (auto it = SField::pluginSTypes.find(name.fieldType);
-                it != SField::pluginSTypes.end())
+            if (auto it = SField::pluginSTypesPtr->find(name.fieldType);
+                it != SField::pluginSTypesPtr->end())
             {
                 // TODO: figure out how to handle more complex types that have
                 // depth
@@ -230,8 +230,8 @@ STVar::STVar(int id, SField const& name)
             construct<STXChainBridge>(name);
             return;
         default:
-            if (auto it = SField::pluginSTypes.find(name.fieldType);
-                it != SField::pluginSTypes.end())
+            if (auto it = SField::pluginSTypesPtr->find(name.fieldType);
+                it != SField::pluginSTypesPtr->end())
             {
                 construct<STPluginType>(name);
                 return;
