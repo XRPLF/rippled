@@ -83,6 +83,23 @@ struct TransactorExport
 };
 typedef Container<TransactorExport> (*getTransactorsPtr)();
 
+#define INITIALIZE_PLUGIN()                                               \
+    extern "C" void setPluginPointers(                                    \
+        std::map<std::uint16_t, PluginTxFormat>* pluginTxFormatPtr,       \
+        std::map<std::uint16_t, PluginLedgerFormat>* pluginObjectsMapPtr, \
+        std::map<std::uint16_t, PluginInnerObjectFormat>*                 \
+            pluginInnerObjectFormatsPtr,                                  \
+        std::map<int, SField const*>* knownCodeToFieldPtr,                \
+        std::vector<int>* pluginSFieldCodesPtr,                           \
+        std::map<int, STypeFunctions>* pluginSTypesPtr)                   \
+    {                                                                     \
+        registerTxFormats(pluginTxFormatPtr);                             \
+        registerLedgerObjects(pluginObjectsMapPtr);                       \
+        registerPluginInnerObjectFormats(pluginInnerObjectFormatsPtr);    \
+        registerSFields(knownCodeToFieldPtr, pluginSFieldCodesPtr);       \
+        registerSTypes(pluginSTypesPtr);                                  \
+    }
+
 }  // namespace ripple
 
 #endif
