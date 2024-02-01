@@ -222,9 +222,13 @@ jobs:
           path: coverage.xml
           retention-days: 30
       - name: upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: wandalen/wretry.action@v1.3.0
         with:
-          files: coverage.xml
-          fail_ci_if_error: true
-          verbose: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+          action: codecov/codecov-action@v3
+          with: |
+            files: coverage.xml
+            fail_ci_if_error: true
+            verbose: true
+            token: ${{ secrets.CODECOV_TOKEN }}
+          attempt_limit: 5
+          attempt_delay: 35000 # in milliseconds
