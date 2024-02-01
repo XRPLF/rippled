@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_STXCHAINBRIDGE_H_INCLUDED
 #define RIPPLE_PROTOCOL_STXCHAINBRIDGE_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STBase.h>
 #include <ripple/protocol/STIssue.h>
@@ -29,7 +30,7 @@ namespace ripple {
 class Serializer;
 class STObject;
 
-class STXChainBridge final : public STBase
+class STXChainBridge final : public STBase, public CountedObject<STXChainBridge>
 {
     STAccount lockingChainDoor_{sfLockingChainDoor};
     STIssue lockingChainIssue_{sfLockingChainIssue};

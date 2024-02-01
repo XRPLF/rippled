@@ -20,13 +20,14 @@
 #ifndef RIPPLE_PROTOCOL_STVECTOR256_H_INCLUDED
 #define RIPPLE_PROTOCOL_STVECTOR256_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/STBase.h>
 #include <ripple/protocol/STBitString.h>
 #include <ripple/protocol/STInteger.h>
 
 namespace ripple {
 
-class STVector256 : public STBase
+class STVector256 : public STBase, public CountedObject<STVector256>
 {
     std::vector<uint256> mValue;
 

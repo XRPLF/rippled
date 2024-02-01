@@ -35,7 +35,7 @@ namespace ripple {
 
 namespace test {
 
-class TxQ1_test : public beast::unit_test::suite
+class TxQPosNegFlows_test : public beast::unit_test::suite
 {
     void
     checkMetrics(
@@ -1018,6 +1018,9 @@ public:
 
         // Fail in preflight
         env(pay(alice, bob, XRP(-1000)), ter(temBAD_AMOUNT));
+
+        // Fail in preflight
+        env(pay(alice, alice, XRP(100)), ter(temREDUNDANT));
 
         // Fail in preclaim
         env(noop(alice), fee(XRP(100000)), ter(terINSUF_FEE_B));
@@ -4949,7 +4952,7 @@ public:
     }
 
     void
-    run2()
+    runMetaInfo()
     {
         testAcctInQueueButEmpty();
         testRPC();
@@ -4970,17 +4973,17 @@ public:
     }
 };
 
-class TxQ2_test : public TxQ1_test
+class TxQMetaInfo_test : public TxQPosNegFlows_test
 {
     void
     run() override
     {
-        run2();
+        runMetaInfo();
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(TxQ1, app, ripple, 1);
-BEAST_DEFINE_TESTSUITE_PRIO(TxQ2, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(TxQPosNegFlows, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(TxQMetaInfo, app, ripple, 1);
 
 }  // namespace test
 }  // namespace ripple

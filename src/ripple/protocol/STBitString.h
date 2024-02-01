@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_STBITSTRING_H_INCLUDED
 #define RIPPLE_PROTOCOL_STBITSTRING_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/beast/utility/Zero.h>
 #include <ripple/protocol/STBase.h>
 
@@ -30,7 +31,7 @@ namespace ripple {
 // information of a template parameterized by an unsigned type. This RTTI
 // information is needed to write gdb pretty printers.
 template <int Bits>
-class STBitString final : public STBase
+class STBitString final : public STBase, public CountedObject<STBitString<Bits>>
 {
     static_assert(Bits > 0, "Number of bits must be positive");
 
