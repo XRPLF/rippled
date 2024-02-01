@@ -113,23 +113,23 @@ public:
         using namespace jtx;
         Account const alice{"alice"};
 
-        // // plugin that doesn't exist
-        // {
-        //     try
-        //     {
-        //         reinitialize();
-        //         // this should crash
-        //         PluginEnv env{
-        //             *this,
-        //             makeConfig("plugin_test_faketest.xrplugin"),
-        //             FeatureBitset{supported_amendments_plugins()}};
-        //         BEAST_EXPECT(false);
-        //     }
-        //     catch (std::runtime_error)
-        //     {
-        //         BEAST_EXPECT(true);
-        //     }
-        // }
+        // plugin that doesn't exist
+        {
+            try
+            {
+                reinitialize();
+                // this should crash
+                PluginEnv env{
+                    *this,
+                    makeConfig("plugin_test_faketest.xrplugin"),
+                    FeatureBitset{supported_amendments_plugins()}};
+                BEAST_EXPECT(false);
+            }
+            catch (std::runtime_error)
+            {
+                BEAST_EXPECT(true);
+            }
+        }
 
         // valid plugin that exists
         {
@@ -610,7 +610,7 @@ public:
         testPluginLoading();
         testBasicTransactor();
         testPluginSTypeSField();
-        // testPluginLedgerObjectInvariantCheck();
+        testPluginLedgerObjectInvariantCheck();
         // testPluginFailure();
     }
 };
