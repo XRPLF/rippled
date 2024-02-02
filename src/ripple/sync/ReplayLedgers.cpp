@@ -101,8 +101,9 @@ ReplayLedgers::withSkipList(SkipList const& skipList)
 
     if (!parent)
     {
-        if (limit_--)
+        if (--limit_)
         {
+            JLOG(getter_.journal_.info()) << "ReplayLedgers " << digest_ << ",limit" << limit_;
             return getter_.peerClient_
                 .getSkipList(ripple::copy(skipList_.back()))
                 ->thenv(std::bind_front(&ReplayLedgers::withSkipList, this));

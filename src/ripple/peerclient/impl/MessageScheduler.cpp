@@ -538,7 +538,7 @@ MessageScheduler::timeout_(RequestId requestId)
             std::chrono::duration_cast<std::chrono::milliseconds>(duration);
         stream << "timeout,id=" << requestId
             << ",peer" << request->metaPeer->id
-            << ",time=" << duration_ms << "ms";
+            << ",time=" << duration_ms;
     }
 
     reopen(lock, "timeout_", request->metaPeer, [&] {
@@ -565,6 +565,7 @@ MessageScheduler::reopen(
     SenderQueue senders;
     push_value tsenders_(tsenders, &senders);
 
+    auto start = Clock::now();
     try
     {
         // Non-trivial callbacks should just schedule a job.
@@ -574,6 +575,12 @@ MessageScheduler::reopen(
     catch (...)
     {
         JLOG(journal_.error()) << "unhandled exception from callback";
+    }
+    auto duration = Clock::now() - start;
+    auto duration_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+    if (duration_ms > std::chrono::milliseconds(100)) {
+        JLOG(journal_.warn()) << "excessive time taken by callback";
     }
 
     if (!senders_.empty())
