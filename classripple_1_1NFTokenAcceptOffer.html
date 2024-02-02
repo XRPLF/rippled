@@ -227,6 +227,8 @@ Private Member Functions</h2></td></tr>
 <tr class="separator:a0b91d74786d52706ee63f2f269d900e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7460d64aede739a49060b72fec69bd92"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NFTokenAcceptOffer.html#a7460d64aede739a49060b72fec69bd92">bridgeOffers</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> &gt; const &amp;buy, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> &gt; const &amp;<a class="el" href="namespaceripple.html#a786c40cb27211e1704047accb2ca26bdadbde26a73174cf0eca91032d18650b52">sell</a>)</td></tr>
 <tr class="separator:a7460d64aede739a49060b72fec69bd92"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7b62c64ee4490b891706f1a1c4fcaa08"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NFTokenAcceptOffer.html#a7b62c64ee4490b891706f1a1c4fcaa08">transferNFToken</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;buyer, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;seller, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;nfTokenID)</td></tr>
+<tr class="separator:a7b62c64ee4490b891706f1a1c4fcaa08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af81f796422a3f66771e31a6ecbbbf57b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>, <a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#af81f796422a3f66771e31a6ecbbbf57b">reset</a> (<a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> fee)</td></tr>
 <tr class="memdesc:af81f796422a3f66771e31a6ecbbbf57b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset the context, discarding any changes made and adjust the fee.  <a href="classripple_1_1Transactor.html#af81f796422a3f66771e31a6ecbbbf57b">More...</a><br /></td></tr>
 <tr class="separator:af81f796422a3f66771e31a6ecbbbf57b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -300,7 +302,7 @@ Static Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8h_source.html#l00044">44</a> of file <a class="el" href="NFTokenAcceptOffer_8h_source.html">NFTokenAcceptOffer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8h_source.html#l00050">50</a> of file <a class="el" href="NFTokenAcceptOffer_8h_source.html">NFTokenAcceptOffer.h</a>.</p>
 
 </div>
 </div>
@@ -373,7 +375,7 @@ Static Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8cpp_source.html#l00305">305</a> of file <a class="el" href="NFTokenAcceptOffer_8cpp_source.html">NFTokenAcceptOffer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8cpp_source.html#l00359">359</a> of file <a class="el" href="NFTokenAcceptOffer_8cpp_source.html">NFTokenAcceptOffer.cpp</a>.</p>
 
 </div>
 </div>
@@ -410,6 +412,50 @@ Static Private Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7b62c64ee4490b891706f1a1c4fcaa08"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7b62c64ee4490b891706f1a1c4fcaa08">&#9670;&nbsp;</a></span>transferNFToken()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a> ripple::NFTokenAcceptOffer::transferNFToken </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>buyer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>seller</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>nfTokenID</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8cpp_source.html#l00305">305</a> of file <a class="el" href="NFTokenAcceptOffer_8cpp_source.html">NFTokenAcceptOffer.cpp</a>.</p>
 
 </div>
 </div>
@@ -494,7 +540,7 @@ Static Private Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Transactor.html#af0192505cdcebc1bb31be32dfb62aa72">ripple::Transactor</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8cpp_source.html#l00350">350</a> of file <a class="el" href="NFTokenAcceptOffer_8cpp_source.html">NFTokenAcceptOffer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8cpp_source.html#l00394">394</a> of file <a class="el" href="NFTokenAcceptOffer_8cpp_source.html">NFTokenAcceptOffer.cpp</a>.</p>
 
 </div>
 </div>
@@ -1092,7 +1138,7 @@ Static Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8h_source.html#l00042">42</a> of file <a class="el" href="NFTokenAcceptOffer_8h_source.html">NFTokenAcceptOffer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8h_source.html#l00048">48</a> of file <a class="el" href="NFTokenAcceptOffer_8h_source.html">NFTokenAcceptOffer.h</a>.</p>
 
 </div>
 </div>
