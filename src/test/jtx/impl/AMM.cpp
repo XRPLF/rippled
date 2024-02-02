@@ -495,6 +495,22 @@ AMM::deposit(
 }
 
 IOUAmount
+AMM::deposit(DepositArg const& arg)
+{
+    return deposit(
+        arg.account,
+        arg.tokens,
+        arg.asset1In,
+        arg.asset2In,
+        arg.maxEP,
+        arg.flags,
+        arg.assets,
+        arg.seq,
+        arg.tfee,
+        arg.err);
+}
+
+IOUAmount
 AMM::withdraw(
     std::optional<Account> const& account,
     Json::Value& jv,
@@ -598,6 +614,21 @@ AMM::withdraw(
     return withdraw(account, jv, seq, assets, ter);
 }
 
+IOUAmount
+AMM::withdraw(WithdrawArg const& arg)
+{
+    return withdraw(
+        arg.account,
+        arg.tokens,
+        arg.asset1Out,
+        arg.asset2Out,
+        arg.maxEP,
+        arg.flags,
+        arg.assets,
+        arg.seq,
+        arg.err);
+}
+
 void
 AMM::vote(
     std::optional<Account> const& account,
@@ -617,6 +648,12 @@ AMM::vote(
     if (fee_ != 0)
         jv[jss::Fee] = std::to_string(fee_);
     submit(jv, seq, ter);
+}
+
+void
+AMM::vote(VoteArg const& arg)
+{
+    return vote(arg.account, arg.tfee, arg.flags, arg.seq, arg.assets, arg.err);
 }
 
 void
@@ -688,6 +725,20 @@ AMM::bid(
 }
 
 void
+AMM::bid(BidArg const& arg)
+{
+    return bid(
+        arg.account,
+        arg.bidMin,
+        arg.bidMax,
+        arg.authAccounts,
+        arg.flags,
+        arg.seq,
+        arg.assets,
+        arg.err);
+}
+
+void
 AMM::submit(
     Json::Value const& jv,
     std::optional<jtx::seq> const& seq,
@@ -729,7 +780,9 @@ AMM::expectAuctionSlot(auto&& cb) const
             static_cast<STObject const&>(amm->peekAtField(sfAuctionSlot));
         if (auctionSlot.isFieldPresent(sfAccount))
         {
-            auto const slotFee = auctionSlot[sfDiscountedFee];
+            // this could fail in pre-fixInnerObjTemplate test if one
+            // the fail-cases. access as optional to avoid the failure
+            auto const slotFee = auctionSlot[~sfDiscountedFee].value_or(0);
             auto const slotInterval = ammAuctionTimeSlot(
                 env_.app().timeKeeper().now().time_since_epoch().count(),
                 auctionSlot);

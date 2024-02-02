@@ -299,6 +299,17 @@ initializeFeeAuctionVote(
     ammSle->setFieldArray(sfVoteSlots, voteSlots);
     // AMM creator gets the auction slot for free.
     STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot, rules);
+    if (!rules.enabled(fixInnerObjTemplate) &&
+        ammSle->isFieldPresent(sfAuctionSlot))
+    {
+        auto const& origAuctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
+        // this is executed on deposit from empty state.
+        // pre-amendment code re-uses AuthAccounts
+        // post-amendment code resets AuthAccounts
+        if (origAuctionSlot.isFieldPresent(sfAuthAccounts))
+            auctionSlot.setFieldArray(
+                sfAuthAccounts, origAuctionSlot.getFieldArray(sfAuthAccounts));
+    }
     auctionSlot.setAccountID(sfAccount, account);
     // current + sec in 24h
     auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(
