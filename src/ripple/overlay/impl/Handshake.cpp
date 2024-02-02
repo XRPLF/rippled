@@ -42,7 +42,7 @@ getFeatureValue(
         return {};
     boost::smatch match;
     boost::regex rx(feature + "=([^;\\s]+)");
-    std::string const allFeatures = std::string{header->value()};
+    std::string const allFeatures(header->value());
     if (boost::regex_search(allFeatures, match, rx))
         return {match[1]};
     return {};
