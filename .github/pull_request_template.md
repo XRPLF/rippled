@@ -33,6 +33,7 @@ Please check [x] relevant options, delete irrelevant ones.
 - [ ] New feature (non-breaking change which adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Refactor (non-breaking change that only restructures code)
+- [ ] Performance (increase or change in throughput and/or latency)
 - [ ] Tests (you added tests for code that already exists, or your new feature included in this PR)
 - [ ] Documentation update
 - [ ] Chore (no impact to binary, e.g. `.gitignore`, formatting, dropping support for older tooling)
@@ -58,6 +59,12 @@ Please check [x] relevant options, delete irrelevant ones.
 ## Before / After
 If relevant, use this section for an English description of the change at a technical level.
 If this change affects an API, examples should be included here.
+
+For performance-impacting changes, please provide these details:
+1. Is this a new feature, bug fix, or improvement to existing functionality?
+2. What behavior/functionality does the change impact?
+3. In what processing can the impact be measured? Be as specific as possible - e.g. RPC client call, payment transaction that involves LOB, AMM, caching, DB operations, etc.
+4. Does this change affect concurrent processing - e.g. does it involve acquiring locks, multi-threaded processing, or async processing?
 -->
 
 <!--

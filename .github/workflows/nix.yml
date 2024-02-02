@@ -49,7 +49,7 @@ jobs:
               cc: /usr/bin/clang-14
               cxx: /usr/bin/clang++-14
     runs-on: [self-hosted, heavy]
-    container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
+    container: rippleci/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
     steps:
@@ -125,7 +125,7 @@ jobs:
           - "-Dunity=ON"
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
+    container: rippleci/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
     steps:
@@ -159,3 +159,76 @@ jobs:
       - name: test
         run: |
           ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
+
+
+  coverage:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux
+        compiler:
+          - gcc
+        configuration:
+          - Debug
+    needs: dependencies
+    runs-on: [self-hosted, heavy]
+    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    env:
+      build_dir: .build
+    steps:
+      - name: download cache
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+      - name: extract cache
+        run: |
+          mkdir -p ~/.conan
+          tar -xzf conan.tar -C ~/.conan
+      - name: check environment
+        run: |
+          echo ${PATH} | tr ':' '\n'
+          conan --version
+          cmake --version
+          gcovr --version
+          env | sort
+          ls ~/.conan
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: dependencies
+        uses: ./.github/actions/dependencies
+        with:
+          configuration: ${{ matrix.configuration }}
+      - name: build
+        uses: ./.github/actions/build
+        with:
+          generator: Ninja
+          configuration: ${{ matrix.configuration }}
+          cmake-args: >-
+            -Dcoverage=ON
+            -Dcoverage_format=xml
+            -DCODE_COVERAGE_VERBOSE=ON
+            -DCMAKE_CXX_FLAGS="-O0"
+            -DCMAKE_C_FLAGS="-O0"
+          cmake-target: coverage
+      - name: build
+        shell: bash
+        run: |
+          mv "${build_dir}/coverage.xml" ./
+      - name: archive coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage.xml
+          path: coverage.xml
+          retention-days: 30
+      - name: upload coverage report
+        uses: wandalen/wretry.action@v1.3.0
+        with:
+          action: codecov/codecov-action@v3
+          with: |
+            files: coverage.xml
+            fail_ci_if_error: true
+            verbose: true
+            token: ${{ secrets.CODECOV_TOKEN }}
+          attempt_limit: 5
+          attempt_delay: 35000 # in milliseconds
