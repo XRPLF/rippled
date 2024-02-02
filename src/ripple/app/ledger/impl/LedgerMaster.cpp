@@ -367,8 +367,6 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
     }
 
     mValidLedger.set(l);
-    // In case we're waiting for a valid before proceeding with Consensus.
-    validCond_.notify_one();
     mValidLedgerSign = signTime.time_since_epoch().count();
     assert(
         mValidLedgerSeq || !app_.getMaxDisallowedLedger() ||
@@ -551,25 +549,22 @@ void
 LedgerMaster::applyHeldTransactions()
 {
     std::lock_guard sl(m_mutex);
-    // It can be expensive to modify the open ledger even with no transactions
-    // to process. Regardless, make sure to reset held transactions with
-    // the parent.
-    if (mHeldTransactions.size())
-    {
-        app_.openLedger().modify([&](OpenView& view, beast::Journal j) {
-            bool any = false;
-            for (auto const& it : mHeldTransactions)
-            {
-                ApplyFlags flags = tapNONE;
-                auto const result =
-                    app_.getTxQ().apply(app_, view, it.second, flags, j);
-                if (result.second)
-                    any = true;
-            }
-            return any;
-        });
-    }
 
+    app_.openLedger().modify([&](OpenView& view, beast::Journal j) {
+        bool any = false;
+        for (auto const& it : mHeldTransactions)
+        {
+            ApplyFlags flags = tapNONE;
+            auto const result =
+                app_.getTxQ().apply(app_, view, it.second, flags, j);
+            if (result.second)
+                any = true;
+        }
+        return any;
+    });
+
+    // VFALCO TODO recreate the CanonicalTxSet object instead of resetting
+    // it.
     // VFALCO NOTE The hash for an open ledger is undefined so we use
     // something that is a reasonable substitute.
     mHeldTransactions.reset(app_.openLedger().current()->info().parentHash);
@@ -1548,6 +1543,7 @@ LedgerMaster::updatePaths()
         if (app_.getOPs().isNeedNetworkLedger())
         {
             --mPathFindThread;
+            mPathLedger.reset();
             JLOG(m_journal.debug()) << "Need network ledger for updating paths";
             return;
         }
@@ -1573,6 +1569,7 @@ LedgerMaster::updatePaths()
             else
             {  // Nothing to do
                 --mPathFindThread;
+                mPathLedger.reset();
                 JLOG(m_journal.debug()) << "Nothing to do for updating paths";
                 return;
             }
@@ -1589,6 +1586,7 @@ LedgerMaster::updatePaths()
                     << "Published ledger too old for updating paths";
                 std::lock_guard ml(m_mutex);
                 --mPathFindThread;
+                mPathLedger.reset();
                 return;
             }
         }
@@ -1601,6 +1599,7 @@ LedgerMaster::updatePaths()
                 if (!pathRequests.requestsPending())
                 {
                     --mPathFindThread;
+                    mPathLedger.reset();
                     JLOG(m_journal.debug())
                         << "No path requests found. Nothing to do for updating "
                            "paths. "
@@ -1618,6 +1617,7 @@ LedgerMaster::updatePaths()
                     << "No path requests left. No need for further updating "
                        "paths";
                 --mPathFindThread;
+                mPathLedger.reset();
                 return;
             }
         }

@@ -64,9 +64,16 @@ elseif(APPLE)
   endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(${PROJECT_NAME}_windows "secp256k1")
-  if(MSVC)
-    set(${PROJECT_NAME}_windows "${PROJECT_NAME}")
-  endif()
+  # This step is commented out from the original. It is bad practice to change
+  # the binary base name depending on the platform. CMake already manipulates
+  # the base name into a final name that fits the conventions of the platform.
+  # Linkers accept base names on the command line and then look for
+  # conventional names on disk. This way, developers can use base names
+  # everywhere (in the CMake and Conan they write) and the tools will do the
+  # right thing.
+  # if(MSVC)
+  #   set(${PROJECT_NAME}_windows "${PROJECT_NAME}")
+  # endif()
   set_target_properties(secp256k1 PROPERTIES
     ARCHIVE_OUTPUT_NAME "${${PROJECT_NAME}_windows}"
     RUNTIME_OUTPUT_NAME "${${PROJECT_NAME}_windows}-${${PROJECT_NAME}_soversion}"

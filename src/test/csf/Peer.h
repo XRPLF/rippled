@@ -19,9 +19,6 @@
 #ifndef RIPPLE_TEST_CSF_PEER_H_INCLUDED
 #define RIPPLE_TEST_CSF_PEER_H_INCLUDED
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/WrappedSink.h>
 #include <ripple/consensus/Consensus.h>
 #include <ripple/consensus/Validations.h>
@@ -29,10 +26,6 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
 #include <algorithm>
-#include <chrono>
-#include <memory>
-#include <mutex>
-#include <optional>
 #include <test/csf/CollectorRef.h>
 #include <test/csf/Scheduler.h>
 #include <test/csf/TrustGraph.h>
@@ -40,7 +33,6 @@
 #include <test/csf/Validation.h>
 #include <test/csf/events.h>
 #include <test/csf/ledgers.h>
-#include <test/jtx/Env.h>
 
 namespace ripple {
 namespace test {
@@ -166,12 +158,9 @@ struct Peer
     using NodeID_t = PeerID;
     using NodeKey_t = PeerKey;
     using TxSet_t = TxSet;
-    using CanonicalTxSet_t = TxSet;
     using PeerPosition_t = Position;
     using Result = ConsensusResult<Peer>;
     using NodeKey = Validation::NodeKey;
-
-    using clock_type = Stopwatch;
 
     //! Logging support that prefixes messages with the peer ID
     beast::WrappedSink sink;
@@ -251,7 +240,7 @@ struct Peer
 
     // Quorum of validations needed for a ledger to be fully validated
     // TODO: Use the logic in ValidatorList to set this dynamically
-    std::size_t q = 0;
+    std::size_t quorum = 0;
 
     hash_set<NodeKey_t> trustedKeys;
 
@@ -260,16 +249,6 @@ struct Peer
 
     //! The collectors to report events to
     CollectorRefs& collectors;
-
-    mutable std::recursive_mutex mtx;
-
-    std::optional<std::chrono::milliseconds> delay;
-
-    struct Null_test : public beast::unit_test::suite
-    {
-        void
-        run() override{};
-    };
 
     /** Constructor
 
@@ -517,8 +496,7 @@ struct Peer
     onClose(
         Ledger const& prevLedger,
         NetClock::time_point closeTime,
-        ConsensusMode mode,
-        clock_type& clock)
+        ConsensusMode mode)
     {
         issue(CloseLedger{prevLedger, openTxs});
 
@@ -530,9 +508,7 @@ struct Peer
                 TxSet::calcID(openTxs),
                 closeTime,
                 now(),
-                id,
-                prevLedger.seq() + typename Ledger_t::Seq{1},
-                scheduler.clock()));
+                id));
     }
 
     void
@@ -544,10 +520,11 @@ struct Peer
         ConsensusMode const& mode,
         Json::Value&& consensusJson)
     {
-        buildAndValidate(
+        onAccept(
             result,
             prevLedger,
             closeResolution,
+            rawCloseTimes,
             mode,
             std::move(consensusJson));
     }
@@ -555,18 +532,9 @@ struct Peer
     void
     onAccept(
         Result const& result,
-        ConsensusCloseTimes const& rawCloseTimes,
-        ConsensusMode const& mode,
-        Json::Value&& consensusJson,
-        std::pair<CanonicalTxSet_t, Ledger_t>&& txsBuilt)
-    {
-    }
-
-    std::pair<CanonicalTxSet_t, Ledger_t>
-    buildAndValidate(
-        Result const& result,
-        Ledger_t const& prevLedger,
+        Ledger const& prevLedger,
         NetClock::duration const& closeResolution,
+        ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
         Json::Value&& consensusJson)
     {
@@ -631,8 +599,6 @@ struct Peer
                 startRound();
             }
         });
-
-        return {};
     }
 
     // Earliest allowed sequence number when checking for ledgers with more
@@ -728,8 +694,8 @@ struct Peer
 
         std::size_t const count = validations.numTrustedForLedger(ledger.id());
         std::size_t const numTrustedPeers = trustGraph.graph().outDegree(this);
-        q = static_cast<std::size_t>(std::ceil(numTrustedPeers * 0.8));
-        if (count >= q && ledger.isAncestor(fullyValidatedLedger))
+        quorum = static_cast<std::size_t>(std::ceil(numTrustedPeers * 0.8));
+        if (count >= quorum && ledger.isAncestor(fullyValidatedLedger))
         {
             issue(FullyValidateLedger{ledger, fullyValidatedLedger});
             fullyValidatedLedger = ledger;
@@ -884,13 +850,7 @@ struct Peer
         hash_set<NodeKey_t> keys;
         for (auto const p : trustGraph.trustedPeers(this))
             keys.insert(p->key);
-        return {q, keys};
-    }
-
-    std::size_t
-    quorum() const
-    {
-        return q;
+        return {quorum, keys};
     }
 
     std::size_t
@@ -1012,70 +972,6 @@ struct Peer
         res.insert(it->second);
 
         return TxSet{res};
-    }
-
-    LedgerMaster&
-    getLedgerMaster() const
-    {
-        Null_test test;
-        jtx::Env env(test);
-
-        return env.app().getLedgerMaster();
-    }
-
-    void
-    clearValidating()
-    {
-    }
-
-    bool
-    retryAccept(
-        Ledger_t const& newLedger,
-        std::optional<std::chrono::time_point<std::chrono::steady_clock>>&
-            start) const
-    {
-        return false;
-    }
-
-    std::recursive_mutex&
-    peekMutex() const
-    {
-        return mtx;
-    }
-
-    void
-    endConsensus() const
-    {
-    }
-
-    bool
-    validating() const
-    {
-        return false;
-    }
-
-    std::optional<std::chrono::milliseconds>
-    getValidationDelay() const
-    {
-        return delay;
-    }
-
-    void
-    setValidationDelay(
-        std::optional<std::chrono::milliseconds> vd = std::nullopt) const
-    {
-    }
-
-    std::optional<std::chrono::milliseconds>
-    getTimerDelay() const
-    {
-        return delay;
-    }
-
-    void
-    setTimerDelay(
-        std::optional<std::chrono::milliseconds> vd = std::nullopt) const
-    {
     }
 };
 

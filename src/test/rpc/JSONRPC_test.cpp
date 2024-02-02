@@ -19,7 +19,6 @@
 
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/TxQ.h>
-#include <ripple/basics/SubmitSync.h>
 #include <ripple/basics/contract.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/ConfigSections.h>
@@ -70,14 +69,14 @@ struct TxnTestData
 
 static constexpr TxnTestData txnTestArray[] = {
 
-    {"Minimal payment.",
+    {"Minimal payment, no Amount only DeliverMax",
      __LINE__,
      R"({
     "command": "doesnt_matter",
     "secret": "masterpassphrase",
     "tx_json": {
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-        "Amount": "1000000000",
+        "DeliverMax": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "TransactionType": "Payment"
     }
@@ -87,7 +86,7 @@ static constexpr TxnTestData txnTestArray[] = {
        "Missing field 'account'.",
        "Missing field 'tx_json.Sequence'."}}},
 
-    {"Pass in Fee with minimal payment.",
+    {"Pass in Fee with minimal payment, both Amount and DeliverMax.",
      __LINE__,
      R"({
     "command": "doesnt_matter",
@@ -97,6 +96,7 @@ static constexpr TxnTestData txnTestArray[] = {
         "Fee": 10,
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
+        "DeliverMax": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "TransactionType": "Payment"
     }
@@ -106,7 +106,7 @@ static constexpr TxnTestData txnTestArray[] = {
        "Missing field 'tx_json.Sequence'.",
        "Missing field 'tx_json.Sequence'."}}},
 
-    {"Pass in Sequence.",
+    {"Pass in Sequence, no Amount only DeliverMax",
      __LINE__,
      R"({
     "command": "doesnt_matter",
@@ -115,7 +115,7 @@ static constexpr TxnTestData txnTestArray[] = {
     "tx_json": {
         "Sequence": 0,
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
-        "Amount": "1000000000",
+        "DeliverMax": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "TransactionType": "Payment"
     }
@@ -125,7 +125,8 @@ static constexpr TxnTestData txnTestArray[] = {
        "Missing field 'tx_json.Fee'.",
        "Missing field 'tx_json.SigningPubKey'."}}},
 
-    {"Pass in Sequence and Fee with minimal payment.",
+    {"Pass in Sequence and Fee with minimal payment, both Amount and "
+     "DeliverMax.",
      __LINE__,
      R"({
     "command": "doesnt_matter",
@@ -136,6 +137,7 @@ static constexpr TxnTestData txnTestArray[] = {
         "Fee": 10,
         "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
         "Amount": "1000000000",
+        "DeliverMax": "1000000000",
         "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
         "TransactionType": "Payment"
     }
@@ -2499,7 +2501,7 @@ public:
     fakeProcessTransaction(
         std::shared_ptr<Transaction>&,
         bool,
-        SubmitSync,
+        bool,
         NetworkOPs::FailHard)
     {
         ;
@@ -2549,8 +2551,7 @@ public:
             Role role,
             std::chrono::seconds validatedLedgerAge,
             Application& app,
-            ProcessTransactionFn const& processTransaction,
-            RPC::SubmitSync sync);
+            ProcessTransactionFn const& processTransaction);
 
         using TestStuff =
             std::tuple<signFunc, submitFunc, char const*, unsigned int>;
@@ -2605,8 +2606,7 @@ public:
                             testRole,
                             1s,
                             env.app(),
-                            processTxn,
-                            RPC::SubmitSync::sync);
+                            processTxn);
                     }
 
                     std::string errStr;
