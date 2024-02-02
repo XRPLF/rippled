@@ -904,16 +904,12 @@ ValidatorList::applyListsAndBroadcast(
     bool broadcast = disposition <= ListDisposition::known_sequence;
 
     // localPublisherList is not broadcast
-    if (broadcast)
+    if (broadcast && result.status <= PublisherStatus::expired &&
+        result.publisherKey &&
+        publisherLists_[*result.publisherKey].maxSequence)
     {
-        assert(
-            result.status <= PublisherStatus::expired && result.publisherKey &&
-            publisherLists_[*result.publisherKey].maxSequence);
         auto const& pubCollection = publisherLists_[*result.publisherKey];
 
-        // The below function call is executed for PublicKeys which are not
-        // specified in the config file. The assert statement above filters
-        // out PublisherLists which are not associated with a master key.
         broadcastBlobs(
             *result.publisherKey,
             pubCollection,
@@ -1307,7 +1303,6 @@ ValidatorList::verify(
     }
 
     auto const signingKey = publisherManifests_.getSigningKey(masterPubKey);
-    assert(revoked || signingKey);
 
     if (revoked || !signingKey || result == ManifestDisposition::invalid)
         return {ListDisposition::untrusted, masterPubKey};

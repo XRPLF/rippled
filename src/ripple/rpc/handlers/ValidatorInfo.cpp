@@ -46,12 +46,7 @@ doValidatorInfo(RPC::JsonContext& context)
     if (mk == validationPK)
         return ret;
 
-    // lookup ephemeral key
-    auto const ek = context.app.validatorManifests().getSigningKey(mk);
-
-    assert(ek == validationPK);
-
-    ret[jss::ephemeral_key] = toBase58(TokenType::NodePublic, *ek);
+    ret[jss::ephemeral_key] = toBase58(TokenType::NodePublic, *validationPK);
 
     if (auto const manifest = context.app.validatorManifests().getManifest(mk))
         ret[jss::manifest] = base64_encode(*manifest);

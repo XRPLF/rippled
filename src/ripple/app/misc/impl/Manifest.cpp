@@ -39,9 +39,11 @@ to_string(Manifest const& m)
 {
     auto const mk = toBase58(TokenType::NodePublic, m.masterKey);
 
-    assert(m.signingKey || m.revoked());
     if (m.revoked())
         return "Revocation Manifest " + mk;
+
+    if (!m.signingKey)
+        Throw<std::runtime_error>("No SigningKey in manifest " + mk);
 
     return "Manifest " + mk + " (" + std::to_string(m.sequence) + ": " +
         toBase58(TokenType::NodePublic, *m.signingKey) + ")";
@@ -94,8 +96,6 @@ deserializeManifest(Slice s, beast::Journal journal)
         if (!publicKeyType(makeSlice(pk)))
             return std::nullopt;
 
-        std::string const serialized(
-            reinterpret_cast<char const*>(s.data()), s.size());
         PublicKey const masterKey = PublicKey(makeSlice(pk));
         std::uint32_t const seq = st.getFieldU32(sfSequence);
 
@@ -148,6 +148,9 @@ deserializeManifest(Slice s, beast::Journal journal)
                 return std::nullopt;
         }
 
+        std::string const serialized(
+            reinterpret_cast<char const*>(s.data()), s.size());
+
         // If the manifest is revoked, then the signingKey will be unseated
         return Manifest(serialized, masterKey, signingKey, seq, domain);
     }
@@ -195,7 +198,11 @@ Manifest::verify() const
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
 
-    assert(signingKey || revoked());
+    // The manifest must either have a signing key or be revoked.  This check
+    // prevents us from accessing an unseated signingKey in the next check.
+    if (!revoked() && !signingKey)
+        return false;
+
     // Signing key and signature are not required for
     // master key revocations
     if (!revoked() && !ripple::verify(st, HashPrefix::manifest, *signingKey))
@@ -433,9 +440,17 @@ ManifestCache::applyManifest(Manifest m)
             return ManifestDisposition::badMasterKey;
         }
 
-        assert(m.signingKey || m.revoked());
         if (!revoked)
         {
+            if (!m.signingKey)
+            {
+                JLOG(j_.warn()) << to_string(m)
+                                << ": is not revoked and the manifest has no "
+                                   "signing key. Hence, the manifest is "
+                                   "invalid\n";
+                return ManifestDisposition::invalid;
+            }
+
             // Sanity check: the ephemeral key of this manifest should not be
             // used as the master or ephemeral key of another manifest:
             if (auto const x = signingToMasterKeys_.find(*m.signingKey);
@@ -483,7 +498,6 @@ ManifestCache::applyManifest(Manifest m)
     if (auto d = prewriteCheck(iter, /*checkSig*/ false, sl))
         return *d;
 
-    assert(m.signingKey || m.revoked());
     bool const revoked = m.revoked();
     // This is the first manifest we are seeing for a master key. This should
     // only ever happen once per validator run.
@@ -510,9 +524,6 @@ ManifestCache::applyManifest(Manifest m)
             m.sequence,
             iter->second.sequence);
 
-    // Past this point, the manifest will be accepted. Hence, perform a
-    // sanity check
-    assert(iter->second.signingKey && !iter->second.revoked());
     signingToMasterKeys_.erase(*iter->second.signingKey);
 
     if (!revoked)

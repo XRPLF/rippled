@@ -1058,7 +1058,7 @@ protected:
                 bool mustHandle = false;
                 if (event.state_ == State::On)
                 {
-                    assert(event.key_);
+                    BEAST_EXPECT(event.key_);
                     event.isSelected_ =
                         network_.overlay().isSelected(*event.key_, event.peer_);
                     auto peers = network_.overlay().getPeers(*event.key_);

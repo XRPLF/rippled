@@ -2458,9 +2458,11 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     {
         if (app_.getValidationPublicKey())
         {
-            assert(app_.validators().localPublicKey());
-            info[jss::pubkey_validator] = toBase58(
-                TokenType::NodePublic, *app_.validators().localPublicKey());
+            if (auto const localPubKey = app_.validators().localPublicKey())
+            {
+                info[jss::pubkey_validator] =
+                    toBase58(TokenType::NodePublic, localPubKey.value());
+            }
         }
         else
         {

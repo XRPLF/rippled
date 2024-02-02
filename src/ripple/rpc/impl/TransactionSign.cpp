@@ -404,7 +404,6 @@ transactionPreProcessImpl(
     if (!keyPair || contains_error(jvResult))
         return jvResult;
 
-    assert(keyPair.has_value());
     PublicKey const& pk = keyPair->first;
     SecretKey const& sk = keyPair->second;
 
