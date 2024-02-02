@@ -250,7 +250,7 @@ install (
     src/ripple/protocol/KnownFormats.h
     src/ripple/protocol/LedgerFormats.h
     src/ripple/protocol/LedgerHeader.h
-    src/ripple/protocol/MultivarJson.h
+    src/ripple/protocol/MultiApiJson.h
     src/ripple/protocol/NFTSyntheticSerializer.h
     src/ripple/protocol/NFTokenID.h
     src/ripple/protocol/NFTokenOfferID.h
@@ -1021,7 +1021,7 @@ if (tests)
     src/test/protocol/Issue_test.cpp
     src/test/protocol/Hooks_test.cpp
     src/test/protocol/Memo_test.cpp
-    src/test/protocol/MultivarJson_test.cpp
+    src/test/protocol/MultiApiJson_test.cpp
     src/test/protocol/PublicKey_test.cpp
     src/test/protocol/Quality_test.cpp
     src/test/protocol/STAccount_test.cpp

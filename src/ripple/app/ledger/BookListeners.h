@@ -21,7 +21,7 @@
 #define RIPPLE_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
 
 #include <ripple/net/InfoSub.h>
-#include <ripple/protocol/ApiVersion.h>
+#include <ripple/protocol/MultiApiJson.h>
 
 #include <memory>
 #include <mutex>

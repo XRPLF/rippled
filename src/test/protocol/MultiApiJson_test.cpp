@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/beast/unit_test.h>
-#include <ripple/protocol/MultivarJson.h>
+#include <ripple/protocol/MultiApiJson.h>
 
 #include <cstdint>
 #include <limits>
@@ -67,12 +67,14 @@ struct MultivarJson_test : beast::unit_test::suite
     void
     run() override
     {
+        using ripple::detail::MultiApiJson;
+
         Json::Value const obj1 = makeJson("value", 1);
         Json::Value const obj2 = makeJson("value", 2);
         Json::Value const obj3 = makeJson("value", 3);
         Json::Value const jsonNull{};
 
-        MultivarJson<3, index, valid<3>> subject{};
+        MultiApiJson<1, 3> subject{};
         static_assert(sizeof(subject) == sizeof(subject.val));
         static_assert(subject.size == subject.val.size());
         static_assert(
@@ -87,9 +89,224 @@ struct MultivarJson_test : beast::unit_test::suite
         subject.val[1] = obj2;
 
         {
+            testcase("forApiVersions, forAllApiVersions");
+
+            // Some static data for test inputs
+            static const int primes[] = {2,  3,  5,  7,  11, 13, 17, 19, 23,
+                                         29, 31, 37, 41, 43, 47, 53, 59, 61,
+                                         67, 71, 73, 79, 83, 89, 97};
+            static_assert(std::size(primes) > RPC::apiMaximumValidVersion);
+
+            MultiApiJson<1, 3> s1{};
+            static_assert(
+                s1.size ==
+                RPC::apiMaximumValidVersion + 1 -
+                    RPC::apiMinimumSupportedVersion);
+
+            int productAllVersions = 1;
+            for (unsigned i = RPC::apiMinimumSupportedVersion;
+                 i <= RPC::apiMaximumValidVersion;
+                 ++i)
+            {
+                auto const index = i - RPC::apiMinimumSupportedVersion;
+                BEAST_EXPECT(index == s1.index(i));
+                BEAST_EXPECT(s1.valid(i));
+                s1.val[index] = makeJson("value", primes[i]);
+                productAllVersions *= primes[i];
+            }
+            BEAST_EXPECT(!s1.valid(0));
+            BEAST_EXPECT(!s1.valid(RPC::apiMaximumValidVersion + 1));
+            BEAST_EXPECT(
+                !s1.valid(std::numeric_limits<decltype(
+                              RPC::apiMaximumValidVersion.value)>::max()));
+
+            int result = 1;
+            static_assert(
+                RPC::apiMinimumSupportedVersion + 1 <=
+                RPC::apiMaximumValidVersion);
+            forApiVersions<
+                RPC::apiMinimumSupportedVersion,
+                RPC::apiMinimumSupportedVersion + 1>(
+                std::as_const(s1).visit(),
+                [this](
+                    Json::Value const& json,
+                    unsigned int version,
+                    int* result) {
+                    BEAST_EXPECT(
+                        version >= RPC::apiMinimumSupportedVersion &&
+                        version <= RPC::apiMinimumSupportedVersion + 1);
+                    if (BEAST_EXPECT(json.isMember("value")))
+                    {
+                        *result *= json["value"].asInt();
+                    }
+                },
+                &result);
+            BEAST_EXPECT(
+                result ==
+                primes[RPC::apiMinimumSupportedVersion] *
+                    primes[RPC::apiMinimumSupportedVersion + 1]);
+
+            // Check all the values with mutable data
+            forAllApiVersions(
+                s1.visit(), [&s1, this](Json::Value& json, auto version) {
+                    BEAST_EXPECT(s1.val[s1.index(version)] == json);
+                    if (BEAST_EXPECT(json.isMember("value")))
+                    {
+                        BEAST_EXPECT(json["value"].asInt() == primes[version]);
+                    }
+                });
+
+            result = 1;
+            forAllApiVersions(
+                std::as_const(s1).visit(),
+                [this](
+                    Json::Value const& json,
+                    unsigned int version,
+                    int* result) {
+                    BEAST_EXPECT(
+                        version >= RPC::apiMinimumSupportedVersion &&
+                        version <= RPC::apiMaximumValidVersion);
+                    if (BEAST_EXPECT(json.isMember("value")))
+                    {
+                        *result *= json["value"].asInt();
+                    }
+                },
+                &result);
+
+            BEAST_EXPECT(result == productAllVersions);
+
+            // Several overloads we want to fail
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](Json::Value&, auto) {});            // missing const
+                };
+            }(std::as_const(s1)));
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](Json::Value&) {});                  // missing const
+                };
+            }(std::as_const(s1)));
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        []() {});  // missing parameters
+                };
+            }(std::as_const(s1)));
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto) {},
+                        1);  // missing parameters
+                };
+            }(std::as_const(s1)));
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto, auto) {},
+                        1);  // missing parameters
+                };
+            }(std::as_const(s1)));
+            static_assert([](auto&& v) {
+                return !requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto, auto, const char*) {},
+                        1);  // parameter type mismatch
+                };
+            }(std::as_const(s1)));
+
+            // Sanity checks
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto) {});
+                };
+            }(s1));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](Json::Value const&) {});
+                };
+            }(std::as_const(s1)));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto...) {});
+                };
+            }(s1));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](Json::Value const&, auto...) {});
+                };
+            }(std::as_const(s1)));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](Json::Value&, auto, auto, auto...) {},
+                        0,
+                        "");
+                };
+            }(s1));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        []<unsigned int Version>(
+                            Json::Value const&,
+                            std::integral_constant<unsigned int, Version>,
+                            int,
+                            const char*) {},
+                        0,
+                        "");
+                };
+            }(std::as_const(s1)));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto...) {});
+                };
+            }(std::move(s1)));
+            static_assert([](auto&& v) {
+                return requires
+                {
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto...) {});
+                };
+            }(std::move(std::as_const(s1))));
+        }
+
+        {
             testcase("default copy construction / assignment");
 
-            MultivarJson<3, index, valid<3>> x{subject};
+            MultiApiJson<1, 3> x{subject};
 
             BEAST_EXPECT(x.val.size() == subject.val.size());
             BEAST_EXPECT(x.val[0] == subject.val[0]);
@@ -100,7 +317,7 @@ struct MultivarJson_test : beast::unit_test::suite
             BEAST_EXPECT(&x.val[1] != &subject.val[1]);
             BEAST_EXPECT(&x.val[2] != &subject.val[2]);
 
-            MultivarJson<3, index, valid<3>> y;
+            MultiApiJson<1, 3> y;
             BEAST_EXPECT((y.val == std::array<Json::Value, 3>{}));
             y = subject;
             BEAST_EXPECT(y.val == subject.val);
@@ -118,7 +335,7 @@ struct MultivarJson_test : beast::unit_test::suite
         {
             testcase("set");
 
-            auto x = MultivarJson<2, index, valid<2>>{Json::objectValue};
+            auto x = MultiApiJson<1, 2>{Json::objectValue};
             x.set("name1", 42);
             BEAST_EXPECT(x.val[0].isMember("name1"));
             BEAST_EXPECT(x.val[1].isMember("name1"));
@@ -187,7 +404,7 @@ struct MultivarJson_test : beast::unit_test::suite
 
             {
                 // All variants have element "One", none have element "Two"
-                MultivarJson<2, index, valid<2>> s1{};
+                MultiApiJson<1, 2> s1{};
                 s1.val[0] = makeJson("One", 12);
                 s1.val[1] = makeJson("One", 42);
                 BEAST_EXPECT(s1.isMember("One") == decltype(s1)::all);
@@ -196,7 +413,7 @@ struct MultivarJson_test : beast::unit_test::suite
 
             {
                 // Some variants have element "One" and some have "Two"
-                MultivarJson<2, index, valid<2>> s2{};
+                MultiApiJson<1, 2> s2{};
                 s2.val[0] = makeJson("One", 12);
                 s2.val[1] = makeJson("Two", 42);
                 BEAST_EXPECT(s2.isMember("One") == decltype(s2)::some);
@@ -205,7 +422,7 @@ struct MultivarJson_test : beast::unit_test::suite
 
             {
                 // Not all variants have element "One", because last one is null
-                MultivarJson<3, index, valid<3>> s3{};
+                MultiApiJson<1, 3> s3{};
                 s3.val[0] = makeJson("One", 12);
                 s3.val[1] = makeJson("One", 42);
                 BEAST_EXPECT(s3.isMember("One") == decltype(s3)::some);
@@ -216,7 +433,7 @@ struct MultivarJson_test : beast::unit_test::suite
         {
             testcase("visitor");
 
-            MultivarJson<3, index, valid<3>> s1{};
+            MultiApiJson<1, 3> s1{};
             s1.val[0] = makeJson("value", 2);
             s1.val[1] = makeJson("value", 3);
             s1.val[2] = makeJson("value", 5);
@@ -574,7 +791,7 @@ struct MultivarJson_test : beast::unit_test::suite
         {
             testcase("visit");
 
-            MultivarJson<3, index, valid<3>> s1{};
+            MultiApiJson<1, 3> s1{};
             s1.val[0] = makeJson("value", 2);
             s1.val[1] = makeJson("value", 3);
             s1.val[2] = makeJson("value", 5);

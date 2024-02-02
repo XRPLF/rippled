@@ -17,10 +17,11 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_JSON_MULTIVARJSON_H_INCLUDED
-#define RIPPLE_JSON_MULTIVARJSON_H_INCLUDED
+#ifndef RIPPLE_JSON_MULTIAPIJSON_H_INCLUDED
+#define RIPPLE_JSON_MULTIAPIJSON_H_INCLUDED
 
 #include <ripple/json/json_value.h>
+#include <ripple/protocol/ApiVersion.h>
 
 #include <array>
 #include <cassert>
@@ -40,7 +41,6 @@ template <typename I, auto A>
 constexpr bool is_integral_constant<std::integral_constant<I, A>&> = true;
 template <typename I, auto A>
 constexpr bool is_integral_constant<std::integral_constant<I, A> const&> = true;
-}  // namespace detail
 
 template <typename T>
 concept some_integral_constant = detail::is_integral_constant<T&>;
@@ -51,17 +51,27 @@ concept some_integral_constant = detail::is_integral_constant<T&>;
 // different API versions. We allow manipulation and inspection of all objects
 // at once with `isMember` and `set`, and also individual inspection and updates
 // of an object selected by the user by version, using `visitor_t` nested type.
-//
-// It is used to define `MultiApiJson` type in API versions header.
-template <std::size_t Size, auto Index, auto Valid>
-struct MultivarJson
+template <unsigned MinVer, unsigned MaxVer>
+struct MultiApiJson
 {
-    constexpr static std::size_t size = Size;
-    constexpr static auto index = Index;
-    constexpr static auto valid = Valid;
+    static_assert(MinVer <= MaxVer);
+
+    static constexpr auto
+    valid(unsigned int v) noexcept -> bool
+    {
+        return v >= MinVer && v <= MaxVer;
+    }
+
+    static constexpr auto
+    index(unsigned int v) noexcept -> std::size_t
+    {
+        return (v < MinVer) ? 0 : static_cast<std::size_t>(v - MinVer);
+    }
+
+    constexpr static std::size_t size = MaxVer + 1 - MinVer;
     std::array<Json::Value, size> val = {};
 
-    explicit MultivarJson(Json::Value const& init = {})
+    explicit MultiApiJson(Json::Value const& init = {})
     {
         if (init == Json::Value{})
             return;  // All elements are already default-initialized
@@ -100,7 +110,7 @@ struct MultivarJson
             unsigned int Version,
             typename... Args,
             typename Fn>
-        requires std::same_as<std::remove_cvref_t<Json>, MultivarJson> auto
+        requires std::same_as<std::remove_cvref_t<Json>, MultiApiJson> auto
         operator()(
             Json& json,
             std::integral_constant<unsigned int, Version> const version,
@@ -123,7 +133,7 @@ struct MultivarJson
 
         // integral_constant version, Json only
         template <typename Json, unsigned int Version, typename Fn>
-        requires std::same_as<std::remove_cvref_t<Json>, MultivarJson> auto
+        requires std::same_as<std::remove_cvref_t<Json>, MultiApiJson> auto
         operator()(
             Json& json,
             std::integral_constant<unsigned int, Version> const,
@@ -143,7 +153,7 @@ struct MultivarJson
             requires(!some_integral_constant<Version>) &&
             std::convertible_to<Version, unsigned>&& std::same_as<
                 std::remove_cvref_t<Json>,
-                MultivarJson> auto
+                MultiApiJson> auto
             operator()(Json& json, Version version, Fn fn, Args&&... args) const
             -> std::
                 invoke_result_t<Fn, decltype(json.val[0]), Version, Args&&...>
@@ -161,7 +171,7 @@ struct MultivarJson
         template <typename Json, typename Version, typename Fn>
             requires(!some_integral_constant<Version>) &&
             std::convertible_to<Version, unsigned>&& std::
-                same_as<std::remove_cvref_t<Json>, MultivarJson> auto
+                same_as<std::remove_cvref_t<Json>, MultiApiJson> auto
                 operator()(Json& json, Version version, Fn fn) const
             -> std::invoke_result_t<Fn, decltype(json.val[0])>
         {
@@ -177,7 +187,7 @@ struct MultivarJson
         return [self = this](auto... args) requires requires
         {
             visitor(
-                std::declval<MultivarJson&>(),
+                std::declval<MultiApiJson&>(),
                 std::declval<decltype(args)>()...);
         }
         {
@@ -191,7 +201,7 @@ struct MultivarJson
         return [self = this](auto... args) requires requires
         {
             visitor(
-                std::declval<MultivarJson const&>(),
+                std::declval<MultiApiJson const&>(),
                 std::declval<decltype(args)>()...);
         }
         {
@@ -202,7 +212,7 @@ struct MultivarJson
     template <typename... Args>
         auto
         visit(Args... args)
-            -> std::invoke_result_t<visitor_t, MultivarJson&, Args...> requires(
+            -> std::invoke_result_t<visitor_t, MultiApiJson&, Args...> requires(
                 sizeof...(args) > 0) &&
         requires
     {
@@ -215,7 +225,7 @@ struct MultivarJson
     template <typename... Args>
         auto
         visit(Args... args) const -> std::
-            invoke_result_t<visitor_t, MultivarJson const&, Args...> requires(
+            invoke_result_t<visitor_t, MultiApiJson const&, Args...> requires(
                 sizeof...(args) > 0) &&
         requires
     {
@@ -225,6 +235,12 @@ struct MultivarJson
         return visitor(*this, std::forward<decltype(args)>(args)...);
     }
 };
+
+}  // namespace detail
+
+// Wrapper for Json for all supported API versions.
+using MultiApiJson = detail::
+    MultiApiJson<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>;
 
 }  // namespace ripple
 

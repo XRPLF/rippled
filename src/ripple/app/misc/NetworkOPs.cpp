@@ -58,9 +58,9 @@
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
-#include <ripple/protocol/ApiVersion.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/MultiApiJson.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
