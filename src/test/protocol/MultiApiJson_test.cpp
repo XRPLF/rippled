@@ -42,7 +42,7 @@ Overload(Ts...) -> Overload<Ts...>;
 
 }  // namespace
 
-struct MultivarJson_test : beast::unit_test::suite
+struct MultiApiJson_test : beast::unit_test::suite
 {
     static auto
     makeJson(const char* key, int val)
@@ -437,6 +437,14 @@ struct MultivarJson_test : beast::unit_test::suite
             s1.val[0] = makeJson("value", 2);
             s1.val[1] = makeJson("value", 3);
             s1.val[2] = makeJson("value", 5);
+
+            BEAST_EXPECT(not s1.valid(0));
+            BEAST_EXPECT(s1.index(0) == 0);
+
+            BEAST_EXPECT(s1.valid(1));
+            BEAST_EXPECT(s1.index(1) == 0);
+
+            BEAST_EXPECT(not s1.valid(4));
 
             // Test different overloads
             static_assert([](auto&& v) {
@@ -1188,7 +1196,7 @@ struct MultivarJson_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(MultivarJson, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(MultiApiJson, protocol, ripple);
 
 }  // namespace test
 }  // namespace ripple
