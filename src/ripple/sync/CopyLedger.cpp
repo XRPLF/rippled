@@ -173,7 +173,10 @@ CopyLedger::onReady(MessageScheduler::Courier& courier)
         double n = request.objects_size();
         // TODO: Move these constants to configuration variables.
         auto timeout = 1s + (n / MAX_OBJECTS_PER_MESSAGE) * 59s;
-        if (blaster.send(request, receiver.get(), timeout))
+        Blacklist blacklist;
+        auto result = blaster.send(blacklist, request, receiver.get(), timeout);
+        assert(result != Blaster::FAILED);
+        if (result == Blaster::SENT)
         {
             receiver.release();
             ++requesti;

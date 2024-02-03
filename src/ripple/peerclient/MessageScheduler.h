@@ -498,6 +498,8 @@ public:
     }
 };
 
+using Blacklist = std::vector<PeerId>;
+
 /**
  * Round-robin after random shuffle, until limit exhausted.
  *
@@ -518,62 +520,91 @@ public:
  */
 class Blaster
 {
+public:
+    enum Result {
+        SENT,
+        RETRY,
+        FAILED,
+    };
+
 private:
     MessageScheduler::Courier& courier_;
-    MetaPeerSet peers_;
+    MetaPeerSet openPeers_;
+    MetaPeerSet closedPeers_{};
     std::size_t index_ = 0;
 
 public:
     Blaster(MessageScheduler::Courier& courier)
-        : courier_(courier), peers_(courier.peers())
+        : courier_(courier), openPeers_(courier.allPeers())
     {
-        assert(!peers_.empty());
-        // All of these peers should be open.
+        // Move closed peers to their own set.
+        auto mid = std::partition(
+                openPeers_.begin(), openPeers_.end(),
+                [&](MetaPeerPtr peer){ return peer->nclosed < peer->nchannels; });
+        std::move(mid, openPeers_.end(), std::back_inserter(closedPeers_));
+        openPeers_.erase(mid, std::end(openPeers_));
+        assert(!openPeers_.empty());
         std::random_device rd;
         std::mt19937 urbg(rd());
-        std::shuffle(peers_.begin(), peers_.end(), urbg);
+        std::shuffle(openPeers_.begin(), openPeers_.end(), urbg);
     }
 
     operator bool() const
     {
         // Limit is assumed to be no greater than number of open channels,
         // implying there should be no possibility of an infinite loop.
-        return index_ < peers_.size() && courier_.limit() > courier_.closed();
-    }
-
-    PeerId
-    peer() const
-    {
-        return peers_[index_]->id;
+        return !openPeers_.empty() && courier_.limit() > courier_.closed();
     }
 
     template <typename Message, typename Duration>
-    bool
+    Result
     send(
+        Blacklist& blacklist,
         Message& message,
         MessageScheduler::Receiver* receiver,
         Duration timeout)
     {
-        assert(index_ < peers_.size());
-        auto sent = courier_.send(peers_[index_], message, receiver, timeout);
-        if (sent)
-        {
-            // Increment `index_`, which may make it match `peers_.size()`.
-            ++index_;
+        assert(*this);
+        std::size_t skipped = 0;
+        while (skipped != openPeers_.size()) {
+            assert(skipped < openPeers_.size());
+            auto const& peer = openPeers_[index_];
+            if (peer->nclosed >= peer->nchannels) {
+                // We closed this peer's last channel on a previous pass
+                // but are just now discovering it.
+                // Move it to the closed set and continue at the same index.
+                closedPeers_.push_back(peer);
+                std::swap(openPeers_[index_], openPeers_.back());
+                openPeers_.pop_back();
+                continue;
+            }
+            if (std::find(blacklist.begin(), blacklist.end(), peer->id) != blacklist.end()) {
+                index_ = (index_ + 1) % openPeers_.size();
+                ++skipped;
+                continue;
+            }
+            auto sent = courier_.send(peer, message, receiver, timeout);
+            // Add to the blacklist unconditionally. Either:
+            // - It belongs in the blacklist: the message could not be sent,
+            // or it will timeout, or the peer will disconnect before
+            // responding.
+            // - Or the blacklist won't matter: the receiver will receive
+            // a response, or the application will shut down.
+            blacklist.push_back(peer->id);
+            if (sent) {
+                return SENT;
+            }
+            closedPeers_.push_back(peer);
+            std::swap(openPeers_[index_], openPeers_.back());
+            openPeers_.pop_back();
+            break;
         }
-        else
-        {
-            // Remove dead peer.
-            peers_[index_] = std::move(peers_.back());
-            // Decrement `peers_.size()`, which may make it match `index_`.
-            peers_.pop_back();
+        for (auto const& peer : closedPeers_) {
+            if (std::find(blacklist.begin(), blacklist.end(), peer->id) == blacklist.end()) {
+                return RETRY;
+            }
         }
-        // Wrap around.
-        if (index_ == peers_.size())
-        {
-            index_ = 0;
-        }
-        return sent;
+        return FAILED;
     }
 };
 

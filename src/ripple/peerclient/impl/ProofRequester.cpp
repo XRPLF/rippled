@@ -21,6 +21,8 @@
 
 #include <ripple/shamap/SHAMap.h>
 
+#include <cassert>
+
 namespace ripple {
 
 void
@@ -39,23 +41,25 @@ ProofRequester::onReady(MessageScheduler::Courier& courier)
     // Step one level at a time.
     // TODO: Step up to two levels at a time.
     request->set_querydepth(0);
+
     // TODO: See getPeerWithLedger in PeerImp.cpp.
-    for (auto& peer : courier.peers())
-    {
-        if (courier.send(peer, *request, this, timeout_))
-        {
-            return;
-        }
+    Blaster blaster{courier};
+    assert(blaster);
+    auto result = blaster.send(blacklist_, *request, this, timeout_);
+    if (result == Blaster::SENT) {
+        assert(courier.closed() == 1);
+        assert(courier.evicting());
+        return;
     }
-    // TODO: Shuffle.
-    for (auto& peer : courier.allPeers())
-    {
-        if (courier.send(peer, *request, this, timeout_))
-        {
-            return;
-        }
+    assert(courier.closed() == 0);
+    assert(!courier.evicting());
+    if (result == Blaster::RETRY) {
+        return;
     }
-    // Never sent. We will be offered again later.
+    assert(result == Blaster::FAILED);
+    courier.withdraw();
+    assert(courier.evicting());
+    return this->throw_("no peer responded in time");
 }
 
 void

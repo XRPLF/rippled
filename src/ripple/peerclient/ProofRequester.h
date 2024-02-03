@@ -45,6 +45,7 @@ private:
     LedgerDigest ledgerDigest_;
     SHAMapKey key_;
     SHAMapNodeID nodeid_{};
+    Blacklist blacklist_{};
     NetClock::duration timeout_ = std::chrono::seconds(4);
 
 public:

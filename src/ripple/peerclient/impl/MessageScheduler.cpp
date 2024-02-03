@@ -358,6 +358,7 @@ MessageScheduler::negotiate(
         ChannelCnt limit =
             (i + 1 == senders.size()) ? (nchannels_ - nclosed_) : 1;
         Courier courier{*this, lock, peers, limit};
+        auto start = Clock::now();
         try
         {
             senders[i]->onReady(courier);
@@ -365,6 +366,12 @@ MessageScheduler::negotiate(
         catch (...)
         {
             JLOG(journal_.error()) << "unhandled exception from onReady";
+        }
+        auto duration = Clock::now() - start;
+        auto duration_ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+        if (duration_ms > std::chrono::milliseconds(100)) {
+            JLOG(journal_.warn()) << "excessive time taken by onReady";
         }
         if (courier.evict_)
         {
@@ -537,7 +544,7 @@ MessageScheduler::timeout_(RequestId requestId)
         auto duration_ms =
             std::chrono::duration_cast<std::chrono::milliseconds>(duration);
         stream << "timeout,id=" << requestId
-            << ",peer" << request->metaPeer->id
+            << ",peer=" << request->metaPeer->id
             << ",time=" << duration_ms;
     }
 

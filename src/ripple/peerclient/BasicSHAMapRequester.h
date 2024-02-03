@@ -45,7 +45,8 @@ protected:
 private:
     protocol::TMLedgerInfoType type_;
     // TODO: Optimize layout.
-    hash_set<SHAMapNodeID> nodeids_;
+    hash_set<SHAMapNodeID> nodeids_{};
+    Blacklist blacklist_{};
     NetClock::duration timeout_ = std::chrono::seconds(4);
 
 protected:
@@ -86,23 +87,25 @@ public:
         // Do not set `queryType`. Limit our reach to our immediate peers.
         // Try to get all transactions in one message.
         request->set_querydepth(Tuning::maxQueryDepth);
+
         // TODO: See getPeerWithLedger in PeerImp.cpp.
-        for (auto& peer : courier.peers())
-        {
-            if (courier.send(peer, *request, this, timeout_))
-            {
-                return;
-            }
+        Blaster blaster{courier};
+        assert(blaster);
+        auto result = blaster.send(blacklist_, *request, this, timeout_);
+        if (result == Blaster::SENT) {
+            assert(courier.closed() == 1);
+            assert(courier.evicting());
+            return;
         }
-        // TODO: Shuffle.
-        for (auto& peer : courier.allPeers())
-        {
-            if (courier.send(peer, *request, this, timeout_))
-            {
-                return;
-            }
+        assert(courier.closed() == 0);
+        assert(!courier.evicting());
+        if (result == Blaster::RETRY) {
+            return;
         }
-        // Never sent. We will be offered again later.
+        assert(result == Blaster::FAILED);
+        courier.withdraw();
+        assert(courier.evicting());
+        return this->throw_("no peer responded in time");
     }
 
     void
