@@ -91,8 +91,14 @@ flow(
     if (sb.rules().enabled(featureDefaultCompositePath) && paths.empty() &&
         defaultPaths)
     {
+        auto issueEqual = [](auto const& sendMax, Issue const& dstIssue) {
+            return sendMax->currency == dstIssue.currency &&
+                sendMax->account == dstIssue.account;
+        };
+        
         if (sendMaxIssue && !isXRP(sendMaxIssue->account) &&
-            !isXRP(dstIssue.account) && sendMaxIssue != dstIssue)
+            !isXRP(dstIssue.account) && !issueEqual(sendMaxIssue, dstIssue) &&
+            sendMaxIssue->account != src)
         {
             STPathSet _paths;
             STPath path;
