@@ -95,7 +95,7 @@ flow(
             return sendMax->currency == dstIssue.currency &&
                 sendMax->account == dstIssue.account;
         };
-        
+
         if (sendMaxIssue && !isXRP(sendMaxIssue->account) &&
             !isXRP(dstIssue.account) && !issueEqual(sendMaxIssue, dstIssue) &&
             sendMaxIssue->account != src)
