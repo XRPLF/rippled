@@ -49,6 +49,18 @@ getNoRippleFlag(
     return false;  // silence warning
 }
 
+static auto
+getBookOffers(jtx::Env& env, Issue const& taker_pays, Issue const& taker_gets)
+{
+    Json::Value jvbp;
+    jvbp[jss::ledger_index] = "current";
+    jvbp[jss::taker_pays][jss::currency] = to_string(taker_pays.currency);
+    jvbp[jss::taker_pays][jss::issuer] = to_string(taker_pays.account);
+    jvbp[jss::taker_gets][jss::currency] = to_string(taker_gets.currency);
+    jvbp[jss::taker_gets][jss::issuer] = to_string(taker_gets.account);
+    return env.rpc("json", "book_offers", to_string(jvbp))[jss::result];
+}
+
 struct Flow_test : public beast::unit_test::suite
 {
     void
@@ -1371,6 +1383,114 @@ struct Flow_test : public beast::unit_test::suite
     }
 
     void
+    testDefaultCompositePath(FeatureBitset features)
+    {
+        if (!features[featureFlowCross])
+            return;
+
+        testcase("DefaultCompositePath");
+
+        using namespace jtx;
+
+        auto const gw1 = Account("gw1");
+        auto const gw2 = Account("gw2");
+        auto const alice = Account("alice");
+        auto const mm = Account("mm");
+        auto const USD = gw1["USD"];
+        auto const BTC = gw2["BTC"];
+        
+        auto prepare = [&](Env& env) {
+            env.fund(XRP(1000000), gw1, gw2, alice, mm);
+            env.close();
+            env(trust(mm, USD(1000)));
+            env(trust(mm, BTC(1000)));
+            env(pay(gw1, mm, USD(1000)));
+            env(pay(gw2, mm, BTC(1000)));
+            env.close();
+
+            env(offer(mm, BTC(250), XRP(1000)));
+            env(offer(mm, XRP(1000), USD(50)));
+            env.close();
+
+            env(offer(mm, BTC(50), USD(10)));
+            env.close();
+        };
+
+        {
+            // Offer
+
+            Env env(*this, features);
+            prepare(env);
+
+            env(trust(alice, BTC(1000)));
+            env(pay(gw2, alice, BTC(250)));
+
+            env(offer(alice, USD(50), BTC(250)));
+
+            BEAST_EXPECT(!isOffer(env, mm, BTC(50), USD(10)));
+
+            BEAST_EXPECT(isOffer(env, mm, BTC(50), XRP(200)));
+            BEAST_EXPECT(isOffer(env, mm, XRP(200), USD(10)));
+
+            auto jrr = getBookOffers(env, BTC, USD);
+            BEAST_EXPECT(jrr[jss::offers].isArray());
+            BEAST_EXPECT(jrr[jss::offers].size() == 0);
+        }
+
+        {
+            // Conversion Payment
+            // tfNoRippleDirect: false
+
+            Env env(*this, features);
+            prepare(env);
+
+            env(trust(alice, BTC(1000)));
+            env(trust(alice, USD(1000)));
+            env(pay(gw2, alice, BTC(250)));
+
+            if (features[featureDefaultCompositePath])
+            {
+                // use composite path
+                env(pay(alice, alice, USD(50)), sendmax(BTC(250)));
+
+                BEAST_EXPECT(!isOffer(env, mm, BTC(50), USD(10)));
+
+                auto jrr = getBookOffers(env, BTC, USD);
+                BEAST_EXPECT(jrr[jss::offers].isArray());
+                BEAST_EXPECT(jrr[jss::offers].size() == 0);
+
+                BEAST_EXPECT(isOffer(env, mm, BTC(50), XRP(200)));
+                BEAST_EXPECT(isOffer(env, mm, XRP(200), USD(10)));
+            }
+            else
+            {
+                // use only direct path
+                env(pay(alice, alice, USD(50)),
+                    sendmax(BTC(250)),
+                    ter(tecPATH_PARTIAL));
+            }
+        }
+
+        {
+            // Conversion Payment
+            // tfNoRippleDirect: true
+
+            Env env(*this, features);
+            prepare(env);
+
+            env(trust(alice, BTC(1000)));
+            env(trust(alice, USD(1000)));
+            env(pay(gw2, alice, BTC(250)));
+
+            // does not use composite path
+            env(pay(alice, alice, USD(50)),
+                sendmax(BTC(250)),
+                txflags(tfNoRippleDirect),
+                ter(temRIPPLE_EMPTY));
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         using namespace jtx;
@@ -1391,6 +1511,7 @@ struct Flow_test : public beast::unit_test::suite
         testReexecuteDirectStep(features);
         testSelfPayLowQualityOffer(features);
         testTicketPay(features);
+        testDefaultCompositePath(features);
     }
 
     void
@@ -1403,7 +1524,8 @@ struct Flow_test : public beast::unit_test::suite
 
         using namespace jtx;
         auto const sa = supported_amendments();
-        testWithFeats(sa - featureFlowCross);
+        testWithFeats(sa - featureFlowCross - featureDefaultCompositePath);
+        testWithFeats(sa - featureDefaultCompositePath);
         testWithFeats(sa);
         testEmptyStrand(sa);
     }
@@ -1419,9 +1541,10 @@ struct Flow_manual_test : public Flow_test
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
 
-        testWithFeats(all - flowCross - f1513);
-        testWithFeats(all - flowCross);
-        testWithFeats(all - f1513);
+        testWithFeats(all - flowCross - f1513 - featureDefaultCompositePath);
+        testWithFeats(all - flowCross - featureDefaultCompositePath);
+        testWithFeats(all - f1513 - featureDefaultCompositePath);
+        testWithFeats(all - featureDefaultCompositePath);
         testWithFeats(all);
 
         testEmptyStrand(all - f1513);

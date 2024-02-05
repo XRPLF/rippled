@@ -87,6 +87,21 @@ flow(
 
     AMMContext ammContext(src, false);
 
+    STPathSet flowPaths = paths;
+    if (sb.rules().enabled(featureDefaultCompositePath) && paths.empty() &&
+        defaultPaths)
+    {
+        if (sendMaxIssue && !isXRP(sendMaxIssue->account) &&
+            !isXRP(dstIssue.account) && sendMaxIssue != dstIssue)
+        {
+            STPathSet _paths;
+            STPath path;
+            path.emplace_back(std::nullopt, xrpCurrency(), std::nullopt);
+            _paths.emplace_back(std::move(path));
+            flowPaths = _paths;
+        }
+    }
+
     // convert the paths to a collection of strands. Each strand is the
     // collection of account->account steps and book steps that may be used in
     // this payment.
@@ -97,7 +112,7 @@ flow(
         dstIssue,
         limitQuality,
         sendMaxIssue,
-        paths,
+        flowPaths,
         defaultPaths,
         ownerPaysTransferFee,
         offerCrossing,
