@@ -230,6 +230,11 @@ install (
   FILES
     src/ripple/json/impl/json_assert.h
   DESTINATION include/ripple/json/impl)
+
+install (
+    FILES
+      src/ripple/net/RPCErr.h
+    DESTINATION include/ripple/net)
 install (
   FILES
     src/ripple/protocol/AccountID.h
@@ -302,7 +307,35 @@ install (
     src/ripple/protocol/impl/STVar.h
     src/ripple/protocol/impl/secp256k1.h
   DESTINATION include/ripple/protocol/impl)
-
+install (
+    FILES
+      src/ripple/resource/Fees.h
+      src/ripple/resource/Charge.h
+    DESTINATION include/ripple/resource)
+install (
+  FILES
+    src/ripple/server/Port.h
+    src/ripple/server/Server.h
+    src/ripple/server/Session.h
+    src/ripple/server/SimpleWriter.h
+    src/ripple/server/Writer.h
+    src/ripple/server/WSSession.h
+    src/ripple/server/Handoff.h
+  DESTINATION include/ripple/server)
+install (
+  FILES
+    src/ripple/server/impl/ServerImpl.h
+    src/ripple/server/impl/io_list.h
+    src/ripple/server/impl/Door.h
+    src/ripple/server/impl/PlainHTTPPeer.h
+    src/ripple/server/impl/PlainWSPeer.h
+    src/ripple/server/impl/BaseHTTPPeer.h
+    src/ripple/server/impl/BaseWSPeer.h
+    src/ripple/server/impl/BasePeer.h
+    src/ripple/server/impl/LowestLayer.h
+    src/ripple/server/impl/SSLHTTPPeer.h
+    src/ripple/server/impl/SSLWSPeer.h
+  DESTINATION include/ripple/server/impl)
 #[===================================[
    beast/legacy headers installation
 #]===================================]
@@ -369,6 +402,7 @@ install (
     src/ripple/beast/utility/PropertyStream.h
     src/ripple/beast/utility/Zero.h
     src/ripple/beast/utility/rngfill.h
+    src/ripple/beast/utility/WrappedSink.h
   DESTINATION include/ripple/beast/utility)
 # WARNING!! -- horrible levelization ahead
 # (these files should be isolated or moved...but
