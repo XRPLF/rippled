@@ -1398,7 +1398,7 @@ struct Flow_test : public beast::unit_test::suite
         auto const mm = Account("mm");
         auto const USD = gw1["USD"];
         auto const BTC = gw2["BTC"];
-        
+
         auto prepare = [&](Env& env) {
             env.fund(XRP(1000000), gw1, gw2, alice, mm);
             env.close();
