@@ -1488,6 +1488,24 @@ struct Flow_test : public beast::unit_test::suite
                 txflags(tfNoRippleDirect),
                 ter(temRIPPLE_EMPTY));
         }
+
+        {
+            // Conversion Payment
+            // Path: specified
+
+            Env env(*this, features);
+            prepare(env);
+
+            env(trust(alice, BTC(1000)));
+            env(trust(alice, USD(1000)));
+            env(pay(gw2, alice, BTC(250)));
+
+            // does not use composite path
+            env(pay(alice, alice, USD(50)),
+                sendmax(BTC(250)),
+                path(~USD),
+                ter(tecPATH_PARTIAL));
+        }
     }
 
     void
