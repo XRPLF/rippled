@@ -131,7 +131,7 @@ private:
     threadItem(
         TxMeta& meta,
         std::shared_ptr<SLE> const& to,
-        ReadView const& view);
+        Rules const& rules);
 
     std::shared_ptr<SLE>
     getForMod(

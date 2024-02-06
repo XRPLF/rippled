@@ -193,7 +193,7 @@ ApplyStateTable::apply(
 
                 if (curNode->isThreadedType())  // thread transaction to node
                                                 // item modified
-                    threadItem(meta, curNode, to);
+                    threadItem(meta, curNode, to.rules());
 
                 STObject prevs(sfPreviousFields);
                 for (auto const& obj : *origNode)
@@ -227,7 +227,7 @@ ApplyStateTable::apply(
                 threadOwners(to, meta, curNode, newMod, j);
 
                 if (curNode->isThreadedType())  // always thread to self
-                    threadItem(meta, curNode, to);
+                    threadItem(meta, curNode, to.rules());
 
                 STObject news(sfNewFields);
                 for (auto const& obj : *curNode)
@@ -525,21 +525,23 @@ void
 ApplyStateTable::threadItem(
     TxMeta& meta,
     std::shared_ptr<SLE> const& sle,
-    ReadView const& view)
+    Rules const& rules)
 {
     key_type prevTxID;
     LedgerIndex prevLgrID;
 
     static std::set<LedgerEntryType> newPreviousTxnIDTypes = {
         ltDIR_NODE, ltAMENDMENTS, ltFEE_SETTINGS, ltNEGATIVE_UNL, ltAMM};
-    bool const includePrevTxnID = view.rules().enabled(fixPreviousTxnID) ||
-        !newPreviousTxnIDTypes.count(sle->getType());
+    // Exclude PrevTxnID/PrevTxnLgrSeq if the fixPreviousTxnID amendment is not
+    // enabled and the ledger object type is in the above set
+    bool const excludePrevTxnID = !rules.enabled(fixPreviousTxnID) &&
+        newPreviousTxnIDTypes.count(sle->getType());
     if (!sle->thread(
             meta.getTxID(),
             meta.getLgrSeq(),
             prevTxID,
             prevLgrID,
-            includePrevTxnID))
+            !excludePrevTxnID))
         return;
 
     if (!prevTxID.isZero())
@@ -624,7 +626,7 @@ ApplyStateTable::threadTx(
         JLOG(j.warn()) << "Threading to non-existent account: " << toBase58(to);
         return;
     }
-    threadItem(meta, sle, base);
+    threadItem(meta, sle, base.rules());
 }
 
 void
