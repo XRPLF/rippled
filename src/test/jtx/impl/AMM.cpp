@@ -670,6 +670,9 @@ AMM::bid(
     if (auto const amm =
             env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
     {
+        assert(
+            !env_.current()->rules().enabled(fixInnerObjTemplate) ||
+            amm->isFieldPresent(sfAuctionSlot));
         if (amm->isFieldPresent(sfAuctionSlot))
         {
             auto const& auctionSlot =
@@ -773,22 +776,28 @@ bool
 AMM::expectAuctionSlot(auto&& cb) const
 {
     if (auto const amm =
-            env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue()));
-        amm && amm->isFieldPresent(sfAuctionSlot))
+            env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
     {
-        auto const& auctionSlot =
-            static_cast<STObject const&>(amm->peekAtField(sfAuctionSlot));
-        if (auctionSlot.isFieldPresent(sfAccount))
+        assert(
+            !env_.current()->rules().enabled(fixInnerObjTemplate) ||
+            amm->isFieldPresent(sfAuctionSlot));
+        if (amm->isFieldPresent(sfAuctionSlot))
         {
-            // this could fail in pre-fixInnerObjTemplate test if one
-            // the fail-cases. access as optional to avoid the failure
-            auto const slotFee = auctionSlot[~sfDiscountedFee].value_or(0);
-            auto const slotInterval = ammAuctionTimeSlot(
-                env_.app().timeKeeper().now().time_since_epoch().count(),
-                auctionSlot);
-            auto const slotPrice = auctionSlot[sfPrice].iou();
-            auto const authAccounts = auctionSlot.getFieldArray(sfAuthAccounts);
-            return cb(slotFee, slotInterval, slotPrice, authAccounts);
+            auto const& auctionSlot =
+                static_cast<STObject const&>(amm->peekAtField(sfAuctionSlot));
+            if (auctionSlot.isFieldPresent(sfAccount))
+            {
+                // this could fail in pre-fixInnerObjTemplate test if one
+                // the fail-cases. access as optional to avoid the failure
+                auto const slotFee = auctionSlot[~sfDiscountedFee].value_or(0);
+                auto const slotInterval = ammAuctionTimeSlot(
+                    env_.app().timeKeeper().now().time_since_epoch().count(),
+                    auctionSlot);
+                auto const slotPrice = auctionSlot[sfPrice].iou();
+                auto const authAccounts =
+                    auctionSlot.getFieldArray(sfAuthAccounts);
+                return cb(slotFee, slotInterval, slotPrice, authAccounts);
+            }
         }
     }
     return false;

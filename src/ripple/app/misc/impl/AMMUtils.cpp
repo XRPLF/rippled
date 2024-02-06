@@ -138,6 +138,10 @@ std::uint16_t
 getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
 {
     using namespace std::chrono;
+    // should not happen
+    assert(
+        !view.rules().enabled(fixInnerObjTemplate) ||
+        ammSle.isFieldPresent(sfAuctionSlot));
     if (ammSle.isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot =
@@ -298,18 +302,14 @@ initializeFeeAuctionVote(
     voteSlots.push_back(voteEntry);
     ammSle->setFieldArray(sfVoteSlots, voteSlots);
     // AMM creator gets the auction slot for free.
-    STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot, rules);
-    if (!rules.enabled(fixInnerObjTemplate) &&
-        ammSle->isFieldPresent(sfAuctionSlot))
+    // AuctionSlot is created on AMMCreate and updated on AMMDeposit
+    // when AMM is in an empty state
+    if (!ammSle->isFieldPresent(sfAuctionSlot))
     {
-        auto const& origAuctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
-        // this is executed on deposit from empty state.
-        // pre-amendment code re-uses AuthAccounts
-        // post-amendment code resets AuthAccounts
-        if (origAuctionSlot.isFieldPresent(sfAuthAccounts))
-            auctionSlot.setFieldArray(
-                sfAuthAccounts, origAuctionSlot.getFieldArray(sfAuthAccounts));
+        STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot, rules);
+        ammSle->set(&auctionSlot);
     }
+    STObject& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
     auctionSlot.setAccountID(sfAccount, account);
     // current + sec in 24h
     auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(
@@ -327,7 +327,6 @@ initializeFeeAuctionVote(
         auctionSlot.setFieldU16(sfDiscountedFee, dfee);
     else if (auctionSlot.isFieldPresent(sfDiscountedFee))
         auctionSlot.makeFieldAbsent(sfDiscountedFee);
-    ammSle->set(&auctionSlot);
 }
 
 }  // namespace ripple

@@ -173,8 +173,16 @@ applyBid(
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
     auto const lpTokens = ammLPHolds(sb, *ammSle, account_, ctx_.journal);
+    // should not happen
+    assert(
+        !ctx_.view().rules().enabled(fixInnerObjTemplate) ||
+        ammSle->isFieldPresent(sfAuctionSlot));
     if (!ammSle->isFieldPresent(sfAuctionSlot))
-        ammSle->makeFieldPresent(sfAuctionSlot);
+    {
+        STObject auctionSlot =
+            STObject::makeInnerObject(sfAuctionSlot, ctx_.view().rules());
+        ammSle->set(&auctionSlot);
+    }
     auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
     auto const current =
         duration_cast<seconds>(

@@ -4887,61 +4887,6 @@ private:
             tesSUCCESS,
             9,
             false);
-
-        auto testDepositOnEmpty = [&](FeatureBitset features, TER const& err) {
-            Env env(
-                *this,
-                envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = XRPAmount(1);
-                    return cfg;
-                }),
-                features);
-            fund(env, gw, {alice, bob}, XRP(20'000), {USD(10'000)});
-            AMM amm(env, gw, XRP(10'000), USD(10'000));
-            for (auto i = 0; i < maxDeletableAMMTrustLines + 10; ++i)
-            {
-                Account const a{std::to_string(i)};
-                env.fund(XRP(1'000), a);
-                env(trust(a, STAmount{amm.lptIssue(), 10'000}));
-                env.close();
-            }
-            amm.bid(BidArg{.authAccounts = {bob, alice}});
-            // The trustlines are partially deleted,
-            // AMM is set to an empty state.
-            amm.withdrawAll(gw);
-            amm.setClose(false);
-            amm.deposit(DepositArg{
-                .account = alice,
-                .asset1In = XRP(10'000),
-                .asset2In = USD(10'000),
-                .flags = tfTwoAssetIfEmpty,
-                .tfee = 0});
-            // AuthAccounts is reset post-amendment
-            if (features[fixInnerObjTemplate])
-                BEAST_EXPECT(amm.expectAuctionSlot({}));
-            // AuthAccounts is re-used pre-amendment
-            else
-                BEAST_EXPECT(amm.expectAuctionSlot({bob, alice}));
-            // repeat some fail/success scenarios
-            amm.vote(VoteArg{.account = alice, .tfee = 0, .err = ter(err)});
-            amm.withdraw(WithdrawArg{
-                .account = alice, .asset1Out = USD(1), .err = ter(err)});
-            amm.vote(VoteArg{.account = alice, .tfee = 20, .err = ter(err)});
-            amm.withdraw(WithdrawArg{
-                .account = alice, .asset1Out = USD(2), .err = ter(err)});
-            env.close();
-            amm.vote(VoteArg{.account = alice, .tfee = 0});
-            amm.vote(VoteArg{.account = alice, .tfee = 0, .err = ter(err)});
-            amm.withdraw(WithdrawArg{.account = alice, .asset1Out = USD(3)});
-            amm.deposit(DepositArg{
-                .account = bob, .asset1In = XRP(100), .asset2In = USD(100)});
-            amm.bid(BidArg{.account = bob});
-            amm.withdraw(WithdrawArg{.account = bob, .asset1Out = USD(4)});
-            amm.vote(VoteArg{.account = bob, .tfee = 10, .err = ter(err)});
-        };
-
-        testDepositOnEmpty(all, tesSUCCESS);
-        testDepositOnEmpty(all - fixInnerObjTemplate, tefEXCEPTION);
     }
 
     void

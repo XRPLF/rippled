@@ -200,6 +200,11 @@ applyVote(
         }
     }
 
+    // should not happen
+    assert(
+        !ctx_.view().rules().enabled(fixInnerObjTemplate) ||
+        ammSle->isFieldPresent(sfAuctionSlot));
+
     // Update the vote entries and the trading/discounted fee.
     ammSle->setFieldArray(sfVoteSlots, updatedVoteSlots);
     if (auto const fee = static_cast<std::int64_t>(num / den))
