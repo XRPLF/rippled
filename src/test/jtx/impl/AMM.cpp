@@ -787,8 +787,10 @@ AMM::expectAuctionSlot(auto&& cb) const
                 static_cast<STObject const&>(amm->peekAtField(sfAuctionSlot));
             if (auctionSlot.isFieldPresent(sfAccount))
             {
-                // this could fail in pre-fixInnerObjTemplate test if one
-                // the fail-cases. access as optional to avoid the failure
+                // This could fail in pre-fixInnerObjTemplate tests
+                // if the submitted transactions recreate one of
+                // the failure scenarios. Access as optional
+                // to avoid the failure.
                 auto const slotFee = auctionSlot[~sfDiscountedFee].value_or(0);
                 auto const slotInterval = ammAuctionTimeSlot(
                     env_.app().timeKeeper().now().time_since_epoch().count(),
