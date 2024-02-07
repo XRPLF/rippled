@@ -663,7 +663,7 @@ std::optional<TER>
 transCode(std::string const& token);
 
 void
-registerPluginTER(TERExport ter);
+registerPluginTERs(std::vector<TERExport>* pluginTERcodes);
 
 void
 resetPluginTERcodes();

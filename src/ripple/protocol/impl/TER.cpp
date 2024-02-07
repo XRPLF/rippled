@@ -25,7 +25,7 @@
 
 namespace ripple {
 
-static std::vector<TERExport> pluginTERcodes{};
+static std::vector<TERExport>* pluginTERcodesPtr;
 
 std::unordered_map<
     TERUnderlyingType,
@@ -33,18 +33,9 @@ std::unordered_map<
     results;
 
 void
-registerPluginTER(TERExport ter)
+registerPluginTERs(std::vector<TERExport>* pluginTERcodes)
 {
-    for (auto terExport : pluginTERcodes)
-    {
-        if (terExport.code == ter.code)
-        {
-            LogicError(
-                std::string("Duplicate key for plugin TER code '") +
-                std::to_string(ter.code) + "': already exists");
-        }
-    }
-    pluginTERcodes.emplace_back(ter);
+    pluginTERcodesPtr = pluginTERcodes;
 }
 
 std::unordered_map<
@@ -239,7 +230,7 @@ initializeTransResults()
 
 #undef MAKE_ERROR
 
-    for (TERExport ter : pluginTERcodes)
+    for (TERExport ter : *pluginTERcodesPtr)
     {
         if (auto const it = results.find(ter.code); it != results.end())
         {
@@ -323,7 +314,6 @@ transCode(std::string const& token)
 void
 resetPluginTERcodes()
 {
-    pluginTERcodes.clear();
     results.clear();
 }
 

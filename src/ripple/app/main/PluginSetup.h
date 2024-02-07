@@ -34,6 +34,7 @@ std::map<std::uint16_t, PluginInnerObjectFormat> pluginInnerObjectFormats{};
 std::vector<int> pluginSFieldCodes{};
 std::map<int, STypeFunctions> pluginSTypes{};
 std::map<int, parsePluginValuePtr> pluginLeafParserMap{};
+std::vector<TERExport> pluginTERcodes{};
 
 typedef void (*setPluginPointersPtr)(
     std::map<std::uint16_t, PluginTxFormat>* pluginTxFormatPtr,
@@ -42,7 +43,8 @@ typedef void (*setPluginPointersPtr)(
     std::map<int, SField const*>* knownCodeToField,
     std::vector<int>* pluginSFieldCodes,
     std::map<int, STypeFunctions>* pluginSTypes,
-    std::map<int, parsePluginValuePtr>* pluginLeafParserMap);
+    std::map<int, parsePluginValuePtr>* pluginLeafParserMap,
+    std::vector<TERExport>* pluginTERcodes);
 
 void
 registerTxFormat(
@@ -223,6 +225,21 @@ registerLeafType(int type, parsePluginValuePtr functionPtr)
 }
 
 void
+registerPluginTER(TERExport ter)
+{
+    for (auto terExport : pluginTERcodes)
+    {
+        if (terExport.code == ter.code)
+        {
+            LogicError(
+                std::string("Duplicate key for plugin TER code '") +
+                std::to_string(ter.code) + "': already exists");
+        }
+    }
+    pluginTERcodes.emplace_back(ter);
+}
+
+void
 registerPluginPointers()
 {
     registerTxFormats(&pluginTxFormats);
@@ -231,6 +248,7 @@ registerPluginPointers()
     registerSFields(nullptr, &pluginSFieldCodes);
     registerSTypes(&pluginSTypes);
     registerLeafTypes(&pluginLeafParserMap);
+    registerPluginTERs(&pluginTERcodes);
 }
 
 void
@@ -243,6 +261,8 @@ clearPluginPointers()
     pluginSFieldCodes.clear();
     pluginSTypes.clear();
     pluginLeafParserMap.clear();
+    pluginTERcodes.clear();
+    resetPluginTERcodes();
 }
 
 void
@@ -258,7 +278,8 @@ setPluginPointers(void* handle)
             SField::getKnownCodeToField(),
             &pluginSFieldCodes,
             &pluginSTypes,
-            &pluginLeafParserMap);
+            &pluginLeafParserMap,
+            &pluginTERcodes);
     }
 }
 

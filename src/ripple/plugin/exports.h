@@ -27,6 +27,7 @@
 #include <ripple/plugin/plugin.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/STParsedJSON.h>
+#include <ripple/protocol/TER.h>
 #include <vector>
 
 namespace ripple {
@@ -93,7 +94,8 @@ typedef Container<TransactorExport> (*getTransactorsPtr)();
         std::map<int, SField const*>* knownCodeToFieldPtr,                \
         std::vector<int>* pluginSFieldCodesPtr,                           \
         std::map<int, STypeFunctions>* pluginSTypesPtr,                   \
-        std::map<int, parsePluginValuePtr>* pluginLeafParserMapPtr)       \
+        std::map<int, parsePluginValuePtr>* pluginLeafParserMapPtr,       \
+        std::vector<TERExport>* pluginTERcodes)                           \
     {                                                                     \
         registerTxFormats(pluginTxFormatPtr);                             \
         registerLedgerObjects(pluginObjectsMapPtr);                       \
@@ -101,6 +103,7 @@ typedef Container<TransactorExport> (*getTransactorsPtr)();
         registerSFields(knownCodeToFieldPtr, pluginSFieldCodesPtr);       \
         registerSTypes(pluginSTypesPtr);                                  \
         registerLeafTypes(pluginLeafParserMapPtr);                        \
+        registerPluginTERs(pluginTERcodes);                               \
     }
 
 }  // namespace ripple
