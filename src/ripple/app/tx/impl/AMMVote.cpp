@@ -200,7 +200,6 @@ applyVote(
         }
     }
 
-    // should not happen
     assert(
         !ctx_.view().rules().enabled(fixInnerObjTemplate) ||
         ammSle->isFieldPresent(sfAuctionSlot));

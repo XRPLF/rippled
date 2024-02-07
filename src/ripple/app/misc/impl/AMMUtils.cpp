@@ -138,7 +138,6 @@ std::uint16_t
 getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
 {
     using namespace std::chrono;
-    // should not happen
     assert(
         !view.rules().enabled(fixInnerObjTemplate) ||
         ammSle.isFieldPresent(sfAuctionSlot));
@@ -304,12 +303,22 @@ initializeFeeAuctionVote(
     // AMM creator gets the auction slot for free.
     // AuctionSlot is created on AMMCreate and updated on AMMDeposit
     // when AMM is in an empty state
-    if (!ammSle->isFieldPresent(sfAuctionSlot))
-    {
-        STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot, rules);
-        ammSle->set(&auctionSlot);
-    }
-    STObject& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
+    STObject& auctionSlot = [&]() -> STObject& {
+        if (!rules.enabled(fixInnerObjTemplate))
+        {
+            return ammSle->peekFieldObject(sfAuctionSlot);
+        }
+        else
+        {
+            if (!ammSle->isFieldPresent(sfAuctionSlot))
+            {
+                STObject auctionSlot =
+                    STObject::makeInnerObject(sfAuctionSlot, rules);
+                ammSle->set(&auctionSlot);
+            }
+            return ammSle->peekFieldObject(sfAuctionSlot);
+        }
+    }();
     auctionSlot.setAccountID(sfAccount, account);
     // current + sec in 24h
     auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(

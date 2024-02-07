@@ -200,7 +200,6 @@ doAMMInfo(RPC::JsonContext& context)
     }
     if (voteSlots.size() > 0)
         ammResult[jss::vote_slots] = std::move(voteSlots);
-    // should not happen
     assert(
         !ledger->rules().enabled(fixInnerObjTemplate) ||
         amm->isFieldPresent(sfAuctionSlot));
