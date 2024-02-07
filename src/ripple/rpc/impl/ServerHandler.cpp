@@ -27,6 +27,7 @@
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/beast/rfc2616.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
@@ -46,9 +47,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/beast/http/fields.hpp>
 #include <boost/beast/http/string_body.hpp>
-#include <boost/type_traits.hpp>
 #include <algorithm>
-#include <mutex>
 #include <stdexcept>
 
 namespace ripple {
@@ -1149,6 +1148,12 @@ parse_Ports(Config const& config, std::ostream& log)
             log << "Missing section: [" << name << "]";
             Throw<std::exception>();
         }
+
+        // grpc ports are parsed by GRPCServer class. Do not validate
+        // grpc port information in this file.
+        if (name == SECTION_PORT_GRPC)
+            continue;
+
         ParsedPort parsed = common;
         parsed.name = name;
         parse_Port(parsed, config[name], log);
