@@ -90,259 +90,260 @@ $(function() {
 <div class="line"><a name="l00019"></a><span class="lineno">   19</span>&#160; </div>
 <div class="line"><a name="l00020"></a><span class="lineno">   20</span>&#160;<span class="preprocessor">#include &lt;ripple/app/misc/NetworkOPs.h&gt;</span></div>
 <div class="line"><a name="l00021"></a><span class="lineno">   21</span>&#160;<span class="preprocessor">#include &lt;ripple/beast/unit_test.h&gt;</span></div>
-<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/jss.h&gt;</span></div>
-<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;test/jtx.h&gt;</span></div>
-<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160; </div>
-<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160;<span class="preprocessor">#include &lt;boost/format.hpp&gt;</span></div>
-<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160; </div>
-<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160; </div>
-<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160;<span class="keyword">namespace </span>test {</div>
-<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160; </div>
-<div class="line"><a name="l00031"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1validator__data.html">   31</a></span>&#160;<span class="keyword">namespace </span>validator_data {</div>
-<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1validator__data.html#ae57bf8941d094957b0b90603fac6de3e">   32</a></span>&#160;<span class="keyword">static</span> <span class="keyword">auto</span> <span class="keyword">const</span> <a class="code" href="namespaceripple_1_1test_1_1validator__data.html#ae57bf8941d094957b0b90603fac6de3e">public_key</a> =</div>
-<div class="line"><a name="l00033"></a><span class="lineno">   33</span>&#160;    <span class="stringliteral">&quot;nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa&quot;</span>;</div>
-<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160; </div>
-<div class="line"><a name="l00035"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1validator__data.html#acdfbd9704063047075238f3686bdca90">   35</a></span>&#160;<span class="keyword">static</span> <span class="keyword">auto</span> <span class="keyword">const</span> <a class="code" href="namespaceripple_1_1test_1_1validator__data.html#acdfbd9704063047075238f3686bdca90">token</a> =</div>
-<div class="line"><a name="l00036"></a><span class="lineno">   36</span>&#160;    <span class="stringliteral">&quot;eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT\n&quot;</span></div>
-<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="stringliteral">&quot;QzODdjMDYyNTkwNzk3MmY0ZTcxOTAyMzFmYWE5Mzc0NTdmYTlkYWY2IiwibWFuaWZl\n&quot;</span></div>
-<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="stringliteral">&quot;c3QiOiJKQUFBQUFGeEllMUZ0d21pbXZHdEgyaUNjTUpxQzlnVkZLaWxHZncxL3ZDeE\n&quot;</span></div>
-<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="stringliteral">&quot;hYWExwbGMyR25NaEFrRTFhZ3FYeEJ3RHdEYklENk9NU1l1TTBGREFscEFnTms4U0tG\n&quot;</span></div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="stringliteral">&quot;bjdNTzJmZGtjd1JRSWhBT25ndTlzQUtxWFlvdUorbDJWMFcrc0FPa1ZCK1pSUzZQU2\n&quot;</span></div>
-<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="stringliteral">&quot;hsSkFmVXNYZkFpQnNWSkdlc2FhZE9KYy9hQVpva1MxdnltR21WcmxIUEtXWDNZeXd1\n&quot;</span></div>
-<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="stringliteral">&quot;NmluOEhBU1FLUHVnQkQ2N2tNYVJGR3ZtcEFUSGxHS0pkdkRGbFdQWXk1QXFEZWRGdj\n&quot;</span></div>
-<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="stringliteral">&quot;VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ==\n&quot;</span>;</div>
-<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;}  <span class="comment">// namespace validator_data</span></div>
-<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
-<div class="line"><a name="l00046"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ServerInfo__test.html">   46</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1test_1_1ServerInfo__test.html">ServerInfo_test</a> : <span class="keyword">public</span> beast::unit_test::suite</div>
-<div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;{</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;<span class="keyword">public</span>:</div>
-<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Config&gt;</a></div>
-<div class="line"><a name="l00050"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ServerInfo__test.html#ad9cc2a3fe55b6fb587e450611209927d">   50</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1ServerInfo__test.html#ad9cc2a3fe55b6fb587e450611209927d">makeValidatorConfig</a>()</div>
-<div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160;    {</div>
-<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;        <span class="keyword">auto</span> p = std::make_unique&lt;Config&gt;();</div>
-<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        boost::format toLoad(R<span class="stringliteral">&quot;rippleConfig(</span></div>
-<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;<span class="stringliteral">[validator_token]</span></div>
-<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="stringliteral">%1%</span></div>
-<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="stringliteral">[validators]</span></div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="stringliteral">%2%</span></div>
-<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="stringliteral">[port_grpc]</span></div>
-<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="stringliteral">ip = 0.0.0.0</span></div>
-<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="stringliteral">port = 50051</span></div>
-<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="stringliteral">[port_admin]</span></div>
-<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="stringliteral">ip = 0.0.0.0</span></div>
-<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="stringliteral">port = 50052</span></div>
-<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="stringliteral">protocol = wss2</span></div>
-<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="stringliteral">admin = 127.0.0.1</span></div>
-<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="stringliteral">)rippleConfig&quot;);</span></div>
-<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="stringliteral">        p-&gt;loadFromString(boost::str(</span></div>
-<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="stringliteral">            toLoad % <a class="code" href="namespaceripple_1_1test_1_1validator__data.html#acdfbd9704063047075238f3686bdca90">validator_data::token</a> % <a class="code" href="namespaceripple_1_1test_1_1validator__data.html#ae57bf8941d094957b0b90603fac6de3e">validator_data::public_key</a>));</span></div>
-<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="stringliteral">        <a class="code" href="namespaceripple_1_1test.html#a343c740a28bf9c6b47ec94df0a3e379d">setupConfigForUnitTests</a>(*p);</span></div>
-<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="stringliteral"></span> </div>
-<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="stringliteral">        </span><span class="keywordflow">return</span> p;</div>
-<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    }</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160; </div>
-<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00080"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ServerInfo__test.html#ac187e7b1d3db06d4caff67a83abd97a4">   80</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1ServerInfo__test.html#ac187e7b1d3db06d4caff67a83abd97a4">testServerInfo</a>()</div>
-<div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160;    {</div>
-<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;        testcase(<span class="stringliteral">&quot;server_info&quot;</span>);</div>
-<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
-<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160; </div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        {</div>
-<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
-<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ad69855b4b26fc3c83922c5783487592c">rpc</a>(<span class="stringliteral">&quot;server_info&quot;</span>);</div>
-<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::error));</div>
-<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            BEAST_EXPECT(result[jss::result][jss::status] == <span class="stringliteral">&quot;success&quot;</span>);</div>
-<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::info));</div>
-<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;        }</div>
-<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160; </div>
-<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160;        {</div>
-<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
-<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160; </div>
-<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160;            <span class="comment">// Call NetworkOPs directly and set the admin flag to false.</span></div>
-<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;            <span class="comment">// Expect that the admin ports are not included in the result.</span></div>
-<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result =</div>
-<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;                env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a9e55bbdb66a785bfd0dda93802b514b6">app</a>().<a class="code" href="classripple_1_1Application.html#a7c963aa5c47180b24897ff6b5622e5bc">getOPs</a>().<a class="code" href="classripple_1_1NetworkOPs.html#af4863a74bd582bd66f43b2e0e82feedd">getServerInfo</a>(<span class="keyword">true</span>, <span class="keyword">false</span>, 0);</div>
-<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; ports = result[jss::ports];</div>
-<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            BEAST_EXPECT(ports.isArray() &amp;&amp; ports.size() == 0);</div>
-<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;        }</div>
-<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160; </div>
-<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160;        {</div>
-<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;            <span class="keyword">auto</span> config = <a class="code" href="classripple_1_1test_1_1ServerInfo__test.html#ad9cc2a3fe55b6fb587e450611209927d">makeValidatorConfig</a>();</div>
-<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> rpc_port =</div>
-<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;                (*config)[<span class="stringliteral">&quot;port_rpc&quot;</span>].get&lt;<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span>&gt;(<span class="stringliteral">&quot;port&quot;</span>);</div>
-<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> grpc_port =</div>
-<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;                (*config)[<span class="stringliteral">&quot;port_grpc&quot;</span>].get&lt;<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span>&gt;(<span class="stringliteral">&quot;port&quot;</span>);</div>
-<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> ws_port = (*config)[<span class="stringliteral">&quot;port_ws&quot;</span>].get&lt;<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span>&gt;(<span class="stringliteral">&quot;port&quot;</span>);</div>
-<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            BEAST_EXPECT(grpc_port);</div>
-<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            BEAST_EXPECT(rpc_port);</div>
-<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            BEAST_EXPECT(ws_port);</div>
-<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160; </div>
-<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>, std::move(config));</div>
-<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ad69855b4b26fc3c83922c5783487592c">rpc</a>(<span class="stringliteral">&quot;server_info&quot;</span>);</div>
-<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::error));</div>
-<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            BEAST_EXPECT(result[jss::result][jss::status] == <span class="stringliteral">&quot;success&quot;</span>);</div>
-<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::info));</div>
-<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;                result[jss::result][jss::info][jss::pubkey_validator] ==</div>
-<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;                <a class="code" href="namespaceripple_1_1test_1_1validator__data.html#ae57bf8941d094957b0b90603fac6de3e">validator_data::public_key</a>);</div>
-<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160; </div>
-<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; ports = result[jss::result][jss::info][jss::ports];</div>
-<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            BEAST_EXPECT(ports.isArray() &amp;&amp; ports.size() == 3);</div>
-<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; port : ports)</div>
-<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            {</div>
-<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span>&amp; proto = port[jss::protocol];</div>
-<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;                BEAST_EXPECT(proto.isArray());</div>
-<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> p = port[jss::port].asUInt();</div>
-<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                BEAST_EXPECT(p == rpc_port || p == ws_port || p == grpc_port);</div>
-<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                <span class="keywordflow">if</span> (p == grpc_port)</div>
-<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                {</div>
-<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;                    BEAST_EXPECT(proto.size() == 1);</div>
-<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                    BEAST_EXPECT(proto[0u].asString() == <span class="stringliteral">&quot;grpc&quot;</span>);</div>
-<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                }</div>
-<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                <span class="keywordflow">if</span> (p == rpc_port)</div>
-<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;                {</div>
-<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                    BEAST_EXPECT(proto.size() == 2);</div>
-<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                    BEAST_EXPECT(proto[0u].asString() == <span class="stringliteral">&quot;http&quot;</span>);</div>
-<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                    BEAST_EXPECT(proto[1u].asString() == <span class="stringliteral">&quot;ws2&quot;</span>);</div>
-<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;                }</div>
-<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;                <span class="keywordflow">if</span> (p == ws_port)</div>
-<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                {</div>
-<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                    BEAST_EXPECT(proto.size() == 1);</div>
-<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                    BEAST_EXPECT(proto[0u].asString() == <span class="stringliteral">&quot;ws&quot;</span>);</div>
-<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                }</div>
-<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;            }</div>
-<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;        }</div>
-<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;    }</div>
-<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160; </div>
-<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00154"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ServerInfo__test.html#ac05ab619f3b6912e010ec516ff93dd8a">  154</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1ServerInfo__test.html#ac05ab619f3b6912e010ec516ff93dd8a">testServerDefinitions</a>()</div>
-<div class="line"><a name="l00155"></a><span class="lineno">  155</span>&#160;    {</div>
-<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;        testcase(<span class="stringliteral">&quot;server_definitions&quot;</span>);</div>
-<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160; </div>
-<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160; </div>
-<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160;        {</div>
-<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
-<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ad69855b4b26fc3c83922c5783487592c">rpc</a>(<span class="stringliteral">&quot;server_definitions&quot;</span>);</div>
-<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::error));</div>
-<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;            BEAST_EXPECT(result[jss::result][jss::status] == <span class="stringliteral">&quot;success&quot;</span>);</div>
-<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::FIELDS));</div>
-<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));</div>
-<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;                result[jss::result].isMember(jss::TRANSACTION_RESULTS));</div>
-<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_TYPES));</div>
-<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::TYPES));</div>
-<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::hash));</div>
-<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160; </div>
-<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160;            <span class="comment">// test a random element of each result</span></div>
-<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;            <span class="comment">// (testing the whole output would be difficult to maintain)</span></div>
-<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160; </div>
-<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160;            {</div>
-<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> firstField = result[jss::result][jss::FIELDS][0u];</div>
-<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;                BEAST_EXPECT(firstField[0u].asString() == <span class="stringliteral">&quot;Generic&quot;</span>);</div>
-<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;                BEAST_EXPECT(</div>
-<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                    firstField[1][jss::isSerialized].asBool() == <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;                BEAST_EXPECT(</div>
-<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;                    firstField[1][jss::isSigningField].asBool() == <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;                BEAST_EXPECT(firstField[1][jss::isVLEncoded].asBool() == <span class="keyword">false</span>);</div>
-<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;                BEAST_EXPECT(firstField[1][jss::nth].asUInt() == 0);</div>
-<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;                BEAST_EXPECT(firstField[1][jss::type].asString() == <span class="stringliteral">&quot;Unknown&quot;</span>);</div>
-<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;            }</div>
-<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160; </div>
-<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;                result[jss::result][jss::LEDGER_ENTRY_TYPES][<span class="stringliteral">&quot;AccountRoot&quot;</span>]</div>
-<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;                    .asUInt() == 97);</div>
-<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;                result[jss::result][jss::TRANSACTION_RESULTS][<span class="stringliteral">&quot;tecDIR_FULL&quot;</span>]</div>
-<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;                    .asUInt() == 121);</div>
-<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;                result[jss::result][jss::TRANSACTION_TYPES][<span class="stringliteral">&quot;Payment&quot;</span>]</div>
-<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;                    .asUInt() == 0);</div>
-<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;                result[jss::result][jss::TYPES][<span class="stringliteral">&quot;AccountID&quot;</span>].asUInt() == 8);</div>
-<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;        }</div>
-<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160; </div>
-<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160;        <span class="comment">// test providing the same hash</span></div>
-<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        {</div>
-<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
-<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> firstResult = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ad69855b4b26fc3c83922c5783487592c">rpc</a>(<span class="stringliteral">&quot;server_definitions&quot;</span>);</div>
-<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> hash = firstResult[jss::result][jss::hash].<a class="code" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>();</div>
-<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> hashParam =</div>
-<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;{ &quot;</span>) + <span class="stringliteral">&quot;\&quot;hash\&quot;: \&quot;&quot;</span> + hash + <span class="stringliteral">&quot;\&quot;}&quot;</span>;</div>
-<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160; </div>
-<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result =</div>
-<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;                env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ad69855b4b26fc3c83922c5783487592c">rpc</a>(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;server_definitions&quot;</span>, hashParam);</div>
-<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::error));</div>
-<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;            BEAST_EXPECT(result[jss::result][jss::status] == <span class="stringliteral">&quot;success&quot;</span>);</div>
-<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::FIELDS));</div>
-<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;                !result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));</div>
-<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;                !result[jss::result].isMember(jss::TRANSACTION_RESULTS));</div>
-<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::TRANSACTION_TYPES));</div>
-<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::TYPES));</div>
-<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::hash));</div>
-<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;        }</div>
-<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160; </div>
-<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160;        <span class="comment">// test providing a different hash</span></div>
-<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;        {</div>
-<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
-<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> hash =</div>
-<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;                <span class="stringliteral">&quot;54296160385A27154BFA70A239DD8E8FD4CC2DB7BA32D970BA3A5B132CF749&quot;</span></div>
-<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;                <span class="stringliteral">&quot;D1&quot;</span>;</div>
-<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> hashParam =</div>
-<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;{ &quot;</span>) + <span class="stringliteral">&quot;\&quot;hash\&quot;: \&quot;&quot;</span> + hash + <span class="stringliteral">&quot;\&quot;}&quot;</span>;</div>
-<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160; </div>
-<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result =</div>
-<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;                env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ad69855b4b26fc3c83922c5783487592c">rpc</a>(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;server_definitions&quot;</span>, hashParam);</div>
-<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::error));</div>
-<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;            BEAST_EXPECT(result[jss::result][jss::status] == <span class="stringliteral">&quot;success&quot;</span>);</div>
-<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::FIELDS));</div>
-<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));</div>
-<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;            BEAST_EXPECT(</div>
-<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;                result[jss::result].isMember(jss::TRANSACTION_RESULTS));</div>
-<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_TYPES));</div>
-<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::TYPES));</div>
-<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::hash));</div>
-<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;        }</div>
-<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;    }</div>
-<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160; </div>
-<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l00247"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ServerInfo__test.html#a299023ea236face0a3e9de451b99fcf6">  247</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1ServerInfo__test.html#a299023ea236face0a3e9de451b99fcf6">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l00248"></a><span class="lineno">  248</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;        <a class="code" href="classripple_1_1test_1_1ServerInfo__test.html#ac187e7b1d3db06d4caff67a83abd97a4">testServerInfo</a>();</div>
-<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        <a class="code" href="classripple_1_1test_1_1ServerInfo__test.html#ac05ab619f3b6912e010ec516ff93dd8a">testServerDefinitions</a>();</div>
-<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;    }</div>
-<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;};</div>
-<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160; </div>
-<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">BEAST_DEFINE_TESTSUITE</a>(ServerInfo, app, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160; </div>
-<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160;}  <span class="comment">// namespace test</span></div>
-<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00022"></a><span class="lineno">   22</span>&#160;<span class="preprocessor">#include &lt;ripple/core/ConfigSections.h&gt;</span></div>
+<div class="line"><a name="l00023"></a><span class="lineno">   23</span>&#160;<span class="preprocessor">#include &lt;ripple/protocol/jss.h&gt;</span></div>
+<div class="line"><a name="l00024"></a><span class="lineno">   24</span>&#160;<span class="preprocessor">#include &lt;test/jtx.h&gt;</span></div>
+<div class="line"><a name="l00025"></a><span class="lineno">   25</span>&#160; </div>
+<div class="line"><a name="l00026"></a><span class="lineno">   26</span>&#160;<span class="preprocessor">#include &lt;boost/format.hpp&gt;</span></div>
+<div class="line"><a name="l00027"></a><span class="lineno">   27</span>&#160; </div>
+<div class="line"><a name="l00028"></a><span class="lineno">   28</span>&#160;<span class="keyword">namespace </span><a class="code" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a name="l00029"></a><span class="lineno">   29</span>&#160; </div>
+<div class="line"><a name="l00030"></a><span class="lineno">   30</span>&#160;<span class="keyword">namespace </span>test {</div>
+<div class="line"><a name="l00031"></a><span class="lineno">   31</span>&#160; </div>
+<div class="line"><a name="l00032"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1validator__data.html">   32</a></span>&#160;<span class="keyword">namespace </span>validator_data {</div>
+<div class="line"><a name="l00033"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1validator__data.html#ae57bf8941d094957b0b90603fac6de3e">   33</a></span>&#160;<span class="keyword">static</span> <span class="keyword">auto</span> <span class="keyword">const</span> <a class="code" href="namespaceripple_1_1test_1_1validator__data.html#ae57bf8941d094957b0b90603fac6de3e">public_key</a> =</div>
+<div class="line"><a name="l00034"></a><span class="lineno">   34</span>&#160;    <span class="stringliteral">&quot;nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa&quot;</span>;</div>
+<div class="line"><a name="l00035"></a><span class="lineno">   35</span>&#160; </div>
+<div class="line"><a name="l00036"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1validator__data.html#acdfbd9704063047075238f3686bdca90">   36</a></span>&#160;<span class="keyword">static</span> <span class="keyword">auto</span> <span class="keyword">const</span> <a class="code" href="namespaceripple_1_1test_1_1validator__data.html#acdfbd9704063047075238f3686bdca90">token</a> =</div>
+<div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="stringliteral">&quot;eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT\n&quot;</span></div>
+<div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    <span class="stringliteral">&quot;QzODdjMDYyNTkwNzk3MmY0ZTcxOTAyMzFmYWE5Mzc0NTdmYTlkYWY2IiwibWFuaWZl\n&quot;</span></div>
+<div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;    <span class="stringliteral">&quot;c3QiOiJKQUFBQUFGeEllMUZ0d21pbXZHdEgyaUNjTUpxQzlnVkZLaWxHZncxL3ZDeE\n&quot;</span></div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;    <span class="stringliteral">&quot;hYWExwbGMyR25NaEFrRTFhZ3FYeEJ3RHdEYklENk9NU1l1TTBGREFscEFnTms4U0tG\n&quot;</span></div>
+<div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;    <span class="stringliteral">&quot;bjdNTzJmZGtjd1JRSWhBT25ndTlzQUtxWFlvdUorbDJWMFcrc0FPa1ZCK1pSUzZQU2\n&quot;</span></div>
+<div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    <span class="stringliteral">&quot;hsSkFmVXNYZkFpQnNWSkdlc2FhZE9KYy9hQVpva1MxdnltR21WcmxIUEtXWDNZeXd1\n&quot;</span></div>
+<div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160;    <span class="stringliteral">&quot;NmluOEhBU1FLUHVnQkQ2N2tNYVJGR3ZtcEFUSGxHS0pkdkRGbFdQWXk1QXFEZWRGdj\n&quot;</span></div>
+<div class="line"><a name="l00044"></a><span class="lineno">   44</span>&#160;    <span class="stringliteral">&quot;VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ==\n&quot;</span>;</div>
+<div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160;}  <span class="comment">// namespace validator_data</span></div>
+<div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160; </div>
+<div class="line"><a name="l00047"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ServerInfo__test.html">   47</a></span>&#160;<span class="keyword">class </span><a class="code" href="classripple_1_1test_1_1ServerInfo__test.html">ServerInfo_test</a> : <span class="keyword">public</span> beast::unit_test::suite</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;{</div>
+<div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;<span class="keyword">public</span>:</div>
+<div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    <span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Config&gt;</a></div>
+<div class="line"><a name="l00051"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ServerInfo__test.html#ad9cc2a3fe55b6fb587e450611209927d">   51</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1ServerInfo__test.html#ad9cc2a3fe55b6fb587e450611209927d">makeValidatorConfig</a>()</div>
+<div class="line"><a name="l00052"></a><span class="lineno">   52</span>&#160;    {</div>
+<div class="line"><a name="l00053"></a><span class="lineno">   53</span>&#160;        <span class="keyword">auto</span> p = std::make_unique&lt;Config&gt;();</div>
+<div class="line"><a name="l00054"></a><span class="lineno">   54</span>&#160;        boost::format toLoad(R<span class="stringliteral">&quot;rippleConfig(</span></div>
+<div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160;<span class="stringliteral">[validator_token]</span></div>
+<div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;<span class="stringliteral">%1%</span></div>
+<div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;<span class="stringliteral">[validators]</span></div>
+<div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;<span class="stringliteral">%2%</span></div>
+<div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160;<span class="stringliteral">[port_grpc]</span></div>
+<div class="line"><a name="l00062"></a><span class="lineno">   62</span>&#160;<span class="stringliteral">ip = 0.0.0.0</span></div>
+<div class="line"><a name="l00063"></a><span class="lineno">   63</span>&#160;<span class="stringliteral">port = 50051</span></div>
+<div class="line"><a name="l00064"></a><span class="lineno">   64</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00065"></a><span class="lineno">   65</span>&#160;<span class="stringliteral">[port_admin]</span></div>
+<div class="line"><a name="l00066"></a><span class="lineno">   66</span>&#160;<span class="stringliteral">ip = 0.0.0.0</span></div>
+<div class="line"><a name="l00067"></a><span class="lineno">   67</span>&#160;<span class="stringliteral">port = 50052</span></div>
+<div class="line"><a name="l00068"></a><span class="lineno">   68</span>&#160;<span class="stringliteral">protocol = wss2</span></div>
+<div class="line"><a name="l00069"></a><span class="lineno">   69</span>&#160;<span class="stringliteral">admin = 127.0.0.1</span></div>
+<div class="line"><a name="l00070"></a><span class="lineno">   70</span>&#160;<span class="stringliteral">)rippleConfig&quot;);</span></div>
+<div class="line"><a name="l00071"></a><span class="lineno">   71</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00072"></a><span class="lineno">   72</span>&#160;<span class="stringliteral">        p-&gt;loadFromString(boost::str(</span></div>
+<div class="line"><a name="l00073"></a><span class="lineno">   73</span>&#160;<span class="stringliteral">            toLoad % <a class="code" href="namespaceripple_1_1test_1_1validator__data.html#acdfbd9704063047075238f3686bdca90">validator_data::token</a> % <a class="code" href="namespaceripple_1_1test_1_1validator__data.html#ae57bf8941d094957b0b90603fac6de3e">validator_data::public_key</a>));</span></div>
+<div class="line"><a name="l00074"></a><span class="lineno">   74</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160;<span class="stringliteral">        <a class="code" href="namespaceripple_1_1test.html#a343c740a28bf9c6b47ec94df0a3e379d">setupConfigForUnitTests</a>(*p);</span></div>
+<div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;<span class="stringliteral"></span> </div>
+<div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;<span class="stringliteral">        </span><span class="keywordflow">return</span> p;</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;    }</div>
+<div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160; </div>
+<div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00081"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ServerInfo__test.html#ac187e7b1d3db06d4caff67a83abd97a4">   81</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1ServerInfo__test.html#ac187e7b1d3db06d4caff67a83abd97a4">testServerInfo</a>()</div>
+<div class="line"><a name="l00082"></a><span class="lineno">   82</span>&#160;    {</div>
+<div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160;        testcase(<span class="stringliteral">&quot;server_info&quot;</span>);</div>
+<div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160; </div>
+<div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160; </div>
+<div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        {</div>
+<div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
+<div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ad69855b4b26fc3c83922c5783487592c">rpc</a>(<span class="stringliteral">&quot;server_info&quot;</span>);</div>
+<div class="line"><a name="l00090"></a><span class="lineno">   90</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::error));</div>
+<div class="line"><a name="l00091"></a><span class="lineno">   91</span>&#160;            BEAST_EXPECT(result[jss::result][jss::status] == <span class="stringliteral">&quot;success&quot;</span>);</div>
+<div class="line"><a name="l00092"></a><span class="lineno">   92</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::info));</div>
+<div class="line"><a name="l00093"></a><span class="lineno">   93</span>&#160;        }</div>
+<div class="line"><a name="l00094"></a><span class="lineno">   94</span>&#160; </div>
+<div class="line"><a name="l00095"></a><span class="lineno">   95</span>&#160;        {</div>
+<div class="line"><a name="l00096"></a><span class="lineno">   96</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
+<div class="line"><a name="l00097"></a><span class="lineno">   97</span>&#160; </div>
+<div class="line"><a name="l00098"></a><span class="lineno">   98</span>&#160;            <span class="comment">// Call NetworkOPs directly and set the admin flag to false.</span></div>
+<div class="line"><a name="l00099"></a><span class="lineno">   99</span>&#160;            <span class="comment">// Expect that the admin ports are not included in the result.</span></div>
+<div class="line"><a name="l00100"></a><span class="lineno">  100</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result =</div>
+<div class="line"><a name="l00101"></a><span class="lineno">  101</span>&#160;                env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#a9e55bbdb66a785bfd0dda93802b514b6">app</a>().<a class="code" href="classripple_1_1Application.html#a7c963aa5c47180b24897ff6b5622e5bc">getOPs</a>().<a class="code" href="classripple_1_1NetworkOPs.html#af4863a74bd582bd66f43b2e0e82feedd">getServerInfo</a>(<span class="keyword">true</span>, <span class="keyword">false</span>, 0);</div>
+<div class="line"><a name="l00102"></a><span class="lineno">  102</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; ports = result[jss::ports];</div>
+<div class="line"><a name="l00103"></a><span class="lineno">  103</span>&#160;            BEAST_EXPECT(ports.isArray() &amp;&amp; ports.size() == 0);</div>
+<div class="line"><a name="l00104"></a><span class="lineno">  104</span>&#160;        }</div>
+<div class="line"><a name="l00105"></a><span class="lineno">  105</span>&#160; </div>
+<div class="line"><a name="l00106"></a><span class="lineno">  106</span>&#160;        {</div>
+<div class="line"><a name="l00107"></a><span class="lineno">  107</span>&#160;            <span class="keyword">auto</span> config = <a class="code" href="classripple_1_1test_1_1ServerInfo__test.html#ad9cc2a3fe55b6fb587e450611209927d">makeValidatorConfig</a>();</div>
+<div class="line"><a name="l00108"></a><span class="lineno">  108</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> rpc_port =</div>
+<div class="line"><a name="l00109"></a><span class="lineno">  109</span>&#160;                (*config)[<span class="stringliteral">&quot;port_rpc&quot;</span>].get&lt;<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span>&gt;(<span class="stringliteral">&quot;port&quot;</span>);</div>
+<div class="line"><a name="l00110"></a><span class="lineno">  110</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> grpc_port =</div>
+<div class="line"><a name="l00111"></a><span class="lineno">  111</span>&#160;                (*config)[SECTION_PORT_GRPC].get&lt;<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span>&gt;(<span class="stringliteral">&quot;port&quot;</span>);</div>
+<div class="line"><a name="l00112"></a><span class="lineno">  112</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> ws_port = (*config)[<span class="stringliteral">&quot;port_ws&quot;</span>].get&lt;<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span>&gt;(<span class="stringliteral">&quot;port&quot;</span>);</div>
+<div class="line"><a name="l00113"></a><span class="lineno">  113</span>&#160;            BEAST_EXPECT(grpc_port);</div>
+<div class="line"><a name="l00114"></a><span class="lineno">  114</span>&#160;            BEAST_EXPECT(rpc_port);</div>
+<div class="line"><a name="l00115"></a><span class="lineno">  115</span>&#160;            BEAST_EXPECT(ws_port);</div>
+<div class="line"><a name="l00116"></a><span class="lineno">  116</span>&#160; </div>
+<div class="line"><a name="l00117"></a><span class="lineno">  117</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>, std::move(config));</div>
+<div class="line"><a name="l00118"></a><span class="lineno">  118</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ad69855b4b26fc3c83922c5783487592c">rpc</a>(<span class="stringliteral">&quot;server_info&quot;</span>);</div>
+<div class="line"><a name="l00119"></a><span class="lineno">  119</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::error));</div>
+<div class="line"><a name="l00120"></a><span class="lineno">  120</span>&#160;            BEAST_EXPECT(result[jss::result][jss::status] == <span class="stringliteral">&quot;success&quot;</span>);</div>
+<div class="line"><a name="l00121"></a><span class="lineno">  121</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::info));</div>
+<div class="line"><a name="l00122"></a><span class="lineno">  122</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00123"></a><span class="lineno">  123</span>&#160;                result[jss::result][jss::info][jss::pubkey_validator] ==</div>
+<div class="line"><a name="l00124"></a><span class="lineno">  124</span>&#160;                <a class="code" href="namespaceripple_1_1test_1_1validator__data.html#ae57bf8941d094957b0b90603fac6de3e">validator_data::public_key</a>);</div>
+<div class="line"><a name="l00125"></a><span class="lineno">  125</span>&#160; </div>
+<div class="line"><a name="l00126"></a><span class="lineno">  126</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; ports = result[jss::result][jss::info][jss::ports];</div>
+<div class="line"><a name="l00127"></a><span class="lineno">  127</span>&#160;            BEAST_EXPECT(ports.isArray() &amp;&amp; ports.size() == 3);</div>
+<div class="line"><a name="l00128"></a><span class="lineno">  128</span>&#160;            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; port : ports)</div>
+<div class="line"><a name="l00129"></a><span class="lineno">  129</span>&#160;            {</div>
+<div class="line"><a name="l00130"></a><span class="lineno">  130</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span>&amp; proto = port[jss::protocol];</div>
+<div class="line"><a name="l00131"></a><span class="lineno">  131</span>&#160;                BEAST_EXPECT(proto.isArray());</div>
+<div class="line"><a name="l00132"></a><span class="lineno">  132</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> p = port[jss::port].asUInt();</div>
+<div class="line"><a name="l00133"></a><span class="lineno">  133</span>&#160;                BEAST_EXPECT(p == rpc_port || p == ws_port || p == grpc_port);</div>
+<div class="line"><a name="l00134"></a><span class="lineno">  134</span>&#160;                <span class="keywordflow">if</span> (p == grpc_port)</div>
+<div class="line"><a name="l00135"></a><span class="lineno">  135</span>&#160;                {</div>
+<div class="line"><a name="l00136"></a><span class="lineno">  136</span>&#160;                    BEAST_EXPECT(proto.size() == 1);</div>
+<div class="line"><a name="l00137"></a><span class="lineno">  137</span>&#160;                    BEAST_EXPECT(proto[0u].asString() == <span class="stringliteral">&quot;grpc&quot;</span>);</div>
+<div class="line"><a name="l00138"></a><span class="lineno">  138</span>&#160;                }</div>
+<div class="line"><a name="l00139"></a><span class="lineno">  139</span>&#160;                <span class="keywordflow">if</span> (p == rpc_port)</div>
+<div class="line"><a name="l00140"></a><span class="lineno">  140</span>&#160;                {</div>
+<div class="line"><a name="l00141"></a><span class="lineno">  141</span>&#160;                    BEAST_EXPECT(proto.size() == 2);</div>
+<div class="line"><a name="l00142"></a><span class="lineno">  142</span>&#160;                    BEAST_EXPECT(proto[0u].asString() == <span class="stringliteral">&quot;http&quot;</span>);</div>
+<div class="line"><a name="l00143"></a><span class="lineno">  143</span>&#160;                    BEAST_EXPECT(proto[1u].asString() == <span class="stringliteral">&quot;ws2&quot;</span>);</div>
+<div class="line"><a name="l00144"></a><span class="lineno">  144</span>&#160;                }</div>
+<div class="line"><a name="l00145"></a><span class="lineno">  145</span>&#160;                <span class="keywordflow">if</span> (p == ws_port)</div>
+<div class="line"><a name="l00146"></a><span class="lineno">  146</span>&#160;                {</div>
+<div class="line"><a name="l00147"></a><span class="lineno">  147</span>&#160;                    BEAST_EXPECT(proto.size() == 1);</div>
+<div class="line"><a name="l00148"></a><span class="lineno">  148</span>&#160;                    BEAST_EXPECT(proto[0u].asString() == <span class="stringliteral">&quot;ws&quot;</span>);</div>
+<div class="line"><a name="l00149"></a><span class="lineno">  149</span>&#160;                }</div>
+<div class="line"><a name="l00150"></a><span class="lineno">  150</span>&#160;            }</div>
+<div class="line"><a name="l00151"></a><span class="lineno">  151</span>&#160;        }</div>
+<div class="line"><a name="l00152"></a><span class="lineno">  152</span>&#160;    }</div>
+<div class="line"><a name="l00153"></a><span class="lineno">  153</span>&#160; </div>
+<div class="line"><a name="l00154"></a><span class="lineno">  154</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00155"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ServerInfo__test.html#ac05ab619f3b6912e010ec516ff93dd8a">  155</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1ServerInfo__test.html#ac05ab619f3b6912e010ec516ff93dd8a">testServerDefinitions</a>()</div>
+<div class="line"><a name="l00156"></a><span class="lineno">  156</span>&#160;    {</div>
+<div class="line"><a name="l00157"></a><span class="lineno">  157</span>&#160;        testcase(<span class="stringliteral">&quot;server_definitions&quot;</span>);</div>
+<div class="line"><a name="l00158"></a><span class="lineno">  158</span>&#160; </div>
+<div class="line"><a name="l00159"></a><span class="lineno">  159</span>&#160;        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a name="l00160"></a><span class="lineno">  160</span>&#160; </div>
+<div class="line"><a name="l00161"></a><span class="lineno">  161</span>&#160;        {</div>
+<div class="line"><a name="l00162"></a><span class="lineno">  162</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
+<div class="line"><a name="l00163"></a><span class="lineno">  163</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ad69855b4b26fc3c83922c5783487592c">rpc</a>(<span class="stringliteral">&quot;server_definitions&quot;</span>);</div>
+<div class="line"><a name="l00164"></a><span class="lineno">  164</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::error));</div>
+<div class="line"><a name="l00165"></a><span class="lineno">  165</span>&#160;            BEAST_EXPECT(result[jss::result][jss::status] == <span class="stringliteral">&quot;success&quot;</span>);</div>
+<div class="line"><a name="l00166"></a><span class="lineno">  166</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::FIELDS));</div>
+<div class="line"><a name="l00167"></a><span class="lineno">  167</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));</div>
+<div class="line"><a name="l00168"></a><span class="lineno">  168</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00169"></a><span class="lineno">  169</span>&#160;                result[jss::result].isMember(jss::TRANSACTION_RESULTS));</div>
+<div class="line"><a name="l00170"></a><span class="lineno">  170</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_TYPES));</div>
+<div class="line"><a name="l00171"></a><span class="lineno">  171</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::TYPES));</div>
+<div class="line"><a name="l00172"></a><span class="lineno">  172</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::hash));</div>
+<div class="line"><a name="l00173"></a><span class="lineno">  173</span>&#160; </div>
+<div class="line"><a name="l00174"></a><span class="lineno">  174</span>&#160;            <span class="comment">// test a random element of each result</span></div>
+<div class="line"><a name="l00175"></a><span class="lineno">  175</span>&#160;            <span class="comment">// (testing the whole output would be difficult to maintain)</span></div>
+<div class="line"><a name="l00176"></a><span class="lineno">  176</span>&#160; </div>
+<div class="line"><a name="l00177"></a><span class="lineno">  177</span>&#160;            {</div>
+<div class="line"><a name="l00178"></a><span class="lineno">  178</span>&#160;                <span class="keyword">auto</span> <span class="keyword">const</span> firstField = result[jss::result][jss::FIELDS][0u];</div>
+<div class="line"><a name="l00179"></a><span class="lineno">  179</span>&#160;                BEAST_EXPECT(firstField[0u].asString() == <span class="stringliteral">&quot;Generic&quot;</span>);</div>
+<div class="line"><a name="l00180"></a><span class="lineno">  180</span>&#160;                BEAST_EXPECT(</div>
+<div class="line"><a name="l00181"></a><span class="lineno">  181</span>&#160;                    firstField[1][jss::isSerialized].asBool() == <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00182"></a><span class="lineno">  182</span>&#160;                BEAST_EXPECT(</div>
+<div class="line"><a name="l00183"></a><span class="lineno">  183</span>&#160;                    firstField[1][jss::isSigningField].asBool() == <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00184"></a><span class="lineno">  184</span>&#160;                BEAST_EXPECT(firstField[1][jss::isVLEncoded].asBool() == <span class="keyword">false</span>);</div>
+<div class="line"><a name="l00185"></a><span class="lineno">  185</span>&#160;                BEAST_EXPECT(firstField[1][jss::nth].asUInt() == 0);</div>
+<div class="line"><a name="l00186"></a><span class="lineno">  186</span>&#160;                BEAST_EXPECT(firstField[1][jss::type].asString() == <span class="stringliteral">&quot;Unknown&quot;</span>);</div>
+<div class="line"><a name="l00187"></a><span class="lineno">  187</span>&#160;            }</div>
+<div class="line"><a name="l00188"></a><span class="lineno">  188</span>&#160; </div>
+<div class="line"><a name="l00189"></a><span class="lineno">  189</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00190"></a><span class="lineno">  190</span>&#160;                result[jss::result][jss::LEDGER_ENTRY_TYPES][<span class="stringliteral">&quot;AccountRoot&quot;</span>]</div>
+<div class="line"><a name="l00191"></a><span class="lineno">  191</span>&#160;                    .asUInt() == 97);</div>
+<div class="line"><a name="l00192"></a><span class="lineno">  192</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00193"></a><span class="lineno">  193</span>&#160;                result[jss::result][jss::TRANSACTION_RESULTS][<span class="stringliteral">&quot;tecDIR_FULL&quot;</span>]</div>
+<div class="line"><a name="l00194"></a><span class="lineno">  194</span>&#160;                    .asUInt() == 121);</div>
+<div class="line"><a name="l00195"></a><span class="lineno">  195</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00196"></a><span class="lineno">  196</span>&#160;                result[jss::result][jss::TRANSACTION_TYPES][<span class="stringliteral">&quot;Payment&quot;</span>]</div>
+<div class="line"><a name="l00197"></a><span class="lineno">  197</span>&#160;                    .asUInt() == 0);</div>
+<div class="line"><a name="l00198"></a><span class="lineno">  198</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00199"></a><span class="lineno">  199</span>&#160;                result[jss::result][jss::TYPES][<span class="stringliteral">&quot;AccountID&quot;</span>].asUInt() == 8);</div>
+<div class="line"><a name="l00200"></a><span class="lineno">  200</span>&#160;        }</div>
+<div class="line"><a name="l00201"></a><span class="lineno">  201</span>&#160; </div>
+<div class="line"><a name="l00202"></a><span class="lineno">  202</span>&#160;        <span class="comment">// test providing the same hash</span></div>
+<div class="line"><a name="l00203"></a><span class="lineno">  203</span>&#160;        {</div>
+<div class="line"><a name="l00204"></a><span class="lineno">  204</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
+<div class="line"><a name="l00205"></a><span class="lineno">  205</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> firstResult = env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ad69855b4b26fc3c83922c5783487592c">rpc</a>(<span class="stringliteral">&quot;server_definitions&quot;</span>);</div>
+<div class="line"><a name="l00206"></a><span class="lineno">  206</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> hash = firstResult[jss::result][jss::hash].<a class="code" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>();</div>
+<div class="line"><a name="l00207"></a><span class="lineno">  207</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> hashParam =</div>
+<div class="line"><a name="l00208"></a><span class="lineno">  208</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;{ &quot;</span>) + <span class="stringliteral">&quot;\&quot;hash\&quot;: \&quot;&quot;</span> + hash + <span class="stringliteral">&quot;\&quot;}&quot;</span>;</div>
+<div class="line"><a name="l00209"></a><span class="lineno">  209</span>&#160; </div>
+<div class="line"><a name="l00210"></a><span class="lineno">  210</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result =</div>
+<div class="line"><a name="l00211"></a><span class="lineno">  211</span>&#160;                env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ad69855b4b26fc3c83922c5783487592c">rpc</a>(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;server_definitions&quot;</span>, hashParam);</div>
+<div class="line"><a name="l00212"></a><span class="lineno">  212</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::error));</div>
+<div class="line"><a name="l00213"></a><span class="lineno">  213</span>&#160;            BEAST_EXPECT(result[jss::result][jss::status] == <span class="stringliteral">&quot;success&quot;</span>);</div>
+<div class="line"><a name="l00214"></a><span class="lineno">  214</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::FIELDS));</div>
+<div class="line"><a name="l00215"></a><span class="lineno">  215</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00216"></a><span class="lineno">  216</span>&#160;                !result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));</div>
+<div class="line"><a name="l00217"></a><span class="lineno">  217</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00218"></a><span class="lineno">  218</span>&#160;                !result[jss::result].isMember(jss::TRANSACTION_RESULTS));</div>
+<div class="line"><a name="l00219"></a><span class="lineno">  219</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::TRANSACTION_TYPES));</div>
+<div class="line"><a name="l00220"></a><span class="lineno">  220</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::TYPES));</div>
+<div class="line"><a name="l00221"></a><span class="lineno">  221</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::hash));</div>
+<div class="line"><a name="l00222"></a><span class="lineno">  222</span>&#160;        }</div>
+<div class="line"><a name="l00223"></a><span class="lineno">  223</span>&#160; </div>
+<div class="line"><a name="l00224"></a><span class="lineno">  224</span>&#160;        <span class="comment">// test providing a different hash</span></div>
+<div class="line"><a name="l00225"></a><span class="lineno">  225</span>&#160;        {</div>
+<div class="line"><a name="l00226"></a><span class="lineno">  226</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
+<div class="line"><a name="l00227"></a><span class="lineno">  227</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> hash =</div>
+<div class="line"><a name="l00228"></a><span class="lineno">  228</span>&#160;                <span class="stringliteral">&quot;54296160385A27154BFA70A239DD8E8FD4CC2DB7BA32D970BA3A5B132CF749&quot;</span></div>
+<div class="line"><a name="l00229"></a><span class="lineno">  229</span>&#160;                <span class="stringliteral">&quot;D1&quot;</span>;</div>
+<div class="line"><a name="l00230"></a><span class="lineno">  230</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> hashParam =</div>
+<div class="line"><a name="l00231"></a><span class="lineno">  231</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;{ &quot;</span>) + <span class="stringliteral">&quot;\&quot;hash\&quot;: \&quot;&quot;</span> + hash + <span class="stringliteral">&quot;\&quot;}&quot;</span>;</div>
+<div class="line"><a name="l00232"></a><span class="lineno">  232</span>&#160; </div>
+<div class="line"><a name="l00233"></a><span class="lineno">  233</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span> result =</div>
+<div class="line"><a name="l00234"></a><span class="lineno">  234</span>&#160;                env.<a class="code" href="classripple_1_1test_1_1jtx_1_1Env.html#ad69855b4b26fc3c83922c5783487592c">rpc</a>(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;server_definitions&quot;</span>, hashParam);</div>
+<div class="line"><a name="l00235"></a><span class="lineno">  235</span>&#160;            BEAST_EXPECT(!result[jss::result].isMember(jss::error));</div>
+<div class="line"><a name="l00236"></a><span class="lineno">  236</span>&#160;            BEAST_EXPECT(result[jss::result][jss::status] == <span class="stringliteral">&quot;success&quot;</span>);</div>
+<div class="line"><a name="l00237"></a><span class="lineno">  237</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::FIELDS));</div>
+<div class="line"><a name="l00238"></a><span class="lineno">  238</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));</div>
+<div class="line"><a name="l00239"></a><span class="lineno">  239</span>&#160;            BEAST_EXPECT(</div>
+<div class="line"><a name="l00240"></a><span class="lineno">  240</span>&#160;                result[jss::result].isMember(jss::TRANSACTION_RESULTS));</div>
+<div class="line"><a name="l00241"></a><span class="lineno">  241</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_TYPES));</div>
+<div class="line"><a name="l00242"></a><span class="lineno">  242</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::TYPES));</div>
+<div class="line"><a name="l00243"></a><span class="lineno">  243</span>&#160;            BEAST_EXPECT(result[jss::result].isMember(jss::hash));</div>
+<div class="line"><a name="l00244"></a><span class="lineno">  244</span>&#160;        }</div>
+<div class="line"><a name="l00245"></a><span class="lineno">  245</span>&#160;    }</div>
+<div class="line"><a name="l00246"></a><span class="lineno">  246</span>&#160; </div>
+<div class="line"><a name="l00247"></a><span class="lineno">  247</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l00248"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1ServerInfo__test.html#a299023ea236face0a3e9de451b99fcf6">  248</a></span>&#160;    <a class="code" href="classripple_1_1test_1_1ServerInfo__test.html#a299023ea236face0a3e9de451b99fcf6">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l00249"></a><span class="lineno">  249</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l00250"></a><span class="lineno">  250</span>&#160;        <a class="code" href="classripple_1_1test_1_1ServerInfo__test.html#ac187e7b1d3db06d4caff67a83abd97a4">testServerInfo</a>();</div>
+<div class="line"><a name="l00251"></a><span class="lineno">  251</span>&#160;        <a class="code" href="classripple_1_1test_1_1ServerInfo__test.html#ac05ab619f3b6912e010ec516ff93dd8a">testServerDefinitions</a>();</div>
+<div class="line"><a name="l00252"></a><span class="lineno">  252</span>&#160;    }</div>
+<div class="line"><a name="l00253"></a><span class="lineno">  253</span>&#160;};</div>
+<div class="line"><a name="l00254"></a><span class="lineno">  254</span>&#160; </div>
+<div class="line"><a name="l00255"></a><span class="lineno">  255</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">BEAST_DEFINE_TESTSUITE</a>(ServerInfo, app, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l00256"></a><span class="lineno">  256</span>&#160; </div>
+<div class="line"><a name="l00257"></a><span class="lineno">  257</span>&#160;}  <span class="comment">// namespace test</span></div>
+<div class="line"><a name="l00258"></a><span class="lineno">  258</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
-<div class="ttc" id="aclassripple_1_1test_1_1ServerInfo__test_html_ac05ab619f3b6912e010ec516ff93dd8a"><div class="ttname"><a href="classripple_1_1test_1_1ServerInfo__test.html#ac05ab619f3b6912e010ec516ff93dd8a">ripple::test::ServerInfo_test::testServerDefinitions</a></div><div class="ttdeci">void testServerDefinitions()</div><div class="ttdef"><b>Definition:</b> <a href="ServerInfo__test_8cpp_source.html#l00154">ServerInfo_test.cpp:154</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1ServerInfo__test_html_ac05ab619f3b6912e010ec516ff93dd8a"><div class="ttname"><a href="classripple_1_1test_1_1ServerInfo__test.html#ac05ab619f3b6912e010ec516ff93dd8a">ripple::test::ServerInfo_test::testServerDefinitions</a></div><div class="ttdeci">void testServerDefinitions()</div><div class="ttdef"><b>Definition:</b> <a href="ServerInfo__test_8cpp_source.html#l00155">ServerInfo_test.cpp:155</a></div></div>
 <div class="ttc" id="aclassripple_1_1NetworkOPs_html_af4863a74bd582bd66f43b2e0e82feedd"><div class="ttname"><a href="classripple_1_1NetworkOPs.html#af4863a74bd582bd66f43b2e0e82feedd">ripple::NetworkOPs::getServerInfo</a></div><div class="ttdeci">virtual Json::Value getServerInfo(bool human, bool admin, bool counters)=0</div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_ad69855b4b26fc3c83922c5783487592c"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#ad69855b4b26fc3c83922c5783487592c">ripple::test::jtx::Env::rpc</a></div><div class="ttdeci">Json::Value rpc(unsigned apiVersion, std::unordered_map&lt; std::string, std::string &gt; const &amp;headers, std::string const &amp;cmd, Args &amp;&amp;... args)</div><div class="ttdoc">Execute an RPC command.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00711">Env.h:711</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_a9e55bbdb66a785bfd0dda93802b514b6"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#a9e55bbdb66a785bfd0dda93802b514b6">ripple::test::jtx::Env::app</a></div><div class="ttdeci">Application &amp; app()</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00241">Env.h:241</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1validator__data_html_ae57bf8941d094957b0b90603fac6de3e"><div class="ttname"><a href="namespaceripple_1_1test_1_1validator__data.html#ae57bf8941d094957b0b90603fac6de3e">ripple::test::validator_data::public_key</a></div><div class="ttdeci">static const auto public_key</div><div class="ttdef"><b>Definition:</b> <a href="ServerInfo__test_8cpp_source.html#l00032">ServerInfo_test.cpp:32</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1validator__data_html_acdfbd9704063047075238f3686bdca90"><div class="ttname"><a href="namespaceripple_1_1test_1_1validator__data.html#acdfbd9704063047075238f3686bdca90">ripple::test::validator_data::token</a></div><div class="ttdeci">static const auto token</div><div class="ttdef"><b>Definition:</b> <a href="ServerInfo__test_8cpp_source.html#l00035">ServerInfo_test.cpp:35</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1ServerInfo__test_html_ad9cc2a3fe55b6fb587e450611209927d"><div class="ttname"><a href="classripple_1_1test_1_1ServerInfo__test.html#ad9cc2a3fe55b6fb587e450611209927d">ripple::test::ServerInfo_test::makeValidatorConfig</a></div><div class="ttdeci">static std::unique_ptr&lt; Config &gt; makeValidatorConfig()</div><div class="ttdef"><b>Definition:</b> <a href="ServerInfo__test_8cpp_source.html#l00050">ServerInfo_test.cpp:50</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1test_1_1validator__data_html_ae57bf8941d094957b0b90603fac6de3e"><div class="ttname"><a href="namespaceripple_1_1test_1_1validator__data.html#ae57bf8941d094957b0b90603fac6de3e">ripple::test::validator_data::public_key</a></div><div class="ttdeci">static const auto public_key</div><div class="ttdef"><b>Definition:</b> <a href="ServerInfo__test_8cpp_source.html#l00033">ServerInfo_test.cpp:33</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1test_1_1validator__data_html_acdfbd9704063047075238f3686bdca90"><div class="ttname"><a href="namespaceripple_1_1test_1_1validator__data.html#acdfbd9704063047075238f3686bdca90">ripple::test::validator_data::token</a></div><div class="ttdeci">static const auto token</div><div class="ttdef"><b>Definition:</b> <a href="ServerInfo__test_8cpp_source.html#l00036">ServerInfo_test.cpp:36</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1ServerInfo__test_html_ad9cc2a3fe55b6fb587e450611209927d"><div class="ttname"><a href="classripple_1_1test_1_1ServerInfo__test.html#ad9cc2a3fe55b6fb587e450611209927d">ripple::test::ServerInfo_test::makeValidatorConfig</a></div><div class="ttdeci">static std::unique_ptr&lt; Config &gt; makeValidatorConfig()</div><div class="ttdef"><b>Definition:</b> <a href="ServerInfo__test_8cpp_source.html#l00051">ServerInfo_test.cpp:51</a></div></div>
 <div class="ttc" id="aclassripple_1_1Application_html_a7c963aa5c47180b24897ff6b5622e5bc"><div class="ttname"><a href="classripple_1_1Application.html#a7c963aa5c47180b24897ff6b5622e5bc">ripple::Application::getOPs</a></div><div class="ttdeci">virtual NetworkOPs &amp; getOPs()=0</div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1ServerInfo__test_html_a299023ea236face0a3e9de451b99fcf6"><div class="ttname"><a href="classripple_1_1test_1_1ServerInfo__test.html#a299023ea236face0a3e9de451b99fcf6">ripple::test::ServerInfo_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="ServerInfo__test_8cpp_source.html#l00247">ServerInfo_test.cpp:247</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1ServerInfo__test_html_a299023ea236face0a3e9de451b99fcf6"><div class="ttname"><a href="classripple_1_1test_1_1ServerInfo__test.html#a299023ea236face0a3e9de451b99fcf6">ripple::test::ServerInfo_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="ServerInfo__test_8cpp_source.html#l00248">ServerInfo_test.cpp:248</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1ServerInfo__test_html"><div class="ttname"><a href="classripple_1_1test_1_1ServerInfo__test.html">ripple::test::ServerInfo_test</a></div><div class="ttdef"><b>Definition:</b> <a href="ServerInfo__test_8cpp_source.html#l00046">ServerInfo_test.cpp:46</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1ServerInfo__test_html"><div class="ttname"><a href="classripple_1_1test_1_1ServerInfo__test.html">ripple::test::ServerInfo_test</a></div><div class="ttdef"><b>Definition:</b> <a href="ServerInfo__test_8cpp_source.html#l00047">ServerInfo_test.cpp:47</a></div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_1_1test_html_a343c740a28bf9c6b47ec94df0a3e379d"><div class="ttname"><a href="namespaceripple_1_1test.html#a343c740a28bf9c6b47ec94df0a3e379d">ripple::test::setupConfigForUnitTests</a></div><div class="ttdeci">void setupConfigForUnitTests(Config &amp;config)</div><div class="ttdoc">initializes a config object for use with jtx::Env</div><div class="ttdef"><b>Definition:</b> <a href="envconfig_8cpp_source.html#l00039">envconfig.cpp:39</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1test_html_a343c740a28bf9c6b47ec94df0a3e379d"><div class="ttname"><a href="namespaceripple_1_1test.html#a343c740a28bf9c6b47ec94df0a3e379d">ripple::test::setupConfigForUnitTests</a></div><div class="ttdeci">void setupConfigForUnitTests(Config &amp;config)</div><div class="ttdoc">initializes a config object for use with jtx::Env</div><div class="ttdef"><b>Definition:</b> <a href="envconfig_8cpp_source.html#l00038">envconfig.cpp:38</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00116">Env.h:116</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1ServerInfo__test_html_ac187e7b1d3db06d4caff67a83abd97a4"><div class="ttname"><a href="classripple_1_1test_1_1ServerInfo__test.html#ac187e7b1d3db06d4caff67a83abd97a4">ripple::test::ServerInfo_test::testServerInfo</a></div><div class="ttdeci">void testServerInfo()</div><div class="ttdef"><b>Definition:</b> <a href="ServerInfo__test_8cpp_source.html#l00080">ServerInfo_test.cpp:80</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1ServerInfo__test_html_ac187e7b1d3db06d4caff67a83abd97a4"><div class="ttname"><a href="classripple_1_1test_1_1ServerInfo__test.html#ac187e7b1d3db06d4caff67a83abd97a4">ripple::test::ServerInfo_test::testServerInfo</a></div><div class="ttdeci">void testServerInfo()</div><div class="ttdef"><b>Definition:</b> <a href="ServerInfo__test_8cpp_source.html#l00081">ServerInfo_test.cpp:81</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_ab0d86bf425efefd03513e8dbfaca317b"><div class="ttname"><a href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">Json::Value::asString</a></div><div class="ttdeci">std::string asString() const</div><div class="ttdoc">Returns the unquoted string value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00469">json_value.cpp:469</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_html_a36e90e9cdf2adf7993483b3190ee8e21"><div class="ttname"><a href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">ripple::test::BEAST_DEFINE_TESTSUITE</a></div><div class="ttdeci">BEAST_DEFINE_TESTSUITE(DeliverMin, app, ripple)</div></div>
 <!-- start footer part -->
