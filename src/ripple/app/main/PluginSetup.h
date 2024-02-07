@@ -33,6 +33,7 @@ std::map<std::uint16_t, PluginLedgerFormat> pluginObjectsMap{};
 std::map<std::uint16_t, PluginInnerObjectFormat> pluginInnerObjectFormats{};
 std::vector<int> pluginSFieldCodes{};
 std::map<int, STypeFunctions> pluginSTypes{};
+std::map<int, parsePluginValuePtr> pluginLeafParserMap{};
 
 typedef void (*setPluginPointersPtr)(
     std::map<std::uint16_t, PluginTxFormat>* pluginTxFormatPtr,
@@ -40,7 +41,8 @@ typedef void (*setPluginPointersPtr)(
     std::map<std::uint16_t, PluginInnerObjectFormat>* pluginInnerObjectFormats,
     std::map<int, SField const*>* knownCodeToField,
     std::vector<int>* pluginSFieldCodes,
-    std::map<int, STypeFunctions>* pluginSTypes);
+    std::map<int, STypeFunctions>* pluginSTypes,
+    std::map<int, parsePluginValuePtr>* pluginLeafParserMap);
 
 void
 registerTxFormat(
@@ -215,6 +217,12 @@ registerSType(STypeFunctions type)
 }
 
 void
+registerLeafType(int type, parsePluginValuePtr functionPtr)
+{
+    pluginLeafParserMap.insert({type, functionPtr});
+}
+
+void
 registerPluginPointers()
 {
     registerTxFormats(&pluginTxFormats);
@@ -222,6 +230,7 @@ registerPluginPointers()
     registerPluginInnerObjectFormats(&pluginInnerObjectFormats);
     registerSFields(nullptr, &pluginSFieldCodes);
     registerSTypes(&pluginSTypes);
+    registerLeafTypes(&pluginLeafParserMap);
 }
 
 void
@@ -233,6 +242,7 @@ clearPluginPointers()
     SField::reset();
     pluginSFieldCodes.clear();
     pluginSTypes.clear();
+    pluginLeafParserMap.clear();
 }
 
 void
@@ -247,7 +257,8 @@ setPluginPointers(void* handle)
             &pluginInnerObjectFormats,
             SField::getKnownCodeToField(),
             &pluginSFieldCodes,
-            &pluginSTypes);
+            &pluginSTypes,
+            &pluginLeafParserMap);
     }
 }
 

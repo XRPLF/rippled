@@ -250,7 +250,7 @@ typedef std::optional<detail::STVar> (*parseLeafTypePtr)(
     Json::Value& error);
 
 void
-registerLeafType(int type, parsePluginValuePtr functionPtr);
+registerLeafTypes(std::map<int, parsePluginValuePtr>* pluginLeafParserMap);
 
 }  // namespace ripple
 

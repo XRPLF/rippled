@@ -48,7 +48,7 @@ namespace ripple {
 
 namespace STParsedJSONDetail {
 
-std::map<int, parsePluginValuePtr> pluginLeafParserMap{};
+std::map<int, parsePluginValuePtr>* pluginLeafParserMapPtr;
 
 // This function is used by parseObject to parse any JSON type that doesn't
 // recurse.  Everything represented here is a leaf-type.
@@ -624,8 +624,8 @@ parseLeaf(
             break;
 
         default:
-            if (auto it = pluginLeafParserMap.find(field.fieldType);
-                it != pluginLeafParserMap.end())
+            if (auto it = pluginLeafParserMapPtr->find(field.fieldType);
+                it != pluginLeafParserMapPtr->end())
             {
                 Buffer buf =
                     it->second(field, json_name, fieldName, name, value, error);
@@ -895,9 +895,9 @@ STParsedJSONArray::STParsedJSONArray(
 }
 
 void
-registerLeafType(int type, parsePluginValuePtr functionPtr)
+registerLeafTypes(std::map<int, parsePluginValuePtr>* pluginLeafParserMap)
 {
-    STParsedJSONDetail::pluginLeafParserMap.insert({type, functionPtr});
+    STParsedJSONDetail::pluginLeafParserMapPtr = pluginLeafParserMap;
 }
 
 }  // namespace ripple

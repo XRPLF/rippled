@@ -100,17 +100,17 @@ getSTypes()
             fromSerialIter,
         },
     };
-    for (int i = 0; i < sizeof(exports) / sizeof(exports[0]); i++)
-    {
-        auto const stype = exports[i];
-        // registerSType(
-        //     {stype.typeId,
-        //      stype.toString,
-        //      stype.toJson,
-        //      stype.toSerializer,
-        //      stype.fromSerialIter});
-        registerLeafType(stype.typeId, stype.parsePtr);
-    }
+    // for (int i = 0; i < sizeof(exports) / sizeof(exports[0]); i++)
+    // {
+    //     auto const stype = exports[i];
+    //     // registerSType(
+    //     //     {stype.typeId,
+    //     //      stype.toString,
+    //     //      stype.toJson,
+    //     //      stype.toSerializer,
+    //     //      stype.fromSerialIter});
+    //     registerLeafType(stype.typeId, stype.parsePtr);
+    // }
     STypeExport* ptr = exports;
     return {ptr, 1};
 }
