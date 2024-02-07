@@ -472,15 +472,14 @@ public:
         {
             bool errored = false;
             reinitialize();
-            PluginEnv env{
-                *this,
-                makeConfig("plugin_test_badtransactor.xrplugin"),
-                FeatureBitset{supported_amendments_plugins()}};
 
             try
             {
                 // this should crash
-                env.fund(XRP(5000), alice);
+                PluginEnv env{
+                    *this,
+                    makeConfig("plugin_test_badtransactor.xrplugin"),
+                    FeatureBitset{supported_amendments_plugins()}};
                 BEAST_EXPECT(false);
             }
             catch (...)
@@ -611,7 +610,7 @@ public:
         testBasicTransactor();
         testPluginSTypeSField();
         testPluginLedgerObjectInvariantCheck();
-        // testPluginFailure();
+        testPluginFailure();
     }
 };
 
