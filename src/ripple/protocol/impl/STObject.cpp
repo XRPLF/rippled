@@ -645,23 +645,22 @@ STObject::getFieldArray(SField const& field) const
 void
 STObject::set(std::unique_ptr<STBase> v)
 {
-    set(v.get());
+    set(std::move(*v.get()));
 }
 
 void
-STObject::set(STBase* v)
+STObject::set(STBase&& v)
 {
-    assert(v);
-    auto const i = getFieldIndex(v->getFName());
+    auto const i = getFieldIndex(v.getFName());
     if (i != -1)
     {
-        v_[i] = std::move(*v);
+        v_[i] = std::move(v);
     }
     else
     {
         if (!isFree())
             Throw<std::runtime_error>("missing field in templated STObject");
-        v_.emplace_back(std::move(*v));
+        v_.emplace_back(std::move(v));
     }
 }
 

@@ -314,7 +314,7 @@ initializeFeeAuctionVote(
             {
                 STObject auctionSlot =
                     STObject::makeInnerObject(sfAuctionSlot, rules);
-                ammSle->set(&auctionSlot);
+                ammSle->set(std::move(auctionSlot));
             }
             return ammSle->peekFieldObject(sfAuctionSlot);
         }
