@@ -68,6 +68,7 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
 <a href="#pri-types">Private Types</a> &#124;
 <a href="#pri-methods">Private Member Functions</a> &#124;
@@ -190,8 +191,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a00db5bd22a73d188e8f2287fbdbc8e92"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STObject.html#a00db5bd22a73d188e8f2287fbdbc8e92">set</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1STBase.html">STBase</a> &gt; v)</td></tr>
 <tr class="memdesc:a00db5bd22a73d188e8f2287fbdbc8e92"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set a field.  <a href="classripple_1_1STObject.html#a00db5bd22a73d188e8f2287fbdbc8e92">More...</a><br /></td></tr>
 <tr class="separator:a00db5bd22a73d188e8f2287fbdbc8e92"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa2cce8129715ebcfbe954f5026a05dbd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STObject.html#aa2cce8129715ebcfbe954f5026a05dbd">set</a> (<a class="el" href="classripple_1_1STBase.html">STBase</a> *v)</td></tr>
-<tr class="separator:aa2cce8129715ebcfbe954f5026a05dbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a357763465c6048c33d47df2e934a7ca0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STObject.html#a357763465c6048c33d47df2e934a7ca0">set</a> (<a class="el" href="classripple_1_1STBase.html">STBase</a> &amp;&amp;v)</td></tr>
+<tr class="separator:a357763465c6048c33d47df2e934a7ca0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa1fb2fa09b2256510bb01306202de9c3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a3e7e3f29aef85bcca06706da54e950fc">SerializedTypeID</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STObject.html#aa1fb2fa09b2256510bb01306202de9c3">getSType</a> () const override</td></tr>
 <tr class="separator:aa1fb2fa09b2256510bb01306202de9c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3b5c3ab2b3da4ecc342bd8cf5e9c3947"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STObject.html#a3b5c3ab2b3da4ecc342bd8cf5e9c3947">isEquivalent</a> (const <a class="el" href="classripple_1_1STBase.html">STBase</a> &amp;t) const override</td></tr>
@@ -389,6 +390,11 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a9a76e581a75199f68e028722160958e4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STBase.html#a9a76e581a75199f68e028722160958e4">addFieldID</a> (<a class="el" href="classripple_1_1Serializer.html">Serializer</a> &amp;s) const</td></tr>
 <tr class="separator:a9a76e581a75199f68e028722160958e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:acc6d5482f5202b8b77d51ac5d6f24dce"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1STObject.html">STObject</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1STObject.html#acc6d5482f5202b8b77d51ac5d6f24dce">makeInnerObject</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;name, <a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules)</td></tr>
+<tr class="separator:acc6d5482f5202b8b77d51ac5d6f24dce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pro-static-methods"></a>
 Static Protected Member Functions</h2></td></tr>
 <tr class="memitem:a84fe46ac92fe704869cc6d64c49dd1ba"><td class="memTemplParams" colspan="2">template&lt;class T &gt; </td></tr>
@@ -485,7 +491,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00074">74</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00075">75</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -509,7 +515,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00081">81</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00082">82</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -538,7 +544,7 @@ Friends</h2></td></tr>
 <tr><td class="fieldname"><a id="abfe55ede147301d55de3383deb20b288adba4a539075f71fb97388e561b098dfd"></a>withAllFields&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00406">406</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00410">410</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -1096,6 +1102,44 @@ template&lt;typename F &gt; </div>
 
 </div>
 </div>
+<a id="acc6d5482f5202b8b77d51ac5d6f24dce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acc6d5482f5202b8b77d51ac5d6f24dce">&#9670;&nbsp;</a></span>makeInnerObject()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STObject.html">STObject</a> ripple::STObject::makeInnerObject </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1SField.html">SField</a> const &amp;&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rules</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">inherited</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00063">63</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+
+</div>
+</div>
 <a id="aa820a166593f797cce00099c29fd6b90"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa820a166593f797cce00099c29fd6b90">&#9670;&nbsp;</a></span>begin()</h2>
 
@@ -1119,7 +1163,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00863">863</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00867">867</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -1146,7 +1190,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00869">869</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00873">873</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -1173,7 +1217,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00875">875</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00879">879</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -1201,7 +1245,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00881">881</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00885">885</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -1229,7 +1273,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00116">116</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00131">131</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1257,7 +1301,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00170">170</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00185">185</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1284,7 +1328,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00887">887</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00891">891</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -1312,7 +1356,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00100">100</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00115">115</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1350,7 +1394,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00180">180</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00195">195</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1381,12 +1425,12 @@ template&lt;typename F &gt; </div>
 <p>Set a field. </p>
 <p>if the field already exists, it is replaced. </p>
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00631">631</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00646">646</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
-<a id="aa2cce8129715ebcfbe954f5026a05dbd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa2cce8129715ebcfbe954f5026a05dbd">&#9670;&nbsp;</a></span>set() <span class="overload">[4/4]</span></h2>
+<a id="a357763465c6048c33d47df2e934a7ca0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a357763465c6048c33d47df2e934a7ca0">&#9670;&nbsp;</a></span>set() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1397,7 +1441,7 @@ template&lt;typename F &gt; </div>
         <tr>
           <td class="memname">void ripple::STObject::set </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1STBase.html">STBase</a> *&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STBase.html">STBase</a> &amp;&amp;&#160;</td>
           <td class="paramname"><em>v</em></td><td>)</td>
           <td></td>
         </tr>
@@ -1408,6 +1452,8 @@ template&lt;typename F &gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00652">652</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1438,7 +1484,7 @@ template&lt;typename F &gt; </div>
 
 <p>Reimplemented in <a class="el" href="classripple_1_1STTx.html#ade013af363e3c323e0e693ffcaec0bec">ripple::STTx</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00073">73</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00088">88</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1468,7 +1514,7 @@ template&lt;typename F &gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a2282c8e10ea51c1565b1fd5e67ac8344">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00304">304</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00319">319</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1497,7 +1543,7 @@ template&lt;typename F &gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#af0182cf3ef71d4367851e1d3d3fbede0">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00079">79</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00094">94</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1527,7 +1573,7 @@ template&lt;typename F &gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#acc434da323d0ee0bf1880cd46b2a207a">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00085">85</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00100">100</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1565,7 +1611,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00787">787</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00808">808</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1596,7 +1642,7 @@ template&lt;typename F &gt; </div>
 
 <p>Reimplemented in <a class="el" href="classripple_1_1STTx.html#ae4c7b50dbe35c2ddd16d4845636a6379">ripple::STTx</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00254">254</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00269">269</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1625,7 +1671,7 @@ template&lt;typename F &gt; </div>
 
 <p>Reimplemented from <a class="el" href="classripple_1_1STBase.html#a45b0231291b9ba9d1e999033ff975cc3">ripple::STBase</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00285">285</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00300">300</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1657,7 +1703,7 @@ template&lt;typename F &gt; </div>
 
 <p>Reimplemented in <a class="el" href="classripple_1_1STTx.html#a489c8110e24455a2e7dac783f4760cc2">ripple::STTx</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00731">731</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00752">752</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1685,7 +1731,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00893">893</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00897">897</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -1712,7 +1758,7 @@ template&lt;typename F &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00902">902</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00906">906</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -1742,7 +1788,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00911">911</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00915">915</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -1769,7 +1815,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00918">918</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00922">922</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -1797,7 +1843,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00451">451</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00466">466</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1825,7 +1871,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00463">463</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00478">478</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1853,7 +1899,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00475">475</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00490">490</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1880,7 +1926,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00481">481</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00496">496</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1908,7 +1954,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00339">339</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00354">354</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1936,7 +1982,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00348">348</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00363">363</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -1964,7 +2010,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00924">924</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00928">928</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -1992,7 +2038,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00930">930</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00934">934</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -2020,7 +2066,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00936">936</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00940">940</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -2048,7 +2094,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00942">942</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00946">946</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -2076,7 +2122,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00357">357</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00372">372</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2104,7 +2150,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00395">395</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00410">410</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2132,7 +2178,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00373">373</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00388">388</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2160,7 +2206,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00384">384</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00399">399</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2188,7 +2234,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00401">401</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00416">416</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2226,7 +2272,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00412">412</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00427">427</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2254,7 +2300,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00547">547</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00562">562</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2282,7 +2328,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00553">553</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00568">568</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2310,7 +2356,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00559">559</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00574">574</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2338,7 +2384,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00565">565</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00580">580</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2366,7 +2412,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00571">571</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00586">586</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2394,7 +2440,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00577">577</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00592">592</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2422,7 +2468,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00583">583</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00598">598</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2450,7 +2496,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00589">589</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00604">604</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2478,7 +2524,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00595">595</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00610">610</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2506,7 +2552,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00603">603</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00618">618</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2534,7 +2580,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00610">610</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00625">625</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2562,7 +2608,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00617">617</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00632">632</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2590,7 +2636,7 @@ template&lt;class... Args&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00624">624</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00639">639</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -2635,7 +2681,7 @@ template&lt;class T &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00949">949</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00953">953</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -2674,7 +2720,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>std::nullopt if the field is not present, else the value of the specified field. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00956">956</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00960">960</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -2785,7 +2831,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00963">963</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00967">967</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -2816,7 +2862,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00970">970</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00974">974</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -2861,7 +2907,7 @@ template&lt;class T &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00977">977</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00981">981</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -2900,7 +2946,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>std::nullopt if the field is not present, else the value of the specified field. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01004">1004</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01008">1008</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -3011,7 +3057,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01024">1024</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01028">1028</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -3042,7 +3088,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01031">1031</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01035">1035</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -3080,7 +3126,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00647">647</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00668">668</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3118,7 +3164,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00653">653</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00674">674</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3156,7 +3202,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00659">659</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00680">680</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3194,7 +3240,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00665">665</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00686">686</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3232,7 +3278,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00671">671</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00692">692</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3270,7 +3316,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00677">677</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00698">698</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3308,7 +3354,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00695">695</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00716">716</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3346,7 +3392,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00701">701</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00722">722</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3384,7 +3430,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00689">689</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00710">710</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3422,7 +3468,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00707">707</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00728">728</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3460,7 +3506,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00713">713</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00734">734</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3498,7 +3544,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00719">719</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00740">740</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3536,7 +3582,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00683">683</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00704">704</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3574,7 +3620,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00725">725</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00746">746</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3614,7 +3660,7 @@ template&lt;class Tag &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01038">1038</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01042">1042</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -3642,7 +3688,7 @@ template&lt;class Tag &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00439">439</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00454">454</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3670,7 +3716,7 @@ template&lt;class Tag &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00445">445</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00460">460</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3698,7 +3744,7 @@ template&lt;class Tag &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00428">428</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00443">443</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3726,7 +3772,7 @@ template&lt;class Tag &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00492">492</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00507">507</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3754,7 +3800,7 @@ template&lt;class Tag &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00514">514</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00529">529</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3782,7 +3828,7 @@ template&lt;class Tag &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00529">529</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00544">544</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3810,7 +3856,7 @@ template&lt;class Tag &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00541">541</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00556">556</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3838,7 +3884,7 @@ template&lt;class Tag &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00243">243</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00258">258</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3866,7 +3912,7 @@ template&lt;class Tag &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00744">744</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00765">765</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -3922,7 +3968,7 @@ template&lt;class Tag &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01056">1056</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01060">1060</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -3988,7 +4034,7 @@ template&lt;class Tag &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00812">812</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8cpp_source.html#l00833">833</a> of file <a class="el" href="STObject_8cpp_source.html">STObject.cpp</a>.</p>
 
 </div>
 </div>
@@ -4046,7 +4092,7 @@ template&lt;typename T , typename V &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01063">1063</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01067">1067</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -4086,7 +4132,7 @@ template&lt;typename T , typename V &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01090">1090</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01094">1094</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -4126,7 +4172,7 @@ template&lt;typename T , typename V &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01113">1113</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01117">1117</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -4166,7 +4212,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01136">1136</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01140">1140</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -4196,7 +4242,7 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01157">1157</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l01161">1161</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -4577,7 +4623,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00076">76</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00077">77</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>
@@ -4601,7 +4647,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00077">77</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="STObject_8h_source.html#l00078">78</a> of file <a class="el" href="STObject_8h_source.html">STObject.h</a>.</p>
 
 </div>
 </div>

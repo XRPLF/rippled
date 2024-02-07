@@ -178,9 +178,13 @@ $(function() {
 , <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxOptions.html#a57a340a78e0da40eef457ecac5b01e6f">ripple::RelationalDatabase::AccountTxOptions</a>
 , <a class="el" href="structripple_1_1RelationalDatabase_1_1AccountTxPageOptions.html#acc6dbb5053fa99590a5fc5191af4b3a8">ripple::RelationalDatabase::AccountTxPageOptions</a>
 , <a class="el" href="structripple_1_1SignerEntries_1_1SignerEntry.html#afc5fc0d18c1b35c6cab91b4407311ea0">ripple::SignerEntries::SignerEntry</a>
+, <a class="el" href="structripple_1_1test_1_1jtx_1_1BidArg.html#a9a3968adaa3e6165e33190ef68487303">ripple::test::jtx::BidArg</a>
 , <a class="el" href="structripple_1_1test_1_1jtx_1_1BookSpec.html#ab084c4eac2d22bad0b9ee5108e607802">ripple::test::jtx::BookSpec</a>
+, <a class="el" href="structripple_1_1test_1_1jtx_1_1DepositArg.html#a4342874799b85d8ff3c754476a807256">ripple::test::jtx::DepositArg</a>
 , <a class="el" href="classripple_1_1test_1_1jtx_1_1IOU.html#a82c970fe46caff8ea46d15785d567a4f">ripple::test::jtx::IOU</a>
 , <a class="el" href="structripple_1_1test_1_1jtx_1_1signer.html#ab24438813ecb23b4bda40cfd51ed29f2">ripple::test::jtx::signer</a>
+, <a class="el" href="structripple_1_1test_1_1jtx_1_1VoteArg.html#a4c7a07c0b4fb537f43fcf4183003b6dd">ripple::test::jtx::VoteArg</a>
+, <a class="el" href="structripple_1_1test_1_1jtx_1_1WithdrawArg.html#a5b55d842b157d46d4d65475b02e44534">ripple::test::jtx::WithdrawArg</a>
 , <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a81e4136540fa07798d7576c574da2db0">ripple::TxQ::MaybeTx</a>
 , <a class="el" href="structripple_1_1TxQ_1_1TxDetails.html#a85214f881eb96a624f6870cb8edd377b">ripple::TxQ::TxDetails</a>
 , <a class="el" href="classripple_1_1TxQ_1_1TxQAccount.html#aa114fffe537a7724f3fa23876a477ff0">ripple::TxQ::TxQAccount</a>
@@ -576,8 +580,26 @@ $(function() {
 <li>asset1_
 : <a class="el" href="classripple_1_1test_1_1jtx_1_1AMM.html#af4ee836d38bc169c99d9332308680cd5">ripple::test::jtx::AMM</a>
 </li>
+<li>asset1In
+: <a class="el" href="structripple_1_1test_1_1jtx_1_1DepositArg.html#a509183bb05aaccee7030461cdd7c463b">ripple::test::jtx::DepositArg</a>
+</li>
+<li>asset1Out
+: <a class="el" href="structripple_1_1test_1_1jtx_1_1WithdrawArg.html#a8fb303a4bcff6d3ddc6f9fda25ed2a9b">ripple::test::jtx::WithdrawArg</a>
+</li>
 <li>asset2_
 : <a class="el" href="classripple_1_1test_1_1jtx_1_1AMM.html#a8a270bad11d1b02d5452394d50d356a4">ripple::test::jtx::AMM</a>
+</li>
+<li>asset2In
+: <a class="el" href="structripple_1_1test_1_1jtx_1_1DepositArg.html#ac1618c76060c8af5a9dcb4cd87ef5ea9">ripple::test::jtx::DepositArg</a>
+</li>
+<li>asset2Out
+: <a class="el" href="structripple_1_1test_1_1jtx_1_1WithdrawArg.html#a0d12552ef653b2965d2fc71bd890d016">ripple::test::jtx::WithdrawArg</a>
+</li>
+<li>assets
+: <a class="el" href="structripple_1_1test_1_1jtx_1_1BidArg.html#adf7b3d8e7c85d79d470caec4e718f894">ripple::test::jtx::BidArg</a>
+, <a class="el" href="structripple_1_1test_1_1jtx_1_1DepositArg.html#a886de7d7aa9b010bd17b7938009b761f">ripple::test::jtx::DepositArg</a>
+, <a class="el" href="structripple_1_1test_1_1jtx_1_1VoteArg.html#abe8e448464a870b11eec6ebd0e24693a">ripple::test::jtx::VoteArg</a>
+, <a class="el" href="structripple_1_1test_1_1jtx_1_1WithdrawArg.html#a95f160e9be771d51d7ef132a37315f96">ripple::test::jtx::WithdrawArg</a>
 </li>
 <li>attestations_
 : <a class="el" href="classripple_1_1XChainAttestationsBase.html#a200934d5d429349ec60ae0958a650f82">ripple::XChainAttestationsBase&lt; TAttestation &gt;</a>
@@ -588,6 +610,9 @@ $(function() {
 <li>attested
 : <a class="el" href="structripple_1_1test_1_1XChainSim__test_1_1AccountCreate.html#a397c54904c9a003b97ed4df82efeeb62">ripple::test::XChainSim_test::AccountCreate</a>
 , <a class="el" href="structripple_1_1test_1_1XChainSim__test_1_1Transfer.html#af439ca31e315935385cba1e87a777596">ripple::test::XChainSim_test::Transfer</a>
+</li>
+<li>authAccounts
+: <a class="el" href="structripple_1_1test_1_1jtx_1_1BidArg.html#a1a9879429034a0b5fb9cfabb80801a21">ripple::test::jtx::BidArg</a>
 </li>
 <li>autoConnect
 : <a class="el" href="structripple_1_1PeerFinder_1_1Config.html#a2aa0119410e7741efd384492c1e5a3b9">ripple::PeerFinder::Config</a>

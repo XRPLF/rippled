@@ -1,6 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/exception.html" title="STL class." alt="" coords="5,56,120,83"/>
-<area shape="rect" id="node2" href="$structJson_1_1JsonMissingKeyError.html" title=" " alt="" coords="178,5,366,32"/>
-<area shape="rect" id="node3" href="$structJson_1_1JsonTypeMismatchError.html" title=" " alt="" coords="168,56,376,83"/>
-<area shape="rect" id="node4" href="$structripple_1_1RPC_1_1Status.html" title="Status represents the results of an operation that might fail." alt="" coords="201,107,343,133"/>
+<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,168,47"/>
+<area shape="rect" id="node2" href="$classripple_1_1InfoSubRequest.html" title=" " alt="" coords="233,13,401,39"/>
+<area shape="rect" id="node3" href="$classripple_1_1PathRequest.html" title=" " alt="" coords="465,71,612,98"/>
+<area shape="rect" id="node4" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="235,64,398,105"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="216,129,417,171"/>
 </map>
