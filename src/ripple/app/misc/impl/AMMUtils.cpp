@@ -312,7 +312,7 @@ initializeFeeAuctionVote(
     auto const& rules = view.rules();
     // AMM creator gets the voting slot.
     STArray voteSlots;
-    STObject voteEntry = STObject::makeInnerObject(sfVoteEntry, rules);
+    STObject voteEntry = STObject::makeInnerObject(sfVoteEntry);
     if (tfee != 0)
         voteEntry.setFieldU16(sfTradingFee, tfee);
     voteEntry.setFieldU32(sfVoteWeight, VOTE_WEIGHT_SCALE_FACTOR);
@@ -325,7 +325,7 @@ initializeFeeAuctionVote(
     if (rules.enabled(fixInnerObjTemplate) &&
         !ammSle->isFieldPresent(sfAuctionSlot))
     {
-        STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot, rules);
+        STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot);
         ammSle->set(std::move(auctionSlot));
     }
     STObject& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);

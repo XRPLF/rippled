@@ -300,11 +300,11 @@ Change::applyAmendment()
     if (gotMajority)
     {
         // This amendment now has a majority
-        newMajorities.push_back(STObject(sfMajority));
+        newMajorities.push_back(STObject::makeInnerObject(sfMajority));
         auto& entry = newMajorities.back();
-        entry.emplace_back(STUInt256(sfAmendment, amendment));
-        entry.emplace_back(STUInt32(
-            sfCloseTime, view().parentCloseTime().time_since_epoch().count()));
+        entry[sfAmendment] = amendment;
+        entry[sfCloseTime] =
+            view().parentCloseTime().time_since_epoch().count();
 
         if (!ctx_.app.getAmendmentTable().isSupported(amendment))
         {

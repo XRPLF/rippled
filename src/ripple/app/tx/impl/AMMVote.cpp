@@ -104,7 +104,7 @@ applyVote(
     Number den{0};
     // Account already has vote entry
     bool foundAccount = false;
-    auto const& rules = ctx_.view().rules();
+
     // Iterate over the current vote entries and update each entry
     // per current total tokens balance and each LP tokens balance.
     // Find the entry with the least tokens and whether the account
@@ -120,7 +120,7 @@ applyVote(
             continue;
         }
         auto feeVal = entry[sfTradingFee];
-        STObject newEntry = STObject::makeInnerObject(sfVoteEntry, rules);
+        STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
         // The account already has the vote entry.
         if (account == account_)
         {
@@ -159,7 +159,7 @@ applyVote(
     {
         auto update = [&](std::optional<std::uint8_t> const& minPos =
                               std::nullopt) {
-            STObject newEntry = STObject::makeInnerObject(sfVoteEntry, rules);
+            STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
             if (feeNew != 0)
                 newEntry.setFieldU16(sfTradingFee, feeNew);
             newEntry.setFieldU32(
