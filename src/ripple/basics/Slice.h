@@ -187,6 +187,14 @@ public:
 
         return {data_ + pos, std::min(count, size() - pos)};
     }
+
+    /** Checks if any byte in the slice is non-zero */
+    [[nodiscard]] bool
+    isNonZero() const noexcept
+    {
+        return std::any_of(
+            begin(), end(), [](std::uint8_t byte) { return byte != 0; });
+    }
 };
 
 //------------------------------------------------------------------------------

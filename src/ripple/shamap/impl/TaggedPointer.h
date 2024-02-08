@@ -65,10 +65,10 @@ class TaggedPointer
         A moved-from object will have a tp_ of zero.
     */
     std::uintptr_t tp_ = 0;
-    /** bit-and with this mask to get the tag bits (lowest two bits) */
-    static constexpr std::uintptr_t tagMask = 3;
-    /** bit-and with this mask to get the pointer bits (mask out the tag) */
-    static constexpr std::uintptr_t ptrMask = ~tagMask;
+    //    /** bit-and with this mask to get the tag bits (lowest two bits) */
+    //    static constexpr std::uintptr_t tagMask = 15;
+    //    /** bit-and with this mask to get the pointer bits (mask out the tag)
+    //    */ static constexpr std::uintptr_t ptrMask = ~tagMask;
 
     /** Deallocate memory and run destructors */
     void
@@ -93,6 +93,12 @@ class TaggedPointer
     explicit TaggedPointer(RawAllocateTag, std::uint8_t numChildren);
 
 public:
+    struct MetaData
+    {
+        std::uint8_t allocated;
+        std::uint8_t rfu[7];
+    };
+
     TaggedPointer() = delete;
     explicit TaggedPointer(std::uint8_t numChildren);
 
@@ -150,6 +156,13 @@ public:
     operator=(TaggedPointer&&);
 
     ~TaggedPointer();
+
+    // Hack this in to the MetaData
+    [[nodiscard]] std::uint8_t
+    getNumChildren() const;
+
+    [[nodiscard]] void*
+    getPointerAfterMetaData() const;
 
     /** Decode the tagged pointer into its tag and pointer */
     [[nodiscard]] std::pair<std::uint8_t, void*>

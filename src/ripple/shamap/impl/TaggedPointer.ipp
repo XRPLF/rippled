@@ -33,13 +33,49 @@ namespace {
 // Given n children, an array of size `*std::lower_bound(boundaries.begin(),
 // boundaries.end(), n);` is used to store the children. Note that the last
 // element must be the number of children in a dense array.
-constexpr std::array<std::uint8_t, 4> boundaries{
+//
+//  We base our boundaries on this sampling of inner nodes from
+//  ledger  83,592,201:
+//
+//  +----------+-----------+
+//  | Children |     Count |
+//  +----------+-----------+
+//  |        1 |   578,512 |
+//  |        2 | 2,840,810 | <-------
+//  |        3 |   624,837 |
+//  |        4 |   120,458 | <-------
+//  |        5 |    45,802 |
+//  |        6 |    73,588 |
+//  |        7 |   129,694 |
+//  |        8 |   184,122 |
+//  |        9 |   208,545 |
+//  |       10 |   187,800 | <-------
+//  |       11 |   129,330 |
+//  |       12 |    68,525 |
+//  |       13 |    27,126 |
+//  |       14 |     7,457 |
+//  |       15 |     1,555 |
+//  |       16 |    71,387 | <-------
+//  +----------+-----------+
+constexpr std::array<std::uint8_t, 16> boundaries{
+    1,
     2,
+    3,
     4,
+    5,
     6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
     SHAMapInnerNode::branchFactor};
 static_assert(
-    boundaries.size() <= 4,
+    boundaries.size() <= 16,
     "The hashesAndChildren member uses a tagged array format with two bits "
     "reserved for the tag. This supports at most 4 values.");
 static_assert(
@@ -52,6 +88,17 @@ static_assert(
 constexpr size_t elementSizeBytes =
     (sizeof(SHAMapHash) + sizeof(std::shared_ptr<SHAMapTreeNode>));
 
+constexpr size_t metaDataBytes = sizeof(TaggedPointer::MetaData);
+
+static_assert(
+    metaDataBytes % alignof(SHAMapHash) == 0,
+    "Metadata size must be a multiple of the alignment of SHAMapHash.");
+
+static_assert(
+    metaDataBytes % alignof(std::shared_ptr<SHAMapTreeNode>) == 0,
+    "Metadata size must be a multiple of the alignment of "
+    "std::shared_ptr<SHAMapTreeNode>.");
+
 constexpr size_t blockSizeBytes = kilobytes(512);
 
 template <std::size_t... I>
@@ -59,7 +106,7 @@ constexpr std::array<size_t, boundaries.size()> initArrayChunkSizeBytes(
     std::index_sequence<I...>)
 {
     return std::array<size_t, boundaries.size()>{
-        boundaries[I] * elementSizeBytes...,
+        ((boundaries[I] * elementSizeBytes) + metaDataBytes)...,
     };
 }
 constexpr auto arrayChunkSizeBytes =
@@ -195,6 +242,19 @@ TaggedPointer::iterChildren(std::uint16_t isBranch, F&& f) const
     }
 }
 
+[[nodiscard]] std::uint8_t
+TaggedPointer::getNumChildren() const
+{
+    return (*reinterpret_cast<const MetaData*>(tp_)).allocated;
+}
+
+[[nodiscard]] void*
+TaggedPointer::getPointerAfterMetaData() const
+{
+    return reinterpret_cast<void*>(
+        reinterpret_cast<char*>(tp_) + sizeof(MetaData));
+}
+
 template <class F>
 void
 TaggedPointer::iterNonEmptyChildIndexes(std::uint16_t isBranch, F&& f) const
@@ -269,12 +329,9 @@ TaggedPointer::getChildIndex(std::uint16_t isBranch, int i) const
 
 inline TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t numChildren)
 {
-    auto [tag, p] = allocateArrays(numChildren);
-    assert(tag < boundaries.size());
-    assert(
-        (reinterpret_cast<std::uintptr_t>(p) & ptrMask) ==
-        reinterpret_cast<std::uintptr_t>(p));
-    tp_ = reinterpret_cast<std::uintptr_t>(p) + tag;
+    auto [_, p] = allocateArrays(numChildren);
+    new (p) MetaData{.allocated = numChildren, .rfu = {}};
+    tp_ = reinterpret_cast<std::uintptr_t>(p);
 }
 
 inline TaggedPointer::TaggedPointer(
@@ -529,27 +586,27 @@ TaggedPointer::operator=(TaggedPointer&& other)
 [[nodiscard]] inline std::pair<std::uint8_t, void*>
 TaggedPointer::decode() const
 {
-    return {tp_ & tagMask, reinterpret_cast<void*>(tp_ & ptrMask)};
+    return {boundariesIndex(getNumChildren()), reinterpret_cast<void*>(tp_)};
 }
 
 [[nodiscard]] inline std::uint8_t
 TaggedPointer::capacity() const
 {
-    return boundaries[tp_ & tagMask];
+    return getNumChildren();
 }
 
 [[nodiscard]] inline bool
 TaggedPointer::isDense() const
 {
-    return (tp_ & tagMask) == boundaries.size() - 1;
+    return getNumChildren() == SHAMapInnerNode::branchFactor;
 }
 
 [[nodiscard]] inline std::
     tuple<std::uint8_t, SHAMapHash*, std::shared_ptr<SHAMapTreeNode>*>
     TaggedPointer::getHashesAndChildren() const
 {
-    auto const [tag, ptr] = decode();
-    auto const hashes = reinterpret_cast<SHAMapHash*>(ptr);
+    auto const [tag, _] = decode();
+    auto const hashes = getHashes();
     std::uint8_t numAllocated = boundaries[tag];
     auto const children = reinterpret_cast<std::shared_ptr<SHAMapTreeNode>*>(
         hashes + numAllocated);
@@ -559,7 +616,7 @@ TaggedPointer::isDense() const
 [[nodiscard]] inline SHAMapHash*
 TaggedPointer::getHashes() const
 {
-    return reinterpret_cast<SHAMapHash*>(tp_ & ptrMask);
+    return reinterpret_cast<SHAMapHash*>(getPointerAfterMetaData());
 };
 
 [[nodiscard]] inline std::shared_ptr<SHAMapTreeNode>*

@@ -74,13 +74,17 @@ SHAMapInnerNode::getChildIndex(int i) const
 std::shared_ptr<SHAMapTreeNode>
 SHAMapInnerNode::clone(std::uint32_t cowid) const
 {
-    auto const branchCount = getBranchCount();
-    auto const thisIsSparse = !hashesAndChildren_.isDense();
-    auto p = std::make_shared<SHAMapInnerNode>(cowid, branchCount);
+    // We are cloning it for writing, and who knows what it'll be used for,
+    // so allocate it 16 branches, and let it get compacted when its hash is
+    // updated.
+    auto p = std::make_shared<SHAMapInnerNode>(cowid, branchFactor);
+
     p->hash_ = hash_;
     p->isBranch_ = isBranch_;
     p->fullBelowGen_ = fullBelowGen_;
+
     SHAMapHash *cloneHashes, *thisHashes;
+
     std::shared_ptr<SHAMapTreeNode>*cloneChildren, *thisChildren;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, cloneHashes, cloneChildren) =
@@ -88,36 +92,16 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
     std::tie(std::ignore, thisHashes, thisChildren) =
         hashesAndChildren_.getHashesAndChildren();
 
-    if (thisIsSparse)
-    {
-        int cloneChildIndex = 0;
-        iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
-            cloneHashes[cloneChildIndex++] = thisHashes[indexNum];
-        });
-    }
-    else
-    {
-        iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
-            cloneHashes[branchNum] = thisHashes[indexNum];
-        });
-    }
+    iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
+        cloneHashes[branchNum] = thisHashes[indexNum];
+    });
 
     spinlock sl(lock_);
     std::lock_guard lock(sl);
 
-    if (thisIsSparse)
-    {
-        int cloneChildIndex = 0;
-        iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
-            cloneChildren[cloneChildIndex++] = thisChildren[indexNum];
-        });
-    }
-    else
-    {
-        iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
-            cloneChildren[branchNum] = thisChildren[indexNum];
-        });
-    }
+    iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
+        cloneChildren[branchNum] = thisChildren[indexNum];
+    });
 
     return p;
 }
@@ -132,26 +116,77 @@ SHAMapInnerNode::makeFullInner(
     if (data.size() != branchFactor * uint256::bytes)
         Throw<std::runtime_error>("Invalid FI node");
 
-    auto ret = std::make_shared<SHAMapInnerNode>(0, branchFactor);
-
     SerialIter si(data);
 
+    // Determine the non-empty branches so we only allocate once what we need
+    // with no reallocation and moving around data.
+    // When allocating 16 branches, it only has to turn around and reallocate
+    // the right size and compact, which is less than ideal. In principle,
+    // with less allocations we should see less fragmentation in the arena.
+    std::uint16_t isBranch = 0;
+    for (int i = 0; i < branchFactor; ++i)
+    {
+        // If the serialized inners included a branch header we wouldn't have to
+        // do this walk to check for non-zero branches. Note that the node store
+        // actually defines a custom compression specifically for inner nodes,
+        // and decompresses it into "full inner" form before handing off to
+        // other components. It may be worth investigating whether the
+        // compressed form is actually more usable here.
+        if (si.getSlice(uint256::bytes).isNonZero())
+        {
+            isBranch |= (1 << i);
+        }
+    }
+
+    auto const nonEmptyBranches = popcnt16(isBranch);
+    auto ret = std::make_shared<SHAMapInnerNode>(0, nonEmptyBranches);
     auto hashes = ret->hashesAndChildren_.getHashes();
+
+    ret->isBranch_ = isBranch;
+    si.reset();
 
     for (int i = 0; i < branchFactor; ++i)
     {
-        hashes[i].as_uint256() = si.getBitString<256>();
+        if (isBranch & (1 << i))
+        {
+            auto const ix = ret->getChildIndex(i);
 
-        if (hashes[i].isNonZero())
-            ret->isBranch_ |= (1 << i);
+            // We shouldn't really have to check this cause we've
+            // already checked the branch is populated. It's tempting
+            // to just go ahead without checking :)
+            if (!ix.has_value())
+            {
+                Throw<std::runtime_error>("Invalid FI node");
+            }
+            else
+            {
+                hashes[ix.value()].as_uint256() = si.getBitString<256>();
+            }
+        }
+        else
+        {
+            // The `TaggedPointer` constructor uses placement new to invoke the
+            // default constructor of `SHAMapHash` for each element in the
+            // `hashes` array. Since `SHAMapHash` is a wrapper around `uint256`,
+            // which itself is a template instantiation of `base_uint` with a
+            // `std::array<std::uint32_t>` member, this process effectively
+            // zero-initializes the underlying array. As a result, all elements
+            // in `hashes` are guaranteed to be in a zeroed state, which permits
+            // the subsequent safe use of `si.skip(uint256::bytes)` to bypass
+            // unneeded zero bytes.
+            si.skip(uint256::bytes);
+        }
     }
 
-    ret->resizeChildArrays(ret->getBranchCount());
-
+#ifdef NDEBUG
     if (hashValid)
         ret->hash_ = hash;
     else
         ret->updateHash();
+#else
+    ret->updateHash();
+    assert(!hashValid || ret->hash_ == hash);
+#endif
 
     return ret;
 }
@@ -159,8 +194,8 @@ SHAMapInnerNode::makeFullInner(
 std::shared_ptr<SHAMapTreeNode>
 SHAMapInnerNode::makeCompressedInner(Slice data)
 {
-    // A compressed inner node is serialized as a series of 33 byte chunks,
-    // representing a one byte "position" and a 256-bit hash:
+    // A compressed inner node is serialized as a series of 33 byte
+    // chunks, representing a one byte "position" and a 256-bit hash:
     constexpr std::size_t chunkSize = uint256::bytes + 1;
 
     if (auto const s = data.size();
@@ -169,25 +204,27 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
 
     SerialIter si(data);
 
-    auto ret = std::make_shared<SHAMapInnerNode>(0, branchFactor);
+    std::uint8_t nonEmptyBranches = data.size() / chunkSize;
+    auto ret = std::make_shared<SHAMapInnerNode>(0, nonEmptyBranches);
 
     auto hashes = ret->hashesAndChildren_.getHashes();
+    int prevPos = 0;
 
     while (!si.empty())
     {
         auto const hash = si.getBitString<256>();
         auto const pos = si.get8();
 
-        if (pos >= branchFactor)
+        ret->isBranch_ |= (1 << pos);
+        auto const ix = ret->getChildIndex(pos);
+
+        if (pos >= branchFactor || prevPos > pos || !ix.has_value())
             Throw<std::runtime_error>("invalid CI node");
 
-        hashes[pos].as_uint256() = hash;
-
-        if (hashes[pos].isNonZero())
-            ret->isBranch_ |= (1 << pos);
+        hashes[ix.value()].as_uint256() = hash;
+        prevPos = pos;
     }
 
-    ret->resizeChildArrays(ret->getBranchCount());
     ret->updateHash();
     return ret;
 }
@@ -210,6 +247,13 @@ SHAMapInnerNode::updateHash()
 void
 SHAMapInnerNode::updateHashDeep()
 {
+    // We only call this here, cause we assume that after this point
+    // this node won't be modified? clone() will be called first, no?
+    this->resizeChildArrays(popcnt16(isBranch_));
+    // Given this works shouldn't we be able to allocate the exact amount
+    // of children for a canonical node? Rather than closest to some
+    // boundary that fits in the last 2 bits of the tagged pointer?
+
     SHAMapHash* hashes;
     std::shared_ptr<SHAMapTreeNode>* children;
     // structured bindings can't be captured in c++ 17; use tie instead
@@ -286,10 +330,15 @@ SHAMapInnerNode::setChild(int m, std::shared_ptr<SHAMapTreeNode> child)
     }();
 
     auto const dstToAllocate = popcnt16(dstIsBranch);
-    // change hashesAndChildren to remove the element, or make room for the
-    // added element, if necessary
-    hashesAndChildren_ = TaggedPointer(
-        std::move(hashesAndChildren_), isBranch_, dstIsBranch, dstToAllocate);
+
+    // We should have allocated 16 branches when cloning, or creating a new node
+    // that wasn't from the wire or db (with a known branch count - it's a
+    // hashed node!)
+    if (hashesAndChildren_.capacity() < dstToAllocate)
+    {
+        assert(false);
+        throw std::runtime_error("insufficient capacity for new child");
+    }
 
     isBranch_ = dstIsBranch;
 
