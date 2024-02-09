@@ -48,6 +48,22 @@ class Invariants_test : public beast::unit_test::suite
         test::jtx::Account const& b,
         ApplyContext& ac)>;
 
+    /** Run a specific test case to put the ledger into a state that will be
+     * detected by an invariant. Simulates the actions of a transaction that
+     * would violate an invariant.
+     *
+     * @param expect_logs One or more messages related to the failing invariant
+     *  that should be in the log output
+     * @precheck See "Precheck" above
+     * @fee If provided, the fee amount paid by the simulated transaction.
+     * @tx A mock transaction that took the actions to trigger the invariant. In
+     *  most cases, only the type matters.
+     * @ters The TER results expected on the two passes of the invariant
+     *  checker.
+     * @preclose See "Preclose" above. Note that @preclose runs *before*
+     * @precheck, but is the last parameter for historical reasons
+     *
+     */
     void
     doInvariantCheck(
         std::vector<std::string> const& expect_logs,
@@ -184,9 +200,10 @@ class Invariants_test : public beast::unit_test::suite
 
         for (auto const& keyletInfo : directAccountKeylets)
         {
-            // TODO: Use structured binding once LLVM issue
+            // TODO: Use structured binding once LLVM 16 is the minimum
+            // supported version. See also:
             // https://github.com/llvm/llvm-project/issues/48582
-            // is fixed.
+            // https://github.com/llvm/llvm-project/commit/127bf44385424891eb04cff8e52d3f157fc2cb7c
             if (!keyletInfo.includeInTests)
                 continue;
             auto const& keyletfunc = keyletInfo.function;

@@ -415,8 +415,11 @@ AccountRootsDeletedClean::finalize(
                 return false;
         }
 
-        // NFT pages
         {
+            // NFT pages. ntfpage_min and nftpage_max were already explicitly
+            // checked above as entries in directAccountKeylets. This uses
+            // view.succ() to check for any NFT pages in between the two
+            // endpoints.
             Keylet const first = keylet::nftpage_min(accountID);
             Keylet const last = keylet::nftpage_max(accountID);
 
