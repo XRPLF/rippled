@@ -2719,9 +2719,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             }
         }
 
-        if (app_.config().exists("port_grpc"))
+        if (app_.config().exists(SECTION_PORT_GRPC))
         {
-            auto const& grpcSection = app_.config().section("port_grpc");
+            auto const& grpcSection = app_.config().section(SECTION_PORT_GRPC);
             auto const optPort = grpcSection.get("port");
             if (optPort && grpcSection.get("ip"))
             {
