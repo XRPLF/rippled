@@ -728,7 +728,7 @@ CreateOffer::flowCross(
         // additional path with XRP as the intermediate between two books.
         // This second path we have to build ourselves.
         STPathSet paths;
-        if (!psb.rules().enabled(featureDefaultCompositePath))
+        if (!psb.rules().enabled(featureDefaultAutoBridge))
             if (!takerAmount.in.native() && !takerAmount.out.native())
             {
                 STPath path;

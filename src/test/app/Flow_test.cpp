@@ -1395,12 +1395,13 @@ struct Flow_test : public beast::unit_test::suite
         auto const gw1 = Account("gw1");
         auto const gw2 = Account("gw2");
         auto const alice = Account("alice");
+        auto const bob = Account("bob");
         auto const mm = Account("mm");
         auto const USD = gw1["USD"];
         auto const BTC = gw2["BTC"];
 
         auto prepare = [&](Env& env) {
-            env.fund(XRP(1000000), gw1, gw2, alice, mm);
+            env.fund(XRP(1000000), gw1, gw2, alice, bob, mm);
             env.close();
             env(trust(mm, USD(1000)));
             env(trust(mm, BTC(1000)));
@@ -1438,6 +1439,18 @@ struct Flow_test : public beast::unit_test::suite
         }
 
         {
+            // SendMax not specified
+            Env env(*this, features);
+            prepare(env);
+
+            env(trust(alice, USD(1000)));
+            env(trust(bob, USD(1000)));
+            env(pay(gw1, alice, USD(200)));
+
+            env(pay(alice, bob, USD(50)));
+        }
+
+        {
             // Conversion Payment
             // tfNoRippleDirect: false
 
@@ -1448,7 +1461,7 @@ struct Flow_test : public beast::unit_test::suite
             env(trust(alice, USD(1000)));
             env(pay(gw2, alice, BTC(250)));
 
-            if (features[featureDefaultCompositePath])
+            if (features[featureDefaultAutoBridge])
             {
                 // use composite path
                 env(pay(alice, alice, USD(50)), sendmax(BTC(250)));
@@ -1542,8 +1555,8 @@ struct Flow_test : public beast::unit_test::suite
 
         using namespace jtx;
         auto const sa = supported_amendments();
-        testWithFeats(sa - featureFlowCross - featureDefaultCompositePath);
-        testWithFeats(sa - featureDefaultCompositePath);
+        testWithFeats(sa - featureFlowCross - featureDefaultAutoBridge);
+        testWithFeats(sa - featureDefaultAutoBridge);
         testWithFeats(sa);
         testEmptyStrand(sa);
     }
@@ -1559,10 +1572,10 @@ struct Flow_manual_test : public Flow_test
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
 
-        testWithFeats(all - flowCross - f1513 - featureDefaultCompositePath);
-        testWithFeats(all - flowCross - featureDefaultCompositePath);
-        testWithFeats(all - f1513 - featureDefaultCompositePath);
-        testWithFeats(all - featureDefaultCompositePath);
+        testWithFeats(all - flowCross - f1513 - featureDefaultAutoBridge);
+        testWithFeats(all - flowCross - featureDefaultAutoBridge);
+        testWithFeats(all - f1513 - featureDefaultAutoBridge);
+        testWithFeats(all - featureDefaultAutoBridge);
         testWithFeats(all);
 
         testEmptyStrand(all - f1513);

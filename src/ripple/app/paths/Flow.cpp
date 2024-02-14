@@ -88,7 +88,7 @@ flow(
     AMMContext ammContext(src, false);
 
     STPathSet flowPaths = paths;
-    if (sb.rules().enabled(featureDefaultCompositePath) && paths.empty() &&
+    if (sb.rules().enabled(featureDefaultAutoBridge) && paths.empty() &&
         defaultPaths)
     {
         auto issueEqual = [](auto const& sendMax, Issue const& dstIssue) {
