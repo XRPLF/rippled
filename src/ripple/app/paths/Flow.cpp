@@ -97,14 +97,11 @@ flow(
         };
 
         if (sendMaxIssue && !isXRP(sendMaxIssue->account) &&
-            !isXRP(dstIssue.account) && !issueEqual(sendMaxIssue, dstIssue) &&
-            sendMaxIssue->account != src)
+            !isXRP(dstIssue.account) && !issueEqual(sendMaxIssue, dstIssue))
         {
-            STPathSet _paths;
             STPath path;
             path.emplace_back(std::nullopt, xrpCurrency(), std::nullopt);
-            _paths.emplace_back(std::move(path));
-            flowPaths = _paths;
+            flowPaths.emplace_back(std::move(path));
         }
     }
 
