@@ -95,9 +95,14 @@ flow(
             return sendMax->currency == dstIssue.currency &&
                 sendMax->account == dstIssue.account;
         };
+        auto directIOU = [&src](auto const& sendMax, Issue const& dstIssue) {
+            return sendMax->currency == dstIssue.currency &&
+                sendMax->account == src;
+        };
 
         if (sendMaxIssue && !isXRP(sendMaxIssue->account) &&
-            !isXRP(dstIssue.account) && !issueEqual(sendMaxIssue, dstIssue))
+            !isXRP(dstIssue.account) && !issueEqual(sendMaxIssue, dstIssue) &&
+            !directIOU(sendMaxIssue, dstIssue))
         {
             STPath path;
             path.emplace_back(std::nullopt, xrpCurrency(), std::nullopt);
