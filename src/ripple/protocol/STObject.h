@@ -44,6 +44,7 @@
 namespace ripple {
 
 class STArray;
+class Rules;
 
 inline void
 throwFieldNotFound(SField const& field)
@@ -102,6 +103,9 @@ public:
     STObject(SerialIter& sit, SField const& name, int depth = 0);
     STObject(SerialIter&& sit, SField const& name);
     explicit STObject(SField const& name);
+
+    static STObject
+    makeInnerObject(SField const& name, Rules const& rules);
 
     iterator
     begin() const;
@@ -342,7 +346,7 @@ public:
     set(std::unique_ptr<STBase> v);
 
     void
-    set(STBase* v);
+    set(STBase&& v);
 
     void
     setFieldU8(SField const& field, unsigned char);

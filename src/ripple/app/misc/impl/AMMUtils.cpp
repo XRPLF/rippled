@@ -138,6 +138,9 @@ std::uint16_t
 getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
 {
     using namespace std::chrono;
+    assert(
+        !view.rules().enabled(fixInnerObjTemplate) ||
+        ammSle.isFieldPresent(sfAuctionSlot));
     if (ammSle.isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot =
@@ -287,9 +290,10 @@ initializeFeeAuctionVote(
     Issue const& lptIssue,
     std::uint16_t tfee)
 {
+    auto const& rules = view.rules();
     // AMM creator gets the voting slot.
     STArray voteSlots;
-    STObject voteEntry{sfVoteEntry};
+    STObject voteEntry = STObject::makeInnerObject(sfVoteEntry, rules);
     if (tfee != 0)
         voteEntry.setFieldU16(sfTradingFee, tfee);
     voteEntry.setFieldU32(sfVoteWeight, VOTE_WEIGHT_SCALE_FACTOR);
@@ -297,7 +301,15 @@ initializeFeeAuctionVote(
     voteSlots.push_back(voteEntry);
     ammSle->setFieldArray(sfVoteSlots, voteSlots);
     // AMM creator gets the auction slot for free.
-    auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
+    // AuctionSlot is created on AMMCreate and updated on AMMDeposit
+    // when AMM is in an empty state
+    if (rules.enabled(fixInnerObjTemplate) &&
+        !ammSle->isFieldPresent(sfAuctionSlot))
+    {
+        STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot, rules);
+        ammSle->set(std::move(auctionSlot));
+    }
+    STObject& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
     auctionSlot.setAccountID(sfAccount, account);
     // current + sec in 24h
     auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(

@@ -57,7 +57,8 @@ AMM::AMM(
     std::optional<std::uint32_t> flags,
     std::optional<jtx::seq> seq,
     std::optional<jtx::msig> ms,
-    std::optional<ter> const& ter)
+    std::optional<ter> const& ter,
+    bool close)
     : env_(env)
     , creatorAccount_(account)
     , asset1_(asset1)
@@ -65,7 +66,7 @@ AMM::AMM(
     , ammID_(keylet::amm(asset1_.issue(), asset2_.issue()).key)
     , initialLPTokens_(initialTokens(asset1, asset2))
     , log_(log)
-    , doClose_(true)
+    , doClose_(close)
     , lastPurchasePrice_(0)
     , bidMin_()
     , bidMax_()
@@ -85,7 +86,8 @@ AMM::AMM(
     STAmount const& asset1,
     STAmount const& asset2,
     ter const& ter,
-    bool log)
+    bool log,
+    bool close)
     : AMM(env,
           account,
           asset1,
@@ -96,7 +98,29 @@ AMM::AMM(
           std::nullopt,
           std::nullopt,
           std::nullopt,
-          ter)
+          ter,
+          close)
+{
+}
+
+AMM::AMM(
+    Env& env,
+    Account const& account,
+    STAmount const& asset1,
+    STAmount const& asset2,
+    CreateArg const& arg)
+    : AMM(env,
+          account,
+          asset1,
+          asset2,
+          arg.log,
+          arg.tfee,
+          arg.fee,
+          arg.flags,
+          arg.seq,
+          arg.ms,
+          arg.err,
+          arg.close)
 {
 }
 
@@ -471,6 +495,22 @@ AMM::deposit(
 }
 
 IOUAmount
+AMM::deposit(DepositArg const& arg)
+{
+    return deposit(
+        arg.account,
+        arg.tokens,
+        arg.asset1In,
+        arg.asset2In,
+        arg.maxEP,
+        arg.flags,
+        arg.assets,
+        arg.seq,
+        arg.tfee,
+        arg.err);
+}
+
+IOUAmount
 AMM::withdraw(
     std::optional<Account> const& account,
     Json::Value& jv,
@@ -574,6 +614,21 @@ AMM::withdraw(
     return withdraw(account, jv, seq, assets, ter);
 }
 
+IOUAmount
+AMM::withdraw(WithdrawArg const& arg)
+{
+    return withdraw(
+        arg.account,
+        arg.tokens,
+        arg.asset1Out,
+        arg.asset2Out,
+        arg.maxEP,
+        arg.flags,
+        arg.assets,
+        arg.seq,
+        arg.err);
+}
+
 void
 AMM::vote(
     std::optional<Account> const& account,
@@ -596,6 +651,12 @@ AMM::vote(
 }
 
 void
+AMM::vote(VoteArg const& arg)
+{
+    return vote(arg.account, arg.tfee, arg.flags, arg.seq, arg.assets, arg.err);
+}
+
+void
 AMM::bid(
     std::optional<Account> const& account,
     std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMin,
@@ -609,6 +670,9 @@ AMM::bid(
     if (auto const amm =
             env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
     {
+        assert(
+            !env_.current()->rules().enabled(fixInnerObjTemplate) ||
+            amm->isFieldPresent(sfAuctionSlot));
         if (amm->isFieldPresent(sfAuctionSlot))
         {
             auto const& auctionSlot =
@@ -664,6 +728,20 @@ AMM::bid(
 }
 
 void
+AMM::bid(BidArg const& arg)
+{
+    return bid(
+        arg.account,
+        arg.bidMin,
+        arg.bidMax,
+        arg.authAccounts,
+        arg.flags,
+        arg.seq,
+        arg.assets,
+        arg.err);
+}
+
+void
 AMM::submit(
     Json::Value const& jv,
     std::optional<jtx::seq> const& seq,
@@ -698,20 +776,30 @@ bool
 AMM::expectAuctionSlot(auto&& cb) const
 {
     if (auto const amm =
-            env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue()));
-        amm && amm->isFieldPresent(sfAuctionSlot))
+            env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
     {
-        auto const& auctionSlot =
-            static_cast<STObject const&>(amm->peekAtField(sfAuctionSlot));
-        if (auctionSlot.isFieldPresent(sfAccount))
+        assert(
+            !env_.current()->rules().enabled(fixInnerObjTemplate) ||
+            amm->isFieldPresent(sfAuctionSlot));
+        if (amm->isFieldPresent(sfAuctionSlot))
         {
-            auto const slotFee = auctionSlot[sfDiscountedFee];
-            auto const slotInterval = ammAuctionTimeSlot(
-                env_.app().timeKeeper().now().time_since_epoch().count(),
-                auctionSlot);
-            auto const slotPrice = auctionSlot[sfPrice].iou();
-            auto const authAccounts = auctionSlot.getFieldArray(sfAuthAccounts);
-            return cb(slotFee, slotInterval, slotPrice, authAccounts);
+            auto const& auctionSlot =
+                static_cast<STObject const&>(amm->peekAtField(sfAuctionSlot));
+            if (auctionSlot.isFieldPresent(sfAccount))
+            {
+                // This could fail in pre-fixInnerObjTemplate tests
+                // if the submitted transactions recreate one of
+                // the failure scenarios. Access as optional
+                // to avoid the failure.
+                auto const slotFee = auctionSlot[~sfDiscountedFee].value_or(0);
+                auto const slotInterval = ammAuctionTimeSlot(
+                    env_.app().timeKeeper().now().time_since_epoch().count(),
+                    auctionSlot);
+                auto const slotPrice = auctionSlot[sfPrice].iou();
+                auto const authAccounts =
+                    auctionSlot.getFieldArray(sfAuthAccounts);
+                return cb(slotFee, slotInterval, slotPrice, authAccounts);
+            }
         }
     }
     return false;

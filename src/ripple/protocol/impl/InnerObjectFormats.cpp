@@ -36,6 +36,9 @@ registerPluginInnerObjectFormats(
 void
 InnerObjectFormats::initialize()
 {
+    // inner objects with the default fields have to be
+    // constructed with STObject::makeInnerObject()
+
     add(sfSignerEntry.jsonName.c_str(),
         sfSignerEntry.getCode(),
         {
