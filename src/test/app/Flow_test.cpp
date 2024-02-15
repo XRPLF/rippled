@@ -1425,8 +1425,11 @@ struct Flow_test : public beast::unit_test::suite
 
             env(trust(alice, BTC(1000)));
             env(pay(gw2, alice, BTC(250)));
+            env.close();
 
+            // IOU-IOU Offer
             env(offer(alice, USD(50), BTC(250)));
+            env.close();
 
             BEAST_EXPECT(!isOffer(env, mm, BTC(50), USD(10)));
 
@@ -1436,6 +1439,12 @@ struct Flow_test : public beast::unit_test::suite
             auto jrr = getBookOffers(env, BTC, USD);
             BEAST_EXPECT(jrr[jss::offers].isArray());
             BEAST_EXPECT(jrr[jss::offers].size() == 0);
+
+            // XRP-IOU Offer
+            env(pay(gw2, alice, BTC(50)));
+            env(offer(alice, XRP(200), BTC(50)));
+            env(offer(alice, USD(10), XRP(200)));
+            env.close();
         }
 
         {
@@ -1446,8 +1455,20 @@ struct Flow_test : public beast::unit_test::suite
             env(trust(alice, USD(1000)));
             env(trust(bob, USD(1000)));
             env(pay(gw1, alice, USD(200)));
+            env.close();
 
             env(pay(alice, bob, USD(50)));
+            // send back to issuer
+            env(pay(bob, gw1, USD(50)));
+            env.close();
+
+            // freeze alice trustline
+            env(trust(gw1, alice["USD"](0), tfSetFreeze));
+            env(offer(mm, BTC(5), USD(1)));
+            env.close();
+
+            env(pay(alice, bob, USD(50)), ter(tecPATH_DRY));
+            env.close();
         }
 
         {
@@ -1460,11 +1481,13 @@ struct Flow_test : public beast::unit_test::suite
             env(trust(alice, BTC(1000)));
             env(trust(alice, USD(1000)));
             env(pay(gw2, alice, BTC(250)));
+            env.close();
 
             if (features[featureDefaultAutoBridge])
             {
                 // use composite path
                 env(pay(alice, alice, USD(50)), sendmax(BTC(250)));
+                env.close();
 
                 BEAST_EXPECT(!isOffer(env, mm, BTC(50), USD(10)));
 
@@ -1481,6 +1504,7 @@ struct Flow_test : public beast::unit_test::suite
                 env(pay(alice, alice, USD(50)),
                     sendmax(BTC(250)),
                     ter(tecPATH_PARTIAL));
+                env.close();
             }
         }
 
@@ -1494,12 +1518,14 @@ struct Flow_test : public beast::unit_test::suite
             env(trust(alice, BTC(1000)));
             env(trust(alice, USD(1000)));
             env(pay(gw2, alice, BTC(250)));
+            env.close();
 
             // does not use composite path
             env(pay(alice, alice, USD(50)),
                 sendmax(BTC(250)),
                 txflags(tfNoRippleDirect),
                 ter(temRIPPLE_EMPTY));
+            env.close();
         }
 
         {
@@ -1512,12 +1538,18 @@ struct Flow_test : public beast::unit_test::suite
             env(trust(alice, BTC(1000)));
             env(trust(alice, USD(1000)));
             env(pay(gw2, alice, BTC(250)));
+            env.close();
 
             // does not use composite path
             env(pay(alice, alice, USD(50)),
                 sendmax(BTC(250)),
                 path(~USD),
                 ter(tecPATH_PARTIAL));
+            env.close();
+
+            // Explicitly add XRP to the path
+            env(pay(alice, alice, USD(50)), sendmax(BTC(250)), path(~XRP));
+            env.close();
         }
     }
 
