@@ -89,7 +89,6 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstring>
-#include <dlfcn.h>
 #include <iostream>
 #include <limits>
 #include <mutex>
@@ -1287,26 +1286,28 @@ addPlugin(std::string libPath)
     {
         Throw<std::runtime_error>("Plugin at " + libPath + " doesn't exist.");
     }
-#if __APPLE__
+#if _WIN32
+    HINSTANCE handle = LoadLibrary(libPath.c_str());
+#elif __APPLE__
     void* handle = dlopen(libPath.c_str(), RTLD_NOW | RTLD_GLOBAL);
 #else
     void* handle =
         dlopen(libPath.c_str(), RTLD_NOW | RTLD_DEEPBIND | RTLD_GLOBAL);
 #endif
 
-    if (dlsym(handle, "getAmendments") != NULL)
+    if (LIBFUNC(handle, "getAmendments") != NULL)
     {
         auto const amendments =
-            ((getAmendmentsPtr)dlsym(handle, "getAmendments"))();
+            ((getAmendmentsPtr)LIBFUNC(handle, "getAmendments"))();
         for (int i = 0; i < amendments.size; i++)
         {
             auto const amendment = *(amendments.data + i);
             registerPluginAmendment(amendment);
         }
     }
-    if (dlsym(handle, "getSTypes") != NULL)
+    if (LIBFUNC(handle, "getSTypes") != NULL)
     {
-        auto const sTypes = ((getSTypesPtr)dlsym(handle, "getSTypes"))();
+        auto const sTypes = ((getSTypesPtr)LIBFUNC(handle, "getSTypes"))();
         for (int i = 0; i < sTypes.size; i++)
         {
             auto const stype = *(sTypes.data + i);
@@ -1319,19 +1320,19 @@ addPlugin(std::string libPath)
             registerLeafType(stype.typeId, stype.parsePtr);
         }
     }
-    if (dlsym(handle, "getSFields") != NULL)
+    if (LIBFUNC(handle, "getSFields") != NULL)
     {
-        auto const sFields = ((getSFieldsPtr)dlsym(handle, "getSFields"))();
+        auto const sFields = ((getSFieldsPtr)LIBFUNC(handle, "getSFields"))();
         for (int i = 0; i < sFields.size; i++)
         {
             auto const sField = *(sFields.data + i);
             registerSField(sField);
         }
     }
-    if (dlsym(handle, "getLedgerObjects") != NULL)
+    if (LIBFUNC(handle, "getLedgerObjects") != NULL)
     {
         auto const ledgerObjects =
-            ((getLedgerObjectsPtr)dlsym(handle, "getLedgerObjects"))();
+            ((getLedgerObjectsPtr)LIBFUNC(handle, "getLedgerObjects"))();
         for (int i = 0; i < ledgerObjects.size; i++)
         {
             auto const ledgerObject = *(ledgerObjects.data + i);
@@ -1362,7 +1363,7 @@ addPlugin(std::string libPath)
         }
     }
     auto const transactors =
-        ((getTransactorsPtr)dlsym(handle, "getTransactors"))();
+        ((getTransactorsPtr)LIBFUNC(handle, "getTransactors"))();
     for (int i = 0; i < transactors.size; i++)
     {
         auto const transactor = *(transactors.data + i);
@@ -1370,28 +1371,29 @@ addPlugin(std::string libPath)
             transactor.txType, transactor.txName, transactor.txFormat);
         registerTxFunctions(transactor);
     }
-    if (dlsym(handle, "getTERcodes") != NULL)
+    if (LIBFUNC(handle, "getTERcodes") != NULL)
     {
-        auto const TERcodes = ((getTERcodesPtr)dlsym(handle, "getTERcodes"))();
+        auto const TERcodes =
+            ((getTERcodesPtr)LIBFUNC(handle, "getTERcodes"))();
         for (int i = 0; i < TERcodes.size; i++)
         {
             auto const TERcode = *(TERcodes.data + i);
             registerPluginTER(TERcode);
         }
     }
-    if (dlsym(handle, "getInvariantChecks") != NULL)
+    if (LIBFUNC(handle, "getInvariantChecks") != NULL)
     {
         auto const invariantChecks =
-            ((getInvariantChecksPtr)dlsym(handle, "getInvariantChecks"))();
+            ((getInvariantChecksPtr)LIBFUNC(handle, "getInvariantChecks"))();
         for (int i = 0; i < invariantChecks.size; i++)
         {
             auto const invariantCheck = *(invariantChecks.data + i);
             registerPluginInvariantCheck(invariantCheck);
         }
     }
-    if (dlsym(handle, "getInnerObjectFormats") != NULL)
+    if (LIBFUNC(handle, "getInnerObjectFormats") != NULL)
     {
-        auto const innerObjectFormats = ((getInnerObjectFormatsPtr)dlsym(
+        auto const innerObjectFormats = ((getInnerObjectFormatsPtr)LIBFUNC(
             handle, "getInnerObjectFormats"))();
         for (int i = 0; i < innerObjectFormats.size; i++)
         {
@@ -1401,7 +1403,7 @@ addPlugin(std::string libPath)
     }
     // register plugin pointers
     setPluginPointers(handle);
-    dlclose(handle);
+    CLOSELIB(handle);
 }
 
 // TODO Break this up into smaller, more digestible initialization segments.

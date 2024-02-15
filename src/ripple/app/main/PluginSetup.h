@@ -23,8 +23,24 @@
 #include <ripple/protocol/InnerObjectFormats.h>
 #include <ripple/protocol/TxFormats.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <dlfcn.h>
+#endif
 #include <map>
+
+#if __linux__ || __APPLE__
+#define LIBTYPE void*
+#define OPENLIB(libname) dlopen((libname), RTLD_LAZY)
+#define LIBFUNC(lib, fn) dlsym((lib), (fn))
+#define CLOSELIB(libname) dlclose(libname)
+#elif _WIN32
+#define LIBTYPE HINSTANCE
+#define OPENLIB(libname) LoadLibraryW(L##libname)
+#define LIBFUNC(lib, fn) GetProcAddress((lib), (fn))
+#define CLOSELIB(libname) FreeLibrary(libename)
+#endif
 
 namespace ripple {
 
@@ -268,19 +284,15 @@ clearPluginPointers()
 void
 setPluginPointers(void* handle)
 {
-    if (dlsym(handle, "setPluginPointers") !=
-        NULL)  // TODO: fix testcases, remove if
-    {
-        ((setPluginPointersPtr)dlsym(handle, "setPluginPointers"))(
-            &pluginTxFormats,
-            &pluginObjectsMap,
-            &pluginInnerObjectFormats,
-            SField::getKnownCodeToField(),
-            &pluginSFieldCodes,
-            &pluginSTypes,
-            &pluginLeafParserMap,
-            &pluginTERcodes);
-    }
+    ((setPluginPointersPtr)LIBFUNC(handle, "setPluginPointers"))(
+        &pluginTxFormats,
+        &pluginObjectsMap,
+        &pluginInnerObjectFormats,
+        SField::getKnownCodeToField(),
+        &pluginSFieldCodes,
+        &pluginSTypes,
+        &pluginLeafParserMap,
+        &pluginTERcodes);
 }
 
 }  // namespace ripple
