@@ -282,7 +282,7 @@ clearPluginPointers()
 }
 
 void
-setPluginPointers(void* handle)
+setPluginPointers(LIBTYPE handle)
 {
     ((setPluginPointersPtr)LIBFUNC(handle, "setPluginPointers"))(
         &pluginTxFormats,
