@@ -1869,21 +1869,6 @@ ApplicationImp::run()
 
     JLOG(m_journal.debug()) << "Application stopping";
 
-    // stop plugins
-    {
-        for (std::string plugin : config_->PLUGINS)
-        {
-            void* handle = dlopen(plugin.c_str(), RTLD_LAZY);
-            if (dlsym(handle, "shutdownPlugin") != NULL)
-            {
-                JLOG(m_journal.info())
-                    << "Shutting down plugin from " << plugin;
-                ((shutdownPtr)dlsym(handle, "shutdownPlugin"))();
-            }
-            dlclose(handle);
-        }
-    }
-
     m_io_latency_sampler.cancel_async();
 
     // VFALCO Enormous hack, we have to force the probe to cancel

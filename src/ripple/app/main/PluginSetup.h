@@ -39,7 +39,7 @@
 #define LIBTYPE HINSTANCE
 #define OPENLIB(libname) LoadLibraryW(L##libname)
 #define LIBFUNC(lib, fn) GetProcAddress((lib), (fn))
-#define CLOSELIB(libname) FreeLibrary(libename)
+#define CLOSELIB(libname) FreeLibrary(libname)
 #endif
 
 namespace ripple {
@@ -52,7 +52,7 @@ std::map<int, STypeFunctions> pluginSTypes{};
 std::map<int, parsePluginValuePtr> pluginLeafParserMap{};
 std::vector<TERExport> pluginTERcodes{};
 
-typedef void (*setPluginPointersPtr)(
+typedef LIBTYPE (*setPluginPointersPtr)(
     std::map<std::uint16_t, PluginTxFormat>* pluginTxFormatPtr,
     std::map<std::uint16_t, PluginLedgerFormat>* pluginObjectsMap,
     std::map<std::uint16_t, PluginInnerObjectFormat>* pluginInnerObjectFormats,

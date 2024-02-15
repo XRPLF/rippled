@@ -46,8 +46,6 @@ typedef Container<AmendmentExport> (*getAmendmentsPtr)();
 
 typedef Container<InnerObjectExport> (*getInnerObjectFormatsPtr)();
 
-typedef void (*shutdownPtr)();
-
 // Transactors
 
 typedef TxConsequences (*makeTxConsequencesPtr)(
