@@ -38,9 +38,7 @@ registerPluginTERs(std::vector<TERExport>* pluginTERcodes)
     pluginTERcodesPtr = pluginTERcodes;
 }
 
-std::unordered_map<
-    TERUnderlyingType,
-    std::pair<char const* const, char const* const>>
+void
 initializeTransResults()
 {
     // clang-format off
@@ -240,8 +238,6 @@ initializeTransResults()
         }
         results.insert({ter.code, {ter.codeStr, ter.description}});
     }
-
-    return results;
 }
 
 std::unordered_map<

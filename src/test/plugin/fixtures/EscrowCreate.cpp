@@ -447,7 +447,6 @@ extern "C" Container<AmendmentExport>
 getAmendments()
 {
     reinitialize();
-    resetPlugins();
     NoZeroNewEscrow::checks.clear();
     AmendmentExport const amendment = {
         "featurePluginTest2",

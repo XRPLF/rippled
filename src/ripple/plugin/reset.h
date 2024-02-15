@@ -31,7 +31,6 @@ void
 resetPlugins()
 {
     resetPluginInvariantChecks();
-    resetPluginTERcodes();
 }
 
 }  // namespace ripple

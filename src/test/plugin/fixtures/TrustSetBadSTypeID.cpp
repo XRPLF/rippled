@@ -89,7 +89,6 @@ extern "C" Container<STypeExport>
 getSTypes()
 {
     reinitialize();
-    // resetPlugins();
     static STypeExport exports[] = {
         {
             STI_UINT32_2,
@@ -100,17 +99,6 @@ getSTypes()
             fromSerialIter,
         },
     };
-    // for (int i = 0; i < sizeof(exports) / sizeof(exports[0]); i++)
-    // {
-    //     auto const stype = exports[i];
-    //     // registerSType(
-    //     //     {stype.typeId,
-    //     //      stype.toString,
-    //     //      stype.toJson,
-    //     //      stype.toSerializer,
-    //     //      stype.fromSerialIter});
-    //     registerLeafType(stype.typeId, stype.parsePtr);
-    // }
     STypeExport* ptr = exports;
     return {ptr, 1};
 }

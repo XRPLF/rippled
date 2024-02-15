@@ -142,7 +142,6 @@ extern "C" Container<AmendmentExport>
 getAmendments()
 {
     reinitialize();
-    resetPlugins();
     AmendmentExport const amendment = {
         "featurePluginTest2",
         true,
