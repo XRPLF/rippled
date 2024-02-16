@@ -20,6 +20,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/TxQ.h>
@@ -659,6 +660,11 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
         else
             jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
 
+        RPC::insertDeliverMax(
+            jvResult[jss::tx_json],
+            tpTrans->getSTransaction()->getTxnType(),
+            apiVersion);
+
         jvResult[jss::tx_blob] =
             strHex(tpTrans->getSTransaction()->getSerializer().peekData());
 
@@ -828,8 +834,7 @@ transactionSubmit(
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    ProcessTransactionFn const& processTransaction,
-    RPC::SubmitSync sync)
+    ProcessTransactionFn const& processTransaction)
 {
     using namespace detail;
 
@@ -855,7 +860,8 @@ transactionSubmit(
     // Finally, submit the transaction.
     try
     {
-        processTransaction(txn.second, isUnlimited(role), sync, failType);
+        // FIXME: For performance, should use asynch interface
+        processTransaction(txn.second, isUnlimited(role), true, failType);
     }
     catch (std::exception&)
     {
@@ -1066,8 +1072,7 @@ transactionSubmitMultiSigned(
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app,
-    ProcessTransactionFn const& processTransaction,
-    RPC::SubmitSync sync)
+    ProcessTransactionFn const& processTransaction)
 {
     auto const& ledger = app.openLedger().current();
     auto j = app.journal("RPCHandler");
@@ -1240,7 +1245,7 @@ transactionSubmitMultiSigned(
     try
     {
         // FIXME: For performance, should use asynch interface
-        processTransaction(txn.second, isUnlimited(role), sync, failType);
+        processTransaction(txn.second, isUnlimited(role), true, failType);
     }
     catch (std::exception&)
     {

@@ -14,7 +14,6 @@ ripple.consensus > ripple.basics
 ripple.consensus > ripple.beast
 ripple.consensus > ripple.json
 ripple.consensus > ripple.protocol
-ripple.consensus > ripple.shamap
 ripple.core > ripple.beast
 ripple.core > ripple.json
 ripple.core > ripple.protocol
@@ -126,13 +125,11 @@ test.core > ripple.server
 test.core > test.jtx
 test.core > test.toplevel
 test.core > test.unit_test
-test.csf > ripple.app
 test.csf > ripple.basics
 test.csf > ripple.beast
 test.csf > ripple.consensus
 test.csf > ripple.json
 test.csf > ripple.protocol
-test.csf > test.jtx
 test.json > ripple.beast
 test.json > ripple.json
 test.json > ripple.rpc

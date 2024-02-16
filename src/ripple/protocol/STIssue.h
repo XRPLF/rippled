@@ -28,7 +28,7 @@
 
 namespace ripple {
 
-class STIssue final : public STBase
+class STIssue final : public STBase, CountedObject<STIssue>
 {
 private:
     Issue issue_{xrpIssue()};

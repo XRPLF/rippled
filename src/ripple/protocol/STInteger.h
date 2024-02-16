@@ -20,12 +20,13 @@
 #ifndef RIPPLE_PROTOCOL_STINTEGER_H_INCLUDED
 #define RIPPLE_PROTOCOL_STINTEGER_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/STBase.h>
 
 namespace ripple {
 
 template <typename Integer>
-class STInteger : public STBase
+class STInteger : public STBase, public CountedObject<STInteger<Integer>>
 {
 public:
     using value_type = Integer;
