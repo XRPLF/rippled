@@ -25,6 +25,7 @@
 #include <ripple/plugin/invariantChecks.h>
 #include <ripple/plugin/ledgerObjects.h>
 #include <ripple/plugin/plugin.h>
+#include <ripple/protocol/InnerObjectFormats.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/TER.h>
