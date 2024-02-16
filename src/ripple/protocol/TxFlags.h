@@ -150,7 +150,7 @@ constexpr std::uint32_t const tfMutable                    = 0x00000010;
  constexpr std::uint32_t const tfNFTokenMintMask =
      ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTransferable);
 
-// if featureDNFT enabled then new flag allowing mutable URI available.
+// if featureDynamicNFT enabled then new flag allowing mutable URI available.
 constexpr std::uint32_t const tfNFTokenMintMaskWithMutable =
     ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTransferable | tfMutable);
 

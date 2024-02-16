@@ -55,10 +55,10 @@ NFTokenMint::preflight(PreflightContext const& ctx)
     // amendment passes we still need to keep the old behavior available.
     std::uint32_t const NFTokenMintMask =
         ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine)
-        // if featureDNFT enabled then new flag allowing mutable URI
+        // if featureDynamicNFT enabled then new flag allowing mutable URI
         // available
-        ? ctx.rules.enabled(featureDNFT) ? tfNFTokenMintMaskWithMutable
-                                         : tfNFTokenMintMask
+        ? ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintMaskWithMutable
+                                               : tfNFTokenMintMask
         : tfNFTokenMintOldMask;
 
     if (ctx.tx.getFlags() & NFTokenMintMask)

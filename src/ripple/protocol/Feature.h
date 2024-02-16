@@ -354,7 +354,7 @@ extern uint256 const featureDID;
 extern uint256 const fixFillOrKill;
 extern uint256 const fixNFTokenReserve;
 extern uint256 const fixInnerObjTemplate;
-extern uint256 const featureDNFT;
+extern uint256 const featureDynamicNFT;
 
 }  // namespace ripple
 

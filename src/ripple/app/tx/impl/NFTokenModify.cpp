@@ -13,7 +13,7 @@ NotTEC
 NFTokenModify::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureNonFungibleTokensV1_1) ||
-        !ctx.rules.enabled(featureDNFT))
+        !ctx.rules.enabled(featureDynamicNFT))
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
