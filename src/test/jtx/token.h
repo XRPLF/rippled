@@ -222,6 +222,10 @@ setMinter(jtx::Account const& account, jtx::Account const& minter);
 Json::Value
 clearMinter(jtx::Account const& account);
 
+/** Modify an NFToken. */
+Json::Value
+modify(jtx::Account const& account, uint256 const& nftokenID);
+
 }  // namespace token
 
 }  // namespace jtx

@@ -42,6 +42,7 @@
 #include <ripple/app/tx/impl/NFTokenCancelOffer.h>
 #include <ripple/app/tx/impl/NFTokenCreateOffer.h>
 #include <ripple/app/tx/impl/NFTokenMint.h>
+#include <ripple/app/tx/impl/NFTokenModify.h>
 #include <ripple/app/tx/impl/PayChan.h>
 #include <ripple/app/tx/impl/Payment.h>
 #include <ripple/app/tx/impl/SetAccount.h>
@@ -125,6 +126,8 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<NFTokenCancelOffer>();
         case ttNFTOKEN_ACCEPT_OFFER:
             return f.template operator()<NFTokenAcceptOffer>();
+        case ttNFTOKEN_MODIFY:
+            return f.template operator()<NFTokenModify>();
         case ttCLAWBACK:
             return f.template operator()<Clawback>();
         case ttAMM_CREATE:
