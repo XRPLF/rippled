@@ -144,11 +144,11 @@ constexpr std::uint32_t const tfMutable                    = 0x00000010;
 // The fixRemoveNFTokenAutoTrustLine amendment disables minting with the
 // tfTrustLine flag as a way to prevent the attack.  But until the
 // amendment passes we still need to keep the old behavior available.
- constexpr std::uint32_t const tfNFTokenMintOldMask =
-     ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTrustLine | tfTransferable);
+constexpr std::uint32_t const tfNFTokenMintOldMask =
+    ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTrustLine | tfTransferable);
 
- constexpr std::uint32_t const tfNFTokenMintMask =
-     ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTransferable);
+constexpr std::uint32_t const tfNFTokenMintMask =
+    ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTransferable);
 
 // if featureDynamicNFT enabled then new flag allowing mutable URI available.
 constexpr std::uint32_t const tfNFTokenMintOldMaskWithMutable =
