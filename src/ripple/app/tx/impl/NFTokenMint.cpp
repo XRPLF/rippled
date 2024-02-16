@@ -59,7 +59,8 @@ NFTokenMint::preflight(PreflightContext const& ctx)
         // available
         ? ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintMaskWithMutable
                                                : tfNFTokenMintMask
-        : tfNFTokenMintOldMask;
+        : ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintOldMaskWithMutable
+                                               : tfNFTokenMintOldMask;
 
     if (ctx.tx.getFlags() & NFTokenMintMask)
         return temINVALID_FLAG;

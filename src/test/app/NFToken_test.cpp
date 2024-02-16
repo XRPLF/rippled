@@ -985,9 +985,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, buyer) == 1);
 
         // Provide neither offers to cancel nor a root index.
-        // env(token::cancelOffer(buyer), ter(temMALFORMED));
-        // env.close();
-        // BEAST_EXPECT(ownerCount(env, buyer) == 1);
+        env(token::cancelOffer(buyer), ter(temMALFORMED));
+        env.close();
+        BEAST_EXPECT(ownerCount(env, buyer) == 1);
 
         //----------------------------------------------------------------------
         // preclaim
@@ -7123,7 +7123,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         Account const alice("alice");
         Account const bob("bob");
 
-        auto modifyEnabled = features[featureDynamicNFT];
+        bool modifyEnabled = features[featureDynamicNFT];
 
         {
             // Mint with tfMutable
@@ -7143,16 +7143,18 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // Modify a nftoken
             uint256 const nftId{token::getNextID(env, minter, 0u, tfMutable)};
-            env(token::mint(minter, 0u), txflags(tfMutable));
-            env.close();
             if (modifyEnabled)
             {
+                env(token::mint(minter, 0u), txflags(tfMutable));
+                env.close();
                 BEAST_EXPECT(ownerCount(env, minter) == 1);
                 env(token::modify(minter, nftId));
                 BEAST_EXPECT(ownerCount(env, minter) == 1);
             }
             else
             {
+                env(token::mint(minter, 0u));
+                env.close();
                 env(token::modify(minter, nftId), ter(temDISABLED));
                 env.close();
             }
