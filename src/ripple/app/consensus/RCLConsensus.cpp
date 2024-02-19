@@ -834,7 +834,7 @@ RCLConsensus::Adaptor::validate(
                 // Report our network ID
                 if (auto const networkID = app_.overlay().networkID())
                 {
-                    v.setFieldU64(sfNetworkID, networkID.value());
+                    v.setFieldU32(sfNetworkID, networkID.value());
                 }
             }
 

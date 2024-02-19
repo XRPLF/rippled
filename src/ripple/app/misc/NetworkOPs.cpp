@@ -2308,6 +2308,16 @@ NetworkOPsImp::recvValidation(
     std::shared_ptr<STValidation> const& val,
     std::string const& source)
 {
+    // Don't relay validations from another network.
+    if (auto networkID = app_.overlay().networkID())
+    {
+        auto const view = m_ledgerMaster.getCurrentLedger();
+
+        if (view->rules().enabled(featureNetworkIDValidation) &&
+            val->getNetworkID() != static_cast<Json::UInt>(*networkID))
+            return false;
+    }
+
     JLOG(m_journal.trace())
         << "recvValidation " << val->getLedgerHash() << " from " << source;
 

@@ -92,6 +92,12 @@ STValidation::getConsensusHash() const
     return getFieldH256(sfConsensusHash);
 }
 
+std::uint32_t
+STValidation::getNetworkID() const
+{
+    return getFieldU32(sfNetworkID);
+}
+
 NetClock::time_point
 STValidation::getSignTime() const
 {
