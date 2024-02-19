@@ -2996,6 +2996,9 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
 
             jvObj[jss::txn_count] = Json::UInt(alpAccepted->size());
 
+            if (auto networkID = app_.overlay().networkID())
+                jvObj[jss::network_id] = static_cast<Json::UInt>(*networkID);
+
             if (mMode >= OperatingMode::SYNCING)
             {
                 jvObj[jss::validated_ledgers] =
