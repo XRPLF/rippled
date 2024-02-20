@@ -106,6 +106,23 @@ preflight1(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "preflight1: invalid fee";
         return temBAD_FEE;
     }
+    // if (ctx.flags == tapPREFLIGHT_BATCH)
+    // {
+    //     if (ctx.tx.isFieldPresent(sfFee) && ctx.tx.getFieldAmount(sfFee) != 0)
+    //     {
+    //         JLOG(ctx.j.debug()) << "preflight1: batch tx contains invalid sfFee";
+    //         return temMALFORMED;
+    //     }
+    // }
+    // else
+    // {
+    //     auto const fee = ctx.tx.getFieldAmount(sfFee);
+    //     if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
+    //     {
+    //         JLOG(ctx.j.debug()) << "preflight1: invalid fee";
+    //         return temBAD_FEE;
+    //     }
+    // }
 
     // check public key validity
     auto const spk = ctx.tx.getSigningPubKey();
@@ -206,7 +223,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     // Only check fee is sufficient when the ledger is open.
     if (ctx.view.open() && ctx.tx.getTxnType() == ttBATCH)
     {
-        XRPAmount feeDue = XRPAmount{0};
+        XRPAmount feeDue = XRPAmount{ctx.view.fees().base * 2};
         auto const& txns = ctx.tx.getFieldArray(sfTransactions);
         for (std::size_t i = 0; i < txns.size(); ++i)
         {

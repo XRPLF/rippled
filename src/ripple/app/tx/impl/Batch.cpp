@@ -341,16 +341,6 @@ Batch::preflight(PreflightContext const& ctx)
         auto const response = invoke_preflight(preflightContext);
         preflightResponses.push_back(response.first);
     }
-
-    // Handle Atomicity
-    // for (const auto& response : preflightResponses)
-    // {
-    //     if (response != tesSUCCESS)
-    //     {
-    //         return response;
-    //     }
-    // }
-
     return preflight2(ctx);
 }
 
@@ -500,7 +490,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         }
         extraFee += txFees;
     }
-    return extraFee;
+    return (Transactor::calculateBaseFee(view, tx) * 2) + extraFee;
 }
 
 }  // namespace ripple
