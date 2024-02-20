@@ -100,23 +100,29 @@ preflight1(PreflightContext const& ctx)
     }
 
     // No point in going any further if the transaction fee is malformed.
-    if (ctx.flags == tapPREFLIGHT_BATCH)
+    auto const fee = ctx.tx.getFieldAmount(sfFee);
+    if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
     {
-        if (ctx.tx.isFieldPresent(sfFee))
-        {
-            JLOG(ctx.j.debug()) << "preflight1: batch tx contains sfFee";
-            return temMALFORMED;
-        }
+        JLOG(ctx.j.debug()) << "preflight1: invalid fee";
+        return temBAD_FEE;
     }
-    else
-    {
-        auto const fee = ctx.tx.getFieldAmount(sfFee);
-        if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
-        {
-            JLOG(ctx.j.debug()) << "preflight1: invalid fee";
-            return temBAD_FEE;
-        }
-    }
+    // if (ctx.flags == tapPREFLIGHT_BATCH)
+    // {
+    //     if (ctx.tx.isFieldPresent(sfFee) && ctx.tx.getFieldAmount(sfFee) != 0)
+    //     {
+    //         JLOG(ctx.j.debug()) << "preflight1: batch tx contains invalid sfFee";
+    //         return temMALFORMED;
+    //     }
+    // }
+    // else
+    // {
+    //     auto const fee = ctx.tx.getFieldAmount(sfFee);
+    //     if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
+    //     {
+    //         JLOG(ctx.j.debug()) << "preflight1: invalid fee";
+    //         return temBAD_FEE;
+    //     }
+    // }
 
     // check public key validity
     if (ctx.flags == tapPREFLIGHT_BATCH)
@@ -224,17 +230,41 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         return temBAD_FEE;
 
     auto const feePaid = ctx.tx[sfFee].xrp();
-    std::cout << "feePaid: " << feePaid << "\n";
     if (!isLegalAmount(feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
 
     // Only check fee is sufficient when the ledger is open.
-    if (ctx.view.open())
+    if (ctx.view.open() && ctx.tx.getTxnType() == ttBATCH)
+    {
+        XRPAmount feeDue = XRPAmount{ctx.view.fees().base * 2};
+        auto const& txns = ctx.tx.getFieldArray(sfTransactions);
+        for (std::size_t i = 0; i < txns.size(); ++i)
+        {
+            auto const& txn = txns[i];
+            if (!txn.isFieldPresent(sfFee))
+            {
+                JLOG(ctx.j.warn())
+                    << "Batch: sfFee missing in array entry.";
+                return telINSUF_FEE_P;
+            }
+
+            auto const _fee = txn.getFieldAmount(sfFee);
+            feeDue += _fee.xrp();
+        }
+
+        if (feePaid < feeDue)
+        {
+            JLOG(ctx.j.trace())
+                << "Insufficient fee paid: " << to_string(feePaid) << "/"
+                << to_string(feeDue);
+            return telINSUF_FEE_P;
+        }
+    }
+    if (ctx.view.open() && ctx.tx.getTxnType() != ttBATCH)
     {
         auto const feeDue =
             minimumFee(ctx.app, baseFee, ctx.view.fees(), ctx.flags);
 
-        std::cout << "feeDue: " << feeDue << "\n";
         if (feePaid < feeDue)
         {
             JLOG(ctx.j.trace())

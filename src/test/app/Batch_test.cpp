@@ -35,14 +35,15 @@ class Batch_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        // test::jtx::Env env{*this, network::makeNetworkConfig(21337)};
-        Env env{
-            *this,
-            envconfig(),
-            features,
-            nullptr,
-            // beast::severities::kWarning
-            beast::severities::kTrace};
+        test::jtx::Env env{*this, envconfig()};
+        auto const feeDrops = env.current()->fees().base;
+        // Env env{
+        //     *this,
+        //     envconfig(),
+        //     features,
+        //     nullptr,
+        //     // beast::severities::kWarning
+        //     beast::severities::kTrace};
 
         auto const alice = Account("alice");
         auto const bob = Account("bob");
@@ -51,68 +52,44 @@ class Batch_test : public beast::unit_test::suite
         env.close();
 
         auto const seq = env.seq("alice");
+
+        // ttBATCH
         Json::Value jv;
         jv[jss::TransactionType] = jss::Batch;
         jv[jss::Account] = alice.human();
+
+        // Batch Transactions
         jv[sfTransactions.jsonName] = Json::Value{Json::arrayValue};
+        
+        // Tx 1
         jv[sfTransactions.jsonName][0U] = Json::Value{};
         jv[sfTransactions.jsonName][0U][jss::BatchTransaction] = Json::Value{};
         jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
           [jss::TransactionType] = jss::AccountSet;
         jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
           [sfAccount.jsonName] = alice.human();
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
-          [sfDestination.jsonName] = bob.human();
         jv[sfTransactions.jsonName][0U][jss::BatchTransaction][sfFee.jsonName] =
-            "1000000";
+            to_string(feeDrops);
         jv[sfTransactions.jsonName][0U][jss::BatchTransaction][jss::Sequence] =
             seq + 1;
         jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
           [jss::SigningPubKey] = strHex(alice.pk());
+        
+        // Tx 2
         jv[sfTransactions.jsonName][1U] = Json::Value{};
         jv[sfTransactions.jsonName][1U][jss::BatchTransaction] = Json::Value{};
         jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
           [jss::TransactionType] = jss::AccountSet;
         jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
           [sfAccount.jsonName] = alice.human();
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
-          [sfDestination.jsonName] = carol.human();
         jv[sfTransactions.jsonName][1U][jss::BatchTransaction][sfFee.jsonName] =
-            "1000000";
+            to_string(feeDrops);
         jv[sfTransactions.jsonName][1U][jss::BatchTransaction][jss::Sequence] =
             seq + 2;
         jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
           [jss::SigningPubKey] = strHex(alice.pk());
-        env(jv, fee(XRP(3)), ter(tesSUCCESS));
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
-          [jss::TransactionType] = jss::AccountSet;
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
-          [sfAccount.jsonName] = alice.human();
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
-          [sfDestination.jsonName] = bob.human();
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction][sfFee.jsonName] =
-            "10";
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction][jss::Sequence] =
-            seq;
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
-          [jss::SigningPubKey] = strHex(alice.pk());
-        jv[sfTransactions.jsonName][1U] = Json::Value{};
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction] = Json::Value{};
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
-          [jss::TransactionType] = jss::Payment;
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
-          [sfAccount.jsonName] = alice.human();
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
-          [sfDestination.jsonName] = carol.human();
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
-          [sfAmount.jsonName] = "1000000";
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction][sfFee.jsonName] =
-            "10";
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction][jss::Sequence] =
-            seq;
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
-          [jss::SigningPubKey] = strHex(alice.pk());
-        env(jv, fee(drops(10)), ter(tesSUCCESS));
+
+        env(jv, fee(drops((2 * feeDrops) + (2 * feeDrops))), ter(tesSUCCESS));
         env.close();
     }
 

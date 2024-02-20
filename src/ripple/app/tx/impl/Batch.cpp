@@ -338,7 +338,6 @@ Batch::preflight(PreflightContext const& ctx)
         auto const response = invoke_preflight(preflightContext);
         preflightResponses.push_back(response.first);
     }
-
     return preflight2(ctx);
 }
 
@@ -419,18 +418,20 @@ XRPAmount
 Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     XRPAmount extraFee{0};
-    // if (tx.isFieldPresent(sfTransactions))
-    // {
-    //     XRPAmount txFees{0};
-    //     auto const& txns = tx.getFieldArray(sfTransactions);
-    //     for (auto const& txn : txns)
-    //     {
-    //         txFees += txn.isFieldPresent(sfFee) ? txn.getFieldAmount(sfFee) :
-    //         XRPAmount{0};
-    //     }
-    //     extraFee += txFees;
-    // }
-    return Transactor::calculateBaseFee(view, tx) + extraFee;
+    if (tx.isFieldPresent(sfTransactions))
+    {
+        XRPAmount txFees{0};
+        auto const& txns = tx.getFieldArray(sfTransactions);
+        for (auto const& txn : txns)
+        {
+            auto const tt = txn.getFieldU16(sfTransactionType);
+            auto const txtype = safe_cast<TxType>(tt);
+            auto const stx = STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
+            txFees += Transactor::calculateBaseFee(view, tx);
+        }
+        extraFee += txFees;
+    }
+    return (Transactor::calculateBaseFee(view, tx) * 2) + extraFee;
 }
 
 }  // namespace ripple
