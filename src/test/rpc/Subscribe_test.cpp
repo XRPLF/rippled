@@ -129,15 +129,20 @@ public:
             }
             BEAST_EXPECT(jv[jss::result][jss::ledger_index] == 2);
         }
-
         {
             // Accept a ledger
             env.close();
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::ledger_index] == 3;
-            }));
+                if (!jv.isMember(jss::ledger_index))
+                    return false;
+                if (jv[jss::ledger_index] != 3)
+                    return false;
+                if (!jv.isMember(jss::network_id))
+                    return false;
+                return true;
+            }));            
         }
 
         {

@@ -2163,8 +2163,8 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (auto hash = (*val)[~sfValidatedHash])
             jvObj[jss::validated_hash] = strHex(*hash);
 
-        if (auto networkID = (*val)[~sfNetworkID])
-            jvObj[jss::network_id] = *networkID;
+        if (auto const netid = app_.overlay().networkID())
+            jvObj[jss::network_id] = static_cast<Json::UInt>(*netid);
 
         auto const masterKey =
             app_.validatorManifests().getMasterKey(signerPublic);
@@ -2996,8 +2996,8 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
 
             jvObj[jss::txn_count] = Json::UInt(alpAccepted->size());
 
-            if (auto networkID = app_.overlay().networkID())
-                jvObj[jss::network_id] = static_cast<Json::UInt>(*networkID);
+            if (auto const netid = app_.overlay().networkID())
+                jvObj[jss::network_id] = static_cast<Json::UInt>(*netid);
 
             if (mMode >= OperatingMode::SYNCING)
             {
