@@ -163,7 +163,8 @@ AMM::ammRpcInfo(
     std::optional<Issue> issue1,
     std::optional<Issue> issue2,
     std::optional<AccountID> const& ammAccount,
-    bool ignoreParams) const
+    bool ignoreParams,
+    unsigned apiVersion) const
 {
     Json::Value jv;
     if (account)
@@ -191,7 +192,10 @@ AMM::ammRpcInfo(
         if (ammAccount)
             jv[jss::amm_account] = to_string(*ammAccount);
     }
-    auto jr = env_.rpc("json", "amm_info", to_string(jv));
+    auto jr =
+        (apiVersion == RPC::apiInvalidVersion
+             ? env_.rpc("json", "amm_info", to_string(jv))
+             : env_.rpc(apiVersion, "json", "amm_info", to_string(jv)));
     if (jr.isObject() && jr.isMember(jss::result) &&
         jr[jss::result].isMember(jss::status))
         return jr[jss::result];

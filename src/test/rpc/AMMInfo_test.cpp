@@ -75,6 +75,52 @@ public:
             }
         });
 
+        // Invalid parameters *and* invalid LP account, default API version
+        testAMM([&](AMM& ammAlice, Env&) {
+            Account bogie("bogie");
+            std::vector<std::tuple<
+                std::optional<Issue>,
+                std::optional<Issue>,
+                std::optional<AccountID>,
+                bool>>
+                vals = {
+                    {xrpIssue(), std::nullopt, std::nullopt, false},
+                    {std::nullopt, USD.issue(), std::nullopt, false},
+                    {xrpIssue(), std::nullopt, ammAlice.ammAccount(), false},
+                    {std::nullopt, USD.issue(), ammAlice.ammAccount(), false},
+                    {xrpIssue(), USD.issue(), ammAlice.ammAccount(), false},
+                    {std::nullopt, std::nullopt, std::nullopt, true}};
+            for (auto const& [iss1, iss2, acct, ignoreParams] : vals)
+            {
+                auto const jv = ammAlice.ammRpcInfo(
+                    bogie, std::nullopt, iss1, iss2, acct, ignoreParams);
+                BEAST_EXPECT(jv[jss::error_message] == "Invalid parameters.");
+            }
+        });
+
+        // Invalid parameters *and* invalid LP account, API version 3
+        testAMM([&](AMM& ammAlice, Env&) {
+            Account bogie("bogie");
+            std::vector<std::tuple<
+                std::optional<Issue>,
+                std::optional<Issue>,
+                std::optional<AccountID>,
+                bool>>
+                vals = {
+                    {xrpIssue(), std::nullopt, std::nullopt, false},
+                    {std::nullopt, USD.issue(), std::nullopt, false},
+                    {xrpIssue(), std::nullopt, ammAlice.ammAccount(), false},
+                    {std::nullopt, USD.issue(), ammAlice.ammAccount(), false},
+                    {xrpIssue(), USD.issue(), ammAlice.ammAccount(), false},
+                    {std::nullopt, std::nullopt, std::nullopt, true}};
+            for (auto const& [iss1, iss2, acct, ignoreParams] : vals)
+            {
+                auto const jv = ammAlice.ammRpcInfo(
+                    bogie, std::nullopt, iss1, iss2, acct, ignoreParams, 3);
+                BEAST_EXPECT(jv[jss::error_message] == "Account malformed.");
+            }
+        });
+
         // Invalid AMM account id
         testAMM([&](AMM& ammAlice, Env&) {
             Account bogie("bogie");
@@ -85,6 +131,61 @@ public:
                 std::nullopt,
                 bogie.id());
             BEAST_EXPECT(jv[jss::error_message] == "Account malformed.");
+        });
+
+        // Invalid parameters *and* invalid AMM account, default API version
+        testAMM([&](AMM& ammAlice, Env&) {
+            Account bogie("bogie");
+            std::vector<std::tuple<
+                std::optional<Issue>,
+                std::optional<Issue>,
+                std::optional<AccountID>,
+                bool>>
+                vals = {
+                    {xrpIssue(), std::nullopt, std::nullopt, false},
+                    {std::nullopt, USD.issue(), std::nullopt, false},
+                    {xrpIssue(), std::nullopt, bogie, false},
+                    {std::nullopt, USD.issue(), bogie, false},
+                    {xrpIssue(), USD.issue(), bogie, false},
+                    {std::nullopt, std::nullopt, std::nullopt, true}};
+            for (auto const& [iss1, iss2, acct, ignoreParams] : vals)
+            {
+                auto const jv = ammAlice.ammRpcInfo(
+                    std::nullopt, std::nullopt, iss1, iss2, acct, ignoreParams);
+                BEAST_EXPECT(jv[jss::error_message] == "Invalid parameters.");
+            }
+        });
+
+        // Invalid parameters *and* invalid AMM account, API version 3
+        testAMM([&](AMM& ammAlice, Env&) {
+            Account bogie("bogie");
+            std::vector<std::tuple<
+                std::optional<Issue>,
+                std::optional<Issue>,
+                std::optional<AccountID>,
+                bool>>
+                vals = {
+                    {xrpIssue(), std::nullopt, std::nullopt, false},
+                    {std::nullopt, USD.issue(), std::nullopt, false},
+                    {xrpIssue(), std::nullopt, bogie, false},
+                    {std::nullopt, USD.issue(), bogie, false},
+                    {xrpIssue(), USD.issue(), bogie, false},
+                    {std::nullopt, std::nullopt, std::nullopt, true}};
+            for (auto const& [iss1, iss2, acct, ignoreParams] : vals)
+            {
+                auto const jv = ammAlice.ammRpcInfo(
+                    std::nullopt,
+                    std::nullopt,
+                    iss1,
+                    iss2,
+                    acct,
+                    ignoreParams,
+                    3);
+                BEAST_EXPECT(
+                    jv[jss::error_message] ==
+                    (acct ? std::string("Account malformed.")
+                          : std::string("Invalid parameters.")));
+            }
         });
     }
 

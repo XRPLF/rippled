@@ -96,6 +96,17 @@ doAMMInfo(RPC::JsonContext& context)
         std::optional<Issue> issue2;
         std::optional<uint256> ammID;
 
+        constexpr auto invalid = [](Json::Value const& params) -> bool {
+            return (params.isMember(jss::asset) !=
+                    params.isMember(jss::asset2)) ||
+                (params.isMember(jss::asset) ==
+                 params.isMember(jss::amm_account));
+        };
+
+        // NOTE, identical check for apVersion >= 3 below
+        if (context.apiVersion < 3 && invalid(params))
+            return Unexpected(rpcINVALID_PARAMS);
+
         if (params.isMember(jss::asset))
         {
             if (auto const i = getIssue(params[jss::asset], context.j))
@@ -130,8 +141,8 @@ doAMMInfo(RPC::JsonContext& context)
                 return Unexpected(rpcACT_MALFORMED);
         }
 
-        if ((params.isMember(jss::asset) != params.isMember(jss::asset2)) ||
-            (params.isMember(jss::asset) == params.isMember(jss::amm_account)))
+        // NOTE, identical check for apVersion < 3 above
+        if (context.apiVersion >= 3 && invalid(params))
             return Unexpected(rpcINVALID_PARAMS);
 
         assert(
