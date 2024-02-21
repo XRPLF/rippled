@@ -33,6 +33,23 @@ namespace test {
 
 class Subscribe_test : public beast::unit_test::suite
 {
+    std::unique_ptr<Config>
+    makeNetworkConfig(uint32_t networkID, std::string const& seed)
+    {
+        auto constexpr defaultseed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
+
+        using namespace jtx;
+        return envconfig([&](std::unique_ptr<Config> cfg) {
+            cfg->NETWORK_ID = networkID;
+            // If the config has valid validation keys then we run as a
+            // validator.
+            cfg->section(SECTION_VALIDATION_SEED)
+                .append(std::vector<std::string>{
+                    seed.empty() ? defaultseed : seed});
+            return cfg;
+        });
+    }
+
 public:
     void
     testServer()
@@ -110,7 +127,7 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, makeNetworkConfig(1, ""));
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 
@@ -141,8 +158,10 @@ public:
                     return false;
                 if (!jv.isMember(jss::network_id))
                     return false;
+                if (jv[jss::network_id] != 0)
+                    return false;
                 return true;
-            }));            
+            }));
         }
 
         {
@@ -434,7 +453,7 @@ public:
     {
         using namespace jtx;
 
-        Env env{*this, envconfig(validator, ""), features};
+        Env env(*this, makeNetworkConfig(1, ""), features);
         auto& cfg = env.app().config();
         if (!BEAST_EXPECT(cfg.section(SECTION_VALIDATION_SEED).empty()))
             return;
@@ -508,6 +527,9 @@ public:
                     return false;
 
                 if (!jv.isMember(jss::network_id))
+                    return false;
+
+                if (jv[jss::network_id] != 0)
                     return false;
 
                 // Certain fields are only added on a flag ledger.
