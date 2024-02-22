@@ -27,6 +27,9 @@ namespace ripple {
 void
 registerPluginDeletionBlockers(char const* name, std::uint16_t type);
 
+void
+clearPluginDeletionBlockers();
+
 Json::Value
 doAccountCurrencies(RPC::JsonContext&);
 Json::Value

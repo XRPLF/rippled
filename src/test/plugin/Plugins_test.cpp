@@ -620,6 +620,9 @@ public:
         testPluginSTypeSField();
         testPluginLedgerObjectInvariantCheck();
         testPluginFailure();
+        // run after all plugin tests
+        // to ensure that no leftover plugin data affects other tests
+        cleanup();
     }
 };
 

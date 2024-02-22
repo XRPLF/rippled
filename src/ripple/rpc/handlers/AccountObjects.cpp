@@ -42,12 +42,38 @@ struct DeletionBlocker
     std::uint16_t type;
 };
 
-static std::vector<DeletionBlocker> pluginDeletionBlockers{};
+static constexpr std::initializer_list<DeletionBlocker>
+    originalDeletionBlockers = {
+        {jss::check, ltCHECK},
+        {jss::escrow, ltESCROW},
+        {jss::nft_page, ltNFTOKEN_PAGE},
+        {jss::payment_channel, ltPAYCHAN},
+        {jss::state, ltRIPPLE_STATE},
+        {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
+        {jss::xchain_owned_create_account_claim_id,
+         ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
+        {jss::bridge, ltBRIDGE}};
+
+static std::vector<DeletionBlocker> deletionBlockers{originalDeletionBlockers};
 
 void
 registerPluginDeletionBlockers(char const* name, std::uint16_t type)
 {
-    pluginDeletionBlockers.push_back({Json::StaticString{name}, type});
+    deletionBlockers.push_back({Json::StaticString{name}, type});
+}
+
+void
+clearPluginDeletionBlockers()
+{
+    deletionBlockers.clear();
+    deletionBlockers = [&] {
+        std::vector<DeletionBlocker> temp{};
+        std::copy(
+            std::begin(originalDeletionBlockers),
+            std::end(originalDeletionBlockers),
+            std::back_inserter(temp));
+        return temp;
+    }();
 }
 
 /** General RPC command that can retrieve objects in the account root.
@@ -202,33 +228,6 @@ doAccountObjects(RPC::JsonContext& context)
     if (params.isMember(jss::deletion_blockers_only) &&
         params[jss::deletion_blockers_only].asBool())
     {
-        DeletionBlocker static constexpr originalDeletionBlockers[] = {
-            {jss::check, ltCHECK},
-            {jss::escrow, ltESCROW},
-            {jss::nft_page, ltNFTOKEN_PAGE},
-            {jss::payment_channel, ltPAYCHAN},
-            {jss::state, ltRIPPLE_STATE},
-            {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
-            {jss::xchain_owned_create_account_claim_id,
-             ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
-            {jss::bridge, ltBRIDGE}};
-
-        static std::vector<DeletionBlocker> deletionBlockers = [&] {
-            std::vector<DeletionBlocker> temp{};
-            std::copy(
-                std::begin(originalDeletionBlockers),
-                std::end(originalDeletionBlockers),
-                std::back_inserter(temp));
-            if (!pluginDeletionBlockers.empty())
-            {
-                std::copy(
-                    pluginDeletionBlockers.begin(),
-                    pluginDeletionBlockers.end(),
-                    std::back_inserter(temp));
-            }
-            return temp;
-        }();
-
         typeFilter.emplace();
         typeFilter->reserve(std::size(deletionBlockers));
 

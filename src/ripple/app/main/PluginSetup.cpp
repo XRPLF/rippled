@@ -22,6 +22,7 @@
 #include <ripple/protocol/InnerObjectFormats.h>
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/TxFormats.h>
+#include <ripple/rpc/handlers/Handlers.h>
 
 namespace ripple {
 
@@ -250,6 +251,7 @@ clearPluginPointers()
     pluginLeafParserMap.clear();
     pluginTERcodes.clear();
     resetPluginTERcodes();
+    clearPluginDeletionBlockers();
 }
 
 void
