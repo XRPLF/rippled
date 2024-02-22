@@ -718,7 +718,7 @@ getInnerObjectFormats()
     auto const& fakeElement = sfFakeElement();
     SOElementExport* formatPtr = format;
     static InnerObjectExport list[] = {{
-        fakeElement.getCode(),
+        static_cast<uint16_t>(fakeElement.getCode()),
         fakeElement.jsonName.c_str(),
         {formatPtr, 1},
     }};
