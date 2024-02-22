@@ -366,7 +366,7 @@ PeerImp::cluster() const
     return static_cast<bool>(app_.cluster().member(publicKey_));
 }
 
-std::string_view
+std::string
 PeerImp::getVersion() const
 {
     if (inbound_)
@@ -834,7 +834,7 @@ PeerImp::name() const
     return name_;
 }
 
-std::string_view
+std::string
 PeerImp::domain() const
 {
     return headers_["Server-Domain"];
