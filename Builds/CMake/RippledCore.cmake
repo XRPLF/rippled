@@ -11,7 +11,6 @@ add_library (xrpl_core
   ${rb_headers}) ## headers added here for benefit of IDEs
 if (unity)
   set_target_properties(xrpl_core PROPERTIES UNITY_BUILD ON)
-  set_target_properties(xrpl_plugin PROPERTIES UNITY_BUILD ON)
 endif ()
 
 add_library(libxrpl INTERFACE)
