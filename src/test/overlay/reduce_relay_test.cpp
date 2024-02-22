@@ -1056,9 +1056,8 @@ protected:
                 // 4) peer is in Slot's peers_ (if not then it is deleted
                 //    by Slots::deleteIdlePeers())
                 bool mustHandle = false;
-                if (event.state_ == State::On)
+                if (event.state_ == State::On && BEAST_EXPECT(event.key_))
                 {
-                    BEAST_EXPECT(event.key_);
                     event.isSelected_ =
                         network_.overlay().isSelected(*event.key_, event.peer_);
                     auto peers = network_.overlay().getPeers(*event.key_);

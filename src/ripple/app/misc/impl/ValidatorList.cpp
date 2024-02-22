@@ -903,7 +903,9 @@ ValidatorList::applyListsAndBroadcast(
     }
     bool broadcast = disposition <= ListDisposition::known_sequence;
 
-    // localPublisherList is not broadcast
+    // this function is only called for PublicKeys which are not specified
+    // in the config file (Note: Keys specified in the local config file are
+    // stored in ValidatorList::localPublisherList data member).
     if (broadcast && result.status <= PublisherStatus::expired &&
         result.publisherKey &&
         publisherLists_[*result.publisherKey].maxSequence)

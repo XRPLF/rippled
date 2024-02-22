@@ -447,7 +447,7 @@ ManifestCache::applyManifest(Manifest m)
                 JLOG(j_.warn()) << to_string(m)
                                 << ": is not revoked and the manifest has no "
                                    "signing key. Hence, the manifest is "
-                                   "invalid\n";
+                                   "invalid";
                 return ManifestDisposition::invalid;
             }
 

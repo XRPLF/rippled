@@ -2456,13 +2456,11 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     if (admin)
     {
-        if (app_.getValidationPublicKey())
+        if (auto const localPubKey = app_.validators().localPublicKey();
+            localPubKey && app_.getValidationPublicKey())
         {
-            if (auto const localPubKey = app_.validators().localPublicKey())
-            {
-                info[jss::pubkey_validator] =
-                    toBase58(TokenType::NodePublic, localPubKey.value());
-            }
+            info[jss::pubkey_validator] =
+                toBase58(TokenType::NodePublic, localPubKey.value());
         }
         else
         {
