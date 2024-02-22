@@ -24,7 +24,6 @@ concurrency:
 # and builds and tests rippled.
 
 jobs:
-
   dependencies:
     strategy:
       fail-fast: false
@@ -107,7 +106,6 @@ jobs:
           path: conan.tar
           if-no-files-found: error
 
-
   test:
     strategy:
       fail-fast: false
@@ -158,8 +156,8 @@ jobs:
           cmake-args: ${{ matrix.cmake-args }}
       - name: test
         run: |
-          ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
-
+          cd ${build_dir}
+          ./rippled --unittest --unittest-jobs $(nproc)
 
   coverage:
     strategy:

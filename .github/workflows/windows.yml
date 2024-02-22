@@ -8,7 +8,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-
   test:
     strategy:
       fail-fast: false
@@ -41,8 +40,8 @@ jobs:
       - name: restore Python cache directory
         uses: actions/cache@v3
         with:
-            path: ${{ steps.pip-cache.outputs.dir }}
-            key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
       - name: install Conan
         run: pip install wheel 'conan<2'
       - name: check environment
@@ -86,12 +85,13 @@ jobs:
       - name: build
         uses: ./.github/actions/build
         with:
-          generator: '${{ matrix.generator }}'
+          generator: "${{ matrix.generator }}"
           configuration: ${{ matrix.configuration }}
           # Hard code for now. Move to the matrix if varied options are needed
-          cmake-args: '-Dassert=ON -Dreporting=OFF -Dunity=ON'
+          cmake-args: "-Dassert=ON -Dreporting=OFF -Dunity=ON"
           cmake-target: install
       - name: test
         shell: bash
         run: |
-          ${build_dir}/${{ matrix.configuration }}/rippled --unittest --unittest-jobs $(nproc)
+          cd ${build_dir}
+          ./${{ matrix.configuration }}/rippled --unittest --unittest-jobs $(nproc)
