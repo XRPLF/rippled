@@ -22,7 +22,6 @@
 
 #include <ripple/app/main/PluginSetup.h>
 #include <ripple/app/tx/applySteps.h>
-#include <ripple/plugin/reset.h>
 #include <test/jtx/Env.h>
 
 namespace ripple {

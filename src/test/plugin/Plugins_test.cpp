@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/tx/impl/InvariantCheck.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
@@ -31,7 +32,7 @@ namespace test {
 static void
 cleanup()
 {
-    resetPlugins();
+    resetPluginInvariantChecks();
     resetTxFunctions();
     clearPluginPointers();
     reinitialize();

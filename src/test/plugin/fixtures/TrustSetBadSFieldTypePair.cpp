@@ -22,7 +22,6 @@
 #include <ripple/ledger/View.h>
 #include <ripple/plugin/createSFields.h>
 #include <ripple/plugin/exports.h>
-#include <ripple/plugin/reset.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
