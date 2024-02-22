@@ -117,6 +117,7 @@ STObject::set(const SOTemplate& type)
     v_.clear();
     v_.reserve(type.size());
     mType = &type;
+    assert(mType->size() > 0);
 
     for (auto const& elem : type)
     {
@@ -139,6 +140,7 @@ STObject::applyTemplate(const SOTemplate& type)
     };
 
     mType = &type;
+    assert(mType->size() > 0);
     decltype(v_) v;
     v.reserve(type.size());
     for (auto const& e : type)

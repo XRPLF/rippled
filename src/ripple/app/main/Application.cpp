@@ -67,7 +67,6 @@
 #include <ripple/overlay/PeerReservationTable.h>
 #include <ripple/overlay/PeerSet.h>
 #include <ripple/overlay/make_Overlay.h>
-#include <ripple/plugin/exports.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/InnerObjectFormats.h>
@@ -1461,14 +1460,14 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     logs_->silent(config_->silent());
 
     // Register plugin features with rippled
-    clearPluginPointers();
     for (std::string plugin : config_->PLUGINS)
     {
         JLOG(m_journal.info()) << "Loading plugin from " << plugin;
         addPlugin(plugin);
     }
     registrationIsDone();
-    registerPluginPointers();
+    if (config_->PLUGINS.size() > 0)
+        registerPluginPointers();
 
     for (std::string const& s : config_->rawFeatures)
     {

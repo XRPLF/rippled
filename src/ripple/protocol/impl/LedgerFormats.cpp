@@ -351,12 +351,16 @@ LedgerFormats::initialize()
         },
         commonFields);
     // clang-format on
-    for (auto& e : *pluginObjectsMapPtr)
+
+    if (pluginObjectsMapPtr != nullptr)
     {
-        add(e.second.objectName.c_str(),
-            e.first,
-            e.second.uniqueFields,
-            commonFields);
+        for (auto& e : *pluginObjectsMapPtr)
+        {
+            add(e.second.objectName.c_str(),
+                e.first,
+                e.second.uniqueFields,
+                commonFields);
+        }
     }
 }
 

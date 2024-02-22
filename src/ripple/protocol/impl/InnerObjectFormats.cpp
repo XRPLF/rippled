@@ -149,6 +149,14 @@ InnerObjectFormats::initialize()
         {
             {sfAccount, soeREQUIRED},
         });
+
+    if (pluginInnerObjectFormatsPtr != nullptr)
+    {
+        for (auto& e : *pluginInnerObjectFormatsPtr)
+        {
+            add(e.second.name.c_str(), e.first, e.second.uniqueFields);
+        }
+    }
 }
 
 InnerObjectFormats&

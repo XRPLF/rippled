@@ -228,15 +228,18 @@ initializeTransResults()
 
 #undef MAKE_ERROR
 
-    for (TERExport ter : *pluginTERcodesPtr)
+    if (pluginTERcodesPtr != nullptr)
     {
-        if (auto const it = results.find(ter.code); it != results.end())
+        for (TERExport ter : *pluginTERcodesPtr)
         {
-            throw std::runtime_error(
-                "Code " + std::to_string(ter.code) + " already exists for " +
-                it->second.first);
+            if (auto const it = results.find(ter.code); it != results.end())
+            {
+                throw std::runtime_error(
+                    "Code " + std::to_string(ter.code) +
+                    " already exists for " + it->second.first);
+            }
+            results.insert({ter.code, {ter.codeStr, ter.description}});
         }
-        results.insert({ter.code, {ter.codeStr, ter.description}});
     }
 }
 

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_TEST_JTX_PLUGINENV_H_INCLUDED
 #define RIPPLE_TEST_JTX_PLUGINENV_H_INCLUDED
 
+#include <ripple/app/main/PluginSetup.h>
 #include <ripple/app/tx/applySteps.h>
 #include <ripple/plugin/reset.h>
 #include <test/jtx/Env.h>
@@ -45,12 +46,6 @@ public:
     {
         if (additionalFeature != uint256{})
             app().config().features.insert(additionalFeature);
-    }
-
-    ~PluginEnv()
-    {
-        resetPlugins();
-        resetTxFunctions();
     }
 };
 

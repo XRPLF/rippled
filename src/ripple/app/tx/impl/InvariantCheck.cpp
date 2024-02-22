@@ -412,8 +412,9 @@ LedgerEntryTypesMatch::visitEntry(
             case ltDID:
                 break;
             default:
-                if (pluginObjectsMapPtr->find(after->getType()) !=
-                    pluginObjectsMapPtr->end())
+                if (pluginObjectsMapPtr != nullptr &&
+                    pluginObjectsMapPtr->find(after->getType()) !=
+                        pluginObjectsMapPtr->end())
                 {
                     break;
                 }

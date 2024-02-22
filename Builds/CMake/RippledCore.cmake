@@ -519,6 +519,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/main/Main.cpp
   src/ripple/app/main/NodeIdentity.cpp
   src/ripple/app/main/NodeStoreScheduler.cpp
+  src/ripple/app/main/PluginSetup.cpp
   src/ripple/app/reporting/ReportingETL.cpp
   src/ripple/app/reporting/ETLSource.cpp
   src/ripple/app/reporting/P2pProxy.cpp

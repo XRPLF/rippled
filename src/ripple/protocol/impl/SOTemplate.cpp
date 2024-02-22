@@ -27,6 +27,7 @@ SOTemplate::SOTemplate(
     : indices_(SField::getNumFields() + 1, -1)  // Unmapped indices == -1
 {
     // Add all SOElements.
+    assert(indices_.size() > 0);
     elements_.reserve(uniqueFields.size() + commonFields.size());
     elements_.assign(uniqueFields.begin(), uniqueFields.end());
     elements_.insert(elements_.end(), commonFields);
@@ -52,6 +53,7 @@ SOTemplate::SOTemplate(
         // Add the field to the index mapping table
         //
         indices_[sField.getNum()] = i;
+        assert(indices_.size() > 0);
     }
 }
 

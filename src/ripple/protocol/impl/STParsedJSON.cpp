@@ -624,17 +624,20 @@ parseLeaf(
             break;
 
         default:
-            if (auto it = pluginLeafParserMapPtr->find(field.fieldType);
-                it != pluginLeafParserMapPtr->end())
+            if (pluginLeafParserMapPtr != nullptr)
             {
-                Buffer buf =
-                    it->second(field, json_name, fieldName, name, value, error);
-                if (!buf.empty())
+                if (auto it = pluginLeafParserMapPtr->find(field.fieldType);
+                    it != pluginLeafParserMapPtr->end())
                 {
-                    ret = detail::make_stvar<STPluginType>(
-                        field, buf.data(), buf.size());
+                    Buffer buf = it->second(
+                        field, json_name, fieldName, name, value, error);
+                    if (!buf.empty())
+                    {
+                        ret = detail::make_stvar<STPluginType>(
+                            field, buf.data(), buf.size());
+                    }
+                    return ret;
                 }
-                return ret;
             }
 
             error = unknown_type(json_name, fieldName, field.fieldType);

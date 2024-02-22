@@ -495,12 +495,15 @@ TxFormats::initialize()
 
     add(jss::DIDDelete, ttDID_DELETE, {}, commonFields);
 
-    for (auto& e : *pluginTxFormatsPtr)
+    if (pluginTxFormatsPtr != nullptr)
     {
-        add(e.second.txName.c_str(),
-            e.first,
-            e.second.uniqueFields,
-            commonFields);
+        for (auto& e : *pluginTxFormatsPtr)
+        {
+            add(e.second.txName.c_str(),
+                e.first,
+                e.second.uniqueFields,
+                commonFields);
+        }
     }
 }
 

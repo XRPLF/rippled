@@ -28,6 +28,15 @@ namespace ripple {
 
 namespace test {
 
+static void
+cleanup()
+{
+    resetPlugins();
+    resetTxFunctions();
+    clearPluginPointers();
+    reinitialize();
+}
+
 inline FeatureBitset
 supported_amendments_plugins()
 {
@@ -117,7 +126,7 @@ public:
         {
             try
             {
-                reinitialize();
+                cleanup();
                 // this should crash
                 PluginEnv env{
                     *this,
@@ -133,7 +142,7 @@ public:
 
         // valid plugin that exists
         {
-            reinitialize();
+            cleanup();
             PluginEnv env{
                 *this,
                 makeConfig("plugin_test_setregularkey.xrplugin"),
@@ -145,7 +154,7 @@ public:
 
         // valid plugin with custom SType/SField
         {
-            reinitialize();
+            cleanup();
             PluginEnv env{
                 *this,
                 makeConfig("plugin_test_trustset.xrplugin"),
@@ -157,7 +166,7 @@ public:
 
         // valid plugin with other features
         {
-            reinitialize();
+            cleanup();
             PluginEnv env{
                 *this,
                 makeConfig("plugin_test_escrowcreate.xrplugin"),
@@ -177,7 +186,7 @@ public:
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        reinitialize();
+        cleanup();
         PluginEnv env{
             *this,
             makeConfig("plugin_test_setregularkey.xrplugin"),
@@ -222,7 +231,7 @@ public:
         auto const trustSet2Amendment =
             sha512Half(Slice(amendmentName.data(), amendmentName.size()));
 
-        reinitialize();
+        cleanup();
         PluginEnv env{
             *this,
             makeConfig("plugin_test_trustset.xrplugin"),
@@ -352,7 +361,7 @@ public:
         auto const newEscrowCreateAmendment =
             sha512Half(Slice(amendmentName.data(), amendmentName.size()));
 
-        reinitialize();
+        cleanup();
         PluginEnv env{
             *this,
             makeConfig("plugin_test_escrowcreate.xrplugin"),
@@ -471,7 +480,7 @@ public:
         // invalid plugin with bad transactor type
         {
             bool errored = false;
-            reinitialize();
+            cleanup();
 
             try
             {
@@ -492,7 +501,7 @@ public:
         // invalid plugin with bad ledger entry type
         {
             bool errored = false;
-            reinitialize();
+            cleanup();
             try
             {
                 // this should crash
@@ -512,7 +521,7 @@ public:
         // invalid plugin with bad SType ID
         {
             bool errored = false;
-            reinitialize();
+            cleanup();
             try
             {
                 // this should crash
@@ -532,7 +541,7 @@ public:
         // invalid plugin with bad SType ID for a custom SField
         {
             bool errored = false;
-            reinitialize();
+            cleanup();
             try
             {
                 // this should crash
@@ -553,7 +562,7 @@ public:
         // SField
         {
             bool errored = false;
-            reinitialize();
+            cleanup();
             try
             {
                 // this should crash
@@ -572,7 +581,7 @@ public:
 
         // invalid plugin with bad TER code
         {
-            reinitialize();
+            cleanup();
             PluginEnv env{
                 *this,
                 makeConfig("plugin_test_badtercode.xrplugin"),
@@ -584,7 +593,7 @@ public:
         // invalid plugin with bad inner object format
         {
             bool errored = false;
-            reinitialize();
+            cleanup();
             try
             {
                 // this should crash
