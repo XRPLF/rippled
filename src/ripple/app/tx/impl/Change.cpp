@@ -91,6 +91,7 @@ Change::preclaim(PreclaimContext const& ctx)
         case ttAMENDMENT:
         case ttFEE:
         case ttUNL_MODIFY:
+        case ttEMIT_FAILURE:
             return tesSUCCESS;
         default:
             return temUNKNOWN;
@@ -108,6 +109,8 @@ Change::doApply()
             return applyFee();
         case ttUNL_MODIFY:
             return applyUNLModify();
+        case ttEMIT_FAILURE:
+            return applyEmitFailure();
         default:
             assert(0);
             return tefFAILURE;
@@ -239,6 +242,44 @@ Change::applyFee()
     view().update(feeObject);
 
     JLOG(j_.warn()) << "Fees have been changed";
+    return tesSUCCESS;
+}
+
+TER
+Change::applyEmitFailure()
+{
+    uint256 txnID(ctx_.tx.getFieldH256(sfTransactionHash));
+    do
+    {
+        JLOG(j_.warn())
+            << "HookEmit[" << txnID << "]: ttEmitFailure removing emitted txn";
+
+        auto key = keylet::emitted(txnID);
+
+        auto const& sle = view().peek(key);
+
+        if (!sle)
+        {
+            // RH NOTE: This will now be the normal execution path, the alternative will only occur if something
+            // went really wrong with the hook callback
+//            JLOG(j_.warn())
+//                << "HookError[" << txnID << "]: ttEmitFailure (Change) tried to remove already removed emittedtxn";
+            break;
+        }
+
+        if (!view().dirRemove(
+                keylet::emittedDir(),
+                sle->getFieldU64(sfOwnerNode),
+                key,
+                false))
+        {
+            JLOG(j_.fatal())
+                << "HookError[" << txnID << "]: ttEmitFailure (Change) tefBAD_LEDGER";
+            return tefBAD_LEDGER;
+        }
+
+        view().erase(sle);
+    } while (0);
     return tesSUCCESS;
 }
 

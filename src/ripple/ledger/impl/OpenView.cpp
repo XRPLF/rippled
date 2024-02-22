@@ -267,6 +267,7 @@ OpenView::rawTxInsert(
         std::piecewise_construct,
         std::forward_as_tuple(key),
         std::forward_as_tuple(txn, metaData));
+
     if (!result.second)
         LogicError("rawTxInsert: duplicate TX id" + to_string(key));
 }

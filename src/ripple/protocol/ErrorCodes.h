@@ -68,7 +68,8 @@ enum error_code_i {
 
     // Ledger state
     rpcACT_NOT_FOUND = 19,
-    // unused                  20,
+    rpcNAMESPACE_NOT_FOUND = 20,
+    
     rpcLGR_NOT_FOUND = 21,
     rpcLGR_NOT_VALIDATED = 22,
     rpcMASTER_DISABLED = 23,
@@ -90,7 +91,7 @@ enum error_code_i {
     rpcACT_MALFORMED = 35,
     rpcALREADY_MULTISIG = 36,
     rpcALREADY_SINGLE_SIG = 37,
-    // unused                  38,
+    rpcNAMESPACE_MALFORMED = 38,
     // unused                  39,
     rpcBAD_FEATURE = 40,
     rpcBAD_ISSUER = 41,

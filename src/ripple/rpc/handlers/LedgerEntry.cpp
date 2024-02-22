@@ -328,6 +328,20 @@ doLedgerEntry(RPC::JsonContext& context)
                     *id, context.params[jss::ticket][jss::ticket_seq].asUInt());
         }
     }
+    else if (context.params.isMember(jss::hook_hash))
+    {
+        expectedType = ltHOOK_DEFINITION;
+        if (context.params[jss::hook_hash].isObject() ||
+            (!uNodeIndex.parseHex(context.params[jss::hook_hash].asString())))
+        {
+            uNodeIndex = beast::zero;
+            jvResult[jss::error] = "malformedRequest";
+        }
+        else
+        {
+            uNodeIndex = keylet::hookDefinition(uNodeIndex).key;
+        }
+    }
     else if (context.params.isMember(jss::nft_page))
     {
         expectedType = ltNFTOKEN_PAGE;

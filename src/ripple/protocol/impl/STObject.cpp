@@ -213,7 +213,10 @@ STObject::set(SerialIter& sit, int depth)
         {
             JLOG(debugLog().error()) << "Unknown field: field_type=" << type
                                      << ", field_name=" << field;
-            Throw<std::runtime_error>("Unknown field");
+            std::stringstream ss;
+            ss << "Unknown field in Object t=" << type << " f=" << field;
+
+            Throw<std::runtime_error>(ss.str().c_str());
         }
 
         // Unflatten the field

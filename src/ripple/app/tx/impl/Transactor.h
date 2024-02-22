@@ -20,10 +20,14 @@
 #ifndef RIPPLE_APP_TX_TRANSACTOR_H_INCLUDED
 #define RIPPLE_APP_TX_TRANSACTOR_H_INCLUDED
 
+#include <ripple/app/hook/applyHook.h>
 #include <ripple/app/tx/applySteps.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
 #include <ripple/basics/XRPAmount.h>
 #include <ripple/beast/utility/Journal.h>
+#include <ripple/ledger/PaymentSandbox.h>
+#include <ripple/ledger/detail/ApplyViewBase.h>
+#include <variant>
 
 namespace ripple {
 
@@ -47,6 +51,7 @@ public:
     PreflightContext&
     operator=(PreflightContext const&) = delete;
 };
+
 
 /** State information when determining if a tx is likely to claim a fee. */
 struct PreclaimContext
@@ -99,6 +104,7 @@ protected:
 
 public:
     enum ConsequencesFactoryType { Normal, Blocker, Custom };
+
     /** Process the transaction. */
     std::pair<TER, bool>
     operator()();
@@ -137,9 +143,21 @@ public:
     static NotTEC
     checkSign(PreclaimContext const& ctx);
 
+
     // Returns the fee in fee units, not scaled for load.
     static FeeUnit64
     calculateBaseFee(ReadView const& view, STTx const& tx);
+
+
+    // Returns a list of zero or more accounts which are
+    // not the originator of the transaction but which are
+    // stakeholders in the transaction. The bool parameter
+    // determines whether or not the specified account has
+    // permission for their hook/s to cause a rollback on
+    // the transaction.
+    static std::vector<std::pair<AccountID, bool>>
+    getTransactionalStakeHolders(STTx const& tx);
+
 
     static TER
     preclaim(PreclaimContext const& ctx)
@@ -158,7 +176,60 @@ public:
         uint256 const& ticketIndex,
         beast::Journal j);
 
+
+    // Hooks
+
+    static FeeUnit64
+    calculateHookChainFee(ReadView const& view, STTx const& tx, Keylet const& hookKeylet,
+            bool collectCallsOnly = false);
+
 protected:
+
+    void
+    doHookCallback(
+        std::shared_ptr<STObject const> const& provisionalMeta);
+
+    TER
+    doTSH(
+        bool strong,                                // only do strong TSH iff true, otheriwse only weak
+        hook::HookStateMap& stateMap,
+        std::vector<hook::HookResult>& result,
+        std::shared_ptr<STObject const> const& provisionalMeta);
+
+
+    // Execute a hook "Again As Weak" is a feature that allows
+    // a hook that which is being executed pre-application of the otxn
+    // to request an additional post-application execution.
+    void
+    doAgainAsWeak(
+        AccountID const& hookAccountID,
+        std::set<uint256> const& hookHashes,
+        hook::HookStateMap& stateMap,
+        std::vector<hook::HookResult>& results,
+        std::shared_ptr<STObject const> const& provisionalMeta);
+
+    TER
+    executeHookChain(
+        std::shared_ptr<ripple::STLedgerEntry const> const& hookSLE,
+        hook::HookStateMap& stateMap,
+        std::vector<hook::HookResult>& results,
+        ripple::AccountID const& account,
+        bool strong,
+        std::shared_ptr<STObject const> const& provisionalMeta);
+
+
+    void
+    addWeakTSHFromSandbox(detail::ApplyViewBase const& pv);
+
+    // hooks amendment fields, these are unpopulated and unused unless featureHooks is enabled
+    int executedHookCount_ = 0;              // record how many hooks have executed across the whole transactor
+    std::set<AccountID> additionalWeakTSH_;  // any TSH that needs weak hook execution at the end
+                                             // of the transactor, who isn't able to be deduced until after apply
+                                             // i.e. pathing participants, crossed offers
+
+    ///////////////////////////////////////////////////
+
+
     TER
     apply();
 
@@ -211,6 +282,18 @@ preflight1(PreflightContext const& ctx);
 /** Checks whether the signature appears valid */
 NotTEC
 preflight2(PreflightContext const& ctx);
+
+template<class C>
+inline
+static
+std::variant<uint32_t, uint256>
+seqID(C const& ctx_)
+{
+    if (ctx_.view().rules().enabled(featureHooks) && ctx_.tx.isFieldPresent(sfEmitDetails))
+        return ctx_.tx.getTransactionID();
+
+    return ctx_.tx.getSeqProxy().value();
+}
 
 }  // namespace ripple
 

@@ -87,6 +87,15 @@ enum class HashPrefix : std::uint32_t {
 
     /** shard info for signing */
     shardInfo = detail::make_hash_prefix('S', 'H', 'D'),
+
+    /** Emit Transaction Nonce */
+    emitTxnNonce = detail::make_hash_prefix('E', 'T', 'X'),
+
+    /** Random entropy for hook developers to use */
+    hookNonce    = detail::make_hash_prefix('N', 'C', 'E'),
+
+    /* Hash of a Hook's actual code */
+    hookDefinition = detail::make_hash_prefix('W', 'S', 'M')
 };
 
 template <class Hasher>

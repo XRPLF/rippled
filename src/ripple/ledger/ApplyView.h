@@ -38,7 +38,7 @@ enum ApplyFlags : std::uint32_t {
     tapRETRY = 0x20,
 
     // Transaction came from a privileged source
-    tapUNLIMITED = 0x400,
+    tapUNLIMITED = 0x400
 };
 
 constexpr ApplyFlags

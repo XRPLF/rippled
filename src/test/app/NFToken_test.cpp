@@ -1128,7 +1128,7 @@ class NFToken_test : public beast::unit_test::suite
         // preclaim
 
         // The buy offer must be present in the ledger.
-        uint256 const missingOfferIndex = keylet::nftoffer(alice, 1).key;
+        uint256 const missingOfferIndex = keylet::nftoffer(alice, 1U).key;
         env(token::acceptBuyOffer(buyer, missingOfferIndex),
             ter(tecOBJECT_NOT_FOUND));
         env.close();

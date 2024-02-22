@@ -217,6 +217,8 @@ public:
         FeeLevel64 feeLevel;
         /// LastValidLedger field of the queued transaction, if any
         std::optional<LedgerIndex> lastValid;
+        /// FirstValidLedger field of the queued transaction, if any
+        std::optional<LedgerIndex> firstValid;
         /** Potential @ref TxConsequences of applying the queued transaction
             to the open ledger.
         */
@@ -357,7 +359,7 @@ public:
         @returns a `Json objectvalue`
     */
     Json::Value
-    doRPC(Application& app) const;
+    doRPC(Application& app, std::optional<FeeUnit64> hookFeeUnits = std::nullopt) const;
 
 private:
     // Implementation for nextQueuableSeq().  The passed lock must be held.
@@ -526,6 +528,7 @@ private:
         AccountID const account;
         /// Expiration ledger for the transaction
         /// (`sfLastLedgerSequence` field).
+        std::optional<LedgerIndex> const firstValid;
         std::optional<LedgerIndex> const lastValid;
         /// Transaction SeqProxy number
         /// (`sfSequence` or `sfTicketSequence` field).

@@ -118,6 +118,13 @@ public:
 
     void
     rawDestroyXRP(XRPAmount const& feeDrops) override;
+    
+    // Map of delta trust lines. As a special case, when both ends of the trust
+    // line are the same currency, then it's delta currency for that issuer. To
+    // get the change in XRP balance, Account == root, issuer == root, currency
+    // == XRP
+    std::map<std::tuple<AccountID, AccountID, Currency>, STAmount>                                                         
+    balanceChanges(ReadView const& view) const;
 
 protected:
     ApplyFlags flags_;

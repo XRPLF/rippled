@@ -183,7 +183,6 @@ public:
                  {spook, 1}}),
             ter(temBAD_QUORUM));
 
-        // clang-format off
         // Make a signer list that's too big.  Should fail. (Even with
         // ExpandedSignerList)
         Account const spare("spare", KeyType::secp256k1);

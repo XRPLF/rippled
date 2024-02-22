@@ -61,12 +61,13 @@ private:
         DigestAwareReadView const& ledger,
         std::unordered_set<uint256, beast::uhash<>> const& presets);
 
+
+public:
     Rules(
         std::unordered_set<uint256, beast::uhash<>> const& presets,
         std::optional<uint256> const& digest,
         STVector256 const& amendments);
 
-public:
     /** Returns `true` if a feature is enabled. */
     bool
     enabled(uint256 const& feature) const;

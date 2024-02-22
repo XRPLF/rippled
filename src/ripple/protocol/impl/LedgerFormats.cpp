@@ -55,6 +55,8 @@ LedgerFormats::LedgerFormats()
             {sfNFTokenMinter,        soeOPTIONAL},
             {sfMintedNFTokens,       soeDEFAULT},
             {sfBurnedNFTokens,       soeDEFAULT},
+            {sfHookStateCount,       soeOPTIONAL},
+            {sfHookNamespaces,       soeOPTIONAL}
         },
         commonFields);
 
@@ -67,6 +69,7 @@ LedgerFormats::LedgerFormats()
             {sfTakerGetsCurrency,    soeOPTIONAL},  // order book directories
             {sfTakerGetsIssuer,      soeOPTIONAL},  // order book directories
             {sfExchangeRate,         soeOPTIONAL},  // order book directories
+            {sfReferenceCount,       soeOPTIONAL},  // for hook state directories
             {sfIndexes,              soeREQUIRED},
             {sfRootIndex,            soeREQUIRED},
             {sfIndexNext,            soeOPTIONAL},
@@ -105,6 +108,8 @@ LedgerFormats::LedgerFormats()
             {sfHighNode,             soeOPTIONAL},
             {sfHighQualityIn,        soeOPTIONAL},
             {sfHighQualityOut,       soeOPTIONAL},
+            {sfLockedBalance,        soeOPTIONAL},
+            {sfLockCount,            soeOPTIONAL},
         },
         commonFields);
 
@@ -178,6 +183,42 @@ LedgerFormats::LedgerFormats()
         },
         commonFields);
 
+    add(jss::Hook,
+        ltHOOK,
+        {
+            {sfAccount, soeOPTIONAL},
+            {sfOwnerNode, soeREQUIRED},
+            {sfPreviousTxnID, soeREQUIRED},
+            {sfPreviousTxnLgrSeq, soeREQUIRED},
+            {sfHooks, soeREQUIRED} 
+        },
+        commonFields);
+
+    add(jss::HookDefinition,
+        ltHOOK_DEFINITION,
+        {
+            {sfHookHash, soeREQUIRED},
+            {sfHookOn, soeREQUIRED},  
+            {sfHookNamespace, soeREQUIRED},
+            {sfHookParameters, soeREQUIRED},
+            {sfHookApiVersion, soeREQUIRED},  
+            {sfCreateCode, soeREQUIRED},
+            {sfHookSetTxnID, soeREQUIRED},
+            {sfReferenceCount, soeREQUIRED},
+            {sfFee, soeREQUIRED},
+            {sfHookCallbackFee, soeOPTIONAL}
+        },
+        commonFields);
+
+    add(jss::HookState,
+        ltHOOK_STATE,
+        {
+            {sfOwnerNode, soeREQUIRED},   
+            {sfHookStateKey, soeREQUIRED},
+            {sfHookStateData, soeREQUIRED},
+        },
+        commonFields);
+
     add(jss::PayChannel,
         ltPAYCHAN,
         {
@@ -236,6 +277,14 @@ LedgerFormats::LedgerFormats()
         },
         commonFields);
 
+    add(jss::Emitted,
+        ltEMITTED,
+        {
+            {sfEmittedTxn, soeOPTIONAL},
+            {sfOwnerNode, soeREQUIRED},
+        },
+        commonFields);
+    
     add(jss::NFTokenPage,
         ltNFTOKEN_PAGE,
         {

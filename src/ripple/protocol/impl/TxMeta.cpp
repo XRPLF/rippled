@@ -43,6 +43,9 @@ TxMeta::TxMeta(
 
     if (obj.isFieldPresent(sfDeliveredAmount))
         setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
+    
+    if (obj.isFieldPresent(sfHookExecutions))
+        setHookExecutions(obj.getFieldArray(sfHookExecutions));
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
@@ -61,6 +64,9 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
 
     if (obj.isFieldPresent(sfDeliveredAmount))
         setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
+
+    if (obj.isFieldPresent(sfHookExecutions))
+        setHookExecutions(obj.getFieldArray(sfHookExecutions));
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
@@ -197,6 +203,14 @@ TxMeta::getAffectedNode(uint256 const& node)
     return *(mNodes.begin());  // Silence compiler warning.
 }
 
+// used for mock TxMeta objects
+void
+TxMeta::setResult(TER res, int index)
+{
+    mResult = TERtoInt(res);
+    mIndex = index;
+}
+
 STObject
 TxMeta::getAsObject() const
 {
@@ -207,6 +221,10 @@ TxMeta::getAsObject() const
     metaData.emplace_back(mNodes);
     if (hasDeliveredAmount())
         metaData.setFieldAmount(sfDeliveredAmount, getDeliveredAmount());
+
+    if (hasHookExecutions())
+        metaData.setFieldArray(sfHookExecutions, getHookExecutions());
+
     return metaData;
 }
 

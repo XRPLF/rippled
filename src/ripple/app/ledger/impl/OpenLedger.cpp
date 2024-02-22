@@ -53,6 +53,12 @@ OpenLedger::current() const
     return current_;
 }
 
+std::shared_ptr<OpenView const>
+OpenLedger::current_unsafe() const
+{
+    return current_;
+}
+
 bool
 OpenLedger::modify(modify_type const& f)
 {
@@ -121,6 +127,11 @@ OpenLedger::accept(
     {
         auto const& tx = txpair.first;
         auto const txId = tx->getTransactionID();
+       
+        // skip emitted txns 
+        if (tx->isFieldPresent(sfEmitDetails))
+            continue;
+
         if (auto const toSkip = app.getHashRouter().shouldRelay(txId))
         {
             JLOG(j_.debug()) << "Relaying recovered tx " << txId;

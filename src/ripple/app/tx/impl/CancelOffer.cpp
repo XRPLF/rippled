@@ -60,11 +60,22 @@ CancelOffer::preclaim(PreclaimContext const& ctx)
     if (!sle)
         return terNO_ACCOUNT;
 
+    bool hooksEnabled = ctx.view.rules().enabled(featureHooks);
+
+    auto const offerID = ctx.tx[~sfOfferID];
+    
     if ((*sle)[sfSequence] <= offerSequence)
     {
-        JLOG(ctx.j.trace()) << "Malformed transaction: "
-                            << "Sequence " << offerSequence << " is invalid.";
-        return temBAD_SEQUENCE;
+        if (hooksEnabled && offerID && offerSequence == 0)
+        {
+            // pass, here the txn provides offerID instead of offerSequence
+        }
+        else
+        {
+            JLOG(ctx.j.trace()) << "Malformed transaction: "
+                                << "Sequence " << offerSequence << " is invalid.";
+            return temBAD_SEQUENCE;
+        }
     }
 
     return tesSUCCESS;
@@ -81,13 +92,31 @@ CancelOffer::doApply()
     if (!sle)
         return tefINTERNAL;
 
-    if (auto sleOffer = view().peek(keylet::offer(account_, offerSequence)))
+    bool hooksEnabled = view().rules().enabled(featureHooks);
+    
+    std::optional<uint256> offerID;
+
+    if (hooksEnabled)
+       offerID = ctx_.tx[~sfOfferID];
+
+    Keylet cancel =
+        hooksEnabled && offerID && offerSequence == 0
+            ? Keylet(ltOFFER, *offerID)
+            : keylet::offer(account_, offerSequence);
+
+    if (auto sleOffer = view().peek(cancel))
     {
-        JLOG(j_.debug()) << "Trying to cancel offer #" << offerSequence;
+        if (offerID)
+            JLOG(j_.debug()) << "Trying to cancel offer :" << *offerID;
+        else
+            JLOG(j_.debug()) << "Trying to cancel offer #" << offerSequence;
         return offerDelete(view(), sleOffer, ctx_.app.journal("View"));
     }
 
-    JLOG(j_.debug()) << "Offer #" << offerSequence << " can't be found.";
+    if (offerID)
+        JLOG(j_.debug()) << "Offer :" << *offerID << " can't be found.";
+    else
+        JLOG(j_.debug()) << "Offer #" << offerSequence << " can't be found.";
     return tesSUCCESS;
 }
 

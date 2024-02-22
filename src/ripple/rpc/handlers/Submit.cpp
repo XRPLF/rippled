@@ -236,7 +236,7 @@ doSubmitGrpc(
             context.app.getHashRouter(),
             *stpTrans,
             context.ledgerMaster.getCurrentLedger()->rules(),
-            context.app.config());
+            context.app.config()); 
         if (validity != Validity::Valid)
         {
             grpc::Status errorStatus{

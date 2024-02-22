@@ -544,6 +544,25 @@ private:
         return jvRequest;
     }
 
+    // fee [<txblob>]
+    Json::Value
+    parseFee(Json::Value const& jvParams)
+    {
+        Json::Value jvRequest(Json::objectValue);
+
+        if (jvParams.size() == 0)
+        {
+            return jvRequest;
+        }
+        else if (jvParams.size() > 1)
+        {
+            return rpcError(rpcINVALID_PARAMS);
+        }
+
+        jvRequest[jss::tx_blob] = jvParams[0u].asString();
+        return jvRequest;
+    }
+
     // get_counts [<min_count>]
     Json::Value
     parseGetCounts(Json::Value const& jvParams)
@@ -785,6 +804,13 @@ private:
         return parseAccountRaw2(jvParams, jss::peer);
     }
 
+    // account_namespace <account> <namespace hex> [<ledger>]
+    Json::Value
+    parseAccountNamespace(Json::Value const& jvParams)
+    {
+        return parseAccountNamespaceRaw(jvParams);
+    }
+
     // account_channels <account> <account>|"" [<ledger>]
     Json::Value
     parseAccountChannels(Json::Value const& jvParams)
@@ -861,6 +887,61 @@ private:
         jvRequest[jss::amount] = jvParams[2u];
 
         jvRequest[jss::signature] = jvParams[3u].asString();
+
+        return jvRequest;
+    }
+
+    Json::Value
+    parseAccountNamespaceRaw(Json::Value const& jvParams)
+    {
+        auto const nParams = jvParams.size();
+        Json::Value jvRequest(Json::objectValue);
+
+        for (auto i = 0; i < nParams; ++i)
+        {
+            std::string strParam = jvParams[i].asString();
+
+            if (i == 0)
+            {
+                // account
+                if (parseBase58<PublicKey>(
+                        TokenType::AccountPublic, strParam) ||
+                    parseBase58<AccountID>(strParam) ||
+                    parseGenericSeed(strParam))
+                {
+                    jvRequest[jss::account] = std::move(strParam);
+                }
+                else
+                {
+                    return rpcError(rpcACT_MALFORMED);
+                }
+                continue;
+            }
+            
+            if (i == 1)
+            {
+                // namespace hex
+                uint256 namespaceId;
+                if (!namespaceId.parseHex(strParam))
+                    return rpcError(rpcNAMESPACE_MALFORMED);
+                jvRequest[jss::namespace_id] = to_string(namespaceId);
+                continue;
+            }
+            
+            if (i == 2)
+            {
+                // ledger index (optional)
+                if (strParam.empty())
+                    break;
+
+                if (jvParseLedger(jvRequest, strParam))
+                    break;
+                else
+                    return rpcError(rpcLGR_IDX_MALFORMED);
+                
+                continue;
+            }
+        }
 
         return jvRequest;
     }
@@ -1237,6 +1318,7 @@ public:
             {"account_currencies", &RPCParser::parseAccountCurrencies, 1, 3},
             {"account_info", &RPCParser::parseAccountItems, 1, 3},
             {"account_lines", &RPCParser::parseAccountLines, 1, 5},
+            {"account_namespace", &RPCParser::parseAccountNamespace, 2, 3},
             {"account_channels", &RPCParser::parseAccountChannels, 1, 3},
             {"account_nfts", &RPCParser::parseAccountItems, 1, 5},
             {"account_objects", &RPCParser::parseAccountItems, 1, 5},
@@ -1251,6 +1333,7 @@ public:
             {"deposit_authorized", &RPCParser::parseDepositAuthorized, 2, 3},
             {"download_shard", &RPCParser::parseDownloadShard, 2, -1},
             {"feature", &RPCParser::parseFeature, 0, 2},
+            {"fee", &RPCParser::parseFee, 0, 1},
             {"fetch_info", &RPCParser::parseFetchInfo, 0, 1},
             {"gateway_balances", &RPCParser::parseGatewayBalances, 1, -1},
             {"get_counts", &RPCParser::parseGetCounts, 0, 1},

@@ -1547,6 +1547,14 @@ PeerImp::handleTransaction(
         auto stx = std::make_shared<STTx const>(sit);
         uint256 txID = stx->getTransactionID();
 
+        // Charge strongly for attempting to relay a txn with sfEmitDetails
+        if (stx->isFieldPresent(sfEmitDetails))
+        {
+            JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing sfEmitDetails (handleTransaction).";
+            //fee_ =  Resource::feeHighBurdenPeer; // RH TODO: enable when relay bug is fixed
+            //return;
+        }
+
         int flags;
         constexpr std::chrono::seconds tx_interval = 10s;
 
@@ -3058,6 +3066,15 @@ PeerImp::checkTransaction(
     // VFALCO TODO Rewrite to not use exceptions
     try
     {
+
+        // charge strongly for relaying Hook emitted txns
+        if (stx->isFieldPresent(sfEmitDetails))
+        {
+            JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing sfEmitDetails (checkSignature).";
+            //charge(Resource::feeHighBurdenPeer);  //RH TODO: enable this charging when relay bug fix
+            return;
+        }
+
         // Expired?
         if (stx->isFieldPresent(sfLastLedgerSequence) &&
             (stx->getFieldU32(sfLastLedgerSequence) <

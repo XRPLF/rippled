@@ -33,6 +33,8 @@
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/st.h>
+#include <ripple/protocol/Rate.h>
+
 
 // During an EscrowFinish, the transaction must specify both
 // a condition and a fulfillment. We track whether that
@@ -93,7 +95,8 @@ after(NetClock::time_point now, std::uint32_t mark)
 TxConsequences
 EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
+    return TxConsequences{ctx.tx,
+        isXRP(ctx.tx[sfAmount]) ? ctx.tx[sfAmount].xrp() : beast::zero};
 }
 
 NotTEC
@@ -105,8 +108,25 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (!isXRP(ctx.tx[sfAmount]))
-        return temBAD_AMOUNT;
+    STAmount const amount {ctx.tx[sfAmount]};
+    if (!isXRP(amount))
+    {
+        if (!ctx.rules.enabled(featurePaychanAndEscrowForTokens))
+            return temBAD_AMOUNT;
+
+        if (!isLegalNet(amount))
+            return temBAD_AMOUNT;
+
+        if (isFakeXRP(amount))
+            return temBAD_CURRENCY;
+
+        if (ctx.tx[sfAccount] == amount.getIssuer())
+        {
+            JLOG(ctx.j.trace())
+                << "Malformed transaction: Cannot escrow own tokens to self.";
+            return temDST_IS_SRC;
+        }
+    }
 
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
@@ -159,6 +179,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 TER
 EscrowCreate::doApply()
 {
+
     auto const closeTime = ctx_.view().info().parentCloseTime;
 
     // Prior to fix1571, the cancel and finish times could be greater
@@ -198,17 +219,79 @@ EscrowCreate::doApply()
     if (!sle)
         return tefINTERNAL;
 
+    STAmount const amount {ctx_.tx[sfAmount]};
+
+    std::shared_ptr<SLE> sleLine;
+
+    auto const balance = STAmount((*sle)[sfBalance]).xrp();
+    auto const reserve =
+        ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
+
+    if (balance < reserve)
+        return tecINSUFFICIENT_RESERVE;
+
     // Check reserve and funds availability
+    if (isXRP(amount))
     {
-        auto const balance = STAmount((*sle)[sfBalance]).xrp();
-        auto const reserve =
-            ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
-
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-
         if (balance < reserve + STAmount(ctx_.tx[sfAmount]).xrp())
             return tecUNFUNDED;
+        // pass
+    }
+    else
+    {
+        // preflight will prevent this ever firing, included
+        // defensively for completeness
+        if (!ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
+            return tefINTERNAL;
+
+        // check if the escrow is capable of being
+        // finished before we allow it to be created
+        {
+            TER result = 
+                trustTransferAllowed(
+                    ctx_.view(),
+                    {account, ctx_.tx[sfDestination]},
+                    amount.issue(),
+                    ctx_.journal);
+
+            JLOG(ctx_.journal.trace())
+                << "EscrowCreate::doApply trustTransferAllowed result="
+                << result;
+
+            if (!isTesSuccess(result))
+                return result;
+        }
+
+        // perform the lock as a dry run before
+        // we modify anything on-ledger
+        sleLine = ctx_.view().peek(keylet::line(account, amount.getIssuer(), amount.getCurrency()));
+        if (!sleLine)
+        {
+            JLOG(ctx_.journal.trace())
+                << "EscrowCreate::doApply trustAdjustLockedBalance trustline missing "
+                << account << "-" 
+                << amount.getIssuer() << "/"
+                << amount.getCurrency(); 
+            return tecUNFUNDED;
+        }
+
+        {
+            TER result = 
+                trustAdjustLockedBalance(
+                    ctx_.view(),
+                    sleLine,
+                    amount,
+                    1,
+                    ctx_.journal,
+                    DryRun);
+            
+            JLOG(ctx_.journal.trace())
+                << "EscrowCreate::doApply trustAdjustLockedBalance (dry) result="
+                << result;
+
+            if (!isTesSuccess(result))
+                return result;
+        }
     }
 
     // Check destination account
@@ -230,8 +313,9 @@ EscrowCreate::doApply()
 
     // Create escrow in ledger.  Note that we we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
-    Keylet const escrowKeylet =
-        keylet::escrow(account, ctx_.tx.getSeqProxy().value());
+    
+    Keylet const escrowKeylet = keylet::escrow(account, seqID(ctx_));
+
     auto const slep = std::make_shared<SLE>(escrowKeylet);
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
     (*slep)[sfAccount] = account;
@@ -264,7 +348,31 @@ EscrowCreate::doApply()
     }
 
     // Deduct owner's balance, increment owner count
-    (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
+    if (isXRP(amount))
+        (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
+    else 
+    {
+        if (!ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens) || !sleLine)
+            return tefINTERNAL;
+
+        // do the lock-up for real now
+        TER result =
+            trustAdjustLockedBalance(
+                ctx_.view(),
+                sleLine,
+                amount,
+                1,
+                ctx_.journal,
+                WetRun);
+                
+        JLOG(ctx_.journal.trace())
+            << "EscrowCreate::doApply trustAdjustLockedBalance (wet) result="
+            << result;
+
+        if (!isTesSuccess(result))
+            return result;
+    }
+
     adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
     ctx_.view().update(sle);
 
@@ -355,10 +463,28 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
 TER
 EscrowFinish::doApply()
 {
-    auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
+    bool hooksEnabled = view().rules().enabled(featureHooks);
+    
+    if (!hooksEnabled && ctx_.tx.isFieldPresent(sfEscrowID))
+        return temDISABLED;
+    
+    std::optional<uint256> escrowID = ctx_.tx[~sfEscrowID];
+
+    if (escrowID && ctx_.tx[sfOfferSequence] != 0)
+        return temMALFORMED;
+
+    Keylet k =        
+        escrowID
+        ? Keylet(ltESCROW, *escrowID)
+        : keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
+
     auto const slep = ctx_.view().peek(k);
     if (!slep)
         return tecNO_TARGET;
+
+    AccountID const account = (*slep)[sfAccount];
+    auto const sle = ctx_.view().peek(keylet::account(account));
+    auto amount = slep->getFieldAmount(sfAmount);
 
     // If a cancel time is present, a finish operation should only succeed prior
     // to that time. fix1571 corrects a logic error in the check that would make
@@ -460,7 +586,33 @@ EscrowFinish::doApply()
         }
     }
 
-    AccountID const account = (*slep)[sfAccount];
+    
+    if (!isXRP(amount))
+    {
+        if (!ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
+            return tefINTERNAL;
+        
+        // perform a dry run of the transfer before we 
+        // change anything on-ledger
+        TER result = 
+            trustTransferLockedBalance(
+                ctx_.view(), 
+                account_,   // txn signing account
+                sle,        // src account
+                sled,       // dst account
+                amount,     // xfer amount
+                -1,
+                j_,
+                DryRun      // dry run
+            );
+
+        JLOG(j_.trace())
+            << "EscrowFinish::doApply trustTransferLockedBalance (dry) result="
+            << result;
+
+        if (!isTesSuccess(result))
+            return result;
+    }
 
     // Remove escrow from owner directory
     {
@@ -484,12 +636,38 @@ EscrowFinish::doApply()
         }
     }
 
-    // Transfer amount to destination
-    (*sled)[sfBalance] = (*sled)[sfBalance] + (*slep)[sfAmount];
+
+
+    if (isXRP(amount))
+        (*sled)[sfBalance] = (*sled)[sfBalance] + (*slep)[sfAmount];
+    else 
+    {
+        // all the significant complexity of checking the validity of this
+        // transfer and ensuring the lines exist etc is hidden away in this
+        // function, all we need to do is call it and return if unsuccessful.
+        TER result = 
+            trustTransferLockedBalance(
+                ctx_.view(), 
+                account_,   // txn signing account
+                sle,        // src account
+                sled,       // dst account
+                amount,     // xfer amount
+                -1,
+                j_,
+                WetRun      // wet run;
+            );
+
+        JLOG(j_.trace())
+            << "EscrowFinish::doApply trustTransferLockedBalance (wet) result="
+            << result;
+
+        if (!isTesSuccess(result))
+            return result;
+    }
+
     ctx_.view().update(sled);
 
     // Adjust source owner count
-    auto const sle = ctx_.view().peek(keylet::account(account));
     adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
     ctx_.view().update(sle);
 
@@ -516,7 +694,21 @@ EscrowCancel::preflight(PreflightContext const& ctx)
 TER
 EscrowCancel::doApply()
 {
-    auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
+    bool hooksEnabled = view().rules().enabled(featureHooks);
+    
+    if (!hooksEnabled && ctx_.tx.isFieldPresent(sfEscrowID))
+        return temDISABLED;
+    
+    std::optional<uint256> escrowID = ctx_.tx[~sfEscrowID];
+
+    if (escrowID && ctx_.tx[sfOfferSequence] != 0)
+        return temMALFORMED;
+
+    Keylet k =        
+        escrowID
+        ? Keylet(ltESCROW, *escrowID)
+        : keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
+    
     auto const slep = ctx_.view().peek(k);
     if (!slep)
         return tecNO_TARGET;
@@ -543,6 +735,32 @@ EscrowCancel::doApply()
     }
 
     AccountID const account = (*slep)[sfAccount];
+    auto const sle = ctx_.view().peek(keylet::account(account));
+    auto amount = slep->getFieldAmount(sfAmount);
+
+    std::shared_ptr<SLE> sleLine;
+
+    if (!isXRP(amount))
+    {
+        if (!ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
+            return tefINTERNAL;
+
+        sleLine =
+            ctx_.view().peek(
+                keylet::line(account, amount.getIssuer(), amount.getCurrency()));
+
+        // dry run before we make any changes to ledger
+        if (TER result = 
+            trustAdjustLockedBalance(
+                ctx_.view(),
+                sleLine,
+                -amount,
+                -1,
+                ctx_.journal,
+                DryRun);
+            result != tesSUCCESS)
+            return result;
+    }
 
     // Remove escrow from owner directory
     {
@@ -569,9 +787,33 @@ EscrowCancel::doApply()
         }
     }
 
-    // Transfer amount back to owner, decrement owner count
-    auto const sle = ctx_.view().peek(keylet::account(account));
-    (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount];
+    // Transfer amount back to the owner (or unlock it in TL case)
+    if (isXRP(amount))
+        (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount];
+    else
+    {
+        if (!ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
+            return tefINTERNAL;
+
+        // unlock previously locked tokens from source line
+        TER result =
+            trustAdjustLockedBalance(
+                ctx_.view(),
+                sleLine,
+                -amount,
+                -1,
+                ctx_.journal,
+                WetRun);
+
+        JLOG(ctx_.journal.trace())
+            << "EscrowCancel::doApply trustAdjustLockedBalance (wet) result="
+            << result;
+        
+        if (!isTesSuccess(result))
+            return result;
+    }
+
+    // Decrement owner count
     adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
     ctx_.view().update(sle);
 

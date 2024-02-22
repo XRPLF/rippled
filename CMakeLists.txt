@@ -9,6 +9,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(Boost_NO_BOOST_CMAKE ON)
+
 # make GIT_COMMIT_HASH define available to all sources
 find_package(Git)
 if(Git_FOUND)
@@ -67,6 +69,7 @@ include(deps/Protobuf)
 include(deps/gRPC)
 include(deps/cassandra)
 include(deps/Postgres)
+include(deps/WasmEdge)
 
 ###
 
@@ -74,5 +77,4 @@ include(RippledCore)
 include(RippledInstall)
 include(RippledCov)
 include(RippledMultiConfig)
-include(RippledDocs)
 include(RippledValidatorKeys)
