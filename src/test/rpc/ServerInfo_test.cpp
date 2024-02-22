@@ -19,6 +19,7 @@
 
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 
@@ -107,7 +108,7 @@ admin = 127.0.0.1
             auto const rpc_port =
                 (*config)["port_rpc"].get<unsigned int>("port");
             auto const grpc_port =
-                (*config)["port_grpc"].get<unsigned int>("port");
+                (*config)[SECTION_PORT_GRPC].get<unsigned int>("port");
             auto const ws_port = (*config)["port_ws"].get<unsigned int>("port");
             BEAST_EXPECT(grpc_port);
             BEAST_EXPECT(rpc_port);

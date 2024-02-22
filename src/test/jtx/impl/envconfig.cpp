@@ -20,7 +20,6 @@
 #include <test/jtx/envconfig.h>
 
 #include <ripple/core/ConfigSections.h>
-#include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 
 namespace ripple {
@@ -57,22 +56,22 @@ setupConfigForUnitTests(Config& cfg)
     cfg.deprecatedClearSection(ConfigSection::importNodeDatabase());
     cfg.legacy("database_path", "");
     cfg.setupControl(true, true, true);
-    cfg["server"].append("port_peer");
-    cfg["port_peer"].set("ip", getEnvLocalhostAddr());
-    cfg["port_peer"].set("port", port_peer);
-    cfg["port_peer"].set("protocol", "peer");
+    cfg["server"].append(PORT_PEER);
+    cfg[PORT_PEER].set("ip", getEnvLocalhostAddr());
+    cfg[PORT_PEER].set("port", port_peer);
+    cfg[PORT_PEER].set("protocol", "peer");
 
-    cfg["server"].append("port_rpc");
-    cfg["port_rpc"].set("ip", getEnvLocalhostAddr());
-    cfg["port_rpc"].set("admin", getEnvLocalhostAddr());
-    cfg["port_rpc"].set("port", port_rpc);
-    cfg["port_rpc"].set("protocol", "http,ws2");
+    cfg["server"].append(PORT_RPC);
+    cfg[PORT_RPC].set("ip", getEnvLocalhostAddr());
+    cfg[PORT_RPC].set("admin", getEnvLocalhostAddr());
+    cfg[PORT_RPC].set("port", port_rpc);
+    cfg[PORT_RPC].set("protocol", "http,ws2");
 
-    cfg["server"].append("port_ws");
-    cfg["port_ws"].set("ip", getEnvLocalhostAddr());
-    cfg["port_ws"].set("admin", getEnvLocalhostAddr());
-    cfg["port_ws"].set("port", port_ws);
-    cfg["port_ws"].set("protocol", "ws");
+    cfg["server"].append(PORT_WS);
+    cfg[PORT_WS].set("ip", getEnvLocalhostAddr());
+    cfg[PORT_WS].set("admin", getEnvLocalhostAddr());
+    cfg[PORT_WS].set("port", port_ws);
+    cfg[PORT_WS].set("protocol", "ws");
     cfg.SSL_VERIFY = false;
 }
 
@@ -81,35 +80,35 @@ namespace jtx {
 std::unique_ptr<Config>
 no_admin(std::unique_ptr<Config> cfg)
 {
-    (*cfg)["port_rpc"].set("admin", "");
-    (*cfg)["port_ws"].set("admin", "");
+    (*cfg)[PORT_RPC].set("admin", "");
+    (*cfg)[PORT_WS].set("admin", "");
     return cfg;
 }
 
 std::unique_ptr<Config>
 secure_gateway(std::unique_ptr<Config> cfg)
 {
-    (*cfg)["port_rpc"].set("admin", "");
-    (*cfg)["port_ws"].set("admin", "");
-    (*cfg)["port_rpc"].set("secure_gateway", getEnvLocalhostAddr());
+    (*cfg)[PORT_RPC].set("admin", "");
+    (*cfg)[PORT_WS].set("admin", "");
+    (*cfg)[PORT_RPC].set("secure_gateway", getEnvLocalhostAddr());
     return cfg;
 }
 
 std::unique_ptr<Config>
 admin_localnet(std::unique_ptr<Config> cfg)
 {
-    (*cfg)["port_rpc"].set("admin", "127.0.0.0/8");
-    (*cfg)["port_ws"].set("admin", "127.0.0.0/8");
+    (*cfg)[PORT_RPC].set("admin", "127.0.0.0/8");
+    (*cfg)[PORT_WS].set("admin", "127.0.0.0/8");
     return cfg;
 }
 
 std::unique_ptr<Config>
 secure_gateway_localnet(std::unique_ptr<Config> cfg)
 {
-    (*cfg)["port_rpc"].set("admin", "");
-    (*cfg)["port_ws"].set("admin", "");
-    (*cfg)["port_rpc"].set("secure_gateway", "127.0.0.0/8");
-    (*cfg)["port_ws"].set("secure_gateway", "127.0.0.0/8");
+    (*cfg)[PORT_RPC].set("admin", "");
+    (*cfg)[PORT_WS].set("admin", "");
+    (*cfg)[PORT_RPC].set("secure_gateway", "127.0.0.0/8");
+    (*cfg)[PORT_WS].set("secure_gateway", "127.0.0.0/8");
     return cfg;
 }
 
@@ -127,7 +126,7 @@ validator(std::unique_ptr<Config> cfg, std::string const& seed)
 std::unique_ptr<Config>
 port_increment(std::unique_ptr<Config> cfg, int increment)
 {
-    for (auto const sectionName : {"port_peer", "port_rpc", "port_ws"})
+    for (auto const sectionName : {PORT_PEER, PORT_RPC, PORT_WS})
     {
         Section& s = (*cfg)[sectionName];
         auto const port = s.get<std::int32_t>("port");
@@ -143,8 +142,8 @@ std::unique_ptr<Config>
 addGrpcConfig(std::unique_ptr<Config> cfg)
 {
     std::string port_grpc = std::to_string(port_base + 3);
-    (*cfg)["port_grpc"].set("ip", getEnvLocalhostAddr());
-    (*cfg)["port_grpc"].set("port", port_grpc);
+    (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
+    (*cfg)[SECTION_PORT_GRPC].set("port", port_grpc);
     return cfg;
 }
 
@@ -154,9 +153,9 @@ addGrpcConfigWithSecureGateway(
     std::string const& secureGateway)
 {
     std::string port_grpc = std::to_string(port_base + 3);
-    (*cfg)["port_grpc"].set("ip", getEnvLocalhostAddr());
-    (*cfg)["port_grpc"].set("port", port_grpc);
-    (*cfg)["port_grpc"].set("secure_gateway", secureGateway);
+    (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
+    (*cfg)[SECTION_PORT_GRPC].set("port", port_grpc);
+    (*cfg)[SECTION_PORT_GRPC].set("secure_gateway", secureGateway);
     return cfg;
 }
 
