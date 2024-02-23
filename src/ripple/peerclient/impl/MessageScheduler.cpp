@@ -434,13 +434,16 @@ MessageScheduler::send_(
     // TODO: Add a factory method to Message for this pattern.
     // It will let us remove the template function `send_`.
     auto packet = std::make_shared<Message>(message, requestType);
-    auto request = std::make_unique<Request>(
+    // P0960R3 in C++20 lets us construct aggregates with std::make_unique,
+    // but it is not implemented in Clang until version 16.
+    // https://clang.llvm.org/cxx_status.html
+    auto request = std::unique_ptr<Request>(new Request{
         requestId,
         responseType,
         metaPeer,
         receiver,
         Timer(io_service_),
-        Clock::now());
+        Clock::now()});
     request->timer.expires_after(timeout);
     request->timer.async_wait(
         [this, requestId](boost::system::error_code const& error) {
