@@ -1091,8 +1091,9 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
 {
     // Can we accept this ledger as our new last fully-validated ledger
 
-    JLOG(m_journal.info()) << "=========> checkAccept (" << ledger->info().seq << ")\n";
-    
+    JLOG(m_journal.info()) << "=========> checkAccept (" << ledger->info().seq
+                           << ")\n";
+
     if (!canBeCurrent(ledger))
         return;
 
@@ -1122,8 +1123,9 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     ledger->setValidated();
     ledger->setFull();
     setValidLedger(ledger);
-    
-    JLOG(m_journal.info()) << "=========> checkAccept (" << ledger->info().seq << ") = validated\n";
+
+    JLOG(m_journal.info()) << "=========> checkAccept (" << ledger->info().seq
+                           << ") = validated\n";
     if (!mPubLedger)
     {
         pendSaveValidated(app_, ledger, true, true);

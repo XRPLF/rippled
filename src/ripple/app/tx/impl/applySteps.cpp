@@ -364,15 +364,15 @@ preflight(
     beast::Journal j)
 {
     PreflightContext const pfctx(app, tx, rules, flags, j);
-//    try
-//    {
-        return {pfctx, invoke_preflight(pfctx)};
-//    }
-//    catch (std::exception const& e)
-//    {
-//        JLOG(j.fatal()) << "apply: " << e.what();
-//        return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
-//    }
+    //    try
+    //    {
+    return {pfctx, invoke_preflight(pfctx)};
+    //    }
+    //    catch (std::exception const& e)
+    //    {
+    //        JLOG(j.fatal()) << "apply: " << e.what();
+    //        return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
+    //    }
 }
 
 PreclaimResult
@@ -408,17 +408,17 @@ preclaim(
             preflightResult.flags,
             preflightResult.j);
     }
-//    try
-//    {
-        if (ctx->preflightResult != tesSUCCESS)
-            return {*ctx, ctx->preflightResult};
-        return {*ctx, invoke_preclaim(*ctx)};
-//    }
-//    catch (std::exception const& e)
-//    {
-//        JLOG(ctx->j.fatal()) << "apply: " << e.what();
-//        return {*ctx, tefEXCEPTION};
-//    }
+    //    try
+    //    {
+    if (ctx->preflightResult != tesSUCCESS)
+        return {*ctx, ctx->preflightResult};
+    return {*ctx, invoke_preclaim(*ctx)};
+    //    }
+    //    catch (std::exception const& e)
+    //    {
+    //        JLOG(ctx->j.fatal()) << "apply: " << e.what();
+    //        return {*ctx, tefEXCEPTION};
+    //    }
 }
 
 XRPAmount
@@ -442,26 +442,26 @@ doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view)
         // info to recover.
         return {tefEXCEPTION, false};
     }
-//    try
-//    {
-        if (!preclaimResult.likelyToClaimFee)
-            return {preclaimResult.ter, false};
+    //    try
+    //    {
+    if (!preclaimResult.likelyToClaimFee)
+        return {preclaimResult.ter, false};
 
-        ApplyContext ctx(
-            app,
-            view,
-            preclaimResult.tx,
-            preclaimResult.ter,
-            calculateBaseFee(view, preclaimResult.tx),
-            preclaimResult.flags,
-            preclaimResult.j);
-        return invoke_apply(ctx);
-//    }
-//    catch (std::exception const& e)
-//    {
-//        JLOG(preclaimResult.j.fatal()) << "apply: " << e.what();
-//        return {tefEXCEPTION, false};
-//    }
+    ApplyContext ctx(
+        app,
+        view,
+        preclaimResult.tx,
+        preclaimResult.ter,
+        calculateBaseFee(view, preclaimResult.tx),
+        preclaimResult.flags,
+        preclaimResult.j);
+    return invoke_apply(ctx);
+    //    }
+    //    catch (std::exception const& e)
+    //    {
+    //        JLOG(preclaimResult.j.fatal()) << "apply: " << e.what();
+    //        return {tefEXCEPTION, false};
+    //    }
 }
 
 }  // namespace ripple

@@ -63,7 +63,7 @@ CancelOffer::preclaim(PreclaimContext const& ctx)
     bool hooksEnabled = ctx.view.rules().enabled(featureHooks);
 
     auto const offerID = ctx.tx[~sfOfferID];
-    
+
     if ((*sle)[sfSequence] <= offerSequence)
     {
         if (hooksEnabled && offerID && offerSequence == 0)
@@ -72,8 +72,9 @@ CancelOffer::preclaim(PreclaimContext const& ctx)
         }
         else
         {
-            JLOG(ctx.j.trace()) << "Malformed transaction: "
-                                << "Sequence " << offerSequence << " is invalid.";
+            JLOG(ctx.j.trace())
+                << "Malformed transaction: "
+                << "Sequence " << offerSequence << " is invalid.";
             return temBAD_SEQUENCE;
         }
     }
@@ -93,16 +94,15 @@ CancelOffer::doApply()
         return tefINTERNAL;
 
     bool hooksEnabled = view().rules().enabled(featureHooks);
-    
+
     std::optional<uint256> offerID;
 
     if (hooksEnabled)
-       offerID = ctx_.tx[~sfOfferID];
+        offerID = ctx_.tx[~sfOfferID];
 
-    Keylet cancel =
-        hooksEnabled && offerID && offerSequence == 0
-            ? Keylet(ltOFFER, *offerID)
-            : keylet::offer(account_, offerSequence);
+    Keylet cancel = hooksEnabled && offerID && offerSequence == 0
+        ? Keylet(ltOFFER, *offerID)
+        : keylet::offer(account_, offerSequence);
 
     if (auto sleOffer = view().peek(cancel))
     {

@@ -507,7 +507,6 @@ extern SF_UINT256 const sfHookSetTxnID;
 extern SF_UINT256 const sfOfferID;
 extern SF_UINT256 const sfEscrowID;
 
-
 // currency amount (common)
 extern SF_AMOUNT const sfAmount;
 extern SF_AMOUNT const sfBalance;

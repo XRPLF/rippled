@@ -194,7 +194,7 @@ decodeBase58(std::string const& s)
     result.assign(zeroes, 0x00);
     while (iter != b256.end())
         result.push_back(*(iter++));
-    
+
     return result;
 }
 

@@ -53,7 +53,8 @@ serializePayChanAuthorization(
     else if (amt.signum() == -1)  // 512 = not native
         msg.add64(
             amt.mantissa() |
-            (static_cast<std::uint64_t>(amt.exponent() + 512 + 97) << (64 - 10)));
+            (static_cast<std::uint64_t>(amt.exponent() + 512 + 97)
+             << (64 - 10)));
     else  // 256 = positive
         msg.add64(
             amt.mantissa() |

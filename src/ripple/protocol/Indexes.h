@@ -52,7 +52,8 @@ class SeqProxy;
 */
 namespace keylet {
 
-/** The (fixed) index of the object containing the emitted txns for the ledger. */
+/** The (fixed) index of the object containing the emitted txns for the ledger.
+ */
 Keylet const&
 emittedDir() noexcept;
 
@@ -245,7 +246,10 @@ escrow(AccountID const& src, UInt32or256 const& seq) noexcept;
 
 /** A PaymentChannel */
 Keylet
-payChan(AccountID const& src, AccountID const& dst, UInt32or256 const& seq) noexcept;
+payChan(
+    AccountID const& src,
+    AccountID const& dst,
+    UInt32or256 const& seq) noexcept;
 
 /** NFT page keylets
 

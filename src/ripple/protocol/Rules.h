@@ -66,7 +66,6 @@ private:
         DigestAwareReadView const& ledger,
         std::unordered_set<uint256, beast::uhash<>> const& presets);
 
-
 public:
     Rules(
         std::unordered_set<uint256, beast::uhash<>> const& presets,

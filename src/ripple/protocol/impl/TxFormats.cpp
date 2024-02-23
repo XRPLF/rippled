@@ -81,7 +81,7 @@ TxFormats::TxFormats()
             {sfTakerGets, soeREQUIRED},
             {sfExpiration, soeOPTIONAL},
             {sfOfferSequence, soeOPTIONAL},
-            {sfOfferID, soeOPTIONAL},              // keylet as alternative to offerseq
+            {sfOfferID, soeOPTIONAL},  // keylet as alternative to offerseq
         },
         commonFields);
 
@@ -151,7 +151,7 @@ TxFormats::TxFormats()
         ttOFFER_CANCEL,
         {
             {sfOfferSequence, soeREQUIRED},
-            {sfOfferID, soeOPTIONAL},              // keylet as alternative to offerseq
+            {sfOfferID, soeOPTIONAL},  // keylet as alternative to offerseq
         },
         commonFields);
 
@@ -192,7 +192,7 @@ TxFormats::TxFormats()
         {
             {sfOwner, soeREQUIRED},
             {sfOfferSequence, soeREQUIRED},
-            {sfEscrowID, soeOPTIONAL},              // keylet as alternative to offerseq
+            {sfEscrowID, soeOPTIONAL},  // keylet as alternative to offerseq
             {sfFulfillment, soeOPTIONAL},
             {sfCondition, soeOPTIONAL},
         },
@@ -203,7 +203,7 @@ TxFormats::TxFormats()
         {
             {sfOwner, soeREQUIRED},
             {sfOfferSequence, soeREQUIRED},
-            {sfEscrowID, soeOPTIONAL},              // keylet as alternative to offerseq
+            {sfEscrowID, soeOPTIONAL},  // keylet as alternative to offerseq
         },
         commonFields);
 
@@ -339,7 +339,7 @@ TxFormats::TxFormats()
             {sfUnauthorize, soeOPTIONAL},
         },
         commonFields);
-    
+
     add(jss::SetHook,
         ttHOOK_SET,
         {

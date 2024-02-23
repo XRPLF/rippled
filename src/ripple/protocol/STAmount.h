@@ -559,9 +559,10 @@ isFakeXRP(STAmount const& amount)
         return false;
 
     return isFakeXRP(amount.issue().currency);
-}    
+}
 
-/** returns true iff adding or subtracting results in less than or equal to 0.01% precision loss **/
+/** returns true iff adding or subtracting results in less than or equal to
+ * 0.01% precision loss **/
 inline bool
 isAddable(STAmount const& amt1, STAmount const& amt2)
 {
@@ -575,13 +576,13 @@ isAddable(STAmount const& amt1, STAmount const& amt2)
     {
         XRPAmount A = (amt1.signum() == -1 ? -(amt1.xrp()) : amt1.xrp());
         XRPAmount B = (amt2.signum() == -1 ? -(amt2.xrp()) : amt2.xrp());
-        
+
         XRPAmount finalAmt = A + B;
         return (finalAmt >= A && finalAmt >= B);
     }
 
-    static const STAmount one {IOUAmount{1, 0}, noIssue()};
-    static const STAmount maxLoss {IOUAmount{1, -4}, noIssue()};
+    static const STAmount one{IOUAmount{1, 0}, noIssue()};
+    static const STAmount maxLoss{IOUAmount{1, -4}, noIssue()};
 
     STAmount A = amt1;
     STAmount B = amt2;
@@ -598,9 +599,9 @@ isAddable(STAmount const& amt1, STAmount const& amt2)
     STAmount lhs = divide((A - B) + B, A, noIssue()) - one;
     STAmount rhs = divide((B - A) + A, B, noIssue()) - one;
 
-    return ((rhs.negative() ? -rhs : rhs) + (lhs.negative() ? -lhs : lhs)) <= maxLoss;
+    return ((rhs.negative() ? -rhs : rhs) + (lhs.negative() ? -lhs : lhs)) <=
+        maxLoss;
 }
-
 
 // Since `canonicalize` does not have access to a ledger, this is needed to put
 // the low-level routine stAmountCanonicalize on an amendment switch. Only

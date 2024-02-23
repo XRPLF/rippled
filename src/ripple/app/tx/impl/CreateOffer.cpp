@@ -74,7 +74,7 @@ CreateOffer::preflight(PreflightContext const& ctx)
     }
 
     auto const offerID = tx[~sfOfferID];
-    
+
     auto const cancelSequence = tx[~sfOfferSequence];
     if (cancelSequence && *cancelSequence == 0)
     {
@@ -84,7 +84,8 @@ CreateOffer::preflight(PreflightContext const& ctx)
 
     if (offerID && cancelSequence)
     {
-        JLOG(j.debug()) << "Malformed offer: expect exactly zero or one of: sfOfferID, sfCancelSequence";
+        JLOG(j.debug()) << "Malformed offer: expect exactly zero or one of: "
+                           "sfOfferID, sfCancelSequence";
         return temBAD_SEQUENCE;
     }
 
@@ -949,7 +950,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     auto const cancelSequence = ctx_.tx[~sfOfferSequence];
     std::optional<uint256> offerID;
     if (hooksEnabled)
-        offerID = ctx_.tx[~sfOfferID];   // this can be used in place of cancel seq
+        offerID =
+            ctx_.tx[~sfOfferID];  // this can be used in place of cancel seq
 
     // Note that we we use the value from the sequence or ticket as the
     // offer sequence.  For more explanation see comments in SeqProxy.h.
@@ -967,9 +969,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // Process a cancellation request that's passed along with an offer.
     if (cancelSequence || offerID)
     {
-        Keylet cancel = offerID
-            ? Keylet(ltOFFER, *offerID)
-            : keylet::offer(account_, *cancelSequence);
+        Keylet cancel = offerID ? Keylet(ltOFFER, *offerID)
+                                : keylet::offer(account_, *cancelSequence);
 
         auto const sleCancel = sb.peek(cancel);
 
@@ -1186,7 +1187,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // We need to place the remainder of the offer into its order book.
-    Keylet offer_index = keylet::offer(account_, seqID(ctx_)); 
+    Keylet offer_index = keylet::offer(account_, seqID(ctx_));
 
     // Add offer to owner's directory.
     auto const ownerNode = sb.dirInsert(

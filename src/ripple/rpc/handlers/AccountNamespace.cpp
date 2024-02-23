@@ -35,7 +35,8 @@
 
 namespace ripple {
 
-/** RPC command that retreives hook state objects from a particular namespace in a particular account.
+/** RPC command that retreives hook state objects from a particular namespace in
+   a particular account.
     {
       account: <account>|<account_public_key>
       namespace_id: <namespace hex>
@@ -80,7 +81,7 @@ doAccountNamespace(RPC::JsonContext& context)
 
     if (!nsID.parseHex(ns))
         return rpcError(rpcINVALID_PARAMS);
-    
+
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
@@ -115,13 +116,7 @@ doAccountNamespace(RPC::JsonContext& context)
     }
 
     if (!RPC::getAccountNamespace(
-            *ledger,
-            accountID,
-            nsID,
-            dirIndex,
-            entryIndex,
-            limit,
-            result))
+            *ledger, accountID, nsID, dirIndex, entryIndex, limit, result))
     {
         result[jss::account_objects] = Json::arrayValue;
     }

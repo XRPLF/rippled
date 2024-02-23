@@ -19,11 +19,11 @@
 
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/mulDiv.h>
-#include <ripple/app/misc/HashRouter.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/protocol/st.h>
@@ -53,8 +53,8 @@ getFeeLevelPaid(ReadView const& view, STTx const& tx)
         return std::pair{baseFee + mod, feePaid + mod};
     }();
 
-    //RH TODO: check if >= 0 is appropriate for hooks / emitted txn
-    //this was previously > 0 and a crash bug in tn2
+    // RH TODO: check if >= 0 is appropriate for hooks / emitted txn
+    // this was previously > 0 and a crash bug in tn2
     assert(baseFee.signum() >= 0);
     if (effectiveFeePaid.signum() <= 0 || baseFee.signum() <= 0)
     {
@@ -1193,7 +1193,6 @@ TxQ::apply(
         txIter->first->second.retriesRemaining == MaybeTx::retriesAllowed &&
         feeLevelPaid > requiredFeeLevel && requiredFeeLevel > baseLevel)
     {
-
         OpenView sandbox(open_ledger, &view, view.rules());
 
         auto result = tryClearAccountQueueUpThruTx(
@@ -1442,131 +1441,147 @@ TxQ::accept(Application& app, OpenView& view)
 
     // Inject emitted transactions if any
     if (view.rules().enabled(featureHooks))
-    do { 
-        Keylet const emittedDirKeylet { keylet::emittedDir() };
-        if (dirIsEmpty(view, emittedDirKeylet))
-            break;
-
-        std::shared_ptr<SLE const> sleDirNode{};
-        unsigned int uDirEntry{0};
-        uint256 dirEntry{beast::zero};
-
-        if (!cdirFirst(
-                view,
-                emittedDirKeylet.key,
-                sleDirNode,
-                uDirEntry,
-                dirEntry))
-            break;
-
         do
         {
-            Keylet const itemKeylet{ltCHILD, dirEntry};
-            auto sleItem = view.read(itemKeylet);
-            if (!sleItem)
-            {
-                // Directory node has an invalid index.  Bail out.
-                JLOG(j_.fatal())
-                    << "EmittedTxn processing: directory node in ledger " << view.seq()
-                    << " has index to object that is missing: "
-                    << to_string(dirEntry);
+            Keylet const emittedDirKeylet{keylet::emittedDir()};
+            if (dirIsEmpty(view, emittedDirKeylet))
                 break;
-            }
 
-            LedgerEntryType const nodeType{
-                safe_cast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
+            std::shared_ptr<SLE const> sleDirNode{};
+            unsigned int uDirEntry{0};
+            uint256 dirEntry{beast::zero};
 
-            if (nodeType != ltEMITTED)
-            {
-                JLOG(j_.fatal())
-                    << "EmittedTxn processing: emitted directory contained non ltEMITTED type";
+            if (!cdirFirst(
+                    view,
+                    emittedDirKeylet.key,
+                    sleDirNode,
+                    uDirEntry,
+                    dirEntry))
                 break;
-            }
 
-            JLOG(j_.info()) << "Processing emitted txn: " << *sleItem;
-
-            auto const& emitted =
-                const_cast<ripple::STLedgerEntry&>(*sleItem).getField(sfEmittedTxn).downcast<STObject>();
-
-            auto s = std::make_shared<ripple::Serializer>();
-            emitted.add(*s);
-            SerialIter sitTrans(s->slice()); // do we need slice?
-            try
+            do
             {
-                auto const& stpTrans = std::make_shared<STTx const>(std::ref(sitTrans));
+                Keylet const itemKeylet{ltCHILD, dirEntry};
+                auto sleItem = view.read(itemKeylet);
+                if (!sleItem)
+                {
+                    // Directory node has an invalid index.  Bail out.
+                    JLOG(j_.fatal())
+                        << "EmittedTxn processing: directory node in ledger "
+                        << view.seq()
+                        << " has index to object that is missing: "
+                        << to_string(dirEntry);
+                    break;
+                }
 
-                if (!stpTrans->isFieldPresent(sfEmitDetails) ||
+                LedgerEntryType const nodeType{
+                    safe_cast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
+
+                if (nodeType != ltEMITTED)
+                {
+                    JLOG(j_.fatal())
+                        << "EmittedTxn processing: emitted directory contained "
+                           "non ltEMITTED type";
+                    break;
+                }
+
+                JLOG(j_.info()) << "Processing emitted txn: " << *sleItem;
+
+                auto const& emitted =
+                    const_cast<ripple::STLedgerEntry&>(*sleItem)
+                        .getField(sfEmittedTxn)
+                        .downcast<STObject>();
+
+                auto s = std::make_shared<ripple::Serializer>();
+                emitted.add(*s);
+                SerialIter sitTrans(s->slice());  // do we need slice?
+                try
+                {
+                    auto const& stpTrans =
+                        std::make_shared<STTx const>(std::ref(sitTrans));
+
+                    if (!stpTrans->isFieldPresent(sfEmitDetails) ||
                         !stpTrans->isFieldPresent(sfFirstLedgerSequence) ||
                         !stpTrans->isFieldPresent(sfLastLedgerSequence))
-                {
-                    JLOG(j_.warn())
-                        << "Hook: Emission failure: "
-                        << "sfEmitDetails or sfFirst/LastLedgerSeq missing.";
-                    continue;
+                    {
+                        JLOG(j_.warn()) << "Hook: Emission failure: "
+                                        << "sfEmitDetails or "
+                                           "sfFirst/LastLedgerSeq missing.";
+                        continue;
+                    }
+
+                    auto seq = view.info().seq;
+                    auto txnHash = stpTrans->getTransactionID();
+
+                    if (stpTrans->getFieldU32(sfLastLedgerSequence) < seq)
+                    {
+                        JLOG(j_.trace()) << "Hook: Emission failure, adding "
+                                            "cleanup pseudotxn to ledger "
+                                         << seq;
+
+                        auto const& emitDetails =
+                            const_cast<ripple::STTx&>(*stpTrans)
+                                .getField(sfEmitDetails)
+                                .downcast<STObject>();
+
+                        STTx efTx(
+                            ttEMIT_FAILURE,
+                            [seq, txnHash, emitDetails](auto& obj) {
+                                obj[sfLedgerSequence] = seq;
+                                obj[sfTransactionHash] = txnHash;
+                                obj.emplace_back(emitDetails);
+                                /*std::unique_ptr<STBase> ed =
+                                    std::make_unique<STBase>(emitDetails);
+                                ed->setFName(sfEmitDetails);
+                                obj.set(std::move(ed));*/
+                            });
+
+                        uint256 txID = efTx.getTransactionID();
+
+                        auto s = std::make_shared<ripple::Serializer>();
+                        efTx.add(*s);
+
+                        // RH TODO: should this txn be added in a different way
+                        // to prevent any chance of failure
+                        app.getHashRouter().setFlags(txID, SF_PRIVATE2);
+                        view.rawTxInsert(txID, std::move(s), nullptr);
+                        ledgerChanged = true;
+
+                        continue;
+                    }
+
+                    auto fls = stpTrans->getFieldU32(sfFirstLedgerSequence);
+                    if (fls > view.info().seq)
+                    {
+                        JLOG(j_.info())
+                            << "Holding TX " << stpTrans->getTransactionID()
+                            << " for future ledger.";
+                        continue;
+                    }
+
+                    // execution to here means we are adding the tx to the local
+                    // set
+                    if (fls >= view.info().seq)
+                    {
+                        app.getHashRouter().setFlags(txnHash, SF_PRIVATE2);
+                        view.rawTxInsert(
+                            stpTrans->getTransactionID(),
+                            std::move(s),
+                            nullptr);
+                        ledgerChanged = true;
+                    }
                 }
-                
-                auto seq = view.info().seq;
-                auto txnHash = stpTrans->getTransactionID();
-
-                if (stpTrans->getFieldU32(sfLastLedgerSequence) < seq)
+                catch (std::exception& e)
                 {
-                    JLOG(j_.trace())
-                        << "Hook: Emission failure, adding cleanup pseudotxn to ledger " << seq;
-
-                    auto const& emitDetails =
-                        const_cast<ripple::STTx&>(*stpTrans).getField(sfEmitDetails).downcast<STObject>();
-
-                    STTx efTx (
-                        ttEMIT_FAILURE,
-                        [seq, txnHash, emitDetails](auto& obj) {
-                            obj[sfLedgerSequence] = seq;
-                            obj[sfTransactionHash] = txnHash;
-                            obj.emplace_back(emitDetails);
-                            /*std::unique_ptr<STBase> ed = 
-                                std::make_unique<STBase>(emitDetails);
-                            ed->setFName(sfEmitDetails);
-                            obj.set(std::move(ed));*/
-
-                        });
-
-                    uint256 txID = efTx.getTransactionID();
-
-                    auto s = std::make_shared<ripple::Serializer>();
-                    efTx.add(*s);
-
-                    // RH TODO: should this txn be added in a different way to prevent any chance of failure
-                    app.getHashRouter().setFlags(txID, SF_PRIVATE2);
-                    view.rawTxInsert(txID, std::move(s), nullptr);
-                    ledgerChanged = true;
-
-                    continue;
+                    JLOG(j_.fatal())
+                        << "EmittedTxn Processing: Failure: " << e.what()
+                        << "\n";
                 }
 
-                auto fls = stpTrans->getFieldU32(sfFirstLedgerSequence);
-                if (fls > view.info().seq)
-                {
-                    JLOG(j_.info()) <<
-                        "Holding TX " << stpTrans->getTransactionID() << " for future ledger.";
-                    continue;
-                }
+            } while (cdirNext(
+                view, emittedDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
 
-                // execution to here means we are adding the tx to the local set
-                if (fls >= view.info().seq)
-                {
-                    app.getHashRouter().setFlags(txnHash, SF_PRIVATE2);
-                    view.rawTxInsert(stpTrans->getTransactionID(), std::move(s), nullptr);
-                    ledgerChanged = true;
-                }
-
-            }
-            catch (std::exception& e)
-            {
-                JLOG(j_.fatal()) << "EmittedTxn Processing: Failure: " << e.what() << "\n";
-            }
-
-        } while (cdirNext(view, emittedDirKeylet.key, sleDirNode, uDirEntry, dirEntry));
-
-    } while(0);
+        } while (0);
 
     for (auto candidateIter = byFee_.begin(); candidateIter != byFee_.end();)
     {
@@ -2000,8 +2015,7 @@ TxQ::doRPC(Application& app, std::optional<XRPAmount> hookFeeUnits) const
     // because the base fee for a given transaction may not be the
     // ledger base fee. e.g. If an AccountDelete triggers a hook, this
     // will give the wrong result.
-    auto const baseFee = view->fees().base
-    + hookFeeUnits.value_or(beast::zero);
+    auto const baseFee = view->fees().base + hookFeeUnits.value_or(beast::zero);
     // If the base fee is 0 drops, but escalation has kicked in, treat the
     // base fee as if it is 1 drop, which makes the rest of the math
     // work.

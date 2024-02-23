@@ -2507,7 +2507,6 @@ public:
         ;
     }
 
-
     void
     testTransactionRPC()
     {

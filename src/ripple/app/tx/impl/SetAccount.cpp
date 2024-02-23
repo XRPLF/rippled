@@ -462,7 +462,6 @@ SetAccount::doApply()
         }
     }
 
-
     //
     // EmailHash
     //

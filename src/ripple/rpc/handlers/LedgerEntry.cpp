@@ -344,7 +344,8 @@ doLedgerEntry(RPC::JsonContext& context)
         {
             expectedType = ltHOOK_DEFINITION;
             if (context.params[jss::hook_hash].isObject() ||
-                (!uNodeIndex.parseHex(context.params[jss::hook_hash].asString())))
+                (!uNodeIndex.parseHex(
+                    context.params[jss::hook_hash].asString())))
             {
                 uNodeIndex = beast::zero;
                 jvResult[jss::error] = "malformedRequest";

@@ -581,7 +581,8 @@ isPseudoTx(STObject const& tx)
         return false;
 
     auto tt = safe_cast<TxType>(*t);
-    return tt == ttAMENDMENT || tt == ttFEE || tt == ttUNL_MODIFY || tt == ttEMIT_FAILURE;
+    return tt == ttAMENDMENT || tt == ttFEE || tt == ttUNL_MODIFY ||
+        tt == ttEMIT_FAILURE;
 }
 
 }  // namespace ripple

@@ -169,8 +169,7 @@ ApplyStateTable::generateTxMeta(
             }
 
             if (!prevs.empty())
-                meta.getAffectedNode(item.first)
-                    .emplace_back(std::move(prevs));
+                meta.getAffectedNode(item.first).emplace_back(std::move(prevs));
 
             STObject finals(sfFinalFields);
             for (auto const& obj : *curNode)
@@ -203,8 +202,7 @@ ApplyStateTable::generateTxMeta(
             }
 
             if (!prevs.empty())
-                meta.getAffectedNode(item.first)
-                    .emplace_back(std::move(prevs));
+                meta.getAffectedNode(item.first).emplace_back(std::move(prevs));
 
             STObject finals(sfFinalFields);
             for (auto const& obj : *curNode)
@@ -238,8 +236,7 @@ ApplyStateTable::generateTxMeta(
             }
 
             if (!news.empty())
-                meta.getAffectedNode(item.first)
-                    .emplace_back(std::move(news));
+                meta.getAffectedNode(item.first).emplace_back(std::move(news));
         }
         else
         {
@@ -265,10 +262,8 @@ ApplyStateTable::apply(
     std::shared_ptr<Serializer> sMeta;
     if (!to.open())
     {
-
         // generate meta
-        auto [meta, newMod] =
-            generateTxMeta(to, tx, deliver, hookExecution, j);
+        auto [meta, newMod] = generateTxMeta(to, tx, deliver, hookExecution, j);
 
         // add any new modified nodes to the modification set
         for (auto& mod : newMod)

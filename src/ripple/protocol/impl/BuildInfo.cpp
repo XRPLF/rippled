@@ -34,8 +34,8 @@ namespace BuildInfo {
 //------------------------------------------------------------------------------
 // clang-format off
 char const* const versionString = "2.1.0"
-// clang-format on
-"-hooks"
+    // clang-format on
+    "-hooks"
 
 #if defined(DEBUG) || defined(SANITIZER)
     "+"

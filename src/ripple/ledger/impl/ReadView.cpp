@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Rules.h>
 #include <ripple/ledger/ReadView.h>
+#include <ripple/protocol/Rules.h>
 
 namespace ripple {
 

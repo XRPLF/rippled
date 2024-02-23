@@ -20,12 +20,14 @@
 #ifndef RIPPLE_TX_SETHOOK_H_INCLUDED
 #define RIPPLE_TX_SETHOOK_H_INCLUDED
 
+#include <ripple/app/hook/Enum.h>
+#include <ripple/app/hook/applyHook.h>
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/tx/impl/SignerEntries.h>
 #include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/Buffer.h>
 #include <ripple/basics/Blob.h>
+#include <ripple/basics/Buffer.h>
+#include <ripple/basics/Log.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STObject.h>
@@ -33,11 +35,8 @@
 #include <algorithm>
 #include <cstdint>
 #include <vector>
-#include <ripple/app/hook/Enum.h>
-#include <ripple/app/hook/applyHook.h>
 
 namespace ripple {
-
 
 struct SetHookCtx
 {
@@ -48,7 +47,6 @@ struct SetHookCtx
 
 class SetHook : public Transactor
 {
-
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
 
@@ -78,7 +76,6 @@ public:
     calculateBaseFee(ReadView const& view, STTx const& tx);
 
 private:
-
     TER
     setHook();
 
@@ -87,8 +84,7 @@ private:
         SetHookCtx& ctx,
         ApplyView& view,
         const AccountID& account,
-        uint256 ns
-    );
+        uint256 ns);
 
     TER
     removeHookFromLedger(
@@ -96,9 +92,7 @@ private:
         ApplyView& view,
         Keylet const& accountKeylet,
         Keylet const& ownerDirKeylet,
-        Keylet const& hookKeylet
-    );
-
+        Keylet const& hookKeylet);
 };
 
 }  // namespace ripple

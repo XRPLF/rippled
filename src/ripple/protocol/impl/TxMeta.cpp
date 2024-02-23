@@ -43,7 +43,7 @@ TxMeta::TxMeta(
 
     if (obj.isFieldPresent(sfDeliveredAmount))
         setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
-    
+
     if (obj.isFieldPresent(sfHookExecutions))
         setHookExecutions(obj.getFieldArray(sfHookExecutions));
 }
