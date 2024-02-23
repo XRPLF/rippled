@@ -187,6 +187,7 @@ MessageScheduler::disconnect(PeerId peerId)
     // Fail all pending requests with reason `DISCONNECT`.
     for (auto const& [_, request] : requests)
     {
+        JLOG(journal_.debug()) << ".disconnect " << request->id;
         // We cancel the timer here as a courtesy, ignoring the result.
         // If this call returns zero,
         // then the timer has already expired
@@ -433,9 +434,10 @@ MessageScheduler::send_(
     peer->send(packet);
     ++metaPeer->nclosed;
     ++nclosed_;
-    JLOG(journal_.debug()) << "send,id=" << requestId
-                           << ",peerId=" << peer->id()
-                           << ",inflight=" << nrequests;
+    JLOG(journal_.debug()) << ".send " << requestId
+                           << " " << peer->id()
+                           << " " << requestType
+                           << " " << message.ByteSizeLong();
     return requestId;
 }
 
@@ -503,17 +505,9 @@ MessageScheduler::receive_(
     // See explanation in `disconnect()`.
     request->timer.cancel();
 
-    if (auto stream = journal_.trace())
-    {
-        auto duration = Clock::now() - request->sent;
-        auto duration_ms =
-            std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-        stream << "receive,id=" << requestId
-               << ",peer" << request->metaPeer->id
-               << ",time=" << duration_ms.count()
-               << "ms,size=" << message->ByteSizeLong()
-               << ",inflight=" << requests_.size();
-    }
+    JLOG(journal_.debug()) << ".receive " << requestId
+        << " " << type
+        << " " << message->ByteSizeLong();
 
     reopen(lock, "receive_", request->metaPeer, [&] {
         // Non-trivial callbacks should just schedule a job.
@@ -538,15 +532,7 @@ MessageScheduler::timeout_(RequestId requestId)
 
     requests_.erase(it);
 
-    if (auto stream = journal_.warn())
-    {
-        auto duration = Clock::now() - request->sent;
-        auto duration_ms =
-            std::chrono::duration_cast<std::chrono::milliseconds>(duration);
-        stream << "timeout,id=" << requestId
-            << ",peer=" << request->metaPeer->id
-            << ",time=" << duration_ms;
-    }
+    JLOG(journal_.debug()) << ".timeout " << requestId;
 
     reopen(lock, "timeout_", request->metaPeer, [&] {
         // Non-trivial callbacks should just schedule a job.
