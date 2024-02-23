@@ -119,6 +119,12 @@ addValidatorManifest(soci::session& session, std::string const& serialized)
     tr.commit();
 }
 
+void
+clearNodeIdentity(soci::session& session)
+{
+    session << "DELETE FROM NodeIdentity;";
+}
+
 std::pair<PublicKey, SecretKey>
 getNodeIdentity(soci::session& session)
 {
@@ -199,19 +205,20 @@ insertPeerReservation(
     PublicKey const& nodeId,
     std::string const& description)
 {
+    auto const sNodeId = toBase58(TokenType::NodePublic, nodeId);
     session << "INSERT INTO PeerReservations (PublicKey, Description) "
                "VALUES (:nodeId, :desc) "
                "ON CONFLICT (PublicKey) DO UPDATE SET "
                "Description=excluded.Description",
-        soci::use(toBase58(TokenType::NodePublic, nodeId)),
-        soci::use(description);
+        soci::use(sNodeId), soci::use(description);
 }
 
 void
 deletePeerReservation(soci::session& session, PublicKey const& nodeId)
 {
+    auto const sNodeId = toBase58(TokenType::NodePublic, nodeId);
     session << "DELETE FROM PeerReservations WHERE PublicKey = :nodeId",
-        soci::use(toBase58(TokenType::NodePublic, nodeId));
+        soci::use(sNodeId);
 }
 
 bool
@@ -254,7 +261,10 @@ readAmendments(
 
     soci::transaction tr(session);
     std::string sql =
-        "SELECT AmendmentHash, AmendmentName, Veto FROM FeatureVotes";
+        "SELECT AmendmentHash, AmendmentName, Veto FROM "
+        "( SELECT AmendmentHash, AmendmentName, Veto, RANK() OVER "
+        "(  PARTITION BY AmendmentHash ORDER BY ROWID DESC ) "
+        "as rnk FROM FeatureVotes ) WHERE rnk = 1";
     // SOCI requires boost::optional (not std::optional) as parameters.
     boost::optional<std::string> amendment_hash;
     boost::optional<std::string> amendment_name;

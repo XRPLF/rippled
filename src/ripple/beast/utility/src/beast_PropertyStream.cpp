@@ -415,24 +415,6 @@ PropertyStream::add(std::string const& key, unsigned char value)
 }
 
 void
-PropertyStream::add(std::string const& key, wchar_t value)
-{
-    lexical_add(key, value);
-}
-
-#if 0
-void PropertyStream::add (std::string const& key, char16_t value)
-{
-    lexical_add (key, value);
-}
-
-void PropertyStream::add (std::string const& key, char32_t value)
-{
-    lexical_add (key, value);
-}
-#endif
-
-void
 PropertyStream::add(std::string const& key, short value)
 {
     lexical_add(key, value);
@@ -524,24 +506,6 @@ PropertyStream::add(unsigned char value)
 {
     lexical_add(value);
 }
-
-void
-PropertyStream::add(wchar_t value)
-{
-    lexical_add(value);
-}
-
-#if 0
-void PropertyStream::add (char16_t value)
-{
-    lexical_add (value);
-}
-
-void PropertyStream::add (char32_t value)
-{
-    lexical_add (value);
-}
-#endif
 
 void
 PropertyStream::add(short value)

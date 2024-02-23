@@ -29,7 +29,7 @@
 #include <ripple/rpc/handlers/WalletPropose.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <cmath>
-#include <ed25519-donna/ed25519.h>
+#include <ed25519.h>
 #include <map>
 
 namespace ripple {

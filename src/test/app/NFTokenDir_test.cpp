@@ -190,8 +190,14 @@ class NFTokenDir_test : public beast::unit_test::suite
                     Account const& account = accounts.emplace_back(
                         Account::base58Seed, std::string(seed));
                     env.fund(XRP(10000), account);
-                    env.close();
+
+                    // Do not close the ledger inside the loop.  If
+                    // fixNFTokenRemint is enabled and accounts are initialized
+                    // at different ledgers, they will have different account
+                    // sequences.  That would cause the accounts to have
+                    // different NFTokenID sequence numbers.
                 }
+                env.close();
 
                 // All of the accounts create one NFT and and offer that NFT to
                 // buyer.
@@ -388,7 +394,12 @@ class NFTokenDir_test : public beast::unit_test::suite
         auto exerciseFixNFTokenDirV1 =
             [this,
              &features](std::initializer_list<std::string_view const> seeds) {
-                Env env{*this, features};
+                Env env{
+                    *this,
+                    envconfig(),
+                    features,
+                    nullptr,
+                    beast::severities::kDisabled};
 
                 // Eventually all of the NFTokens will be owned by buyer.
                 Account const buyer{"buyer"};
@@ -403,8 +414,14 @@ class NFTokenDir_test : public beast::unit_test::suite
                     Account const& account = accounts.emplace_back(
                         Account::base58Seed, std::string(seed));
                     env.fund(XRP(10000), account);
-                    env.close();
+
+                    // Do not close the ledger inside the loop.  If
+                    // fixNFTokenRemint is enabled and accounts are initialized
+                    // at different ledgers, they will have different account
+                    // sequences.  That would cause the accounts to have
+                    // different NFTokenID sequence numbers.
                 }
+                env.close();
 
                 // All of the accounts create one NFT and and offer that NFT to
                 // buyer.
@@ -647,8 +664,14 @@ class NFTokenDir_test : public beast::unit_test::suite
             Account const& account =
                 accounts.emplace_back(Account::base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
-            env.close();
+
+            // Do not close the ledger inside the loop.  If
+            // fixNFTokenRemint is enabled and accounts are initialized
+            // at different ledgers, they will have different account
+            // sequences.  That would cause the accounts to have
+            // different NFTokenID sequence numbers.
         }
+        env.close();
 
         // All of the accounts create one NFT and and offer that NFT to buyer.
         std::vector<uint256> nftIDs;
@@ -822,8 +845,14 @@ class NFTokenDir_test : public beast::unit_test::suite
             Account const& account =
                 accounts.emplace_back(Account::base58Seed, std::string(seed));
             env.fund(XRP(10000), account);
-            env.close();
+
+            // Do not close the ledger inside the loop.  If
+            // fixNFTokenRemint is enabled and accounts are initialized
+            // at different ledgers, they will have different account
+            // sequences.  That would cause the accounts to have
+            // different NFTokenID sequence numbers.
         }
+        env.close();
 
         // All of the accounts create seven consecutive NFTs and and offer
         // those NFTs to buyer.
@@ -1070,9 +1099,11 @@ public:
     {
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
-        FeatureBitset const fixNFTDir{fixNFTokenDirV1};
+        FeatureBitset const fixNFTDir{
+            fixNFTokenDirV1, featureNonFungibleTokensV1_1};
 
-        testWithFeats(all - fixNFTDir);
+        testWithFeats(all - fixNFTDir - fixNFTokenRemint);
+        testWithFeats(all - fixNFTokenRemint);
         testWithFeats(all);
     }
 };

@@ -16,13 +16,16 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#ifndef RIPPLE_CONSENSUS_ConsensusProposal_H_INCLUDED
-#define RIPPLE_CONSENSUS_ConsensusProposal_H_INCLUDED
+#ifndef RIPPLE_CONSENSUS_CONSENSUSPROPOSAL_H_INCLUDED
+#define RIPPLE_CONSENSUS_CONSENSUSPROPOSAL_H_INCLUDED
 
+#include <ripple/basics/base_uint.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/json/json_value.h>
+#include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/jss.h>
 #include <cstdint>
+#include <optional>
 
 namespace ripple {
 /** Represents a proposed position taken during a round of consensus.
@@ -169,6 +172,7 @@ public:
         NetClock::time_point newCloseTime,
         NetClock::time_point now)
     {
+        signingHash_.reset();
         position_ = newPosition;
         closeTime_ = newCloseTime;
         time_ = now;
@@ -185,6 +189,7 @@ public:
     void
     bowOut(NetClock::time_point now)
     {
+        signingHash_.reset();
         time_ = now;
         proposeSeq_ = seqLeave;
     }
@@ -210,6 +215,23 @@ public:
         return ret;
     }
 
+    //! The digest for this proposal, used for signing purposes.
+    uint256 const&
+    signingHash() const
+    {
+        if (!signingHash_)
+        {
+            signingHash_ = sha512Half(
+                HashPrefix::proposal,
+                std::uint32_t(proposeSeq()),
+                closeTime().time_since_epoch().count(),
+                prevLedger(),
+                position());
+        }
+
+        return signingHash_.value();
+    }
+
 private:
     //! Unique identifier of prior ledger this proposal is based on
     LedgerID_t previousLedger_;
@@ -228,6 +250,9 @@ private:
 
     //! The identifier of the node taking this position
     NodeID_t nodeID_;
+
+    //! The signing hash for this proposal
+    mutable std::optional<uint256> signingHash_;
 };
 
 template <class NodeID_t, class LedgerID_t, class Position_t>

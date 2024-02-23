@@ -22,7 +22,6 @@
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/shamap/SHAMap.h>
-#include <algorithm>
 #include <test/shamap/common.h>
 #include <test/unit_test/SuiteJournal.h>
 
@@ -45,10 +44,7 @@ static_assert(std::is_move_assignable<SHAMap::const_iterator>{}, "");
 
 static_assert(std::is_nothrow_destructible<SHAMapItem>{}, "");
 static_assert(!std::is_default_constructible<SHAMapItem>{}, "");
-static_assert(std::is_copy_constructible<SHAMapItem>{}, "");
-static_assert(std::is_copy_assignable<SHAMapItem>{}, "");
-static_assert(std::is_move_constructible<SHAMapItem>{}, "");
-static_assert(std::is_move_assignable<SHAMapItem>{}, "");
+static_assert(!std::is_copy_constructible<SHAMapItem>{}, "");
 
 static_assert(std::is_nothrow_destructible<SHAMapNodeID>{}, "");
 static_assert(std::is_default_constructible<SHAMapNodeID>{}, "");
@@ -155,37 +151,43 @@ public:
         if (!backed)
             sMap.setUnbacked();
 
-        SHAMapItem i1(h1, IntToVUC(1)), i2(h2, IntToVUC(2)),
-            i3(h3, IntToVUC(3)), i4(h4, IntToVUC(4)), i5(h5, IntToVUC(5));
+        auto i1 = make_shamapitem(h1, IntToVUC(1));
+        auto i2 = make_shamapitem(h2, IntToVUC(2));
+        auto i3 = make_shamapitem(h3, IntToVUC(3));
+        auto i4 = make_shamapitem(h4, IntToVUC(4));
+        auto i5 = make_shamapitem(h5, IntToVUC(5));
+
         unexpected(
-            !sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, SHAMapItem{i2}),
+            !sMap.addItem(
+                SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i2)),
             "no add");
         sMap.invariants();
         unexpected(
-            !sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, SHAMapItem{i1}),
+            !sMap.addItem(
+                SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i1)),
             "no add");
         sMap.invariants();
 
         auto i = sMap.begin();
         auto e = sMap.end();
-        unexpected(i == e || (*i != i1), "bad traverse");
+        unexpected(i == e || (*i != *i1), "bad traverse");
         ++i;
-        unexpected(i == e || (*i != i2), "bad traverse");
+        unexpected(i == e || (*i != *i2), "bad traverse");
         ++i;
         unexpected(i != e, "bad traverse");
-        sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, SHAMapItem{i4});
+        sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i4));
         sMap.invariants();
-        sMap.delItem(i2.key());
+        sMap.delItem(i2->key());
         sMap.invariants();
-        sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, SHAMapItem{i3});
+        sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i3));
         sMap.invariants();
         i = sMap.begin();
         e = sMap.end();
-        unexpected(i == e || (*i != i1), "bad traverse");
+        unexpected(i == e || (*i != *i1), "bad traverse");
         ++i;
-        unexpected(i == e || (*i != i3), "bad traverse");
+        unexpected(i == e || (*i != *i3), "bad traverse");
         ++i;
-        unexpected(i == e || (*i != i4), "bad traverse");
+        unexpected(i == e || (*i != *i4), "bad traverse");
         ++i;
         unexpected(i != e, "bad traverse");
 
@@ -265,9 +267,9 @@ public:
             BEAST_EXPECT(map.getHash() == beast::zero);
             for (int k = 0; k < keys.size(); ++k)
             {
-                SHAMapItem item(keys[k], IntToVUC(k));
                 BEAST_EXPECT(map.addItem(
-                    SHAMapNodeType::tnTRANSACTION_NM, std::move(item)));
+                    SHAMapNodeType::tnTRANSACTION_NM,
+                    make_shamapitem(keys[k], IntToVUC(k))));
                 BEAST_EXPECT(map.getHash().as_uint256() == hashes[k]);
                 map.invariants();
             }
@@ -312,7 +314,7 @@ public:
             {
                 map.addItem(
                     SHAMapNodeType::tnTRANSACTION_NM,
-                    SHAMapItem{k, IntToVUC(0)});
+                    make_shamapitem(k, IntToVUC(0)));
                 map.invariants();
             }
 
@@ -346,7 +348,7 @@ class SHAMapPathProof_test : public beast::unit_test::suite
             uint256 k(c);
             map.addItem(
                 SHAMapNodeType::tnACCOUNT_STATE,
-                SHAMapItem{k, Slice{k.data(), k.size()}});
+                make_shamapitem(k, Slice{k.data(), k.size()}));
             map.invariants();
 
             auto root = map.getHash().as_uint256();

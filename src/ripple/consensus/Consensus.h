@@ -30,6 +30,9 @@
 #include <ripple/consensus/LedgerTiming.h>
 #include <ripple/json/json_writer.h>
 #include <boost/logic/tribool.hpp>
+
+#include <chrono>
+#include <deque>
 #include <optional>
 #include <sstream>
 
@@ -295,7 +298,7 @@ class Consensus
 
     using Result = ConsensusResult<Adaptor>;
 
-    // Helper class to ensure adaptor is notified whenver the ConsensusMode
+    // Helper class to ensure adaptor is notified whenever the ConsensusMode
     // changes
     class MonitoredMode
     {
@@ -1643,7 +1646,7 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o)
             (inThisSet && result_->txns.find(txId) && !o.find(txId)) ||
             (!inThisSet && !result_->txns.find(txId) && o.find(txId)));
 
-        Tx_t tx = inThisSet ? *result_->txns.find(txId) : *o.find(txId);
+        Tx_t tx = inThisSet ? result_->txns.find(txId) : o.find(txId);
         auto txID = tx.id();
 
         if (result_->disputes.find(txID) != result_->disputes.end())

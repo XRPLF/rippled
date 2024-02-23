@@ -10,6 +10,6 @@ apk add \
     bash util-linux coreutils binutils grep \
     make ninja cmake build-base gcc g++ abuild git \
     python3 python3-dev
-pip3 install awscli
+pip3 install awscli --break-system-packages
 # list curdir contents to build log:
 ls -la

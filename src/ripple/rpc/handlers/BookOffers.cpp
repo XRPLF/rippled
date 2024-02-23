@@ -26,6 +26,7 @@
 #include <ripple/protocol/UintTypes.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
+#include <ripple/rpc/BookChanges.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 
@@ -198,6 +199,18 @@ doBookOffers(RPC::JsonContext& context)
     context.loadType = Resource::feeMediumBurdenRPC;
 
     return jvResult;
+}
+
+Json::Value
+doBookChanges(RPC::JsonContext& context)
+{
+    auto res = RPC::getLedgerByContext(context);
+
+    if (std::holds_alternative<Json::Value>(res))
+        return std::get<Json::Value>(res);
+
+    return RPC::computeBookChanges(
+        std::get<std::shared_ptr<Ledger const>>(res));
 }
 
 }  // namespace ripple

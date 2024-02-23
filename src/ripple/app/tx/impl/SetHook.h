@@ -74,7 +74,7 @@ public:
     static TER
     preclaim(PreclaimContext const&);
 
-    static FeeUnit64
+    static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
 
 private:

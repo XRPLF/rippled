@@ -26,9 +26,11 @@
 #include <ripple/beast/net/IPEndpoint.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/SystemParameters.h>  // VFALCO Breaks levelization
+
 #include <boost/beast/core/string.hpp>
 #include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
 #include <boost/lexical_cast.hpp>
+
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
@@ -37,6 +39,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace ripple {
@@ -57,7 +60,28 @@ enum class SizedItem : std::size_t {
     lgrDBCache,
     openFinalLimit,
     burstSize,
-    ramSizeGB
+    ramSizeGB,
+    accountIdCacheSize,
+};
+
+/** Fee schedule for startup / standalone, and to vote for.
+During voting ledgers, the FeeVote logic will try to move towards
+these values when injecting fee-setting transactions.
+A default-constructed Setup contains recommended values.
+*/
+struct FeeSetup
+{
+    /** The cost of a reference transaction in drops. */
+    XRPAmount reference_fee{10};
+
+    /** The account reserve requirement in drops. */
+    XRPAmount account_reserve{10 * DROPS_PER_XRP};
+
+    /** The per-owned item reserve requirement in drops. */
+    XRPAmount owner_reserve{2 * DROPS_PER_XRP};
+
+    /* (Remember to update the example cfg files when changing any of these
+     * values.) */
 };
 
 //  This entire derived class is deprecated.
@@ -125,9 +149,11 @@ public:
     bool nodeToShard = false;
     bool ELB_SUPPORT = false;
 
-    std::vector<std::string> IPS;           // Peer IPs from rippled.cfg.
-    std::vector<std::string> IPS_FIXED;     // Fixed Peer IPs from rippled.cfg.
-    std::vector<std::string> SNTP_SERVERS;  // SNTP servers from rippled.cfg.
+    // Entries from [ips] config stanza
+    std::vector<std::string> IPS;
+
+    // Entries from [ips_fixed] config stanza
+    std::vector<std::string> IPS_FIXED;
 
     enum StartUpType { FRESH, NORMAL, LOAD, LOAD_FILE, REPLAY, NETWORK };
     StartUpType START_UP = NORMAL;
@@ -137,9 +163,11 @@ public:
     std::string START_LEDGER;
 
     // Network parameters
+    uint32_t NETWORK_ID = 0;
 
-    // The number of fee units a reference transaction costs
-    static constexpr FeeUnit32 TRANSACTION_FEE_BASE{10};
+    // DEPRECATED - Fee units for a reference transction.
+    // Only provided for backwards compatibility in a couple of places
+    static constexpr std::uint32_t FEE_UNITS_DEPRECATED = 10;
 
     // Note: The following parameters do not relate to the UNL or trust at all
     // Minimum number of nodes to consider the network present
@@ -183,9 +211,7 @@ public:
     std::optional<std::size_t>
         VALIDATION_QUORUM;  // validations to consider ledger authoritative
 
-    XRPAmount FEE_DEFAULT{10};
-    XRPAmount FEE_ACCOUNT_RESERVE{200 * DROPS_PER_XRP};
-    XRPAmount FEE_OWNER_RESERVE{50 * DROPS_PER_XRP};
+    FeeSetup FEES;
 
     // Node storage configuration
     std::uint32_t LEDGER_HISTORY = 256;
@@ -273,6 +299,14 @@ public:
 
     // First, attempt to load the latest ledger directly from disk.
     bool FAST_LOAD = false;
+    // When starting rippled with existing database it do not know it has those
+    // ledgers locally until the server naturally tries to backfill. This makes
+    // is difficult to test some functionality (in particular performance
+    // testing sidechains). With this variable the user is able to force rippled
+    // to consider the ledger range to be present. It should be used for testing
+    // only.
+    std::optional<std::pair<std::uint32_t, std::uint32_t>>
+        FORCED_LEDGER_RANGE_PRESENT;
 
 public:
     Config();
@@ -363,6 +397,9 @@ public:
     getValueFor(SizedItem item, std::optional<std::size_t> node = std::nullopt)
         const;
 };
+
+FeeSetup
+setup_FeeVote(Section const& section);
 
 }  // namespace ripple
 

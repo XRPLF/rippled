@@ -41,12 +41,10 @@ appendNftOfferJson(
 
     obj[jss::nft_offer_index] = to_string(offer->key());
     obj[jss::flags] = (*offer)[sfFlags];
-    obj[jss::owner] =
-        app.accountIDCache().toBase58(offer->getAccountID(sfOwner));
+    obj[jss::owner] = toBase58(offer->getAccountID(sfOwner));
 
     if (offer->isFieldPresent(sfDestination))
-        obj[jss::destination] =
-            app.accountIDCache().toBase58(offer->getAccountID(sfDestination));
+        obj[jss::destination] = toBase58(offer->getAccountID(sfDestination));
 
     if (offer->isFieldPresent(sfExpiration))
         obj[jss::expiration] = offer->getFieldU32(sfExpiration);

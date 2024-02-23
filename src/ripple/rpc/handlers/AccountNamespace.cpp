@@ -126,7 +126,7 @@ doAccountNamespace(RPC::JsonContext& context)
         result[jss::account_objects] = Json::arrayValue;
     }
 
-    result[jss::account] = context.app.accountIDCache().toBase58(accountID);
+    result[jss::account] = toBase58(accountID);
     result[jss::namespace_id] = ns;
     context.loadType = Resource::feeMediumBurdenRPC;
     return result;

@@ -28,13 +28,6 @@ class AccountOffers_test : public beast::unit_test::suite
 public:
     // test helper
     static bool
-    checkArraySize(Json::Value const& val, unsigned int size)
-    {
-        return val.isArray() && val.size() == size;
-    }
-
-    // test helper
-    static bool
     checkMarker(Json::Value const& val)
     {
         return val.isMember(jss::marker) && val[jss::marker].isString() &&
@@ -248,15 +241,15 @@ public:
                 "json",
                 "account_offers",
                 jvParams.toStyledString())[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "badSeed");
+            BEAST_EXPECT(jrr[jss::error] == "actMalformed");
             BEAST_EXPECT(jrr[jss::status] == "error");
-            BEAST_EXPECT(jrr[jss::error_message] == "Disallowed seed.");
+            BEAST_EXPECT(jrr[jss::error_message] == "Account malformed.");
         }
 
         {
             // bogus account value
-            auto const jrr =
-                env.rpc("account_offers", "rNOT_AN_ACCOUNT")[jss::result];
+            auto const jrr = env.rpc(
+                "account_offers", Account("bogus").human())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "actNotFound");
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Account not found.");

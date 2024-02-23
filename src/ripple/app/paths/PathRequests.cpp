@@ -200,6 +200,9 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
                 break;
         }
 
+        // Hold on to the line cache until after the lock is released, so it can
+        // be destroyed outside of the lock
+        std::shared_ptr<RippleLineCache> lastCache;
         {
             // Get the latest requests, cache, and ledger for next pass
             std::lock_guard sl(mLock);
@@ -207,6 +210,7 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
             if (requests_.empty())
                 break;
             requests = requests_;
+            lastCache = cache;
             cache = getLineCache(cache->getLedger(), false);
         }
     } while (!app_.getJobQueue().isStopping());

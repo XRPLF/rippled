@@ -55,6 +55,8 @@ LedgerFormats::LedgerFormats()
             {sfNFTokenMinter,        soeOPTIONAL},
             {sfMintedNFTokens,       soeDEFAULT},
             {sfBurnedNFTokens,       soeDEFAULT},
+            {sfFirstNFTokenSequence, soeOPTIONAL},
+            {sfAMMID,                soeOPTIONAL},
             {sfHookStateCount,       soeOPTIONAL},
             {sfHookNamespaces,       soeOPTIONAL}
         },
@@ -151,10 +153,15 @@ LedgerFormats::LedgerFormats()
     add(jss::FeeSettings,
         ltFEE_SETTINGS,
         {
-            {sfBaseFee,              soeREQUIRED},
-            {sfReferenceFeeUnits,    soeREQUIRED},
-            {sfReserveBase,          soeREQUIRED},
-            {sfReserveIncrement,     soeREQUIRED},
+            // Old version uses raw numbers
+            {sfBaseFee,              soeOPTIONAL},
+            {sfReferenceFeeUnits,    soeOPTIONAL},
+            {sfReserveBase,          soeOPTIONAL},
+            {sfReserveIncrement,     soeOPTIONAL},
+            // New version uses Amounts
+            {sfBaseFeeDrops,           soeOPTIONAL},
+            {sfReserveBaseDrops,       soeOPTIONAL},
+            {sfReserveIncrementDrops,  soeOPTIONAL},
         },
         commonFields);
 
@@ -306,6 +313,77 @@ LedgerFormats::LedgerFormats()
             {sfNFTokenOfferNode,     soeREQUIRED},
             {sfDestination,          soeOPTIONAL},
             {sfExpiration,           soeOPTIONAL},
+            {sfPreviousTxnID,        soeREQUIRED},
+            {sfPreviousTxnLgrSeq,    soeREQUIRED}
+        },
+        commonFields);
+
+    add(jss::AMM,
+        ltAMM,
+        {
+            {sfAccount, soeREQUIRED},
+            {sfTradingFee, soeDEFAULT},
+            {sfVoteSlots, soeOPTIONAL},
+            {sfAuctionSlot, soeOPTIONAL},
+            {sfLPTokenBalance, soeREQUIRED},
+            {sfAsset, soeREQUIRED},
+            {sfAsset2, soeREQUIRED},
+            {sfOwnerNode, soeREQUIRED},
+        },
+        commonFields);
+
+    add(jss::Bridge,
+        ltBRIDGE,
+        {
+            {sfAccount,                  soeREQUIRED},
+            {sfSignatureReward,          soeREQUIRED},
+            {sfMinAccountCreateAmount,   soeOPTIONAL},
+            {sfXChainBridge,             soeREQUIRED},
+            {sfXChainClaimID,            soeREQUIRED},
+            {sfXChainAccountCreateCount, soeREQUIRED},
+            {sfXChainAccountClaimCount,  soeREQUIRED},
+            {sfOwnerNode,                soeREQUIRED},
+            {sfPreviousTxnID,            soeREQUIRED},
+            {sfPreviousTxnLgrSeq,        soeREQUIRED}
+        },
+        commonFields);
+
+    add(jss::XChainOwnedClaimID,
+        ltXCHAIN_OWNED_CLAIM_ID,
+        {
+            {sfAccount,                 soeREQUIRED},
+            {sfXChainBridge,            soeREQUIRED},
+            {sfXChainClaimID,           soeREQUIRED},
+            {sfOtherChainSource,        soeREQUIRED},
+            {sfXChainClaimAttestations, soeREQUIRED},
+            {sfSignatureReward,         soeREQUIRED},
+            {sfOwnerNode,               soeREQUIRED},
+            {sfPreviousTxnID,           soeREQUIRED},
+            {sfPreviousTxnLgrSeq,       soeREQUIRED}
+        },
+        commonFields);
+
+    add(jss::XChainOwnedCreateAccountClaimID,
+        ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID,
+        {
+            {sfAccount,                         soeREQUIRED},
+            {sfXChainBridge,                    soeREQUIRED},
+            {sfXChainAccountCreateCount,        soeREQUIRED},
+            {sfXChainCreateAccountAttestations, soeREQUIRED},
+            {sfOwnerNode,                       soeREQUIRED},
+            {sfPreviousTxnID,                   soeREQUIRED},
+            {sfPreviousTxnLgrSeq,               soeREQUIRED}
+        },
+        commonFields);
+
+    add(jss::DID,
+        ltDID,
+        {
+            {sfAccount,              soeREQUIRED},
+            {sfDIDDocument,          soeOPTIONAL},
+            {sfURI,                  soeOPTIONAL},
+            {sfData,          soeOPTIONAL},
+            {sfOwnerNode,            soeREQUIRED},
             {sfPreviousTxnID,        soeREQUIRED},
             {sfPreviousTxnLgrSeq,    soeREQUIRED}
         },

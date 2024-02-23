@@ -299,7 +299,6 @@ public:
         serverPort.back().port = 0;
         serverPort.back().protocol.insert("http");
         auto eps = s->ports(serverPort);
-        log << "server listening on port " << eps[0].port() << std::endl;
         test_request(eps[0]);
         test_keepalive(eps[0]);
         // s->close();

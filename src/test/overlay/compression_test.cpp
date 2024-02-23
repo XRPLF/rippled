@@ -20,9 +20,9 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/Manifest.h>
+#include <ripple/basics/random.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/beast/utility/Journal.h>
-#include <ripple/core/TimeKeeper.h>
 #include <ripple/overlay/Compression.h>
 #include <ripple/overlay/Message.h>
 #include <ripple/overlay/impl/Handshake.h>
@@ -34,12 +34,12 @@
 #include <ripple/protocol/Sign.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/protocol/messages.h>
 #include <ripple/shamap/SHAMapNodeID.h>
 #include <boost/asio/ip/address_v4.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/endian/conversion.hpp>
 #include <algorithm>
-#include <ripple.pb.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
@@ -227,8 +227,7 @@ public:
         auto transaction = std::make_shared<protocol::TMTransaction>();
         transaction->set_rawtransaction(usdTxBlob);
         transaction->set_status(protocol::tsNEW);
-        auto tk = make_TimeKeeper(logs.journal("TimeKeeper"));
-        transaction->set_receivetimestamp(tk->now().time_since_epoch().count());
+        transaction->set_receivetimestamp(rand_int<std::uint64_t>());
         transaction->set_deferred(true);
 
         return transaction;
@@ -263,19 +262,23 @@ public:
         ledgerData->set_error(protocol::TMReplyError::reNO_LEDGER);
         ledgerData->mutable_nodes()->Reserve(n);
         uint256 parentHash(0);
+
+        NetClock::duration const resolution{10};
+        NetClock::time_point ct{resolution};
+
         for (int i = 0; i < n; i++)
         {
             LedgerInfo info;
-            auto tk = make_TimeKeeper(logs.journal("TimeKeeper"));
             info.seq = i;
-            info.parentCloseTime = tk->now();
+            info.parentCloseTime = ct;
             info.hash = ripple::sha512Half(i);
             info.txHash = ripple::sha512Half(i + 1);
             info.accountHash = ripple::sha512Half(i + 2);
             info.parentHash = parentHash;
             info.drops = XRPAmount(10);
-            info.closeTimeResolution = tk->now().time_since_epoch();
-            info.closeTime = tk->now();
+            info.closeTimeResolution = resolution;
+            info.closeTime = ct;
+            ct += resolution;
             parentHash = ledgerHash(info);
             Serializer nData;
             ripple::addRaw(info, nData);
@@ -341,7 +344,7 @@ public:
         Serializer s1;
         st.add(s1);
         list->set_signature(s1.data(), s1.size());
-        list->set_blob(strHex(s.getString()));
+        list->set_blob(strHex(s.slice()));
         return list;
     }
 
@@ -375,7 +378,7 @@ public:
         st.add(s1);
         auto& blob = *list->add_blobs();
         blob.set_signature(s1.data(), s1.size());
-        blob.set_blob(strHex(s.getString()));
+        blob.set_blob(strHex(s.slice()));
         return list;
     }
 

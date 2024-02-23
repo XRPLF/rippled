@@ -113,9 +113,7 @@ class PerfLogImp : public PerfLog
         std::unordered_map<std::uint64_t, MethodStart> methods_;
         mutable std::mutex methodsMutex_;
 
-        Counters(
-            std::vector<char const*> const& labels,
-            JobTypes const& jobTypes);
+        Counters(std::set<char const*> const& labels, JobTypes const& jobTypes);
         Json::Value
         countersJson() const;
         Json::Value

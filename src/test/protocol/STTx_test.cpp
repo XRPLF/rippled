@@ -1591,7 +1591,11 @@ public:
         });
         j.sign(keypair.first, keypair.second);
 
-        Rules defaultRules{{}};
+        // Rules store a reference to the presets. Create a local to guarantee
+        // proper lifetime.
+        std::unordered_set<uint256, beast::uhash<>> const presets;
+        Rules const defaultRules{presets};
+        BEAST_EXPECT(!defaultRules.enabled(featureExpandedSignerList));
 
         unexpected(
             !j.checkSign(STTx::RequireFullyCanonicalSig::yes, defaultRules),

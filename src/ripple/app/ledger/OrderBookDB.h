@@ -23,6 +23,8 @@
 #include <ripple/app/ledger/AcceptedLedgerTx.h>
 #include <ripple/app/ledger/BookListeners.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/json/MultivarJson.h>
+
 #include <mutex>
 
 namespace ripple {
@@ -63,7 +65,7 @@ public:
     processTxn(
         std::shared_ptr<ReadView const> const& ledger,
         const AcceptedLedgerTx& alTx,
-        Json::Value const& jvObj);
+        MultiApiJson const& jvObj);
 
 private:
     Application& app_;

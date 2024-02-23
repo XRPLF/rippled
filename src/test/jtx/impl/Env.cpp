@@ -83,7 +83,7 @@ Env::AppBundle::AppBundle(
         std::move(config), std::move(logs), std::move(timeKeeper_));
     app = owned.get();
     app->logs().threshold(thresh);
-    if (!app->setup())
+    if (!app->setup({}))
         Throw<std::runtime_error>("Env::AppBundle: setup failed");
     timeKeeper->set(app->getLedgerMaster().getClosedLedger()->info().closeTime);
     app->start(false /*don't start timers*/);
@@ -163,7 +163,10 @@ Env::lookup(AccountID const& id) const
 {
     auto const iter = map_.find(id);
     if (iter == map_.end())
+    {
+        std::cout << "Unknown account: " << id << "\n";
         Throw<std::runtime_error>("Env::lookup:: unknown account ID");
+    }
     return iter->second;
 }
 
@@ -412,6 +415,11 @@ Env::autofill(JTx& jt)
         jtx::fill_fee(jv, *current());
     if (jt.fill_seq)
         jtx::fill_seq(jv, *current());
+
+    uint32_t networkID = app().config().NETWORK_ID;
+    if (!jv.isMember(jss::NetworkID) && networkID > 1024)
+        jv[jss::NetworkID] = std::to_string(networkID);
+
     // Must come last
     try
     {
@@ -452,10 +460,12 @@ Env::st(JTx const& jt)
 
 Json::Value
 Env::do_rpc(
+    unsigned apiVersion,
     std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)
 {
-    return rpcClient(args, app().config(), app().logs(), headers).second;
+    return rpcClient(args, app().config(), app().logs(), apiVersion, headers)
+        .second;
 }
 
 void
@@ -464,6 +474,14 @@ Env::enableFeature(uint256 const feature)
     // Env::close() must be called for feature
     // enable to take place.
     app().config().features.insert(feature);
+}
+
+void
+Env::disableFeature(uint256 const feature)
+{
+    // Env::close() must be called for feature
+    // enable to take place.
+    app().config().features.erase(feature);
 }
 
 }  // namespace jtx

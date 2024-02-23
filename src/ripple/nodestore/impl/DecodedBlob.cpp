@@ -38,7 +38,6 @@ DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
 
     m_success = false;
     m_key = key;
-    // VFALCO NOTE Ledger indexes should have started at 1
     m_objectType = hotUNKNOWN;
     m_objectData = nullptr;
     m_dataBytes = std::max(0, valueBytes - 9);

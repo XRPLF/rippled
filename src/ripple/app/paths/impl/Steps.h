@@ -23,6 +23,7 @@
 #include <ripple/app/paths/impl/AmountSpec.h>
 #include <ripple/basics/Log.h>
 #include <ripple/protocol/Quality.h>
+#include <ripple/protocol/QualityFunction.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ripple/protocol/TER.h>
 
@@ -33,10 +34,12 @@ namespace ripple {
 class PaymentSandbox;
 class ReadView;
 class ApplyView;
+class AMMContext;
 
 enum class DebtDirection { issues, redeems };
 enum class QualityDirection { in, out };
 enum class StrandDirection { forward, reverse };
+enum OfferCrossing { no = 0, yes = 1, sell = 2 };
 
 inline bool
 redeems(DebtDirection dir)
@@ -188,6 +191,16 @@ public:
     virtual std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const = 0;
 
+    /** Get QualityFunction. Used in one path optimization where
+     * the quality function is non-constant (has AMM) and there is
+     * limitQuality. QualityFunction allows calculation of
+     * required path output given requested limitQuality.
+     * All steps, except for BookStep have the default
+     * implementation.
+     */
+    virtual std::pair<std::optional<QualityFunction>, DebtDirection>
+    getQualityFunc(ReadView const& v, DebtDirection prevStepDir) const;
+
     /** Return the number of offers consumed or partially consumed the last time
         the step ran, including expired and unfunded offers.
 
@@ -292,6 +305,17 @@ private:
     equal(Step const& rhs) const = 0;
 };
 
+inline std::pair<std::optional<QualityFunction>, DebtDirection>
+Step::getQualityFunc(ReadView const& v, DebtDirection prevStepDir) const
+{
+    if (auto const res = qualityUpperBound(v, prevStepDir); res.first)
+        return {
+            QualityFunction{*res.first, QualityFunction::CLOBLikeTag{}},
+            res.second};
+    else
+        return {std::nullopt, res.second};
+}
+
 /// @cond INTERNAL
 using Strand = std::vector<std::unique_ptr<Step>>;
 
@@ -361,6 +385,7 @@ normalizePath(
    @param ownerPaysTransferFee false -> charge sender; true -> charge offer
    owner
    @param offerCrossing false -> payment; true -> offer crossing
+   @param ammContext counts iterations with AMM offers
    @param j Journal for logging messages
    @return Error code and constructed Strand
 */
@@ -374,7 +399,8 @@ toStrand(
     std::optional<Issue> const& sendMaxIssue,
     STPath const& path,
     bool ownerPaysTransferFee,
-    bool offerCrossing,
+    OfferCrossing offerCrossing,
+    AMMContext& ammContext,
     beast::Journal j);
 
 /**
@@ -398,6 +424,7 @@ toStrand(
    @param ownerPaysTransferFee false -> charge sender; true -> charge offer
    owner
    @param offerCrossing false -> payment; true -> offer crossing
+   @param ammContext counts iterations with AMM offers
    @param j Journal for logging messages
    @return error code and collection of strands
 */
@@ -412,7 +439,8 @@ toStrands(
     STPathSet const& paths,
     bool addDefaultPath,
     bool ownerPaysTransferFee,
-    bool offerCrossing,
+    OfferCrossing offerCrossing,
+    AMMContext& ammContext,
     beast::Journal j);
 
 /// @cond INTERNAL
@@ -504,9 +532,10 @@ struct StrandContext
     bool const isFirst;               ///< true if Step is first in Strand
     bool const isLast = false;        ///< true if Step is last in Strand
     bool const ownerPaysTransferFee;  ///< true if owner, not sender, pays fee
-    bool const offerCrossing;         ///< true if offer crossing, not payment
-    bool const isDefaultPath;         ///< true if Strand is default path
-    size_t const strandSize;          ///< Length of Strand
+    OfferCrossing const
+        offerCrossing;         ///< Yes/Sell if offer crossing, not payment
+    bool const isDefaultPath;  ///< true if Strand is default path
+    size_t const strandSize;   ///< Length of Strand
     /** The previous step in the strand. Needed to check the no ripple
         constraint
      */
@@ -521,6 +550,7 @@ struct StrandContext
         than once
     */
     boost::container::flat_set<Issue>& seenBookOuts;
+    AMMContext& ammContext;
     beast::Journal const j;
 
     /** StrandContext constructor. */
@@ -535,12 +565,13 @@ struct StrandContext
         std::optional<Quality> const& limitQuality_,
         bool isLast_,
         bool ownerPaysTransferFee_,
-        bool offerCrossing_,
+        OfferCrossing offerCrossing_,
         bool isDefaultPath_,
         std::array<boost::container::flat_set<Issue>, 2>&
             seenDirectIssues_,  ///< For detecting currency loops
         boost::container::flat_set<Issue>&
-            seenBookOuts_,   ///< For detecting book loops
+            seenBookOuts_,  ///< For detecting book loops
+        AMMContext& ammContext_,
         beast::Journal j_);  ///< Journal for logging
 };
 

@@ -59,13 +59,15 @@ doConnect(RPC::JsonContext& context)
     else
         iPort = DEFAULT_PEER_PORT;
 
-    auto ip =
-        beast::IP::Endpoint::from_string(context.params[jss::ip].asString());
+    auto const ip_str = context.params[jss::ip].asString();
+    auto ip = beast::IP::Endpoint::from_string(ip_str);
 
     if (!is_unspecified(ip))
         context.app.overlay().connect(ip.at_port(iPort));
 
-    return RPC::makeObjectValue("connecting");
+    return RPC::makeObjectValue(
+        "attempting connection to IP:" + ip_str +
+        " port: " + std::to_string(iPort));
 }
 
 }  // namespace ripple

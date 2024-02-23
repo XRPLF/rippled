@@ -25,7 +25,6 @@
 #include <ripple/basics/Log.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/ledger/View.h>
-#include <ripple/rpc/impl/GRPCHelpers.h>
 #include <test/jtx.h>
 
 namespace ripple {
@@ -1883,114 +1882,6 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
     }
 };
 
-class NegativeUNLgRPC_test : public beast::unit_test::suite
-{
-    template <class T>
-    std::string
-    toByteString(T const& data)
-    {
-        const char* bytes = reinterpret_cast<const char*>(data.data());
-        return {bytes, data.size()};
-    }
-
-    void
-    testGRPC()
-    {
-        testcase("gRPC test");
-
-        auto gRpcTest = [this](
-                            std::uint32_t negUnlSize,
-                            bool hasToDisable,
-                            bool hasToReEnable) -> bool {
-            NetworkHistory history = {
-                *this, {20, negUnlSize, hasToDisable, hasToReEnable, {}}};
-            if (!history.goodHistory)
-                return false;
-
-            auto const& negUnlObject =
-                history.lastLedger()->read(keylet::negativeUNL());
-            if (!negUnlSize && !hasToDisable && !hasToReEnable && !negUnlObject)
-                return true;
-            if (!negUnlObject)
-                return false;
-
-            org::xrpl::rpc::v1::NegativeUNL to;
-            ripple::RPC::convert(to, *negUnlObject);
-            if (!to.has_flags() ||
-                to.flags().value() != negUnlObject->getFlags())
-                return false;
-
-            bool goodSize = to.disabled_validators_size() == negUnlSize &&
-                to.has_validator_to_disable() == hasToDisable &&
-                to.has_validator_to_re_enable() == hasToReEnable;
-            if (!goodSize)
-                return false;
-
-            if (negUnlSize)
-            {
-                if (!negUnlObject->isFieldPresent(sfDisabledValidators))
-                    return false;
-                auto const& nUnlData =
-                    negUnlObject->getFieldArray(sfDisabledValidators);
-                if (nUnlData.size() != negUnlSize)
-                    return false;
-                int idx = 0;
-                for (auto const& n : nUnlData)
-                {
-                    if (!n.isFieldPresent(sfPublicKey) ||
-                        !n.isFieldPresent(sfFirstLedgerSequence))
-                        return false;
-
-                    if (!to.disabled_validators(idx).has_ledger_sequence() ||
-                        !to.disabled_validators(idx).has_public_key())
-                        return false;
-
-                    if (to.disabled_validators(idx).public_key().value() !=
-                        toByteString(n.getFieldVL(sfPublicKey)))
-                        return false;
-
-                    if (to.disabled_validators(idx).ledger_sequence().value() !=
-                        n.getFieldU32(sfFirstLedgerSequence))
-                        return false;
-
-                    ++idx;
-                }
-            }
-
-            if (hasToDisable)
-            {
-                if (!negUnlObject->isFieldPresent(sfValidatorToDisable))
-                    return false;
-                if (to.validator_to_disable().value() !=
-                    toByteString(
-                        negUnlObject->getFieldVL(sfValidatorToDisable)))
-                    return false;
-            }
-
-            if (hasToReEnable)
-            {
-                if (!negUnlObject->isFieldPresent(sfValidatorToReEnable))
-                    return false;
-                if (to.validator_to_re_enable().value() !=
-                    toByteString(
-                        negUnlObject->getFieldVL(sfValidatorToReEnable)))
-                    return false;
-            }
-
-            return true;
-        };
-
-        BEAST_EXPECT(gRpcTest(0, false, false));
-        BEAST_EXPECT(gRpcTest(2, true, true));
-    }
-
-    void
-    run() override
-    {
-        testGRPC();
-    }
-};
-
 BEAST_DEFINE_TESTSUITE(NegativeUNL, ledger, ripple);
 BEAST_DEFINE_TESTSUITE(NegativeUNLNoAmendment, ledger, ripple);
 
@@ -2006,7 +1897,6 @@ BEAST_DEFINE_TESTSUITE_PRIO(
     1);
 BEAST_DEFINE_TESTSUITE(NegativeUNLVoteNewValidator, consensus, ripple);
 BEAST_DEFINE_TESTSUITE(NegativeUNLVoteFilterValidations, consensus, ripple);
-BEAST_DEFINE_TESTSUITE(NegativeUNLgRPC, ledger, ripple);
 
 ///////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////

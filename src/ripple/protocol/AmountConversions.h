@@ -120,6 +120,61 @@ toAmount<XRPAmount>(XRPAmount const& amt)
     return amt;
 }
 
+template <typename T>
+T
+toAmount(
+    Issue const& issue,
+    Number const& n,
+    Number::rounding_mode mode = Number::getround())
+{
+    saveNumberRoundMode rm(Number::getround());
+    if (isXRP(issue))
+        Number::setround(mode);
+    if constexpr (std::is_same_v<IOUAmount, T>)
+        return IOUAmount(n);
+    if constexpr (std::is_same_v<XRPAmount, T>)
+        return XRPAmount(static_cast<std::int64_t>(n));
+    if constexpr (std::is_same_v<STAmount, T>)
+    {
+        if (isXRP(issue))
+            return STAmount(issue, static_cast<std::int64_t>(n));
+        return STAmount(issue, n.mantissa(), n.exponent());
+    }
+}
+
+inline STAmount
+toSTAmount(
+    Issue const& issue,
+    Number const& n,
+    Number::rounding_mode mode = Number::getround())
+{
+    return toAmount<STAmount>(issue, n, mode);
+}
+
+template <typename T>
+Issue
+getIssue(T const& amt)
+{
+    if constexpr (std::is_same_v<IOUAmount, T>)
+        return noIssue();
+    if constexpr (std::is_same_v<XRPAmount, T>)
+        return xrpIssue();
+    if constexpr (std::is_same_v<STAmount, T>)
+        return amt.issue();
+}
+
+template <typename T>
+constexpr T
+get(STAmount const& a)
+{
+    if constexpr (std::is_same_v<IOUAmount, T>)
+        return a.iou();
+    if constexpr (std::is_same_v<XRPAmount, T>)
+        return a.xrp();
+    if constexpr (std::is_same_v<STAmount, T>)
+        return a;
+}
+
 }  // namespace ripple
 
 #endif

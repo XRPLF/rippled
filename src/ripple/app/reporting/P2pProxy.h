@@ -21,12 +21,11 @@
 #define RIPPLE_APP_REPORTING_P2PPROXY_H_INCLUDED
 
 #include <ripple/app/main/Application.h>
+#include <ripple/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/Handler.h>
 
 #include <boost/beast/websocket.hpp>
-
-#include "org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h"
 #include <grpcpp/grpcpp.h>
 
 namespace ripple {
@@ -48,8 +47,6 @@ needCurrentOrClosed(Request& request)
 {
     // These are the only gRPC requests that specify a ledger
     if constexpr (
-        std::is_same<Request, org::xrpl::rpc::v1::GetAccountInfoRequest>::
-            value ||
         std::is_same<Request, org::xrpl::rpc::v1::GetLedgerRequest>::value ||
         std::is_same<Request, org::xrpl::rpc::v1::GetLedgerDataRequest>::
             value ||

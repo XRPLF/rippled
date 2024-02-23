@@ -215,6 +215,8 @@ public:
     void
     clearLedger(std::uint32_t seq);
     bool
+    isValidated(ReadView const& ledger);
+    bool
     getValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal);
     bool
     getFullValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal);
@@ -291,6 +293,10 @@ public:
     // Returns the minimum ledger sequence in SQL database, if any.
     std::optional<LedgerIndex>
     minSqlSeq();
+
+    // Iff a txn exists at the specified ledger and offset then return its txnid
+    std::optional<uint256>
+    txnIdFromIndex(uint32_t ledgerSeq, uint32_t txnIndex);
 
 private:
     void

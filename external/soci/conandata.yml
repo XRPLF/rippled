@@ -1,0 +1,12 @@
+sources:
+  "4.0.3":
+    url: "https://github.com/SOCI/soci/archive/v4.0.3.tar.gz"
+    sha256: "4b1ff9c8545c5d802fbe06ee6cd2886630e5c03bf740e269bb625b45cf934928"
+patches:
+  "4.0.3":
+    - patch_file: "patches/0001-Remove-hardcoded-INSTALL_NAME_DIR-for-relocatable-li.patch"
+      patch_description: "Generate relocatable libraries on MacOS"
+      patch_type: "portability"
+    - patch_file: "patches/0002-Fix-soci_backend.patch"
+      patch_description: "Fix variable names for dependencies"
+      patch_type: "conan"

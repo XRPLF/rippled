@@ -23,11 +23,13 @@
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/IOUAmount.h>
 #include <ripple/basics/LocalValue.h>
+#include <ripple/basics/Number.h>
 #include <ripple/basics/XRPAmount.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/STBase.h>
 #include <ripple/protocol/Serializer.h>
+#include <ripple/protocol/json_get_or_throw.h>
 
 namespace ripple {
 
@@ -124,6 +126,8 @@ public:
 
     explicit STAmount(std::uint64_t mantissa = 0, bool negative = false);
 
+    explicit STAmount(SField const& name, STAmount const& amt);
+
     STAmount(
         Issue const& issue,
         std::uint64_t mantissa = 0,
@@ -144,6 +148,7 @@ public:
     // Legacy support for new-style amounts
     STAmount(IOUAmount const& amount, Issue const& issue);
     STAmount(XRPAmount const& amount);
+    operator Number() const;
 
     //--------------------------------------------------------------------------
     //
@@ -275,7 +280,13 @@ private:
     STBase*
     move(std::size_t n, void* buf) override;
 
+    STAmount&
+    operator=(IOUAmount const& iou);
+
     friend class detail::STVar;
+
+    friend STAmount
+    operator+(STAmount const& v1, STAmount const& v2);
 };
 
 //------------------------------------------------------------------------------
@@ -368,6 +379,13 @@ STAmount::zeroed() const
 inline STAmount::operator bool() const noexcept
 {
     return *this != beast::zero;
+}
+
+inline STAmount::operator Number() const
+{
+    if (mIsNative)
+        return xrp();
+    return iou();
 }
 
 inline STAmount& STAmount::operator=(beast::Zero)
@@ -488,7 +506,7 @@ divide(STAmount const& v1, STAmount const& v2, Issue const& issue);
 STAmount
 multiply(STAmount const& v1, STAmount const& v2, Issue const& issue);
 
-// multiply, or divide rounding result in specified direction
+// multiply rounding result in specified direction
 STAmount
 mulRound(
     STAmount const& v1,
@@ -496,8 +514,25 @@ mulRound(
     Issue const& issue,
     bool roundUp);
 
+// multiply following the rounding directions more precisely.
+STAmount
+mulRoundStrict(
+    STAmount const& v1,
+    STAmount const& v2,
+    Issue const& issue,
+    bool roundUp);
+
+// divide rounding result in specified direction
 STAmount
 divRound(
+    STAmount const& v1,
+    STAmount const& v2,
+    Issue const& issue,
+    bool roundUp);
+
+// divide following the rounding directions more precisely.
+STAmount
+divRoundStrict(
     STAmount const& v1,
     STAmount const& v2,
     Issue const& issue,
@@ -571,7 +606,12 @@ isAddable(STAmount const& amt1, STAmount const& amt2)
 // the low-level routine stAmountCanonicalize on an amendment switch. Only
 // transactions need to use this switchover. Outside of a transaction it's safe
 // to unconditionally use the new behavior.
-extern LocalValue<bool> stAmountCanonicalizeSwitchover;
+
+bool
+getSTAmountCanonicalizeSwitchover();
+
+void
+setSTAmountCanonicalizeSwitchover(bool v);
 
 /** RAII class to set and restore the STAmount canonicalize switchover.
  */
@@ -579,14 +619,14 @@ extern LocalValue<bool> stAmountCanonicalizeSwitchover;
 class STAmountSO
 {
 public:
-    explicit STAmountSO(bool v) : saved_(*stAmountCanonicalizeSwitchover)
+    explicit STAmountSO(bool v) : saved_(getSTAmountCanonicalizeSwitchover())
     {
-        *stAmountCanonicalizeSwitchover = v;
+        setSTAmountCanonicalizeSwitchover(v);
     }
 
     ~STAmountSO()
     {
-        *stAmountCanonicalizeSwitchover = saved_;
+        setSTAmountCanonicalizeSwitchover(saved_);
     }
 
 private:
@@ -595,4 +635,18 @@ private:
 
 }  // namespace ripple
 
+//------------------------------------------------------------------------------
+namespace Json {
+template <>
+inline ripple::STAmount
+getOrThrow(Json::Value const& v, ripple::SField const& field)
+{
+    using namespace ripple;
+    Json::StaticString const& key = field.getJsonName();
+    if (!v.isMember(key))
+        Throw<JsonMissingKeyError>(key);
+    Json::Value const& inner = v[key];
+    return amountFromJson(field, inner);
+}
+}  // namespace Json
 #endif

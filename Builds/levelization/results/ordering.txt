@@ -112,7 +112,6 @@ test.consensus > ripple.basics
 test.consensus > ripple.beast
 test.consensus > ripple.consensus
 test.consensus > ripple.ledger
-test.consensus > ripple.rpc
 test.consensus > test.csf
 test.consensus > test.toplevel
 test.consensus > test.unit_test
@@ -132,6 +131,7 @@ test.csf > ripple.json
 test.csf > ripple.protocol
 test.json > ripple.beast
 test.json > ripple.json
+test.json > ripple.rpc
 test.json > test.jtx
 test.jtx > ripple.app
 test.jtx > ripple.basics
@@ -142,6 +142,8 @@ test.jtx > ripple.json
 test.jtx > ripple.ledger
 test.jtx > ripple.net
 test.jtx > ripple.protocol
+test.jtx > ripple.resource
+test.jtx > ripple.rpc
 test.jtx > ripple.server
 test.ledger > ripple.app
 test.ledger > ripple.basics
@@ -168,7 +170,6 @@ test.nodestore > test.unit_test
 test.overlay > ripple.app
 test.overlay > ripple.basics
 test.overlay > ripple.beast
-test.overlay > ripple.core
 test.overlay > ripple.overlay
 test.overlay > ripple.peerfinder
 test.overlay > ripple.protocol

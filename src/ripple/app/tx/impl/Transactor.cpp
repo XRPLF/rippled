@@ -46,6 +46,30 @@ namespace ripple {
 NotTEC
 preflight0(PreflightContext const& ctx)
 {
+    if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
+    {
+        uint32_t nodeNID = ctx.app.config().NETWORK_ID;
+        std::optional<uint32_t> txNID = ctx.tx[~sfNetworkID];
+
+        if (nodeNID <= 1024)
+        {
+            // legacy networks have ids less than 1024, these networks cannot
+            // specify NetworkID in txn
+            if (txNID)
+                return telNETWORK_ID_MAKES_TX_NON_CANONICAL;
+        }
+        else
+        {
+            // new networks both require the field to be present and require it
+            // to match
+            if (!txNID)
+                return telREQUIRES_NETWORK_ID;
+
+            if (*txNID != nodeNID)
+                return telWRONG_NETWORK;
+        }
+    }
+
     auto const txID = ctx.tx.getTransactionID();
 
     if (txID == beast::zero)
@@ -150,12 +174,10 @@ Transactor::Transactor(ApplyContext& ctx)
 {
 }
 
-
 // RH NOTE: this only computes one chain at a time, so if there is a receiving side to a txn
-// then it must seperately be computed by a second call here
-FeeUnit64
-Transactor::
-calculateHookChainFee(
+// then it must separately be computed by a second call here
+XRPAmount
+Transactor:: calculateHookChainFee(
     ReadView const& view,
     STTx const& tx,
     Keylet const& hookKeylet,
@@ -164,9 +186,9 @@ calculateHookChainFee(
 
     std::shared_ptr<SLE const> hookSLE = view.read(hookKeylet);
     if (!hookSLE)
-        return FeeUnit64{0};
+        return XRPAmount{0};
 
-    FeeUnit64 fee{0};
+    XRPAmount fee{0};
 
     auto const& hooks = hookSLE->getFieldArray(sfHooks);
 
@@ -203,16 +225,14 @@ calculateHookChainFee(
         if (hook::canHook(tx.getTxnType(), hookOn) &&
             (!collectCallsOnly || (flags & hook::hsfCOLLECT)))
         {
-                fee += FeeUnit64{
-                    (uint32_t)(hookDef->getFieldAmount(sfFee).xrp().drops())
-                };
+                fee += hookDef->getFieldAmount(sfFee).xrp();
         }
     }
 
     return fee;
 }
 
-FeeUnit64
+XRPAmount
 Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // Returns the fee in fee units.
@@ -220,20 +240,20 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
     // The computation has two parts:
     //  * The base fee, which is the same for most transactions.
     //  * The additional cost of each multisignature on the transaction.
-    FeeUnit64 const baseFee = safe_cast<FeeUnit64>(view.fees().units);
+    XRPAmount const baseFee = view.fees().base;
 
     // Each signer adds one more baseFee to the minimum required fee
     // for the transaction.
     std::size_t const signerCount =
         tx.isFieldPresent(sfSigners) ? tx.getFieldArray(sfSigners).size() : 0;
 
-    FeeUnit64 hookExecutionFee{0};
+    XRPAmount hookExecutionFee{0};
     uint64_t burden {1};
     if (view.rules().enabled(featureHooks))
     {
         // if this is a "cleanup" txn we regard it as already paid up
         if (tx.getFieldU16(sfTransactionType) == ttEMIT_FAILURE)
-            return FeeUnit64{0};    
+            return XRPAmount{0};    
 
         // if the txn is an emitted txn then we add the callback fee
         // if the txn is NOT an emitted txn then we process the sending account's hook chain 
@@ -248,7 +268,7 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
 
             if (hookDef && hookDef->isFieldPresent(sfHookCallbackFee))
                 hookExecutionFee +=
-                    FeeUnit64{(uint32_t)(hookDef->getFieldAmount(sfHookCallbackFee).xrp().drops())};
+                    hookDef->getFieldAmount(sfHookCallbackFee).xrp();
 
             assert (emitDetails.isFieldPresent(sfEmitBurden));
 
@@ -275,7 +295,7 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
 XRPAmount
 Transactor::minimumFee(
     Application& app,
-    FeeUnit64 baseFee,
+    XRPAmount baseFee,
     Fees const& fees,
     ApplyFlags flags)
 {
@@ -283,7 +303,7 @@ Transactor::minimumFee(
 }
 
 TER
-Transactor::checkFee(PreclaimContext const& ctx, FeeUnit64 baseFee)
+Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 {
     if (!ctx.tx[sfFee].native())
         return temBAD_FEE;
@@ -878,6 +898,32 @@ removeExpiredNFTokenOffers(
     }
 }
 
+static void
+removeDeletedTrustLines(
+    ApplyView& view,
+    std::vector<uint256> const& trustLines,
+    beast::Journal viewJ)
+{
+    if (trustLines.size() > maxDeletableAMMTrustLines)
+    {
+        JLOG(viewJ.error())
+            << "removeDeletedTrustLines: deleted trustlines exceed max "
+            << trustLines.size();
+        return;
+    }
+
+    for (auto const& index : trustLines)
+    {
+        if (auto const sleState = view.peek({ltRIPPLE_STATE, index});
+            deleteAMMTrustLine(view, sleState, std::nullopt, viewJ) !=
+            tesSUCCESS)
+        {
+            JLOG(viewJ.error())
+                << "removeDeletedTrustLines: failed to delete AMM trustline";
+        }
+    }
+}
+
 /** Reset the context, discarding any changes made and adjust the fee */
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
@@ -1223,8 +1269,7 @@ addWeakTSHFromSandbox(detail::ApplyViewBase const& pv)
 }
 
 TER
-Transactor::
-doTSH(
+Transactor::doTSH(
     bool strong,                    // only strong iff true, only weak iff false
     hook::HookStateMap& stateMap,
     std::vector<hook::HookResult>& results,
@@ -1278,14 +1323,13 @@ doTSH(
                 continue;
 
             // compute and deduct fees for the TSH if applicable
-            FeeUnit64 tshFee =
+            XRPAmount tshFeeDrops =
                 calculateHookChainFee(view, ctx_.tx, klTshHook, !canRollback);
 
             // no hooks to execute, skip tsh
-            if (tshFee == 0)
+            if (tshFeeDrops == 0)
                 continue;
                 
-            XRPAmount tshFeeDrops = view.fees().toDrops(tshFee);
             assert(tshFeeDrops >= beast::zero);
 
             STAmount priorBalance = tshAcc->getFieldAmount(sfBalance);
@@ -1464,6 +1508,7 @@ Transactor::operator()()
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
 
     STAmountSO stAmountSO{view().rules().enabled(fixSTAmountCanonicalize)};
+    NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
 
 #ifdef DEBUG
     {
@@ -1575,7 +1620,8 @@ Transactor::operator()()
     }
     else if (
         (result == tecOVERSIZE) || (result == tecKILLED) ||
-        (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
+        (result == tecINCOMPLETE) || (result == tecEXPIRED) ||
+        (isTecClaimHardFail(result, view().flags())))
     {
         JLOG(j_.trace()) << "reapplying because of " << transToken(result);
 
@@ -1584,10 +1630,21 @@ Transactor::operator()()
         //        should be used, making it possible to do more useful work
         //        when transactions fail with a `tec` code.
         std::vector<uint256> removedOffers;
+        std::vector<uint256> removedTrustLines;
+        std::vector<uint256> expiredNFTokenOffers;
 
-        if ((result == tecOVERSIZE) || (result == tecKILLED))
+        bool const doOffers =
+            ((result == tecOVERSIZE) || (result == tecKILLED));
+        bool const doLines = (result == tecINCOMPLETE);
+        bool const doNFTokenOffers = (result == tecEXPIRED);
+        if (doOffers || doLines || doNFTokenOffers)
         {
-            ctx_.visit([&removedOffers](
+            ctx_.visit([&doOffers,
+                        &removedOffers,
+                        &doLines,
+                        &removedTrustLines,
+                        &doNFTokenOffers,
+                        &expiredNFTokenOffers](
                            uint256 const& index,
                            bool isDelete,
                            std::shared_ptr<SLE const> const& before,
@@ -1595,30 +1652,23 @@ Transactor::operator()()
                 if (isDelete)
                 {
                     assert(before && after);
-                    if (before && after && (before->getType() == ltOFFER) &&
+                    if (doOffers && before && after &&
+                        (before->getType() == ltOFFER) &&
                         (before->getFieldAmount(sfTakerPays) ==
                          after->getFieldAmount(sfTakerPays)))
                     {
                         // Removal of offer found or made unfunded
                         removedOffers.push_back(index);
                     }
-                }
-            });
-        }
 
-        std::vector<uint256> expiredNFTokenOffers;
+                    if (doLines && before && after &&
+                        (before->getType() == ltRIPPLE_STATE))
+                    {
+                        // Removal of obsolete AMM trust line
+                        removedTrustLines.push_back(index);
+                    }
 
-        if (result == tecEXPIRED)
-        {
-            ctx_.visit([&expiredNFTokenOffers](
-                           uint256 const& index,
-                           bool isDelete,
-                           std::shared_ptr<SLE const> const& before,
-                           std::shared_ptr<SLE const> const& after) {
-                if (isDelete)
-                {
-                    assert(before && after);
-                    if (before && after &&
+                    if (doNFTokenOffers && before && after &&
                         (before->getType() == ltNFTOKEN_OFFER))
                         expiredNFTokenOffers.push_back(index);
                 }
@@ -1642,6 +1692,10 @@ Transactor::operator()()
         if (result == tecEXPIRED)
             removeExpiredNFTokenOffers(
                 view(), expiredNFTokenOffers, ctx_.app.journal("View"));
+
+        if (result == tecINCOMPLETE)
+            removeDeletedTrustLines(
+                view(), removedTrustLines, ctx_.app.journal("View"));
 
         applied = isTecClaim(result);
     }

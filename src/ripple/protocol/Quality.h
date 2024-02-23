@@ -223,6 +223,29 @@ public:
             toAmount<In>(stRes.in), toAmount<Out>(stRes.out));
     }
 
+    Amounts
+    ceil_out_strict(Amounts const& amount, STAmount const& limit, bool roundUp)
+        const;
+
+    template <class In, class Out>
+    TAmounts<In, Out>
+    ceil_out_strict(
+        TAmounts<In, Out> const& amount,
+        Out const& limit,
+        bool roundUp) const
+    {
+        if (amount.out <= limit)
+            return amount;
+
+        // Use the existing STAmount implementation for now, but consider
+        // replacing with code specific to IOUAMount and XRPAmount
+        Amounts stAmt(toSTAmount(amount.in), toSTAmount(amount.out));
+        STAmount stLim(toSTAmount(limit));
+        auto const stRes = ceil_out_strict(stAmt, stLim, roundUp);
+        return TAmounts<In, Out>(
+            toAmount<In>(stRes.in), toAmount<Out>(stRes.out));
+    }
+
     /** Returns `true` if lhs is lower quality than `rhs`.
         Lower quality means the taker receives a worse deal.
         Higher quality is better for the taker.

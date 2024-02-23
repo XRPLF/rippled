@@ -40,7 +40,23 @@ NFTokenMint::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.tx.getFlags() & tfNFTokenMintMask)
+    // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
+    // accounts allowed a TrustLine to be added to the issuer of that token
+    // without explicit permission from that issuer.  This was enabled by
+    // minting the NFToken with the tfTrustLine flag set.
+    //
+    // That capability could be used to attack the NFToken issuer.  It
+    // would be possible for two accounts to trade the NFToken back and forth
+    // building up any number of TrustLines on the issuer, increasing the
+    // issuer's reserve without bound.
+    //
+    // The fixRemoveNFTokenAutoTrustLine amendment disables minting with the
+    // tfTrustLine flag as a way to prevent the attack.  But until the
+    // amendment passes we still need to keep the old behavior available.
+    std::uint32_t const NFTokenMintMask =
+        ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine) ? tfNFTokenMintMask
+                                                         : tfNFTokenMintOldMask;
+    if (ctx.tx.getFlags() & NFTokenMintMask)
         return temINVALID_FLAG;
 
     if (auto const f = ctx.tx[~sfTransferFee])
@@ -144,15 +160,66 @@ NFTokenMint::doApply()
             // Should not happen.  Checked in preclaim.
             return Unexpected(tecNO_ISSUER);
 
-        // Get the unique sequence number for this token:
-        std::uint32_t const tokenSeq = (*root)[~sfMintedNFTokens].value_or(0);
+        if (!ctx_.view().rules().enabled(fixNFTokenRemint))
         {
-            std::uint32_t const nextTokenSeq = tokenSeq + 1;
-            if (nextTokenSeq < tokenSeq)
-                return Unexpected(tecMAX_SEQUENCE_REACHED);
+            // Get the unique sequence number for this token:
+            std::uint32_t const tokenSeq =
+                (*root)[~sfMintedNFTokens].value_or(0);
+            {
+                std::uint32_t const nextTokenSeq = tokenSeq + 1;
+                if (nextTokenSeq < tokenSeq)
+                    return Unexpected(tecMAX_SEQUENCE_REACHED);
 
-            (*root)[sfMintedNFTokens] = nextTokenSeq;
+                (*root)[sfMintedNFTokens] = nextTokenSeq;
+            }
+            ctx_.view().update(root);
+            return tokenSeq;
         }
+
+        // With fixNFTokenRemint amendment enabled:
+        //
+        // If the issuer hasn't minted an NFToken before we must add a
+        // FirstNFTokenSequence field to the issuer's AccountRoot.  The
+        // value of the FirstNFTokenSequence must equal the issuer's
+        // current account sequence.
+        //
+        // There are three situations:
+        //  o If the first token is being minted by the issuer and
+        //     * If the transaction consumes a Sequence number, then the
+        //       Sequence has been pre-incremented by the time we get here in
+        //       doApply.  We must decrement the value in the Sequence field.
+        //     * Otherwise the transaction uses a Ticket so the Sequence has
+        //       not been pre-incremented.  We use the Sequence value as is.
+        //  o The first token is being minted by an authorized minter.  In
+        //    this case the issuer's Sequence field has been left untouched.
+        //    We use the issuer's Sequence value as is.
+        if (!root->isFieldPresent(sfFirstNFTokenSequence))
+        {
+            std::uint32_t const acctSeq = root->at(sfSequence);
+
+            root->at(sfFirstNFTokenSequence) =
+                ctx_.tx.isFieldPresent(sfIssuer) ||
+                    ctx_.tx.getSeqProxy().isTicket()
+                ? acctSeq
+                : acctSeq - 1;
+        }
+
+        std::uint32_t const mintedNftCnt =
+            (*root)[~sfMintedNFTokens].value_or(0u);
+
+        (*root)[sfMintedNFTokens] = mintedNftCnt + 1u;
+        if ((*root)[sfMintedNFTokens] == 0u)
+            return Unexpected(tecMAX_SEQUENCE_REACHED);
+
+        // Get the unique sequence number of this token by
+        // sfFirstNFTokenSequence + sfMintedNFTokens
+        std::uint32_t const offset = (*root)[sfFirstNFTokenSequence];
+        std::uint32_t const tokenSeq = offset + mintedNftCnt;
+
+        // Check for more overflow cases
+        if (tokenSeq + 1u == 0u || tokenSeq < offset)
+            return Unexpected(tecMAX_SEQUENCE_REACHED);
+
         ctx_.view().update(root);
         return tokenSeq;
     }();

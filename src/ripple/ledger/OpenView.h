@@ -77,7 +77,7 @@ private:
     };
 
     // List of tx, key order
-    // Use the boost pmr functionality instead of the c++-17 standard pmr
+    // Use boost::pmr functionality instead of std::pmr
     // functions b/c clang does not support pmr yet (as-of 9/2020)
     using txs_map = std::map<
         key_type,

@@ -55,7 +55,8 @@ doChannelAuthorize(RPC::JsonContext& context)
         return RPC::missing_field_error(jss::secret);
 
     Json::Value result;
-    auto const [pk, sk] = RPC::keypairForSignature(params, result);
+    auto const [pk, sk] =
+        RPC::keypairForSignature(params, result, context.apiVersion);
     if (RPC::contains_error(result))
         return result;
 
@@ -80,10 +81,11 @@ doChannelAuthorize(RPC::JsonContext& context)
         auto const buf = sign(pk, sk, msg.slice());
         result[jss::signature] = strHex(buf);
     }
-    catch (std::exception&)
+    catch (std::exception const& ex)
     {
-        result =
-            RPC::make_error(rpcINTERNAL, "Exception occurred during signing.");
+        result = RPC::make_error(
+            rpcINTERNAL,
+            "Exception occurred during signing: " + std::string(ex.what()));
     }
     return result;
 }

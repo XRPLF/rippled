@@ -20,13 +20,15 @@
 #ifndef RIPPLE_PROTOCOL_STACCOUNT_H_INCLUDED
 #define RIPPLE_PROTOCOL_STACCOUNT_H_INCLUDED
 
+#include <ripple/basics/CountedObject.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/STBase.h>
+
 #include <string>
 
 namespace ripple {
 
-class STAccount final : public STBase
+class STAccount final : public STBase, public CountedObject<STAccount>
 {
 private:
     // The original implementation of STAccount kept the value in an STBlob.
@@ -64,7 +66,7 @@ public:
     STAccount&
     operator=(AccountID const& value);
 
-    AccountID
+    AccountID const&
     value() const noexcept;
 
     void
@@ -86,7 +88,7 @@ STAccount::operator=(AccountID const& value)
     return *this;
 }
 
-inline AccountID
+inline AccountID const&
 STAccount::value() const noexcept
 {
     return value_;
@@ -97,6 +99,36 @@ STAccount::setValue(AccountID const& v)
 {
     value_ = v;
     default_ = false;
+}
+
+inline bool
+operator==(STAccount const& lhs, STAccount const& rhs)
+{
+    return lhs.value() == rhs.value();
+}
+
+inline auto
+operator<(STAccount const& lhs, STAccount const& rhs)
+{
+    return lhs.value() < rhs.value();
+}
+
+inline bool
+operator==(STAccount const& lhs, AccountID const& rhs)
+{
+    return lhs.value() == rhs;
+}
+
+inline auto
+operator<(STAccount const& lhs, AccountID const& rhs)
+{
+    return lhs.value() < rhs;
+}
+
+inline auto
+operator<(AccountID const& lhs, STAccount const& rhs)
+{
+    return lhs < rhs.value();
 }
 
 }  // namespace ripple

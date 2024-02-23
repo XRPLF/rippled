@@ -31,6 +31,7 @@
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/HashPrefix.h>
+#include <ripple/protocol/LedgerHeader.h>
 #include <ripple/protocol/digest.h>
 
 #include <boost/algorithm/string/predicate.hpp>

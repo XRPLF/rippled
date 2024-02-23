@@ -31,11 +31,9 @@ AcceptedLedger::AcceptedLedger(
     transactions_.reserve(256);
 
     auto insertAll = [&](auto const& txns) {
-        auto const& idcache = app.accountIDCache();
-
         for (auto const& item : txns)
             transactions_.emplace_back(std::make_unique<AcceptedLedgerTx>(
-                ledger, item.first, item.second, idcache));
+                ledger, item.first, item.second));
     };
 
     if (app.config().reporting())

@@ -20,7 +20,9 @@
 #ifndef RIPPLE_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
 #define RIPPLE_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
 
+#include <ripple/json/MultivarJson.h>
 #include <ripple/net/InfoSub.h>
+
 #include <memory>
 #include <mutex>
 
@@ -58,7 +60,7 @@ public:
 
     */
     void
-    publish(Json::Value const& jvObj, hash_set<std::uint64_t>& havePublished);
+    publish(MultiApiJson const& jvObj, hash_set<std::uint64_t>& havePublished);
 
 private:
     std::recursive_mutex mLock;

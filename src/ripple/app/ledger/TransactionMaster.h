@@ -68,7 +68,7 @@ public:
 
     std::shared_ptr<STTx const>
     fetch(
-        std::shared_ptr<SHAMapItem> const& item,
+        boost::intrusive_ptr<SHAMapItem> const& item,
         SHAMapNodeType type,
         std::uint32_t uCommitLedger);
 

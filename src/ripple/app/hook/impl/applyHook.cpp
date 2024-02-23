@@ -1,4 +1,5 @@
 #include <ripple/app/hook/applyHook.h>
+
 #include <ripple/basics/Log.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/app/misc/Transaction.h>
@@ -8,6 +9,8 @@
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/tx/impl/details/NFTokenUtils.h>
+#include <ripple/app/tx/impl/Transactor.h>
 #include <memory>
 #include <string>
 #include <optional>
@@ -3841,12 +3844,12 @@ DEFINE_HOOK_FUNCTION(
         std::unique_ptr<STTx const> stpTrans;
         stpTrans = std::make_unique<STTx const>(std::ref(sitTrans));
 
-        FeeUnit64 fee =
+        XRPAmount fee =
             Transactor::calculateBaseFee(
                 *(applyCtx.app.openLedger().current()),
                 *stpTrans);
 
-        return fee.fee();
+        return fee.drops();
     }
     catch (std::exception& e)
     {

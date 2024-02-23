@@ -1,0 +1,14 @@
+Fixes the following error:
+error: inlining failed in call to ‘always_inline’ ‘size_t snappy::AdvanceToNextTag(const uint8_t**, size_t*)’: function body can be overwritten at link time
+
+--- snappy-stubs-internal.h
++++ snappy-stubs-internal.h
+@@ -100,7 +100,7 @@
+ 
+ // Inlining hints.
+ #ifdef HAVE_ATTRIBUTE_ALWAYS_INLINE
+-#define SNAPPY_ATTRIBUTE_ALWAYS_INLINE __attribute__((always_inline))
++#define SNAPPY_ATTRIBUTE_ALWAYS_INLINE
+ #else
+ #define SNAPPY_ATTRIBUTE_ALWAYS_INLINE
+ #endif

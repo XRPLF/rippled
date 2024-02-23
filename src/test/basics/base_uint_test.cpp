@@ -57,8 +57,76 @@ struct nonhash
 struct base_uint_test : beast::unit_test::suite
 {
     using test96 = base_uint<96>;
-    static_assert(std::is_copy_constructible<test96>::value, "");
-    static_assert(std::is_copy_assignable<test96>::value, "");
+    static_assert(std::is_copy_constructible<test96>::value);
+    static_assert(std::is_copy_assignable<test96>::value);
+
+    void
+    testComparisons()
+    {
+        {
+            static constexpr std::
+                array<std::pair<std::string_view, std::string_view>, 6>
+                    test_args{
+                        {{"0000000000000000", "0000000000000001"},
+                         {"0000000000000000", "ffffffffffffffff"},
+                         {"1234567812345678", "2345678923456789"},
+                         {"8000000000000000", "8000000000000001"},
+                         {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
+                         {"fffffffffffffffe", "ffffffffffffffff"}}};
+
+            for (auto const& arg : test_args)
+            {
+                ripple::base_uint<64> const u{arg.first}, v{arg.second};
+                BEAST_EXPECT(u < v);
+                BEAST_EXPECT(u <= v);
+                BEAST_EXPECT(u != v);
+                BEAST_EXPECT(!(u == v));
+                BEAST_EXPECT(!(u > v));
+                BEAST_EXPECT(!(u >= v));
+                BEAST_EXPECT(!(v < u));
+                BEAST_EXPECT(!(v <= u));
+                BEAST_EXPECT(v != u);
+                BEAST_EXPECT(!(v == u));
+                BEAST_EXPECT(v > u);
+                BEAST_EXPECT(v >= u);
+                BEAST_EXPECT(u == u);
+                BEAST_EXPECT(v == v);
+            }
+        }
+
+        {
+            static constexpr std::array<
+                std::pair<std::string_view, std::string_view>,
+                6>
+                test_args{{
+                    {"000000000000000000000000", "000000000000000000000001"},
+                    {"000000000000000000000000", "ffffffffffffffffffffffff"},
+                    {"0123456789ab0123456789ab", "123456789abc123456789abc"},
+                    {"555555555555555555555555", "55555555555a555555555555"},
+                    {"aaaaaaaaaaaaaaa9aaaaaaaa", "aaaaaaaaaaaaaaaaaaaaaaaa"},
+                    {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
+                }};
+
+            for (auto const& arg : test_args)
+            {
+                ripple::base_uint<96> const u{arg.first}, v{arg.second};
+                BEAST_EXPECT(u < v);
+                BEAST_EXPECT(u <= v);
+                BEAST_EXPECT(u != v);
+                BEAST_EXPECT(!(u == v));
+                BEAST_EXPECT(!(u > v));
+                BEAST_EXPECT(!(u >= v));
+                BEAST_EXPECT(!(v < u));
+                BEAST_EXPECT(!(v <= u));
+                BEAST_EXPECT(v != u);
+                BEAST_EXPECT(!(v == u));
+                BEAST_EXPECT(v > u);
+                BEAST_EXPECT(v >= u);
+                BEAST_EXPECT(u == u);
+                BEAST_EXPECT(v == v);
+            }
+        }
+    }
 
     void
     run() override
@@ -66,9 +134,12 @@ struct base_uint_test : beast::unit_test::suite
         testcase("base_uint: general purpose tests");
 
         static_assert(
-            !std::is_constructible<test96, std::complex<double>>::value, "");
+            !std::is_constructible<test96, std::complex<double>>::value);
         static_assert(
-            !std::is_assignable<test96&, std::complex<double>>::value, "");
+            !std::is_assignable<test96&, std::complex<double>>::value);
+
+        testComparisons();
+
         // used to verify set insertion (hashing required)
         std::unordered_set<test96, hardened_hash<>> uset;
 
@@ -112,8 +183,8 @@ struct base_uint_test : beast::unit_test::suite
             BEAST_EXPECT(d == --t);
         }
 
-        BEAST_EXPECT(compare(u, v) < 0);
-        BEAST_EXPECT(compare(v, u) > 0);
+        BEAST_EXPECT(u < v);
+        BEAST_EXPECT(v > u);
 
         v = u;
         BEAST_EXPECT(v == u);

@@ -19,7 +19,35 @@
 
 #include <ripple/protocol/Issue.h>
 
+#include <ripple/json/json_errors.h>
+#include <ripple/protocol/AccountID.h>
+#include <ripple/protocol/UintTypes.h>
+#include <ripple/protocol/jss.h>
+
 namespace ripple {
+
+std::string
+Issue::getText() const
+{
+    std::string ret;
+
+    ret.reserve(64);
+    ret = to_string(currency);
+
+    if (!isXRP(currency))
+    {
+        ret += "/";
+
+        if (isXRP(account))
+            ret += "0";
+        else if (account == noAccount())
+            ret += "1";
+        else
+            ret += to_string(account);
+    }
+
+    return ret;
+}
 
 bool
 isConsistent(Issue const& ac)
@@ -36,67 +64,68 @@ to_string(Issue const& ac)
     return to_string(ac.account) + "/" + to_string(ac.currency);
 }
 
+Json::Value
+to_json(Issue const& is)
+{
+    Json::Value jv;
+    jv[jss::currency] = to_string(is.currency);
+    if (!isXRP(is.currency))
+        jv[jss::issuer] = toBase58(is.account);
+    return jv;
+}
+
+Issue
+issueFromJson(Json::Value const& v)
+{
+    if (!v.isObject())
+    {
+        Throw<std::runtime_error>(
+            "issueFromJson can only be specified with an 'object' Json value");
+    }
+
+    Json::Value const curStr = v[jss::currency];
+    Json::Value const issStr = v[jss::issuer];
+
+    if (!curStr.isString())
+    {
+        Throw<Json::error>(
+            "issueFromJson currency must be a string Json value");
+    }
+
+    auto const currency = to_currency(curStr.asString());
+    if (currency == badCurrency() || currency == noCurrency())
+    {
+        Throw<Json::error>("issueFromJson currency must be a valid currency");
+    }
+
+    if (isXRP(currency))
+    {
+        if (!issStr.isNull())
+        {
+            Throw<Json::error>("Issue, XRP should not have issuer");
+        }
+        return xrpIssue();
+    }
+
+    if (!issStr.isString())
+    {
+        Throw<Json::error>("issueFromJson issuer must be a string Json value");
+    }
+    auto const issuer = parseBase58<AccountID>(issStr.asString());
+
+    if (!issuer)
+    {
+        Throw<Json::error>("issueFromJson issuer must be a valid account");
+    }
+
+    return Issue{currency, *issuer};
+}
+
 std::ostream&
 operator<<(std::ostream& os, Issue const& x)
 {
     os << to_string(x);
     return os;
-}
-
-/** Ordered comparison.
-    The assets are ordered first by currency and then by account,
-    if the currency is not XRP.
-*/
-int
-compare(Issue const& lhs, Issue const& rhs)
-{
-    int diff = compare(lhs.currency, rhs.currency);
-    if (diff != 0)
-        return diff;
-    if (isXRP(lhs.currency))
-        return 0;
-    return compare(lhs.account, rhs.account);
-}
-
-/** Equality comparison. */
-/** @{ */
-bool
-operator==(Issue const& lhs, Issue const& rhs)
-{
-    return compare(lhs, rhs) == 0;
-}
-
-bool
-operator!=(Issue const& lhs, Issue const& rhs)
-{
-    return !(lhs == rhs);
-}
-/** @} */
-
-/** Strict weak ordering. */
-/** @{ */
-bool
-operator<(Issue const& lhs, Issue const& rhs)
-{
-    return compare(lhs, rhs) < 0;
-}
-
-bool
-operator>(Issue const& lhs, Issue const& rhs)
-{
-    return rhs < lhs;
-}
-
-bool
-operator>=(Issue const& lhs, Issue const& rhs)
-{
-    return !(lhs < rhs);
-}
-
-bool
-operator<=(Issue const& lhs, Issue const& rhs)
-{
-    return !(rhs < lhs);
 }
 
 }  // namespace ripple

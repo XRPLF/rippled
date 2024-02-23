@@ -217,9 +217,9 @@ debugTostr(SHAMap const& set)
             auto const tx = std::make_shared<STTx const>(sit);
             ss << debugTxstr(tx) << ", ";
         }
-        catch (std::exception const&)
+        catch (std::exception const& ex)
         {
-            ss << "THRO, ";
+            ss << "THROW:" << ex.what() << ", ";
         }
     }
     return ss.str();

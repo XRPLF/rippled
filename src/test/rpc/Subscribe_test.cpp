@@ -20,10 +20,13 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/core/ConfigSections.h>
+#include <ripple/json/json_value.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/envconfig.h>
+#include <tuple>
 
 namespace ripple {
 namespace test {
@@ -161,7 +164,7 @@ public:
     }
 
     void
-    testTransactions()
+    testTransactions_APIv1()
     {
         using namespace std::chrono_literals;
         using namespace jtx;
@@ -192,8 +195,16 @@ public:
             // Check stream update for payment transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]
-                         ["NewFields"][jss::Account] ==
-                    Account("alice").human();
+                         ["NewFields"][jss::Account]  //
+                    == Account("alice").human() &&
+                    jv[jss::transaction][jss::TransactionType]  //
+                    == jss::Payment &&
+                    jv[jss::transaction][jss::DeliverMax]  //
+                    == "10000000010" &&
+                    jv[jss::transaction][jss::Fee]  //
+                    == "10" &&
+                    jv[jss::transaction][jss::Sequence]  //
+                    == 1;
             }));
 
             // Check stream update for accountset transaction
@@ -209,7 +220,16 @@ public:
             // Check stream update for payment transaction
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]
-                         ["NewFields"][jss::Account] == Account("bob").human();
+                         ["NewFields"][jss::Account]  //
+                    == Account("bob").human() &&
+                    jv[jss::transaction][jss::TransactionType]  //
+                    == jss::Payment &&
+                    jv[jss::transaction][jss::DeliverMax]  //
+                    == "10000000010" &&
+                    jv[jss::transaction][jss::Fee]  //
+                    == "10" &&
+                    jv[jss::transaction][jss::Sequence]  //
+                    == 2;
             }));
 
             // Check stream update for accountset transaction
@@ -289,6 +309,85 @@ public:
     }
 
     void
+    testTransactions_APIv2()
+    {
+        testcase("transactions API version 2");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env(*this);
+        auto wsc = makeWSClient(env.app().config());
+        Json::Value stream{Json::objectValue};
+
+        {
+            // RPC subscribe to transactions stream
+            stream[jss::api_version] = 2;
+            stream[jss::streams] = Json::arrayValue;
+            stream[jss::streams].append("transactions");
+            auto jv = wsc->invoke("subscribe", stream);
+            if (wsc->version() == 2)
+            {
+                BEAST_EXPECT(
+                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(
+                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+            }
+            BEAST_EXPECT(jv[jss::status] == "success");
+        }
+
+        {
+            env.fund(XRP(10000), "alice");
+            env.close();
+
+            // Check stream update for payment transaction
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+                return jv[jss::meta]["AffectedNodes"][1u]["CreatedNode"]
+                         ["NewFields"][jss::Account]  //
+                    == Account("alice").human() &&
+                    jv[jss::close_time_iso]  //
+                    == "2000-01-01T00:00:10Z" &&
+                    jv[jss::validated] == true &&  //
+                    jv[jss::ledger_hash] ==
+                    "0F1A9E0C109ADEF6DA2BDE19217C12BBEC57174CBDBD212B0EBDC1CEDB"
+                    "853185" &&  //
+                    !jv[jss::inLedger] &&
+                    jv[jss::ledger_index] == 3 &&           //
+                    jv[jss::tx_json][jss::TransactionType]  //
+                    == jss::Payment &&
+                    jv[jss::tx_json][jss::DeliverMax]  //
+                    == "10000000010" &&
+                    !jv[jss::tx_json].isMember(jss::Amount) &&
+                    jv[jss::tx_json][jss::Fee]  //
+                    == "10" &&
+                    jv[jss::tx_json][jss::Sequence]  //
+                    == 1;
+            }));
+
+            // Check stream update for accountset transaction
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+                return jv[jss::meta]["AffectedNodes"][0u]["ModifiedNode"]
+                         ["FinalFields"][jss::Account] ==
+                    Account("alice").human();
+            }));
+        }
+
+        {
+            // RPC unsubscribe
+            auto jv = wsc->invoke("unsubscribe", stream);
+            if (wsc->version() == 2)
+            {
+                BEAST_EXPECT(
+                    jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
+                BEAST_EXPECT(
+                    jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
+            }
+            BEAST_EXPECT(jv[jss::status] == "success");
+        }
+    }
+
+    void
     testManifests()
     {
         using namespace jtx;
@@ -326,11 +425,11 @@ public:
     }
 
     void
-    testValidations()
+    testValidations(FeatureBitset features)
     {
         using namespace jtx;
 
-        Env env{*this, envconfig(validator, "")};
+        Env env{*this, envconfig(validator, ""), features};
         auto& cfg = env.app().config();
         if (!BEAST_EXPECT(cfg.section(SECTION_VALIDATION_SEED).empty()))
             return;
@@ -742,7 +841,7 @@ public:
 
         using namespace std::chrono_literals;
         using namespace jtx;
-        using IdxHashVec = std::vector<std::pair<int, std::string>>;
+        using IdxHashVec = std::vector<std::tuple<int, std::string, bool, int>>;
 
         Account alice("alice");
         Account bob("bob");
@@ -780,11 +879,14 @@ public:
                         idx = r[jss::account_history_tx_index].asInt();
                     if (r.isMember(jss::account_history_tx_first))
                         first_flag = true;
+                    bool boundary = r.isMember(jss::account_history_boundary);
+                    int ledger_idx = r[jss::ledger_index].asInt();
                     if (r.isMember(jss::transaction) &&
                         r[jss::transaction].isMember(jss::hash))
                     {
+                        auto t{r[jss::transaction]};
                         v.emplace_back(
-                            idx, r[jss::transaction][jss::hash].asString());
+                            idx, t[jss::hash].asString(), boundary, ledger_idx);
                         continue;
                     }
                 }
@@ -837,13 +939,13 @@ public:
             hash_map<std::string, int> txHistoryMap;
             for (auto const& tx : txHistoryVec)
             {
-                txHistoryMap.emplace(tx.second, tx.first);
+                txHistoryMap.emplace(std::get<1>(tx), std::get<0>(tx));
             }
 
             auto getHistoryIndex = [&](std::size_t i) -> std::optional<int> {
                 if (i >= accountVec.size())
                     return {};
-                auto it = txHistoryMap.find(accountVec[i].second);
+                auto it = txHistoryMap.find(std::get<1>(accountVec[i]));
                 if (it == txHistoryMap.end())
                     return {};
                 return it->second;
@@ -856,6 +958,48 @@ public:
             {
                 if (auto idx = getHistoryIndex(i);
                     !idx || *idx != *firstHistoryIndex + i)
+                    return false;
+            }
+            return true;
+        };
+
+        // example of vector created from the return of `subscribe` rpc
+        // with jss::accounts
+        // boundary == true on last tx of ledger
+        // ------------------------------------------------------------
+        // (0, "E5B8B...", false, 4
+        // (0, "39E1C...", false, 4
+        // (0, "14EF1...", false, 4
+        // (0, "386E6...", false, 4
+        // (0, "00F3B...", true,  4
+        // (0, "1DCDC...", false, 5
+        // (0, "BD02A...", false, 5
+        // (0, "D3E16...", false, 5
+        // (0, "CB593...", false, 5
+        // (0, "8F28B...", true,  5
+        //
+        // example of vector created from the return of `subscribe` rpc
+        // with jss::account_history_tx_stream.
+        // boundary == true on first tx of ledger
+        // ------------------------------------------------------------
+        // (-1, "8F28B...", false, 5
+        // (-2, "CB593...", false, 5
+        // (-3, "D3E16...", false, 5
+        // (-4, "BD02A...", false, 5
+        // (-5, "1DCDC...", true,  5
+        // (-6, "00F3B...", false, 4
+        // (-7, "386E6...", false, 4
+        // (-8, "14EF1...", false, 4
+        // (-9, "39E1C...", false, 4
+        // (-10, "E5B8B...", true, 4
+
+        auto checkBoundary = [](IdxHashVec const& vec, bool /* forward */) {
+            size_t num_tx = vec.size();
+            for (size_t i = 0; i < num_tx; ++i)
+            {
+                auto [idx, hash, boundary, ledger] = vec[i];
+                if ((i + 1 == num_tx || ledger != std::get<3>(vec[i + 1])) !=
+                    boundary)
                     return false;
             }
             return true;
@@ -879,6 +1023,7 @@ public:
             auto jv = wscTxHistory->invoke("subscribe", request);
             if (!BEAST_EXPECT(goodSubRPC(jv)))
                 return;
+
             jv = wscTxHistory->invoke("subscribe", request);
             BEAST_EXPECT(!goodSubRPC(jv));
 
@@ -910,7 +1055,6 @@ public:
             r = getTxHash(*wscTxHistory, vec, 1);
             BEAST_EXPECT(!r.first);
         }
-
         {
             /*
              * subscribe genesis account tx history without txns
@@ -949,8 +1093,8 @@ public:
             if (!BEAST_EXPECT(r.first && r.second))
                 return;
             BEAST_EXPECT(
-                bobFullHistoryVec.back().second ==
-                genesisFullHistoryVec.back().second);
+                std::get<1>(bobFullHistoryVec.back()) ==
+                std::get<1>(genesisFullHistoryVec.back()));
 
             /*
              * unsubscribe to prepare next test
@@ -986,8 +1130,8 @@ public:
             jv = wscTxHistory->invoke("unsubscribe", request);
 
             BEAST_EXPECT(
-                bobFullHistoryVec.back().second ==
-                genesisFullHistoryVec.back().second);
+                std::get<1>(bobFullHistoryVec.back()) ==
+                std::get<1>(genesisFullHistoryVec.back()));
         }
 
         {
@@ -1029,11 +1173,17 @@ public:
             if (!BEAST_EXPECT(hashCompare(accountVec, txHistoryVec, true)))
                 return;
 
+            // check boundary tags
+            // only account_history_tx_stream has ledger boundary information.
+            if (!BEAST_EXPECT(checkBoundary(txHistoryVec, false)))
+                return;
+
             {
                 // take out all history txns from stream to prepare next test
                 IdxHashVec initFundTxns;
                 if (!BEAST_EXPECT(
-                        getTxHash(*wscTxHistory, initFundTxns, 10).second))
+                        getTxHash(*wscTxHistory, initFundTxns, 10).second) ||
+                    !BEAST_EXPECT(checkBoundary(initFundTxns, false)))
                     return;
             }
 
@@ -1045,6 +1195,12 @@ public:
                 return;
             if (!BEAST_EXPECT(hashCompare(accountVec, txHistoryVec, true)))
                 return;
+
+            // check boundary tags
+            // only account_history_tx_stream has ledger boundary information.
+            if (!BEAST_EXPECT(checkBoundary(txHistoryVec, false)))
+                return;
+
             wscTxHistory->invoke("unsubscribe", request);
             wscAccount->invoke("unsubscribe", stream);
         }
@@ -1140,11 +1296,17 @@ public:
     void
     run() override
     {
+        using namespace test::jtx;
+        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const xrpFees{featureXRPFees};
+
         testServer();
         testLedger();
-        testTransactions();
+        testTransactions_APIv1();
+        testTransactions_APIv2();
         testManifests();
-        testValidations();
+        testValidations(all - xrpFees);
+        testValidations(all);
         testSubErrors(true);
         testSubErrors(false);
         testSubByUrl();

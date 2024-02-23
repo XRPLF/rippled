@@ -44,7 +44,7 @@ public:
         @return `true` if the ledger was already tracked
     */
     bool
-    insert(std::shared_ptr<Ledger const> ledger, bool validated);
+    insert(std::shared_ptr<Ledger const> const& ledger, bool validated);
 
     /** Get the ledgers_by_hash cache hit rate
         @return the hit rate
@@ -95,7 +95,7 @@ public:
     /** Repair a hash to index mapping
         @param ledgerIndex The index whose mapping is to be repaired
         @param ledgerHash The hash it is to be mapped to
-        @return `true` if the mapping was repaired
+        @return `false` if the mapping was repaired
     */
     bool
     fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);

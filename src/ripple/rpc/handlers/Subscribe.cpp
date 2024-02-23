@@ -110,6 +110,7 @@ doSubscribe(RPC::JsonContext& context)
     {
         ispSub = context.infoSub;
     }
+    ispSub->setApiVersion(context.apiVersion);
 
     if (context.params.isMember(jss::streams))
     {
@@ -135,6 +136,10 @@ doSubscribe(RPC::JsonContext& context)
             else if (streamName == "ledger")
             {
                 context.netOps.subLedger(ispSub, jvResult);
+            }
+            else if (streamName == "book_changes")
+            {
+                context.netOps.subBookChanges(ispSub);
             }
             else if (streamName == "manifests")
             {

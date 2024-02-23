@@ -300,7 +300,7 @@ preclaim(
 
     @return The base fee.
 */
-FeeUnit64
+XRPAmount
 calculateBaseFee(ReadView const& view, STTx const& tx);
 
 /** Return the minimum fee that an "ordinary" transaction would pay.
@@ -335,9 +335,6 @@ calculateDefaultBaseFee(ReadView const& view, STTx const& tx);
 */
 std::pair<TER, bool>
 doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view);
-
-FeeUnit64
-invoke_calculateBaseFee(ReadView const& view, STTx const& tx);
 
 }  // namespace ripple
 

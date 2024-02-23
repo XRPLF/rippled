@@ -50,7 +50,7 @@ public:
         {
             auto it = h.find("X-User");
             if (it != h.end())
-                user_ = it->value().to_string();
+                user_ = it->value();
             fwdfor_ = std::string(forwardedFor(h));
         }
     }

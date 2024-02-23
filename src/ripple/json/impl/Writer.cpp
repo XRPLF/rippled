@@ -47,8 +47,6 @@ const char openBrace = '{';
 const char openBracket = '[';
 const char quote = '"';
 
-const std::string none;
-
 static auto const integralFloatsBecomeInts = false;
 
 size_t
