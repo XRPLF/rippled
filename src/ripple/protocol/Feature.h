@@ -128,6 +128,7 @@ class FeatureBitset : private std::bitset<detail::numFeatures>
     void
     initFromFeatures(uint256 const& f, Fs&&... fs)
     {
+        registrationIsDone();
         set(f);
         if constexpr (sizeof...(fs) > 0)
             initFromFeatures(std::forward<Fs>(fs)...);
