@@ -27,6 +27,34 @@
 #include <iterator>
 #include <mutex>
 
+#if __cpp_lib_format < 201907L
+/**
+ * The stream operator for `std::duration` was added in libstdc++ 13.1.
+ * We condition this stub on compilers that are missing the definition.
+ * https://gcc.gnu.org/onlinedocs/libstdc++/manual/status.html#table.cxx20_features
+ * https://isocpp.org/std/standing-documents/sd-6-sg10-feature-test-recommendations#__cpp_lib_format
+ */
+template <typename T>
+struct units_suffix;
+
+template <>
+struct units_suffix<std::milli> {
+    static constexpr char const* value = "ms";
+};
+
+// Taken from https://en.cppreference.com/w/cpp/chrono/duration/operator_ltlt
+template<typename CharT, typename Traits, typename Rep, typename Period>
+std::basic_ostream<CharT, Traits>&
+operator<<(std::basic_ostream<CharT, Traits>& os, std::chrono::duration<Rep, Period> const& d) {
+    std::basic_ostringstream<CharT, Traits> s;
+    s.flags(os.flags());
+    s.imbue(os.getloc());
+    s.precision(os.precision());
+    s << d.count() << units_suffix<Period>::value;
+    return os << s.str();
+}
+#endif
+
 namespace ripple {
 
 using RequestId = MessageScheduler::RequestId;
@@ -425,7 +453,6 @@ MessageScheduler::send_(
         });
 
     requests_.emplace(requestId, std::move(request));
-    std::size_t nrequests = requests_.size();
 
     // REVIEW: `PeerImp::send` seems to have no way to indicate an error.
     // Can we assume it is always successful?
