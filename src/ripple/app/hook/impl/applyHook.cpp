@@ -949,13 +949,13 @@ lookup_state_cache(
 // reserved.
 inline bool  // true unless a new hook state was required and the acc has
              // insufficent reserve
-             set_state_cache(
-                 hook::HookContext& hookCtx,
-                 ripple::AccountID const& acc,
-                 ripple::uint256 const& ns,
-                 ripple::uint256 const& key,
-                 ripple::Blob& data,
-                 bool modified)
+set_state_cache(
+    hook::HookContext& hookCtx,
+    ripple::AccountID const& acc,
+    ripple::uint256 const& ns,
+    ripple::uint256 const& key,
+    ripple::Blob& data,
+    bool modified)
 {
     auto& stateMap = hookCtx.result.stateMap;
     if (stateMap.find(acc) == stateMap.end())
