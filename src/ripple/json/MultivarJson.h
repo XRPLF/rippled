@@ -45,8 +45,8 @@ struct MultivarJson
     }
 
     Json::Value const&
-    select(auto&& selector)
-        const requires std::same_as<std::size_t, decltype(selector())>
+    select(auto&& selector) const
+        requires std::same_as<std::size_t, decltype(selector())>
     {
         auto const index = selector();
         assert(index < size);
@@ -54,8 +54,9 @@ struct MultivarJson
     }
 
     void
-    set(const char* key, auto const& v) requires
-        std::constructible_from<Json::Value, decltype(v)>
+    set(const char* key,
+        auto const&
+            v) requires std::constructible_from<Json::Value, decltype(v)>
     {
         for (auto& a : this->val)
             a[key] = v;
@@ -122,7 +123,7 @@ template <
     unsigned int maxVer,
     std::size_t size,
     typename Fn>
-requires                                           //
+    requires                                       //
     (maxVer >= minVer) &&                          //
     (size == maxVer + 1 - minVer) &&               //
     (apiVersionSelector(minVer)() == 0) &&         //

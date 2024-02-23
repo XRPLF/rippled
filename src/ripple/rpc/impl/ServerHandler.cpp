@@ -386,9 +386,9 @@ logDuration(
     beast::Journal& journal)
 {
     using namespace std::chrono_literals;
-    auto const level = (duration >= 10s) ? journal.error()
-        : (duration >= 1s)               ? journal.warn()
-                                         : journal.debug();
+    auto const level = (duration >= 10s)
+        ? journal.error()
+        : (duration >= 1s) ? journal.warn() : journal.debug();
 
     JLOG(level) << "RPC request processing duration = "
                 << std::chrono::duration_cast<std::chrono::microseconds>(

@@ -763,7 +763,8 @@ concept SingleVersionedTestCallable = requires(T callable, unsigned int version)
 {
     {
         callable(version)
-        } -> std::same_as<void>;
+    }
+    ->std::same_as<void>;
 };
 
 /**

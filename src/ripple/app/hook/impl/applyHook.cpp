@@ -2326,8 +2326,8 @@ DEFINE_HOOK_FUNCTION(
                 ripple::Keylet kl = keylet_type == keylet_code::CHILD
                     ? ripple::keylet::child(id)
                     : keylet_type == keylet_code::EMITTED
-                    ? ripple::keylet::emitted(id)
-                    : ripple::keylet::unchecked(id);
+                        ? ripple::keylet::emitted(id)
+                        : ripple::keylet::unchecked(id);
 
                 return serialize_keylet(kl, memory, write_ptr, write_len);
             }
@@ -2356,10 +2356,10 @@ DEFINE_HOOK_FUNCTION(
                 ripple::Keylet kl = keylet_type == keylet_code::HOOK
                     ? ripple::keylet::hook(id)
                     : keylet_type == keylet_code::SIGNERS
-                    ? ripple::keylet::signers(id)
-                    : keylet_type == keylet_code::OWNER_DIR
-                    ? ripple::keylet::ownerDir(id)
-                    : ripple::keylet::account(id);
+                        ? ripple::keylet::signers(id)
+                        : keylet_type == keylet_code::OWNER_DIR
+                            ? ripple::keylet::ownerDir(id)
+                            : ripple::keylet::account(id);
 
                 return serialize_keylet(kl, memory, write_ptr, write_len);
             }
@@ -2386,8 +2386,8 @@ DEFINE_HOOK_FUNCTION(
                 ripple::Keylet kl = keylet_type == keylet_code::CHECK
                     ? ripple::keylet::check(id, c)
                     : keylet_type == keylet_code::ESCROW
-                    ? ripple::keylet::escrow(id, c)
-                    : ripple::keylet::offer(id, c);
+                        ? ripple::keylet::escrow(id, c)
+                        : ripple::keylet::offer(id, c);
 
                 return serialize_keylet(kl, memory, write_ptr, write_len);
             }
@@ -2481,11 +2481,13 @@ DEFINE_HOOK_FUNCTION(
                 WRITE_WASM_MEMORY_AND_RETURN(
                     write_ptr,
                     write_len,
-                    keylet_type == keylet_code::AMENDMENTS ? cAmendments.data()
-                        : keylet_type == keylet_code::FEES ? cFees.data()
-                        : keylet_type == keylet_code::NEGATIVE_UNL
-                        ? cNegativeUNL.data()
-                        : cEmittedDir.data(),
+                    keylet_type == keylet_code::AMENDMENTS
+                        ? cAmendments.data()
+                        : keylet_type == keylet_code::FEES
+                            ? cFees.data()
+                            : keylet_type == keylet_code::NEGATIVE_UNL
+                                ? cNegativeUNL.data()
+                                : cEmittedDir.data(),
                     34,
                     memory,
                     memory_length);

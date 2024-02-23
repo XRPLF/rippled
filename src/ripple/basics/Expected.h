@@ -136,13 +136,13 @@ class [[nodiscard]] Expected
 
 public:
     template <typename U>
-    requires std::convertible_to<U, T>
-    constexpr Expected(U&& r) : Base(T(std::forward<U>(r)))
+    requires std::convertible_to<U, T> constexpr Expected(U && r)
+        : Base(T(std::forward<U>(r)))
     {
     }
 
     template <typename U>
-    requires std::convertible_to<U, E> &&
+        requires std::convertible_to<U, E> &&
         (!std::is_reference_v<U>)constexpr Expected(Unexpected<U> e)
         : Base(E(std::move(e.value())))
     {
@@ -218,7 +218,7 @@ public:
     }
 
     template <typename U>
-    requires std::convertible_to<U, E> &&
+        requires std::convertible_to<U, E> &&
         (!std::is_reference_v<U>)constexpr Expected(Unexpected<U> e)
         : Base(E(std::move(e.value())))
     {

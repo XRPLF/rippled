@@ -201,9 +201,8 @@ public:
                                           {acc25, 1}, {acc26, 1}, {acc27, 1},
                                           {acc28, 1}, {acc29, 1}, {acc30, 1},
                                           {acc31, 1}, {acc32, 1}, {acc33, 1}}
-                    : std::vector<signer>{{bogie, 1}, {demon, 1}, {ghost, 1},
-                                          {haunt, 1}, {jinni, 1}, {phase, 1},
-                                          {shade, 1}, {spook, 1}, {spare, 1}}),
+                    : std::vector<
+                          signer>{{bogie, 1}, {demon, 1}, {ghost, 1}, {haunt, 1}, {jinni, 1}, {phase, 1}, {shade, 1}, {spook, 1}, {spare, 1}}),
             ter(temMALFORMED));
         // clang-format on
         env.close();
