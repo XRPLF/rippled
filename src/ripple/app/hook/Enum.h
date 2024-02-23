@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <set>
 #include <string>
 #ifndef HOOKENUM_INCLUDED
