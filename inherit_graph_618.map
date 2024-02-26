@@ -4,24 +4,25 @@
 <area shape="rect" id="node3" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,71,168,112"/>
 <area shape="rect" id="node4" href="$classripple_1_1STAmount.html" title=" " alt="" coords="235,85,368,111"/>
 <area shape="rect" id="node5" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,136,168,177"/>
-<area shape="rect" id="node6" href="$classripple_1_1STArray.html" title=" " alt="" coords="243,150,360,177"/>
+<area shape="rect" id="node6" href="$classripple_1_1STArray.html" title=" " alt="" coords="243,143,360,170"/>
 <area shape="rect" id="node7" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,201,168,243"/>
-<area shape="rect" id="node8" href="$classripple_1_1STBlob.html" title=" " alt="" coords="245,209,357,235"/>
-<area shape="rect" id="node9" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,319,168,360"/>
-<area shape="rect" id="node10" href="$classripple_1_1STIssue.html" title=" " alt="" coords="243,259,360,286"/>
-<area shape="rect" id="node11" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="220,311,383,352"/>
-<area shape="rect" id="node12" href="$classripple_1_1STLedgerEntry.html" title=" " alt="" coords="435,347,596,374"/>
-<area shape="rect" id="node13" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,384,168,425"/>
-<area shape="rect" id="node14" href="$classripple_1_1STObject.html" title=" " alt="" coords="239,377,364,403"/>
-<area shape="rect" id="node15" href="$classripple_1_1STTx.html" title=" " alt="" coords="466,417,565,443"/>
-<area shape="rect" id="node16" href="$classripple_1_1STValidation.html" title=" " alt="" coords="441,474,589,501"/>
-<area shape="rect" id="node17" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,537,168,579"/>
-<area shape="rect" id="node18" href="$classripple_1_1STPathSet.html" title=" " alt="" coords="235,559,367,586"/>
-<area shape="rect" id="node19" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="220,428,383,469"/>
-<area shape="rect" id="node20" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="220,493,383,535"/>
-<area shape="rect" id="node21" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,603,168,644"/>
-<area shape="rect" id="node22" href="$classripple_1_1STVector256.html" title=" " alt="" coords="227,610,375,637"/>
-<area shape="rect" id="node23" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,668,168,709"/>
-<area shape="rect" id="node24" href="$classripple_1_1STXChainBridge.html" title=" " alt="" coords="216,667,387,694"/>
-<area shape="rect" id="node25" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="29,267,144,294"/>
+<area shape="rect" id="node8" href="$classripple_1_1STBlob.html" title=" " alt="" coords="245,194,357,221"/>
+<area shape="rect" id="node9" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,267,168,308"/>
+<area shape="rect" id="node10" href="$classripple_1_1STIssue.html" title=" " alt="" coords="243,245,360,271"/>
+<area shape="rect" id="node11" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="220,296,383,337"/>
+<area shape="rect" id="node12" href="$classripple_1_1STLedgerEntry.html" title=" " alt="" coords="435,358,596,385"/>
+<area shape="rect" id="node13" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,405,168,447"/>
+<area shape="rect" id="node14" href="$classripple_1_1STObject.html" title=" " alt="" coords="239,413,364,439"/>
+<area shape="rect" id="node15" href="$classripple_1_1STTx.html" title=" " alt="" coords="466,442,565,469"/>
+<area shape="rect" id="node16" href="$classripple_1_1STValidation.html" title=" " alt="" coords="441,499,589,526"/>
+<area shape="rect" id="node17" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,573,168,615"/>
+<area shape="rect" id="node18" href="$classripple_1_1STPathSet.html" title=" " alt="" coords="235,595,367,622"/>
+<area shape="rect" id="node19" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="220,464,383,505"/>
+<area shape="rect" id="node20" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="220,529,383,571"/>
+<area shape="rect" id="node21" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,639,168,680"/>
+<area shape="rect" id="node22" href="$classripple_1_1STVector256.html" title=" " alt="" coords="227,646,375,673"/>
+<area shape="rect" id="node23" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,704,168,745"/>
+<area shape="rect" id="node24" href="$classripple_1_1STXChainBridge.html" title=" " alt="" coords="216,703,387,730"/>
+<area shape="rect" id="node25" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="29,343,144,370"/>
+<area shape="rect" id="node26" href="$classripple_1_1STCurrency.html" title=" " alt="" coords="231,362,371,389"/>
 </map>

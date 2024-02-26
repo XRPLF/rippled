@@ -831,270 +831,283 @@ $(function() {
 <div class="line"><a name="l00760"></a><span class="lineno">  760</span>&#160;            }</div>
 <div class="line"><a name="l00761"></a><span class="lineno">  761</span>&#160;            <span class="keywordflow">break</span>;</div>
 <div class="line"><a name="l00762"></a><span class="lineno">  762</span>&#160; </div>
-<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;        <span class="keywordflow">default</span>:</div>
-<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;            error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a5d6f40484fef914999a235f1c8927f0b">bad_type</a>(json_name, fieldName);</div>
-<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;            <span class="keywordflow">return</span> ret;</div>
-<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;    }</div>
-<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160; </div>
-<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;    <span class="keywordflow">return</span> ret;</div>
-<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;}</div>
-<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160; </div>
-<div class="line"><a name="l00771"></a><span class="lineno"><a class="line" href="namespaceripple_1_1STParsedJSONDetail.html#a7444cf831a775edd42d6a1ff8f22fae5">  771</a></span>&#160;<span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">int</span> <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a7444cf831a775edd42d6a1ff8f22fae5">maxDepth</a> = 64;</div>
-<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160; </div>
-<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;<span class="comment">// Forward declaration since parseObject() and parseArray() call each other.</span></div>
-<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;detail::STVar&gt;</a></div>
-<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160;<a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a7706e311e6424bc28b2d9c2724ec9300">parseArray</a>(</div>
-<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; json_name,</div>
-<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; json,</div>
-<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;    <a class="code" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; inName,</div>
-<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;    <span class="keywordtype">int</span> depth,</div>
-<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; error);</div>
-<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160; </div>
-<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;STObject&gt;</a></div>
-<div class="line"><a name="l00783"></a><span class="lineno"><a class="line" href="namespaceripple_1_1STParsedJSONDetail.html#a49566dbe3cc1c22b1aabe9efa5c638e9">  783</a></span>&#160;<a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a49566dbe3cc1c22b1aabe9efa5c638e9">parseObject</a>(</div>
-<div class="line"><a name="l00784"></a><span class="lineno">  784</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; json_name,</div>
-<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; json,</div>
-<div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;    <a class="code" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; inName,</div>
-<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;    <span class="keywordtype">int</span> depth,</div>
-<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; error)</div>
-<div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160;{</div>
-<div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;    <span class="keywordflow">if</span> (!json.<a class="code" href="classJson_1_1Value.html#a478d6ca4b353199e3b9f91b9cfebc7ba">isObjectOrNull</a>())</div>
-<div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;    {</div>
-<div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160;        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a3fc50568b30feb553d2a641b7ebaa517">not_an_object</a>(json_name);</div>
-<div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160;    }</div>
-<div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160; </div>
-<div class="line"><a name="l00796"></a><span class="lineno">  796</span>&#160;    <span class="keywordflow">if</span> (depth &gt; <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a7444cf831a775edd42d6a1ff8f22fae5">maxDepth</a>)</div>
-<div class="line"><a name="l00797"></a><span class="lineno">  797</span>&#160;    {</div>
-<div class="line"><a name="l00798"></a><span class="lineno">  798</span>&#160;        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#ac34dac5dc1bd0ee5138834d6e0d8aa0d">too_deep</a>(json_name);</div>
-<div class="line"><a name="l00799"></a><span class="lineno">  799</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00800"></a><span class="lineno">  800</span>&#160;    }</div>
-<div class="line"><a name="l00801"></a><span class="lineno">  801</span>&#160; </div>
-<div class="line"><a name="l00802"></a><span class="lineno">  802</span>&#160;    <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00803"></a><span class="lineno">  803</span>&#160;    {</div>
-<div class="line"><a name="l00804"></a><span class="lineno">  804</span>&#160;        <a class="code" href="classripple_1_1STObject.html">STObject</a> data(inName);</div>
-<div class="line"><a name="l00805"></a><span class="lineno">  805</span>&#160; </div>
-<div class="line"><a name="l00806"></a><span class="lineno">  806</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; fieldName : json.<a class="code" href="classJson_1_1Value.html#a79d7725dce6260317333e69022367ac9">getMemberNames</a>())</div>
-<div class="line"><a name="l00807"></a><span class="lineno">  807</span>&#160;        {</div>
-<div class="line"><a name="l00808"></a><span class="lineno">  808</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; value = json[fieldName];</div>
-<div class="line"><a name="l00809"></a><span class="lineno">  809</span>&#160; </div>
-<div class="line"><a name="l00810"></a><span class="lineno">  810</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; field = <a class="code" href="classripple_1_1SField.html#ac50e95825ecf10dfd786cb9b8da4ae39">SField::getField</a>(fieldName);</div>
-<div class="line"><a name="l00811"></a><span class="lineno">  811</span>&#160; </div>
-<div class="line"><a name="l00812"></a><span class="lineno">  812</span>&#160;            <span class="keywordflow">if</span> (field == <a class="code" href="namespaceripple.html#acb4c76f4bb5b316911034e025cde5489">sfInvalid</a>)</div>
-<div class="line"><a name="l00813"></a><span class="lineno">  813</span>&#160;            {</div>
-<div class="line"><a name="l00814"></a><span class="lineno">  814</span>&#160;                error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#acb02638573a10f8c386461de12f132eb">unknown_field</a>(json_name, fieldName);</div>
-<div class="line"><a name="l00815"></a><span class="lineno">  815</span>&#160;                <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00816"></a><span class="lineno">  816</span>&#160;            }</div>
-<div class="line"><a name="l00817"></a><span class="lineno">  817</span>&#160; </div>
-<div class="line"><a name="l00818"></a><span class="lineno">  818</span>&#160;            <span class="keywordflow">switch</span> (field.fieldType)</div>
-<div class="line"><a name="l00819"></a><span class="lineno">  819</span>&#160;            {</div>
-<div class="line"><a name="l00820"></a><span class="lineno">  820</span>&#160;                <span class="comment">// Object-style containers (which recurse).</span></div>
-<div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160;                <span class="keywordflow">case</span> STI_OBJECT:</div>
-<div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160;                <span class="keywordflow">case</span> STI_TRANSACTION:</div>
-<div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;                <span class="keywordflow">case</span> STI_LEDGERENTRY:</div>
-<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160;                <span class="keywordflow">case</span> STI_VALIDATION:</div>
-<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;                    <span class="keywordflow">if</span> (!value.<a class="code" href="classJson_1_1Value.html#a8cf96c0f2a552051fcfc78ffee60e037">isObject</a>())</div>
-<div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160;                    {</div>
-<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;                        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a3fc50568b30feb553d2a641b7ebaa517">not_an_object</a>(json_name, fieldName);</div>
-<div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160;                        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00829"></a><span class="lineno">  829</span>&#160;                    }</div>
+<div class="line"><a name="l00763"></a><span class="lineno">  763</span>&#160;        <span class="keywordflow">case</span> STI_CURRENCY:</div>
+<div class="line"><a name="l00764"></a><span class="lineno">  764</span>&#160;            <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00765"></a><span class="lineno">  765</span>&#160;            {</div>
+<div class="line"><a name="l00766"></a><span class="lineno">  766</span>&#160;                ret = detail::make_stvar&lt;STCurrency&gt;(</div>
+<div class="line"><a name="l00767"></a><span class="lineno">  767</span>&#160;                    <a class="code" href="namespaceripple.html#a2f6ecb5c0671c8eae429821a6456b704">currencyFromJson</a>(field, value));</div>
+<div class="line"><a name="l00768"></a><span class="lineno">  768</span>&#160;            }</div>
+<div class="line"><a name="l00769"></a><span class="lineno">  769</span>&#160;            <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
+<div class="line"><a name="l00770"></a><span class="lineno">  770</span>&#160;            {</div>
+<div class="line"><a name="l00771"></a><span class="lineno">  771</span>&#160;                error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a9c5f5f83378546d25848c2dd4f791795">invalid_data</a>(json_name, fieldName);</div>
+<div class="line"><a name="l00772"></a><span class="lineno">  772</span>&#160;                <span class="keywordflow">return</span> ret;</div>
+<div class="line"><a name="l00773"></a><span class="lineno">  773</span>&#160;            }</div>
+<div class="line"><a name="l00774"></a><span class="lineno">  774</span>&#160;            <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00775"></a><span class="lineno">  775</span>&#160; </div>
+<div class="line"><a name="l00776"></a><span class="lineno">  776</span>&#160;        <span class="keywordflow">default</span>:</div>
+<div class="line"><a name="l00777"></a><span class="lineno">  777</span>&#160;            error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a5d6f40484fef914999a235f1c8927f0b">bad_type</a>(json_name, fieldName);</div>
+<div class="line"><a name="l00778"></a><span class="lineno">  778</span>&#160;            <span class="keywordflow">return</span> ret;</div>
+<div class="line"><a name="l00779"></a><span class="lineno">  779</span>&#160;    }</div>
+<div class="line"><a name="l00780"></a><span class="lineno">  780</span>&#160; </div>
+<div class="line"><a name="l00781"></a><span class="lineno">  781</span>&#160;    <span class="keywordflow">return</span> ret;</div>
+<div class="line"><a name="l00782"></a><span class="lineno">  782</span>&#160;}</div>
+<div class="line"><a name="l00783"></a><span class="lineno">  783</span>&#160; </div>
+<div class="line"><a name="l00784"></a><span class="lineno"><a class="line" href="namespaceripple_1_1STParsedJSONDetail.html#a7444cf831a775edd42d6a1ff8f22fae5">  784</a></span>&#160;<span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">int</span> <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a7444cf831a775edd42d6a1ff8f22fae5">maxDepth</a> = 64;</div>
+<div class="line"><a name="l00785"></a><span class="lineno">  785</span>&#160; </div>
+<div class="line"><a name="l00786"></a><span class="lineno">  786</span>&#160;<span class="comment">// Forward declaration since parseObject() and parseArray() call each other.</span></div>
+<div class="line"><a name="l00787"></a><span class="lineno">  787</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;detail::STVar&gt;</a></div>
+<div class="line"><a name="l00788"></a><span class="lineno">  788</span>&#160;<a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a7706e311e6424bc28b2d9c2724ec9300">parseArray</a>(</div>
+<div class="line"><a name="l00789"></a><span class="lineno">  789</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; json_name,</div>
+<div class="line"><a name="l00790"></a><span class="lineno">  790</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; json,</div>
+<div class="line"><a name="l00791"></a><span class="lineno">  791</span>&#160;    <a class="code" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; inName,</div>
+<div class="line"><a name="l00792"></a><span class="lineno">  792</span>&#160;    <span class="keywordtype">int</span> depth,</div>
+<div class="line"><a name="l00793"></a><span class="lineno">  793</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; error);</div>
+<div class="line"><a name="l00794"></a><span class="lineno">  794</span>&#160; </div>
+<div class="line"><a name="l00795"></a><span class="lineno">  795</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;STObject&gt;</a></div>
+<div class="line"><a name="l00796"></a><span class="lineno"><a class="line" href="namespaceripple_1_1STParsedJSONDetail.html#a49566dbe3cc1c22b1aabe9efa5c638e9">  796</a></span>&#160;<a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a49566dbe3cc1c22b1aabe9efa5c638e9">parseObject</a>(</div>
+<div class="line"><a name="l00797"></a><span class="lineno">  797</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; json_name,</div>
+<div class="line"><a name="l00798"></a><span class="lineno">  798</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; json,</div>
+<div class="line"><a name="l00799"></a><span class="lineno">  799</span>&#160;    <a class="code" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; inName,</div>
+<div class="line"><a name="l00800"></a><span class="lineno">  800</span>&#160;    <span class="keywordtype">int</span> depth,</div>
+<div class="line"><a name="l00801"></a><span class="lineno">  801</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; error)</div>
+<div class="line"><a name="l00802"></a><span class="lineno">  802</span>&#160;{</div>
+<div class="line"><a name="l00803"></a><span class="lineno">  803</span>&#160;    <span class="keywordflow">if</span> (!json.<a class="code" href="classJson_1_1Value.html#a478d6ca4b353199e3b9f91b9cfebc7ba">isObjectOrNull</a>())</div>
+<div class="line"><a name="l00804"></a><span class="lineno">  804</span>&#160;    {</div>
+<div class="line"><a name="l00805"></a><span class="lineno">  805</span>&#160;        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a3fc50568b30feb553d2a641b7ebaa517">not_an_object</a>(json_name);</div>
+<div class="line"><a name="l00806"></a><span class="lineno">  806</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00807"></a><span class="lineno">  807</span>&#160;    }</div>
+<div class="line"><a name="l00808"></a><span class="lineno">  808</span>&#160; </div>
+<div class="line"><a name="l00809"></a><span class="lineno">  809</span>&#160;    <span class="keywordflow">if</span> (depth &gt; <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a7444cf831a775edd42d6a1ff8f22fae5">maxDepth</a>)</div>
+<div class="line"><a name="l00810"></a><span class="lineno">  810</span>&#160;    {</div>
+<div class="line"><a name="l00811"></a><span class="lineno">  811</span>&#160;        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#ac34dac5dc1bd0ee5138834d6e0d8aa0d">too_deep</a>(json_name);</div>
+<div class="line"><a name="l00812"></a><span class="lineno">  812</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00813"></a><span class="lineno">  813</span>&#160;    }</div>
+<div class="line"><a name="l00814"></a><span class="lineno">  814</span>&#160; </div>
+<div class="line"><a name="l00815"></a><span class="lineno">  815</span>&#160;    <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00816"></a><span class="lineno">  816</span>&#160;    {</div>
+<div class="line"><a name="l00817"></a><span class="lineno">  817</span>&#160;        <a class="code" href="classripple_1_1STObject.html">STObject</a> data(inName);</div>
+<div class="line"><a name="l00818"></a><span class="lineno">  818</span>&#160; </div>
+<div class="line"><a name="l00819"></a><span class="lineno">  819</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; fieldName : json.<a class="code" href="classJson_1_1Value.html#a79d7725dce6260317333e69022367ac9">getMemberNames</a>())</div>
+<div class="line"><a name="l00820"></a><span class="lineno">  820</span>&#160;        {</div>
+<div class="line"><a name="l00821"></a><span class="lineno">  821</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; value = json[fieldName];</div>
+<div class="line"><a name="l00822"></a><span class="lineno">  822</span>&#160; </div>
+<div class="line"><a name="l00823"></a><span class="lineno">  823</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; field = <a class="code" href="classripple_1_1SField.html#ac50e95825ecf10dfd786cb9b8da4ae39">SField::getField</a>(fieldName);</div>
+<div class="line"><a name="l00824"></a><span class="lineno">  824</span>&#160; </div>
+<div class="line"><a name="l00825"></a><span class="lineno">  825</span>&#160;            <span class="keywordflow">if</span> (field == <a class="code" href="namespaceripple.html#acb4c76f4bb5b316911034e025cde5489">sfInvalid</a>)</div>
+<div class="line"><a name="l00826"></a><span class="lineno">  826</span>&#160;            {</div>
+<div class="line"><a name="l00827"></a><span class="lineno">  827</span>&#160;                error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#acb02638573a10f8c386461de12f132eb">unknown_field</a>(json_name, fieldName);</div>
+<div class="line"><a name="l00828"></a><span class="lineno">  828</span>&#160;                <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00829"></a><span class="lineno">  829</span>&#160;            }</div>
 <div class="line"><a name="l00830"></a><span class="lineno">  830</span>&#160; </div>
-<div class="line"><a name="l00831"></a><span class="lineno">  831</span>&#160;                    <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00832"></a><span class="lineno">  832</span>&#160;                    {</div>
-<div class="line"><a name="l00833"></a><span class="lineno">  833</span>&#160;                        <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a49566dbe3cc1c22b1aabe9efa5c638e9">parseObject</a>(</div>
-<div class="line"><a name="l00834"></a><span class="lineno">  834</span>&#160;                            json_name + <span class="stringliteral">&quot;.&quot;</span> + fieldName,</div>
-<div class="line"><a name="l00835"></a><span class="lineno">  835</span>&#160;                            value,</div>
-<div class="line"><a name="l00836"></a><span class="lineno">  836</span>&#160;                            field,</div>
-<div class="line"><a name="l00837"></a><span class="lineno">  837</span>&#160;                            depth + 1,</div>
-<div class="line"><a name="l00838"></a><span class="lineno">  838</span>&#160;                            error);</div>
-<div class="line"><a name="l00839"></a><span class="lineno">  839</span>&#160;                        <span class="keywordflow">if</span> (!ret)</div>
-<div class="line"><a name="l00840"></a><span class="lineno">  840</span>&#160;                            <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00841"></a><span class="lineno">  841</span>&#160;                        data.emplace_back(std::move(*ret));</div>
+<div class="line"><a name="l00831"></a><span class="lineno">  831</span>&#160;            <span class="keywordflow">switch</span> (field.fieldType)</div>
+<div class="line"><a name="l00832"></a><span class="lineno">  832</span>&#160;            {</div>
+<div class="line"><a name="l00833"></a><span class="lineno">  833</span>&#160;                <span class="comment">// Object-style containers (which recurse).</span></div>
+<div class="line"><a name="l00834"></a><span class="lineno">  834</span>&#160;                <span class="keywordflow">case</span> STI_OBJECT:</div>
+<div class="line"><a name="l00835"></a><span class="lineno">  835</span>&#160;                <span class="keywordflow">case</span> STI_TRANSACTION:</div>
+<div class="line"><a name="l00836"></a><span class="lineno">  836</span>&#160;                <span class="keywordflow">case</span> STI_LEDGERENTRY:</div>
+<div class="line"><a name="l00837"></a><span class="lineno">  837</span>&#160;                <span class="keywordflow">case</span> STI_VALIDATION:</div>
+<div class="line"><a name="l00838"></a><span class="lineno">  838</span>&#160;                    <span class="keywordflow">if</span> (!value.<a class="code" href="classJson_1_1Value.html#a8cf96c0f2a552051fcfc78ffee60e037">isObject</a>())</div>
+<div class="line"><a name="l00839"></a><span class="lineno">  839</span>&#160;                    {</div>
+<div class="line"><a name="l00840"></a><span class="lineno">  840</span>&#160;                        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a3fc50568b30feb553d2a641b7ebaa517">not_an_object</a>(json_name, fieldName);</div>
+<div class="line"><a name="l00841"></a><span class="lineno">  841</span>&#160;                        <span class="keywordflow">return</span> std::nullopt;</div>
 <div class="line"><a name="l00842"></a><span class="lineno">  842</span>&#160;                    }</div>
-<div class="line"><a name="l00843"></a><span class="lineno">  843</span>&#160;                    <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
-<div class="line"><a name="l00844"></a><span class="lineno">  844</span>&#160;                    {</div>
-<div class="line"><a name="l00845"></a><span class="lineno">  845</span>&#160;                        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a9c5f5f83378546d25848c2dd4f791795">invalid_data</a>(json_name, fieldName);</div>
-<div class="line"><a name="l00846"></a><span class="lineno">  846</span>&#160;                        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00847"></a><span class="lineno">  847</span>&#160;                    }</div>
-<div class="line"><a name="l00848"></a><span class="lineno">  848</span>&#160; </div>
-<div class="line"><a name="l00849"></a><span class="lineno">  849</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00850"></a><span class="lineno">  850</span>&#160; </div>
-<div class="line"><a name="l00851"></a><span class="lineno">  851</span>&#160;                <span class="comment">// Array-style containers (which recurse).</span></div>
-<div class="line"><a name="l00852"></a><span class="lineno">  852</span>&#160;                <span class="keywordflow">case</span> STI_ARRAY:</div>
-<div class="line"><a name="l00853"></a><span class="lineno">  853</span>&#160;                    <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00854"></a><span class="lineno">  854</span>&#160;                    {</div>
-<div class="line"><a name="l00855"></a><span class="lineno">  855</span>&#160;                        <span class="keyword">auto</span> array = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a7706e311e6424bc28b2d9c2724ec9300">parseArray</a>(</div>
-<div class="line"><a name="l00856"></a><span class="lineno">  856</span>&#160;                            json_name + <span class="stringliteral">&quot;.&quot;</span> + fieldName,</div>
-<div class="line"><a name="l00857"></a><span class="lineno">  857</span>&#160;                            value,</div>
-<div class="line"><a name="l00858"></a><span class="lineno">  858</span>&#160;                            field,</div>
-<div class="line"><a name="l00859"></a><span class="lineno">  859</span>&#160;                            depth + 1,</div>
-<div class="line"><a name="l00860"></a><span class="lineno">  860</span>&#160;                            error);</div>
-<div class="line"><a name="l00861"></a><span class="lineno">  861</span>&#160;                        <span class="keywordflow">if</span> (!array.has_value())</div>
-<div class="line"><a name="l00862"></a><span class="lineno">  862</span>&#160;                            <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00863"></a><span class="lineno">  863</span>&#160;                        data.emplace_back(std::move(*array));</div>
-<div class="line"><a name="l00864"></a><span class="lineno">  864</span>&#160;                    }</div>
-<div class="line"><a name="l00865"></a><span class="lineno">  865</span>&#160;                    <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
-<div class="line"><a name="l00866"></a><span class="lineno">  866</span>&#160;                    {</div>
-<div class="line"><a name="l00867"></a><span class="lineno">  867</span>&#160;                        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a9c5f5f83378546d25848c2dd4f791795">invalid_data</a>(json_name, fieldName);</div>
-<div class="line"><a name="l00868"></a><span class="lineno">  868</span>&#160;                        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00869"></a><span class="lineno">  869</span>&#160;                    }</div>
-<div class="line"><a name="l00870"></a><span class="lineno">  870</span>&#160; </div>
-<div class="line"><a name="l00871"></a><span class="lineno">  871</span>&#160;                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00872"></a><span class="lineno">  872</span>&#160; </div>
-<div class="line"><a name="l00873"></a><span class="lineno">  873</span>&#160;                <span class="comment">// Everything else (types that don&#39;t recurse).</span></div>
-<div class="line"><a name="l00874"></a><span class="lineno">  874</span>&#160;                <span class="keywordflow">default</span>: {</div>
-<div class="line"><a name="l00875"></a><span class="lineno">  875</span>&#160;                    <span class="keyword">auto</span> leaf =</div>
-<div class="line"><a name="l00876"></a><span class="lineno">  876</span>&#160;                        <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a45f0c7d30050d346eb572733be8a483f">parseLeaf</a>(json_name, fieldName, &amp;inName, value, error);</div>
-<div class="line"><a name="l00877"></a><span class="lineno">  877</span>&#160; </div>
-<div class="line"><a name="l00878"></a><span class="lineno">  878</span>&#160;                    <span class="keywordflow">if</span> (!leaf)</div>
-<div class="line"><a name="l00879"></a><span class="lineno">  879</span>&#160;                        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00880"></a><span class="lineno">  880</span>&#160; </div>
-<div class="line"><a name="l00881"></a><span class="lineno">  881</span>&#160;                    data.emplace_back(std::move(*leaf));</div>
-<div class="line"><a name="l00882"></a><span class="lineno">  882</span>&#160;                }</div>
+<div class="line"><a name="l00843"></a><span class="lineno">  843</span>&#160; </div>
+<div class="line"><a name="l00844"></a><span class="lineno">  844</span>&#160;                    <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00845"></a><span class="lineno">  845</span>&#160;                    {</div>
+<div class="line"><a name="l00846"></a><span class="lineno">  846</span>&#160;                        <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a49566dbe3cc1c22b1aabe9efa5c638e9">parseObject</a>(</div>
+<div class="line"><a name="l00847"></a><span class="lineno">  847</span>&#160;                            json_name + <span class="stringliteral">&quot;.&quot;</span> + fieldName,</div>
+<div class="line"><a name="l00848"></a><span class="lineno">  848</span>&#160;                            value,</div>
+<div class="line"><a name="l00849"></a><span class="lineno">  849</span>&#160;                            field,</div>
+<div class="line"><a name="l00850"></a><span class="lineno">  850</span>&#160;                            depth + 1,</div>
+<div class="line"><a name="l00851"></a><span class="lineno">  851</span>&#160;                            error);</div>
+<div class="line"><a name="l00852"></a><span class="lineno">  852</span>&#160;                        <span class="keywordflow">if</span> (!ret)</div>
+<div class="line"><a name="l00853"></a><span class="lineno">  853</span>&#160;                            <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00854"></a><span class="lineno">  854</span>&#160;                        data.emplace_back(std::move(*ret));</div>
+<div class="line"><a name="l00855"></a><span class="lineno">  855</span>&#160;                    }</div>
+<div class="line"><a name="l00856"></a><span class="lineno">  856</span>&#160;                    <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
+<div class="line"><a name="l00857"></a><span class="lineno">  857</span>&#160;                    {</div>
+<div class="line"><a name="l00858"></a><span class="lineno">  858</span>&#160;                        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a9c5f5f83378546d25848c2dd4f791795">invalid_data</a>(json_name, fieldName);</div>
+<div class="line"><a name="l00859"></a><span class="lineno">  859</span>&#160;                        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00860"></a><span class="lineno">  860</span>&#160;                    }</div>
+<div class="line"><a name="l00861"></a><span class="lineno">  861</span>&#160; </div>
+<div class="line"><a name="l00862"></a><span class="lineno">  862</span>&#160;                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00863"></a><span class="lineno">  863</span>&#160; </div>
+<div class="line"><a name="l00864"></a><span class="lineno">  864</span>&#160;                <span class="comment">// Array-style containers (which recurse).</span></div>
+<div class="line"><a name="l00865"></a><span class="lineno">  865</span>&#160;                <span class="keywordflow">case</span> STI_ARRAY:</div>
+<div class="line"><a name="l00866"></a><span class="lineno">  866</span>&#160;                    <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00867"></a><span class="lineno">  867</span>&#160;                    {</div>
+<div class="line"><a name="l00868"></a><span class="lineno">  868</span>&#160;                        <span class="keyword">auto</span> array = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a7706e311e6424bc28b2d9c2724ec9300">parseArray</a>(</div>
+<div class="line"><a name="l00869"></a><span class="lineno">  869</span>&#160;                            json_name + <span class="stringliteral">&quot;.&quot;</span> + fieldName,</div>
+<div class="line"><a name="l00870"></a><span class="lineno">  870</span>&#160;                            value,</div>
+<div class="line"><a name="l00871"></a><span class="lineno">  871</span>&#160;                            field,</div>
+<div class="line"><a name="l00872"></a><span class="lineno">  872</span>&#160;                            depth + 1,</div>
+<div class="line"><a name="l00873"></a><span class="lineno">  873</span>&#160;                            error);</div>
+<div class="line"><a name="l00874"></a><span class="lineno">  874</span>&#160;                        <span class="keywordflow">if</span> (!array.has_value())</div>
+<div class="line"><a name="l00875"></a><span class="lineno">  875</span>&#160;                            <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00876"></a><span class="lineno">  876</span>&#160;                        data.emplace_back(std::move(*array));</div>
+<div class="line"><a name="l00877"></a><span class="lineno">  877</span>&#160;                    }</div>
+<div class="line"><a name="l00878"></a><span class="lineno">  878</span>&#160;                    <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
+<div class="line"><a name="l00879"></a><span class="lineno">  879</span>&#160;                    {</div>
+<div class="line"><a name="l00880"></a><span class="lineno">  880</span>&#160;                        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a9c5f5f83378546d25848c2dd4f791795">invalid_data</a>(json_name, fieldName);</div>
+<div class="line"><a name="l00881"></a><span class="lineno">  881</span>&#160;                        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00882"></a><span class="lineno">  882</span>&#160;                    }</div>
 <div class="line"><a name="l00883"></a><span class="lineno">  883</span>&#160; </div>
-<div class="line"><a name="l00884"></a><span class="lineno">  884</span>&#160;                <span class="keywordflow">break</span>;</div>
-<div class="line"><a name="l00885"></a><span class="lineno">  885</span>&#160;            }</div>
-<div class="line"><a name="l00886"></a><span class="lineno">  886</span>&#160;        }</div>
-<div class="line"><a name="l00887"></a><span class="lineno">  887</span>&#160; </div>
-<div class="line"><a name="l00888"></a><span class="lineno">  888</span>&#160;        <span class="comment">// Some inner object types have templates.  Attempt to apply that.</span></div>
-<div class="line"><a name="l00889"></a><span class="lineno">  889</span>&#160;        data.applyTemplateFromSField(inName);  <span class="comment">// May throw</span></div>
+<div class="line"><a name="l00884"></a><span class="lineno">  884</span>&#160;                    <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00885"></a><span class="lineno">  885</span>&#160; </div>
+<div class="line"><a name="l00886"></a><span class="lineno">  886</span>&#160;                <span class="comment">// Everything else (types that don&#39;t recurse).</span></div>
+<div class="line"><a name="l00887"></a><span class="lineno">  887</span>&#160;                <span class="keywordflow">default</span>: {</div>
+<div class="line"><a name="l00888"></a><span class="lineno">  888</span>&#160;                    <span class="keyword">auto</span> leaf =</div>
+<div class="line"><a name="l00889"></a><span class="lineno">  889</span>&#160;                        <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a45f0c7d30050d346eb572733be8a483f">parseLeaf</a>(json_name, fieldName, &amp;inName, value, error);</div>
 <div class="line"><a name="l00890"></a><span class="lineno">  890</span>&#160; </div>
-<div class="line"><a name="l00891"></a><span class="lineno">  891</span>&#160;        <span class="keywordflow">return</span> data;</div>
-<div class="line"><a name="l00892"></a><span class="lineno">  892</span>&#160;    }</div>
-<div class="line"><a name="l00893"></a><span class="lineno">  893</span>&#160;    <span class="keywordflow">catch</span> (<a class="code" href="classripple_1_1STObject_1_1FieldErr.html">STObject::FieldErr</a> <span class="keyword">const</span>&amp; e)</div>
-<div class="line"><a name="l00894"></a><span class="lineno">  894</span>&#160;    {</div>
-<div class="line"><a name="l00895"></a><span class="lineno">  895</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;template_mismatch: &quot;</span> &lt;&lt; e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>() &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
-<div class="line"><a name="l00896"></a><span class="lineno">  896</span>&#160;        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#acfff0cb3c802ef69c012ac9bc941a77d">template_mismatch</a>(inName);</div>
-<div class="line"><a name="l00897"></a><span class="lineno">  897</span>&#160;    }</div>
-<div class="line"><a name="l00898"></a><span class="lineno">  898</span>&#160;    <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
-<div class="line"><a name="l00899"></a><span class="lineno">  899</span>&#160;    {</div>
-<div class="line"><a name="l00900"></a><span class="lineno">  900</span>&#160;        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a9c5f5f83378546d25848c2dd4f791795">invalid_data</a>(json_name);</div>
-<div class="line"><a name="l00901"></a><span class="lineno">  901</span>&#160;    }</div>
-<div class="line"><a name="l00902"></a><span class="lineno">  902</span>&#160;    <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00903"></a><span class="lineno">  903</span>&#160;}</div>
-<div class="line"><a name="l00904"></a><span class="lineno">  904</span>&#160; </div>
-<div class="line"><a name="l00905"></a><span class="lineno">  905</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;detail::STVar&gt;</a></div>
-<div class="line"><a name="l00906"></a><span class="lineno"><a class="line" href="namespaceripple_1_1STParsedJSONDetail.html#a7706e311e6424bc28b2d9c2724ec9300">  906</a></span>&#160;<a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a7706e311e6424bc28b2d9c2724ec9300">parseArray</a>(</div>
-<div class="line"><a name="l00907"></a><span class="lineno">  907</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; json_name,</div>
-<div class="line"><a name="l00908"></a><span class="lineno">  908</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; json,</div>
-<div class="line"><a name="l00909"></a><span class="lineno">  909</span>&#160;    <a class="code" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; inName,</div>
-<div class="line"><a name="l00910"></a><span class="lineno">  910</span>&#160;    <span class="keywordtype">int</span> depth,</div>
-<div class="line"><a name="l00911"></a><span class="lineno">  911</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; error)</div>
-<div class="line"><a name="l00912"></a><span class="lineno">  912</span>&#160;{</div>
-<div class="line"><a name="l00913"></a><span class="lineno">  913</span>&#160;    <span class="keywordflow">if</span> (!json.<a class="code" href="classJson_1_1Value.html#ac31a26a1cd6b6516ec66297e10c54e39">isArrayOrNull</a>())</div>
-<div class="line"><a name="l00914"></a><span class="lineno">  914</span>&#160;    {</div>
-<div class="line"><a name="l00915"></a><span class="lineno">  915</span>&#160;        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a89f744baf306bc8afceb338dd98ba8bc">not_an_array</a>(json_name);</div>
-<div class="line"><a name="l00916"></a><span class="lineno">  916</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00917"></a><span class="lineno">  917</span>&#160;    }</div>
-<div class="line"><a name="l00918"></a><span class="lineno">  918</span>&#160; </div>
-<div class="line"><a name="l00919"></a><span class="lineno">  919</span>&#160;    <span class="keywordflow">if</span> (depth &gt; <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a7444cf831a775edd42d6a1ff8f22fae5">maxDepth</a>)</div>
-<div class="line"><a name="l00920"></a><span class="lineno">  920</span>&#160;    {</div>
-<div class="line"><a name="l00921"></a><span class="lineno">  921</span>&#160;        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#ac34dac5dc1bd0ee5138834d6e0d8aa0d">too_deep</a>(json_name);</div>
-<div class="line"><a name="l00922"></a><span class="lineno">  922</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00923"></a><span class="lineno">  923</span>&#160;    }</div>
-<div class="line"><a name="l00924"></a><span class="lineno">  924</span>&#160; </div>
-<div class="line"><a name="l00925"></a><span class="lineno">  925</span>&#160;    <span class="keywordflow">try</span></div>
-<div class="line"><a name="l00926"></a><span class="lineno">  926</span>&#160;    {</div>
-<div class="line"><a name="l00927"></a><span class="lineno">  927</span>&#160;        <a class="code" href="classripple_1_1STArray.html">STArray</a> tail(inName);</div>
-<div class="line"><a name="l00928"></a><span class="lineno">  928</span>&#160; </div>
-<div class="line"><a name="l00929"></a><span class="lineno">  929</span>&#160;        <span class="keywordflow">for</span> (<a class="code" href="namespaceJson.html#ab1488c31a37eea2d37f36a0961372572">Json::UInt</a> i = 0; json.<a class="code" href="classJson_1_1Value.html#aaf7abfe7040b96bd515d5797053bfe3e">isValidIndex</a>(i); ++i)</div>
-<div class="line"><a name="l00930"></a><span class="lineno">  930</span>&#160;        {</div>
-<div class="line"><a name="l00931"></a><span class="lineno">  931</span>&#160;            <span class="keywordtype">bool</span> <span class="keyword">const</span> isObjectOrNull(json[i].isObjectOrNull());</div>
-<div class="line"><a name="l00932"></a><span class="lineno">  932</span>&#160;            <span class="keywordtype">bool</span> <span class="keyword">const</span> singleKey(isObjectOrNull ? json[i].size() == 1 : <span class="keyword">true</span>);</div>
-<div class="line"><a name="l00933"></a><span class="lineno">  933</span>&#160; </div>
-<div class="line"><a name="l00934"></a><span class="lineno">  934</span>&#160;            <span class="keywordflow">if</span> (!isObjectOrNull || !singleKey)</div>
-<div class="line"><a name="l00935"></a><span class="lineno">  935</span>&#160;            {</div>
-<div class="line"><a name="l00936"></a><span class="lineno">  936</span>&#160;                <span class="comment">// null values are !singleKey</span></div>
-<div class="line"><a name="l00937"></a><span class="lineno">  937</span>&#160;                error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a896aa0ea6f2a2733d3b57535264af4dc">singleton_expected</a>(json_name, i);</div>
-<div class="line"><a name="l00938"></a><span class="lineno">  938</span>&#160;                <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00939"></a><span class="lineno">  939</span>&#160;            }</div>
-<div class="line"><a name="l00940"></a><span class="lineno">  940</span>&#160; </div>
-<div class="line"><a name="l00941"></a><span class="lineno">  941</span>&#160;            <span class="comment">// TODO: There doesn&#39;t seem to be a nice way to get just the</span></div>
-<div class="line"><a name="l00942"></a><span class="lineno">  942</span>&#160;            <span class="comment">// first/only key in an object without copying all keys into</span></div>
-<div class="line"><a name="l00943"></a><span class="lineno">  943</span>&#160;            <span class="comment">// a vector</span></div>
-<div class="line"><a name="l00944"></a><span class="lineno">  944</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> objectName(json[i].getMemberNames()[0]);</div>
-<div class="line"><a name="l00945"></a><span class="lineno">  945</span>&#160;            ;</div>
-<div class="line"><a name="l00946"></a><span class="lineno">  946</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; nameField(<a class="code" href="classripple_1_1SField.html#ac50e95825ecf10dfd786cb9b8da4ae39">SField::getField</a>(objectName));</div>
-<div class="line"><a name="l00947"></a><span class="lineno">  947</span>&#160; </div>
-<div class="line"><a name="l00948"></a><span class="lineno">  948</span>&#160;            <span class="keywordflow">if</span> (nameField == <a class="code" href="namespaceripple.html#acb4c76f4bb5b316911034e025cde5489">sfInvalid</a>)</div>
-<div class="line"><a name="l00949"></a><span class="lineno">  949</span>&#160;            {</div>
-<div class="line"><a name="l00950"></a><span class="lineno">  950</span>&#160;                error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#acb02638573a10f8c386461de12f132eb">unknown_field</a>(json_name, objectName);</div>
+<div class="line"><a name="l00891"></a><span class="lineno">  891</span>&#160;                    <span class="keywordflow">if</span> (!leaf)</div>
+<div class="line"><a name="l00892"></a><span class="lineno">  892</span>&#160;                        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00893"></a><span class="lineno">  893</span>&#160; </div>
+<div class="line"><a name="l00894"></a><span class="lineno">  894</span>&#160;                    data.emplace_back(std::move(*leaf));</div>
+<div class="line"><a name="l00895"></a><span class="lineno">  895</span>&#160;                }</div>
+<div class="line"><a name="l00896"></a><span class="lineno">  896</span>&#160; </div>
+<div class="line"><a name="l00897"></a><span class="lineno">  897</span>&#160;                <span class="keywordflow">break</span>;</div>
+<div class="line"><a name="l00898"></a><span class="lineno">  898</span>&#160;            }</div>
+<div class="line"><a name="l00899"></a><span class="lineno">  899</span>&#160;        }</div>
+<div class="line"><a name="l00900"></a><span class="lineno">  900</span>&#160; </div>
+<div class="line"><a name="l00901"></a><span class="lineno">  901</span>&#160;        <span class="comment">// Some inner object types have templates.  Attempt to apply that.</span></div>
+<div class="line"><a name="l00902"></a><span class="lineno">  902</span>&#160;        data.applyTemplateFromSField(inName);  <span class="comment">// May throw</span></div>
+<div class="line"><a name="l00903"></a><span class="lineno">  903</span>&#160; </div>
+<div class="line"><a name="l00904"></a><span class="lineno">  904</span>&#160;        <span class="keywordflow">return</span> data;</div>
+<div class="line"><a name="l00905"></a><span class="lineno">  905</span>&#160;    }</div>
+<div class="line"><a name="l00906"></a><span class="lineno">  906</span>&#160;    <span class="keywordflow">catch</span> (<a class="code" href="classripple_1_1STObject_1_1FieldErr.html">STObject::FieldErr</a> <span class="keyword">const</span>&amp; e)</div>
+<div class="line"><a name="l00907"></a><span class="lineno">  907</span>&#160;    {</div>
+<div class="line"><a name="l00908"></a><span class="lineno">  908</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;template_mismatch: &quot;</span> &lt;&lt; e.<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>() &lt;&lt; <span class="stringliteral">&quot;\n&quot;</span>;</div>
+<div class="line"><a name="l00909"></a><span class="lineno">  909</span>&#160;        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#acfff0cb3c802ef69c012ac9bc941a77d">template_mismatch</a>(inName);</div>
+<div class="line"><a name="l00910"></a><span class="lineno">  910</span>&#160;    }</div>
+<div class="line"><a name="l00911"></a><span class="lineno">  911</span>&#160;    <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
+<div class="line"><a name="l00912"></a><span class="lineno">  912</span>&#160;    {</div>
+<div class="line"><a name="l00913"></a><span class="lineno">  913</span>&#160;        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a9c5f5f83378546d25848c2dd4f791795">invalid_data</a>(json_name);</div>
+<div class="line"><a name="l00914"></a><span class="lineno">  914</span>&#160;    }</div>
+<div class="line"><a name="l00915"></a><span class="lineno">  915</span>&#160;    <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00916"></a><span class="lineno">  916</span>&#160;}</div>
+<div class="line"><a name="l00917"></a><span class="lineno">  917</span>&#160; </div>
+<div class="line"><a name="l00918"></a><span class="lineno">  918</span>&#160;<span class="keyword">static</span> <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;detail::STVar&gt;</a></div>
+<div class="line"><a name="l00919"></a><span class="lineno"><a class="line" href="namespaceripple_1_1STParsedJSONDetail.html#a7706e311e6424bc28b2d9c2724ec9300">  919</a></span>&#160;<a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a7706e311e6424bc28b2d9c2724ec9300">parseArray</a>(</div>
+<div class="line"><a name="l00920"></a><span class="lineno">  920</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; json_name,</div>
+<div class="line"><a name="l00921"></a><span class="lineno">  921</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; json,</div>
+<div class="line"><a name="l00922"></a><span class="lineno">  922</span>&#160;    <a class="code" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; inName,</div>
+<div class="line"><a name="l00923"></a><span class="lineno">  923</span>&#160;    <span class="keywordtype">int</span> depth,</div>
+<div class="line"><a name="l00924"></a><span class="lineno">  924</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a>&amp; error)</div>
+<div class="line"><a name="l00925"></a><span class="lineno">  925</span>&#160;{</div>
+<div class="line"><a name="l00926"></a><span class="lineno">  926</span>&#160;    <span class="keywordflow">if</span> (!json.<a class="code" href="classJson_1_1Value.html#ac31a26a1cd6b6516ec66297e10c54e39">isArrayOrNull</a>())</div>
+<div class="line"><a name="l00927"></a><span class="lineno">  927</span>&#160;    {</div>
+<div class="line"><a name="l00928"></a><span class="lineno">  928</span>&#160;        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a89f744baf306bc8afceb338dd98ba8bc">not_an_array</a>(json_name);</div>
+<div class="line"><a name="l00929"></a><span class="lineno">  929</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00930"></a><span class="lineno">  930</span>&#160;    }</div>
+<div class="line"><a name="l00931"></a><span class="lineno">  931</span>&#160; </div>
+<div class="line"><a name="l00932"></a><span class="lineno">  932</span>&#160;    <span class="keywordflow">if</span> (depth &gt; <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a7444cf831a775edd42d6a1ff8f22fae5">maxDepth</a>)</div>
+<div class="line"><a name="l00933"></a><span class="lineno">  933</span>&#160;    {</div>
+<div class="line"><a name="l00934"></a><span class="lineno">  934</span>&#160;        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#ac34dac5dc1bd0ee5138834d6e0d8aa0d">too_deep</a>(json_name);</div>
+<div class="line"><a name="l00935"></a><span class="lineno">  935</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00936"></a><span class="lineno">  936</span>&#160;    }</div>
+<div class="line"><a name="l00937"></a><span class="lineno">  937</span>&#160; </div>
+<div class="line"><a name="l00938"></a><span class="lineno">  938</span>&#160;    <span class="keywordflow">try</span></div>
+<div class="line"><a name="l00939"></a><span class="lineno">  939</span>&#160;    {</div>
+<div class="line"><a name="l00940"></a><span class="lineno">  940</span>&#160;        <a class="code" href="classripple_1_1STArray.html">STArray</a> tail(inName);</div>
+<div class="line"><a name="l00941"></a><span class="lineno">  941</span>&#160; </div>
+<div class="line"><a name="l00942"></a><span class="lineno">  942</span>&#160;        <span class="keywordflow">for</span> (<a class="code" href="namespaceJson.html#ab1488c31a37eea2d37f36a0961372572">Json::UInt</a> i = 0; json.<a class="code" href="classJson_1_1Value.html#aaf7abfe7040b96bd515d5797053bfe3e">isValidIndex</a>(i); ++i)</div>
+<div class="line"><a name="l00943"></a><span class="lineno">  943</span>&#160;        {</div>
+<div class="line"><a name="l00944"></a><span class="lineno">  944</span>&#160;            <span class="keywordtype">bool</span> <span class="keyword">const</span> isObjectOrNull(json[i].isObjectOrNull());</div>
+<div class="line"><a name="l00945"></a><span class="lineno">  945</span>&#160;            <span class="keywordtype">bool</span> <span class="keyword">const</span> singleKey(isObjectOrNull ? json[i].size() == 1 : <span class="keyword">true</span>);</div>
+<div class="line"><a name="l00946"></a><span class="lineno">  946</span>&#160; </div>
+<div class="line"><a name="l00947"></a><span class="lineno">  947</span>&#160;            <span class="keywordflow">if</span> (!isObjectOrNull || !singleKey)</div>
+<div class="line"><a name="l00948"></a><span class="lineno">  948</span>&#160;            {</div>
+<div class="line"><a name="l00949"></a><span class="lineno">  949</span>&#160;                <span class="comment">// null values are !singleKey</span></div>
+<div class="line"><a name="l00950"></a><span class="lineno">  950</span>&#160;                error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a896aa0ea6f2a2733d3b57535264af4dc">singleton_expected</a>(json_name, i);</div>
 <div class="line"><a name="l00951"></a><span class="lineno">  951</span>&#160;                <span class="keywordflow">return</span> std::nullopt;</div>
 <div class="line"><a name="l00952"></a><span class="lineno">  952</span>&#160;            }</div>
 <div class="line"><a name="l00953"></a><span class="lineno">  953</span>&#160; </div>
-<div class="line"><a name="l00954"></a><span class="lineno">  954</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> objectFields(json[i][objectName]);</div>
-<div class="line"><a name="l00955"></a><span class="lineno">  955</span>&#160; </div>
-<div class="line"><a name="l00956"></a><span class="lineno">  956</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> ss;</div>
-<div class="line"><a name="l00957"></a><span class="lineno">  957</span>&#160;            ss &lt;&lt; json_name &lt;&lt; <span class="stringliteral">&quot;.&quot;</span></div>
-<div class="line"><a name="l00958"></a><span class="lineno">  958</span>&#160;               &lt;&lt; <span class="stringliteral">&quot;[&quot;</span> &lt;&lt; i &lt;&lt; <span class="stringliteral">&quot;].&quot;</span> &lt;&lt; objectName;</div>
-<div class="line"><a name="l00959"></a><span class="lineno">  959</span>&#160; </div>
-<div class="line"><a name="l00960"></a><span class="lineno">  960</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a49566dbe3cc1c22b1aabe9efa5c638e9">parseObject</a>(</div>
-<div class="line"><a name="l00961"></a><span class="lineno">  961</span>&#160;                ss.<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>(), objectFields, nameField, depth + 1, error);</div>
-<div class="line"><a name="l00962"></a><span class="lineno">  962</span>&#160;            <span class="keywordflow">if</span> (!ret)</div>
-<div class="line"><a name="l00963"></a><span class="lineno">  963</span>&#160;            {</div>
-<div class="line"><a name="l00964"></a><span class="lineno">  964</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> errMsg = error[<span class="stringliteral">&quot;error_message&quot;</span>].asString();</div>
-<div class="line"><a name="l00965"></a><span class="lineno">  965</span>&#160;                error[<span class="stringliteral">&quot;error_message&quot;</span>] =</div>
-<div class="line"><a name="l00966"></a><span class="lineno">  966</span>&#160;                    <span class="stringliteral">&quot;Error at &#39;&quot;</span> + ss.<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>() + <span class="stringliteral">&quot;&#39;. &quot;</span> + errMsg;</div>
-<div class="line"><a name="l00967"></a><span class="lineno">  967</span>&#160;                <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00968"></a><span class="lineno">  968</span>&#160;            }</div>
-<div class="line"><a name="l00969"></a><span class="lineno">  969</span>&#160; </div>
-<div class="line"><a name="l00970"></a><span class="lineno">  970</span>&#160;            <span class="keywordflow">if</span> (ret-&gt;getFName().fieldType != STI_OBJECT)</div>
-<div class="line"><a name="l00971"></a><span class="lineno">  971</span>&#160;            {</div>
-<div class="line"><a name="l00972"></a><span class="lineno">  972</span>&#160;                ss &lt;&lt; <span class="stringliteral">&quot;Field type: &quot;</span> &lt;&lt; ret-&gt;getFName().fieldType &lt;&lt; <span class="stringliteral">&quot; &quot;</span>;</div>
-<div class="line"><a name="l00973"></a><span class="lineno">  973</span>&#160;                error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#aa5b371f04fc4f1703a3fa0f420125593">non_object_in_array</a>(ss.<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>(), i);</div>
-<div class="line"><a name="l00974"></a><span class="lineno">  974</span>&#160;                <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00975"></a><span class="lineno">  975</span>&#160;            }</div>
-<div class="line"><a name="l00976"></a><span class="lineno">  976</span>&#160; </div>
-<div class="line"><a name="l00977"></a><span class="lineno">  977</span>&#160;            tail.<a class="code" href="classripple_1_1STArray.html#adc3dc750320964c46b6d4ea2af8b8bc7">push_back</a>(std::move(*ret));</div>
-<div class="line"><a name="l00978"></a><span class="lineno">  978</span>&#160;        }</div>
-<div class="line"><a name="l00979"></a><span class="lineno">  979</span>&#160; </div>
-<div class="line"><a name="l00980"></a><span class="lineno">  980</span>&#160;        <span class="keywordflow">return</span> detail::make_stvar&lt;STArray&gt;(std::move(tail));</div>
-<div class="line"><a name="l00981"></a><span class="lineno">  981</span>&#160;    }</div>
-<div class="line"><a name="l00982"></a><span class="lineno">  982</span>&#160;    <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
-<div class="line"><a name="l00983"></a><span class="lineno">  983</span>&#160;    {</div>
-<div class="line"><a name="l00984"></a><span class="lineno">  984</span>&#160;        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a9c5f5f83378546d25848c2dd4f791795">invalid_data</a>(json_name);</div>
-<div class="line"><a name="l00985"></a><span class="lineno">  985</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a name="l00986"></a><span class="lineno">  986</span>&#160;    }</div>
-<div class="line"><a name="l00987"></a><span class="lineno">  987</span>&#160;}</div>
-<div class="line"><a name="l00988"></a><span class="lineno">  988</span>&#160; </div>
-<div class="line"><a name="l00989"></a><span class="lineno">  989</span>&#160;}  <span class="comment">// namespace STParsedJSONDetail</span></div>
-<div class="line"><a name="l00990"></a><span class="lineno">  990</span>&#160; </div>
-<div class="line"><a name="l00991"></a><span class="lineno">  991</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l00954"></a><span class="lineno">  954</span>&#160;            <span class="comment">// TODO: There doesn&#39;t seem to be a nice way to get just the</span></div>
+<div class="line"><a name="l00955"></a><span class="lineno">  955</span>&#160;            <span class="comment">// first/only key in an object without copying all keys into</span></div>
+<div class="line"><a name="l00956"></a><span class="lineno">  956</span>&#160;            <span class="comment">// a vector</span></div>
+<div class="line"><a name="l00957"></a><span class="lineno">  957</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> objectName(json[i].getMemberNames()[0]);</div>
+<div class="line"><a name="l00958"></a><span class="lineno">  958</span>&#160;            ;</div>
+<div class="line"><a name="l00959"></a><span class="lineno">  959</span>&#160;            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; nameField(<a class="code" href="classripple_1_1SField.html#ac50e95825ecf10dfd786cb9b8da4ae39">SField::getField</a>(objectName));</div>
+<div class="line"><a name="l00960"></a><span class="lineno">  960</span>&#160; </div>
+<div class="line"><a name="l00961"></a><span class="lineno">  961</span>&#160;            <span class="keywordflow">if</span> (nameField == <a class="code" href="namespaceripple.html#acb4c76f4bb5b316911034e025cde5489">sfInvalid</a>)</div>
+<div class="line"><a name="l00962"></a><span class="lineno">  962</span>&#160;            {</div>
+<div class="line"><a name="l00963"></a><span class="lineno">  963</span>&#160;                error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#acb02638573a10f8c386461de12f132eb">unknown_field</a>(json_name, objectName);</div>
+<div class="line"><a name="l00964"></a><span class="lineno">  964</span>&#160;                <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00965"></a><span class="lineno">  965</span>&#160;            }</div>
+<div class="line"><a name="l00966"></a><span class="lineno">  966</span>&#160; </div>
+<div class="line"><a name="l00967"></a><span class="lineno">  967</span>&#160;            <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span> objectFields(json[i][objectName]);</div>
+<div class="line"><a name="l00968"></a><span class="lineno">  968</span>&#160; </div>
+<div class="line"><a name="l00969"></a><span class="lineno">  969</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> ss;</div>
+<div class="line"><a name="l00970"></a><span class="lineno">  970</span>&#160;            ss &lt;&lt; json_name &lt;&lt; <span class="stringliteral">&quot;.&quot;</span></div>
+<div class="line"><a name="l00971"></a><span class="lineno">  971</span>&#160;               &lt;&lt; <span class="stringliteral">&quot;[&quot;</span> &lt;&lt; i &lt;&lt; <span class="stringliteral">&quot;].&quot;</span> &lt;&lt; objectName;</div>
+<div class="line"><a name="l00972"></a><span class="lineno">  972</span>&#160; </div>
+<div class="line"><a name="l00973"></a><span class="lineno">  973</span>&#160;            <span class="keyword">auto</span> ret = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a49566dbe3cc1c22b1aabe9efa5c638e9">parseObject</a>(</div>
+<div class="line"><a name="l00974"></a><span class="lineno">  974</span>&#160;                ss.<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>(), objectFields, nameField, depth + 1, error);</div>
+<div class="line"><a name="l00975"></a><span class="lineno">  975</span>&#160;            <span class="keywordflow">if</span> (!ret)</div>
+<div class="line"><a name="l00976"></a><span class="lineno">  976</span>&#160;            {</div>
+<div class="line"><a name="l00977"></a><span class="lineno">  977</span>&#160;                <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> errMsg = error[<span class="stringliteral">&quot;error_message&quot;</span>].asString();</div>
+<div class="line"><a name="l00978"></a><span class="lineno">  978</span>&#160;                error[<span class="stringliteral">&quot;error_message&quot;</span>] =</div>
+<div class="line"><a name="l00979"></a><span class="lineno">  979</span>&#160;                    <span class="stringliteral">&quot;Error at &#39;&quot;</span> + ss.<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>() + <span class="stringliteral">&quot;&#39;. &quot;</span> + errMsg;</div>
+<div class="line"><a name="l00980"></a><span class="lineno">  980</span>&#160;                <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00981"></a><span class="lineno">  981</span>&#160;            }</div>
+<div class="line"><a name="l00982"></a><span class="lineno">  982</span>&#160; </div>
+<div class="line"><a name="l00983"></a><span class="lineno">  983</span>&#160;            <span class="keywordflow">if</span> (ret-&gt;getFName().fieldType != STI_OBJECT)</div>
+<div class="line"><a name="l00984"></a><span class="lineno">  984</span>&#160;            {</div>
+<div class="line"><a name="l00985"></a><span class="lineno">  985</span>&#160;                ss &lt;&lt; <span class="stringliteral">&quot;Field type: &quot;</span> &lt;&lt; ret-&gt;getFName().fieldType &lt;&lt; <span class="stringliteral">&quot; &quot;</span>;</div>
+<div class="line"><a name="l00986"></a><span class="lineno">  986</span>&#160;                error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#aa5b371f04fc4f1703a3fa0f420125593">non_object_in_array</a>(ss.<a class="codeRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>(), i);</div>
+<div class="line"><a name="l00987"></a><span class="lineno">  987</span>&#160;                <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00988"></a><span class="lineno">  988</span>&#160;            }</div>
+<div class="line"><a name="l00989"></a><span class="lineno">  989</span>&#160; </div>
+<div class="line"><a name="l00990"></a><span class="lineno">  990</span>&#160;            tail.<a class="code" href="classripple_1_1STArray.html#adc3dc750320964c46b6d4ea2af8b8bc7">push_back</a>(std::move(*ret));</div>
+<div class="line"><a name="l00991"></a><span class="lineno">  991</span>&#160;        }</div>
 <div class="line"><a name="l00992"></a><span class="lineno">  992</span>&#160; </div>
-<div class="line"><a name="l00993"></a><span class="lineno"><a class="line" href="classripple_1_1STParsedJSONObject.html#a734cbd3240d7031c0c5754dcd8ebe588">  993</a></span>&#160;<a class="code" href="classripple_1_1STParsedJSONObject.html#a82b1dc2203506444a0f5175a874739d5">STParsedJSONObject::STParsedJSONObject</a>(</div>
-<div class="line"><a name="l00994"></a><span class="lineno">  994</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; name,</div>
-<div class="line"><a name="l00995"></a><span class="lineno">  995</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; json)</div>
-<div class="line"><a name="l00996"></a><span class="lineno">  996</span>&#160;{</div>
-<div class="line"><a name="l00997"></a><span class="lineno">  997</span>&#160;    <span class="keyword">using namespace </span>STParsedJSONDetail;</div>
-<div class="line"><a name="l00998"></a><span class="lineno">  998</span>&#160;    <span class="keywordtype">object</span> = parseObject(name, json, <a class="code" href="namespaceripple.html#a5b37d2021c21c06e89ffc7d7f55cc354">sfGeneric</a>, 0, <a class="code" href="classripple_1_1STParsedJSONObject.html#a75ae1e4c096f722a17614c58d8b284a4">error</a>);</div>
-<div class="line"><a name="l00999"></a><span class="lineno">  999</span>&#160;}</div>
-<div class="line"><a name="l01000"></a><span class="lineno"> 1000</span>&#160; </div>
-<div class="line"><a name="l01001"></a><span class="lineno"> 1001</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a name="l01002"></a><span class="lineno"> 1002</span>&#160; </div>
-<div class="line"><a name="l01003"></a><span class="lineno"><a class="line" href="classripple_1_1STParsedJSONArray.html#af70e133b97807762bc1462fce2e54634"> 1003</a></span>&#160;<a class="code" href="classripple_1_1STParsedJSONArray.html#aff64a5a6805ea010242118eecaab8436">STParsedJSONArray::STParsedJSONArray</a>(</div>
-<div class="line"><a name="l01004"></a><span class="lineno"> 1004</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; name,</div>
-<div class="line"><a name="l01005"></a><span class="lineno"> 1005</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; json)</div>
-<div class="line"><a name="l01006"></a><span class="lineno"> 1006</span>&#160;{</div>
-<div class="line"><a name="l01007"></a><span class="lineno"> 1007</span>&#160;    <span class="keyword">using namespace </span>STParsedJSONDetail;</div>
-<div class="line"><a name="l01008"></a><span class="lineno"> 1008</span>&#160;    <span class="keyword">auto</span> arr = parseArray(name, json, <a class="code" href="namespaceripple.html#a5b37d2021c21c06e89ffc7d7f55cc354">sfGeneric</a>, 0, <a class="code" href="classripple_1_1STParsedJSONObject.html#a75ae1e4c096f722a17614c58d8b284a4">error</a>);</div>
-<div class="line"><a name="l01009"></a><span class="lineno"> 1009</span>&#160;    <span class="keywordflow">if</span> (!arr)</div>
-<div class="line"><a name="l01010"></a><span class="lineno"> 1010</span>&#160;        array.reset();</div>
-<div class="line"><a name="l01011"></a><span class="lineno"> 1011</span>&#160;    <span class="keywordflow">else</span></div>
-<div class="line"><a name="l01012"></a><span class="lineno"> 1012</span>&#160;    {</div>
-<div class="line"><a name="l01013"></a><span class="lineno"> 1013</span>&#160;        <span class="keyword">auto</span> p = <span class="keyword">dynamic_cast&lt;</span><a class="code" href="classripple_1_1STArray.html">STArray</a>*<span class="keyword">&gt;</span>(&amp;arr-&gt;get());</div>
-<div class="line"><a name="l01014"></a><span class="lineno"> 1014</span>&#160;        <span class="keywordflow">if</span> (p == <span class="keyword">nullptr</span>)</div>
-<div class="line"><a name="l01015"></a><span class="lineno"> 1015</span>&#160;            array.reset();</div>
-<div class="line"><a name="l01016"></a><span class="lineno"> 1016</span>&#160;        <span class="keywordflow">else</span></div>
-<div class="line"><a name="l01017"></a><span class="lineno"> 1017</span>&#160;            array = std::move(*p);</div>
-<div class="line"><a name="l01018"></a><span class="lineno"> 1018</span>&#160;    }</div>
-<div class="line"><a name="l01019"></a><span class="lineno"> 1019</span>&#160;}</div>
-<div class="line"><a name="l01020"></a><span class="lineno"> 1020</span>&#160; </div>
-<div class="line"><a name="l01021"></a><span class="lineno"> 1021</span>&#160;}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a name="l00993"></a><span class="lineno">  993</span>&#160;        <span class="keywordflow">return</span> detail::make_stvar&lt;STArray&gt;(std::move(tail));</div>
+<div class="line"><a name="l00994"></a><span class="lineno">  994</span>&#160;    }</div>
+<div class="line"><a name="l00995"></a><span class="lineno">  995</span>&#160;    <span class="keywordflow">catch</span> (<a class="codeRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
+<div class="line"><a name="l00996"></a><span class="lineno">  996</span>&#160;    {</div>
+<div class="line"><a name="l00997"></a><span class="lineno">  997</span>&#160;        error = <a class="code" href="namespaceripple_1_1STParsedJSONDetail.html#a9c5f5f83378546d25848c2dd4f791795">invalid_data</a>(json_name);</div>
+<div class="line"><a name="l00998"></a><span class="lineno">  998</span>&#160;        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a name="l00999"></a><span class="lineno">  999</span>&#160;    }</div>
+<div class="line"><a name="l01000"></a><span class="lineno"> 1000</span>&#160;}</div>
+<div class="line"><a name="l01001"></a><span class="lineno"> 1001</span>&#160; </div>
+<div class="line"><a name="l01002"></a><span class="lineno"> 1002</span>&#160;}  <span class="comment">// namespace STParsedJSONDetail</span></div>
+<div class="line"><a name="l01003"></a><span class="lineno"> 1003</span>&#160; </div>
+<div class="line"><a name="l01004"></a><span class="lineno"> 1004</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l01005"></a><span class="lineno"> 1005</span>&#160; </div>
+<div class="line"><a name="l01006"></a><span class="lineno"><a class="line" href="classripple_1_1STParsedJSONObject.html#a734cbd3240d7031c0c5754dcd8ebe588"> 1006</a></span>&#160;<a class="code" href="classripple_1_1STParsedJSONObject.html#a82b1dc2203506444a0f5175a874739d5">STParsedJSONObject::STParsedJSONObject</a>(</div>
+<div class="line"><a name="l01007"></a><span class="lineno"> 1007</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; name,</div>
+<div class="line"><a name="l01008"></a><span class="lineno"> 1008</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; json)</div>
+<div class="line"><a name="l01009"></a><span class="lineno"> 1009</span>&#160;{</div>
+<div class="line"><a name="l01010"></a><span class="lineno"> 1010</span>&#160;    <span class="keyword">using namespace </span>STParsedJSONDetail;</div>
+<div class="line"><a name="l01011"></a><span class="lineno"> 1011</span>&#160;    <span class="keywordtype">object</span> = parseObject(name, json, <a class="code" href="namespaceripple.html#a5b37d2021c21c06e89ffc7d7f55cc354">sfGeneric</a>, 0, <a class="code" href="classripple_1_1STParsedJSONObject.html#a75ae1e4c096f722a17614c58d8b284a4">error</a>);</div>
+<div class="line"><a name="l01012"></a><span class="lineno"> 1012</span>&#160;}</div>
+<div class="line"><a name="l01013"></a><span class="lineno"> 1013</span>&#160; </div>
+<div class="line"><a name="l01014"></a><span class="lineno"> 1014</span>&#160;<span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a name="l01015"></a><span class="lineno"> 1015</span>&#160; </div>
+<div class="line"><a name="l01016"></a><span class="lineno"><a class="line" href="classripple_1_1STParsedJSONArray.html#af70e133b97807762bc1462fce2e54634"> 1016</a></span>&#160;<a class="code" href="classripple_1_1STParsedJSONArray.html#aff64a5a6805ea010242118eecaab8436">STParsedJSONArray::STParsedJSONArray</a>(</div>
+<div class="line"><a name="l01017"></a><span class="lineno"> 1017</span>&#160;    <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; name,</div>
+<div class="line"><a name="l01018"></a><span class="lineno"> 1018</span>&#160;    <a class="code" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; json)</div>
+<div class="line"><a name="l01019"></a><span class="lineno"> 1019</span>&#160;{</div>
+<div class="line"><a name="l01020"></a><span class="lineno"> 1020</span>&#160;    <span class="keyword">using namespace </span>STParsedJSONDetail;</div>
+<div class="line"><a name="l01021"></a><span class="lineno"> 1021</span>&#160;    <span class="keyword">auto</span> arr = parseArray(name, json, <a class="code" href="namespaceripple.html#a5b37d2021c21c06e89ffc7d7f55cc354">sfGeneric</a>, 0, <a class="code" href="classripple_1_1STParsedJSONObject.html#a75ae1e4c096f722a17614c58d8b284a4">error</a>);</div>
+<div class="line"><a name="l01022"></a><span class="lineno"> 1022</span>&#160;    <span class="keywordflow">if</span> (!arr)</div>
+<div class="line"><a name="l01023"></a><span class="lineno"> 1023</span>&#160;        array.reset();</div>
+<div class="line"><a name="l01024"></a><span class="lineno"> 1024</span>&#160;    <span class="keywordflow">else</span></div>
+<div class="line"><a name="l01025"></a><span class="lineno"> 1025</span>&#160;    {</div>
+<div class="line"><a name="l01026"></a><span class="lineno"> 1026</span>&#160;        <span class="keyword">auto</span> p = <span class="keyword">dynamic_cast&lt;</span><a class="code" href="classripple_1_1STArray.html">STArray</a>*<span class="keyword">&gt;</span>(&amp;arr-&gt;get());</div>
+<div class="line"><a name="l01027"></a><span class="lineno"> 1027</span>&#160;        <span class="keywordflow">if</span> (p == <span class="keyword">nullptr</span>)</div>
+<div class="line"><a name="l01028"></a><span class="lineno"> 1028</span>&#160;            array.reset();</div>
+<div class="line"><a name="l01029"></a><span class="lineno"> 1029</span>&#160;        <span class="keywordflow">else</span></div>
+<div class="line"><a name="l01030"></a><span class="lineno"> 1030</span>&#160;            array = std::move(*p);</div>
+<div class="line"><a name="l01031"></a><span class="lineno"> 1031</span>&#160;    }</div>
+<div class="line"><a name="l01032"></a><span class="lineno"> 1032</span>&#160;}</div>
+<div class="line"><a name="l01033"></a><span class="lineno"> 1033</span>&#160; </div>
+<div class="line"><a name="l01034"></a><span class="lineno"> 1034</span>&#160;}  <span class="comment">// namespace ripple</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="aclassJson_1_1Value_html_aff51d8b52979ca06cf9d909accd5f695"><div class="ttname"><a href="classJson_1_1Value.html#aff51d8b52979ca06cf9d909accd5f695">Json::Value::isInt</a></div><div class="ttdeci">bool isInt() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00979">json_value.cpp:979</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a791ac17da7afb28eaa4c229daa4ccef5"><div class="ttname"><a href="namespaceripple.html#a791ac17da7afb28eaa4c229daa4ccef5">ripple::to_currency</a></div><div class="ttdeci">bool to_currency(Currency &amp;currency, std::string const &amp;code)</div><div class="ttdoc">Tries to convert a string to a Currency, returns true on success.</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8cpp_source.html#l00080">UintTypes.cpp:80</a></div></div>
 <div class="ttc" id="ais_signed_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_signed.html">std::is_signed</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_a7444cf831a775edd42d6a1ff8f22fae5"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#a7444cf831a775edd42d6a1ff8f22fae5">ripple::STParsedJSONDetail::maxDepth</a></div><div class="ttdeci">static const int maxDepth</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00771">STParsedJSON.cpp:771</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_a7444cf831a775edd42d6a1ff8f22fae5"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#a7444cf831a775edd42d6a1ff8f22fae5">ripple::STParsedJSONDetail::maxDepth</a></div><div class="ttdeci">static const int maxDepth</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00784">STParsedJSON.cpp:784</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_a896aa0ea6f2a2733d3b57535264af4dc"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#a896aa0ea6f2a2733d3b57535264af4dc">ripple::STParsedJSONDetail::singleton_expected</a></div><div class="ttdeci">static Json::Value singleton_expected(std::string const &amp;object, unsigned int index)</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00164">STParsedJSON.cpp:164</a></div></div>
 <div class="ttc" id="ais_unsigned_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_unsigned.html">std::is_unsigned</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_a8cf96c0f2a552051fcfc78ffee60e037"><div class="ttname"><a href="classJson_1_1Value.html#a8cf96c0f2a552051fcfc78ffee60e037">Json::Value::isObject</a></div><div class="ttdeci">bool isObject() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l01027">json_value.cpp:1027</a></div></div>
@@ -1103,31 +1116,32 @@ $(function() {
 <div class="ttc" id="aclassJson_1_1Value_html_a71e1f82cf1c3eaf969d400dcffb163a6"><div class="ttname"><a href="classJson_1_1Value.html#a71e1f82cf1c3eaf969d400dcffb163a6">Json::Value::isString</a></div><div class="ttdeci">bool isString() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l01009">json_value.cpp:1009</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_aaf7abfe7040b96bd515d5797053bfe3e"><div class="ttname"><a href="classJson_1_1Value.html#aaf7abfe7040b96bd515d5797053bfe3e">Json::Value::isValidIndex</a></div><div class="ttdeci">bool isValidIndex(UInt index) const</div><div class="ttdoc">Return true if index &lt; size().</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00841">json_value.cpp:841</a></div></div>
 <div class="ttc" id="aexception_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a></div><div class="ttdoc">STL class.</div></div>
-<div class="ttc" id="anamespaceripple_html_a5b37d2021c21c06e89ffc7d7f55cc354"><div class="ttname"><a href="namespaceripple.html#a5b37d2021c21c06e89ffc7d7f55cc354">ripple::sfGeneric</a></div><div class="ttdeci">const SField sfGeneric(access, 0)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00356">SField.h:356</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5b37d2021c21c06e89ffc7d7f55cc354"><div class="ttname"><a href="namespaceripple.html#a5b37d2021c21c06e89ffc7d7f55cc354">ripple::sfGeneric</a></div><div class="ttdeci">const SField sfGeneric(access, 0)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00359">SField.h:359</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_acfff0cb3c802ef69c012ac9bc941a77d"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#acfff0cb3c802ef69c012ac9bc941a77d">ripple::STParsedJSONDetail::template_mismatch</a></div><div class="ttdeci">static Json::Value template_mismatch(SField const &amp;sField)</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00173">STParsedJSON.cpp:173</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_a5d6f40484fef914999a235f1c8927f0b"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#a5d6f40484fef914999a235f1c8927f0b">ripple::STParsedJSONDetail::bad_type</a></div><div class="ttdeci">static Json::Value bad_type(std::string const &amp;object, std::string const &amp;field)</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00118">STParsedJSON.cpp:118</a></div></div>
 <div class="ttc" id="acharconv_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/charconv.html">charconv</a></div></div>
 <div class="ttc" id="anamespaceJson_html_ab1488c31a37eea2d37f36a0961372572"><div class="ttname"><a href="namespaceJson.html#ab1488c31a37eea2d37f36a0961372572">Json::UInt</a></div><div class="ttdeci">unsigned int UInt</div><div class="ttdef"><b>Definition:</b> <a href="json__forwards_8h_source.html#l00027">json_forwards.h:27</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_a7706e311e6424bc28b2d9c2724ec9300"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#a7706e311e6424bc28b2d9c2724ec9300">ripple::STParsedJSONDetail::parseArray</a></div><div class="ttdeci">static std::optional&lt; detail::STVar &gt; parseArray(std::string const &amp;json_name, Json::Value const &amp;json, SField const &amp;inName, int depth, Json::Value &amp;error)</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00906">STParsedJSON.cpp:906</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_a7706e311e6424bc28b2d9c2724ec9300"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#a7706e311e6424bc28b2d9c2724ec9300">ripple::STParsedJSONDetail::parseArray</a></div><div class="ttdeci">static std::optional&lt; detail::STVar &gt; parseArray(std::string const &amp;json_name, Json::Value const &amp;json, SField const &amp;inName, int depth, Json::Value &amp;error)</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00919">STParsedJSON.cpp:919</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a2f6ecb5c0671c8eae429821a6456b704"><div class="ttname"><a href="namespaceripple.html#a2f6ecb5c0671c8eae429821a6456b704">ripple::currencyFromJson</a></div><div class="ttdeci">STCurrency currencyFromJson(SField const &amp;name, Json::Value const &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="STCurrency_8cpp_source.html#l00096">STCurrency.cpp:96</a></div></div>
 <div class="ttc" id="aclassripple_1_1STVector256_html_a6bd443eec0924c8b8f95e6c6d812117c"><div class="ttname"><a href="classripple_1_1STVector256.html#a6bd443eec0924c8b8f95e6c6d812117c">ripple::STVector256::push_back</a></div><div class="ttdeci">void push_back(uint256 const &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="STVector256_8h_source.html#l00217">STVector256.h:217</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_aa5b371f04fc4f1703a3fa0f420125593"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#aa5b371f04fc4f1703a3fa0f420125593">ripple::STParsedJSONDetail::non_object_in_array</a></div><div class="ttdeci">static Json::Value non_object_in_array(std::string const &amp;item, Json::UInt index)</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00182">STParsedJSON.cpp:182</a></div></div>
 <div class="ttc" id="abasic_stringstream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a></div><div class="ttdoc">STL class.</div></div>
 <div class="ttc" id="aclassripple_1_1STArray_html_adc3dc750320964c46b6d4ea2af8b8bc7"><div class="ttname"><a href="classripple_1_1STArray.html#adc3dc750320964c46b6d4ea2af8b8bc7">ripple::STArray::push_back</a></div><div class="ttdeci">void push_back(STObject const &amp;object)</div><div class="ttdef"><b>Definition:</b> <a href="STArray_8h_source.html#l00212">STArray.h:212</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_ac34dac5dc1bd0ee5138834d6e0d8aa0d"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#ac34dac5dc1bd0ee5138834d6e0d8aa0d">ripple::STParsedJSONDetail::too_deep</a></div><div class="ttdeci">static Json::Value too_deep(std::string const &amp;object)</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00156">STParsedJSON.cpp:156</a></div></div>
 <div class="ttc" id="acerr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a></div></div>
-<div class="ttc" id="aclassripple_1_1SField_html_ac50e95825ecf10dfd786cb9b8da4ae39"><div class="ttname"><a href="classripple_1_1SField.html#ac50e95825ecf10dfd786cb9b8da4ae39">ripple::SField::getField</a></div><div class="ttdeci">static const SField &amp; getField(int fieldCode)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8cpp_source.html#l00452">SField.cpp:452</a></div></div>
-<div class="ttc" id="anamespaceripple_html_aba8a68cc62f850c6d8710d5d15f59f1d"><div class="ttname"><a href="namespaceripple.html#aba8a68cc62f850c6d8710d5d15f59f1d">ripple::TERtoInt</a></div><div class="ttdeci">constexpr TERUnderlyingType TERtoInt(TELcodes v)</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00340">TER.h:340</a></div></div>
-<div class="ttc" id="anamespaceripple_html_acb4c76f4bb5b316911034e025cde5489"><div class="ttname"><a href="namespaceripple.html#acb4c76f4bb5b316911034e025cde5489">ripple::sfInvalid</a></div><div class="ttdeci">const SField sfInvalid(access, -1)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00355">SField.h:355</a></div></div>
+<div class="ttc" id="aclassripple_1_1SField_html_ac50e95825ecf10dfd786cb9b8da4ae39"><div class="ttname"><a href="classripple_1_1SField.html#ac50e95825ecf10dfd786cb9b8da4ae39">ripple::SField::getField</a></div><div class="ttdeci">static const SField &amp; getField(int fieldCode)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8cpp_source.html#l00464">SField.cpp:464</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aba8a68cc62f850c6d8710d5d15f59f1d"><div class="ttname"><a href="namespaceripple.html#aba8a68cc62f850c6d8710d5d15f59f1d">ripple::TERtoInt</a></div><div class="ttdeci">constexpr TERUnderlyingType TERtoInt(TELcodes v)</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00347">TER.h:347</a></div></div>
+<div class="ttc" id="anamespaceripple_html_acb4c76f4bb5b316911034e025cde5489"><div class="ttname"><a href="namespaceripple.html#acb4c76f4bb5b316911034e025cde5489">ripple::sfInvalid</a></div><div class="ttdeci">const SField sfInvalid(access, -1)</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00358">SField.h:358</a></div></div>
 <div class="ttc" id="aclassripple_1_1STPathSet_html"><div class="ttname"><a href="classripple_1_1STPathSet.html">ripple::STPathSet</a></div><div class="ttdef"><b>Definition:</b> <a href="STPathSet_8h_source.html#l00176">STPathSet.h:176</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_a45f0c7d30050d346eb572733be8a483f"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#a45f0c7d30050d346eb572733be8a483f">ripple::STParsedJSONDetail::parseLeaf</a></div><div class="ttdeci">static std::optional&lt; detail::STVar &gt; parseLeaf(std::string const &amp;json_name, std::string const &amp;fieldName, SField const *name, Json::Value const &amp;value, Json::Value &amp;error)</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00193">STParsedJSON.cpp:193</a></div></div>
-<div class="ttc" id="anamespaceripple_html_af357b795b06e79478dd2c89383590cdf"><div class="ttname"><a href="namespaceripple.html#af357b795b06e79478dd2c89383590cdf">ripple::transCode</a></div><div class="ttdeci">std::optional&lt; TER &gt; transCode(std::string const &amp;token)</div><div class="ttdef"><b>Definition:</b> <a href="TER_8cpp_source.html#l00258">TER.cpp:258</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af357b795b06e79478dd2c89383590cdf"><div class="ttname"><a href="namespaceripple.html#af357b795b06e79478dd2c89383590cdf">ripple::transCode</a></div><div class="ttdeci">std::optional&lt; TER &gt; transCode(std::string const &amp;token)</div><div class="ttdef"><b>Definition:</b> <a href="TER_8cpp_source.html#l00264">TER.cpp:264</a></div></div>
 <div class="ttc" id="aclassripple_1_1STParsedJSONObject_html_a75ae1e4c096f722a17614c58d8b284a4"><div class="ttname"><a href="classripple_1_1STParsedJSONObject.html#a75ae1e4c096f722a17614c58d8b284a4">ripple::STParsedJSONObject::error</a></div><div class="ttdeci">Json::Value error</div><div class="ttdoc">On failure, an appropriate set of error values.</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8h_source.html#l00053">STParsedJSON.h:53</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a2d6a849c0d9674aa6406cb8f2f5f3f26"><div class="ttname"><a href="namespaceripple.html#a2d6a849c0d9674aa6406cb8f2f5f3f26">ripple::sfLedgerEntry</a></div><div class="ttdeci">const SField sfLedgerEntry</div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint</a></div><div class="ttdoc">Integers of any length that is a multiple of 32-bits.</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00082">base_uint.h:82</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a3de80dfbf6f7cdf152c70751e51ef399"><div class="ttname"><a href="namespaceripple.html#a3de80dfbf6f7cdf152c70751e51ef399">ripple::sfTransactionType</a></div><div class="ttdeci">const SF_UINT16 sfTransactionType</div></div>
-<div class="ttc" id="aclassripple_1_1STObject_1_1FieldErr_html"><div class="ttname"><a href="classripple_1_1STObject_1_1FieldErr.html">ripple::STObject::FieldErr</a></div><div class="ttdef"><b>Definition:</b> <a href="STObject_8h_source.html#l00651">STObject.h:651</a></div></div>
+<div class="ttc" id="aclassripple_1_1STObject_1_1FieldErr_html"><div class="ttname"><a href="classripple_1_1STObject_1_1FieldErr.html">ripple::STObject::FieldErr</a></div><div class="ttdef"><b>Definition:</b> <a href="STObject_8h_source.html#l00656">STObject.h:656</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_af192b10a72a469abe1224b246a985245"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#af192b10a72a469abe1224b246a985245">ripple::STParsedJSONDetail::out_of_range</a></div><div class="ttdeci">static Json::Value out_of_range(std::string const &amp;object, std::string const &amp;field)</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00110">STParsedJSON.cpp:110</a></div></div>
-<div class="ttc" id="aclassripple_1_1TxFormats_html_a1db8e0fb64564b47c2c33ff763ccc8c3"><div class="ttname"><a href="classripple_1_1TxFormats.html#a1db8e0fb64564b47c2c33ff763ccc8c3">ripple::TxFormats::getInstance</a></div><div class="ttdeci">static TxFormats const  &amp; getInstance()</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8cpp_source.html#l00489">TxFormats.cpp:489</a></div></div>
+<div class="ttc" id="aclassripple_1_1TxFormats_html_a1db8e0fb64564b47c2c33ff763ccc8c3"><div class="ttname"><a href="classripple_1_1TxFormats.html#a1db8e0fb64564b47c2c33ff763ccc8c3">ripple::TxFormats::getInstance</a></div><div class="ttdeci">static TxFormats const  &amp; getInstance()</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8cpp_source.html#l00508">TxFormats.cpp:508</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_ac31a26a1cd6b6516ec66297e10c54e39"><div class="ttname"><a href="classJson_1_1Value.html#ac31a26a1cd6b6516ec66297e10c54e39">Json::Value::isArrayOrNull</a></div><div class="ttdeci">bool isArrayOrNull() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l01021">json_value.cpp:1021</a></div></div>
 <div class="ttc" id="aclassripple_1_1STArray_html"><div class="ttname"><a href="classripple_1_1STArray.html">ripple::STArray</a></div><div class="ttdef"><b>Definition:</b> <a href="STArray_8h_source.html#l00028">STArray.h:28</a></div></div>
 <div class="ttc" id="ato_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a></div><div class="ttdeci">T to_string(T... args)</div></div>
@@ -1139,19 +1153,19 @@ $(function() {
 <div class="ttc" id="afrom_chars_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/from_chars.html">std::from_chars</a></div><div class="ttdeci">T from_chars(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_a3dd70cd8b97f850ca18b354df806137b"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#a3dd70cd8b97f850ca18b354df806137b">ripple::STParsedJSONDetail::to_unsigned</a></div><div class="ttdeci">constexpr std::enable_if_t&lt; std::is_unsigned&lt; U &gt;::value &amp;&amp;std::is_signed&lt; S &gt;::value, U &gt; to_unsigned(S value)</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00054">STParsedJSON.cpp:54</a></div></div>
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
-<div class="ttc" id="aclassripple_1_1LedgerFormats_html_a5bdb783a850ee6f598b07577b4b5f7de"><div class="ttname"><a href="classripple_1_1LedgerFormats.html#a5bdb783a850ee6f598b07577b4b5f7de">ripple::LedgerFormats::getInstance</a></div><div class="ttdeci">static LedgerFormats const  &amp; getInstance()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerFormats_8cpp_source.html#l00346">LedgerFormats.cpp:346</a></div></div>
+<div class="ttc" id="aclassripple_1_1LedgerFormats_html_a5bdb783a850ee6f598b07577b4b5f7de"><div class="ttname"><a href="classripple_1_1LedgerFormats.html#a5bdb783a850ee6f598b07577b4b5f7de">ripple::LedgerFormats::getInstance</a></div><div class="ttdeci">static LedgerFormats const  &amp; getInstance()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerFormats_8cpp_source.html#l00362">LedgerFormats.cpp:362</a></div></div>
 <div class="ttc" id="aclassripple_1_1STXChainBridge_html"><div class="ttname"><a href="classripple_1_1STXChainBridge.html">ripple::STXChainBridge</a></div><div class="ttdef"><b>Definition:</b> <a href="STXChainBridge_8h_source.html#l00033">STXChainBridge.h:33</a></div></div>
 <div class="ttc" id="amin_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/numeric_limits/min.html">std::numeric_limits::min</a></div><div class="ttdeci">T min(T... args)</div></div>
-<div class="ttc" id="aclassripple_1_1STObject_html"><div class="ttname"><a href="classripple_1_1STObject.html">ripple::STObject</a></div><div class="ttdef"><b>Definition:</b> <a href="STObject_8h_source.html#l00054">STObject.h:54</a></div></div>
+<div class="ttc" id="aclassripple_1_1STObject_html"><div class="ttname"><a href="classripple_1_1STObject.html">ripple::STObject</a></div><div class="ttdef"><b>Definition:</b> <a href="STObject_8h_source.html#l00055">STObject.h:55</a></div></div>
 <div class="ttc" id="aclassripple_1_1STParsedJSONArray_html_aff64a5a6805ea010242118eecaab8436"><div class="ttname"><a href="classripple_1_1STParsedJSONArray.html#aff64a5a6805ea010242118eecaab8436">ripple::STParsedJSONArray::STParsedJSONArray</a></div><div class="ttdeci">STParsedJSONArray()=delete</div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_a79d7725dce6260317333e69022367ac9"><div class="ttname"><a href="classJson_1_1Value.html#a79d7725dce6260317333e69022367ac9">Json::Value::getMemberNames</a></div><div class="ttdeci">Members getMemberNames() const</div><div class="ttdoc">Return a list of the member names.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00948">json_value.cpp:948</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a1415ce32533612522867c13ef2428534"><div class="ttname"><a href="namespaceripple.html#a1415ce32533612522867c13ef2428534">ripple::sfTransactionResult</a></div><div class="ttdeci">const SF_UINT8 sfTransactionResult</div></div>
 <div class="ttc" id="anamespaceripple_html_a95e082491139cffc65c01b6fcaa3edfe"><div class="ttname"><a href="namespaceripple.html#a95e082491139cffc65c01b6fcaa3edfe">ripple::sfLedgerEntryType</a></div><div class="ttdeci">const SF_UINT16 sfLedgerEntryType</div></div>
-<div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_a49566dbe3cc1c22b1aabe9efa5c638e9"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#a49566dbe3cc1c22b1aabe9efa5c638e9">ripple::STParsedJSONDetail::parseObject</a></div><div class="ttdeci">static std::optional&lt; STObject &gt; parseObject(std::string const &amp;json_name, Json::Value const &amp;json, SField const &amp;inName, int depth, Json::Value &amp;error)</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00783">STParsedJSON.cpp:783</a></div></div>
-<div class="ttc" id="aclassripple_1_1SField_html"><div class="ttname"><a href="classripple_1_1SField.html">ripple::SField</a></div><div class="ttdoc">Identifies fields.</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00139">SField.h:139</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_a49566dbe3cc1c22b1aabe9efa5c638e9"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#a49566dbe3cc1c22b1aabe9efa5c638e9">ripple::STParsedJSONDetail::parseObject</a></div><div class="ttdeci">static std::optional&lt; STObject &gt; parseObject(std::string const &amp;json_name, Json::Value const &amp;json, SField const &amp;inName, int depth, Json::Value &amp;error)</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00796">STParsedJSON.cpp:796</a></div></div>
+<div class="ttc" id="aclassripple_1_1SField_html"><div class="ttname"><a href="classripple_1_1SField.html">ripple::SField</a></div><div class="ttdoc">Identifies fields.</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00141">SField.h:141</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html_a1f9135f2eef3ec702d5f17e679733e8e"><div class="ttname"><a href="classripple_1_1base__uint.html#a1f9135f2eef3ec702d5f17e679733e8e">ripple::base_uint::zero</a></div><div class="ttdeci">void zero()</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00542">base_uint.h:542</a></div></div>
-<div class="ttc" id="aclassripple_1_1SField_html_abcc116274a030ac6e4a8f45314394140"><div class="ttname"><a href="classripple_1_1SField.html#abcc116274a030ac6e4a8f45314394140">ripple::SField::getName</a></div><div class="ttdeci">std::string const  &amp; getName() const</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00202">SField.h:202</a></div></div>
+<div class="ttc" id="aclassripple_1_1SField_html_abcc116274a030ac6e4a8f45314394140"><div class="ttname"><a href="classripple_1_1SField.html#abcc116274a030ac6e4a8f45314394140">ripple::SField::getName</a></div><div class="ttdeci">std::string const  &amp; getName() const</div><div class="ttdef"><b>Definition:</b> <a href="SField_8h_source.html#l00204">SField.h:204</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_a3fc50568b30feb553d2a641b7ebaa517"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#a3fc50568b30feb553d2a641b7ebaa517">ripple::STParsedJSONDetail::not_an_object</a></div><div class="ttdeci">static Json::Value not_an_object(std::string const &amp;object, std::string const &amp;field)</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00081">STParsedJSON.cpp:81</a></div></div>
 <div class="ttc" id="acassert_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cassert.html">cassert</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_a74b305583ec3aacf4f9dd06e799dc265"><div class="ttname"><a href="classJson_1_1Value.html#a74b305583ec3aacf4f9dd06e799dc265">Json::Value::asUInt</a></div><div class="ttdeci">UInt asUInt() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00545">json_value.cpp:545</a></div></div>
@@ -1173,7 +1187,7 @@ $(function() {
 <div class="ttc" id="aclassJson_1_1Value_html_a478d6ca4b353199e3b9f91b9cfebc7ba"><div class="ttname"><a href="classJson_1_1Value.html#a478d6ca4b353199e3b9f91b9cfebc7ba">Json::Value::isObjectOrNull</a></div><div class="ttdeci">bool isObjectOrNull() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l01033">json_value.cpp:1033</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aae762024dc856aebd64dba33686f2660"><div class="ttname"><a href="namespaceripple.html#aae762024dc856aebd64dba33686f2660">ripple::sfTransaction</a></div><div class="ttdeci">const SField sfTransaction</div></div>
 <div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_a88e38edbe7d2ad37404adf635540e937"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#a88e38edbe7d2ad37404adf635540e937">ripple::STParsedJSONDetail::array_expected</a></div><div class="ttdeci">static Json::Value array_expected(std::string const &amp;object, std::string const &amp;field)</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00140">STParsedJSON.cpp:140</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a2cd6200f6709780fcf1dd26ec9cd2866"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a2cd6200f6709780fcf1dd26ec9cd2866">ripple::RPC::make_error</a></div><div class="ttdeci">Json::Value make_error(error_code_i code)</div><div class="ttdoc">Returns a new json object that reflects the error code.</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8cpp_source.html#l00180">ErrorCodes.cpp:180</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_a2cd6200f6709780fcf1dd26ec9cd2866"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a2cd6200f6709780fcf1dd26ec9cd2866">ripple::RPC::make_error</a></div><div class="ttdeci">Json::Value make_error(error_code_i code)</div><div class="ttdoc">Returns a new json object that reflects the error code.</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8cpp_source.html#l00181">ErrorCodes.cpp:181</a></div></div>
 <div class="ttc" id="awhat_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception/what.html">std::runtime_error::what</a></div><div class="ttdeci">T what(T... args)</div></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00145">json_value.h:145</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1STParsedJSONDetail_html_a89f744baf306bc8afceb338dd98ba8bc"><div class="ttname"><a href="namespaceripple_1_1STParsedJSONDetail.html#a89f744baf306bc8afceb338dd98ba8bc">ripple::STParsedJSONDetail::not_an_array</a></div><div class="ttdeci">static Json::Value not_an_array(std::string const &amp;object)</div><div class="ttdef"><b>Definition:</b> <a href="STParsedJSON_8cpp_source.html#l00095">STParsedJSON.cpp:95</a></div></div>

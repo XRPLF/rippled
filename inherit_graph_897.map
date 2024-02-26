@@ -1,7 +1,47 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,169,47"/>
-<area shape="rect" id="node2" href="$classripple_1_1PathFindTrustLine.html" title=" " alt="" coords="217,45,396,71"/>
-<area shape="rect" id="node3" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="6,123,169,164"/>
-<area shape="rect" id="node4" href="$classripple_1_1RPCTrustLine.html" title=" " alt="" coords="231,99,382,126"/>
-<area shape="rect" id="node5" href="$classripple_1_1TrustLineBase.html" title="Wraps a trust line SLE for convenience." alt="" coords="9,71,166,98"/>
+<area shape="rect" id="node1" href="$classripple_1_1Transactor.html" title=" " alt="" coords="5,1095,140,1121"/>
+<area shape="rect" id="node2" href="$classripple_1_1AMMBid.html" title="AMMBid implements AMM bid Transactor." alt="" coords="252,5,371,32"/>
+<area shape="rect" id="node3" href="$classripple_1_1AMMCreate.html" title="AMMCreate implements Automatic Market Maker(AMM) creation Transactor." alt="" coords="241,56,382,83"/>
+<area shape="rect" id="node4" href="$classripple_1_1AMMDelete.html" title="AMMDelete implements AMM delete transactor." alt="" coords="241,107,382,133"/>
+<area shape="rect" id="node5" href="$classripple_1_1AMMDeposit.html" title="AMMDeposit implements AMM deposit Transactor." alt="" coords="237,157,385,184"/>
+<area shape="rect" id="node6" href="$classripple_1_1AMMVote.html" title="AMMVote implements AMM vote Transactor." alt="" coords="248,208,375,235"/>
+<area shape="rect" id="node7" href="$classripple_1_1AMMWithdraw.html" title="AMMWithdraw implements AMM withdraw Transactor." alt="" coords="231,259,391,285"/>
+<area shape="rect" id="node8" href="$classripple_1_1BridgeModify.html" title=" " alt="" coords="235,309,388,336"/>
+<area shape="rect" id="node9" href="$classripple_1_1CancelCheck.html" title=" " alt="" coords="236,360,387,387"/>
+<area shape="rect" id="node10" href="$classripple_1_1CancelOffer.html" title=" " alt="" coords="240,411,383,437"/>
+<area shape="rect" id="node11" href="$classripple_1_1CashCheck.html" title=" " alt="" coords="242,461,381,488"/>
+<area shape="rect" id="node12" href="$classripple_1_1Change.html" title=" " alt="" coords="253,512,369,539"/>
+<area shape="rect" id="node13" href="$classripple_1_1Clawback.html" title=" " alt="" coords="246,563,377,589"/>
+<area shape="rect" id="node14" href="$classripple_1_1CreateCheck.html" title=" " alt="" coords="236,613,387,640"/>
+<area shape="rect" id="node15" href="$classripple_1_1CreateOffer.html" title="Transactor specialized for creating offers in the ledger." alt="" coords="240,664,383,691"/>
+<area shape="rect" id="node16" href="$classripple_1_1CreateTicket.html" title=" " alt="" coords="236,715,387,741"/>
+<area shape="rect" id="node17" href="$classripple_1_1DeleteAccount.html" title=" " alt="" coords="230,765,393,792"/>
+<area shape="rect" id="node18" href="$classripple_1_1DeleteOracle.html" title="Price Oracle is a system that acts as a bridge between a blockchain network and the external world,..." alt="" coords="235,816,387,843"/>
+<area shape="rect" id="node19" href="$classripple_1_1DepositPreauth.html" title=" " alt="" coords="228,867,395,893"/>
+<area shape="rect" id="node20" href="$classripple_1_1DIDDelete.html" title=" " alt="" coords="244,917,379,944"/>
+<area shape="rect" id="node21" href="$classripple_1_1DIDSet.html" title=" " alt="" coords="255,968,367,995"/>
+<area shape="rect" id="node22" href="$classripple_1_1EscrowCancel.html" title=" " alt="" coords="233,1019,390,1045"/>
+<area shape="rect" id="node23" href="$classripple_1_1EscrowCreate.html" title=" " alt="" coords="233,1069,389,1096"/>
+<area shape="rect" id="node24" href="$classripple_1_1EscrowFinish.html" title=" " alt="" coords="236,1120,387,1147"/>
+<area shape="rect" id="node25" href="$classripple_1_1NFTokenAcceptOffer.html" title=" " alt="" coords="212,1171,411,1197"/>
+<area shape="rect" id="node26" href="$classripple_1_1NFTokenBurn.html" title=" " alt="" coords="235,1221,387,1248"/>
+<area shape="rect" id="node27" href="$classripple_1_1NFTokenCancelOffer.html" title=" " alt="" coords="212,1272,411,1299"/>
+<area shape="rect" id="node28" href="$classripple_1_1NFTokenCreateOffer.html" title=" " alt="" coords="213,1323,410,1349"/>
+<area shape="rect" id="node29" href="$classripple_1_1NFTokenMint.html" title=" " alt="" coords="236,1373,387,1400"/>
+<area shape="rect" id="node30" href="$classripple_1_1PayChanClaim.html" title=" " alt="" coords="231,1424,392,1451"/>
+<area shape="rect" id="node31" href="$classripple_1_1PayChanCreate.html" title=" " alt="" coords="228,1475,395,1501"/>
+<area shape="rect" id="node32" href="$classripple_1_1PayChanFund.html" title=" " alt="" coords="235,1525,388,1552"/>
+<area shape="rect" id="node33" href="$classripple_1_1Payment.html" title=" " alt="" coords="249,1576,373,1603"/>
+<area shape="rect" id="node34" href="$classripple_1_1SetAccount.html" title=" " alt="" coords="241,1627,381,1653"/>
+<area shape="rect" id="node35" href="$classripple_1_1SetOracle.html" title="Price Oracle is a system that acts as a bridge between a blockchain network and the external world,..." alt="" coords="246,1677,377,1704"/>
+<area shape="rect" id="node36" href="$classripple_1_1SetRegularKey.html" title=" " alt="" coords="231,1728,392,1755"/>
+<area shape="rect" id="node37" href="$classripple_1_1SetSignerList.html" title="See the README.md for an overview of the SetSignerList transaction that this class implements." alt="" coords="235,1779,387,1805"/>
+<area shape="rect" id="node38" href="$classripple_1_1SetTrust.html" title=" " alt="" coords="252,1829,371,1856"/>
+<area shape="rect" id="node39" href="$classripple_1_1XChainAddAccountCreateAttestation.html" title=" " alt="" coords="217,1881,406,1922"/>
+<area shape="rect" id="node40" href="$classripple_1_1XChainAddClaimAttestation.html" title=" " alt="" coords="188,1947,435,1973"/>
+<area shape="rect" id="node41" href="$classripple_1_1XChainClaim.html" title=" " alt="" coords="236,1997,387,2024"/>
+<area shape="rect" id="node42" href="$classripple_1_1XChainCommit.html" title=" " alt="" coords="229,2048,393,2075"/>
+<area shape="rect" id="node43" href="$classripple_1_1XChainCreateAccountCommit.html" title=" " alt="" coords="208,2099,415,2141"/>
+<area shape="rect" id="node44" href="$classripple_1_1XChainCreateBridge.html" title=" " alt="" coords="213,2165,410,2192"/>
+<area shape="rect" id="node45" href="$classripple_1_1XChainCreateClaimID.html" title=" " alt="" coords="208,2216,415,2243"/>
 </map>
