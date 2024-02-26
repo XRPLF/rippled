@@ -197,8 +197,9 @@ existing maintainer without a vote.
 
 ## Current Maintainers
 
+* [Ed Hennis](https://github.com/ximinez) (Ripple)
+* [intelliot](https://github.com/intelliot) (Ripple)
 * [JoelKatz](https://github.com/JoelKatz) (Ripple)
-* [manojsdoshi](https://github.com/manojsdoshi) (Ripple)
 * [n3tc4t](https://github.com/n3tc4t) (XRPL Labs)
 * [Nik Bougalis](https://github.com/nbougalis)
 * [nixer89](https://github.com/nixer89) (XRP Ledger Foundation)
@@ -206,7 +207,6 @@ existing maintainer without a vote.
 * [seelabs](https://github.com/seelabs) (Ripple)
 * [Silkjaer](https://github.com/Silkjaer) (XRP Ledger Foundation)
 * [WietseWind](https://github.com/WietseWind) (XRPL Labs + XRP Ledger Foundation)
-* [Ed Hennis](https://github.com/ximinez) (Ripple)
 
 
 [1]: https://docs.github.com/en/get-started/quickstart/contributing-to-projects
