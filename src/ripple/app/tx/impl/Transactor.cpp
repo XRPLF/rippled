@@ -1722,7 +1722,7 @@ Transactor::operator()()
         meta.setResult(result, 0);
 
         std::shared_ptr<STObject const> proMeta =
-            std::make_shared<STObject const>(std::move(meta.getAsObject()));
+            std::make_shared<STObject const>(meta.getAsObject());
 
         // perform callback logic if applicable
         if (ctx_.tx.isFieldPresent(sfEmitDetails))

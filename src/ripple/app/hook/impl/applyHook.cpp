@@ -4875,13 +4875,16 @@ DEFINE_HOOK_FUNCTION(int64_t, float_log, int64_t float1)
         return 0;
 
     int32_t exp_out = 0;
-    while (result * 10 < maxMantissa)
+    // Avoid overflows by dividing
+    while (result < maxMantissa / 10)
     {
         result *= 10;
         exp_out--;
     }
+    int64_t const man{static_cast<int64_t>(result)};
+    assert(man < maxMantissa);
 
-    return make_float((int64_t)result, exp_out);
+    return make_float(man, exp_out);
 }
 
 DEFINE_HOOK_FUNCTION(int64_t, float_root, int64_t float1, uint32_t n)
@@ -4907,13 +4910,16 @@ DEFINE_HOOK_FUNCTION(int64_t, float_root, int64_t float1, uint32_t n)
         return 0;
 
     int32_t exp_out = 0;
-    while (result * 10 < maxMantissa)
+    // Avoid overflows by dividing
+    while (result < maxMantissa / 10)
     {
         result *= 10;
         exp_out--;
     }
+    int64_t const man{static_cast<int64_t>(result)};
+    assert(man < maxMantissa);
 
-    return make_float((int64_t)result, exp_out);
+    return make_float(man, exp_out);
 }
 
 DEFINE_HOOK_FUNCTION(
