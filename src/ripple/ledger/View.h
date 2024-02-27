@@ -1052,8 +1052,9 @@ trustTransferLockedBalance(
         // if it did
         if (isTrustDefault(sleSrcAcc, sleSrcLine))
         {
-            uint32_t flags = sleSrcLine->getFieldU32(sfFlags);
-            uint32_t fReserve{srcHigh ? lsfHighReserve : lsfLowReserve};
+            uint32_t const flags = sleSrcLine->getFieldU32(sfFlags);
+            LedgerSpecificFlags const fReserve{
+                srcHigh ? lsfHighReserve : lsfLowReserve};
             if (flags & fReserve)
             {
                 sleSrcLine->setFieldU32(sfFlags, flags & ~fReserve);

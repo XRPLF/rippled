@@ -150,7 +150,7 @@ struct WasmBlkInf
     {                                                                          \
         if (DEBUG_GUARD)                                                       \
             printf(                                                            \
-                "[%u]%.*swce=%ld | g=%u, pg=%u, m=%g\n",                       \
+                "[%u]%.*swce=%llu | g=%u, pg=%u, m=%g\n",                      \
                 x,                                                             \
                 level,                                                         \
                 "                                                            " \
@@ -323,7 +323,7 @@ check_guard(
                                                  // *must* be the _g function
 
                 printf(
-                    "iteration_bound: %d, call_func_idx: %ld, guard_func_idx: "
+                    "iteration_bound: %d, call_func_idx: %lld, guard_func_idx: "
                     "%d\n",
                     iteration_bound,
                     call_func_idx,
