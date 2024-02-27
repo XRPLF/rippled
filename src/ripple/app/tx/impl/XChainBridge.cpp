@@ -22,6 +22,7 @@
 #include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/app/tx/impl/XChainBridge.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/Number.h>
 #include <ripple/basics/XRPAmount.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/utility/Journal.h>
@@ -41,7 +42,6 @@
 #include <ripple/protocol/XChainAttestations.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/st.h>
-
 #include <unordered_map>
 #include <unordered_set>
 
@@ -672,6 +672,12 @@ finalizeClaimHelper(
             // if the transfer failed, distribute the pool for "OnTransferFail"
             // cases (the attesters did their job)
             STAmount const share = [&] {
+                auto const round_mode =
+                    innerSb.rules().enabled(fixXChainRewardRounding)
+                    ? Number::rounding_mode::downward
+                    : Number::getround();
+                saveNumberRoundMode _{Number::setround(round_mode)};
+
                 STAmount const den{rewardAccounts.size()};
                 return divide(rewardPool, den, rewardPool.issue());
             }();
