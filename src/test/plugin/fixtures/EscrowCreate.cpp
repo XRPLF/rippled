@@ -431,22 +431,12 @@ getLedgerObjects()
     return {ptr, 1};
 }
 
-extern "C" Container<InvariantCheckExport>
-getInvariantChecks()
-{
-    static InvariantCheckExport list[] = {{
-        NoZeroNewEscrow::visitEntryExport,
-        NoZeroNewEscrow::finalizeExport,
-    }};
-    InvariantCheckExport* ptr = list;
-    return {ptr, 1};
-}
+EXPORT_INVARIANT_CHECKS(NoZeroNewEscrow)
 
 extern "C" Container<AmendmentExport>
 getAmendments()
 {
     reinitialize();
-    NoZeroNewEscrow::checks.clear();
     AmendmentExport const amendment = {
         "featurePluginTest2",
         true,
