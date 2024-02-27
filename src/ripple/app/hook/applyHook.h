@@ -1,42 +1,28 @@
 #ifndef APPLY_HOOK_INCLUDED
 #define APPLY_HOOK_INCLUDED 1
 #include <ripple/app/hook/Enum.h>
+#include <ripple/app/hook/HookStateMap.h>
 #include <ripple/app/hook/Macro.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
-#include <ripple/basics/Blob.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/TER.h>
 #include <ripple/protocol/digest.h>
+
+#include <wasmedge/wasmedge.h>
+
 #include <any>
 #include <memory>
 #include <optional>
 #include <queue>
 #include <vector>
-#include <wasmedge/wasmedge.h>
 
 namespace hook {
 struct HookContext;
 struct HookResult;
 bool
 isEmittedTxn(ripple::STTx const& tx);
-
-// This map type acts as both a read and write cache for hook execution
-// and is preserved across the execution of the set of hook chains
-// being executed in the current transaction. It is committed to lgr
-// only upon tesSuccess for the otxn.
-using HookStateMap = std::map<
-    ripple::AccountID,  // account that owns the state
-    std::pair<
-        int64_t,  // remaining available ownercount
-        std::map<
-            ripple::uint256,  // namespace
-            std::map<
-                ripple::uint256,  // key
-                std::pair<
-                    bool,               // is modified from ledger value
-                    ripple::Blob>>>>>;  // the value
 
 using namespace ripple;
 static const std::map<uint16_t, uint8_t> TSHAllowances = {

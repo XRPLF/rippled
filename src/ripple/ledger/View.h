@@ -538,7 +538,6 @@ trustAdjustLockedBalance(
     if (!sleLine)
         return tecINTERNAL;
 
-    auto const currency = deltaAmt.getCurrency();
     auto const issuer = deltaAmt.getIssuer();
 
     STAmount lowLimit = sleLine->getFieldAmount(sfLowLimit);
@@ -546,7 +545,7 @@ trustAdjustLockedBalance(
     // the account which is modifying the LockedBalance is always
     // the side that isn't the issuer, so if the low side is the
     // issuer then the high side is the account.
-    bool high = lowLimit.getIssuer() == issuer;
+    bool const high = lowLimit.getIssuer() == issuer;
 
     std::vector<AccountID> parties{
         high ? sleLine->getFieldAmount(sfHighLimit).getIssuer()
