@@ -189,8 +189,8 @@ newSField(const int fieldValue, char const* fieldName)
                 std::to_string(fieldValue) + ") already exists: sf" +
                 std::string(field.fieldName));
     }
-    T const* newSField = new T(typeId, fieldValue, fieldName);
-    return *newSField;
+    throw std::runtime_error(
+        "SField " + std::string(fieldName) + " doesn't exist.");
 }
 
 template <class T>
@@ -208,9 +208,16 @@ newUntypedSField(const int fieldValue, char const* fieldName)
     {
         return field;
     }
-    SField const* newSField = new SField(getSTId<T>(), fieldValue, fieldName);
-    return *newSField;
+    throw std::runtime_error(
+        "SField " + std::string(fieldName) + " doesn't exist.");
 }
+
+#define DEFINE_UNTYPED_SFIELD(type, fieldValue, fieldName)            \
+    exportedSFields.push_back(getSTId<type>, fieldValue, #fieldName); \
+    SField const& sf##fieldName()                                     \
+    {                                                                 \
+        return newUntypedSField<type>(fieldValue, #fieldName);        \
+    }
 
 SF_PLUGINTYPE const&
 constructCustomSField(int tid, int fv, const char* fn)
@@ -218,7 +225,7 @@ constructCustomSField(int tid, int fv, const char* fn)
     if (SField const& field = SField::getField(field_code(tid, fv));
         field != sfInvalid)
         return reinterpret_cast<SF_PLUGINTYPE const&>(field);
-    return *(new SF_PLUGINTYPE(tid, fv, fn));
+    throw std::runtime_error("SField " + std::string(fn) + " doesn't exist.");
 }
 
 }  // namespace ripple
