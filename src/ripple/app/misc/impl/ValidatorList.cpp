@@ -886,8 +886,8 @@ ValidatorList::applyListsAndBroadcast(
     {
         bool good = true;
 
-        // localPublisherList is always available. No need to perform the
-        // below check
+        // localPublisherList never expires, so localPublisherList is excluded
+        // from the below check.
         for (auto const& [_, listCollection] : publisherLists_)
         {
             if (listCollection.status != PublisherStatus::available)
