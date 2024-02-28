@@ -21,6 +21,7 @@
 #define RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
 
 #include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/misc/Transaction.h>
 #include <ripple/ledger/ApplyView.h>
 #include <ripple/rpc/Role.h>
 
@@ -96,6 +97,16 @@ transactionSign(
     Json::Value params,  // Passed by value so it can be modified locally.
     unsigned apiVersion,
     NetworkOPs::FailHard failType,
+    Role role,
+    std::chrono::seconds validatedLedgerAge,
+    Application& app);
+
+// JSON requests can be sterilised and parsed into a Transaction pointer using
+// this function. If the request cannot be parsed as a transaction, an error
+// (i.e Json::Value) is returned, otherwise a Transaction::pointer is returned
+std::variant<Json::Value, Transaction::pointer>
+getTxnPtr(
+    Json::Value jvRequest,
     Role role,
     std::chrono::seconds validatedLedgerAge,
     Application& app);

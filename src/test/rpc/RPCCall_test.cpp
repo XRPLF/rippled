@@ -6217,8 +6217,45 @@ public:
     }
 
     void
+    testSubmitResponseFields()
+    {
+        testcase(
+            "Check for the presence of recently added fields in submit "
+            "command with JSON input");
+
+        using namespace jtx;
+
+        Env env{*this};
+        {
+            std::string const cmdParams =
+                "{\"TransactionType\":\"Payment\", "
+                "\"Account\":\"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh\","
+                "\"Destination\":\"rf1BiGeXwwQoi8Z2ueFYTEXSwuJYfV2Jpn\", "
+                "\"Amount\":\"5000\"}";
+            Json::Value const jr =
+                env.rpc("submit", "masterpassphrase", cmdParams)[jss::result];
+
+            BEAST_EXPECT(jr[jss::status] == "success");
+            BEAST_EXPECT(jr[jss::accepted]);
+            BEAST_EXPECT(jr[jss::account_sequence_available] == 2);
+            BEAST_EXPECT(jr[jss::account_sequence_next] == 2);
+            BEAST_EXPECT(jr[jss::applied]);
+            BEAST_EXPECT(jr[jss::broadcast]);
+            BEAST_EXPECT(jr[jss::kept]);
+            BEAST_EXPECT(jr[jss::queued] == false);
+            BEAST_EXPECT(jr[jss::open_ledger_cost] == "10");
+            BEAST_EXPECT(jr[jss::validated_ledger_index] == 2);
+
+            // sign-and-submit commands run the risk of exposing secrets in
+            // clear text. Hence, display the deprecation warning message.
+            BEAST_EXPECT(jr[jss::deprecated]);
+        }
+    }
+
+    void
     run() override
     {
+        testSubmitResponseFields();
         test::jtx::forAllApiVersions(
             std::bind_front(&RPCCall_test::testRPCCall, this));
     }

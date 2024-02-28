@@ -22,12 +22,13 @@
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/net/RPCErr.h>
+#include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
-#include <ripple/rpc/GRPCHandlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/TransactionSign.h>
+#include <string>
 
 namespace ripple {
 
@@ -39,6 +40,37 @@ getFailHard(RPC::JsonContext const& context)
         context.params["fail_hard"].asBool());
 }
 
+// This is helper function that is used to calculate the CheckID field in a
+// CheckCreate transaction.
+// The function returns false, if an error occurs whilst parsing the input
+// transaction.
+// Otherwise, true is returned and appropriate CheckID is populated in the
+// response
+// Note: CheckID field is populated if and only if the transaction creates a
+// Check object (i.e. transaction returns tesSUCCESS code)
+bool
+populateCheckID(
+    Json::Value& result,
+    std::string const& account,
+    std::uint32_t seq)
+{
+    auto acctID = parseBase58<AccountID>(account);
+
+    if (!acctID)
+    {
+        result[jss::error] =
+            "Unable to parse AccountID from the "
+            "input: " +
+            account + "\n";
+        return false;
+    }
+
+    if (result[jss::engine_result] == "tesSUCCESS")
+        result[jss::CheckID] = to_string(keylet::check(*acctID, seq).key);
+
+    return true;
+}
+
 // {
 //   tx_json: <object>,
 //   secret: <secret>
@@ -47,37 +79,49 @@ Json::Value
 doSubmit(RPC::JsonContext& context)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
-
+    std::optional<Blob> ret;
     if (!context.params.isMember(jss::tx_blob))
     {
-        auto const failType = getFailHard(context);
-
         if (context.role != Role::ADMIN && !context.app.config().canSign())
             return RPC::make_error(
                 rpcNOT_SUPPORTED, "Signing is not supported by this server.");
 
-        auto ret = RPC::transactionSubmit(
+        auto sanitizeRequest = RPC::getTxnPtr(
             context.params,
-            context.apiVersion,
-            failType,
             context.role,
             context.ledgerMaster.getValidatedLedgerAge(),
-            context.app,
-            RPC::getProcessTxnFn(context.netOps));
+            context.app);
 
-        ret[jss::deprecated] =
-            "Signing support in the 'submit' command has been "
-            "deprecated and will be removed in a future version "
-            "of the server. Please migrate to a standalone "
-            "signing tool.";
+        std::shared_ptr<Transaction> tpTrans;
+        try
+        {
+            tpTrans = std::get<Transaction::pointer>(sanitizeRequest);
+        }
+        // An error occurred whilst parsing the request
+        catch (std::bad_variant_access const& ex)
+        {
+            Json::Value const errorMsg = std::get<Json::Value>(sanitizeRequest);
+            return RPC::make_error(
+                rpcINVALID_PARAMS,
+                "Unable to parse your request into a valid "
+                "transaction\nDetailed error: " +
+                    errorMsg.asString());
+        }
 
-        return ret;
+        std::string const txnBlob =
+            strHex(tpTrans->getSTransaction()->getSerializer().peekData());
+
+        ret = strUnHex(txnBlob);
+    }
+    else
+    {
+        ret = strUnHex(context.params[jss::tx_blob].asString());
     }
 
+    // the below steps are identical for the submit command irrespective of
+    // whether tx_blob or JSON format was used in the request
+
     Json::Value jvResult;
-
-    auto ret = strUnHex(context.params[jss::tx_blob].asString());
-
     if (!ret || !ret->size())
         return rpcError(rpcINVALID_PARAMS);
 
@@ -181,6 +225,23 @@ doSubmit(RPC::JsonContext& context)
                     safe_cast<Json::Value::UInt>(
                         currentLedgerState->validatedLedger);
             }
+        }
+
+        jvResult[jss::deprecated] =
+            "Signing support in the 'submit' command has been "
+            "deprecated and will be removed in a future version "
+            "of the server. Please migrate to a standalone "
+            "signing tool.";
+
+        // populate the CheckID for CheckCreate transactions
+        if (tpTrans->getSTransaction()->getTxnType() == ttCHECK_CREATE)
+        {
+            if (!populateCheckID(
+                    jvResult,
+                    jvResult[jss::tx_json][jss::Account].asString(),
+                    tpTrans->getSTransaction()->getSeqProxy().value()))
+                // an error occurred in the parsing of Account information
+                return jvResult;
         }
 
         return jvResult;

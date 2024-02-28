@@ -825,22 +825,18 @@ transactionSign(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-/** Returns a Json::objectValue. */
-Json::Value
-transactionSubmit(
+std::variant<Json::Value, Transaction::pointer>
+getTxnPtr(
     Json::Value jvRequest,
-    unsigned apiVersion,
-    NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
-    Application& app,
-    ProcessTransactionFn const& processTransaction)
+    Application& app)
 {
     using namespace detail;
 
     auto const& ledger = app.openLedger().current();
     auto j = app.journal("RPCHandler");
-    JLOG(j.debug()) << "transactionSubmit: " << jvRequest;
+    JLOG(j.debug()) << "getTxnPtr: " << jvRequest;
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
@@ -857,11 +853,42 @@ transactionSubmit(
     if (!txn.second)
         return txn.first;
 
+    return txn.second;
+}
+
+/** Returns a Json::objectValue. */
+Json::Value
+transactionSubmit(
+    Json::Value jvRequest,
+    unsigned apiVersion,
+    NetworkOPs::FailHard failType,
+    Role role,
+    std::chrono::seconds validatedLedgerAge,
+    Application& app,
+    ProcessTransactionFn const& processTransaction)
+{
+    using namespace detail;
+    auto j = app.journal("RPCHandler");
+    JLOG(j.debug()) << "transactionSubmit: " << jvRequest;
+
+    std::variant<Json::Value, Transaction::pointer> sanitizeRequest =
+        getTxnPtr(jvRequest, role, validatedLedgerAge, app);
+
+    Transaction::pointer ptrTxn;
+    try
+    {
+        ptrTxn = std::get<Transaction::pointer>(sanitizeRequest);
+    }
+    catch (std::bad_variant_access const& ex)
+    {
+        return std::get<Json::Value>(sanitizeRequest);
+    }
+
     // Finally, submit the transaction.
     try
     {
         // FIXME: For performance, should use asynch interface
-        processTransaction(txn.second, isUnlimited(role), true, failType);
+        processTransaction(ptrTxn, isUnlimited(role), true, failType);
     }
     catch (std::exception&)
     {
@@ -869,7 +896,7 @@ transactionSubmit(
             rpcINTERNAL, "Exception occurred during transaction submission.");
     }
 
-    return transactionFormatResultImpl(txn.second, apiVersion);
+    return transactionFormatResultImpl(ptrTxn, apiVersion);
 }
 
 namespace detail {
