@@ -791,10 +791,6 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
             newPrev->at(sfNextPageMin) = nextPage->key();
             view.update(newPrev);
         }
-        else
-        {
-            nextPage->makeFieldAbsent(sfPreviousPageMin);
-        }
         view.erase(page);
         view.insert(nextPage);
         return didRepair;
