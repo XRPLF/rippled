@@ -21,8 +21,10 @@
 #define RIPPLE_PROTOCOL_STBLOB_H_INCLUDED
 
 #include <ripple/basics/Buffer.h>
+#include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Slice.h>
 #include <ripple/protocol/STBase.h>
+
 #include <cassert>
 #include <cstring>
 #include <memory>
@@ -30,7 +32,7 @@
 namespace ripple {
 
 // variable length byte string
-class STBlob : public STBase
+class STBlob : public STBase, public CountedObject<STBlob>
 {
     Buffer value_;
 
@@ -88,7 +90,7 @@ private:
 };
 
 inline STBlob::STBlob(STBlob const& rhs)
-    : STBase(rhs), value_(rhs.data(), rhs.size())
+    : STBase(rhs), CountedObject<STBlob>(rhs), value_(rhs.data(), rhs.size())
 {
 }
 
