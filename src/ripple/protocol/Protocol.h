@@ -109,6 +109,31 @@ using TxID = uint256;
  */
 std::uint16_t constexpr maxDeletableAMMTrustLines = 512;
 
+/** The maximum length of a URI inside an Oracle */
+std::size_t constexpr maxOracleURI = 256;
+
+/** The maximum length of a Provider inside an Oracle */
+std::size_t constexpr maxOracleProvider = 256;
+
+/** The maximum size of a data series array inside an Oracle */
+std::size_t constexpr maxOracleDataSeries = 10;
+
+/** The maximum length of a SymbolClass inside an Oracle */
+std::size_t constexpr maxOracleSymbolClass = 16;
+
+/** The maximum allowed time difference between lastUpdateTime and the time
+    of the last closed ledger
+*/
+std::size_t constexpr maxLastUpdateTimeDelta = 300;
+
+/** The maximum price scaling factor
+ */
+std::size_t constexpr maxPriceScale = 20;
+
+/** The maximum percentage of outliers to trim
+ */
+std::size_t constexpr maxTrim = 25;
+
 }  // namespace ripple
 
 #endif

@@ -24,6 +24,7 @@
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STBlob.h>
+#include <ripple/protocol/STCurrency.h>
 #include <ripple/protocol/STObject.h>
 
 namespace ripple {
@@ -642,6 +643,13 @@ STObject::getFieldArray(SField const& field) const
     return getFieldByConstRef<STArray>(field, empty);
 }
 
+STCurrency const&
+STObject::getFieldCurrency(SField const& field) const
+{
+    static STCurrency const empty{};
+    return getFieldByConstRef<STCurrency>(field, empty);
+}
+
 void
 STObject::set(std::unique_ptr<STBase> v)
 {
@@ -726,6 +734,12 @@ STObject::setFieldVL(SField const& field, Slice const& s)
 
 void
 STObject::setFieldAmount(SField const& field, STAmount const& v)
+{
+    setFieldUsingAssignment(field, v);
+}
+
+void
+STObject::setFieldCurrency(SField const& field, STCurrency const& v)
 {
     setFieldUsingAssignment(field, v);
 }

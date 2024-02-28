@@ -760,6 +760,19 @@ parseLeaf(
             }
             break;
 
+        case STI_CURRENCY:
+            try
+            {
+                ret = detail::make_stvar<STCurrency>(
+                    currencyFromJson(field, value));
+            }
+            catch (std::exception const&)
+            {
+                error = invalid_data(json_name, fieldName);
+                return ret;
+            }
+            break;
+
         default:
             error = bad_type(json_name, fieldName);
             return ret;
