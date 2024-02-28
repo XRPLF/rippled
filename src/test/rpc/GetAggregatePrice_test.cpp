@@ -35,10 +35,10 @@ public:
     {
         testcase("Errors");
         using namespace jtx;
+        using Oracles = std::vector<std::pair<Account, std::uint32_t>>;
         Account const owner{"owner"};
         Account const some{"some"};
-        static std::vector<std::pair<Account, std::uint32_t>> oracles = {
-            {owner, 1}};
+        static Oracles oracles = {{owner, 1}};
 
         {
             Env env(*this);
@@ -62,7 +62,7 @@ public:
                 "Missing field 'oracles'.");
 
             // empty oracles array
-            ret = Oracle::aggregatePrice(env, "XRP", "USD", {{}});
+            ret = Oracle::aggregatePrice(env, "XRP", "USD", Oracles{});
             BEAST_EXPECT(ret[jss::error].asString() == "oracleMalformed");
 
             // invalid oracle document id
