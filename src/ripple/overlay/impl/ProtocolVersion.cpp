@@ -37,7 +37,8 @@ namespace ripple {
 constexpr ProtocolVersion const supportedProtocolList[]
 {
     {2, 1},
-    {2, 2}
+    {2, 2},
+    {2, 3}
 };
 // clang-format on
 
@@ -122,7 +123,9 @@ parseProtocolVersions(boost::beast::string_view const& value)
 }
 
 std::optional<ProtocolVersion>
-negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
+negotiateProtocolVersion(
+    std::vector<ProtocolVersion> const& versions,
+    std::optional<std::vector<ProtocolVersion>> const& supported)
 {
     std::optional<ProtocolVersion> result;
 
@@ -134,39 +137,38 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
     std::function<void(ProtocolVersion const&)> pickVersion =
         [&result](ProtocolVersion const& v) { result = v; };
 
-    std::set_intersection(
-        std::begin(versions),
-        std::end(versions),
-        std::begin(supportedProtocolList),
-        std::end(supportedProtocolList),
-        boost::make_function_output_iterator(pickVersion));
+    auto genResult = [&](auto const& list) {
+        std::set_intersection(
+            std::begin(versions),
+            std::end(versions),
+            std::begin(list),
+            std::end(list),
+            boost::make_function_output_iterator(pickVersion));
+    };
+
+    if (supported)
+        genResult(*supported);
+    else
+        genResult(supportedProtocolList);
 
     return result;
 }
 
 std::optional<ProtocolVersion>
-negotiateProtocolVersion(boost::beast::string_view const& versions)
+negotiateProtocolVersion(
+    boost::beast::string_view const& versions,
+    std::optional<std::vector<ProtocolVersion>> const& supported)
 {
     auto const them = parseProtocolVersions(versions);
 
-    return negotiateProtocolVersion(them);
+    return negotiateProtocolVersion(them, supported);
 }
 
 std::string const&
 supportedProtocolVersions()
 {
-    static std::string const supported = []() {
-        std::string ret;
-        for (auto const& v : supportedProtocolList)
-        {
-            if (!ret.empty())
-                ret += ", ";
-            ret += to_string(v);
-        }
-
-        return ret;
-    }();
-
+    static std::string const supported =
+        toProtocolVersionStr(supportedProtocolList);
     return supported;
 }
 

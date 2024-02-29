@@ -123,9 +123,10 @@ Config::makeConfig(
     if (validationPublicKey)
         config.peerPrivate = true;
 
-    // if it's a private peer or we are running as standalone
-    // automatic connections would defeat the purpose.
-    config.autoConnect = !cfg.standalone() && !cfg.PEER_PRIVATE;
+    // if it's a private peer or we are running as standalone (except allow
+    // overlay) automatic connections would defeat the purpose.
+    config.autoConnect =
+        (!cfg.standalone() || cfg.ALLOW_OVERLAY) && !cfg.PEER_PRIVATE;
     config.listeningPort = port;
     config.features = "";
     config.ipLimit = ipLimit;
