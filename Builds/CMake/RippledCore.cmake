@@ -98,6 +98,7 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/STArray.cpp
   src/ripple/protocol/impl/STBase.cpp
   src/ripple/protocol/impl/STBlob.cpp
+  src/ripple/protocol/impl/STCurrency.cpp
   src/ripple/protocol/impl/STInteger.cpp
   src/ripple/protocol/impl/STLedgerEntry.cpp
   src/ripple/protocol/impl/STObject.cpp
@@ -553,6 +554,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/CreateOffer.cpp
   src/ripple/app/tx/impl/CreateTicket.cpp
   src/ripple/app/tx/impl/DeleteAccount.cpp
+  src/ripple/app/tx/impl/DeleteOracle.cpp
   src/ripple/app/tx/impl/DepositPreauth.cpp
   src/ripple/app/tx/impl/DID.cpp
   src/ripple/app/tx/impl/Escrow.cpp
@@ -566,6 +568,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/PayChan.cpp
   src/ripple/app/tx/impl/Payment.cpp
   src/ripple/app/tx/impl/SetAccount.cpp
+  src/ripple/app/tx/impl/SetOracle.cpp
   src/ripple/app/tx/impl/SetRegularKey.cpp
   src/ripple/app/tx/impl/SetSignerList.cpp
   src/ripple/app/tx/impl/SetTrust.cpp
@@ -721,6 +724,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/FetchInfo.cpp
   src/ripple/rpc/handlers/GatewayBalances.cpp
   src/ripple/rpc/handlers/GetCounts.cpp
+  src/ripple/rpc/handlers/GetAggregatePrice.cpp
   src/ripple/rpc/handlers/LedgerAccept.cpp
   src/ripple/rpc/handlers/LedgerCleanerHandler.cpp
   src/ripple/rpc/handlers/LedgerClosed.cpp
@@ -840,6 +844,7 @@ if (tests)
     src/test/app/NFTokenDir_test.cpp
     src/test/app/OfferStream_test.cpp
     src/test/app/Offer_test.cpp
+    src/test/app/Oracle_test.cpp
     src/test/app/OversizeMeta_test.cpp
     src/test/app/Path_test.cpp
     src/test/app/PayChan_test.cpp
@@ -964,6 +969,7 @@ if (tests)
     src/test/jtx/impl/AMMTest.cpp
     src/test/jtx/impl/Env.cpp
     src/test/jtx/impl/JSONRPCClient.cpp
+    src/test/jtx/impl/Oracle.cpp
     src/test/jtx/impl/TestHelpers.cpp
     src/test/jtx/impl/WSClient.cpp
     src/test/jtx/impl/acctdelete.cpp
@@ -1089,6 +1095,7 @@ if (tests)
     src/test/rpc/DeliveredAmount_test.cpp
     src/test/rpc/Feature_test.cpp
     src/test/rpc/GatewayBalances_test.cpp
+    src/test/rpc/GetAggregatePrice_test.cpp
     src/test/rpc/GetCounts_test.cpp
     src/test/rpc/JSONRPC_test.cpp
     src/test/rpc/KeyGeneration_test.cpp
