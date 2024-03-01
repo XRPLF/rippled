@@ -176,7 +176,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
             }
 
             {
-                //#synchronous Valid values : off, normal, full, extra
+                // #synchronous Valid values : off, normal, full, extra
                 if (set(synchronous, "synchronous", sqlite) &&
                     !safety_level.empty())
                 {

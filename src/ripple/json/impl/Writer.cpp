@@ -285,7 +285,8 @@ Writer::output(double f)
     impl_->output({s.data(), lengthWithoutTrailingZeros(s)});
 }
 
-void Writer::output(std::nullptr_t)
+void
+Writer::output(std::nullptr_t)
 {
     impl_->output("null");
 }

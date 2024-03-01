@@ -23,14 +23,12 @@ public:
     /** Holds the result of evaluating one test condition. */
     struct test
     {
-        explicit test(bool pass_)
-            : pass(pass_)
+        explicit test(bool pass_) : pass(pass_)
         {
         }
 
         test(bool pass_, std::string const& reason_)
-            : pass(pass_)
-            , reason(reason_)
+            : pass(pass_), reason(reason_)
         {
         }
 
@@ -39,15 +37,13 @@ public:
     };
 
 private:
-    class tests_t
-        : public detail::const_container <std::vector <test>>
+    class tests_t : public detail::const_container<std::vector<test>>
     {
     private:
         std::size_t failed_;
 
     public:
-        tests_t()
-            : failed_(0)
+        tests_t() : failed_(0)
         {
         }
 
@@ -81,8 +77,7 @@ private:
         }
     };
 
-    class log_t
-        : public detail::const_container <std::vector <std::string>>
+    class log_t : public detail::const_container<std::vector<std::string>>
     {
     public:
         /** Insert a string into the log. */
@@ -96,8 +91,7 @@ private:
     std::string name_;
 
 public:
-    explicit case_results(std::string const& name = "")
-        : name_(name)
+    explicit case_results(std::string const& name = "") : name_(name)
     {
     }
 
@@ -118,8 +112,7 @@ public:
 //--------------------------------------------------------------------------
 
 /** Holds the set of testcase results in a suite. */
-class suite_results
-    : public detail::const_container <std::vector <case_results>>
+class suite_results : public detail::const_container<std::vector<case_results>>
 {
 private:
     std::string name_;
@@ -127,8 +120,7 @@ private:
     std::size_t failed_ = 0;
 
 public:
-    explicit suite_results(std::string const& name = "")
-        : name_(name)
+    explicit suite_results(std::string const& name = "") : name_(name)
     {
     }
 
@@ -177,8 +169,7 @@ public:
 
 // VFALCO TODO Make this a template class using scoped allocators
 /** Holds the results of running a set of testsuites. */
-class results
-    : public detail::const_container <std::vector <suite_results>>
+class results : public detail::const_container<std::vector<suite_results>>
 {
 private:
     std::size_t m_cases;
@@ -186,10 +177,7 @@ private:
     std::size_t failed_;
 
 public:
-    results()
-        : m_cases(0)
-        , total_(0)
-        , failed_(0)
+    results() : m_cases(0), total_(0), failed_(0)
     {
     }
 
@@ -236,7 +224,7 @@ public:
     /** @} */
 };
 
-} // unit_test
-} // beast
+}  // namespace unit_test
+}  // namespace beast
 
 #endif

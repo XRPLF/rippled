@@ -65,7 +65,8 @@ public:
     {
     }
 
-    constexpr XRPAmount& operator=(beast::Zero)
+    constexpr XRPAmount&
+    operator=(beast::Zero)
     {
         drops_ = 0;
         return *this;

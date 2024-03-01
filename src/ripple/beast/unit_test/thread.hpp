@@ -29,31 +29,27 @@ public:
 
     thread() = default;
     thread(thread const&) = delete;
-    thread& operator=(thread const&) = delete;
+    thread&
+    operator=(thread const&) = delete;
 
-    thread(thread&& other)
-        : s_(other.s_)
-        , t_(std::move(other.t_))
+    thread(thread&& other) : s_(other.s_), t_(std::move(other.t_))
     {
     }
 
-    thread& operator=(thread&& other)
+    thread&
+    operator=(thread&& other)
     {
         s_ = other.s_;
         t_ = std::move(other.t_);
         return *this;
     }
 
-    template<class F, class... Args>
-    explicit
-    thread(suite& s, F&& f, Args&&... args)
-        : s_(&s)
+    template <class F, class... Args>
+    explicit thread(suite& s, F&& f, Args&&... args) : s_(&s)
     {
         std::function<void(void)> b =
-            std::bind(std::forward<F>(f),
-                std::forward<Args>(args)...);
-        t_ = std::thread(&thread::run, this,
-            std::move(b));
+            std::bind(std::forward<F>(f), std::forward<Args>(args)...);
+        t_ = std::thread(&thread::run, this, std::move(b));
     }
 
     bool
@@ -68,8 +64,7 @@ public:
         return t_.get_id();
     }
 
-    static
-    unsigned
+    static unsigned
     hardware_concurrency() noexcept
     {
         return std::thread::hardware_concurrency();
@@ -97,28 +92,27 @@ public:
 
 private:
     void
-    run(std::function <void(void)> f)
+    run(std::function<void(void)> f)
     {
         try
         {
             f();
         }
-        catch(suite::abort_exception const&)
+        catch (suite::abort_exception const&)
         {
         }
-        catch(std::exception const& e)
+        catch (std::exception const& e)
         {
-            s_->fail("unhandled exception: " +
-                std::string(e.what()));
+            s_->fail("unhandled exception: " + std::string(e.what()));
         }
-        catch(...)
+        catch (...)
         {
             s_->fail("unhandled exception");
         }
     }
 };
 
-} // unit_test
-} // beast
+}  // namespace unit_test
+}  // namespace beast
 
 #endif

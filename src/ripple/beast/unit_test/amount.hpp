@@ -24,32 +24,29 @@ private:
 
 public:
     amount(amount const&) = default;
-    amount& operator=(amount const&) = delete;
+    amount&
+    operator=(amount const&) = delete;
 
-    template<class = void>
+    template <class = void>
     amount(std::size_t n, std::string const& what);
 
-    friend
-    std::ostream&
+    friend std::ostream&
     operator<<(std::ostream& s, amount const& t);
 };
 
-template<class>
-amount::amount(std::size_t n, std::string const& what)
-    : n_(n)
-    , what_(what)
+template <class>
+amount::amount(std::size_t n, std::string const& what) : n_(n), what_(what)
 {
 }
 
-inline
-std::ostream&
+inline std::ostream&
 operator<<(std::ostream& s, amount const& t)
 {
-    s << t.n_ << " " << t.what_ <<((t.n_ != 1) ? "s" : "");
+    s << t.n_ << " " << t.what_ << ((t.n_ != 1) ? "s" : "");
     return s;
 }
 
-} // unit_test
-} // beast
+}  // namespace unit_test
+}  // namespace beast
 
 #endif
