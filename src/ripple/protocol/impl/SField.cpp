@@ -76,6 +76,7 @@ CONSTRUCT_UNTYPED_SFIELD(sfMetadata,            "Metadata",             METADATA
 CONSTRUCT_TYPED_SFIELD(sfCloseResolution,       "CloseResolution",      UINT8,      1);
 CONSTRUCT_TYPED_SFIELD(sfMethod,                "Method",               UINT8,      2);
 CONSTRUCT_TYPED_SFIELD(sfTransactionResult,     "TransactionResult",    UINT8,      3);
+CONSTRUCT_TYPED_SFIELD(sfScale,                 "Scale",                UINT8,      4);
 
 // 8-bit integers (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfTickSize,              "TickSize",             UINT8,     16);
@@ -113,6 +114,7 @@ CONSTRUCT_TYPED_SFIELD(sfTransferRate,          "TransferRate",         UINT32, 
 CONSTRUCT_TYPED_SFIELD(sfWalletSize,            "WalletSize",           UINT32,    12);
 CONSTRUCT_TYPED_SFIELD(sfOwnerCount,            "OwnerCount",           UINT32,    13);
 CONSTRUCT_TYPED_SFIELD(sfDestinationTag,        "DestinationTag",       UINT32,    14);
+CONSTRUCT_TYPED_SFIELD(sfLastUpdateTime,        "LastUpdateTime",       UINT32,    15);
 
 // 32-bit integers (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfHighQualityIn,         "HighQualityIn",        UINT32,    16);
@@ -149,6 +151,7 @@ CONSTRUCT_TYPED_SFIELD(sfEmitGeneration,        "EmitGeneration",       UINT32, 
 // 47 is reserved for LockCount(Hooks)
 CONSTRUCT_TYPED_SFIELD(sfVoteWeight,            "VoteWeight",           UINT32,    48);
 CONSTRUCT_TYPED_SFIELD(sfFirstNFTokenSequence,  "FirstNFTokenSequence", UINT32,    50);
+CONSTRUCT_TYPED_SFIELD(sfOracleDocumentID,      "OracleDocumentID",     UINT32,    51);
 
 // 64-bit integers (common)
 CONSTRUCT_TYPED_SFIELD(sfIndexNext,             "IndexNext",            UINT64,     1);
@@ -173,6 +176,7 @@ CONSTRUCT_TYPED_SFIELD(sfReferenceCount,           "ReferenceCount",           U
 CONSTRUCT_TYPED_SFIELD(sfXChainClaimID,            "XChainClaimID",            UINT64, 20);
 CONSTRUCT_TYPED_SFIELD(sfXChainAccountCreateCount, "XChainAccountCreateCount", UINT64, 21);
 CONSTRUCT_TYPED_SFIELD(sfXChainAccountClaimCount,  "XChainAccountClaimCount",  UINT64, 22);
+CONSTRUCT_TYPED_SFIELD(sfAssetPrice,               "AssetPrice",               UINT64, 23);
 
 // 128-bit
 CONSTRUCT_TYPED_SFIELD(sfEmailHash,             "EmailHash",            UINT128,    1);
@@ -285,6 +289,8 @@ CONSTRUCT_TYPED_SFIELD(sfHookParameterName,     "HookParameterName",    VL,     
 CONSTRUCT_TYPED_SFIELD(sfHookParameterValue,    "HookParameterValue",   VL,        25);
 CONSTRUCT_TYPED_SFIELD(sfDIDDocument,           "DIDDocument",          VL,        26);
 CONSTRUCT_TYPED_SFIELD(sfData,                  "Data",                 VL,        27);
+CONSTRUCT_TYPED_SFIELD(sfAssetClass,            "AssetClass",           VL,        28);
+CONSTRUCT_TYPED_SFIELD(sfProvider,              "Provider",             VL,        29);
 
 // account
 CONSTRUCT_TYPED_SFIELD(sfAccount,               "Account",              ACCOUNT,    1);
@@ -315,6 +321,10 @@ CONSTRUCT_TYPED_SFIELD(sfNFTokenOffers,         "NFTokenOffers",        VECTOR25
 
 // path set
 CONSTRUCT_UNTYPED_SFIELD(sfPaths,               "Paths",                PATHSET,    1);
+
+// currency
+CONSTRUCT_TYPED_SFIELD(sfBaseAsset,             "BaseAsset",            CURRENCY,   1);
+CONSTRUCT_TYPED_SFIELD(sfQuoteAsset,            "QuoteAsset",           CURRENCY,   2);
 
 // issue
 CONSTRUCT_TYPED_SFIELD(sfLockingChainIssue,     "LockingChainIssue",    ISSUE,      1);
@@ -364,6 +374,7 @@ CONSTRUCT_UNTYPED_SFIELD(sfXChainClaimAttestationCollectionElement,
 CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement,
                                                  "XChainCreateAccountAttestationCollectionElement",
                                                                         OBJECT,    31);
+CONSTRUCT_UNTYPED_SFIELD(sfPriceData,            "PriceData",           OBJECT,    32);
 
 // array of objects
 //                                                                            ARRAY/1 is reserved for end of array
@@ -391,7 +402,8 @@ CONSTRUCT_UNTYPED_SFIELD(sfXChainClaimAttestations,
 CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountAttestations,
                                                  "XChainCreateAccountAttestations",
                                                                         ARRAY,     22);
-// 23 and 24 are unused and available for use
+// 23 is unused and available for use
+CONSTRUCT_UNTYPED_SFIELD(sfPriceDataSeries,     "PriceDataSeries",      ARRAY,     24);
 CONSTRUCT_UNTYPED_SFIELD(sfAuthAccounts,        "AuthAccounts",         ARRAY,     25);
 
 // clang-format on

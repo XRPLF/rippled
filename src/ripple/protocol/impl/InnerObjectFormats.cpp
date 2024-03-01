@@ -150,6 +150,15 @@ InnerObjectFormats::initialize()
             {sfAccount, soeREQUIRED},
         });
 
+    add(sfPriceData.jsonName.c_str(),
+        sfPriceData.getCode(),
+        {
+            {sfBaseAsset, soeREQUIRED},
+            {sfQuoteAsset, soeREQUIRED},
+            {sfAssetPrice, soeOPTIONAL},
+            {sfScale, soeDEFAULT},
+        });
+
     if (pluginInnerObjectFormatsPtr != nullptr)
     {
         for (auto& e : *pluginInnerObjectFormatsPtr)

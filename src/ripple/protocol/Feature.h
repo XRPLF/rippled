@@ -365,6 +365,7 @@ extern uint256 const featureDID;
 extern uint256 const fixFillOrKill;
 extern uint256 const fixNFTokenReserve;
 extern uint256 const fixInnerObjTemplate;
+extern uint256 const featurePriceOracle;
 
 }  // namespace ripple
 

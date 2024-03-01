@@ -350,6 +350,22 @@ LedgerFormats::initialize()
             {sfPreviousTxnLgrSeq,    soeREQUIRED}
         },
         commonFields);
+
+    add(jss::Oracle,
+        ltORACLE,
+        {
+            {sfOwner,               soeREQUIRED},
+            {sfProvider,            soeREQUIRED},
+            {sfPriceDataSeries,     soeREQUIRED},
+            {sfAssetClass,          soeREQUIRED},
+            {sfLastUpdateTime,      soeREQUIRED},
+            {sfURI,                 soeOPTIONAL},
+            {sfOwnerNode,           soeREQUIRED},
+            {sfPreviousTxnID,       soeREQUIRED},
+            {sfPreviousTxnLgrSeq,   soeREQUIRED}
+        },
+        commonFields);
+
     // clang-format on
 
     if (pluginObjectsMapPtr != nullptr)
