@@ -63,21 +63,21 @@ class LedgerLoad_test : public beast::unit_test::suite
         retval.ledgerFile = td.file("ledgerdata.json");
 
         Env env{*this};
-        Account prev;
+        std::optional<Account> prev;
 
         for (auto i = 0; i < 20; ++i)
         {
             Account acct{"A" + std::to_string(i)};
             env.fund(XRP(10000), acct);
             env.close();
-            if (i > 0)
+            if (i > 0 && BEAST_EXPECT(prev))
             {
-                env.trust(acct["USD"](1000), prev);
-                env(pay(acct, prev, acct["USD"](5)));
+                env.trust(acct["USD"](1000), *prev);
+                env(pay(acct, *prev, acct["USD"](5)));
             }
             env(offer(acct, XRP(100), acct["USD"](1)));
             env.close();
-            prev = std::move(acct);
+            prev.emplace(std::move(acct));
         }
 
         retval.ledger = env.rpc("ledger", "current", "full")[jss::result];

@@ -1574,7 +1574,9 @@ PeerImp::handleTransaction(
                 flags |= SF_TRUSTED;
             }
 
-            if (app_.getValidationPublicKey().empty())
+            // for non-validator nodes only -- localPublicKey is set for
+            // validators only
+            if (!app_.getValidationPublicKey())
             {
                 // For now, be paranoid and have each validator
                 // check each transaction, regardless of source

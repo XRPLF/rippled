@@ -50,7 +50,7 @@ public:
     {
         using namespace jtx;
         {
-            Account a;
+            Account a("chenna");
             Account b(a);
             a = b;
             a = std::move(b);
