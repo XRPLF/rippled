@@ -81,19 +81,20 @@ Collaboration diagram for ripple::ManifestCache:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1ManifestCache__coll__graph.png" border="0" usemap="#ripple_1_1ManifestCache_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1ManifestCache_coll__map" id="ripple_1_1ManifestCache_coll__map">
-<area shape="rect" title="Remembers manifests with the highest sequence number." alt="" coords="1093,179,1256,205"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="637,5,789,61"/>
-<area shape="rect" href="classripple_1_1PublicKey.html" title="A public key." alt="" coords="185,69,316,96"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="840,164,992,220"/>
-<area shape="rect" href="structripple_1_1Manifest.html" title=" " alt="" coords="451,179,573,205"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,44,100,71"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="9,95,97,121"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/shared_mutex.html" title="STL class." alt="" coords="845,113,987,140"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="609,260,816,287"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="199,249,302,276"/>
-<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="207,179,294,205"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="861,316,971,343"/>
-<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="439,320,585,347"/>
+<area shape="rect" title="Remembers manifests with the highest sequence number." alt="" coords="1119,263,1281,289"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="662,269,814,325"/>
+<area shape="rect" href="classripple_1_1PublicKey.html" title="A public key." alt="" coords="197,229,328,256"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="865,181,1017,237"/>
+<area shape="rect" href="structripple_1_1Manifest.html" title=" " alt="" coords="476,140,599,167"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,204,100,231"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="9,255,97,281"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/thread/shared_mutex.html" title="STL class." alt="" coords="870,324,1013,351"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="635,25,841,52"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="211,5,314,32"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="185,73,340,114"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title="STL class." alt="" coords="219,140,306,167"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="886,375,997,401"/>
+<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="464,375,611,401"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -104,9 +105,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a55b2fe63f46ce104f2dffb351e792c79"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ManifestCache.html#a55b2fe63f46ce104f2dffb351e792c79">sequence</a> () const</td></tr>
 <tr class="memdesc:a55b2fe63f46ce104f2dffb351e792c79"><td class="mdescLeft">&#160;</td><td class="mdescRight">A monotonically increasing number used to detect new manifests.  <a href="classripple_1_1ManifestCache.html#a55b2fe63f46ce104f2dffb351e792c79">More...</a><br /></td></tr>
 <tr class="separator:a55b2fe63f46ce104f2dffb351e792c79"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8409a7089c3e04f972f1513a54576133"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1PublicKey.html">PublicKey</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ManifestCache.html#a8409a7089c3e04f972f1513a54576133">getSigningKey</a> (<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;pk) const</td></tr>
-<tr class="memdesc:a8409a7089c3e04f972f1513a54576133"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns master key's current signing key.  <a href="classripple_1_1ManifestCache.html#a8409a7089c3e04f972f1513a54576133">More...</a><br /></td></tr>
-<tr class="separator:a8409a7089c3e04f972f1513a54576133"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a557c94c2a57c5bbe75557524420b1e9d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ManifestCache.html#a557c94c2a57c5bbe75557524420b1e9d">getSigningKey</a> (<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;pk) const</td></tr>
+<tr class="memdesc:a557c94c2a57c5bbe75557524420b1e9d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns master key's current signing key.  <a href="classripple_1_1ManifestCache.html#a557c94c2a57c5bbe75557524420b1e9d">More...</a><br /></td></tr>
+<tr class="separator:a557c94c2a57c5bbe75557524420b1e9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adbe8167cfd5ac328a9bf8b85c319ddc1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1PublicKey.html">PublicKey</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ManifestCache.html#adbe8167cfd5ac328a9bf8b85c319ddc1">getMasterKey</a> (<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;pk) const</td></tr>
 <tr class="memdesc:adbe8167cfd5ac328a9bf8b85c319ddc1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns ephemeral signing key's master public key.  <a href="classripple_1_1ManifestCache.html#adbe8167cfd5ac328a9bf8b85c319ddc1">More...</a><br /></td></tr>
 <tr class="separator:adbe8167cfd5ac328a9bf8b85c319ddc1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -161,7 +162,7 @@ Private Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Remembers manifests with the highest sequence number. </p>
 
-<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00231">231</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00255">255</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a2c088a5eb9f576fc06b07a5a91877093"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2c088a5eb9f576fc06b07a5a91877093">&#9670;&nbsp;</a></span>ManifestCache()</h2>
@@ -187,7 +188,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00246">246</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00270">270</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
 
 </div>
 </div>
@@ -209,18 +210,18 @@ Private Attributes</h2></td></tr>
 
 <p>A monotonically increasing number used to detect new manifests. </p>
 
-<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00254">254</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00278">278</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
 
 </div>
 </div>
-<a id="a8409a7089c3e04f972f1513a54576133"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8409a7089c3e04f972f1513a54576133">&#9670;&nbsp;</a></span>getSigningKey()</h2>
+<a id="a557c94c2a57c5bbe75557524420b1e9d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a557c94c2a57c5bbe75557524420b1e9d">&#9670;&nbsp;</a></span>getSigningKey()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> ripple::ManifestCache::getSigningKey </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> &gt; ripple::ManifestCache::getSigningKey </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;&#160;</td>
           <td class="paramname"><em>pk</em></td><td>)</td>
@@ -240,7 +241,7 @@ Private Attributes</h2></td></tr>
 <dl class="section user"><dt>Thread Safety</dt><dd></dd></dl>
 <p>May be called concurrently </p>
 
-<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00291">291</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00310">310</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
 
 </div>
 </div>
@@ -271,7 +272,7 @@ Private Attributes</h2></td></tr>
 <dl class="section user"><dt>Thread Safety</dt><dd></dd></dl>
 <p>May be called concurrently </p>
 
-<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00303">303</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00322">322</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
 
 </div>
 </div>
@@ -294,7 +295,7 @@ Private Attributes</h2></td></tr>
 <p>Returns master key's current manifest sequence. </p>
 <dl class="section return"><dt>Returns</dt><dd>sequence corresponding to Master public key if configured or std::nullopt otherwise </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00315">315</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00334">334</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
 
 </div>
 </div>
@@ -317,7 +318,7 @@ Private Attributes</h2></td></tr>
 <p>Returns domain claimed by a given public key. </p>
 <dl class="section return"><dt>Returns</dt><dd>domain corresponding to Master public key if present, otherwise std::nullopt </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00327">327</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00346">346</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
 
 </div>
 </div>
@@ -340,7 +341,7 @@ Private Attributes</h2></td></tr>
 <p>Returns mainfest corresponding to a given public key. </p>
 <dl class="section return"><dt>Returns</dt><dd>manifest corresponding to Master public key if present, otherwise std::nullopt </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00339">339</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00358">358</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
 
 </div>
 </div>
@@ -370,7 +371,7 @@ Private Attributes</h2></td></tr>
 <dl class="section user"><dt>Thread Safety</dt><dd></dd></dl>
 <p>May be called concurrently </p>
 
-<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00351">351</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00370">370</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
 
 </div>
 </div>
@@ -401,7 +402,7 @@ Private Attributes</h2></td></tr>
 <dl class="section user"><dt>Thread Safety</dt><dd></dd></dl>
 <p>May be called concurrently </p>
 
-<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00363">363</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00382">382</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
 
 </div>
 </div>
@@ -456,7 +457,7 @@ Private Attributes</h2></td></tr>
 <dl class="section user"><dt>Thread Safety</dt><dd></dd></dl>
 <p>May be called concurrently </p>
 
-<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00520">520</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00548">548</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
 
 </div>
 </div>
@@ -497,7 +498,7 @@ Private Attributes</h2></td></tr>
 <dl class="section user"><dt>Thread Safety</dt><dd></dd></dl>
 <p>May be called concurrently </p>
 
-<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00513">513</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00541">541</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
 
 </div>
 </div>
@@ -544,7 +545,7 @@ Private Attributes</h2></td></tr>
 <dl class="section user"><dt>Thread Safety</dt><dd></dd></dl>
 <p>May be called concurrently </p>
 
-<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00577">577</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html#l00605">605</a> of file <a class="el" href="app_2misc_2impl_2Manifest_8cpp_source.html">app/misc/impl/Manifest.cpp</a>.</p>
 
 </div>
 </div>
@@ -579,7 +580,7 @@ Do not write <a class="el" href="classripple_1_1ManifestCache.html" title="Remem
 <dl class="section user"><dt>Thread Safety</dt><dd></dd></dl>
 <p>May be called concurrently </p>
 
-<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00401">401</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00425">425</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
 
 </div>
 </div>
@@ -625,7 +626,7 @@ Do not write <a class="el" href="classripple_1_1ManifestCache.html" title="Remem
 <dl class="section user"><dt>Thread Safety</dt><dd></dd></dl>
 <p>May be called concurrently </p>
 
-<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00429">429</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00453">453</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
 
 </div>
 </div>
@@ -650,7 +651,7 @@ Do not write <a class="el" href="classripple_1_1ManifestCache.html" title="Remem
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00234">234</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00258">258</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
 
 </div>
 </div>
@@ -674,7 +675,7 @@ Do not write <a class="el" href="classripple_1_1ManifestCache.html" title="Remem
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00235">235</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00259">259</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
 
 </div>
 </div>
@@ -700,7 +701,7 @@ Do not write <a class="el" href="classripple_1_1ManifestCache.html" title="Remem
 
 <p>Active manifests stored by master public key. </p>
 
-<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00238">238</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00262">262</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
 
 </div>
 </div>
@@ -726,7 +727,7 @@ Do not write <a class="el" href="classripple_1_1ManifestCache.html" title="Remem
 
 <p>Master public keys stored by current ephemeral public key. </p>
 
-<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00241">241</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00265">265</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
 
 </div>
 </div>
@@ -750,7 +751,7 @@ Do not write <a class="el" href="classripple_1_1ManifestCache.html" title="Remem
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00243">243</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Manifest_8h_source.html#l00267">267</a> of file <a class="el" href="Manifest_8h_source.html">Manifest.h</a>.</p>
 
 </div>
 </div>

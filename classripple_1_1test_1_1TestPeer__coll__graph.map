@@ -1,4 +1,7 @@
 <map id="ripple::test::TestPeer" name="ripple::test::TestPeer">
-<area shape="rect" id="node1" title="Simulate a network peer." alt="" coords="5,80,160,107"/>
-<area shape="rect" id="node2" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="35,5,131,32"/>
+<area shape="rect" id="node1" title="Simulate a network peer." alt="" coords="5,184,160,211"/>
+<area shape="rect" id="node2" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="13,95,109,121"/>
+<area shape="rect" id="node3" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="133,95,264,121"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="94,5,189,32"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="213,5,301,32"/>
 </map>

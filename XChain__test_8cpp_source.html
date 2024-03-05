@@ -754,7 +754,7 @@ $(function() {
 <div class="line"><a name="l00728"></a><span class="lineno">  728</span>&#160;        <span class="comment">//   Locking chain is XRP,</span></div>
 <div class="line"><a name="l00729"></a><span class="lineno">  729</span>&#160;        <span class="comment">// - Issuing chain is XRP with issuing chain is the root account.</span></div>
 <div class="line"><a name="l00730"></a><span class="lineno">  730</span>&#160;        <span class="comment">// ---------------------------------------------------------------------</span></div>
-<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> a, b;</div>
+<div class="line"><a name="l00731"></a><span class="lineno">  731</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> a(<span class="stringliteral">&quot;a&quot;</span>), b(<span class="stringliteral">&quot;b&quot;</span>);</div>
 <div class="line"><a name="l00732"></a><span class="lineno">  732</span>&#160;        <a class="code" href="classripple_1_1Issue.html">Issue</a> ia, ib;</div>
 <div class="line"><a name="l00733"></a><span class="lineno">  733</span>&#160; </div>
 <div class="line"><a name="l00734"></a><span class="lineno">  734</span>&#160;        <a class="codeRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">std::tuple</a> lcs{</div>
@@ -5009,200 +5009,201 @@ $(function() {
 <div class="line"><a name="l05005"></a><span class="lineno"> 5005</span>&#160; </div>
 <div class="line"><a name="l05006"></a><span class="lineno"> 5006</span>&#160;        <span class="comment">// create 10 accounts + door funded on both chains, and store</span></div>
 <div class="line"><a name="l05007"></a><span class="lineno"> 5007</span>&#160;        <span class="comment">// in ChainStateTracker the initial amount of these accounts</span></div>
-<div class="line"><a name="l05008"></a><span class="lineno"> 5008</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> doorXRPLocking, doorUSDLocking, doorUSDIssuing;</div>
-<div class="line"><a name="l05009"></a><span class="lineno"> 5009</span>&#160; </div>
-<div class="line"><a name="l05010"></a><span class="lineno"> 5010</span>&#160;        constexpr <span class="keywordtype">size_t</span> num_acct = 10;</div>
-<div class="line"><a name="l05011"></a><span class="lineno"> 5011</span>&#160;        <span class="keyword">auto</span> a = [&amp;doorXRPLocking, &amp;doorUSDLocking, &amp;doorUSDIssuing]() {</div>
-<div class="line"><a name="l05012"></a><span class="lineno"> 5012</span>&#160;            <span class="keyword">using namespace </span>std::literals;</div>
-<div class="line"><a name="l05013"></a><span class="lineno"> 5013</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;Account&gt;</a> result;</div>
-<div class="line"><a name="l05014"></a><span class="lineno"> 5014</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(num_acct);</div>
-<div class="line"><a name="l05015"></a><span class="lineno"> 5015</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; num_acct; ++i)</div>
-<div class="line"><a name="l05016"></a><span class="lineno"> 5016</span>&#160;                result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(</div>
-<div class="line"><a name="l05017"></a><span class="lineno"> 5017</span>&#160;                    <span class="stringliteral">&quot;a&quot;</span>s + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i),</div>
-<div class="line"><a name="l05018"></a><span class="lineno"> 5018</span>&#160;                    (i % 2) ? <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea8183aa2c95dc1385c8f58bf1917fcb0b">KeyType::ed25519</a> : <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>);</div>
-<div class="line"><a name="l05019"></a><span class="lineno"> 5019</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(<span class="stringliteral">&quot;doorXRPLocking&quot;</span>);</div>
-<div class="line"><a name="l05020"></a><span class="lineno"> 5020</span>&#160;            doorXRPLocking = result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>();</div>
-<div class="line"><a name="l05021"></a><span class="lineno"> 5021</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(<span class="stringliteral">&quot;doorUSDLocking&quot;</span>);</div>
-<div class="line"><a name="l05022"></a><span class="lineno"> 5022</span>&#160;            doorUSDLocking = result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>();</div>
-<div class="line"><a name="l05023"></a><span class="lineno"> 5023</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(<span class="stringliteral">&quot;doorUSDIssuing&quot;</span>);</div>
-<div class="line"><a name="l05024"></a><span class="lineno"> 5024</span>&#160;            doorUSDIssuing = result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>();</div>
-<div class="line"><a name="l05025"></a><span class="lineno"> 5025</span>&#160;            <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l05026"></a><span class="lineno"> 5026</span>&#160;        }();</div>
-<div class="line"><a name="l05027"></a><span class="lineno"> 5027</span>&#160; </div>
-<div class="line"><a name="l05028"></a><span class="lineno"> 5028</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; acct : a)</div>
-<div class="line"><a name="l05029"></a><span class="lineno"> 5029</span>&#160;        {</div>
-<div class="line"><a name="l05030"></a><span class="lineno"> 5030</span>&#160;            <a class="code" href="classripple_1_1STAmount.html">STAmount</a> amt{<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(100000)};</div>
-<div class="line"><a name="l05031"></a><span class="lineno"> 5031</span>&#160; </div>
-<div class="line"><a name="l05032"></a><span class="lineno"> 5032</span>&#160;            mcEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#ae046965de2fe0a3c315ac492f30ce981">fund</a>(amt, acct);</div>
-<div class="line"><a name="l05033"></a><span class="lineno"> 5033</span>&#160;            scEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#ae046965de2fe0a3c315ac492f30ce981">fund</a>(amt, acct);</div>
-<div class="line"><a name="l05034"></a><span class="lineno"> 5034</span>&#160;        }</div>
-<div class="line"><a name="l05035"></a><span class="lineno"> 5035</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> USDLocking{<span class="stringliteral">&quot;USDLocking&quot;</span>};</div>
-<div class="line"><a name="l05036"></a><span class="lineno"> 5036</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1IOU.html">IOU</a> usdLocking{USDLocking[<span class="stringliteral">&quot;USD&quot;</span>]};</div>
-<div class="line"><a name="l05037"></a><span class="lineno"> 5037</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1IOU.html">IOU</a> usdIssuing{doorUSDIssuing[<span class="stringliteral">&quot;USD&quot;</span>]};</div>
-<div class="line"><a name="l05038"></a><span class="lineno"> 5038</span>&#160; </div>
-<div class="line"><a name="l05039"></a><span class="lineno"> 5039</span>&#160;        mcEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#ae046965de2fe0a3c315ac492f30ce981">fund</a>(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(100000), USDLocking);</div>
-<div class="line"><a name="l05040"></a><span class="lineno"> 5040</span>&#160;        mcEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#a310ab1928a3dc199b95e2e9f7db3481a">close</a>();</div>
-<div class="line"><a name="l05041"></a><span class="lineno"> 5041</span>&#160;        mcEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#a74725c44ab888f51ed4cfa883dc09497">tx</a>(trust(doorUSDLocking, usdLocking(100000)));</div>
-<div class="line"><a name="l05042"></a><span class="lineno"> 5042</span>&#160;        mcEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#a310ab1928a3dc199b95e2e9f7db3481a">close</a>();</div>
-<div class="line"><a name="l05043"></a><span class="lineno"> 5043</span>&#160;        mcEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#a74725c44ab888f51ed4cfa883dc09497">tx</a>(pay(USDLocking, doorUSDLocking, usdLocking(50000)));</div>
-<div class="line"><a name="l05044"></a><span class="lineno"> 5044</span>&#160; </div>
-<div class="line"><a name="l05045"></a><span class="lineno"> 5045</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; a.size(); ++i)</div>
-<div class="line"><a name="l05046"></a><span class="lineno"> 5046</span>&#160;        {</div>
-<div class="line"><a name="l05047"></a><span class="lineno"> 5047</span>&#160;            <span class="keyword">auto</span>&amp; acct{a[i]};</div>
-<div class="line"><a name="l05048"></a><span class="lineno"> 5048</span>&#160;            <span class="keywordflow">if</span> (i &lt; num_acct)</div>
-<div class="line"><a name="l05049"></a><span class="lineno"> 5049</span>&#160;            {</div>
-<div class="line"><a name="l05050"></a><span class="lineno"> 5050</span>&#160;                mcEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#a74725c44ab888f51ed4cfa883dc09497">tx</a>(trust(acct, usdLocking(100000)));</div>
-<div class="line"><a name="l05051"></a><span class="lineno"> 5051</span>&#160;                scEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#a74725c44ab888f51ed4cfa883dc09497">tx</a>(trust(acct, usdIssuing(100000)));</div>
-<div class="line"><a name="l05052"></a><span class="lineno"> 5052</span>&#160;            }</div>
-<div class="line"><a name="l05053"></a><span class="lineno"> 5053</span>&#160;            st-&gt;init(acct);</div>
-<div class="line"><a name="l05054"></a><span class="lineno"> 5054</span>&#160;        }</div>
-<div class="line"><a name="l05055"></a><span class="lineno"> 5055</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : <a class="code" href="structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#a2c73b2d307417fbdb5407d363a2e181d">signers</a>)</div>
-<div class="line"><a name="l05056"></a><span class="lineno"> 5056</span>&#160;            st-&gt;init(s.account);</div>
-<div class="line"><a name="l05057"></a><span class="lineno"> 5057</span>&#160; </div>
-<div class="line"><a name="l05058"></a><span class="lineno"> 5058</span>&#160;        st-&gt;b_.init(<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#ad72de397f7ac10115b92a1d8691a8e2e">Account::master</a>);</div>
-<div class="line"><a name="l05059"></a><span class="lineno"> 5059</span>&#160; </div>
-<div class="line"><a name="l05060"></a><span class="lineno"> 5060</span>&#160;        <span class="comment">// also create some unfunded accounts</span></div>
-<div class="line"><a name="l05061"></a><span class="lineno"> 5061</span>&#160;        constexpr <span class="keywordtype">size_t</span> num_ua = 20;</div>
-<div class="line"><a name="l05062"></a><span class="lineno"> 5062</span>&#160;        <span class="keyword">auto</span> ua = []() {</div>
-<div class="line"><a name="l05063"></a><span class="lineno"> 5063</span>&#160;            <span class="keyword">using namespace </span>std::literals;</div>
-<div class="line"><a name="l05064"></a><span class="lineno"> 5064</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;Account&gt;</a> result;</div>
-<div class="line"><a name="l05065"></a><span class="lineno"> 5065</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(num_ua);</div>
-<div class="line"><a name="l05066"></a><span class="lineno"> 5066</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; num_ua; ++i)</div>
-<div class="line"><a name="l05067"></a><span class="lineno"> 5067</span>&#160;                result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(</div>
-<div class="line"><a name="l05068"></a><span class="lineno"> 5068</span>&#160;                    <span class="stringliteral">&quot;ua&quot;</span>s + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i),</div>
-<div class="line"><a name="l05069"></a><span class="lineno"> 5069</span>&#160;                    (i % 2) ? <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea8183aa2c95dc1385c8f58bf1917fcb0b">KeyType::ed25519</a> : <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>);</div>
-<div class="line"><a name="l05070"></a><span class="lineno"> 5070</span>&#160;            <span class="keywordflow">return</span> result;</div>
-<div class="line"><a name="l05071"></a><span class="lineno"> 5071</span>&#160;        }();</div>
-<div class="line"><a name="l05072"></a><span class="lineno"> 5072</span>&#160; </div>
-<div class="line"><a name="l05073"></a><span class="lineno"> 5073</span>&#160;        <span class="comment">// initialize a bridge from a BridgeDef</span></div>
-<div class="line"><a name="l05074"></a><span class="lineno"> 5074</span>&#160;        <span class="keyword">auto</span> initBridge = [&amp;mcEnv, &amp;scEnv, &amp;st](<a class="code" href="structripple_1_1test_1_1BridgeDef.html">BridgeDef</a>&amp; bd) {</div>
-<div class="line"><a name="l05075"></a><span class="lineno"> 5075</span>&#160;            bd.initBridge(mcEnv, scEnv);</div>
-<div class="line"><a name="l05076"></a><span class="lineno"> 5076</span>&#160;            st-&gt;a_.spendFee(bd.doorA, 2);</div>
-<div class="line"><a name="l05077"></a><span class="lineno"> 5077</span>&#160;            st-&gt;b_.spendFee(bd.doorB, 2);</div>
-<div class="line"><a name="l05078"></a><span class="lineno"> 5078</span>&#160;        };</div>
-<div class="line"><a name="l05079"></a><span class="lineno"> 5079</span>&#160; </div>
-<div class="line"><a name="l05080"></a><span class="lineno"> 5080</span>&#160;        <span class="comment">// create XRP -&gt; XRP bridge</span></div>
-<div class="line"><a name="l05081"></a><span class="lineno"> 5081</span>&#160;        <span class="comment">// ------------------------</span></div>
-<div class="line"><a name="l05082"></a><span class="lineno"> 5082</span>&#160;        <a class="code" href="structripple_1_1test_1_1BridgeDef.html">BridgeDef</a> xrp_b{</div>
-<div class="line"><a name="l05083"></a><span class="lineno"> 5083</span>&#160;            doorXRPLocking,</div>
-<div class="line"><a name="l05084"></a><span class="lineno"> 5084</span>&#160;            <a class="code" href="namespaceripple.html#af13e153259f9f64839b634f3b9642dcb">xrpIssue</a>(),</div>
-<div class="line"><a name="l05085"></a><span class="lineno"> 5085</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#ad72de397f7ac10115b92a1d8691a8e2e">Account::master</a>,</div>
-<div class="line"><a name="l05086"></a><span class="lineno"> 5086</span>&#160;            <a class="code" href="namespaceripple.html#af13e153259f9f64839b634f3b9642dcb">xrpIssue</a>(),</div>
-<div class="line"><a name="l05087"></a><span class="lineno"> 5087</span>&#160;            <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1),</div>
-<div class="line"><a name="l05088"></a><span class="lineno"> 5088</span>&#160;            <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(20),</div>
-<div class="line"><a name="l05089"></a><span class="lineno"> 5089</span>&#160;            <a class="code" href="structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#aef3896efde9adfa362bcfe68cd3f7fea">quorum</a>,</div>
-<div class="line"><a name="l05090"></a><span class="lineno"> 5090</span>&#160;            <a class="code" href="structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#a2c73b2d307417fbdb5407d363a2e181d">signers</a>,</div>
-<div class="line"><a name="l05091"></a><span class="lineno"> 5091</span>&#160;            <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391">Json::nullValue</a>};</div>
-<div class="line"><a name="l05092"></a><span class="lineno"> 5092</span>&#160; </div>
-<div class="line"><a name="l05093"></a><span class="lineno"> 5093</span>&#160;        initBridge(xrp_b);</div>
-<div class="line"><a name="l05094"></a><span class="lineno"> 5094</span>&#160; </div>
-<div class="line"><a name="l05095"></a><span class="lineno"> 5095</span>&#160;        <span class="comment">// create USD -&gt; USD bridge</span></div>
-<div class="line"><a name="l05096"></a><span class="lineno"> 5096</span>&#160;        <span class="comment">// ------------------------</span></div>
-<div class="line"><a name="l05097"></a><span class="lineno"> 5097</span>&#160;        <a class="code" href="structripple_1_1test_1_1BridgeDef.html">BridgeDef</a> usd_b{</div>
-<div class="line"><a name="l05098"></a><span class="lineno"> 5098</span>&#160;            doorUSDLocking,</div>
-<div class="line"><a name="l05099"></a><span class="lineno"> 5099</span>&#160;            usdLocking,</div>
-<div class="line"><a name="l05100"></a><span class="lineno"> 5100</span>&#160;            doorUSDIssuing,</div>
-<div class="line"><a name="l05101"></a><span class="lineno"> 5101</span>&#160;            usdIssuing,</div>
-<div class="line"><a name="l05102"></a><span class="lineno"> 5102</span>&#160;            <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1),</div>
-<div class="line"><a name="l05103"></a><span class="lineno"> 5103</span>&#160;            <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(20),</div>
-<div class="line"><a name="l05104"></a><span class="lineno"> 5104</span>&#160;            <a class="code" href="structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#aef3896efde9adfa362bcfe68cd3f7fea">quorum</a>,</div>
-<div class="line"><a name="l05105"></a><span class="lineno"> 5105</span>&#160;            <a class="code" href="structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#a2c73b2d307417fbdb5407d363a2e181d">signers</a>,</div>
-<div class="line"><a name="l05106"></a><span class="lineno"> 5106</span>&#160;            <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391">Json::nullValue</a>};</div>
-<div class="line"><a name="l05107"></a><span class="lineno"> 5107</span>&#160; </div>
-<div class="line"><a name="l05108"></a><span class="lineno"> 5108</span>&#160;        initBridge(usd_b);</div>
-<div class="line"><a name="l05109"></a><span class="lineno"> 5109</span>&#160; </div>
-<div class="line"><a name="l05110"></a><span class="lineno"> 5110</span>&#160;        <span class="comment">// try a single account create + transfer to validate the simulation</span></div>
-<div class="line"><a name="l05111"></a><span class="lineno"> 5111</span>&#160;        <span class="comment">// engine. Do the transfer 8 time steps after the account create, to</span></div>
-<div class="line"><a name="l05112"></a><span class="lineno"> 5112</span>&#160;        <span class="comment">// give  time enough for ua[0] to be funded now so it can reserve</span></div>
-<div class="line"><a name="l05113"></a><span class="lineno"> 5113</span>&#160;        <span class="comment">// the claimID</span></div>
-<div class="line"><a name="l05114"></a><span class="lineno"> 5114</span>&#160;        <span class="comment">// -----------------------------------------------------------------</span></div>
-<div class="line"><a name="l05115"></a><span class="lineno"> 5115</span>&#160;        ac(0, st, xrp_b, {a[0], ua[0], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(777), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05116"></a><span class="lineno"> 5116</span>&#160;        xfer(8, st, xrp_b, {a[0], ua[0], a[2], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(3), <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05117"></a><span class="lineno"> 5117</span>&#160;        runSimulation(st);</div>
-<div class="line"><a name="l05118"></a><span class="lineno"> 5118</span>&#160; </div>
-<div class="line"><a name="l05119"></a><span class="lineno"> 5119</span>&#160;        <span class="comment">// try the same thing in the other direction</span></div>
-<div class="line"><a name="l05120"></a><span class="lineno"> 5120</span>&#160;        <span class="comment">// -----------------------------------------</span></div>
-<div class="line"><a name="l05121"></a><span class="lineno"> 5121</span>&#160;        ac(0, st, xrp_b, {a[0], ua[0], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(777), xrp_b.reward, <span class="keyword">false</span>});</div>
-<div class="line"><a name="l05122"></a><span class="lineno"> 5122</span>&#160;        xfer(8, st, xrp_b, {a[0], ua[0], a[2], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(3), <span class="keyword">false</span>});</div>
-<div class="line"><a name="l05123"></a><span class="lineno"> 5123</span>&#160;        runSimulation(st);</div>
-<div class="line"><a name="l05124"></a><span class="lineno"> 5124</span>&#160; </div>
-<div class="line"><a name="l05125"></a><span class="lineno"> 5125</span>&#160;        <span class="comment">// run multiple XRP transfers</span></div>
-<div class="line"><a name="l05126"></a><span class="lineno"> 5126</span>&#160;        <span class="comment">// --------------------------</span></div>
-<div class="line"><a name="l05127"></a><span class="lineno"> 5127</span>&#160;        xfer(0, st, xrp_b, {a[0], a[0], a[1], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(6), <span class="keyword">true</span>, WithClaim::no});</div>
-<div class="line"><a name="l05128"></a><span class="lineno"> 5128</span>&#160;        xfer(1, st, xrp_b, {a[0], a[0], a[1], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(8), <span class="keyword">false</span>, WithClaim::no});</div>
-<div class="line"><a name="l05129"></a><span class="lineno"> 5129</span>&#160;        xfer(1, st, xrp_b, {a[1], a[1], a[1], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1), <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05130"></a><span class="lineno"> 5130</span>&#160;        xfer(2, st, xrp_b, {a[0], a[0], a[1], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(3), <span class="keyword">false</span>});</div>
-<div class="line"><a name="l05131"></a><span class="lineno"> 5131</span>&#160;        xfer(2, st, xrp_b, {a[1], a[1], a[1], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(5), <span class="keyword">false</span>});</div>
-<div class="line"><a name="l05132"></a><span class="lineno"> 5132</span>&#160;        xfer(2, st, xrp_b, {a[0], a[0], a[1], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(7), <span class="keyword">false</span>, WithClaim::no});</div>
-<div class="line"><a name="l05133"></a><span class="lineno"> 5133</span>&#160;        xfer(2, st, xrp_b, {a[1], a[1], a[1], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(9), <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05134"></a><span class="lineno"> 5134</span>&#160;        runSimulation(st);</div>
-<div class="line"><a name="l05135"></a><span class="lineno"> 5135</span>&#160; </div>
-<div class="line"><a name="l05136"></a><span class="lineno"> 5136</span>&#160;        <span class="comment">// run one USD transfer</span></div>
-<div class="line"><a name="l05137"></a><span class="lineno"> 5137</span>&#160;        <span class="comment">// --------------------</span></div>
-<div class="line"><a name="l05138"></a><span class="lineno"> 5138</span>&#160;        xfer(0, st, usd_b, {a[0], a[1], a[2], usdLocking(3), <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05139"></a><span class="lineno"> 5139</span>&#160;        runSimulation(st);</div>
-<div class="line"><a name="l05140"></a><span class="lineno"> 5140</span>&#160; </div>
-<div class="line"><a name="l05141"></a><span class="lineno"> 5141</span>&#160;        <span class="comment">// run multiple USD transfers</span></div>
-<div class="line"><a name="l05142"></a><span class="lineno"> 5142</span>&#160;        <span class="comment">// --------------------------</span></div>
-<div class="line"><a name="l05143"></a><span class="lineno"> 5143</span>&#160;        xfer(0, st, usd_b, {a[0], a[0], a[1], usdLocking(6), <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05144"></a><span class="lineno"> 5144</span>&#160;        xfer(1, st, usd_b, {a[0], a[0], a[1], usdIssuing(8), <span class="keyword">false</span>});</div>
-<div class="line"><a name="l05145"></a><span class="lineno"> 5145</span>&#160;        xfer(1, st, usd_b, {a[1], a[1], a[1], usdLocking(1), <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05146"></a><span class="lineno"> 5146</span>&#160;        xfer(2, st, usd_b, {a[0], a[0], a[1], usdIssuing(3), <span class="keyword">false</span>});</div>
-<div class="line"><a name="l05147"></a><span class="lineno"> 5147</span>&#160;        xfer(2, st, usd_b, {a[1], a[1], a[1], usdIssuing(5), <span class="keyword">false</span>});</div>
-<div class="line"><a name="l05148"></a><span class="lineno"> 5148</span>&#160;        xfer(2, st, usd_b, {a[0], a[0], a[1], usdIssuing(7), <span class="keyword">false</span>});</div>
-<div class="line"><a name="l05149"></a><span class="lineno"> 5149</span>&#160;        xfer(2, st, usd_b, {a[1], a[1], a[1], usdLocking(9), <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05150"></a><span class="lineno"> 5150</span>&#160;        runSimulation(st);</div>
-<div class="line"><a name="l05151"></a><span class="lineno"> 5151</span>&#160; </div>
-<div class="line"><a name="l05152"></a><span class="lineno"> 5152</span>&#160;        <span class="comment">// run mixed transfers</span></div>
-<div class="line"><a name="l05153"></a><span class="lineno"> 5153</span>&#160;        <span class="comment">// -------------------</span></div>
-<div class="line"><a name="l05154"></a><span class="lineno"> 5154</span>&#160;        xfer(0, st, xrp_b, {a[0], a[0], a[0], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1), <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05155"></a><span class="lineno"> 5155</span>&#160;        xfer(0, st, usd_b, {a[1], a[3], a[3], usdIssuing(3), <span class="keyword">false</span>});</div>
-<div class="line"><a name="l05156"></a><span class="lineno"> 5156</span>&#160;        xfer(0, st, usd_b, {a[3], a[2], a[1], usdIssuing(5), <span class="keyword">false</span>});</div>
-<div class="line"><a name="l05157"></a><span class="lineno"> 5157</span>&#160; </div>
-<div class="line"><a name="l05158"></a><span class="lineno"> 5158</span>&#160;        xfer(1, st, xrp_b, {a[0], a[0], a[0], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(4), <span class="keyword">false</span>});</div>
-<div class="line"><a name="l05159"></a><span class="lineno"> 5159</span>&#160;        xfer(1, st, xrp_b, {a[1], a[1], a[0], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(8), <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05160"></a><span class="lineno"> 5160</span>&#160;        xfer(1, st, usd_b, {a[4], a[1], a[1], usdLocking(7), <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05161"></a><span class="lineno"> 5161</span>&#160; </div>
-<div class="line"><a name="l05162"></a><span class="lineno"> 5162</span>&#160;        xfer(3, st, xrp_b, {a[1], a[1], a[0], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(7), <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05163"></a><span class="lineno"> 5163</span>&#160;        xfer(3, st, xrp_b, {a[0], a[4], a[3], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(2), <span class="keyword">false</span>});</div>
-<div class="line"><a name="l05164"></a><span class="lineno"> 5164</span>&#160;        xfer(3, st, xrp_b, {a[1], a[1], a[0], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(9), <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05165"></a><span class="lineno"> 5165</span>&#160;        xfer(3, st, usd_b, {a[3], a[1], a[1], usdIssuing(11), <span class="keyword">false</span>});</div>
-<div class="line"><a name="l05166"></a><span class="lineno"> 5166</span>&#160;        runSimulation(st);</div>
-<div class="line"><a name="l05167"></a><span class="lineno"> 5167</span>&#160; </div>
-<div class="line"><a name="l05168"></a><span class="lineno"> 5168</span>&#160;        <span class="comment">// run multiple account create to stress attestation batching</span></div>
-<div class="line"><a name="l05169"></a><span class="lineno"> 5169</span>&#160;        <span class="comment">// ----------------------------------------------------------</span></div>
-<div class="line"><a name="l05170"></a><span class="lineno"> 5170</span>&#160;        ac(0, st, xrp_b, {a[0], ua[1], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(301), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05171"></a><span class="lineno"> 5171</span>&#160;        ac(0, st, xrp_b, {a[1], ua[2], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(302), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05172"></a><span class="lineno"> 5172</span>&#160;        ac(1, st, xrp_b, {a[0], ua[3], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(303), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05173"></a><span class="lineno"> 5173</span>&#160;        ac(2, st, xrp_b, {a[1], ua[4], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(304), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05174"></a><span class="lineno"> 5174</span>&#160;        ac(3, st, xrp_b, {a[0], ua[5], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(305), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05175"></a><span class="lineno"> 5175</span>&#160;        ac(4, st, xrp_b, {a[1], ua[6], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(306), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05176"></a><span class="lineno"> 5176</span>&#160;        ac(6, st, xrp_b, {a[0], ua[7], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(307), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05177"></a><span class="lineno"> 5177</span>&#160;        ac(7, st, xrp_b, {a[2], ua[8], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(308), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05178"></a><span class="lineno"> 5178</span>&#160;        ac(9, st, xrp_b, {a[0], ua[9], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(309), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05008"></a><span class="lineno"> 5008</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> doorXRPLocking(<span class="stringliteral">&quot;doorXRPLocking&quot;</span>),</div>
+<div class="line"><a name="l05009"></a><span class="lineno"> 5009</span>&#160;            doorUSDLocking(<span class="stringliteral">&quot;doorUSDLocking&quot;</span>), doorUSDIssuing(<span class="stringliteral">&quot;doorUSDIssuing&quot;</span>);</div>
+<div class="line"><a name="l05010"></a><span class="lineno"> 5010</span>&#160; </div>
+<div class="line"><a name="l05011"></a><span class="lineno"> 5011</span>&#160;        constexpr <span class="keywordtype">size_t</span> num_acct = 10;</div>
+<div class="line"><a name="l05012"></a><span class="lineno"> 5012</span>&#160;        <span class="keyword">auto</span> a = [&amp;doorXRPLocking, &amp;doorUSDLocking, &amp;doorUSDIssuing]() {</div>
+<div class="line"><a name="l05013"></a><span class="lineno"> 5013</span>&#160;            <span class="keyword">using namespace </span>std::literals;</div>
+<div class="line"><a name="l05014"></a><span class="lineno"> 5014</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;Account&gt;</a> result;</div>
+<div class="line"><a name="l05015"></a><span class="lineno"> 5015</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(num_acct);</div>
+<div class="line"><a name="l05016"></a><span class="lineno"> 5016</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; num_acct; ++i)</div>
+<div class="line"><a name="l05017"></a><span class="lineno"> 5017</span>&#160;                result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(</div>
+<div class="line"><a name="l05018"></a><span class="lineno"> 5018</span>&#160;                    <span class="stringliteral">&quot;a&quot;</span>s + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i),</div>
+<div class="line"><a name="l05019"></a><span class="lineno"> 5019</span>&#160;                    (i % 2) ? <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea8183aa2c95dc1385c8f58bf1917fcb0b">KeyType::ed25519</a> : <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>);</div>
+<div class="line"><a name="l05020"></a><span class="lineno"> 5020</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(<span class="stringliteral">&quot;doorXRPLocking&quot;</span>);</div>
+<div class="line"><a name="l05021"></a><span class="lineno"> 5021</span>&#160;            doorXRPLocking = result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>();</div>
+<div class="line"><a name="l05022"></a><span class="lineno"> 5022</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(<span class="stringliteral">&quot;doorUSDLocking&quot;</span>);</div>
+<div class="line"><a name="l05023"></a><span class="lineno"> 5023</span>&#160;            doorUSDLocking = result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>();</div>
+<div class="line"><a name="l05024"></a><span class="lineno"> 5024</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(<span class="stringliteral">&quot;doorUSDIssuing&quot;</span>);</div>
+<div class="line"><a name="l05025"></a><span class="lineno"> 5025</span>&#160;            doorUSDIssuing = result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>();</div>
+<div class="line"><a name="l05026"></a><span class="lineno"> 5026</span>&#160;            <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l05027"></a><span class="lineno"> 5027</span>&#160;        }();</div>
+<div class="line"><a name="l05028"></a><span class="lineno"> 5028</span>&#160; </div>
+<div class="line"><a name="l05029"></a><span class="lineno"> 5029</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; acct : a)</div>
+<div class="line"><a name="l05030"></a><span class="lineno"> 5030</span>&#160;        {</div>
+<div class="line"><a name="l05031"></a><span class="lineno"> 5031</span>&#160;            <a class="code" href="classripple_1_1STAmount.html">STAmount</a> amt{<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(100000)};</div>
+<div class="line"><a name="l05032"></a><span class="lineno"> 5032</span>&#160; </div>
+<div class="line"><a name="l05033"></a><span class="lineno"> 5033</span>&#160;            mcEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#ae046965de2fe0a3c315ac492f30ce981">fund</a>(amt, acct);</div>
+<div class="line"><a name="l05034"></a><span class="lineno"> 5034</span>&#160;            scEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#ae046965de2fe0a3c315ac492f30ce981">fund</a>(amt, acct);</div>
+<div class="line"><a name="l05035"></a><span class="lineno"> 5035</span>&#160;        }</div>
+<div class="line"><a name="l05036"></a><span class="lineno"> 5036</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> USDLocking{<span class="stringliteral">&quot;USDLocking&quot;</span>};</div>
+<div class="line"><a name="l05037"></a><span class="lineno"> 5037</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1IOU.html">IOU</a> usdLocking{USDLocking[<span class="stringliteral">&quot;USD&quot;</span>]};</div>
+<div class="line"><a name="l05038"></a><span class="lineno"> 5038</span>&#160;        <a class="code" href="classripple_1_1test_1_1jtx_1_1IOU.html">IOU</a> usdIssuing{doorUSDIssuing[<span class="stringliteral">&quot;USD&quot;</span>]};</div>
+<div class="line"><a name="l05039"></a><span class="lineno"> 5039</span>&#160; </div>
+<div class="line"><a name="l05040"></a><span class="lineno"> 5040</span>&#160;        mcEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#ae046965de2fe0a3c315ac492f30ce981">fund</a>(<a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(100000), USDLocking);</div>
+<div class="line"><a name="l05041"></a><span class="lineno"> 5041</span>&#160;        mcEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#a310ab1928a3dc199b95e2e9f7db3481a">close</a>();</div>
+<div class="line"><a name="l05042"></a><span class="lineno"> 5042</span>&#160;        mcEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#a74725c44ab888f51ed4cfa883dc09497">tx</a>(trust(doorUSDLocking, usdLocking(100000)));</div>
+<div class="line"><a name="l05043"></a><span class="lineno"> 5043</span>&#160;        mcEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#a310ab1928a3dc199b95e2e9f7db3481a">close</a>();</div>
+<div class="line"><a name="l05044"></a><span class="lineno"> 5044</span>&#160;        mcEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#a74725c44ab888f51ed4cfa883dc09497">tx</a>(pay(USDLocking, doorUSDLocking, usdLocking(50000)));</div>
+<div class="line"><a name="l05045"></a><span class="lineno"> 5045</span>&#160; </div>
+<div class="line"><a name="l05046"></a><span class="lineno"> 5046</span>&#160;        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; a.size(); ++i)</div>
+<div class="line"><a name="l05047"></a><span class="lineno"> 5047</span>&#160;        {</div>
+<div class="line"><a name="l05048"></a><span class="lineno"> 5048</span>&#160;            <span class="keyword">auto</span>&amp; acct{a[i]};</div>
+<div class="line"><a name="l05049"></a><span class="lineno"> 5049</span>&#160;            <span class="keywordflow">if</span> (i &lt; num_acct)</div>
+<div class="line"><a name="l05050"></a><span class="lineno"> 5050</span>&#160;            {</div>
+<div class="line"><a name="l05051"></a><span class="lineno"> 5051</span>&#160;                mcEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#a74725c44ab888f51ed4cfa883dc09497">tx</a>(trust(acct, usdLocking(100000)));</div>
+<div class="line"><a name="l05052"></a><span class="lineno"> 5052</span>&#160;                scEnv.<a class="code" href="structripple_1_1test_1_1SEnv.html#a74725c44ab888f51ed4cfa883dc09497">tx</a>(trust(acct, usdIssuing(100000)));</div>
+<div class="line"><a name="l05053"></a><span class="lineno"> 5053</span>&#160;            }</div>
+<div class="line"><a name="l05054"></a><span class="lineno"> 5054</span>&#160;            st-&gt;init(acct);</div>
+<div class="line"><a name="l05055"></a><span class="lineno"> 5055</span>&#160;        }</div>
+<div class="line"><a name="l05056"></a><span class="lineno"> 5056</span>&#160;        <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; s : <a class="code" href="structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#a2c73b2d307417fbdb5407d363a2e181d">signers</a>)</div>
+<div class="line"><a name="l05057"></a><span class="lineno"> 5057</span>&#160;            st-&gt;init(s.account);</div>
+<div class="line"><a name="l05058"></a><span class="lineno"> 5058</span>&#160; </div>
+<div class="line"><a name="l05059"></a><span class="lineno"> 5059</span>&#160;        st-&gt;b_.init(<a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#ad72de397f7ac10115b92a1d8691a8e2e">Account::master</a>);</div>
+<div class="line"><a name="l05060"></a><span class="lineno"> 5060</span>&#160; </div>
+<div class="line"><a name="l05061"></a><span class="lineno"> 5061</span>&#160;        <span class="comment">// also create some unfunded accounts</span></div>
+<div class="line"><a name="l05062"></a><span class="lineno"> 5062</span>&#160;        constexpr <span class="keywordtype">size_t</span> num_ua = 20;</div>
+<div class="line"><a name="l05063"></a><span class="lineno"> 5063</span>&#160;        <span class="keyword">auto</span> ua = []() {</div>
+<div class="line"><a name="l05064"></a><span class="lineno"> 5064</span>&#160;            <span class="keyword">using namespace </span>std::literals;</div>
+<div class="line"><a name="l05065"></a><span class="lineno"> 5065</span>&#160;            <a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;Account&gt;</a> result;</div>
+<div class="line"><a name="l05066"></a><span class="lineno"> 5066</span>&#160;            result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(num_ua);</div>
+<div class="line"><a name="l05067"></a><span class="lineno"> 5067</span>&#160;            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; num_ua; ++i)</div>
+<div class="line"><a name="l05068"></a><span class="lineno"> 5068</span>&#160;                result.<a class="codeRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(</div>
+<div class="line"><a name="l05069"></a><span class="lineno"> 5069</span>&#160;                    <span class="stringliteral">&quot;ua&quot;</span>s + <a class="codeRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i),</div>
+<div class="line"><a name="l05070"></a><span class="lineno"> 5070</span>&#160;                    (i % 2) ? <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea8183aa2c95dc1385c8f58bf1917fcb0b">KeyType::ed25519</a> : <a class="code" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">KeyType::secp256k1</a>);</div>
+<div class="line"><a name="l05071"></a><span class="lineno"> 5071</span>&#160;            <span class="keywordflow">return</span> result;</div>
+<div class="line"><a name="l05072"></a><span class="lineno"> 5072</span>&#160;        }();</div>
+<div class="line"><a name="l05073"></a><span class="lineno"> 5073</span>&#160; </div>
+<div class="line"><a name="l05074"></a><span class="lineno"> 5074</span>&#160;        <span class="comment">// initialize a bridge from a BridgeDef</span></div>
+<div class="line"><a name="l05075"></a><span class="lineno"> 5075</span>&#160;        <span class="keyword">auto</span> initBridge = [&amp;mcEnv, &amp;scEnv, &amp;st](<a class="code" href="structripple_1_1test_1_1BridgeDef.html">BridgeDef</a>&amp; bd) {</div>
+<div class="line"><a name="l05076"></a><span class="lineno"> 5076</span>&#160;            bd.initBridge(mcEnv, scEnv);</div>
+<div class="line"><a name="l05077"></a><span class="lineno"> 5077</span>&#160;            st-&gt;a_.spendFee(bd.doorA, 2);</div>
+<div class="line"><a name="l05078"></a><span class="lineno"> 5078</span>&#160;            st-&gt;b_.spendFee(bd.doorB, 2);</div>
+<div class="line"><a name="l05079"></a><span class="lineno"> 5079</span>&#160;        };</div>
+<div class="line"><a name="l05080"></a><span class="lineno"> 5080</span>&#160; </div>
+<div class="line"><a name="l05081"></a><span class="lineno"> 5081</span>&#160;        <span class="comment">// create XRP -&gt; XRP bridge</span></div>
+<div class="line"><a name="l05082"></a><span class="lineno"> 5082</span>&#160;        <span class="comment">// ------------------------</span></div>
+<div class="line"><a name="l05083"></a><span class="lineno"> 5083</span>&#160;        <a class="code" href="structripple_1_1test_1_1BridgeDef.html">BridgeDef</a> xrp_b{</div>
+<div class="line"><a name="l05084"></a><span class="lineno"> 5084</span>&#160;            doorXRPLocking,</div>
+<div class="line"><a name="l05085"></a><span class="lineno"> 5085</span>&#160;            <a class="code" href="namespaceripple.html#af13e153259f9f64839b634f3b9642dcb">xrpIssue</a>(),</div>
+<div class="line"><a name="l05086"></a><span class="lineno"> 5086</span>&#160;            <a class="code" href="classripple_1_1test_1_1jtx_1_1Account.html#ad72de397f7ac10115b92a1d8691a8e2e">Account::master</a>,</div>
+<div class="line"><a name="l05087"></a><span class="lineno"> 5087</span>&#160;            <a class="code" href="namespaceripple.html#af13e153259f9f64839b634f3b9642dcb">xrpIssue</a>(),</div>
+<div class="line"><a name="l05088"></a><span class="lineno"> 5088</span>&#160;            <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1),</div>
+<div class="line"><a name="l05089"></a><span class="lineno"> 5089</span>&#160;            <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(20),</div>
+<div class="line"><a name="l05090"></a><span class="lineno"> 5090</span>&#160;            <a class="code" href="structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#aef3896efde9adfa362bcfe68cd3f7fea">quorum</a>,</div>
+<div class="line"><a name="l05091"></a><span class="lineno"> 5091</span>&#160;            <a class="code" href="structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#a2c73b2d307417fbdb5407d363a2e181d">signers</a>,</div>
+<div class="line"><a name="l05092"></a><span class="lineno"> 5092</span>&#160;            <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391">Json::nullValue</a>};</div>
+<div class="line"><a name="l05093"></a><span class="lineno"> 5093</span>&#160; </div>
+<div class="line"><a name="l05094"></a><span class="lineno"> 5094</span>&#160;        initBridge(xrp_b);</div>
+<div class="line"><a name="l05095"></a><span class="lineno"> 5095</span>&#160; </div>
+<div class="line"><a name="l05096"></a><span class="lineno"> 5096</span>&#160;        <span class="comment">// create USD -&gt; USD bridge</span></div>
+<div class="line"><a name="l05097"></a><span class="lineno"> 5097</span>&#160;        <span class="comment">// ------------------------</span></div>
+<div class="line"><a name="l05098"></a><span class="lineno"> 5098</span>&#160;        <a class="code" href="structripple_1_1test_1_1BridgeDef.html">BridgeDef</a> usd_b{</div>
+<div class="line"><a name="l05099"></a><span class="lineno"> 5099</span>&#160;            doorUSDLocking,</div>
+<div class="line"><a name="l05100"></a><span class="lineno"> 5100</span>&#160;            usdLocking,</div>
+<div class="line"><a name="l05101"></a><span class="lineno"> 5101</span>&#160;            doorUSDIssuing,</div>
+<div class="line"><a name="l05102"></a><span class="lineno"> 5102</span>&#160;            usdIssuing,</div>
+<div class="line"><a name="l05103"></a><span class="lineno"> 5103</span>&#160;            <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1),</div>
+<div class="line"><a name="l05104"></a><span class="lineno"> 5104</span>&#160;            <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(20),</div>
+<div class="line"><a name="l05105"></a><span class="lineno"> 5105</span>&#160;            <a class="code" href="structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#aef3896efde9adfa362bcfe68cd3f7fea">quorum</a>,</div>
+<div class="line"><a name="l05106"></a><span class="lineno"> 5106</span>&#160;            <a class="code" href="structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#a2c73b2d307417fbdb5407d363a2e181d">signers</a>,</div>
+<div class="line"><a name="l05107"></a><span class="lineno"> 5107</span>&#160;            <a class="code" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391">Json::nullValue</a>};</div>
+<div class="line"><a name="l05108"></a><span class="lineno"> 5108</span>&#160; </div>
+<div class="line"><a name="l05109"></a><span class="lineno"> 5109</span>&#160;        initBridge(usd_b);</div>
+<div class="line"><a name="l05110"></a><span class="lineno"> 5110</span>&#160; </div>
+<div class="line"><a name="l05111"></a><span class="lineno"> 5111</span>&#160;        <span class="comment">// try a single account create + transfer to validate the simulation</span></div>
+<div class="line"><a name="l05112"></a><span class="lineno"> 5112</span>&#160;        <span class="comment">// engine. Do the transfer 8 time steps after the account create, to</span></div>
+<div class="line"><a name="l05113"></a><span class="lineno"> 5113</span>&#160;        <span class="comment">// give  time enough for ua[0] to be funded now so it can reserve</span></div>
+<div class="line"><a name="l05114"></a><span class="lineno"> 5114</span>&#160;        <span class="comment">// the claimID</span></div>
+<div class="line"><a name="l05115"></a><span class="lineno"> 5115</span>&#160;        <span class="comment">// -----------------------------------------------------------------</span></div>
+<div class="line"><a name="l05116"></a><span class="lineno"> 5116</span>&#160;        ac(0, st, xrp_b, {a[0], ua[0], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(777), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05117"></a><span class="lineno"> 5117</span>&#160;        xfer(8, st, xrp_b, {a[0], ua[0], a[2], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(3), <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05118"></a><span class="lineno"> 5118</span>&#160;        runSimulation(st);</div>
+<div class="line"><a name="l05119"></a><span class="lineno"> 5119</span>&#160; </div>
+<div class="line"><a name="l05120"></a><span class="lineno"> 5120</span>&#160;        <span class="comment">// try the same thing in the other direction</span></div>
+<div class="line"><a name="l05121"></a><span class="lineno"> 5121</span>&#160;        <span class="comment">// -----------------------------------------</span></div>
+<div class="line"><a name="l05122"></a><span class="lineno"> 5122</span>&#160;        ac(0, st, xrp_b, {a[0], ua[0], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(777), xrp_b.reward, <span class="keyword">false</span>});</div>
+<div class="line"><a name="l05123"></a><span class="lineno"> 5123</span>&#160;        xfer(8, st, xrp_b, {a[0], ua[0], a[2], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(3), <span class="keyword">false</span>});</div>
+<div class="line"><a name="l05124"></a><span class="lineno"> 5124</span>&#160;        runSimulation(st);</div>
+<div class="line"><a name="l05125"></a><span class="lineno"> 5125</span>&#160; </div>
+<div class="line"><a name="l05126"></a><span class="lineno"> 5126</span>&#160;        <span class="comment">// run multiple XRP transfers</span></div>
+<div class="line"><a name="l05127"></a><span class="lineno"> 5127</span>&#160;        <span class="comment">// --------------------------</span></div>
+<div class="line"><a name="l05128"></a><span class="lineno"> 5128</span>&#160;        xfer(0, st, xrp_b, {a[0], a[0], a[1], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(6), <span class="keyword">true</span>, WithClaim::no});</div>
+<div class="line"><a name="l05129"></a><span class="lineno"> 5129</span>&#160;        xfer(1, st, xrp_b, {a[0], a[0], a[1], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(8), <span class="keyword">false</span>, WithClaim::no});</div>
+<div class="line"><a name="l05130"></a><span class="lineno"> 5130</span>&#160;        xfer(1, st, xrp_b, {a[1], a[1], a[1], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1), <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05131"></a><span class="lineno"> 5131</span>&#160;        xfer(2, st, xrp_b, {a[0], a[0], a[1], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(3), <span class="keyword">false</span>});</div>
+<div class="line"><a name="l05132"></a><span class="lineno"> 5132</span>&#160;        xfer(2, st, xrp_b, {a[1], a[1], a[1], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(5), <span class="keyword">false</span>});</div>
+<div class="line"><a name="l05133"></a><span class="lineno"> 5133</span>&#160;        xfer(2, st, xrp_b, {a[0], a[0], a[1], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(7), <span class="keyword">false</span>, WithClaim::no});</div>
+<div class="line"><a name="l05134"></a><span class="lineno"> 5134</span>&#160;        xfer(2, st, xrp_b, {a[1], a[1], a[1], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(9), <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05135"></a><span class="lineno"> 5135</span>&#160;        runSimulation(st);</div>
+<div class="line"><a name="l05136"></a><span class="lineno"> 5136</span>&#160; </div>
+<div class="line"><a name="l05137"></a><span class="lineno"> 5137</span>&#160;        <span class="comment">// run one USD transfer</span></div>
+<div class="line"><a name="l05138"></a><span class="lineno"> 5138</span>&#160;        <span class="comment">// --------------------</span></div>
+<div class="line"><a name="l05139"></a><span class="lineno"> 5139</span>&#160;        xfer(0, st, usd_b, {a[0], a[1], a[2], usdLocking(3), <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05140"></a><span class="lineno"> 5140</span>&#160;        runSimulation(st);</div>
+<div class="line"><a name="l05141"></a><span class="lineno"> 5141</span>&#160; </div>
+<div class="line"><a name="l05142"></a><span class="lineno"> 5142</span>&#160;        <span class="comment">// run multiple USD transfers</span></div>
+<div class="line"><a name="l05143"></a><span class="lineno"> 5143</span>&#160;        <span class="comment">// --------------------------</span></div>
+<div class="line"><a name="l05144"></a><span class="lineno"> 5144</span>&#160;        xfer(0, st, usd_b, {a[0], a[0], a[1], usdLocking(6), <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05145"></a><span class="lineno"> 5145</span>&#160;        xfer(1, st, usd_b, {a[0], a[0], a[1], usdIssuing(8), <span class="keyword">false</span>});</div>
+<div class="line"><a name="l05146"></a><span class="lineno"> 5146</span>&#160;        xfer(1, st, usd_b, {a[1], a[1], a[1], usdLocking(1), <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05147"></a><span class="lineno"> 5147</span>&#160;        xfer(2, st, usd_b, {a[0], a[0], a[1], usdIssuing(3), <span class="keyword">false</span>});</div>
+<div class="line"><a name="l05148"></a><span class="lineno"> 5148</span>&#160;        xfer(2, st, usd_b, {a[1], a[1], a[1], usdIssuing(5), <span class="keyword">false</span>});</div>
+<div class="line"><a name="l05149"></a><span class="lineno"> 5149</span>&#160;        xfer(2, st, usd_b, {a[0], a[0], a[1], usdIssuing(7), <span class="keyword">false</span>});</div>
+<div class="line"><a name="l05150"></a><span class="lineno"> 5150</span>&#160;        xfer(2, st, usd_b, {a[1], a[1], a[1], usdLocking(9), <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05151"></a><span class="lineno"> 5151</span>&#160;        runSimulation(st);</div>
+<div class="line"><a name="l05152"></a><span class="lineno"> 5152</span>&#160; </div>
+<div class="line"><a name="l05153"></a><span class="lineno"> 5153</span>&#160;        <span class="comment">// run mixed transfers</span></div>
+<div class="line"><a name="l05154"></a><span class="lineno"> 5154</span>&#160;        <span class="comment">// -------------------</span></div>
+<div class="line"><a name="l05155"></a><span class="lineno"> 5155</span>&#160;        xfer(0, st, xrp_b, {a[0], a[0], a[0], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(1), <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05156"></a><span class="lineno"> 5156</span>&#160;        xfer(0, st, usd_b, {a[1], a[3], a[3], usdIssuing(3), <span class="keyword">false</span>});</div>
+<div class="line"><a name="l05157"></a><span class="lineno"> 5157</span>&#160;        xfer(0, st, usd_b, {a[3], a[2], a[1], usdIssuing(5), <span class="keyword">false</span>});</div>
+<div class="line"><a name="l05158"></a><span class="lineno"> 5158</span>&#160; </div>
+<div class="line"><a name="l05159"></a><span class="lineno"> 5159</span>&#160;        xfer(1, st, xrp_b, {a[0], a[0], a[0], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(4), <span class="keyword">false</span>});</div>
+<div class="line"><a name="l05160"></a><span class="lineno"> 5160</span>&#160;        xfer(1, st, xrp_b, {a[1], a[1], a[0], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(8), <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05161"></a><span class="lineno"> 5161</span>&#160;        xfer(1, st, usd_b, {a[4], a[1], a[1], usdLocking(7), <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05162"></a><span class="lineno"> 5162</span>&#160; </div>
+<div class="line"><a name="l05163"></a><span class="lineno"> 5163</span>&#160;        xfer(3, st, xrp_b, {a[1], a[1], a[0], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(7), <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05164"></a><span class="lineno"> 5164</span>&#160;        xfer(3, st, xrp_b, {a[0], a[4], a[3], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(2), <span class="keyword">false</span>});</div>
+<div class="line"><a name="l05165"></a><span class="lineno"> 5165</span>&#160;        xfer(3, st, xrp_b, {a[1], a[1], a[0], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(9), <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05166"></a><span class="lineno"> 5166</span>&#160;        xfer(3, st, usd_b, {a[3], a[1], a[1], usdIssuing(11), <span class="keyword">false</span>});</div>
+<div class="line"><a name="l05167"></a><span class="lineno"> 5167</span>&#160;        runSimulation(st);</div>
+<div class="line"><a name="l05168"></a><span class="lineno"> 5168</span>&#160; </div>
+<div class="line"><a name="l05169"></a><span class="lineno"> 5169</span>&#160;        <span class="comment">// run multiple account create to stress attestation batching</span></div>
+<div class="line"><a name="l05170"></a><span class="lineno"> 5170</span>&#160;        <span class="comment">// ----------------------------------------------------------</span></div>
+<div class="line"><a name="l05171"></a><span class="lineno"> 5171</span>&#160;        ac(0, st, xrp_b, {a[0], ua[1], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(301), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05172"></a><span class="lineno"> 5172</span>&#160;        ac(0, st, xrp_b, {a[1], ua[2], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(302), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05173"></a><span class="lineno"> 5173</span>&#160;        ac(1, st, xrp_b, {a[0], ua[3], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(303), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05174"></a><span class="lineno"> 5174</span>&#160;        ac(2, st, xrp_b, {a[1], ua[4], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(304), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05175"></a><span class="lineno"> 5175</span>&#160;        ac(3, st, xrp_b, {a[0], ua[5], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(305), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05176"></a><span class="lineno"> 5176</span>&#160;        ac(4, st, xrp_b, {a[1], ua[6], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(306), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05177"></a><span class="lineno"> 5177</span>&#160;        ac(6, st, xrp_b, {a[0], ua[7], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(307), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05178"></a><span class="lineno"> 5178</span>&#160;        ac(7, st, xrp_b, {a[2], ua[8], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(308), xrp_b.reward, <span class="keyword">true</span>});</div>
 <div class="line"><a name="l05179"></a><span class="lineno"> 5179</span>&#160;        ac(9, st, xrp_b, {a[0], ua[9], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(309), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05180"></a><span class="lineno"> 5180</span>&#160;        ac(10, st, xrp_b, {a[0], ua[10], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(310), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05181"></a><span class="lineno"> 5181</span>&#160;        ac(12, st, xrp_b, {a[0], ua[11], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(311), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05182"></a><span class="lineno"> 5182</span>&#160;        ac(12, st, xrp_b, {a[3], ua[12], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(312), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05183"></a><span class="lineno"> 5183</span>&#160;        ac(12, st, xrp_b, {a[4], ua[13], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(313), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05184"></a><span class="lineno"> 5184</span>&#160;        ac(12, st, xrp_b, {a[3], ua[14], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(314), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05185"></a><span class="lineno"> 5185</span>&#160;        ac(12, st, xrp_b, {a[6], ua[15], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(315), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05186"></a><span class="lineno"> 5186</span>&#160;        ac(13, st, xrp_b, {a[7], ua[16], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(316), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05187"></a><span class="lineno"> 5187</span>&#160;        ac(15, st, xrp_b, {a[3], ua[17], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(317), xrp_b.reward, <span class="keyword">true</span>});</div>
-<div class="line"><a name="l05188"></a><span class="lineno"> 5188</span>&#160;        runSimulation(st, <span class="keyword">true</span>);  <span class="comment">// balances verification working now.</span></div>
-<div class="line"><a name="l05189"></a><span class="lineno"> 5189</span>&#160;    }</div>
-<div class="line"><a name="l05190"></a><span class="lineno"> 5190</span>&#160; </div>
-<div class="line"><a name="l05191"></a><span class="lineno"> 5191</span>&#160;    <span class="keywordtype">void</span></div>
-<div class="line"><a name="l05192"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1XChainSim__test.html#a97f47e3b312ce55e6312dbef81839dd5"> 5192</a></span>&#160;    <a class="code" href="structripple_1_1test_1_1XChainSim__test.html#a97f47e3b312ce55e6312dbef81839dd5">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a name="l05193"></a><span class="lineno"> 5193</span>&#160;<span class="keyword">    </span>{</div>
-<div class="line"><a name="l05194"></a><span class="lineno"> 5194</span>&#160;        testXChainSimulation();</div>
-<div class="line"><a name="l05195"></a><span class="lineno"> 5195</span>&#160;    }</div>
-<div class="line"><a name="l05196"></a><span class="lineno"> 5196</span>&#160;};</div>
-<div class="line"><a name="l05197"></a><span class="lineno"> 5197</span>&#160; </div>
-<div class="line"><a name="l05198"></a><span class="lineno"> 5198</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">BEAST_DEFINE_TESTSUITE</a>(XChain, app, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l05199"></a><span class="lineno"> 5199</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">BEAST_DEFINE_TESTSUITE</a>(XChainSim, app, <a class="code" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a name="l05200"></a><span class="lineno"> 5200</span>&#160; </div>
-<div class="line"><a name="l05201"></a><span class="lineno"> 5201</span>&#160;}  <span class="comment">// namespace ripple::test</span></div>
+<div class="line"><a name="l05180"></a><span class="lineno"> 5180</span>&#160;        ac(9, st, xrp_b, {a[0], ua[9], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(309), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05181"></a><span class="lineno"> 5181</span>&#160;        ac(10, st, xrp_b, {a[0], ua[10], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(310), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05182"></a><span class="lineno"> 5182</span>&#160;        ac(12, st, xrp_b, {a[0], ua[11], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(311), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05183"></a><span class="lineno"> 5183</span>&#160;        ac(12, st, xrp_b, {a[3], ua[12], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(312), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05184"></a><span class="lineno"> 5184</span>&#160;        ac(12, st, xrp_b, {a[4], ua[13], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(313), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05185"></a><span class="lineno"> 5185</span>&#160;        ac(12, st, xrp_b, {a[3], ua[14], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(314), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05186"></a><span class="lineno"> 5186</span>&#160;        ac(12, st, xrp_b, {a[6], ua[15], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(315), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05187"></a><span class="lineno"> 5187</span>&#160;        ac(13, st, xrp_b, {a[7], ua[16], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(316), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05188"></a><span class="lineno"> 5188</span>&#160;        ac(15, st, xrp_b, {a[3], ua[17], <a class="code" href="namespaceripple_1_1test_1_1jtx.html#a37cf35ddf6bc8f4c6cbfa3fba57d6815">XRP</a>(317), xrp_b.reward, <span class="keyword">true</span>});</div>
+<div class="line"><a name="l05189"></a><span class="lineno"> 5189</span>&#160;        runSimulation(st, <span class="keyword">true</span>);  <span class="comment">// balances verification working now.</span></div>
+<div class="line"><a name="l05190"></a><span class="lineno"> 5190</span>&#160;    }</div>
+<div class="line"><a name="l05191"></a><span class="lineno"> 5191</span>&#160; </div>
+<div class="line"><a name="l05192"></a><span class="lineno"> 5192</span>&#160;    <span class="keywordtype">void</span></div>
+<div class="line"><a name="l05193"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1XChainSim__test.html#a97f47e3b312ce55e6312dbef81839dd5"> 5193</a></span>&#160;    <a class="code" href="structripple_1_1test_1_1XChainSim__test.html#a97f47e3b312ce55e6312dbef81839dd5">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a name="l05194"></a><span class="lineno"> 5194</span>&#160;<span class="keyword">    </span>{</div>
+<div class="line"><a name="l05195"></a><span class="lineno"> 5195</span>&#160;        testXChainSimulation();</div>
+<div class="line"><a name="l05196"></a><span class="lineno"> 5196</span>&#160;    }</div>
+<div class="line"><a name="l05197"></a><span class="lineno"> 5197</span>&#160;};</div>
+<div class="line"><a name="l05198"></a><span class="lineno"> 5198</span>&#160; </div>
+<div class="line"><a name="l05199"></a><span class="lineno"> 5199</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">BEAST_DEFINE_TESTSUITE</a>(XChain, app, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l05200"></a><span class="lineno"> 5200</span>&#160;<a class="code" href="namespaceripple_1_1test.html#a36e90e9cdf2adf7993483b3190ee8e21">BEAST_DEFINE_TESTSUITE</a>(XChainSim, app, <a class="code" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a name="l05201"></a><span class="lineno"> 5201</span>&#160; </div>
+<div class="line"><a name="l05202"></a><span class="lineno"> 5202</span>&#160;}  <span class="comment">// namespace ripple::test</span></div>
 </div><!-- fragment --></div><!-- contents -->
 <div class="ttc" id="astructripple_1_1test_1_1XChainSim__test_1_1ChainStateTrack_1_1BridgeCounters_html_ab1894a528a3af81c0ae8803f7aff4618"><div class="ttname"><a href="structripple_1_1test_1_1XChainSim__test_1_1ChainStateTrack_1_1BridgeCounters.html#ab1894a528a3af81c0ae8803f7aff4618">ripple::test::XChainSim_test::ChainStateTrack::BridgeCounters::signers</a></div><div class="ttdeci">std::vector&lt; size_t &gt; signers</div><div class="ttdef"><b>Definition:</b> <a href="XChain__test_8cpp_source.html#l04524">XChain_test.cpp:4524</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1XChainBridgeObjects_html_a3e825e5701efd4ec6052161af0bc73bd"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#a3e825e5701efd4ec6052161af0bc73bd">ripple::test::jtx::XChainBridgeObjects::split_reward_everyone</a></div><div class="ttdeci">const STAmount split_reward_everyone</div><div class="ttdef"><b>Definition:</b> <a href="xchain__bridge_8h_source.html#l00196">xchain_bridge.h:196</a></div></div>
@@ -5380,7 +5381,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Application_html_aca56b7c63030174e59720ab51d739422"><div class="ttname"><a href="classripple_1_1Application.html#aca56b7c63030174e59720ab51d739422">ripple::Application::config</a></div><div class="ttdeci">virtual Config &amp; config()=0</div></div>
 <div class="ttc" id="aclassripple_1_1TERSubset_html"><div class="ttname"><a href="classripple_1_1TERSubset.html">ripple::TERSubset&lt; CanCvtToTER &gt;</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1XChainSim__test_1_1ChainStateTrack_html_a1aebbd7f99b29f9643e5b6e413c0ae10"><div class="ttname"><a href="structripple_1_1test_1_1XChainSim__test_1_1ChainStateTrack.html#a1aebbd7f99b29f9643e5b6e413c0ae10">ripple::test::XChainSim_test::ChainStateTrack::transfer</a></div><div class="ttdeci">void transfer(jtx::Account const &amp;from, jtx::Account const &amp;to, STAmount amt)</div><div class="ttdef"><b>Definition:</b> <a href="XChain__test_8cpp_source.html#l04491">XChain_test.cpp:4491</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1XChainSim__test_html_a97f47e3b312ce55e6312dbef81839dd5"><div class="ttname"><a href="structripple_1_1test_1_1XChainSim__test.html#a97f47e3b312ce55e6312dbef81839dd5">ripple::test::XChainSim_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="XChain__test_8cpp_source.html#l05192">XChain_test.cpp:5192</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1XChainSim__test_html_a97f47e3b312ce55e6312dbef81839dd5"><div class="ttname"><a href="structripple_1_1test_1_1XChainSim__test.html#a97f47e3b312ce55e6312dbef81839dd5">ripple::test::XChainSim_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdef"><b>Definition:</b> <a href="XChain__test_8cpp_source.html#l05193">XChain_test.cpp:5193</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1XChainBridgeObjects_html_a39c84f492ebd618d4cf26e28a0548c62"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#a39c84f492ebd618d4cf26e28a0548c62">ripple::test::jtx::XChainBridgeObjects::att_create_acct_vec</a></div><div class="ttdeci">JValueVec att_create_acct_vec(std::uint64_t createCount, jtx::AnyAmount const &amp;amt, jtx::Account const &amp;dst, std::size_t const numAtts, std::size_t const fromIdx=0)</div><div class="ttdef"><b>Definition:</b> <a href="xchain__bridge_8h_source.html#l00219">xchain_bridge.h:219</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1BalanceTransfer_html_aa19edf026e04c4f78f5a8efb8810ea2c"><div class="ttname"><a href="structripple_1_1test_1_1BalanceTransfer.html#aa19edf026e04c4f78f5a8efb8810ea2c">ripple::test::BalanceTransfer::check_most_balances</a></div><div class="ttdeci">bool check_most_balances(STAmount const &amp;amt, STAmount const &amp;reward)</div><div class="ttdef"><b>Definition:</b> <a href="XChain__test_8cpp_source.html#l00330">XChain_test.cpp:330</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1jtx_1_1XChainBridgeObjects_html_a8ff3515c5fe11a495c2fb958b917bb11"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#a8ff3515c5fe11a495c2fb958b917bb11">ripple::test::jtx::XChainBridgeObjects::split_reward_quorum</a></div><div class="ttdeci">const STAmount split_reward_quorum</div><div class="ttdef"><b>Definition:</b> <a href="xchain__bridge_8h_source.html#l00195">xchain_bridge.h:195</a></div></div>

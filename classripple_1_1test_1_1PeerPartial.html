@@ -68,6 +68,7 @@ $(function() {
   <div class="summary">
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="classripple_1_1test_1_1PeerPartial-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">ripple::test::PeerPartial Class Reference<span class="mlabels"><span class="mlabel">abstract</span></span></div>  </div>
@@ -91,8 +92,11 @@ Collaboration diagram for ripple::test::PeerPartial:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1test_1_1PeerPartial__coll__graph.png" border="0" usemap="#ripple_1_1test_1_1PeerPartial_coll__map" alt="Collaboration graph"/></div>
 <map name="ripple_1_1test_1_1PeerPartial_coll__map" id="ripple_1_1test_1_1PeerPartial_coll__map">
-<area shape="rect" title="Simulate two entities &#45; peer directly connected to the server (via squelch in PeerSim) and PeerImp (v..." alt="" coords="5,80,176,107"/>
-<area shape="rect" href="classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="43,5,139,32"/>
+<area shape="rect" title="Simulate two entities &#45; peer directly connected to the server (via squelch in PeerSim) and PeerImp (v..." alt="" coords="5,184,176,211"/>
+<area shape="rect" href="classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="21,95,117,121"/>
+<area shape="rect" href="classripple_1_1PublicKey.html" title="A public key." alt="" coords="141,95,272,121"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="102,5,197,32"/>
+<area shape="rect" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="221,5,309,32"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -106,6 +110,8 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a4fd842d2c51feade8e96e3c49d6513b3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1PeerPartial.html#a4fd842d2c51feade8e96e3c49d6513b3">PeerPartial</a> ()</td></tr>
+<tr class="separator:a4fd842d2c51feade8e96e3c49d6513b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a70b3e7b66fc3c86f5d51406b82abfbcd"><td class="memItemLeft" align="right" valign="top">virtual&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1PeerPartial.html#a70b3e7b66fc3c86f5d51406b82abfbcd">~PeerPartial</a> ()</td></tr>
 <tr class="separator:a70b3e7b66fc3c86f5d51406b82abfbcd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a696e6416ee4c0a413af8626f1eea4c9c"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1PeerPartial.html#a696e6416ee4c0a413af8626f1eea4c9c">onMessage</a> (<a class="el" href="namespaceripple_1_1test.html#a357f16ba6b57e892a6ee6e7c5bcde09b">MessageSPtr</a> const &amp;m, <a class="el" href="namespaceripple_1_1test.html#a7ead0a4637af4b331e2ede8e1f823a32">SquelchCB</a> f)=0</td></tr>
@@ -165,6 +171,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:abbd18f7342c0b7daa8364492fe41c65a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aee121254a095838be2d8040bfdfacc79"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">id_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#aee121254a095838be2d8040bfdfacc79">id</a> () const =0</td></tr>
 <tr class="separator:aee121254a095838be2d8040bfdfacc79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-attribs"></a>
+Public Attributes</h2></td></tr>
+<tr class="memitem:a6f78b525333bc4d9786240f32ec618a4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1PublicKey.html">PublicKey</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1PeerPartial.html#a6f78b525333bc4d9786240f32ec618a4">nodePublicKey_</a></td></tr>
+<tr class="separator:a6f78b525333bc4d9786240f32ec618a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Simulate two entities - peer directly connected to the server (via squelch in <a class="el" href="classripple_1_1test_1_1PeerSim.html">PeerSim</a>) and <a class="el" href="classripple_1_1PeerImp.html">PeerImp</a> (via <a class="el" href="classripple_1_1test_1_1Overlay.html" title="Simulate server&#39;s OverlayImpl.">Overlay</a>) </p>
@@ -223,6 +234,25 @@ Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a4fd842d2c51feade8e96e3c49d6513b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4fd842d2c51feade8e96e3c49d6513b3">&#9670;&nbsp;</a></span>PeerPartial()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::test::PeerPartial::PeerPartial </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00061">61</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a70b3e7b66fc3c86f5d51406b82abfbcd"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a70b3e7b66fc3c86f5d51406b82abfbcd">&#9670;&nbsp;</a></span>~PeerPartial()</h2>
 
@@ -246,7 +276,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00061">61</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00067">67</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -333,7 +363,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00069">69</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00075">75</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -363,7 +393,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a3c89dbf867ba814f0bf2417757d5a0f4">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00076">76</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00082">82</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -392,7 +422,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a35b25d5a662db9a534ac4a972a8ba6b3">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00080">80</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00086">86</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -424,7 +454,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a6fb081a4c8492b9891bff272041541ab">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00085">85</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00091">91</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -455,7 +485,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a8a547a67289ee47e4998117c1ea38fe9">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00089">89</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00095">95</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -484,7 +514,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a03de12036ac5466b0b01a26e2ef0e729">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00094">94</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00100">100</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -514,7 +544,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a25952c97b91516972a84da5dac619f96">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00099">99</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00105">105</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -543,7 +573,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a262044337e374e312d5334458d937484">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00104">104</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00110">110</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -572,7 +602,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a3a7b97f3e4307066f4e0a6abc9f9be35">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00110">110</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00115">115</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -602,7 +632,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a1781d176803366238413407a0815124a">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00115">115</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00120">120</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -632,7 +662,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#af1ca96d5fb66c617c63b54fccff8246f">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00120">120</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00125">125</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -672,7 +702,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#adc1069de1a8a5ff1364003caf00bb139">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00125">125</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00130">130</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -701,7 +731,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a7be0fe54e7f2f72ddc0ec749122b8d10">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00129">129</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00134">134</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -741,7 +771,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a855aa29a52d98979b211ff765dbc542a">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00135">135</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00140">140</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -781,7 +811,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#ac03dabc3ec86db62e3d1ea827ab0d0fa">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00140">140</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00145">145</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -811,7 +841,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#adc8cbc6f94f2122808ed21ac217f18fa">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00144">144</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00149">149</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -840,7 +870,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a580e873a73a8000e6bdba97a2a37b9e0">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00149">149</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00154">154</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -880,7 +910,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a95b02bf56c4332da48e7e0bc503a0d43">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00153">153</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00158">158</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -909,7 +939,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a574a942c5ee778c1b795b5ca65292821">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00158">158</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00163">163</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -938,7 +968,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a0cb56d7585b19a684f6476830125b835">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00163">163</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00168">168</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -969,7 +999,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a9cec6a68be4e99382787eec3571a36b4">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00168">168</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00173">173</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1001,7 +1031,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a910dd384abd01647432192b7e05b3748">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00172">172</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00177">177</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1033,7 +1063,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#ac4df87634b8bfedbdb69edcd11fee6a1">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00176">176</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00181">181</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1061,6 +1091,23 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Implemented in <a class="el" href="classripple_1_1test_1_1PeerSim.html#ae42c3f411ca368bcc26accb12432eeaf">ripple::test::PeerSim</a>, <a class="el" href="classripple_1_1PeerImp.html#ad5f9fa027664a3b94683a02c3cd9febe">ripple::PeerImp</a>, and <a class="el" href="classripple_1_1test_1_1TestPeer.html#a71506ecf36760b766e81a453df84e91a">ripple::test::TestPeer</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a6f78b525333bc4d9786240f32ec618a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f78b525333bc4d9786240f32ec618a4">&#9670;&nbsp;</a></span>nodePublicKey_</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> ripple::test::PeerPartial::nodePublicKey_</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="reduce__relay__test_8cpp_source.html#l00066">66</a> of file <a class="el" href="reduce__relay__test_8cpp_source.html">reduce_relay_test.cpp</a>.</p>
 
 </div>
 </div>
