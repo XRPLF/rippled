@@ -1,5 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="5,687,117,714"/>
+<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="5,719,117,746"/>
 <area shape="rect" id="node2" href="$structbeast_1_1detail_1_1is__boost__reverse__iterator_3_01boost_1_1intrusive_1_1reverse__iterator_3_01It_01_4_01_4.html" title=" " alt="" coords="205,5,404,76"/>
 <area shape="rect" id="node3" href="$structbeast_1_1is__aged__container_3_01beast_1_1detail_1_1aged__ordered__container_3_01IsMulti_0338a9b22fe6c4be0d8f95d218bdfb0e7.html" title=" " alt="" coords="168,100,441,171"/>
 <area shape="rect" id="node4" href="$structbeast_1_1is__aged__container_3_01beast_1_1detail_1_1aged__unordered__container_3_01IsMultia80d60acae45fc077226391e490a323d.html" title=" " alt="" coords="189,195,420,281"/>
@@ -18,4 +18,5 @@
 <area shape="rect" id="node17" href="$classripple_1_1CanCvtToTER_3_01TEScodes_01_4.html" title=" " alt="" coords="228,1104,381,1145"/>
 <area shape="rect" id="node18" href="$structripple_1_1detail_1_1is__contiguous__container_3_01Container_00_01std_1_1void__t_3_01declty5b72e96ce5f7645bf11da72bb5b4c85a.html" title=" " alt="" coords="165,1169,444,1299"/>
 <area shape="rect" id="node19" href="$structripple_1_1detail_1_1is__contiguous__container_3_01Slice_01_4.html" title=" " alt="" coords="221,1323,389,1379"/>
+<area shape="rect" id="node20" href="$structstd_1_1is__error__code__enum_3_01ripple_1_1TokenCodecErrc_01_4.html" title=" " alt="" coords="183,1404,427,1445"/>
 </map>

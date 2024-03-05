@@ -108,7 +108,7 @@ $(function() {
 <div class="line"><a name="l00037"></a><span class="lineno">   37</span>&#160;    <span class="keywordflow">if</span> (maxSize &amp;&amp; (file_size(fullPath, ec) &gt; *maxSize || ec))</div>
 <div class="line"><a name="l00038"></a><span class="lineno">   38</span>&#160;    {</div>
 <div class="line"><a name="l00039"></a><span class="lineno">   39</span>&#160;        <span class="keywordflow">if</span> (!ec)</div>
-<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            ec = make_error_code(file_too_large);</div>
+<div class="line"><a name="l00040"></a><span class="lineno">   40</span>&#160;            ec = <a class="code" href="namespaceripple.html#a70e53b89eb57ac8fdc4625ce28455eb4">make_error_code</a>(file_too_large);</div>
 <div class="line"><a name="l00041"></a><span class="lineno">   41</span>&#160;        <span class="keywordflow">return</span> {};</div>
 <div class="line"><a name="l00042"></a><span class="lineno">   42</span>&#160;    }</div>
 <div class="line"><a name="l00043"></a><span class="lineno">   43</span>&#160; </div>
@@ -116,7 +116,7 @@ $(function() {
 <div class="line"><a name="l00045"></a><span class="lineno">   45</span>&#160; </div>
 <div class="line"><a name="l00046"></a><span class="lineno">   46</span>&#160;    <span class="keywordflow">if</span> (!fileStream)</div>
 <div class="line"><a name="l00047"></a><span class="lineno">   47</span>&#160;    {</div>
-<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        ec = make_error_code(<span class="keyword">static_cast&lt;</span>errc_t<span class="keyword">&gt;</span>(errno));</div>
+<div class="line"><a name="l00048"></a><span class="lineno">   48</span>&#160;        ec = <a class="code" href="namespaceripple.html#a70e53b89eb57ac8fdc4625ce28455eb4">make_error_code</a>(<span class="keyword">static_cast&lt;</span>errc_t<span class="keyword">&gt;</span>(errno));</div>
 <div class="line"><a name="l00049"></a><span class="lineno">   49</span>&#160;        <span class="keywordflow">return</span> {};</div>
 <div class="line"><a name="l00050"></a><span class="lineno">   50</span>&#160;    }</div>
 <div class="line"><a name="l00051"></a><span class="lineno">   51</span>&#160; </div>
@@ -126,7 +126,7 @@ $(function() {
 <div class="line"><a name="l00055"></a><span class="lineno">   55</span>&#160; </div>
 <div class="line"><a name="l00056"></a><span class="lineno">   56</span>&#160;    <span class="keywordflow">if</span> (fileStream.bad())</div>
 <div class="line"><a name="l00057"></a><span class="lineno">   57</span>&#160;    {</div>
-<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        ec = make_error_code(<span class="keyword">static_cast&lt;</span>errc_t<span class="keyword">&gt;</span>(errno));</div>
+<div class="line"><a name="l00058"></a><span class="lineno">   58</span>&#160;        ec = <a class="code" href="namespaceripple.html#a70e53b89eb57ac8fdc4625ce28455eb4">make_error_code</a>(<span class="keyword">static_cast&lt;</span>errc_t<span class="keyword">&gt;</span>(errno));</div>
 <div class="line"><a name="l00059"></a><span class="lineno">   59</span>&#160;        <span class="keywordflow">return</span> {};</div>
 <div class="line"><a name="l00060"></a><span class="lineno">   60</span>&#160;    }</div>
 <div class="line"><a name="l00061"></a><span class="lineno">   61</span>&#160; </div>
@@ -146,7 +146,7 @@ $(function() {
 <div class="line"><a name="l00075"></a><span class="lineno">   75</span>&#160; </div>
 <div class="line"><a name="l00076"></a><span class="lineno">   76</span>&#160;    <span class="keywordflow">if</span> (!fileStream)</div>
 <div class="line"><a name="l00077"></a><span class="lineno">   77</span>&#160;    {</div>
-<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        ec = make_error_code(<span class="keyword">static_cast&lt;</span>errc_t<span class="keyword">&gt;</span>(errno));</div>
+<div class="line"><a name="l00078"></a><span class="lineno">   78</span>&#160;        ec = <a class="code" href="namespaceripple.html#a70e53b89eb57ac8fdc4625ce28455eb4">make_error_code</a>(<span class="keyword">static_cast&lt;</span>errc_t<span class="keyword">&gt;</span>(errno));</div>
 <div class="line"><a name="l00079"></a><span class="lineno">   79</span>&#160;        <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00080"></a><span class="lineno">   80</span>&#160;    }</div>
 <div class="line"><a name="l00081"></a><span class="lineno">   81</span>&#160; </div>
@@ -154,7 +154,7 @@ $(function() {
 <div class="line"><a name="l00083"></a><span class="lineno">   83</span>&#160; </div>
 <div class="line"><a name="l00084"></a><span class="lineno">   84</span>&#160;    <span class="keywordflow">if</span> (fileStream.bad())</div>
 <div class="line"><a name="l00085"></a><span class="lineno">   85</span>&#160;    {</div>
-<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        ec = make_error_code(<span class="keyword">static_cast&lt;</span>errc_t<span class="keyword">&gt;</span>(errno));</div>
+<div class="line"><a name="l00086"></a><span class="lineno">   86</span>&#160;        ec = <a class="code" href="namespaceripple.html#a70e53b89eb57ac8fdc4625ce28455eb4">make_error_code</a>(<span class="keyword">static_cast&lt;</span>errc_t<span class="keyword">&gt;</span>(errno));</div>
 <div class="line"><a name="l00087"></a><span class="lineno">   87</span>&#160;        <span class="keywordflow">return</span>;</div>
 <div class="line"><a name="l00088"></a><span class="lineno">   88</span>&#160;    }</div>
 <div class="line"><a name="l00089"></a><span class="lineno">   89</span>&#160;}</div>
@@ -167,6 +167,7 @@ $(function() {
 <div class="ttc" id="aistreambuf_iterator_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/iterator/istreambuf_iterator.html">std::istreambuf_iterator</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="RCLCensorshipDetector_8h_source.html#l00029">RCLCensorshipDetector.h:29</a></div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt; std::size_t &gt;</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a70e53b89eb57ac8fdc4625ce28455eb4"><div class="ttname"><a href="namespaceripple.html#a70e53b89eb57ac8fdc4625ce28455eb4">ripple::make_error_code</a></div><div class="ttdeci">std::error_code make_error_code(ripple::TokenCodecErrc e)</div><div class="ttdef"><b>Definition:</b> <a href="token__errors_8h_source.html#l00096">token_errors.h:96</a></div></div>
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
 Generated by &#160;<a href="http://www.doxygen.org/index.html">
