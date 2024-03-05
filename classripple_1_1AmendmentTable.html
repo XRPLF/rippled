@@ -112,11 +112,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a8eee69252a4b7961d0d8cd411896eeb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af59e59a074e1dbef4faf0eef0c9dcfa7"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#af59e59a074e1dbef4faf0eef0c9dcfa7">firstUnsupportedExpected</a> () const =0</td></tr>
 <tr class="separator:af59e59a074e1dbef4faf0eef0c9dcfa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac63a31d38346fba5d5ca78c4894af31a"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#ac63a31d38346fba5d5ca78c4894af31a">getJson</a> () const =0</td></tr>
-<tr class="separator:ac63a31d38346fba5d5ca78c4894af31a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a679a2a34193d9788688eb8456631bc49"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a679a2a34193d9788688eb8456631bc49">getJson</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;amendment) const =0</td></tr>
-<tr class="memdesc:a679a2a34193d9788688eb8456631bc49"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>.  <a href="classripple_1_1AmendmentTable.html#a679a2a34193d9788688eb8456631bc49">More...</a><br /></td></tr>
-<tr class="separator:a679a2a34193d9788688eb8456631bc49"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ac6934733758e569d25e1e136fb84d5"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a6ac6934733758e569d25e1e136fb84d5">getJson</a> (bool <a class="el" href="namespaceripple.html#a4267716481f84b7fd7ea521266fa9ef8">isAdmin</a>) const =0</td></tr>
+<tr class="separator:a6ac6934733758e569d25e1e136fb84d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b779a15190c7e9ba93ca99bada7093c"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a2b779a15190c7e9ba93ca99bada7093c">getJson</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;amendment, bool <a class="el" href="namespaceripple.html#a4267716481f84b7fd7ea521266fa9ef8">isAdmin</a>) const =0</td></tr>
+<tr class="memdesc:a2b779a15190c7e9ba93ca99bada7093c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>.  <a href="classripple_1_1AmendmentTable.html#a2b779a15190c7e9ba93ca99bada7093c">More...</a><br /></td></tr>
+<tr class="separator:a2b779a15190c7e9ba93ca99bada7093c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac721ac20262609226483f1436b0df02f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#ac721ac20262609226483f1436b0df02f">doValidatedLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; const &amp;lastValidatedLedger)</td></tr>
 <tr class="memdesc:ac721ac20262609226483f1436b0df02f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called when a new fully-validated ledger is accepted.  <a href="classripple_1_1AmendmentTable.html#ac721ac20262609226483f1436b0df02f">More...</a><br /></td></tr>
 <tr class="separator:ac721ac20262609226483f1436b0df02f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -393,8 +393,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ac63a31d38346fba5d5ca78c4894af31a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac63a31d38346fba5d5ca78c4894af31a">&#9670;&nbsp;</a></span>getJson() <span class="overload">[1/2]</span></h2>
+<a id="a6ac6934733758e569d25e1e136fb84d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ac6934733758e569d25e1e136fb84d5">&#9670;&nbsp;</a></span>getJson() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -405,7 +405,8 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::AmendmentTable::getJson </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>isAdmin</em></td><td>)</td>
           <td> const</td>
         </tr>
       </table>
@@ -416,12 +417,12 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1AmendmentTableImpl.html#a9c84b0a42b131a8c6392a993bc4b4c4c">ripple::AmendmentTableImpl</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1AmendmentTableImpl.html#a8f8c9cec31fa120c43e41fa2e7d108ad">ripple::AmendmentTableImpl</a>.</p>
 
 </div>
 </div>
-<a id="a679a2a34193d9788688eb8456631bc49"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a679a2a34193d9788688eb8456631bc49">&#9670;&nbsp;</a></span>getJson() <span class="overload">[2/2]</span></h2>
+<a id="a2b779a15190c7e9ba93ca99bada7093c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b779a15190c7e9ba93ca99bada7093c">&#9670;&nbsp;</a></span>getJson() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -433,8 +434,18 @@ Public Member Functions</h2></td></tr>
           <td class="memname">virtual <a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::AmendmentTable::getJson </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
-          <td class="paramname"><em>amendment</em></td><td>)</td>
-          <td> const</td>
+          <td class="paramname"><em>amendment</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>isAdmin</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
         </tr>
       </table>
   </td>
@@ -446,7 +457,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>. </p>
 
-<p>Implemented in <a class="el" href="classripple_1_1AmendmentTableImpl.html#a8780f13856e21995bfa5001959d5bff4">ripple::AmendmentTableImpl</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1AmendmentTableImpl.html#a989a955a89400c53e8d89a280b890d6b">ripple::AmendmentTableImpl</a>.</p>
 
 </div>
 </div>
