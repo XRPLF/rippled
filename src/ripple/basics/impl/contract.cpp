@@ -20,7 +20,6 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/contract.h>
 #include <cstdlib>
-#include <exception>
 #include <iostream>
 
 namespace ripple {

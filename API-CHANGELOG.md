@@ -28,6 +28,12 @@ The `network_id` field was added in the `server_info` response in version 1.5.0 
 
 ## XRP Ledger server version 2.0.0
 
+### Additions in 2.2
+
+Additions are intended to be non-breaking (because they are purely additive).
+
+- `feature`: A non-admin mode that uses the same formatting as admin RPC, but hides potentially-sensitive data.
+
 ### Additions in 2.0
 
 Additions are intended to be non-breaking (because they are purely additive).
@@ -35,7 +41,6 @@ Additions are intended to be non-breaking (because they are purely additive).
 - `server_definitions`: A new RPC that generates a `definitions.json`-like output that can be used in XRPL libraries.
 - In `Payment` transactions, `DeliverMax` has been added. This is a replacement for the `Amount` field, which should not be used. Typically, the `delivered_amount` (in transaction metadata) should be used. To ease the transition, `DeliverMax` is present regardless of API version, since adding a field is non-breaking.
 - API version 2 has been moved from beta to supported, meaning that it is generally available (regardless of the `beta_rpc_api` setting).
-
 
 ## XRP Ledger server version 1.12.0
 
