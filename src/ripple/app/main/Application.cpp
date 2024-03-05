@@ -189,7 +189,7 @@ public:
 
     NodeCache m_tempNodeCache;
     CachedSLEs cachedSLEs_;
-    std::pair<PublicKey, SecretKey> nodeIdentity_;
+    std::optional<std::pair<PublicKey, SecretKey>> nodeIdentity_;
     ValidatorKeys const validatorKeys_;
 
     std::unique_ptr<Resource::Manager> m_resourceManager;
@@ -591,13 +591,20 @@ public:
     std::pair<PublicKey, SecretKey> const&
     nodeIdentity() override
     {
-        return nodeIdentity_;
+        if (nodeIdentity_)
+            return *nodeIdentity_;
+
+        LogicError(
+            "Accessing Application::nodeIdentity() before it is initialized.");
     }
 
-    PublicKey const&
+    std::optional<PublicKey const>
     getValidationPublicKey() const override
     {
-        return validatorKeys_.publicKey;
+        if (!validatorKeys_.keys)
+            return {};
+
+        return validatorKeys_.keys->publicKey;
     }
 
     NetworkOPs&
@@ -1496,7 +1503,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         return false;
     }
 
-    if (validatorKeys_.publicKey.size())
+    if (validatorKeys_.keys)
         setMaxDisallowedLedger();
 
     // Configure the amendments the server supports
@@ -1617,9 +1624,19 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
             publisherManifests_->load(getWalletDB(), "PublisherManifests");
 
+            // It is possible to have a valid ValidatorKeys object without
+            // setting the signingKey or masterKey. This occurs if the
+            // configuration file does not have either
+            // SECTION_VALIDATOR_TOKEN or SECTION_VALIDATION_SEED section.
+
+            // masterKey for the configuration-file specified validator keys
+            std::optional<PublicKey> localSigningKey;
+            if (validatorKeys_.keys)
+                localSigningKey = validatorKeys_.keys->publicKey;
+
             // Setup trusted validators
             if (!validators_->load(
-                    validatorKeys_.publicKey,
+                    localSigningKey,
                     config().section(SECTION_VALIDATORS).values(),
                     config().section(SECTION_VALIDATOR_LIST_KEYS).values()))
             {

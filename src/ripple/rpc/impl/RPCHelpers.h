@@ -290,7 +290,7 @@ getAPIVersionNumber(const Json::Value& value, bool betaEnabled);
 std::variant<std::shared_ptr<Ledger const>, Json::Value>
 getLedgerByContext(RPC::JsonContext& context);
 
-std::pair<PublicKey, SecretKey>
+std::optional<std::pair<PublicKey, SecretKey>>
 keypairForSignature(
     Json::Value const& params,
     Json::Value& error,
