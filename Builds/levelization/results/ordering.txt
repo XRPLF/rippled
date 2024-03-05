@@ -54,6 +54,10 @@ ripple.perflog > ripple.json
 ripple.perflog > ripple.nodestore
 ripple.perflog > ripple.protocol
 ripple.perflog > ripple.rpc
+ripple.plugin > ripple.basics
+ripple.plugin > ripple.beast
+ripple.plugin > ripple.json
+ripple.plugin > ripple.ledger
 ripple.protocol > ripple.beast
 ripple.protocol > ripple.crypto
 ripple.protocol > ripple.json
@@ -184,6 +188,15 @@ test.peerfinder > ripple.peerfinder
 test.peerfinder > ripple.protocol
 test.peerfinder > test.beast
 test.peerfinder > test.unit_test
+test.plugin > ripple.app
+test.plugin > ripple.basics
+test.plugin > ripple.beast
+test.plugin > ripple.conditions
+test.plugin > ripple.ledger
+test.plugin > ripple.plugin
+test.plugin > ripple.protocol
+test.plugin > test.jtx
+test.plugin > test.toplevel
 test.protocol > ripple.basics
 test.protocol > ripple.beast
 test.protocol > ripple.crypto
