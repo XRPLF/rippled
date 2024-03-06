@@ -269,6 +269,7 @@ install (
     src/ripple/protocol/SOTemplate.h
     src/ripple/protocol/STAccount.h
     src/ripple/protocol/STAmount.h
+    src/ripple/protocol/STCurrency.h
     src/ripple/protocol/STIssue.h
     src/ripple/protocol/STArray.h
     src/ripple/protocol/STBase.h
