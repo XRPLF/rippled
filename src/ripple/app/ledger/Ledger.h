@@ -420,6 +420,9 @@ private:
     beast::Journal j_;
 };
 
+using LedgerPtr = std::shared_ptr<Ledger>;
+using ConstLedgerPtr = std::shared_ptr<Ledger const>;
+
 /** A ledger wrapped in a CachedView. */
 using CachedLedger = CachedView<Ledger>;
 

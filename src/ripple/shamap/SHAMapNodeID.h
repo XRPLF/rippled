@@ -160,4 +160,15 @@ selectBranch(SHAMapNodeID const& id, uint256 const& hash);
 
 }  // namespace ripple
 
+namespace beast {
+
+template <class Hasher>
+inline void
+hash_append(Hasher& h, ripple::SHAMapNodeID const& nodeid)
+{
+    hash_append(h, nodeid.getRawString());
+}
+
+}  // namespace beast
+
 #endif

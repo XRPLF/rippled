@@ -59,9 +59,14 @@ public:
     std::shared_ptr<Ledger const>
     getLedgerBySeq(LedgerIndex ledgerIndex);
 
-    /** Retrieve a ledger given its hash */
+    /** Retrieve a ledger given its hash
+     *
+     * @param acquire Whether or not to acquire a copy of the ledger from the
+     * network (through `InboundLedgers`) should it be missing in the local
+     * database.
+     */
     std::shared_ptr<Ledger const>
-    getLedgerByHash(LedgerHash const& ledgerHash);
+    getLedgerByHash(LedgerHash const& ledgerHash, bool acquire = true);
 
     /** Get a ledger's hash given its sequence number
         @param ledgerIndex The sequence number of the desired ledger

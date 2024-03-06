@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -61,6 +62,13 @@ public:
     /** Create a slice pointing to existing memory. */
     Slice(void const* data, std::size_t size) noexcept
         : data_(reinterpret_cast<std::uint8_t const*>(data)), size_(size)
+    {
+    }
+
+    template <class T, class Alloc>
+    requires(std::is_same_v<T, unsigned char>)
+        Slice(std::vector<T, Alloc> const& v) noexcept
+        : data_(v.data()), size_(v.size())
     {
     }
 
@@ -226,9 +234,8 @@ operator<(Slice const& lhs, Slice const& rhs) noexcept
         rhs.data() + rhs.size());
 }
 
-template <class Stream>
-Stream&
-operator<<(Stream& s, Slice const& v)
+inline std::ostream&
+operator<<(std::ostream& s, Slice const& v)
 {
     s << strHex(v);
     return s;

@@ -27,6 +27,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <sstream>
 
 namespace ripple {
 

@@ -43,6 +43,11 @@ ripple.overlay > ripple.peerfinder
 ripple.overlay > ripple.protocol
 ripple.overlay > ripple.resource
 ripple.overlay > ripple.server
+ripple.peerclient > ripple.basics
+ripple.peerclient > ripple.beast
+ripple.peerclient > ripple.ledger
+ripple.peerclient > ripple.protocol
+ripple.peerclient > ripple.shamap
 ripple.peerfinder > ripple.basics
 ripple.peerfinder > ripple.beast
 ripple.peerfinder > ripple.core
@@ -82,6 +87,14 @@ ripple.shamap > ripple.beast
 ripple.shamap > ripple.crypto
 ripple.shamap > ripple.nodestore
 ripple.shamap > ripple.protocol
+ripple.sync > ripple.basics
+ripple.sync > ripple.beast
+ripple.sync > ripple.core
+ripple.sync > ripple.ledger
+ripple.sync > ripple.nodestore
+ripple.sync > ripple.peerclient
+ripple.sync > ripple.protocol
+ripple.sync > ripple.shamap
 test.app > ripple.app
 test.app > ripple.basics
 test.app > ripple.beast

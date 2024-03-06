@@ -30,6 +30,7 @@
 #include <ripple/consensus/LedgerTiming.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/core/TimeKeeper.h>
+#include <ripple/sync/LedgerGetter.h>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -132,12 +133,9 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
         JLOG(j_.debug())
             << "Need validated ledger for preferred ledger analysis " << hash;
 
-        Application* pApp = &app_;
-
         app_.getJobQueue().addJob(
-            jtADVANCE, "getConsensusLedger", [pApp, hash]() {
-                pApp->getInboundLedgers().acquire(
-                    hash, 0, InboundLedger::Reason::CONSENSUS);
+            jtADVANCE, "getConsensusLedger", [&app = app_, hash]() {
+                app.getLedgerGetter().get(hash);
             });
         return std::nullopt;
     }

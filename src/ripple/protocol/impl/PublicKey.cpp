@@ -27,13 +27,6 @@
 
 namespace ripple {
 
-std::ostream&
-operator<<(std::ostream& os, PublicKey const& pk)
-{
-    os << strHex(pk);
-    return os;
-}
-
 template <>
 std::optional<PublicKey>
 parseBase58(TokenType type, std::string const& s)
