@@ -2,6 +2,8 @@
 #define APPLY_HOOK_INCLUDED 1
 #include <ripple/app/hook/Enum.h>
 #include <ripple/app/hook/HookStateMap.h>
+
+#if RIPPLE_WASMEDGE_AVAILABLE
 #include <ripple/app/hook/Macro.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
@@ -906,5 +908,7 @@ public:
 };
 
 }  // namespace hook
+
+#endif  // RIPPLE_WASMEDGE_AVAILABLE
 
 #endif

@@ -44,7 +44,9 @@
 #include <utility>
 #include <variant>
 #include <vector>
+#if RIPPLE_WASMEDGE_AVAILABLE
 #include <wasmedge/wasmedge.h>
+#endif  // RIPPLE_WASMEDGE_AVAILABLE
 
 #define DEBUG_GUARD_CHECK 1
 #define HS_ACC() \

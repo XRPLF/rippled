@@ -1,3 +1,5 @@
+#if RIPPLE_WASMEDGE_AVAILABLE
+
 #include <ripple/app/hook/applyHook.h>
 
 #include <ripple/app/ledger/LedgerMaster.h>
@@ -4694,6 +4696,7 @@ DEFINE_HOOK_FUNCTION(
     return hook_float::float_set(
         exponent, (is_negative ? -1 : 1) * ((int64_t)(mantissa)));
 }
+
 inline int64_t
 float_divide_internal(int64_t float1, int64_t float2)
 {
@@ -4783,6 +4786,7 @@ float_divide_internal(int64_t float1, int64_t float2)
     float_out = set_mantissa(float_out, man3);
     return float_out;
 }
+
 DEFINE_HOOK_FUNCTION(int64_t, float_divide, int64_t float1, int64_t float2)
 {
     return float_divide_internal(float1, float2);
@@ -5154,3 +5158,5 @@ DEFINE_HOOK_FUNCTION(int64_t, meta_slot, uint32_t slot_into)
 
     return slot_into;
 }
+
+#endif  // RIPPLE_WASMEDGE_AVAILABLE

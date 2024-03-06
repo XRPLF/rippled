@@ -84,7 +84,17 @@ find_package(LibArchive REQUIRED)
 find_package(SOCI REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(Snappy REQUIRED)
-find_package(wasmedge REQUIRED)
+
+# https://conan.io/center/recipes/wasmedge?version=0.9.0
+option(wasmedge "Enable WASM" ON)
+if(wasmedge)
+  find_package(wasmedge REQUIRED)
+  set_target_properties(wasmedge::wasmedge PROPERTIES
+    INTERFACE_COMPILE_DEFINITIONS RIPPLE_WASMEDGE_AVAILABLE=1
+  )
+  target_link_libraries(ripple_libs INTERFACE wasmedge::wasmedge)
+  # include(deps/WasmEdge)
+endif()
 
 option(rocksdb "Enable RocksDB" ON)
 if(rocksdb)
@@ -107,7 +117,6 @@ target_link_libraries(ripple_libs INTERFACE
   secp256k1::secp256k1
   soci::soci
   SQLite::SQLite3
-  wasmedge::wasmedge
 )
 
 # Work around changes to Conan recipe for now.
@@ -138,8 +147,6 @@ endif()
 include(RippledCore)
 include(deps/Protobuf)
 include(deps/gRPC)
-# https://conan.io/center/recipes/wasmedge?version=0.9.0
-# include(deps/WasmEdge)
 include(RippledInstall)
 include(RippledMultiConfig)
 include(RippledValidatorKeys)
