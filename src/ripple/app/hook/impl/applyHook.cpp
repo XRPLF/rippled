@@ -501,12 +501,6 @@ hook::maxHookParameterValueSize(void)
     return 128;
 }
 
-bool
-hook::isEmittedTxn(ripple::STTx const& tx)
-{
-    return tx.isFieldPresent(ripple::sfEmitDetails);
-}
-
 int64_t
 hook::computeExecutionFee(uint64_t instructionCount)
 {
@@ -561,25 +555,6 @@ is_UTF16LE(const uint8_t* buffer, size_t len)
             return false;
 
     return true;
-}
-
-// Called by Transactor.cpp to determine if a transaction type can trigger a
-// given hook... The HookOn field in the SetHook transaction determines which
-// transaction types (tt's) trigger the hook. Every bit except ttHookSet is
-// active low, so for example ttESCROW_FINISH = 2, so if the 2nd bit (counting
-// from 0) from the right is 0 then the hook will trigger on ESCROW_FINISH. If
-// it is 1 then ESCROW_FINISH will not trigger the hook. However ttHOOK_SET = 22
-// is active high, so by default (HookOn == 0) ttHOOK_SET is not triggered by
-// transactions. If you wish to set a hook that has control over ttHOOK_SET then
-// set bit 1U<<22.
-bool
-hook::canHook(ripple::TxType txType, uint64_t hookOn)
-{
-    // invert ttHOOK_SET bit
-    hookOn ^= (1ULL << ttHOOK_SET);
-    // invert entire field
-    hookOn ^= 0xFFFFFFFFFFFFFFFFULL;
-    return (hookOn >> txType) & 1;
 }
 
 // Update HookState ledger objects for the hook... only called after accept() or
@@ -1356,7 +1331,7 @@ hook::finalizeHookResult(
     // directory) if we are allowed to
     if (doEmit)
     {
-        DBG_PRINTF("emitted txn count: %d\n", hookResult.emittedTxn.size());
+        DBG_PRINTF("emitted txn count: %llu\n", hookResult.emittedTxn.size());
         for (; hookResult.emittedTxn.size() > 0; hookResult.emittedTxn.pop())
         {
             auto& tpTrans = hookResult.emittedTxn.front();
@@ -3449,7 +3424,7 @@ get_stobject_length(
                 payload_length_,
                 recursion_depth + 1);
             DBG_PRINTF(
-                "%d get_stobject_length i %d %d-%d, upto %d sublength %d\n",
+                "%d get_stobject_length i %d %d-%d, upto %lld sublength %d\n",
                 recursion_depth,
                 i,
                 subtype,

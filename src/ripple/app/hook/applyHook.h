@@ -1,7 +1,9 @@
 #ifndef APPLY_HOOK_INCLUDED
 #define APPLY_HOOK_INCLUDED 1
+
 #include <ripple/app/hook/Enum.h>
 #include <ripple/app/hook/HookStateMap.h>
+#include <ripple/app/hook/hook.h>
 
 #if RIPPLE_WASMEDGE_AVAILABLE
 #include <ripple/app/hook/Macro.h>
@@ -21,11 +23,6 @@
 #include <vector>
 
 namespace hook {
-struct HookContext;
-struct HookResult;
-bool
-isEmittedTxn(ripple::STTx const& tx);
-
 using namespace ripple;
 static const std::map<uint16_t, uint8_t> TSHAllowances = {
     {ttPAYMENT, tshROLLBACK},
@@ -464,9 +461,6 @@ DECLARE_HOOK_FUNCTION(int64_t, meta_slot, uint32_t slot_no);
 } /* end namespace hook_api */
 
 namespace hook {
-
-bool
-canHook(ripple::TxType txType, uint64_t hookOn);
 
 struct HookResult;
 

@@ -224,7 +224,7 @@ Transactor::calculateHookChainFee(
             flags = hookDef->getFieldU32(sfFlags);
 
         if (hook::canHook(tx.getTxnType(), hookOn) &&
-            (!collectCallsOnly || (flags & hook::hsfCOLLECT)))
+            (!collectCallsOnly || (flags & hsfCOLLECT)))
         {
             fee += hookDef->getFieldAmount(sfFee).xrp();
         }
