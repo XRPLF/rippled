@@ -41,7 +41,7 @@ private:
 public:
     using const_iterator = std::uint8_t const*;
 
-    SecretKey() = default;
+    SecretKey() = delete;
     SecretKey(SecretKey const&) = default;
     SecretKey&
     operator=(SecretKey const&) = default;
