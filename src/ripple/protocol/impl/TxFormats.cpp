@@ -26,7 +26,7 @@
 
 namespace ripple {
 
-std::map<std::uint16_t, PluginTxFormat>* pluginTxFormatsPtr;
+std::map<std::uint16_t, PluginTxFormat>* pluginTxFormatsPtr = nullptr;
 
 void
 registerTxFormats(std::map<std::uint16_t, PluginTxFormat>* pluginTxFormats)

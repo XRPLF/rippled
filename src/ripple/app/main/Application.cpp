@@ -1301,6 +1301,13 @@ addPlugin(std::string libPath)
         dlopen(libPath.c_str(), RTLD_NOW | RTLD_DEEPBIND | RTLD_GLOBAL);
 #endif
 
+    if (!handle)
+        throw std::runtime_error(
+            "Can't load " + libPath + ", err: " + std::string(dlerror()));
+
+    // register plugin pointers
+    setPluginPointers(handle);
+
     if (LIBFUNC(handle, "getAmendments") != NULL)
     {
         auto const amendments =
@@ -1407,8 +1414,6 @@ addPlugin(std::string libPath)
             registerPluginInnerObjectFormat(innerObjectFormat);
         }
     }
-    // register plugin pointers
-    setPluginPointers(handle);
     CLOSELIB(handle);
 }
 
@@ -1467,14 +1472,15 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     logs_->silent(config_->silent());
 
     // Register plugin features with rippled
+    if (config_->PLUGINS.size() > 0)
+        registerPluginPointers();
     for (std::string plugin : config_->PLUGINS)
     {
         JLOG(m_journal.info()) << "Loading plugin from " << plugin;
         addPlugin(plugin);
     }
+    TxFormats::getInstance();  // initialize TxFormats data
     registrationIsDone();
-    if (config_->PLUGINS.size() > 0)
-        registerPluginPointers();
 
     for (std::string const& s : config_->rawFeatures)
     {
