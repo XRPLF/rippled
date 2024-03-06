@@ -154,6 +154,10 @@ jobs:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
           cmake-args: ${{ matrix.cmake-args }}
+      - name: plugin debug
+        run: |
+          cd ${build_dir}
+          ls
       - name: test
         run: |
           cd ${build_dir}

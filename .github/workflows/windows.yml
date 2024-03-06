@@ -90,6 +90,10 @@ jobs:
           # Hard code for now. Move to the matrix if varied options are needed
           cmake-args: "-Dassert=ON -Dreporting=OFF -Dunity=ON"
           cmake-target: install
+      - name: plugin debug
+        run: |
+          cd ${build_dir}
+          ls
       - name: test
         shell: bash
         run: |

@@ -45,6 +45,10 @@ jobs:
         with:
           generator: ${{ matrix.generator }}
           configuration: ${{ matrix.configuration }}
+      - name: plugin debug
+        run: |
+          cd ${build_dir}
+          ls
       - name: test
         run: |
           cd ${build_dir}
