@@ -81,11 +81,11 @@ public:
     firstUnsupportedExpected() const = 0;
 
     virtual Json::Value
-    getJson() const = 0;
+    getJson(bool isAdmin) const = 0;
 
     /** Returns a Json::objectValue. */
     virtual Json::Value
-    getJson(uint256 const& amendment) const = 0;
+    getJson(uint256 const& amendment, bool isAdmin) const = 0;
 
     /** Called when a new fully-validated ledger is accepted. */
     void

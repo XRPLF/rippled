@@ -388,6 +388,7 @@ private:
         Json::Value& v,
         uint256 const& amendment,
         AmendmentState const& state,
+        bool isAdmin,
         std::lock_guard<std::mutex> const& lock) const;
 
     void
@@ -428,9 +429,9 @@ public:
     firstUnsupportedExpected() const override;
 
     Json::Value
-    getJson() const override;
+    getJson(bool isAdmin) const override;
     Json::Value
-    getJson(uint256 const&) const override;
+    getJson(uint256 const&, bool isAdmin) const override;
 
     bool
     needValidatedLedger(LedgerIndex seq) const override;
@@ -906,13 +907,14 @@ AmendmentTableImpl::injectJson(
     Json::Value& v,
     const uint256& id,
     const AmendmentState& fs,
+    bool isAdmin,
     std::lock_guard<std::mutex> const&) const
 {
     if (!fs.name.empty())
         v[jss::name] = fs.name;
 
     v[jss::supported] = fs.supported;
-    if (!fs.enabled)
+    if (!fs.enabled && isAdmin)
     {
         if (fs.vote == AmendmentVote::obsolete)
             v[jss::vetoed] = "Obsolete";
@@ -921,7 +923,7 @@ AmendmentTableImpl::injectJson(
     }
     v[jss::enabled] = fs.enabled;
 
-    if (!fs.enabled && lastVote_)
+    if (!fs.enabled && lastVote_ && isAdmin)
     {
         auto const votesTotal = lastVote_->trustedValidations();
         auto const votesNeeded = lastVote_->threshold();
@@ -936,7 +938,7 @@ AmendmentTableImpl::injectJson(
 }
 
 Json::Value
-AmendmentTableImpl::getJson() const
+AmendmentTableImpl::getJson(bool isAdmin) const
 {
     Json::Value ret(Json::objectValue);
     {
@@ -947,6 +949,7 @@ AmendmentTableImpl::getJson() const
                 ret[to_string(e.first)] = Json::objectValue,
                 e.first,
                 e.second,
+                isAdmin,
                 lock);
         }
     }
@@ -954,16 +957,19 @@ AmendmentTableImpl::getJson() const
 }
 
 Json::Value
-AmendmentTableImpl::getJson(uint256 const& amendmentID) const
+AmendmentTableImpl::getJson(uint256 const& amendmentID, bool isAdmin) const
 {
     Json::Value ret = Json::objectValue;
-    Json::Value& jAmendment = (ret[to_string(amendmentID)] = Json::objectValue);
 
     {
         std::lock_guard lock(mutex_);
         AmendmentState const* a = get(amendmentID, lock);
         if (a)
-            injectJson(jAmendment, amendmentID, *a, lock);
+        {
+            Json::Value& jAmendment =
+                (ret[to_string(amendmentID)] = Json::objectValue);
+            injectJson(jAmendment, amendmentID, *a, isAdmin, lock);
+        }
     }
 
     return ret;

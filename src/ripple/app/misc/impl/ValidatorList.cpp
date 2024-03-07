@@ -26,6 +26,7 @@
 #include <ripple/basics/base64.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/overlay/Overlay.h>
+#include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
@@ -134,7 +135,7 @@ ValidatorList::ValidatorList(
 
 bool
 ValidatorList::load(
-    PublicKey const& localSigningKey,
+    std::optional<PublicKey> const& localSigningKey,
     std::vector<std::string> const& configKeys,
     std::vector<std::string> const& publisherKeys)
 {
@@ -192,11 +193,12 @@ ValidatorList::load(
 
     JLOG(j_.debug()) << "Loaded " << count << " keys";
 
-    localPubKey_ = validatorManifests_.getMasterKey(localSigningKey);
+    if (localSigningKey)
+        localPubKey_ = validatorManifests_.getMasterKey(*localSigningKey);
 
     // Treat local validator key as though it was listed in the config
-    if (localPubKey_.size())
-        keyListings_.insert({localPubKey_, 1});
+    if (localPubKey_)
+        keyListings_.insert({*localPubKey_, 1});
 
     JLOG(j_.debug()) << "Loading configured validator keys";
 
@@ -231,15 +233,15 @@ ValidatorList::load(
             JLOG(j_.warn()) << "Duplicate node identity: " << match[1];
             continue;
         }
-        auto [it, inserted] = publisherLists_.emplace();
-        // Config listed keys never expire
-        auto& current = it->second.current;
-        if (inserted)
-            current.validUntil = TimeKeeper::time_point::max();
-        current.list.emplace_back(*id);
-        it->second.status = PublisherStatus::available;
+        localPublisherList.list.emplace_back(*id);
         ++count;
     }
+
+    // Config listed keys never expire
+    // set the expiration time for the newly created publisher list
+    // exactly once
+    if (count > 0)
+        localPublisherList.validUntil = TimeKeeper::time_point::max();
 
     JLOG(j_.debug()) << "Loaded " << count << " entries";
 
@@ -883,9 +885,11 @@ ValidatorList::applyListsAndBroadcast(
     if (disposition == ListDisposition::accepted)
     {
         bool good = true;
-        for (auto const& [pubKey, listCollection] : publisherLists_)
+
+        // localPublisherList never expires, so localPublisherList is excluded
+        // from the below check.
+        for (auto const& [_, listCollection] : publisherLists_)
         {
-            (void)pubKey;
             if (listCollection.status != PublisherStatus::available)
             {
                 good = false;
@@ -899,12 +903,15 @@ ValidatorList::applyListsAndBroadcast(
     }
     bool broadcast = disposition <= ListDisposition::known_sequence;
 
-    if (broadcast)
+    // this function is only called for PublicKeys which are not specified
+    // in the config file (Note: Keys specified in the local config file are
+    // stored in ValidatorList::localPublisherList data member).
+    if (broadcast && result.status <= PublisherStatus::expired &&
+        result.publisherKey &&
+        publisherLists_[*result.publisherKey].maxSequence)
     {
         auto const& pubCollection = publisherLists_[*result.publisherKey];
-        assert(
-            result.status <= PublisherStatus::expired && result.publisherKey &&
-            pubCollection.maxSequence);
+
         broadcastBlobs(
             *result.publisherKey,
             pubCollection,
@@ -1070,9 +1077,24 @@ ValidatorList::applyList(
     using namespace std::string_literals;
 
     Json::Value list;
-    PublicKey pubKey;
     auto const& manifest = localManifest ? *localManifest : globalManifest;
-    auto const result = verify(lock, list, pubKey, manifest, blob, signature);
+    auto [result, pubKeyOpt] = verify(lock, list, manifest, blob, signature);
+
+    if (!pubKeyOpt)
+    {
+        JLOG(j_.info()) << "ValidatorList::applyList unable to retrieve the "
+                           "master public key from the verify function\n";
+        return PublisherListStats{result};
+    }
+
+    if (!publicKeyType(*pubKeyOpt))
+    {
+        JLOG(j_.info()) << "ValidatorList::applyList Invalid Public Key type"
+                           " retrieved from the verify function\n ";
+        return PublisherListStats{result};
+    }
+
+    PublicKey pubKey = *pubKeyOpt;
     if (result > ListDisposition::pending)
     {
         if (publisherLists_.count(pubKey))
@@ -1255,11 +1277,12 @@ ValidatorList::loadLists()
     return sites;
 }
 
-ListDisposition
+// The returned PublicKey value is read from the manifest. Manifests do not
+// contain the default-constructed public keys
+std::pair<ListDisposition, std::optional<PublicKey>>
 ValidatorList::verify(
     ValidatorList::lock_guard const& lock,
     Json::Value& list,
-    PublicKey& pubKey,
     std::string const& manifest,
     std::string const& blob,
     std::string const& signature)
@@ -1267,35 +1290,33 @@ ValidatorList::verify(
     auto m = deserializeManifest(base64_decode(manifest));
 
     if (!m || !publisherLists_.count(m->masterKey))
-        return ListDisposition::untrusted;
+        return {ListDisposition::untrusted, {}};
 
-    pubKey = m->masterKey;
+    PublicKey masterPubKey = m->masterKey;
     auto const revoked = m->revoked();
 
     auto const result = publisherManifests_.applyManifest(std::move(*m));
 
     if (revoked && result == ManifestDisposition::accepted)
     {
-        removePublisherList(lock, pubKey, PublisherStatus::revoked);
+        removePublisherList(lock, masterPubKey, PublisherStatus::revoked);
         // If the manifest is revoked, no future list is valid either
-        publisherLists_[pubKey].remaining.clear();
+        publisherLists_[masterPubKey].remaining.clear();
     }
 
-    if (revoked || result == ManifestDisposition::invalid)
-        return ListDisposition::untrusted;
+    auto const signingKey = publisherManifests_.getSigningKey(masterPubKey);
+
+    if (revoked || !signingKey || result == ManifestDisposition::invalid)
+        return {ListDisposition::untrusted, masterPubKey};
 
     auto const sig = strUnHex(signature);
     auto const data = base64_decode(blob);
-    if (!sig ||
-        !ripple::verify(
-            publisherManifests_.getSigningKey(pubKey),
-            makeSlice(data),
-            makeSlice(*sig)))
-        return ListDisposition::invalid;
+    if (!sig || !ripple::verify(*signingKey, makeSlice(data), makeSlice(*sig)))
+        return {ListDisposition::invalid, masterPubKey};
 
     Json::Reader r;
     if (!r.parse(data, list))
-        return ListDisposition::invalid;
+        return {ListDisposition::invalid, masterPubKey};
 
     if (list.isMember(jss::sequence) && list[jss::sequence].isInt() &&
         list.isMember(jss::expiration) && list[jss::expiration].isInt() &&
@@ -1308,15 +1329,15 @@ ValidatorList::verify(
         auto const validUntil = TimeKeeper::time_point{
             TimeKeeper::duration{list[jss::expiration].asUInt()}};
         auto const now = timeKeeper_.now();
-        auto const& listCollection = publisherLists_[pubKey];
+        auto const& listCollection = publisherLists_[masterPubKey];
         if (validUntil <= validFrom)
-            return ListDisposition::invalid;
+            return {ListDisposition::invalid, masterPubKey};
         else if (sequence < listCollection.current.sequence)
-            return ListDisposition::stale;
+            return {ListDisposition::stale, masterPubKey};
         else if (sequence == listCollection.current.sequence)
-            return ListDisposition::same_sequence;
+            return {ListDisposition::same_sequence, masterPubKey};
         else if (validUntil <= now)
-            return ListDisposition::expired;
+            return {ListDisposition::expired, masterPubKey};
         else if (validFrom > now)
             // Not yet valid. Return pending if one of the following is true
             // * There's no maxSequence, indicating this is the first blob seen
@@ -1334,15 +1355,15 @@ ValidatorList::verify(
                      validFrom < listCollection.remaining
                                      .at(*listCollection.maxSequence)
                                      .validFrom)
-                ? ListDisposition::pending
-                : ListDisposition::known_sequence;
+                ? std::make_pair(ListDisposition::pending, masterPubKey)
+                : std::make_pair(ListDisposition::known_sequence, masterPubKey);
     }
     else
     {
-        return ListDisposition::invalid;
+        return {ListDisposition::invalid, masterPubKey};
     }
 
-    return ListDisposition::accepted;
+    return {ListDisposition::accepted, masterPubKey};
 }
 
 bool
@@ -1408,7 +1429,7 @@ ValidatorList::trustedPublisher(PublicKey const& identity) const
         publisherLists_.at(identity).status < PublisherStatus::revoked;
 }
 
-PublicKey
+std::optional<PublicKey>
 ValidatorList::localPublicKey() const
 {
     std::shared_lock read_lock{mutex_};
@@ -1452,7 +1473,7 @@ ValidatorList::removePublisherList(
 std::size_t
 ValidatorList::count(ValidatorList::shared_lock const&) const
 {
-    return publisherLists_.size();
+    return publisherLists_.size() + (localPublisherList.list.size() > 0);
 }
 
 std::size_t
@@ -1466,13 +1487,14 @@ std::optional<TimeKeeper::time_point>
 ValidatorList::expires(ValidatorList::shared_lock const&) const
 {
     std::optional<TimeKeeper::time_point> res{};
-    for (auto const& [pubKey, collection] : publisherLists_)
+    for (auto const& [_, collection] : publisherLists_)
     {
-        (void)pubKey;
         // Unfetched
         auto const& current = collection.current;
         if (current.validUntil == TimeKeeper::time_point{})
+        {
             return std::nullopt;
+        }
 
         // Find the latest validUntil in a chain where the next validFrom
         // overlaps with the previous validUntil. applyLists has already cleaned
@@ -1486,6 +1508,20 @@ ValidatorList::expires(ValidatorList::shared_lock const&) const
             else
                 break;
         }
+
+        // Earliest
+        if (!res || chainedExpiration < *res)
+        {
+            res = chainedExpiration;
+        }
+    }
+
+    if (localPublisherList.list.size() > 0)
+    {
+        PublisherList collection = localPublisherList;
+        // Unfetched
+        auto const& current = collection;
+        auto chainedExpiration = current.validUntil;
 
         // Earliest
         if (!res || chainedExpiration < *res)
@@ -1541,23 +1577,18 @@ ValidatorList::getJson() const
         }
     }
 
-    // Local static keys
-    PublicKey local;
+    // Validator keys listed in the local config file
     Json::Value& jLocalStaticKeys =
         (res[jss::local_static_keys] = Json::arrayValue);
-    if (auto it = publisherLists_.find(local); it != publisherLists_.end())
-    {
-        for (auto const& key : it->second.current.list)
-            jLocalStaticKeys.append(toBase58(TokenType::NodePublic, key));
-    }
+
+    for (auto const& key : localPublisherList.list)
+        jLocalStaticKeys.append(toBase58(TokenType::NodePublic, key));
 
     // Publisher lists
     Json::Value& jPublisherLists =
         (res[jss::publisher_lists] = Json::arrayValue);
     for (auto const& [publicKey, pubCollection] : publisherLists_)
     {
-        if (local == publicKey)
-            continue;
         Json::Value& curr = jPublisherLists.append(Json::objectValue);
         curr[jss::pubkey_publisher] = strHex(publicKey);
         curr[jss::available] =
@@ -1617,10 +1648,10 @@ ValidatorList::getJson() const
     validatorManifests_.for_each_manifest([&jSigningKeys,
                                            this](Manifest const& manifest) {
         auto it = keyListings_.find(manifest.masterKey);
-        if (it != keyListings_.end())
+        if (it != keyListings_.end() && manifest.signingKey)
         {
             jSigningKeys[toBase58(TokenType::NodePublic, manifest.masterKey)] =
-                toBase58(TokenType::NodePublic, manifest.signingKey);
+                toBase58(TokenType::NodePublic, *manifest.signingKey);
         }
     });
 
@@ -1661,7 +1692,7 @@ ValidatorList::for_each_available(
 
     for (auto const& [key, plCollection] : publisherLists_)
     {
-        if (plCollection.status != PublisherStatus::available || key.empty())
+        if (plCollection.status != PublisherStatus::available)
             continue;
         assert(plCollection.maxSequence);
         func(
@@ -1781,6 +1812,9 @@ ValidatorList::updateTrusted(
 
     // Rotate pending and remove expired published lists
     bool good = true;
+    // localPublisherList is not processed here. This is because the
+    // Validators specified in the local config file do not expire nor do
+    // they have a "remaining" section of PublisherList.
     for (auto& [pubKey, collection] : publisherLists_)
     {
         {
@@ -1836,6 +1870,8 @@ ValidatorList::updateTrusted(
             }
         }
         // Remove if expired
+        // ValidatorLists specified in the local config file never expire.
+        // Hence, the below steps are not relevant for localPublisherList
         if (collection.status == PublisherStatus::available &&
             collection.current.validUntil <= closeTime)
         {
@@ -1877,8 +1913,15 @@ ValidatorList::updateTrusted(
     {
         trustedSigningKeys_.clear();
 
+        // trustedMasterKeys_ contain non-revoked manifests only. Hence the
+        // manifests must contain a valid signingKey
         for (auto const& k : trustedMasterKeys_)
-            trustedSigningKeys_.insert(validatorManifests_.getSigningKey(k));
+        {
+            std::optional<PublicKey> const signingKey =
+                validatorManifests_.getSigningKey(k);
+            assert(signingKey);
+            trustedSigningKeys_.insert(*signingKey);
+        }
     }
 
     JLOG(j_.debug())
@@ -1920,7 +1963,8 @@ ValidatorList::updateTrusted(
                         << unlSize << ")";
     }
 
-    if (publisherLists_.size() && unlSize == 0)
+    if ((publisherLists_.size() || localPublisherList.list.size()) &&
+        unlSize == 0)
     {
         // No validators. Lock down.
         ops.setUNLBlocked();
