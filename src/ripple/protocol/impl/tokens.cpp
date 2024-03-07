@@ -269,7 +269,7 @@ encodeBase58(
 std::string
 decodeBase58(std::string const& s)
 {
-    auto psz = reinterpret_cast<unsigned char const*>(s.data());
+    auto psz = reinterpret_cast<unsigned char const*>(s.c_str());
     auto remain = s.size();
     // Skip and count leading zeroes
     int zeroes = 0;
@@ -340,7 +340,7 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
 }
 
 std::string
-decodeBase58Token(std::string_view s, TokenType type)
+decodeBase58Token(std::string const& s, TokenType type)
 {
     std::string const ret = detail::decodeBase58(s);
 

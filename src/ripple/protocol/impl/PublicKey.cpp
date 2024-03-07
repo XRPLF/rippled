@@ -36,7 +36,7 @@ operator<<(std::ostream& os, PublicKey const& pk)
 
 template <>
 std::optional<PublicKey>
-parseBase58(TokenType type, std::string_view s)
+parseBase58(TokenType type, std::string const& s)
 {
     auto const result = decodeBase58Token(s, type);
     auto const pks = makeSlice(result);
