@@ -363,10 +363,12 @@ public:
         }
 
         // Try some random secret keys
-        std::array<PublicKey, 32> keys;
+        std::vector<PublicKey> keys;
+        keys.reserve(32);
 
-        for (std::size_t i = 0; i != keys.size(); ++i)
-            keys[i] = derivePublicKey(keyType, randomSecretKey());
+        for (std::size_t i = 0; i != keys.capacity(); ++i)
+            keys.emplace_back(derivePublicKey(keyType, randomSecretKey()));
+        BEAST_EXPECT(keys.size() == 32);
 
         for (std::size_t i = 0; i != keys.size(); ++i)
         {
@@ -447,7 +449,11 @@ public:
         BEAST_EXPECT(pk1 == pk2);
         BEAST_EXPECT(pk2 == pk1);
 
-        PublicKey pk3;
+        PublicKey pk3 = derivePublicKey(
+            KeyType::secp256k1,
+            generateSecretKey(
+                KeyType::secp256k1, generateSeed("arbitraryPassPhrase")));
+        // Testing the copy assignment operation of PublicKey class
         pk3 = pk2;
         BEAST_EXPECT(pk3 == pk2);
         BEAST_EXPECT(pk1 == pk3);

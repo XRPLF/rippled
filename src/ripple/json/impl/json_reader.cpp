@@ -22,7 +22,6 @@
 
 #include <algorithm>
 #include <cctype>
-#include <cstdint>
 #include <istream>
 #include <string>
 
