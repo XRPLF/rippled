@@ -269,6 +269,7 @@ install (
     src/ripple/protocol/SOTemplate.h
     src/ripple/protocol/STAccount.h
     src/ripple/protocol/STAmount.h
+    src/ripple/protocol/STCurrency.h
     src/ripple/protocol/STIssue.h
     src/ripple/protocol/STArray.h
     src/ripple/protocol/STBase.h
@@ -305,8 +306,10 @@ install (
   DESTINATION include/ripple/protocol)
 install (
   FILES
+    src/ripple/protocol/impl/b58_utils.h
     src/ripple/protocol/impl/STVar.h
     src/ripple/protocol/impl/secp256k1.h
+    src/ripple/protocol/impl/token_errors.h
   DESTINATION include/ripple/protocol/impl)
 install (
     FILES
@@ -887,6 +890,7 @@ if (tests)
     src/test/basics/StringUtilities_test.cpp
     src/test/basics/TaggedCache_test.cpp
     src/test/basics/XRPAmount_test.cpp
+    src/test/basics/base58_test.cpp
     src/test/basics/base64_test.cpp
     src/test/basics/base_uint_test.cpp
     src/test/basics/contract_test.cpp

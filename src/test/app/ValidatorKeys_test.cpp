@@ -107,7 +107,7 @@ public:
             // No config -> no key but valid
             Config c;
             ValidatorKeys k{c, journal};
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
             BEAST_EXPECT(!k.configInvalid());
         }
@@ -117,8 +117,11 @@ public:
             c.section(SECTION_VALIDATION_SEED).append(seed);
 
             ValidatorKeys k{c, journal};
-            BEAST_EXPECT(k.publicKey == seedPublicKey);
-            BEAST_EXPECT(k.secretKey == seedSecretKey);
+            if (BEAST_EXPECT(k.keys))
+            {
+                BEAST_EXPECT(k.keys->publicKey == seedPublicKey);
+                BEAST_EXPECT(k.keys->secretKey == seedSecretKey);
+            }
             BEAST_EXPECT(k.nodeID == seedNodeID);
             BEAST_EXPECT(k.manifest.empty());
             BEAST_EXPECT(!k.configInvalid());
@@ -131,7 +134,7 @@ public:
 
             ValidatorKeys k{c, journal};
             BEAST_EXPECT(k.configInvalid());
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
         }
 
@@ -141,8 +144,11 @@ public:
             c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);
             ValidatorKeys k{c, journal};
 
-            BEAST_EXPECT(k.publicKey == tokenPublicKey);
-            BEAST_EXPECT(k.secretKey == tokenSecretKey);
+            if (BEAST_EXPECT(k.keys))
+            {
+                BEAST_EXPECT(k.keys->publicKey == tokenPublicKey);
+                BEAST_EXPECT(k.keys->secretKey == tokenSecretKey);
+            }
             BEAST_EXPECT(k.nodeID == tokenNodeID);
             BEAST_EXPECT(k.manifest == tokenManifest);
             BEAST_EXPECT(!k.configInvalid());
@@ -153,7 +159,7 @@ public:
             c.section(SECTION_VALIDATOR_TOKEN).append("badtoken");
             ValidatorKeys k{c, journal};
             BEAST_EXPECT(k.configInvalid());
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
         }
 
@@ -165,7 +171,7 @@ public:
             ValidatorKeys k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
         }
 
@@ -176,7 +182,7 @@ public:
             ValidatorKeys k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
         }
     }
