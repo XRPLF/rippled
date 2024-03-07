@@ -320,15 +320,11 @@ install (
   DESTINATION include/ripple/resource)
 install (
   FILES
-    src/ripple/resource/impl/Charge.cpp
-    src/ripple/resource/impl/Consumer.cpp
     src/ripple/resource/impl/Entry.h
-    src/ripple/resource/impl/Fees.cpp
     src/ripple/resource/impl/Import.h
     src/ripple/resource/impl/Key.h
     src/ripple/resource/impl/Kind.h
     src/ripple/resource/impl/Logic.h
-    src/ripple/resource/impl/ResourceManager.cpp
     src/ripple/resource/impl/Tuning.h
   DESTINATION include/ripple/resource/impl)
 install (
@@ -347,12 +343,10 @@ install (
     src/ripple/server/impl/BasePeer.h
     src/ripple/server/impl/BaseWSPeer.h
     src/ripple/server/impl/Door.h
-    src/ripple/server/impl/JSONRPCUtil.cpp
     src/ripple/server/impl/JSONRPCUtil.h
     src/ripple/server/impl/LowestLayer.h
     src/ripple/server/impl/PlainHTTPPeer.h
     src/ripple/server/impl/PlainWSPeer.h
-    src/ripple/server/impl/Port.cpp
     src/ripple/server/impl/ServerImpl.h
     src/ripple/server/impl/SSLHTTPPeer.h
     src/ripple/server/impl/SSLWSPeer.h
@@ -404,7 +398,6 @@ install (
     src/ripple/beast/unit_test/amount.hpp
     src/ripple/beast/unit_test/dstream.hpp
     src/ripple/beast/unit_test/global_suites.hpp
-    src/ripple/beast/unit_test/main.cpp
     src/ripple/beast/unit_test/match.hpp
     src/ripple/beast/unit_test/recorder.hpp
     src/ripple/beast/unit_test/reporter.hpp
