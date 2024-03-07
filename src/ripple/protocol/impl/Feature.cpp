@@ -495,6 +495,7 @@ REGISTER_FIX    (fixPreviousTxnID,              Supported::yes, VoteBehavior::De
 REGISTER_FIX    (fixAMMv1_1,                    Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FEATURE(NFTokenMintOffer,              Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixReducedOffersV2,            Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixEnforceNFTokenTrustline,    Supported::yes, VoteBehavior::DefaultNo);
 
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.
