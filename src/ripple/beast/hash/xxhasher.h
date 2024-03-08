@@ -24,6 +24,7 @@
 #include <xxhash.h>
 
 #include <cstddef>
+#include <new>
 #include <type_traits>
 
 namespace beast {
@@ -36,6 +37,15 @@ private:
 
     XXH3_state_t* state_;
 
+    static XXH3_state_t*
+    allocState()
+    {
+        auto ret = XXH3_createState();
+        if (ret == nullptr)
+            throw std::bad_alloc();
+        return ret;
+    }
+
 public:
     using result_type = std::size_t;
 
@@ -45,9 +55,9 @@ public:
     xxhasher&
     operator=(xxhasher const&) = delete;
 
-    xxhasher() noexcept
+    xxhasher()
     {
-        state_ = XXH3_createState();
+        state_ = allocState();
         XXH3_64bits_reset(state_);
     }
 
@@ -61,7 +71,7 @@ public:
         std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     explicit xxhasher(Seed seed)
     {
-        state_ = XXH3_createState();
+        state_ = allocState();
         XXH3_64bits_reset_withSeed(state_, seed);
     }
 
@@ -70,7 +80,7 @@ public:
         std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     xxhasher(Seed seed, Seed)
     {
-        state_ = XXH3_createState();
+        state_ = allocState();
         XXH3_64bits_reset_withSeed(state_, seed);
     }
 
