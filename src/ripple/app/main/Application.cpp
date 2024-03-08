@@ -1303,7 +1303,7 @@ addPlugin(std::string libPath)
 
     if (!handle)
         throw std::runtime_error(
-            "Can't load " + libPath + ", err: " + std::string(dlerror()));
+            "Can't load " + libPath + ", err: " + GETERROR());
 
     // register plugin pointers
     setPluginPointers(handle);

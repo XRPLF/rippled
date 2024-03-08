@@ -37,11 +37,13 @@
 #define OPENLIB(libname) dlopen((libname), RTLD_LAZY)
 #define LIBFUNC(lib, fn) dlsym((lib), (fn))
 #define CLOSELIB(libname) dlclose(libname)
+#define GETERROR() std::string(strerror(errno))
 #elif _WIN32
 #define LIBTYPE HINSTANCE
 #define OPENLIB(libname) LoadLibraryW(L##libname)
 #define LIBFUNC(lib, fn) GetProcAddress((lib), (fn))
 #define CLOSELIB(libname) FreeLibrary(libname)
+#define GETERROR() std::to_string(GetLastError())
 #endif
 
 namespace ripple {
