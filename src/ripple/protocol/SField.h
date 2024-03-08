@@ -90,9 +90,6 @@ class STCurrency;
     STYPE(STI_XCHAIN_BRIDGE, 25)                  \
     STYPE(STI_CURRENCY, 26)                       \
                                                   \
-    /* general type for plugins */                \
-    STYPE(STI_PLUGIN_TYPE, 10000)                 \
-                                                  \
     /* high-level types */                        \
     /* cannot be serialized inside other types */ \
     STYPE(STI_TRANSACTION, 10001)                 \
