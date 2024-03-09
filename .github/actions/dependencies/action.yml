@@ -13,6 +13,7 @@ runs:
       shell: bash
       run: |
         conan export external/snappy snappy/1.1.10@
+        conan export external/rocksdb rocksdb/6.29.5@
         conan export external/soci soci/4.0.3@
     - name: install dependencies
       shell: bash
