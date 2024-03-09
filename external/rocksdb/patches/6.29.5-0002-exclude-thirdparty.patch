@@ -1,0 +1,6 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ec59d4491..5d340fab7 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -103 +102,0 @@ if(MSVC)
+-  include(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty.inc)
