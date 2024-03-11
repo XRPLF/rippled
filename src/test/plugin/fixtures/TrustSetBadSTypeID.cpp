@@ -90,7 +90,6 @@ fromSerialIter(int typeId, SerialIter& st)
 extern "C" Container<STypeExport>
 getSTypes()
 {
-    reinitialize();
     static STypeExport exports[] = {
         {
             STI_UINT32_2,
