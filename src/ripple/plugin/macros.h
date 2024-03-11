@@ -90,6 +90,14 @@ namespace ripple {
         return {ptr, sizeof(exports) / sizeof(exports[0])}; \
     }
 
+#define EXPORT_TER(...)                             \
+    extern "C" Container<TERExport> getTERcodes()   \
+    {                                               \
+        static TERExport exports[] = {__VA_ARGS__}; \
+        TERExport* ptr = exports;                   \
+        return {ptr, 1};                            \
+    }
+
 }  // namespace ripple
 
 #endif

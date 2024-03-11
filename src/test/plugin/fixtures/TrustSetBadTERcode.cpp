@@ -83,14 +83,6 @@ getTransactors()
     return {ptr, 1};
 }
 
-extern "C" Container<TERExport>
-getTERcodes()
-{
-    static TERExport terCodes[] = {
-        {temINVALID_FLAG2, "temINVALID_FLAG2", "Test code"},
-    };
-    TERExport* ptr = terCodes;
-    return {ptr, 1};
-}
+EXPORT_TER({temINVALID_FLAG2, "temINVALID_FLAG2", "Test code"});
 
 INITIALIZE_PLUGIN()
