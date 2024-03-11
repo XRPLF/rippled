@@ -275,10 +275,12 @@ public:
         }
 
         // Try some random secret keys
-        std::array<SecretKey, 32> keys;
+        std::vector<SecretKey> keys;
+        keys.reserve(32);
 
-        for (std::size_t i = 0; i != keys.size(); ++i)
-            keys[i] = randomSecretKey();
+        for (std::size_t i = 0; i != keys.capacity(); ++i)
+            keys.emplace_back(randomSecretKey());
+        BEAST_EXPECT(keys.size() == 32);
 
         for (std::size_t i = 0; i != keys.size(); ++i)
         {
