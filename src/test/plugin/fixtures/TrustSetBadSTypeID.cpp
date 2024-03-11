@@ -87,21 +87,13 @@ fromSerialIter(int typeId, SerialIter& st)
     return Buffer(&val, sizeof val);
 }
 
-extern "C" Container<STypeExport>
-getSTypes()
-{
-    static STypeExport exports[] = {
-        {
-            STI_UINT32_2,
-            parseLeafTypeNew,
-            toString,
-            NULL,
-            toSerializer,
-            fromSerialIter,
-        },
-    };
-    STypeExport* ptr = exports;
-    return {ptr, 1};
-}
+EXPORT_STYPES({
+    STI_UINT32_2,
+    parseLeafTypeNew,
+    toString,
+    NULL,
+    toSerializer,
+    fromSerialIter,
+});
 
 INITIALIZE_PLUGIN()

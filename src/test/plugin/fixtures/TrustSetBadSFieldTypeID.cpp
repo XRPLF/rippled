@@ -45,17 +45,9 @@ sfQualityIn2()
     return constructCustomSField(STI_UINT32_2, 1, "QualityIn2");
 }
 
-extern "C" Container<SFieldExport>
-getSFields()
-{
-    auto const& qualityIn = sfQualityIn2();
-    static SFieldExport sfields[] = {
-        {qualityIn.fieldType,
-         qualityIn.fieldValue,
-         qualityIn.fieldName.c_str()},
-    };
-    SFieldExport* ptr = sfields;
-    return {ptr, 1};
-}
+EXPORT_SFIELDS(
+    {sfQualityIn2().fieldType,
+     sfQualityIn2().fieldValue,
+     sfQualityIn2().fieldName.c_str()});
 
 INITIALIZE_PLUGIN()

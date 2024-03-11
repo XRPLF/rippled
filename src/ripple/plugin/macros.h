@@ -74,6 +74,22 @@ namespace ripple {
         return {ptr, 1};                                  \
     }
 
+#define EXPORT_STYPES(...)                                  \
+    extern "C" Container<STypeExport> getSTypes()           \
+    {                                                       \
+        static STypeExport exports[] = {__VA_ARGS__};       \
+        STypeExport* ptr = exports;                         \
+        return {ptr, sizeof(exports) / sizeof(exports[0])}; \
+    }
+
+#define EXPORT_SFIELDS(...)                                 \
+    extern "C" Container<SFieldExport> getSFields()         \
+    {                                                       \
+        static SFieldExport exports[] = {__VA_ARGS__};      \
+        SFieldExport* ptr = exports;                        \
+        return {ptr, sizeof(exports) / sizeof(exports[0])}; \
+    }
+
 }  // namespace ripple
 
 #endif

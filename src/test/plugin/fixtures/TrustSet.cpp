@@ -679,34 +679,19 @@ getTransactors()
     return {ptr, 1};
 }
 
-extern "C" Container<STypeExport>
-getSTypes()
-{
-    static STypeExport exports[] = {
-        {
-            STI_UINT32_2,
-            parseLeafTypeNew,
-            toString,
-            NULL,
-            toSerializer,
-            fromSerialIter,
-        },
-    };
-    STypeExport* ptr = exports;
-    return {ptr, 1};
-}
+EXPORT_STYPES({
+    STI_UINT32_2,
+    parseLeafTypeNew,
+    toString,
+    NULL,
+    toSerializer,
+    fromSerialIter,
+});
 
-extern "C" Container<SFieldExport>
-getSFields()
-{
-    static SFieldExport sfields[] = {
-        {STI_UINT32_2, 1, "QualityIn2"},
-        {STI_ARRAY, 30, "FakeArray"},
-        {STI_OBJECT, 17, "FakeElement"},
-    };
-    SFieldExport* ptr = sfields;
-    return {ptr, 3};
-}
+EXPORT_SFIELDS(
+    {STI_UINT32_2, 1, "QualityIn2"},
+    {STI_ARRAY, 30, "FakeArray"},
+    {STI_OBJECT, 17, "FakeElement"}, );
 
 extern "C" Container<InnerObjectExport>
 getInnerObjectFormats()

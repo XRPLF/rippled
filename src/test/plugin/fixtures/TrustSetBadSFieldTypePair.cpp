@@ -43,15 +43,9 @@ sfNewArray()
     return newUntypedSField<STArray>(8, "NewArray");
 }
 
-extern "C" Container<SFieldExport>
-getSFields()
-{
-    auto const& newArray = sfNewArray();
-    static SFieldExport sfields[] = {
-        {newArray.fieldType, newArray.fieldValue, newArray.fieldName.c_str()},
-    };
-    SFieldExport* ptr = sfields;
-    return {ptr, 1};
-}
+EXPORT_SFIELDS(
+    {sfNewArray().fieldType,
+     sfNewArray().fieldValue,
+     sfNewArray().fieldName.c_str()});
 
 INITIALIZE_PLUGIN()

@@ -96,22 +96,13 @@ getTransactors()
     return {ptr, 1};
 }
 
-extern "C" Container<SFieldExport>
-getSFields()
-{
-    auto const& fakeArray = sfFakeArray();
-    auto const& fakeElement = sfFakeElement();
-    static SFieldExport sfields[] = {
-        {fakeArray.fieldType,
-         fakeArray.fieldValue,
-         fakeArray.fieldName.c_str()},
-        {fakeElement.fieldType,
-         fakeElement.fieldValue,
-         fakeElement.fieldName.c_str()},
-    };
-    SFieldExport* ptr = sfields;
-    return {ptr, 2};
-}
+EXPORT_SFIELDS(
+    {sfFakeArray().fieldType,
+     sfFakeArray().fieldValue,
+     sfFakeArray().fieldName.c_str()},
+    {sfFakeElement().fieldType,
+     sfFakeElement().fieldValue,
+     sfFakeElement().fieldName.c_str()});
 
 extern "C" Container<InnerObjectExport>
 getInnerObjectFormats()
