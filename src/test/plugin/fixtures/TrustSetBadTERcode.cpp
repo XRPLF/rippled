@@ -21,6 +21,7 @@
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/ledger/View.h>
 #include <ripple/plugin/exports.h>
+#include <ripple/plugin/macros.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
@@ -32,6 +33,8 @@
 #include <string>
 
 using namespace ripple;
+
+EXPORT_AMENDMENT_TEST(featurePluginTest, true, VoteBehavior::DefaultNo);
 
 const int temINVALID_FLAG2 = -290;
 
@@ -87,19 +90,6 @@ getTERcodes()
         {temINVALID_FLAG2, "temINVALID_FLAG2", "Test code"},
     };
     TERExport* ptr = terCodes;
-    return {ptr, 1};
-}
-
-extern "C" Container<AmendmentExport>
-getAmendments()
-{
-    AmendmentExport const amendment = {
-        "featurePluginTest",
-        true,
-        VoteBehavior::DefaultNo,
-    };
-    static AmendmentExport list[] = {amendment};
-    AmendmentExport* ptr = list;
     return {ptr, 1};
 }
 

@@ -23,6 +23,7 @@
 #include <ripple/conditions/Fulfillment.h>
 #include <ripple/ledger/View.h>
 #include <ripple/plugin/exports.h>
+#include <ripple/plugin/macros.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
@@ -34,6 +35,8 @@
 #include <map>
 
 using namespace ripple;
+
+EXPORT_AMENDMENT_TEST(featurePluginTest2, true, VoteBehavior::DefaultNo);
 
 static const std::uint16_t ltNEW_ESCROW = 0x0001;
 static const std::uint16_t NEW_ESCROW_NAMESPACE = 't';
@@ -50,8 +53,6 @@ new_escrow(AccountID const& src, std::uint32_t seq) noexcept
 {
     return {ltNEW_ESCROW, indexHash(NEW_ESCROW_NAMESPACE, src, seq)};
 }
-
-static uint256 newEscrowCreateAmendment;
 
 /** Has the specified time passed?
 
@@ -86,7 +87,7 @@ calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(newEscrowCreateAmendment))
+    if (!ctx.rules.enabled(featurePluginTest2))
         return temDISABLED;
 
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
@@ -432,20 +433,5 @@ getLedgerObjects()
 }
 
 EXPORT_INVARIANT_CHECKS(NoZeroNewEscrow)
-
-extern "C" Container<AmendmentExport>
-getAmendments()
-{
-    reinitialize();
-    AmendmentExport const amendment = {
-        "featurePluginTest2",
-        true,
-        VoteBehavior::DefaultNo,
-    };
-    newEscrowCreateAmendment = registerPluginAmendment(amendment);
-    static AmendmentExport list[] = {amendment};
-    AmendmentExport* ptr = list;
-    return {ptr, 1};
-}
 
 INITIALIZE_PLUGIN()

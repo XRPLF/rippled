@@ -23,6 +23,7 @@
 #include <ripple/conditions/Fulfillment.h>
 #include <ripple/ledger/View.h>
 #include <ripple/plugin/exports.h>
+#include <ripple/plugin/macros.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
@@ -34,6 +35,8 @@
 #include <map>
 
 using namespace ripple;
+
+EXPORT_AMENDMENT_TEST(featurePluginTest2, true, VoteBehavior::DefaultNo);
 
 static const std::uint16_t ltNEW_ESCROW = 0x0072;
 static const std::uint16_t NEW_ESCROW_NAMESPACE = 't';
@@ -50,8 +53,6 @@ new_escrow(AccountID const& src, std::uint32_t seq) noexcept
 {
     return {ltNEW_ESCROW, indexHash(NEW_ESCROW_NAMESPACE, src, seq)};
 }
-
-static uint256 newEscrowCreateAmendment;
 
 NotTEC
 preflight(PreflightContext const& ctx)
@@ -135,20 +136,6 @@ getLedgerObjects()
          NULL,
          visitEntryXRPChange}};
     LedgerObjectExport* ptr = list;
-    return {ptr, 1};
-}
-extern "C" Container<AmendmentExport>
-getAmendments()
-{
-    reinitialize();
-    AmendmentExport const amendment = {
-        "featurePluginTest2",
-        true,
-        VoteBehavior::DefaultNo,
-    };
-    newEscrowCreateAmendment = registerPluginAmendment(amendment);
-    static AmendmentExport list[] = {amendment};
-    AmendmentExport* ptr = list;
     return {ptr, 1};
 }
 

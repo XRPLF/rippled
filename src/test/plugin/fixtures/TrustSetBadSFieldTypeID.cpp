@@ -22,6 +22,7 @@
 #include <ripple/ledger/View.h>
 #include <ripple/plugin/createSFields.h>
 #include <ripple/plugin/exports.h>
+#include <ripple/plugin/macros.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
@@ -33,6 +34,8 @@
 #include <string>
 
 using namespace ripple;
+
+EXPORT_AMENDMENT_TEST(featurePluginTest, true, VoteBehavior::DefaultNo);
 
 const int STI_UINT32_2 = 28;
 
@@ -52,19 +55,6 @@ getSFields()
          qualityIn.fieldName.c_str()},
     };
     SFieldExport* ptr = sfields;
-    return {ptr, 1};
-}
-
-extern "C" Container<AmendmentExport>
-getAmendments()
-{
-    AmendmentExport const amendment = {
-        "featurePluginTest",
-        true,
-        VoteBehavior::DefaultNo,
-    };
-    static AmendmentExport list[] = {amendment};
-    AmendmentExport* ptr = list;
     return {ptr, 1};
 }
 

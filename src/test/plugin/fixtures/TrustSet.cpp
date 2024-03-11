@@ -22,6 +22,7 @@
 #include <ripple/ledger/View.h>
 #include <ripple/plugin/createSFields.h>
 #include <ripple/plugin/exports.h>
+#include <ripple/plugin/macros.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
@@ -133,14 +134,14 @@ sfQualityIn2()
     return constructCustomSField(STI_UINT32_2, 1, "QualityIn2");
 }
 
-static uint256 trustSet2Amendment{};
+EXPORT_AMENDMENT_TEST(featurePluginTest, true, VoteBehavior::DefaultNo);
 
 const int temINVALID_FLAG2 = -210;
 
 NotTEC
 preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(trustSet2Amendment))
+    if (!ctx.rules.enabled(featurePluginTest))
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
@@ -732,20 +733,6 @@ getTERcodes()
         {temINVALID_FLAG2, "temINVALID_FLAG2", "Test code"},
     };
     TERExport* ptr = terCodes;
-    return {ptr, 1};
-}
-
-extern "C" Container<AmendmentExport>
-getAmendments()
-{
-    AmendmentExport const amendment = {
-        "featurePluginTest",
-        true,
-        VoteBehavior::DefaultNo,
-    };
-    trustSet2Amendment = registerPluginAmendment(amendment);
-    static AmendmentExport list[] = {amendment};
-    AmendmentExport* ptr = list;
     return {ptr, 1};
 }
 

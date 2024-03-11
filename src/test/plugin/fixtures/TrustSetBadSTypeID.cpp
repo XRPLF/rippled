@@ -21,6 +21,7 @@
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/ledger/View.h>
 #include <ripple/plugin/exports.h>
+#include <ripple/plugin/macros.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
@@ -34,6 +35,8 @@
 using namespace ripple;
 
 const int STI_UINT32_2 = 23;
+
+EXPORT_AMENDMENT_TEST(featurePluginTest, true, VoteBehavior::DefaultNo);
 
 Buffer
 parseLeafTypeNew(
@@ -99,19 +102,6 @@ getSTypes()
         },
     };
     STypeExport* ptr = exports;
-    return {ptr, 1};
-}
-
-extern "C" Container<AmendmentExport>
-getAmendments()
-{
-    AmendmentExport const amendment = {
-        "featurePluginTest",
-        true,
-        VoteBehavior::DefaultNo,
-    };
-    static AmendmentExport list[] = {amendment};
-    AmendmentExport* ptr = list;
     return {ptr, 1};
 }
 
