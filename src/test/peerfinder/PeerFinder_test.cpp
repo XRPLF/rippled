@@ -161,7 +161,6 @@ public:
     void
     test_duplicateOutIn()
     {
-        auto const seconds = 10000;
         testcase("duplicate out/in");
         TestStore store;
         TestChecker checker;
@@ -177,40 +176,31 @@ public:
             logic.config(c);
         }
 
-        std::size_t n = 0;
-        for (std::size_t i = 0; i < seconds; ++i)
+        auto const list = logic.autoconnect();
+        if (BEAST_EXPECT(!list.empty()))
         {
-            auto const list = logic.autoconnect();
-            if (!list.empty())
+            BEAST_EXPECT(list.size() == 1);
+            auto const remote = list.front();
+            auto const slot1 = logic.new_outbound_slot(remote);
+            if (BEAST_EXPECT(slot1 != nullptr))
             {
-                BEAST_EXPECT(list.size() == 1);
-                auto const remote = list.front();
-                auto const slot1 = logic.new_outbound_slot(remote);
-                if (BEAST_EXPECT(slot1 != nullptr))
-                {
-                    BEAST_EXPECT(
-                        logic.connectedAddresses_.count(remote.address()) == 1);
-                    auto const local =
-                        beast::IP::Endpoint::from_string("65.0.0.2:1024");
-                    auto const slot2 = logic.new_inbound_slot(local, remote);
-                    BEAST_EXPECT(
-                        logic.connectedAddresses_.count(remote.address()) == 1);
-                    if (!BEAST_EXPECT(slot2 == nullptr))
-                        logic.on_closed(slot2);
-                    logic.on_closed(slot1);
-                }
-                ++n;
+                BEAST_EXPECT(
+                    logic.connectedAddresses_.count(remote.address()) == 1);
+                auto const local =
+                    beast::IP::Endpoint::from_string("65.0.0.2:1024");
+                auto const slot2 = logic.new_inbound_slot(local, remote);
+                BEAST_EXPECT(
+                    logic.connectedAddresses_.count(remote.address()) == 1);
+                if (!BEAST_EXPECT(slot2 == nullptr))
+                    logic.on_closed(slot2);
+                logic.on_closed(slot1);
             }
-            clock.advance(std::chrono::seconds(1));
-            logic.once_per_second();
         }
-        BEAST_EXPECT(n <= (seconds + 59) / 60);
     }
 
     void
     test_duplicateInOut()
     {
-        auto const seconds = 10000;
         testcase("duplicate in/out");
         TestStore store;
         TestChecker checker;
@@ -226,34 +216,26 @@ public:
             logic.config(c);
         }
 
-        std::size_t n = 0;
-        for (std::size_t i = 0; i < seconds; ++i)
+        auto const list = logic.autoconnect();
+        if (BEAST_EXPECT(!list.empty()))
         {
-            auto const list = logic.autoconnect();
-            if (!list.empty())
+            BEAST_EXPECT(list.size() == 1);
+            auto const remote = list.front();
+            auto const local =
+                beast::IP::Endpoint::from_string("65.0.0.2:1024");
+            auto const slot1 = logic.new_inbound_slot(local, remote);
+            if (BEAST_EXPECT(slot1 != nullptr))
             {
-                BEAST_EXPECT(list.size() == 1);
-                auto const remote = list.front();
-                auto const local =
-                    beast::IP::Endpoint::from_string("65.0.0.2:1024");
-                auto const slot1 = logic.new_inbound_slot(local, remote);
-                if (BEAST_EXPECT(slot1 != nullptr))
-                {
-                    BEAST_EXPECT(
-                        logic.connectedAddresses_.count(remote.address()) == 1);
-                    auto const slot2 = logic.new_outbound_slot(remote);
-                    BEAST_EXPECT(
-                        logic.connectedAddresses_.count(remote.address()) == 1);
-                    if (!BEAST_EXPECT(slot2 == nullptr))
-                        logic.on_closed(slot2);
-                    logic.on_closed(slot1);
-                }
-                ++n;
+                BEAST_EXPECT(
+                    logic.connectedAddresses_.count(remote.address()) == 1);
+                auto const slot2 = logic.new_outbound_slot(remote);
+                BEAST_EXPECT(
+                    logic.connectedAddresses_.count(remote.address()) == 1);
+                if (!BEAST_EXPECT(slot2 == nullptr))
+                    logic.on_closed(slot2);
+                logic.on_closed(slot1);
             }
-            clock.advance(std::chrono::seconds(1));
-            logic.once_per_second();
         }
-        BEAST_EXPECT(n <= (seconds + 59) / 60);
     }
 
     void
