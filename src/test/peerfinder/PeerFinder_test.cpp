@@ -20,11 +20,11 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/beast/unit_test/suite.hpp>
 #include <ripple/core/Config.h>
 #include <ripple/peerfinder/impl/Logic.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
-#include "ripple/beast/unit_test/suite.hpp"
 #include <test/unit_test/SuiteJournal.h>
 
 namespace ripple {
@@ -177,9 +177,7 @@ public:
             logic.config(c);
         }
 
-        PublicKey const pk(randomKeyPair(KeyType::secp256k1).first);
         std::size_t n = 0;
-
         for (std::size_t i = 0; i < seconds; ++i)
         {
             auto const list = logic.autoconnect();
@@ -228,9 +226,7 @@ public:
             logic.config(c);
         }
 
-        PublicKey const pk(randomKeyPair(KeyType::secp256k1).first);
         std::size_t n = 0;
-
         for (std::size_t i = 0; i < seconds; ++i)
         {
             auto const list = logic.autoconnect();
