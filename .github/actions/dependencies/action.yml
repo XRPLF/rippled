@@ -23,8 +23,8 @@ runs:
         # Do not quote the URL. An empty string will be accepted (with
         # a non-fatal warning), but a missing argument will not.
         conan remote add ripple ${{ env.CONAN_URL }} --insert 0
-        echo outcome=$(conan user --remote ripple ${{ secrets.CONAN_USERNAME }} \
-          --password ${{ secrets.CONAN_TOKEN }} >&2 && echo success || \
+        echo outcome=$(conan user --remote ripple ${{ env.CONAN_USERNAME }} \
+          --password ${{ env.CONAN_TOKEN }} >&2 && echo success || \
           echo failure) | tee ${GITHUB_OUTPUT}
     - name: list missing binaries
       id: binaries

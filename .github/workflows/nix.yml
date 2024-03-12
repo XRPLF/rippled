@@ -62,8 +62,6 @@ jobs:
           cmake --version
           env | sort
       - name: configure Conan
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         run: |
           conan profile new default --detect
           conan profile update settings.compiler.cppstd=20 default
@@ -78,9 +76,12 @@ jobs:
         run: tar -czf conan.tar -C ~/.conan .
       - name: build dependencies
         uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+          CONAN_USERNAME: ${{ secrets.CONAN_USERNAME }}
+          CONAN_TOKEN: ${{ secrets.CONAN_TOKEN }}
         with:
           configuration: ${{ matrix.configuration }}
-        secrets: inherit
       - name: upload archive
         uses: actions/upload-artifact@v3
         with:
