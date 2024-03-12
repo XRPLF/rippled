@@ -80,6 +80,7 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
+        secrets: inherit
       - name: upload archive
         uses: actions/upload-artifact@v3
         with:
