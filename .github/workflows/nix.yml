@@ -62,8 +62,6 @@ jobs:
           cmake --version
           env | sort
       - name: configure Conan
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         run: |
           conan profile new default --detect
           conan profile update settings.compiler.cppstd=20 default
@@ -73,33 +71,17 @@ jobs:
           conan profile update env.CC=${{ matrix.profile.cc }} default
           conan profile update env.CXX=${{ matrix.profile.cxx }} default
           conan profile update conf.tools.build:compiler_executables='{"c": "${{ matrix.profile.cc }}", "cpp": "${{ matrix.profile.cxx }}"}' default
-          # Do not quote the URL. An empty string will be accepted (with
-          # a non-fatal warning), but a missing argument will not.
-          conan remote add ripple ${{ env.CONAN_URL }} --insert 0
-      - name: try to authenticate to ripple Conan remote
-        id: remote
-        run: |
-          echo outcome=$(conan user --remote ripple ${{ secrets.CONAN_USERNAME }} --password ${{ secrets.CONAN_TOKEN }} >&2 && echo success || echo failure) | tee ${GITHUB_OUTPUT}
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
         run: tar -czf conan.tar -C ~/.conan .
-      - name: list missing binaries
-        id: binaries
-        # Print the list of dependencies that would need to be built locally.
-        # A non-empty list means we have "failed" to cache binaries remotely.
-        run: |
-          echo missing=$(conan info . --build missing --settings build_type=${{ matrix.configuration }} --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
       - name: build dependencies
-        if: (steps.binaries.outputs.missing != '[]')
         uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+          CONAN_USERNAME: ${{ secrets.CONAN_USERNAME }}
+          CONAN_TOKEN: ${{ secrets.CONAN_TOKEN }}
         with:
           configuration: ${{ matrix.configuration }}
-      - name: upload dependencies to remote
-        if: (steps.binaries.outputs.missing != '[]') && (steps.remote.outputs.outcome == 'success')
-        run: conan upload --remote ripple '*' --all --parallel --confirm
-      - name: recreate archive with dependencies
-        if: (steps.binaries.outputs.missing != '[]') && (steps.remote.outputs.outcome == 'failure')
-        run: tar -czf conan.tar -C ~/.conan .
       - name: upload archive
         uses: actions/upload-artifact@v3
         with:
@@ -148,6 +130,8 @@ jobs:
         uses: actions/checkout@v3
       - name: dependencies
         uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         with:
           configuration: ${{ matrix.configuration }}
       - name: build
@@ -197,6 +181,8 @@ jobs:
         uses: actions/checkout@v3
       - name: dependencies
         uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         with:
           configuration: ${{ matrix.configuration }}
       - name: build

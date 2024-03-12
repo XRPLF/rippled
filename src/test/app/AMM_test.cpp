@@ -4790,6 +4790,106 @@ private:
     }
 
     void
+    testFixDefaultInnerObj()
+    {
+        testcase("Fix Default Inner Object");
+        using namespace jtx;
+        FeatureBitset const all{supported_amendments()};
+
+        auto test = [&](FeatureBitset features,
+                        TER const& err1,
+                        TER const& err2,
+                        TER const& err3,
+                        TER const& err4,
+                        std::uint16_t tfee,
+                        bool closeLedger,
+                        std::optional<std::uint16_t> extra = std::nullopt) {
+            Env env(*this, features);
+            fund(env, gw, {alice}, XRP(1'000), {USD(10)});
+            AMM amm(
+                env,
+                gw,
+                XRP(10),
+                USD(10),
+                {.tfee = tfee, .close = closeLedger});
+            amm.deposit(alice, USD(10), XRP(10));
+            amm.vote(VoteArg{.account = alice, .tfee = tfee, .err = ter(err1)});
+            amm.withdraw(WithdrawArg{
+                .account = gw, .asset1Out = USD(1), .err = ter(err2)});
+            // with the amendment disabled and ledger not closed,
+            // second vote succeeds if the first vote sets the trading fee
+            // to non-zero; if the first vote sets the trading fee to >0 && <9
+            // then the second withdraw succeeds if the second vote sets
+            // the trading fee so that the discounted fee is non-zero
+            amm.vote(VoteArg{.account = alice, .tfee = 20, .err = ter(err3)});
+            amm.withdraw(WithdrawArg{
+                .account = gw, .asset1Out = USD(2), .err = ter(err4)});
+        };
+
+        // ledger is closed after each transaction, vote/withdraw don't fail
+        // regardless whether the amendment is enabled or not
+        test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 0, true);
+        test(
+            all - fixInnerObjTemplate,
+            tesSUCCESS,
+            tesSUCCESS,
+            tesSUCCESS,
+            tesSUCCESS,
+            0,
+            true);
+        // ledger is not closed after each transaction
+        // vote/withdraw don't fail if the amendment is enabled
+        test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 0, false);
+        // vote/withdraw fail if the amendment is not enabled
+        // second vote/withdraw still fail: second vote fails because
+        // the initial trading fee is 0, consequently second withdraw fails
+        // because the second vote fails
+        test(
+            all - fixInnerObjTemplate,
+            tefEXCEPTION,
+            tefEXCEPTION,
+            tefEXCEPTION,
+            tefEXCEPTION,
+            0,
+            false);
+        // if non-zero trading/discounted fee then vote/withdraw
+        // don't fail whether the ledger is closed or not and
+        // the amendment is enabled or not
+        test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 10, true);
+        test(
+            all - fixInnerObjTemplate,
+            tesSUCCESS,
+            tesSUCCESS,
+            tesSUCCESS,
+            tesSUCCESS,
+            10,
+            true);
+        test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 10, false);
+        test(
+            all - fixInnerObjTemplate,
+            tesSUCCESS,
+            tesSUCCESS,
+            tesSUCCESS,
+            tesSUCCESS,
+            10,
+            false);
+        // non-zero trading fee but discounted fee is 0, vote doesn't fail
+        // but withdraw fails
+        test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 9, false);
+        // second vote sets the trading fee to non-zero, consequently
+        // second withdraw doesn't fail even if the amendment is not
+        // enabled and the ledger is not closed
+        test(
+            all - fixInnerObjTemplate,
+            tesSUCCESS,
+            tefEXCEPTION,
+            tesSUCCESS,
+            tesSUCCESS,
+            9,
+            false);
+    }
+
+    void
     testCore()
     {
         testInvalidInstance();
@@ -4815,6 +4915,7 @@ private:
         testClawback();
         testAMMID();
         testSelection();
+        testFixDefaultInnerObj();
     }
 
     void
