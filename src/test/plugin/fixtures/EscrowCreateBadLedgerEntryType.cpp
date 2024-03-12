@@ -41,13 +41,6 @@ EXPORT_AMENDMENT_TEST(featurePluginTest2, true, VoteBehavior::DefaultNo);
 static const std::uint16_t ltNEW_ESCROW = 0x0072;
 static const std::uint16_t NEW_ESCROW_NAMESPACE = 't';
 
-template <class... Args>
-static uint256
-indexHash(std::uint16_t space, Args const&... args)
-{
-    return sha512Half(space, args...);
-}
-
 Keylet
 new_escrow(AccountID const& src, std::uint32_t seq) noexcept
 {

@@ -60,13 +60,6 @@ supported_amendments_plugins()
     return ids;
 }
 
-template <class... Args>
-static uint256
-indexHash(std::uint16_t space, Args const&... args)
-{
-    return sha512Half(space, args...);
-}
-
 // Helper function that returns the owner count of an account root.
 static std::uint32_t
 ownerCount(test::jtx::Env const& env, test::jtx::Account const& acct)

@@ -105,6 +105,13 @@ typedef Container<TransactorExport> (*getTransactorsPtr)();
         registerPluginTERs(pluginTERcodes);                               \
     }
 
+template <class... Args>
+static uint256
+indexHash(std::uint16_t space, Args const&... args)
+{
+    return sha512Half(space, args...);
+}
+
 }  // namespace ripple
 
 #endif
