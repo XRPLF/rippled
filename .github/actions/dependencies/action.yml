@@ -12,8 +12,27 @@ runs:
     - name: export custom recipes
       shell: bash
       run: |
+        conan config set general.revisions_enabled=1
         conan export external/snappy snappy/1.1.10@
+        conan export external/rocksdb rocksdb/6.29.5@
         conan export external/soci soci/4.0.3@
+    - name: try to authenticate to ripple Conan remote
+      id: remote
+      shell: bash
+      run: |
+        # Do not quote the URL. An empty string will be accepted (with
+        # a non-fatal warning), but a missing argument will not.
+        conan remote add ripple ${{ env.CONAN_URL }} --insert 0
+        echo outcome=$(conan user --remote ripple ${{ env.CONAN_USERNAME }} \
+          --password ${{ env.CONAN_TOKEN }} >&2 && echo success || \
+          echo failure) | tee ${GITHUB_OUTPUT}
+    - name: list missing binaries
+      id: binaries
+      shell: bash
+      # Print the list of dependencies that would need to be built locally.
+      # A non-empty list means we have "failed" to cache binaries remotely.
+      run: |
+        echo missing=$(conan info . --build missing --settings build_type=${{ inputs.configuration }} --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
     - name: install dependencies
       shell: bash
       run: |
@@ -24,3 +43,7 @@ runs:
           --build missing \
           --settings build_type=${{ inputs.configuration }} \
           ..
+    - name: upload dependencies to remote
+      if: (steps.binaries.outputs.missing != '[]') && (steps.remote.outputs.outcome == 'success')
+      shell: bash
+      run: conan upload --remote ripple '*' --all --parallel --confirm
