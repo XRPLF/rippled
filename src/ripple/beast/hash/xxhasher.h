@@ -20,9 +20,11 @@
 #ifndef BEAST_HASH_XXHASHER_H_INCLUDED
 #define BEAST_HASH_XXHASHER_H_INCLUDED
 
-#include <ripple/beast/hash/impl/xxhash.h>
 #include <boost/endian/conversion.hpp>
+#include <xxhash.h>
+
 #include <cstddef>
+#include <new>
 #include <type_traits>
 
 namespace beast {
@@ -33,16 +35,35 @@ private:
     // requires 64-bit std::size_t
     static_assert(sizeof(std::size_t) == 8, "");
 
-    detail::XXH64_state_t state_;
+    XXH3_state_t* state_;
+
+    static XXH3_state_t*
+    allocState()
+    {
+        auto ret = XXH3_createState();
+        if (ret == nullptr)
+            throw std::bad_alloc();
+        return ret;
+    }
 
 public:
     using result_type = std::size_t;
 
     static constexpr auto const endian = boost::endian::order::native;
 
-    xxhasher() noexcept
+    xxhasher(xxhasher const&) = delete;
+    xxhasher&
+    operator=(xxhasher const&) = delete;
+
+    xxhasher()
     {
-        detail::XXH64_reset(&state_, 1);
+        state_ = allocState();
+        XXH3_64bits_reset(state_);
+    }
+
+    ~xxhasher() noexcept
+    {
+        XXH3_freeState(state_);
     }
 
     template <
@@ -50,7 +71,8 @@ public:
         std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     explicit xxhasher(Seed seed)
     {
-        detail::XXH64_reset(&state_, seed);
+        state_ = allocState();
+        XXH3_64bits_reset_withSeed(state_, seed);
     }
 
     template <
@@ -58,18 +80,19 @@ public:
         std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     xxhasher(Seed seed, Seed)
     {
-        detail::XXH64_reset(&state_, seed);
+        state_ = allocState();
+        XXH3_64bits_reset_withSeed(state_, seed);
     }
 
     void
     operator()(void const* key, std::size_t len) noexcept
     {
-        detail::XXH64_update(&state_, key, len);
+        XXH3_64bits_update(state_, key, len);
     }
 
     explicit operator std::size_t() noexcept
     {
-        return detail::XXH64_digest(&state_);
+        return XXH3_64bits_digest(state_);
     }
 };
 

@@ -147,6 +147,13 @@ which allows you to statically link it with GCC, if you want.
    conan export external/snappy snappy/1.1.10@
    ```
 
+Export our [Conan recipe for RocksDB](./external/rocksdb).
+It does not override paths to dependencies when building with Visual Studio.
+
+   ```
+   conan export external/rocksdb rocksdb/6.29.5@
+   ```
+
 Export our [Conan recipe for SOCI](./external/soci).
 It patches their CMake to correctly import its dependencies.
 
