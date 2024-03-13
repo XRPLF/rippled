@@ -406,6 +406,10 @@ install (
   DESTINATION include/ripple/beast/unit_test)
 install (
   FILES
+    src/ripple/beast/unit_test/detail/const_container.hpp
+  DESTINATION include/ripple/beast/unit_test/detail)
+install (
+  FILES
     src/ripple/beast/utility/Journal.h
     src/ripple/beast/utility/PropertyStream.h
     src/ripple/beast/utility/WrappedSink.h
