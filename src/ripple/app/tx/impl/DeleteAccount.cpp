@@ -19,6 +19,7 @@
 
 #include <ripple/app/tx/impl/DID.h>
 #include <ripple/app/tx/impl/DeleteAccount.h>
+#include <ripple/app/tx/impl/DeleteOracle.h>
 #include <ripple/app/tx/impl/DepositPreauth.h>
 #include <ripple/app/tx/impl/SetSignerList.h>
 #include <ripple/app/tx/impl/details/NFTokenUtils.h>
@@ -146,6 +147,18 @@ removeDIDFromLedger(
     return DIDDelete::deleteSLE(view, sleDel, account, j);
 }
 
+TER
+removeOracleFromLedger(
+    Application&,
+    ApplyView& view,
+    AccountID const& account,
+    uint256 const&,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal j)
+{
+    return DeleteOracle::deleteOracle(view, sleDel, account, j);
+}
+
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -166,6 +179,8 @@ nonObligationDeleter(LedgerEntryType t)
             return removeNFTokenOfferFromLedger;
         case ltDID:
             return removeDIDFromLedger;
+        case ltORACLE:
+            return removeOracleFromLedger;
         default:
             return nullptr;
     }

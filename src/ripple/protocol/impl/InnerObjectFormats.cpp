@@ -25,6 +25,9 @@ namespace ripple {
 
 InnerObjectFormats::InnerObjectFormats()
 {
+    // inner objects with the default fields have to be
+    // constructed with STObject::makeInnerObject()
+
     add(sfSignerEntry.jsonName.c_str(),
         sfSignerEntry.getCode(),
         {
@@ -134,6 +137,15 @@ InnerObjectFormats::InnerObjectFormats()
         sfAuthAccount.getCode(),
         {
             {sfAccount, soeREQUIRED},
+        });
+
+    add(sfPriceData.jsonName.c_str(),
+        sfPriceData.getCode(),
+        {
+            {sfBaseAsset, soeREQUIRED},
+            {sfQuoteAsset, soeREQUIRED},
+            {sfAssetPrice, soeOPTIONAL},
+            {sfScale, soeDEFAULT},
         });
 }
 
