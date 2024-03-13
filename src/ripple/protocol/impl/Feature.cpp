@@ -461,6 +461,7 @@ REGISTER_FEATURE(DID,                           Supported::yes, VoteBehavior::De
 REGISTER_FIX(fixFillOrKill,                     Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixNFTokenReserve,             Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX(fixInnerObjTemplate,               Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FEATURE(PriceOracle,                   Supported::yes, VoteBehavior::DefaultNo);
 
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.
