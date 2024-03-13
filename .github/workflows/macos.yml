@@ -37,8 +37,13 @@ jobs:
         run : |
           conan profile get env.CXXFLAGS default || true
           conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
-      - name: dependencies
+          conan remote remove ripple
+      - name: build dependencies
         uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+          CONAN_USERNAME: ${{ secrets.CONAN_USERNAME }}
+          CONAN_TOKEN: ${{ secrets.CONAN_TOKEN }}
         with:
           configuration: ${{ matrix.configuration }}
       - name: build

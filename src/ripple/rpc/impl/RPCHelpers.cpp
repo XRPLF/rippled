@@ -792,7 +792,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
     return seed;
 }
 
-std::pair<PublicKey, SecretKey>
+std::optional<std::pair<PublicKey, SecretKey>>
 keypairForSignature(
     Json::Value const& params,
     Json::Value& error,
