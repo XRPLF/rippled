@@ -16,15 +16,18 @@ runs:
         conan export external/snappy snappy/1.1.10@
         conan export external/rocksdb rocksdb/6.29.5@
         conan export external/soci soci/4.0.3@
-    - name: try to authenticate to ripple Conan remote
-      id: remote
+    - name: add Ripple Conan remote
       shell: bash
       run: |
         conan remote list
         # Do not quote the URL. An empty string will be accepted (with
         # a non-fatal warning), but a missing argument will not.
         conan remote add ripple ${{ env.CONAN_URL }} --insert 0
-        echo outcome=$(conan user --remote ripple >&2 \
+    - name: try to authenticate to Ripple Conan remote
+      id: remote
+      shell: bash
+      run: |
+        echo outcome=$(conan user --remote ripple --password >&2 \
           && echo success || echo failure) | tee ${GITHUB_OUTPUT}
     - name: list missing binaries
       id: binaries
