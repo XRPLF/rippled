@@ -27,9 +27,9 @@ jobs:
       build_dir: .build
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: choose Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: 3.9
       - name: learn Python cache directory
@@ -39,7 +39,7 @@ jobs:
           python -m pip install --upgrade pip
           echo "dir=$(pip cache dir)" | tee ${GITHUB_OUTPUT}
       - name: restore Python cache directory
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
             path: ${{ steps.pip-cache.outputs.dir }}
             key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
@@ -47,11 +47,11 @@ jobs:
         run: pip install wheel 'conan<2'
       - name: check environment
         run: |
+          dir env:
           $env:PATH -split ';'
           python --version
           conan --version
           cmake --version
-          dir env:
       - name: configure Conan
         shell: bash
         run: |
@@ -61,8 +61,8 @@ jobs:
         uses: ./.github/actions/dependencies
         env:
           CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
-          CONAN_USERNAME: ${{ secrets.CONAN_USERNAME }}
-          CONAN_TOKEN: ${{ secrets.CONAN_TOKEN }}
+          CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
+          CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:
           configuration: ${{ matrix.configuration }}
       - name: build
