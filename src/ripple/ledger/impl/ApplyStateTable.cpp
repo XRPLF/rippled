@@ -530,7 +530,7 @@ ApplyStateTable::threadItem(
     key_type prevTxID;
     LedgerIndex prevLgrID;
 
-    static std::set<LedgerEntryType> newPreviousTxnIDTypes = {
+    static const std::set<LedgerEntryType> newPreviousTxnIDTypes = {
         ltDIR_NODE, ltAMENDMENTS, ltFEE_SETTINGS, ltNEGATIVE_UNL, ltAMM};
     // Exclude PrevTxnID/PrevTxnLgrSeq if the fixPreviousTxnID amendment is not
     // enabled and the ledger object type is in the above set
