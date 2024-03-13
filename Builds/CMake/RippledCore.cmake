@@ -28,7 +28,6 @@ target_sources (xrpl_core PRIVATE
   src/ripple/beast/clock/basic_seconds_clock.cpp
   src/ripple/beast/core/CurrentThreadName.cpp
   src/ripple/beast/core/SemanticVersion.cpp
-  src/ripple/beast/hash/impl/xxhash.cpp
   src/ripple/beast/insight/impl/Collector.cpp
   src/ripple/beast/insight/impl/Groups.cpp
   src/ripple/beast/insight/impl/Hook.cpp
@@ -156,7 +155,9 @@ target_link_libraries (xrpl_core
     secp256k1::secp256k1
     ed25519::ed25519
     date::date
-    Ripple::opts)
+    Ripple::opts
+    xxHash::xxhash
+  )
 
 #[=================================[
    xrpl_plugin installation
@@ -185,6 +186,7 @@ target_sources (xrpl_plugin PRIVATE
 add_library (Ripple::xrpl_plugin ALIAS xrpl_plugin)
 target_link_libraries(xrpl_plugin PUBLIC
   Ripple::xrpl_core
+  xxHash::xxhash
 )
 #[=================================[
    main/core headers installation
@@ -394,9 +396,6 @@ install (
     src/ripple/beast/hash/uhash.h
     src/ripple/beast/hash/xxhasher.h
   DESTINATION include/ripple/beast/hash)
-install (
-  FILES src/ripple/beast/hash/impl/xxhash.h
-  DESTINATION include/ripple/beast/hash/impl)
 install (
   FILES
   src/ripple/beast/net/IPAddress.h
