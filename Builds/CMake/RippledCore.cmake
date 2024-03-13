@@ -420,15 +420,6 @@ install (
     src/ripple/beast/utility/Zero.h
     src/ripple/beast/utility/rngfill.h
   DESTINATION include/ripple/beast/utility)
-# WARNING!! -- horrible levelization ahead
-# (these files should be isolated or moved...but
-#  unfortunately unit_test.h above creates this dependency)
-if (tests)
-  install (
-    FILES
-      src/ripple/beast/unit_test/detail/const_container.hpp
-    DESTINATION include/ripple/beast/unit_test/detail)
-endif () #tests
 #[===================================================================[
    rippled executable
 #]===================================================================]
