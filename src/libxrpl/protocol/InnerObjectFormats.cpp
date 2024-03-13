@@ -172,6 +172,15 @@ InnerObjectFormats::InnerObjectFormats()
             {sfBookDirectory, soeREQUIRED},
             {sfBookNode, soeREQUIRED},
         });
+
+    add(sfSponsor.jsonName.c_str(),
+        sfSponsor.getCode(),
+        {
+            {sfAccount, soeREQUIRED},
+            {sfFlags, soeREQUIRED},
+            {sfSignature, soeOPTIONAL},
+            {sfSigners, soeOPTIONAL},
+        });
 }
 
 InnerObjectFormats const&

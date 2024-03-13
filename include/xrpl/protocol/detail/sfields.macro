@@ -362,6 +362,7 @@ UNTYPED_SFIELD(sfCredential,             OBJECT,    33)
 UNTYPED_SFIELD(sfRawTransaction,         OBJECT,    34)
 UNTYPED_SFIELD(sfBatchSigner,            OBJECT,    35)
 UNTYPED_SFIELD(sfBook,                   OBJECT,    36)
+UNTYPED_SFIELD(sfSponsor,                OBJECT,    37)
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array

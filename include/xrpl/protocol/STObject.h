@@ -244,7 +244,9 @@ public:
     getFieldV256(SField const& field) const;
     STArray const&
     getFieldArray(SField const& field) const;
-    STCurrency const&
+    const STObject&
+    getFieldObject(SField const& field) const;
+    const STCurrency&
     getFieldCurrency(SField const& field) const;
     STNumber const&
     getFieldNumber(SField const& field) const;
