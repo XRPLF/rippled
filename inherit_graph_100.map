@@ -1,3 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classbeast_1_1xxhasher.html" title=" " alt="" coords="5,5,132,32"/>
+<area shape="rect" id="node1" href="$classJson_1_1Collection.html" title=" " alt="" coords="5,31,128,57"/>
+<area shape="rect" id="node2" href="$classJson_1_1Array.html" title="Represents a JSON array being written to a Writer." alt="" coords="179,5,271,32"/>
+<area shape="rect" id="node3" href="$classJson_1_1Object.html" title="Represents a JSON object being written to a Writer." alt="" coords="176,56,275,83"/>
+<area shape="rect" id="node4" href="$classJson_1_1Object_1_1Root.html" title=" " alt="" coords="323,56,459,83"/>
 </map>

@@ -69,21 +69,13 @@ $(function() {
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pri-static-methods">Static Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classbeast_1_1xxhasher-members.html">List of all members</a>  </div>
   <div class="headertitle">
 <div class="title">beast::xxhasher Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-<div class="dynheader">
-Collaboration diagram for beast::xxhasher:</div>
-<div class="dyncontent">
-<div class="center"><img src="classbeast_1_1xxhasher__coll__graph.png" border="0" usemap="#beast_1_1xxhasher_coll__map" alt="Collaboration graph"/></div>
-<map name="beast_1_1xxhasher_coll__map" id="beast_1_1xxhasher_coll__map">
-<area shape="rect" title=" " alt="" coords="19,109,146,136"/>
-<area shape="rect" href="structbeast_1_1detail_1_1XXH64__state__t.html" title=" " alt="" coords="5,5,160,47"/>
-</map>
-<center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-types"></a>
 Public Types</h2></td></tr>
@@ -92,8 +84,14 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a27f44b10940831b67d76f60ef796d89d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1xxhasher.html#a27f44b10940831b67d76f60ef796d89d">xxhasher</a> () noexcept</td></tr>
-<tr class="separator:a27f44b10940831b67d76f60ef796d89d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad003e843ed575273487c13a33d2674af"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1xxhasher.html#ad003e843ed575273487c13a33d2674af">xxhasher</a> (<a class="el" href="classbeast_1_1xxhasher.html">xxhasher</a> const &amp;)=delete</td></tr>
+<tr class="separator:ad003e843ed575273487c13a33d2674af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4f826b587b298e875127342f30eb13f1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1xxhasher.html">xxhasher</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1xxhasher.html#a4f826b587b298e875127342f30eb13f1">operator=</a> (<a class="el" href="classbeast_1_1xxhasher.html">xxhasher</a> const &amp;)=delete</td></tr>
+<tr class="separator:a4f826b587b298e875127342f30eb13f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a63e92a2292042226dd74326c2b22ab8d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1xxhasher.html#a63e92a2292042226dd74326c2b22ab8d">xxhasher</a> ()</td></tr>
+<tr class="separator:a63e92a2292042226dd74326c2b22ab8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab727535c9d3531610bbcb9cb328cf343"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1xxhasher.html#ab727535c9d3531610bbcb9cb328cf343">~xxhasher</a> () noexcept</td></tr>
+<tr class="separator:ab727535c9d3531610bbcb9cb328cf343"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aedcac8f2c4494df24e9e45e8970cef25"><td class="memTemplParams" colspan="2">template&lt;class Seed , std::enable_if_t&lt; std::is_unsigned&lt; Seed &gt;::value &gt; *  = nullptr&gt; </td></tr>
 <tr class="memitem:aedcac8f2c4494df24e9e45e8970cef25"><td class="memTemplItemLeft" align="right" valign="top">&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classbeast_1_1xxhasher.html#aedcac8f2c4494df24e9e45e8970cef25">xxhasher</a> (Seed seed)</td></tr>
 <tr class="separator:aedcac8f2c4494df24e9e45e8970cef25"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -110,14 +108,19 @@ Static Public Attributes</h2></td></tr>
 <tr class="memitem:ad757205d826af867fa0a449873dc5333"><td class="memItemLeft" align="right" valign="top">static constexpr const auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1xxhasher.html#ad757205d826af867fa0a449873dc5333">endian</a> = boost::endian::order::native</td></tr>
 <tr class="separator:ad757205d826af867fa0a449873dc5333"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-static-methods"></a>
+Static Private Member Functions</h2></td></tr>
+<tr class="memitem:a0927d5b35015fcdb211b65ae76c83e29"><td class="memItemLeft" align="right" valign="top">static XXH3_state_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1xxhasher.html#a0927d5b35015fcdb211b65ae76c83e29">allocState</a> ()</td></tr>
+<tr class="separator:a0927d5b35015fcdb211b65ae76c83e29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a5fbb2b4d1a32b8e7a481d5166225ff04"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structbeast_1_1detail_1_1XXH64__state__t.html">detail::XXH64_state_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1xxhasher.html#a5fbb2b4d1a32b8e7a481d5166225ff04">state_</a></td></tr>
-<tr class="separator:a5fbb2b4d1a32b8e7a481d5166225ff04"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c3911cde7b3a20ddea6c2cfd76fc28e"><td class="memItemLeft" align="right" valign="top">XXH3_state_t *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1xxhasher.html#a0c3911cde7b3a20ddea6c2cfd76fc28e">state_</a></td></tr>
+<tr class="separator:a0c3911cde7b3a20ddea6c2cfd76fc28e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00030">30</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00032">32</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="ac5f329d7607dc0f69380efc55374c07f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac5f329d7607dc0f69380efc55374c07f">&#9670;&nbsp;</a></span>result_type</h2>
@@ -131,13 +134,13 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00039">39</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00050">50</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a27f44b10940831b67d76f60ef796d89d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a27f44b10940831b67d76f60ef796d89d">&#9670;&nbsp;</a></span>xxhasher() <span class="overload">[1/3]</span></h2>
+<a id="ad003e843ed575273487c13a33d2674af"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad003e843ed575273487c13a33d2674af">&#9670;&nbsp;</a></span>xxhasher() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -147,6 +150,51 @@ Private Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">beast::xxhasher::xxhasher </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1xxhasher.html">xxhasher</a> const &amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">delete</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a63e92a2292042226dd74326c2b22ab8d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a63e92a2292042226dd74326c2b22ab8d">&#9670;&nbsp;</a></span>xxhasher() <span class="overload">[2/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">beast::xxhasher::xxhasher </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00058">58</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
+
+</div>
+</div>
+<a id="ab727535c9d3531610bbcb9cb328cf343"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab727535c9d3531610bbcb9cb328cf343">&#9670;&nbsp;</a></span>~xxhasher()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">beast::xxhasher::~xxhasher </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -159,12 +207,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00043">43</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00064">64</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
 
 </div>
 </div>
 <a id="aedcac8f2c4494df24e9e45e8970cef25"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aedcac8f2c4494df24e9e45e8970cef25">&#9670;&nbsp;</a></span>xxhasher() <span class="overload">[2/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aedcac8f2c4494df24e9e45e8970cef25">&#9670;&nbsp;</a></span>xxhasher() <span class="overload">[3/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -189,12 +237,12 @@ template&lt;class Seed , std::enable_if_t&lt; std::is_unsigned&lt; Seed &gt;::va
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00051">51</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00072">72</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
 
 </div>
 </div>
 <a id="a4e744e54951665e9c1c39ec4e143ec2c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e744e54951665e9c1c39ec4e143ec2c">&#9670;&nbsp;</a></span>xxhasher() <span class="overload">[3/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e744e54951665e9c1c39ec4e143ec2c">&#9670;&nbsp;</a></span>xxhasher() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -221,11 +269,64 @@ template&lt;class Seed , std::enable_if_t&lt; std::is_unsigned&lt; Seed &gt;::va
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00059">59</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00081">81</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a0927d5b35015fcdb211b65ae76c83e29"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0927d5b35015fcdb211b65ae76c83e29">&#9670;&nbsp;</a></span>allocState()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">static XXH3_state_t* beast::xxhasher::allocState </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00041">41</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
+
+</div>
+</div>
+<a id="a4f826b587b298e875127342f30eb13f1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4f826b587b298e875127342f30eb13f1">&#9670;&nbsp;</a></span>operator=()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classbeast_1_1xxhasher.html">xxhasher</a>&amp; beast::xxhasher::operator= </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1xxhasher.html">xxhasher</a> const &amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">delete</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="acc997554fcc2ee9a27be7ec0bb083655"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acc997554fcc2ee9a27be7ec0bb083655">&#9670;&nbsp;</a></span>operator()()</h2>
 
@@ -260,7 +361,7 @@ template&lt;class Seed , std::enable_if_t&lt; std::is_unsigned&lt; Seed &gt;::va
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00065">65</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00088">88</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
 
 </div>
 </div>
@@ -287,13 +388,13 @@ template&lt;class Seed , std::enable_if_t&lt; std::is_unsigned&lt; Seed &gt;::va
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00070">70</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00093">93</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a5fbb2b4d1a32b8e7a481d5166225ff04"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5fbb2b4d1a32b8e7a481d5166225ff04">&#9670;&nbsp;</a></span>state_</h2>
+<a id="a0c3911cde7b3a20ddea6c2cfd76fc28e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c3911cde7b3a20ddea6c2cfd76fc28e">&#9670;&nbsp;</a></span>state_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -302,7 +403,7 @@ template&lt;class Seed , std::enable_if_t&lt; std::is_unsigned&lt; Seed &gt;::va
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structbeast_1_1detail_1_1XXH64__state__t.html">detail::XXH64_state_t</a> beast::xxhasher::state_</td>
+          <td class="memname">XXH3_state_t* beast::xxhasher::state_</td>
         </tr>
       </table>
   </td>
@@ -312,7 +413,7 @@ template&lt;class Seed , std::enable_if_t&lt; std::is_unsigned&lt; Seed &gt;::va
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00034">34</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00036">36</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
 
 </div>
 </div>
@@ -336,7 +437,7 @@ template&lt;class Seed , std::enable_if_t&lt; std::is_unsigned&lt; Seed &gt;::va
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00041">41</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xxhasher_8h_source.html#l00052">52</a> of file <a class="el" href="xxhasher_8h_source.html">xxhasher.h</a>.</p>
 
 </div>
 </div>
