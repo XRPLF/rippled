@@ -94,6 +94,7 @@ endif()
 
 find_package(nudb REQUIRED)
 find_package(date REQUIRED)
+find_package(xxHash REQUIRED)
 
 target_link_libraries(ripple_libs INTERFACE
   ed25519::ed25519
