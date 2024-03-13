@@ -1,0 +1,27 @@
+sources:
+  "6.29.5":
+    url: "https://github.com/facebook/rocksdb/archive/refs/tags/v6.29.5.tar.gz"
+    sha256: "ddbf84791f0980c0bbce3902feb93a2c7006f6f53bfd798926143e31d4d756f0"
+  "6.27.3":
+    url: "https://github.com/facebook/rocksdb/archive/refs/tags/v6.27.3.tar.gz"
+    sha256: "ee29901749b9132692b26f0a6c1d693f47d1a9ed8e3771e60556afe80282bf58"
+  "6.20.3":
+    url: "https://github.com/facebook/rocksdb/archive/refs/tags/v6.20.3.tar.gz"
+    sha256: "c6502c7aae641b7e20fafa6c2b92273d935d2b7b2707135ebd9a67b092169dca"
+  "8.8.1":
+    url: "https://github.com/facebook/rocksdb/archive/refs/tags/v8.8.1.tar.gz"
+    sha256: "056c7e21ad8ae36b026ac3b94b9d6e0fcc60e1d937fc80330921e4181be5c36e"
+patches:
+  "6.29.5":
+    - patch_file: "patches/6.29.5-0001-add-include-cstdint-for-gcc-13.patch"
+      patch_description: "Fix build with gcc 13 by including cstdint"
+      patch_type: "portability"
+      patch_source: "https://github.com/facebook/rocksdb/pull/11118"
+    - patch_file: "patches/6.29.5-0002-exclude-thirdparty.patch"
+      patch_description: "Do not include thirdparty.inc"
+      patch_type: "portability"
+  "6.27.3":
+    - patch_file: "patches/6.27.3-0001-add-include-cstdint-for-gcc-13.patch"
+      patch_description: "Fix build with gcc 13 by including cstdint"
+      patch_type: "portability"
+      patch_source: "https://github.com/facebook/rocksdb/pull/11118"
