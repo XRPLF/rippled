@@ -39,7 +39,8 @@ jobs:
           cmake --version
       - name: configure Conan
         run : |
-          conan profile get env.CXXFLAGS default || true
+          conan profile new default --detect
+          conan profile update settings.compiler.cppstd=20 default
           conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
       - name: build dependencies
         uses: ./.github/actions/dependencies
