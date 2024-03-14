@@ -34,6 +34,8 @@ jobs:
           env | sort
           echo ${PATH} | tr ':' '\n'
           python --version
+          ls -l /opt/homebrew/bin || true
+          ls -l /opt/homebrew/sbin || true
           conan --version
           cmake --version
       - name: configure Conan
