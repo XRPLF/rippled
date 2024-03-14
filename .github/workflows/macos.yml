@@ -27,6 +27,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.9
+      - name: install Conan
+        run: brew install conan@1
       - name: install Ninja
         if: matrix.generator == 'Ninja'
         run: brew install ninja
