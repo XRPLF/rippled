@@ -25,9 +25,9 @@
 #include <ripple/app/rdb/RelationalDatabase.h>
 #include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/ledger/View.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/nftPageMask.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
