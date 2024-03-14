@@ -22,8 +22,8 @@
 #include <ripple/app/paths/PathRequests.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/JobQueue.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <algorithm>
