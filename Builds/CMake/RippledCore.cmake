@@ -88,6 +88,7 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/PublicKey.cpp
   src/ripple/protocol/impl/Quality.cpp
   src/ripple/protocol/impl/QualityFunction.cpp
+  src/ripple/protocol/impl/RPCErr.cpp
   src/ripple/protocol/impl/Rate2.cpp
   src/ripple/protocol/impl/Rules.cpp
   src/ripple/protocol/impl/SField.cpp
@@ -159,54 +160,54 @@ target_link_libraries (xrpl_core
 #]=================================]
 install (
   FILES
-    src/ripple/basics/algorithm.h
     src/ripple/basics/Archive.h
-    src/ripple/basics/base64.h
-    src/ripple/basics/base_uint.h
     src/ripple/basics/BasicConfig.h
     src/ripple/basics/Blob.h
     src/ripple/basics/Buffer.h
     src/ripple/basics/ByteUtilities.h
-    src/ripple/basics/chrono.h
-    src/ripple/basics/comparators.h
     src/ripple/basics/CompressionAlgorithms.h
-    src/ripple/basics/contract.h
     src/ripple/basics/CountedObject.h
     src/ripple/basics/DecayingSample.h
     src/ripple/basics/Expected.h
     src/ripple/basics/FeeUnits.h
     src/ripple/basics/FileUtilities.h
-    src/ripple/basics/hardened_hash.h
     src/ripple/basics/IOUAmount.h
-    src/ripple/basics/join.h
     src/ripple/basics/KeyCache.h
     src/ripple/basics/LocalValue.h
     src/ripple/basics/Log.h
-    src/ripple/basics/make_SSLContext.h
     src/ripple/basics/MathUtilities.h
-    src/ripple/basics/mulDiv.h
     src/ripple/basics/Number.h
-    src/ripple/basics/partitioned_unordered_map.h
     src/ripple/basics/PerfLog.h
-    src/ripple/basics/random.h
-    src/ripple/basics/RangeSet.h
     src/ripple/basics/README.md
-    src/ripple/basics/ResolverAsio.h
+    src/ripple/basics/RangeSet.h
     src/ripple/basics/Resolver.h
-    src/ripple/basics/safe_cast.h
-    src/ripple/basics/scope.h
+    src/ripple/basics/ResolverAsio.h
     src/ripple/basics/SHAMapHash.h
     src/ripple/basics/Slice.h
-    src/ripple/basics/spinlock.h
-    src/ripple/basics/strHex.h
     src/ripple/basics/StringUtilities.h
     src/ripple/basics/TaggedCache.h
-    src/ripple/basics/tagged_integer.h
     src/ripple/basics/ThreadSafetyAnalysis.h
     src/ripple/basics/ToString.h
     src/ripple/basics/UnorderedContainers.h
     src/ripple/basics/UptimeClock.h
     src/ripple/basics/XRPAmount.h
+    src/ripple/basics/algorithm.h
+    src/ripple/basics/base64.h
+    src/ripple/basics/base_uint.h
+    src/ripple/basics/chrono.h
+    src/ripple/basics/comparators.h
+    src/ripple/basics/contract.h
+    src/ripple/basics/hardened_hash.h
+    src/ripple/basics/join.h
+    src/ripple/basics/make_SSLContext.h
+    src/ripple/basics/mulDiv.h
+    src/ripple/basics/partitioned_unordered_map.h
+    src/ripple/basics/random.h
+    src/ripple/basics/safe_cast.h
+    src/ripple/basics/scope.h
+    src/ripple/basics/spinlock.h
+    src/ripple/basics/strHex.h
+    src/ripple/basics/tagged_integer.h
   DESTINATION include/ripple/basics)
 install (
   FILES
@@ -231,11 +232,6 @@ install (
   FILES
     src/ripple/json/impl/json_assert.h
   DESTINATION include/ripple/json/impl)
-
-install (
-    FILES
-      src/ripple/net/RPCErr.h
-    DESTINATION include/ripple/net)
 install (
   FILES
     src/ripple/protocol/AccountID.h
@@ -251,94 +247,110 @@ install (
     src/ripple/protocol/InnerObjectFormats.h
     src/ripple/protocol/Issue.h
     src/ripple/protocol/json_get_or_throw.h
-    src/ripple/protocol/KeyType.h
     src/ripple/protocol/Keylet.h
+    src/ripple/protocol/KeyType.h
     src/ripple/protocol/KnownFormats.h
     src/ripple/protocol/LedgerFormats.h
     src/ripple/protocol/LedgerHeader.h
-    src/ripple/protocol/NFTSyntheticSerializer.h
     src/ripple/protocol/NFTokenID.h
     src/ripple/protocol/NFTokenOfferID.h
+    src/ripple/protocol/NFTSyntheticSerializer.h
     src/ripple/protocol/Protocol.h
     src/ripple/protocol/PublicKey.h
     src/ripple/protocol/Quality.h
     src/ripple/protocol/QualityFunction.h
     src/ripple/protocol/Rate.h
+    src/ripple/protocol/RPCErr.h
     src/ripple/protocol/Rules.h
+    src/ripple/protocol/SecretKey.h
+    src/ripple/protocol/Seed.h
+    src/ripple/protocol/SeqProxy.h
+    src/ripple/protocol/Serializer.h
     src/ripple/protocol/SField.h
+    src/ripple/protocol/Sign.h
     src/ripple/protocol/SOTemplate.h
     src/ripple/protocol/STAccount.h
     src/ripple/protocol/STAmount.h
-    src/ripple/protocol/STCurrency.h
-    src/ripple/protocol/STIssue.h
     src/ripple/protocol/STArray.h
     src/ripple/protocol/STBase.h
     src/ripple/protocol/STBitString.h
     src/ripple/protocol/STBlob.h
+    src/ripple/protocol/STCurrency.h
     src/ripple/protocol/STExchange.h
     src/ripple/protocol/STInteger.h
+    src/ripple/protocol/STIssue.h
     src/ripple/protocol/STLedgerEntry.h
     src/ripple/protocol/STObject.h
     src/ripple/protocol/STParsedJSON.h
     src/ripple/protocol/STPathSet.h
     src/ripple/protocol/STTx.h
-    src/ripple/protocol/XChainAttestations.h
-    src/ripple/protocol/STXChainBridge.h
     src/ripple/protocol/STValidation.h
     src/ripple/protocol/STVector256.h
-    src/ripple/protocol/SecretKey.h
-    src/ripple/protocol/Seed.h
-    src/ripple/protocol/SeqProxy.h
-    src/ripple/protocol/Serializer.h
-    src/ripple/protocol/Sign.h
+    src/ripple/protocol/STXChainBridge.h
     src/ripple/protocol/SystemParameters.h
     src/ripple/protocol/TER.h
     src/ripple/protocol/TxFlags.h
     src/ripple/protocol/TxFormats.h
     src/ripple/protocol/TxMeta.h
     src/ripple/protocol/UintTypes.h
+    src/ripple/protocol/XChainAttestations.h
     src/ripple/protocol/digest.h
     src/ripple/protocol/jss.h
-    src/ripple/protocol/serialize.h
     src/ripple/protocol/nft.h
     src/ripple/protocol/nftPageMask.h
+    src/ripple/protocol/serialize.h
     src/ripple/protocol/tokens.h
   DESTINATION include/ripple/protocol)
 install (
   FILES
+  src/ripple/protocol/impl/STVar.h
     src/ripple/protocol/impl/b58_utils.h
-    src/ripple/protocol/impl/STVar.h
     src/ripple/protocol/impl/secp256k1.h
     src/ripple/protocol/impl/token_errors.h
   DESTINATION include/ripple/protocol/impl)
 install (
-    FILES
-      src/ripple/resource/Fees.h
-      src/ripple/resource/Charge.h
-    DESTINATION include/ripple/resource)
+  FILES
+    src/ripple/resource/Charge.h
+    src/ripple/resource/Consumer.h
+    src/ripple/resource/Disposition.h
+    src/ripple/resource/Fees.h
+    src/ripple/resource/Gossip.h
+    src/ripple/resource/ResourceManager.h
+    src/ripple/resource/Types.h
+  DESTINATION include/ripple/resource)
 install (
   FILES
+    src/ripple/resource/impl/Entry.h
+    src/ripple/resource/impl/Import.h
+    src/ripple/resource/impl/Key.h
+    src/ripple/resource/impl/Kind.h
+    src/ripple/resource/impl/Logic.h
+    src/ripple/resource/impl/Tuning.h
+  DESTINATION include/ripple/resource/impl)
+install (
+  FILES
+    src/ripple/server/Handoff.h
     src/ripple/server/Port.h
     src/ripple/server/Server.h
     src/ripple/server/Session.h
     src/ripple/server/SimpleWriter.h
     src/ripple/server/Writer.h
     src/ripple/server/WSSession.h
-    src/ripple/server/Handoff.h
   DESTINATION include/ripple/server)
 install (
   FILES
-    src/ripple/server/impl/ServerImpl.h
-    src/ripple/server/impl/io_list.h
+    src/ripple/server/impl/BaseHTTPPeer.h
+    src/ripple/server/impl/BasePeer.h
+    src/ripple/server/impl/BaseWSPeer.h
     src/ripple/server/impl/Door.h
+    src/ripple/server/impl/JSONRPCUtil.h
+    src/ripple/server/impl/LowestLayer.h
     src/ripple/server/impl/PlainHTTPPeer.h
     src/ripple/server/impl/PlainWSPeer.h
-    src/ripple/server/impl/BaseHTTPPeer.h
-    src/ripple/server/impl/BaseWSPeer.h
-    src/ripple/server/impl/BasePeer.h
-    src/ripple/server/impl/LowestLayer.h
+    src/ripple/server/impl/ServerImpl.h
     src/ripple/server/impl/SSLHTTPPeer.h
     src/ripple/server/impl/SSLWSPeer.h
+    src/ripple/server/impl/io_list.h
   DESTINATION include/ripple/server/impl)
 #[===================================[
    beast/legacy headers installation
@@ -364,11 +376,11 @@ install (
   DESTINATION include/ripple/beast/hash)
 install (
   FILES
-  src/ripple/beast/net/IPAddress.h
-  src/ripple/beast/net/IPAddressConversion.h
-  src/ripple/beast/net/IPAddressV4.h
-  src/ripple/beast/net/IPAddressV6.h
-  src/ripple/beast/net/IPEndpoint.h
+    src/ripple/beast/net/IPAddress.h
+    src/ripple/beast/net/IPAddressConversion.h
+    src/ripple/beast/net/IPAddressV4.h
+    src/ripple/beast/net/IPAddressV6.h
+    src/ripple/beast/net/IPEndpoint.h
   DESTINATION include/ripple/beast/net)
 install (
   FILES
@@ -382,15 +394,14 @@ install (
     src/ripple/beast/unit_test/amount.hpp
     src/ripple/beast/unit_test/dstream.hpp
     src/ripple/beast/unit_test/global_suites.hpp
-    src/ripple/beast/unit_test/main.cpp
     src/ripple/beast/unit_test/match.hpp
     src/ripple/beast/unit_test/recorder.hpp
     src/ripple/beast/unit_test/reporter.hpp
     src/ripple/beast/unit_test/results.hpp
     src/ripple/beast/unit_test/runner.hpp
-    src/ripple/beast/unit_test/suite.hpp
     src/ripple/beast/unit_test/suite_info.hpp
     src/ripple/beast/unit_test/suite_list.hpp
+    src/ripple/beast/unit_test/suite.hpp
     src/ripple/beast/unit_test/thread.hpp
   DESTINATION include/ripple/beast/unit_test)
 install (
@@ -401,34 +412,10 @@ install (
   FILES
     src/ripple/beast/utility/Journal.h
     src/ripple/beast/utility/PropertyStream.h
+    src/ripple/beast/utility/WrappedSink.h
     src/ripple/beast/utility/Zero.h
     src/ripple/beast/utility/rngfill.h
-    src/ripple/beast/utility/WrappedSink.h
   DESTINATION include/ripple/beast/utility)
-# WARNING!! -- horrible levelization ahead
-# (these files should be isolated or moved...but
-#  unfortunately unit_test.h above creates this dependency)
-if (tests)
-  install (
-    FILES
-      src/ripple/beast/unit_test/amount.hpp
-      src/ripple/beast/unit_test/dstream.hpp
-      src/ripple/beast/unit_test/global_suites.hpp
-      src/ripple/beast/unit_test/match.hpp
-      src/ripple/beast/unit_test/recorder.hpp
-      src/ripple/beast/unit_test/reporter.hpp
-      src/ripple/beast/unit_test/results.hpp
-      src/ripple/beast/unit_test/runner.hpp
-      src/ripple/beast/unit_test/suite.hpp
-      src/ripple/beast/unit_test/suite_info.hpp
-      src/ripple/beast/unit_test/suite_list.hpp
-      src/ripple/beast/unit_test/thread.hpp
-    DESTINATION include/ripple/beast/extras/unit_test)
-  install (
-    FILES
-      src/ripple/beast/unit_test/detail/const_container.hpp
-    DESTINATION include/ripple/beast/unit_test/detail)
-endif () #tests
 #[===================================================================[
    rippled executable
 #]===================================================================]
@@ -641,7 +628,6 @@ target_sources (rippled PRIVATE
   src/ripple/net/impl/HTTPStream.cpp
   src/ripple/net/impl/InfoSub.cpp
   src/ripple/net/impl/RPCCall.cpp
-  src/ripple/net/impl/RPCErr.cpp
   src/ripple/net/impl/RPCSub.cpp
   src/ripple/net/impl/RegisterSSLCerts.cpp
   #[===============================[
