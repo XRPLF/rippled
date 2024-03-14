@@ -24,7 +24,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
       - name: install Conan
-        run: brew install conan@1
+        run: brew reinstall conan@1
       - name: install Ninja
         if: matrix.generator == 'Ninja'
         run: brew install ninja
