@@ -24,18 +24,17 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
       - name: install Conan
-        run: brew reinstall conan@1
+        run: |
+          brew install conan@1
+          echo '/opt/homebrew/opt/conan@1/bin' >> $GITHUB_PATH
       - name: install Ninja
         if: matrix.generator == 'Ninja'
         run: brew install ninja
       - name: check environment
         run: |
-          eval $(brew shellenv)
           env | sort
           echo ${PATH} | tr ':' '\n'
           python --version
-          ls -l /opt/homebrew/bin || true
-          ls -l /opt/homebrew/sbin || true
           conan --version
           cmake --version
       - name: configure Conan
