@@ -6626,6 +6626,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             Account const gw("gw");
             Account const issuer("issuer");
             Account const minter("minter");
+            Account const bob("bob");
             IOU const gwAUD(gw["AUD"]);
 
             env.fund(XRP(10000), alice, buyer, gw, issuer, minter);
@@ -6729,6 +6730,42 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
                 // Unfreeze alice's trustline.
                 env(trust(gw, alice["AUD"](999), tfClearFreeze));
+                env.close();
+            }
+
+            {
+                // check reserve
+                auto const acctReserve =
+                    env.current()->fees().accountReserve(0);
+                auto const incReserve = env.current()->fees().increment;
+
+                env.fund(acctReserve + incReserve, bob);
+                env.close();
+
+                // doesn't have reserve for 2 objects (NFTokenPage, Offer)
+                env(token::mint(bob),
+                    token::amount(XRP(0)),
+                    ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+
+                // have reserve for NFTokenPage, Offer
+                env(pay(env.master, bob, incReserve + drops(10)));
+                env.close();
+                env(token::mint(bob), token::amount(XRP(0)));
+                env.close();
+
+                // doesn't have reserve for Offer
+                env(pay(env.master, bob, drops(10)));
+                env.close();
+                env(token::mint(bob),
+                    token::amount(XRP(0)),
+                    ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+
+                // have reserve for Offer
+                env(pay(env.master, bob, incReserve + drops(10)));
+                env.close();
+                env(token::mint(bob), token::amount(XRP(0)));
                 env.close();
             }
 

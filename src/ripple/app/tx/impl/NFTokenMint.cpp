@@ -110,10 +110,10 @@ NFTokenMint::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (auto exp = ctx.tx[~sfExpiration]; exp == 0)
+    if (auto const exp = ctx.tx[~sfExpiration]; exp == 0)
         return temBAD_EXPIRATION;
 
-    if (auto dest = ctx.tx[~sfDestination])
+    if (auto const dest = ctx.tx[~sfDestination])
     {
         // The destination can't be the account executing the transaction.
         if (dest == ctx.tx[sfAccount])
@@ -376,7 +376,7 @@ NFTokenMint::doApply()
                 return tecDIR_FULL;
 
             // Only sell offer are supported at NFTokenMint.
-            std::uint32_t sleFlags = lsfSellNFToken;
+            std::uint32_t const sleFlags = lsfSellNFToken;
 
             auto offer = std::make_shared<SLE>(offerID);
             (*offer)[sfOwner] = account_;
