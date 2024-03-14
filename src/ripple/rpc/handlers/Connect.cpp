@@ -19,9 +19,9 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/core/Config.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
