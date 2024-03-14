@@ -23,6 +23,10 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v4
+      - name: choose Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.9
       - name: install Ninja
         if: matrix.generator == 'Ninja'
         run: brew install ninja
