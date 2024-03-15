@@ -91,10 +91,15 @@ flow(
     if (sb.rules().enabled(featureDefaultAutoBridge) && paths.empty() &&
         defaultPaths)
     {
+        // If the same issuer and currency, use the direct path.
         auto issueEqual = [](auto const& sendMax, Issue const& dstIssue) {
             return sendMax->currency == dstIssue.currency &&
                 sendMax->account == dstIssue.account;
         };
+
+        // If IOU Payment and SendMax field isn't specified in transaction
+        // json, then SendMax is automatically set as srcAccount's currency.
+        // In this case, don’t set the bridge path, use only the direct path.
         auto directIOU = [&src](auto const& sendMax, Issue const& dstIssue) {
             return sendMax->currency == dstIssue.currency &&
                 sendMax->account == src;

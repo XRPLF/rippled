@@ -1385,9 +1385,6 @@ struct Flow_test : public beast::unit_test::suite
     void
     testDefaultCompositePath(FeatureBitset features)
     {
-        if (!features[featureFlowCross])
-            return;
-
         testcase("DefaultCompositePath");
 
         using namespace jtx;
@@ -1444,6 +1441,12 @@ struct Flow_test : public beast::unit_test::suite
             env(pay(gw2, alice, BTC(50)));
             env(offer(alice, XRP(200), BTC(50)));
             env(offer(alice, USD(10), XRP(200)));
+            env.close();
+
+            // IOU-IOU (issuer-issuer) Offer
+            env(offer(gw1, BTC(200), USD(10)));
+            env.close();
+            env(offer(gw2, USD(10), BTC(200)));
             env.close();
         }
 
