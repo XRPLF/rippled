@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2023 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,27 +17,41 @@
 */
 //==============================================================================
 
-#include <ripple/net/RPCErr.h>
-#include <ripple/protocol/ErrorCodes.h>
+#ifndef RIPPLE_TX_SETORACLE_H_INCLUDED
+#define RIPPLE_TX_SETORACLE_H_INCLUDED
+
+#include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
 
-struct RPCErr;
+/**
+    Price Oracle is a system that acts as a bridge between
+    a blockchain network and the external world, providing off-chain price data
+    to decentralized applications (dApps) on the blockchain. This implementation
+    conforms to the requirements specified in the XLS-47d.
 
-// VFALCO NOTE Deprecated function
-Json::Value
-rpcError(int iError)
-{
-    Json::Value jvResult(Json::objectValue);
-    RPC::inject_error(iError, jvResult);
-    return jvResult;
-}
+    The SetOracle transactor implements creating or updating Oracle objects.
+*/
 
-// VFALCO NOTE Deprecated function
-bool
-isRpcError(Json::Value jvResult)
+class SetOracle : public Transactor
 {
-    return jvResult.isObject() && jvResult.isMember(jss::error);
-}
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
+    explicit SetOracle(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
+    TER
+    doApply() override;
+};
 
 }  // namespace ripple
+
+#endif  // RIPPLE_TX_SETORACLE_H_INCLUDED

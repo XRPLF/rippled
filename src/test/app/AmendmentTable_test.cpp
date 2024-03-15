@@ -288,7 +288,7 @@ public:
         uint256 const unsupportedID = amendmentId(unsupported_[0]);
         {
             Json::Value const unsupp =
-                table->getJson(unsupportedID)[to_string(unsupportedID)];
+                table->getJson(unsupportedID, true)[to_string(unsupportedID)];
             BEAST_EXPECT(unsupp.size() == 0);
         }
 
@@ -296,7 +296,7 @@ public:
         table->veto(unsupportedID);
         {
             Json::Value const unsupp =
-                table->getJson(unsupportedID)[to_string(unsupportedID)];
+                table->getJson(unsupportedID, true)[to_string(unsupportedID)];
             BEAST_EXPECT(unsupp[jss::vetoed].asBool());
         }
     }
@@ -637,6 +637,22 @@ public:
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
         BEAST_EXPECT(majority.empty());
+
+        uint256 const unsupportedID = amendmentId(unsupported_[0]);
+        {
+            Json::Value const unsupp =
+                table->getJson(unsupportedID, false)[to_string(unsupportedID)];
+            BEAST_EXPECT(unsupp.size() == 0);
+        }
+
+        table->veto(unsupportedID);
+        {
+            Json::Value const unsupp =
+                table->getJson(unsupportedID, false)[to_string(unsupportedID)];
+            BEAST_EXPECT(!unsupp[jss::vetoed].asBool());
+        }
+
+        votes.emplace_back(testAmendment, validators.size());
 
         votes.emplace_back(testAmendment, validators.size());
 

@@ -86,7 +86,10 @@ struct Manifest
     PublicKey masterKey;
 
     /// The ephemeral key associated with this manifest.
-    PublicKey signingKey;
+    // A revoked manifest does not have a signingKey
+    // This field is specified as "optional" in manifestFormat's
+    // SOTemplate
+    std::optional<PublicKey> signingKey;
 
     /// The sequence number of this manifest.
     std::uint32_t sequence = 0;
@@ -94,7 +97,22 @@ struct Manifest
     /// The domain, if one was specified in the manifest; empty otherwise.
     std::string domain;
 
-    Manifest() = default;
+    Manifest() = delete;
+
+    Manifest(
+        std::string const& serialized_,
+        PublicKey const& masterKey_,
+        std::optional<PublicKey> const& signingKey_,
+        std::uint32_t seq,
+        std::string const& domain_)
+        : serialized(serialized_)
+        , masterKey(masterKey_)
+        , signingKey(signingKey_)
+        , sequence(seq)
+        , domain(domain_)
+    {
+    }
+
     Manifest(Manifest const& other) = delete;
     Manifest&
     operator=(Manifest const& other) = delete;
@@ -109,6 +127,12 @@ struct Manifest
     /// Returns hash of serialized manifest data
     uint256
     hash() const;
+
+    /// Returns `true` if manifest revokes master key
+    // The maximum possible sequence number means that the master key has
+    // been revoked
+    static bool
+    revoked(std::uint32_t sequence);
 
     /// Returns `true` if manifest revokes master key
     bool
@@ -266,7 +290,7 @@ public:
 
         May be called concurrently
     */
-    PublicKey
+    std::optional<PublicKey>
     getSigningKey(PublicKey const& pk) const;
 
     /** Returns ephemeral signing key's master public key.
