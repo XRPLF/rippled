@@ -6707,6 +6707,15 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env.close();
                 BEAST_EXPECT(ownerCount(env, alice) == 0);
 
+                // If the IOU issuer and the NFToken issuer are the same,
+                // then that issuer does not need a trust line to accept their
+                // fee.
+                env(token::mint(gw),
+                    token::amount(gwAUD(1000)),
+                    txflags(tfTransferable),
+                    token::xferFee(10));
+                env.close();
+
                 // Give alice the needed trust line, but freeze it.
                 env(trust(gw, alice["AUD"](999), tfSetFreeze));
                 env.close();

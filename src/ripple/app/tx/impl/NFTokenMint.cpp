@@ -197,7 +197,10 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
             auto const nftIssuer =
                 ctx.tx[~sfIssuer].value_or(ctx.tx[sfAccount]);
 
-            if (!ctx.view.exists(keylet::line(nftIssuer, amount->issue())))
+            // If the IOU issuer and the NFToken issuer are the same,
+            // then that issuer does not need a trust line to accept their fee.
+            if (nftIssuer != amount->getIssuer() &&
+                !ctx.view.read(keylet::line(nftIssuer, amount->issue())))
                 return tecNO_LINE;
 
             if (isFrozen(
