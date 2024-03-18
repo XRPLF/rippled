@@ -1,6 +1,12 @@
 <!--
 This PR template helps you to write a good pull request description.
 Please feel free to include additional useful information even beyond what is requested below.
+
+If your branch is on a personal fork and has a name that allows it to
+run CI build/test jobs (e.g. "ci/foo"), remember to rename it BEFORE
+opening the PR.  This avoids unnecessary redundant test runs. Renaming
+the branch after opening the PR will close the PR.
+https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-branches-in-your-repository/renaming-a-branch
 -->
 
 ## High Level Overview of Change
