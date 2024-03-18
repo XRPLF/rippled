@@ -66,6 +66,7 @@
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/BookChanges.h>
+#include <ripple/rpc/CTID.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/ServerHandler.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
@@ -3123,6 +3124,20 @@ NetworkOPsImp::transJson(
             jvObj[jss::meta], *ledger, transaction, meta->get());
     }
 
+    // add CTID where the needed data for it exists
+    if (auto const& lookup = ledger->txRead(transaction->getTransactionID());
+        lookup.second && lookup.second->isFieldPresent(sfTransactionIndex))
+    {
+        uint32_t const txnSeq = lookup.second->getFieldU32(sfTransactionIndex);
+        uint32_t netID = app_.config().NETWORK_ID;
+        if (transaction->isFieldPresent(sfNetworkID))
+            netID = transaction->getFieldU32(sfNetworkID);
+
+        if (std::optional<std::string> ctid =
+                RPC::encodeCTID(ledger->info().seq, txnSeq, netID);
+            ctid)
+            jvObj[jss::ctid] = *ctid;
+    }
     if (!ledger->open())
         jvObj[jss::ledger_hash] = to_string(ledger->info().hash);
 
