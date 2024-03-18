@@ -39,6 +39,10 @@ trust(Account const& account, STAmount const& amount, std::uint32_t flags)
     return jv;
 }
 
+// This function overload is especially useful for modelling Authorised trust
+// lines. account (first function parameter) is the issuing authority, it
+// authorises peer (third function parameter) to hold a certain currency
+// (amount, the second function parameter)
 Json::Value
 trust(
     Account const& account,
