@@ -121,6 +121,13 @@ CreateTicket::doApply()
 
         sleTicket->setAccountID(sfAccount, account_);
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);
+
+        if (ctx_.tx.isFieldPresent(sfSponsor) &&
+            (ctx_.tx.getFieldObject(sfSponsor)[sfFlags] & tfSponsorReserve))
+        {
+            sleTicket->setAccountID(
+                sfSponsorAccount, ctx_.tx.getFieldObject(sfSponsor)[sfAccount]);
+        }
         view().insert(sleTicket);
 
         auto const page = view().dirInsert(
@@ -145,6 +152,21 @@ CreateTicket::doApply()
 
     // Every added Ticket counts against the creator's reserve.
     adjustOwnerCount(view(), sleAccountRoot, ticketCount, viewJ);
+
+    // Check reserve sponsorship
+    if (ctx_.tx.isFieldPresent(sfSponsor) &&
+        (ctx_.tx.getFieldObject(sfSponsor)[sfFlags] & tfSponsorReserve))
+    {
+        AccountID const& sponsor = ctx_.tx.getFieldObject(sfSponsor)[sfAccount];
+        auto const& sponsorSle = view().peek(keylet::account(sponsor));
+        sponsorSle->setFieldU32(
+            sfSponsoringOwnerCount,
+            sponsorSle->getFieldU32(sfSponsoringOwnerCount) + ticketCount);
+        sleAccountRoot->setFieldU32(
+            sfSponsoredOwnerCount,
+            sleAccountRoot->getFieldU32(sfSponsoredOwnerCount) + ticketCount);
+        view().update(sponsorSle);
+    }
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.

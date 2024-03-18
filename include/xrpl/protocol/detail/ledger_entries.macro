@@ -167,6 +167,8 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
     {sfFirstNFTokenSequence, soeOPTIONAL},
     {sfAMMID,                soeOPTIONAL}, // pseudo-account designator
     {sfVaultID,              soeOPTIONAL}, // pseudo-account designator
+    {sfSponsoredOwnerCount,  soeOPTIONAL},
+    {sfSponsoringOwnerCount, soeOPTIONAL},
 }))
 
 /** A ledger object which contains a list of object identifiers.

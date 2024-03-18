@@ -443,6 +443,17 @@ adjustOwnerCount(
     std::int32_t amount,
     beast::Journal j);
 
+inline void
+adjustOwnerCount(
+    ApplyView& view,
+    AccountID const& account,
+    std::int32_t amount,
+    beast::Journal j)
+{
+    return adjustOwnerCount(
+        view, view.peek(keylet::account(account)), amount, j);
+}
+
 /** @{ */
 /** Returns the first entry in the directory, advancing the index
 
