@@ -47,37 +47,49 @@ Json::Value
 doSubmit(RPC::JsonContext& context)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
-
+    std::optional<Blob> ret;
     if (!context.params.isMember(jss::tx_blob))
     {
-        auto const failType = getFailHard(context);
-
         if (context.role != Role::ADMIN && !context.app.config().canSign())
             return RPC::make_error(
                 rpcNOT_SUPPORTED, "Signing is not supported by this server.");
 
-        auto ret = RPC::transactionSubmit(
+        auto sanitizeRequest = RPC::getTxnPtr(
             context.params,
-            context.apiVersion,
-            failType,
             context.role,
             context.ledgerMaster.getValidatedLedgerAge(),
-            context.app,
-            RPC::getProcessTxnFn(context.netOps));
+            context.app);
 
-        ret[jss::deprecated] =
-            "Signing support in the 'submit' command has been "
-            "deprecated and will be removed in a future version "
-            "of the server. Please migrate to a standalone "
-            "signing tool.";
+        std::shared_ptr<Transaction> tpTrans;
+        try
+        {
+            tpTrans = std::get<Transaction::pointer>(sanitizeRequest);
+        }
+        // An error occurred whilst parsing the request
+        catch (std::bad_variant_access const& ex)
+        {
+            Json::Value const errorMsg = std::get<Json::Value>(sanitizeRequest);
+            return RPC::make_error(
+                rpcINVALID_PARAMS,
+                "Unable to parse your request into a valid "
+                "transaction\nDetailed error: " +
+                    errorMsg.asString());
+        }
 
-        return ret;
+        std::string const txnBlob =
+            strHex(tpTrans->getSTransaction()->getSerializer().peekData());
+
+        ret = strUnHex(txnBlob);
+    }
+    else
+    {
+        ret = strUnHex(context.params[jss::tx_blob].asString());
     }
 
+    // the below steps are identical for the submit command irrespective of
+    // whether tx_blob or JSON format was used in the request
+
     Json::Value jvResult;
-
-    auto ret = strUnHex(context.params[jss::tx_blob].asString());
-
     if (!ret || !ret->size())
         return rpcError(rpcINVALID_PARAMS);
 
@@ -182,6 +194,13 @@ doSubmit(RPC::JsonContext& context)
                         currentLedgerState->validatedLedger);
             }
         }
+
+        if (!context.params.isMember(jss::tx_blob))
+            jvResult[jss::deprecated] =
+                "Signing support in the 'submit' command has been "
+                "deprecated and will be removed in a future version "
+                "of the server. Please migrate to a standalone "
+                "signing tool.";
 
         return jvResult;
     }
