@@ -728,12 +728,13 @@ CreateOffer::flowCross(
         // additional path with XRP as the intermediate between two books.
         // This second path we have to build ourselves.
         STPathSet paths;
-        if (!takerAmount.in.native() && !takerAmount.out.native())
-        {
-            STPath path;
-            path.emplace_back(std::nullopt, xrpCurrency(), std::nullopt);
-            paths.emplace_back(std::move(path));
-        }
+        if (!psb.rules().enabled(featureDefaultAutoBridge))
+            if (!takerAmount.in.native() && !takerAmount.out.native())
+            {
+                STPath path;
+                path.emplace_back(std::nullopt, xrpCurrency(), std::nullopt);
+                paths.emplace_back(std::move(path));
+            }
         // Special handling for the tfSell flag.
         STAmount deliver = takerAmount.out;
         OfferCrossing offerCrossing = OfferCrossing::yes;

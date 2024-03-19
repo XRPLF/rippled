@@ -87,6 +87,34 @@ flow(
 
     AMMContext ammContext(src, false);
 
+    STPathSet flowPaths = paths;
+    if (sb.rules().enabled(featureDefaultAutoBridge) && paths.empty() &&
+        defaultPaths)
+    {
+        // If the same issuer and currency, use the direct path.
+        auto issueEqual = [](auto const& sendMax, Issue const& dstIssue) {
+            return sendMax->currency == dstIssue.currency &&
+                sendMax->account == dstIssue.account;
+        };
+
+        // If IOU Payment and SendMax field isn't specified in transaction
+        // json, then SendMax is automatically set as srcAccount's currency.
+        // In this case, don’t set the bridge path, use only the direct path.
+        auto directIOU = [&src](auto const& sendMax, Issue const& dstIssue) {
+            return sendMax->currency == dstIssue.currency &&
+                sendMax->account == src;
+        };
+
+        if (sendMaxIssue && !isXRP(sendMaxIssue->account) &&
+            !isXRP(dstIssue.account) && !issueEqual(sendMaxIssue, dstIssue) &&
+            !directIOU(sendMaxIssue, dstIssue))
+        {
+            STPath path;
+            path.emplace_back(std::nullopt, xrpCurrency(), std::nullopt);
+            flowPaths.emplace_back(std::move(path));
+        }
+    }
+
     // convert the paths to a collection of strands. Each strand is the
     // collection of account->account steps and book steps that may be used in
     // this payment.
@@ -97,7 +125,7 @@ flow(
         dstIssue,
         limitQuality,
         sendMaxIssue,
-        paths,
+        flowPaths,
         defaultPaths,
         ownerPaysTransferFee,
         offerCrossing,
