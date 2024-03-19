@@ -38,7 +38,6 @@ jobs:
         cmake-args:
           - '-Dassert=ON -Dreporting=OFF -Dunity=OFF'
           - '-Dassert=OFF -Dreporting=OFF -Dunity=ON'
-    #runs-on: [self-hosted, windows-runner-vc2022]
     runs-on: ${{ matrix.version.runs-on }}
     env:
       build_dir: .build
@@ -55,8 +54,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           echo "dir=$(pip cache dir)" | tee ${GITHUB_OUTPUT}
-          # Try the old style
-          echo "::set-output name=dir::$(pip cache dir)"
       - name: restore Python cache directory
         uses: actions/cache@v4
         with:
@@ -74,7 +71,7 @@ jobs:
       - name: configure Conan
         shell: bash
         run: |
-          conan profile new default --detect || conan profile show default
+          conan profile new default --detect
           conan profile update settings.compiler.cppstd=20 default
           conan profile update \
             settings.compiler.runtime=MT${{ matrix.configuration.runtime }} \
