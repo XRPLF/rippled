@@ -237,7 +237,10 @@ private:
 
         std::vector<std::string> uris;
         for (auto const& u : servers)
+        {
+            log << "Testing " << u.uri << std::endl;
             uris.push_back(u.uri);
+        }
         sites->load(uris);
         sites->start();
         sites->join();

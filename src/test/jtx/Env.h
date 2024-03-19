@@ -512,7 +512,11 @@ public:
         of JTx submission.
     */
     void
-    postconditions(JTx const& jt, TER ter, bool didApply);
+    postconditions(
+        JTx const& jt,
+        TER ter,
+        bool didApply,
+        Json::Value const& jr = Json::Value());
 
     /** Apply funclets and submit. */
     /** @{ */
