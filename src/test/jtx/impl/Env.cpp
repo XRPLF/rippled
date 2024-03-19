@@ -280,7 +280,9 @@ Env::parseResult(Json::Value const& jr)
         jr[jss::result].isMember(jss::engine_result_code))
         ter = TER::fromInt(jr[jss::result][jss::engine_result_code].asInt());
     else
-        ter = temINVALID;
+        // Use an error code that is not used anywhere in the transaction engine
+        // to distinguish this case.
+        ter = telENV_RPC_FAILED;
     return std::make_pair(ter, isTesSuccess(ter) || isTecClaim(ter));
 }
 
@@ -288,23 +290,29 @@ void
 Env::submit(JTx const& jt)
 {
     bool didApply;
-    if (jt.stx)
-    {
-        txid_ = jt.stx->getTransactionID();
-        Serializer s;
-        jt.stx->add(s);
-        auto const jr = rpc("submit", strHex(s.slice()));
+    auto const jr = [&]() {
+        if (jt.stx)
+        {
+            txid_ = jt.stx->getTransactionID();
+            Serializer s;
+            jt.stx->add(s);
+            auto const jr = rpc("submit", strHex(s.slice()));
 
-        std::tie(ter_, didApply) = parseResult(jr);
-    }
-    else
-    {
-        // Parsing failed or the JTx is
-        // otherwise missing the stx field.
-        ter_ = temMALFORMED;
-        didApply = false;
-    }
-    return postconditions(jt, ter_, didApply);
+            std::tie(ter_, didApply) = parseResult(jr);
+
+            return jr;
+        }
+        else
+        {
+            // Parsing failed or the JTx is
+            // otherwise missing the stx field.
+            ter_ = temMALFORMED;
+            didApply = false;
+
+            return Json::Value();
+        }
+    }();
+    return postconditions(jt, ter_, didApply, jr);
 }
 
 void
@@ -342,11 +350,15 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
 
     std::tie(ter_, didApply) = parseResult(jr);
 
-    return postconditions(jt, ter_, didApply);
+    return postconditions(jt, ter_, didApply, jr);
 }
 
 void
-Env::postconditions(JTx const& jt, TER ter, bool didApply)
+Env::postconditions(
+    JTx const& jt,
+    TER ter,
+    bool didApply,
+    Json::Value const& jr)
 {
     if (jt.ter &&
         !test.expect(
@@ -356,6 +368,8 @@ Env::postconditions(JTx const& jt, TER ter, bool didApply)
                 transHuman(*jt.ter) + ")"))
     {
         test.log << pretty(jt.jv) << std::endl;
+        if (jr)
+            test.log << pretty(jr) << std::endl;
         // Don't check postconditions if
         // we didn't get the expected result.
         return;
