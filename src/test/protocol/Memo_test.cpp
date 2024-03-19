@@ -56,7 +56,7 @@ public:
             JTx memoSize = makeJtxWithMemo();
             memoSize.jv[sfMemos.jsonName][0u][sfMemo.jsonName]
                        [sfMemoData.jsonName] = std::string(2020, '0');
-            env(memoSize, ter(temINVALID));
+            env(memoSize, ter(telENV_RPC_FAILED));
 
             // This memo is just barely small enough.
             memoSize.jv[sfMemos.jsonName][0u][sfMemo.jsonName]
@@ -72,7 +72,7 @@ public:
             auto& m = mi[sfCreatedNode.jsonName];  // CreatedNode in Memos
             m[sfMemoData.jsonName] = "3030303030";
 
-            env(memoNonMemo, ter(temINVALID));
+            env(memoNonMemo, ter(telENV_RPC_FAILED));
         }
         {
             // Put an invalid field in a Memo object.
@@ -80,7 +80,7 @@ public:
             memoExtra
                 .jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfFlags.jsonName] =
                 13;
-            env(memoExtra, ter(temINVALID));
+            env(memoExtra, ter(telENV_RPC_FAILED));
         }
         {
             // Put a character that is not allowed in a URL in a MemoType field.
@@ -88,7 +88,7 @@ public:
             memoBadChar.jv[sfMemos.jsonName][0u][sfMemo.jsonName]
                           [sfMemoType.jsonName] =
                 strHex(std::string_view("ONE<INFINITY"));
-            env(memoBadChar, ter(temINVALID));
+            env(memoBadChar, ter(telENV_RPC_FAILED));
         }
         {
             // Put a character that is not allowed in a URL in a MemoData field.
@@ -105,7 +105,7 @@ public:
             memoBadChar.jv[sfMemos.jsonName][0u][sfMemo.jsonName]
                           [sfMemoFormat.jsonName] =
                 strHex(std::string_view("NoBraces{}InURL"));
-            env(memoBadChar, ter(temINVALID));
+            env(memoBadChar, ter(telENV_RPC_FAILED));
         }
     }
 
