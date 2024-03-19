@@ -242,7 +242,7 @@ base64_encode(std::uint8_t const* data, std::size_t len)
 }
 
 std::string
-base64_decode(std::string const& data)
+base64_decode(std::string_view data)
 {
     std::string dest;
     dest.resize(base64::decoded_size(data.size()));

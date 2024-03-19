@@ -77,14 +77,13 @@ public:
     newInboundEndpoint(
         beast::IP::Endpoint const& address,
         bool const proxy,
-        boost::string_view const& forwardedFor) override
+        std::string_view forwardedFor) override
     {
         if (!proxy)
             return newInboundEndpoint(address);
 
         boost::system::error_code ec;
-        auto const proxiedIp =
-            boost::asio::ip::make_address(forwardedFor.to_string(), ec);
+        auto const proxiedIp = boost::asio::ip::make_address(forwardedFor, ec);
         if (ec)
         {
             journal_.warn()

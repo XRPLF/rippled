@@ -247,6 +247,8 @@ build_map(boost::beast::http::fields const& h)
     std::map<std::string, std::string> c;
     for (auto const& e : h)
     {
+        // key cannot be a std::string_view because it needs to be used in
+        // map and along with iterators
         std::string key(e.name_string());
         std::transform(key.begin(), key.end(), key.begin(), [](auto kc) {
             return std::tolower(static_cast<unsigned char>(kc));
@@ -592,8 +594,8 @@ ServerHandler::processRequest(
     beast::IP::Endpoint const& remoteIPAddress,
     Output&& output,
     std::shared_ptr<JobQueue::Coro> coro,
-    boost::string_view forwardedFor,
-    boost::string_view user)
+    std::string_view forwardedFor,
+    std::string_view user)
 {
     auto rpcJ = app_.journal("RPC");
 
@@ -847,8 +849,8 @@ ServerHandler::processRequest(
          */
         if (role != Role::IDENTIFIED && role != Role::PROXY)
         {
-            forwardedFor.clear();
-            user.clear();
+            forwardedFor.remove_suffix(forwardedFor.size());
+            user.remove_suffix(user.size());
         }
 
         JLOG(m_journal.debug()) << "Query: " << strMethod << params;

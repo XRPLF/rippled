@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/core/Config.h>
@@ -27,7 +26,6 @@
 #include <ripple/protocol/jss.h>
 #include <ripple/protocol/tokens.h>
 #include <boost/regex.hpp>
-#include <memory.h>
 
 namespace ripple {
 
@@ -113,7 +111,8 @@ Cluster::load(Section const& nodes)
             return false;
         }
 
-        auto const id = parseBase58<PublicKey>(TokenType::NodePublic, match[1]);
+        auto const id =
+            parseBase58<PublicKey>(TokenType::NodePublic, match[1].str());
 
         if (!id)
         {

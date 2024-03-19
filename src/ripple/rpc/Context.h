@@ -57,8 +57,8 @@ struct JsonContext : public Context
      */
     struct Headers
     {
-        boost::string_view user;
-        boost::string_view forwardedFor;
+        std::string_view user;
+        std::string_view forwardedFor;
     };
 
     Json::Value params;

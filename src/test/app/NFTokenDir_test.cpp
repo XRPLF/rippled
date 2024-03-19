@@ -185,7 +185,7 @@ class NFTokenDir_test : public beast::unit_test::suite
                 // Create accounts for all of the seeds and fund those accounts.
                 std::vector<Account> accounts;
                 accounts.reserve(seeds.size());
-                for (std::string_view const& seed : seeds)
+                for (std::string_view seed : seeds)
                 {
                     Account const& account = accounts.emplace_back(
                         Account::base58Seed, std::string(seed));
@@ -409,7 +409,7 @@ class NFTokenDir_test : public beast::unit_test::suite
                 // Create accounts for all of the seeds and fund those accounts.
                 std::vector<Account> accounts;
                 accounts.reserve(seeds.size());
-                for (std::string_view const& seed : seeds)
+                for (std::string_view seed : seeds)
                 {
                     Account const& account = accounts.emplace_back(
                         Account::base58Seed, std::string(seed));
@@ -659,7 +659,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         // Create accounts for all of the seeds and fund those accounts.
         std::vector<Account> accounts;
         accounts.reserve(seeds.size());
-        for (std::string_view const& seed : seeds)
+        for (std::string_view seed : seeds)
         {
             Account const& account =
                 accounts.emplace_back(Account::base58Seed, std::string(seed));
@@ -840,7 +840,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         // Create accounts for all of the seeds and fund those accounts.
         std::vector<Account> accounts;
         accounts.reserve(seeds.size());
-        for (std::string_view const& seed : seeds)
+        for (std::string_view seed : seeds)
         {
             Account const& account =
                 accounts.emplace_back(Account::base58Seed, std::string(seed));

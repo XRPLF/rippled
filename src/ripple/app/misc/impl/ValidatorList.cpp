@@ -34,7 +34,6 @@
 #include <boost/regex.hpp>
 
 #include <cmath>
-#include <mutex>
 #include <numeric>
 #include <shared_mutex>
 
@@ -215,7 +214,8 @@ ValidatorList::load(
             return false;
         }
 
-        auto const id = parseBase58<PublicKey>(TokenType::NodePublic, match[1]);
+        auto const id =
+            parseBase58<PublicKey>(TokenType::NodePublic, match[1].str());
 
         if (!id)
         {
@@ -1707,7 +1707,7 @@ ValidatorList::for_each_available(
 
 std::optional<Json::Value>
 ValidatorList::getAvailable(
-    boost::beast::string_view const& pubKey,
+    std::string_view pubKey,
     std::optional<std::uint32_t> forceVersion /* = {} */)
 {
     std::shared_lock read_lock{mutex_};
