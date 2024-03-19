@@ -247,7 +247,10 @@ public:
 
         // Duplicate signers should fail.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(demon, demon), fee(3 * baseFee), ter(temINVALID));
+        env(noop(alice),
+            msig(demon, demon),
+            fee(3 * baseFee),
+            ter(telENV_RPC_FAILED));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
@@ -358,7 +361,7 @@ public:
         msig phantoms{bogie, demon};
         std::reverse(phantoms.signers.begin(), phantoms.signers.end());
         std::uint32_t const aliceSeq = env.seq(alice);
-        env(noop(alice), phantoms, ter(temINVALID));
+        env(noop(alice), phantoms, ter(telENV_RPC_FAILED));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
     }
@@ -1634,7 +1637,10 @@ public:
 
         // Duplicate signers should fail.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(demon, demon), fee(3 * baseFee), ter(temINVALID));
+        env(noop(alice),
+            msig(demon, demon),
+            fee(3 * baseFee),
+            ter(telENV_RPC_FAILED));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
