@@ -389,7 +389,9 @@ public:
     std::optional<std::uint32_t>
     networkID() const override
     {
-        return setup_.networkID;
+        if (auto const netid = setup_.networkID)
+            return netid;
+        return 0;
     }
 
     Json::Value

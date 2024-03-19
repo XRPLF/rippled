@@ -102,6 +102,9 @@ public:
     uint256
     getConsensusHash() const;
 
+    std::uint32_t
+    getNetworkID() const;
+
     NetClock::time_point
     getSignTime() const;
 

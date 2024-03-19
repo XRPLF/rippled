@@ -2163,6 +2163,9 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (auto hash = (*val)[~sfValidatedHash])
             jvObj[jss::validated_hash] = strHex(*hash);
 
+        if (auto const netid = app_.overlay().networkID())
+            jvObj[jss::network_id] = static_cast<Json::UInt>(*netid);
+
         auto const masterKey =
             app_.validatorManifests().getMasterKey(signerPublic);
 
@@ -2305,6 +2308,16 @@ NetworkOPsImp::recvValidation(
     std::shared_ptr<STValidation> const& val,
     std::string const& source)
 {
+    // Don't relay validations from another network.
+    if (auto networkID = app_.overlay().networkID())
+    {
+        auto const view = m_ledgerMaster.getCurrentLedger();
+
+        if (view->rules().enabled(featureNetworkIDValidation) &&
+            val->getNetworkID() != static_cast<Json::UInt>(*networkID))
+            return false;
+    }
+
     JLOG(m_journal.trace())
         << "recvValidation " << val->getLedgerHash() << " from " << source;
 
@@ -2983,6 +2996,9 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
                 lpAccepted->fees().increment.jsonClipped();
 
             jvObj[jss::txn_count] = Json::UInt(alpAccepted->size());
+
+            if (auto const netid = app_.overlay().networkID())
+                jvObj[jss::network_id] = static_cast<Json::UInt>(*netid);
 
             if (mMode >= OperatingMode::SYNCING)
             {
