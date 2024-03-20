@@ -16,36 +16,37 @@ namespace unit_test {
 namespace detail {
 
 /// Holds test suites registered during static initialization.
-inline
-suite_list&
+inline suite_list&
 global_suites()
 {
     static suite_list s;
     return s;
 }
 
-template<class Suite>
+template <class Suite>
 struct insert_suite
 {
-    insert_suite(char const* name, char const* module,
-        char const* library, bool manual, int priority)
+    insert_suite(
+        char const* name,
+        char const* module,
+        char const* library,
+        bool manual,
+        int priority)
     {
-        global_suites().insert<Suite>(
-            name, module, library, manual, priority);
+        global_suites().insert<Suite>(name, module, library, manual, priority);
     }
 };
 
-} // detail
+}  // namespace detail
 
 /// Holds test suites registered during static initialization.
-inline
-suite_list const&
+inline suite_list const&
 global_suites()
 {
     return detail::global_suites();
 }
 
-} // unit_test
-} // beast
+}  // namespace unit_test
+}  // namespace beast
 
 #endif

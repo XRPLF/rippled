@@ -55,8 +55,8 @@ constexpr size_t elementSizeBytes =
 constexpr size_t blockSizeBytes = kilobytes(512);
 
 template <std::size_t... I>
-constexpr std::array<size_t, boundaries.size()> initArrayChunkSizeBytes(
-    std::index_sequence<I...>)
+constexpr std::array<size_t, boundaries.size()>
+initArrayChunkSizeBytes(std::index_sequence<I...>)
 {
     return std::array<size_t, boundaries.size()>{
         boundaries[I] * elementSizeBytes...,
@@ -66,8 +66,8 @@ constexpr auto arrayChunkSizeBytes =
     initArrayChunkSizeBytes(std::make_index_sequence<boundaries.size()>{});
 
 template <std::size_t... I>
-constexpr std::array<size_t, boundaries.size()> initArrayChunksPerBlock(
-    std::index_sequence<I...>)
+constexpr std::array<size_t, boundaries.size()>
+initArrayChunksPerBlock(std::index_sequence<I...>)
 {
     return std::array<size_t, boundaries.size()>{
         blockSizeBytes / arrayChunkSizeBytes[I]...,
@@ -93,8 +93,8 @@ boundariesIndex(std::uint8_t numChildren)
 }
 
 template <std::size_t... I>
-std::array<std::function<void*()>, boundaries.size()> initAllocateArrayFuns(
-    std::index_sequence<I...>)
+std::array<std::function<void*()>, boundaries.size()>
+initAllocateArrayFuns(std::index_sequence<I...>)
 {
     return std::array<std::function<void*()>, boundaries.size()>{
         boost::singleton_pool<
@@ -110,8 +110,8 @@ std::array<std::function<void*()>, boundaries.size()> const allocateArrayFuns =
     initAllocateArrayFuns(std::make_index_sequence<boundaries.size()>{});
 
 template <std::size_t... I>
-std::array<std::function<void(void*)>, boundaries.size()> initFreeArrayFuns(
-    std::index_sequence<I...>)
+std::array<std::function<void(void*)>, boundaries.size()>
+initFreeArrayFuns(std::index_sequence<I...>)
 {
     return std::array<std::function<void(void*)>, boundaries.size()>{
         static_cast<void (*)(void*)>(boost::singleton_pool<
@@ -127,8 +127,8 @@ std::array<std::function<void(void*)>, boundaries.size()> const freeArrayFuns =
     initFreeArrayFuns(std::make_index_sequence<boundaries.size()>{});
 
 template <std::size_t... I>
-std::array<std::function<bool(void*)>, boundaries.size()> initIsFromArrayFuns(
-    std::index_sequence<I...>)
+std::array<std::function<bool(void*)>, boundaries.size()>
+initIsFromArrayFuns(std::index_sequence<I...>)
 {
     return std::array<std::function<bool(void*)>, boundaries.size()>{
         boost::singleton_pool<

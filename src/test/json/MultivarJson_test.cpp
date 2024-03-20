@@ -104,42 +104,31 @@ struct MultivarJson_test : beast::unit_test::suite
 
             // Tests of requires clause - these are expected to match
             static_assert([](auto&& v) {
-                return requires
-                {
-                    v.select([]() -> std::size_t { return 0; });
-                };
+                return requires {
+                           v.select([]() -> std::size_t { return 0; });
+                       };
             }(subject));
             static_assert([](auto&& v) {
-                return requires
-                {
-                    v.select([]() constexpr->std::size_t { return 0; });
-                };
+                return requires {
+                           v.select(
+                               []() constexpr -> std::size_t { return 0; });
+                       };
             }(subject));
             static_assert([](auto&& v) {
-                return requires
-                {
-                    v.select([]() mutable -> std::size_t { return 0; });
-                };
+                return requires {
+                           v.select([]() mutable -> std::size_t { return 0; });
+                       };
             }(subject));
 
             // Tests of requires clause - these are expected NOT to match
             static_assert([](auto&& a) {
-                return !requires
-                {
-                    subject.select([]() -> int { return 0; });
-                };
+                return !requires { subject.select([]() -> int { return 0; }); };
             }(subject));
             static_assert([](auto&& v) {
-                return !requires
-                {
-                    v.select([]() -> void {});
-                };
+                return !requires { v.select([]() -> void {}); };
             }(subject));
             static_assert([](auto&& v) {
-                return !requires
-                {
-                    v.select([]() -> bool { return false; });
-                };
+                return !requires { v.select([]() -> bool { return false; }); };
             }(subject));
         }
 
@@ -165,45 +154,25 @@ struct MultivarJson_test : beast::unit_test::suite
 
             // Tests of requires clause - these are expected to match
             static_assert([](auto&& v) {
-                return requires
-                {
-                    v.set("name", Json::nullValue);
-                };
+                return requires { v.set("name", Json::nullValue); };
             }(x));
             static_assert([](auto&& v) {
-                return requires
-                {
-                    v.set("name", "value");
-                };
+                return requires { v.set("name", "value"); };
             }(x));
-            static_assert([](auto&& v) {
-                return requires
-                {
-                    v.set("name", true);
-                };
-            }(x));
-            static_assert([](auto&& v) {
-                return requires
-                {
-                    v.set("name", 42);
-                };
-            }(x));
+            static_assert(
+                [](auto&& v) { return requires { v.set("name", true); }; }(x));
+            static_assert(
+                [](auto&& v) { return requires { v.set("name", 42); }; }(x));
 
             // Tests of requires clause - these are expected NOT to match
             struct foo_t final
             {
             };
             static_assert([](auto&& v) {
-                return !requires
-                {
-                    v.set("name", foo_t{});
-                };
+                return !requires { v.set("name", foo_t{}); };
             }(x));
             static_assert([](auto&& v) {
-                return !requires
-                {
-                    v.set("name", std::nullopt);
-                };
+                return !requires { v.set("name", std::nullopt); };
             }(x));
         }
 
@@ -253,10 +222,7 @@ struct MultivarJson_test : beast::unit_test::suite
             static_assert(
                 std::is_same_v<decltype(apiVersionSelector(1)()), std::size_t>);
             static_assert([](auto&& v) {
-                return requires
-                {
-                    v.select(apiVersionSelector(1));
-                };
+                return requires { v.select(apiVersionSelector(1)); };
             }(x));
 
             BEAST_EXPECT(x.select(apiVersionSelector(0)) == obj1);
@@ -310,72 +276,65 @@ struct MultivarJson_test : beast::unit_test::suite
 
             // Can use fn with constexpr functor
             static_assert([](auto&& v) {
-                return requires
-                {
-                    ripple::visit<1, 3>(
-                        v, [](Json::Value&, unsigned int) constexpr {});
-                };
+                return requires {
+                           ripple::visit<1, 3>(
+                               v, [](Json::Value&, unsigned int) constexpr {});
+                       };
             }(s1));
 
             // Can use fn with deduction over all parameters
             static_assert([](auto&& v) {
-                return requires
-                {
-                    ripple::visit<1, 3>(v, [](auto&, auto) constexpr {});
-                };
+                return requires {
+                           ripple::visit<1, 3>(v, [](auto&, auto) constexpr {});
+                       };
             }(s1));
 
             // Can use fn with conversion of version parameter
             static_assert([](auto&& v) {
-                return requires
-                {
-                    ripple::visit<1, 3>(v, [](auto&, std::size_t) constexpr {});
-                };
+                return requires {
+                           ripple::visit<1, 3>(
+                               v, [](auto&, std::size_t) constexpr {});
+                       };
             }(s1));
 
             // Cannot use fn with const parameter
             static_assert([](auto&& v) {
-                return !requires
-                {
-                    ripple::visit<1, 3>(
-                        v, [](Json::Value const&, auto) constexpr {});
-                };
+                return !requires {
+                            ripple::visit<1, 3>(
+                                v, [](Json::Value const&, auto) constexpr {});
+                        };
             }(const_cast<MultivarJson<3> const&>(s1)));
 
             // Cannot call visit with size mismatch
             static_assert([](auto&& v) {
-                return !requires
-                {
-                    ripple::visit<1, 2>(
-                        v, [](Json::Value&, unsigned int) constexpr {});
-                };
+                return !requires {
+                            ripple::visit<1, 2>(
+                                v, [](Json::Value&, unsigned int) constexpr {});
+                        };
             }(s1));
 
             // Cannot call visit with version offset
             static_assert([](auto&& v) {
-                return !requires
-                {
-                    ripple::visit<0, 2>(
-                        v, [](Json::Value&, unsigned int) constexpr {});
-                };
+                return !requires {
+                            ripple::visit<0, 2>(
+                                v, [](Json::Value&, unsigned int) constexpr {});
+                        };
             }(s1));
 
             // Cannot call visit with size mismatch
             static_assert([](auto&& v) {
-                return !requires
-                {
-                    ripple::visit<1, 4>(
-                        v, [](Json::Value&, unsigned int) constexpr {});
-                };
+                return !requires {
+                            ripple::visit<1, 4>(
+                                v, [](Json::Value&, unsigned int) constexpr {});
+                        };
             }(s1));
 
             // Cannot call visit with wrong order of versions
             static_assert([](auto&& v) {
-                return !requires
-                {
-                    ripple::visit<3, 1>(
-                        v, [](Json::Value&, unsigned int) constexpr {});
-                };
+                return !requires {
+                            ripple::visit<3, 1>(
+                                v, [](Json::Value&, unsigned int) constexpr {});
+                        };
             }(s1));
         }
     }

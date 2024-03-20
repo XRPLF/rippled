@@ -54,9 +54,8 @@ struct MultivarJson
     }
 
     void
-    set(const char* key,
-        auto const&
-            v) requires std::constructible_from<Json::Value, decltype(v)>
+    set(const char* key, auto const& v)
+        requires std::constructible_from<Json::Value, decltype(v)>
     {
         for (auto& a : this->val)
             a[key] = v;
@@ -105,8 +104,7 @@ Such hypothetical change should correspond with change in RPCHelpers.h
 constexpr auto
 apiVersionSelector(unsigned int apiVersion) noexcept
 {
-    return [apiVersion]() constexpr
-    {
+    return [apiVersion]() constexpr {
         return static_cast<std::size_t>(
             apiVersion <= 1         //
                 ? 0                 //
@@ -128,12 +126,10 @@ template <
     (size == maxVer + 1 - minVer) &&               //
     (apiVersionSelector(minVer)() == 0) &&         //
     (apiVersionSelector(maxVer)() + 1 == size) &&  //
-    requires(Json::Value& json, Fn fn)
-{
-    fn(json, static_cast<unsigned int>(1));
-}
-void
-visit(MultivarJson<size>& json, Fn fn)
+    requires(Json::Value& json, Fn fn) {
+        fn(json, static_cast<unsigned int>(1));
+    }
+void visit(MultivarJson<size>& json, Fn fn)
 {
     [&]<std::size_t... offset>(std::index_sequence<offset...>)
     {

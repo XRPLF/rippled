@@ -61,7 +61,8 @@ STUInt8::getText() const
 }
 
 template <>
-Json::Value STUInt8::getJson(JsonOptions) const
+Json::Value
+STUInt8::getJson(JsonOptions) const
 {
     if (getFName() == sfTransactionResult)
     {
@@ -118,7 +119,8 @@ STUInt16::getText() const
 }
 
 template <>
-Json::Value STUInt16::getJson(JsonOptions) const
+Json::Value
+STUInt16::getJson(JsonOptions) const
 {
     if (getFName() == sfLedgerEntryType)
     {
@@ -164,7 +166,8 @@ STUInt32::getText() const
 }
 
 template <>
-Json::Value STUInt32::getJson(JsonOptions) const
+Json::Value
+STUInt32::getJson(JsonOptions) const
 {
     return value_;
 }
@@ -192,7 +195,8 @@ STUInt64::getText() const
 }
 
 template <>
-Json::Value STUInt64::getJson(JsonOptions) const
+Json::Value
+STUInt64::getJson(JsonOptions) const
 {
     std::string str(16, 0);
     auto ret = std::to_chars(str.data(), str.data() + str.size(), value_, 16);

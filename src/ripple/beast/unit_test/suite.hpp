@@ -21,14 +21,12 @@ namespace unit_test {
 
 namespace detail {
 
-template<class String>
-static
-std::string
-make_reason(String const& reason,
-    char const* file, int line)
+template <class String>
+static std::string
+make_reason(String const& reason, char const* file, int line)
 {
     std::string s(reason);
-    if(! s.empty())
+    if (!s.empty())
         s.append(": ");
     namespace fs = boost::filesystem;
     s.append(fs::path{file}.filename().string());
@@ -38,15 +36,11 @@ make_reason(String const& reason,
     return s;
 }
 
-} // detail
+}  // namespace detail
 
 class thread;
 
-enum abort_t
-{
-    no_abort_on_fail,
-    abort_on_fail
-};
+enum abort_t { no_abort_on_fail, abort_on_fail };
 
 /** A testsuite class.
 
@@ -73,16 +67,13 @@ private:
         }
     };
 
-    template<class CharT, class Traits, class Allocator>
-    class log_buf
-        : public std::basic_stringbuf<CharT, Traits, Allocator>
+    template <class CharT, class Traits, class Allocator>
+    class log_buf : public std::basic_stringbuf<CharT, Traits, Allocator>
     {
         suite& suite_;
 
     public:
-        explicit
-        log_buf(suite& self)
-            : suite_(self)
+        explicit log_buf(suite& self) : suite_(self)
         {
         }
 
@@ -95,27 +86,24 @@ private:
         sync() override
         {
             auto const& s = this->str();
-            if(s.size() > 0)
+            if (s.size() > 0)
                 suite_.runner_->log(s);
             this->str("");
             return 0;
         }
     };
 
-    template<
+    template <
         class CharT,
         class Traits = std::char_traits<CharT>,
-        class Allocator = std::allocator<CharT>
-    >
+        class Allocator = std::allocator<CharT>>
     class log_os : public std::basic_ostream<CharT, Traits>
     {
         log_buf<CharT, Traits, Allocator> buf_;
 
     public:
-        explicit
-        log_os(suite& self)
-            : std::basic_ostream<CharT, Traits>(&buf_)
-            , buf_(self)
+        explicit log_os(suite& self)
+            : std::basic_ostream<CharT, Traits>(&buf_), buf_(self)
         {
         }
     };
@@ -128,9 +116,7 @@ private:
         std::stringstream ss_;
 
     public:
-        explicit
-        testcase_t(suite& self)
-            : suite_(self)
+        explicit testcase_t(suite& self) : suite_(self)
         {
         }
 
@@ -145,13 +131,12 @@ private:
             @param abort Determines if suite continues running after a failure.
         */
         void
-        operator()(std::string const& name,
-            abort_t abort = no_abort_on_fail);
+        operator()(std::string const& name, abort_t abort = no_abort_on_fail);
 
         scoped_testcase
         operator()(abort_t abort);
 
-        template<class T>
+        template <class T>
         scoped_testcase
         operator<<(T const& t);
     };
@@ -170,22 +155,20 @@ public:
     /** Returns the "current" running suite.
         If no suite is running, nullptr is returned.
     */
-    static
-    suite*
+    static suite*
     this_suite()
     {
         return *p_this_suite();
     }
 
-    suite()
-        : log(*this)
-        , testcase(*this)
+    suite() : log(*this), testcase(*this)
     {
     }
 
     virtual ~suite() = default;
     suite(suite const&) = delete;
-    suite& operator=(suite const&) = delete;
+    suite&
+    operator=(suite const&) = delete;
 
     /** Invokes the test using the specified runner.
 
@@ -194,12 +177,12 @@ public:
         forwarded constructor arguments to the base.
         Normally this is called by the framework for you.
     */
-    template<class = void>
+    template <class = void>
     void
     operator()(runner& r);
 
     /** Record a successful test condition. */
-    template<class = void>
+    template <class = void>
     void
     pass();
 
@@ -212,11 +195,11 @@ public:
         @param line The source code line number where the test failed.
     */
     /** @{ */
-    template<class String>
+    template <class String>
     void
     fail(String const& reason, char const* file, int line);
 
-    template<class = void>
+    template <class = void>
     void
     fail(std::string const& reason = "");
     /** @} */
@@ -239,57 +222,59 @@ public:
         @return `true` if the test condition indicates success.
     */
     /** @{ */
-    template<class Condition>
+    template <class Condition>
     bool
     expect(Condition const& shouldBeTrue)
     {
         return expect(shouldBeTrue, "");
     }
 
-    template<class Condition, class String>
+    template <class Condition, class String>
     bool
     expect(Condition const& shouldBeTrue, String const& reason);
 
-    template<class Condition>
+    template <class Condition>
     bool
-    expect(Condition const& shouldBeTrue,
-        char const* file, int line)
+    expect(Condition const& shouldBeTrue, char const* file, int line)
     {
         return expect(shouldBeTrue, "", file, line);
     }
 
-    template<class Condition, class String>
+    template <class Condition, class String>
     bool
-    expect(Condition const& shouldBeTrue,
-        String const& reason, char const* file, int line);
+    expect(
+        Condition const& shouldBeTrue,
+        String const& reason,
+        char const* file,
+        int line);
     /** @} */
 
     //
     // DEPRECATED
     //
     // Expect an exception from f()
-    template<class F, class String>
+    template <class F, class String>
     bool
     except(F&& f, String const& reason);
-    template<class F>
+    template <class F>
     bool
     except(F&& f)
     {
         return except(f, "");
     }
-    template<class E, class F, class String>
+    template <class E, class F, class String>
     bool
     except(F&& f, String const& reason);
-    template<class E, class F>
+    template <class E, class F>
     bool
     except(F&& f)
     {
         return except<E>(f, "");
     }
-    template<class F, class String>
+    template <class F, class String>
     bool
     unexcept(F&& f, String const& reason);
-    template<class F>
+    template <class F>
     bool
     unexcept(F&& f)
     {
@@ -305,12 +290,11 @@ public:
 
     // DEPRECATED
     // @return `true` if the test condition indicates success(a false value)
-    template<class Condition, class String>
+    template <class Condition, class String>
     bool
-    unexpected(Condition shouldBeFalse,
-        String const& reason);
+    unexpected(Condition shouldBeFalse, String const& reason);
 
-    template<class Condition>
+    template <class Condition>
     bool
     unexpected(Condition shouldBeFalse)
     {
@@ -320,8 +304,7 @@ public:
 private:
     friend class thread;
 
-    static
-    suite**
+    static suite**
     p_this_suite()
     {
         static suite* pts = nullptr;
@@ -329,14 +312,13 @@ private:
     }
 
     /** Runs the suite. */
-    virtual
-    void
+    virtual void
     run() = 0;
 
     void
     propagate_abort();
 
-    template<class = void>
+    template <class = void>
     void
     run(runner& r);
 };
@@ -351,35 +333,32 @@ private:
     std::stringstream& ss_;
 
 public:
-    scoped_testcase& operator=(scoped_testcase const&) = delete;
+    scoped_testcase&
+    operator=(scoped_testcase const&) = delete;
 
     ~scoped_testcase()
     {
         auto const& name = ss_.str();
-        if(! name.empty())
+        if (!name.empty())
             suite_.runner_->testcase(name);
     }
 
-    scoped_testcase(suite& self, std::stringstream& ss)
-        : suite_(self)
-        , ss_(ss)
+    scoped_testcase(suite& self, std::stringstream& ss) : suite_(self), ss_(ss)
     {
         ss_.clear();
         ss_.str({});
     }
 
-    template<class T>
-    scoped_testcase(suite& self,
-            std::stringstream& ss, T const& t)
-        : suite_(self)
-        , ss_(ss)
+    template <class T>
+    scoped_testcase(suite& self, std::stringstream& ss, T const& t)
+        : suite_(self), ss_(ss)
     {
         ss_.clear();
         ss_.str({});
         ss_ << t;
     }
 
-    template<class T>
+    template <class T>
     scoped_testcase&
     operator<<(T const& t)
     {
@@ -390,37 +369,32 @@ public:
 
 //------------------------------------------------------------------------------
 
-inline
-void
-suite::testcase_t::operator()(
-    std::string const& name, abort_t abort)
+inline void
+suite::testcase_t::operator()(std::string const& name, abort_t abort)
 {
     suite_.abort_ = abort == abort_on_fail;
     suite_.runner_->testcase(name);
 }
 
-inline
-suite::scoped_testcase
+inline suite::scoped_testcase
 suite::testcase_t::operator()(abort_t abort)
 {
     suite_.abort_ = abort == abort_on_fail;
-    return { suite_, ss_ };
+    return {suite_, ss_};
 }
 
-template<class T>
-inline
-suite::scoped_testcase
+template <class T>
+inline suite::scoped_testcase
 suite::testcase_t::operator<<(T const& t)
 {
-    return { suite_, ss_, t };
+    return {suite_, ss_, t};
 }
 
 //------------------------------------------------------------------------------
 
-template<class>
+template <class>
 void
-suite::
-operator()(runner& r)
+suite::operator()(runner& r)
 {
     *p_this_suite() = this;
     try
@@ -428,20 +402,18 @@ operator()(runner& r)
         run(r);
         *p_this_suite() = nullptr;
     }
-    catch(...)
+    catch (...)
     {
         *p_this_suite() = nullptr;
         throw;
     }
 }
 
-template<class Condition, class String>
+template <class Condition, class String>
 bool
-suite::
-expect(
-    Condition const& shouldBeTrue, String const& reason)
+suite::expect(Condition const& shouldBeTrue, String const& reason)
 {
-    if(shouldBeTrue)
+    if (shouldBeTrue)
     {
         pass();
         return true;
@@ -450,13 +422,15 @@ expect(
     return false;
 }
 
-template<class Condition, class String>
+template <class Condition, class String>
 bool
-suite::
-expect(Condition const& shouldBeTrue,
-    String const& reason, char const* file, int line)
+suite::expect(
+    Condition const& shouldBeTrue,
+    String const& reason,
+    char const* file,
+    int line)
 {
-    if(shouldBeTrue)
+    if (shouldBeTrue)
     {
         pass();
         return true;
@@ -467,10 +441,9 @@ expect(Condition const& shouldBeTrue,
 
 // DEPRECATED
 
-template<class F, class String>
+template <class F, class String>
 bool
-suite::
-except(F&& f, String const& reason)
+suite::except(F&& f, String const& reason)
 {
     try
     {
@@ -478,17 +451,16 @@ except(F&& f, String const& reason)
         fail(reason);
         return false;
     }
-    catch(...)
+    catch (...)
     {
         pass();
     }
     return true;
 }
 
-template<class E, class F, class String>
+template <class E, class F, class String>
 bool
-suite::
-except(F&& f, String const& reason)
+suite::except(F&& f, String const& reason)
 {
     try
     {
@@ -496,17 +468,16 @@ except(F&& f, String const& reason)
         fail(reason);
         return false;
     }
-    catch(E const&)
+    catch (E const&)
     {
         pass();
     }
     return true;
 }
 
-template<class F, class String>
+template <class F, class String>
 bool
-suite::
-unexcept(F&& f, String const& reason)
+suite::unexcept(F&& f, String const& reason)
 {
     try
     {
@@ -514,73 +485,64 @@ unexcept(F&& f, String const& reason)
         pass();
         return true;
     }
-    catch(...)
+    catch (...)
     {
         fail(reason);
     }
     return false;
 }
 
-template<class Condition, class String>
+template <class Condition, class String>
 bool
-suite::
-unexpected(
-    Condition shouldBeFalse, String const& reason)
+suite::unexpected(Condition shouldBeFalse, String const& reason)
 {
-    bool const b =
-        static_cast<bool>(shouldBeFalse);
-    if(! b)
+    bool const b = static_cast<bool>(shouldBeFalse);
+    if (!b)
         pass();
     else
         fail(reason);
-    return ! b;
+    return !b;
 }
 
-template<class>
+template <class>
 void
-suite::
-pass()
+suite::pass()
 {
     propagate_abort();
     runner_->pass();
 }
 
 // ::fail
-template<class>
+template <class>
 void
-suite::
-fail(std::string const& reason)
+suite::fail(std::string const& reason)
 {
     propagate_abort();
     runner_->fail(reason);
-    if(abort_)
+    if (abort_)
     {
         aborted_ = true;
         BOOST_THROW_EXCEPTION(abort_exception());
     }
 }
 
-template<class String>
+template <class String>
 void
-suite::
-fail(String const& reason, char const* file, int line)
+suite::fail(String const& reason, char const* file, int line)
 {
     fail(detail::make_reason(reason, file, line));
 }
 
-inline
-void
-suite::
-propagate_abort()
+inline void
+suite::propagate_abort()
 {
-    if(abort_ && aborted_)
+    if (abort_ && aborted_)
         BOOST_THROW_EXCEPTION(abort_exception());
 }
 
-template<class>
+template <class>
 void
-suite::
-run(runner& r)
+suite::run(runner& r)
 {
     runner_ = &r;
 
@@ -588,16 +550,15 @@ run(runner& r)
     {
         run();
     }
-    catch(abort_exception const&)
+    catch (abort_exception const&)
     {
         // ends the suite
     }
-    catch(std::exception const& e)
+    catch (std::exception const& e)
     {
-        runner_->fail("unhandled exception: " +
-            std::string(e.what()));
+        runner_->fail("unhandled exception: " + std::string(e.what()));
     }
-    catch(...)
+    catch (...)
     {
         runner_->fail("unhandled exception");
     }
@@ -616,20 +577,21 @@ run(runner& r)
 
     If the condition is false, the file and line number are reported.
 */
-#define BEAST_EXPECTS(cond, reason) ((cond) ? (pass(), true) : \
-        (fail((reason), __FILE__, __LINE__), false))
+#define BEAST_EXPECTS(cond, reason) \
+    ((cond) ? (pass(), true) : (fail((reason), __FILE__, __LINE__), false))
 #endif
 
-} // unit_test
-} // beast
+}  // namespace unit_test
+}  // namespace beast
 
 //------------------------------------------------------------------------------
 
 // detail:
 // This inserts the suite with the given manual flag
-#define BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,manual,priority) \
-    static beast::unit_test::detail::insert_suite <Class##_test>   \
-        Library ## Module ## Class ## _test_instance(             \
+#define BEAST_DEFINE_TESTSUITE_INSERT(                          \
+    Class, Module, Library, manual, priority)                   \
+    static beast::unit_test::detail::insert_suite<Class##_test> \
+        Library##Module##Class##_test_instance(                 \
             #Class, #Module, #Library, manual, priority)
 
 //------------------------------------------------------------------------------
@@ -678,21 +640,21 @@ run(runner& r)
 */
 
 #if BEAST_NO_UNIT_TEST_INLINE
-#define BEAST_DEFINE_TESTSUITE(Class,Module,Library)
-#define BEAST_DEFINE_TESTSUITE_MANUAL(Class,Module,Library)
-#define BEAST_DEFINE_TESTSUITE_PRIO(Class,Module,Library,Priority)
-#define BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Class,Module,Library,Priority)
+#define BEAST_DEFINE_TESTSUITE(Class, Module, Library)
+#define BEAST_DEFINE_TESTSUITE_MANUAL(Class, Module, Library)
+#define BEAST_DEFINE_TESTSUITE_PRIO(Class, Module, Library, Priority)
+#define BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Class, Module, Library, Priority)
 
 #else
 #include <ripple/beast/unit_test/global_suites.hpp>
-#define BEAST_DEFINE_TESTSUITE(Class,Module,Library) \
-        BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,false,0)
-#define BEAST_DEFINE_TESTSUITE_MANUAL(Class,Module,Library) \
-        BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,true,0)
-#define BEAST_DEFINE_TESTSUITE_PRIO(Class,Module,Library,Priority) \
-        BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,false,Priority)
-#define BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Class,Module,Library,Priority) \
-        BEAST_DEFINE_TESTSUITE_INSERT(Class,Module,Library,true,Priority)
+#define BEAST_DEFINE_TESTSUITE(Class, Module, Library) \
+    BEAST_DEFINE_TESTSUITE_INSERT(Class, Module, Library, false, 0)
+#define BEAST_DEFINE_TESTSUITE_MANUAL(Class, Module, Library) \
+    BEAST_DEFINE_TESTSUITE_INSERT(Class, Module, Library, true, 0)
+#define BEAST_DEFINE_TESTSUITE_PRIO(Class, Module, Library, Priority) \
+    BEAST_DEFINE_TESTSUITE_INSERT(Class, Module, Library, false, Priority)
+#define BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Class, Module, Library, Priority) \
+    BEAST_DEFINE_TESTSUITE_INSERT(Class, Module, Library, true, Priority)
 #endif
 
 #endif

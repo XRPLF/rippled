@@ -33,58 +33,51 @@ public:
     }
 
 private:
-    virtual
-    void
+    virtual void
     on_suite_begin(suite_info const& info) override
     {
         m_suite = suite_results(info.full_name());
     }
 
-    virtual
-    void
+    virtual void
     on_suite_end() override
     {
         m_results.insert(std::move(m_suite));
     }
 
-    virtual
-    void
+    virtual void
     on_case_begin(std::string const& name) override
     {
         m_case = case_results(name);
     }
 
-    virtual
-    void
+    virtual void
     on_case_end() override
     {
-        if(m_case.tests.size() > 0)
+        if (m_case.tests.size() > 0)
             m_suite.insert(std::move(m_case));
     }
 
-    virtual
-    void
+    virtual void
     on_pass() override
     {
         m_case.tests.pass();
     }
 
-    virtual
-    void
+    virtual void
     on_fail(std::string const& reason) override
     {
         m_case.tests.fail(reason);
     }
 
-    virtual
-    void
+    virtual void
     on_log(std::string const& s) override
     {
         m_case.log.insert(s);
     }
 };
 
-} // unit_test
-} // beast
+}  // namespace unit_test
+}  // namespace beast
 
 #endif

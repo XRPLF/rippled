@@ -18,8 +18,7 @@ namespace unit_test {
 class selector
 {
 public:
-    enum mode_t
-    {
+    enum mode_t {
         // Run all tests except manual ones
         all,
 
@@ -45,83 +44,81 @@ private:
     std::string library_;
 
 public:
-    template<class = void>
-    explicit
-    selector(mode_t mode, std::string const& pattern = "");
+    template <class = void>
+    explicit selector(mode_t mode, std::string const& pattern = "");
 
-    template<class = void>
+    template <class = void>
     bool
     operator()(suite_info const& s);
 };
 
 //------------------------------------------------------------------------------
 
-template<class>
+template <class>
 selector::selector(mode_t mode, std::string const& pattern)
-    : mode_(mode)
-    , pat_(pattern)
+    : mode_(mode), pat_(pattern)
 {
-    if(mode_ == automatch && pattern.empty())
+    if (mode_ == automatch && pattern.empty())
         mode_ = all;
 }
 
-template<class>
+template <class>
 bool
 selector::operator()(suite_info const& s)
 {
-    switch(mode_)
+    switch (mode_)
     {
-    case automatch:
-        // suite or full name
-        if(s.name() == pat_ || s.full_name() == pat_)
-        {
-            mode_ = none;
-            return true;
-        }
+        case automatch:
+            // suite or full name
+            if (s.name() == pat_ || s.full_name() == pat_)
+            {
+                mode_ = none;
+                return true;
+            }
 
-        // check module
-        if(pat_ == s.module())
-        {
-            mode_ = module;
-            library_ = s.library();
-            return ! s.manual();
-        }
+            // check module
+            if (pat_ == s.module())
+            {
+                mode_ = module;
+                library_ = s.library();
+                return !s.manual();
+            }
 
-        // check library
-        if(pat_ == s.library())
-        {
-            mode_ = library;
-            return ! s.manual();
-        }
+            // check library
+            if (pat_ == s.library())
+            {
+                mode_ = library;
+                return !s.manual();
+            }
 
-        // check start of name
-        if (s.name().starts_with(pat_) || s.full_name().starts_with(pat_))
-        {
-            // Don't change the mode so that the partial pattern can match
-            // more than once
-            return !s.manual();
-        }
+            // check start of name
+            if (s.name().starts_with(pat_) || s.full_name().starts_with(pat_))
+            {
+                // Don't change the mode so that the partial pattern can match
+                // more than once
+                return !s.manual();
+            }
 
-        return false;
+            return false;
 
-    case suite:
-        return pat_ == s.name();
+        case suite:
+            return pat_ == s.name();
 
-    case module:
-        return pat_ == s.module() && ! s.manual();
+        case module:
+            return pat_ == s.module() && !s.manual();
 
-    case library:
-        return pat_ == s.library() && ! s.manual();
+        case library:
+            return pat_ == s.library() && !s.manual();
 
-    case none:
-        return false;
+        case none:
+            return false;
 
-    case all:
-    default:
-        break;
+        case all:
+        default:
+            break;
     };
 
-    return ! s.manual();
+    return !s.manual();
 }
 
 //------------------------------------------------------------------------------
@@ -143,38 +140,34 @@ selector::operator()(suite_info const& s)
         not marked manual are selected from then on.
 
 */
-inline
-selector
+inline selector
 match_auto(std::string const& name)
 {
     return selector(selector::automatch, name);
 }
 
 /** Return a predicate that matches all suites not marked manual. */
-inline
-selector
+inline selector
 match_all()
 {
     return selector(selector::all);
 }
 
 /** Returns a predicate that matches a specific suite. */
-inline
-selector
+inline selector
 match_suite(std::string const& name)
 {
     return selector(selector::suite, name);
 }
 
 /** Returns a predicate that matches all suites in a library. */
-inline
-selector
+inline selector
 match_library(std::string const& name)
 {
     return selector(selector::library, name);
 }
 
-} // unit_test
-} // beast
+}  // namespace unit_test
+}  // namespace beast
 
 #endif

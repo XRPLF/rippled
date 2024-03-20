@@ -232,7 +232,8 @@ public:
 
     //-------------------------------------------------------------------------
     // Resolver
-    void do_stop(CompletionCounter)
+    void
+    do_stop(CompletionCounter)
     {
         assert(m_stop_called == true);
 
@@ -330,7 +331,8 @@ public:
             std::string(port_first, port_last));
     }
 
-    void do_work(CompletionCounter)
+    void
+    do_work(CompletionCounter)
     {
         if (m_stop_called == true)
             return;

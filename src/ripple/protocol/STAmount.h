@@ -388,7 +388,8 @@ inline STAmount::operator Number() const
     return iou();
 }
 
-inline STAmount& STAmount::operator=(beast::Zero)
+inline STAmount&
+STAmount::operator=(beast::Zero)
 {
     clear();
     return *this;

@@ -81,12 +81,14 @@ public:
         return j_;
     }
 
-    std::shared_ptr<FullBelowCache> getFullBelowCache(std::uint32_t) override
+    std::shared_ptr<FullBelowCache>
+    getFullBelowCache(std::uint32_t) override
     {
         return fbCache_;
     }
 
-    std::shared_ptr<TreeNodeCache> getTreeNodeCache(std::uint32_t) override
+    std::shared_ptr<TreeNodeCache>
+    getTreeNodeCache(std::uint32_t) override
     {
         return tnCache_;
     }

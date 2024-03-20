@@ -34,7 +34,8 @@ public:
     runner() = default;
     virtual ~runner() = default;
     runner(runner const&) = delete;
-    runner& operator=(runner const&) = delete;
+    runner&
+    operator=(runner const&) = delete;
 
     /** Set the argument string.
 
@@ -59,7 +60,7 @@ public:
     /** Run the specified suite.
         @return `true` if any conditions failed.
     */
-    template<class = void>
+    template <class = void>
     bool
     run(suite_info const& s);
 
@@ -69,7 +70,7 @@ public:
         must be convertible to `suite_info`.
         @return `true` if any conditions failed.
     */
-    template<class FwdIter>
+    template <class FwdIter>
     bool
     run(FwdIter first, FwdIter last);
 
@@ -80,14 +81,14 @@ public:
         @endcode
         @return `true` if any conditions failed.
     */
-    template<class FwdIter, class Pred>
+    template <class FwdIter, class Pred>
     bool
     run_if(FwdIter first, FwdIter last, Pred pred = Pred{});
 
     /** Run all suites in a container.
         @return `true` if any conditions failed.
     */
-    template<class SequenceContainer>
+    template <class SequenceContainer>
     bool
     run_each(SequenceContainer const& c);
 
@@ -98,56 +99,49 @@ public:
         @endcode
         @return `true` if any conditions failed.
     */
-    template<class SequenceContainer, class Pred>
+    template <class SequenceContainer, class Pred>
     bool
     run_each_if(SequenceContainer const& c, Pred pred = Pred{});
 
 protected:
     /// Called when a new suite starts.
-    virtual
-    void
+    virtual void
     on_suite_begin(suite_info const&)
     {
     }
 
     /// Called when a suite ends.
-    virtual
-    void
+    virtual void
     on_suite_end()
     {
     }
 
     /// Called when a new case starts.
-    virtual
-    void
+    virtual void
     on_case_begin(std::string const&)
     {
     }
 
     /// Called when a new case ends.
-    virtual
-    void
+    virtual void
     on_case_end()
     {
     }
 
     /// Called for each passing condition.
-    virtual
-    void
+    virtual void
     on_pass()
     {
     }
 
     /// Called for each failing condition.
-    virtual
-    void
+    virtual void
     on_fail(std::string const&)
     {
     }
 
     /// Called when a test logs output.
-    virtual
-    void
+    virtual void
     on_log(std::string const&)
     {
     }
@@ -156,26 +150,26 @@ private:
     friend class suite;
 
     // Start a new testcase.
-    template<class = void>
+    template <class = void>
     void
     testcase(std::string const& name);
 
-    template<class = void>
+    template <class = void>
     void
     pass();
 
-    template<class = void>
+    template <class = void>
     void
     fail(std::string const& reason);
 
-    template<class = void>
+    template <class = void>
     void
     log(std::string const& s);
 };
 
 //------------------------------------------------------------------------------
 
-template<class>
+template <class>
 bool
 runner::run(suite_info const& s)
 {
@@ -191,98 +185,98 @@ runner::run(suite_info const& s)
     return failed_;
 }
 
-template<class FwdIter>
+template <class FwdIter>
 bool
 runner::run(FwdIter first, FwdIter last)
 {
     bool failed(false);
-    for(;first != last; ++first)
+    for (; first != last; ++first)
         failed = run(*first) || failed;
     return failed;
 }
 
-template<class FwdIter, class Pred>
+template <class FwdIter, class Pred>
 bool
 runner::run_if(FwdIter first, FwdIter last, Pred pred)
 {
     bool failed(false);
-    for(;first != last; ++first)
-        if(pred(*first))
+    for (; first != last; ++first)
+        if (pred(*first))
             failed = run(*first) || failed;
     return failed;
 }
 
-template<class SequenceContainer>
+template <class SequenceContainer>
 bool
 runner::run_each(SequenceContainer const& c)
 {
     bool failed(false);
-    for(auto const& s : c)
+    for (auto const& s : c)
         failed = run(s) || failed;
     return failed;
 }
 
-template<class SequenceContainer, class Pred>
+template <class SequenceContainer, class Pred>
 bool
 runner::run_each_if(SequenceContainer const& c, Pred pred)
 {
     bool failed(false);
-    for(auto const& s : c)
-        if(pred(s))
+    for (auto const& s : c)
+        if (pred(s))
             failed = run(s) || failed;
     return failed;
 }
 
-template<class>
+template <class>
 void
 runner::testcase(std::string const& name)
 {
     std::lock_guard lock(mutex_);
     // Name may not be empty
-    BOOST_ASSERT(default_ || ! name.empty());
+    BOOST_ASSERT(default_ || !name.empty());
     // Forgot to call pass or fail
     BOOST_ASSERT(default_ || cond_);
-    if(! default_)
+    if (!default_)
         on_case_end();
     default_ = false;
     cond_ = false;
     on_case_begin(name);
 }
 
-template<class>
+template <class>
 void
 runner::pass()
 {
     std::lock_guard lock(mutex_);
-    if(default_)
+    if (default_)
         testcase("");
     on_pass();
     cond_ = true;
 }
 
-template<class>
+template <class>
 void
 runner::fail(std::string const& reason)
 {
     std::lock_guard lock(mutex_);
-    if(default_)
+    if (default_)
         testcase("");
     on_fail(reason);
     failed_ = true;
     cond_ = true;
 }
 
-template<class>
+template <class>
 void
 runner::log(std::string const& s)
 {
     std::lock_guard lock(mutex_);
-    if(default_)
+    if (default_)
         testcase("");
     on_log(s);
 }
 
-} // unit_test
-} // beast
+}  // namespace unit_test
+}  // namespace beast
 
 #endif
