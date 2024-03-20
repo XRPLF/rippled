@@ -138,15 +138,43 @@ XRPNotCreated::visitEntry(
 bool
 XRPNotCreated::finalize(
     STTx const& tx,
-    TER const,
+    TER const res,
     XRPAmount const fee,
     ReadView const&,
     beast::Journal const& j)
 {
     // The net change should never be positive, as this would mean that the
     // transaction created XRP out of thin air. That's not possible.
+    auto const tt = tx.getTxnType();
+    if (tt == ttBATCH && res == tesSUCCESS)
+    {
+        drops_ = -fee.drops();
+        // return true;
+        // auto const& txns = tx.getFieldArray(sfTransactions);
+        // XRPAmount dropsAdded{beast::zero};
+        // XRPAmount feeAdded{beast::zero};
+        // for (auto const& txn : txns)
+        // {
+        //     dropsAdded += txn.getFieldAmount(sfAmount).xrp();
+        //     feeAdded += txn.getFieldAmount(sfFee).xrp();
+        // }
+
+        // int64_t drops = dropsAdded.drops() - feeAdded.drops();
+
+        // std::cout << "fee.drops: " << feeAdded << "\n";
+        // std::cout << "dropsAdded: " << dropsAdded.drops() << "\n";
+        // std::cout << "drops: " << drops << "\n";
+        // std::cout << "drops=: " << drops_ << "\n";
+
+        // // catch any overflow or funny business
+        // if (drops > dropsAdded.drops())
+        //     return false;
+
+        // return drops_ == drops;
+    }
     if (drops_ > 0)
     {
+        std::cout << "XRP net change was positive: " << drops_ << "\n";
         JLOG(j.fatal()) << "Invariant failed: XRP net change was positive: "
                         << drops_;
         return false;

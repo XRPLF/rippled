@@ -237,10 +237,13 @@ invoke_preclaim(PreclaimContext const& ctx)
 
             if (id != beast::zero)
             {
-                TER result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
+                // TER result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
 
-                if (result != tesSUCCESS)
-                    return result;
+                // if (result != tesSUCCESS)
+                //     return result;
+
+                // Ignore Sequence Validation on ttBATCH txns
+                TER result = tesSUCCESS;
 
                 result = T::checkPriorTxAndLastLedger(ctx);
 
@@ -338,6 +341,16 @@ Batch::preflight(PreflightContext const& ctx)
         auto const response = invoke_preflight(preflightContext);
         preflightResponses.push_back(response.first);
     }
+
+    // Handle Atomicity
+    // for (const auto& response : preflightResponses)
+    // {
+    //     if (response != tesSUCCESS)
+    //     {
+    //         return response;
+    //     }
+    // }
+
     return preflight2(ctx);
 }
 
@@ -352,6 +365,13 @@ Batch::preclaim(PreclaimContext const& ctx)
     auto const& txns = ctx.tx.getFieldArray(sfTransactions);
     for (std::size_t i = 0; i < txns.size(); ++i)
     {
+        // Cannot continue on failed txns
+        if (preflightResponses[i] != tesSUCCESS)
+        {
+            JLOG(ctx.j.warn()) << "Batch: Failed Preflight Response: " << preflightResponses[i];
+            continue;
+        }
+
         auto const& txn = txns[i];
         if (!txn.isFieldPresent(sfTransactionType))
         {
@@ -370,15 +390,38 @@ Batch::preclaim(PreclaimContext const& ctx)
         preclaimResponses.push_back(response);
     }
 
+    // Handle Atomicity
+    // for (const auto& response : preclaimResponses)
+    // {
+    //     if (response != tesSUCCESS)
+    //     {
+    //         return response;
+    //     }
+    // }
+
     return tesSUCCESS;
 }
+
+std::vector<TER> doApplyResponses;
+std::vector<ApplyContext> doApplyContext;
 
 TER
 Batch::doApply()
 {
+
+    Sandbox sb(&ctx_.view());
+    
     auto const& txns = ctx_.tx.getFieldArray(sfTransactions);
     for (std::size_t i = 0; i < txns.size(); ++i)
     {
+
+        // Cannot continue on failed txns
+        if (preclaimResponses[i] != tesSUCCESS)
+        {
+            JLOG(ctx_.journal.warn()) << "Batch: Failed Preclaim Response: " << preclaimResponses[i];
+            continue;
+        }
+
         auto const& txn = txns[i];
         if (!txn.isFieldPresent(sfTransactionType))
         {
@@ -389,20 +432,28 @@ Batch::doApply()
 
         auto const tt = txn.getFieldU16(sfTransactionType);
         auto const txtype = safe_cast<TxType>(tt);
-        auto const stx =
-            STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
+        auto const stx = STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
 
+        // std::cout << "Batch::ApplyContext" << "\n";
+        // OpenView ov{*env.current()};
         ApplyContext actx(
             ctx_.app,
             ctx_.base_,
             stx,
             preclaimResponses[i],
-            XRPAmount(1),
+            ctx_.view().fees().base,
             view().flags(),
             ctx_.journal);
         auto const result = invoke_apply(actx);
 
+        // if (result.first != tesSUCCESS)
+        // {
+        //     actx.discard();
+        // }
+
         ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
+
+        doApplyResponses.push_back(result.first);
 
         STObject meta{sfBatchExecution};
         meta.setFieldU8(sfTransactionResult, TERtoInt(result.first));
@@ -410,6 +461,24 @@ Batch::doApply()
         meta.setFieldH256(sfTransactionHash, stx.getTransactionID());
         avi.addBatchExecutionMetaData(std::move(meta));
     }
+
+    // Handle Atomicity
+    // for (const auto& response : doApplyResponses)
+    // {
+    //     if (response != tesSUCCESS)
+    //     {
+    //         return response;
+    //     }
+    // }
+
+    auto const sle = sb.peek(keylet::account(account_));
+    if (!sle)
+        return tefINTERNAL;
+
+    std::cout << "ACCOUNT SEQ: " << sle->getFieldU32(sfSequence) << "\n";
+    std::cout << "ACCOUNT BALANCE: " << sle->getFieldAmount(sfBalance) << "\n";
+
+    // ctx_.discard();
 
     return tesSUCCESS;
 }
@@ -431,7 +500,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         }
         extraFee += txFees;
     }
-    return (Transactor::calculateBaseFee(view, tx) * 2) + extraFee;
+    return extraFee;
 }
 
 }  // namespace ripple

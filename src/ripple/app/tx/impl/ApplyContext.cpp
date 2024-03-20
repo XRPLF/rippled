@@ -56,8 +56,6 @@ ApplyContext::discard()
 void
 ApplyContext::apply(TER ter)
 {
-    if (flags_ == tapPREFLIGHT_BATCH)
-        return;
     view_->apply(base_, tx, ter, journal);
 }
 
