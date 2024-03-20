@@ -403,7 +403,7 @@ Batch::preclaim(PreclaimContext const& ctx)
 }
 
 std::vector<TER> doApplyResponses;
-std::vector<ApplyContext> doApplyContext;
+// std::vector<ApplyContext> doApplyContext;
 
 TER
 Batch::doApply()
@@ -471,12 +471,12 @@ Batch::doApply()
     //     }
     // }
 
-    auto const sle = sb.peek(keylet::account(account_));
-    if (!sle)
-        return tefINTERNAL;
+    // auto const sle = sb.peek(keylet::account(account_));
+    // if (!sle)
+    //     return tefINTERNAL;
 
-    std::cout << "ACCOUNT SEQ: " << sle->getFieldU32(sfSequence) << "\n";
-    std::cout << "ACCOUNT BALANCE: " << sle->getFieldAmount(sfBalance) << "\n";
+    // std::cout << "ACCOUNT SEQ: " << sle->getFieldU32(sfSequence) << "\n";
+    // std::cout << "ACCOUNT BALANCE: " << sle->getFieldAmount(sfBalance) << "\n";
 
     // ctx_.discard();
 

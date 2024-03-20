@@ -174,7 +174,6 @@ XRPNotCreated::finalize(
     }
     if (drops_ > 0)
     {
-        std::cout << "XRP net change was positive: " << drops_ << "\n";
         JLOG(j.fatal()) << "Invariant failed: XRP net change was positive: "
                         << drops_;
         return false;
