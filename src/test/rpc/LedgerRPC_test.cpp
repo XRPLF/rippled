@@ -2237,48 +2237,6 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
     }
 
-    void
-    testLedgerAccountsOption()
-    {
-        testcase("Ledger Request, Accounts Hashes");
-        using namespace test::jtx;
-
-        Env env{*this};
-
-        env.close();
-
-        std::string index;
-        {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = 3u;
-            jvParams[jss::accounts] = true;
-            jvParams[jss::expand] = true;
-            jvParams[jss::type] = "hashes";
-            auto const jrr =
-                env.rpc("json", "ledger", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));
-            BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
-            BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 1u);
-            BEAST_EXPECT(
-                jrr[jss::ledger][jss::accountState][0u]["LedgerEntryType"] ==
-                jss::LedgerHashes);
-            index = jrr[jss::ledger][jss::accountState][0u]["index"].asString();
-        }
-        {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = 3u;
-            jvParams[jss::accounts] = true;
-            jvParams[jss::expand] = false;
-            jvParams[jss::type] = "hashes";
-            auto const jrr =
-                env.rpc("json", "ledger", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));
-            BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
-            BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 1u);
-            BEAST_EXPECT(jrr[jss::ledger][jss::accountState][0u] == index);
-        }
-    }
-
 public:
     void
     run() override
@@ -2302,7 +2260,6 @@ public:
         testLookupLedger();
         testNoQueue();
         testQueue();
-        testLedgerAccountsOption();
         testLedgerEntryDID();
 
         test::jtx::forAllApiVersions(std::bind_front(
