@@ -3171,6 +3171,26 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 ter(tecNO_PERMISSION));
             env.close();
         }
+
+        // minter mint and offer to buyer
+        if (features[featureNFTokenMintOffer])
+        {
+            // enable flag
+            env(fset(buyer, asfDisallowIncomingNFTokenOffer));
+            // a sell offer from the minter to the buyer should be rejected
+            env(token::mint(minter),
+                token::amount(drops(1)),
+                token::destination(buyer),
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            // disable flag
+            env(fclear(buyer, asfDisallowIncomingNFTokenOffer));
+            env(token::mint(minter),
+                token::amount(drops(1)),
+                token::destination(buyer));
+            env.close();
+        }
     }
 
     void
@@ -6567,6 +6587,282 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     }
 
     void
+    testFeatMintWithOffer(FeatureBitset features)
+    {
+        testcase("NFTokenMint with Create NFTokenOffer");
+
+        using namespace test::jtx;
+
+        if (!features[featureNFTokenMintOffer])
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const buyer("buyer");
+
+            env.fund(XRP(10000), alice, buyer);
+            env.close();
+
+            env(token::mint(alice),
+                token::amount(XRP(10000)),
+                ter(temDISABLED));
+            env.close();
+
+            env(token::mint(alice),
+                token::destination("buyer"),
+                ter(temDISABLED));
+            env.close();
+
+            env(token::mint(alice),
+                token::expiration(lastClose(env) + 25),
+                ter(temDISABLED));
+            env.close();
+        }
+
+        if (features[featureNFTokenMintOffer])
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const buyer{"buyer"};
+            Account const gw("gw");
+            Account const issuer("issuer");
+            Account const minter("minter");
+            Account const bob("bob");
+            IOU const gwAUD(gw["AUD"]);
+
+            env.fund(XRP(10000), alice, buyer, gw, issuer, minter);
+            env.close();
+
+            {
+                // Destination field specified but Amount field not specified
+                env(token::mint(alice),
+                    token::destination(buyer),
+                    ter(temMALFORMED));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // Expiration field specified but Amount field not specified
+                env(token::mint(alice),
+                    token::expiration(lastClose(env) + 25),
+                    ter(temMALFORMED));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, buyer) == 0);
+            }
+
+            {
+                // The destination may not be the account submitting the
+                // transaction.
+                env(token::mint(alice),
+                    token::amount(XRP(1000)),
+                    token::destination(alice),
+                    ter(temMALFORMED));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // The destination must be an account already established in the
+                // ledger.
+                env(token::mint(alice),
+                    token::amount(XRP(1000)),
+                    token::destination(Account("demon")),
+                    ter(tecNO_DST));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+            }
+
+            {
+                // Set a bad expiration.
+                env(token::mint(alice),
+                    token::amount(XRP(1000)),
+                    token::expiration(0),
+                    ter(temBAD_EXPIRATION));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // The new NFTokenOffer may not have passed its expiration time.
+                env(token::mint(alice),
+                    token::amount(XRP(1000)),
+                    token::expiration(lastClose(env)),
+                    ter(tecEXPIRED));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+            }
+
+            {
+                // Set an invalid amount.
+                env(token::mint(alice),
+                    token::amount(buyer["USD"](1)),
+                    txflags(tfOnlyXRP),
+                    ter(temBAD_AMOUNT));
+                env(token::mint(alice),
+                    token::amount(buyer["USD"](0)),
+                    ter(temBAD_AMOUNT));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // Issuer (alice) must have a trust line for the offered funds.
+                env(token::mint(alice),
+                    token::amount(gwAUD(1000)),
+                    txflags(tfTransferable),
+                    token::xferFee(10),
+                    ter(tecNO_LINE));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // If the IOU issuer and the NFToken issuer are the same,
+                // then that issuer does not need a trust line to accept their
+                // fee.
+                env(token::mint(gw),
+                    token::amount(gwAUD(1000)),
+                    txflags(tfTransferable),
+                    token::xferFee(10));
+                env.close();
+
+                // Give alice the needed trust line, but freeze it.
+                env(trust(gw, alice["AUD"](999), tfSetFreeze));
+                env.close();
+
+                // Issuer (alice) must have a trust line for the offered funds
+                // and the trust line may not be frozen.
+                env(token::mint(alice),
+                    token::amount(gwAUD(1000)),
+                    txflags(tfTransferable),
+                    token::xferFee(10),
+                    ter(tecFROZEN));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // Seller (alice) must have a trust line may not be frozen.
+                env(token::mint(alice),
+                    token::amount(gwAUD(1000)),
+                    ter(tecFROZEN));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // Unfreeze alice's trustline.
+                env(trust(gw, alice["AUD"](999), tfClearFreeze));
+                env.close();
+            }
+
+            {
+                // check reserve
+                auto const acctReserve =
+                    env.current()->fees().accountReserve(0);
+                auto const incReserve = env.current()->fees().increment;
+
+                env.fund(acctReserve + incReserve, bob);
+                env.close();
+
+                // doesn't have reserve for 2 objects (NFTokenPage, Offer)
+                env(token::mint(bob),
+                    token::amount(XRP(0)),
+                    ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+
+                // have reserve for NFTokenPage, Offer
+                env(pay(env.master, bob, incReserve + drops(10)));
+                env.close();
+                env(token::mint(bob), token::amount(XRP(0)));
+                env.close();
+
+                // doesn't have reserve for Offer
+                env(pay(env.master, bob, drops(10)));
+                env.close();
+                env(token::mint(bob),
+                    token::amount(XRP(0)),
+                    ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+
+                // have reserve for Offer
+                env(pay(env.master, bob, incReserve + drops(10)));
+                env.close();
+                env(token::mint(bob), token::amount(XRP(0)));
+                env.close();
+            }
+
+            // Amount field specified
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            env(token::mint(alice), token::amount(XRP(10)));
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+            env.close();
+
+            // Amount field and Destination field, Expiration field specified
+            env(token::mint(alice),
+                token::amount(XRP(10)),
+                token::destination(buyer),
+                token::expiration(lastClose(env) + 25));
+            env.close();
+
+            // With TransferFee field
+            env(trust(alice, gwAUD(1000)));
+            env.close();
+            env(token::mint(alice),
+                token::amount(gwAUD(1)),
+                token::destination(buyer),
+                token::expiration(lastClose(env) + 25),
+                txflags(tfTransferable),
+                token::xferFee(10));
+            env.close();
+
+            // Can be canceled by the issuer.
+            env(token::mint(alice),
+                token::amount(XRP(10)),
+                token::destination(buyer),
+                token::expiration(lastClose(env) + 25));
+            uint256 const offerAliceSellsToBuyer =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::cancelOffer(alice, {offerAliceSellsToBuyer}));
+            env.close();
+
+            // Can be canceled by the buyer.
+            env(token::mint(buyer),
+                token::amount(XRP(10)),
+                token::destination(alice),
+                token::expiration(lastClose(env) + 25));
+            uint256 const offerBuyerSellsToAlice =
+                keylet::nftoffer(buyer, env.seq(buyer)).key;
+            env(token::cancelOffer(alice, {offerBuyerSellsToAlice}));
+            env.close();
+
+            env(token::setMinter(issuer, minter));
+            env.close();
+
+            // Minter will have offer not issuer
+            BEAST_EXPECT(ownerCount(env, minter) == 0);
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            env(token::mint(minter),
+                token::issuer(issuer),
+                token::amount(drops(1)));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, minter) == 2);
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+        }
+
+        // Test sell offers with a destination with and without
+        // fixNFTokenNegOffer.
+        if (features[featureNFTokenMintOffer])
+        {
+            for (auto const& tweakedFeatures :
+                 {features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1,
+                  features | fixNFTokenNegOffer})
+            {
+                Env env{*this, tweakedFeatures};
+                Account const alice("alice");
+
+                env.fund(XRP(1000000), alice);
+
+                TER const offerCreateTER = tweakedFeatures[fixNFTokenNegOffer]
+                    ? static_cast<TER>(temBAD_AMOUNT)
+                    : static_cast<TER>(tesSUCCESS);
+
+                // Make offers with negative amounts for the NFTs
+                env(token::mint(alice),
+                    token::amount(XRP(-2)),
+                    ter(offerCreateTER));
+                env.close();
+            }
+        }
+    }
+
+    void
     testTxJsonMetaFields(FeatureBitset features)
     {
         // `nftoken_id` is added in the `tx` response for NFTokenMint and
@@ -6795,6 +7091,15 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 alice, {aliceOfferIndex1, aliceOfferIndex2}));
             env.close();
             verifyNFTokenIDsInCancelOffer({nftId});
+        }
+
+        if (features[featureNFTokenMintOffer])
+        {
+            uint256 const aliceMintWithOfferIndex1 =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::mint(alice), token::amount(XRP(0)));
+            env.close();
+            verifyNFTokenOfferID(aliceMintWithOfferIndex1);
         }
     }
 
@@ -7144,6 +7449,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         testIOUWithTransferFee(features);
         testBrokeredSaleToSelf(features);
         testFixNFTokenRemint(features);
+        testFeatMintWithOffer(features);
         testTxJsonMetaFields(features);
         testFixNFTokenBuyerReserve(features);
     }
@@ -7156,15 +7462,17 @@ public:
         static FeatureBitset const all{supported_amendments()};
         static FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
-        static std::array<FeatureBitset, 6> const feats{
+        static std::array<FeatureBitset, 7> const feats{
             all - fixNFTDir - fixNonFungibleTokensV1_2 - fixNFTokenRemint -
-                fixNFTokenReserve,
+                fixNFTokenReserve - featureNFTokenMintOffer,
             all - disallowIncoming - fixNonFungibleTokensV1_2 -
-                fixNFTokenRemint - fixNFTokenReserve,
+                fixNFTokenRemint - fixNFTokenReserve - featureNFTokenMintOffer,
             all - fixNonFungibleTokensV1_2 - fixNFTokenRemint -
-                fixNFTokenReserve,
-            all - fixNFTokenRemint - fixNFTokenReserve,
-            all - fixNFTokenReserve,
+                fixNFTokenReserve - featureNFTokenMintOffer,
+            all - fixNFTokenRemint - fixNFTokenReserve -
+                featureNFTokenMintOffer,
+            all - fixNFTokenReserve - featureNFTokenMintOffer,
+            all - featureNFTokenMintOffer,
             all};
 
         if (BEAST_EXPECT(instance < feats.size()))
@@ -7217,12 +7525,21 @@ class NFTokenWOTokenReserve_test : public NFTokenBaseUtil_test
     }
 };
 
+class NFTokenWOMintOffer_test : public NFTokenBaseUtil_test
+{
+    void
+    run() override
+    {
+        NFTokenBaseUtil_test::run(5);
+    }
+};
+
 class NFTokenAllFeatures_test : public NFTokenBaseUtil_test
 {
     void
     run() override
     {
-        NFTokenBaseUtil_test::run(5, true);
+        NFTokenBaseUtil_test::run(6, true);
     }
 };
 
@@ -7231,6 +7548,7 @@ BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDisallowIncoming, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOfixV1, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenRemint, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenReserve, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOMintOffer, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAllFeatures, tx, ripple, 2);
 
 }  // namespace ripple
