@@ -272,19 +272,13 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
     // Fix a bug where the transfer of an NFToken with a transfer fee could
     // give the NFToken issuer an undesired trust line.
-    if (ctx.view.rules().enabled(fixNFTokenTrustlineSurprise))
+    if (ctx.view.rules().enabled(fixEnforceNFTokenTrustline))
     {
         std::shared_ptr<SLE const> const& offer = bo ? bo : so;
         if (!offer)
             // Should be caught in preflight.
             return tecINTERNAL;
 
-        // - If the NFToken has a transfer fee, and
-        // - If the NFToken doesn't have the flagCreateTrustLines flag set, and
-        // - If the Amount is not XRP, and
-        // - If the NFToken issuer is not the Amount issuer, and
-        // - If the NFToken issuer does not have a trust line for the Amount
-        // - Then reject the token accept.
         uint256 const& tokenID = offer->at(sfNFTokenID);
         STAmount const& amount = offer->at(sfAmount);
         if (nft::getTransferFee(tokenID) != 0 &&

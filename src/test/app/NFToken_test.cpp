@@ -7144,10 +7144,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         //  7. The transfer fee from Carol's purchase re-establishes issuer's
         //     USD trustline.
         //
-        // The fixNFTokenTrustlineSurprise amendment addresses this oversight.
+        // The fixEnforceNFTokenTrustline amendment addresses this oversight.
         //
         // We run this test case both with and without
-        // fixNFTokenTrustlineSurprise enabled so we can see the change
+        // fixEnforceNFTokenTrustline enabled so we can see the change
         // in behavior.
         //
         // In both cases we remove the fixRemoveNFTokenAutoTrustLine amendment.
@@ -7155,8 +7155,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         FeatureBitset const localFeatures =
             features - fixRemoveNFTokenAutoTrustLine;
         for (FeatureBitset feats :
-             {localFeatures - fixNFTokenTrustlineSurprise,
-              localFeatures | fixNFTokenTrustlineSurprise})
+             {localFeatures - fixEnforceNFTokenTrustline,
+              localFeatures | fixEnforceNFTokenTrustline})
         {
             Env env{*this, feats};
             env.fund(XRP(1000), issuer, becky, cheri, gw);
@@ -7251,10 +7251,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
 
             // cheri attempts to accept the NoAutoTrustLine NFT.  Behavior
-            // depends on whether fixNFTokenTrustlineSurprise is enabled.
-            if (feats[fixNFTokenTrustlineSurprise])
+            // depends on whether fixEnforceNFTokenTrustline is enabled.
+            if (feats[fixEnforceNFTokenTrustline])
             {
-                // With fixNFTokenTrustlineSurprise cheri can't accept the
+                // With fixEnforceNFTokenTrustline cheri can't accept the
                 // offer because issuer could not get their transfer fee
                 // without the appropriate trustline.
                 env(token::acceptSellOffer(cheri, beckyNoAutoTrustOfferIndex),
@@ -7272,7 +7272,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             }
             else
             {
-                // Without fixNFTokenTrustlineSurprise the offer just works
+                // Without fixEnforceNFTokenTrustline the offer just works
                 // and issuer gets a trustline that they did not request.
                 env(token::acceptSellOffer(cheri, beckyNoAutoTrustOfferIndex));
                 env.close();
@@ -7319,10 +7319,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         //  5. Becky attempts to create an offer to sell the NFToken for
         //     isISU(100).  The attempt fails with `tecNO_LINE`.
         //
-        // The fixNFTokenTrustlineSurprise amendment addresses this oversight.
+        // The fixEnforceNFTokenTrustline amendment addresses this oversight.
         //
         // We run this test case both with and without
-        // fixNFTokenTrustlineSurprise enabled so we can see the change
+        // fixEnforceNFTokenTrustline enabled so we can see the change
         // in behavior.
         //
         // In both cases we remove the fixRemoveNFTokenAutoTrustLine amendment.
@@ -7330,8 +7330,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         FeatureBitset const localFeatures =
             features - fixRemoveNFTokenAutoTrustLine;
         for (FeatureBitset feats :
-             {localFeatures - fixNFTokenTrustlineSurprise,
-              localFeatures | fixNFTokenTrustlineSurprise})
+             {localFeatures - fixEnforceNFTokenTrustline,
+              localFeatures | fixEnforceNFTokenTrustline})
         {
             Env env{*this, feats};
             env.fund(XRP(1000), issuer, becky, cheri);
@@ -7379,10 +7379,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             }
 
             // Behavior from here down diverges significantly based on
-            // fixNFTokenTrustlineSurprise.
-            if (!feats[fixNFTokenTrustlineSurprise])
+            // fixEnforceNFTokenTrustline.
+            if (!feats[fixEnforceNFTokenTrustline])
             {
-                // Without fixNFTokenTrustlineSurprise becky simply can't
+                // Without fixEnforceNFTokenTrustline becky simply can't
                 // create an offer for a non-tfTrustLine NFToken that would
                 // pay the transfer fee in issuer's own IOU.
                 env(token::createOffer(becky, nftNoAutoTrustID, isISU(100)),
@@ -7413,7 +7413,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             }
             else
             {
-                // With fixNFTokenTrustlineSurprise things go better.
+                // With fixEnforceNFTokenTrustline things go better.
                 // becky creates offers to sell the nfts for ISU.
                 uint256 const beckyNoAutoTrustOfferIndex =
                     keylet::nftoffer(becky, env.seq(becky)).key;
