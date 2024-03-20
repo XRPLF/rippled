@@ -56,6 +56,7 @@ jobs:
         shell: bash
         run: |
           conan profile new default --detect
+          conan profile update settings.compiler.cppstd=20 default
           conan profile update settings.compiler.runtime=MT${{ matrix.configuration == 'Debug' && 'd' || '' }} default
       - name: build dependencies
         uses: ./.github/actions/dependencies
