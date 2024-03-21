@@ -123,8 +123,19 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
         if (!ctx.view.exists(keylet::account(issuer)))
             return tecNO_ISSUER;
 
-        if (!ctx.view.exists(keylet::line(issuer, amount.issue())))
+        // There was a bug in a corner case that fixEnforceNFTokenTrustline
+        // addresses.  If the IOU issuer and the NFToken issuer are the same,
+        // then that issuer does not need a trust line to accept their fee.
+        if (ctx.view.rules().enabled(fixEnforceNFTokenTrustline))
+        {
+            if (issuer != amount.getIssuer() &&
+                !ctx.view.read(keylet::line(issuer, amount.issue())))
+                return tecNO_LINE;
+        }
+        else if (!ctx.view.exists(keylet::line(issuer, amount.issue())))
+        {
             return tecNO_LINE;
+        }
 
         if (isFrozen(
                 ctx.view, issuer, amount.getCurrency(), amount.getIssuer()))
