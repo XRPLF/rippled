@@ -677,12 +677,8 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
 bool
 repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
 {
-    // Assume that no repair is required.
     bool didRepair = false;
 
-    // Walk from the first NFTokenPage owned by owner to the last
-    // NFTokenPage owned by owner.  Repair any broken links that we
-    // find along the way.
     auto const last = keylet::nftpage_max(owner);
 
     std::shared_ptr<SLE> page = view.peek(Keylet(
@@ -690,20 +686,17 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
         view.succ(keylet::nftpage_min(owner).key, last.key.next())
             .value_or(last.key)));
 
-    // If no page was found then owner has no NFToken pages that might need
-    // repair.
     if (!page)
         return didRepair;
 
     if (page->key() == last.key)
     {
-        // There is one and only one page in this entire directory.  There
-        // should be no links on that page.
+        // There's only one page in this entire directory.  There should be
+        // no links on that page.
         bool const nextPresent = page->isFieldPresent(sfNextPageMin);
         bool const prevPresent = page->isFieldPresent(sfPreviousPageMin);
         if (nextPresent || prevPresent)
         {
-            // This page should have no links but does.  Remove the links.
             didRepair = true;
             if (prevPresent)
                 page->makeFieldAbsent(sfPreviousPageMin);
@@ -714,17 +707,15 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
         return didRepair;
     }
 
-    // There's a first page that is not the same as last page.  The first page
-    // should not contain a previous link.
+    // First page is not the same as last page.  The first page should not
+    // contain a previous link.
     if (page->isFieldPresent(sfPreviousPageMin))
     {
-        // Remove the unneeded previous link.
         didRepair = true;
         page->makeFieldAbsent(sfPreviousPageMin);
         view.update(page);
     }
 
-    // For every page between the first and last...
     std::shared_ptr<SLE> nextPage;
     while (
         (nextPage = view.peek(Keylet(
@@ -732,21 +723,17 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
              view.succ(page->key().next(), last.key.next())
                  .value_or(last.key)))))
     {
-        // page should have a link to nextPage.
         if (!page->isFieldPresent(sfNextPageMin) ||
             page->getFieldH256(sfNextPageMin) != nextPage->key())
         {
-            // Repair the link to nextPage.
             didRepair = true;
             page->setFieldH256(sfNextPageMin, nextPage->key());
             view.update(page);
         }
 
-        // nextPage should have a link to page;
         if (!nextPage->isFieldPresent(sfPreviousPageMin) ||
             nextPage->getFieldH256(sfPreviousPageMin) != page->key())
         {
-            // Repair the link to page.
             didRepair = true;
             nextPage->setFieldH256(sfPreviousPageMin, page->key());
             view.update(nextPage);
@@ -756,7 +743,6 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
             // We need special handling for the last page.
             break;
 
-        // Continue to walk the links.
         page = nextPage;
     }
 
@@ -796,9 +782,6 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
         return didRepair;
     }
 
-    // The lastPage is present in the ledger and has the right index.  There's
-    // also a previous page.  Make sure that the last page does not have a
-    // next link.
     if (nextPage->isFieldPresent(sfNextPageMin))
     {
         didRepair = true;

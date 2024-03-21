@@ -663,7 +663,6 @@ ValidNFTokenPage::finalize(
         return false;
     }
 
-    // Only enforce these invariants if fixNFTokenPageLinks is enabled.
     if (view.rules().enabled(fixNFTokenPageLinks))
     {
         if (deletedFinalPage_)

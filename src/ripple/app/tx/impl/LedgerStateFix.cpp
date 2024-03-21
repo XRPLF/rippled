@@ -43,7 +43,6 @@ LedgerStateFix::preflight(PreflightContext const& ctx)
     switch (ctx.tx[sfLedgerFixType])
     {
         case FixType::nfTokenPageLink:
-            // FixType::nfTokenPageLink requires an Owner field.
             if (!ctx.tx.isFieldPresent(sfOwner))
                 return temINVALID;
             break;
