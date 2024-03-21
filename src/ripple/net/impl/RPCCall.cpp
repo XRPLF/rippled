@@ -1349,6 +1349,10 @@ struct RPCCallImp
             // Only care about the result, if we care to deliver it
             // callbackFuncP.
 
+            if (ecResult)
+                Throw<std::runtime_error>(
+                    "onResponse error: " + ecResult.message());
+
             // Receive reply
             if (strData.empty())
                 Throw<std::runtime_error>("no response from server");
