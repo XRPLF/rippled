@@ -838,6 +838,7 @@ void
 resetPluginInvariantChecks()
 {
     pluginInvariantChecks.clear();
+    pluginXRPChangeFns.clear();
 }
 
 void
