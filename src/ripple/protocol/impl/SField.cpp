@@ -113,6 +113,7 @@ CONSTRUCT_TYPED_SFIELD(sfHookStateChangeCount,  "HookStateChangeCount", UINT16, 
 CONSTRUCT_TYPED_SFIELD(sfHookEmitCount,         "HookEmitCount",        UINT16,    18);
 CONSTRUCT_TYPED_SFIELD(sfHookExecutionIndex,    "HookExecutionIndex",   UINT16,    19);
 CONSTRUCT_TYPED_SFIELD(sfHookApiVersion,        "HookApiVersion",       UINT16,    20);
+CONSTRUCT_TYPED_SFIELD(sfLedgerFixType,         "LedgerFixType",        UINT16,    21);
 
 // 32-bit integers (common)
 CONSTRUCT_TYPED_SFIELD(sfNetworkID,             "NetworkID",            UINT32,     1);

@@ -137,6 +137,7 @@ transResults()
         MAKE_ERROR(tefTOO_BIG,                     "Transaction affects too many items."),
         MAKE_ERROR(tefNO_TICKET,                   "Ticket is not in ledger."),
         MAKE_ERROR(tefNFTOKEN_IS_NOT_TRANSFERABLE, "The specified NFToken is not transferable."),
+        MAKE_ERROR(tefINVALID_LEDGER_FIX_TYPE,     "The LedgerFixType field has an invalid value."),
 
         MAKE_ERROR(telLOCAL_ERROR,            "Local failure."),
         MAKE_ERROR(telBAD_DOMAIN,             "Domain too long."),
