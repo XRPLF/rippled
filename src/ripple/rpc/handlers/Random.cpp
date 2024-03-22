@@ -21,8 +21,8 @@
 #include <ripple/beast/utility/rngfill.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/json/json_value.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/jss.h>
 
 namespace ripple {

@@ -54,7 +54,7 @@ jobs:
       build_dir: .build
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
@@ -78,8 +78,8 @@ jobs:
         uses: ./.github/actions/dependencies
         env:
           CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
-          CONAN_USERNAME: ${{ secrets.CONAN_USERNAME }}
-          CONAN_TOKEN: ${{ secrets.CONAN_TOKEN }}
+          CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
+          CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:
           configuration: ${{ matrix.configuration }}
       - name: upload archive
@@ -121,13 +121,12 @@ jobs:
           tar -xzf conan.tar -C ~/.conan
       - name: check environment
         run: |
+          env | sort
           echo ${PATH} | tr ':' '\n'
           conan --version
           cmake --version
-          env | sort
-          ls ~/.conan
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: dependencies
         uses: ./.github/actions/dependencies
         env:
@@ -178,7 +177,7 @@ jobs:
           env | sort
           ls ~/.conan
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: dependencies
         uses: ./.github/actions/dependencies
         env:
@@ -210,7 +209,7 @@ jobs:
       - name: upload coverage report
         uses: wandalen/wretry.action@v1.3.0
         with:
-          action: codecov/codecov-action@v3
+          action: codecov/codecov-action@v4
           with: |
             files: coverage.xml
             fail_ci_if_error: true
