@@ -388,7 +388,7 @@ public:
     run() override
     {
         testBadInput();
-        test::jtx::forAllApiVersions(
+        forAllApiVersions(
             std::bind_front(&TransactionEntry_test::testRequest, this));
     }
 };

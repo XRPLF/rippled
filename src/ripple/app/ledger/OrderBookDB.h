@@ -23,7 +23,7 @@
 #include <ripple/app/ledger/AcceptedLedgerTx.h>
 #include <ripple/app/ledger/BookListeners.h>
 #include <ripple/app/main/Application.h>
-#include <ripple/json/MultivarJson.h>
+#include <ripple/protocol/MultiApiJson.h>
 
 #include <mutex>
 
