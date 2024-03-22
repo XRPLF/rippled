@@ -3,9 +3,54 @@
    core functionality, useable by some client software perhaps
 #]===================================================================]
 
+include(target_protobuf_sources)
+
 file (GLOB_RECURSE rb_headers
   src/ripple/beast/*.h
   src/ripple/beast/*.hpp)
+
+# Protocol buffers cannot participate in a unity build,
+# because all the generated sources
+# define a bunch of `static const` variables with the same names,
+# so we just build them as a separate library.
+add_library(xrpl.libpb)
+target_protobuf_sources(xrpl.libpb ripple/proto
+  LANGUAGE cpp
+  IMPORT_DIRS src/ripple/proto
+  PROTOS src/ripple/proto/ripple.proto
+)
+
+file(GLOB_RECURSE protos "src/ripple/proto/org/*.proto")
+target_protobuf_sources(xrpl.libpb ripple/proto
+  LANGUAGE cpp
+  IMPORT_DIRS src/ripple/proto
+  PROTOS "${protos}"
+)
+target_protobuf_sources(xrpl.libpb ripple/proto
+  LANGUAGE grpc
+  IMPORT_DIRS src/ripple/proto
+  PROTOS "${protos}"
+  PLUGIN protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>
+  GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
+)
+
+target_compile_options(xrpl.libpb
+  PUBLIC
+    $<$<BOOL:${MSVC}>:-wd4996>
+    $<$<BOOL:${XCODE}>:
+      --system-header-prefix="google/protobuf"
+      -Wno-deprecated-dynamic-exception-spec
+    >
+  PRIVATE
+    $<$<BOOL:${MSVC}>:-wd4065>
+    $<$<NOT:$<BOOL:${MSVC}>>:-Wno-deprecated-declarations>
+)
+
+target_link_libraries(xrpl.libpb
+  PUBLIC
+    protobuf::libprotobuf
+    gRPC::grpc++
+)
 
 add_library (xrpl_core
   ${rb_headers}) ## headers added here for benefit of IDEs
@@ -16,7 +61,6 @@ endif ()
 add_library(libxrpl INTERFACE)
 target_link_libraries(libxrpl INTERFACE xrpl_core)
 add_library(xrpl::libxrpl ALIAS libxrpl)
-
 
 #[===============================[
     beast/legacy FILES:
@@ -152,6 +196,7 @@ target_link_libraries (xrpl_core
     Ripple::syslibs
     secp256k1::secp256k1
     ed25519::ed25519
+    xrpl.libpb
     date::date
     Ripple::opts
     xxHash::xxhash)
