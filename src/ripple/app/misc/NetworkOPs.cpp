@@ -52,7 +52,6 @@
 #include <ripple/consensus/ConsensusParms.h>
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/crypto/csprng.h>
-#include <ripple/json/MultivarJson.h>
 #include <ripple/json/to_string.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
@@ -60,6 +59,7 @@
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/MultiApiJson.h>
 #include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/jss.h>
@@ -68,7 +68,6 @@
 #include <ripple/rpc/BookChanges.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/ServerHandler.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/steady_timer.hpp>
 
@@ -2213,11 +2212,11 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         // NOTE Use MultiApiJson to publish two slightly different JSON objects
         // for consumers supporting different API versions
         MultiApiJson multiObj{jvObj};
-        visit<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(
-            multiObj,  //
-            [](Json::Value& jvTx, unsigned int apiVersion) {
+        multiObj.visit(
+            RPC::apiVersion<1>,  //
+            [](Json::Value& jvTx) {
                 // Type conversion for older API versions to string
-                if (jvTx.isMember(jss::ledger_index) && apiVersion < 2)
+                if (jvTx.isMember(jss::ledger_index))
                 {
                     jvTx[jss::ledger_index] =
                         std::to_string(jvTx[jss::ledger_index].asUInt());
@@ -2229,9 +2228,9 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         {
             if (auto p = i->second.lock())
             {
-                p->send(
-                    multiObj.select(apiVersionSelector(p->getApiVersion())),
-                    true);
+                multiObj.visit(
+                    p->getApiVersion(),  //
+                    [&](Json::Value const& jv) { p->send(jv, true); });
                 ++i;
             }
             else
@@ -2769,8 +2768,9 @@ NetworkOPsImp::pubProposedTransaction(
 
             if (p)
             {
-                p->send(
-                    jvObj.select(apiVersionSelector(p->getApiVersion())), true);
+                jvObj.visit(
+                    p->getApiVersion(),  //
+                    [&](Json::Value const& jv) { p->send(jv, true); });
                 ++it;
             }
             else
@@ -3167,13 +3167,14 @@ NetworkOPsImp::transJson(
 
     std::string const hash = to_string(transaction->getTransactionID());
     MultiApiJson multiObj{jvObj};
-    visit<RPC::apiMinimumSupportedVersion, RPC::apiMaximumValidVersion>(
-        multiObj,  //
-        [&](Json::Value& jvTx, unsigned int apiVersion) {
+    forAllApiVersions(
+        multiObj.visit(),  //
+        [&]<unsigned Version>(
+            Json::Value& jvTx, std::integral_constant<unsigned, Version>) {
             RPC::insertDeliverMax(
-                jvTx[jss::transaction], transaction->getTxnType(), apiVersion);
+                jvTx[jss::transaction], transaction->getTxnType(), Version);
 
-            if (apiVersion > 1)
+            if constexpr (Version > 1)
             {
                 jvTx[jss::tx_json] = jvTx.removeMember(jss::transaction);
                 jvTx[jss::hash] = hash;
@@ -3210,8 +3211,9 @@ NetworkOPsImp::pubValidatedTransaction(
 
             if (p)
             {
-                p->send(
-                    jvObj.select(apiVersionSelector(p->getApiVersion())), true);
+                jvObj.visit(
+                    p->getApiVersion(),  //
+                    [&](Json::Value const& jv) { p->send(jv, true); });
                 ++it;
             }
             else
@@ -3226,8 +3228,9 @@ NetworkOPsImp::pubValidatedTransaction(
 
             if (p)
             {
-                p->send(
-                    jvObj.select(apiVersionSelector(p->getApiVersion())), true);
+                jvObj.visit(
+                    p->getApiVersion(),  //
+                    [&](Json::Value const& jv) { p->send(jv, true); });
                 ++it;
             }
             else
@@ -3347,9 +3350,9 @@ NetworkOPsImp::pubAccountTransaction(
 
         for (InfoSub::ref isrListener : notify)
         {
-            isrListener->send(
-                jvObj.select(apiVersionSelector(isrListener->getApiVersion())),
-                true);
+            jvObj.visit(
+                isrListener->getApiVersion(),  //
+                [&](Json::Value const& jv) { isrListener->send(jv, true); });
         }
 
         if (last)
@@ -3366,9 +3369,9 @@ NetworkOPsImp::pubAccountTransaction(
 
             jvObj.set(jss::account_history_tx_index, index->forwardTxIndex_++);
 
-            info.sink_->send(
-                jvObj.select(apiVersionSelector(info.sink_->getApiVersion())),
-                true);
+            jvObj.visit(
+                info.sink_->getApiVersion(),  //
+                [&](Json::Value const& jv) { info.sink_->send(jv, true); });
         }
     }
 }
@@ -3426,9 +3429,9 @@ NetworkOPsImp::pubProposedAccountTransaction(
         MultiApiJson jvObj = transJson(tx, result, false, ledger, std::nullopt);
 
         for (InfoSub::ref isrListener : notify)
-            isrListener->send(
-                jvObj.select(apiVersionSelector(isrListener->getApiVersion())),
-                true);
+            jvObj.visit(
+                isrListener->getApiVersion(),  //
+                [&](Json::Value const& jv) { isrListener->send(jv, true); });
 
         assert(
             jvObj.isMember(jss::account_history_tx_stream) ==
@@ -3439,9 +3442,9 @@ NetworkOPsImp::pubProposedAccountTransaction(
             if (index->forwardTxIndex_ == 0 && !index->haveHistorical_)
                 jvObj.set(jss::account_history_tx_first, true);
             jvObj.set(jss::account_history_tx_index, index->forwardTxIndex_++);
-            info.sink_->send(
-                jvObj.select(apiVersionSelector(info.sink_->getApiVersion())),
-                true);
+            jvObj.visit(
+                info.sink_->getApiVersion(),  //
+                [&](Json::Value const& jv) { info.sink_->send(jv, true); });
         }
     }
 }
@@ -3647,9 +3650,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                                         bool unsubscribe) -> bool {
                 if (auto sptr = subInfo.sinkWptr_.lock())
                 {
-                    sptr->send(
-                        jvObj.select(apiVersionSelector(sptr->getApiVersion())),
-                        true);
+                    jvObj.visit(
+                        sptr->getApiVersion(),  //
+                        [&](Json::Value const& jv) { sptr->send(jv, true); });
 
                     if (unsubscribe)
                         unsubAccountHistory(sptr, accountId, false);
