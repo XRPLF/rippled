@@ -74,7 +74,8 @@ public:
         uint256 const& txID,
         std::uint32_t ledgerSeq,
         uint256& prevTxID,
-        std::uint32_t& prevLedgerID);
+        std::uint32_t& prevLedgerID,
+        bool const includePrevTxnID);
 
 private:
     /*  Make STObject comply with the template for this SLE type

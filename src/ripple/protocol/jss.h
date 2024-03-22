@@ -524,6 +524,7 @@ JSS(node_writes_duration_us);    // out: GetCounts
 JSS(node_write_retries);         // out: GetCounts
 JSS(node_writes_delayed);        // out::GetCounts
 JSS(nth);                        // out: RPC server_definitions
+JSS(nunl);                       // in: AccountObjects
 JSS(obligations);                // out: GatewayBalances
 JSS(offer);                      // in: LedgerEntry
 JSS(offers);                     // out: NetworkOPs, AccountOffers, Subscribe
