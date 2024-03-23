@@ -40,23 +40,19 @@ private:
 
 public:
     /// The type of yield context passed to functions.
-    using yield_context =
-        boost::asio::yield_context;
+    using yield_context = boost::asio::yield_context;
 
-    explicit
-    enable_yield_to(std::size_t concurrency = 1)
-        : work_(ios_)
+    explicit enable_yield_to(std::size_t concurrency = 1) : work_(ios_)
     {
         threads_.reserve(concurrency);
-        while(concurrency--)
-            threads_.emplace_back(
-                [&]{ ios_.run(); });
+        while (concurrency--)
+            threads_.emplace_back([&] { ios_.run(); });
     }
 
     ~enable_yield_to()
     {
         work_ = boost::none;
-        for(auto& t : threads_)
+        for (auto& t : threads_)
             t.join();
     }
 
@@ -79,11 +75,11 @@ public:
         @param fn... One or more functions to invoke.
     */
 #if BEAST_DOXYGEN
-    template<class... FN>
+    template <class... FN>
     void
-    yield_to(FN&&... fn)
+    yield_to(FN&&... fn);
 #else
-    template<class F0, class... FN>
+    template <class F0, class... FN>
     void
     yield_to(F0&& f0, FN&&... fn);
 #endif
@@ -94,41 +90,38 @@ private:
     {
     }
 
-    template<class F0, class... FN>
+    template <class F0, class... FN>
     void
     spawn(F0&& f, FN&&... fn);
 };
 
-template<class F0, class... FN>
+template <class F0, class... FN>
 void
-enable_yield_to::
-yield_to(F0&& f0, FN&&... fn)
+enable_yield_to::yield_to(F0&& f0, FN&&... fn)
 {
     running_ = 1 + sizeof...(FN);
     spawn(f0, fn...);
     std::unique_lock<std::mutex> lock{m_};
-    cv_.wait(lock, [&]{ return running_ == 0; });
+    cv_.wait(lock, [&] { return running_ == 0; });
 }
 
-template<class F0, class... FN>
-inline
-void
-enable_yield_to::
-spawn(F0&& f, FN&&... fn)
+template <class F0, class... FN>
+inline void
+enable_yield_to::spawn(F0&& f, FN&&... fn)
 {
-    boost::asio::spawn(ios_,
-        [&](yield_context yield)
-        {
+    boost::asio::spawn(
+        ios_,
+        [&](yield_context yield) {
             f(yield);
             std::lock_guard lock{m_};
-            if(--running_ == 0)
+            if (--running_ == 0)
                 cv_.notify_all();
-        }
-        , boost::coroutines::attributes(2 * 1024 * 1024));
+        },
+        boost::coroutines::attributes(2 * 1024 * 1024));
     spawn(fn...);
 }
 
-} // test
-} // beast
+}  // namespace test
+}  // namespace beast
 
 #endif

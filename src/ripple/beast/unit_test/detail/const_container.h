@@ -16,7 +16,7 @@ namespace detail {
     The interface allows for limited read only operations. Derived classes
     provide additional behavior.
 */
-template<class Container>
+template <class Container>
 class const_container
 {
 private:
@@ -25,12 +25,14 @@ private:
     cont_type m_cont;
 
 protected:
-    cont_type& cont()
+    cont_type&
+    cont()
     {
         return m_cont;
     }
 
-    cont_type const& cont() const
+    cont_type const&
+    cont() const
     {
         return m_cont;
     }
@@ -84,8 +86,8 @@ public:
     /** @} */
 };
 
-} // detail
-} // unit_test
-} // beast
+}  // namespace detail
+}  // namespace unit_test
+}  // namespace beast
 
 #endif
