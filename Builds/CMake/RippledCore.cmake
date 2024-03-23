@@ -6,8 +6,7 @@
 include(target_protobuf_sources)
 
 file (GLOB_RECURSE rb_headers
-  src/ripple/beast/*.h
-  src/ripple/beast/*.hpp)
+  src/ripple/beast/*.h)
 
 # Protocol buffers cannot participate in a unity build,
 # because all the generated sources
@@ -438,22 +437,22 @@ install (
   DESTINATION include/ripple/beast)
 install (
   FILES
-    src/ripple/beast/unit_test/amount.hpp
-    src/ripple/beast/unit_test/dstream.hpp
-    src/ripple/beast/unit_test/global_suites.hpp
-    src/ripple/beast/unit_test/match.hpp
-    src/ripple/beast/unit_test/recorder.hpp
-    src/ripple/beast/unit_test/reporter.hpp
-    src/ripple/beast/unit_test/results.hpp
-    src/ripple/beast/unit_test/runner.hpp
-    src/ripple/beast/unit_test/suite_info.hpp
-    src/ripple/beast/unit_test/suite_list.hpp
-    src/ripple/beast/unit_test/suite.hpp
-    src/ripple/beast/unit_test/thread.hpp
+    src/ripple/beast/unit_test/amount.h
+    src/ripple/beast/unit_test/dstream.h
+    src/ripple/beast/unit_test/global_suites.h
+    src/ripple/beast/unit_test/match.h
+    src/ripple/beast/unit_test/recorder.h
+    src/ripple/beast/unit_test/reporter.h
+    src/ripple/beast/unit_test/results.h
+    src/ripple/beast/unit_test/runner.h
+    src/ripple/beast/unit_test/suite_info.h
+    src/ripple/beast/unit_test/suite_list.h
+    src/ripple/beast/unit_test/suite.h
+    src/ripple/beast/unit_test/thread.h
   DESTINATION include/ripple/beast/unit_test)
 install (
   FILES
-    src/ripple/beast/unit_test/detail/const_container.hpp
+    src/ripple/beast/unit_test/detail/const_container.h
   DESTINATION include/ripple/beast/unit_test/detail)
 install (
   FILES
