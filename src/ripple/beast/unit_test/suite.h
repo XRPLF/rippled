@@ -8,7 +8,7 @@
 #ifndef BEAST_UNIT_TEST_SUITE_HPP
 #define BEAST_UNIT_TEST_SUITE_HPP
 
-#include <ripple/beast/unit_test/runner.hpp>
+#include <ripple/beast/unit_test/runner.h>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/throw_exception.hpp>
@@ -646,7 +646,7 @@ suite::run(runner& r)
 #define BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Class, Module, Library, Priority)
 
 #else
-#include <ripple/beast/unit_test/global_suites.hpp>
+#include <ripple/beast/unit_test/global_suites.h>
 #define BEAST_DEFINE_TESTSUITE(Class, Module, Library) \
     BEAST_DEFINE_TESTSUITE_INSERT(Class, Module, Library, false, 0)
 #define BEAST_DEFINE_TESTSUITE_MANUAL(Class, Module, Library) \

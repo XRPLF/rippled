@@ -8,7 +8,7 @@
 #ifndef BEAST_UNIT_TEST_RUNNER_H_INCLUDED
 #define BEAST_UNIT_TEST_RUNNER_H_INCLUDED
 
-#include <ripple/beast/unit_test/suite_info.hpp>
+#include <ripple/beast/unit_test/suite_info.h>
 #include <boost/assert.hpp>
 #include <mutex>
 #include <ostream>

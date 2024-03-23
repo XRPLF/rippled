@@ -8,7 +8,7 @@
 #ifndef BEAST_UNIT_TEST_THREAD_HPP
 #define BEAST_UNIT_TEST_THREAD_HPP
 
-#include <ripple/beast/unit_test/suite.hpp>
+#include <ripple/beast/unit_test/suite.h>
 #include <functional>
 #include <thread>
 #include <utility>
