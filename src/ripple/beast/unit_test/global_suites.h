@@ -8,7 +8,7 @@
 #ifndef BEAST_UNIT_TEST_GLOBAL_SUITES_HPP
 #define BEAST_UNIT_TEST_GLOBAL_SUITES_HPP
 
-#include <ripple/beast/unit_test/suite_list.hpp>
+#include <ripple/beast/unit_test/suite_list.h>
 
 namespace beast {
 namespace unit_test {

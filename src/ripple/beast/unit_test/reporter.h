@@ -8,8 +8,8 @@
 #ifndef BEAST_UNIT_TEST_REPORTER_HPP
 #define BEAST_UNIT_TEST_REPORTER_HPP
 
-#include <ripple/beast/unit_test/amount.hpp>
-#include <ripple/beast/unit_test/recorder.hpp>
+#include <ripple/beast/unit_test/amount.h>
+#include <ripple/beast/unit_test/recorder.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
 #include <algorithm>
