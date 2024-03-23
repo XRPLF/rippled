@@ -27,37 +27,37 @@ namespace unit_test {
 
 namespace detail {
 
-template<class CharT, class Traits, class Allocator>
-class dstream_buf
-    : public std::basic_stringbuf<CharT, Traits, Allocator>
+template <class CharT, class Traits, class Allocator>
+class dstream_buf : public std::basic_stringbuf<CharT, Traits, Allocator>
 {
     using ostream = std::basic_ostream<CharT, Traits>;
 
     bool dbg_;
     ostream& os_;
 
-    template<class T>
-    void write(T const*) = delete;
+    template <class T>
+    void
+    write(T const*) = delete;
 
-    void write(char const* s)
+    void
+    write(char const* s)
     {
-        if(dbg_)
-            /*boost::detail::winapi*/::OutputDebugStringA(s);
+        if (dbg_)
+            /*boost::detail::winapi*/ ::OutputDebugStringA(s);
         os_ << s;
     }
 
-    void write(wchar_t const* s)
+    void
+    write(wchar_t const* s)
     {
-        if(dbg_)
-            /*boost::detail::winapi*/::OutputDebugStringW(s);
+        if (dbg_)
+            /*boost::detail::winapi*/ ::OutputDebugStringW(s);
         os_ << s;
     }
 
 public:
-    explicit
-    dstream_buf(ostream& os)
-        : os_(os)
-        , dbg_(/*boost::detail::winapi*/::IsDebuggerPresent() != 0)
+    explicit dstream_buf(ostream& os)
+        : os_(os), dbg_(/*boost::detail::winapi*/ ::IsDebuggerPresent() != 0)
     {
     }
 
@@ -75,7 +75,7 @@ public:
     }
 };
 
-} // detail
+}  // namespace detail
 
 /** std::ostream with Visual Studio IDE redirection.
 
@@ -84,28 +84,23 @@ public:
     is attached when the stream is created, output will be
     additionally copied to the Visual Studio Output window.
 */
-template<
+template <
     class CharT,
     class Traits = std::char_traits<CharT>,
-    class Allocator = std::allocator<CharT>
->
-class basic_dstream
-    : public std::basic_ostream<CharT, Traits>
+    class Allocator = std::allocator<CharT>>
+class basic_dstream : public std::basic_ostream<CharT, Traits>
 {
-    detail::dstream_buf<
-        CharT, Traits, Allocator> buf_;
+    detail::dstream_buf<CharT, Traits, Allocator> buf_;
 
 public:
     /** Construct a stream.
 
         @param os The output stream to wrap.
     */
-    explicit
-    basic_dstream(std::ostream& os)
-        : std::basic_ostream<CharT, Traits>(&buf_)
-        , buf_(os)
+    explicit basic_dstream(std::ostream& os)
+        : std::basic_ostream<CharT, Traits>(&buf_), buf_(os)
     {
-        if(os.flags() & std::ios::unitbuf)
+        if (os.flags() & std::ios::unitbuf)
             std::unitbuf(*this);
     }
 };
@@ -120,7 +115,7 @@ using dwstream = std::wostream&;
 
 #endif
 
-} // unit_test
-} // beast
+}  // namespace unit_test
+}  // namespace beast
 
 #endif

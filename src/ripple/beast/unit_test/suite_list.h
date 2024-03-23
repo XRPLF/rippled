@@ -8,19 +8,18 @@
 #ifndef BEAST_UNIT_TEST_SUITE_LIST_HPP
 #define BEAST_UNIT_TEST_SUITE_LIST_HPP
 
-#include <ripple/beast/unit_test/suite_info.hpp>
 #include <ripple/beast/unit_test/detail/const_container.hpp>
+#include <ripple/beast/unit_test/suite_info.hpp>
 #include <boost/assert.hpp>
-#include <typeindex>
 #include <set>
+#include <typeindex>
 #include <unordered_set>
 
 namespace beast {
 namespace unit_test {
 
 /// A container of test suites.
-class suite_list
-    : public detail::const_container <std::set <suite_info>>
+class suite_list : public detail::const_container<std::set<suite_info>>
 {
 private:
 #ifndef NDEBUG
@@ -33,7 +32,7 @@ public:
 
         The suite must not already exist.
     */
-    template<class Suite>
+    template <class Suite>
     void
     insert(
         char const* name,
@@ -45,7 +44,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-template<class Suite>
+template <class Suite>
 void
 suite_list::insert(
     char const* name,
@@ -59,20 +58,19 @@ suite_list::insert(
         std::string s;
         s = std::string(library) + "." + module + "." + name;
         auto const result(names_.insert(s));
-        BOOST_ASSERT(result.second); // Duplicate name
+        BOOST_ASSERT(result.second);  // Duplicate name
     }
 
     {
-        auto const result(classes_.insert(
-            std::type_index(typeid(Suite))));
-        BOOST_ASSERT(result.second); // Duplicate type
+        auto const result(classes_.insert(std::type_index(typeid(Suite))));
+        BOOST_ASSERT(result.second);  // Duplicate type
     }
 #endif
-    cont().emplace(make_suite_info<Suite>(
-        name, module, library, manual, priority));
+    cont().emplace(
+        make_suite_info<Suite>(name, module, library, manual, priority));
 }
 
-} // unit_test
-} // beast
+}  // namespace unit_test
+}  // namespace beast
 
 #endif
