@@ -132,26 +132,67 @@ SHAMapInnerNode::makeFullInner(
     if (data.size() != branchFactor * uint256::bytes)
         Throw<std::runtime_error>("Invalid FI node");
 
-    auto ret = std::make_shared<SHAMapInnerNode>(0, branchFactor);
-
     SerialIter si(data);
 
+    // Determine the non-empty branches so we only allocate once what we need
+    // with no reallocation and moving around data.
+    // When allocating 16 branches, it has to turn around and reallocate
+    // the right size and compact, which is less than ideal. In principle,
+    // with fewer allocations we should see less fragmentation in the arena.
+    std::uint16_t isBranch = 0;
+    for (int i = 0; i < branchFactor; ++i)
+    {
+        // If the serialized inners included a branch header we wouldn't have to
+        // do this walk to check for non-zero branches. Note that the node store
+        // actually defines a custom compression specifically for inner nodes,
+        // and decompresses it into "full inner" form before handing off to
+        // other components. It may be worth investigating whether the
+        // compressed form is actually more usable here.
+        if (si.getSlice(uint256::bytes).isNonZero())
+        {
+            isBranch |= (1 << i);
+        }
+    }
+
+    auto const nonEmptyBranches = popcnt16(isBranch);
+    auto ret = std::make_shared<SHAMapInnerNode>(0, nonEmptyBranches);
     auto hashes = ret->hashesAndChildren_.getHashes();
+
+    ret->isBranch_ = isBranch;
+    si.reset();
 
     for (int i = 0; i < branchFactor; ++i)
     {
-        hashes[i].as_uint256() = si.getBitString<256>();
-
-        if (hashes[i].isNonZero())
-            ret->isBranch_ |= (1 << i);
+        if (isBranch & (1 << i))
+        {
+            auto const ix = ret->getChildIndex(i);
+            assert(ix);
+            hashes[*ix].as_uint256() = si.getBitString<256>();
+        }
+        else
+        {
+            // The `TaggedPointer` constructor uses placement new to invoke the
+            // default constructor of `SHAMapHash` for each element in the
+            // `hashes` array. Since `SHAMapHash` is a wrapper around `uint256`,
+            // which itself is a template instantiation of `base_uint` with a
+            // `std::array<std::uint32_t>` member, this process effectively
+            // zero-initializes the underlying array. As a result, all elements
+            // in `hashes` are guaranteed to be in a zeroed state, which permits
+            // the subsequent safe use of `si.skip(uint256::bytes)` to bypass
+            // unneeded zero bytes.
+            si.skip(uint256::bytes);
+        }
     }
 
-    ret->resizeChildArrays(ret->getBranchCount());
-
+#ifdef NDEBUG
     if (hashValid)
         ret->hash_ = hash;
     else
         ret->updateHash();
+#else
+    ret->updateHash();
+    assert(!hashValid || ret->hash_ == hash);
+#endif
 
     return ret;
 }
@@ -159,8 +200,8 @@ SHAMapInnerNode::makeFullInner(
 std::shared_ptr<SHAMapTreeNode>
 SHAMapInnerNode::makeCompressedInner(Slice data)
 {
-    // A compressed inner node is serialized as a series of 33 byte chunks,
-    // representing a one byte "position" and a 256-bit hash:
+    // A compressed inner node is serialized as a series of 33 byte
+    // chunks, representing a one byte "position" and a 256-bit hash:
     constexpr std::size_t chunkSize = uint256::bytes + 1;
 
     if (auto const s = data.size();
@@ -169,25 +210,27 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
 
     SerialIter si(data);
 
-    auto ret = std::make_shared<SHAMapInnerNode>(0, branchFactor);
+    std::uint8_t nonEmptyBranches = data.size() / chunkSize;
+    auto ret = std::make_shared<SHAMapInnerNode>(0, nonEmptyBranches);
 
     auto hashes = ret->hashesAndChildren_.getHashes();
+    int prevPos = 0;
 
     while (!si.empty())
     {
         auto const hash = si.getBitString<256>();
         auto const pos = si.get8();
 
-        if (pos >= branchFactor)
+        ret->isBranch_ |= (1 << pos);
+        auto const ix = ret->getChildIndex(pos);
+
+        if (pos >= branchFactor || prevPos > pos || !ix)
             Throw<std::runtime_error>("invalid CI node");
 
-        hashes[pos].as_uint256() = hash;
-
-        if (hashes[pos].isNonZero())
-            ret->isBranch_ |= (1 << pos);
+        hashes[*ix].as_uint256() = hash;
+        prevPos = pos;
     }
 
-    ret->resizeChildArrays(ret->getBranchCount());
     ret->updateHash();
     return ret;
 }

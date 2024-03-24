@@ -33,10 +33,34 @@ namespace {
 // Given n children, an array of size `*std::lower_bound(boundaries.begin(),
 // boundaries.end(), n);` is used to store the children. Note that the last
 // element must be the number of children in a dense array.
+//
+//  We base our boundaries on this sampling of inner nodes from
+//  ledger  83,592,201:
+//
+//  +----------+-----------+
+//  | Children |     Count |
+//  +----------+-----------+
+//  |        1 |   578,512 |
+//  |        2 | 2,840,810 | <-------
+//  |        3 |   624,837 |
+//  |        4 |   120,458 | <-------
+//  |        5 |    45,802 |
+//  |        6 |    73,588 |
+//  |        7 |   129,694 |
+//  |        8 |   184,122 |
+//  |        9 |   208,545 |
+//  |       10 |   187,800 | <-------
+//  |       11 |   129,330 |
+//  |       12 |    68,525 |
+//  |       13 |    27,126 |
+//  |       14 |     7,457 |
+//  |       15 |     1,555 |
+//  |       16 |    71,387 | <-------
+//  +----------+-----------+
 constexpr std::array<std::uint8_t, 4> boundaries{
     2,
     4,
-    6,
+    10,
     SHAMapInnerNode::branchFactor};
 static_assert(
     boundaries.size() <= 4,
