@@ -96,8 +96,15 @@ doAMMInfo(RPC::JsonContext& context)
         std::optional<Issue> issue2;
         std::optional<uint256> ammID;
 
-        if ((params.isMember(jss::asset) != params.isMember(jss::asset2)) ||
-            (params.isMember(jss::asset) == params.isMember(jss::amm_account)))
+        constexpr auto invalid = [](Json::Value const& params) -> bool {
+            return (params.isMember(jss::asset) !=
+                    params.isMember(jss::asset2)) ||
+                (params.isMember(jss::asset) ==
+                 params.isMember(jss::amm_account));
+        };
+
+        // NOTE, identical check for apVersion >= 3 below
+        if (context.apiVersion < 3 && invalid(params))
             return Unexpected(rpcINVALID_PARAMS);
 
         if (params.isMember(jss::asset))
@@ -127,16 +134,20 @@ doAMMInfo(RPC::JsonContext& context)
             ammID = sle->getFieldH256(sfAMMID);
         }
 
-        assert(
-            (issue1.has_value() == issue2.has_value()) &&
-            (issue1.has_value() != ammID.has_value()));
-
         if (params.isMember(jss::account))
         {
             accountID = getAccount(params[jss::account], result);
             if (!accountID || !ledger->read(keylet::account(*accountID)))
                 return Unexpected(rpcACT_MALFORMED);
         }
+
+        // NOTE, identical check for apVersion < 3 above
+        if (context.apiVersion >= 3 && invalid(params))
+            return Unexpected(rpcINVALID_PARAMS);
+
+        assert(
+            (issue1.has_value() == issue2.has_value()) &&
+            (issue1.has_value() != ammID.has_value()));
 
         auto const ammKeylet = [&]() {
             if (issue1 && issue2)
