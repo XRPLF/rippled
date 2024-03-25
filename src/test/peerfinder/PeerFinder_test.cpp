@@ -20,7 +20,7 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/unit_test.h>
-#include <ripple/beast/unit_test/suite.hpp>
+#include <ripple/beast/unit_test/suite.h>
 #include <ripple/core/Config.h>
 #include <ripple/peerfinder/impl/Logic.h>
 #include <ripple/protocol/PublicKey.h>

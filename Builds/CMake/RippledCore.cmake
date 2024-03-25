@@ -3,9 +3,53 @@
    core functionality, useable by some client software perhaps
 #]===================================================================]
 
+include(target_protobuf_sources)
+
 file (GLOB_RECURSE rb_headers
-  src/ripple/beast/*.h
-  src/ripple/beast/*.hpp)
+  src/ripple/beast/*.h)
+
+# Protocol buffers cannot participate in a unity build,
+# because all the generated sources
+# define a bunch of `static const` variables with the same names,
+# so we just build them as a separate library.
+add_library(xrpl.libpb)
+target_protobuf_sources(xrpl.libpb ripple/proto
+  LANGUAGE cpp
+  IMPORT_DIRS src/ripple/proto
+  PROTOS src/ripple/proto/ripple.proto
+)
+
+file(GLOB_RECURSE protos "src/ripple/proto/org/*.proto")
+target_protobuf_sources(xrpl.libpb ripple/proto
+  LANGUAGE cpp
+  IMPORT_DIRS src/ripple/proto
+  PROTOS "${protos}"
+)
+target_protobuf_sources(xrpl.libpb ripple/proto
+  LANGUAGE grpc
+  IMPORT_DIRS src/ripple/proto
+  PROTOS "${protos}"
+  PLUGIN protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>
+  GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
+)
+
+target_compile_options(xrpl.libpb
+  PUBLIC
+    $<$<BOOL:${MSVC}>:-wd4996>
+    $<$<BOOL:${XCODE}>:
+      --system-header-prefix="google/protobuf"
+      -Wno-deprecated-dynamic-exception-spec
+    >
+  PRIVATE
+    $<$<BOOL:${MSVC}>:-wd4065>
+    $<$<NOT:$<BOOL:${MSVC}>>:-Wno-deprecated-declarations>
+)
+
+target_link_libraries(xrpl.libpb
+  PUBLIC
+    protobuf::libprotobuf
+    gRPC::grpc++
+)
 
 add_library (xrpl_core
   ${rb_headers}) ## headers added here for benefit of IDEs
@@ -17,11 +61,11 @@ add_library(libxrpl INTERFACE)
 target_link_libraries(libxrpl INTERFACE xrpl_core)
 add_library(xrpl::libxrpl ALIAS libxrpl)
 
-
 #[===============================[
     beast/legacy FILES:
     TODO: review these sources for removal or replacement
 #]===============================]
+# BEGIN LIBXRPL SOURCES
 target_sources (xrpl_core PRIVATE
   src/ripple/beast/clock/basic_seconds_clock.cpp
   src/ripple/beast/core/CurrentThreadName.cpp
@@ -45,16 +89,23 @@ target_sources (xrpl_core PRIVATE
 target_sources (xrpl_core PRIVATE
   #[===============================[
     main sources:
-      subdir: basics (partial)
+      subdir: basics
   #]===============================]
+  src/ripple/basics/impl/Archive.cpp
   src/ripple/basics/impl/base64.cpp
+  src/ripple/basics/impl/BasicConfig.cpp
   src/ripple/basics/impl/contract.cpp
   src/ripple/basics/impl/CountedObject.cpp
   src/ripple/basics/impl/FileUtilities.cpp
   src/ripple/basics/impl/IOUAmount.cpp
   src/ripple/basics/impl/Log.cpp
+  src/ripple/basics/impl/make_SSLContext.cpp
+  src/ripple/basics/impl/mulDiv.cpp
   src/ripple/basics/impl/Number.cpp
+  src/ripple/basics/impl/partitioned_unordered_map.cpp
+  src/ripple/basics/impl/ResolverAsio.cpp
   src/ripple/basics/impl/StringUtilities.cpp
+  src/ripple/basics/impl/UptimeClock.cpp
   #[===============================[
     main sources:
       subdir: json
@@ -124,12 +175,27 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/NFTokenID.cpp
   src/ripple/protocol/impl/NFTokenOfferID.cpp
   #[===============================[
+     main sources:
+       subdir: resource
+  #]===============================]
+  src/ripple/resource/impl/Charge.cpp
+  src/ripple/resource/impl/Consumer.cpp
+  src/ripple/resource/impl/Fees.cpp
+  src/ripple/resource/impl/ResourceManager.cpp
+  #[===============================[
+     main sources:
+       subdir: server
+  #]===============================]
+  src/ripple/server/impl/JSONRPCUtil.cpp
+  src/ripple/server/impl/Port.cpp
+  #[===============================[
     main sources:
       subdir: crypto
   #]===============================]
   src/ripple/crypto/impl/RFC1751.cpp
   src/ripple/crypto/impl/csprng.cpp
   src/ripple/crypto/impl/secure_erase.cpp)
+# END LIBXRPL SOURCES
 
 add_library (Ripple::xrpl_core ALIAS xrpl_core)
 target_include_directories (xrpl_core
@@ -147,17 +213,20 @@ target_compile_options (xrpl_core
     $<$<BOOL:${is_gcc}>:-Wno-maybe-uninitialized>)
 target_link_libraries (xrpl_core
   PUBLIC
+    date::date
+    ed25519::ed25519
+    LibArchive::LibArchive
     OpenSSL::Crypto
     Ripple::boost
+    Ripple::opts
     Ripple::syslibs
     secp256k1::secp256k1
-    ed25519::ed25519
-    date::date
-    Ripple::opts
+    xrpl.libpb
     xxHash::xxhash)
 #[=================================[
    main/core headers installation
 #]=================================]
+# BEGIN LIBXRPL HEADERS
 install (
   FILES
     src/ripple/basics/Archive.h
@@ -393,22 +462,22 @@ install (
   DESTINATION include/ripple/beast)
 install (
   FILES
-    src/ripple/beast/unit_test/amount.hpp
-    src/ripple/beast/unit_test/dstream.hpp
-    src/ripple/beast/unit_test/global_suites.hpp
-    src/ripple/beast/unit_test/match.hpp
-    src/ripple/beast/unit_test/recorder.hpp
-    src/ripple/beast/unit_test/reporter.hpp
-    src/ripple/beast/unit_test/results.hpp
-    src/ripple/beast/unit_test/runner.hpp
-    src/ripple/beast/unit_test/suite_info.hpp
-    src/ripple/beast/unit_test/suite_list.hpp
-    src/ripple/beast/unit_test/suite.hpp
-    src/ripple/beast/unit_test/thread.hpp
+    src/ripple/beast/unit_test/amount.h
+    src/ripple/beast/unit_test/dstream.h
+    src/ripple/beast/unit_test/global_suites.h
+    src/ripple/beast/unit_test/match.h
+    src/ripple/beast/unit_test/recorder.h
+    src/ripple/beast/unit_test/reporter.h
+    src/ripple/beast/unit_test/results.h
+    src/ripple/beast/unit_test/runner.h
+    src/ripple/beast/unit_test/suite_info.h
+    src/ripple/beast/unit_test/suite_list.h
+    src/ripple/beast/unit_test/suite.h
+    src/ripple/beast/unit_test/thread.h
   DESTINATION include/ripple/beast/unit_test)
 install (
   FILES
-    src/ripple/beast/unit_test/detail/const_container.hpp
+    src/ripple/beast/unit_test/detail/const_container.h
   DESTINATION include/ripple/beast/unit_test/detail)
 install (
   FILES
@@ -418,6 +487,7 @@ install (
     src/ripple/beast/utility/Zero.h
     src/ripple/beast/utility/rngfill.h
   DESTINATION include/ripple/beast/utility)
+# END LIBXRPL HEADERS
 #[===================================================================[
    rippled executable
 #]===================================================================]
@@ -434,6 +504,7 @@ endif ()
 if (tests)
     target_compile_definitions(rippled PUBLIC ENABLE_TESTS)
 endif()
+# BEGIN XRPLD SOURCES
 target_sources (rippled PRIVATE
   #[===============================[
      main sources:
@@ -570,17 +641,6 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/details/NFTokenUtils.cpp
   #[===============================[
      main sources:
-       subdir: basics (partial)
-  #]===============================]
-  src/ripple/basics/impl/Archive.cpp
-  src/ripple/basics/impl/BasicConfig.cpp
-  src/ripple/basics/impl/ResolverAsio.cpp
-  src/ripple/basics/impl/UptimeClock.cpp
-  src/ripple/basics/impl/make_SSLContext.cpp
-  src/ripple/basics/impl/mulDiv.cpp
-  src/ripple/basics/impl/partitioned_unordered_map.cpp
-  #[===============================[
-     main sources:
        subdir: conditions
   #]===============================]
   src/ripple/conditions/impl/Condition.cpp
@@ -681,14 +741,6 @@ target_sources (rippled PRIVATE
   src/ripple/peerfinder/impl/SourceStrings.cpp
   #[===============================[
      main sources:
-       subdir: resource
-  #]===============================]
-  src/ripple/resource/impl/Charge.cpp
-  src/ripple/resource/impl/Consumer.cpp
-  src/ripple/resource/impl/Fees.cpp
-  src/ripple/resource/impl/ResourceManager.cpp
-  #[===============================[
-     main sources:
        subdir: rpc
   #]===============================]
   src/ripple/rpc/handlers/AccountChannels.cpp
@@ -773,13 +825,6 @@ target_sources (rippled PRIVATE
        subdir: perflog
   #]===============================]
   src/ripple/perflog/impl/PerfLogImp.cpp
-
-  #[===============================[
-     main sources:
-       subdir: server
-  #]===============================]
-  src/ripple/server/impl/JSONRPCUtil.cpp
-  src/ripple/server/impl/Port.cpp
   #[===============================[
      main sources:
        subdir: shamap
@@ -793,6 +838,7 @@ target_sources (rippled PRIVATE
   src/ripple/shamap/impl/SHAMapSync.cpp
   src/ripple/shamap/impl/SHAMapTreeNode.cpp
   src/ripple/shamap/impl/ShardFamily.cpp)
+# END XRPLD SOURCES
 
   #[===============================[
      test sources:

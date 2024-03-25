@@ -19,7 +19,7 @@
 
 #include <test/unit_test/multi_runner.h>
 
-#include <ripple/beast/unit_test/amount.hpp>
+#include <ripple/beast/unit_test/amount.h>
 
 #include <boost/lexical_cast.hpp>
 

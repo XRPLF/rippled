@@ -9,6 +9,7 @@ install (
     ripple_syslibs
     ripple_boost
     xrpl_core
+    xrpl.libpb
   EXPORT RippleExports
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
