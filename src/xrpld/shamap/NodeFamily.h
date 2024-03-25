@@ -60,18 +60,14 @@ public:
         return j_;
     }
 
-    bool
-    isShardBacked() const override
-    {
-        return false;
-    }
-
-    std::shared_ptr<FullBelowCache> getFullBelowCache(std::uint32_t) override
+    std::shared_ptr<FullBelowCache>
+    getFullBelowCache() override
     {
         return fbCache_;
     }
 
-    std::shared_ptr<TreeNodeCache> getTreeNodeCache(std::uint32_t) override
+    std::shared_ptr<TreeNodeCache>
+    getTreeNodeCache() override
     {
         return tnCache_;
     }
