@@ -98,7 +98,6 @@ find_package(xxHash REQUIRED)
 
 target_link_libraries(ripple_libs INTERFACE
   ed25519::ed25519
-  LibArchive::LibArchive
   lz4::lz4
   OpenSSL::Crypto
   OpenSSL::SSL

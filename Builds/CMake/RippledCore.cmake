@@ -88,16 +88,23 @@ target_sources (xrpl_core PRIVATE
 target_sources (xrpl_core PRIVATE
   #[===============================[
     main sources:
-      subdir: basics (partial)
+      subdir: basics
   #]===============================]
+  src/ripple/basics/impl/Archive.cpp
   src/ripple/basics/impl/base64.cpp
+  src/ripple/basics/impl/BasicConfig.cpp
   src/ripple/basics/impl/contract.cpp
   src/ripple/basics/impl/CountedObject.cpp
   src/ripple/basics/impl/FileUtilities.cpp
   src/ripple/basics/impl/IOUAmount.cpp
   src/ripple/basics/impl/Log.cpp
+  src/ripple/basics/impl/make_SSLContext.cpp
+  src/ripple/basics/impl/mulDiv.cpp
   src/ripple/basics/impl/Number.cpp
+  src/ripple/basics/impl/partitioned_unordered_map.cpp
+  src/ripple/basics/impl/ResolverAsio.cpp
   src/ripple/basics/impl/StringUtilities.cpp
+  src/ripple/basics/impl/UptimeClock.cpp
   #[===============================[
     main sources:
       subdir: json
@@ -167,6 +174,20 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/NFTokenID.cpp
   src/ripple/protocol/impl/NFTokenOfferID.cpp
   #[===============================[
+     main sources:
+       subdir: resource
+  #]===============================]
+  src/ripple/resource/impl/Charge.cpp
+  src/ripple/resource/impl/Consumer.cpp
+  src/ripple/resource/impl/Fees.cpp
+  src/ripple/resource/impl/ResourceManager.cpp
+  #[===============================[
+     main sources:
+       subdir: server
+  #]===============================]
+  src/ripple/server/impl/JSONRPCUtil.cpp
+  src/ripple/server/impl/Port.cpp
+  #[===============================[
     main sources:
       subdir: crypto
   #]===============================]
@@ -190,14 +211,15 @@ target_compile_options (xrpl_core
     $<$<BOOL:${is_gcc}>:-Wno-maybe-uninitialized>)
 target_link_libraries (xrpl_core
   PUBLIC
+    date::date
+    ed25519::ed25519
+    LibArchive::LibArchive
     OpenSSL::Crypto
     Ripple::boost
+    Ripple::opts
     Ripple::syslibs
     secp256k1::secp256k1
-    ed25519::ed25519
     xrpl.libpb
-    date::date
-    Ripple::opts
     xxHash::xxhash)
 #[=================================[
    main/core headers installation
@@ -614,17 +636,6 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/details/NFTokenUtils.cpp
   #[===============================[
      main sources:
-       subdir: basics (partial)
-  #]===============================]
-  src/ripple/basics/impl/Archive.cpp
-  src/ripple/basics/impl/BasicConfig.cpp
-  src/ripple/basics/impl/ResolverAsio.cpp
-  src/ripple/basics/impl/UptimeClock.cpp
-  src/ripple/basics/impl/make_SSLContext.cpp
-  src/ripple/basics/impl/mulDiv.cpp
-  src/ripple/basics/impl/partitioned_unordered_map.cpp
-  #[===============================[
-     main sources:
        subdir: conditions
   #]===============================]
   src/ripple/conditions/impl/Condition.cpp
@@ -725,14 +736,6 @@ target_sources (rippled PRIVATE
   src/ripple/peerfinder/impl/SourceStrings.cpp
   #[===============================[
      main sources:
-       subdir: resource
-  #]===============================]
-  src/ripple/resource/impl/Charge.cpp
-  src/ripple/resource/impl/Consumer.cpp
-  src/ripple/resource/impl/Fees.cpp
-  src/ripple/resource/impl/ResourceManager.cpp
-  #[===============================[
-     main sources:
        subdir: rpc
   #]===============================]
   src/ripple/rpc/handlers/AccountChannels.cpp
@@ -817,13 +820,6 @@ target_sources (rippled PRIVATE
        subdir: perflog
   #]===============================]
   src/ripple/perflog/impl/PerfLogImp.cpp
-
-  #[===============================[
-     main sources:
-       subdir: server
-  #]===============================]
-  src/ripple/server/impl/JSONRPCUtil.cpp
-  src/ripple/server/impl/Port.cpp
   #[===============================[
      main sources:
        subdir: shamap
