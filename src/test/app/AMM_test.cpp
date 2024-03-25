@@ -3693,6 +3693,32 @@ private:
             Env env{*this, feature};
             fund(env, gw, {alice}, {USD(1'000)}, Fund::All);
             AMM amm(env, alice, XRP(1'000), USD(1'000), ter(temDISABLED));
+            amm.bid(
+                alice,
+                1000,
+                std::nullopt,
+                {},
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(temMALFORMED));
+            amm.vote(
+                std::nullopt,
+                100,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(temDISABLED));
+            amm.withdraw(
+                alice, 100, std::nullopt, std::nullopt, ter(temMALFORMED));
+            amm.deposit(
+                alice,
+                USD(100),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(temDISABLED));
+            amm.ammDelete(alice, ter(temDISABLED));
         }
     }
 
@@ -4391,6 +4417,9 @@ private:
             amm.ammDelete(alice);
             BEAST_EXPECT(!amm.ammExists());
             BEAST_EXPECT(!env.le(keylet::ownerDir(amm.ammAccount())));
+
+            // Try redundant delete
+            amm.ammDelete(alice, ter(terNO_AMM));
         }
     }
 
