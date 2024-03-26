@@ -27,7 +27,7 @@ namespace ripple {
 
 // Create ETL source without grpc endpoint
 // Fetch ledger and load initial ledger will fail for this source
-// Primarly used in read-only mode, to monitor when ledgers are validated
+// Primarily used in read-only mode, to monitor when ledgers are validated
 ETLSource::ETLSource(std::string ip, std::string wsPort, ReportingETL& etl)
     : ip_(ip)
     , wsPort_(wsPort)
