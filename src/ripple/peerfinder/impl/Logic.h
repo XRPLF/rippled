@@ -273,7 +273,7 @@ public:
 
         std::lock_guard _(lock_);
 
-        // Check for duplicate connection
+        // Check for connection limit per address
         if (is_public(remote_endpoint))
         {
             auto const count =
@@ -285,6 +285,15 @@ public:
                     << remote_endpoint << " because of ip limits.";
                 return SlotImp::ptr();
             }
+        }
+
+        // Check for duplicate connection
+        if (slots_.find(remote_endpoint) != slots_.end())
+        {
+            JLOG(m_journal.debug())
+                << beast::leftw(18) << "Logic dropping " << remote_endpoint
+                << " as duplicate incoming";
+            return SlotImp::ptr();
         }
 
         // Create the slot

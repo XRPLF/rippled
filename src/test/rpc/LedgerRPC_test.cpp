@@ -2305,7 +2305,7 @@ public:
         testLedgerAccountsOption();
         testLedgerEntryDID();
 
-        test::jtx::forAllApiVersions(std::bind_front(
+        forAllApiVersions(std::bind_front(
             &LedgerRPC_test::testLedgerEntryInvalidParams, this));
     }
 };

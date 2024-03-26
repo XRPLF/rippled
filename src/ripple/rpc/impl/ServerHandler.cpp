@@ -643,7 +643,7 @@ ServerHandler::processRequest(
             continue;
         }
 
-        auto apiVersion = RPC::apiVersionIfUnspecified;
+        unsigned apiVersion = RPC::apiVersionIfUnspecified;
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 &&
             jsonRPC[jss::params][0u].isObject())

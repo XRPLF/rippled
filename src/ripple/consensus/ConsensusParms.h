@@ -86,7 +86,7 @@ struct ConsensusParms
      *  validators don't appear to be offline that are merely waiting for
      *  laggards.
      */
-    std::chrono::milliseconds ledgerMAX_CONSENSUS = std::chrono::seconds{10};
+    std::chrono::milliseconds ledgerMAX_CONSENSUS = std::chrono::seconds{15};
 
     //! Minimum number of seconds to wait to ensure others have computed the LCL
     std::chrono::milliseconds ledgerMIN_CLOSE = std::chrono::seconds{2};

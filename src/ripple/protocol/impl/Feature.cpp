@@ -458,10 +458,12 @@ REGISTER_FEATURE(AMM,                           Supported::yes, VoteBehavior::De
 REGISTER_FEATURE(XChainBridge,                  Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixDisallowIncomingV1,         Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FEATURE(DID,                           Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX(fixFillOrKill,                     Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixFillOrKill,                 Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixNFTokenReserve,             Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX(fixInnerObjTemplate,               Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixInnerObjTemplate,           Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FEATURE(PriceOracle,                   Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixEmptyDID,                   Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixXChainRewardRounding,       Supported::yes, VoteBehavior::DefaultNo);
 // InvariantsV1_1 will be changes to Supported::yes when all the
 // invariants expected to be included under it are complete.
 REGISTER_FEATURE(InvariantsV1_1,                Supported::no, VoteBehavior::DefaultNo);
