@@ -213,7 +213,8 @@ deleteAMMTrustLines(
                 JLOG(j.error())
                     << "deleteAMMTrustLines: deleting non-trustline "
                     << nodeType;
-                return {tecINTERNAL, SkipEntry::No};
+                return {tecINTERNAL, SkipEntry::No};  // LCOV_EXCL_LINE exclude
+                                                      // from test coverage
             }
 
             // Trustlines must have zero balance
@@ -222,7 +223,8 @@ deleteAMMTrustLines(
                 JLOG(j.error())
                     << "deleteAMMTrustLines: deleting trustline with "
                        "non-zero balance.";
-                return {tecINTERNAL, SkipEntry::No};
+                return {tecINTERNAL, SkipEntry::No};  // LCOV_EXCL_LINE exclude
+                                                      // from test coverage
             }
 
             return {
@@ -245,7 +247,7 @@ deleteAMMAccount(
     {
         JLOG(j.error()) << "deleteAMMAccount: AMM object does not exist "
                         << asset << " " << asset2;
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE exclude from test coverage
     }
 
     auto const ammAccountID = (*ammSle)[sfAccount];
@@ -254,7 +256,7 @@ deleteAMMAccount(
     {
         JLOG(j.error()) << "deleteAMMAccount: AMM account does not exist "
                         << to_string(ammAccountID);
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE exclude from test coverage
     }
 
     if (auto const ter =
@@ -267,13 +269,13 @@ deleteAMMAccount(
             ownerDirKeylet, (*ammSle)[sfOwnerNode], ammSle->key(), false))
     {
         JLOG(j.error()) << "deleteAMMAccount: failed to remove dir link";
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE exclude from test coverage
     }
     if (sb.exists(ownerDirKeylet) && !sb.emptyDirDelete(ownerDirKeylet))
     {
         JLOG(j.error()) << "deleteAMMAccount: cannot delete root dir node of "
                         << toBase58(ammAccountID);
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE exclude from test coverage
     }
 
     sb.erase(ammSle);

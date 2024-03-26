@@ -194,8 +194,9 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             return tecAMM_NOT_EMPTY;
         if (amountBalance != beast::zero || amount2Balance != beast::zero)
         {
-            JLOG(ctx.j.debug()) << "AMM Deposit: tokens balance is not zero.";
-            return tecINTERNAL;
+            JLOG(ctx.j.debug())
+                << "AMM Deposit: tokens balance is not zero.";  // LCOV_EXCL_LINE
+            return tecINTERNAL;  // LCOV_EXCL_LINE exclude from test coverage
         }
     }
     else
@@ -205,9 +206,10 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         if (amountBalance <= beast::zero || amount2Balance <= beast::zero ||
             lptAMMBalance < beast::zero)
         {
-            JLOG(ctx.j.debug())
-                << "AMM Deposit: reserves or tokens balance is zero.";
-            return tecINTERNAL;
+            JLOG(ctx.j.debug())  // LCOV_EXCL_LINE exclude from test coverage
+                << "AMM Deposit: reserves or "  // LCOV_EXCL_LINE
+                << "tokens balance is zero.";   // LCOV_EXCL_LINE
+            return tecINTERNAL;  // LCOV_EXCL_LINE exclude from test coverage
         }
     }
 
@@ -254,10 +256,17 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             if (auto const ter =
                     requireAuth(ctx.view, amount->issue(), accountID))
             {
-                JLOG(ctx.j.debug())
-                    << "AMM Deposit: account is not authorized, "
-                    << amount->issue();
-                return ter;
+                JLOG(ctx.j.debug())  // LCOV_EXCL_LINE exclude from test
+                                     // coverage
+                    << "AMM Deposit: account is not "
+                       "authorized, "    // LCOV_EXCL_LINE
+                                         // exclude
+                                         // from test
+                                         // coverage
+                    << amount->issue();  // LCOV_EXCL_LINE
+                                         // exclude from test
+                                         // coverage
+                return ter;  // LCOV_EXCL_LINE exclude from test coverage
             }
             // AMM account or currency frozen
             if (isFrozen(ctx.view, ammAccountID, amount->issue()))
@@ -339,7 +348,8 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const lpTokensDeposit = ctx_.tx[~sfLPTokenOut];
     auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
-        return {tecINTERNAL, false};
+        return {
+            tecINTERNAL, false};  // LCOV_EXCL_LINE exclude from test coverage
     auto const ammAccountID = (*ammSle)[sfAccount];
 
     auto const expected = ammHolds(
@@ -421,8 +431,12 @@ AMMDeposit::applyGuts(Sandbox& sb)
                 lptAMMBalance.issue(),
                 tfee);
         // should not happen.
-        JLOG(j_.error()) << "AMM Deposit: invalid options.";
-        return std::make_pair(tecINTERNAL, STAmount{});
+        JLOG(j_.error())
+            << "AMM Deposit: invalid options.";  // LCOV_EXCL_LINE exclude from
+                                                 // test coverage
+        return std::make_pair(
+            tecINTERNAL,
+            STAmount{});  // LCOV_EXCL_LINE exclude from test coverage
     }();
 
     if (result == tesSUCCESS)
@@ -624,7 +638,8 @@ AMMDeposit::equalDepositTokens(
         JLOG(j_.error()) << "AMMDeposit::equalDepositTokens exception "
                          << e.what();
     }
-    return {tecINTERNAL, STAmount{}};
+    return {
+        tecINTERNAL, STAmount{}};  // LCOV_EXCL_LINE exclude from test coverage
 }
 
 /** Proportional deposit of pool assets with the constraints on the maximum

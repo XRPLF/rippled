@@ -608,7 +608,12 @@ private:
                      USD(100),
                      STAmount{USD, 1, -1},
                      std::nullopt},
-                };
+                    {tfTwoAssetIfEmpty | tfLPToken,
+                     std::nullopt,
+                     XRP(100),
+                     USD(100),
+                     STAmount{USD, 1, -1},
+                     std::nullopt}};
             for (auto const& it : invalidOptions)
             {
                 ammAlice.deposit(
@@ -624,6 +629,19 @@ private:
                     ter(temMALFORMED));
             }
 
+            {
+                // bad preflight1
+                Json::Value jv = Json::objectValue;
+                jv[jss::Account] = alice.human();
+                jv[jss::TransactionType] = jss::AMMDeposit;
+                jv[jss::Asset] =
+                    STIssue(sfAsset, XRP).getJson(JsonOptions::none);
+                jv[jss::Asset2] =
+                    STIssue(sfAsset, USD).getJson(JsonOptions::none);
+                jv[jss::Fee] = "-1";
+                env(jv, ter(temBAD_FEE));
+            }
+
             // Invalid tokens
             ammAlice.deposit(
                 alice, 0, std::nullopt, std::nullopt, ter(temBAD_AMM_TOKENS));
@@ -633,6 +651,33 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(temBAD_AMM_TOKENS));
+
+            {
+                Json::Value jv = Json::objectValue;
+                jv[jss::Account] = alice.human();
+                jv[jss::TransactionType] = jss::AMMDeposit;
+                jv[jss::Asset] =
+                    STIssue(sfAsset, XRP).getJson(JsonOptions::none);
+                jv[jss::Asset2] =
+                    STIssue(sfAsset, USD).getJson(JsonOptions::none);
+                jv[jss::LPTokenOut] =
+                    USD(100).value().getJson(JsonOptions::none);
+                jv[jss::Flags] = tfLPToken;
+                env(jv, ter(temBAD_AMM_TOKENS));
+            }
+
+            // Invalid trading fee
+            ammAlice.deposit(
+                carol,
+                std::nullopt,
+                XRP(200),
+                USD(200),
+                std::nullopt,
+                tfTwoAssetIfEmpty,
+                std::nullopt,
+                std::nullopt,
+                10'000,
+                ter(temBAD_FEE));
 
             // Invalid tokens - bogus currency
             {
@@ -830,6 +875,13 @@ private:
                 ter(tecFROZEN));
             ammAlice.deposit(
                 carol, 1'000'000, std::nullopt, std::nullopt, ter(tecFROZEN));
+            ammAlice.deposit(
+                carol,
+                XRP(100),
+                USD(100),
+                std::nullopt,
+                std::nullopt,
+                ter(tecFROZEN));
         });
 
         // Individually frozen (AMM) account
@@ -866,6 +918,50 @@ private:
                 std::nullopt,
                 ter(tecFROZEN));
         });
+
+        // Individually frozen (AMM) account with IOU/IOU AMM
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                env(trust(gw, carol["USD"](0), tfSetFreeze));
+                env(trust(gw, carol["BTC"](0), tfSetFreeze));
+                env.close();
+                ammAlice.deposit(
+                    carol,
+                    1'000'000,
+                    std::nullopt,
+                    std::nullopt,
+                    ter(tecFROZEN));
+                ammAlice.deposit(
+                    carol,
+                    USD(100),
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    ter(tecFROZEN));
+                env(trust(gw, carol["USD"](0), tfClearFreeze));
+                // Individually frozen AMM
+                env(trust(
+                    gw,
+                    STAmount{
+                        Issue{gw["USD"].currency, ammAlice.ammAccount()}, 0},
+                    tfSetFreeze));
+                env.close();
+                // Can deposit non-frozen token
+                ammAlice.deposit(
+                    carol,
+                    1'000'000,
+                    std::nullopt,
+                    std::nullopt,
+                    ter(tecFROZEN));
+                ammAlice.deposit(
+                    carol,
+                    USD(100),
+                    BTC(0.01),
+                    std::nullopt,
+                    std::nullopt,
+                    ter(tecFROZEN));
+            },
+            {{USD(20'000), BTC(0.5)}});
 
         // Insufficient XRP balance
         testAMM([&](AMM& ammAlice, Env& env) {
@@ -952,6 +1048,15 @@ private:
             ammAlice.deposit(
                 carol,
                 XRP(100),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                ter(tecINSUF_RESERVE_LINE));
+
+            env(offer(carol, XRP(100), USD(103)));
+            ammAlice.deposit(
+                carol,
+                USD(100),
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
