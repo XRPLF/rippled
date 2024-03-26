@@ -168,9 +168,7 @@ fillJsonTx(
         if (validated)
         {
             auto const seq = fill.ledger.seq();
-            txJson[jss::ledger_index] = (fill.context->apiVersion > 1)
-                ? Json::Value(seq)
-                : Json::Value(std::to_string(seq));
+            txJson[jss::ledger_index] = seq;
             if (fill.closeTime)
                 txJson[jss::close_time_iso] = to_string_iso(*fill.closeTime);
         }

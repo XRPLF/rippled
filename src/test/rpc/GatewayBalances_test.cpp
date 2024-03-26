@@ -172,10 +172,7 @@ public:
         qry2[jss::account] = alice.human();
         qry2[jss::hotwallet] = "asdf";
 
-        for (auto apiVersion = RPC::apiMinimumSupportedVersion;
-             apiVersion <= RPC::apiBetaVersion;
-             ++apiVersion)
-        {
+        forAllApiVersions([&, this](unsigned apiVersion) {
             qry2[jss::api_version] = apiVersion;
             auto jv = wsc->invoke("gateway_balances", qry2);
             expect(jv[jss::status] == "error");
@@ -184,7 +181,7 @@ public:
             auto const error =
                 apiVersion < 2u ? "invalidHotWallet" : "invalidParams";
             BEAST_EXPECT(response[jss::error] == error);
-        }
+        });
     }
 
     void

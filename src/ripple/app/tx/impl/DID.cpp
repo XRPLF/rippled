@@ -161,6 +161,13 @@ DIDSet::doApply()
     set(sfURI);
     set(sfDIDDocument);
     set(sfData);
+    if (ctx_.view().rules().enabled(fixEmptyDID) &&
+        !sleDID->isFieldPresent(sfURI) &&
+        !sleDID->isFieldPresent(sfDIDDocument) &&
+        !sleDID->isFieldPresent(sfData))
+    {
+        return tecEMPTY_DID;
+    }
 
     return addSLE(ctx_, sleDID, account_);
 }

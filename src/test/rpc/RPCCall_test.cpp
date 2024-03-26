@@ -6219,8 +6219,7 @@ public:
     void
     run() override
     {
-        test::jtx::forAllApiVersions(
-            std::bind_front(&RPCCall_test::testRPCCall, this));
+        forAllApiVersions(std::bind_front(&RPCCall_test::testRPCCall, this));
     }
 };
 
