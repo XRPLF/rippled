@@ -391,12 +391,12 @@ public:
         return ammID_;
     }
 
-private:
     void
     setTokens(
         Json::Value& jv,
         std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt);
 
+private:
     AccountID
     create(
         std::uint32_t tfee = 0,

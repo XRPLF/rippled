@@ -42,6 +42,9 @@
 namespace ripple {
 namespace test {
 
+/**
+ * Tests of AMM that use offers too.
+ */
 struct AMMExtended_test : public jtx::AMMTest
 {
 private:

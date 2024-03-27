@@ -37,6 +37,10 @@
 namespace ripple {
 namespace test {
 
+/**
+ * Basic tests of AMM that do not use offers.
+ * Tests incorporating offers are in `AMMExtended_test`.
+ */
 struct AMM_test : public jtx::AMMTest
 {
 private:
@@ -81,10 +85,8 @@ private:
             env.fund(XRP(30'000), gw, alice);
             env.close();
             env(fset(gw, asfRequireAuth));
-            env.close();
-            env.trust(USD(30'000), alice);
-            env.close();
-            env(trust(gw, alice["USD"](30'000)), txflags(tfSetfAuth));
+            env(trust(alice, gw["USD"](30'000), 0));
+            env(trust(gw, alice["USD"](0), tfSetfAuth));
             env.close();
             env(pay(gw, alice, USD(10'000)));
             env.close();
