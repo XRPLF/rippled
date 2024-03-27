@@ -227,7 +227,7 @@ public:
     std::string SSL_VERIFY_DIR;
 
     // Compression
-    bool COMPRESSION = false;
+    bool COMPRESSION = true;
 
     // Enable the experimental Ledger Replay functionality
     bool LEDGER_REPLAY = false;
