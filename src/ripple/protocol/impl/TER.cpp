@@ -20,13 +20,26 @@
 #include <ripple/protocol/TER.h>
 #include <boost/range/adaptor/transformed.hpp>
 #include <type_traits>
+#include <unordered_map>
+#include <vector>
 
 namespace ripple {
 
+static std::vector<TERExport>* pluginTERcodesPtr;
+
 std::unordered_map<
     TERUnderlyingType,
-    std::pair<char const* const, char const* const>> const&
-transResults()
+    std::pair<char const* const, char const* const>>
+    results;
+
+void
+registerPluginTERs(std::vector<TERExport>* pluginTERcodes)
+{
+    pluginTERcodesPtr = pluginTERcodes;
+}
+
+void
+initializeTransResults()
 {
     // clang-format off
 
@@ -34,10 +47,7 @@ transResults()
     // humans without affecting the compiler.
 #define MAKE_ERROR(code, desc) { code, { #code, desc } }
 
-    static
-    std::unordered_map<
-            TERUnderlyingType,
-            std::pair<char const* const, char const* const>> const results
+    results.insert(
     {
         MAKE_ERROR(tecAMM_BALANCE,                   "AMM has invalid balance."),
         MAKE_ERROR(tecAMM_INVALID_TOKENS,            "AMM invalid LP tokens."),
@@ -220,11 +230,35 @@ transResults()
         MAKE_ERROR(terNO_AMM,                 "AMM doesn't exist for the asset pair."),
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
-    };
+    });
     // clang-format on
 
 #undef MAKE_ERROR
 
+    if (pluginTERcodesPtr != nullptr)
+    {
+        for (TERExport ter : *pluginTERcodesPtr)
+        {
+            if (auto const it = results.find(ter.code); it != results.end())
+            {
+                throw std::runtime_error(
+                    "Code " + std::to_string(ter.code) +
+                    " already exists for " + it->second.first);
+            }
+            results.insert({ter.code, {ter.codeStr, ter.description}});
+        }
+    }
+}
+
+std::unordered_map<
+    TERUnderlyingType,
+    std::pair<char const* const, char const* const>> const&
+transResults()
+{
+    if (results.size() == 0)
+    {
+        initializeTransResults();
+    }
     return results;
 }
 
@@ -281,6 +315,12 @@ transCode(std::string const& token)
         return std::nullopt;
 
     return TER::fromInt(r->second);
+}
+
+void
+resetPluginTERcodes()
+{
+    results.clear();
 }
 
 }  // namespace ripple

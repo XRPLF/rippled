@@ -464,7 +464,7 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
  * is always tesSUCCESS if the entry should be skipped.
  */
 using EntryDeleter = std::function<std::pair<TER, SkipEntry>(
-    LedgerEntryType,
+    std::uint16_t,  // LedgerEntryType
     uint256 const&,
     std::shared_ptr<SLE>&)>;
 /** Cleanup owner directory entries on account delete.

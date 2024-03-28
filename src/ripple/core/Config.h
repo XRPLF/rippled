@@ -284,6 +284,7 @@ public:
     // These override the command line client settings
     std::optional<beast::IP::Endpoint> rpc_ip;
 
+    std::vector<std::string> rawFeatures;
     std::unordered_set<uint256, beast::uhash<>> features;
 
     std::string SERVER_DOMAIN;
@@ -307,6 +308,9 @@ public:
     // only.
     std::optional<std::pair<std::uint32_t, std::uint32_t>>
         FORCED_LEDGER_RANGE_PRESENT;
+
+    // plugin locations
+    std::vector<std::string> PLUGINS = {};
 
 public:
     Config();

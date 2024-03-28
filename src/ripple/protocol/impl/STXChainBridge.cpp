@@ -187,7 +187,7 @@ STXChainBridge::toSTObject() const
     return o;
 }
 
-SerializedTypeID
+int
 STXChainBridge::getSType() const
 {
     return STI_XCHAIN_BRIDGE;

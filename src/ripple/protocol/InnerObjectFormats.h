@@ -29,10 +29,21 @@ namespace ripple {
 class InnerObjectFormats : public KnownFormats<int, InnerObjectFormats>
 {
 private:
+    void
+    initialize();
+
     /** Create the object.
         This will load the object with all the known inner object formats.
     */
-    InnerObjectFormats();
+    InnerObjectFormats()
+    {
+        initialize();
+    }
+
+    static InnerObjectFormats&
+    getInstanceHelper();
+
+    bool cleared = false;
 
 public:
     static InnerObjectFormats const&
@@ -40,7 +51,20 @@ public:
 
     SOTemplate const*
     findSOTemplateBySField(SField const& sField) const;
+
+    static void
+    reset();
 };
+
+struct PluginInnerObjectFormat
+{
+    std::string name;
+    std::vector<SOElement> uniqueFields;
+};
+
+void
+registerPluginInnerObjectFormats(
+    std::map<std::uint16_t, PluginInnerObjectFormat>* pluginInnerObjectFormats);
 
 }  // namespace ripple
 

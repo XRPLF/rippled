@@ -25,6 +25,7 @@
 #include <ripple/app/tx/impl/AMMVote.h>
 #include <ripple/app/tx/impl/AMMWithdraw.h>
 #include <ripple/app/tx/impl/ApplyContext.h>
+#include <ripple/app/tx/impl/ApplyHandler.h>
 #include <ripple/app/tx/impl/CancelCheck.h>
 #include <ripple/app/tx/impl/CancelOffer.h>
 #include <ripple/app/tx/impl/CashCheck.h>
@@ -57,12 +58,26 @@
 
 namespace ripple {
 
+std::map<std::uint16_t, TransactorExport> transactors{};
+
+void
+registerTxFunctions(TransactorExport transactor)
+{
+    transactors.insert({transactor.txType, transactor});
+}
+
+void
+resetTxFunctions()
+{
+    transactors.clear();
+}
+
 namespace {
 
 struct UnknownTxnType : std::exception
 {
     TxType txnType;
-    UnknownTxnType(TxType t) : txnType{t}
+    UnknownTxnType(std::uint16_t t) : txnType{t}
     {
     }
 };
@@ -71,7 +86,7 @@ struct UnknownTxnType : std::exception
 // throw an "UnknownTxnType" exception on error
 template <class F>
 auto
-with_txn_type(TxType txnType, F&& f)
+with_txn_type(std::uint16_t txnType, F&& f)
 {
     switch (txnType)
     {
@@ -178,33 +193,33 @@ with_txn_type(TxType txnType, F&& f)
 // building with Visual Studio 2017 we can consider replacing the four
 // templates with a single template function that uses if constexpr.
 //
-// For Transactor::Normal
+// For Normal
 //
 
 // clang-format off
 // Current formatter for rippled is based on clang-10, which does not handle `requires` clauses
 template <class T>
-requires(T::ConsequencesFactory == Transactor::Normal)
+requires(T::ConsequencesFactory == Normal)
 TxConsequences
-    consequences_helper(PreflightContext const& ctx)
+consequences_helper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx);
 };
 
-// For Transactor::Blocker
+// For Blocker
 template <class T>
-requires(T::ConsequencesFactory == Transactor::Blocker)
+requires(T::ConsequencesFactory == Blocker)
 TxConsequences
-    consequences_helper(PreflightContext const& ctx)
+consequences_helper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx, TxConsequences::blocker);
 };
 
-// For Transactor::Custom
+// For Custom
 template <class T>
-requires(T::ConsequencesFactory == Transactor::Custom)
+requires(T::ConsequencesFactory == Custom)
 TxConsequences
-    consequences_helper(PreflightContext const& ctx)
+consequences_helper(PreflightContext const& ctx)
 {
     return T::makeTxConsequences(ctx);
 };
@@ -225,11 +240,104 @@ invoke_preflight(PreflightContext const& ctx)
     }
     catch (UnknownTxnType const& e)
     {
+        if (auto it = transactors.find(ctx.tx.getTxnType());
+            it != transactors.end())
+        {
+            auto const tec = it->second.preflight == NULL
+                ? tesSUCCESS
+                : it->second.preflight(ctx);
+            if (!isTesSuccess(tec))
+            {
+                return {tec, TxConsequences{tec}};
+            }
+            else if (it->second.consequencesFactoryType == Normal)
+            {
+                return {tec, TxConsequences(ctx.tx)};
+            }
+            else if (it->second.consequencesFactoryType == Blocker)
+            {
+                return {tec, TxConsequences(ctx.tx, TxConsequences::blocker)};
+            }
+            else if (it->second.consequencesFactoryType == Custom)
+            {
+                return {tec, it->second.makeTxConsequences(ctx)};
+            }
+        }
         // Should never happen
         JLOG(ctx.j.fatal())
             << "Unknown transaction type in preflight: " << e.txnType;
         assert(false);
         return {temUNKNOWN, TxConsequences{temUNKNOWN}};
+    }
+}
+
+static TER
+invoke_plugin_preclaim(TransactorExport t, PreclaimContext const& ctx)
+{
+    // If the transactor requires a valid account and the transaction doesn't
+    // list one, preflight will have already a flagged a failure.
+    auto const id = ctx.tx.getAccountID(sfAccount);
+
+    if (id != beast::zero)
+    {
+        TER result;
+        if (t.checkSeqProxy != NULL)
+        {
+            result = t.checkSeqProxy(ctx.view, ctx.tx, ctx.j);
+        }
+        else
+        {
+            result = Transactor::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
+        }
+
+        if (result != tesSUCCESS)
+            return result;
+
+        if (t.checkPriorTxAndLastLedger != NULL)
+        {
+            result = t.checkPriorTxAndLastLedger(ctx);
+        }
+        else
+        {
+            result = Transactor::checkPriorTxAndLastLedger(ctx);
+        }
+
+        if (result != tesSUCCESS)
+            return result;
+
+        if (t.checkFee != NULL)
+        {
+            result = t.checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
+        }
+        else
+        {
+            result =
+                Transactor::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
+        }
+
+        if (result != tesSUCCESS)
+            return result;
+
+        if (t.checkSign != NULL)
+        {
+            result = t.checkSign(ctx);
+        }
+        else
+        {
+            result = Transactor::checkSign(ctx);
+        }
+
+        if (result != tesSUCCESS)
+            return result;
+    }
+
+    if (t.preclaim != NULL)
+    {
+        return t.preclaim(ctx);
+    }
+    else
+    {
+        return Transactor::preclaim(ctx);
     }
 }
 
@@ -274,6 +382,11 @@ invoke_preclaim(PreclaimContext const& ctx)
     }
     catch (UnknownTxnType const& e)
     {
+        if (auto it = transactors.find(ctx.tx.getTxnType());
+            it != transactors.end())
+        {
+            return invoke_plugin_preclaim(it->second, ctx);
+        }
         // Should never happen
         JLOG(ctx.j.fatal())
             << "Unknown transaction type in preclaim: " << e.txnType;
@@ -293,6 +406,15 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
     }
     catch (UnknownTxnType const& e)
     {
+        if (auto it = transactors.find(tx.getTxnType());
+            it != transactors.end())
+        {
+            if (it->second.calculateBaseFee == NULL)
+            {
+                return Transactor::calculateBaseFee(view, tx);
+            }
+            return it->second.calculateBaseFee(view, tx);
+        }
         assert(false);
         return XRPAmount{0};
     }
@@ -349,6 +471,12 @@ invoke_apply(ApplyContext& ctx)
     }
     catch (UnknownTxnType const& e)
     {
+        if (auto it = transactors.find(ctx.tx.getTxnType());
+            it != transactors.end())
+        {
+            ApplyHandler p(ctx, it->second);
+            return p();
+        }
         // Should never happen
         JLOG(ctx.journal.fatal())
             << "Unknown transaction type in apply: " << e.txnType;

@@ -34,6 +34,8 @@
 #include <ripple/protocol/STVector256.h>
 #include <ripple/protocol/STXChainBridge.h>
 #include <ripple/protocol/XChainAttestations.h>
+#include <ripple/protocol/impl/STVar.h>
+#include <ripple/protocol/st.h>
 
 namespace ripple {
 namespace detail {
@@ -172,11 +174,22 @@ STVar::STVar(SerialIter& sit, SField const& name, int depth)
             construct<STCurrency>(sit, name);
             return;
         default:
-            Throw<std::runtime_error>("Unknown object type");
+            if (auto it = SField::pluginSTypesPtr->find(name.fieldType);
+                it != SField::pluginSTypesPtr->end())
+            {
+                // TODO: figure out how to handle more complex types that have
+                // depth
+                construct<STPluginType>(sit, name);
+                return;
+            }
+            else
+            {
+                Throw<std::runtime_error>("Unknown object type");
+            }
     }
 }
 
-STVar::STVar(SerializedTypeID id, SField const& name)
+STVar::STVar(int id, SField const& name)
 {
     assert((id == STI_NOTPRESENT) || (id == name.fieldType));
     switch (id)
@@ -236,7 +249,16 @@ STVar::STVar(SerializedTypeID id, SField const& name)
             construct<STCurrency>(name);
             return;
         default:
-            Throw<std::runtime_error>("Unknown object type");
+            if (auto it = SField::pluginSTypesPtr->find(name.fieldType);
+                it != SField::pluginSTypesPtr->end())
+            {
+                construct<STPluginType>(name);
+                return;
+            }
+            else
+            {
+                Throw<std::runtime_error>("Unknown object type");
+            }
     }
 }
 

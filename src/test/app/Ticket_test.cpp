@@ -793,7 +793,7 @@ class Ticket_test : public beast::unit_test::suite
                                  std::uint32_t ledgerSeq,
                                  std::uint32_t txSeq,
                                  std::optional<std::uint32_t> ticketSeq,
-                                 TxType txType) {
+                                 std::uint16_t txType) {
             error_code_i txErrCode{rpcSUCCESS};
 
             using TxPair = std::

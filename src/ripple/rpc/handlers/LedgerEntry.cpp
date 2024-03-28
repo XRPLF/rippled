@@ -50,7 +50,7 @@ doLedgerEntry(RPC::JsonContext& context)
 
     uint256 uNodeIndex;
     bool bNodeBinary = false;
-    LedgerEntryType expectedType = ltANY;
+    std::uint16_t expectedType = ltANY;
 
     try
     {

@@ -199,7 +199,7 @@ STPathSet::getJson(JsonOptions options) const
     return ret;
 }
 
-SerializedTypeID
+int
 STPathSet::getSType() const
 {
     return STI_PATHSET;

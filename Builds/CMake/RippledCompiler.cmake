@@ -120,7 +120,7 @@ else ()
   target_link_libraries (common
     INTERFACE
       -rdynamic
-      $<$<BOOL:${is_linux}>:-Wl,-z,relro,-z,now>
+      $<$<BOOL:${is_linux}>:-Wl,-z,relro,-z,now,-rpath,.>
       # link to static libc/c++ iff:
       #   * static option set and
       #   * NOT APPLE (AppleClang does not support static libc/c++) and

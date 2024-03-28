@@ -98,7 +98,7 @@ public:
     Issue const&
     issue(ChainType ct) const;
 
-    SerializedTypeID
+    int
     getSType() const override;
 
     Json::Value getJson(JsonOptions) const override;

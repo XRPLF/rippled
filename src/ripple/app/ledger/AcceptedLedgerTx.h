@@ -70,7 +70,7 @@ public:
     {
         return mTxn->getTransactionID();
     }
-    TxType
+    std::uint16_t
     getTxnType() const
     {
         return mTxn->getTxnType();

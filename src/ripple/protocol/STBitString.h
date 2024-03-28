@@ -49,7 +49,7 @@ public:
     STBitString(SField const& n, const value_type& v);
     STBitString(SerialIter& sit, SField const& name);
 
-    SerializedTypeID
+    int
     getSType() const override;
 
     std::string
@@ -123,21 +123,21 @@ STBitString<Bits>::move(std::size_t n, void* buf)
 }
 
 template <>
-inline SerializedTypeID
+inline int
 STUInt128::getSType() const
 {
     return STI_UINT128;
 }
 
 template <>
-inline SerializedTypeID
+inline int
 STUInt160::getSType() const
 {
     return STI_UINT160;
 }
 
 template <>
-inline SerializedTypeID
+inline int
 STUInt256::getSType() const
 {
     return STI_UINT256;

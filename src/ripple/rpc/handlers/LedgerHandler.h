@@ -75,7 +75,7 @@ private:
     std::vector<TxQ::TxDetails> queueTxs_;
     Json::Value result_;
     int options_ = 0;
-    LedgerEntryType type_;
+    std::uint16_t type_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

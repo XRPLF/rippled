@@ -40,7 +40,7 @@ struct LedgerFill
         RPC::Context* ctx,
         int o = 0,
         std::vector<TxQ::TxDetails> q = {},
-        LedgerEntryType t = ltANY)
+        std::uint16_t t = ltANY)  // LedgerEntryType
         : ledger(l), options(o), txQueue(std::move(q)), type(t), context(ctx)
     {
         if (context)
@@ -60,7 +60,7 @@ struct LedgerFill
     ReadView const& ledger;
     int options;
     std::vector<TxQ::TxDetails> txQueue;
-    LedgerEntryType type;
+    std::uint16_t type;
     RPC::Context* context;
     std::optional<NetClock::time_point> closeTime;
 };

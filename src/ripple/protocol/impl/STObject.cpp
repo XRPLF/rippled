@@ -85,7 +85,7 @@ STObject::move(std::size_t n, void* buf)
     return emplace(n, buf, std::move(*this));
 }
 
-SerializedTypeID
+int
 STObject::getSType() const
 {
     return STI_OBJECT;
@@ -118,6 +118,7 @@ STObject::set(const SOTemplate& type)
     v_.clear();
     v_.reserve(type.size());
     mType = &type;
+    assert(mType->size() > 0);
 
     for (auto const& elem : type)
     {
@@ -140,6 +141,7 @@ STObject::applyTemplate(const SOTemplate& type)
     };
 
     mType = &type;
+    assert(mType->size() > 0);
     decltype(v_) v;
     v.reserve(type.size());
     for (auto const& e : type)
@@ -629,6 +631,13 @@ STObject::getFieldPathSet(SField const& field) const
     return getFieldByConstRef<STPathSet>(field, empty);
 }
 
+STPluginType const&
+STObject::getFieldPluginType(SField const& field) const
+{
+    STPluginType empty;
+    return getFieldByConstRef<STPluginType>(field, empty);
+}
+
 const STVector256&
 STObject::getFieldV256(SField const& field) const
 {
@@ -757,6 +766,12 @@ STObject::setFieldPathSet(SField const& field, STPathSet const& v)
 }
 
 void
+STObject::setFieldPluginType(SField const& field, STPluginType const& v)
+{
+    setFieldUsingSetValue<STPluginType>(field, Buffer(v.data(), v.size()));
+}
+
+void
 STObject::setFieldArray(SField const& field, STArray const& v)
 {
     setFieldUsingAssignment(field, v);
@@ -832,7 +847,7 @@ STObject::add(Serializer& s, WhichFields whichFields) const
         // When we serialize an object inside another object,
         // the type associated by rule with this field name
         // must be OBJECT, or the object cannot be deserialized
-        SerializedTypeID const sType{field->getSType()};
+        int const sType{field->getSType()};
         assert(
             (sType != STI_OBJECT) ||
             (field->getFName().fieldType == STI_OBJECT));

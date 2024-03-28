@@ -53,7 +53,7 @@ public:
     void
     setIssue(Issue const& issue);
 
-    SerializedTypeID
+    int
     getSType() const override;
 
     std::string

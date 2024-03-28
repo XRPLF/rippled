@@ -77,6 +77,7 @@ struct ConfigSection
 #define SECTION_PEERS_MAX "peers_max"
 #define SECTION_PEERS_IN_MAX "peers_in_max"
 #define SECTION_PEERS_OUT_MAX "peers_out_max"
+#define SECTION_PLUGINS "plugins"
 #define SECTION_PORT_GRPC "port_grpc"
 #define SECTION_PREFETCH_WORKERS "prefetch_workers"
 #define SECTION_REDUCE_RELAY "reduce_relay"

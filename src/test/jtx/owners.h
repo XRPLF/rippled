@@ -33,19 +33,19 @@ namespace jtx {
 namespace detail {
 
 std::uint32_t
-owned_count_of(ReadView const& view, AccountID const& id, LedgerEntryType type);
+owned_count_of(ReadView const& view, AccountID const& id, std::uint16_t type);
 
 void
 owned_count_helper(
     Env& env,
     AccountID const& id,
-    LedgerEntryType type,
+    std::uint16_t type,
     std::uint32_t value);
 
 }  // namespace detail
 
 // Helper for aliases
-template <LedgerEntryType Type>
+template <std::uint16_t Type>
 class owner_count
 {
 private:

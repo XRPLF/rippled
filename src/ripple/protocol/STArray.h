@@ -148,7 +148,7 @@ public:
     iterator
     erase(const_iterator first, const_iterator last);
 
-    SerializedTypeID
+    int
     getSType() const override;
 
     bool

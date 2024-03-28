@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
 #include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/ErrorCodes.h>
@@ -28,6 +27,7 @@
 #include <ripple/protocol/nftPageMask.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
+#include <ripple/rpc/handlers/Handlers.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/Tuning.h>
 
@@ -35,6 +35,46 @@
 #include <string>
 
 namespace ripple {
+
+struct DeletionBlocker
+{
+    Json::StaticString name;
+    std::uint16_t type;
+};
+
+static constexpr std::initializer_list<DeletionBlocker>
+    originalDeletionBlockers = {
+        {jss::check, ltCHECK},
+        {jss::escrow, ltESCROW},
+        {jss::nft_page, ltNFTOKEN_PAGE},
+        {jss::payment_channel, ltPAYCHAN},
+        {jss::state, ltRIPPLE_STATE},
+        {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
+        {jss::xchain_owned_create_account_claim_id,
+         ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
+        {jss::bridge, ltBRIDGE}};
+
+static std::vector<DeletionBlocker> deletionBlockers{originalDeletionBlockers};
+
+void
+registerPluginDeletionBlockers(char const* name, std::uint16_t type)
+{
+    deletionBlockers.push_back({Json::StaticString{name}, type});
+}
+
+void
+clearPluginDeletionBlockers()
+{
+    deletionBlockers.clear();
+    deletionBlockers = [&] {
+        std::vector<DeletionBlocker> temp{};
+        std::copy(
+            std::begin(originalDeletionBlockers),
+            std::end(originalDeletionBlockers),
+            std::back_inserter(temp));
+        return temp;
+    }();
+}
 
 /** General RPC command that can retrieve objects in the account root.
     {
@@ -183,26 +223,11 @@ doAccountObjects(RPC::JsonContext& context)
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
 
-    std::optional<std::vector<LedgerEntryType>> typeFilter;
+    std::optional<std::vector<std::uint16_t>> typeFilter;
 
     if (params.isMember(jss::deletion_blockers_only) &&
         params[jss::deletion_blockers_only].asBool())
     {
-        struct
-        {
-            Json::StaticString name;
-            LedgerEntryType type;
-        } static constexpr deletionBlockers[] = {
-            {jss::check, ltCHECK},
-            {jss::escrow, ltESCROW},
-            {jss::nft_page, ltNFTOKEN_PAGE},
-            {jss::payment_channel, ltPAYCHAN},
-            {jss::state, ltRIPPLE_STATE},
-            {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
-            {jss::xchain_owned_create_account_claim_id,
-             ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
-            {jss::bridge, ltBRIDGE}};
-
         typeFilter.emplace();
         typeFilter->reserve(std::size(deletionBlockers));
 
@@ -228,7 +253,7 @@ doAccountObjects(RPC::JsonContext& context)
         }
         else if (type != ltANY)
         {
-            typeFilter = std::vector<LedgerEntryType>({type});
+            typeFilter = std::vector<std::uint16_t>({type});
         }
     }
 

@@ -53,7 +53,7 @@ STVector256::move(std::size_t n, void* buf)
     return emplace(n, buf, std::move(*this));
 }
 
-SerializedTypeID
+int
 STVector256::getSType() const
 {
     return STI_VECTOR256;

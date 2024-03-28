@@ -32,6 +32,7 @@
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/STPathSet.h>
+#include <ripple/protocol/STPluginType.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/STValidation.h>
 #include <ripple/protocol/STVector256.h>

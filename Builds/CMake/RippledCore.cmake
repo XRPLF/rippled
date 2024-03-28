@@ -17,6 +17,8 @@ add_library(libxrpl INTERFACE)
 target_link_libraries(libxrpl INTERFACE xrpl_core)
 add_library(xrpl::libxrpl ALIAS libxrpl)
 
+add_library(xrpl_plugin ${rb_headers})
+
 
 #[===============================[
     beast/legacy FILES:
@@ -104,6 +106,7 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/STObject.cpp
   src/ripple/protocol/impl/STParsedJSON.cpp
   src/ripple/protocol/impl/STPathSet.cpp
+  src/ripple/protocol/impl/STPluginType.cpp
   src/ripple/protocol/impl/STXChainBridge.cpp
   src/ripple/protocol/impl/STTx.cpp
   src/ripple/protocol/impl/XChainAttestations.cpp
@@ -154,7 +157,38 @@ target_link_libraries (xrpl_core
     ed25519::ed25519
     date::date
     Ripple::opts
-    xxHash::xxhash)
+    xxHash::xxhash
+  )
+
+#[=================================[
+   xrpl_plugin installation
+#]=================================]
+target_sources (xrpl_plugin PRIVATE
+  src/ripple/app/tx/impl/validity.cpp
+  src/ripple/app/tx/impl/TxConsequences.cpp
+  src/ripple/ledger/impl/ApplyStateTable.cpp
+  src/ripple/ledger/impl/ApplyView.cpp
+  src/ripple/ledger/impl/ApplyViewBase.cpp
+  src/ripple/ledger/impl/ApplyViewImpl.cpp
+  src/ripple/ledger/impl/OpenView.cpp
+  src/ripple/ledger/impl/RawStateTable.cpp
+  src/ripple/ledger/impl/ReadView.cpp
+  src/ripple/ledger/impl/View.cpp
+  src/ripple/app/tx/impl/InvariantCheck.cpp
+  src/ripple/app/tx/impl/details/NFTokenUtils.cpp
+  src/ripple/app/tx/impl/ApplyContext.cpp
+  src/ripple/app/misc/impl/LoadFeeTrack.cpp
+  src/ripple/app/misc/HashRouter.cpp
+  src/ripple/app/tx/impl/PreflightContext.cpp
+  src/ripple/app/tx/impl/SignerEntries.cpp
+  src/ripple/ledger/impl/Directory.cpp
+)
+
+add_library (Ripple::xrpl_plugin ALIAS xrpl_plugin)
+target_link_libraries(xrpl_plugin PUBLIC
+  Ripple::xrpl_core
+  xxHash::xxhash
+)
 #[=================================[
    main/core headers installation
 #]=================================]
@@ -477,6 +511,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/main/Main.cpp
   src/ripple/app/main/NodeIdentity.cpp
   src/ripple/app/main/NodeStoreScheduler.cpp
+  src/ripple/app/main/PluginSetup.cpp
   src/ripple/app/reporting/ReportingETL.cpp
   src/ripple/app/reporting/ETLSource.cpp
   src/ripple/app/reporting/P2pProxy.cpp
@@ -484,7 +519,6 @@ target_sources (rippled PRIVATE
   src/ripple/app/misc/impl/AMMUtils.cpp
   src/ripple/app/misc/CanonicalTXSet.cpp
   src/ripple/app/misc/FeeVoteImpl.cpp
-  src/ripple/app/misc/HashRouter.cpp
   src/ripple/app/misc/NegativeUNLVote.cpp
   src/ripple/app/misc/NetworkOPs.cpp
   src/ripple/app/misc/SHAMapStoreImp.cpp
@@ -532,7 +566,6 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/AMMDeposit.cpp
   src/ripple/app/tx/impl/AMMVote.cpp
   src/ripple/app/tx/impl/AMMWithdraw.cpp
-  src/ripple/app/tx/impl/ApplyContext.cpp
   src/ripple/app/tx/impl/BookTip.cpp
   src/ripple/app/tx/impl/CancelCheck.cpp
   src/ripple/app/tx/impl/CancelOffer.cpp
@@ -547,7 +580,6 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/DepositPreauth.cpp
   src/ripple/app/tx/impl/DID.cpp
   src/ripple/app/tx/impl/Escrow.cpp
-  src/ripple/app/tx/impl/InvariantCheck.cpp
   src/ripple/app/tx/impl/NFTokenAcceptOffer.cpp
   src/ripple/app/tx/impl/NFTokenBurn.cpp
   src/ripple/app/tx/impl/NFTokenCancelOffer.cpp
@@ -567,7 +599,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/Transactor.cpp
   src/ripple/app/tx/impl/apply.cpp
   src/ripple/app/tx/impl/applySteps.cpp
-  src/ripple/app/tx/impl/details/NFTokenUtils.cpp
+  src/ripple/app/tx/impl/ApplyHandler.cpp
   #[===============================[
      main sources:
        subdir: basics (partial)
@@ -608,18 +640,9 @@ target_sources (rippled PRIVATE
      main sources:
        subdir: ledger
   #]===============================]
-  src/ripple/ledger/impl/ApplyStateTable.cpp
-  src/ripple/ledger/impl/ApplyView.cpp
-  src/ripple/ledger/impl/ApplyViewBase.cpp
-  src/ripple/ledger/impl/ApplyViewImpl.cpp
   src/ripple/ledger/impl/BookDirs.cpp
   src/ripple/ledger/impl/CachedView.cpp
-  src/ripple/ledger/impl/Directory.cpp
-  src/ripple/ledger/impl/OpenView.cpp
   src/ripple/ledger/impl/PaymentSandbox.cpp
-  src/ripple/ledger/impl/RawStateTable.cpp
-  src/ripple/ledger/impl/ReadView.cpp
-  src/ripple/ledger/impl/View.cpp
   #[===============================[
      main sources:
        subdir: net
@@ -1041,6 +1064,11 @@ if (tests)
     src/test/peerfinder/PeerFinder_test.cpp
     #[===============================[
        test sources:
+         subdir: plugin
+    #]===============================]
+    src/test/plugin/Plugins_test.cpp
+    #[===============================[
+       test sources:
          subdir: protocol
     #]===============================]
     src/test/protocol/ApiVersion_test.cpp
@@ -1134,6 +1162,99 @@ if (tests)
          subdir: unit_test
     #]===============================]
     src/test/unit_test/multi_runner.cpp)
+
+    add_library(plugin_test_setregularkey SHARED)
+    target_sources(plugin_test_setregularkey PRIVATE 
+      src/test/plugin/fixtures/SetRegularKey_plugin.cpp
+    )
+    target_link_libraries(plugin_test_setregularkey PUBLIC Ripple::xrpl_plugin)
+    target_compile_options (plugin_test_setregularkey PUBLIC -Wno-return-type-c-linkage)
+
+    add_library(plugin_test_trustset SHARED)
+    target_sources(plugin_test_trustset PRIVATE 
+      src/test/plugin/fixtures/TrustSet.cpp
+    )
+    target_link_libraries(plugin_test_trustset PUBLIC Ripple::xrpl_plugin)
+    target_compile_options (plugin_test_trustset PUBLIC -Wno-return-type-c-linkage)
+    
+    add_library(plugin_test_escrowcreate SHARED)
+    target_sources(plugin_test_escrowcreate PRIVATE 
+      src/test/plugin/fixtures/EscrowCreate.cpp
+    )
+    target_link_libraries(plugin_test_escrowcreate PUBLIC Ripple::xrpl_plugin)
+    target_compile_options (plugin_test_escrowcreate PUBLIC -Wno-return-type-c-linkage)
+
+    add_library(plugin_test_badtransactor SHARED)
+    target_sources(plugin_test_badtransactor PRIVATE 
+      src/test/plugin/fixtures/SetRegularKeyBadTransactor.cpp
+    )
+    target_link_libraries(plugin_test_badtransactor PUBLIC Ripple::xrpl_plugin)
+    target_compile_options (plugin_test_badtransactor PUBLIC -Wno-return-type-c-linkage)
+
+    add_library(plugin_test_badledgerentry SHARED)
+    target_sources(plugin_test_badledgerentry PRIVATE 
+      src/test/plugin/fixtures/EscrowCreateBadLedgerEntryType.cpp
+    )
+    target_link_libraries(plugin_test_badledgerentry PUBLIC Ripple::xrpl_plugin)
+    target_compile_options (plugin_test_badledgerentry PUBLIC -Wno-return-type-c-linkage)
+
+    add_library(plugin_test_badstypeid SHARED)
+    target_sources(plugin_test_badstypeid PRIVATE 
+      src/test/plugin/fixtures/TrustSetBadSTypeID.cpp
+    )
+    target_link_libraries(plugin_test_badstypeid PUBLIC Ripple::xrpl_plugin)
+    target_compile_options (plugin_test_badstypeid PUBLIC -Wno-return-type-c-linkage)
+
+    add_library(plugin_test_badsfieldtypeid SHARED)
+    target_sources(plugin_test_badsfieldtypeid PRIVATE 
+      src/test/plugin/fixtures/TrustSetBadSFieldTypeID.cpp
+    )
+    target_link_libraries(plugin_test_badsfieldtypeid PUBLIC Ripple::xrpl_plugin)
+    target_compile_options (plugin_test_badsfieldtypeid PUBLIC -Wno-return-type-c-linkage)
+
+    add_library(plugin_test_badsfieldtypepair SHARED)
+    target_sources(plugin_test_badsfieldtypepair PRIVATE 
+      src/test/plugin/fixtures/TrustSetBadSFieldTypePair.cpp
+    )
+    target_link_libraries(plugin_test_badsfieldtypepair PUBLIC Ripple::xrpl_plugin)
+    target_compile_options (plugin_test_badsfieldtypepair PUBLIC -Wno-return-type-c-linkage)
+
+    add_library(plugin_test_badtercode SHARED)
+    target_sources(plugin_test_badtercode PRIVATE 
+      src/test/plugin/fixtures/TrustSetBadTERcode.cpp
+    )
+    target_link_libraries(plugin_test_badtercode PUBLIC Ripple::xrpl_plugin)
+    target_compile_options (plugin_test_badtercode PUBLIC -Wno-return-type-c-linkage)
+
+    add_library(plugin_test_badinnerobject SHARED)
+    target_sources(plugin_test_badinnerobject PRIVATE 
+      src/test/plugin/fixtures/TrustSetBadInnerObject.cpp
+    )
+    target_link_libraries(plugin_test_badinnerobject PUBLIC Ripple::xrpl_plugin)
+    target_compile_options (plugin_test_badinnerobject PUBLIC -Wno-return-type-c-linkage)
+
+    set_target_properties(
+      plugin_test_setregularkey
+      plugin_test_trustset
+      plugin_test_escrowcreate
+      plugin_test_badtransactor
+      plugin_test_badledgerentry
+      plugin_test_badstypeid
+      plugin_test_badsfieldtypeid
+      plugin_test_badsfieldtypepair
+      plugin_test_badtercode
+      plugin_test_badinnerobject
+      PROPERTIES PREFIX "" SUFFIX ".xrplugin")
+    install(TARGETS plugin_test_setregularkey)
+    install(TARGETS plugin_test_trustset)
+    install(TARGETS plugin_test_escrowcreate)
+    install(TARGETS plugin_test_badtransactor)
+    install(TARGETS plugin_test_badledgerentry)
+    install(TARGETS plugin_test_badstypeid)
+    install(TARGETS plugin_test_badsfieldtypeid)
+    install(TARGETS plugin_test_badsfieldtypepair)
+    install(TARGETS plugin_test_badtercode)
+    install(TARGETS plugin_test_badinnerobject)
 endif () #tests
 
 target_link_libraries (rippled
@@ -1141,6 +1262,7 @@ target_link_libraries (rippled
   Ripple::opts
   Ripple::libs
   Ripple::xrpl_core
+  Ripple::xrpl_plugin
   )
 exclude_if_included (rippled)
 # define a macro for tests that might need to

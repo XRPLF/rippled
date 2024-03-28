@@ -45,7 +45,7 @@ public:
 
 }  // namespace detail
 
-/** A 160-bit unsigned that uniquely identifies an account. */
+/** A 160-bit unsigned int that uniquely identifies an account. */
 using AccountID = base_uint<160, detail::AccountIDTag>;
 
 /** Convert AccountID to base58 checked string */

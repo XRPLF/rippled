@@ -1561,8 +1561,8 @@ cleanupOnAccountDelete(
                 return tefBAD_LEDGER;
             }
 
-            LedgerEntryType const nodeType{safe_cast<LedgerEntryType>(
-                sleItem->getFieldU16(sfLedgerEntryType))};
+            std::uint16_t const nodeType{
+                sleItem->getFieldU16(sfLedgerEntryType)};
 
             // Deleter handles the details of specific account-owned object
             // deletion

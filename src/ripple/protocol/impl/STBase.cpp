@@ -65,7 +65,7 @@ STBase::move(std::size_t n, void* buf)
     return emplace(n, buf, std::move(*this));
 }
 
-SerializedTypeID
+int
 STBase::getSType() const
 {
     return STI_NOTPRESENT;
