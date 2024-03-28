@@ -661,6 +661,13 @@ public:
     }
     /** @} */
 
+    /** Create a STTx from a JTx without sanitizing
+        Use to inject bogus values into test transactions by first
+        editing the JSON.
+    */
+    std::shared_ptr<STTx const>
+    ust(JTx const& jt);
+
 protected:
     int trace_ = 0;
     TestStopwatch stopwatch_;

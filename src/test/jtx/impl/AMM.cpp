@@ -667,8 +667,23 @@ AMM::bid(
     std::optional<std::pair<Issue, Issue>> const& assets,
     std::optional<ter> const& ter)
 {
+    submit(bidJson(account, bidMin, bidMax, authAccounts, flags, seq, assets,
+        ter), seq, ter);
+}
+
+Json::Value
+AMM::bidJson(
+    std::optional<Account> const& account,
+    std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMin,
+    std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMax,
+    std::vector<Account> const& authAccounts,
+    std::optional<std::uint32_t> const& flags,
+    std::optional<jtx::seq> const& seq,
+    std::optional<std::pair<Issue, Issue>> const& assets,
+    std::optional<ter> const& ter)
+{
     if (auto const amm =
-            env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
+        env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
     {
         assert(
             !env_.current()->rules().enabled(fixInnerObjTemplate) ||
@@ -724,21 +739,7 @@ AMM::bid(
     jv[jss::TransactionType] = jss::AMMBid;
     if (fee_ != 0)
         jv[jss::Fee] = std::to_string(fee_);
-    submit(jv, seq, ter);
-}
-
-void
-AMM::bid(BidArg const& arg)
-{
-    return bid(
-        arg.account,
-        arg.bidMin,
-        arg.bidMax,
-        arg.authAccounts,
-        arg.flags,
-        arg.seq,
-        arg.assets,
-        arg.err);
+    return jv;
 }
 
 void

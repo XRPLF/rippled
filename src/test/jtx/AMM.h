@@ -106,18 +106,6 @@ struct VoteArg
     std::optional<ter> err = std::nullopt;
 };
 
-struct BidArg
-{
-    std::optional<Account> account = std::nullopt;
-    std::optional<std::variant<int, IOUAmount, STAmount>> bidMin = std::nullopt;
-    std::optional<std::variant<int, IOUAmount, STAmount>> bidMax = std::nullopt;
-    std::vector<Account> authAccounts = {};
-    std::optional<std::uint32_t> flags = std::nullopt;
-    std::optional<jtx::seq> seq = std::nullopt;
-    std::optional<std::pair<Issue, Issue>> assets = std::nullopt;
-    std::optional<ter> err = std::nullopt;
-};
-
 /** Convenience class to test AMM functionality.
  */
 class AMM
@@ -329,8 +317,18 @@ public:
         std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
-    void
-    bid(BidArg const& arg);
+    // Return the JSON for a bid, but don't execute it.
+    Json::Value
+    bidJson(std::optional<Account> const& account,
+        std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMin =
+        std::nullopt,
+        std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMax =
+        std::nullopt,
+        std::vector<Account> const& authAccounts = {},
+        std::optional<std::uint32_t> const& flags = std::nullopt,
+        std::optional<jtx::seq> const& seq = std::nullopt,
+        std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
+        std::optional<ter> const& ter = std::nullopt);
 
     AccountID const&
     ammAccount() const

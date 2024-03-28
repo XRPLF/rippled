@@ -19,6 +19,7 @@
 #include <ripple/app/misc/AMMHelpers.h>
 #include <ripple/app/paths/AMMContext.h>
 #include <ripple/app/paths/AMMOffer.h>
+#include <ripple/app/tx/impl/AMMBid.h>
 #include <ripple/protocol/AMMCore.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/resource/Fees.h>
@@ -2823,6 +2824,54 @@ private:
                 XRPAmount{1'000'010'011},
                 STAmount{USD, UINT64_C(1'010'10090898081), -11},
                 IOUAmount{1'004'487'562112089, -9}));
+        }
+
+        // preflight tests
+        {
+            Env env(*this);
+            fund(env, gw, {alice, bob}, XRP(2'000), {USD(2'000)});
+            AMM amm(env, gw, XRP(1'000), USD(1'010), false, 1'000);
+            Json::Value tx = amm.bidJson(alice, 500);
+
+            {
+                auto jtx = env.jt(
+                    tx,
+                    seq(1),
+                    fee(10));
+                env.app().config().features.erase(featureAMM);
+                PreflightContext pfctx(env.app(), *jtx.stx,
+                    env.current()->rules(), tapNONE, env.journal);
+                auto pf = AMMBid::preflight(pfctx);
+                BEAST_EXPECT(pf == temDISABLED);
+                env.app().config().features.insert(featureAMM);
+            }
+
+            {
+                auto jtx = env.jt(
+                    tx,
+                    seq(1),
+                    fee(10));
+                jtx.jv["TxnSignature"] = "deadbeef";
+                jtx.stx = env.ust(jtx);
+                PreflightContext pfctx(env.app(), *jtx.stx,
+                    env.current()->rules(), tapNONE, env.journal);
+                auto pf = AMMBid::preflight(pfctx);
+                BEAST_EXPECT(pf != tesSUCCESS);
+            }
+
+            {
+                auto jtx = env.jt(
+                    tx,
+                    seq(1),
+                    fee(10));
+                jtx.jv["Asset2"]["currency"] = "XRP";
+                jtx.jv["Asset2"].removeMember("issuer");
+                jtx.stx = env.ust(jtx);
+                PreflightContext pfctx(env.app(), *jtx.stx,
+                    env.current()->rules(), tapNONE, env.journal);
+                auto pf = AMMBid::preflight(pfctx);
+                BEAST_EXPECT(pf == temBAD_AMM_TOKENS);
+            }
         }
     }
 
