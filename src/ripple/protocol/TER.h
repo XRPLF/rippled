@@ -26,6 +26,7 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <unordered_map>
 
 namespace ripple {
 
@@ -61,6 +62,10 @@ enum TELcodes : TERUnderlyingType {
     telCAN_NOT_QUEUE_BLOCKED,
     telCAN_NOT_QUEUE_FEE,
     telCAN_NOT_QUEUE_FULL,
+    telWRONG_NETWORK,
+    telREQUIRES_NETWORK_ID,
+    telNETWORK_ID_MAKES_TX_NON_CANONICAL,
+    telENV_RPC_FAILED
 };
 
 //------------------------------------------------------------------------------
@@ -122,6 +127,20 @@ enum TEMcodes : TERUnderlyingType {
 
     temSEQ_AND_TICKET,
     temBAD_NFTOKEN_TRANSFER_FEE,
+
+    temBAD_AMM_TOKENS,
+
+    temXCHAIN_EQUAL_DOOR_ACCOUNTS,
+    temXCHAIN_BAD_PROOF,
+    temXCHAIN_BRIDGE_BAD_ISSUES,
+    temXCHAIN_BRIDGE_NONDOOR_OWNER,
+    temXCHAIN_BRIDGE_BAD_MIN_ACCOUNT_CREATE_AMOUNT,
+    temXCHAIN_BRIDGE_BAD_REWARD_AMOUNT,
+
+    temEMPTY_DID,
+
+    temARRAY_EMPTY,
+    temARRAY_TOO_LARGE,
 };
 
 //------------------------------------------------------------------------------
@@ -204,7 +223,9 @@ enum TERcodes : TERUnderlyingType {
     terNO_RIPPLE,    // Rippling not allowed
     terQUEUED,       // Transaction is being held in TxQ until fee drops
     terPRE_TICKET,   // Ticket is not yet in ledger but might be on its way
-    terNO_HOOK       // Transaction requires a non-existent hook definition (referenced by sfHookHash)
+    terNO_AMM,       // AMM doesn't exist for the asset pair
+    terNO_HOOK       // Transaction requires a non-existent hook definition
+                     // (referenced by sfHookHash)
 };
 
 //------------------------------------------------------------------------------
@@ -292,8 +313,40 @@ enum TECcodes : TERUnderlyingType {
     tecINSUFFICIENT_FUNDS = 159,
     tecOBJECT_NOT_FOUND = 160,
     tecINSUFFICIENT_PAYMENT = 161,
-    tecREQUIRES_FLAG = 162,
-    tecPRECISION_LOSS = 163,
+    tecUNFUNDED_AMM = 162,
+    tecAMM_BALANCE = 163,
+    tecAMM_FAILED = 164,
+    tecAMM_INVALID_TOKENS = 165,
+    tecAMM_EMPTY = 166,
+    tecAMM_NOT_EMPTY = 167,
+    tecAMM_ACCOUNT = 168,
+    tecINCOMPLETE = 169,
+    tecXCHAIN_BAD_TRANSFER_ISSUE = 170,
+    tecXCHAIN_NO_CLAIM_ID = 171,
+    tecXCHAIN_BAD_CLAIM_ID = 172,
+    tecXCHAIN_CLAIM_NO_QUORUM = 173,
+    tecXCHAIN_PROOF_UNKNOWN_KEY = 174,
+    tecXCHAIN_CREATE_ACCOUNT_NONXRP_ISSUE = 175,
+    tecXCHAIN_WRONG_CHAIN = 176,
+    tecXCHAIN_REWARD_MISMATCH = 177,
+    tecXCHAIN_NO_SIGNERS_LIST = 178,
+    tecXCHAIN_SENDING_ACCOUNT_MISMATCH = 179,
+    tecXCHAIN_INSUFF_CREATE_AMOUNT = 180,
+    tecXCHAIN_ACCOUNT_CREATE_PAST = 181,
+    tecXCHAIN_ACCOUNT_CREATE_TOO_MANY = 182,
+    tecXCHAIN_PAYMENT_FAILED = 183,
+    tecXCHAIN_SELF_COMMIT = 184,
+    tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR = 185,
+    tecXCHAIN_CREATE_ACCOUNT_DISABLED = 186,
+    tecEMPTY_DID = 187,
+    tecINVALID_UPDATE_TIME = 188,
+    tecTOKEN_PAIR_NOT_FOUND = 189,
+    tecARRAY_EMPTY = 190,
+    tecARRAY_TOO_LARGE = 191
+    // Used by Hooks. Has a different value than in the original
+    tecREQUIRES_FLAG = 192,
+    // Used by Hooks. Has a different value than in the original
+    tecPRECISION_LOSS = 193
 };
 
 //------------------------------------------------------------------------------
@@ -606,6 +659,11 @@ isTecClaim(TER x)
 {
     return ((x) >= tecCLAIM);
 }
+
+std::unordered_map<
+    TERUnderlyingType,
+    std::pair<char const* const, char const* const>> const&
+transResults();
 
 bool
 transResultInfo(TER code, std::string& token, std::string& text);

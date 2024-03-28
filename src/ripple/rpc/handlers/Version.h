@@ -46,23 +46,15 @@ public:
         setVersion(obj, apiVersion_, betaEnabled_);
     }
 
-    static char const*
-    name()
-    {
-        return "version";
-    }
+    static constexpr char const* name = "version";
 
-    static Role
-    role()
-    {
-        return Role::USER;
-    }
+    static constexpr unsigned minApiVer = RPC::apiMinimumSupportedVersion;
 
-    static Condition
-    condition()
-    {
-        return NO_CONDITION;
-    }
+    static constexpr unsigned maxApiVer = RPC::apiMaximumValidVersion;
+
+    static constexpr Role role = Role::USER;
+
+    static constexpr Condition condition = NO_CONDITION;
 
 private:
     unsigned int apiVersion_;

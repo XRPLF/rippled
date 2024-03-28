@@ -87,7 +87,7 @@ parseBase58(std::string const& s)
 }
 
 std::optional<Seed>
-parseGenericSeed(std::string const& str)
+parseGenericSeed(std::string const& str, bool rfc1751)
 {
     if (str.empty())
         return std::nullopt;
@@ -111,6 +111,7 @@ parseGenericSeed(std::string const& str)
     if (auto seed = parseBase58<Seed>(str))
         return seed;
 
+    if (rfc1751)
     {
         std::string key;
         if (RFC1751::getKeyFromEnglish(key, str) == 1)

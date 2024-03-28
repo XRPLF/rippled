@@ -59,8 +59,12 @@ private:
     friend Rules
     makeRulesGivenLedger(
         DigestAwareReadView const& ledger,
-        std::unordered_set<uint256, beast::uhash<>> const& presets);
+        Rules const& current);
 
+    friend Rules
+    makeRulesGivenLedger(
+        DigestAwareReadView const& ledger,
+        std::unordered_set<uint256, beast::uhash<>> const& presets);
 
 public:
     Rules(
@@ -68,6 +72,10 @@ public:
         std::optional<uint256> const& digest,
         STVector256 const& amendments);
 
+    std::unordered_set<uint256, beast::uhash<>> const&
+    presets() const;
+
+public:
     /** Returns `true` if a feature is enabled. */
     bool
     enabled(uint256 const& feature) const;

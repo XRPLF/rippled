@@ -21,11 +21,12 @@
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/jss.h>
+#include <test/jtx.h>
+#include <test/jtx/Env.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <fstream>
-#include <test/jtx.h>
-#include <test/jtx/Env.h>
 
 namespace ripple {
 
@@ -62,26 +63,26 @@ class LedgerLoad_test : public beast::unit_test::suite
         retval.ledgerFile = td.file("ledgerdata.json");
 
         Env env{*this};
-        Account prev;
+        std::optional<Account> prev;
 
         for (auto i = 0; i < 20; ++i)
         {
             Account acct{"A" + std::to_string(i)};
             env.fund(XRP(10000), acct);
             env.close();
-            if (i > 0)
+            if (i > 0 && BEAST_EXPECT(prev))
             {
-                env.trust(acct["USD"](1000), prev);
-                env(pay(acct, prev, acct["USD"](5)));
+                env.trust(acct["USD"](1000), *prev);
+                env(pay(acct, *prev, acct["USD"](5)));
             }
             env(offer(acct, XRP(100), acct["USD"](1)));
             env.close();
-            prev = std::move(acct);
+            prev.emplace(std::move(acct));
         }
 
         retval.ledger = env.rpc("ledger", "current", "full")[jss::result];
         BEAST_EXPECT(
-            retval.ledger[jss::ledger][jss::accountState].size() == 101);
+            retval.ledger[jss::ledger][jss::accountState].size() == 102);
 
         retval.hashes = [&] {
             for (auto const& it : retval.ledger[jss::ledger][jss::accountState])
@@ -111,7 +112,9 @@ class LedgerLoad_test : public beast::unit_test::suite
         Env env(
             *this,
             envconfig(
-                ledgerConfig, sd.dbPath, sd.ledgerFile, Config::LOAD_FILE));
+                ledgerConfig, sd.dbPath, sd.ledgerFile, Config::LOAD_FILE),
+            nullptr,
+            beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
         BEAST_EXPECT(
             sd.ledger[jss::ledger][jss::accountState].size() ==
@@ -129,7 +132,9 @@ class LedgerLoad_test : public beast::unit_test::suite
         except([&] {
             Env env(
                 *this,
-                envconfig(ledgerConfig, sd.dbPath, "", Config::LOAD_FILE));
+                envconfig(ledgerConfig, sd.dbPath, "", Config::LOAD_FILE),
+                nullptr,
+                beast::severities::kDisabled);
         });
 
         // file does not exist
@@ -137,10 +142,9 @@ class LedgerLoad_test : public beast::unit_test::suite
             Env env(
                 *this,
                 envconfig(
-                    ledgerConfig,
-                    sd.dbPath,
-                    "badfile.json",
-                    Config::LOAD_FILE));
+                    ledgerConfig, sd.dbPath, "badfile.json", Config::LOAD_FILE),
+                nullptr,
+                beast::severities::kDisabled);
         });
 
         // make a corrupted version of the ledger file (last 10 bytes removed).
@@ -150,7 +154,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         copy_file(
             sd.ledgerFile,
             ledgerFileCorrupt,
-            copy_option::overwrite_if_exists,
+            copy_options::overwrite_existing,
             ec);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -168,7 +172,9 @@ class LedgerLoad_test : public beast::unit_test::suite
                     ledgerConfig,
                     sd.dbPath,
                     ledgerFileCorrupt.string(),
-                    Config::LOAD_FILE));
+                    Config::LOAD_FILE),
+                nullptr,
+                beast::severities::kDisabled);
         });
     }
 
@@ -183,9 +189,11 @@ class LedgerLoad_test : public beast::unit_test::suite
         boost::erase_all(ledgerHash, "\"");
         Env env(
             *this,
-            envconfig(ledgerConfig, sd.dbPath, ledgerHash, Config::LOAD));
+            envconfig(ledgerConfig, sd.dbPath, ledgerHash, Config::LOAD),
+            nullptr,
+            beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
-        BEAST_EXPECT(jrb[jss::ledger][jss::accountState].size() == 97);
+        BEAST_EXPECT(jrb[jss::ledger][jss::accountState].size() == 98);
         BEAST_EXPECT(
             jrb[jss::ledger][jss::accountState].size() <=
             sd.ledger[jss::ledger][jss::accountState].size());
@@ -199,7 +207,10 @@ class LedgerLoad_test : public beast::unit_test::suite
 
         // create a new env with the ledger "latest" specified for startup
         Env env(
-            *this, envconfig(ledgerConfig, sd.dbPath, "latest", Config::LOAD));
+            *this,
+            envconfig(ledgerConfig, sd.dbPath, "latest", Config::LOAD),
+            nullptr,
+            beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
         BEAST_EXPECT(
             sd.ledger[jss::ledger][jss::accountState].size() ==
@@ -213,7 +224,11 @@ class LedgerLoad_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         // create a new env with specific ledger index at startup
-        Env env(*this, envconfig(ledgerConfig, sd.dbPath, "43", Config::LOAD));
+        Env env(
+            *this,
+            envconfig(ledgerConfig, sd.dbPath, "43", Config::LOAD),
+            nullptr,
+            beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
         BEAST_EXPECT(
             sd.ledger[jss::ledger][jss::accountState].size() ==

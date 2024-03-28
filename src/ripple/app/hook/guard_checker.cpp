@@ -1,24 +1,26 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <vector>
-#include <string_view>
-#include <optional>
 #include "Guard.h"
-#include <iostream>
-#include <ostream>
-#include <unistd.h>
-#include <sys/stat.h>
 #include <fcntl.h>
+#include <iostream>
+#include <optional>
+#include <ostream>
+#include <stdint.h>
+#include <stdio.h>
+#include <string_view>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <vector>
 
-int main(int argc, char** argv)
+int
+main(int argc, char** argv)
 {
     if (argc != 2)
-        return fprintf(stderr, "Guard Checker\n\tUsage: %s somefile.wasm\n", argv[0]);
-    
+        return fprintf(
+            stderr, "Guard Checker\n\tUsage: %s somefile.wasm\n", argv[0]);
 
     int fd = open(argv[1], O_RDONLY);
     if (fd < 0)
-        return fprintf(stderr, "Could not open file for reading:`%s`\n", argv[1]);
+        return fprintf(
+            stderr, "Could not open file for reading:`%s`\n", argv[1]);
 
     size_t len = lseek(fd, 0, SEEK_END);
 
@@ -33,7 +35,11 @@ int main(int argc, char** argv)
     {
         size_t bytes_read = read(fd, ptr + upto, len - upto);
         if (bytes_read < 0)
-            return fprintf(stderr, "Error reading file `%s`, only %ld bytes could be read\n", argv[1], upto);
+            return fprintf(
+                stderr,
+                "Error reading file `%s`, only %ld bytes could be read\n",
+                argv[1],
+                upto);
         upto += bytes_read;
     }
 
@@ -41,8 +47,7 @@ int main(int argc, char** argv)
 
     close(fd);
 
-    auto result = 
-        validateGuards(hook, true, std::cout, "");
+    auto result = validateGuards(hook, true, std::cout, "");
 
     if (!result)
     {

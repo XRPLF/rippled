@@ -83,6 +83,15 @@ std::uint16_t constexpr maxTransferFee = 50000;
 /** The maximum length of a URI inside an NFT */
 std::size_t constexpr maxTokenURILength = 256;
 
+/** The maximum length of a Data element inside a DID */
+std::size_t constexpr maxDIDDocumentLength = 256;
+
+/** The maximum length of a URI inside a DID */
+std::size_t constexpr maxDIDURILength = 256;
+
+/** The maximum length of an Attestation inside a DID */
+std::size_t constexpr maxDIDAttestationLength = 256;
+
 /** The maximum length of a domain */
 std::size_t constexpr maxDomainLength = 256;
 
@@ -94,6 +103,36 @@ using LedgerIndex = std::uint32_t;
     canonicalized, serialized transaction object.
 */
 using TxID = uint256;
+
+/** The maximum number of trustlines to delete as part of AMM account
+ * deletion cleanup.
+ */
+std::uint16_t constexpr maxDeletableAMMTrustLines = 512;
+
+/** The maximum length of a URI inside an Oracle */
+std::size_t constexpr maxOracleURI = 256;
+
+/** The maximum length of a Provider inside an Oracle */
+std::size_t constexpr maxOracleProvider = 256;
+
+/** The maximum size of a data series array inside an Oracle */
+std::size_t constexpr maxOracleDataSeries = 10;
+
+/** The maximum length of a SymbolClass inside an Oracle */
+std::size_t constexpr maxOracleSymbolClass = 16;
+
+/** The maximum allowed time difference between lastUpdateTime and the time
+    of the last closed ledger
+*/
+std::size_t constexpr maxLastUpdateTimeDelta = 300;
+
+/** The maximum price scaling factor
+ */
+std::size_t constexpr maxPriceScale = 20;
+
+/** The maximum percentage of outliers to trim
+ */
+std::size_t constexpr maxTrim = 25;
 
 }  // namespace ripple
 

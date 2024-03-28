@@ -20,21 +20,200 @@
 #ifndef RIPPLE_RPC_SERVERHANDLER_H_INCLUDED
 #define RIPPLE_RPC_SERVERHANDLER_H_INCLUDED
 
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/core/Config.h>
+#include <ripple/app/main/CollectorManager.h>
 #include <ripple/core/JobQueue.h>
-#include <ripple/resource/ResourceManager.h>
-#include <ripple/rpc/impl/ServerHandlerImp.h>
-#include <ripple/server/Port.h>
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/ip/address.hpp>
-#include <memory>
+#include <ripple/json/Output.h>
+#include <ripple/rpc/RPCHandler.h>
+#include <ripple/rpc/impl/WSInfoSub.h>
+#include <ripple/server/Server.h>
+#include <ripple/server/Session.h>
+#include <ripple/server/WSSession.h>
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
+#include <boost/utility/string_view.hpp>
+#include <condition_variable>
+#include <map>
+#include <mutex>
 #include <vector>
 
 namespace ripple {
 
-using ServerHandler = ServerHandlerImp;
+inline bool
+operator<(Port const& lhs, Port const& rhs)
+{
+    return lhs.name < rhs.name;
+}
+
+class ServerHandler
+{
+public:
+    struct Setup
+    {
+        explicit Setup() = default;
+
+        std::vector<Port> ports;
+
+        // Memberspace
+        struct client_t
+        {
+            explicit client_t() = default;
+
+            bool secure = false;
+            std::string ip;
+            std::uint16_t port = 0;
+            std::string user;
+            std::string password;
+            std::string admin_user;
+            std::string admin_password;
+        };
+
+        // Configuration when acting in client role
+        client_t client;
+
+        // Configuration for the Overlay
+        struct overlay_t
+        {
+            explicit overlay_t() = default;
+
+            boost::asio::ip::address ip;
+            std::uint16_t port = 0;
+        };
+
+        overlay_t overlay;
+
+        void
+        makeContexts();
+    };
+
+private:
+    using socket_type = boost::beast::tcp_stream;
+    using stream_type = boost::beast::ssl_stream<socket_type>;
+
+    Application& app_;
+    Resource::Manager& m_resourceManager;
+    beast::Journal m_journal;
+    NetworkOPs& m_networkOPs;
+    std::unique_ptr<Server> m_server;
+    Setup setup_;
+    JobQueue& m_jobQueue;
+    beast::insight::Counter rpc_requests_;
+    beast::insight::Event rpc_size_;
+    beast::insight::Event rpc_time_;
+    std::mutex mutex_;
+    std::condition_variable condition_;
+    bool stopped_{false};
+    std::map<std::reference_wrapper<Port const>, int> count_;
+
+    // A private type used to restrict access to the ServerHandler constructor.
+    struct ServerHandlerCreator
+    {
+        explicit ServerHandlerCreator() = default;
+    };
+
+    // Friend declaration that allows make_ServerHandler to access the
+    // private type that restricts access to the ServerHandler ctor.
+    friend std::unique_ptr<ServerHandler>
+    make_ServerHandler(
+        Application& app,
+        boost::asio::io_service&,
+        JobQueue&,
+        NetworkOPs&,
+        Resource::Manager&,
+        CollectorManager& cm);
+
+public:
+    // Must be public so make_unique can call it.
+    ServerHandler(
+        ServerHandlerCreator const&,
+        Application& app,
+        boost::asio::io_service& io_service,
+        JobQueue& jobQueue,
+        NetworkOPs& networkOPs,
+        Resource::Manager& resourceManager,
+        CollectorManager& cm);
+
+    ~ServerHandler();
+
+    using Output = Json::Output;
+
+    void
+    setup(Setup const& setup, beast::Journal journal);
+
+    Setup const&
+    setup() const
+    {
+        return setup_;
+    }
+
+    void
+    stop();
+
+    //
+    // Handler
+    //
+
+    bool
+    onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoint);
+
+    Handoff
+    onHandoff(
+        Session& session,
+        std::unique_ptr<stream_type>&& bundle,
+        http_request_type&& request,
+        boost::asio::ip::tcp::endpoint const& remote_address);
+
+    Handoff
+    onHandoff(
+        Session& session,
+        http_request_type&& request,
+        boost::asio::ip::tcp::endpoint const& remote_address)
+    {
+        return onHandoff(
+            session,
+            {},
+            std::forward<http_request_type>(request),
+            remote_address);
+    }
+
+    void
+    onRequest(Session& session);
+
+    void
+    onWSMessage(
+        std::shared_ptr<WSSession> session,
+        std::vector<boost::asio::const_buffer> const& buffers);
+
+    void
+    onClose(Session& session, boost::system::error_code const&);
+
+    void
+    onStopped(Server&);
+
+private:
+    Json::Value
+    processSession(
+        std::shared_ptr<WSSession> const& session,
+        std::shared_ptr<JobQueue::Coro> const& coro,
+        Json::Value const& jv);
+
+    void
+    processSession(
+        std::shared_ptr<Session> const&,
+        std::shared_ptr<JobQueue::Coro> coro);
+
+    void
+    processRequest(
+        Port const& port,
+        std::string const& request,
+        beast::IP::Endpoint const& remoteIPAddress,
+        Output&&,
+        std::shared_ptr<JobQueue::Coro> coro,
+        boost::string_view forwardedFor,
+        boost::string_view user);
+
+    Handoff
+    statusResponse(http_request_type const& request) const;
+};
 
 ServerHandler::Setup
 setup_ServerHandler(Config const& c, std::ostream&& log);

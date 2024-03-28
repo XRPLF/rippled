@@ -25,6 +25,7 @@
 #include <ripple/core/Config.h>
 #include <ripple/rpc/RPCHandler.h>
 #include <ripple/rpc/Status.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/rpc/impl/Tuning.h>
 #include <vector>
 
@@ -39,8 +40,8 @@ namespace RPC {
 enum Condition {
     NO_CONDITION = 0,
     NEEDS_NETWORK_CONNECTION = 1,
-    NEEDS_CURRENT_LEDGER = 2 + NEEDS_NETWORK_CONNECTION,
-    NEEDS_CLOSED_LEDGER = 4 + NEEDS_NETWORK_CONNECTION,
+    NEEDS_CURRENT_LEDGER = 1 << 1,
+    NEEDS_CLOSED_LEDGER = 1 << 2,
 };
 
 struct Handler
@@ -52,6 +53,9 @@ struct Handler
     Method<Json::Value> valueMethod_;
     Role role_;
     RPC::Condition condition_;
+
+    unsigned minApiVer_ = apiMinimumSupportedVersion;
+    unsigned maxApiVer_ = apiMaximumValidVersion;
 };
 
 Handler const*
@@ -70,7 +74,7 @@ makeObjectValue(
 }
 
 /** Return names of all methods. */
-std::vector<char const*>
+std::set<char const*>
 getHandlerNames();
 
 template <class T>
@@ -94,20 +98,18 @@ conditionMet(Condition condition_required, T& context)
     }
 
     if (context.app.getOPs().isAmendmentBlocked() &&
-        (condition_required & NEEDS_CURRENT_LEDGER ||
-         condition_required & NEEDS_CLOSED_LEDGER))
+        (condition_required != NO_CONDITION))
     {
         return rpcAMENDMENT_BLOCKED;
     }
 
     if (context.app.getOPs().isUNLBlocked() &&
-        (condition_required & NEEDS_CURRENT_LEDGER ||
-         condition_required & NEEDS_CLOSED_LEDGER))
+        (condition_required != NO_CONDITION))
     {
         return rpcEXPIRED_VALIDATOR_LIST;
     }
 
-    if ((condition_required & NEEDS_NETWORK_CONNECTION) &&
+    if ((condition_required != NO_CONDITION) &&
         (context.netOps.getOperatingMode() < OperatingMode::SYNCING))
     {
         JLOG(context.j.info()) << "Insufficient network mode for RPC: "
@@ -119,7 +121,7 @@ conditionMet(Condition condition_required, T& context)
     }
 
     if (!context.app.config().standalone() &&
-        condition_required & NEEDS_CURRENT_LEDGER)
+        condition_required != NO_CONDITION)
     {
         if (context.ledgerMaster.getValidatedLedgerAge() >
             Tuning::maxValidatedLedgerAge)
@@ -143,7 +145,7 @@ conditionMet(Condition condition_required, T& context)
         }
     }
 
-    if ((condition_required & NEEDS_CLOSED_LEDGER) &&
+    if ((condition_required != NO_CONDITION) &&
         !context.ledgerMaster.getClosedLedger())
     {
         if (context.apiVersion == 1)

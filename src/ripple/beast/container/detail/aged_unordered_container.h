@@ -148,115 +148,84 @@ private:
     };
 
     // VFALCO TODO hoist to remove template argument dependencies
-    class ValueHash : private beast::detail::empty_base_optimization<Hash>
-#ifdef _LIBCPP_VERSION
-        ,
-                      public std::unary_function<element, std::size_t>
-#endif
+    class ValueHash : public Hash
     {
     public:
-#ifndef _LIBCPP_VERSION
         using argument_type = element;
         using result_type = size_t;
-#endif
 
         ValueHash()
         {
         }
 
-        ValueHash(Hash const& h)
-            : beast::detail::empty_base_optimization<Hash>(h)
+        ValueHash(Hash const& h) : Hash(h)
         {
         }
 
         std::size_t
         operator()(element const& e) const
         {
-            return this->member()(extract(e.value));
+            return Hash::operator()(extract(e.value));
         }
 
         Hash&
         hash_function()
         {
-            return this->member();
+            return *this;
         }
 
         Hash const&
         hash_function() const
         {
-            return this->member();
+            return *this;
         }
     };
 
     // Compares value_type against element, used in find/insert_check
     // VFALCO TODO hoist to remove template argument dependencies
-    class KeyValueEqual
-        : private beast::detail::empty_base_optimization<KeyEqual>
-#ifdef _LIBCPP_VERSION
-        ,
-          public std::binary_function<Key, element, bool>
-#endif
+    class KeyValueEqual : public KeyEqual
     {
     public:
-#ifndef _LIBCPP_VERSION
         using first_argument_type = Key;
         using second_argument_type = element;
         using result_type = bool;
-#endif
 
         KeyValueEqual()
         {
         }
 
-        KeyValueEqual(KeyEqual const& keyEqual)
-            : beast::detail::empty_base_optimization<KeyEqual>(keyEqual)
+        KeyValueEqual(KeyEqual const& keyEqual) : KeyEqual(keyEqual)
         {
         }
-
-        // VFALCO NOTE WE might want only to enable these overloads
-        //                if KeyEqual has is_transparent
-#if 0
-        template <class K>
-        bool operator() (K const& k, element const& e) const
-        {
-            return this->member() (k, extract (e.value));
-        }
-
-        template <class K>
-        bool operator() (element const& e, K const& k) const
-        {
-            return this->member() (extract (e.value), k);
-        }
-#endif
 
         bool
         operator()(Key const& k, element const& e) const
         {
-            return this->member()(k, extract(e.value));
+            return KeyEqual::operator()(k, extract(e.value));
         }
 
         bool
         operator()(element const& e, Key const& k) const
         {
-            return this->member()(extract(e.value), k);
+            return KeyEqual::operator()(extract(e.value), k);
         }
 
         bool
         operator()(element const& lhs, element const& rhs) const
         {
-            return this->member()(extract(lhs.value), extract(rhs.value));
+            return KeyEqual::operator()(extract(lhs.value), extract(rhs.value));
         }
 
         KeyEqual&
         key_eq()
         {
-            return this->member();
+            return *this;
         }
 
         KeyEqual const&
         key_eq() const
         {
-            return this->member();
+            return *this;
         }
     };
 
@@ -1205,15 +1174,15 @@ public:
         return emplace<maybe_multi>(std::forward<Args>(args)...);
     }
 
-    template <bool is_const, class Iterator, class Base>
-    beast::detail::aged_container_iterator<false, Iterator, Base>
-    erase(beast::detail::aged_container_iterator<is_const, Iterator, Base> pos);
+    template <bool is_const, class Iterator>
+    beast::detail::aged_container_iterator<false, Iterator>
+    erase(beast::detail::aged_container_iterator<is_const, Iterator> pos);
 
-    template <bool is_const, class Iterator, class Base>
-    beast::detail::aged_container_iterator<false, Iterator, Base>
+    template <bool is_const, class Iterator>
+    beast::detail::aged_container_iterator<false, Iterator>
     erase(
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> first,
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> last);
+        beast::detail::aged_container_iterator<is_const, Iterator> first,
+        beast::detail::aged_container_iterator<is_const, Iterator> last);
 
     template <class K>
     auto
@@ -1222,9 +1191,9 @@ public:
     void
     swap(aged_unordered_container& other) noexcept;
 
-    template <bool is_const, class Iterator, class Base>
+    template <bool is_const, class Iterator>
     void
-    touch(beast::detail::aged_container_iterator<is_const, Iterator, Base> pos)
+    touch(beast::detail::aged_container_iterator<is_const, Iterator> pos)
     {
         touch(pos, clock().now());
     }
@@ -1541,10 +1510,10 @@ private:
         insert_unchecked(first, last);
     }
 
-    template <bool is_const, class Iterator, class Base>
+    template <bool is_const, class Iterator>
     void
     touch(
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> pos,
+        beast::detail::aged_container_iterator<is_const, Iterator> pos,
         typename clock_type::time_point const& now)
     {
         auto& e(*pos.iterator());
@@ -3044,8 +3013,8 @@ template <
     class Hash,
     class KeyEqual,
     class Allocator>
-template <bool is_const, class Iterator, class Base>
-beast::detail::aged_container_iterator<false, Iterator, Base>
+template <bool is_const, class Iterator>
+beast::detail::aged_container_iterator<false, Iterator>
 aged_unordered_container<
     IsMulti,
     IsMap,
@@ -3054,11 +3023,11 @@ aged_unordered_container<
     Clock,
     Hash,
     KeyEqual,
-    Allocator>::
-    erase(beast::detail::aged_container_iterator<is_const, Iterator, Base> pos)
+    Allocator>::erase(beast::detail::aged_container_iterator<is_const, Iterator>
+                          pos)
 {
     unlink_and_delete_element(&*((pos++).iterator()));
-    return beast::detail::aged_container_iterator<false, Iterator, Base>(
+    return beast::detail::aged_container_iterator<false, Iterator>(
         pos.iterator());
 }
 
@@ -3071,8 +3040,8 @@ template <
     class Hash,
     class KeyEqual,
     class Allocator>
-template <bool is_const, class Iterator, class Base>
-beast::detail::aged_container_iterator<false, Iterator, Base>
+template <bool is_const, class Iterator>
+beast::detail::aged_container_iterator<false, Iterator>
 aged_unordered_container<
     IsMulti,
     IsMap,
@@ -3083,13 +3052,13 @@ aged_unordered_container<
     KeyEqual,
     Allocator>::
     erase(
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> first,
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> last)
+        beast::detail::aged_container_iterator<is_const, Iterator> first,
+        beast::detail::aged_container_iterator<is_const, Iterator> last)
 {
     for (; first != last;)
         unlink_and_delete_element(&*((first++).iterator()));
 
-    return beast::detail::aged_container_iterator<false, Iterator, Base>(
+    return beast::detail::aged_container_iterator<false, Iterator>(
         first.iterator());
 }
 

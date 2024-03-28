@@ -70,7 +70,7 @@ public:
     abstract_clock(abstract_clock const&) = default;
 
     /** Returns the current time. */
-    virtual time_point
+    [[nodiscard]] virtual time_point
     now() const = 0;
 };
 

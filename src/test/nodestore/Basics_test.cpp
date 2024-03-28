@@ -56,10 +56,9 @@ public:
 
         auto batch = createPredictableBatch(numObjectsToTest, seedValue);
 
-        EncodedBlob encoded;
         for (int i = 0; i < batch.size(); ++i)
         {
-            encoded.prepare(batch[i]);
+            EncodedBlob encoded(batch[i]);
 
             DecodedBlob decoded(
                 encoded.getKey(), encoded.getData(), encoded.getSize());

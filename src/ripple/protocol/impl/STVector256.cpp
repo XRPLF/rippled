@@ -26,19 +26,19 @@ namespace ripple {
 
 STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
 {
-    Blob data = sit.getVL();
-    auto const count = data.size() / (256 / 8);
-    mValue.reserve(count);
-    Blob::iterator begin = data.begin();
-    unsigned int uStart = 0;
-    for (unsigned int i = 0; i != count; i++)
-    {
-        unsigned int uEnd = uStart + (256 / 8);
-        // This next line could be optimized to construct a default
-        // uint256 in the vector and then copy into it
-        mValue.push_back(uint256(Blob(begin + uStart, begin + uEnd)));
-        uStart = uEnd;
-    }
+    auto const slice = sit.getSlice(sit.getVLDataLength());
+
+    if (slice.size() % uint256::size() != 0)
+        Throw<std::runtime_error>(
+            "Bad serialization for STVector256: " +
+            std::to_string(slice.size()));
+
+    auto const cnt = slice.size() / uint256::size();
+
+    mValue.reserve(cnt);
+
+    for (std::size_t i = 0; i != cnt; ++i)
+        mValue.emplace_back(slice.substr(i * uint256::size(), uint256::size()));
 }
 
 STBase*

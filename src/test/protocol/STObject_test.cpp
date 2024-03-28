@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
 #include <ripple/beast/unit_test.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
@@ -609,12 +608,7 @@ public:
     auto const kp =
         generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase"));
     st[sf5] = kp.first;
-    BEAST_EXPECT(st[sf5] != PublicKey{});
     st[~sf5] = std::nullopt;
-#if 0
-            pk = st[sf5];
-            BEAST_EXPECT(pk.size() == 0);
-#endif
 }
 
 // By reference fields

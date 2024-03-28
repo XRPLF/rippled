@@ -40,14 +40,14 @@ public:
     struct FeatureInfo
     {
         FeatureInfo() = delete;
-        FeatureInfo(std::string const& n, uint256 const& f, DefaultVote v)
+        FeatureInfo(std::string const& n, uint256 const& f, VoteBehavior v)
             : name(n), feature(f), vote(v)
         {
         }
 
         std::string const name;
         uint256 const feature;
-        DefaultVote const vote;
+        VoteBehavior const vote;
     };
 
     virtual ~AmendmentTable() = default;
@@ -81,11 +81,11 @@ public:
     firstUnsupportedExpected() const = 0;
 
     virtual Json::Value
-    getJson() const = 0;
+    getJson(bool isAdmin) const = 0;
 
     /** Returns a Json::objectValue. */
     virtual Json::Value
-    getJson(uint256 const& amendment) const = 0;
+    getJson(uint256 const& amendment, bool isAdmin) const = 0;
 
     /** Called when a new fully-validated ledger is accepted. */
     void
@@ -110,6 +110,10 @@ public:
         LedgerIndex ledgerSeq,
         std::set<uint256> const& enabled,
         majorityAmendments_t const& majority) = 0;
+
+    // Called when the set of trusted validators changes.
+    virtual void
+    trustChanged(hash_set<PublicKey> const& allTrusted) = 0;
 
     // Called by the consensus code when we need to
     // inject pseudo-transactions
@@ -172,8 +176,7 @@ public:
 
             initialPosition->addGiveItem(
                 SHAMapNodeType::tnTRANSACTION_NM,
-                std::make_shared<SHAMapItem>(
-                    amendTx.getTransactionID(), s.slice()));
+                make_shamapitem(amendTx.getTransactionID(), s.slice()));
         }
     }
 };

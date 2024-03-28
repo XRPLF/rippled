@@ -25,16 +25,6 @@ message LedgerSpecifier
     }
 }
 
-// Next field: 3
-message LedgerRange
-{
-    uint32 ledger_index_min = 1;
-
-    // Note, if ledger_index_min is non-zero and ledger_index_max is 0, the
-    // software will use the max validated ledger in place of ledger_index_max
-    uint32 ledger_index_max = 2;
-};
-
 
 // Next field: 3
 message RawLedgerObject

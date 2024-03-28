@@ -72,7 +72,7 @@ shouldForwardToP2p(RPC::JsonContext& context)
     if (params.isMember(jss::ledger_index))
     {
         auto indexValue = params[jss::ledger_index];
-        if (!indexValue.isNumeric())
+        if (indexValue.isString())
         {
             auto index = indexValue.asString();
             return index == "current" || index == "closed";

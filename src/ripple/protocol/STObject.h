@@ -28,6 +28,9 @@
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/SOTemplate.h>
 #include <ripple/protocol/STAmount.h>
+#include <ripple/protocol/STBase.h>
+#include <ripple/protocol/STCurrency.h>
+#include <ripple/protocol/STIssue.h>
 #include <ripple/protocol/STPathSet.h>
 #include <ripple/protocol/STVector256.h>
 #include <ripple/protocol/impl/STVar.h>
@@ -41,6 +44,7 @@
 namespace ripple {
 
 class STArray;
+class Rules;
 
 inline void
 throwFieldNotFound(SField const& field)
@@ -99,6 +103,9 @@ public:
     STObject(SerialIter& sit, SField const& name, int depth = 0);
     STObject(SerialIter&& sit, SField const& name);
     explicit STObject(SField const& name);
+
+    static STObject
+    makeInnerObject(SField const& name, Rules const& rules);
 
     iterator
     begin() const;
@@ -235,6 +242,8 @@ public:
     getFieldV256(SField const& field) const;
     const STArray&
     getFieldArray(SField const& field) const;
+    const STCurrency&
+    getFieldCurrency(SField const& field) const;
 
     /** Get the value of a field.
         @param A TypedField built from an SField value representing the desired
@@ -337,7 +346,7 @@ public:
     set(std::unique_ptr<STBase> v);
 
     void
-    set(STBase* v);
+    set(STBase&& v);
 
     void
     setFieldU8(SField const& field, unsigned char);
@@ -361,6 +370,10 @@ public:
 
     void
     setFieldAmount(SField const& field, STAmount const&);
+    void
+    setFieldIssue(SField const& field, STIssue const&);
+    void
+    setFieldCurrency(SField const& field, STCurrency const&);
     void
     setFieldPathSet(SField const& field, STPathSet const&);
     void

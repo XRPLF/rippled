@@ -24,7 +24,9 @@
 #include <ripple/protocol/KeyType.h>
 #include <ripple/protocol/STExchange.h>
 #include <ripple/protocol/UintTypes.h>
+#include <ripple/protocol/json_get_or_throw.h>
 #include <ripple/protocol/tokens.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -59,13 +61,17 @@ namespace ripple {
 class PublicKey
 {
 protected:
-    std::size_t size_ = 0;
-    std::uint8_t buf_[33];  // should be large enough
+    // All the constructed public keys are valid, non-empty and contain 33
+    // bytes of data.
+    static constexpr std::size_t size_ = 33;
+    std::uint8_t buf_[size_];  // should be large enough
 
 public:
     using const_iterator = std::uint8_t const*;
 
-    PublicKey() = default;
+public:
+    PublicKey() = delete;
+
     PublicKey(PublicKey const& other);
     PublicKey&
     operator=(PublicKey const& other);
@@ -113,12 +119,6 @@ public:
         return buf_ + size_;
     }
 
-    bool
-    empty() const noexcept
-    {
-        return size_ == 0;
-    }
-
     Slice
     slice() const noexcept
     {
@@ -139,8 +139,7 @@ operator<<(std::ostream& os, PublicKey const& pk);
 inline bool
 operator==(PublicKey const& lhs, PublicKey const& rhs)
 {
-    return lhs.size() == rhs.size() &&
-        std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
+    return std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
 }
 
 inline bool
@@ -267,5 +266,28 @@ AccountID
 calcAccountID(PublicKey const& pk);
 
 }  // namespace ripple
+
+//------------------------------------------------------------------------------
+
+namespace Json {
+template <>
+inline ripple::PublicKey
+getOrThrow(Json::Value const& v, ripple::SField const& field)
+{
+    using namespace ripple;
+    std::string const b58 = getOrThrow<std::string>(v, field);
+    if (auto pubKeyBlob = strUnHex(b58); publicKeyType(makeSlice(*pubKeyBlob)))
+    {
+        return PublicKey{makeSlice(*pubKeyBlob)};
+    }
+    for (auto const tokenType :
+         {TokenType::NodePublic, TokenType::AccountPublic})
+    {
+        if (auto const pk = parseBase58<PublicKey>(tokenType, b58))
+            return *pk;
+    }
+    Throw<JsonTypeMismatchError>(field.getJsonName(), "PublicKey");
+}
+}  // namespace Json
 
 #endif

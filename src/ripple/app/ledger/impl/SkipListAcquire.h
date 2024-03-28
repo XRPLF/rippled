@@ -96,7 +96,7 @@ public:
     void
     processData(
         std::uint32_t ledgerSeq,
-        std::shared_ptr<SHAMapItem const> const& item);
+        boost::intrusive_ptr<SHAMapItem const> const& item);
 
     /**
      * Add a callback that will be called when the skipList is ready or failed.

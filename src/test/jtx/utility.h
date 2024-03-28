@@ -23,6 +23,7 @@
 #include <ripple/app/ledger/Ledger.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/STObject.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <stdexcept>
 #include <test/jtx/Account.h>
 
@@ -60,6 +61,13 @@ fill_fee(Json::Value& jv, ReadView const& view);
 /** Set the sequence number automatically. */
 void
 fill_seq(Json::Value& jv, ReadView const& view);
+
+/** Given a rippled unit test rpc command, return the corresponding JSON. */
+Json::Value
+cmdToJSONRPC(
+    std::vector<std::string> const& args,
+    beast::Journal j,
+    unsigned int apiVersion);
 
 }  // namespace jtx
 }  // namespace test

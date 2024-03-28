@@ -22,8 +22,6 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/base64.h>
-#include <ripple/basics/contract.h>
-#include <ripple/beast/rfc2616.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/protocol/PublicKey.h>
@@ -32,7 +30,6 @@
 #include <boost/algorithm/string/trim.hpp>
 
 #include <numeric>
-#include <shared_mutex>
 #include <stdexcept>
 
 namespace ripple {
@@ -45,12 +42,15 @@ to_string(Manifest const& m)
     if (m.revoked())
         return "Revocation Manifest " + mk;
 
+    if (!m.signingKey)
+        Throw<std::runtime_error>("No SigningKey in manifest " + mk);
+
     return "Manifest " + mk + " (" + std::to_string(m.sequence) + ": " +
-        toBase58(TokenType::NodePublic, m.signingKey) + ")";
+        toBase58(TokenType::NodePublic, *m.signingKey) + ")";
 }
 
 std::optional<Manifest>
-deserializeManifest(Slice s)
+deserializeManifest(Slice s, beast::Journal journal)
 {
     if (s.empty())
         return std::nullopt;
@@ -96,25 +96,27 @@ deserializeManifest(Slice s)
         if (!publicKeyType(makeSlice(pk)))
             return std::nullopt;
 
-        Manifest m;
-        m.serialized.assign(reinterpret_cast<char const*>(s.data()), s.size());
-        m.masterKey = PublicKey(makeSlice(pk));
-        m.sequence = st.getFieldU32(sfSequence);
+        PublicKey const masterKey = PublicKey(makeSlice(pk));
+        std::uint32_t const seq = st.getFieldU32(sfSequence);
+
+        std::string domain;
+
+        std::optional<PublicKey> signingKey;
 
         if (st.isFieldPresent(sfDomain))
         {
             auto const d = st.getFieldVL(sfDomain);
 
-            m.domain.assign(reinterpret_cast<char const*>(d.data()), d.size());
+            domain.assign(reinterpret_cast<char const*>(d.data()), d.size());
 
-            if (!isProperlyFormedTomlDomain(m.domain))
+            if (!isProperlyFormedTomlDomain(domain))
                 return std::nullopt;
         }
 
         bool const hasEphemeralKey = st.isFieldPresent(sfSigningPubKey);
         bool const hasEphemeralSig = st.isFieldPresent(sfSignature);
 
-        if (m.revoked())
+        if (Manifest::revoked(seq))
         {
             // Revocation manifests should not specify a new signing key
             // or a signing key signature.
@@ -139,17 +141,23 @@ deserializeManifest(Slice s)
             if (!publicKeyType(makeSlice(spk)))
                 return std::nullopt;
 
-            m.signingKey = PublicKey(makeSlice(spk));
+            signingKey.emplace(makeSlice(spk));
 
             // The signing and master keys can't be the same
-            if (m.signingKey == m.masterKey)
+            if (*signingKey == masterKey)
                 return std::nullopt;
         }
 
-        return m;
+        std::string const serialized(
+            reinterpret_cast<char const*>(s.data()), s.size());
+
+        // If the manifest is revoked, then the signingKey will be unseated
+        return Manifest(serialized, masterKey, signingKey, seq, domain);
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
+        JLOG(journal.error())
+            << "Exception in " << __func__ << ": " << ex.what();
         return std::nullopt;
     }
 }
@@ -190,9 +198,14 @@ Manifest::verify() const
     SerialIter sit(serialized.data(), serialized.size());
     st.set(sit);
 
+    // The manifest must either have a signing key or be revoked.  This check
+    // prevents us from accessing an unseated signingKey in the next check.
+    if (!revoked() && !signingKey)
+        return false;
+
     // Signing key and signature are not required for
     // master key revocations
-    if (!revoked() && !ripple::verify(st, HashPrefix::manifest, signingKey))
+    if (!revoked() && !ripple::verify(st, HashPrefix::manifest, *signingKey))
         return false;
 
     return ripple::verify(
@@ -215,6 +228,14 @@ Manifest::revoked() const
         The maximum possible sequence number means that the master key
         has been revoked.
     */
+    return revoked(sequence);
+}
+
+bool
+Manifest::revoked(std::uint32_t sequence)
+{
+    // The maximum possible sequence number means that the master key has
+    // been revoked.
     return sequence == std::numeric_limits<std::uint32_t>::max();
 }
 
@@ -239,7 +260,7 @@ Manifest::getMasterSignature() const
 }
 
 std::optional<ValidatorToken>
-loadValidatorToken(std::vector<std::string> const& blob)
+loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
 {
     try
     {
@@ -277,13 +298,15 @@ loadValidatorToken(std::vector<std::string> const& blob)
 
         return std::nullopt;
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
+        JLOG(journal.error())
+            << "Exception in " << __func__ << ": " << ex.what();
         return std::nullopt;
     }
 }
 
-PublicKey
+std::optional<PublicKey>
 ManifestCache::getSigningKey(PublicKey const& pk) const
 {
     std::shared_lock lock{mutex_};
@@ -419,9 +442,18 @@ ManifestCache::applyManifest(Manifest m)
 
         if (!revoked)
         {
+            if (!m.signingKey)
+            {
+                JLOG(j_.warn()) << to_string(m)
+                                << ": is not revoked and the manifest has no "
+                                   "signing key. Hence, the manifest is "
+                                   "invalid";
+                return ManifestDisposition::invalid;
+            }
+
             // Sanity check: the ephemeral key of this manifest should not be
             // used as the master or ephemeral key of another manifest:
-            if (auto const x = signingToMasterKeys_.find(m.signingKey);
+            if (auto const x = signingToMasterKeys_.find(*m.signingKey);
                 x != signingToMasterKeys_.end())
             {
                 JLOG(j_.warn())
@@ -432,7 +464,7 @@ ManifestCache::applyManifest(Manifest m)
                 return ManifestDisposition::badEphemeralKey;
             }
 
-            if (auto const x = map_.find(m.signingKey); x != map_.end())
+            if (auto const x = map_.find(*m.signingKey); x != map_.end())
             {
                 JLOG(j_.warn())
                     << to_string(m) << ": Ephemeral key used as master key for "
@@ -475,7 +507,7 @@ ManifestCache::applyManifest(Manifest m)
             logMftAct(stream, "AcceptedNew", m.masterKey, m.sequence);
 
         if (!revoked)
-            signingToMasterKeys_[m.signingKey] = m.masterKey;
+            signingToMasterKeys_.emplace(*m.signingKey, m.masterKey);
 
         auto masterKey = m.masterKey;
         map_.emplace(std::move(masterKey), std::move(m));
@@ -492,10 +524,10 @@ ManifestCache::applyManifest(Manifest m)
             m.sequence,
             iter->second.sequence);
 
-    signingToMasterKeys_.erase(iter->second.signingKey);
+    signingToMasterKeys_.erase(*iter->second.signingKey);
 
     if (!revoked)
-        signingToMasterKeys_[m.signingKey] = m.masterKey;
+        signingToMasterKeys_.emplace(*m.signingKey, m.masterKey);
 
     iter->second = std::move(m);
 

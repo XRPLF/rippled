@@ -22,6 +22,7 @@
 #include <ripple/shamap/impl/TaggedPointer.h>
 
 #include <array>
+#include <bit>
 
 #include <boost/pool/pool_alloc.hpp>
 
@@ -159,29 +160,6 @@ deallocateArrays(std::uint8_t boundaryIndex, void* p)
     freeArrayFuns[boundaryIndex](p);
 }
 
-[[nodiscard]] inline int
-popcnt16(std::uint16_t a)
-{
-#if defined(__clang__) || defined(__GNUC__)
-    return __builtin_popcount(a);
-#else
-    // fallback to table lookup
-    static auto constexpr const tbl = []() {
-        std::array<std::uint8_t, 256> ret{};
-        for (int i = 0; i != 256; ++i)
-        {
-            for (int j = 0; j != 8; ++j)
-            {
-                if (i & (1 << j))
-                    ret[i]++;
-            }
-        }
-        return ret;
-    }();
-    return tbl[a & 0xff] + tbl[a >> 8];
-#endif
-}
-
 // Used in `iterChildren` and elsewhere as the hash value for sparse arrays when
 // the hash isn't actually stored in the array.
 static SHAMapHash const zeroSHAMapHash;
@@ -285,7 +263,7 @@ TaggedPointer::getChildIndex(std::uint16_t isBranch, int i) const
 
     // mask sets all the bits >=i to zero and all the bits <i to
     // one.
-    auto const mask = (1 << i) - 1;
+    auto const mask = (1u << i) - 1;
     return popcnt16(isBranch & mask);
 }
 

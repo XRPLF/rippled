@@ -20,6 +20,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OpenLedger.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/TxQ.h>
@@ -28,9 +29,9 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/mulDiv.h>
 #include <ripple/json/json_writer.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/protocol/Sign.h>
@@ -52,35 +53,25 @@ class SigningForParams
 {
 private:
     AccountID const* const multiSigningAcctID_;
-    PublicKey* const multiSignPublicKey_;
-    Buffer* const multiSignature_;
+    std::optional<PublicKey> multiSignPublicKey_;
+    Buffer multiSignature_;
 
 public:
-    explicit SigningForParams()
-        : multiSigningAcctID_(nullptr)
-        , multiSignPublicKey_(nullptr)
-        , multiSignature_(nullptr)
+    explicit SigningForParams() : multiSigningAcctID_(nullptr)
     {
     }
 
     SigningForParams(SigningForParams const& rhs) = delete;
 
-    SigningForParams(
-        AccountID const& multiSigningAcctID,
-        PublicKey& multiSignPublicKey,
-        Buffer& multiSignature)
+    SigningForParams(AccountID const& multiSigningAcctID)
         : multiSigningAcctID_(&multiSigningAcctID)
-        , multiSignPublicKey_(&multiSignPublicKey)
-        , multiSignature_(&multiSignature)
     {
     }
 
     bool
     isMultiSigning() const
     {
-        return (
-            (multiSigningAcctID_ != nullptr) &&
-            (multiSignPublicKey_ != nullptr) && (multiSignature_ != nullptr));
+        return multiSigningAcctID_ != nullptr;
     }
 
     bool
@@ -96,23 +87,46 @@ public:
         return !isMultiSigning();
     }
 
+    bool
+    validMultiSign() const
+    {
+        return isMultiSigning() && multiSignPublicKey_ &&
+            multiSignature_.size();
+    }
+
     // Don't call this method unless isMultiSigning() returns true.
     AccountID const&
-    getSigner()
+    getSigner() const
     {
+        if (!multiSigningAcctID_)
+            LogicError("Accessing unknown SigningForParams::getSigner()");
         return *multiSigningAcctID_;
+    }
+
+    PublicKey const&
+    getPublicKey() const
+    {
+        if (!multiSignPublicKey_)
+            LogicError("Accessing unknown SigningForParams::getPublicKey()");
+        return *multiSignPublicKey_;
+    }
+
+    Buffer const&
+    getSignature() const
+    {
+        return multiSignature_;
     }
 
     void
     setPublicKey(PublicKey const& multiSignPublicKey)
     {
-        *multiSignPublicKey_ = multiSignPublicKey;
+        multiSignPublicKey_ = multiSignPublicKey;
     }
 
     void
     moveMultiSignature(Buffer&& multiSignature)
     {
-        *multiSignature_ = std::move(multiSignature);
+        multiSignature_ = std::move(multiSignature);
     }
 };
 
@@ -166,6 +180,22 @@ checkPayment(
     // Only path find for Payments.
     if (tx_json[jss::TransactionType].asString() != jss::Payment)
         return Json::Value();
+
+    // DeliverMax is an alias to Amount and we use Amount internally
+    if (tx_json.isMember(jss::DeliverMax))
+    {
+        if (tx_json.isMember(jss::Amount))
+        {
+            if (tx_json[jss::DeliverMax] != tx_json[jss::Amount])
+                return RPC::make_error(
+                    rpcINVALID_PARAMS,
+                    "Cannot specify differing 'Amount' and 'DeliverMax'");
+        }
+        else
+            tx_json[jss::Amount] = tx_json[jss::DeliverMax];
+
+        tx_json.removeMember(jss::DeliverMax);
+    }
 
     if (!tx_json.isMember(jss::Amount))
         return RPC::missing_field_error("tx_json.Amount");
@@ -369,9 +399,13 @@ transactionPreProcessImpl(
     auto j = app.journal("RPCHandler");
 
     Json::Value jvResult;
-    auto const [pk, sk] = keypairForSignature(params, jvResult);
-    if (contains_error(jvResult))
+    std::optional<std::pair<PublicKey, SecretKey>> keyPair =
+        keypairForSignature(params, jvResult);
+    if (!keyPair || contains_error(jvResult))
         return jvResult;
+
+    PublicKey const& pk = keyPair->first;
+    SecretKey const& sk = keyPair->second;
 
     bool const verify =
         !(params.isMember(jss::offline) && params[jss::offline].asBool());
@@ -629,12 +663,25 @@ transactionConstructImpl(
 }
 
 static Json::Value
-transactionFormatResultImpl(Transaction::pointer tpTrans)
+transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 {
     Json::Value jvResult;
     try
     {
-        jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
+        if (apiVersion > 1)
+        {
+            jvResult[jss::tx_json] =
+                tpTrans->getJson(JsonOptions::disable_API_prior_V2);
+            jvResult[jss::hash] = to_string(tpTrans->getID());
+        }
+        else
+            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
+
+        RPC::insertDeliverMax(
+            jvResult[jss::tx_json],
+            tpTrans->getSTransaction()->getTxnType(),
+            apiVersion);
+
         jvResult[jss::tx_blob] =
             strHex(tpTrans->getSTransaction()->getSerializer().peekData());
 
@@ -720,8 +767,7 @@ checkFee(
         }
     }
 
-    // Default fee in fee units.
-    FeeUnit32 const feeDefault = config.TRANSACTION_FEE_BASE;
+    XRPAmount const feeDefault = config.FEES.reference_fee;
 
     auto ledger = app.openLedger().current();
     // Administrative and identified endpoints are exempt from local fees.
@@ -738,14 +784,10 @@ checkFee(
 
     auto const limit = [&]() {
         // Scale fee units to drops:
-        auto const drops =
-            mulDiv(feeDefault, ledger->fees().base, ledger->fees().units);
-        if (!drops.first)
+        auto const result = mulDiv(feeDefault, mult, div);
+        if (!result)
             Throw<std::overflow_error>("mulDiv");
-        auto const result = mulDiv(drops.second, mult, div);
-        if (!result.first)
-            Throw<std::overflow_error>("mulDiv");
-        return result.second;
+        return *result;
     }();
 
     if (fee > limit)
@@ -766,6 +808,7 @@ checkFee(
 Json::Value
 transactionSign(
     Json::Value jvRequest,
+    unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
@@ -796,13 +839,14 @@ transactionSign(
     if (!txn.second)
         return txn.first;
 
-    return transactionFormatResultImpl(txn.second);
+    return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
 /** Returns a Json::objectValue. */
 Json::Value
 transactionSubmit(
     Json::Value jvRequest,
+    unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
@@ -842,7 +886,7 @@ transactionSubmit(
             rpcINTERNAL, "Exception occurred during transaction submission.");
     }
 
-    return transactionFormatResultImpl(txn.second);
+    return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
 namespace detail {
@@ -932,6 +976,7 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
 Json::Value
 transactionSignFor(
     Json::Value jvRequest,
+    unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
@@ -981,10 +1026,7 @@ transactionSignFor(
     }
 
     // Add and amend fields based on the transaction type.
-    Buffer multiSignature;
-    PublicKey multiSignPubKey;
-    SigningForParams signForParams(
-        *signerAccountID, multiSignPubKey, multiSignature);
+    SigningForParams signForParams(*signerAccountID);
 
     transactionPreProcessResult preprocResult = transactionPreProcessImpl(
         jvRequest, role, signForParams, validatedLedgerAge, app);
@@ -992,12 +1034,14 @@ transactionSignFor(
     if (!preprocResult.second)
         return preprocResult.first;
 
+    assert(signForParams.validMultiSign());
+
     {
         std::shared_ptr<SLE const> account_state =
             ledger->read(keylet::account(*signerAccountID));
         // Make sure the account and secret belong together.
-        auto const err =
-            acctMatchesPubKey(account_state, *signerAccountID, multiSignPubKey);
+        auto const err = acctMatchesPubKey(
+            account_state, *signerAccountID, signForParams.getPublicKey());
 
         if (err != rpcSUCCESS)
             return rpcError(err);
@@ -1009,8 +1053,9 @@ transactionSignFor(
         // Make the signer object that we'll inject.
         STObject signer(sfSigner);
         signer[sfAccount] = *signerAccountID;
-        signer.setFieldVL(sfTxnSignature, multiSignature);
-        signer.setFieldVL(sfSigningPubKey, multiSignPubKey.slice());
+        signer.setFieldVL(sfTxnSignature, signForParams.getSignature());
+        signer.setFieldVL(
+            sfSigningPubKey, signForParams.getPublicKey().slice());
 
         // If there is not yet a Signers array, make one.
         if (!sttx->isFieldPresent(sfSigners))
@@ -1032,13 +1077,14 @@ transactionSignFor(
     if (!txn.second)
         return txn.first;
 
-    return transactionFormatResultImpl(txn.second);
+    return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
 /** Returns a Json::objectValue. */
 Json::Value
 transactionSubmitMultiSigned(
     Json::Value jvRequest,
+    unsigned apiVersion,
     NetworkOPs::FailHard failType,
     Role role,
     std::chrono::seconds validatedLedgerAge,
@@ -1224,7 +1270,7 @@ transactionSubmitMultiSigned(
             rpcINTERNAL, "Exception occurred during transaction submission.");
     }
 
-    return transactionFormatResultImpl(txn.second);
+    return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
 }  // namespace RPC

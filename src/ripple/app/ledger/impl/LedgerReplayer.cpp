@@ -172,7 +172,7 @@ LedgerReplayer::createDeltas(std::shared_ptr<LedgerReplayTask> task)
 void
 LedgerReplayer::gotSkipList(
     LedgerInfo const& info,
-    std::shared_ptr<SHAMapItem const> const& item)
+    boost::intrusive_ptr<SHAMapItem const> const& item)
 {
     std::shared_ptr<SkipListAcquire> skipList = {};
     {

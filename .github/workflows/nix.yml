@@ -1,0 +1,230 @@
+name: nix
+on:
+  pull_request:
+  push:
+    # If the branches list is ever changed, be sure to change it on all
+    # build/test jobs (nix, macos, windows)
+    branches:
+      # Always build the package branches
+      - develop
+      - release
+      - master
+      # Branches that opt-in to running
+      - 'ci/**'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# This workflow has two job matrixes.
+# They can be considered phases because the second matrix ("test")
+# depends on the first ("dependencies").
+#
+# The first phase has a job in the matrix for each combination of
+# variables that affects dependency ABI:
+# platform, compiler, and configuration.
+# It creates a GitHub artifact holding the Conan profile,
+# and builds and caches binaries for all the dependencies.
+# If an Artifactory remote is configured, they are cached there.
+# If not, they are added to the GitHub artifact.
+# GitHub's "cache" action has a size limit (10 GB) that is too small
+# to hold the binaries if they are built locally.
+# We must use the "{upload,download}-artifact" actions instead.
+#
+# The second phase has a job in the matrix for each test configuration.
+# It installs dependency binaries from the cache, whichever was used,
+# and builds and tests rippled.
+
+jobs:
+
+  dependencies:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux
+        compiler:
+          - gcc
+          - clang
+        configuration:
+          - Debug
+          - Release
+        include:
+          - compiler: gcc
+            profile:
+              version: 11
+              cc: /usr/bin/gcc
+              cxx: /usr/bin/g++
+          - compiler: clang
+            profile:
+              version: 14
+              cc: /usr/bin/clang-14
+              cxx: /usr/bin/clang++-14
+    runs-on: [self-hosted, heavy]
+    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    env:
+      build_dir: .build
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: check environment
+        run: |
+          echo ${PATH} | tr ':' '\n'
+          conan --version
+          cmake --version
+          env | sort
+      - name: configure Conan
+        run: |
+          conan profile new default --detect
+          conan profile update settings.compiler.cppstd=20 default
+          conan profile update settings.compiler=${{ matrix.compiler }} default
+          conan profile update settings.compiler.version=${{ matrix.profile.version }} default
+          conan profile update settings.compiler.libcxx=libstdc++11 default
+          conan profile update env.CC=${{ matrix.profile.cc }} default
+          conan profile update env.CXX=${{ matrix.profile.cxx }} default
+          conan profile update conf.tools.build:compiler_executables='{"c": "${{ matrix.profile.cc }}", "cpp": "${{ matrix.profile.cxx }}"}' default
+      - name: archive profile
+        # Create this archive before dependencies are added to the local cache.
+        run: tar -czf conan.tar -C ~/.conan .
+      - name: build dependencies
+        uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+          CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
+          CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
+        with:
+          configuration: ${{ matrix.configuration }}
+      - name: upload archive
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          path: conan.tar
+          if-no-files-found: error
+
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux
+        compiler:
+          - gcc
+          - clang
+        configuration:
+          - Debug
+          - Release
+        cmake-args:
+          -
+          - "-Dunity=ON"
+    needs: dependencies
+    runs-on: [self-hosted, heavy]
+    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    env:
+      build_dir: .build
+    steps:
+      - name: download cache
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+      - name: extract cache
+        run: |
+          mkdir -p ~/.conan
+          tar -xzf conan.tar -C ~/.conan
+      - name: check environment
+        run: |
+          env | sort
+          echo ${PATH} | tr ':' '\n'
+          conan --version
+          cmake --version
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: dependencies
+        uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+        with:
+          configuration: ${{ matrix.configuration }}
+      - name: build
+        uses: ./.github/actions/build
+        with:
+          generator: Ninja
+          configuration: ${{ matrix.configuration }}
+          cmake-args: ${{ matrix.cmake-args }}
+      - name: test
+        run: |
+          ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
+
+
+  coverage:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux
+        compiler:
+          - gcc
+        configuration:
+          - Debug
+    needs: dependencies
+    runs-on: [self-hosted, heavy]
+    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    env:
+      build_dir: .build
+    steps:
+      - name: download cache
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+      - name: extract cache
+        run: |
+          mkdir -p ~/.conan
+          tar -xzf conan.tar -C ~/.conan
+      - name: check environment
+        run: |
+          echo ${PATH} | tr ':' '\n'
+          conan --version
+          cmake --version
+          gcovr --version
+          env | sort
+          ls ~/.conan
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: dependencies
+        uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+        with:
+          configuration: ${{ matrix.configuration }}
+      - name: build
+        uses: ./.github/actions/build
+        with:
+          generator: Ninja
+          configuration: ${{ matrix.configuration }}
+          cmake-args: >-
+            -Dcoverage=ON
+            -Dcoverage_format=xml
+            -DCODE_COVERAGE_VERBOSE=ON
+            -DCMAKE_CXX_FLAGS="-O0"
+            -DCMAKE_C_FLAGS="-O0"
+          cmake-target: coverage
+      - name: build
+        shell: bash
+        run: |
+          mv "${build_dir}/coverage.xml" ./
+      - name: archive coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage.xml
+          path: coverage.xml
+          retention-days: 30
+      - name: upload coverage report
+        uses: wandalen/wretry.action@v1.3.0
+        with:
+          action: codecov/codecov-action@v4
+          with: |
+            files: coverage.xml
+            fail_ci_if_error: true
+            verbose: true
+            token: ${{ secrets.CODECOV_TOKEN }}
+          attempt_limit: 5
+          attempt_delay: 35000 # in milliseconds

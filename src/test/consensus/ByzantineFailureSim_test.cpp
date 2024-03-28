@@ -78,7 +78,7 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         // All peers see some TX 0
         for (Peer* peer : network)
         {
-            peer->submit(Tx(0));
+            peer->submit(Tx{0});
             // Peers 0,1,2,6 will close the next ledger differently by injecting
             // a non-consensus approved transaciton
             if (byzantineNodes.contains(peer))

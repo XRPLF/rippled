@@ -26,6 +26,7 @@
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
+#include <ripple/basics/strHex.h>
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/SField.h>
 #include <cassert>
@@ -251,22 +252,22 @@ public:
     }
 
     bool
-    operator==(Blob const& v)
+    operator==(Blob const& v) const
     {
         return v == mData;
     }
     bool
-    operator!=(Blob const& v)
+    operator!=(Blob const& v) const
     {
         return v != mData;
     }
     bool
-    operator==(const Serializer& v)
+    operator==(const Serializer& v) const
     {
         return v.mData == mData;
     }
     bool
-    operator!=(const Serializer& v)
+    operator!=(const Serializer& v) const
     {
         return v.mData != mData;
     }

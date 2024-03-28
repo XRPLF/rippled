@@ -226,13 +226,15 @@ public:
                 // SOCI requires boost::optional (not std::optional) as
                 // parameters.
                 boost::optional<std::int32_t> ig;
-                boost::optional<std::uint32_t> uig;
+                // Known bug: https://github.com/SOCI/soci/issues/926
+                // boost::optional<std::uint32_t> uig;
+                uint32_t uig = 0;
                 boost::optional<std::int64_t> big;
                 boost::optional<std::uint64_t> ubig;
                 s << "SELECT I, UI, BI, UBI from STT;", soci::into(ig),
                     soci::into(uig), soci::into(big), soci::into(ubig);
                 BEAST_EXPECT(
-                    *ig == id[0] && *uig == uid[0] && *big == bid[0] &&
+                    *ig == id[0] && uig == uid[0] && *big == bid[0] &&
                     *ubig == ubid[0]);
             }
             catch (std::exception&)
@@ -357,17 +359,12 @@ public:
             bfs::remove(dbPath);
     }
     void
-    testSQLite()
+    run() override
     {
         testSQLiteFileNames();
         testSQLiteSession();
         testSQLiteSelect();
         testSQLiteDeleteWithSubselect();
-    }
-    void
-    run() override
-    {
-        testSQLite();
     }
 };
 

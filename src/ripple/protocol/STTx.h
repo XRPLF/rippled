@@ -29,6 +29,7 @@
 #include <ripple/protocol/SeqProxy.h>
 #include <ripple/protocol/TxFormats.h>
 #include <boost/container/flat_set.hpp>
+
 #include <functional>
 
 namespace ripple {
@@ -108,6 +109,7 @@ public:
 
     Json::Value
     getJson(JsonOptions options) const override;
+
     Json::Value
     getJson(JsonOptions options, bool binary) const;
 

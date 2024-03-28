@@ -18,21 +18,24 @@
 //==============================================================================
 
 #include <ripple/protocol/InnerObjectFormats.h>
+#include <ripple/protocol/SField.h>
+#include <ripple/protocol/SOTemplate.h>
 
 namespace ripple {
 
 InnerObjectFormats::InnerObjectFormats()
 {
+    // inner objects with the default fields have to be
+    // constructed with STObject::makeInnerObject()
+
     add(sfEmitDetails.jsonName.c_str(),
         sfEmitDetails.getCode(),
-        {
-            {sfEmitGeneration,  soeREQUIRED},
-            {sfEmitBurden,      soeREQUIRED},
-            {sfEmitParentTxnID, soeREQUIRED},
-            {sfEmitNonce,       soeREQUIRED},
-            {sfEmitCallback,    soeOPTIONAL},
-            {sfEmitHookHash,    soeREQUIRED}
-        });
+        {{sfEmitGeneration, soeREQUIRED},
+         {sfEmitBurden, soeREQUIRED},
+         {sfEmitParentTxnID, soeREQUIRED},
+         {sfEmitNonce, soeREQUIRED},
+         {sfEmitCallback, soeOPTIONAL},
+         {sfEmitHookHash, soeREQUIRED}});
 
     add(sfSignerEntry.jsonName.c_str(),
         sfSignerEntry.getCode(),
@@ -63,67 +66,139 @@ InnerObjectFormats::InnerObjectFormats()
             {sfPublicKey, soeREQUIRED},
             {sfFirstLedgerSequence, soeREQUIRED},
         });
-    
+
     add(sfHookExecution.jsonName.c_str(),
         sfHookExecution.getCode(),
-        {
-            {sfHookResult,              soeREQUIRED},
-            {sfHookHash,                soeREQUIRED},
-            {sfHookAccount,             soeREQUIRED},
-            {sfHookReturnCode,          soeREQUIRED},
-            {sfHookReturnString,        soeREQUIRED},
-            {sfHookInstructionCount,    soeREQUIRED},
-            {sfHookExecutionIndex,      soeREQUIRED},
-            {sfHookStateChangeCount,    soeREQUIRED},
-            {sfHookEmitCount,           soeREQUIRED}
-        });
+        {{sfHookResult, soeREQUIRED},
+         {sfHookHash, soeREQUIRED},
+         {sfHookAccount, soeREQUIRED},
+         {sfHookReturnCode, soeREQUIRED},
+         {sfHookReturnString, soeREQUIRED},
+         {sfHookInstructionCount, soeREQUIRED},
+         {sfHookExecutionIndex, soeREQUIRED},
+         {sfHookStateChangeCount, soeREQUIRED},
+         {sfHookEmitCount, soeREQUIRED}});
 
     add(sfHookDefinition.jsonName.c_str(),
         sfHookDefinition.getCode(),
-        {
-            {sfCreateCode,      soeREQUIRED},
-            {sfHookNamespace,   soeREQUIRED},
-            {sfHookParameters,  soeREQUIRED},
-            {sfHookOn,          soeREQUIRED},
-            {sfHookApiVersion,  soeREQUIRED},
-            {sfFlags,           soeREQUIRED},
-            {sfFee,             soeREQUIRED}
-        });
-    
+        {{sfCreateCode, soeREQUIRED},
+         {sfHookNamespace, soeREQUIRED},
+         {sfHookParameters, soeREQUIRED},
+         {sfHookOn, soeREQUIRED},
+         {sfHookApiVersion, soeREQUIRED},
+         {sfFlags, soeREQUIRED},
+         {sfFee, soeREQUIRED}});
+
     add(sfHook.jsonName.c_str(),
         sfHook.getCode(),
-        {
-            {sfHookHash,        soeOPTIONAL},
-            {sfCreateCode,      soeOPTIONAL},
-            {sfHookGrants,      soeOPTIONAL},
-            {sfHookNamespace,   soeOPTIONAL},
-            {sfHookParameters,  soeOPTIONAL},
-            {sfHookOn,          soeOPTIONAL},
-            {sfHookApiVersion,  soeOPTIONAL},
-            {sfFlags,           soeOPTIONAL}
-        });
+        {{sfHookHash, soeOPTIONAL},
+         {sfCreateCode, soeOPTIONAL},
+         {sfHookGrants, soeOPTIONAL},
+         {sfHookNamespace, soeOPTIONAL},
+         {sfHookParameters, soeOPTIONAL},
+         {sfHookOn, soeOPTIONAL},
+         {sfHookApiVersion, soeOPTIONAL},
+         {sfFlags, soeOPTIONAL}});
 
     add(sfHookGrant.jsonName.c_str(),
         sfHookGrant.getCode(),
-        {
-            {sfHookHash,        soeREQUIRED},
-            {sfAuthorize,       soeOPTIONAL},
-            {sfFlags,           soeOPTIONAL}
-        });
+        {{sfHookHash, soeREQUIRED},
+         {sfAuthorize, soeOPTIONAL},
+         {sfFlags, soeOPTIONAL}});
 
     add(sfHookParameter.jsonName.c_str(),
         sfHookParameter.getCode(),
-        {
-            {sfHookParameterName,   soeREQUIRED},
-            {sfHookParameterValue,  soeREQUIRED}
-        });
-
+        {{sfHookParameterName, soeREQUIRED},
+         {sfHookParameterValue, soeREQUIRED}});
 
     add(sfNFToken.jsonName.c_str(),
         sfNFToken.getCode(),
         {
             {sfNFTokenID, soeREQUIRED},
             {sfURI, soeOPTIONAL},
+        });
+
+    add(sfVoteEntry.jsonName.c_str(),
+        sfVoteEntry.getCode(),
+        {
+            {sfAccount, soeREQUIRED},
+            {sfTradingFee, soeDEFAULT},
+            {sfVoteWeight, soeREQUIRED},
+        });
+
+    add(sfAuctionSlot.jsonName.c_str(),
+        sfAuctionSlot.getCode(),
+        {{sfAccount, soeREQUIRED},
+         {sfExpiration, soeREQUIRED},
+         {sfDiscountedFee, soeDEFAULT},
+         {sfPrice, soeREQUIRED},
+         {sfAuthAccounts, soeOPTIONAL}});
+
+    add(sfXChainClaimAttestationCollectionElement.jsonName.c_str(),
+        sfXChainClaimAttestationCollectionElement.getCode(),
+        {
+            {sfAttestationSignerAccount, soeREQUIRED},
+            {sfPublicKey, soeREQUIRED},
+            {sfSignature, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+            {sfAccount, soeREQUIRED},
+            {sfAttestationRewardAccount, soeREQUIRED},
+            {sfWasLockingChainSend, soeREQUIRED},
+            {sfXChainClaimID, soeREQUIRED},
+            {sfDestination, soeOPTIONAL},
+        });
+
+    add(sfXChainCreateAccountAttestationCollectionElement.jsonName.c_str(),
+        sfXChainCreateAccountAttestationCollectionElement.getCode(),
+        {
+            {sfAttestationSignerAccount, soeREQUIRED},
+            {sfPublicKey, soeREQUIRED},
+            {sfSignature, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+            {sfAccount, soeREQUIRED},
+            {sfAttestationRewardAccount, soeREQUIRED},
+            {sfWasLockingChainSend, soeREQUIRED},
+            {sfXChainAccountCreateCount, soeREQUIRED},
+            {sfDestination, soeREQUIRED},
+            {sfSignatureReward, soeREQUIRED},
+        });
+
+    add(sfXChainClaimProofSig.jsonName.c_str(),
+        sfXChainClaimProofSig.getCode(),
+        {
+            {sfAttestationSignerAccount, soeREQUIRED},
+            {sfPublicKey, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+            {sfAttestationRewardAccount, soeREQUIRED},
+            {sfWasLockingChainSend, soeREQUIRED},
+            {sfDestination, soeOPTIONAL},
+        });
+
+    add(sfXChainCreateAccountProofSig.jsonName.c_str(),
+        sfXChainCreateAccountProofSig.getCode(),
+        {
+            {sfAttestationSignerAccount, soeREQUIRED},
+            {sfPublicKey, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+            {sfSignatureReward, soeREQUIRED},
+            {sfAttestationRewardAccount, soeREQUIRED},
+            {sfWasLockingChainSend, soeREQUIRED},
+            {sfDestination, soeREQUIRED},
+        });
+
+    add(sfAuthAccount.jsonName.c_str(),
+        sfAuthAccount.getCode(),
+        {
+            {sfAccount, soeREQUIRED},
+        });
+
+    add(sfPriceData.jsonName.c_str(),
+        sfPriceData.getCode(),
+        {
+            {sfBaseAsset, soeREQUIRED},
+            {sfQuoteAsset, soeREQUIRED},
+            {sfAssetPrice, soeOPTIONAL},
+            {sfScale, soeDEFAULT},
         });
 }
 

@@ -43,7 +43,7 @@ namespace ripple {
 namespace perf {
 
 PerfLogImp::Counters::Counters(
-    std::vector<char const*> const& labels,
+    std::set<char const*> const& labels,
     JobTypes const& jobTypes)
 {
     {

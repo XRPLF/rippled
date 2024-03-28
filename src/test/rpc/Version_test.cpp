@@ -76,11 +76,17 @@ class Version_test : public beast::unit_test::suite
                 std::to_string(RPC::apiMinimumSupportedVersion - 1) + "}");
         BEAST_EXPECT(badVersion(re));
 
+        BEAST_EXPECT(env.app().config().BETA_RPC_API);
         re = env.rpc(
             "json",
             "version",
             "{\"api_version\": " +
-                std::to_string(RPC::apiMaximumSupportedVersion + 1) + "}");
+                std::to_string(
+                    std::max(
+                        RPC::apiMaximumSupportedVersion.value,
+                        RPC::apiBetaVersion.value) +
+                    1) +
+                "}");
         BEAST_EXPECT(badVersion(re));
 
         re = env.rpc("json", "version", "{\"api_version\": \"a\"}");
@@ -107,15 +113,15 @@ class Version_test : public beast::unit_test::suite
         Json::Value j_object = Json::Value(Json::objectValue);
         BEAST_EXPECT(
             RPC::getAPIVersionNumber(j_object, false) == versionIfUnspecified);
-        j_object[jss::api_version] = RPC::apiVersionIfUnspecified;
+        j_object[jss::api_version] = RPC::apiVersionIfUnspecified.value;
         BEAST_EXPECT(
             RPC::getAPIVersionNumber(j_object, false) == versionIfUnspecified);
 
-        j_object[jss::api_version] = RPC::apiMinimumSupportedVersion;
+        j_object[jss::api_version] = RPC::apiMinimumSupportedVersion.value;
         BEAST_EXPECT(
             RPC::getAPIVersionNumber(j_object, false) ==
             RPC::apiMinimumSupportedVersion);
-        j_object[jss::api_version] = RPC::apiMaximumSupportedVersion;
+        j_object[jss::api_version] = RPC::apiMaximumSupportedVersion.value;
         BEAST_EXPECT(
             RPC::getAPIVersionNumber(j_object, false) ==
             RPC::apiMaximumSupportedVersion);
@@ -128,14 +134,14 @@ class Version_test : public beast::unit_test::suite
         BEAST_EXPECT(
             RPC::getAPIVersionNumber(j_object, false) ==
             RPC::apiInvalidVersion);
-        j_object[jss::api_version] = RPC::apiBetaVersion;
+        j_object[jss::api_version] = RPC::apiBetaVersion.value;
         BEAST_EXPECT(
             RPC::getAPIVersionNumber(j_object, true) == RPC::apiBetaVersion);
         j_object[jss::api_version] = RPC::apiBetaVersion + 1;
         BEAST_EXPECT(
             RPC::getAPIVersionNumber(j_object, true) == RPC::apiInvalidVersion);
 
-        j_object[jss::api_version] = RPC::apiInvalidVersion;
+        j_object[jss::api_version] = RPC::apiInvalidVersion.value;
         BEAST_EXPECT(
             RPC::getAPIVersionNumber(j_object, false) ==
             RPC::apiInvalidVersion);
@@ -190,6 +196,7 @@ class Version_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
+        BEAST_EXPECT(env.app().config().BETA_RPC_API);
         auto const without_api_verion = std::string("{ ") +
             "\"jsonrpc\": \"2.0\", "
             "\"ripplerpc\": \"2.0\", "
@@ -203,7 +210,11 @@ class Version_test : public beast::unit_test::suite
             "\"method\": \"version\", "
             "\"params\": { "
             "\"api_version\": " +
-            std::to_string(RPC::apiMaximumSupportedVersion + 1) + "}}";
+            std::to_string(std::max(
+                               RPC::apiMaximumSupportedVersion.value,
+                               RPC::apiBetaVersion.value) +
+                           1) +
+            "}}";
         auto re = env.rpc(
             "json2",
             '[' + without_api_verion + ", " + with_wrong_api_verion + ']');
@@ -265,8 +276,9 @@ class Version_test : public beast::unit_test::suite
             jrr[jss::version].isMember(jss::last))
             return;
         BEAST_EXPECT(
-            jrr[jss::version][jss::first] == RPC::apiMinimumSupportedVersion);
-        BEAST_EXPECT(jrr[jss::version][jss::last] == RPC::apiBetaVersion);
+            jrr[jss::version][jss::first] ==
+            RPC::apiMinimumSupportedVersion.value);
+        BEAST_EXPECT(jrr[jss::version][jss::last] == RPC::apiBetaVersion.value);
     }
 
 public:

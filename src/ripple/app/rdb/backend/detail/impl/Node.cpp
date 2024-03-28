@@ -307,7 +307,7 @@ saveValidatedLedger(
 
                         sql += txnId;
                         sql += "','";
-                        sql += app.accountIDCache().toBase58(account);
+                        sql += toBase58(account);
                         sql += "',";
                         sql += ledgerSeq;
                         sql += ",";
@@ -518,7 +518,7 @@ getHashByIndex(soci::session& session, LedgerIndex ledgerIndex)
 
     std::string sql =
         "SELECT LedgerHash FROM Ledgers INDEXED BY SeqLedger WHERE LedgerSeq='";
-    sql.append(beast::lexicalCastThrow<std::string>(ledgerIndex));
+    sql.append(std::to_string(ledgerIndex));
     sql.append("';");
 
     std::string hash;
@@ -581,9 +581,9 @@ getHashesByIndex(
 {
     std::string sql =
         "SELECT LedgerSeq,LedgerHash,PrevHash FROM Ledgers WHERE LedgerSeq >= ";
-    sql.append(beast::lexicalCastThrow<std::string>(minSeq));
+    sql.append(std::to_string(minSeq));
     sql.append(" AND LedgerSeq <= ");
-    sql.append(beast::lexicalCastThrow<std::string>(maxSeq));
+    sql.append(std::to_string(maxSeq));
     sql.append(";");
 
     std::uint64_t ls;
@@ -760,10 +760,8 @@ transactionsSQL(
         sql = boost::str(
             boost::format("SELECT %s FROM AccountTransactions "
                           "WHERE Account = '%s' %s %s LIMIT %u, %u;") %
-            selection % app.accountIDCache().toBase58(options.account) %
-            maxClause % minClause %
-            beast::lexicalCastThrow<std::string>(options.offset) %
-            beast::lexicalCastThrow<std::string>(numberOfResults));
+            selection % toBase58(options.account) % maxClause % minClause %
+            options.offset % numberOfResults);
     else
         sql = boost::str(
             boost::format(
@@ -774,11 +772,9 @@ transactionsSQL(
                 "ORDER BY AccountTransactions.LedgerSeq %s, "
                 "AccountTransactions.TxnSeq %s, AccountTransactions.TransID %s "
                 "LIMIT %u, %u;") %
-            selection % app.accountIDCache().toBase58(options.account) %
-            maxClause % minClause % (descending ? "DESC" : "ASC") %
+            selection % toBase58(options.account) % maxClause % minClause %
             (descending ? "DESC" : "ASC") % (descending ? "DESC" : "ASC") %
-            beast::lexicalCastThrow<std::string>(options.offset) %
-            beast::lexicalCastThrow<std::string>(numberOfResults));
+            (descending ? "DESC" : "ASC") % options.offset % numberOfResults);
     JLOG(j.trace()) << "txSQL query: " << sql;
     return sql;
 }
@@ -1049,7 +1045,6 @@ getNewestAccountTxsB(
  *        account that matches the given criteria starting from the provided
  *        marker and invokes the callback parameter for each found transaction.
  * @param session Session with the database.
- * @param idCache Account ID cache.
  * @param onUnsavedLedger Callback function to call on each found unsaved
  *        ledger within the given range.
  * @param onTransaction Callback function to call on each found transaction.
@@ -1069,7 +1064,6 @@ getNewestAccountTxsB(
 static std::pair<std::optional<RelationalDatabase::AccountTxMarker>, int>
 accountTxPage(
     soci::session& session,
-    AccountIDCache const& idCache,
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
     std::function<
         void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
@@ -1131,12 +1125,12 @@ accountTxPage(
     {
         sql = boost::str(
             boost::format(
-                prefix + (R"(AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u'
+                prefix + (R"(AccountTransactions.LedgerSeq BETWEEN %u AND %u
              ORDER BY AccountTransactions.LedgerSeq %s,
              AccountTransactions.TxnSeq %s
              LIMIT %u;)")) %
-            idCache.toBase58(options.account) % options.minLedger %
-            options.maxLedger % order % order % queryLimit);
+            toBase58(options.account) % options.minLedger % options.maxLedger %
+            order % order % queryLimit);
     }
     else
     {
@@ -1146,7 +1140,7 @@ accountTxPage(
         const std::uint32_t maxLedger =
             forward ? options.maxLedger : findLedger - 1;
 
-        auto b58acct = idCache.toBase58(options.account);
+        auto b58acct = toBase58(options.account);
         sql = boost::str(
             boost::format((
                 R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
@@ -1154,12 +1148,14 @@ accountTxPage(
             FROM AccountTransactions, Transactions WHERE
             (AccountTransactions.TransID = Transactions.TransID AND
             AccountTransactions.Account = '%s' AND
-            AccountTransactions.LedgerSeq BETWEEN '%u' AND '%u')
-            OR
+            AccountTransactions.LedgerSeq BETWEEN %u AND %u)
+            UNION
+            SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,Status,RawTxn,TxnMeta
+            FROM AccountTransactions, Transactions WHERE
             (AccountTransactions.TransID = Transactions.TransID AND
             AccountTransactions.Account = '%s' AND
-            AccountTransactions.LedgerSeq = '%u' AND
-            AccountTransactions.TxnSeq %s '%u')
+            AccountTransactions.LedgerSeq = %u AND
+            AccountTransactions.TxnSeq %s %u)
             ORDER BY AccountTransactions.LedgerSeq %s,
             AccountTransactions.TxnSeq %s
             LIMIT %u;
@@ -1250,7 +1246,6 @@ accountTxPage(
 std::pair<std::optional<RelationalDatabase::AccountTxMarker>, int>
 oldestAccountTxPage(
     soci::session& session,
-    AccountIDCache const& idCache,
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
     std::function<
         void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
@@ -1261,7 +1256,6 @@ oldestAccountTxPage(
 {
     return accountTxPage(
         session,
-        idCache,
         onUnsavedLedger,
         onTransaction,
         options,
@@ -1273,7 +1267,6 @@ oldestAccountTxPage(
 std::pair<std::optional<RelationalDatabase::AccountTxMarker>, int>
 newestAccountTxPage(
     soci::session& session,
-    AccountIDCache const& idCache,
     std::function<void(std::uint32_t)> const& onUnsavedLedger,
     std::function<
         void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
@@ -1284,7 +1277,6 @@ newestAccountTxPage(
 {
     return accountTxPage(
         session,
-        idCache,
         onUnsavedLedger,
         onTransaction,
         options,

@@ -22,7 +22,6 @@
 
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/STAmount.h>
-#include <org/xrpl/rpc/v1/amount.pb.h>
 
 #include <functional>
 #include <memory>

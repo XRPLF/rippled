@@ -92,7 +92,7 @@ enum class HashPrefix : std::uint32_t {
     emitTxnNonce = detail::make_hash_prefix('E', 'T', 'X'),
 
     /** Random entropy for hook developers to use */
-    hookNonce    = detail::make_hash_prefix('N', 'C', 'E'),
+    hookNonce = detail::make_hash_prefix('N', 'C', 'E'),
 
     /* Hash of a Hook's actual code */
     hookDefinition = detail::make_hash_prefix('W', 'S', 'M')

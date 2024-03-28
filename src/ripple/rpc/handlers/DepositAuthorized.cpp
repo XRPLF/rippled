@@ -20,6 +20,7 @@
 #include <ripple/ledger/ReadView.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
@@ -46,13 +47,10 @@ doDepositAuthorized(RPC::JsonContext& context)
             rpcINVALID_PARAMS,
             RPC::expected_field_message(jss::source_account, "a string"));
 
-    AccountID srcAcct;
-    {
-        Json::Value const jvAccepted = RPC::accountFromString(
-            srcAcct, params[jss::source_account].asString(), true);
-        if (jvAccepted)
-            return jvAccepted;
-    }
+    auto srcID = parseBase58<AccountID>(params[jss::source_account].asString());
+    if (!srcID)
+        return rpcError(rpcACT_MALFORMED);
+    auto const srcAcct{std::move(srcID.value())};
 
     // Validate destination_account.
     if (!params.isMember(jss::destination_account))
@@ -62,13 +60,11 @@ doDepositAuthorized(RPC::JsonContext& context)
             rpcINVALID_PARAMS,
             RPC::expected_field_message(jss::destination_account, "a string"));
 
-    AccountID dstAcct;
-    {
-        Json::Value const jvAccepted = RPC::accountFromString(
-            dstAcct, params[jss::destination_account].asString(), true);
-        if (jvAccepted)
-            return jvAccepted;
-    }
+    auto dstID =
+        parseBase58<AccountID>(params[jss::destination_account].asString());
+    if (!dstID)
+        return rpcError(rpcACT_MALFORMED);
+    auto const dstAcct{std::move(dstID.value())};
 
     // Validate ledger.
     std::shared_ptr<ReadView const> ledger;

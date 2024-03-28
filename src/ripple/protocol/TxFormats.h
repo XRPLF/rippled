@@ -139,6 +139,64 @@ enum TxType : std::uint16_t
     /** This transaction accepts an existing offer to buy or sell an existing  NFT. */
     ttNFTOKEN_ACCEPT_OFFER = 29,
 
+    /** This transaction claws back issued tokens. */
+    ttCLAWBACK = 30,
+
+    /** This transaction type creates an AMM instance */
+    ttAMM_CREATE = 35,
+
+    /** This transaction type deposits into an AMM instance */
+    ttAMM_DEPOSIT = 36,
+
+    /** This transaction type withdraws from an AMM instance */
+    ttAMM_WITHDRAW = 37,
+
+    /** This transaction type votes for the trading fee */
+    ttAMM_VOTE = 38,
+
+    /** This transaction type bids for the auction slot */
+    ttAMM_BID = 39,
+
+    /** This transaction type deletes AMM in the empty state */
+    ttAMM_DELETE = 40,
+
+    /** This transactions creates a crosschain sequence number */
+    ttXCHAIN_CREATE_CLAIM_ID = 41,
+
+    /** This transactions initiates a crosschain transaction */
+    ttXCHAIN_COMMIT = 42,
+
+    /** This transaction completes a crosschain transaction */
+    ttXCHAIN_CLAIM = 43,
+
+    /** This transaction initiates a crosschain account create transaction */
+    ttXCHAIN_ACCOUNT_CREATE_COMMIT = 44,
+
+    /** This transaction adds an attestation to a claimid*/
+    ttXCHAIN_ADD_CLAIM_ATTESTATION = 45,
+
+    /** This transaction adds an attestation to a claimid*/
+    ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION = 46,
+
+    /** This transaction modifies a sidechain */
+    ttXCHAIN_MODIFY_BRIDGE = 47,
+
+    /** This transactions creates a sidechain */
+    ttXCHAIN_CREATE_BRIDGE = 48,
+
+    /** This transaction type creates or updates a DID */
+    ttDID_SET = 49,
+
+    /** This transaction type deletes a DID */
+    ttDID_DELETE = 50,
+
+
+    /** This transaction type creates an Oracle instance */
+    ttORACLE_SET = 51,
+
+    /** This transaction type deletes an Oracle instance */
+    ttORACLE_DELETE = 52,
+
     /** This system-generated transaction type is used to update the status of the various amendments.
 
         For details, see: https://xrpl.org/amendments.html

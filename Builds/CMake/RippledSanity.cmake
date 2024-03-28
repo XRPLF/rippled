@@ -2,6 +2,8 @@
    convenience variables and sanity checks
 #]===================================================================]
 
+include(ProcessorCount)
+
 if (NOT ep_procs)
   ProcessorCount(ep_procs)
   if (ep_procs GREATER 1)
@@ -10,12 +12,7 @@ if (NOT ep_procs)
     message (STATUS "Using ${ep_procs} cores for ExternalProject builds.")
   endif ()
 endif ()
-get_property (is_multiconfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-if (is_multiconfig STREQUAL "NOTFOUND")
-  if (${CMAKE_GENERATOR} STREQUAL "Xcode" OR ${CMAKE_GENERATOR} MATCHES "^Visual Studio")
-    set (is_multiconfig TRUE)
-  endif ()
-endif ()
+get_property(is_multiconfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 set (CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
 if (NOT is_multiconfig)
@@ -48,9 +45,6 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 8.0)
     message (FATAL_ERROR "This project requires GCC 8 or later")
   endif ()
-endif ()
-if (CMAKE_GENERATOR STREQUAL "Xcode")
-  set (is_xcode TRUE)
 endif ()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")

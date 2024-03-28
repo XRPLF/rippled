@@ -24,12 +24,22 @@
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
 
+#include <functional>
+
 namespace ripple {
 
 namespace RPC {
 
 class LedgerRequestRPC_test : public beast::unit_test::suite
 {
+    static constexpr char const* hash1 =
+        "3020EB9E7BE24EF7D7A060CB051583EC117384636D1781AFB5B87F3E348DA489";
+    static constexpr char const* accounthash1 =
+        "BD8A3D72CA73DDE887AD63666EC2BAD07875CBA997A102579B5B95ECDFFEAED8";
+
+    static constexpr char const* zerohash =
+        "0000000000000000000000000000000000000000000000000000000000000000";
+
 public:
     void
     testLedgerRequest()
@@ -181,87 +191,69 @@ public:
         BEAST_EXPECT(
             result[jss::ledger][jss::total_coins] == "100000000000000000");
         BEAST_EXPECT(result[jss::ledger][jss::closed] == true);
-        BEAST_EXPECT(
-            result[jss::ledger][jss::ledger_hash] ==
-            "E9BB323980D202EC7E51BAB2AA8E35353F9C7BDAB59BF17378EADD4D0486EF9F");
-        BEAST_EXPECT(
-            result[jss::ledger][jss::parent_hash] ==
-            "0000000000000000000000000000000000000000000000000000000000000000");
-        BEAST_EXPECT(
-            result[jss::ledger][jss::account_hash] ==
-            "A21ED30C04C88046FC61DB9DC19375EEDBD365FD8C17286F27127DF804E9CAA6");
-        BEAST_EXPECT(
-            result[jss::ledger][jss::transaction_hash] ==
-            "0000000000000000000000000000000000000000000000000000000000000000");
+        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == hash1);
+        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == zerohash);
+        BEAST_EXPECT(result[jss::ledger][jss::account_hash] == accounthash1);
+        BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == zerohash);
 
         result = env.rpc("ledger_request", "2")[jss::result];
+        constexpr char const* hash2 =
+            "CCC3B3E88CCAC17F1BE6B4A648A55999411F19E3FE55EB721960EB0DF28EDDA5";
         BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == "2");
         BEAST_EXPECT(
             result[jss::ledger][jss::total_coins] == "100000000000000000");
         BEAST_EXPECT(result[jss::ledger][jss::closed] == true);
-        BEAST_EXPECT(
-            result[jss::ledger][jss::ledger_hash] ==
-            "A15F7FBE0B06286915D971BF9802C9431CD7DE40E2AC7D07C409EDB1C0715C60");
-        BEAST_EXPECT(
-            result[jss::ledger][jss::parent_hash] ==
-            "E9BB323980D202EC7E51BAB2AA8E35353F9C7BDAB59BF17378EADD4D0486EF9F");
+        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == hash2);
+        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == hash1);
         BEAST_EXPECT(
             result[jss::ledger][jss::account_hash] ==
-            "CB07F3CA0398BE969A5B88F874629D4DBB6E103DE7C6DB8037281A89E51AA8C6");
-        BEAST_EXPECT(
-            result[jss::ledger][jss::transaction_hash] ==
-            "0000000000000000000000000000000000000000000000000000000000000000");
+            "3C834285F7F464FBE99AFEB84D354A968EB2CAA24523FF26797A973D906A3D29");
+        BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == zerohash);
 
         result = env.rpc("ledger_request", "3")[jss::result];
+        constexpr char const* hash3 =
+            "8D631B20BC989AF568FBA97375290544B0703A5ADC1CF9E9053580461690C9EE";
         BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == "3");
         BEAST_EXPECT(
             result[jss::ledger][jss::total_coins] == "99999999999999980");
         BEAST_EXPECT(result[jss::ledger][jss::closed] == true);
-        BEAST_EXPECT(
-            result[jss::ledger][jss::ledger_hash] ==
-            "9BCA8AE5FD41D223D82E1B8288961D693EB1B2EFA10F51827A641AD4B12111D7");
-        BEAST_EXPECT(
-            result[jss::ledger][jss::parent_hash] ==
-            "A15F7FBE0B06286915D971BF9802C9431CD7DE40E2AC7D07C409EDB1C0715C60");
+        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == hash3);
+        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == hash2);
         BEAST_EXPECT(
             result[jss::ledger][jss::account_hash] ==
-            "5B793533909906D15CE27D1A423732D113160AB166188D89A2DFD8737CBDCBD5");
+            "BC9EF2A16BFF80BCFABA6FA84688D858D33BD0FA0435CAA9DF6DA4105A39A29E");
         BEAST_EXPECT(
             result[jss::ledger][jss::transaction_hash] ==
             "0213EC486C058B3942FBE3DAC6839949A5C5B02B8B4244C8998EFDF04DBD8222");
 
         result = env.rpc("ledger_request", "4")[jss::result];
+        constexpr char const* hash4 =
+            "1A8E7098B23597E73094DADA58C9D62F3AB93A12C6F7666D56CA85A6CFDE530F";
         BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == "4");
         BEAST_EXPECT(
             result[jss::ledger][jss::total_coins] == "99999999999999960");
         BEAST_EXPECT(result[jss::ledger][jss::closed] == true);
-        BEAST_EXPECT(
-            result[jss::ledger][jss::ledger_hash] ==
-            "433D1E42F2735F926BF594E4F3DFC70AE3E74F51464156ED83A33D0FF121D136");
-        BEAST_EXPECT(
-            result[jss::ledger][jss::parent_hash] ==
-            "9BCA8AE5FD41D223D82E1B8288961D693EB1B2EFA10F51827A641AD4B12111D7");
+        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == hash4);
+        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == hash3);
         BEAST_EXPECT(
             result[jss::ledger][jss::account_hash] ==
-            "39C91E2227ACECD057AFDC64AE8FEFF5A0E07CF26ED29D1AECC55B0385F3EFDE");
+            "C690188F123C91355ADA8BDF4AC5B5C927076D3590C215096868A5255264C6DD");
         BEAST_EXPECT(
             result[jss::ledger][jss::transaction_hash] ==
             "3CBDB8F42E04333E1642166BFB93AC9A7E1C6C067092CD5D881D6F3AB3D67E76");
 
         result = env.rpc("ledger_request", "5")[jss::result];
+        constexpr char const* hash5 =
+            "C6A222D71AE65D7B4F240009EAD5DEB20D7EEDE5A4064F28BBDBFEEB6FBE48E5";
         BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == "5");
         BEAST_EXPECT(
             result[jss::ledger][jss::total_coins] == "99999999999999940");
         BEAST_EXPECT(result[jss::ledger][jss::closed] == true);
-        BEAST_EXPECT(
-            result[jss::ledger][jss::ledger_hash] ==
-            "9ED4D0C397810980904AF3FC08583D23B09C3C7CCF835D2A4768145A8BAC1175");
-        BEAST_EXPECT(
-            result[jss::ledger][jss::parent_hash] ==
-            "433D1E42F2735F926BF594E4F3DFC70AE3E74F51464156ED83A33D0FF121D136");
+        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == hash5);
+        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == hash4);
         BEAST_EXPECT(
             result[jss::ledger][jss::account_hash] ==
-            "8F047B6A0D2083DF4F69C17F7CC9AE997B0D59020A43D9799A31D22F55837147");
+            "EA81CD9D36740736F00CB747E0D0E32D3C10B695823D961F0FB9A1CE7133DD4D");
         BEAST_EXPECT(
             result[jss::ledger][jss::transaction_hash] ==
             "C3D086CD6BDB9E97AD1D513B2C049EF2840BD21D0B3E22D84EBBB89B6D2EF59D");
@@ -273,7 +265,7 @@ public:
     }
 
     void
-    testBadInput()
+    testBadInput(unsigned apiVersion)
     {
         using namespace test::jtx;
         Env env{*this};
@@ -297,9 +289,9 @@ public:
         // the purpose in this test is to force the ledger expiration/out of
         // date check to trigger
         env.timeKeeper().adjustCloseTime(weeks{3});
-        result = env.rpc("ledger_request", "1")[jss::result];
+        result = env.rpc(apiVersion, "ledger_request", "1")[jss::result];
         BEAST_EXPECT(result[jss::status] == "error");
-        if (RPC::apiMaximumSupportedVersion == 1)
+        if (apiVersion == 1)
         {
             BEAST_EXPECT(result[jss::error] == "noCurrent");
             BEAST_EXPECT(
@@ -340,18 +332,10 @@ public:
         BEAST_EXPECT(
             result[jss::ledger][jss::total_coins] == "100000000000000000");
         BEAST_EXPECT(result[jss::ledger][jss::closed] == true);
-        BEAST_EXPECT(
-            result[jss::ledger][jss::ledger_hash] ==
-            "E9BB323980D202EC7E51BAB2AA8E35353F9C7BDAB59BF17378EADD4D0486EF9F");
-        BEAST_EXPECT(
-            result[jss::ledger][jss::parent_hash] ==
-            "0000000000000000000000000000000000000000000000000000000000000000");
-        BEAST_EXPECT(
-            result[jss::ledger][jss::account_hash] ==
-            "A21ED30C04C88046FC61DB9DC19375EEDBD365FD8C17286F27127DF804E9CAA6");
-        BEAST_EXPECT(
-            result[jss::ledger][jss::transaction_hash] ==
-            "0000000000000000000000000000000000000000000000000000000000000000");
+        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == hash1);
+        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == zerohash);
+        BEAST_EXPECT(result[jss::ledger][jss::account_hash] == accounthash1);
+        BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == zerohash);
     }
 
     void
@@ -375,7 +359,8 @@ public:
     {
         testLedgerRequest();
         testEvolution();
-        testBadInput();
+        forAllApiVersions(
+            std::bind_front(&LedgerRequestRPC_test::testBadInput, this));
         testMoreThan256Closed();
         testNonAdmin();
     }

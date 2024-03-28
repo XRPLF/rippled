@@ -81,8 +81,7 @@ public:
         res->setAccepted(
             res->info().closeTime,
             res->info().closeTimeResolution,
-            true /* close time correct*/,
-            env.app().config());
+            true /* close time correct*/);
         lh.insert(res, false);
         return res;
     }

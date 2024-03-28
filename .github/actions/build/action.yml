@@ -1,0 +1,32 @@
+name: build
+inputs:
+  generator:
+    default: null
+  configuration:
+    required: true
+  cmake-args:
+    default: null
+  cmake-target:
+    default: all
+# An implicit input is the environment variable `build_dir`.
+runs:
+  using: composite
+  steps:
+    - name: configure
+      shell: bash
+      run: |
+        cd ${build_dir}
+        cmake \
+          ${{ inputs.generator && format('-G "{0}"', inputs.generator) || '' }} \
+          -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+          -DCMAKE_BUILD_TYPE=${{ inputs.configuration }} \
+          ${{ inputs.cmake-args }} \
+          ..
+    - name: build
+      shell: bash
+      run: |
+        cmake \
+          --build ${build_dir} \
+          --config ${{ inputs.configuration }} \
+          --parallel ${NUM_PROCESSORS:-$(nproc)} \
+          --target ${{ inputs.cmake-target }}

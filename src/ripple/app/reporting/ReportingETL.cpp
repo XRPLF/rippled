@@ -189,7 +189,10 @@ ReportingETL::flushLedger(std::shared_ptr<Ledger>& ledger)
     auto& txHash = ledger->info().txHash;
     auto& ledgerHash = ledger->info().hash;
 
-    ledger->setImmutable(app_.config(), false);
+    assert(
+        ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+        ledger->read(keylet::fees()));
+    ledger->setImmutable(false);
     auto start = std::chrono::system_clock::now();
 
     auto numFlushed = ledger->stateMap().flushDirty(hotACCOUNT_NODE);

@@ -22,9 +22,9 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/ReadView.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/net/RPCSub.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
@@ -110,6 +110,7 @@ doSubscribe(RPC::JsonContext& context)
     {
         ispSub = context.infoSub;
     }
+    ispSub->setApiVersion(context.apiVersion);
 
     if (context.params.isMember(jss::streams))
     {
@@ -135,6 +136,10 @@ doSubscribe(RPC::JsonContext& context)
             else if (streamName == "ledger")
             {
                 context.netOps.subLedger(ispSub, jvResult);
+            }
+            else if (streamName == "book_changes")
+            {
+                context.netOps.subBookChanges(ispSub);
             }
             else if (streamName == "manifests")
             {

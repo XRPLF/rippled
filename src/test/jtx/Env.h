@@ -30,13 +30,13 @@
 #include <ripple/core/Config.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
-#include <ripple/ledger/CachedSLEs.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/STAmount.h>
 #include <ripple/protocol/STObject.h>
 #include <ripple/protocol/STTx.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <functional>
 #include <string>
 #include <test/jtx/AbstractClient.h>
@@ -280,6 +280,17 @@ public:
     */
     template <class... Args>
     Json::Value
+    rpc(unsigned apiVersion,
+        std::unordered_map<std::string, std::string> const& headers,
+        std::string const& cmd,
+        Args&&... args);
+
+    template <class... Args>
+    Json::Value
+    rpc(unsigned apiVersion, std::string const& cmd, Args&&... args);
+
+    template <class... Args>
+    Json::Value
     rpc(std::unordered_map<std::string, std::string> const& headers,
         std::string const& cmd,
         Args&&... args);
@@ -445,6 +456,18 @@ public:
         return jt;
     }
 
+    /** Create a JTx from parameters. */
+    template <class JsonValue, class... FN>
+    JTx
+    jtnofill(JsonValue&& jv, FN const&... fN)
+    {
+        JTx jt(std::forward<JsonValue>(jv));
+        invoke(jt, fN...);
+        autofill_sig(jt);
+        jt.stx = st(jt);
+        return jt;
+    }
+
     /** Create JSON from parameters.
         This will apply funclets and autofill.
     */
@@ -489,7 +512,11 @@ public:
         of JTx submission.
     */
     void
-    postconditions(JTx const& jt, TER ter, bool didApply);
+    postconditions(
+        JTx const& jt,
+        TER ter,
+        bool didApply,
+        Json::Value const& jr = Json::Value());
 
     /** Apply funclets and submit. */
     /** @{ */
@@ -542,6 +569,9 @@ public:
 
     void
     enableFeature(uint256 const feature);
+
+    void
+    disableFeature(uint256 const feature);
 
 private:
     void
@@ -639,6 +669,7 @@ protected:
 
     Json::Value
     do_rpc(
+        unsigned apiVersion,
         std::vector<std::string> const& args,
         std::unordered_map<std::string, std::string> const& headers = {});
 
@@ -682,12 +713,39 @@ protected:
 template <class... Args>
 Json::Value
 Env::rpc(
+    unsigned apiVersion,
     std::unordered_map<std::string, std::string> const& headers,
     std::string const& cmd,
     Args&&... args)
 {
     return do_rpc(
-        std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
+        apiVersion,
+        std::vector<std::string>{cmd, std::forward<Args>(args)...},
+        headers);
+}
+
+template <class... Args>
+Json::Value
+Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
+{
+    return rpc(
+        apiVersion,
+        std::unordered_map<std::string, std::string>(),
+        cmd,
+        std::forward<Args>(args)...);
+}
+
+template <class... Args>
+Json::Value
+Env::rpc(
+    std::unordered_map<std::string, std::string> const& headers,
+    std::string const& cmd,
+    Args&&... args)
+{
+    return do_rpc(
+        RPC::apiCommandLineVersion,
+        std::vector<std::string>{cmd, std::forward<Args>(args)...},
+        headers);
 }
 
 template <class... Args>

@@ -91,17 +91,10 @@ private:
     using value_type = map_type::value_type;
 
     struct Transform
-#ifdef _LIBCPP_VERSION
-        : std::unary_function<
-              map_type::right_map::const_iterator::value_type const&,
-              beast::IP::Endpoint const&>
-#endif
     {
-#ifndef _LIBCPP_VERSION
         using first_argument_type =
             map_type::right_map::const_iterator::value_type const&;
         using result_type = beast::IP::Endpoint const&;
-#endif
 
         explicit Transform() = default;
 

@@ -33,7 +33,7 @@ ApplyContext::ApplyContext(
     OpenView& base,
     STTx const& tx_,
     TER preclaimResult_,
-    FeeUnit64 baseFee_,
+    XRPAmount baseFee_,
     ApplyFlags flags,
     beast::Journal journal_)
     : app(app_)

@@ -22,7 +22,7 @@ uint64          Appnum          Application defined constant
 uint16          KeySize         Key size in bytes
 uint64          Salt            A random seed
 uint64          Pepper          The salt hashed
-uint16          BlockSize       Size of a file block in bytes
+uint16          BlockSize       size of a file block in bytes
 uint16          LoadFactor      Target fraction in 65536ths
 uint8[56]       Reserved        Zeroes
 uint8[]         Reserved        Zero-pad to block size
@@ -160,4 +160,3 @@ Iteration 0: RIPEMD160[nudb.dat] = FAE6AE84C15968B0419FDFC014931EA12A396C71
 Iteration 1: RIPEMD160[nudb.key] = F96BF2722AB2EE009FFAE4A36AAFC4F220E21951
 Iteration 1: RIPEMD160[nudb.dat] = FAE6AE84C15968B0419FDFC014931EA12A396C71
 ```
-

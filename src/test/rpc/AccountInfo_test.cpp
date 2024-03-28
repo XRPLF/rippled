@@ -46,14 +46,16 @@ public:
                 "Missing field 'account'.");
         }
         {
-            // account_info with a malformed account sting.
+            // account_info with a malformed account string.
             auto const info = env.rpc(
                 "json",
                 "account_info",
                 "{\"account\": "
                 "\"n94JNrQYkDrpt62bbSR7nVEhdyAvcJXRAsjEkFYyqRkh9SUTYEqV\"}");
             BEAST_EXPECT(
-                info[jss::result][jss::error_message] == "Disallowed seed.");
+                info[jss::result][jss::error_code] == rpcACT_MALFORMED);
+            BEAST_EXPECT(
+                info[jss::result][jss::error_message] == "Account malformed.");
         }
         {
             // account_info with an account that's not in the ledger.
@@ -61,9 +63,20 @@ public:
             auto const info = env.rpc(
                 "json",
                 "account_info",
-                std::string("{ ") + "\"account\": \"" + bogie.human() + "\"}");
+                R"({ "account": ")" + bogie.human() + R"("})");
+            BEAST_EXPECT(
+                info[jss::result][jss::error_code] == rpcACT_NOT_FOUND);
             BEAST_EXPECT(
                 info[jss::result][jss::error_message] == "Account not found.");
+        }
+        {
+            // Cannot use a seed as account
+            auto const info =
+                env.rpc("json", "account_info", R"({"account": "foo"})");
+            BEAST_EXPECT(
+                info[jss::result][jss::error_code] == rpcACT_MALFORMED);
+            BEAST_EXPECT(
+                info[jss::result][jss::error_message] == "Account malformed.");
         }
     }
 
@@ -193,10 +206,7 @@ public:
     testSignerListsApiVersion2()
     {
         using namespace jtx;
-        Env env{*this, envconfig([](std::unique_ptr<Config> c) {
-                    c->loadFromString("\n[beta_rpc_api]\n1\n");
-                    return c;
-                })};
+        Env env{*this};
         Account const alice{"alice"};
         env.fund(XRP(1000), alice);
 
@@ -206,6 +216,10 @@ public:
         auto const withSigners = std::string("{ ") +
             "\"api_version\": 2, \"account\": \"" + alice.human() + "\", " +
             "\"signer_lists\": true }";
+
+        auto const withSignersAsString = std::string("{ ") +
+            "\"api_version\": 2, \"account\": \"" + alice.human() + "\", " +
+            "\"signer_lists\": asdfggh }";
 
         // Alice has no SignerList yet.
         {
@@ -252,6 +266,13 @@ public:
             BEAST_EXPECT(signerEntries.size() == 1);
             auto const& entry0 = signerEntries[0u][sfSignerEntry.jsonName];
             BEAST_EXPECT(entry0[sfSignerWeight.jsonName] == 3);
+        }
+        {
+            // account_info with "signer_lists" as not bool should error out
+            auto const info =
+                env.rpc("json", "account_info", withSignersAsString);
+            BEAST_EXPECT(info[jss::status] == "error");
+            BEAST_EXPECT(info[jss::error] == "invalidParams");
         }
 
         // Give alice a big signer list
@@ -491,224 +512,126 @@ public:
         }
     }
 
-    // gRPC stuff
-    class GetAccountInfoClient : public GRPCTestClientBase
-    {
-    public:
-        org::xrpl::rpc::v1::GetAccountInfoRequest request;
-        org::xrpl::rpc::v1::GetAccountInfoResponse reply;
-
-        explicit GetAccountInfoClient(std::string const& port)
-            : GRPCTestClientBase(port)
-        {
-        }
-
-        void
-        GetAccountInfo()
-        {
-            status = stub_->GetAccountInfo(&context, request, &reply);
-        }
-    };
-
     void
-    testSimpleGrpc()
+    testAccountFlags(FeatureBitset const& features)
     {
-        testcase("gRPC simple");
-
         using namespace jtx;
-        std::unique_ptr<Config> config = envconfig(addGrpcConfig);
-        std::string grpcPort = *(*config)["port_grpc"].get<std::string>("port");
-        Env env(*this, std::move(config));
+
+        Env env(*this, features);
         Account const alice{"alice"};
-        env.fund(drops(1000 * 1000 * 1000), alice);
+        Account const bob{"bob"};
+        env.fund(XRP(1000), alice, bob);
 
-        {
-            // most simple case
-            GetAccountInfoClient client(grpcPort);
-            client.request.mutable_account()->set_address(alice.human());
-            client.GetAccountInfo();
-            if (!BEAST_EXPECT(client.status.ok()))
-            {
-                return;
-            }
-            BEAST_EXPECT(
-                client.reply.account_data().account().value().address() ==
-                alice.human());
-        }
-        {
-            GetAccountInfoClient client(grpcPort);
-            client.request.mutable_account()->set_address(alice.human());
-            client.request.set_queue(true);
-            client.request.mutable_ledger()->set_sequence(3);
-            client.GetAccountInfo();
-            if (!BEAST_EXPECT(client.status.ok()))
-                return;
-            BEAST_EXPECT(
-                client.reply.account_data()
-                    .balance()
-                    .value()
-                    .xrp_amount()
-                    .drops() == 1000 * 1000 * 1000);
-            BEAST_EXPECT(
-                client.reply.account_data().account().value().address() ==
-                alice.human());
-            BEAST_EXPECT(
-                client.reply.account_data().sequence().value() ==
-                env.seq(alice));
-            BEAST_EXPECT(client.reply.queue_data().txn_count() == 0);
-        }
-    }
+        auto getAccountFlag = [&env](
+                                  std::string_view fName,
+                                  Account const& account) {
+            auto const info = env.rpc(
+                "json",
+                "account_info",
+                R"({"account" : ")" + account.human() + R"("})");
 
-    void
-    testErrorsGrpc()
-    {
-        testcase("gRPC errors");
+            std::optional<bool> res;
+            if (info[jss::result][jss::status] == "success" &&
+                info[jss::result][jss::account_flags].isMember(fName.data()))
+                res.emplace(info[jss::result][jss::account_flags][fName.data()]
+                                .asBool());
 
-        using namespace jtx;
-        std::unique_ptr<Config> config = envconfig(addGrpcConfig);
-        std::string grpcPort = *(*config)["port_grpc"].get<std::string>("port");
-        Env env(*this, std::move(config));
-        auto getClient = [&grpcPort]() {
-            return GetAccountInfoClient(grpcPort);
-        };
-        Account const alice{"alice"};
-        env.fund(drops(1000 * 1000 * 1000), alice);
-
-        {
-            // bad address
-            auto client = getClient();
-            client.request.mutable_account()->set_address("deadbeef");
-            client.GetAccountInfo();
-            BEAST_EXPECT(!client.status.ok());
-        }
-        {
-            // no account
-            Account const bogie{"bogie"};
-            auto client = getClient();
-            client.request.mutable_account()->set_address(bogie.human());
-            client.GetAccountInfo();
-            BEAST_EXPECT(!client.status.ok());
-        }
-        {
-            // bad ledger_index
-            auto client = getClient();
-            client.request.mutable_account()->set_address(alice.human());
-            client.request.mutable_ledger()->set_sequence(0);
-            client.GetAccountInfo();
-            BEAST_EXPECT(!client.status.ok());
-        }
-    }
-
-    void
-    testSignerListsGrpc()
-    {
-        testcase("gRPC singer lists");
-
-        using namespace jtx;
-        std::unique_ptr<Config> config = envconfig(addGrpcConfig);
-        std::string grpcPort = *(*config)["port_grpc"].get<std::string>("port");
-        Env env(*this, std::move(config));
-        auto getClient = [&grpcPort]() {
-            return GetAccountInfoClient(grpcPort);
+            return res;
         };
 
-        Account const alice{"alice"};
-        env.fund(drops(1000 * 1000 * 1000), alice);
+        static constexpr std::
+            array<std::pair<std::string_view, std::uint32_t>, 7>
+                asFlags{
+                    {{"defaultRipple", asfDefaultRipple},
+                     {"depositAuth", asfDepositAuth},
+                     {"disallowIncomingXRP", asfDisallowXRP},
+                     {"globalFreeze", asfGlobalFreeze},
+                     {"noFreeze", asfNoFreeze},
+                     {"requireAuthorization", asfRequireAuth},
+                     {"requireDestinationTag", asfRequireDest}}};
 
+        for (auto& asf : asFlags)
         {
-            auto client = getClient();
-            client.request.mutable_account()->set_address(alice.human());
-            client.request.set_signer_lists(true);
-            client.GetAccountInfo();
-            if (!BEAST_EXPECT(client.status.ok()))
-                return;
-            BEAST_EXPECT(client.reply.signer_list().signer_entries_size() == 0);
+            // Clear a flag and check that account_info returns results
+            // as expected
+            env(fclear(alice, asf.second));
+            env.close();
+            auto const f1 = getAccountFlag(asf.first, alice);
+            BEAST_EXPECT(f1.has_value());
+            BEAST_EXPECT(!f1.value());
+
+            // Set a flag and check that account_info returns results
+            // as expected
+            env(fset(alice, asf.second));
+            env.close();
+            auto const f2 = getAccountFlag(asf.first, alice);
+            BEAST_EXPECT(f2.has_value());
+            BEAST_EXPECT(f2.value());
         }
 
-        // Give alice a SignerList.
-        Account const bogie{"bogie"};
-        Json::Value const smallSigners = signers(alice, 2, {{bogie, 3}});
-        env(smallSigners);
+        static constexpr std::
+            array<std::pair<std::string_view, std::uint32_t>, 4>
+                disallowIncomingFlags{
+                    {{"disallowIncomingCheck", asfDisallowIncomingCheck},
+                     {"disallowIncomingNFTokenOffer",
+                      asfDisallowIncomingNFTokenOffer},
+                     {"disallowIncomingPayChan", asfDisallowIncomingPayChan},
+                     {"disallowIncomingTrustline",
+                      asfDisallowIncomingTrustline}}};
+
+        if (features[featureDisallowIncoming])
         {
-            auto client = getClient();
-            client.request.mutable_account()->set_address(alice.human());
-            client.request.set_signer_lists(false);
-            client.GetAccountInfo();
-            if (!BEAST_EXPECT(client.status.ok()))
-                return;
-            BEAST_EXPECT(client.reply.signer_list().signer_entries_size() == 0);
-        }
-        {
-            auto client = getClient();
-            client.request.mutable_account()->set_address(alice.human());
-            client.request.set_signer_lists(true);
-            client.GetAccountInfo();
-            if (!BEAST_EXPECT(client.status.ok()))
+            for (auto& asf : disallowIncomingFlags)
             {
-                return;
+                // Clear a flag and check that account_info returns results
+                // as expected
+                env(fclear(alice, asf.second));
+                env.close();
+                auto const f1 = getAccountFlag(asf.first, alice);
+                BEAST_EXPECT(f1.has_value());
+                BEAST_EXPECT(!f1.value());
+
+                // Set a flag and check that account_info returns results
+                // as expected
+                env(fset(alice, asf.second));
+                env.close();
+                auto const f2 = getAccountFlag(asf.first, alice);
+                BEAST_EXPECT(f2.has_value());
+                BEAST_EXPECT(f2.value());
             }
+        }
+        else
+        {
+            for (auto& asf : disallowIncomingFlags)
+            {
+                BEAST_EXPECT(!getAccountFlag(asf.first, alice));
+            }
+        }
+
+        static constexpr std::pair<std::string_view, std::uint32_t>
+            allowTrustLineClawbackFlag{
+                "allowTrustLineClawback", asfAllowTrustLineClawback};
+
+        if (features[featureClawback])
+        {
+            // must use bob's account because alice has noFreeze set
+            auto const f1 =
+                getAccountFlag(allowTrustLineClawbackFlag.first, bob);
+            BEAST_EXPECT(f1.has_value());
+            BEAST_EXPECT(!f1.value());
+
+            // Set allowTrustLineClawback
+            env(fset(bob, allowTrustLineClawbackFlag.second));
+            env.close();
+            auto const f2 =
+                getAccountFlag(allowTrustLineClawbackFlag.first, bob);
+            BEAST_EXPECT(f2.has_value());
+            BEAST_EXPECT(f2.value());
+        }
+        else
+        {
             BEAST_EXPECT(
-                client.reply.account_data().owner_count().value() == 1);
-            BEAST_EXPECT(client.reply.signer_list().signer_entries_size() == 1);
-        }
-
-        // Give alice a big signer list
-        Account const demon{"demon"};
-        Account const ghost{"ghost"};
-        Account const haunt{"haunt"};
-        Account const jinni{"jinni"};
-        Account const phase{"phase"};
-        Account const shade{"shade"};
-        Account const spook{"spook"};
-        Json::Value const bigSigners = signers(
-            alice,
-            4,
-            {
-                {bogie, 1},
-                {demon, 1},
-                {ghost, 1},
-                {haunt, 1},
-                {jinni, 1},
-                {phase, 1},
-                {shade, 1},
-                {spook, 1},
-            });
-        env(bigSigners);
-
-        std::set<std::string> accounts;
-        accounts.insert(bogie.human());
-        accounts.insert(demon.human());
-        accounts.insert(ghost.human());
-        accounts.insert(haunt.human());
-        accounts.insert(jinni.human());
-        accounts.insert(phase.human());
-        accounts.insert(shade.human());
-        accounts.insert(spook.human());
-        {
-            auto client = getClient();
-            client.request.mutable_account()->set_address(alice.human());
-            client.request.set_signer_lists(true);
-            client.GetAccountInfo();
-            if (!BEAST_EXPECT(client.status.ok()))
-            {
-                return;
-            }
-            BEAST_EXPECT(
-                client.reply.account_data().owner_count().value() == 1);
-            auto& signerList = client.reply.signer_list();
-            BEAST_EXPECT(signerList.signer_quorum().value() == 4);
-            BEAST_EXPECT(signerList.signer_entries_size() == 8);
-            for (int i = 0; i < 8; ++i)
-            {
-                BEAST_EXPECT(
-                    signerList.signer_entries(i).signer_weight().value() == 1);
-                BEAST_EXPECT(
-                    accounts.erase(signerList.signer_entries(i)
-                                       .account()
-                                       .value()
-                                       .address()) == 1);
-            }
-            BEAST_EXPECT(accounts.size() == 0);
+                !getAccountFlag(allowTrustLineClawbackFlag.first, bob));
         }
     }
 
@@ -719,9 +642,13 @@ public:
         testSignerLists();
         testSignerListsApiVersion2();
         testSignerListsV2();
-        testSimpleGrpc();
-        testErrorsGrpc();
-        testSignerListsGrpc();
+
+        FeatureBitset const allFeatures{
+            ripple::test::jtx::supported_amendments()};
+        testAccountFlags(allFeatures);
+        testAccountFlags(allFeatures - featureDisallowIncoming);
+        testAccountFlags(
+            allFeatures - featureDisallowIncoming - featureClawback);
     }
 };
 

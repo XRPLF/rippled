@@ -134,7 +134,6 @@ public:
 
     class Stream;
 
-private:
     /* Scoped ostream-based container for writing messages to a Journal. */
     class ScopedStream
     {

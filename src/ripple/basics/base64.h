@@ -57,6 +57,7 @@
 #ifndef RIPPLE_BASICS_BASE64_H_INCLUDED
 #define RIPPLE_BASICS_BASE64_H_INCLUDED
 
+#include <cstdint>
 #include <string>
 
 namespace ripple {

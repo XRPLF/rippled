@@ -25,21 +25,6 @@
 
 namespace ripple {
 
-/** @{ */
-/** Converts a hex digit to the corresponding integer
-    @param cDigit one of '0'-'9', 'A'-'F' or 'a'-'f'
-    @return an integer from 0 to 15 on success; -1 on failure.
-*/
-int
-charUnHex(unsigned char c);
-
-inline int
-charUnHex(char c)
-{
-    return charUnHex(static_cast<unsigned char>(c));
-}
-/** @} */
-
 template <class FwdIt>
 std::string
 strHex(FwdIt begin, FwdIt end)

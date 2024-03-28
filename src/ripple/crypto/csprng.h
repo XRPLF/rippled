@@ -39,9 +39,6 @@ class csprng_engine
 private:
     std::mutex mutex_;
 
-    void
-    mix(void* buffer, std::size_t count, double bitsPerByte);
-
 public:
     using result_type = std::uint64_t;
 

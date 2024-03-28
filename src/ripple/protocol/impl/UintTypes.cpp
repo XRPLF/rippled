@@ -93,14 +93,8 @@ to_currency(Currency& currency, std::string const& code)
 
         currency = beast::zero;
 
-        std::transform(
-            code.begin(),
-            code.end(),
-            currency.begin() + detail::isoCodeOffset,
-            [](auto c) {
-                return static_cast<unsigned char>(
-                    ::toupper(static_cast<unsigned char>(c)));
-            });
+        std::copy(
+            code.begin(), code.end(), currency.begin() + detail::isoCodeOffset);
 
         return true;
     }

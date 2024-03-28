@@ -127,8 +127,8 @@ OpenLedger::accept(
     {
         auto const& tx = txpair.first;
         auto const txId = tx->getTransactionID();
-       
-        // skip emitted txns 
+
+        // skip emitted txns
         if (tx->isFieldPresent(sfEmitDetails))
             continue;
 
@@ -217,9 +217,9 @@ debugTostr(SHAMap const& set)
             auto const tx = std::make_shared<STTx const>(sit);
             ss << debugTxstr(tx) << ", ";
         }
-        catch (std::exception const&)
+        catch (std::exception const& ex)
         {
-            ss << "THRO, ";
+            ss << "THROW:" << ex.what() << ", ";
         }
     }
     return ss.str();

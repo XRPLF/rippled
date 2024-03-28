@@ -69,7 +69,7 @@ private:
 
         using namespace jtx;
 
-        Env env(*this);
+        Env env(*this, envconfig(), nullptr, beast::severities::kDisabled);
         auto trustedSites =
             std::make_unique<ValidatorSite>(env.app(), env.journal);
 
@@ -172,7 +172,6 @@ private:
         test::StreamSink sink;
         beast::Journal journal{sink};
 
-        PublicKey emptyLocalKey;
         std::vector<std::string> emptyCfgKeys;
         struct publisher
         {
@@ -229,8 +228,7 @@ private:
             item.uri = uri.str();
         }
 
-        BEAST_EXPECT(
-            trustedKeys.load(emptyLocalKey, emptyCfgKeys, cfgPublishers));
+        BEAST_EXPECT(trustedKeys.load({}, emptyCfgKeys, cfgPublishers));
 
         // Normally, tests will only need a fraction of this time,
         // but sometimes DNS resolution takes an inordinate amount
@@ -239,7 +237,10 @@ private:
 
         std::vector<std::string> uris;
         for (auto const& u : servers)
+        {
+            log << "Testing " << u.uri << std::endl;
             uris.push_back(u.uri);
+        }
         sites->load(uris);
         sites->start();
         sites->join();
@@ -282,9 +283,6 @@ private:
             if (u.cfg.failFetch)
             {
                 using namespace std::chrono;
-                log << " -- Msg: "
-                    << myStatus[jss::last_refresh_message].asString()
-                    << std::endl;
                 std::stringstream nextRefreshStr{
                     myStatus[jss::next_refresh_time].asString()};
                 system_clock::time_point nextRefresh;
@@ -357,9 +355,6 @@ private:
                     sink.messages().str().find(u.expectMsg) !=
                         std::string::npos,
                     sink.messages().str());
-                log << " -- Msg: "
-                    << myStatus[jss::last_refresh_message].asString()
-                    << std::endl;
             }
         }
     }

@@ -18,10 +18,10 @@
 //==============================================================================
 
 #include <ripple/basics/strHex.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/KeyType.h>
 #include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/SecretKey.h>
 #include <ripple/protocol/Seed.h>
 #include <ripple/protocol/jss.h>
@@ -29,7 +29,7 @@
 #include <ripple/rpc/handlers/WalletPropose.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <cmath>
-#include <ed25519-donna/ed25519.h>
+#include <ed25519.h>
 #include <map>
 
 namespace ripple {

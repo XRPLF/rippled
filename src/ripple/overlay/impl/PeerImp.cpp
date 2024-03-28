@@ -176,7 +176,7 @@ PeerImp::run()
     if (auto const iter = headers_.find("Closed-Ledger");
         iter != headers_.end())
     {
-        closed = parseLedgerHash(iter->value().to_string());
+        closed = parseLedgerHash(iter->value());
 
         if (!closed)
             fail("Malformed handshake data (1)");
@@ -185,7 +185,7 @@ PeerImp::run()
     if (auto const iter = headers_.find("Previous-Ledger");
         iter != headers_.end())
     {
-        previous = parseLedgerHash(iter->value().to_string());
+        previous = parseLedgerHash(iter->value());
 
         if (!previous)
             fail("Malformed handshake data (2)");
@@ -372,8 +372,8 @@ std::string
 PeerImp::getVersion() const
 {
     if (inbound_)
-        return headers_["User-Agent"].to_string();
-    return headers_["Server"].to_string();
+        return headers_["User-Agent"];
+    return headers_["Server"];
 }
 
 Json::Value
@@ -399,8 +399,8 @@ PeerImp::json()
     if (auto const d = domain(); !d.empty())
         ret[jss::server_domain] = domain();
 
-    if (auto const nid = headers_["Network-ID"].to_string(); !nid.empty())
-        ret[jss::network_id] = nid;
+    if (auto const nid = headers_["Network-ID"]; !nid.empty())
+        ret[jss::network_id] = std::string(nid);
 
     ret[jss::load] = usage_.balance();
 
@@ -642,11 +642,6 @@ PeerImp::gracefulClose()
     assert(socket_.is_open());
     assert(!gracefulClose_);
     gracefulClose_ = true;
-#if 0
-    // Flush messages
-    while(send_queue_.size() > 1)
-        send_queue_.pop_back();
-#endif
     if (send_queue_.size() > 0)
         return;
     setTimer();
@@ -844,7 +839,7 @@ PeerImp::name() const
 std::string
 PeerImp::domain() const
 {
-    return headers_["Server-Domain"].to_string();
+    return headers_["Server-Domain"];
 }
 
 //------------------------------------------------------------------------------
@@ -1550,9 +1545,10 @@ PeerImp::handleTransaction(
         // Charge strongly for attempting to relay a txn with sfEmitDetails
         if (stx->isFieldPresent(sfEmitDetails))
         {
-            JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing sfEmitDetails (handleTransaction).";
-            //fee_ =  Resource::feeHighBurdenPeer; // RH TODO: enable when relay bug is fixed
-            //return;
+            JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
+                                       "sfEmitDetails (handleTransaction).";
+            // fee_ =  Resource::feeHighBurdenPeer; // RH TODO: enable when
+            // relay bug is fixed return;
         }
 
         int flags;
@@ -1587,7 +1583,9 @@ PeerImp::handleTransaction(
                 flags |= SF_TRUSTED;
             }
 
-            if (app_.getValidationPublicKey().empty())
+            // for non-validator nodes only -- localPublicKey is set for
+            // validators only
+            if (!app_.getValidationPublicKey())
             {
                 // For now, be paranoid and have each validator
                 // check each transaction, regardless of source
@@ -1621,10 +1619,11 @@ PeerImp::handleTransaction(
                 });
         }
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
         JLOG(p_journal_.warn())
-            << "Transaction invalid: " << strHex(m->rawtransaction());
+            << "Transaction invalid: " << strHex(m->rawtransaction())
+            << ". Exception: " << ex.what();
     }
 }
 
@@ -2127,7 +2126,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
             m->ledgerseq(), app_.getLedgerMaster().getValidLedgerIndex());
     }
 
-    app_.getOPs().pubPeerStatus([=]() -> Json::Value {
+    app_.getOPs().pubPeerStatus([=, this]() -> Json::Value {
         Json::Value j = Json::objectValue;
 
         if (m->has_newstatus())
@@ -3066,12 +3065,13 @@ PeerImp::checkTransaction(
     // VFALCO TODO Rewrite to not use exceptions
     try
     {
-
         // charge strongly for relaying Hook emitted txns
         if (stx->isFieldPresent(sfEmitDetails))
         {
-            JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing sfEmitDetails (checkSignature).";
-            //charge(Resource::feeHighBurdenPeer);  //RH TODO: enable this charging when relay bug fix
+            JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
+                                       "sfEmitDetails (checkSignature).";
+            // charge(Resource::feeHighBurdenPeer);  //RH TODO: enable this
+            // charging when relay bug fix
             return;
         }
 
@@ -3132,8 +3132,10 @@ PeerImp::checkTransaction(
         app_.getOPs().processTransaction(
             tx, trusted, false, NetworkOPs::FailHard::no);
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
+        JLOG(p_journal_.warn())
+            << "Exception in " << __func__ << ": " << ex.what();
         app_.getHashRouter().setFlags(stx->getTransactionID(), SF_BAD);
         charge(Resource::feeBadData);
     }
@@ -3217,9 +3219,10 @@ PeerImp::checkValidation(
             }
         }
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
-        JLOG(p_journal_.trace()) << "Exception processing validation";
+        JLOG(p_journal_.trace())
+            << "Exception processing validation: " << ex.what();
         charge(Resource::feeInvalidRequest);
     }
 }
@@ -3588,7 +3591,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
                         << "processLedgerRequest: getNodeFat returns false";
                 }
             }
-            catch (std::exception& e)
+            catch (std::exception const& e)
             {
                 std::string info;
                 switch (itype)
