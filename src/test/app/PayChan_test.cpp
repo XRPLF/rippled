@@ -1088,10 +1088,7 @@ struct PayChan_test : public beast::unit_test::suite
         args[jss::amount] = 51110000;
 
         // test for all api versions
-        for (auto apiVersion = RPC::apiMinimumSupportedVersion;
-             apiVersion <= RPC::apiBetaVersion;
-             ++apiVersion)
-        {
+        forAllApiVersions([&, this](unsigned apiVersion) {
             testcase(
                 "PayChan Channel_Auth RPC Api " + std::to_string(apiVersion));
             args[jss::api_version] = apiVersion;
@@ -1101,7 +1098,7 @@ struct PayChan_test : public beast::unit_test::suite
                 args.toStyledString())[jss::result];
             auto const error = apiVersion < 2u ? "invalidParams" : "badKeyType";
             BEAST_EXPECT(rs[jss::error] == error);
-        }
+        });
     }
 
     void
