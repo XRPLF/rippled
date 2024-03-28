@@ -2,9 +2,9 @@ option (validator_keys "Enables building of validator-keys-tool as a separate ta
 
 if (validator_keys)
   git_branch (current_branch)
-  # default to tracking VK develop branch unless we are on master/release
-  if (NOT (current_branch STREQUAL "master" OR current_branch STREQUAL "release"))
-    set (current_branch "develop")
+  # default to tracking VK master branch unless we are on release
+  if (NOT (current_branch STREQUAL "release"))
+    set (current_branch "master")
   endif ()
   message (STATUS "tracking ValidatorKeys branch: ${current_branch}")
 
