@@ -128,7 +128,7 @@ public:
                     FeatureBitset{supported_amendments_plugins()}};
                 BEAST_EXPECT(false);
             }
-            catch (std::runtime_error)
+            catch (std::exception const&)
             {
                 BEAST_EXPECT(true);
             }

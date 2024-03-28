@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PLUGIN_PLUGIN_H_INCLUDED
 #define RIPPLE_PLUGIN_PLUGIN_H_INCLUDED
 
-#include <ripple/plugin/SField.h>
+#include <ripple/plugin/SField_plugin.h>
 #include <ripple/protocol/SOTemplate.h>
 #include <vector>
 

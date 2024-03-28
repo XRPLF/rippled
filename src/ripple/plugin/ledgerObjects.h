@@ -21,7 +21,7 @@
 #define RIPPLE_PLUGIN_LEDGEROBJECTS_H_INCLUDED
 
 #include <ripple/ledger/ApplyView.h>
-#include <ripple/plugin/SField.h>
+#include <ripple/plugin/SField_plugin.h>
 #include <ripple/protocol/st.h>
 #include <map>
 

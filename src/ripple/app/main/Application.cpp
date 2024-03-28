@@ -1302,8 +1302,10 @@ addPlugin(std::string libPath)
 #endif
 
     if (!handle)
-        throw std::runtime_error(
+    {
+        Throw<std::runtime_error>(
             "Can't load " + libPath + ", err: " + GETERROR());
+    }
 
     // register plugin pointers
     setPluginPointers(handle);
@@ -1414,7 +1416,6 @@ addPlugin(std::string libPath)
             registerPluginInnerObjectFormat(innerObjectFormat);
         }
     }
-    CLOSELIB(handle);
 }
 
 // TODO Break this up into smaller, more digestible initialization segments.

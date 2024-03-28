@@ -1162,7 +1162,7 @@ if (tests)
 
     add_library(plugin_test_setregularkey SHARED)
     target_sources(plugin_test_setregularkey PRIVATE 
-      src/test/plugin/fixtures/SetRegularKey.cpp
+      src/test/plugin/fixtures/SetRegularKey_plugin.cpp
     )
     target_link_libraries(plugin_test_setregularkey PUBLIC Ripple::xrpl_plugin)
     target_compile_options (plugin_test_setregularkey PUBLIC -Wno-return-type-c-linkage)

@@ -22,7 +22,7 @@
 
 #include <ripple/basics/safe_cast.h>
 #include <ripple/json/json_value.h>
-#include <ripple/plugin/SField.h>
+#include <ripple/plugin/SField_plugin.h>
 
 #include <cstdint>
 #include <map>

@@ -66,6 +66,9 @@ class Feature_test : public beast::unit_test::suite
     {
         testcase("featureToName");
 
+        using namespace test::jtx;
+        Env env{*this};
+
         // Test all the supported features. In a perfect world, this would test
         // FeatureCollections::featureNames, but that's private. Leave it that
         // way.
