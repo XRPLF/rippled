@@ -130,7 +130,7 @@ struct DID_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this);
+        Env env{*this, features};
         Account const alice{"alice"};
         env.fund(XRP(5000), alice);
         env.close();
@@ -177,6 +177,16 @@ struct DID_test : public beast::unit_test::suite
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
+        // some empty fields, some optional fields
+        // pre-fix amendment
+        auto const fixEnabled = env.current()->rules().enabled(fixEmptyDID);
+        env(did::set(alice),
+            did::uri(""),
+            fixEnabled ? ter(tecEMPTY_DID) : ter(tesSUCCESS));
+        env.close();
+        auto const expectedOwnerReserve = fixEnabled ? 0 : 1;
+        BEAST_EXPECT(ownerCount(env, alice) == expectedOwnerReserve);
+
         // Modifying a DID to become empty is checked in testSetModify
     }
 
@@ -188,7 +198,7 @@ struct DID_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this);
+        Env env{*this, features};
         Account const alice{"alice"};
         env.fund(XRP(5000), alice);
         env.close();
@@ -219,7 +229,7 @@ struct DID_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this);
+        Env env{*this, features};
         Account const alice{"alice"};
         Account const bob{"bob"};
         Account const charlie{"charlie"};
@@ -273,7 +283,7 @@ struct DID_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this);
+        Env env{*this, features};
         Account const alice{"alice"};
         env.fund(XRP(5000), alice);
         env.close();
@@ -390,13 +400,19 @@ struct DID_test : public beast::unit_test::suite
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{
-            supported_amendments() | FeatureBitset{featureDID}};
+        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const emptyDID{fixEmptyDID};
         testEnabled(all);
         testAccountReserve(all);
         testSetInvalid(all);
         testDeleteInvalid(all);
         testSetModify(all);
+
+        testEnabled(all - emptyDID);
+        testAccountReserve(all - emptyDID);
+        testSetInvalid(all - emptyDID);
+        testDeleteInvalid(all - emptyDID);
+        testSetModify(all - emptyDID);
     }
 };
 

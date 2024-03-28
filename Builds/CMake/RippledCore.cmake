@@ -252,7 +252,6 @@ install (
 install (
   FILES
     src/ripple/json/JsonPropertyStream.h
-    src/ripple/json/MultivarJson.h
     src/ripple/json/Object.h
     src/ripple/json/Output.h
     src/ripple/json/Writer.h
@@ -271,6 +270,7 @@ install (
     src/ripple/protocol/AccountID.h
     src/ripple/protocol/AMMCore.h
     src/ripple/protocol/AmountConversions.h
+    src/ripple/protocol/ApiVersion.h
     src/ripple/protocol/Book.h
     src/ripple/protocol/BuildInfo.h
     src/ripple/protocol/ErrorCodes.h
@@ -286,6 +286,8 @@ install (
     src/ripple/protocol/KnownFormats.h
     src/ripple/protocol/LedgerFormats.h
     src/ripple/protocol/LedgerHeader.h
+    src/ripple/protocol/MultiApiJson.h
+    src/ripple/protocol/NFTSyntheticSerializer.h
     src/ripple/protocol/NFTokenID.h
     src/ripple/protocol/NFTokenOfferID.h
     src/ripple/protocol/NFTSyntheticSerializer.h
@@ -967,7 +969,6 @@ if (tests)
     src/test/json/Output_test.cpp
     src/test/json/Writer_test.cpp
     src/test/json/json_value_test.cpp
-    src/test/json/MultivarJson_test.cpp
     #[===============================[
        test sources:
          subdir: jtx
@@ -1070,11 +1071,13 @@ if (tests)
        test sources:
          subdir: protocol
     #]===============================]
+    src/test/protocol/ApiVersion_test.cpp
     src/test/protocol/BuildInfo_test.cpp
     src/test/protocol/InnerObjectFormats_test.cpp
     src/test/protocol/Issue_test.cpp
     src/test/protocol/Hooks_test.cpp
     src/test/protocol/Memo_test.cpp
+    src/test/protocol/MultiApiJson_test.cpp
     src/test/protocol/PublicKey_test.cpp
     src/test/protocol/Quality_test.cpp
     src/test/protocol/STAccount_test.cpp
