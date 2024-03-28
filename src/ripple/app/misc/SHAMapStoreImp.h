@@ -77,6 +77,9 @@ private:
     std::string const dbPrefix_ = "rippledb";
     // check health/stop status as records are copied
     std::uint64_t const checkHealthInterval_ = 1000;
+    // back off periodically to reduce write contention as records are copied
+    std::uint64_t const backoffInterval_ =
+        ripple::NodeStore::batchWriteLimitSize / 2;
     // minimum # of ledgers to maintain for health of network
     static std::uint32_t const minimumDeletionInterval_ = 256;
     // minimum # of ledgers required for standalone mode.
