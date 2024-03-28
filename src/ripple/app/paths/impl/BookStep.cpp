@@ -793,6 +793,17 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
     TAmounts<TIn, TOut> const& stepAmt,
     TOut const& ownerGives) const
 {
+    if (!offer.checkInvariant(ofrAmt, j_))
+    {
+        // purposely written as separate if statements so we get logging even
+        // when the amendment isn't active.
+        if (sb.rules().enabled(fixAMMOverflowOffer))
+        {
+            Throw<FlowException>(
+                tecINVARIANT_FAILED, "AMM pool product invariant failed.");
+        }
+    }
+
     // The offer owner gets the ofrAmt. The difference between ofrAmt and
     // stepAmt is a transfer fee that goes to book_.in.account
     {

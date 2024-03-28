@@ -93,6 +93,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
     return cur;
 }
 
+namespace {
 template <typename T>
 constexpr T
 maxAmount()
@@ -105,16 +106,41 @@ maxAmount()
         return STAmount(STAmount::cMaxValue / 2, STAmount::cMaxOffset);
 }
 
-template <typename TIn, typename TOut>
-AMMOffer<TIn, TOut>
-AMMLiquidity<TIn, TOut>::maxOffer(TAmounts<TIn, TOut> const& balances) const
+template <typename T>
+T
+maxOut(T const& out, Issue const& iss)
 {
-    return AMMOffer<TIn, TOut>(
-        *this,
-        {maxAmount<TIn>(),
-         swapAssetIn(balances, maxAmount<TIn>(), tradingFee_)},
-        balances,
-        Quality{balances});
+    Number const res = out * Number{99, -2};
+    return toAmount<T>(iss, res, Number::rounding_mode::downward);
+}
+}  // namespace
+
+template <typename TIn, typename TOut>
+std::optional<AMMOffer<TIn, TOut>>
+AMMLiquidity<TIn, TOut>::maxOffer(
+    TAmounts<TIn, TOut> const& balances,
+    Rules const& rules) const
+{
+    if (!rules.enabled(fixAMMOverflowOffer))
+    {
+        return AMMOffer<TIn, TOut>(
+            *this,
+            {maxAmount<TIn>(),
+             swapAssetIn(balances, maxAmount<TIn>(), tradingFee_)},
+            balances,
+            Quality{balances});
+    }
+    else
+    {
+        auto const out = maxOut<TOut>(balances.out, issueOut());
+        if (out <= TOut{0} || out >= balances.out)
+            return std::nullopt;
+        return AMMOffer<TIn, TOut>(
+            *this,
+            {swapAssetOut(balances, out, tradingFee_), out},
+            balances,
+            Quality{balances});
+    }
 }
 
 template <typename TIn, typename TOut>
@@ -167,15 +193,16 @@ AMMLiquidity<TIn, TOut>::getOffer(
                 if (clobQuality && Quality{amounts} < clobQuality)
                     return std::nullopt;
                 return AMMOffer<TIn, TOut>(
-                    *this, amounts, std::nullopt, Quality{amounts});
+                    *this, amounts, balances, Quality{amounts});
             }
             else if (!clobQuality)
             {
                 // If there is no CLOB to compare against, return the largest
                 // amount, which doesn't overflow. The size is going to be
                 // changed in BookStep per either deliver amount limit, or
-                // sendmax, or available output or input funds.
-                return maxOffer(balances);
+                // sendmax, or available output or input funds. Might return
+                // nullopt if the pool is small.
+                return maxOffer(balances, view.rules());
             }
             else if (
                 auto const amounts =
@@ -188,7 +215,10 @@ AMMLiquidity<TIn, TOut>::getOffer(
         catch (std::overflow_error const& e)
         {
             JLOG(j_.error()) << "AMMLiquidity::getOffer overflow " << e.what();
-            return maxOffer(balances);
+            if (!view.rules().enabled(fixAMMOverflowOffer))
+                return maxOffer(balances, view.rules());
+            else
+                return std::nullopt;
         }
         catch (std::exception const& e)
         {
