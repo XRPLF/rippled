@@ -47,6 +47,57 @@ target_link_libraries(xrpl.libpb
     gRPC::grpc++
 )
 
+# TODO: Clean up the number of library targets later.
+add_library(xrpl.imports.main INTERFACE)
+target_link_libraries(xrpl.imports.main INTERFACE
+    LibArchive::LibArchive
+    OpenSSL::Crypto
+    Ripple::boost
+    Ripple::opts
+    Ripple::syslibs
+    absl::random_random
+    date::date
+    ed25519::ed25519
+    secp256k1::secp256k1
+    xxHash::xxhash
+)
+
+include(add_module)
+include(target_link_modules)
+
+# Level 01
+add_module(xrpl beast)
+target_link_libraries(xrpl.libxrpl.beast PUBLIC
+  xrpl.imports.main
+  xrpl.libpb
+)
+
+# Level 02
+add_module(xrpl basics)
+target_link_libraries(xrpl.libxrpl.basics PUBLIC xrpl.libxrpl.beast)
+
+# Level 03
+add_module(xrpl json)
+target_link_libraries(xrpl.libxrpl.json PUBLIC xrpl.libxrpl.basics)
+
+add_module(xrpl crypto)
+target_link_libraries(xrpl.libxrpl.crypto PUBLIC xrpl.libxrpl.basics)
+
+# Level 04
+add_module(xrpl protocol)
+target_link_libraries(xrpl.libxrpl.protocol PUBLIC
+  xrpl.libxrpl.crypto
+  xrpl.libxrpl.json
+)
+
+# Level 05
+add_module(xrpl resource)
+target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
+
+add_module(xrpl server)
+target_link_libraries(xrpl.libxrpl.server PUBLIC xrpl.libxrpl.protocol)
+
+
 add_library(xrpl.libxrpl)
 set_target_properties(xrpl.libxrpl PROPERTIES OUTPUT_NAME xrpl)
 if(unity)
@@ -60,7 +111,19 @@ file(GLOB_RECURSE sources CONFIGURE_DEPENDS
 )
 target_sources(xrpl.libxrpl PRIVATE ${sources})
 
+target_link_modules(xrpl PUBLIC
+  basics
+  beast
+  crypto
+  json
+  protocol
+  resource
+  server
+)
+
 target_include_directories(xrpl.libxrpl
+  PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)

@@ -29,6 +29,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/hardened_hash.h>
+#include <xrpl/basics/partitioned_unordered_map.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <boost/endian/conversion.hpp>
@@ -628,6 +629,17 @@ inline std::ostream&
 operator<<(std::ostream& out, base_uint<Bits, Tag> const& u)
 {
     return out << to_string(u);
+}
+
+template <>
+inline std::size_t
+extract(uint256 const& key)
+{
+    std::size_t result;
+    // Use memcpy to avoid unaligned UB
+    // (will optimize to equivalent code)
+    std::memcpy(&result, key.data(), sizeof(std::size_t));
+    return result;
 }
 
 #ifndef __INTELLISENSE__

@@ -8,7 +8,15 @@ install (
     opts
     ripple_syslibs
     ripple_boost
+    xrpl.imports.main
     xrpl.libpb
+    xrpl.libxrpl.basics
+    xrpl.libxrpl.beast
+    xrpl.libxrpl.crypto
+    xrpl.libxrpl.json
+    xrpl.libxrpl.protocol
+    xrpl.libxrpl.resource
+    xrpl.libxrpl.server
     xrpl.libxrpl
   EXPORT RippleExports
   LIBRARY DESTINATION lib

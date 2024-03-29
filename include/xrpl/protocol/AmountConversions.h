@@ -21,8 +21,8 @@
 #define RIPPLE_PROTOCOL_AMOUNTCONVERSION_H_INCLUDED
 
 #include <xrpl/basics/IOUAmount.h>
-#include <xrpl/basics/XRPAmount.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <type_traits>
 

@@ -30,8 +30,8 @@
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpl/basics/IOUAmount.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/XRPAmount.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <boost/container/flat_set.hpp>
 

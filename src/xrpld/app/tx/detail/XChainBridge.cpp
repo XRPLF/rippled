@@ -26,7 +26,6 @@
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/XRPAmount.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
@@ -40,6 +39,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XChainAttestations.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/st.h>
 #include <unordered_map>

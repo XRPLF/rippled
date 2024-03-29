@@ -20,8 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_STVALIDATION_H_INCLUDED
 #define RIPPLE_PROTOCOL_STVALIDATION_H_INCLUDED
 
-#include <xrpl/basics/FeeUnits.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>

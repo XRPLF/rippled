@@ -21,13 +21,13 @@
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/XRPAmount.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/st.h>
 

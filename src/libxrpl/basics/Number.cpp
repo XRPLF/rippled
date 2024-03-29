@@ -499,11 +499,6 @@ Number::operator rep() const
     return drops;
 }
 
-Number::operator XRPAmount() const
-{
-    return XRPAmount{static_cast<rep>(*this)};
-}
-
 std::string
 to_string(Number const& amount)
 {

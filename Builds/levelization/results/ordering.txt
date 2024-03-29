@@ -1,5 +1,4 @@
 libxrpl.basics > xrpl.basics
-libxrpl.basics > xrpl.protocol
 libxrpl.crypto > xrpl.basics
 libxrpl.json > xrpl.basics
 libxrpl.json > xrpl.json
@@ -130,6 +129,7 @@ test.shamap > xrpl.protocol
 test.toplevel > test.csf
 test.toplevel > xrpl.json
 test.unit_test > xrpl.basics
+xrpl.json > xrpl.basics
 xrpl.protocol > xrpl.basics
 xrpl.protocol > xrpl.json
 xrpl.resource > xrpl.basics

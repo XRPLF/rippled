@@ -24,11 +24,11 @@
 #include <xrpl/basics/IOUAmount.h>
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/XRPAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/json_get_or_throw.h>
 
 namespace ripple {
