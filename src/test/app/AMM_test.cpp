@@ -122,10 +122,12 @@ private:
             1'000);
 
         // Make sure asset comparison works.
-        BEAST_EXPECT(STIssue(sfAsset, STAmount(XRP(2'000)).issue()) ==
-                     STIssue(sfAsset, STAmount(XRP(2'000)).issue()));
-        BEAST_EXPECT(STIssue(sfAsset, STAmount(XRP(2'000)).issue()) !=
-                     STIssue(sfAsset, STAmount({USD(2'000)}).issue()));
+        BEAST_EXPECT(
+            STIssue(sfAsset, STAmount(XRP(2'000)).issue()) ==
+            STIssue(sfAsset, STAmount(XRP(2'000)).issue()));
+        BEAST_EXPECT(
+            STIssue(sfAsset, STAmount(XRP(2'000)).issue()) !=
+            STIssue(sfAsset, STAmount({USD(2'000)}).issue()));
     }
 
     void
@@ -2945,41 +2947,44 @@ private:
             Json::Value tx = amm.bidJson(alice, 500);
 
             {
-                auto jtx = env.jt(
-                    tx,
-                    seq(1),
-                    fee(10));
+                auto jtx = env.jt(tx, seq(1), fee(10));
                 env.app().config().features.erase(featureAMM);
-                PreflightContext pfctx(env.app(), *jtx.stx,
-                    env.current()->rules(), tapNONE, env.journal);
+                PreflightContext pfctx(
+                    env.app(),
+                    *jtx.stx,
+                    env.current()->rules(),
+                    tapNONE,
+                    env.journal);
                 auto pf = AMMBid::preflight(pfctx);
                 BEAST_EXPECT(pf == temDISABLED);
                 env.app().config().features.insert(featureAMM);
             }
 
             {
-                auto jtx = env.jt(
-                    tx,
-                    seq(1),
-                    fee(10));
+                auto jtx = env.jt(tx, seq(1), fee(10));
                 jtx.jv["TxnSignature"] = "deadbeef";
                 jtx.stx = env.ust(jtx);
-                PreflightContext pfctx(env.app(), *jtx.stx,
-                    env.current()->rules(), tapNONE, env.journal);
+                PreflightContext pfctx(
+                    env.app(),
+                    *jtx.stx,
+                    env.current()->rules(),
+                    tapNONE,
+                    env.journal);
                 auto pf = AMMBid::preflight(pfctx);
                 BEAST_EXPECT(pf != tesSUCCESS);
             }
 
             {
-                auto jtx = env.jt(
-                    tx,
-                    seq(1),
-                    fee(10));
+                auto jtx = env.jt(tx, seq(1), fee(10));
                 jtx.jv["Asset2"]["currency"] = "XRP";
                 jtx.jv["Asset2"].removeMember("issuer");
                 jtx.stx = env.ust(jtx);
-                PreflightContext pfctx(env.app(), *jtx.stx,
-                    env.current()->rules(), tapNONE, env.journal);
+                PreflightContext pfctx(
+                    env.app(),
+                    *jtx.stx,
+                    env.current()->rules(),
+                    tapNONE,
+                    env.journal);
                 auto pf = AMMBid::preflight(pfctx);
                 BEAST_EXPECT(pf == temBAD_AMM_TOKENS);
             }

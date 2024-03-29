@@ -667,8 +667,10 @@ AMM::bid(
     std::optional<std::pair<Issue, Issue>> const& assets,
     std::optional<ter> const& ter)
 {
-    submit(bidJson(account, bidMin, bidMax, authAccounts, flags, seq, assets,
-        ter), seq, ter);
+    submit(
+        bidJson(account, bidMin, bidMax, authAccounts, flags, seq, assets, ter),
+        seq,
+        ter);
 }
 
 Json::Value
@@ -683,7 +685,7 @@ AMM::bidJson(
     std::optional<ter> const& ter)
 {
     if (auto const amm =
-        env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
+            env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
     {
         assert(
             !env_.current()->rules().enabled(fixInnerObjTemplate) ||

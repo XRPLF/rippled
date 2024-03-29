@@ -319,11 +319,12 @@ public:
 
     // Return the JSON for a bid, but don't execute it.
     Json::Value
-    bidJson(std::optional<Account> const& account,
+    bidJson(
+        std::optional<Account> const& account,
         std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMin =
-        std::nullopt,
+            std::nullopt,
         std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMax =
-        std::nullopt,
+            std::nullopt,
         std::vector<Account> const& authAccounts = {},
         std::optional<std::uint32_t> const& flags = std::nullopt,
         std::optional<jtx::seq> const& seq = std::nullopt,
