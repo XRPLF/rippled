@@ -120,6 +120,12 @@ private:
             },
             std::nullopt,
             1'000);
+
+        // Make sure asset comparison works.
+        BEAST_EXPECT(STIssue(sfAsset, STAmount(XRP(2'000)).issue()) ==
+                     STIssue(sfAsset, STAmount(XRP(2'000)).issue()));
+        BEAST_EXPECT(STIssue(sfAsset, STAmount(XRP(2'000)).issue()) !=
+                     STIssue(sfAsset, STAmount({USD(2'000)}).issue()));
     }
 
     void
