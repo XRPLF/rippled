@@ -403,7 +403,7 @@ for Linux. The solution is to build the dependency locally by passing
 `--build boost` when calling `conan install`.
 
 ```
-conan install --build boost ...
+conan install --build boost ..
 ```
 
 
