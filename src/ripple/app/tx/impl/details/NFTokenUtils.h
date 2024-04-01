@@ -97,8 +97,12 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer);
 bool
 compareTokens(uint256 const& a, uint256 const& b);
 
-TER 
-updateToken(ApplyView& view, AccountID const& owner, STObject&& nft, std::shared_ptr<SLE>&& page);
+TER
+updateToken(
+    ApplyView& view,
+    AccountID const& owner,
+    STObject&& nft,
+    std::shared_ptr<SLE>&& page);
 
 }  // namespace nft
 

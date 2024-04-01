@@ -40,11 +40,27 @@ NFTokenMint::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    // if featureDNFT enabled then new flag allowing mutable URI available
-
+    // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
+    // accounts allowed a TrustLine to be added to the issuer of that token
+    // without explicit permission from that issuer.  This was enabled by
+    // minting the NFToken with the tfTrustLine flag set.
+    //
+    // That capability could be used to attack the NFToken issuer.  It
+    // would be possible for two accounts to trade the NFToken back and forth
+    // building up any number of TrustLines on the issuer, increasing the
+    // issuer's reserve without bound.
+    //
+    // The fixRemoveNFTokenAutoTrustLine amendment disables minting with the
+    // tfTrustLine flag as a way to prevent the attack.  But until the
+    // amendment passes we still need to keep the old behavior available.
     std::uint32_t const NFTokenMintMask =
-        ctx.rules.enabled(featureDNFT) ? tfNFTokenMintMask
-                                       : tfNFTokenMintOldMask;
+        ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine)
+        // if featureDynamicNFT enabled then new flag allowing mutable URI
+        // available
+        ? ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintMaskWithMutable
+                                               : tfNFTokenMintMask
+        : ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintOldMaskWithMutable
+                                               : tfNFTokenMintOldMask;
 
     if (ctx.tx.getFlags() & NFTokenMintMask)
         return temINVALID_FLAG;

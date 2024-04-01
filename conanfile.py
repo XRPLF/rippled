@@ -147,9 +147,9 @@ class Xrpl(ConanFile):
     def package_info(self):
         libxrpl = self.cpp_info.components['libxrpl']
         libxrpl.libs = [
-            'libxrpl_core.a',
-            'libed25519.a',
-            'libsecp256k1.a',
+            'xrpl_core',
+            'ed25519',
+            'secp256k1',
         ]
         # TODO: Fix the protobufs to include each other relative to
         # `include/`, not `include/ripple/proto/`.

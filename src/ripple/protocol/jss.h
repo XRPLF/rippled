@@ -100,6 +100,7 @@ JSS(NFTokenOffer);         // ledger type.
 JSS(NFTokenAcceptOffer);   // transaction type.
 JSS(NFTokenCancelOffer);   // transaction type.
 JSS(NFTokenCreateOffer);   // transaction type.
+JSS(NFTokenModify);        // transaction type.
 JSS(NFTokenPage);          // ledger type.
 JSS(LPTokenOut);           // in: AMM Liquidity Provider deposit tokens
 JSS(LPTokenIn);            // in: AMM Liquidity Provider withdraw tokens
@@ -636,7 +637,6 @@ JSS(sub_index);             // in: LedgerEntry
 JSS(subcommand);            // in: PathFind
 JSS(success);               // rpc
 JSS(supported);             // out: AmendmentTableImpl
-JSS(sync_mode);             // in: Submit
 JSS(system_time_offset);    // out: NetworkOPs
 JSS(tag);                   // out: Peers
 JSS(taker);                 // in: Subscribe, BookOffers
