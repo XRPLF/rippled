@@ -57,7 +57,8 @@ LedgerStateFix::preflight(PreflightContext const& ctx)
 XRPAmount
 LedgerStateFix::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    // The fee required for AccountDelete is one owner reserve.
+    // The fee required for LedgerStateFix is one owner reserve, just like
+    // the fee for AccountDelete.
     return view.fees().increment;
 }
 
