@@ -1,4 +1,4 @@
-find_package(Protobuf 3.8)
+find_package(Protobuf REQUIRED)
 
 # .proto files import each other like this:
 #
