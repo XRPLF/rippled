@@ -77,7 +77,7 @@ ammHolds(
                 return std::make_optional(std::make_pair(issue1, issue2));
             else if (checkIssue == issue2)
                 return std::make_optional(std::make_pair(issue2, issue1));
-            // This error can only be hit if the AMM is corrupted
+            // Unreachable unless AMM corrupted.
             // LCOV_EXCL_START
             JLOG(j.debug())
                 << "ammHolds: Invalid " << label << " " << checkIssue;
@@ -90,8 +90,7 @@ ammHolds(
         }
         else if (optIssue2)
         {
-            // This line cannot be hit since you cannot have Amount2
-            // without Amount
+            // Cannot have Amount2 without Amount.
             return singleIssue(*optIssue2, "optIssue2");  // LCOV_EXCL_LINE
         }
         return std::make_optional(std::make_pair(issue1, issue2));
@@ -342,11 +341,11 @@ initializeFeeAuctionVote(
     if (tfee != 0)
         ammSle->setFieldU16(sfTradingFee, tfee);
     else if (ammSle->isFieldPresent(sfTradingFee))
-        ammSle->makeFieldAbsent(sfTradingFee);  // LCOV_EXCL_LINE never hit
+        ammSle->makeFieldAbsent(sfTradingFee);  // LCOV_EXCL_LINE
     if (auto const dfee = tfee / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION)
         auctionSlot.setFieldU16(sfDiscountedFee, dfee);
     else if (auctionSlot.isFieldPresent(sfDiscountedFee))
-        auctionSlot.makeFieldAbsent(sfDiscountedFee);  // LCOV_EXCL_LINE not hit
+        auctionSlot.makeFieldAbsent(sfDiscountedFee);  // LCOV_EXCL_LINE
 }
 
 }  // namespace ripple
