@@ -4,3 +4,13 @@ coverage:
       default:
         target: 60%
         threshold: 2%
+
+parsers:
+  cobertura:
+    partials_as_hits: true
+    handle_missing_conditions : true
+
+ignore:
+  - "src/test/"
+  - "src/ripple/beast/test/"
+  - "src/ripple/beast/unit_test/"
