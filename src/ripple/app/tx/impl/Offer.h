@@ -23,6 +23,7 @@
 #include <ripple/basics/contract.h>
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Quality.h>
+#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/SField.h>
 #include <ripple/protocol/STLedgerEntry.h>
 #include <ostream>
@@ -140,11 +141,15 @@ public:
     limitOut(
         TAmounts<TIn, TOut> const& offrAmt,
         TOut const& limit,
-        bool fixReducedOffers,
+        Rules const& rules,
         bool roundUp) const;
 
     TAmounts<TIn, TOut>
-    limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit) const;
+    limitIn(
+        TAmounts<TIn, TOut> const& offrAmt,
+        TIn const& limit,
+        Rules const& rules,
+        bool roundUp) const;
 
     template <typename... Args>
     static TER
@@ -219,10 +224,10 @@ TAmounts<TIn, TOut>
 TOffer<TIn, TOut>::limitOut(
     TAmounts<TIn, TOut> const& offrAmt,
     TOut const& limit,
-    bool fixReducedOffers,
+    Rules const& rules,
     bool roundUp) const
 {
-    if (fixReducedOffers)
+    if (rules.enabled(fixReducedOffersV1))
         // It turns out that the ceil_out implementation has some slop in
         // it.  ceil_out_strict removes that slop.  But removing that slop
         // affects transaction outcomes, so the change must be made using
@@ -233,9 +238,18 @@ TOffer<TIn, TOut>::limitOut(
 
 template <class TIn, class TOut>
 TAmounts<TIn, TOut>
-TOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit)
-    const
+TOffer<TIn, TOut>::limitIn(
+    TAmounts<TIn, TOut> const& offrAmt,
+    TIn const& limit,
+    Rules const& rules,
+    bool roundUp) const
 {
+    if (rules.enabled(fixReducedOffersV2))
+        // It turns out that the ceil_in implementation has some slop in
+        // it.  ceil_in_strict removes that slop.  But removing that slop
+        // affects transaction outcomes, so the change must be made using
+        // an amendment.
+        return quality().ceil_in_strict(offrAmt, limit, roundUp);
     return m_quality.ceil_in(offrAmt, limit);
 }
 

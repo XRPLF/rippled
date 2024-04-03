@@ -506,7 +506,6 @@ struct Flow_test : public beast::unit_test::suite
             // Without limits, the 0.4 USD would produce 1000 EUR in the forward
             // pass. This test checks that the payment produces 1 EUR, as
             // expected.
-
             Env env(*this, features);
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(USD(1000), alice, bob, carol);
@@ -518,14 +517,26 @@ struct Flow_test : public beast::unit_test::suite
             env(offer(bob, USD(1), drops(2)), txflags(tfPassive));
             env(offer(bob, drops(1), EUR(1000)), txflags(tfPassive));
 
+            bool const reducedOffersV2 = features[fixReducedOffersV2];
+
+            // With reducedOffersV2, it is not allowed to accept less than
+            // USD(0.5) of bob's USD offer.  If we provide 1 drop for less
+            // than USD(0.5), then the remaining fractional offer would
+            // block the order book.
+            TER const expectedTER =
+                reducedOffersV2 ? TER(tecPATH_DRY) : TER(tesSUCCESS);
             env(pay(alice, carol, EUR(1)),
                 path(~XRP, ~EUR),
                 sendmax(USD(0.4)),
-                txflags(tfNoRippleDirect | tfPartialPayment));
+                txflags(tfNoRippleDirect | tfPartialPayment),
+                ter(expectedTER));
 
-            env.require(balance(carol, EUR(1)));
-            env.require(balance(bob, USD(0.4)));
-            env.require(balance(bob, EUR(999)));
+            if (!reducedOffersV2)
+            {
+                env.require(balance(carol, EUR(1)));
+                env.require(balance(bob, USD(0.4)));
+                env.require(balance(bob, EUR(999)));
+            }
         }
     }
 
@@ -1375,9 +1386,12 @@ struct Flow_test : public beast::unit_test::suite
     {
         using namespace jtx;
         FeatureBitset const ownerPaysFee{featureOwnerPaysFee};
+        FeatureBitset const reducedOffersV2(fixReducedOffersV2);
 
         testLineQuality(features);
         testFalseDry(features);
+        testDirectStep(features - reducedOffersV2);
+        testBookStep(features - reducedOffersV2);
         testDirectStep(features);
         testBookStep(features);
         testDirectStep(features | ownerPaysFee);

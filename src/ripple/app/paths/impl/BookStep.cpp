@@ -661,14 +661,18 @@ limitStepIn(
     TOut& ownerGives,
     std::uint32_t transferRateIn,
     std::uint32_t transferRateOut,
-    TIn const& limit)
+    TIn const& limit,
+    Rules const& rules)
 {
     if (limit < stpAmt.in)
     {
         stpAmt.in = limit;
         auto const inLmt =
             mulRatio(stpAmt.in, QUALITY_ONE, transferRateIn, /*roundUp*/ false);
-        ofrAmt = offer.limitIn(ofrAmt, inLmt);
+        // It turns out we can prevent order book blocking by (strictly)
+        // rounding down the ceil_in() result.  This adjustment changes
+        // transaction outcomes, so it must be made under an amendment.
+        ofrAmt = offer.limitIn(ofrAmt, inLmt, rules, /* roundUp */ false);
         stpAmt.out = ofrAmt.out;
         ownerGives = mulRatio(
             ofrAmt.out, transferRateOut, QUALITY_ONE, /*roundUp*/ false);
@@ -696,7 +700,7 @@ limitStepOut(
         ofrAmt = offer.limitOut(
             ofrAmt,
             stpAmt.out,
-            rules.enabled(fixReducedOffersV1),
+            rules,
             /*roundUp*/ true);
         stpAmt.in =
             mulRatio(ofrAmt.in, transferRateIn, QUALITY_ONE, /*roundUp*/ true);
@@ -736,7 +740,6 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         sb, afView, book_, sb.parentCloseTime(), counter, j_);
 
     bool const flowCross = afView.rules().enabled(featureFlowCross);
-    bool const fixReduced = afView.rules().enabled(fixReducedOffersV1);
     bool offerAttempted = false;
     std::optional<Quality> ofrQ;
     auto execOffer = [&](auto& offer) {
@@ -818,7 +821,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             // rounding down the ceil_out() result.  This adjustment changes
             // transaction outcomes, so it must be made under an amendment.
             ofrAmt = offer.limitOut(
-                ofrAmt, stpAmt.out, fixReduced, /*roundUp*/ false);
+                ofrAmt, stpAmt.out, afView.rules(), /*roundUp*/ false);
 
             stpAmt.in =
                 mulRatio(ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true);
@@ -1177,7 +1180,8 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
                 ownerGivesAdj,
                 transferRateIn,
                 transferRateOut,
-                remainingIn);
+                remainingIn,
+                afView.rules());
             savedIns.insert(remainingIn);
             lastOut = savedOuts.insert(stpAdjAmt.out);
             result.out = sum(savedOuts);
@@ -1228,7 +1232,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
             }
             else
             {
-                // This is (likely) a problem case, and wil be caught
+                // This is (likely) a problem case, and will be caught
                 // with later checks
                 savedOuts.insert(lastOutAmt);
             }

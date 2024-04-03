@@ -200,6 +200,29 @@ public:
             toAmount<In>(stRes.in), toAmount<Out>(stRes.out));
     }
 
+    Amounts
+    ceil_in_strict(Amounts const& amount, STAmount const& limit, bool roundUp)
+        const;
+
+    template <class In, class Out>
+    TAmounts<In, Out>
+    ceil_in_strict(
+        TAmounts<In, Out> const& amount,
+        In const& limit,
+        bool roundUp) const
+    {
+        if (amount.in <= limit)
+            return amount;
+
+        // Use the existing STAmount implementation for now, but consider
+        // replacing with code specific to IOUAMount and XRPAmount
+        Amounts stAmt(toSTAmount(amount.in), toSTAmount(amount.out));
+        STAmount stLim(toSTAmount(limit));
+        auto const stRes = ceil_in_strict(stAmt, stLim, roundUp);
+        return TAmounts<In, Out>(
+            toAmount<In>(stRes.in), toAmount<Out>(stRes.out));
+    }
+
     /** Returns the scaled amount with out capped.
         Math is avoided if the result is exact. The input is clamped
         to prevent money creation.

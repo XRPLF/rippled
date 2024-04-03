@@ -81,7 +81,7 @@ TAmounts<TIn, TOut>
 AMMOffer<TIn, TOut>::limitOut(
     TAmounts<TIn, TOut> const& offrAmt,
     TOut const& limit,
-    bool fixReducedOffers,
+    Rules const& rules,
     bool roundUp) const
 {
     // Change the offer size proportionally to the original offer quality
@@ -92,7 +92,7 @@ AMMOffer<TIn, TOut>::limitOut(
     // poolPays * poolGets < (poolPays - assetOut) * (poolGets + assetIn)
     if (ammLiquidity_.multiPath())
     {
-        if (fixReducedOffers)
+        if (rules.enabled(fixReducedOffersV1))
             // It turns out that the ceil_out implementation has some slop in
             // it.  ceil_out_strict removes that slop.  But removing that slop
             // affects transaction outcomes, so the change must be made using
@@ -110,11 +110,18 @@ template <typename TIn, typename TOut>
 TAmounts<TIn, TOut>
 AMMOffer<TIn, TOut>::limitIn(
     TAmounts<TIn, TOut> const& offrAmt,
-    TIn const& limit) const
+    TIn const& limit,
+    Rules const& rules,
+    bool roundUp) const
 {
     // See the comments above in limitOut().
     if (ammLiquidity_.multiPath())
+    {
+        if (rules.enabled(fixReducedOffersV2))
+            return quality().ceil_in_strict(offrAmt, limit, roundUp);
+
         return quality().ceil_in(offrAmt, limit);
+    }
     return {limit, swapAssetIn(balances_, limit, ammLiquidity_.tradingFee())};
 }
 
