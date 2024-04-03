@@ -1058,16 +1058,15 @@ public:
             auto const& jt = env.jt(noop(alice));
             BEAST_EXPECT(jt.stx);
 
-            bool didApply;
-            TER ter;
+            Env::ParsedResult parsed;
 
             env.app().openLedger().modify(
                 [&](OpenView& view, beast::Journal j) {
-                    std::tie(ter, didApply) = ripple::apply(
+                    std::tie(parsed.ter, parsed.didApply) = ripple::apply(
                         env.app(), view, *jt.stx, tapNONE, env.journal);
-                    return didApply;
+                    return parsed.didApply;
                 });
-            env.postconditions(jt, ter, didApply);
+            env.postconditions(jt, parsed);
         }
         checkMetrics(__LINE__, env, 1, std::nullopt, 4, 2, 256);
 

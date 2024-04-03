@@ -272,24 +272,46 @@ Env::trust(STAmount const& amount, Account const& account)
     test.expect(balance(account) == start);
 }
 
-std::pair<TER, bool>
+Env::ParsedResult
 Env::parseResult(Json::Value const& jr)
 {
-    TER ter;
-    if (jr.isObject() && jr.isMember(jss::result) &&
-        jr[jss::result].isMember(jss::engine_result_code))
-        ter = TER::fromInt(jr[jss::result][jss::engine_result_code].asInt());
+    auto error = [](ParsedResult& parsed, Json::Value const& object) {
+        // Use an error code that is not used anywhere in the transaction
+        // engine to distinguish this case.
+        parsed.ter = telENV_RPC_FAILED;
+        // Extract information about the error
+        if (!object.isObject())
+            return;
+        if (object.isMember(jss::error_code))
+            parsed.rpcCode =
+                safe_cast<error_code_i>(object[jss::error_code].asInt());
+        if (object.isMember(jss::error_message))
+            parsed.rpcMessage = object[jss::error_message].asString();
+        if (object.isMember(jss::error))
+            parsed.rpcError = object[jss::error].asString();
+        if (object.isMember(jss::error_exception))
+            parsed.rpcException = object[jss::error_exception].asString();
+    };
+    ParsedResult parsed;
+    if (jr.isObject() && jr.isMember(jss::result))
+    {
+        auto const& result = jr[jss::result];
+        if (result.isMember(jss::engine_result_code))
+            parsed.ter = TER::fromInt(result[jss::engine_result_code].asInt());
+        else
+            error(parsed, result);
+    }
     else
-        // Use an error code that is not used anywhere in the transaction engine
-        // to distinguish this case.
-        ter = telENV_RPC_FAILED;
-    return std::make_pair(ter, isTesSuccess(ter) || isTecClaim(ter));
+        error(parsed, jr);
+
+    parsed.didApply = isTesSuccess(parsed.ter) || isTecClaim(parsed.ter);
+    return parsed;
 }
 
 void
 Env::submit(JTx const& jt)
 {
-    bool didApply;
+    ParsedResult parsedResult;
     auto const jr = [&]() {
         if (jt.stx)
         {
@@ -298,7 +320,8 @@ Env::submit(JTx const& jt)
             jt.stx->add(s);
             auto const jr = rpc("submit", strHex(s.slice()));
 
-            std::tie(ter_, didApply) = parseResult(jr);
+            parsedResult = parseResult(jr);
+            ter_ = parsedResult.ter;
 
             return jr;
         }
@@ -306,20 +329,18 @@ Env::submit(JTx const& jt)
         {
             // Parsing failed or the JTx is
             // otherwise missing the stx field.
-            ter_ = temMALFORMED;
-            didApply = false;
+            parsedResult.ter = ter_ = temMALFORMED;
+            parsedResult.didApply = false;
 
             return Json::Value();
         }
     }();
-    return postconditions(jt, ter_, didApply, jr);
+    return postconditions(jt, parsedResult, jr);
 }
 
 void
 Env::sign_and_submit(JTx const& jt, Json::Value params)
 {
-    bool didApply;
-
     auto const account = lookup(jt.jv[jss::Account].asString());
     auto const& passphrase = account.name();
 
@@ -348,24 +369,51 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
     if (!txid_.parseHex(jr[jss::result][jss::tx_json][jss::hash].asString()))
         txid_.zero();
 
-    std::tie(ter_, didApply) = parseResult(jr);
+    ParsedResult const parsedResult = parseResult(jr);
+    ter_ = parsedResult.ter;
 
-    return postconditions(jt, ter_, didApply, jr);
+    return postconditions(jt, parsedResult, jr);
 }
 
 void
 Env::postconditions(
     JTx const& jt,
-    TER ter,
-    bool didApply,
+    ParsedResult const& parsed,
     Json::Value const& jr)
 {
-    if (jt.ter &&
-        !test.expect(
-            ter == *jt.ter,
-            "apply: Got " + transToken(ter) + " (" + transHuman(ter) +
-                "); Expected " + transToken(*jt.ter) + " (" +
-                transHuman(*jt.ter) + ")"))
+    bool bad =
+        (jt.ter &&
+         !test.expect(
+             parsed.ter == *jt.ter,
+             "apply: Got " + transToken(parsed.ter) + " (" +
+                 transHuman(parsed.ter) + "); Expected " + transToken(*jt.ter) +
+                 " (" + transHuman(*jt.ter) + ")"));
+    using namespace std::string_literals;
+    bad = (jt.rpcCode &&
+           !test.expect(
+               parsed.rpcCode == jt.rpcCode->first &&
+                   parsed.rpcMessage == jt.rpcCode->second,
+               "apply: Got RPC result "s +
+                   RPC::get_error_info(parsed.rpcCode).token.c_str() + " (" +
+                   parsed.rpcMessage + "); Expected " +
+                   RPC::get_error_info(jt.rpcCode->first).token.c_str() + " (" +
+                   jt.rpcCode->second + ")")) ||
+        bad;
+    // If we have an rpcCode (just checked), then the rpcException check is
+    // optional - the 'error' field may not be defined, but if it is, it must
+    // match rpcError.
+    bad =
+        (jt.rpcException &&
+         !test.expect(
+             (jt.rpcCode && parsed.rpcError.empty()) ||
+                 (parsed.rpcError == jt.rpcException->first &&
+                  (!jt.rpcException->second ||
+                   parsed.rpcException == *jt.rpcException->second)),
+             "apply: Got RPC result "s + parsed.rpcError + " (" +
+                 parsed.rpcException + "); Expected " + jt.rpcException->first +
+                 " (" + jt.rpcException->second.value_or("n/a") + ")")) ||
+        bad;
+    if (bad)
     {
         test.log << pretty(jt.jv) << std::endl;
         if (jr)

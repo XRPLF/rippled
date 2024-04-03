@@ -748,8 +748,12 @@ public:
             params[jss::fee_mult_max] = 1;
             params[jss::fee_div_max] = 2;
             // RPC errors result in telENV_RPC_FAILED
-            envs(noop(alice), fee(none), seq(none), ter(telENV_RPC_FAILED))(
-                params);
+            envs(
+                noop(alice),
+                fee(none),
+                seq(none),
+                rpc(rpcHIGH_FEE,
+                    "Fee of 10 exceeds the requested tx limit of 5"))(params);
 
             auto tx = env.tx();
             BEAST_EXPECT(!tx);
