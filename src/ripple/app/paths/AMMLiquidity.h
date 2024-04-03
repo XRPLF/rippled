@@ -137,10 +137,17 @@ private:
     TAmounts<TIn, TOut>
     generateFibSeqOffer(TAmounts<TIn, TOut> const& balances) const;
 
-    /** Generate max offer
+    /** Generate max offer.
+     * If `fixAMMOverflowOffer` is active, the offer is generated as:
+     * takerGets = 99% * balances.out takerPays = swapOut(takerGets).
+     * Return nullopt if takerGets is 0 or takerGets == balances.out.
+     *
+     * If `fixAMMOverflowOffer` is not active, the offer is generated as:
+     * takerPays = max input amount;
+     * takerGets = swapIn(takerPays).
      */
-    AMMOffer<TIn, TOut>
-    maxOffer(TAmounts<TIn, TOut> const& balances) const;
+    std::optional<AMMOffer<TIn, TOut>>
+    maxOffer(TAmounts<TIn, TOut> const& balances, Rules const& rules) const;
 };
 
 }  // namespace ripple

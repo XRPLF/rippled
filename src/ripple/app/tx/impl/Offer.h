@@ -163,6 +163,15 @@ public:
         // CLOB offer pays the transfer fee
         return {ofrInRate, ofrOutRate};
     }
+
+    /** Check any required invariant. Limit order book offer
+     * always returns true.
+     */
+    bool
+    checkInvariant(TAmounts<TIn, TOut> const&, beast::Journal j) const
+    {
+        return true;
+    }
 };
 
 using Offer = TOffer<>;

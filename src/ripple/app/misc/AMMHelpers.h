@@ -134,7 +134,7 @@ withinRelativeDistance(
 template <typename Amt>
     requires(
         std::is_same_v<Amt, STAmount> || std::is_same_v<Amt, IOUAmount> ||
-        std::is_same_v<Amt, XRPAmount>)
+        std::is_same_v<Amt, XRPAmount> || std::is_same_v<Amt, Number>)
 bool
 withinRelativeDistance(Amt const& calc, Amt const& req, Number const& dist)
 {
