@@ -152,19 +152,19 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
     {
         if (votesYes)
         {
-            JLOG(j_.trace()) << "Peer " << peer << " votes YES on " << tx_.id();
+            JLOG(j_.debug()) << "Peer " << peer << " votes YES on " << tx_.id();
             ++yays_;
         }
         else
         {
-            JLOG(j_.trace()) << "Peer " << peer << " votes NO on " << tx_.id();
+            JLOG(j_.debug()) << "Peer " << peer << " votes NO on " << tx_.id();
             ++nays_;
         }
     }
     // changes vote to yes
     else if (votesYes && !it->second)
     {
-        JLOG(j_.trace()) << "Peer " << peer << " now votes YES on " << tx_.id();
+        JLOG(j_.debug()) << "Peer " << peer << " now votes YES on " << tx_.id();
         --nays_;
         ++yays_;
         it->second = true;
@@ -172,7 +172,7 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
     // changes vote to no
     else if (!votesYes && it->second)
     {
-        JLOG(j_.trace()) << "Peer " << peer << " now votes NO on " << tx_.id();
+        JLOG(j_.debug()) << "Peer " << peer << " now votes NO on " << tx_.id();
         ++nays_;
         --yays_;
         it->second = false;
@@ -238,17 +238,17 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
 
     if (newPosition == ourVote_)
     {
-        JLOG(j_.trace()) << "No change (" << (ourVote_ ? "YES" : "NO")
-                         << ") : weight " << weight << ", percent "
-                         << percentTime;
-        JLOG(j_.trace()) << Json::Compact{getJson()};
+        JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO")
+                        << ") : weight " << weight << ", percent "
+                        << percentTime;
+        JLOG(j_.debug()) << Json::Compact{getJson()};
         return false;
     }
 
     ourVote_ = newPosition;
-    JLOG(j_.trace()) << "We now vote " << (ourVote_ ? "YES" : "NO") << " on "
+    JLOG(j_.debug()) << "We now vote " << (ourVote_ ? "YES" : "NO") << " on "
                      << tx_.id();
-    JLOG(j_.trace()) << Json::Compact{getJson()};
+    JLOG(j_.debug()) << Json::Compact{getJson()};
     return true;
 }
 

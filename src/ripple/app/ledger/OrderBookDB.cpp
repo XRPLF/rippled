@@ -47,7 +47,7 @@ OrderBookDB::setup(std::shared_ptr<ReadView const> const& ledger)
 
     if (seq != 0)
     {
-        if ((seq > ledger->seq()) && ((ledger->seq() - seq) < 25600))
+        if ((ledger->seq() > seq) && ((ledger->seq() - seq) < 25600))
             return;
 
         if ((ledger->seq() <= seq) && ((seq - ledger->seq()) < 16))

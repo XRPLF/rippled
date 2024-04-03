@@ -17,25 +17,41 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_SUBMITSYNC_H_INCLUDED
-#define RIPPLE_BASICS_SUBMITSYNC_H_INCLUDED
+#ifndef RIPPLE_TX_SETORACLE_H_INCLUDED
+#define RIPPLE_TX_SETORACLE_H_INCLUDED
+
+#include <ripple/app/tx/impl/Transactor.h>
 
 namespace ripple {
-namespace RPC {
 
 /**
- * Possible values for defining synchronous behavior of the transaction
- * submission API.
- *   1) sync (default): Process transactions in a batch immediately,
- *       and return only once the transaction has been processed.
- *   2) async: Put transaction into the batch for the next processing
- *       interval and return immediately.
- *   3) wait: Put transaction into the batch for the next processing
- *       interval and return only after it is processed.
- */
-enum class SubmitSync { sync, async, wait };
+    Price Oracle is a system that acts as a bridge between
+    a blockchain network and the external world, providing off-chain price data
+    to decentralized applications (dApps) on the blockchain. This implementation
+    conforms to the requirements specified in the XLS-47d.
 
-}  // namespace RPC
+    The SetOracle transactor implements creating or updating Oracle objects.
+*/
+
+class SetOracle : public Transactor
+{
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
+    explicit SetOracle(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
+    TER
+    doApply() override;
+};
+
 }  // namespace ripple
 
-#endif
+#endif  // RIPPLE_TX_SETORACLE_H_INCLUDED

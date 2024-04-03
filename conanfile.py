@@ -36,6 +36,7 @@ class Xrpl(ConanFile):
         'soci/4.0.3',
         'sqlite3/3.42.0',
         'zlib/1.2.13',
+        'xxhash/0.8.2',
     ]
 
     default_options = {
@@ -86,6 +87,7 @@ class Xrpl(ConanFile):
         'soci:shared': False,
         'soci:with_sqlite3': True,
         'soci:with_boost': True,
+        'xxhash:shared': False,
     }
 
     def set_version(self):
@@ -147,9 +149,9 @@ class Xrpl(ConanFile):
     def package_info(self):
         libxrpl = self.cpp_info.components['libxrpl']
         libxrpl.libs = [
-            'libxrpl_core.a',
-            'libed25519.a',
-            'libsecp256k1.a',
+            'xrpl_core',
+            'ed25519',
+            'secp256k1',
         ]
         # TODO: Fix the protobufs to include each other relative to
         # `include/`, not `include/ripple/proto/`.
@@ -159,4 +161,5 @@ class Xrpl(ConanFile):
             'openssl::crypto',
             'date::date',
             'grpc::grpc++',
+            'xxHash::xxhash',
         ]

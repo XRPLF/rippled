@@ -64,7 +64,8 @@ enum TELcodes : TERUnderlyingType {
     telCAN_NOT_QUEUE_FULL,
     telWRONG_NETWORK,
     telREQUIRES_NETWORK_ID,
-    telNETWORK_ID_MAKES_TX_NON_CANONICAL
+    telNETWORK_ID_MAKES_TX_NON_CANONICAL,
+    telENV_RPC_FAILED
 };
 
 //------------------------------------------------------------------------------
@@ -135,6 +136,9 @@ enum TEMcodes : TERUnderlyingType {
     temXCHAIN_BRIDGE_BAD_REWARD_AMOUNT,
 
     temEMPTY_DID,
+
+    temARRAY_EMPTY,
+    temARRAY_TOO_LARGE,
 };
 
 //------------------------------------------------------------------------------
@@ -218,7 +222,6 @@ enum TERcodes : TERUnderlyingType {
     terQUEUED,       // Transaction is being held in TxQ until fee drops
     terPRE_TICKET,   // Ticket is not yet in ledger but might be on its way
     terNO_AMM,       // AMM doesn't exist for the asset pair
-    terSUBMITTED     // Has been submitted async.
 };
 
 //------------------------------------------------------------------------------
@@ -331,7 +334,11 @@ enum TECcodes : TERUnderlyingType {
     tecXCHAIN_SELF_COMMIT = 184,
     tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR = 185,
     tecXCHAIN_CREATE_ACCOUNT_DISABLED = 186,
-    tecEMPTY_DID = 187
+    tecEMPTY_DID = 187,
+    tecINVALID_UPDATE_TIME = 188,
+    tecTOKEN_PAIR_NOT_FOUND = 189,
+    tecARRAY_EMPTY = 190,
+    tecARRAY_TOO_LARGE = 191
 };
 
 //------------------------------------------------------------------------------

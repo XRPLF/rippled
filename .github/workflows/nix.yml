@@ -1,5 +1,16 @@
 name: nix
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    # If the branches list is ever changed, be sure to change it on all
+    # build/test jobs (nix, macos, windows)
+    branches:
+      # Always build the package branches
+      - develop
+      - release
+      - master
+      # Branches that opt-in to running
+      - 'ci/**'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -49,12 +60,12 @@ jobs:
               cc: /usr/bin/clang-14
               cxx: /usr/bin/clang++-14
     runs-on: [self-hosted, heavy]
-    container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
+    container: rippleci/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
@@ -62,8 +73,6 @@ jobs:
           cmake --version
           env | sort
       - name: configure Conan
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         run: |
           conan profile new default --detect
           conan profile update settings.compiler.cppstd=20 default
@@ -73,33 +82,17 @@ jobs:
           conan profile update env.CC=${{ matrix.profile.cc }} default
           conan profile update env.CXX=${{ matrix.profile.cxx }} default
           conan profile update conf.tools.build:compiler_executables='{"c": "${{ matrix.profile.cc }}", "cpp": "${{ matrix.profile.cxx }}"}' default
-          # Do not quote the URL. An empty string will be accepted (with
-          # a non-fatal warning), but a missing argument will not.
-          conan remote add ripple ${{ env.CONAN_URL }} --insert 0
-      - name: try to authenticate to ripple Conan remote
-        id: remote
-        run: |
-          echo outcome=$(conan user --remote ripple ${{ secrets.CONAN_USERNAME }} --password ${{ secrets.CONAN_TOKEN }} >&2 && echo success || echo failure) | tee ${GITHUB_OUTPUT}
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
         run: tar -czf conan.tar -C ~/.conan .
-      - name: list missing binaries
-        id: binaries
-        # Print the list of dependencies that would need to be built locally.
-        # A non-empty list means we have "failed" to cache binaries remotely.
-        run: |
-          echo missing=$(conan info . --build missing --settings build_type=${{ matrix.configuration }} --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
       - name: build dependencies
-        if: (steps.binaries.outputs.missing != '[]')
         uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+          CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
+          CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:
           configuration: ${{ matrix.configuration }}
-      - name: upload dependencies to remote
-        if: (steps.binaries.outputs.missing != '[]') && (steps.remote.outputs.outcome == 'success')
-        run: conan upload --remote ripple '*' --all --parallel --confirm
-      - name: recreate archive with dependencies
-        if: (steps.binaries.outputs.missing != '[]') && (steps.remote.outputs.outcome == 'failure')
-        run: tar -czf conan.tar -C ~/.conan .
       - name: upload archive
         uses: actions/upload-artifact@v3
         with:
@@ -125,7 +118,56 @@ jobs:
           - "-Dunity=ON"
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: thejohnfreeman/rippled-build-ubuntu:12e19cd9034b
+    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    env:
+      build_dir: .build
+    steps:
+      - name: download cache
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+      - name: extract cache
+        run: |
+          mkdir -p ~/.conan
+          tar -xzf conan.tar -C ~/.conan
+      - name: check environment
+        run: |
+          env | sort
+          echo ${PATH} | tr ':' '\n'
+          conan --version
+          cmake --version
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: dependencies
+        uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+        with:
+          configuration: ${{ matrix.configuration }}
+      - name: build
+        uses: ./.github/actions/build
+        with:
+          generator: Ninja
+          configuration: ${{ matrix.configuration }}
+          cmake-args: ${{ matrix.cmake-args }}
+      - name: test
+        run: |
+          ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
+
+
+  coverage:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux
+        compiler:
+          - gcc
+        configuration:
+          - Debug
+    needs: dependencies
+    runs-on: [self-hosted, heavy]
+    container: rippleci/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
     steps:
@@ -142,12 +184,15 @@ jobs:
           echo ${PATH} | tr ':' '\n'
           conan --version
           cmake --version
+          gcovr --version
           env | sort
           ls ~/.conan
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: dependencies
         uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         with:
           configuration: ${{ matrix.configuration }}
       - name: build
@@ -155,7 +200,31 @@ jobs:
         with:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
-          cmake-args: ${{ matrix.cmake-args }}
-      - name: test
+          cmake-args: >-
+            -Dcoverage=ON
+            -Dcoverage_format=xml
+            -DCODE_COVERAGE_VERBOSE=ON
+            -DCMAKE_CXX_FLAGS="-O0"
+            -DCMAKE_C_FLAGS="-O0"
+          cmake-target: coverage
+      - name: build
+        shell: bash
         run: |
-          ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
+          mv "${build_dir}/coverage.xml" ./
+      - name: archive coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage.xml
+          path: coverage.xml
+          retention-days: 30
+      - name: upload coverage report
+        uses: wandalen/wretry.action@v1.3.0
+        with:
+          action: codecov/codecov-action@v4
+          with: |
+            files: coverage.xml
+            fail_ci_if_error: true
+            verbose: true
+            token: ${{ secrets.CODECOV_TOKEN }}
+          attempt_limit: 5
+          attempt_delay: 35000 # in milliseconds

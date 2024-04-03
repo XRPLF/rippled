@@ -25,9 +25,9 @@
 #include <ripple/app/rdb/RelationalDatabase.h>
 #include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/ledger/View.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/nftPageMask.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
@@ -792,7 +792,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
     return seed;
 }
 
-std::pair<PublicKey, SecretKey>
+std::optional<std::pair<PublicKey, SecretKey>>
 keypairForSignature(
     Json::Value const& params,
     Json::Value& error,
@@ -934,7 +934,7 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 20>
+        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 21>
             types{
                 {{jss::account, ltACCOUNT_ROOT},
                  {jss::amendments, ltAMENDMENTS},
@@ -956,7 +956,8 @@ chooseLedgerEntryType(Json::Value const& params)
                  {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
                  {jss::xchain_owned_create_account_claim_id,
                   ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
-                 {jss::did, ltDID}}};
+                 {jss::did, ltDID},
+                 {jss::oracle, ltORACLE}}};
 
         auto const& p = params[jss::type];
         if (!p.isString())
@@ -1125,26 +1126,5 @@ getLedgerByContext(RPC::JsonContext& context)
     return RPC::make_error(
         rpcNOT_READY, "findCreate failed to return an inbound ledger");
 }
-
-ripple::Expected<RPC::SubmitSync, Json::Value>
-getSubmitSyncMode(Json::Value const& params)
-{
-    using enum RPC::SubmitSync;
-    if (params.isMember(jss::sync_mode))
-    {
-        std::string const syncMode = params[jss::sync_mode].asString();
-        if (syncMode == "async")
-            return async;
-        else if (syncMode == "wait")
-            return wait;
-        else if (syncMode != "sync")
-            return Unexpected(RPC::make_error(
-                rpcINVALID_PARAMS,
-                "sync_mode parameter must be one of \"sync\", \"async\", or "
-                "\"wait\"."));
-    }
-    return sync;
-}
-
 }  // namespace RPC
 }  // namespace ripple
