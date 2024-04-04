@@ -1128,6 +1128,41 @@ private:
                 expectLedgerEntryRoot(env, carol, XRPAmount{28'999'999'990}));
         });
 
+        // equal asset deposit: the specified value of LPTokens triggers a
+        // rounding-down of LPTokens in the adjustLPToken calculations
+        testAMM([&](AMM& ammAlice, Env& env) {
+            const IOUAmount newLPTokens{UINT64_C(488088'4817015109), -10};
+            ammAlice.deposit(DepositArg{.account = carol, .tokens =
+                                                              newLPTokens});
+
+            // fraction of newLPTokens/(existing LPToken balance). Carol is
+            // seeking additional 488088.4817015109 LPTokens. The existing
+            // LPToken balance is 1e7
+            const Number fr = Number{UINT64_C(488088'4817015109), -10}/1e7;
+
+            // The below equations are based on Equation 1, 2 from XLS-30d
+            // specification, Section: 2.3.1.2
+            const Number deltaXRP = fr * 1e10;
+            const Number deltaUSD = fr * 1e4;
+
+            const STAmount depositUSD = STAmount{USD, deltaUSD.mantissa(),
+                                                 deltaUSD.exponent()};
+
+            const STAmount depositXRP = STAmount{XRP, deltaXRP.mantissa(),
+                                                 deltaXRP.exponent()};
+
+            // initial LPTokens (1e7) + newLPTokens
+            BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000) + depositXRP,
+                                                 USD(10'000) + depositUSD,
+                                                 IOUAmount{1, 7} + newLPTokens));
+
+            // 30,000 less deposited depositUSD
+            BEAST_EXPECT(expectLine(env, carol, USD(30'000) - depositUSD));
+            // 30,000 less deposited depositXRP and 10 drops tx fee
+            BEAST_EXPECT(expectLedgerEntryRoot(env, carol, XRP(30'000) -
+                                                   depositXRP - txfee(env, 1)));
+        });
+
         // Equal limit deposit: deposit USD100 and XRP proportionally
         // to the pool composition not to exceed 100XRP. If the amount
         // exceeds 100XRP then deposit 100XRP and USD proportionally
