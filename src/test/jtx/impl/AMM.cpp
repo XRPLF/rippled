@@ -700,7 +700,8 @@ AMM::bid(BidArg const& arg)
     bidMax_ = std::nullopt;
 
     Json::Value jv;
-    jv[jss::Account] = arg.account ? arg.account->human() : creatorAccount_.human();
+    jv[jss::Account] =
+        arg.account ? arg.account->human() : creatorAccount_.human();
     setTokens(jv, arg.assets);
     auto getBid = [&](auto const& bid) {
         if (std::holds_alternative<int>(bid))
