@@ -3876,15 +3876,9 @@ private:
                 std::nullopt,
                 std::nullopt,
                 ter(temDISABLED));
-            amm.withdraw(
-                alice, 100, std::nullopt, std::nullopt, ter(temMALFORMED));
-            amm.deposit(
-                alice,
-                USD(100),
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(temDISABLED));
+            amm.withdraw({.tokens = 100, .err = ter(temMALFORMED)});
+            amm.withdraw({.err = ter(temDISABLED)});
+            amm.deposit({.asset1In = USD(100), .err = ter(temDISABLED)});
             amm.ammDelete(alice, ter(temDISABLED));
         }
     }

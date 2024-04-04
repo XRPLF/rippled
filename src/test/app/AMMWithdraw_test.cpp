@@ -40,19 +40,6 @@ namespace test {
 struct AMMWithdraw_test : public jtx::AMMTest
 {
     void
-    testDisabled()
-    {
-        using namespace jtx;
-
-        // Each testAMM() call makes 27 tests.
-        testAMM([&](AMM& ammAlice, Env& env) {
-            env.disableFeature(featureAMM);
-            WithdrawArg args{.err = ter(temDISABLED)};
-            ammAlice.withdraw(args);
-        });
-    }
-
-    void
     testMalformed()
     {
         using namespace jtx;
@@ -171,7 +158,6 @@ struct AMMWithdraw_test : public jtx::AMMTest
     void
     run() override
     {
-        testDisabled();
         testMalformed();
         testOther();
     }
