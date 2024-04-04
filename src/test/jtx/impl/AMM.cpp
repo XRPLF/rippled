@@ -668,21 +668,20 @@ AMM::bid(
     std::optional<ter> const& ter)
 {
     submit(
-        bidJson(account, bidMin, bidMax, authAccounts, flags, seq, assets, ter),
+        bid({
+            .account = account,
+            .bidMin = bidMin,
+            .bidMax = bidMax,
+            .authAccounts = authAccounts,
+            .flags = flags,
+            .assets = assets,
+        }),
         seq,
         ter);
 }
 
 Json::Value
-AMM::bidJson(
-    std::optional<Account> const& account,
-    std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMin,
-    std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMax,
-    std::vector<Account> const& authAccounts,
-    std::optional<std::uint32_t> const& flags,
-    std::optional<jtx::seq> const& seq,
-    std::optional<std::pair<Issue, Issue>> const& assets,
-    std::optional<ter> const& ter)
+AMM::bid(BidArg const& arg)
 {
     if (auto const amm =
             env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
@@ -701,8 +700,8 @@ AMM::bidJson(
     bidMax_ = std::nullopt;
 
     Json::Value jv;
-    jv[jss::Account] = account ? account->human() : creatorAccount_.human();
-    setTokens(jv, assets);
+    jv[jss::Account] = arg.account ? arg.account->human() : creatorAccount_.human();
+    setTokens(jv, arg.assets);
     auto getBid = [&](auto const& bid) {
         if (std::holds_alternative<int>(bid))
             return STAmount{lptIssue_, std::get<int>(bid)};
@@ -711,22 +710,22 @@ AMM::bidJson(
         else
             return std::get<STAmount>(bid);
     };
-    if (bidMin)
+    if (arg.bidMin)
     {
-        STAmount saTokens = getBid(*bidMin);
+        STAmount saTokens = getBid(*arg.bidMin);
         saTokens.setJson(jv[jss::BidMin]);
         bidMin_ = saTokens.iou();
     }
-    if (bidMax)
+    if (arg.bidMax)
     {
-        STAmount saTokens = getBid(*bidMax);
+        STAmount saTokens = getBid(*arg.bidMax);
         saTokens.setJson(jv[jss::BidMax]);
         bidMax_ = saTokens.iou();
     }
-    if (authAccounts.size() > 0)
+    if (arg.authAccounts.size() > 0)
     {
         Json::Value accounts(Json::arrayValue);
-        for (auto const& account : authAccounts)
+        for (auto const& account : arg.authAccounts)
         {
             Json::Value acct;
             Json::Value authAcct;
@@ -736,8 +735,8 @@ AMM::bidJson(
         }
         jv[jss::AuthAccounts] = accounts;
     }
-    if (flags)
-        jv[jss::Flags] = *flags;
+    if (arg.flags)
+        jv[jss::Flags] = *arg.flags;
     jv[jss::TransactionType] = jss::AMMBid;
     if (fee_ != 0)
         jv[jss::Fee] = std::to_string(fee_);

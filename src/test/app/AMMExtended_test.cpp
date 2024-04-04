@@ -3644,7 +3644,7 @@ private:
         ammAlice.vote({}, 1'000);
         BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
 
-        ammAlice.bid(alice, 100);
+        env(ammAlice.bid({ .account = alice, .bidMin = 100 }), msig(becky, bogie));
         BEAST_EXPECT(ammAlice.expectAuctionSlot(100, 0, IOUAmount{4'000}));
         // 4000 tokens burnt
         BEAST_EXPECT(ammAlice.expectBalances(

@@ -2412,141 +2412,84 @@ private:
 
         testAMM([&](AMM& ammAlice, Env& env) {
             // Invalid flags
-            ammAlice.bid(
-                carol,
-                0,
-                std::nullopt,
-                {},
-                tfWithdrawAll,
-                std::nullopt,
-                std::nullopt,
-                ter(temINVALID_FLAG));
+            env(ammAlice.bid({
+                .account = carol,
+                .bidMin = 0,
+                .flags = tfWithdrawAll,
+            }), ter(temINVALID_FLAG));
 
             ammAlice.deposit(carol, 1'000'000);
             // Invalid Bid price <= 0
             for (auto bid : {0, -100})
             {
-                ammAlice.bid(
-                    carol,
-                    bid,
-                    std::nullopt,
-                    {},
-                    std::nullopt,
-                    std::nullopt,
-                    std::nullopt,
-                    ter(temBAD_AMOUNT));
-                ammAlice.bid(
-                    carol,
-                    std::nullopt,
-                    bid,
-                    {},
-                    std::nullopt,
-                    std::nullopt,
-                    std::nullopt,
-                    ter(temBAD_AMOUNT));
+                env(ammAlice.bid({
+                    .account = carol,
+                    .bidMin = bid,
+                }), ter(temBAD_AMOUNT));
+                env(ammAlice.bid({
+                    .account = carol,
+                    .bidMax = bid,
+                }), ter(temBAD_AMOUNT));
             }
 
             // Invlaid Min/Max combination
-            ammAlice.bid(
-                carol,
-                200,
-                100,
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_INVALID_TOKENS));
+            env(ammAlice.bid({
+                .account = carol,
+                .bidMin = 200,
+                .bidMax = 100,
+            }), ter(tecAMM_INVALID_TOKENS));
 
             // Invalid Account
             Account bad("bad");
             env.memoize(bad);
-            ammAlice.bid(
-                bad,
-                std::nullopt,
-                100,
-                {},
-                std::nullopt,
-                seq(1),
-                std::nullopt,
-                ter(terNO_ACCOUNT));
+            env(ammAlice.bid({
+                .account = bad,
+                .bidMax = 100,
+            }), seq(1), ter(terNO_ACCOUNT));
 
             // Account is not LP
             Account const dan("dan");
             env.fund(XRP(1'000), dan);
-            ammAlice.bid(
-                dan,
-                100,
-                std::nullopt,
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_INVALID_TOKENS));
-            ammAlice.bid(
-                dan,
-                std::nullopt,
-                std::nullopt,
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_INVALID_TOKENS));
+            env(ammAlice.bid({
+                .account = dan,
+                .bidMin = 100,
+            }), ter(tecAMM_INVALID_TOKENS));
+            env(ammAlice.bid({
+                .account = dan,
+            }), ter(tecAMM_INVALID_TOKENS));
 
             // Auth account is invalid.
-            ammAlice.bid(
-                carol,
-                100,
-                std::nullopt,
-                {bob},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(terNO_ACCOUNT));
+            env(ammAlice.bid({
+                .account = carol,
+                .bidMin = 100,
+                .authAccounts = {bob},
+            }), ter(terNO_ACCOUNT));
 
             // Invalid Assets
-            ammAlice.bid(
-                alice,
-                std::nullopt,
-                100,
-                {},
-                std::nullopt,
-                std::nullopt,
-                {{USD, GBP}},
-                ter(terNO_AMM));
+            env(ammAlice.bid({
+                .account = alice,
+                .bidMax = 100,
+                .assets = {{USD, GBP}},
+            }), ter(terNO_AMM));
 
             // Invalid Min/Max issue
-            ammAlice.bid(
-                alice,
-                std::nullopt,
-                STAmount{USD, 100},
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(temBAD_AMM_TOKENS));
-            ammAlice.bid(
-                alice,
-                STAmount{USD, 100},
-                std::nullopt,
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(temBAD_AMM_TOKENS));
+            env(ammAlice.bid({
+                .account = alice,
+                .bidMax = STAmount{USD, 100},
+            }), ter(temBAD_AMM_TOKENS));
+            env(ammAlice.bid({
+                .account = alice,
+                .bidMin = STAmount{USD, 100},
+            }), ter(temBAD_AMM_TOKENS));
         });
 
         // Invalid AMM
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.withdrawAll(alice);
-            ammAlice.bid(
-                alice,
-                std::nullopt,
-                100,
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(terNO_AMM));
+            env(ammAlice.bid({
+                .account = alice,
+                .bidMax = 100,
+            }), ter(terNO_AMM));
         });
 
         // More than four Auth accounts.
@@ -2558,15 +2501,11 @@ private:
             env.fund(XRP(1'000), bob, ed, bill, scott, james);
             env.close();
             ammAlice.deposit(carol, 1'000'000);
-            ammAlice.bid(
-                carol,
-                100,
-                std::nullopt,
-                {bob, ed, bill, scott, james},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(temMALFORMED));
+            env(ammAlice.bid({
+                .account = carol,
+                .bidMin = 100,
+                .authAccounts = {bob, ed, bill, scott, james},
+            }), ter(temMALFORMED));
         });
 
         // Bid price exceeds LP owned tokens
@@ -2574,36 +2513,23 @@ private:
             fund(env, gw, {bob}, XRP(1'000), {USD(100)}, Fund::Acct);
             ammAlice.deposit(carol, 1'000'000);
             ammAlice.deposit(bob, 10);
-            ammAlice.bid(
-                carol,
-                1'000'001,
-                std::nullopt,
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_INVALID_TOKENS));
-            ammAlice.bid(
-                carol,
-                std::nullopt,
-                1'000'001,
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_INVALID_TOKENS));
-            ammAlice.bid(carol, 1'000);
+            env(ammAlice.bid({
+                .account = carol,
+                .bidMin = 1'000'001,
+            }), ter(tecAMM_INVALID_TOKENS));
+            env(ammAlice.bid({
+                .account = carol,
+                .bidMax = 1'000'001,
+            }), ter(tecAMM_INVALID_TOKENS));
+            env(ammAlice.bid({
+                .account = carol,
+                .bidMin = 1'000,
+            }));
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{1'000}));
             // Slot purchase price is more than 1000 but bob only has 10 tokens
-            ammAlice.bid(
-                bob,
-                std::nullopt,
-                std::nullopt,
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_INVALID_TOKENS));
+            env(ammAlice.bid({
+                .account = bob,
+            }), ter(tecAMM_INVALID_TOKENS));
         });
 
         // Bid all tokens, still own the slot
@@ -2616,18 +2542,13 @@ private:
             env.trust(STAmount{lpIssue, 50}, bob);
             env(pay(gw, alice, STAmount{lpIssue, 100}));
             env(pay(gw, bob, STAmount{lpIssue, 50}));
-            amm.bid(alice, 100);
+            env(amm.bid({ .account = alice, .bidMin = 100 }));
             // Alice doesn't have any more tokens, but
             // she still owns the slot.
-            amm.bid(
-                bob,
-                std::nullopt,
-                50,
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_FAILED));
+            env(amm.bid({
+                .account = bob,
+                .bidMax = 50,
+            }), ter(tecAMM_FAILED));
         }
     }
 
@@ -2643,7 +2564,7 @@ private:
         // Bid 110 tokens. Pay bidMin.
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(carol, 1'000'000);
-            ammAlice.bid(carol, 110);
+            env(ammAlice.bid({ .account = carol, .bidMin = 110 }));
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{110}));
             // 110 tokens are burned.
             BEAST_EXPECT(ammAlice.expectBalances(
@@ -2654,12 +2575,12 @@ private:
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(carol, 1'000'000);
             // Bid exactly 110. Pay 110 because the pay price is < 110.
-            ammAlice.bid(carol, 110, 110);
+            env(ammAlice.bid({ .account = carol, .bidMin = 110, .bidMax = 110 }));
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{110}));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11'000), USD(11'000), IOUAmount{10'999'890}));
             // Bid exactly 180-200. Pay 180 because the pay price is < 180.
-            ammAlice.bid(alice, 180, 200);
+            env(ammAlice.bid({ .account = alice, .bidMin = 180, .bidMax = 200 }));
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{180}));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11'000), USD(11'000), IOUAmount{10'999'814'5, -1}));
@@ -2669,43 +2590,34 @@ private:
         testAMM([&](AMM& ammAlice, Env& env) {
             ammAlice.deposit(carol, 1'000'000);
             // Bid, pay bidMin.
-            ammAlice.bid(carol, 110);
+            env(ammAlice.bid({ .account = carol, .bidMin = 110 }));
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{110}));
 
             fund(env, gw, {bob}, {USD(10'000)}, Fund::Acct);
             ammAlice.deposit(bob, 1'000'000);
             // Bid, pay the computed price.
-            ammAlice.bid(bob);
+            env(ammAlice.bid({ .account = bob }));
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount(1155, -1)));
 
             // Bid bidMax fails because the computed price is higher.
-            ammAlice.bid(
-                carol,
-                std::nullopt,
-                120,
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_FAILED));
+            env(ammAlice.bid({
+                .account = carol,
+                .bidMax = 120,
+            }), ter(tecAMM_FAILED));
             // Bid MaxSlotPrice succeeds - pay computed price
-            ammAlice.bid(carol, std::nullopt, 600);
+            env(ammAlice.bid({ .account = carol, .bidMax = 600 }));
             BEAST_EXPECT(
                 ammAlice.expectAuctionSlot(0, 0, IOUAmount{121'275, -3}));
 
             // Bid Min/MaxSlotPrice fails because the computed price is not in
             // range
-            ammAlice.bid(
-                carol,
-                10,
-                100,
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_FAILED));
+            env(ammAlice.bid({
+                .account = carol,
+                .bidMin = 10,
+                .bidMax = 100,
+            }), ter(tecAMM_FAILED));
             // Bid Min/MaxSlotPrice succeeds - pay computed price
-            ammAlice.bid(carol, 100, 600);
+            env(ammAlice.bid({ .account = carol, .bidMin = 100, .bidMax = 600 }));
             BEAST_EXPECT(
                 ammAlice.expectAuctionSlot(0, 0, IOUAmount{127'33875, -5}));
         });
@@ -2766,7 +2678,11 @@ private:
                 ammAlice.deposit(carol, 500'000);
                 ammAlice.deposit(dan, 500'000);
                 auto ammTokens = ammAlice.getLPTokensBalance();
-                ammAlice.bid(carol, 120, std::nullopt, {bob, ed});
+                env(ammAlice.bid({
+                    .account = carol,
+                    .bidMin = 120,
+                    .authAccounts = {bob, ed},
+                }));
                 auto const slotPrice = IOUAmount{5'200};
                 ammTokens -= slotPrice;
                 BEAST_EXPECT(ammAlice.expectAuctionSlot(100, 0, slotPrice));
@@ -2876,10 +2792,10 @@ private:
             1'000);
 
         // Bid tiny amount
-        testAMM([&](AMM& ammAlice, Env&) {
+        testAMM([&](AMM& ammAlice, Env& env) {
             // Bid a tiny amount
             auto const tiny = Number{STAmount::cMinValue, STAmount::cMinOffset};
-            ammAlice.bid(alice, IOUAmount{tiny});
+            env(ammAlice.bid({ .account = alice, .bidMin = IOUAmount{tiny} }));
             // Auction slot purchase price is equal to the tiny amount
             // since the minSlotPrice is 0 with no trading fee.
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny}));
@@ -2887,8 +2803,10 @@ private:
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(10'000), USD(10'000), ammAlice.tokens()));
             // Bid the tiny amount
-            ammAlice.bid(
-                alice, IOUAmount{STAmount::cMinValue, STAmount::cMinOffset});
+            env(ammAlice.bid({
+                .account = alice,
+                .bidMin = IOUAmount{STAmount::cMinValue, STAmount::cMinOffset},
+            }));
             // Pay slightly higher price
             BEAST_EXPECT(ammAlice.expectAuctionSlot(
                 0, 0, IOUAmount{tiny * Number{105, -2}}));
@@ -2899,14 +2817,22 @@ private:
 
         // Reset auth account
         testAMM([&](AMM& ammAlice, Env& env) {
-            ammAlice.bid(alice, IOUAmount{100}, std::nullopt, {carol});
+            env(ammAlice.bid({
+                .account = alice,
+                .bidMin = IOUAmount{100},
+                .authAccounts = {carol},
+            }));
             BEAST_EXPECT(ammAlice.expectAuctionSlot({carol}));
-            ammAlice.bid(alice, IOUAmount{100});
+            env(ammAlice.bid({ .account = alice, .bidMin = IOUAmount{100} }));
             BEAST_EXPECT(ammAlice.expectAuctionSlot({}));
             Account bob("bob");
             Account dan("dan");
             fund(env, {bob, dan}, XRP(1'000));
-            ammAlice.bid(alice, IOUAmount{100}, std::nullopt, {bob, dan});
+            env(ammAlice.bid({
+                .account = alice,
+                .bidMin = IOUAmount{100},
+                .authAccounts = {bob, dan},
+            }));
             BEAST_EXPECT(ammAlice.expectAuctionSlot({bob, dan}));
         });
 
@@ -2921,7 +2847,7 @@ private:
             env(pay(gw, alice, STAmount{lpIssue, 500}));
             env(pay(gw, bob, STAmount{lpIssue, 50}));
             // Alice doesn't have anymore lp tokens
-            amm.bid(alice, 500);
+            env(amm.bid({ .account = alice, .bidMin = 500 }));
             BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{500}));
             BEAST_EXPECT(expectLine(env, alice, STAmount{lpIssue, 0}));
             // But trades with the discounted fee since she still owns the slot.
@@ -2944,7 +2870,7 @@ private:
             Env env(*this);
             fund(env, gw, {alice, bob}, XRP(2'000), {USD(2'000)});
             AMM amm(env, gw, XRP(1'000), USD(1'010), false, 1'000);
-            Json::Value tx = amm.bidJson(alice, 500);
+            Json::Value tx = amm.bid({ .account = alice, .bidMin = 500 });
 
             {
                 auto jtx = env.jt(tx, seq(1), fee(10));
@@ -3768,7 +3694,7 @@ private:
             ammAlice.vote(carol, 0);
             BEAST_EXPECT(ammAlice.expectTradingFee(0));
             // Carol bids
-            ammAlice.bid(carol, 100);
+            env(ammAlice.bid({ .account = carol, .bidMin = 100 }));
             BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{4'999'900}));
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{100}));
             BEAST_EXPECT(accountBalance(env, carol) == "22499999960");
@@ -3860,25 +3786,14 @@ private:
             Env env{*this, feature};
             fund(env, gw, {alice}, {USD(1'000)}, Fund::All);
             AMM amm(env, alice, XRP(1'000), USD(1'000), ter(temDISABLED));
-            amm.bid(
-                alice,
-                1000,
-                std::nullopt,
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(temMALFORMED));
-            amm.vote(
-                std::nullopt,
-                100,
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(temDISABLED));
-            amm.withdraw({.tokens = 100, .err = ter(temMALFORMED)});
-            amm.withdraw({.err = ter(temDISABLED)});
-            amm.deposit({.asset1In = USD(100), .err = ter(temDISABLED)});
+
+            env(amm.bid({.bidMax = 1000 }), ter(temMALFORMED));
+            env(amm.bid(BidArg{}), ter(temDISABLED));
+            amm.vote(VoteArg{.tfee = 100, .err = ter(temDISABLED)});
+            amm.withdraw(WithdrawArg{.tokens = 100, .err = ter(temMALFORMED)});
+            amm.withdraw(WithdrawArg{.err = ter(temDISABLED)});
+            amm.deposit(
+                DepositArg{.asset1In = USD(100), .err = ter(temDISABLED)});
             amm.ammDelete(alice, ter(temDISABLED));
         }
     }
@@ -4499,15 +4414,10 @@ private:
 
             // Bid,Vote,Deposit,Withdraw,SetTrust failing with
             // tecAMM_EMPTY. Deposit succeeds with tfTwoAssetIfEmpty option.
-            amm.bid(
-                alice,
-                1000,
-                std::nullopt,
-                {},
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                ter(tecAMM_EMPTY));
+            env(amm.bid({
+                .account = alice,
+                .bidMin = 1000,
+            }), ter(tecAMM_EMPTY));
             amm.vote(
                 std::nullopt,
                 100,
