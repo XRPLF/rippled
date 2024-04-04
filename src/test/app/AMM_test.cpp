@@ -2632,23 +2632,23 @@ private:
                 XRP(12'000), USD(12'000), IOUAmount{12'000'000, 0}));
 
             // Initial state. Pay bidMin.
-            ammAlice.bid(carol, 110);
+            env(ammAlice.bid({ .account = carol, .bidMin = 110 }));
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{110}));
 
             // 1st Interval after close, price for 0th interval.
-            ammAlice.bid(bob);
+            env(ammAlice.bid({ .account = bob }));
             env.close(seconds(AUCTION_SLOT_INTERVAL_DURATION + 1));
             BEAST_EXPECT(
                 ammAlice.expectAuctionSlot(0, 1, IOUAmount{1'155, -1}));
 
             // 10th Interval after close, price for 1st interval.
-            ammAlice.bid(carol);
+            env(ammAlice.bid({ .account = carol }));
             env.close(seconds(10 * AUCTION_SLOT_INTERVAL_DURATION + 1));
             BEAST_EXPECT(
                 ammAlice.expectAuctionSlot(0, 10, IOUAmount{121'275, -3}));
 
             // 20th Interval (expired) after close, price for 10th interval.
-            ammAlice.bid(bob);
+            env(ammAlice.bid({ .account = bob }));
             env.close(seconds(
                 AUCTION_SLOT_TIME_INTERVALS * AUCTION_SLOT_INTERVAL_DURATION +
                 1));
@@ -2656,7 +2656,7 @@ private:
                 0, std::nullopt, IOUAmount{127'33875, -5}));
 
             // 0 Interval.
-            ammAlice.bid(carol, 110);
+            env(ammAlice.bid({ .account = carol, .bidMin = 110 }));
             BEAST_EXPECT(
                 ammAlice.expectAuctionSlot(0, std::nullopt, IOUAmount{110}));
             // ~321.09 tokens burnt on bidding fees.
