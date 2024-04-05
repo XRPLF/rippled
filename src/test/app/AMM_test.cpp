@@ -2423,9 +2423,10 @@ private:
             // this transaction fails because AMMBid transaction can not burn
             // all the outstanding LPTokens
             env(amm.bid({
-                .account = gw,
-                .bidMin = 1'000'000,
-                }), ter(tecAMM_INVALID_TOKENS));
+                    .account = gw,
+                    .bidMin = 1'000'000,
+                }),
+                ter(tecAMM_INVALID_TOKENS));
         }
 
         // burn all the LPTokens through a AMMBid transaction
@@ -2441,9 +2442,11 @@ private:
             // this transaction suceeds because the bid price is less than
             // the total outstanding LPToken balance
             env(amm.bid({
-                .account = gw,
-                .bidMin = STAmount{amm.lptIssue(), UINT64_C(999'999)},
-                }), ter(tesSUCCESS)).close();
+                    .account = gw,
+                    .bidMin = STAmount{amm.lptIssue(), UINT64_C(999'999)},
+                }),
+                ter(tesSUCCESS))
+                .close();
 
             // gw must posses the auction slot
             BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{999'999}));
@@ -2459,8 +2462,10 @@ private:
             // transaction. This transaction fails because it would burn all
             // the remaining LPTokens
             env(amm.bid({
-                .account = gw, .bidMin = 1,
-                }), ter(tecAMM_INVALID_TOKENS));
+                    .account = gw,
+                    .bidMin = 1,
+                }),
+                ter(tecAMM_INVALID_TOKENS));
         }
 
         testAMM([&](AMM& ammAlice, Env& env) {
