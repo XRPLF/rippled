@@ -2652,7 +2652,7 @@ private:
                 XRP(12'000), USD(12'000), IOUAmount{12'000'000, 0}));
 
             // Initial state. Pay bidMin.
-            env(ammAlice.bid({.account = carol, .bidMin = 110}));
+            env(ammAlice.bid({.account = carol, .bidMin = 110})).close();
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{110}));
 
             // 1st Interval after close, price for 0th interval.
@@ -2676,7 +2676,7 @@ private:
                 0, std::nullopt, IOUAmount{127'33875, -5}));
 
             // 0 Interval.
-            env(ammAlice.bid({.account = carol, .bidMin = 110}));
+            env(ammAlice.bid({.account = carol, .bidMin = 110})).close();
             BEAST_EXPECT(
                 ammAlice.expectAuctionSlot(0, std::nullopt, IOUAmount{110}));
             // ~321.09 tokens burnt on bidding fees.

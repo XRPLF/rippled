@@ -521,17 +521,18 @@ public:
     /** Apply funclets and submit. */
     /** @{ */
     template <class JsonValue, class... FN>
-    void
+    Env&
     apply(JsonValue&& jv, FN const&... fN)
     {
         submit(jt(std::forward<JsonValue>(jv), fN...));
+        return *this;
     }
 
     template <class JsonValue, class... FN>
-    void
+    Env&
     operator()(JsonValue&& jv, FN const&... fN)
     {
-        apply(std::forward<JsonValue>(jv), fN...);
+        return apply(std::forward<JsonValue>(jv), fN...);
     }
     /** @} */
 
