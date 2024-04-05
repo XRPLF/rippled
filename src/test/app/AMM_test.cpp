@@ -1128,17 +1128,24 @@ private:
                 expectLedgerEntryRoot(env, carol, XRPAmount{28'999'999'990}));
         });
 
-        // equal asset deposit: the specified value of LPTokens triggers a
-        // rounding-down of LPTokens in the adjustLPToken calculations
+        // equal asset deposit: unit test to exercise the rounding-down of
+        // LPTokens in the adjustLPToken calculations. Any LPTokens with a
+        // non-zero fractional part will trigger this piece of code
+        // (AMMHelpers.cpp: adjustLPTokens)
         testAMM([&](AMM& ammAlice, Env& env) {
-            const IOUAmount newLPTokens{UINT64_C(488088'4817015109), -10};
+            // Approximately 1% of the existing pool
+            const Number deltaLPTokens{UINT64_C(100000'1), -1};
+            const IOUAmount newLPTokens{deltaLPTokens.mantissa(),
+                                        deltaLPTokens.exponent()};
+
+            // carol performs a two-asset deposit
             ammAlice.deposit(DepositArg{.account = carol, .tokens =
                                                               newLPTokens});
 
             // fraction of newLPTokens/(existing LPToken balance). Carol is
-            // seeking additional 488088.4817015109 LPTokens. The existing
+            // seeking additional 100000.1 LPTokens. The existing
             // LPToken balance is 1e7
-            const Number fr = Number{UINT64_C(488088'4817015109), -10}/1e7;
+            const Number fr = deltaLPTokens/1e7;
 
             // The below equations are based on Equation 1, 2 from XLS-30d
             // specification, Section: 2.3.1.2
