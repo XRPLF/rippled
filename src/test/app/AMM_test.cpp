@@ -1132,7 +1132,6 @@ private:
         // LPTokens in the adjustLPToken calculations
         // (AMMHelpers.cpp: adjustLPTokens)
         testAMM([&](AMM& ammAlice, Env& env) {
-            // Approximately 1% of the existing pool
             const Number deltaLPTokens{UINT64_C(488088'4817015109), -10};
             const IOUAmount newLPTokens{deltaLPTokens.mantissa(),
                                         deltaLPTokens.exponent()};
