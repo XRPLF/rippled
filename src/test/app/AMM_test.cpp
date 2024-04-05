@@ -2422,10 +2422,10 @@ private:
             // gw attempts to burn all her LPTokens through a bid transaction
             // this transaction fails because AMMBid transaction can not burn
             // all the outstanding LPTokens
-            amm.bid(BidArg{
+            env(amm.bid({
                 .account = gw,
                 .bidMin = 1'000'000,
-                .err = ter(tecAMM_INVALID_TOKENS)});
+                }), ter(tecAMM_INVALID_TOKENS));
         }
 
         // burn all the LPTokens through a AMMBid transaction
@@ -2440,10 +2440,10 @@ private:
             // gw burns all but one of her LPTokens through a bid transaction
             // this transaction suceeds because the bid price is less than
             // the total outstanding LPToken balance
-            amm.bid(BidArg{
+            env(amm.bid({
                 .account = gw,
                 .bidMin = STAmount{amm.lptIssue(), UINT64_C(999'999)},
-                .err = ter(tesSUCCESS)});
+                }), ter(tesSUCCESS)).close();
 
             // gw must posses the auction slot
             BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{999'999}));
@@ -2458,8 +2458,9 @@ private:
             // gw attempts to burn the last of her LPTokens in an AMMBid
             // transaction. This transaction fails because it would burn all
             // the remaining LPTokens
-            amm.bid(BidArg{
-                .account = gw, .bidMin = 1, .err = ter(tecAMM_INVALID_TOKENS)});
+            env(amm.bid({
+                .account = gw, .bidMin = 1,
+                }), ter(tecAMM_INVALID_TOKENS));
         }
 
         testAMM([&](AMM& ammAlice, Env& env) {
@@ -3860,7 +3861,7 @@ private:
             AMM amm(env, alice, XRP(1'000), USD(1'000), ter(temDISABLED));
 
             env(amm.bid({.bidMax = 1000}), ter(temMALFORMED));
-            env(amm.bid(BidArg{}), ter(temDISABLED));
+            env(amm.bid({}), ter(temDISABLED));
             amm.vote(VoteArg{.tfee = 100, .err = ter(temDISABLED)});
             amm.withdraw(WithdrawArg{.tokens = 100, .err = ter(temMALFORMED)});
             amm.withdraw(WithdrawArg{.err = ter(temDISABLED)});

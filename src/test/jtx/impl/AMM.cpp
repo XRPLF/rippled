@@ -656,30 +656,6 @@ AMM::vote(VoteArg const& arg)
     return vote(arg.account, arg.tfee, arg.flags, arg.seq, arg.assets, arg.err);
 }
 
-void
-AMM::bid(
-    std::optional<Account> const& account,
-    std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMin,
-    std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMax,
-    std::vector<Account> const& authAccounts,
-    std::optional<std::uint32_t> const& flags,
-    std::optional<jtx::seq> const& seq,
-    std::optional<std::pair<Issue, Issue>> const& assets,
-    std::optional<ter> const& ter)
-{
-    submit(
-        bid({
-            .account = account,
-            .bidMin = bidMin,
-            .bidMax = bidMax,
-            .authAccounts = authAccounts,
-            .flags = flags,
-            .assets = assets,
-        }),
-        seq,
-        ter);
-}
-
 Json::Value
 AMM::bid(BidArg const& arg)
 {

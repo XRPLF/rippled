@@ -315,18 +315,6 @@ public:
     void
     vote(VoteArg const& arg);
 
-    void
-    bid(std::optional<Account> const& account,
-        std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMin =
-            std::nullopt,
-        std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMax =
-            std::nullopt,
-        std::vector<Account> const& authAccounts = {},
-        std::optional<std::uint32_t> const& flags = std::nullopt,
-        std::optional<jtx::seq> const& seq = std::nullopt,
-        std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
-
     Json::Value
     bid(BidArg const& arg);
 
