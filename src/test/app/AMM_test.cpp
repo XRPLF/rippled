@@ -4934,30 +4934,30 @@ private:
     void
     testCore()
     {
-//        testInvalidInstance();
-//        testInstanceCreate();
-//        testInvalidDeposit();
+        testInvalidInstance();
+        testInstanceCreate();
+        testInvalidDeposit();
         testDeposit();
-//        testInvalidWithdraw();
-//        testWithdraw();
-//        testInvalidFeeVote();
-//        testFeeVote();
-//        testInvalidBid();
-//        testBid();
-//        testInvalidAMMPayment();
-//        testBasicPaymentEngine();
-//        testAMMTokens();
-//        testAmendment();
-//        testFlags();
-//        testRippling();
-//        testAMMAndCLOB();
-//        testTradingFee();
-//        testAdjustedTokens();
-//        testAutoDelete();
-//        testClawback();
-//        testAMMID();
-//        testSelection();
-//        testFixDefaultInnerObj();
+        testInvalidWithdraw();
+        testWithdraw();
+        testInvalidFeeVote();
+        testFeeVote();
+        testInvalidBid();
+        testBid();
+        testInvalidAMMPayment();
+        testBasicPaymentEngine();
+        testAMMTokens();
+        testAmendment();
+        testFlags();
+        testRippling();
+        testAMMAndCLOB();
+        testTradingFee();
+        testAdjustedTokens();
+        testAutoDelete();
+        testClawback();
+        testAMMID();
+        testSelection();
+        testFixDefaultInnerObj();
     }
 
     void
