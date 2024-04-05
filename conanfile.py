@@ -162,5 +162,5 @@ class Xrpl(ConanFile):
             'openssl::crypto',
             'date::date',
             'grpc::grpc++',
-            'xxHash::xxhash',
+            'xxhash::xxhash',
         ]
