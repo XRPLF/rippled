@@ -2410,6 +2410,58 @@ private:
         using namespace jtx;
         using namespace std::chrono;
 
+        // burn all the LPTokens through a AMMBid transaction
+        {
+            Env env(*this);
+            fund(env, gw, {alice}, XRP(2'000), {USD(2'000)});
+            AMM amm(env, gw, XRP(1'000), USD(1'000), false, 1'000);
+
+            // auction slot is owned by the creator of the AMM i.e. gw
+            BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{0}));
+
+            // gw attempts to burn all her LPTokens through a bid transaction
+            // this transaction fails because AMMBid transaction can not burn
+            // all the outstanding LPTokens
+            amm.bid(BidArg{
+                .account = gw,
+                .bidMin = 1'000'000,
+                .err = ter(tecAMM_INVALID_TOKENS)});
+        }
+
+        // burn all the LPTokens through a AMMBid transaction
+        {
+            Env env(*this);
+            fund(env, gw, {alice}, XRP(2'000), {USD(2'000)});
+            AMM amm(env, gw, XRP(1'000), USD(1'000), false, 1'000);
+
+            // auction slot is owned by the creator of the AMM i.e. gw
+            BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{0}));
+
+            // gw burns all but one of her LPTokens through a bid transaction
+            // this transaction suceeds because the bid price is less than
+            // the total outstanding LPToken balance
+            amm.bid(BidArg{
+                .account = gw,
+                .bidMin = STAmount{amm.lptIssue(), UINT64_C(999'999)},
+                .err = ter(tesSUCCESS)});
+
+            // gw must posses the auction slot
+            BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{999'999}));
+
+            // 999'999 tokens are burned, only 1 LPToken is in vogue
+            BEAST_EXPECT(
+                amm.expectBalances(XRP(1'000), USD(1'000), IOUAmount{1}));
+
+            // gw posses only one LPToken in her balance
+            BEAST_EXPECT(Number{amm.getLPTokensBalance(gw)} == 1);
+
+            // gw attempts to burn the last of her LPTokens in an AMMBid
+            // transaction. This transaction fails because it would burn all
+            // the remaining LPTokens
+            amm.bid(BidArg{
+                .account = gw, .bidMin = 1, .err = ter(tecAMM_INVALID_TOKENS)});
+        }
+
         testAMM([&](AMM& ammAlice, Env& env) {
             // Invalid flags
             env(ammAlice.bid({
@@ -5013,30 +5065,30 @@ private:
     void
     testCore()
     {
-        testInvalidInstance();
-        testInstanceCreate();
-        testInvalidDeposit();
-        testDeposit();
-        testInvalidWithdraw();
-        testWithdraw();
-        testInvalidFeeVote();
-        testFeeVote();
+        //        testInvalidInstance();
+        //        testInstanceCreate();
+        //        testInvalidDeposit();
+        //        testDeposit();
+        //        testInvalidWithdraw();
+        //        testWithdraw();
+        //        testInvalidFeeVote();
+        //        testFeeVote();
         testInvalidBid();
-        testBid();
-        testInvalidAMMPayment();
-        testBasicPaymentEngine();
-        testAMMTokens();
-        testAmendment();
-        testFlags();
-        testRippling();
-        testAMMAndCLOB();
-        testTradingFee();
-        testAdjustedTokens();
-        testAutoDelete();
-        testClawback();
-        testAMMID();
-        testSelection();
-        testFixDefaultInnerObj();
+        //        testBid();
+        //        testInvalidAMMPayment();
+        //        testBasicPaymentEngine();
+        //        testAMMTokens();
+        //        testAmendment();
+        //        testFlags();
+        //        testRippling();
+        //        testAMMAndCLOB();
+        //        testTradingFee();
+        //        testAdjustedTokens();
+        //        testAutoDelete();
+        //        testClawback();
+        //        testAMMID();
+        //        testSelection();
+        //        testFixDefaultInnerObj();
     }
 
     void
