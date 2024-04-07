@@ -34,5 +34,5 @@ setup_target_for_coverage_gcovr(
   EXECUTABLE rippled
   EXECUTABLE_ARGS --unittest$<$<BOOL:${coverage_test}>:=${coverage_test}> --unittest-jobs ${coverage_test_parallelism} --quiet --unittest-log
   EXCLUDE "src/test" "${CMAKE_BINARY_DIR}/proto_gen" "${CMAKE_BINARY_DIR}/proto_gen_grpc"
-  DEPENDENCIES rippled
+  DEPENDENCIES rippled xrpl_plugin plugin_test_setregularkey plugin_test_trustset plugin_test_escrowcreate plugin_test_badtransactor plugin_test_badledgerentry plugin_test_badstypeid plugin_test_badsfieldtypeid plugin_test_badsfieldtypepair plugin_test_badtercode plugin_test_badinnerobject
 )
