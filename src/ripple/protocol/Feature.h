@@ -366,6 +366,7 @@ extern uint256 const featureDID;
 extern uint256 const fixFillOrKill;
 extern uint256 const fixNFTokenReserve;
 extern uint256 const fixInnerObjTemplate;
+extern uint256 const fixAMMOverflowOffer;
 extern uint256 const featurePriceOracle;
 extern uint256 const fixEmptyDID;
 extern uint256 const fixXChainRewardRounding;
