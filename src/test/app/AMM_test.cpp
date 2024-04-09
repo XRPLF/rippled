@@ -1129,44 +1129,60 @@ private:
         });
 
         // equal asset deposit: unit test to exercise the rounding-down of
-        // LPTokens in the adjustLPToken calculations
-        // (AMMHelpers.cpp: adjustLPTokens)
-        testAMM([&](AMM& ammAlice, Env& env) {
-            const Number deltaLPTokens{UINT64_C(488088'4817015109), -10};
-            const IOUAmount newLPTokens{deltaLPTokens.mantissa(),
-                                        deltaLPTokens.exponent()};
+        // LPTokens in the AMMHelpers.cpp: adjustLPTokens calculations
+        // The LPTokens need to have 16 significant digits and a fractional part
+        for (const Number deltaLPTokens :
+             {Number{UINT64_C(100000'0000000009), -10},
+              Number{UINT64_C(100000'0000000001), -10}})
+        {
+            testAMM([&](AMM& ammAlice, Env& env) {
+                // initial LPToken balance
+                IOUAmount const initLPToken = ammAlice.getLPTokensBalance();
+                const IOUAmount newLPTokens{
+                    deltaLPTokens.mantissa(), deltaLPTokens.exponent()};
 
-            // carol performs a two-asset deposit
-            ammAlice.deposit(DepositArg{.account = carol, .tokens =
-                                                              newLPTokens});
+                // carol performs a two-asset deposit
+                ammAlice.deposit(
+                    DepositArg{.account = carol, .tokens = newLPTokens});
 
-            // fraction of newLPTokens/(existing LPToken balance). Carol is
-            // seeking additional 100000.1 LPTokens. The existing
-            // LPToken balance is 1e7
-            const Number fr = deltaLPTokens/1e7;
+                IOUAmount const finalLPToken = ammAlice.getLPTokensBalance();
 
-            // The below equations are based on Equation 1, 2 from XLS-30d
-            // specification, Section: 2.3.1.2
-            const Number deltaXRP = fr * 1e10;
-            const Number deltaUSD = fr * 1e4;
+                // Change in behavior due to rounding down of LPTokens:
+                // there is a decrease in the observed return of LPTokens --
+                // Inputs Number{UINT64_C(100000'0000000001), -10} and
+                // Number{UINT64_C(100000'0000000009), -10} are both rounded
+                // down to 1e5
+                BEAST_EXPECT((finalLPToken - initLPToken == IOUAmount{1, 5}));
+                BEAST_EXPECT(finalLPToken - initLPToken < deltaLPTokens);
 
-            const STAmount depositUSD = STAmount{USD, deltaUSD.mantissa(),
-                                                 deltaUSD.exponent()};
+                // fraction of newLPTokens/(existing LPToken balance). The
+                // existing LPToken balance is 1e7
+                const Number fr = deltaLPTokens / 1e7;
 
-            const STAmount depositXRP = STAmount{XRP, deltaXRP.mantissa(),
-                                                 deltaXRP.exponent()};
+                // The below equations are based on Equation 1, 2 from XLS-30d
+                // specification, Section: 2.3.1.2
+                const Number deltaXRP = fr * 1e10;
+                const Number deltaUSD = fr * 1e4;
 
-            // initial LPTokens (1e7) + newLPTokens
-            BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000) + depositXRP,
-                                                 USD(10'000) + depositUSD,
-                                                 IOUAmount{1, 7} + newLPTokens));
+                const STAmount depositUSD =
+                    STAmount{USD, deltaUSD.mantissa(), deltaUSD.exponent()};
 
-            // 30,000 less deposited depositUSD
-            BEAST_EXPECT(expectLine(env, carol, USD(30'000) - depositUSD));
-            // 30,000 less deposited depositXRP and 10 drops tx fee
-            BEAST_EXPECT(expectLedgerEntryRoot(env, carol, XRP(30'000) -
-                                                   depositXRP - txfee(env, 1)));
-        });
+                const STAmount depositXRP =
+                    STAmount{XRP, deltaXRP.mantissa(), deltaXRP.exponent()};
+
+                // initial LPTokens (1e7) + newLPTokens
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000) + depositXRP,
+                    USD(10'000) + depositUSD,
+                    IOUAmount{1, 7} + newLPTokens));
+
+                // 30,000 less deposited depositUSD
+                BEAST_EXPECT(expectLine(env, carol, USD(30'000) - depositUSD));
+                // 30,000 less deposited depositXRP and 10 drops tx fee
+                BEAST_EXPECT(expectLedgerEntryRoot(
+                    env, carol, XRP(30'000) - depositXRP - txfee(env, 1)));
+            });
+        }
 
         // Equal limit deposit: deposit USD100 and XRP proportionally
         // to the pool composition not to exceed 100XRP. If the amount

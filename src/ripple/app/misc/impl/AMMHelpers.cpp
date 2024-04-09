@@ -153,11 +153,6 @@ adjustAmountsByLPTokens(
     std::uint16_t tfee,
     bool isDeposit)
 {
-    // If lpTokens contains a fractional part and at least 16 significant
-    // digits, it is possible that lpTokensActual is rounded down. This is to
-    // ensure that we don't create/burn more LPTokens (depending on
-    // whether it's AMMDeposit or AMMWithdraw transaction) than what the trader
-    // asked for.
     auto const lpTokensActual =
         adjustLPTokens(lptAMMBalance, lpTokens, isDeposit);
 
