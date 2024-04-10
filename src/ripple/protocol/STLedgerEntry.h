@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_STLEDGERENTRY_H_INCLUDED
 
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/STObject.h>
 
 namespace ripple {
@@ -67,15 +68,14 @@ public:
 
     // is this a ledger entry that can be threaded
     bool
-    isThreadedType() const;
+    isThreadedType(Rules const& rules) const;
 
     bool
     thread(
         uint256 const& txID,
         std::uint32_t ledgerSeq,
         uint256& prevTxID,
-        std::uint32_t& prevLedgerID,
-        bool const includePrevTxnID);
+        std::uint32_t& prevLedgerID);
 
 private:
     /*  Make STObject comply with the template for this SLE type

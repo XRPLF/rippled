@@ -191,9 +191,10 @@ ApplyStateTable::apply(
             {
                 assert(curNode && origNode);
 
-                if (curNode->isThreadedType())  // thread transaction to node
-                                                // item modified
-                    threadItem(meta, curNode, to.rules());
+                if (curNode->isThreadedType(
+                        to.rules()))  // thread transaction to node
+                                      // item modified
+                    threadItem(meta, curNode);
 
                 STObject prevs(sfPreviousFields);
                 for (auto const& obj : *origNode)
@@ -226,8 +227,9 @@ ApplyStateTable::apply(
                 assert(curNode && !origNode);
                 threadOwners(to, meta, curNode, newMod, j);
 
-                if (curNode->isThreadedType())  // always thread to self
-                    threadItem(meta, curNode, to.rules());
+                if (curNode->isThreadedType(
+                        to.rules()))  // always thread to self
+                    threadItem(meta, curNode);
 
                 STObject news(sfNewFields);
                 for (auto const& obj : *curNode)
@@ -522,26 +524,12 @@ ApplyStateTable::destroyXRP(XRPAmount const& fee)
 
 // Insert this transaction to the SLE's threading list
 void
-ApplyStateTable::threadItem(
-    TxMeta& meta,
-    std::shared_ptr<SLE> const& sle,
-    Rules const& rules)
+ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 {
     key_type prevTxID;
     LedgerIndex prevLgrID;
 
-    static const std::set<LedgerEntryType> newPreviousTxnIDTypes = {
-        ltDIR_NODE, ltAMENDMENTS, ltFEE_SETTINGS, ltNEGATIVE_UNL, ltAMM};
-    // Exclude PrevTxnID/PrevTxnLgrSeq if the fixPreviousTxnID amendment is not
-    // enabled and the ledger object type is in the above set
-    bool const excludePrevTxnID = !rules.enabled(fixPreviousTxnID) &&
-        newPreviousTxnIDTypes.count(sle->getType());
-    if (!sle->thread(
-            meta.getTxID(),
-            meta.getLgrSeq(),
-            prevTxID,
-            prevLgrID,
-            !excludePrevTxnID))
+    if (!sle->thread(meta.getTxID(), meta.getLgrSeq(), prevTxID, prevLgrID))
         return;
 
     if (!prevTxID.isZero())
@@ -626,7 +614,8 @@ ApplyStateTable::threadTx(
         JLOG(j.warn()) << "Threading to non-existent account: " << toBase58(to);
         return;
     }
-    threadItem(meta, sle, base.rules());
+    // threadItem only applied to AccountRoot
+    threadItem(meta, sle);
 }
 
 void

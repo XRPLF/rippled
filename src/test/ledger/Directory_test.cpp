@@ -431,6 +431,8 @@ struct Directory_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     directory["LedgerEntryType"] ==
                     jss::DirectoryNode);  // sanity check
+                // The PreviousTxnID and PreviousTxnLgrSeq fields should not be
+                // on the DirectoryNode object when the amendment is disabled
                 BEAST_EXPECT(!directory.isMember("PreviousTxnID"));
                 BEAST_EXPECT(!directory.isMember("PreviousTxnLgrSeq"));
             }
