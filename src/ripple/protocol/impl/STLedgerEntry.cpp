@@ -27,6 +27,7 @@
 #include <ripple/protocol/jss.h>
 #include <boost/format.hpp>
 #include <algorithm>
+#include <array>
 #include <limits>
 
 namespace ripple {
@@ -128,7 +129,7 @@ STLedgerEntry::getJson(JsonOptions options) const
 bool
 STLedgerEntry::isThreadedType(Rules const& rules) const
 {
-    static const std::array<LedgerEntryType, 5> newPreviousTxnIDTypes = {
+    static constexpr std::array<LedgerEntryType, 5> newPreviousTxnIDTypes = {
         ltDIR_NODE, ltAMENDMENTS, ltFEE_SETTINGS, ltNEGATIVE_UNL, ltAMM};
     // Exclude PrevTxnID/PrevTxnLgrSeq if the fixPreviousTxnID amendment is not
     // enabled and the ledger object type is in the above set
