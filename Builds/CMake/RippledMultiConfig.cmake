@@ -23,7 +23,7 @@ if (is_multiconfig)
     list (REMOVE_ITEM all_sources ${_src})
   endforeach ()
   if (tests)
-    foreach (plugin_test_setregularkey
+    foreach (_target plugin_test_setregularkey
               plugin_test_trustset
               plugin_test_escrowcreate
               plugin_test_badtransactor
