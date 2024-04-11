@@ -79,7 +79,7 @@ private:
     std::uint64_t const checkHealthInterval_ = 1000;
     // back off periodically to reduce write contention as records are copied
     std::uint64_t const backoffInterval_ =
-        ripple::NodeStore::batchWriteLimitSize / 2;
+        ripple::NodeStore::batchWriteLimitSize / 512;
     // minimum # of ledgers to maintain for health of network
     static std::uint32_t const minimumDeletionInterval_ = 256;
     // minimum # of ledgers required for standalone mode.
@@ -105,7 +105,8 @@ private:
     std::uint32_t deleteInterval_ = 0;
     bool advisoryDelete_ = false;
     std::uint32_t deleteBatch_ = 100;
-    std::chrono::milliseconds backOff_{100};
+    // TODO: Update the example config file to reflect this new value
+    std::chrono::seconds backOff_{2};
     std::chrono::seconds ageThreshold_{60};
     /// If  the node is out of sync during an online_delete healthWait()
     /// call, sleep the thread for this time, and continue checking until
