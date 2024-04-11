@@ -106,7 +106,7 @@ private:
     bool advisoryDelete_ = false;
     std::uint32_t deleteBatch_ = 100;
     // TODO: Update the example config file to reflect this new value
-    std::chrono::seconds backOff_{2};
+    std::chrono::milliseconds backOff_{2000};
     std::chrono::seconds ageThreshold_{60};
     /// If  the node is out of sync during an online_delete healthWait()
     /// call, sleep the thread for this time, and continue checking until
