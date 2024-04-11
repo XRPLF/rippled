@@ -806,7 +806,6 @@ if (tests)
     src/test/app/AMM_test.cpp
     src/test/app/AMMCalc_test.cpp
     src/test/app/AMMExtended_test.cpp
-    src/test/app/AMMWithdraw_test.cpp
     src/test/app/Check_test.cpp
     src/test/app/Clawback_test.cpp
     src/test/app/CrossingLimits_test.cpp

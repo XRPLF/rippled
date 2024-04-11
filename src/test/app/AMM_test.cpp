@@ -948,7 +948,7 @@ private:
                         Issue{gw["USD"].currency, ammAlice.ammAccount()}, 0},
                     tfSetFreeze));
                 env.close();
-                // Can deposit non-frozen token
+                // Cannot deposit non-frozen token
                 ammAlice.deposit(
                     carol,
                     1'000'000,
@@ -1474,6 +1474,48 @@ private:
         testcase("Invalid Withdraw");
 
         using namespace jtx;
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                WithdrawArg args{
+                    .asset1Out = XRP(100),
+                    .err = ter(tecAMM_BALANCE),
+                };
+                ammAlice.withdraw(args);
+            },
+            {{XRP(99), USD(99)}});
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                WithdrawArg args{
+                    .asset1Out = USD(100),
+                    .err = ter(tecAMM_BALANCE),
+                };
+                ammAlice.withdraw(args);
+            },
+            {{XRP(99), USD(99)}});
+
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), gw, alice, bob);
+            env.close();
+            env(fset(gw, asfRequireAuth));
+            env(trust(alice, gw["USD"](30'000), 0));
+            env(trust(gw, alice["USD"](0), tfSetfAuth));
+            // Bob trusts Gateway to owe him USD...
+            env(trust(bob, gw["USD"](30'000), 0));
+            // ...but Gateway does not authorize Bob to hold its USD.
+            env.close();
+            env(pay(gw, alice, USD(10'000)));
+            env.close();
+            AMM ammAlice(env, alice, XRP(10'000), USD(10'000));
+            WithdrawArg args{
+                .account = bob,
+                .asset1Out = USD(100),
+                .err = ter(tecNO_AUTH),
+            };
+            ammAlice.withdraw(args);
+        }
 
         testAMM([&](AMM& ammAlice, Env& env) {
             // Invalid flags
@@ -2438,7 +2480,7 @@ private:
             // auction slot is owned by the creator of the AMM i.e. gw
             BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{0}));
 
-            // gw burns all but one of her LPTokens through a bid transaction
+            // gw burns all but one of its LPTokens through a bid transaction
             // this transaction suceeds because the bid price is less than
             // the total outstanding LPToken balance
             env(amm.bid({
@@ -2448,17 +2490,17 @@ private:
                 ter(tesSUCCESS))
                 .close();
 
-            // gw must posses the auction slot
+            // gw must own the auction slot
             BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{999'999}));
 
-            // 999'999 tokens are burned, only 1 LPToken is in vogue
+            // 999'999 tokens are burned, only 1 LPToken is owned by gw
             BEAST_EXPECT(
                 amm.expectBalances(XRP(1'000), USD(1'000), IOUAmount{1}));
 
-            // gw posses only one LPToken in her balance
+            // gw owns only 1 LPToken in its balance
             BEAST_EXPECT(Number{amm.getLPTokensBalance(gw)} == 1);
 
-            // gw attempts to burn the last of her LPTokens in an AMMBid
+            // gw attempts to burn the last of its LPTokens in an AMMBid
             // transaction. This transaction fails because it would burn all
             // the remaining LPTokens
             env(amm.bid({
@@ -5069,38 +5111,98 @@ private:
     }
 
     void
-    testCore()
+    testMalformed()
     {
-        //        testInvalidInstance();
-        //        testInstanceCreate();
-        //        testInvalidDeposit();
-        //        testDeposit();
-        //        testInvalidWithdraw();
-        //        testWithdraw();
-        //        testInvalidFeeVote();
-        //        testFeeVote();
+        using namespace jtx;
+
+        testAMM([&](AMM& ammAlice, Env& env) {
+            WithdrawArg args{
+                .flags = tfSingleAsset,
+                .err = ter(temMALFORMED),
+            };
+            ammAlice.withdraw(args);
+        });
+
+        testAMM([&](AMM& ammAlice, Env& env) {
+            WithdrawArg args{
+                .flags = tfOneAssetLPToken,
+                .err = ter(temMALFORMED),
+            };
+            ammAlice.withdraw(args);
+        });
+
+        testAMM([&](AMM& ammAlice, Env& env) {
+            WithdrawArg args{
+                .flags = tfLimitLPToken,
+                .err = ter(temMALFORMED),
+            };
+            ammAlice.withdraw(args);
+        });
+
+        testAMM([&](AMM& ammAlice, Env& env) {
+            WithdrawArg args{
+                .asset1Out = XRP(100),
+                .asset2Out = XRP(100),
+                .err = ter(temBAD_AMM_TOKENS),
+            };
+            ammAlice.withdraw(args);
+        });
+
+        testAMM([&](AMM& ammAlice, Env& env) {
+            WithdrawArg args{
+                .asset1Out = XRP(100),
+                .asset2Out = BAD(100),
+                .err = ter(temBAD_CURRENCY),
+            };
+            ammAlice.withdraw(args);
+        });
+
+        testAMM([&](AMM& ammAlice, Env& env) {
+            Json::Value jv;
+            jv[jss::TransactionType] = jss::AMMWithdraw;
+            jv[jss::Flags] = tfLimitLPToken;
+            jv[jss::Account] = alice.human();
+            ammAlice.setTokens(jv);
+            XRP(100).value().setJson(jv[jss::Amount]);
+            USD(100).value().setJson(jv[jss::EPrice]);
+            env(jv, ter(temBAD_AMM_TOKENS));
+        });
+    }
+
+    void
+    testAll()
+    {
+        testInvalidInstance();
+        testInstanceCreate();
+        testInvalidDeposit();
+        testDeposit();
+        testInvalidWithdraw();
+        testWithdraw();
+        testInvalidFeeVote();
+        testFeeVote();
         testInvalidBid();
-        //        testBid();
-        //        testInvalidAMMPayment();
-        //        testBasicPaymentEngine();
-        //        testAMMTokens();
-        //        testAmendment();
-        //        testFlags();
-        //        testRippling();
-        //        testAMMAndCLOB();
-        //        testTradingFee();
-        //        testAdjustedTokens();
-        //        testAutoDelete();
-        //        testClawback();
-        //        testAMMID();
-        //        testSelection();
-        //        testFixDefaultInnerObj();
+        testBid();
+        testInvalidAMMPayment();
+        testBasicPaymentEngine();
+        testAMMTokens();
+        testAmendment();
+        testFlags();
+        testRippling();
+        testAMMAndCLOB();
+        testTradingFee();
+        testAdjustedTokens();
+        testAutoDelete();
+        testClawback();
+        testAMMID();
+        testSelection();
+        testFixDefaultInnerObj();
+        testMalformed();
     }
 
     void
     run() override
     {
-        testCore();
+        testAll();
     }
 };
 
