@@ -10,7 +10,7 @@ on:
       - release
       - master
       # Branches that opt-in to running
-      - 'ci/**'
+      - "ci/**"
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -148,10 +148,6 @@ jobs:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
           cmake-args: ${{ matrix.cmake-args }}
-      - name: plugin debug
-        run: |
-          cd ${build_dir}
-          ls
       - name: test
         run: |
           cd ${build_dir}

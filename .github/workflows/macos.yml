@@ -10,7 +10,7 @@ on:
       - release
       - master
       # Branches that opt-in to running
-      - 'ci/**'
+      - "ci/**"
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -48,7 +48,7 @@ jobs:
           conan --version
           cmake --version
       - name: configure Conan
-        run : |
+        run: |
           conan profile new default --detect || true
           conan profile update settings.compiler.cppstd=20 default
           conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
@@ -65,10 +65,6 @@ jobs:
         with:
           generator: ${{ matrix.generator }}
           configuration: ${{ matrix.configuration }}
-      - name: plugin debug
-        run: |
-          cd ${build_dir}
-          ls
       - name: test
         run: |
           cd ${build_dir}
