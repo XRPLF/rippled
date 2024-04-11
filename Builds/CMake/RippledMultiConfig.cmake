@@ -22,6 +22,25 @@ if (is_multiconfig)
     get_target_property (_src ${_target} SOURCES)
     list (REMOVE_ITEM all_sources ${_src})
   endforeach ()
+  if (tests)
+    foreach (plugin_test_setregularkey
+              plugin_test_trustset
+              plugin_test_escrowcreate
+              plugin_test_badtransactor
+              plugin_test_badledgerentry
+              plugin_test_badstypeid
+              plugin_test_badsfieldtypeid
+              plugin_test_badsfieldtypepair
+              plugin_test_badtercode
+              plugin_test_badinnerobject)
+      get_target_property (_type ${_target} TYPE)
+      if(_type STREQUAL "INTERFACE_LIBRARY")
+        continue()
+      endif()
+      get_target_property (_src ${_target} SOURCES)
+      list (REMOVE_ITEM all_sources ${_src})
+    endforeach ()
+  endif ()
   target_sources (rippled PRIVATE ${all_sources})
   set_property (
     SOURCE ${all_sources}

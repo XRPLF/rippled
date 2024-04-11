@@ -33,18 +33,25 @@
 
 namespace ripple {
 
+template struct Container<STypeExport>;
 typedef Container<STypeExport> (*getSTypesPtr)();
 
+template struct Container<SFieldExport>;
 typedef Container<SFieldExport> (*getSFieldsPtr)();
 
+template struct Container<LedgerObjectExport>;
 typedef Container<LedgerObjectExport> (*getLedgerObjectsPtr)();
 
+template struct Container<TERExport>;
 typedef Container<TERExport> (*getTERcodesPtr)();
 
+template struct Container<InvariantCheckExport>;
 typedef Container<InvariantCheckExport> (*getInvariantChecksPtr)();
 
+template struct Container<AmendmentExport>;
 typedef Container<AmendmentExport> (*getAmendmentsPtr)();
 
+template struct Container<InnerObjectExport>;
 typedef Container<InnerObjectExport> (*getInnerObjectFormatsPtr)();
 
 // Transactors
@@ -82,6 +89,8 @@ struct TransactorExport
     checkFeePtr checkFee = nullptr;
     checkSignPtr checkSign = nullptr;
 };
+
+template struct Container<TransactorExport>;
 typedef Container<TransactorExport> (*getTransactorsPtr)();
 
 #define INITIALIZE_PLUGIN()                                               \

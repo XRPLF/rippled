@@ -48,25 +48,6 @@ struct InvariantCheckExport
     finalizePtr finalize;
 };
 
-#define EXPORT_INVARIANT_CHECKS(...)                                \
-    /* This function is in the macro instead of in the header file  \
-     * because it allows the list to be static                      \
-     */                                                             \
-    template <typename... Args>                                     \
-    Container<InvariantCheckExport> exportInvariantChecks()         \
-    {                                                               \
-        (Args::checks.clear(), ...);                                \
-        static InvariantCheckExport list[] = {                      \
-            {Args::visitEntryExport, Args::finalizeExport}...};     \
-        InvariantCheckExport* ptr = list;                           \
-        return {ptr, sizeof...(Args)};                              \
-    }                                                               \
-                                                                    \
-    extern "C" Container<InvariantCheckExport> getInvariantChecks() \
-    {                                                               \
-        return exportInvariantChecks<__VA_ARGS__>();                \
-    }
-
 }  // namespace ripple
 
 #endif
