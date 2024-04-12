@@ -1,14 +1,32 @@
+codecov:
+  require_ci_to_pass: true
+
+comment:
+  behavior: default
+  layout: reach,diff,flags,tree,reach
+  show_carryforward_flags: false
+
 coverage:
   status:
     project:
       default:
         target: 60%
         threshold: 2%
+    patch:
+      default:
+        target: auto
+        threshold: 2%
+    changes: false
+
+github_checks:
+  annotations: true
 
 parsers:
   cobertura:
     partials_as_hits: true
     handle_missing_conditions : true
+
+slack_app: false
 
 ignore:
   - "src/test/"
