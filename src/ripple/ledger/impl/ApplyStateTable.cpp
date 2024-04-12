@@ -21,10 +21,8 @@
 #include <ripple/json/to_string.h>
 #include <ripple/ledger/detail/ApplyStateTable.h>
 #include <ripple/protocol/Feature.h>
-#include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/st.h>
 #include <cassert>
-#include <set>
 
 namespace ripple {
 namespace detail {
@@ -615,6 +613,7 @@ ApplyStateTable::threadTx(
         return;
     }
     // threadItem only applied to AccountRoot
+    assert(sle->isThreadedType(base.rules()));
     threadItem(meta, sle);
 }
 

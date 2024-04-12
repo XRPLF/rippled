@@ -21,11 +21,11 @@
 #define RIPPLE_PROTOCOL_STLEDGERENTRY_H_INCLUDED
 
 #include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/STObject.h>
 
 namespace ripple {
 
+class Rules;
 class Invariants_test;
 
 class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>

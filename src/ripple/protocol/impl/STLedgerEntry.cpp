@@ -17,13 +17,15 @@
 */
 //==============================================================================
 
+#include <ripple/protocol/STLedgerEntry.h>
+
 #include <ripple/basics/Log.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/json/to_string.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/STLedgerEntry.h>
+#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/jss.h>
 #include <boost/format.hpp>
 #include <algorithm>
@@ -138,7 +140,7 @@ STLedgerEntry::isThreadedType(Rules const& rules) const
             newPreviousTxnIDTypes.cbegin(),
             newPreviousTxnIDTypes.cend(),
             type_);
-    return getFieldIndex(sfPreviousTxnID) != -1 && !excludePrevTxnID;
+    return !excludePrevTxnID && getFieldIndex(sfPreviousTxnID) != -1;
 }
 
 bool

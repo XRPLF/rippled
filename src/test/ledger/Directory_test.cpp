@@ -406,28 +406,30 @@ struct Directory_test : public beast::unit_test::suite
         auto const alice = Account{"alice"};
         auto const USD = gw["USD"];
 
-        auto ledger_data = [](Env& env) {
+        auto ledger_data = [this](Env& env) {
             Json::Value params;
             params[jss::type] = jss::directory;
             params[jss::ledger_index] = "validated";
-            return env.rpc(
-                "json", "ledger_data", to_string(params))[jss::result];
+            auto const result =
+                env.rpc("json", "ledger_data", to_string(params))[jss::result];
+            BEAST_EXPECT(!result.isMember(jss::marker));
+            return result;
         };
 
-        {
-            // fixPreviousTxnID is disabled.
-            Env env(*this, supported_amendments() - fixPreviousTxnID);
-            env.fund(XRP(10000), alice, gw);
-            env.close();
-            env.trust(USD(1000), alice);
-            env(pay(gw, alice, USD(1000)));
-            env.close();
+        // fixPreviousTxnID is disabled.
+        Env env(*this, supported_amendments() - fixPreviousTxnID);
+        env.fund(XRP(10000), alice, gw);
+        env.close();
+        env.trust(USD(1000), alice);
+        env(pay(gw, alice, USD(1000)));
+        env.close();
 
+        {
+            auto const jrr = ledger_data(env);
+            auto const& jstate = jrr[jss::state];
+            BEAST_EXPECTS(checkArraySize(jstate, 2), jrr.toStyledString());
+            for (auto const& directory : jstate)
             {
-                auto const jrr = ledger_data(env);
-                BEAST_EXPECTS(
-                    checkArraySize(jrr[jss::state], 2), jrr.toStyledString());
-                auto const directory = jrr[jss::state][0u];
                 BEAST_EXPECT(
                     directory["LedgerEntryType"] ==
                     jss::DirectoryNode);  // sanity check
@@ -436,26 +438,50 @@ struct Directory_test : public beast::unit_test::suite
                 BEAST_EXPECT(!directory.isMember("PreviousTxnID"));
                 BEAST_EXPECT(!directory.isMember("PreviousTxnLgrSeq"));
             }
+        }
 
-            // Now enable the amendment so the directory node is updated.
-            env.enableFeature(fixPreviousTxnID);
-            env.close();
+        // Now enable the amendment so the directory node is updated.
+        env.enableFeature(fixPreviousTxnID);
+        env.close();
 
-            // Make sure the `PreviousTxnID` and `PreviousTxnLgrSeq` fields now
-            // exist
-            env(offer(alice, XRP(1), USD(1)));
-            env.close();
+        // Make sure the `PreviousTxnID` and `PreviousTxnLgrSeq` fields now
+        // exist
+        env(offer(alice, XRP(1), USD(1)));
+        auto const txID = to_string(env.tx()->getTransactionID());
+        auto const ledgerSeq = env.current()->info().seq;
+        env.close();
+        // Make sure the fields only exist if the object is touched
+        env(noop(gw));
+        env.close();
 
+        {
+            auto const jrr = ledger_data(env);
+            auto const& jstate = jrr[jss::state];
+            BEAST_EXPECTS(checkArraySize(jstate, 3), jrr.toStyledString());
+            for (auto const& directory : jstate)
             {
-                auto const jrr = ledger_data(env);
-                BEAST_EXPECTS(
-                    checkArraySize(jrr[jss::state], 3), jrr.toStyledString());
-                auto const directory = jrr[jss::state][0u];
                 BEAST_EXPECT(
                     directory["LedgerEntryType"] ==
                     jss::DirectoryNode);  // sanity check
-                BEAST_EXPECT(directory.isMember("PreviousTxnID"));
-                BEAST_EXPECT(directory.isMember("PreviousTxnLgrSeq"));
+                if (directory[jss::Owner] == gw.human())
+                {
+                    // gw's directory did not get touched, so it
+                    // should not have those fields populated
+                    BEAST_EXPECT(!directory.isMember("PreviousTxnID"));
+                    BEAST_EXPECT(!directory.isMember("PreviousTxnLgrSeq"));
+                }
+                else
+                {
+                    // All of the other directories, including the order
+                    // book, did get touched, so they should have those
+                    // fields
+                    BEAST_EXPECT(
+                        directory.isMember("PreviousTxnID") &&
+                        directory["PreviousTxnID"].asString() == txID);
+                    BEAST_EXPECT(
+                        directory.isMember("PreviousTxnLgrSeq") &&
+                        directory["PreviousTxnLgrSeq"].asUInt() == ledgerSeq);
+                }
             }
         }
     }
