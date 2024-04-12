@@ -206,10 +206,33 @@ newUntypedSField(const int fieldValue, char const* fieldName)
 {
     if (SField const& field = SField::getField(fieldName); field != sfInvalid)
     {
+        if (field.fieldValue != fieldValue)
+        {
+            throw std::runtime_error(
+                "SField " + std::string(fieldName) +
+                " does not match fieldValue. Expected " +
+                std::to_string(fieldValue) + ", received " +
+                std::to_string(field.fieldValue));
+        }
+        if (auto const fieldType = getSTId<T>(); field.fieldType != fieldType)
+        {
+            throw std::runtime_error(
+                "SField " + std::string(fieldName) +
+                " does not match fieldType. Expected " +
+                std::to_string(fieldType) + ", received " +
+                std::to_string(field.fieldType));
+        }
         return field;
     }
     throw std::runtime_error(
         "SField " + std::string(fieldName) + " doesn't exist.");
+}
+
+template <class T>
+SField const&
+newUntypedSField(const int fieldValue, std::string fieldName)
+{
+    return newUntypedSField<T>(fieldValue, fieldName.c_str());
 }
 
 #define DEFINE_UNTYPED_SFIELD(type, fieldValue, fieldName)            \

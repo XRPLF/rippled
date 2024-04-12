@@ -107,7 +107,8 @@ registerSField(SFieldExport const& sfield)
         field != sfInvalid)
     {
         throw std::runtime_error(
-            "SField " + std::string(sfield.txtName) + " already exists");
+            "SField " + field.fieldName + " already exists with code " +
+            std::to_string(field.getCode()));
     }
     if (SField const& field =
             SField::getField(field_code(sfield.typeId, sfield.fieldValue));
