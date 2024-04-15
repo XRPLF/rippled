@@ -747,7 +747,6 @@ public:
             // Force the factor low enough to fail
             params[jss::fee_mult_max] = 1;
             params[jss::fee_div_max] = 2;
-            // RPC errors result in telENV_RPC_FAILED
             envs(
                 noop(alice),
                 fee(none),

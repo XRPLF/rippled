@@ -56,7 +56,7 @@ public:
     void
     operator()(Env&, JTx& jt) const
     {
-        // The RPC request should fail
+        // The RPC request should fail. RPC errors result in telENV_RPC_FAILED.
         jt.ter = telENV_RPC_FAILED;
         if (code_)
         {
