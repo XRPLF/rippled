@@ -167,6 +167,173 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
                 std::get<5>(entry) = rate;  // close
             }
         }
+
+        std::map<
+            std::string,  // AMM AccountID
+            std::tuple<
+                STAmount,  // one side amount before
+                STAmount,  // one side amount after
+                STAmount,  // other side amount before
+                STAmount   // other side amount after
+                >>
+            ammInfo;
+
+        // handle AMM
+        for (auto const& node : tx.second->getFieldArray(sfAffectedNodes))
+        {
+            // if either FF or PF are missing we can't compute
+            // but generally these are cancelled rather than crossed
+            // so skipping them is consistent
+            if (!node.isFieldPresent(sfFinalFields) ||
+                !node.isFieldPresent(sfPreviousFields))
+                continue;
+
+            uint16_t nodeType = node.getFieldU16(sfLedgerEntryType);
+
+            auto const& ffBase = node.peekAtField(sfFinalFields);
+            auto const& finalFields = ffBase.template downcast<STObject>();
+            auto const& pfBase = node.peekAtField(sfPreviousFields);
+            auto const& previousFields = pfBase.template downcast<STObject>();
+
+            uint32_t flags = finalFields.getFieldU32(sfFlags);
+
+            std::optional<AccountID> filledAmmAccountID;
+
+            // we only care about AMM related objects being changed
+            if (nodeType == ltACCOUNT_ROOT &&
+                finalFields.isFieldPresent(sfAMMID))
+            {
+                // AMM Pool XRP Balance
+                AccountID const ammAccountID =
+                    finalFields.getAccountID(sfAccount);
+
+                if (ammInfo.find(toBase58(ammAccountID)) == ammInfo.end())
+                    ammInfo[toBase58(ammAccountID)] = {
+                        previousFields.getFieldAmount(sfBalance),
+                        finalFields.getFieldAmount(sfBalance),
+                        STAmount{0},
+                        STAmount{0},
+                    };
+                else
+                {
+                    auto& entry = ammInfo[toBase58(ammAccountID)];
+                    std::get<2>(entry) =
+                        previousFields.getFieldAmount(sfBalance);
+                    std::get<3>(entry) = finalFields.getFieldAmount(sfBalance);
+
+                    filledAmmAccountID = ammAccountID;
+                }
+            }
+            else if (nodeType == ltRIPPLE_STATE && flags & lsfAMMNode)
+            {
+                // AMM Pool Token Balance
+                STAmount balanceAfter = finalFields.getFieldAmount(sfBalance);
+                STAmount balanceBefore =
+                    previousFields.getFieldAmount(sfBalance);
+                if (balanceAfter == beast::zero)
+                    continue;
+
+                bool const isIssuerHigh = balanceAfter > beast::zero;
+
+                AccountID const ammAccountID =
+                    finalFields
+                        .getFieldAmount(isIssuerHigh ? sfLowLimit : sfHighLimit)
+                        .getIssuer();
+                Issue const issue =
+                    finalFields
+                        .getFieldAmount(isIssuerHigh ? sfHighLimit : sfLowLimit)
+                        .issue();
+                if (balanceAfter.negative())
+                    balanceAfter.negate();
+                if (balanceBefore.negative())
+                    balanceBefore.negate();
+
+                if (ammInfo.find(toBase58(ammAccountID)) == ammInfo.end())
+                    ammInfo[toBase58(ammAccountID)] = {
+                        STAmount{balanceBefore.iou(), issue},
+                        STAmount{balanceAfter.iou(), issue},
+                        STAmount{0},
+                        STAmount{0},
+                    };
+                else
+                {
+                    auto& entry = ammInfo[toBase58(ammAccountID)];
+                    std::get<2>(entry) = STAmount{balanceBefore.iou(), issue};
+                    std::get<3>(entry) = STAmount{balanceAfter.iou(), issue};
+
+                    filledAmmAccountID = ammAccountID;
+                }
+            }
+            else
+            {
+                continue;
+            }
+
+            if (!filledAmmAccountID)
+                continue;
+
+            // When 2 token information is stored, set related info
+            auto& entry = ammInfo[toBase58(*filledAmmAccountID)];
+
+            STAmount delta_amt1 = std::get<1>(entry) - std::get<0>(entry);
+            STAmount delta_amt2 = std::get<3>(entry) - std::get<2>(entry);
+
+            std::string g{to_string(delta_amt1.issue())};
+            std::string p{to_string(delta_amt2.issue())};
+
+            bool const noswap = isXRP(delta_amt1)
+                ? true
+                : (isXRP(delta_amt2) ? false : (g < p));
+
+            STAmount first = noswap ? delta_amt1 : delta_amt2;
+            STAmount second = noswap ? delta_amt2 : delta_amt1;
+
+            // defensively programmed, should (probably) never happen
+            if (second == beast::zero)
+                continue;
+
+            STAmount rate = divide(first, second, noIssue());
+
+            if (first < beast::zero)
+                first = -first;
+
+            if (second < beast::zero)
+                second = -second;
+
+            std::stringstream ss;
+            if (noswap)
+                ss << g << "|" << p;
+            else
+                ss << p << "|" << g;
+
+            std::string key{ss.str()};
+
+            if (tally.find(key) == tally.end())
+                tally[key] = {
+                    first,   // side A vol
+                    second,  // side B vol
+                    rate,    // high
+                    rate,    // low
+                    rate,    // open
+                    rate     // close
+                };
+            else
+            {
+                // increment volume
+                auto& entry = tally[key];
+
+                std::get<0>(entry) += first;   // side A vol
+                std::get<1>(entry) += second;  // side B vol
+
+                if (std::get<2>(entry) < rate)  // high
+                    std::get<2>(entry) = rate;
+
+                if (std::get<3>(entry) > rate)  // low
+                    std::get<3>(entry) = rate;
+
+                std::get<5>(entry) = rate;  // close
+            }
+        }
     }
 
     Json::Value jvObj(Json::objectValue);
