@@ -1410,7 +1410,7 @@ struct Flow_test : public beast::unit_test::suite
             env(offer(mm, XRP(1000), USD(50)));
             env.close();
 
-            env(offer(mm, BTC(50), USD(10)));
+            env(offer(mm, BTC(50), USD(20)));
             env.close();
         };
 
@@ -1428,25 +1428,29 @@ struct Flow_test : public beast::unit_test::suite
             env(offer(alice, USD(50), BTC(250)));
             env.close();
 
-            BEAST_EXPECT(!isOffer(env, mm, BTC(50), USD(10)));
+            BEAST_EXPECT(!isOffer(env, mm, BTC(50), USD(20)));
 
-            BEAST_EXPECT(isOffer(env, mm, BTC(50), XRP(200)));
-            BEAST_EXPECT(isOffer(env, mm, XRP(200), USD(10)));
+            BEAST_EXPECT(isOffer(env, mm, BTC(100), XRP(400)));
+            BEAST_EXPECT(isOffer(env, mm, XRP(400), USD(20)));
 
             auto jrr = getBookOffers(env, BTC, USD);
             BEAST_EXPECT(jrr[jss::offers].isArray());
             BEAST_EXPECT(jrr[jss::offers].size() == 0);
 
             // XRP-IOU Offer
-            env(pay(gw2, alice, BTC(50)));
-            env(offer(alice, XRP(200), BTC(50)));
-            env(offer(alice, USD(10), XRP(200)));
+            env(pay(gw2, alice, BTC(100)));
+            env(offer(alice, XRP(400), BTC(100)));
+            env(offer(alice, USD(20), XRP(400)));
+            BEAST_EXPECT(!isOffer(env, mm, BTC(100), XRP(400)));
+            BEAST_EXPECT(!isOffer(env, mm, XRP(400), USD(20)));
             env.close();
 
             // IOU-IOU (issuer-issuer) Offer
             env(offer(gw1, BTC(200), USD(10)));
             env.close();
+            BEAST_EXPECT(isOffer(env, gw1, BTC(200), USD(10)));
             env(offer(gw2, USD(10), BTC(200)));
+            BEAST_EXPECT(!isOffer(env, gw1, BTC(200), USD(10)));
             env.close();
         }
 
@@ -1492,14 +1496,14 @@ struct Flow_test : public beast::unit_test::suite
                 env(pay(alice, alice, USD(50)), sendmax(BTC(250)));
                 env.close();
 
-                BEAST_EXPECT(!isOffer(env, mm, BTC(50), USD(10)));
+                BEAST_EXPECT(!isOffer(env, mm, BTC(50), USD(20)));
 
                 auto jrr = getBookOffers(env, BTC, USD);
                 BEAST_EXPECT(jrr[jss::offers].isArray());
                 BEAST_EXPECT(jrr[jss::offers].size() == 0);
 
-                BEAST_EXPECT(isOffer(env, mm, BTC(50), XRP(200)));
-                BEAST_EXPECT(isOffer(env, mm, XRP(200), USD(10)));
+                BEAST_EXPECT(isOffer(env, mm, BTC(100), XRP(400)));
+                BEAST_EXPECT(isOffer(env, mm, XRP(400), USD(20)));
             }
             else
             {
