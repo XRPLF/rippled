@@ -439,7 +439,11 @@ transferHelper(
         auto const sleSrc = psb.peek(keylet::account(src));
         assert(sleSrc);
         if (!sleSrc)
+        {
+            JLOG(j.debug())
+                << "~~~transferHelper: !sleSrc. Src: " << toBase58(src);
             return tecINTERNAL;
+        }
 
         {
             auto const ownerCount = sleSrc->getFieldU32(sfOwnerCount);
@@ -708,7 +712,12 @@ finalizeClaimHelper(
             }
 
             if (distributed > rewardPool)
+            {
+                JLOG(j.debug())
+                    << "~~~finalizeClaimHelper: distributed(" << distributed
+                    << ") > rewardPool(" << rewardPool << ")";
                 return tecINTERNAL;
+            }
 
             return tesSUCCESS;
         }();
@@ -779,6 +788,9 @@ getSignersListAndQuorum(
 
     if (!sleDoor)
     {
+        JLOG(j.debug()) << "~~~getSignersListAndQuorum: !sleDoor.  Bridge: "
+                        << sleBridge.getFullText()
+                        << ", thisDoor: " << toBase58(thisDoor);
         return {r, q, tecINTERNAL};
     }
 
@@ -793,6 +805,9 @@ getSignersListAndQuorum(
 
     if (!accountSigners)
     {
+        JLOG(j.debug())
+            << "~~~getSignersListAndQuorum: !accountSigners. Bridge: "
+            << sleBridge.getFullText() << ", thisDoor: " << toBase58(thisDoor);
         return {r, q, tecINTERNAL};
     }
 
@@ -1246,7 +1261,10 @@ attestationPreclaim(PreclaimContext const& ctx)
 {
     auto const att = toClaim<TAttestation>(ctx.tx);
     if (!att)
+    {
+        JLOG(ctx.j.debug()) << "~~~attestationPreclaim: !att.";
         return tecINTERNAL;  // checked in preflight
+    }
 
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
     auto const sleBridge = readBridge(ctx.view, bridgeSpec);
@@ -1276,8 +1294,10 @@ attestationDoApply(ApplyContext& ctx)
 {
     auto const att = toClaim<TAttestation>(ctx.tx);
     if (!att)
-        // Should already be checked in preflight
+    {  // Should already be checked in preflight
+        JLOG(ctx.journal.debug()) << "~~~attestationDoApply: !att.";
         return tecINTERNAL;
+    }
 
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
 
@@ -1310,7 +1330,13 @@ attestationDoApply(ApplyContext& ctx)
             else if (thisDoor == bridgeSpec.issuingChainDoor())
                 dstChain = STXChainBridge::ChainType::issuing;
             else
+            {
+                JLOG(ctx.journal.debug())
+                    << "~~~attestationDoApply: bridge mismatch. Bridge: "
+                    << bridgeSpec.getFullText()
+                    << ", thisDoor: " << toBase58(thisDoor);
                 return Unexpected(tecINTERNAL);
+            }
         }
         STXChainBridge::ChainType const srcChain =
             STXChainBridge::otherChain(dstChain);
@@ -1517,7 +1543,12 @@ XChainCreateBridge::doApply()
 
     auto const sleAcct = ctx_.view().peek(keylet::account(account));
     if (!sleAcct)
+    {
+        JLOG(ctx_.journal.debug())
+            << "~~~XChainCreateBridge::doApply: !sleAcct. Acc: "
+            << toBase58(account);
         return tecINTERNAL;
+    }
 
     STXChainBridge::ChainType const chainType =
         STXChainBridge::srcChain(account == bridgeSpec.lockingChainDoor());
@@ -1635,7 +1666,11 @@ BridgeModify::doApply()
 
     auto const sleAcct = ctx_.view().peek(keylet::account(account));
     if (!sleAcct)
+    {
+        JLOG(ctx_.journal.debug())
+            << "~~~BridgeModify::doApply: !sleAcct. Acc: " << toBase58(account);
         return tecINTERNAL;
+    }
 
     STXChainBridge::ChainType const chainType =
         STXChainBridge::srcChain(account == bridgeSpec.lockingChainDoor());
@@ -1643,7 +1678,12 @@ BridgeModify::doApply()
     auto const sleBridge =
         ctx_.view().peek(keylet::bridge(bridgeSpec, chainType));
     if (!sleBridge)
+    {
+        JLOG(ctx_.journal.debug())
+            << "~~~BridgeModify::doApply: !sleBridge.  Bridge: "
+            << bridgeSpec.getFullText();
         return tecINTERNAL;
+    }
 
     if (reward)
         (*sleBridge)[sfSignatureReward] = *reward;
@@ -1666,6 +1706,8 @@ BridgeModify::doApply()
 NotTEC
 XChainClaim::preflight(PreflightContext const& ctx)
 {
+    JLOG(ctx.j.trace()) << "~~~XChainClaim::preflight: START";
+
     if (!ctx.rules.enabled(featureXChainBridge))
         return temDISABLED;
 
@@ -1691,6 +1733,8 @@ XChainClaim::preflight(PreflightContext const& ctx)
 TER
 XChainClaim::preclaim(PreclaimContext const& ctx)
 {
+    JLOG(ctx.j.trace()) << "~~~XChainClaim::preclaim: START";
+
     AccountID const account = ctx.tx[sfAccount];
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
     STAmount const& thisChainAmount = ctx.tx[sfAmount];
@@ -1715,7 +1759,13 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
         else if (thisDoor == bridgeSpec.issuingChainDoor())
             isLockingChain = false;
         else
+        {
+            JLOG(ctx.j.debug())
+                << "~~~XChainClaim::preclaim: bridge mismatch. Bridge: "
+                << bridgeSpec.getFullText()
+                << ", thisDoor: " << toBase58(thisDoor);
             return tecINTERNAL;
+        }
     }
 
     {
@@ -1739,6 +1789,9 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
         // Should have been caught when creating the bridge
         // Detect here so `otherChainAmount` doesn't switch from IOU -> XRP
         // and the numeric issues that need to be addressed with that.
+        JLOG(ctx.j.debug())
+            << "~~~XChainClaim::preclaim: issue mismatch. Bridge: "
+            << bridgeSpec.getFullText();
         return tecINTERNAL;
     }
 
@@ -1775,6 +1828,8 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
 TER
 XChainClaim::doApply()
 {
+    JLOG(ctx_.journal.trace()) << "~~~XChainClaim::doApply: START";
+
     PaymentSandbox psb(&ctx_.view());
 
     AccountID const account = ctx_.tx[sfAccount];
@@ -1804,7 +1859,16 @@ XChainClaim::doApply()
         auto const sleClaimID = psb.peek(claimIDKeylet);
 
         if (!(sleBridge && sleClaimID && sleAcct))
+        {
+            JLOG(ctx_.journal.debug())
+                << "~~~XChainClaim::doApply: condition failed. sleBridge: "
+                << (sleBridge ? sleBridge->getFullText() : std::string())
+                << ", sleClaimID: "
+                << (sleClaimID ? sleClaimID->getFullText() : std::string())
+                << ", sleAcct: "
+                << (sleAcct ? sleAcct->getFullText() : std::string());
             return Unexpected(tecINTERNAL);
+        }
 
         AccountID const thisDoor = (*sleBridge)[sfAccount];
 
@@ -1815,7 +1879,13 @@ XChainClaim::doApply()
             else if (thisDoor == bridgeSpec.issuingChainDoor())
                 dstChain = STXChainBridge::ChainType::issuing;
             else
+            {
+                JLOG(ctx_.journal.debug())
+                    << "~~~XChainClaim::doApply: bridge mismatch. Bridge: "
+                    << bridgeSpec.getFullText()
+                    << ", thisDoor: " << toBase58(thisDoor);
                 return Unexpected(tecINTERNAL);
+            }
         }
         STXChainBridge::ChainType const srcChain =
             STXChainBridge::otherChain(dstChain);
@@ -1954,7 +2024,13 @@ XChainCommit::preclaim(PreclaimContext const& ctx)
         else if (thisDoor == bridgeSpec.issuingChainDoor())
             isLockingChain = false;
         else
+        {
+            JLOG(ctx.j.debug())
+                << "~~~XChainCommit::preclaim: bridge mismatch. Bridge: "
+                << bridgeSpec.getFullText()
+                << ", thisDoor: " << toBase58(thisDoor);
             return tecINTERNAL;
+        }
     }
 
     if (isLockingChain)
@@ -1981,11 +2057,21 @@ XChainCommit::doApply()
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
 
     if (!psb.read(keylet::account(account)))
+    {
+        JLOG(ctx_.journal.debug())
+            << "~~~XChainCommit::doApply: can't read acc. Acc: "
+            << toBase58(account);
         return tecINTERNAL;
+    }
 
     auto const sleBridge = readBridge(psb, bridgeSpec);
     if (!sleBridge)
+    {
+        JLOG(ctx_.journal.debug())
+            << "~~~XChainCommit::doApply: !sleBridge. Bridge: "
+            << bridgeSpec.getFullText();
         return tecINTERNAL;
+    }
 
     auto const dst = (*sleBridge)[sfAccount];
 
@@ -2082,21 +2168,42 @@ XChainCreateClaimID::doApply()
 
     auto const sleAcct = ctx_.view().peek(keylet::account(account));
     if (!sleAcct)
+    {
+        JLOG(ctx_.journal.debug())
+            << "~~~XChainCreateClaimID::doApply: !sleAcct. Acc: "
+            << toBase58(account);
         return tecINTERNAL;
+    }
 
     auto const sleBridge = peekBridge(ctx_.view(), bridgeSpec);
     if (!sleBridge)
+    {
+        JLOG(ctx_.journal.debug())
+            << "~~~XChainCreateClaimID::doApply: !sleBridge. Bridge: "
+            << bridgeSpec.getFullText();
         return tecINTERNAL;
+    }
 
     std::uint32_t const claimID = (*sleBridge)[sfXChainClaimID] + 1;
     if (claimID == 0)
+    {
+        JLOG(ctx_.journal.debug())
+            << "~~~XChainCreateClaimID::doApply: claimID == 0. Bridge: "
+            << bridgeSpec.getFullText();
         return tecINTERNAL;  // overflow
+    }
 
     (*sleBridge)[sfXChainClaimID] = claimID;
 
     Keylet const claimIDKeylet = keylet::xChainClaimID(bridgeSpec, claimID);
     if (ctx_.view().exists(claimIDKeylet))
+    {
+        JLOG(ctx_.journal.debug())
+            << "~~~XChainCreateClaimID::doApply: claimIDKeylet exists. "
+               "claimID: "
+            << claimID << ", Bridge: " << bridgeSpec.getFullText();
         return tecINTERNAL;  // already checked out!?!
+    }
 
     auto const sleClaimID = std::make_shared<SLE>(claimIDKeylet);
 
