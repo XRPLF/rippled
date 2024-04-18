@@ -3271,7 +3271,7 @@ private:
             if (!BEAST_EXPECT(checkArraySize(affected, 4u)))
                 return;
             auto ff =
-                affected[2u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
+                affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
             BEAST_EXPECT(
                 ff[sfHighLimit.fieldName] ==
                 bob["USD"](100).value().getJson(JsonOptions::none));
