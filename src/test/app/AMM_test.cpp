@@ -5169,6 +5169,7 @@ private:
         });
     }
 
+    void
     testFixOverflowOffer()
     {
         using namespace jtx;
