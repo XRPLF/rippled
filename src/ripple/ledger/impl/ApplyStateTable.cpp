@@ -189,8 +189,9 @@ ApplyStateTable::apply(
             {
                 assert(curNode && origNode);
 
-                if (curNode->isThreadedType())  // thread transaction to node
-                                                // item modified
+                if (curNode->isThreadedType(
+                        to.rules()))  // thread transaction to node
+                                      // item modified
                     threadItem(meta, curNode);
 
                 STObject prevs(sfPreviousFields);
@@ -224,7 +225,8 @@ ApplyStateTable::apply(
                 assert(curNode && !origNode);
                 threadOwners(to, meta, curNode, newMod, j);
 
-                if (curNode->isThreadedType())  // always thread to self
+                if (curNode->isThreadedType(
+                        to.rules()))  // always thread to self
                     threadItem(meta, curNode);
 
                 STObject news(sfNewFields);
@@ -610,6 +612,8 @@ ApplyStateTable::threadTx(
         JLOG(j.warn()) << "Threading to non-existent account: " << toBase58(to);
         return;
     }
+    // threadItem only applied to AccountRoot
+    assert(sle->isThreadedType(base.rules()));
     threadItem(meta, sle);
 }
 
