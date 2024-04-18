@@ -297,14 +297,16 @@ Env::parseResult(Json::Value const& jr)
     {
         auto const& result = jr[jss::result];
         if (result.isMember(jss::engine_result_code))
+        {
             parsed.ter = TER::fromInt(result[jss::engine_result_code].asInt());
+            parsed.rpcCode.emplace(rpcSUCCESS);
+        }
         else
             error(parsed, result);
     }
     else
         error(parsed, jr);
 
-    parsed.didApply = isTesSuccess(parsed.ter) || isTecClaim(parsed.ter);
     return parsed;
 }
 
@@ -321,7 +323,8 @@ Env::submit(JTx const& jt)
             auto const jr = rpc("submit", strHex(s.slice()));
 
             parsedResult = parseResult(jr);
-            ter_ = parsedResult.ter;
+            test.expect(parsedResult.ter, "ter uninitialized!");
+            ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
 
             return jr;
         }
@@ -330,7 +333,6 @@ Env::submit(JTx const& jt)
             // Parsing failed or the JTx is
             // otherwise missing the stx field.
             parsedResult.ter = ter_ = temMALFORMED;
-            parsedResult.didApply = false;
 
             return Json::Value();
         }
@@ -370,7 +372,8 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
         txid_.zero();
 
     ParsedResult const parsedResult = parseResult(jr);
-    ter_ = parsedResult.ter;
+    test.expect(parsedResult.ter, "ter uninitialized!");
+    ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
 
     return postconditions(jt, parsedResult, jr);
 }
@@ -381,21 +384,24 @@ Env::postconditions(
     ParsedResult const& parsed,
     Json::Value const& jr)
 {
-    bool bad =
-        (jt.ter &&
+    bool bad = !test.expect(parsed.ter, "apply: No ter result!");
+    bad =
+        (jt.ter && parsed.ter &&
          !test.expect(
-             parsed.ter == *jt.ter,
-             "apply: Got " + transToken(parsed.ter) + " (" +
-                 transHuman(parsed.ter) + "); Expected " + transToken(*jt.ter) +
-                 " (" + transHuman(*jt.ter) + ")"));
+             *parsed.ter == *jt.ter,
+             "apply: Got " + transToken(*parsed.ter) + " (" +
+                 transHuman(*parsed.ter) + "); Expected " +
+                 transToken(*jt.ter) + " (" + transHuman(*jt.ter) + ")"));
     using namespace std::string_literals;
     bad = (jt.rpcCode &&
            !test.expect(
                parsed.rpcCode == jt.rpcCode->first &&
                    parsed.rpcMessage == jt.rpcCode->second,
                "apply: Got RPC result "s +
-                   RPC::get_error_info(parsed.rpcCode).token.c_str() + " (" +
-                   parsed.rpcMessage + "); Expected " +
+                   (parsed.rpcCode
+                        ? RPC::get_error_info(*parsed.rpcCode).token.c_str()
+                        : "NO RESULT") +
+                   " (" + parsed.rpcMessage + "); Expected " +
                    RPC::get_error_info(jt.rpcCode->first).token.c_str() + " (" +
                    jt.rpcCode->second + ")")) ||
         bad;

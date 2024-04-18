@@ -123,14 +123,15 @@ public:
     /// Used by parseResult() and postConditions()
     struct ParsedResult
     {
-        TER ter;
-        // One way that RPC errors are returned
-        error_code_i rpcCode = rpcSUCCESS;
+        std::optional<TER> ter{};
+        // RPC errors tend to return either a "code" and a "message" (sometimes
+        // with an "error" that corresponds to the "code"), or with an "error"
+        // and an "exception". However, this structure allows all possible
+        // combinations.
+        std::optional<error_code_i> rpcCode{};
         std::string rpcMessage;
-        // Another way that RPC errors are returned
         std::string rpcError;
         std::string rpcException;
-        bool didApply;
     };
 
 private:

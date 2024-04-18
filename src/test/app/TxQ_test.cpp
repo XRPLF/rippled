@@ -1062,9 +1062,11 @@ public:
 
             env.app().openLedger().modify(
                 [&](OpenView& view, beast::Journal j) {
-                    std::tie(parsed.ter, parsed.didApply) = ripple::apply(
+                    // No need to initialize, since it's about to get set
+                    bool didApply;
+                    std::tie(parsed.ter, didApply) = ripple::apply(
                         env.app(), view, *jt.stx, tapNONE, env.journal);
-                    return parsed.didApply;
+                    return didApply;
                 });
             env.postconditions(jt, parsed);
         }
