@@ -95,6 +95,9 @@
 #     - replace both functions setup_target_for_coverage_gcovr_* with a single setup_target_for_coverage_gcovr
 #     - add support for all gcovr output formats
 #
+# 2024-04-03, Bronek Kozicki
+#     - add support for output formats: jacoco, clover, lcov
+#
 # USAGE:
 #
 # 1. Copy this file into your cmake modules path.
@@ -256,10 +259,10 @@ endif()
 #     BASE_DIRECTORY "../"                   # Base directory for report
 #                                            #  (defaults to PROJECT_SOURCE_DIR)
 #     FORMAT "cobertura"                     # Output format, one of:
-#                                            #  xml cobertura sonarqube json-summary
-#                                            #  json-details coveralls csv txt
-#                                            #  html-single html-nested html-details
-#                                            #  (xml is an alias to cobertura;
+#                                            #  xml cobertura sonarqube jacoco clover
+#                                            #  json-summary json-details coveralls csv
+#                                            #  txt html-single html-nested html-details
+#                                            #  lcov (xml is an alias to cobertura;
 #                                            #  if no format is set, defaults to xml)
 #     EXCLUDE "src/dir1/*" "src/dir2/*"      # Patterns to exclude (can be relative
 #                                            #  to BASE_DIRECTORY, with CMake 3.4+)
@@ -308,6 +311,8 @@ function(setup_target_for_coverage_gcovr)
             set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.txt)
         elseif(Coverage_FORMAT STREQUAL "csv")
             set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.csv)
+        elseif(Coverage_FORMAT STREQUAL "lcov")
+            set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.lcov)
         else()
             set(GCOVR_OUTPUT_FILE ${Coverage_NAME}.xml)
         endif()
@@ -320,6 +325,14 @@ function(setup_target_for_coverage_gcovr)
         set(Coverage_FORMAT cobertura) # overwrite xml
     elseif(Coverage_FORMAT STREQUAL "sonarqube")
         list(APPEND GCOVR_ADDITIONAL_ARGS --sonarqube "${GCOVR_OUTPUT_FILE}" )
+    elseif(Coverage_FORMAT STREQUAL "jacoco")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --jacoco "${GCOVR_OUTPUT_FILE}" )
+        list(APPEND GCOVR_ADDITIONAL_ARGS --jacoco-pretty )
+    elseif(Coverage_FORMAT STREQUAL "clover")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --clover "${GCOVR_OUTPUT_FILE}" )
+        list(APPEND GCOVR_ADDITIONAL_ARGS --clover-pretty )
+    elseif(Coverage_FORMAT STREQUAL "lcov")
+        list(APPEND GCOVR_ADDITIONAL_ARGS --lcov "${GCOVR_OUTPUT_FILE}" )
     elseif(Coverage_FORMAT STREQUAL "json-summary")
         list(APPEND GCOVR_ADDITIONAL_ARGS --json-summary "${GCOVR_OUTPUT_FILE}" )
         list(APPEND GCOVR_ADDITIONAL_ARGS --json-summary-pretty)
