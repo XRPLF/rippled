@@ -74,9 +74,6 @@ public:
     Issue const&
     issueIn() const;
 
-    Issue const&
-    issueOut() const;
-
     AccountID const&
     owner() const;
 
