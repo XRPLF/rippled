@@ -56,9 +56,6 @@ public:
     SerializedTypeID
     getSType() const override;
 
-    std::string
-    getText() const override;
-
     Json::Value getJson(JsonOptions) const override;
 
     void
@@ -71,9 +68,6 @@ public:
     isDefault() const override;
 
 private:
-    static std::unique_ptr<STIssue>
-    construct(SerialIter&, SField const& name);
-
     STBase*
     copy(std::size_t n, void* buf) const override;
     STBase*
