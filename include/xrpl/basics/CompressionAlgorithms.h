@@ -21,9 +21,9 @@
 #define RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
+#include <lz4.h>
 #include <algorithm>
 #include <cstdint>
-#include <lz4.h>
 #include <stdexcept>
 #include <vector>
 
