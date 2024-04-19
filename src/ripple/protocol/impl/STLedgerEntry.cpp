@@ -17,14 +17,19 @@
 */
 //==============================================================================
 
+#include <ripple/protocol/STLedgerEntry.h>
+
 #include <ripple/basics/Log.h>
 #include <ripple/basics/contract.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/json/to_string.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/STLedgerEntry.h>
+#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/jss.h>
 #include <boost/format.hpp>
+#include <algorithm>
+#include <array>
 #include <limits>
 
 namespace ripple {
@@ -124,9 +129,18 @@ STLedgerEntry::getJson(JsonOptions options) const
 }
 
 bool
-STLedgerEntry::isThreadedType() const
+STLedgerEntry::isThreadedType(Rules const& rules) const
 {
-    return getFieldIndex(sfPreviousTxnID) != -1;
+    static constexpr std::array<LedgerEntryType, 5> newPreviousTxnIDTypes = {
+        ltDIR_NODE, ltAMENDMENTS, ltFEE_SETTINGS, ltNEGATIVE_UNL, ltAMM};
+    // Exclude PrevTxnID/PrevTxnLgrSeq if the fixPreviousTxnID amendment is not
+    // enabled and the ledger object type is in the above set
+    bool const excludePrevTxnID = !rules.enabled(fixPreviousTxnID) &&
+        std::count(
+            newPreviousTxnIDTypes.cbegin(),
+            newPreviousTxnIDTypes.cend(),
+            type_);
+    return !excludePrevTxnID && getFieldIndex(sfPreviousTxnID) != -1;
 }
 
 bool

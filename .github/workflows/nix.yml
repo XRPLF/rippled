@@ -179,6 +179,8 @@ jobs:
         run: |
           mkdir -p ~/.conan
           tar -xzf conan.tar -C ~/.conan
+      - name: install gcovr
+        run: pip install "gcovr>=7,<8"
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
@@ -207,7 +209,7 @@ jobs:
             -DCMAKE_CXX_FLAGS="-O0"
             -DCMAKE_C_FLAGS="-O0"
           cmake-target: coverage
-      - name: build
+      - name: move coverage report
         shell: bash
         run: |
           mv "${build_dir}/coverage.xml" ./
@@ -218,13 +220,15 @@ jobs:
           path: coverage.xml
           retention-days: 30
       - name: upload coverage report
-        uses: wandalen/wretry.action@v1.3.0
+        uses: wandalen/wretry.action@v1.4.10
         with:
-          action: codecov/codecov-action@v4
+          action: codecov/codecov-action@v4.3.0
           with: |
             files: coverage.xml
             fail_ci_if_error: true
+            disable_search: true
             verbose: true
+            plugin: noop
             token: ${{ secrets.CODECOV_TOKEN }}
           attempt_limit: 5
-          attempt_delay: 35000 # in milliseconds
+          attempt_delay: 210000 # in milliseconds

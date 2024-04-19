@@ -77,6 +77,8 @@ LedgerFormats::LedgerFormats()
             {sfIndexNext,            soeOPTIONAL},
             {sfIndexPrevious,        soeOPTIONAL},
             {sfNFTokenID,            soeOPTIONAL},
+            {sfPreviousTxnID,        soeOPTIONAL},
+            {sfPreviousTxnLgrSeq,    soeOPTIONAL},
         },
         commonFields);
 
@@ -147,6 +149,8 @@ LedgerFormats::LedgerFormats()
         {
             {sfAmendments,           soeOPTIONAL},  // Enabled
             {sfMajorities,           soeOPTIONAL},
+            {sfPreviousTxnID,        soeOPTIONAL},
+            {sfPreviousTxnLgrSeq,    soeOPTIONAL},
         },
         commonFields);
 
@@ -154,14 +158,16 @@ LedgerFormats::LedgerFormats()
         ltFEE_SETTINGS,
         {
             // Old version uses raw numbers
-            {sfBaseFee,              soeOPTIONAL},
-            {sfReferenceFeeUnits,    soeOPTIONAL},
-            {sfReserveBase,          soeOPTIONAL},
-            {sfReserveIncrement,     soeOPTIONAL},
+            {sfBaseFee,                soeOPTIONAL},
+            {sfReferenceFeeUnits,      soeOPTIONAL},
+            {sfReserveBase,            soeOPTIONAL},
+            {sfReserveIncrement,       soeOPTIONAL},
             // New version uses Amounts
             {sfBaseFeeDrops,           soeOPTIONAL},
             {sfReserveBaseDrops,       soeOPTIONAL},
             {sfReserveIncrementDrops,  soeOPTIONAL},
+            {sfPreviousTxnID,          soeOPTIONAL},
+            {sfPreviousTxnLgrSeq,      soeOPTIONAL},
         },
         commonFields);
 
@@ -281,6 +287,8 @@ LedgerFormats::LedgerFormats()
             {sfDisabledValidators,   soeOPTIONAL},
             {sfValidatorToDisable,   soeOPTIONAL},
             {sfValidatorToReEnable,  soeOPTIONAL},
+            {sfPreviousTxnID,        soeOPTIONAL},
+            {sfPreviousTxnLgrSeq,    soeOPTIONAL},
         },
         commonFields);
 
@@ -321,14 +329,16 @@ LedgerFormats::LedgerFormats()
     add(jss::AMM,
         ltAMM,
         {
-            {sfAccount, soeREQUIRED},
-            {sfTradingFee, soeDEFAULT},
-            {sfVoteSlots, soeOPTIONAL},
-            {sfAuctionSlot, soeOPTIONAL},
-            {sfLPTokenBalance, soeREQUIRED},
-            {sfAsset, soeREQUIRED},
-            {sfAsset2, soeREQUIRED},
-            {sfOwnerNode, soeREQUIRED},
+            {sfAccount,              soeREQUIRED},
+            {sfTradingFee,           soeDEFAULT},
+            {sfVoteSlots,            soeOPTIONAL},
+            {sfAuctionSlot,          soeOPTIONAL},
+            {sfLPTokenBalance,       soeREQUIRED},
+            {sfAsset,                soeREQUIRED},
+            {sfAsset2,               soeREQUIRED},
+            {sfOwnerNode,            soeREQUIRED},
+            {sfPreviousTxnID,        soeOPTIONAL},
+            {sfPreviousTxnLgrSeq,    soeOPTIONAL},
         },
         commonFields);
 

@@ -45,13 +45,6 @@ AMMOffer<TIn, TOut>::issueIn() const
 }
 
 template <typename TIn, typename TOut>
-Issue const&
-AMMOffer<TIn, TOut>::issueOut() const
-{
-    return ammLiquidity_.issueOut();
-}
-
-template <typename TIn, typename TOut>
 AccountID const&
 AMMOffer<TIn, TOut>::owner() const
 {

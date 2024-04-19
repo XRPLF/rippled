@@ -465,6 +465,7 @@ REGISTER_FIX    (fixAMMOverflowOffer,           Supported::yes, VoteBehavior::De
 REGISTER_FEATURE(PriceOracle,                   Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixEmptyDID,                   Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixXChainRewardRounding,       Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixPreviousTxnID,              Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FEATURE(Hooks,                         Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FEATURE(PaychanAndEscrowForTokens,     Supported::yes, VoteBehavior::DefaultNo);
 

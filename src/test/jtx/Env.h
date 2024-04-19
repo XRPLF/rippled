@@ -521,17 +521,18 @@ public:
     /** Apply funclets and submit. */
     /** @{ */
     template <class JsonValue, class... FN>
-    void
+    Env&
     apply(JsonValue&& jv, FN const&... fN)
     {
         submit(jt(std::forward<JsonValue>(jv), fN...));
+        return *this;
     }
 
     template <class JsonValue, class... FN>
-    void
+    Env&
     operator()(JsonValue&& jv, FN const&... fN)
     {
-        apply(std::forward<JsonValue>(jv), fN...);
+        return apply(std::forward<JsonValue>(jv), fN...);
     }
     /** @} */
 
@@ -660,6 +661,13 @@ public:
         trust(amount, to1, toN...);
     }
     /** @} */
+
+    /** Create a STTx from a JTx without sanitizing
+        Use to inject bogus values into test transactions by first
+        editing the JSON.
+    */
+    std::shared_ptr<STTx const>
+    ust(JTx const& jt);
 
 protected:
     int trace_ = 0;
