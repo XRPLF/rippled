@@ -465,6 +465,7 @@ REGISTER_FIX    (fixAMMOverflowOffer,           Supported::yes, VoteBehavior::De
 REGISTER_FEATURE(PriceOracle,                   Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixEmptyDID,                   Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixXChainRewardRounding,       Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixPreviousTxnID,              Supported::yes, VoteBehavior::DefaultNo);
 // InvariantsV1_1 will be changes to Supported::yes when all the
 // invariants expected to be included under it are complete.
 REGISTER_FEATURE(InvariantsV1_1,                Supported::no, VoteBehavior::DefaultNo);

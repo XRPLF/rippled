@@ -472,6 +472,32 @@ Env::st(JTx const& jt)
     return nullptr;
 }
 
+std::shared_ptr<STTx const>
+Env::ust(JTx const& jt)
+{
+    // The parse must succeed, since we
+    // generated the JSON ourselves.
+    std::optional<STObject> obj;
+    try
+    {
+        obj = jtx::parse(jt.jv);
+    }
+    catch (jtx::parse_error const&)
+    {
+        test.log << "Exception: parse_error\n" << pretty(jt.jv) << std::endl;
+        Rethrow();
+    }
+
+    try
+    {
+        return std::make_shared<STTx const>(std::move(*obj));
+    }
+    catch (std::exception const&)
+    {
+    }
+    return nullptr;
+}
+
 Json::Value
 Env::do_rpc(
     unsigned apiVersion,

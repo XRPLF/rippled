@@ -130,7 +130,8 @@ public:
             Account ed("ed");
             Account bill("bill");
             env.fund(XRP(1000), bob, ed, bill);
-            ammAlice.bid(alice, 100, std::nullopt, {carol, bob, ed, bill});
+            env(ammAlice.bid(
+                {.bidMin = 100, .authAccounts = {carol, bob, ed, bill}}));
             BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
                 XRP(80000),
                 USD(80000),
