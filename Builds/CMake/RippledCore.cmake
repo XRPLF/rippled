@@ -236,6 +236,7 @@ install (
     src/ripple/basics/ByteUtilities.h
     src/ripple/basics/CompressionAlgorithms.h
     src/ripple/basics/CountedObject.h
+    src/ripple/basics/Coroutine.h
     src/ripple/basics/DecayingSample.h
     src/ripple/basics/Expected.h
     src/ripple/basics/FeeUnits.h
@@ -271,12 +272,14 @@ install (
     src/ripple/basics/make_SSLContext.h
     src/ripple/basics/mulDiv.h
     src/ripple/basics/partitioned_unordered_map.h
+    src/ripple/basics/promises.h
     src/ripple/basics/random.h
     src/ripple/basics/safe_cast.h
     src/ripple/basics/scope.h
     src/ripple/basics/spinlock.h
     src/ripple/basics/strHex.h
     src/ripple/basics/tagged_integer.h
+    src/ripple/basics/utility.h
   DESTINATION include/ripple/basics)
 install (
   FILES
