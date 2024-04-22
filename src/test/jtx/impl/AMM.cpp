@@ -234,7 +234,6 @@ AMM::expectBalances(
         balances(asset1.issue(), asset2.issue(), account);
     return asset1 == asset1Balance && asset2 == asset2Balance &&
         lptAMMBalance == STAmount{lpt, lptIssue_};
-    return false;
 }
 
 IOUAmount

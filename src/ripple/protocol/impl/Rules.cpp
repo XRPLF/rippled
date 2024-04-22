@@ -26,7 +26,7 @@
 namespace ripple {
 
 namespace {
-// Use a static inisde a function to help prevent order-of-initialization issues
+// Use a static inside a function to help prevent order-of-initialization issues
 LocalValue<std::optional<Rules>>&
 getCurrentTransactionRulesRef()
 {
