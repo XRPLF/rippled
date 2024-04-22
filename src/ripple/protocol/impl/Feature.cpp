@@ -466,6 +466,7 @@ REGISTER_FEATURE(PriceOracle,                   Supported::yes, VoteBehavior::De
 REGISTER_FIX    (fixEmptyDID,                   Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixXChainRewardRounding,       Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixPreviousTxnID,              Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixAMMRounding,                Supported::yes, VoteBehavior::DefaultNo);
 
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.
