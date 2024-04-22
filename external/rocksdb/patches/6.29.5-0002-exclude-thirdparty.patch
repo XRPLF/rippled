@@ -1,0 +1,16 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ec59d4491..35577c998 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -101 +100,0 @@ if(MSVC)
+-  option(WITH_GFLAGS "build with GFlags" OFF)
+@@ -103,2 +102,2 @@ if(MSVC)
+-  include(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty.inc)
+-else()
++endif()
++
+@@ -117 +116 @@ else()
+-  if(MINGW)
++  if(MINGW OR MSVC)
+@@ -183 +181,0 @@ else()
+-endif()

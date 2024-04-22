@@ -111,6 +111,10 @@ transResults()
         MAKE_ERROR(tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR, "Bad public key account pair in an xchain transaction."),
         MAKE_ERROR(tecXCHAIN_CREATE_ACCOUNT_DISABLED, "This bridge does not support account creation."),
         MAKE_ERROR(tecEMPTY_DID,                     "The DID object did not have a URI or DIDDocument field."),
+        MAKE_ERROR(tecINVALID_UPDATE_TIME,           "The Oracle object has invalid LastUpdateTime field."),
+        MAKE_ERROR(tecTOKEN_PAIR_NOT_FOUND,          "Token pair is not found in Oracle object."),
+        MAKE_ERROR(tecARRAY_EMPTY,                   "Array is empty."),
+        MAKE_ERROR(tecARRAY_TOO_LARGE,               "Array is too large."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
@@ -150,6 +154,7 @@ transResults()
         MAKE_ERROR(telWRONG_NETWORK,          "Transaction specifies a Network ID that differs from that of the local node."),
         MAKE_ERROR(telREQUIRES_NETWORK_ID,    "Transactions submitted to this node/network must include a correct NetworkID field."),
         MAKE_ERROR(telNETWORK_ID_MAKES_TX_NON_CANONICAL, "Transactions submitted to this node/network must NOT include a NetworkID field."),
+        MAKE_ERROR(telENV_RPC_FAILED,         "Unit test RPC failure."),
 
         MAKE_ERROR(temMALFORMED,                 "Malformed transaction."),
         MAKE_ERROR(temBAD_AMM_TOKENS,            "Malformed: Invalid LPTokens."),
@@ -197,6 +202,8 @@ transResults()
         MAKE_ERROR(temXCHAIN_BRIDGE_NONDOOR_OWNER,   "Malformed: Bridge owner must be one of the door accounts."),
         MAKE_ERROR(temXCHAIN_BRIDGE_BAD_MIN_ACCOUNT_CREATE_AMOUNT,   "Malformed: Bad min account create amount."),
         MAKE_ERROR(temXCHAIN_BRIDGE_BAD_REWARD_AMOUNT, "Malformed: Bad reward amount."),
+        MAKE_ERROR(temARRAY_EMPTY,               "Malformed: Array is empty."),
+        MAKE_ERROR(temARRAY_TOO_LARGE,           "Malformed: Array is too large."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),

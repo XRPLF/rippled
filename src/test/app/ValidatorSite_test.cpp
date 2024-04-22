@@ -172,7 +172,6 @@ private:
         test::StreamSink sink;
         beast::Journal journal{sink};
 
-        PublicKey emptyLocalKey;
         std::vector<std::string> emptyCfgKeys;
         struct publisher
         {
@@ -229,8 +228,7 @@ private:
             item.uri = uri.str();
         }
 
-        BEAST_EXPECT(
-            trustedKeys.load(emptyLocalKey, emptyCfgKeys, cfgPublishers));
+        BEAST_EXPECT(trustedKeys.load({}, emptyCfgKeys, cfgPublishers));
 
         // Normally, tests will only need a fraction of this time,
         // but sometimes DNS resolution takes an inordinate amount
@@ -239,7 +237,10 @@ private:
 
         std::vector<std::string> uris;
         for (auto const& u : servers)
+        {
+            log << "Testing " << u.uri << std::endl;
             uris.push_back(u.uri);
+        }
         sites->load(uris);
         sites->start();
         sites->join();
