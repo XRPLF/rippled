@@ -43,8 +43,8 @@ namespace detail {
 class ServerDefinitions
 {
 private:
-    std::string
     // translate e.g. STI_LEDGERENTRY to LedgerEntry
+    std::string
     translate(std::string const& inp);
 
     uint256 defsHash_;
@@ -142,6 +142,13 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
             translate(std::string(rawName).substr(4) /* remove STI_ */);
         defs_[jss::TYPES][typeName] = typeValue;
         typeMap[typeValue] = typeName;
+    }
+    for (auto const& [code, data] : *SField::pluginSTypesPtr)
+    {
+        std::string typeName =
+            translate(std::string(data.typeName).substr(4) /* remove STI_ */);
+        defs_[jss::TYPES][typeName] = code;
+        typeMap[code] = typeName;
     }
 
     // populate LedgerEntryType names and values
