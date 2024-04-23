@@ -945,26 +945,27 @@ chooseLedgerEntryType(Json::Value const& params)
         static std::vector<std::pair<char const*, std::uint16_t>> types{
             {jss::account, ltACCOUNT_ROOT},
             {jss::amendments, ltAMENDMENTS},
+            {jss::amm, ltAMM},
+            {jss::bridge, ltBRIDGE},
             {jss::check, ltCHECK},
             {jss::deposit_preauth, ltDEPOSIT_PREAUTH},
+            {jss::did, ltDID},
             {jss::directory, ltDIR_NODE},
             {jss::escrow, ltESCROW},
             {jss::fee, ltFEE_SETTINGS},
             {jss::hashes, ltLEDGER_HASHES},
+            {jss::nunl, ltNEGATIVE_UNL},
+            {jss::oracle, ltORACLE},
+            {jss::nft_offer, ltNFTOKEN_OFFER},
+            {jss::nft_page, ltNFTOKEN_PAGE},
             {jss::offer, ltOFFER},
             {jss::payment_channel, ltPAYCHAN},
             {jss::signer_list, ltSIGNER_LIST},
             {jss::state, ltRIPPLE_STATE},
             {jss::ticket, ltTICKET},
-            {jss::nft_offer, ltNFTOKEN_OFFER},
-            {jss::nft_page, ltNFTOKEN_PAGE},
-            {jss::amm, ltAMM},
-            {jss::bridge, ltBRIDGE},
             {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
             {jss::xchain_owned_create_account_claim_id,
-             ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
-            {jss::did, ltDID},
-            {jss::oracle, ltORACLE}};
+             ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID}};
         types.insert(
             types.end(), pluginLedgerTypes.begin(), pluginLedgerTypes.end());
 

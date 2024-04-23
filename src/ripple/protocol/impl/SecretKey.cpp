@@ -191,7 +191,7 @@ public:
         auto gsk = [this, tweak = calculateTweak(ordinal)]() {
             auto rpk = root_;
 
-            if (secp256k1_ec_privkey_tweak_add(
+            if (secp256k1_ec_seckey_tweak_add(
                     secp256k1Context(), rpk.data(), tweak.data()) == 1)
             {
                 SecretKey sk{Slice{rpk.data(), rpk.size()}};

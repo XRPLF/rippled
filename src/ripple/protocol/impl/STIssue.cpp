@@ -65,12 +65,6 @@ STIssue::getSType() const
     return STI_ISSUE;
 }
 
-std::string
-STIssue::getText() const
-{
-    return issue_.getText();
-}
-
 Json::Value STIssue::getJson(JsonOptions) const
 {
     return to_json(issue_);
@@ -95,12 +89,6 @@ bool
 STIssue::isDefault() const
 {
     return issue_ == xrpIssue();
-}
-
-std::unique_ptr<STIssue>
-STIssue::construct(SerialIter& sit, SField const& name)
-{
-    return std::make_unique<STIssue>(sit, name);
 }
 
 STBase*
