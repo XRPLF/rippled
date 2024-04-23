@@ -681,6 +681,7 @@ getTransactors()
 
 EXPORT_STYPES({
     STI_UINT32_2,
+    "STI_UINT32_2",
     parseLeafTypeNew,
     toString,
     NULL,

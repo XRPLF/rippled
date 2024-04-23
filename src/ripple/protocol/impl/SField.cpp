@@ -505,7 +505,7 @@ SField::getField(std::string const& fieldName)
 void
 SField::reset()
 {
-    if (pluginSTypesPtr != nullptr)
+    if (pluginSFieldCodesPtr != nullptr)
     {
         for (auto& code : *pluginSFieldCodesPtr)
         {

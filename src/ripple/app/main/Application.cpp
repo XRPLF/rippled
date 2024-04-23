@@ -1328,6 +1328,7 @@ addPlugin(std::string libPath)
             auto const stype = *(sTypes.data + i);
             registerSType(
                 {stype.typeId,
+                 stype.typeName,
                  stype.toString,
                  stype.toJson,
                  stype.toSerializer,

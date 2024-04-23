@@ -60,6 +60,7 @@ typedef Buffer (*parsePluginValuePtr)(
 struct STypeExport
 {
     int typeId;
+    const char* typeName;
     parsePluginValuePtr parsePtr;
     toStringPtr toString;
     toJsonPtr toJson;

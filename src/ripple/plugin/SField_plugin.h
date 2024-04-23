@@ -43,6 +43,7 @@ typedef Buffer (*fromSerialIterPtr)(int typeId, SerialIter& st);
 struct STypeFunctions
 {
     int typeId;
+    const char* typeName;
     toStringPtr toString;
     toJsonPtr toJson;
     toSerializerPtr toSerializer;
