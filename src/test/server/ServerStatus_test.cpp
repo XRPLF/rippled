@@ -21,7 +21,7 @@
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/base64.h>
-#include <ripple/beast/test/yield_to.hpp>
+#include <ripple/beast/test/yield_to.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/rpc/ServerHandler.h>
 #include <boost/algorithm/string/predicate.hpp>

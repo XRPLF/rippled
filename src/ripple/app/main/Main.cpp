@@ -35,7 +35,7 @@
 #include <ripple/rpc/RPCHandler.h>
 
 #ifdef ENABLE_TESTS
-#include <ripple/beast/unit_test/match.hpp>
+#include <ripple/beast/unit_test/match.h>
 #include <test/unit_test/multi_runner.h>
 #endif  // ENABLE_TESTS
 

@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <ripple/beast/unit_test.h>
-#include <ripple/beast/unit_test/suite.hpp>
+#include <ripple/beast/unit_test/suite.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/ApiVersion.h>
 
