@@ -39,6 +39,10 @@ class Xrpl(ConanFile):
         'xxhash/0.8.2',
     ]
 
+    tool_requires = [
+        'protobuf/3.21.9',
+    ]
+
     default_options = {
         'assertions': False,
         'coverage': False,

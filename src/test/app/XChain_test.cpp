@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test/suite.hpp>
+#include <ripple/beast/unit_test/suite.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Issue.h>
