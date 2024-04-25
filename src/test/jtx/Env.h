@@ -120,6 +120,20 @@ public:
 
     Account const& master = Account::master;
 
+    /// Used by parseResult() and postConditions()
+    struct ParsedResult
+    {
+        std::optional<TER> ter{};
+        // RPC errors tend to return either a "code" and a "message" (sometimes
+        // with an "error" that corresponds to the "code"), or with an "error"
+        // and an "exception". However, this structure allows all possible
+        // combinations.
+        std::optional<error_code_i> rpcCode{};
+        std::string rpcMessage;
+        std::string rpcError;
+        std::string rpcException;
+    };
+
 private:
     struct AppBundle
     {
@@ -493,7 +507,7 @@ public:
 
     /** Gets the TER result and `didApply` flag from a RPC Json result object.
      */
-    static std::pair<TER, bool>
+    static ParsedResult
     parseResult(Json::Value const& jr);
 
     /** Submit an existing JTx.
@@ -514,24 +528,24 @@ public:
     void
     postconditions(
         JTx const& jt,
-        TER ter,
-        bool didApply,
+        ParsedResult const& parsed,
         Json::Value const& jr = Json::Value());
 
     /** Apply funclets and submit. */
     /** @{ */
     template <class JsonValue, class... FN>
-    void
+    Env&
     apply(JsonValue&& jv, FN const&... fN)
     {
         submit(jt(std::forward<JsonValue>(jv), fN...));
+        return *this;
     }
 
     template <class JsonValue, class... FN>
-    void
+    Env&
     operator()(JsonValue&& jv, FN const&... fN)
     {
-        apply(std::forward<JsonValue>(jv), fN...);
+        return apply(std::forward<JsonValue>(jv), fN...);
     }
     /** @} */
 
@@ -660,6 +674,13 @@ public:
         trust(amount, to1, toN...);
     }
     /** @} */
+
+    /** Create a STTx from a JTx without sanitizing
+        Use to inject bogus values into test transactions by first
+        editing the JSON.
+    */
+    std::shared_ptr<STTx const>
+    ust(JTx const& jt);
 
 protected:
     int trace_ = 0;
