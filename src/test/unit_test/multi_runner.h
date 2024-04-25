@@ -20,8 +20,8 @@
 #ifndef TEST_UNIT_TEST_MULTI_RUNNER_H
 #define TEST_UNIT_TEST_MULTI_RUNNER_H
 
-#include <ripple/beast/unit_test/global_suites.hpp>
-#include <ripple/beast/unit_test/runner.hpp>
+#include <ripple/beast/unit_test/global_suites.h>
+#include <ripple/beast/unit_test/runner.h>
 #include <boost/beast/core/static_string.hpp>
 
 #include <boost/container/static_vector.hpp>

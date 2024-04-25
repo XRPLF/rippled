@@ -5,9 +5,9 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#include <ripple/beast/unit_test/amount.hpp>
-#include <ripple/beast/unit_test/global_suites.hpp>
-#include <ripple/beast/unit_test/suite.hpp>
+#include <ripple/beast/unit_test/amount.h>
+#include <ripple/beast/unit_test/global_suites.h>
+#include <ripple/beast/unit_test/suite.h>
 #include <string>
 
 // Include this .cpp in your project to gain access to the printing suite
