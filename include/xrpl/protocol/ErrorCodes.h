@@ -136,9 +136,8 @@ enum error_code_i {
     rpcINVALID_LGR_RANGE = 79,
     rpcEXPIRED_VALIDATOR_LIST = 80,
 
-    // Reporting
-    rpcFAILED_TO_FORWARD = 90,
-    rpcREPORTING_UNSUPPORTED = 91,
+    // unused = 90,
+    // unused = 91,
 
     rpcOBJECT_NOT_FOUND = 92,
 
@@ -149,7 +148,7 @@ enum error_code_i {
     rpcORACLE_MALFORMED = 94,
 
     rpcLAST =
-        rpcORACLE_MALFORMED  // rpcLAST should always equal the last code.=
+        rpcORACLE_MALFORMED  // rpcLAST should always equal the last code.
 };
 
 /** Codes returned in the `warnings` array of certain RPC commands.
@@ -160,7 +159,7 @@ enum warning_code_i {
     warnRPC_UNSUPPORTED_MAJORITY = 1001,
     warnRPC_AMENDMENT_BLOCKED = 1002,
     warnRPC_EXPIRED_VALIDATOR_LIST = 1003,
-    warnRPC_REPORTING = 1004
+    // unused = 1004
 };
 
 //------------------------------------------------------------------------------

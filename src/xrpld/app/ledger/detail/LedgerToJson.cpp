@@ -22,7 +22,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/core/Pg.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
@@ -232,14 +231,7 @@ fillJsonTx(Object& json, LedgerFill const& fill)
             }
         };
 
-        if (fill.context && fill.context->app.config().reporting())
-        {
-            appendAll(flatFetchTransactions(fill.ledger, fill.context->app));
-        }
-        else
-        {
-            appendAll(fill.ledger.txs);
-        }
+        appendAll(fill.ledger.txs);
     }
     catch (std::exception const& ex)
     {
