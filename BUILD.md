@@ -36,8 +36,14 @@ See [System Requirements](https://xrpl.org/system-requirements.html).
 Building rippled generally requires git, Python, Conan, CMake, and a C++ compiler. Some guidance on setting up such a [C++ development environment can be found here](./docs/build/environment.md).
 
 - [Python 3.7](https://www.python.org/downloads/)
-- [Conan 1.60](https://conan.io/downloads.html)
+- [Conan 1.60](https://conan.io/downloads.html)[^1]
 - [CMake 3.16](https://cmake.org/download/)
+
+[^1]: It is possible to build with Conan 2.x,
+but the instructions are significantly different,
+which is why we are not recommending it yet.
+Notably, the `conan profile update` command is removed in 2.x.
+Profiles must be edited by hand.
 
 `rippled` is written in the C++20 dialect and includes the `<concepts>` header.
 The [minimum compiler versions][2] required are:
