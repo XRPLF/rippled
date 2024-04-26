@@ -24,6 +24,8 @@
 #include <ripple/basics/XRPAmount.h>
 #include <ripple/protocol/STAmount.h>
 
+#include <type_traits>
+
 namespace ripple {
 
 inline STAmount
@@ -130,15 +132,43 @@ toAmount(
     saveNumberRoundMode rm(Number::getround());
     if (isXRP(issue))
         Number::setround(mode);
+
     if constexpr (std::is_same_v<IOUAmount, T>)
         return IOUAmount(n);
-    if constexpr (std::is_same_v<XRPAmount, T>)
+    else if constexpr (std::is_same_v<XRPAmount, T>)
         return XRPAmount(static_cast<std::int64_t>(n));
-    if constexpr (std::is_same_v<STAmount, T>)
+    else if constexpr (std::is_same_v<STAmount, T>)
     {
         if (isXRP(issue))
             return STAmount(issue, static_cast<std::int64_t>(n));
         return STAmount(issue, n.mantissa(), n.exponent());
+    }
+    else
+    {
+        constexpr bool alwaysFalse = !std::is_same_v<T, T>;
+        static_assert(alwaysFalse, "Unsupported type for toAmount");
+    }
+}
+
+template <typename T>
+T
+toMaxAmount(Issue const& issue)
+{
+    if constexpr (std::is_same_v<IOUAmount, T>)
+        return IOUAmount(STAmount::cMaxValue, STAmount::cMaxOffset);
+    else if constexpr (std::is_same_v<XRPAmount, T>)
+        return XRPAmount(static_cast<std::int64_t>(STAmount::cMaxNativeN));
+    else if constexpr (std::is_same_v<STAmount, T>)
+    {
+        if (isXRP(issue))
+            return STAmount(
+                issue, static_cast<std::int64_t>(STAmount::cMaxNativeN));
+        return STAmount(issue, STAmount::cMaxValue, STAmount::cMaxOffset);
+    }
+    else
+    {
+        constexpr bool alwaysFalse = !std::is_same_v<T, T>;
+        static_assert(alwaysFalse, "Unsupported type for toMaxAmount");
     }
 }
 
@@ -157,10 +187,15 @@ getIssue(T const& amt)
 {
     if constexpr (std::is_same_v<IOUAmount, T>)
         return noIssue();
-    if constexpr (std::is_same_v<XRPAmount, T>)
+    else if constexpr (std::is_same_v<XRPAmount, T>)
         return xrpIssue();
-    if constexpr (std::is_same_v<STAmount, T>)
+    else if constexpr (std::is_same_v<STAmount, T>)
         return amt.issue();
+    else
+    {
+        constexpr bool alwaysFalse = !std::is_same_v<T, T>;
+        static_assert(alwaysFalse, "Unsupported type for getIssue");
+    }
 }
 
 template <typename T>
@@ -169,10 +204,15 @@ get(STAmount const& a)
 {
     if constexpr (std::is_same_v<IOUAmount, T>)
         return a.iou();
-    if constexpr (std::is_same_v<XRPAmount, T>)
+    else if constexpr (std::is_same_v<XRPAmount, T>)
         return a.xrp();
-    if constexpr (std::is_same_v<STAmount, T>)
+    else if constexpr (std::is_same_v<STAmount, T>)
         return a;
+    else
+    {
+        constexpr bool alwaysFalse = !std::is_same_v<T, T>;
+        static_assert(alwaysFalse, "Unsupported type for get");
+    }
 }
 
 }  // namespace ripple

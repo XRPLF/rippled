@@ -133,6 +133,13 @@ public:
         return x.mantissa_ < y.mantissa_;
     }
 
+    /** Return the sign of the amount */
+    constexpr int
+    signum() const noexcept
+    {
+        return (mantissa_ < 0) ? -1 : (mantissa_ ? 1 : 0);
+    }
+
     friend constexpr bool
     operator>(Number const& x, Number const& y) noexcept
     {

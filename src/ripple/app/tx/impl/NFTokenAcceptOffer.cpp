@@ -259,7 +259,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             // We also _must not_ check the tx submitter in brokered
             // mode, because then we are confirming that the broker can
             // cover what the buyer will pay, which doesn't make sense, causes
-            // an unncessary tec, and is also resolved with this amendment.
+            // an unnecessary tec, and is also resolved with this amendment.
             if (accountFunds(
                     ctx.view,
                     ctx.tx[sfAccount],

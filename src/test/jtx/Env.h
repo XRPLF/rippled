@@ -120,6 +120,20 @@ public:
 
     Account const& master = Account::master;
 
+    /// Used by parseResult() and postConditions()
+    struct ParsedResult
+    {
+        std::optional<TER> ter{};
+        // RPC errors tend to return either a "code" and a "message" (sometimes
+        // with an "error" that corresponds to the "code"), or with an "error"
+        // and an "exception". However, this structure allows all possible
+        // combinations.
+        std::optional<error_code_i> rpcCode{};
+        std::string rpcMessage;
+        std::string rpcError;
+        std::string rpcException;
+    };
+
 private:
     struct AppBundle
     {
@@ -493,7 +507,7 @@ public:
 
     /** Gets the TER result and `didApply` flag from a RPC Json result object.
      */
-    static std::pair<TER, bool>
+    static ParsedResult
     parseResult(Json::Value const& jr);
 
     /** Submit an existing JTx.
@@ -514,8 +528,7 @@ public:
     void
     postconditions(
         JTx const& jt,
-        TER ter,
-        bool didApply,
+        ParsedResult const& parsed,
         Json::Value const& jr = Json::Value());
 
     /** Apply funclets and submit. */
