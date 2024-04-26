@@ -41,7 +41,7 @@ public:
         env.fund(XRP(10000), noripple(alice));
         // ask for the ledger entry - account root, to check its flags
         auto const jrr = env.le(alice);
-        BEAST_EXPECT((*env.le(alice))[sfFlags] == 0u);
+        BEAST_EXPECT(jrr && jrr->at(sfFlags) == 0u);
     }
 
     void
