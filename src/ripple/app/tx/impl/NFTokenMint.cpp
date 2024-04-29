@@ -31,16 +31,23 @@
 
 namespace ripple {
 
+static std::uint16_t
+extractNFTokenFlagsFromTxFlags(std::uint32_t txFlags)
+{
+    return static_cast<std::uint16_t>(txFlags & 0x0000FFFF);
+}
+
 NotTEC
 NFTokenMint::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureNonFungibleTokensV1))
         return temDISABLED;
 
-    if (!ctx.rules.enabled(featureNFTokenMintOffer) &&
-        (ctx.tx.isFieldPresent(sfAmount) ||
-         ctx.tx.isFieldPresent(sfDestination) ||
-         ctx.tx.isFieldPresent(sfExpiration)))
+    bool const hasOfferFields = ctx.tx.isFieldPresent(sfAmount) ||
+        ctx.tx.isFieldPresent(sfDestination) ||
+        ctx.tx.isFieldPresent(sfExpiration);
+
+    if (!ctx.rules.enabled(featureNFTokenMintOffer) && hasOfferFields)
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
@@ -86,38 +93,27 @@ NFTokenMint::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    // Amount field should be set if Destination and/or Expiration is set
-    if (ctx.tx.isFieldPresent(sfDestination) ||
-        ctx.tx.isFieldPresent(sfExpiration))
+    if (hasOfferFields)
     {
+        // The Amount field must be present if either the Destination or
+        // Expiration fields are present.
         if (!ctx.tx.isFieldPresent(sfAmount))
             return temMALFORMED;
-    }
 
-    if (auto const amount = ctx.tx[~sfAmount])
-    {
-        if (amount->negative() && ctx.rules.enabled(fixNFTokenNegOffer))
-            // An offer for a negative amount makes no sense.
-            return temBAD_AMOUNT;
-
-        if (!isXRP(*amount))
+        // Rely on the common code shared with NFTokenCreateOffer to
+        // do the validation.  We pass tfSellNFToken as the transaction flags
+        // because a Mint is only allowed to create a sell offer.
+        if (NotTEC notTec = nft::tokenOfferCreatePreflight(
+                ctx.tx[sfAccount],
+                ctx.tx[sfAmount],
+                ctx.tx[~sfDestination],
+                ctx.tx[~sfExpiration],
+                extractNFTokenFlagsFromTxFlags(ctx.tx.getFlags()),
+                ctx.rules);
+            !isTesSuccess(notTec))
         {
-            if (ctx.tx.isFlag(tfOnlyXRP))
-                return temBAD_AMOUNT;
-
-            if (!*amount)
-                return temBAD_AMOUNT;
+            return notTec;
         }
-    }
-
-    if (auto const exp = ctx.tx[~sfExpiration]; exp == 0)
-        return temBAD_EXPIRATION;
-
-    if (auto const dest = ctx.tx[~sfDestination])
-    {
-        // The destination can't be the account executing the transaction.
-        if (dest == ctx.tx[sfAccount])
-            return temMALFORMED;
     }
 
     return preflight2(ctx);
@@ -186,56 +182,26 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
-    if (auto const amount = ctx.tx[~sfAmount])
+    if (ctx.tx.isFieldPresent(sfAmount))
     {
+        // The Amount field says create an offer for the minted token.
         if (hasExpired(ctx.view, ctx.tx[~sfExpiration]))
             return tecEXPIRED;
 
-        if (!(ctx.tx.getFlags() & nft::flagCreateTrustLines) &&
-            !amount->native() && ctx.tx[~sfTransferFee])
-        {
-            auto const nftIssuer =
-                ctx.tx[~sfIssuer].value_or(ctx.tx[sfAccount]);
-
-            // If the IOU issuer and the NFToken issuer are the same,
-            // then that issuer does not need a trust line to accept their fee.
-            if (nftIssuer != amount->getIssuer() &&
-                !ctx.view.read(keylet::line(nftIssuer, amount->issue())))
-                return tecNO_LINE;
-
-            if (isFrozen(
-                    ctx.view,
-                    nftIssuer,
-                    amount->getCurrency(),
-                    amount->getIssuer()))
-                return tecFROZEN;
-        }
-
-        if (isFrozen(
+        // Rely on the common code shared with NFTokenCreateOffer to
+        // do the validation.  We pass tfSellNFToken as the transaction flags
+        // because a Mint is only allowed to create a sell offer.
+        if (TER const ter = nft::tokenOfferCreatePreclaim(
                 ctx.view,
                 ctx.tx[sfAccount],
-                amount->getCurrency(),
-                amount->getIssuer()))
-            return tecFROZEN;
-
-        if (auto const destination = ctx.tx[~sfDestination])
-        {
-            // If a destination is specified, the destination must already be in
-            // the ledger.
-            auto const sleDst = ctx.view.read(keylet::account(*destination));
-
-            if (!sleDst)
-                return tecNO_DST;
-
-            // check if the destination has disallowed incoming offers
-            if (ctx.view.rules().enabled(featureDisallowIncoming))
-            {
-                // flag cannot be set unless amendment is enabled but
-                // out of an abundance of caution check anyway
-                if (sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
-                    return tecNO_PERMISSION;
-            }
-        }
+                ctx.tx[~sfIssuer].value_or(ctx.tx[sfAccount]),
+                ctx.tx[sfAmount],
+                ctx.tx[~sfDestination],
+                extractNFTokenFlagsFromTxFlags(ctx.tx.getFlags()),
+                ctx.tx[~sfTransferFee].value_or(0),
+                ctx.j);
+            !isTesSuccess(ter))
+            return ter;
     }
     return tesSUCCESS;
 }
@@ -330,7 +296,7 @@ NFTokenMint::doApply()
         return tecINTERNAL;
 
     auto const nftokenID = createNFTokenID(
-        static_cast<std::uint16_t>(ctx_.tx.getFlags() & 0x0000FFFF),
+        extractNFTokenFlagsFromTxFlags(ctx_.tx.getFlags()),
         ctx_.tx[~sfTransferFee].value_or(0),
         issuer,
         nft::toTaxon(ctx_.tx[sfNFTokenTaxon]),
@@ -351,64 +317,27 @@ NFTokenMint::doApply()
 
     if (ctx_.tx.isFieldPresent(sfAmount))
     {
-        auto const offerID =
-            keylet::nftoffer(account_, ctx_.tx.getSeqProxy().value());
-
-        // Create the offer:
-        {
-            // Token offers are always added to the owner's owner directory:
-            auto const ownerNode = ctx_.view().dirInsert(
-                keylet::ownerDir(account_),
-                offerID,
-                describeOwnerDir(account_));
-
-            if (!ownerNode)
-                return tecDIR_FULL;
-
-            // Token offers are also added to the token's sell offer
-            // directory
-            auto const offerNode = ctx_.view().dirInsert(
-                keylet::nft_sells(nftokenID),
-                offerID,
-                [&nftokenID](std::shared_ptr<SLE> const& sle) {
-                    (*sle)[sfFlags] = lsfNFTokenSellOffers;
-                    (*sle)[sfNFTokenID] = nftokenID;
-                });
-
-            if (!offerNode)
-                return tecDIR_FULL;
-
-            // Only sell offer are supported at NFTokenMint.
-            std::uint32_t const sleFlags = lsfSellNFToken;
-
-            auto offer = std::make_shared<SLE>(offerID);
-            (*offer)[sfOwner] = account_;
-            (*offer)[sfNFTokenID] = nftokenID;
-            (*offer)[sfAmount] = ctx_.tx[sfAmount];
-            (*offer)[sfFlags] = sleFlags;
-            (*offer)[sfOwnerNode] = *ownerNode;
-            (*offer)[sfNFTokenOfferNode] = *offerNode;
-
-            if (auto const expiration = ctx_.tx[~sfExpiration])
-                (*offer)[sfExpiration] = *expiration;
-
-            if (auto const destination = ctx_.tx[~sfDestination])
-                (*offer)[sfDestination] = *destination;
-
-            ctx_.view().insert(offer);
-
-            adjustOwnerCount(
-                ctx_.view(),
-                ctx_.view().peek(keylet::account(account_)),
-                1,
+        // Rely on the common code shared with NFTokenCreateOffer to create
+        // the offer.  We pass tfSellNFToken as the transaction flags
+        // because a Mint is only allowed to create a sell offer.
+        if (TER const ter = nft::tokenOfferCreateApply(
+                view(),
+                ctx_.tx[sfAccount],
+                ctx_.tx[sfAmount],
+                ctx_.tx[~sfDestination],
+                ctx_.tx[~sfExpiration],
+                ctx_.tx.getSeqProxy(),
+                nftokenID,
+                mPriorBalance,
                 j_);
-        }
+            !isTesSuccess(ter))
+            return ter;
     }
 
     // Only check the reserve if the owner count actually changed.  This
     // allows NFTs to be added to the page (and burn fees) without
     // requiring the reserve to be met each time.  The reserve is
-    // only managed when a new NFT page is added.
+    // only managed when a new NFT page or sell offer is added.
     if (auto const ownerCountAfter =
             view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
         ownerCountAfter > ownerCountBefore)
