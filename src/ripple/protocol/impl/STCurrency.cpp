@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <ripple/protocol/Feature.h>
+#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/STCurrency.h>
 #include <ripple/protocol/jss.h>
 
@@ -71,6 +73,12 @@ STCurrency::isEquivalent(const STBase& t) const
 bool
 STCurrency::isDefault() const
 {
+    if (auto const rules = getCurrentTransactionRules())
+    {
+        if (rules->enabled(fixAMMMetadata))
+            return false;
+    }
+
     return isXRP(currency_);
 }
 
