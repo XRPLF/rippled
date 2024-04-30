@@ -132,6 +132,9 @@ apply(
     STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
     NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
+    if (tx.isFieldPresent(sfBatchTxn))
+        return {tesSUCCESS, false};
+
     auto pfresult = preflight(app, view.rules(), tx, flags, j);
     auto pcresult = preclaim(pfresult, app, view);
     return doApply(pcresult, app, view);

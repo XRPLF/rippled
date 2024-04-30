@@ -150,7 +150,7 @@ XRPNotCreated::finalize(
     {
         drops_ = -fee.drops();
         // return true;
-        // auto const& txns = tx.getFieldArray(sfTransactions);
+        // auto const& txns = tx.getFieldArray(sfRawTransactions);
         // XRPAmount dropsAdded{beast::zero};
         // XRPAmount feeAdded{beast::zero};
         // for (auto const& txn : txns)
@@ -166,7 +166,7 @@ XRPNotCreated::finalize(
         // std::cout << "drops: " << drops << "\n";
         // std::cout << "drops=: " << drops_ << "\n";
 
-        // // catch any overflow or funny business
+        // catch any overflow or funny business
         // if (drops > dropsAdded.drops())
         //     return false;
 

@@ -141,6 +141,13 @@ InnerObjectFormats::InnerObjectFormats()
         {{sfTransactionType, soeREQUIRED},
          {sfTransactionResult, soeREQUIRED},
          {sfTransactionHash, soeREQUIRED}});
+
+    add(sfBatchTxn.jsonName.c_str(),
+        sfBatchTxn.getCode(),
+        {{sfAccount, soeREQUIRED},
+         {sfOuterSequence, soeREQUIRED},
+         {sfSequence, soeOPTIONAL},
+         {sfBatchIndex, soeREQUIRED}});
 }
 
 InnerObjectFormats const&

@@ -106,23 +106,6 @@ preflight1(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "preflight1: invalid fee";
         return temBAD_FEE;
     }
-    // if (ctx.flags == tapPREFLIGHT_BATCH)
-    // {
-    //     if (ctx.tx.isFieldPresent(sfFee) && ctx.tx.getFieldAmount(sfFee) != 0)
-    //     {
-    //         JLOG(ctx.j.debug()) << "preflight1: batch tx contains invalid sfFee";
-    //         return temMALFORMED;
-    //     }
-    // }
-    // else
-    // {
-    //     auto const fee = ctx.tx.getFieldAmount(sfFee);
-    //     if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
-    //     {
-    //         JLOG(ctx.j.debug()) << "preflight1: invalid fee";
-    //         return temBAD_FEE;
-    //     }
-    // }
 
     // check public key validity
     auto const spk = ctx.tx.getSigningPubKey();
@@ -223,8 +206,8 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     // Only check fee is sufficient when the ledger is open.
     if (ctx.view.open() && ctx.tx.getTxnType() == ttBATCH)
     {
-        XRPAmount feeDue = XRPAmount{ctx.view.fees().base * 2};
-        auto const& txns = ctx.tx.getFieldArray(sfTransactions);
+        XRPAmount feeDue = XRPAmount{0};
+        auto const& txns = ctx.tx.getFieldArray(sfRawTransactions);
         for (std::size_t i = 0; i < txns.size(); ++i)
         {
             auto const& txn = txns[i];
@@ -234,9 +217,14 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
                     << "Batch: sfFee missing in array entry.";
                 return telINSUF_FEE_P;
             }
-
             auto const _fee = txn.getFieldAmount(sfFee);
             feeDue += _fee.xrp();
+
+            // auto const tt = txn.getFieldU16(sfTransactionType);
+            // auto const txtype = safe_cast<TxType>(tt);
+            // auto const stx = STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
+            // auto const _fee = Transactor::calculateBaseFee(ctx.view, stx);
+            // feeDue += _fee;
         }
 
         if (feePaid < feeDue)
@@ -418,6 +406,11 @@ Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
     SeqProxy const seqProx = ctx_.tx.getSeqProxy();
     if (seqProx.isSeq())
     {
+
+        // do not update sequence of sfAccountTxnID for batch tx
+        if (ctx_.tx.isFieldPresent(sfBatchTxn))
+            return tesSUCCESS;
+
         // Note that if this transaction is a TicketCreate, then
         // the transaction will modify the account root sfSequence
         // yet again.
@@ -493,10 +486,6 @@ TER
 Transactor::apply()
 {
     preCompute();
-
-    auto const tt = ctx_.tx.getTxnType();
-    if (tt == ttBATCH)
-        return doApply();
 
     // If the transactor requires a valid account and the transaction doesn't
     // list one, preflight will have already a flagged a failure.
@@ -919,11 +908,11 @@ Transactor::operator()()
     if (ctx_.size() > oversizeMetaDataCap)
         result = tecOVERSIZE;
 
-    if (isTecClaim(result) && (view().flags() & tapFAIL_HARD))
+    if ((isTecClaim(result) && (view().flags() & tapFAIL_HARD)) ||
+        view().flags() & tapPREFLIGHT_BATCH)
     {
         // If the tapFAIL_HARD flag is set, a tec result
         // must not do anything
-
         ctx_.discard();
         applied = false;
     }

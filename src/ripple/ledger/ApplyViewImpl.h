@@ -83,6 +83,12 @@ public:
         batchExecution_.push_back(std::move(batchExecution));
     }
 
+    void
+    setHookMetaData(std::vector<STObject>&& batch)
+    {
+        batchExecution_ = std::move(batch);
+    }
+
     /** Get the number of modified entries
      */
     std::size_t

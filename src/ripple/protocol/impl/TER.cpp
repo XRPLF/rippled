@@ -111,6 +111,7 @@ transResults()
         MAKE_ERROR(tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR, "Bad public key account pair in an xchain transaction."),
         MAKE_ERROR(tecXCHAIN_CREATE_ACCOUNT_DISABLED, "This bridge does not support account creation."),
         MAKE_ERROR(tecEMPTY_DID,                     "The DID object did not have a URI or DIDDocument field."),
+        MAKE_ERROR(tecBATCH_FAILURE,                 "Tx Batch Failure."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),

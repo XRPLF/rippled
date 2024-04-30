@@ -97,6 +97,7 @@ CONSTRUCT_TYPED_SFIELD(sfTickSize,              "TickSize",             UINT8,  
 CONSTRUCT_TYPED_SFIELD(sfUNLModifyDisabling,    "UNLModifyDisabling",   UINT8,     17);
 CONSTRUCT_TYPED_SFIELD(sfHookResult,            "HookResult",           UINT8,     18);
 CONSTRUCT_TYPED_SFIELD(sfWasLockingChainSend,   "WasLockingChainSend",  UINT8,     19);
+CONSTRUCT_TYPED_SFIELD(sfBatchIndex,            "BatchIndex",           UINT8,     20);
 
 // 16-bit integers
 CONSTRUCT_TYPED_SFIELD(sfLedgerEntryType,       "LedgerEntryType",      UINT16,     1, SField::sMD_Never);
@@ -164,6 +165,7 @@ CONSTRUCT_TYPED_SFIELD(sfEmitGeneration,        "EmitGeneration",       UINT32, 
 // 47 is reserved for LockCount(Hooks)
 CONSTRUCT_TYPED_SFIELD(sfVoteWeight,            "VoteWeight",           UINT32,    48);
 CONSTRUCT_TYPED_SFIELD(sfFirstNFTokenSequence,  "FirstNFTokenSequence", UINT32,    50);
+CONSTRUCT_TYPED_SFIELD(sfOuterSequence,         "OuterSequence",        UINT32,    51);
 
 // 64-bit integers (common)
 CONSTRUCT_TYPED_SFIELD(sfIndexNext,             "IndexNext",            UINT64,     1);
@@ -379,8 +381,9 @@ CONSTRUCT_UNTYPED_SFIELD(sfXChainClaimAttestationCollectionElement,
 CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement,
                                                  "XChainCreateAccountAttestationCollectionElement",
                                                                         OBJECT,    31);
-CONSTRUCT_UNTYPED_SFIELD(sfBatchTransaction,    "BatchTransaction",     OBJECT,    32);
+CONSTRUCT_UNTYPED_SFIELD(sfRawTransaction,      "RawTransaction",       OBJECT,    32);
 CONSTRUCT_UNTYPED_SFIELD(sfBatchExecution,      "BatchExecution",       OBJECT,    33);
+CONSTRUCT_UNTYPED_SFIELD(sfBatchTxn,            "BatchTxn",             OBJECT,    34);
 
 // array of objects
 //                                                                            ARRAY/1 is reserved for end of array
@@ -410,8 +413,8 @@ CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountAttestations,
                                                                         ARRAY,     22);
 // 23 and 24 are unused and available for use
 CONSTRUCT_UNTYPED_SFIELD(sfAuthAccounts,        "AuthAccounts",         ARRAY,     25);
-CONSTRUCT_UNTYPED_SFIELD(sfTransactions,        "Transactions",         ARRAY,     26);
-CONSTRUCT_UNTYPED_SFIELD(sfBatchExecutions,     "BatchExecutions",      ARRAY,     27);
+CONSTRUCT_UNTYPED_SFIELD(sfBatchExecutions,     "BatchExecutions",      ARRAY,     26);
+CONSTRUCT_UNTYPED_SFIELD(sfRawTransactions,     "RawTransactions",      ARRAY,     27);
 
 // clang-format on
 

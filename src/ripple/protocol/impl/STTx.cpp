@@ -187,6 +187,14 @@ STTx::getSeqProxy() const
     if (seq != 0)
         return SeqProxy::sequence(seq);
 
+    if (isFieldPresent(sfBatchTxn))
+    {
+        STObject const batchTxn = const_cast<ripple::STTx&>(*this).getField(sfBatchTxn).downcast<STObject>();
+        std::uint32_t const startSequence{batchTxn.getFieldU32(sfOuterSequence)};
+        std::uint32_t const batchIndex{batchTxn.getFieldU8(sfBatchIndex)};
+        return SeqProxy::sequence(startSequence + batchIndex + 1);
+    }
+
     std::optional<std::uint32_t> const ticketSeq{operator[](~sfTicketSequence)};
     if (!ticketSeq)
         // No TicketSequence specified.  Return the Sequence, whatever it is.

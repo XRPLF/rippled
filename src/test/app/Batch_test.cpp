@@ -22,6 +22,33 @@
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 
+// tfOnlyOne
+// Tx1: Payment = tecUNFUNDED => Leave
+// Tx2: Payment = tesSUCCESS => Leave
+// TER(tesSUCCESS)
+
+// tfUntilFailure
+// Tx1: Payment = tesSUCCESS => Leave
+// Tx2: Payment = tecUNFUNDED => Leave
+// TER(tesSUCCESS)
+
+// tfBatchAtomic
+// Tx1: Payment = tesSUCCESS => Revert
+// Tx2: Payment = tecUNFUNDED => Leave
+// TER(tecBATCH_FAILURE)
+
+// Broadcast - Manually broadcast the inner transactions
+// Stacking Views
+// TicketCreate as first of batch
+// Sequence optional except when needed specifically
+// Bypass the queue for inner transactions
+// Fee only on outer - if 2 payments and fee escellation make sure that the outer tx includes the fee escallation for all inner
+// Look at TicketCreate for creating virtual tickets (Transactor.cpp) (TransactionConsequences.cpp)
+// If we have the batch index, the virtual ticket number is seq of batch + batch index.
+// Think about multiple different angles of this. AccountA & AccountB.
+
+// OptionB: Use OfferID
+
 namespace ripple {
 namespace test {
 
@@ -48,17 +75,44 @@ class Batch_test : public beast::unit_test::suite
             ++index;
         }
     }
-
-    void
-    testBatch(FeatureBitset features)
+  
+    Json::Value
+    addBatchTx(
+        Json::Value jv,
+        Json::Value const& tx,
+        jtx::Account const& account,
+        XRPAmount feeDrops,
+        std::uint8_t index,
+        std::uint32_t outerSequence)
     {
-        testcase("batch");
+        jv[sfRawTransactions.jsonName][index] = Json::Value{};
+        jv[sfRawTransactions.jsonName][index][jss::RawTransaction] = tx;
+        jv[sfRawTransactions.jsonName][index][jss::RawTransaction][jss::SigningPubKey] = strHex(account.pk());
+        jv[sfRawTransactions.jsonName][index][jss::RawTransaction][sfFee.jsonName] = 0;
+        jv[sfRawTransactions.jsonName][index][jss::RawTransaction][jss::Sequence] = 0;
+        jv[sfRawTransactions.jsonName][index][jss::RawTransaction][sfBatchTxn.jsonName] = Json::Value{};
+        jv[sfRawTransactions.jsonName][index][jss::RawTransaction][sfBatchTxn.jsonName][jss::Account] = account.human();
+        jv[sfRawTransactions.jsonName][index][jss::RawTransaction][sfBatchTxn.jsonName][sfOuterSequence.jsonName] = outerSequence;
+        jv[sfRawTransactions.jsonName][index][jss::RawTransaction][sfBatchTxn.jsonName][sfBatchIndex.jsonName] = index;
+        return jv;
+    }
+
+    // OnSucess -> (0)
+    // OnFailure -> Next Tx Index
+    // Ex.
+    // 0: MintURIToken: If Fail -> 2
+    // 1: Payment: If Fail -> 2
+    // 2: Payment: 0
+  
+    void
+    testBadPubKey(FeatureBitset features)
+    {
+        testcase("bad pubkey");
 
         using namespace test::jtx;
         using namespace std::literals;
 
         test::jtx::Env env{*this, envconfig()};
-        auto const feeDrops = env.current()->fees().base;
         // Env env{
         //     *this,
         //     envconfig(),
@@ -67,67 +121,55 @@ class Batch_test : public beast::unit_test::suite
         //     // beast::severities::kWarning
         //     beast::severities::kTrace};
 
+        auto const feeDrops = env.current()->fees().base;
+
         auto const alice = Account("alice");
         auto const bob = Account("bob");
-        auto const carol = Account("carol");
-        env.fund(XRP(1000), alice, bob, carol);
+        env.fund(XRP(1000), alice, bob);
         env.close();
 
         auto const seq = env.seq("alice");
-
+        std::cout << "seq: " << seq << "\n";
         // ttBATCH
         Json::Value jv;
         jv[jss::TransactionType] = jss::Batch;
         jv[jss::Account] = alice.human();
 
         // Batch Transactions
-        jv[sfTransactions.jsonName] = Json::Value{Json::arrayValue};
-        
-        // Tx 1
-        jv[sfTransactions.jsonName][0U] = Json::Value{};
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction] = Json::Value{};
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
-          [jss::TransactionType] = jss::AccountSet;
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
-          [sfAccount.jsonName] = alice.human();
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction][sfFee.jsonName] =
-            to_string(feeDrops);
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction][jss::Sequence] =
-            seq + 1;
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
-          [jss::SigningPubKey] = strHex(alice.pk());
-        
-        // Tx 2
-        jv[sfTransactions.jsonName][1U] = Json::Value{};
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction] = Json::Value{};
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
-          [jss::TransactionType] = jss::AccountSet;
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
-          [sfAccount.jsonName] = alice.human();
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction][sfFee.jsonName] =
-            to_string(feeDrops);
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction][jss::Sequence] =
-            seq + 2;
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
-          [jss::SigningPubKey] = strHex(alice.pk());
+        jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
 
-        env(jv, fee(drops((2 * feeDrops) + (2 * feeDrops))), ter(tesSUCCESS));
+        // Tx 1
+        Json::Value const tx1 = pay(alice, bob, XRP(1));
+        jv = addBatchTx(jv, tx1, alice, feeDrops, 0, 0);
+
+        // Tx 2
+        Json::Value const tx2 = pay(alice, bob, XRP(1));
+        jv = addBatchTx(jv, tx2, bob, feeDrops, 1, 0);
+
+        env(jv, fee(feeDrops * 2), ter(tesSUCCESS));
         env.close();
+
+        std::array<TestBatchData, 2> testCases = {{
+            {"tesSUCCESS", "Payment"},
+            {"tesSUCCESS", "Payment"},
+        }};
 
         Json::Value params;
         params[jss::transaction] = env.tx()->getJson(JsonOptions::none)[jss::hash];
         auto const jrr = env.rpc("json", "tx", to_string(params));
-        std::cout << "RESULT: " << jrr << "\n";
+        std::cout << "jrr: " << jrr << "\n";
+        auto const meta = jrr[jss::result][jss::meta];
+        validateBatchTxns(meta, testCases);
 
-        std::cout << "ALICE SEQ: " << env.seq(alice) << "\n";
-        std::cout << "ALICE POST: " << env.balance(alice) << "\n";
-        std::cout << "BOB POST: " << env.balance(bob) << "\n";
+        BEAST_EXPECT(env.seq(alice) == 2);
+        BEAST_EXPECT(env.balance(alice) == XRP(1000) - XRP(1) - (feeDrops * 2));
+        BEAST_EXPECT(env.balance(bob) == XRP(1000) + XRP(1));
     }
   
     void
-    testAtomic(FeatureBitset features)
+    testUnfunded(FeatureBitset features)
     {
-        testcase("atomic");
+        testcase("unfunded");
 
         using namespace test::jtx;
         using namespace std::literals;
@@ -149,45 +191,17 @@ class Batch_test : public beast::unit_test::suite
         jv[jss::Account] = alice.human();
 
         // Batch Transactions
-        jv[sfTransactions.jsonName] = Json::Value{Json::arrayValue};
+        jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
 
         // Tx 1
-        jv[sfTransactions.jsonName][0U] = Json::Value{};
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction] = Json::Value{};
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
-          [jss::TransactionType] = jss::Payment;
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
-          [sfAccount.jsonName] = alice.human();
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
-          [sfDestination.jsonName] = bob.human();
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
-          [sfAmount.jsonName] = "1000000";
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction][sfFee.jsonName] =
-            to_string(feeDrops);
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction][jss::Sequence] =
-            seq + 1;
-        jv[sfTransactions.jsonName][0U][jss::BatchTransaction]
-          [jss::SigningPubKey] = strHex(alice.pk());
+        Json::Value const tx1 = pay(alice, bob, XRP(1));
+        jv = addBatchTx(jv, tx1, alice, feeDrops, 0, 0);
 
         // Tx 2
-        jv[sfTransactions.jsonName][1U] = Json::Value{};
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction] = Json::Value{};
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
-          [jss::TransactionType] = jss::Payment;
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
-          [sfAccount.jsonName] = alice.human();
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
-          [sfDestination.jsonName] = bob.human();
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
-          [sfAmount.jsonName] = "999900000";
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction][sfFee.jsonName] =
-            to_string(feeDrops);
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction][jss::Sequence] =
-            seq + 2;
-        jv[sfTransactions.jsonName][1U][jss::BatchTransaction]
-          [jss::SigningPubKey] = strHex(alice.pk());
+        Json::Value const tx2 = pay(alice, bob, XRP(999));
+        jv = addBatchTx(jv, tx2, alice, feeDrops, 1, 0);
 
-        env(jv, fee(drops((2 * feeDrops))), ter(tesSUCCESS));
+        env(jv, fee(feeDrops * 2), ter(tesSUCCESS));
         env.close();
 
         std::array<TestBatchData, 2> testCases = {{
@@ -198,23 +212,33 @@ class Batch_test : public beast::unit_test::suite
         Json::Value params;
         params[jss::transaction] = env.tx()->getJson(JsonOptions::none)[jss::hash];
         auto const jrr = env.rpc("json", "tx", to_string(params));
+        std::cout << "jrr: " << jrr << "\n";
         auto const meta = jrr[jss::result][jss::meta];
         validateBatchTxns(meta, testCases);
 
-        BEAST_EXPECT(env.seq(alice) == 7);
-        BEAST_EXPECT(env.balance(alice) == XRP(1000) - XRP(1) - (feeDrops * 2));
+        BEAST_EXPECT(env.seq(alice) == 2);
+        BEAST_EXPECT(env.balance(alice) == XRP(1000) - XRP(1) - (feeDrops * 1));
         BEAST_EXPECT(env.balance(bob) == XRP(1000) + XRP(1));
     }
 
     void
-    testInvalidBatch(FeatureBitset features)
+    testSuccess(FeatureBitset features)
     {
-        testcase("invalid batch");
+        testcase("batch success");
 
         using namespace test::jtx;
         using namespace std::literals;
 
-        test::jtx::Env env{*this};
+        test::jtx::Env env{*this, envconfig()};
+        // Env env{
+        //     *this,
+        //     envconfig(),
+        //     features,
+        //     nullptr,
+        //     // beast::severities::kWarning
+        //     beast::severities::kTrace};
+
+        auto const feeDrops = env.current()->fees().base;
 
         auto const alice = Account("alice");
         auto const bob = Account("bob");
@@ -222,22 +246,181 @@ class Batch_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice, bob, carol);
         env.close();
 
+        auto const seq = env.seq("alice");
+        std::cout << "seq: " << seq << "\n";
+        // ttBATCH
         Json::Value jv;
-        jv[jss::TransactionType] = jss::AccountSet;
+        jv[jss::TransactionType] = jss::Batch;
         jv[jss::Account] = alice.human();
-        jv[jss::Destination] = bob.human();
-        jv[sfFee.jsonName] = "10";
-        jv[sfCloseResolution.jsonName] = to_string(1);
-        env(jv, fee(drops(10)), ter(tesSUCCESS));
+        jv[jss::Sequence] = seq;
+
+        // Batch Transactions
+        jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
+
+        // Tx 1
+        Json::Value const tx1 = pay(alice, bob, XRP(1));
+        jv = addBatchTx(jv, tx1, alice, feeDrops, 0, seq);
+
+        // Tx 2
+        Json::Value const tx2 = pay(alice, bob, XRP(1));
+        jv = addBatchTx(jv, tx2, alice, feeDrops, 1, seq);
+
+        env(jv, fee(feeDrops * 2), txflags(tfAllOrNothing), ter(tesSUCCESS));
         env.close();
+
+        std::array<TestBatchData, 2> testCases = {{
+            {"tesSUCCESS", "Payment"},
+            {"tesSUCCESS", "Payment"},
+        }};
+
+        Json::Value params;
+        params[jss::ledger_index] = env.current()->seq() - 1;
+        params[jss::transactions] = true;
+        params[jss::expand] = true;
+        auto const jrr = env.rpc("json", "ledger", to_string(params));
+        std::cout << "jrr: " << jrr << "\n";
+
+        // Json::Value params;
+        // params[jss::transaction] = env.tx()->getJson(JsonOptions::none)[jss::hash];
+        // auto const jrr = env.rpc("json", "tx", to_string(params));
+        // std::cout << "jrr: " << jrr << "\n";
+        // auto const meta = jrr[jss::result][jss::meta];
+        // validateBatchTxns(meta, testCases);
+
+        std::cout << "seq: " << env.seq(alice) << "\n";
+        std::cout << "alice: " << env.balance(alice) << "\n";
+        std::cout << "bob: " << env.balance(bob) << "\n";
+
+        BEAST_EXPECT(env.seq(alice) == 7);
+        BEAST_EXPECT(env.balance(alice) == XRP(1000) - XRP(2) - (feeDrops * 2));
+        BEAST_EXPECT(env.balance(bob) == XRP(1000) + XRP(2));
+    }
+
+    void
+    testAtomicFailure(FeatureBitset features)
+    {
+        testcase("atomic failure");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        test::jtx::Env env{*this, envconfig()};
+        auto const feeDrops = env.current()->fees().base;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        env.fund(XRP(1000), alice, bob, carol);
+        env.close();
+
+        auto const seq = env.seq("alice");
+        Json::Value jv;
+        jv[jss::TransactionType] = jss::Batch;
+        jv[jss::Account] = alice.human();
+        jv[jss::Sequence] = seq;
+
+        // Batch Transactions
+        jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
+
+        // Tx 1
+        Json::Value const tx1 = pay(alice, bob, XRP(1));
+        jv = addBatchTx(jv, tx1, alice, feeDrops, 0, seq);
+
+        // Tx 2
+        Json::Value const tx2 = pay(alice, bob, XRP(999));
+        jv = addBatchTx(jv, tx2, alice, feeDrops, 1, seq);
+
+        env(jv, fee(feeDrops * 2), txflags(tfAllOrNothing), ter(tecBATCH_FAILURE));
+        env.close();
+
+        Json::Value params;
+        params[jss::ledger_index] = env.current()->seq() - 1;
+        params[jss::transactions] = true;
+        params[jss::expand] = true;
+        auto const jrr = env.rpc("json", "ledger", to_string(params));
+        std::cout << "jrr: " << jrr << "\n";
+
+        std::cout << "seq: " << env.seq(alice) << "\n";
+        std::cout << "alice: " << env.balance(alice) << "\n";
+        std::cout << "bob: " << env.balance(bob) << "\n";
+
+        BEAST_EXPECT(env.seq(alice) == 5);
+        BEAST_EXPECT(env.balance(alice) == XRP(1000) - (feeDrops * 2));
+        BEAST_EXPECT(env.balance(bob) == XRP(1000));
+    }
+
+    void
+    testFirstFailure(FeatureBitset features)
+    {
+        testcase("first failure");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        // test::jtx::Env env{*this, envconfig()};
+        Env env{
+            *this,
+            envconfig(),
+            features,
+            nullptr,
+            // beast::severities::kWarning
+            beast::severities::kTrace};
+        auto const feeDrops = env.current()->fees().base;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        env.fund(XRP(1000), alice, bob, carol);
+        env.close();
+
+        auto const seq = env.seq("alice");
+        Json::Value jv;
+        jv[jss::TransactionType] = jss::Batch;
+        jv[jss::Account] = alice.human();
+        jv[jss::Sequence] = seq;
+
+        // Batch Transactions
+        jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
+
+        // Tx 1
+        Json::Value const tx1 = pay(alice, bob, XRP(1));
+        jv = addBatchTx(jv, tx1, alice, feeDrops, 0, seq);
+
+        // Tx 2
+        Json::Value const tx2 = pay(alice, bob, XRP(999));
+        jv = addBatchTx(jv, tx2, alice, feeDrops, 1, seq);
+
+        // Tx 3
+        Json::Value const tx3 = pay(alice, bob, XRP(1));
+        jv = addBatchTx(jv, tx3, alice, feeDrops, 2, seq);
+
+        env(jv, fee(feeDrops * 3), txflags(tfOnlyOne), ter(tecBATCH_FAILURE));
+        env.close();
+
+        Json::Value params;
+        params[jss::ledger_index] = env.current()->seq() - 1;
+        params[jss::transactions] = true;
+        params[jss::expand] = true;
+        auto const jrr = env.rpc("json", "ledger", to_string(params));
+        std::cout << "jrr: " << jrr << "\n";
+
+        std::cout << "seq: " << env.seq(alice) << "\n";
+        std::cout << "alice: " << env.balance(alice) << "\n";
+        std::cout << "bob: " << env.balance(bob) << "\n";
+
+        BEAST_EXPECT(env.seq(alice) == 4);
+        BEAST_EXPECT(env.balance(alice) == XRP(1000) - XRP(1));
+        BEAST_EXPECT(env.balance(bob) == XRP(1000) + XRP(1));
     }
 
     void
     testWithFeats(FeatureBitset features)
     {
-        // testBatch(features);
-        testAtomic(features);
-        // testInvalidBatch(features);
+        // testBadPubKey(features);
+        // testUnfunded(features);
+        // testSuccess(features);
+        // testAtomicFailure(features);
+        testFirstFailure(features);
     }
 
 public:

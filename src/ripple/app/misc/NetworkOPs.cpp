@@ -2752,6 +2752,11 @@ NetworkOPsImp::pubProposedTransaction(
     std::shared_ptr<STTx const> const& transaction,
     TER result)
 {
+
+    // never publish emitted txns
+    if (transaction->isFieldPresent(ripple::sfBatchTxn))
+        return;
+
     MultiApiJson jvObj =
         transJson(transaction, result, false, ledger, std::nullopt);
 

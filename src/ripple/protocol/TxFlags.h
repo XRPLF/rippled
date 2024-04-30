@@ -185,6 +185,17 @@ constexpr std::uint32_t tfDepositMask = ~(tfUniversal | tfDepositSubTx);
 constexpr std::uint32_t tfClearAccountCreateAmount     = 0x00010000;
 constexpr std::uint32_t tfBridgeModifyMask = ~(tfUniversal | tfClearAccountCreateAmount);
 
+enum BatchFlags : std::uint32_t {
+    tfAllOrNothing = 0x00000001,
+    tfOnlyOne = 0x00000002,
+    tfUntilFailure = 0x00000004,
+    tfIndependent = 0x00000008,
+};
+
+constexpr std::uint32_t const tfBatchMask =
+    ~(tfUniversal | tfAllOrNothing | tfOnlyOne | tfUntilFailure | tfIndependent);
+
+
 // clang-format on
 
 }  // namespace ripple
