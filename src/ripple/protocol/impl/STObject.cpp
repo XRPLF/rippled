@@ -18,10 +18,13 @@
 //==============================================================================
 
 #include <ripple/basics/Log.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/InnerObjectFormats.h>
+#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/STBlob.h>
+#include <ripple/protocol/STCurrency.h>
 #include <ripple/protocol/STObject.h>
 
 namespace ripple {
@@ -55,6 +58,19 @@ STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(
     if (depth > 10)
         Throw<std::runtime_error>("Maximum nesting depth of STObject exceeded");
     set(sit, depth);
+}
+
+STObject
+STObject::makeInnerObject(SField const& name, Rules const& rules)
+{
+    STObject obj{name};
+    if (rules.enabled(fixInnerObjTemplate))
+    {
+        if (SOTemplate const* elements =
+                InnerObjectFormats::getInstance().findSOTemplateBySField(name))
+            obj.set(*elements);
+    }
+    return obj;
 }
 
 STBase*
@@ -627,19 +643,32 @@ STObject::getFieldArray(SField const& field) const
     return getFieldByConstRef<STArray>(field, empty);
 }
 
+STCurrency const&
+STObject::getFieldCurrency(SField const& field) const
+{
+    static STCurrency const empty{};
+    return getFieldByConstRef<STCurrency>(field, empty);
+}
+
 void
 STObject::set(std::unique_ptr<STBase> v)
 {
-    auto const i = getFieldIndex(v->getFName());
+    set(std::move(*v.get()));
+}
+
+void
+STObject::set(STBase&& v)
+{
+    auto const i = getFieldIndex(v.getFName());
     if (i != -1)
     {
-        v_[i] = std::move(*v);
+        v_[i] = std::move(v);
     }
     else
     {
         if (!isFree())
             Throw<std::runtime_error>("missing field in templated STObject");
-        v_.emplace_back(std::move(*v));
+        v_.emplace_back(std::move(v));
     }
 }
 
@@ -705,6 +734,12 @@ STObject::setFieldVL(SField const& field, Slice const& s)
 
 void
 STObject::setFieldAmount(SField const& field, STAmount const& v)
+{
+    setFieldUsingAssignment(field, v);
+}
+
+void
+STObject::setFieldCurrency(SField const& field, STCurrency const& v)
 {
     setFieldUsingAssignment(field, v);
 }

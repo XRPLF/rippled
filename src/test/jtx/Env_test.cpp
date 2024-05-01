@@ -50,7 +50,7 @@ public:
     {
         using namespace jtx;
         {
-            Account a;
+            Account a("chenna");
             Account b(a);
             a = b;
             a = std::move(b);
@@ -747,8 +747,12 @@ public:
             // Force the factor low enough to fail
             params[jss::fee_mult_max] = 1;
             params[jss::fee_div_max] = 2;
-            // RPC errors result in temINVALID
-            envs(noop(alice), fee(none), seq(none), ter(temINVALID))(params);
+            envs(
+                noop(alice),
+                fee(none),
+                seq(none),
+                rpc(rpcHIGH_FEE,
+                    "Fee of 10 exceeds the requested tx limit of 5"))(params);
 
             auto tx = env.tx();
             BEAST_EXPECT(!tx);

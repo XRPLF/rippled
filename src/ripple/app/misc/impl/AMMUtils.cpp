@@ -60,9 +60,12 @@ ammHolds(
                     *optIssue2,
                     std::make_optional(std::make_pair(issue1, issue2))))
             {
+                // This error can only be hit if the AMM is corrupted
+                // LCOV_EXCL_START
                 JLOG(j.debug()) << "ammHolds: Invalid optIssue1 or optIssue2 "
                                 << *optIssue1 << " " << *optIssue2;
                 return std::nullopt;
+                // LCOV_EXCL_STOP
             }
             return std::make_optional(std::make_pair(*optIssue1, *optIssue2));
         }
@@ -74,9 +77,12 @@ ammHolds(
                 return std::make_optional(std::make_pair(issue1, issue2));
             else if (checkIssue == issue2)
                 return std::make_optional(std::make_pair(issue2, issue1));
+            // Unreachable unless AMM corrupted.
+            // LCOV_EXCL_START
             JLOG(j.debug())
                 << "ammHolds: Invalid " << label << " " << checkIssue;
             return std::nullopt;
+            // LCOV_EXCL_STOP
         };
         if (optIssue1)
         {
@@ -84,7 +90,8 @@ ammHolds(
         }
         else if (optIssue2)
         {
-            return singleIssue(*optIssue2, "optIssue2");
+            // Cannot have Amount2 without Amount.
+            return singleIssue(*optIssue2, "optIssue2");  // LCOV_EXCL_LINE
         }
         return std::make_optional(std::make_pair(issue1, issue2));
     }();
@@ -138,6 +145,9 @@ std::uint16_t
 getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
 {
     using namespace std::chrono;
+    assert(
+        !view.rules().enabled(fixInnerObjTemplate) ||
+        ammSle.isFieldPresent(sfAuctionSlot));
     if (ammSle.isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot =
@@ -207,19 +217,23 @@ deleteAMMTrustLines(
             // Should only have the trustlines
             if (nodeType != LedgerEntryType::ltRIPPLE_STATE)
             {
+                // LCOV_EXCL_START
                 JLOG(j.error())
                     << "deleteAMMTrustLines: deleting non-trustline "
                     << nodeType;
                 return {tecINTERNAL, SkipEntry::No};
+                // LCOV_EXCL_STOP
             }
 
             // Trustlines must have zero balance
             if (sleItem->getFieldAmount(sfBalance) != beast::zero)
             {
+                // LCOV_EXCL_START
                 JLOG(j.error())
                     << "deleteAMMTrustLines: deleting trustline with "
                        "non-zero balance.";
                 return {tecINTERNAL, SkipEntry::No};
+                // LCOV_EXCL_STOP
             }
 
             return {
@@ -240,18 +254,22 @@ deleteAMMAccount(
     auto ammSle = sb.peek(keylet::amm(asset, asset2));
     if (!ammSle)
     {
+        // LCOV_EXCL_START
         JLOG(j.error()) << "deleteAMMAccount: AMM object does not exist "
                         << asset << " " << asset2;
         return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     auto const ammAccountID = (*ammSle)[sfAccount];
     auto sleAMMRoot = sb.peek(keylet::account(ammAccountID));
     if (!sleAMMRoot)
     {
+        // LCOV_EXCL_START
         JLOG(j.error()) << "deleteAMMAccount: AMM account does not exist "
                         << to_string(ammAccountID);
         return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     if (auto const ter =
@@ -263,14 +281,18 @@ deleteAMMAccount(
     if (!sb.dirRemove(
             ownerDirKeylet, (*ammSle)[sfOwnerNode], ammSle->key(), false))
     {
+        // LCOV_EXCL_START
         JLOG(j.error()) << "deleteAMMAccount: failed to remove dir link";
         return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
     if (sb.exists(ownerDirKeylet) && !sb.emptyDirDelete(ownerDirKeylet))
     {
+        // LCOV_EXCL_START
         JLOG(j.error()) << "deleteAMMAccount: cannot delete root dir node of "
                         << toBase58(ammAccountID);
         return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     sb.erase(ammSle);
@@ -287,9 +309,10 @@ initializeFeeAuctionVote(
     Issue const& lptIssue,
     std::uint16_t tfee)
 {
+    auto const& rules = view.rules();
     // AMM creator gets the voting slot.
     STArray voteSlots;
-    STObject voteEntry{sfVoteEntry};
+    STObject voteEntry = STObject::makeInnerObject(sfVoteEntry, rules);
     if (tfee != 0)
         voteEntry.setFieldU16(sfTradingFee, tfee);
     voteEntry.setFieldU32(sfVoteWeight, VOTE_WEIGHT_SCALE_FACTOR);
@@ -297,7 +320,15 @@ initializeFeeAuctionVote(
     voteSlots.push_back(voteEntry);
     ammSle->setFieldArray(sfVoteSlots, voteSlots);
     // AMM creator gets the auction slot for free.
-    auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
+    // AuctionSlot is created on AMMCreate and updated on AMMDeposit
+    // when AMM is in an empty state
+    if (rules.enabled(fixInnerObjTemplate) &&
+        !ammSle->isFieldPresent(sfAuctionSlot))
+    {
+        STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot, rules);
+        ammSle->set(std::move(auctionSlot));
+    }
+    STObject& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
     auctionSlot.setAccountID(sfAccount, account);
     // current + sec in 24h
     auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(
@@ -310,11 +341,11 @@ initializeFeeAuctionVote(
     if (tfee != 0)
         ammSle->setFieldU16(sfTradingFee, tfee);
     else if (ammSle->isFieldPresent(sfTradingFee))
-        ammSle->makeFieldAbsent(sfTradingFee);
+        ammSle->makeFieldAbsent(sfTradingFee);  // LCOV_EXCL_LINE
     if (auto const dfee = tfee / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION)
         auctionSlot.setFieldU16(sfDiscountedFee, dfee);
     else if (auctionSlot.isFieldPresent(sfDiscountedFee))
-        auctionSlot.makeFieldAbsent(sfDiscountedFee);
+        auctionSlot.makeFieldAbsent(sfDiscountedFee);  // LCOV_EXCL_LINE
 }
 
 }  // namespace ripple
