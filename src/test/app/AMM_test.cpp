@@ -4085,12 +4085,9 @@ private:
                     env,
                     bob,
                     1,
-                    {{{XRPAmount{50'152'992},
-                       STAmount{USD, UINT64_C(50'15374745888576), -14}}}}));
-                BEAST_EXPECT(expectLine(
-                    env,
-                    carol,
-                    STAmount{USD, UINT64_C(30'099'92138204985), -11}));
+                    {{{XRPAmount{50'074'628},
+                       STAmount{USD, UINT64_C(50'07512950697), -11}}}}));
+                BEAST_EXPECT(expectLine(env, carol, USD(30'100)));
             }
         }
 
@@ -6221,6 +6218,47 @@ private:
     }
 
     void
+    testFixAMMOfferBlockedByLOB(FeatureBitset features)
+    {
+        testcase("AMM Offer Blocked By LOB");
+        using namespace jtx;
+
+        Env env(*this, features);
+
+        fund(env, gw, {alice, carol}, XRP(1'000'000), {USD(1'000'000)});
+        // This offer blocks AMM offer in pre-amendment
+        env(offer(alice, XRP(1), USD(0.01)));
+        env.close();
+
+        AMM amm(env, gw, XRP(200'000), USD(100'000));
+
+        // The offer doesn't cross AMM in pre-amendment code
+        // It crosses AMM in post-amendment code
+        env(offer(carol, USD(0.49), XRP(1)));
+        env.close();
+
+        if (!features[fixAMMRounding])
+        {
+            BEAST_EXPECT(
+                amm.expectBalances(XRP(200'000), USD(100'000), amm.tokens()));
+            BEAST_EXPECT(
+                expectOffers(env, alice, 1, {{Amounts{XRP(1), USD(0.01)}}}));
+            // Carol's offer is blocked by alice's offer
+            BEAST_EXPECT(
+                expectOffers(env, carol, 1, {{Amounts{USD(0.49), XRP(1)}}}));
+        }
+        else
+        {
+            BEAST_EXPECT(amm.expectBalances(
+                XRPAmount(200'000'980'005), USD(99'999.51), amm.tokens()));
+            BEAST_EXPECT(
+                expectOffers(env, alice, 1, {{Amounts{XRP(1), USD(0.01)}}}));
+            // Carol's offer crosses AMM
+            BEAST_EXPECT(expectOffers(env, carol, 0));
+        }
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{jtx::supported_amendments()};
@@ -6259,6 +6297,8 @@ private:
         testSwapRounding();
         testFixAMMOfferRounding(all);
         testFixAMMOfferRounding(all - fixAMMRounding);
+        testFixAMMOfferBlockedByLOB(all);
+        testFixAMMOfferBlockedByLOB(all - fixAMMRounding);
     }
 };
 
