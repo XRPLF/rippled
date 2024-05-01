@@ -1291,17 +1291,34 @@ private:
         env(offer(cam, B_BUX(30), A_BUX(30)));
 
         // AMM is consumed up to the first cam Offer quality
-        BEAST_EXPECT(ammCarol.expectBalances(
-            STAmount{A_BUX, UINT64_C(309'3541659651605), -13},
-            STAmount{B_BUX, UINT64_C(320'0215509984417), -13},
-            ammCarol.tokens()));
-        BEAST_EXPECT(expectOffers(
-            env,
-            cam,
-            1,
-            {{Amounts{
-                STAmount{B_BUX, UINT64_C(20'0215509984417), -13},
-                STAmount{A_BUX, UINT64_C(20'0215509984417), -13}}}}));
+        if (!features[fixAMMRounding])
+        {
+            BEAST_EXPECT(ammCarol.expectBalances(
+                STAmount{A_BUX, UINT64_C(309'3541659651605), -13},
+                STAmount{B_BUX, UINT64_C(320'0215509984417), -13},
+                ammCarol.tokens()));
+            BEAST_EXPECT(expectOffers(
+                env,
+                cam,
+                1,
+                {{Amounts{
+                    STAmount{B_BUX, UINT64_C(20'0215509984417), -13},
+                    STAmount{A_BUX, UINT64_C(20'0215509984417), -13}}}}));
+        }
+        else
+        {
+            BEAST_EXPECT(ammCarol.expectBalances(
+                STAmount{A_BUX, UINT64_C(309'3541659651602), -13},
+                STAmount{B_BUX, UINT64_C(320'021550998442), -12},
+                ammCarol.tokens()));
+            BEAST_EXPECT(expectOffers(
+                env,
+                cam,
+                1,
+                {{Amounts{
+                    STAmount{B_BUX, UINT64_C(20'021550998442), -12},
+                    STAmount{A_BUX, UINT64_C(20'021550998442), -12}}}}));
+        }
     }
 
     void
@@ -1453,6 +1470,7 @@ private:
         testBadPathAssert(all);
         testSellFlagBasic(all);
         testDirectToDirectPath(all);
+        testDirectToDirectPath(all - fixAMMRounding);
         // testSelfCrossLowQualityOffer
         // testOfferInScaling
         // testOfferInScalingWithXferRate
@@ -3163,8 +3181,12 @@ private:
         // Alice offers to buy 1000 XRP for 1000 USD. She takes Bob's first
         // offer, removes 999 more as unfunded, then hits the step limit.
         env(offer(alice, USD(1'000), XRP(1'000)));
-        env.require(
-            balance(alice, STAmount{USD, UINT64_C(2'050126257867561), -15}));
+        if (!features[fixAMMRounding])
+            env.require(balance(
+                alice, STAmount{USD, UINT64_C(2'050126257867561), -15}));
+        else
+            env.require(balance(
+                alice, STAmount{USD, UINT64_C(2'050125257867587), -15}));
         env.require(owners(alice, 2));
         env.require(balance(bob, USD(0)));
         env.require(owners(bob, 1'001));
@@ -4093,6 +4115,7 @@ private:
         using namespace jtx;
         FeatureBitset const all{supported_amendments()};
         testStepLimit(all);
+        testStepLimit(all - fixAMMRounding);
     }
 
     void

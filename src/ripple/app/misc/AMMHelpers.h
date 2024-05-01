@@ -21,7 +21,9 @@
 #define RIPPLE_APP_MISC_AMMHELPERS_H_INCLUDED
 
 #include <ripple/basics/IOUAmount.h>
+#include <ripple/basics/Log.h>
 #include <ripple/basics/Number.h>
+#include <ripple/beast/utility/Journal.h>
 #include <ripple/protocol/AMMCore.h>
 #include <ripple/protocol/AmountConversions.h>
 #include <ripple/protocol/Feature.h>
@@ -147,12 +149,223 @@ withinRelativeDistance(Amt const& calc, Amt const& req, Number const& dist)
 }
 // clang-format on
 
-/** Finds takerPays (i) and takerGets (o) such that given pool composition
- * poolGets(I) and poolPays(O): (O - o) / (I + i) = quality.
- * Where takerGets is calculated as the swapAssetIn (see below).
- * The above equation produces the quadratic equation:
- * i^2*(1-fee) + i*I*(2-fee) + I^2 - I*O/quality,
- * which is solved for i, and o is found with swapAssetIn().
+/** Solve quadratic equation to find takerGets or takerPays. Round
+ * to minimize the amount in order to maximize the quality.
+ */
+std::optional<Number>
+solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c);
+
+/** Generate AMM offer starting with takerGets when AMM pool
+ * from the payment perspective is IOU(in)/XRP(out)
+ * Equations:
+ * Spot Price Quality after the offer is consumed:
+ *     Qsp = (O - o) / (I + i) (1)
+ *  where O is poolPays, I is poolGets, o is takerGets, i is takerPays
+ * Swap out:
+ *     i = (I * o) / (O - o) * f (2)
+ *  where f is (1 - tfee/100000), tfee is in basis points
+ * Effective price targetQuality:
+ *     Qep = o / i (3)
+ * There are two scenarios to consider
+ * A) Qsp = Qep. Substitute i in (1) with (2) and solve for o
+ *    and Qsp = targetQuality(Qt):
+ *     o**2 + o * (I * Qt * (1 - 1 / f) - 2 * O) + O**2 - Qt * I * O = 0
+ * B) Qep = Qsp. Substitute i in (3) with (2) and solve for o
+ *    and Qep = targetQuality(Qt):
+ *     o = O - I * Qt / f
+ * Since the scenario is not know a priori, both A and B are solved and
+ * the lowest value of o is takerGets. takerPays is calculated with
+ * swap out eq (2). If o is less or equal to 0 then the offer can't
+ * be generated.
+ */
+template <typename TIn, typename TOut>
+std::optional<TAmounts<TIn, TOut>>
+getAMMOfferStartWithTakerGets(
+    TAmounts<TIn, TOut> const& pool,
+    Quality const& targetQuality,
+    std::uint16_t const& tfee)
+{
+    assert(targetQuality.rate() != beast::zero);
+    // calculate a, b, c to minimize quadratic equation solution
+    // b is negative
+    // calculate:
+    // (-b - root2(b * b - 4 * a * c)) / (2 * a)
+    // minimize:
+    // (-b - root2(b * b  - 4 * a * c)) / (2 * a)
+    // b
+    // maximize:
+    // root2(b * b - 4 * a * c)
+    // b * b
+    // minimize:
+    // 4 * a * c
+    // a
+    // c
+    // maximize:
+    // 2 * a
+    // a
+    // a must be maximized and minimized. a is 1, no rounding
+    // b must be maximized and minimized. choose minimize since the effect of
+    // the rounding outside of root2 is greater than the inside of root2.
+    // fee is always maximized
+    // feeMult is always minimized
+    auto const fee = upward()(getFee(tfee));
+    auto const feeMult = downward()(1 - fee);
+    auto const a = 1;
+    // minimize b
+    // b = pool.in * (1 - 1 / f) / targetQuality.rate() - 2 * pool.out
+    // minimize:
+    // pool.in * (1 - 1 / f) / targetQuality.rate()
+    // pool.in * (1 - 1 / f)
+    // maximize:
+    // 1 / f
+    // 2 * pool.out
+    auto const b = downward()(
+        pool.in * (1 - upward()(1 / feeMult)) / targetQuality.rate() -
+        upward()(2 * pool.out));
+    // minimize c
+    // c = pool.out * pool.out - pool.in * pool.out / targetQuality.rate()
+    // minimize:
+    // pool.out * pool.out - pool.in * pool.out / targetQuality.rate()
+    // pool.out * pool.out
+    // maximize:
+    // pool.in * pool.out / targetQuality.rate()
+    // pool.in * pool.out
+    auto const c = downward()(
+        pool.out * pool.out -
+        upward()((pool.in * pool.out) / targetQuality.rate()));
+
+    auto nTakerGets = solveQuadraticEqSmallest(a, b, c);
+    if (!nTakerGets || *nTakerGets <= 0)
+        return std::nullopt;
+
+    // minimize constraint
+    // constraint = pool.out - pool.in / (targetQuality.rate() * f)
+    // minimize:
+    // pool.out - pool.in / (targetQuality.rate() * f)
+    // maximize:
+    // pool.in / (targetQuality.rate() * f)
+    // minimize:
+    // (targetQuality.rate() * f)
+    auto const nTakerGetsConstraint = downward()(
+        pool.out -
+        upward()(pool.in / downward()(targetQuality.rate() * feeMult)));
+    if (nTakerGetsConstraint <= 0)
+        return std::nullopt;
+
+    // Pick the smallest to make the quality better
+    if (nTakerGetsConstraint < nTakerGets)
+        nTakerGets = nTakerGetsConstraint;
+
+    auto const takerGets = toAmount<TOut>(
+        getIssue(pool.out), *nTakerGets, Number::rounding_mode::downward);
+
+    return TAmounts<TIn, TOut>{swapAssetOut(pool, takerGets, tfee), takerGets};
+}
+
+/** Generate AMM offer starting with takerPays when AMM pool
+ * from the payment perspective is XRP(in)/IOU(out) or IOU(in)/IOU(out).
+ * Equations:
+ * Spot Price Quality after the offer is consumed:
+ *     Qsp = (O - o) / (I + i) (1)
+ *  where O is poolPays, I is poolGets, o is takerGets, i is takerPays
+ * Swap in:
+ *     o = (O * i * f) / (I + i * f) (2)
+ *  where f is (1 - tfee/100000), tfee is in basis points
+ * Effective price quality:
+ *     Qep = o / i (3)
+ * There are two scenarios to consider
+ * A) Qsp = Qep. Substitute o in (1) with (2) and solve for i
+ *    and Qsp = targetQuality(Qt):
+ *     i**2 * f + i * I * (1 + f) + I**2 - I * O / Qt = 0
+ * B) Qep = Qsp. Substitute i in (3) with (2) and solve for i
+ *    and Qep = targetQuality(Qt):
+ *     i = O / Qt - I / f
+ * Since the scenario is not know a priori, both A and B are solved and
+ * the lowest value of i is takerPays. takerGets is calculated with
+ * swap in eq (2). If i is less or equal to 0 then the offer can't
+ * be generated.
+ */
+template <typename TIn, typename TOut>
+std::optional<TAmounts<TIn, TOut>>
+getAMMOfferStartWithTakerPays(
+    TAmounts<TIn, TOut> const& pool,
+    Quality const& targetQuality,
+    std::uint16_t tfee)
+{
+    // calculate a, b, c to minimize quadratic equation solution
+    // b is positive
+    // calculate:
+    // (-b + root2(b * b - 4 * a * c)) / (2 * a)
+    // minimize:
+    // (-b + root2(b * b - 4 * a * c))
+    // maximize
+    // b
+    // minimize:
+    // root2(b * b - 4 * a * c)
+    // b * b
+    // maximize:
+    // 4 * a * c
+    // a
+    // c
+    // maximize:
+    // 2 * a
+    // a
+    // b must be maximized and minimized. choose maximize since the effect of
+    // the rounding outside of root2 is greater than the inside of root2.
+    // fee is always maximized
+    // feeMult is always minimized
+    auto const fee = upward()(getFee(tfee));
+    auto const f = downward()(1 - fee);
+    auto const& a = f;
+    // maximize b
+    auto const b = upward()(pool.in * (1 + f));
+    // maximize c
+    // c = pool.in * pool.in - pool.in * pool.out * targetQuality.rate()
+    // maximize:
+    // pool.in * pool.in
+    // minimize:
+    // pool.in * pool.out * targetQuality.rate()
+    auto const c = upward()(
+        pool.in * pool.in -
+        downward()(pool.in * pool.out * targetQuality.rate()));
+
+    auto nTakerPays = solveQuadraticEqSmallest(a, b, c);
+    if (!nTakerPays || nTakerPays <= 0)
+        return std::nullopt;
+
+    // minimize constraint
+    // constraint = pool.out * targetQuality.rate() - pool.in / f
+    // minimize:
+    // pool.out * targetQuality.rate() - pool.in / f
+    // pool.out * targetQuality.rate()
+    // maximize:
+    // pool.in / f
+    auto const nTakerPaysConstraint =
+        downward()(pool.out * targetQuality.rate() - upward()(pool.in / f));
+    if (nTakerPaysConstraint <= 0)
+        return std::nullopt;
+
+    // Pick the smallest to make the quality better
+    if (nTakerPaysConstraint < nTakerPays)
+        nTakerPays = nTakerPaysConstraint;
+
+    auto const takerPays = toAmount<TIn>(
+        getIssue(pool.in), *nTakerPays, Number::rounding_mode::downward);
+
+    return TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
+}
+
+/**   Generate AMM offer so that either updated Spot Price Quality (SPQ)
+ * is equal to LOB quality (in this case AMM offer quality is
+ * better than LOB quality) or AMM offer is equal to LOB quality
+ * (in this case SPQ is better than LOB quality).
+ * Pre-amendment code calculates takerPays first. If takerGets is XRP,
+ * it is rounded down, which results in worse offer quality than
+ * LOB quality, and the offer might fail to generate.
+ * Post-amendment code calculates the XRP offer side first. The result
+ * is rounded down, which makes the offer quality better.
+ *   It might not be possible to match either SPQ or AMM offer to LOB
+ * quality. This generally happens at higher fees.
  * @param pool AMM pool balances
  * @param quality requested quality
  * @param tfee trading fee in basis points
@@ -163,43 +376,114 @@ std::optional<TAmounts<TIn, TOut>>
 changeSpotPriceQuality(
     TAmounts<TIn, TOut> const& pool,
     Quality const& quality,
-    std::uint16_t tfee)
+    std::uint16_t tfee,
+    Rules const& rules,
+    beast::Journal j)
 {
-    auto const f = feeMult(tfee);  // 1 - fee
-    auto const& a = f;
-    auto const b = pool.in * (1 + f);
-    Number const c = pool.in * pool.in - pool.in * pool.out * quality.rate();
-    if (auto const res = b * b - 4 * a * c; res < 0)
-        return std::nullopt;
-    else if (auto const nTakerPaysPropose = (-b + root2(res)) / (2 * a);
-             nTakerPaysPropose > 0)
+    if (!rules.enabled(fixAMMRounding))
     {
-        auto const nTakerPays = [&]() {
-            // The fee might make the AMM offer quality less than CLOB quality.
-            // Therefore, AMM offer has to satisfy this constraint: o / i >= q.
-            // Substituting o with swapAssetIn() gives:
-            // i <= O / q - I / (1 - fee).
-            auto const nTakerPaysConstraint =
-                pool.out * quality.rate() - pool.in / f;
-            if (nTakerPaysPropose > nTakerPaysConstraint)
-                return nTakerPaysConstraint;
-            return nTakerPaysPropose;
-        }();
-        if (nTakerPays <= 0)
+        // Finds takerPays (i) and takerGets (o) such that given pool
+        // composition poolGets(I) and poolPays(O): (O - o) / (I + i) = quality.
+        // Where takerGets is calculated as the swapAssetIn (see below).
+        // The above equation produces the quadratic equation:
+        // i^2*(1-fee) + i*I*(2-fee) + I^2 - I*O/quality,
+        // which is solved for i, and o is found with swapAssetIn().
+        auto const f = feeMult(tfee);  // 1 - fee
+        auto const& a = f;
+        auto const b = pool.in * (1 + f);
+        Number const c =
+            pool.in * pool.in - pool.in * pool.out * quality.rate();
+        if (auto const res = b * b - 4 * a * c; res < 0)
             return std::nullopt;
-        auto const takerPays = toAmount<TIn>(
-            getIssue(pool.in), nTakerPays, Number::rounding_mode::upward);
-        // should not fail
-        if (auto const amounts =
-                TAmounts<TIn, TOut>{
-                    takerPays, swapAssetIn(pool, takerPays, tfee)};
-            Quality{amounts} < quality &&
-            !withinRelativeDistance(Quality{amounts}, quality, Number(1, -7)))
-            Throw<std::runtime_error>("changeSpotPriceQuality failed");
-        else
-            return amounts;
+        else if (auto const nTakerPaysPropose = (-b + root2(res)) / (2 * a);
+                 nTakerPaysPropose > 0)
+        {
+            auto const nTakerPays = [&]() {
+                // The fee might make the AMM offer quality less than CLOB
+                // quality. Therefore, AMM offer has to satisfy this constraint:
+                // o / i >= q. Substituting o with swapAssetIn() gives: i <= O /
+                // q - I / (1 - fee).
+                auto const nTakerPaysConstraint =
+                    pool.out * quality.rate() - pool.in / f;
+                if (nTakerPaysPropose > nTakerPaysConstraint)
+                    return nTakerPaysConstraint;
+                return nTakerPaysPropose;
+            }();
+            if (nTakerPays <= 0)
+            {
+                JLOG(j.trace())
+                    << "changeSpotPriceQuality negative: " << to_string(pool.in)
+                    << " " << to_string(pool.out) << " " << quality << " "
+                    << tfee;
+                return std::nullopt;
+            }
+            auto const takerPays = toAmount<TIn>(
+                getIssue(pool.in), nTakerPays, Number::rounding_mode::upward);
+            // should not fail
+            if (auto const amounts =
+                    TAmounts<TIn, TOut>{
+                        takerPays, swapAssetIn(pool, takerPays, tfee)};
+                Quality{amounts} < quality &&
+                !withinRelativeDistance(
+                    Quality{amounts}, quality, Number(1, -7)))
+            {
+                JLOG(j.error())
+                    << "changeSpotPriceQuality failed: " << to_string(pool.in)
+                    << " " << to_string(pool.out) << " "
+                    << to_string(amounts.in) << " " << to_string(amounts.out)
+                    << " " << quality << " " << tfee;
+                Throw<std::runtime_error>("changeSpotPriceQuality failed");
+            }
+            else
+            {
+                JLOG(j.trace())
+                    << "changeSpotPriceQuality succeeded: "
+                    << to_string(pool.in) << " " << to_string(pool.out) << " "
+                    << to_string(amounts.in) << " " << to_string(amounts.out)
+                    << " " << quality << " " << tfee;
+                return amounts;
+            }
+        }
+        JLOG(j.trace()) << "changeSpotPriceQuality negative: "
+                        << to_string(pool.in) << " " << to_string(pool.out)
+                        << " " << quality << " " << tfee;
+        return std::nullopt;
     }
-    return std::nullopt;
+
+    // Generate the offer starting with XRP side. Return seated offer amounts
+    // if the offer can be generated, otherwise nullopt.
+    auto const amounts = [&]() {
+        if (isXRP(getIssue(pool.out)))
+            return getAMMOfferStartWithTakerGets(pool, quality, tfee);
+        return getAMMOfferStartWithTakerPays(pool, quality, tfee);
+    }();
+    if (!amounts)
+    {
+        JLOG(j.trace()) << "changeSpotPrice negative: " << to_string(pool.in)
+                        << " " << to_string(pool.out) << " "
+                        << Number{1} / quality.rate() << " " << tfee
+                        << std::endl;
+        return std::nullopt;
+    }
+
+    // Might fail due to finite precision. Should the relative difference be
+    // allowed?
+    if (Quality{*amounts} < quality)
+    {
+        JLOG(j.error()) << "changeSpotPriceQuality failed: "
+                        << to_string(pool.in) << " " << to_string(pool.out)
+                        << " " << to_string(amounts->in) << " "
+                        << to_string(amounts->out) << " " << quality << " "
+                        << tfee;
+        return std::nullopt;
+    }
+
+    JLOG(j.trace()) << "changeSpotPriceQuality succeeded: "
+                    << to_string(pool.in) << " " << to_string(pool.out) << " "
+                    << to_string(amounts->in) << " " << to_string(amounts->out)
+                    << " " << quality << " " << tfee;
+
+    return amounts;
 }
 
 /** AMM pool invariant - the product (A * B) after swap in/out has to remain

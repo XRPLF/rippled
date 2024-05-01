@@ -387,6 +387,71 @@ public:
     operator=(saveNumberRoundMode const&) = delete;
 };
 
+// Functors to facilitate intermediate steps rounding mode
+// in complex arithmetic expressions.
+// Class constructor saves the current rounding mode,
+// sets the requested rounding mode, and is called before
+// the arithmetic expression is evaluated. The rounding mode
+// state is restored in the functor call, which sets the outer
+// functor rounding mode or the initial mode. For instance, if
+// the following expression has to be minimized:
+// (a * b) / (c - d) then the functors are called as follows:
+// downard()(downward()(a * b) / upward()(c - d))
+// the call sequence is as follows:
+// set downward; set downward; num = a * b; restore downward; return n;
+// set upward; den = c - d; restore downward; return den; r = num / den;
+// restore to_nearest; return r;
+
+class upward
+{
+private:
+    Number::rounding_mode mode_;
+
+public:
+    upward() : mode_(Number::getround())
+    {
+        Number::setround(Number::rounding_mode::upward);
+    }
+    ~upward() = default;
+    upward(upward const&) = delete;
+    upward(upward const&&) = delete;
+    upward&
+    operator=(upward const&) = delete;
+    upward&
+    operator=(upward const&&) = delete;
+    Number const&
+    operator()(Number const& n)
+    {
+        Number::setround(mode_);
+        return n;
+    }
+};
+
+class downward
+{
+private:
+    Number::rounding_mode mode_;
+
+public:
+    downward() : mode_(Number::getround())
+    {
+        Number::setround(Number::rounding_mode::downward);
+    }
+    ~downward() = default;
+    downward(downward const&) = delete;
+    downward(downward const&&) = delete;
+    downward&
+    operator=(downward const&) = delete;
+    downward&
+    operator=(downward const&&) = delete;
+    Number const&
+    operator()(Number const& n)
+    {
+        Number::setround(mode_);
+        return n;
+    }
+};
+
 }  // namespace ripple
 
 #endif  // RIPPLE_BASICS_NUMBER_H_INCLUDED

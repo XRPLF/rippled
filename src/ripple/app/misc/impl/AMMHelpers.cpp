@@ -203,4 +203,52 @@ solveQuadraticEq(Number const& a, Number const& b, Number const& c)
     return (-b + root2(b * b - 4 * a * c)) / (2 * a);
 }
 
+// Minimize takerGets or takerPays
+std::optional<Number>
+solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c)
+{
+    // calculate:
+    // d = b * b - 4 * a * c
+    // (-b + root2(d)) / (2 * a)
+    // minimize:
+    // (-b + root2(d)) / (2 * a)
+    // (-b + root2(d))
+    // root2(d)
+    // d
+    // b * b
+    // maximize:
+    // 4 * a * c
+    // (2 * a)
+    if (b > 0)
+    {
+        auto const d = downward()((downward()(b * b) - upward()(4 * a * c)));
+        if (d < 0)
+            return std::nullopt;
+        return downward()(
+            downward()(-b + downward()(root2(d))) / upward()(2 * a));
+    }
+    else
+    {
+        // calculate:
+        // d = b * b - 4 * a * c
+        // (-b - root2(d)) / (2 * a)
+        // minimize:
+        // (-b - root2(d)) / (2 * a)
+        // (-b - root2(d))
+        // maximize:
+        // root2(d)
+        // d
+        // b * b
+        // minimize:
+        // 4 * a * c
+        // maximize:
+        // (2 * a)
+        auto const d = upward()((upward()(b * b) - downward()(4 * a * c)));
+        if (d < 0)
+            return std::nullopt;
+        return downward()(
+            downward()(-b - upward()(root2(d))) / upward()(2 * a));
+    }
+}
+
 }  // namespace ripple

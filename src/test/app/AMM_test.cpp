@@ -37,6 +37,8 @@
 #include <utility>
 #include <vector>
 
+#include <boost/regex.hpp>
+
 namespace ripple {
 namespace test {
 
@@ -4060,17 +4062,36 @@ private:
             env(offer(bob, XRP(100), USD(100.001)));
             AMM ammAlice(env, alice, XRP(10'000), USD(10'100));
             env(offer(carol, USD(100), XRP(100)));
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRPAmount{10'049'825'373},
-                STAmount{USD, UINT64_C(10'049'92586949302), -11},
-                ammAlice.tokens()));
-            BEAST_EXPECT(expectOffers(
-                env,
-                bob,
-                1,
-                {{{XRPAmount{50'074'629},
-                   STAmount{USD, UINT64_C(50'07513050698), -11}}}}));
-            BEAST_EXPECT(expectLine(env, carol, USD(30'100)));
+            if (!features[fixAMMRounding])
+            {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRPAmount{10'049'825'373},
+                    STAmount{USD, UINT64_C(10'049'92586949302), -11},
+                    ammAlice.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    bob,
+                    1,
+                    {{{XRPAmount{50'074'629},
+                       STAmount{USD, UINT64_C(50'07513050698), -11}}}}));
+            }
+            else
+            {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRPAmount{10'049'825'372},
+                    STAmount{USD, UINT64_C(10'049'92587049303), -11},
+                    ammAlice.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    bob,
+                    1,
+                    {{{XRPAmount{50'152'992},
+                       STAmount{USD, UINT64_C(50'15374745888576), -14}}}}));
+                BEAST_EXPECT(expectLine(
+                    env,
+                    carol,
+                    STAmount{USD, UINT64_C(30'099'92138204985), -11}));
+            }
         }
 
         // Individually frozen account
@@ -4352,7 +4373,7 @@ private:
                     env(offer(
                             LP1,
                             XRPAmount{18'095'132},
-                            STAmount{TST, UINT64_C(1'68737984885387), -14}),
+                            STAmount{TST, UINT64_C(1'68737976189735), -14}),
                         txflags(tfPassive));
             },
             [&](Env& env) {
@@ -4677,10 +4698,10 @@ private:
                 BEAST_EXPECT(expectLine(
                     env,
                     bob,
-                    STAmount{EUR, UINT64_C(1'989'987453007616), -12}));
+                    STAmount{EUR, UINT64_C(1'989'987468671679), -12}));
                 BEAST_EXPECT(ammAlice.expectBalances(
                     USD(1'000),
-                    STAmount{EUR, UINT64_C(1'005'012546992384), -12},
+                    STAmount{EUR, UINT64_C(1'005'012531328321), -12},
                     ammAlice.tokens()));
             }
             BEAST_EXPECT(expectOffers(env, carol, 0));
@@ -5196,31 +5217,65 @@ private:
                     {
                         if (rates.first == 1.5)
                         {
-                            BEAST_EXPECT(expectOffers(
-                                env,
-                                ed,
-                                1,
-                                {{Amounts{
-                                    STAmount{
-                                        ETH, UINT64_C(378'6327949540823), -13},
-                                    STAmount{
-                                        USD,
-                                        UINT64_C(283'9745962155617),
-                                        -13}}}}));
+                            if (!features[fixAMMRounding])
+                                BEAST_EXPECT(expectOffers(
+                                    env,
+                                    ed,
+                                    1,
+                                    {{Amounts{
+                                        STAmount{
+                                            ETH,
+                                            UINT64_C(378'6327949540823),
+                                            -13},
+                                        STAmount{
+                                            USD,
+                                            UINT64_C(283'9745962155617),
+                                            -13}}}}));
+                            else
+                                BEAST_EXPECT(expectOffers(
+                                    env,
+                                    ed,
+                                    1,
+                                    {{Amounts{
+                                        STAmount{
+                                            ETH,
+                                            UINT64_C(378'6327949540813),
+                                            -13},
+                                        STAmount{
+                                            USD,
+                                            UINT64_C(283'974596215561),
+                                            -12}}}}));
                         }
                         else
                         {
-                            BEAST_EXPECT(expectOffers(
-                                env,
-                                ed,
-                                1,
-                                {{Amounts{
-                                    STAmount{
-                                        ETH, UINT64_C(325'299461620749), -12},
-                                    STAmount{
-                                        USD,
-                                        UINT64_C(243'9745962155617),
-                                        -13}}}}));
+                            if (!features[fixAMMRounding])
+                                BEAST_EXPECT(expectOffers(
+                                    env,
+                                    ed,
+                                    1,
+                                    {{Amounts{
+                                        STAmount{
+                                            ETH,
+                                            UINT64_C(325'299461620749),
+                                            -12},
+                                        STAmount{
+                                            USD,
+                                            UINT64_C(243'9745962155617),
+                                            -13}}}}));
+                            else
+                                BEAST_EXPECT(expectOffers(
+                                    env,
+                                    ed,
+                                    1,
+                                    {{Amounts{
+                                        STAmount{
+                                            ETH,
+                                            UINT64_C(325'299461620748),
+                                            -12},
+                                        STAmount{
+                                            USD,
+                                            UINT64_C(243'974596215561),
+                                            -12}}}}));
                         }
                     }
                     else if (i == 2)
@@ -5292,29 +5347,71 @@ private:
                 {
                     if (rates.first == 1.5)
                     {
-                        BEAST_EXPECT(expectOffers(
-                            env, ed, 1, {{Amounts{ETH(400), USD(250)}}}));
-                        BEAST_EXPECT(expectOffers(
-                            env,
-                            alice,
-                            1,
-                            {{Amounts{
-                                STAmount{USD, UINT64_C(40'5694150420947), -13},
-                                STAmount{ETH, UINT64_C(64'91106406735152), -14},
-                            }}}));
+                        if (!features[fixAMMRounding])
+                        {
+                            BEAST_EXPECT(expectOffers(
+                                env, ed, 1, {{Amounts{ETH(400), USD(250)}}}));
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                alice,
+                                1,
+                                {{Amounts{
+                                    STAmount{
+                                        USD, UINT64_C(40'5694150420947), -13},
+                                    STAmount{
+                                        ETH, UINT64_C(64'91106406735152), -14},
+                                }}}));
+                        }
+                        else
+                        {
+                            // Ed offer is partially crossed.
+                            // The updated rounding makes limitQuality
+                            // work if both amendments are enabled
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                ed,
+                                1,
+                                {{Amounts{
+                                    STAmount{
+                                        ETH, UINT64_C(335'0889359326475), -13},
+                                    STAmount{
+                                        USD, UINT64_C(209'4305849579047), -13},
+                                }}}));
+                            BEAST_EXPECT(expectOffers(env, alice, 0));
+                        }
                     }
                     else
                     {
-                        // Ed offer is partially crossed.
-                        BEAST_EXPECT(expectOffers(
-                            env,
-                            ed,
-                            1,
-                            {{Amounts{
-                                STAmount{ETH, UINT64_C(335'0889359326485), -13},
-                                STAmount{USD, UINT64_C(209'4305849579053), -13},
-                            }}}));
-                        BEAST_EXPECT(expectOffers(env, alice, 0));
+                        if (!features[fixAMMRounding])
+                        {
+                            // Ed offer is partially crossed.
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                ed,
+                                1,
+                                {{Amounts{
+                                    STAmount{
+                                        ETH, UINT64_C(335'0889359326485), -13},
+                                    STAmount{
+                                        USD, UINT64_C(209'4305849579053), -13},
+                                }}}));
+                            BEAST_EXPECT(expectOffers(env, alice, 0));
+                        }
+                        else
+                        {
+                            // Ed offer is partially crossed.
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                ed,
+                                1,
+                                {{Amounts{
+                                    STAmount{
+                                        ETH, UINT64_C(335'0889359326475), -13},
+                                    STAmount{
+                                        USD, UINT64_C(209'4305849579047), -13},
+                                }}}));
+                            BEAST_EXPECT(expectOffers(env, alice, 0));
+                        }
                     }
                 }
             }
@@ -5555,6 +5652,149 @@ private:
             tesSUCCESS,
             9,
             false);
+    }
+
+    void
+    testFixAMMOfferRounding(FeatureBitset features)
+    {
+        testcase("Fix AMM Offer Rounding");
+        using namespace jtx;
+
+        enum class Status {
+            FailedShouldSucceed,  // Failed in pre-fix due to rounding,
+                                  //   should succeed after fix
+            SucceededShouldFail,  // Succeeded in pre-fix, should fail after fix
+                                  //   due to small quality difference
+            FailedShouldFail,     // Failed in pre-fix due to rounding,
+                               //   should fail after fix due to small quality
+                               //   difference
+            Fail,    // Both fail because the quality can't be matched
+            Succeed  // succeed in both
+        };
+        // clang-format off
+        std::vector<std::tuple<std::string, std::string, Quality, std::uint16_t, Status>> tests = {
+            {"0.001519763260828713", "1558701", Quality{5414253689393440221}, 1000, Status::FailedShouldSucceed},
+            {"0.01099814367603737", "1892611", Quality{5482264816516900274}, 1000, Status::FailedShouldSucceed},
+            {"0.78", "796599", Quality{5630392334958379008}, 1000, Status::FailedShouldSucceed},
+            {"105439.2955578965", "49398693", Quality{5910869983721805038}, 400, Status::FailedShouldSucceed},
+            {"105870.7966405942", "49198160", Quality{5910886636672739152}, 400, Status::FailedShouldSucceed},
+            {"12408293.23445213", "4340810521", Quality{5911611095910090752}, 997, Status::FailedShouldSucceed},
+            {"12417257.02139501", "4337708190", Quality{5911618893549287514}, 997, Status::FailedShouldSucceed},
+            {"12421193.02929446", "4336257104", Quality{5911617164910090752}, 997, Status::FailedShouldSucceed},
+            {"12430504.11172408", "4332652733", Quality{5911624840510090752}, 997, Status::FailedShouldSucceed},
+            {"12448020.44860317", "4327094808", Quality{5911630793102002342}, 997, Status::FailedShouldSucceed},
+            {"12459400.62586608", "4323181824", Quality{5911636760796038120}, 997, Status::FailedShouldSucceed},
+            {"12484012.69745274", "4314743527", Quality{5911645806886990752}, 997, Status::FailedShouldSucceed},
+            {"1892611", "0.01099814367603737", Quality{6703103457950430139}, 1000, Status::FailedShouldSucceed},
+            {"423028.8508101858", "3392804520", Quality{5837920340654162816}, 600, Status::FailedShouldSucceed},
+            {"44565388.41001027", "73890647", Quality{6058976634606450001}, 1000, Status::FailedShouldSucceed},
+            {"66831.68494832662", "16", Quality{6346111134641742975}, 0, Status::FailedShouldSucceed},
+            {"675.9287302203422", "1242632304", Quality{5625960929244093294}, 300, Status::FailedShouldSucceed},
+            {"7047.112186735699", "1649845866", Quality{5696855348026306945}, 504, Status::FailedShouldSucceed},
+            {"7050.618862421691", "1649021148", Quality{5696851051486606944}, 504, Status::FailedShouldSucceed},
+            {"7067.580774394729", "1645091721", Quality{5696869936556306944}, 504, Status::FailedShouldSucceed},
+            {"840236.4402981238", "47419053", Quality{5982561601648018688}, 499, Status::FailedShouldSucceed},
+            {"771493171", "1.243473020567508", Quality{6707566798038544272}, 100, Status::SucceededShouldFail}, // e-8
+            {"69864389131", "287631.4543025075", Quality{6487623473313516078}, 451, Status::SucceededShouldFail}, // e-27
+            {"4328342973", "12453825.99247381", Quality{6272522264364865181}, 997, Status::Succeed},
+            {"32347017", "7003.93031579449", Quality{6347261126087916670}, 1000, Status::Succeed},
+            {"61697206161", "36631.4583206413", Quality{6558965195382476659}, 500, Status::Succeed},
+            {"1654524979", "7028.659825511603", Quality{6487551345110052981}, 504, Status::Succeed},
+            {"88621.22277293179", "5128418948", Quality{5766347291552869205}, 380, Status::Succeed},
+            {"1892611", "0.01099814367603737", Quality{6703102780512015436}, 1000, Status::Succeed},
+            {"4542.639373338766", "24554809", Quality{5838994982188783710}, 0, Status::Succeed},
+            {"61729242395", "36612.54235922302", Quality{6558965195382476659}, 500, Status::Succeed},
+            {"5132932546", "88542.99750172683", Quality{6419203342950054537}, 380, Status::Succeed},
+            {"61728936416", "36612.72293260183", Quality{6558965195382476659}, 500, Status::Succeed},
+            {"78929964.1549083", "1506494795", Quality{5986890029845558688}, 589, Status::Succeed},
+            {"10096561906", "44727.72453735605", Quality{6487455290284644551}, 250, Status::Succeed},
+            {"61726973824", "36613.8812028485", Quality{6558965195382476659}, 500, Status::Succeed},
+            {"88542.99750172683", "5132932546", Quality{5766340625287267809}, 380, Status::Succeed},
+            {"5092.219565514988", "8768257694", Quality{5626349534958379008}, 503, Status::Succeed},
+            {"3984444708", "2346.961925837792", Quality{6558965195382476659}, 856, Status::Succeed},
+            {"1819778294", "8305.084302902864", Quality{6487429398998540860}, 415, Status::Succeed},
+            {"6970462.633911943", "57359281", Quality{6054087899185946624}, 850, Status::Succeed},
+            {"6867833.409998674", "58209141", Quality{6054087899185946624}, 850, Status::Succeed},
+            {"61729180252", "36612.5790328038", Quality{6558965195382476659}, 500, Status::Succeed},
+            {"3983448845", "2347.543644281467", Quality{6558965195382476659}, 856, Status::Succeed},
+            {"12620994.47870887", "4268375883", Quality{5911709456684429178}, 997, Status::FailedShouldFail},
+            {"69864389131", "87631.4543025075", Quality{6487623473313516078}, 451, Status::Fail},
+            {"161188552", "111348916.0485442", Quality{6126343493209354960}, 951, Status::Fail},
+            {"8786728329", "5082.14702870352", Quality{6558975057426432945}, 503, Status::Fail},
+            {"16029697.27716903", "52533753764", Quality{5839722566538405334}, 300, Status::Fail},
+            {"69083040327", "287653.0870710118", Quality{6487593878219547209}, 451, Status::Fail},
+            {"69149412262", "287378.2320466131", Quality{6487598429267708125}, 451, Status::Fail},
+            {"7085.712662020652", "1641678041", Quality{5696878928996306944}, 504, Status::Fail},
+            {"4287933408", "12647119.31273569", Quality{6272434379517829568}, 997, Status::Fail},
+            {"2589759", "1437955820.851155", Quality{5910540710926591876}, 1000, Status::Fail},
+            {"22071", "581.0131445589597", Quality{6200752082570952858}, 1000, Status::Fail},
+            {"5133.191072353023", "8698642336", Quality{5626404736812508230}, 503, Status::Fail},
+            {"797.6336019392708", "16033", Quality{5985755421420704201}, 1000, Status::Fail},
+            {"10068383848", "44859.76447997668", Quality{6487429644904978750}, 250, Status::Fail},
+            {"2904.871634067977", "86342169", Quality{5768003800713897969}, 1000, Status::Fail},
+            {"52569881886", "16018714.05521815", Quality{6344359875332611941}, 300, Status::Fail},
+            {"1648082737", "7058.314768411529", Quality{6487526401072963590}, 504, Status::Fail},
+            {"13000417.60326603", "226998641", Quality{5986520833276606518}, 1000, Status::Fail},
+            {"5006103033", "4291143.17799397", Quality{6342238275317971011}, 1000, Status::Fail}
+        };
+        // clang-format on
+
+        boost::regex rx("^\\d+$");
+        boost::smatch match;
+        // tests that succeed should have the same amounts pre-fix and post-fix
+        std::vector<std::pair<STAmount, STAmount>> successAmounts;
+        Env env(*this, features);
+        for (auto const& t : tests)
+        {
+            auto getPool = [&](std::string const& v, bool isXRP) {
+                if (isXRP)
+                    return amountFromString(xrpIssue(), v);
+                return amountFromString(noIssue(), v);
+            };
+            auto const& quality = std::get<Quality>(t);
+            auto const tfee = std::get<std::uint16_t>(t);
+            auto const status = std::get<Status>(t);
+            auto const poolInIsXRP =
+                boost::regex_search(std::get<0>(t), match, rx);
+            auto const poolOutIsXRP =
+                boost::regex_search(std::get<1>(t), match, rx);
+            assert(!(poolInIsXRP && poolOutIsXRP));
+            auto const poolIn = getPool(std::get<0>(t), poolInIsXRP);
+            auto const poolOut = getPool(std::get<1>(t), poolOutIsXRP);
+            try
+            {
+                auto const amounts = changeSpotPriceQuality(
+                    Amounts{poolIn, poolOut},
+                    quality,
+                    tfee,
+                    env.current()->rules(),
+                    env.journal);
+                if (amounts)
+                {
+                    BEAST_EXPECT(
+                        status == Status::Succeed ||
+                        (features[fixAMMRounding] &&
+                         status == Status::FailedShouldSucceed) ||
+                        (!features[fixAMMRounding] &&
+                         status == Status::SucceededShouldFail));
+                }
+                else
+                    BEAST_EXPECT(
+                        status == Status::Fail ||
+                        (features[fixAMMRounding] &&
+                         (status == Status::SucceededShouldFail ||
+                          status == Status::FailedShouldFail)));
+            }
+            catch (std::runtime_error const& e)
+            {
+                BEAST_EXPECT(
+                    !strcmp(e.what(), "changeSpotPriceQuality failed"));
+                BEAST_EXPECT(
+                    !features[fixAMMRounding] &&
+                    (status == Status::FailedShouldSucceed ||
+                     status == Status::FailedShouldFail));
+            }
+        }
     }
 
     void
@@ -6017,6 +6257,8 @@ private:
         testFixOverflowOffer(all);
         testFixOverflowOffer(all - fixAMMRounding);
         testSwapRounding();
+        testFixAMMOfferRounding(all);
+        testFixAMMOfferRounding(all - fixAMMRounding);
     }
 };
 
