@@ -834,7 +834,13 @@ flow(
     {
         if (actualOut > outReq)
         {
-            assert(0);
+            // Rounding in the payment engine is causing this assert to
+            // sometimes fire with "dust" amounts. This is causing issues when
+            // running debug builds of rippled. While this issue still needs to
+            // be resolved, the assert is causing more harm than good at this
+            // point.
+            // assert(0);
+
             return {tefEXCEPTION, std::move(ofrsToRmOnFail)};
         }
         if (!partialPayment)

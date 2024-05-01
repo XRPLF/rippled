@@ -200,7 +200,6 @@ existing maintainer without a vote.
 * [JoelKatz](https://github.com/JoelKatz) (Ripple)
 * [manojsdoshi](https://github.com/manojsdoshi) (Ripple)
 * [n3tc4t](https://github.com/n3tc4t) (XRPL Labs)
-* [Nik Bougalis](https://github.com/nbougalis)
 * [nixer89](https://github.com/nixer89) (XRP Ledger Foundation)
 * [RichardAH](https://github.com/RichardAH) (XRPL Labs + XRP Ledger Foundation)
 * [seelabs](https://github.com/seelabs) (Ripple)
