@@ -74,7 +74,11 @@ SetOracle::preclaim(PreclaimContext const& ctx)
     auto const sleSetter =
         ctx.view.read(keylet::account(ctx.tx.getAccountID(sfAccount)));
     if (!sleSetter)
+    {
+        // LCOV_EXCL_START
         return terNO_ACCOUNT;
+        // LCOV_EXCL_STOP
+    }
 
     // lastUpdateTime must be within maxLastUpdateTimeDelta seconds
     // of the last closed ledger
@@ -88,8 +92,11 @@ SetOracle::preclaim(PreclaimContext const& ctx)
     std::size_t const lastUpdateTimeEpoch =
         lastUpdateTime - epoch_offset.count();
     if (closeTime < maxLastUpdateTimeDelta)
-        Throw<std::runtime_error>(
-            "Oracle: close time is less than maxLastUpdateTimeDelta");
+    {
+        // LCOV_EXCL_START
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
     if (lastUpdateTimeEpoch < (closeTime - maxLastUpdateTimeDelta) ||
         lastUpdateTimeEpoch > (closeTime + maxLastUpdateTimeDelta))
         return tecINVALID_UPDATE_TIME;
@@ -194,7 +201,9 @@ adjustOwnerCount(ApplyContext& ctx, int count)
         return true;
     }
 
+    // LCOV_EXCL_START
     return false;
+    // LCOV_EXCL_STOP
 }
 
 static void
@@ -274,7 +283,11 @@ SetOracle::doApply()
         auto const newCount = pairs.size() > 5 ? 2 : 1;
         auto const adjust = newCount - oldCount;
         if (adjust != 0 && !adjustOwnerCount(ctx_, adjust))
+        {
+            // LCOV_EXCL_START
             return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         ctx_.view().update(sle);
     }
@@ -295,13 +308,21 @@ SetOracle::doApply()
         auto page = ctx_.view().dirInsert(
             keylet::ownerDir(account_), sle->key(), describeOwnerDir(account_));
         if (!page)
+        {
+            // LCOV_EXCL_START
             return tecDIR_FULL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sle)[sfOwnerNode] = *page;
 
         auto const count = series.size() > 5 ? 2 : 1;
         if (!adjustOwnerCount(ctx_, count))
+        {
+            // LCOV_EXCL_START
             return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         ctx_.view().insert(sle);
     }

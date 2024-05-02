@@ -48,7 +48,11 @@ TER
 DeleteOracle::preclaim(PreclaimContext const& ctx)
 {
     if (!ctx.view.exists(keylet::account(ctx.tx.getAccountID(sfAccount))))
+    {
+        // LCOV_EXCL_START
         return terNO_ACCOUNT;
+        // LCOV_EXCL_STOP
+    }
 
     if (auto const sle = ctx.view.read(keylet::oracle(
             ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
@@ -60,8 +64,10 @@ DeleteOracle::preclaim(PreclaimContext const& ctx)
     else if (ctx.tx.getAccountID(sfAccount) != sle->getAccountID(sfOwner))
     {
         // this can't happen because of the above check
+        // LCOV_EXCL_START
         JLOG(ctx.j.debug()) << "Oracle Delete: invalid account.";
         return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
     return tesSUCCESS;
 }
@@ -74,18 +80,28 @@ DeleteOracle::deleteOracle(
     beast::Journal j)
 {
     if (!sle)
-        return tesSUCCESS;
+    {
+        // LCOV_EXCL_START
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     if (!view.dirRemove(
             keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), true))
     {
+        // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete Oracle from owner.";
         return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
 
     auto const sleOwner = view.peek(keylet::account(account));
     if (!sleOwner)
+    {
+        // LCOV_EXCL_START
         return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     auto const count =
         sle->getFieldArray(sfPriceDataSeries).size() > 5 ? -2 : -1;
@@ -104,7 +120,9 @@ DeleteOracle::doApply()
             keylet::oracle(account_, ctx_.tx[sfOracleDocumentID])))
         return deleteOracle(ctx_.view(), sle, account_, j_);
 
+    // LCOV_EXCL_START
     return tecINTERNAL;
+    // LCOV_EXCL_STOP
 }
 
 }  // namespace ripple
