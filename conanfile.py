@@ -116,7 +116,12 @@ class Xrpl(ConanFile):
             self.requires('rocksdb/6.29.5')
 
     exports_sources = (
-        'CMakeLists.txt', 'Builds/*', 'bin/getRippledInfo', 'src/*', 'cfg/*'
+        'CMakeLists.txt',
+        'Builds/*',
+        'bin/getRippledInfo',
+        'external/*',
+        'src/*',
+        'cfg/*'
     )
 
     def layout(self):
@@ -162,8 +167,18 @@ class Xrpl(ConanFile):
         libxrpl.includedirs = ['include', 'include/ripple/proto']
         libxrpl.requires = [
             'boost::boost',
-            'openssl::crypto',
             'date::date',
             'grpc::grpc++',
+            'libarchive::libarchive',
+            'lz4::lz4',
+            'nudb::nudb',
+            'openssl::crypto',
+            'protobuf::libprotobuf',
+            'snappy::snappy',
+            'soci::soci',
+            'sqlite3::sqlite',
             'xxhash::xxhash',
+            'zlib::zlib',
         ]
+        if self.options.rocksdb:
+            libxrpl.requires.append('rocksdb::librocksdb')
