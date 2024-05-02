@@ -21,6 +21,8 @@
 
 #include <ripple/basics/Log.h>
 #include <ripple/basics/contract.h>
+#include <ripple/protocol/Feature.h>
+#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/jss.h>
 
@@ -88,6 +90,12 @@ STIssue::isEquivalent(const STBase& t) const
 bool
 STIssue::isDefault() const
 {
+    if (auto const rules = getCurrentTransactionRules())
+    {
+        if (rules->enabled(fixAMMMetadata))
+            return false;
+    }
+
     return issue_ == xrpIssue();
 }
 

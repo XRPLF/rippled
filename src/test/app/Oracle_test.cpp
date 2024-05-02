@@ -666,6 +666,44 @@ private:
         }
     }
 
+    void
+    testXRPAssetMeta(FeatureBitset features)
+    {
+        testcase("XRP Asset Meta");
+
+        Env env(*this, features);
+        Account const owner("owner");
+        env.fund(XRP(1'000), owner);
+        Oracle oracle(
+            env, {.owner = owner, .series = {{"XRP", "USD", 740, 1}}});
+
+        std::string const txHash{
+            env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+
+        env.close();
+        Json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
+
+        for (Json::Value const& metaNode : meta[sfAffectedNodes.jsonName])
+        {
+            // Ensure XRP asset is shown in PriceData regardless of the
+            // fixAMMMetadata amendment
+            if (metaNode.isMember(sfCreatedNode.jsonName) &&
+                metaNode[sfCreatedNode.jsonName][sfLedgerEntryType.jsonName]
+                        .asString() == jss::Oracle)
+            {
+                auto const newFields =
+                    metaNode[sfCreatedNode.jsonName][sfNewFields.jsonName];
+                BEAST_EXPECT(newFields.isMember(sfPriceDataSeries.jsonName));
+
+                auto const priceData = newFields[sfPriceDataSeries.jsonName][0u]
+                                                [sfPriceData.jsonName];
+                BEAST_EXPECT(priceData.isMember(sfBaseAsset.jsonName));
+                BEAST_EXPECT(
+                    priceData[sfBaseAsset.jsonName].asString() == "XRP");
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -684,6 +722,8 @@ public:
               all - featureExpandedSignerList})
             testMultisig(features);
         testLedgerEntry();
+        testXRPAssetMeta(all);
+        testXRPAssetMeta(all - fixAMMMetadata);
     }
 };
 

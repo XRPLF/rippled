@@ -5981,6 +5981,49 @@ private:
     }
 
     void
+    testFixAMMMetadata(FeatureBitset features)
+    {
+        testcase("Fix XRP Asset metadata");
+        using namespace jtx;
+
+        Env env(*this, features);
+
+        env.fund(XRP(10'000), gw);
+        env.fund(XRP(10'000), alice);
+        env.trust(USD(2'000), alice);
+        env.close();
+        env(pay(gw, alice, USD(2'000)));
+        AMM ammAlice(env, alice, XRP(1'000), USD(1'000));
+        std::string const txHash{
+            env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+
+        env.close();
+        Json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
+
+        for (Json::Value const& metaNode : meta[sfAffectedNodes.jsonName])
+        {
+            if (metaNode.isMember(sfCreatedNode.jsonName) &&
+                metaNode[sfCreatedNode.jsonName][sfLedgerEntryType.jsonName]
+                        .asString() == jss::AMM)
+            {
+                auto const newFields =
+                    metaNode[sfCreatedNode.jsonName][sfNewFields.jsonName];
+                if (features[fixAMMMetadata])
+                {
+                    BEAST_EXPECT(newFields.isMember(sfAsset.jsonName));
+                    BEAST_EXPECT(
+                        newFields[sfAsset.jsonName][jss::currency].asString() ==
+                        "XRP");
+                }
+                else
+                {
+                    BEAST_EXPECT(!newFields.isMember(sfAsset.jsonName));
+                }
+            }
+        }
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{jtx::supported_amendments()};
@@ -6017,6 +6060,8 @@ private:
         testFixOverflowOffer(all);
         testFixOverflowOffer(all - fixAMMRounding);
         testSwapRounding();
+        testFixAMMMetadata(all);
+        testFixAMMMetadata(all - fixAMMMetadata);
     }
 };
 
