@@ -116,7 +116,7 @@ class Xrpl(ConanFile):
             self.requires('rocksdb/6.29.5')
 
     exports_sources = (
-        'CMakeLists.txt', 'Builds/*', 'bin/getRippledInfo', 'src/*', 'cfg/*'
+        'CMakeLists.txt', 'Builds/*', 'bin/getRippledInfo', 'src/*', 'cfg/*', 'external/*'
     )
 
     def layout(self):
