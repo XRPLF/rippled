@@ -3783,10 +3783,15 @@ private:
             {features});
 
         // Offer crossing IOU/IOU and transfer rate
+        // Single path AMM offer
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 env(rate(gw, 1.25));
                 env.close();
+                // This offer succeeds to cross pre- and post-amendment
+                // because the strand's out amount is small enough to match
+                // limitQuality value and limitOut() function in StrandFlow
+                // doesn't require an adjustment to out value.
                 env(offer(carol, EUR(100), GBP(100)));
                 env.close();
                 // No transfer fee
@@ -3797,6 +3802,195 @@ private:
                 // Initial 30,000 + 100(offer)
                 BEAST_EXPECT(expectLine(env, carol, EUR(30'100)));
                 BEAST_EXPECT(expectOffers(env, bob, 0));
+            },
+            {{GBP(1'000), EUR(1'100)}},
+            0,
+            std::nullopt,
+            {features});
+        // Single-path AMM offer
+        testAMM(
+            [&](AMM& amm, Env& env) {
+                env(rate(gw, 1.001));
+                env.close();
+                env(offer(carol, XRP(100), USD(55)));
+                env.close();
+                if (!features[fixAMMRounding])
+                {
+                    // Pre-amendment the transfer fee is not taken into
+                    // account when calculating the limit out based on
+                    // limitQuality. Carol pays 0.1% on the takerGets, which
+                    // lowers the overall quality. AMM offer is generated based
+                    // on higher limit out, which generates a larger offer
+                    // with lower quality. Consequently, the offer fails
+                    // to cross.
+                    BEAST_EXPECT(
+                        amm.expectBalances(XRP(1'000), USD(500), amm.tokens()));
+                    BEAST_EXPECT(expectOffers(
+                        env, carol, 1, {{Amounts{XRP(100), USD(55)}}}));
+                }
+                else
+                {
+                    // Post-amendment the transfer fee is taken into account
+                    // when calculating the limit out based on limitQuality.
+                    // This increases the limitQuality and decreases
+                    // the limit out. Consequently, AMM offer size is decreased,
+                    // and the quality is increased, matching the overall
+                    // quality.
+                    // AMM offer ~50USD/91XRP
+                    BEAST_EXPECT(amm.expectBalances(
+                        XRPAmount(909'090'909),
+                        STAmount{USD, UINT64_C(550'000000055), -9},
+                        amm.tokens()));
+                    // Offer ~91XRP/49.99USD
+                    BEAST_EXPECT(expectOffers(
+                        env,
+                        carol,
+                        1,
+                        {{Amounts{
+                            XRPAmount{9'090'909},
+                            STAmount{USD, 4'99999995, -8}}}}));
+                    // Carol pays 0.1% fee on ~50USD =~ 0.05USD
+                    BEAST_EXPECT(
+                        env.balance(carol, USD) ==
+                        STAmount(USD, UINT64_C(29'949'94999999494), -11));
+                }
+            },
+            {{XRP(1'000), USD(500)}},
+            0,
+            std::nullopt,
+            {features});
+        testAMM(
+            [&](AMM& amm, Env& env) {
+                env(rate(gw, 1.001));
+                env.close();
+                env(offer(carol, XRP(10), USD(5.5)));
+                env.close();
+                if (!features[fixAMMRounding])
+                {
+                    BEAST_EXPECT(amm.expectBalances(
+                        XRP(990),
+                        STAmount{USD, UINT64_C(505'050505050505), -12},
+                        amm.tokens()));
+                    BEAST_EXPECT(expectOffers(env, carol, 0));
+                }
+                else
+                {
+                    BEAST_EXPECT(amm.expectBalances(
+                        XRP(990),
+                        STAmount{USD, UINT64_C(505'0505050505051), -13},
+                        amm.tokens()));
+                    BEAST_EXPECT(expectOffers(env, carol, 0));
+                }
+            },
+            {{XRP(1'000), USD(500)}},
+            0,
+            std::nullopt,
+            {features});
+        // Multi-path AMM offer
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                Account const ed("ed");
+                fund(
+                    env,
+                    gw,
+                    {bob, ed},
+                    XRP(30'000),
+                    {GBP(2'000), EUR(2'000)},
+                    Fund::Acct);
+                env(rate(gw, 1.25));
+                env.close();
+                // The auto-bridge is worse quality than AMM, is not consumed
+                // first and initially forces multi-path AMM offer generation.
+                // Multi-path AMM offers are consumed until their quality
+                // is less than the auto-bridge offers quality. Auto-bridge
+                // offers are consumed afterward. Then the behavior is
+                // different pre-amendment and post-amendment.
+                env(offer(bob, GBP(10), XRP(10)), txflags(tfPassive));
+                env(offer(ed, XRP(10), EUR(10)), txflags(tfPassive));
+                env.close();
+                env(offer(carol, EUR(100), GBP(100)));
+                env.close();
+                if (!features[fixAMMRounding])
+                {
+                    // After the auto-bridge offers are consumed, single path
+                    // AMM offer is generated with the limit out not taking
+                    // into consideration the transfer fee. This results
+                    // in an overall lower quality offer than the limit quality
+                    // and the single path AMM offer fails to consume.
+                    // Total consumed ~37.06GBP/39.32EUR
+                    BEAST_EXPECT(ammAlice.expectBalances(
+                        STAmount{GBP, UINT64_C(1'037'06583722133), -11},
+                        STAmount{EUR, UINT64_C(1'060'684828792831), -12},
+                        ammAlice.tokens()));
+                    // Consumed offer ~49.32EUR/49.32GBP
+                    BEAST_EXPECT(expectOffers(
+                        env,
+                        carol,
+                        1,
+                        {Amounts{
+                            STAmount{EUR, UINT64_C(50'684828792831), -12},
+                            STAmount{GBP, UINT64_C(50'684828792831), -12}}}));
+                    BEAST_EXPECT(expectOffers(env, bob, 0));
+                    BEAST_EXPECT(expectOffers(env, ed, 0));
+
+                    // Initial 30,000 - ~47.06(offers = 37.06(AMM) + 10(LOB))
+                    // * 1.25
+                    //     = 58.825 = ~29941.17
+                    // carol bought ~72.93EUR at the cost of ~70.68GBP
+                    // the offer is partially consumed
+                    BEAST_EXPECT(expectLine(
+                        env,
+                        carol,
+                        STAmount{GBP, UINT64_C(29'941'16770347333), -11}));
+                    // Initial 30,000 + ~49.3(offers = 39.3(AMM) + 10(LOB))
+                    BEAST_EXPECT(expectLine(
+                        env,
+                        carol,
+                        STAmount{EUR, UINT64_C(30'049'31517120716), -11}));
+                }
+                else
+                {
+                    // After the auto-bridge offers are consumed, single path
+                    // AMM offer is generated with the limit out taking
+                    // into consideration the transfer fee. This results
+                    // in an overall quality offer matching the limit quality
+                    // and the single path AMM offer is consumed. More
+                    // liquidity is consumed overall in post-amendment.
+                    // Total consumed ~60.68GBP/62.93EUR
+                    BEAST_EXPECT(ammAlice.expectBalances(
+                        STAmount{GBP, UINT64_C(1'060'684828792832), -12},
+                        STAmount{EUR, UINT64_C(1'037'06583722134), -11},
+                        ammAlice.tokens()));
+                    // Consumed offer ~72.93EUR/72.93GBP
+                    BEAST_EXPECT(expectOffers(
+                        env,
+                        carol,
+                        1,
+                        {Amounts{
+                            STAmount{EUR, UINT64_C(27'06583722134028), -14},
+                            STAmount{GBP, UINT64_C(27'06583722134028), -14}}}));
+                    BEAST_EXPECT(expectOffers(env, bob, 0));
+                    BEAST_EXPECT(expectOffers(env, ed, 0));
+
+                    // Initial 30,000 - ~70.68(offers = 60.68(AMM) + 10(LOB))
+                    // * 1.25
+                    //     = 88.35 = ~29911.64
+                    // carol bought ~72.93EUR at the cost of ~70.68GBP
+                    // the offer is partially consumed
+                    BEAST_EXPECT(expectLine(
+                        env,
+                        carol,
+                        STAmount{GBP, UINT64_C(29'911'64396400896), -11}));
+                    // Initial 30,000 + ~72.93(offers = 62.93(AMM) + 10(LOB))
+                    BEAST_EXPECT(expectLine(
+                        env,
+                        carol,
+                        STAmount{EUR, UINT64_C(30'072'93416277865), -11}));
+                }
+                // Initial 2000 + 10 = 2010
+                BEAST_EXPECT(expectLine(env, bob, GBP(2'010)));
+                // Initial 2000 - 10 * 1.25 = 1987.5
+                BEAST_EXPECT(expectLine(env, ed, EUR(1'987.5)));
             },
             {{GBP(1'000), EUR(1'100)}},
             0,
