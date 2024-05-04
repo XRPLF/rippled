@@ -165,6 +165,13 @@ adjustAmountsByLPTokens(
 
     if (lpTokensActual < lpTokens)
     {
+        bool const ammRoundingEnabled = [&]() {
+            if (auto const& rules = getCurrentTransactionRules();
+                rules && rules->enabled(fixAMMRounding))
+                return true;
+            return false;
+        }();
+
         // Equal trade
         if (amount2)
         {
@@ -172,10 +179,14 @@ adjustAmountsByLPTokens(
             auto const amountActual = toSTAmount(amount.issue(), fr * amount);
             auto const amount2Actual =
                 toSTAmount(amount2->issue(), fr * *amount2);
-            return std::make_tuple(
-                amountActual < amount ? amountActual : amount,
-                amount2Actual < amount2 ? amount2Actual : amount2,
-                lpTokensActual);
+            if (!ammRoundingEnabled)
+                return std::make_tuple(
+                    amountActual < amount ? amountActual : amount,
+                    amount2Actual < amount2 ? amount2Actual : amount2,
+                    lpTokensActual);
+            else
+                return std::make_tuple(
+                    amountActual, amount2Actual, lpTokensActual);
         }
 
         // Single trade
@@ -183,13 +194,19 @@ adjustAmountsByLPTokens(
             if (isDeposit)
                 return ammAssetIn(
                     amountBalance, lptAMMBalance, lpTokensActual, tfee);
-            else
+            else if (!ammRoundingEnabled)
                 return withdrawByTokens(
                     amountBalance, lptAMMBalance, lpTokens, tfee);
+            else
+                return withdrawByTokens(
+                    amountBalance, lptAMMBalance, lpTokensActual, tfee);
         }();
-        return amountActual < amount
-            ? std::make_tuple(amountActual, std::nullopt, lpTokensActual)
-            : std::make_tuple(amount, std::nullopt, lpTokensActual);
+        if (!ammRoundingEnabled)
+            return amountActual < amount
+                ? std::make_tuple(amountActual, std::nullopt, lpTokensActual)
+                : std::make_tuple(amount, std::nullopt, lpTokensActual);
+        else
+            return std::make_tuple(amountActual, std::nullopt, lpTokensActual);
     }
 
     assert(lpTokensActual == lpTokens);

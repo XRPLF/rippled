@@ -233,7 +233,7 @@ private:
                 {{XRP(10'100), USD(10'000)}},
                 0,
                 std::nullopt,
-                tweakedFeatures);
+                {tweakedFeatures});
 
             // Immediate or Cancel - cross as much as possible
             // and add nothing on the books.
@@ -257,7 +257,7 @@ private:
                 {{XRP(10'100), USD(10'000)}},
                 0,
                 std::nullopt,
-                tweakedFeatures);
+                {tweakedFeatures});
 
             // tfPassive -- place the offer without crossing it.
             testAMM(
@@ -274,7 +274,7 @@ private:
                 {{XRP(10'100), USD(10'000)}},
                 0,
                 std::nullopt,
-                tweakedFeatures);
+                {tweakedFeatures});
 
             // tfPassive -- cross only offers of better quality.
             testAMM(
@@ -296,7 +296,7 @@ private:
                 {{XRP(11'000), USD(9'000)}},
                 0,
                 std::nullopt,
-                tweakedFeatures);
+                {tweakedFeatures});
         }
     }
 
@@ -430,7 +430,7 @@ private:
             {{XRP(10'000), USD(10'000)}},
             0,
             std::nullopt,
-            features);
+            {features});
     }
 
     void
@@ -453,7 +453,7 @@ private:
             {{XRP(10'000), USD(10'100)}},
             0,
             std::nullopt,
-            features);
+            {features});
     }
 
     void
@@ -477,7 +477,7 @@ private:
             {{XRP(10'100), USD(10'000)}},
             0,
             std::nullopt,
-            features);
+            {features});
     }
 
     void
@@ -643,7 +643,7 @@ private:
             {{XRP(9'900), USD(10'100)}},
             0,
             std::nullopt,
-            features);
+            {features});
     }
 
     void
@@ -952,7 +952,7 @@ private:
             {{XRP(10'000), USD(10'100)}},
             0,
             std::nullopt,
-            features);
+            {features});
 
         // Reverse the order, so the offer in the books is to sell XRP
         // in return for USD.
@@ -973,7 +973,7 @@ private:
             {{XRP(10'100), USD(10'000)}},
             0,
             std::nullopt,
-            features);
+            {features});
 
         {
             // Bridged crossing.
