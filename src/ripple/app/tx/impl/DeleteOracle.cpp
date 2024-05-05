@@ -48,11 +48,7 @@ TER
 DeleteOracle::preclaim(PreclaimContext const& ctx)
 {
     if (!ctx.view.exists(keylet::account(ctx.tx.getAccountID(sfAccount))))
-    {
-        // LCOV_EXCL_START
-        return terNO_ACCOUNT;
-        // LCOV_EXCL_STOP
-    }
+        return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
     if (auto const sle = ctx.view.read(keylet::oracle(
             ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
@@ -80,11 +76,7 @@ DeleteOracle::deleteOracle(
     beast::Journal j)
 {
     if (!sle)
-    {
-        // LCOV_EXCL_START
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (!view.dirRemove(
             keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), true))
@@ -97,11 +89,7 @@ DeleteOracle::deleteOracle(
 
     auto const sleOwner = view.peek(keylet::account(account));
     if (!sleOwner)
-    {
-        // LCOV_EXCL_START
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const count =
         sle->getFieldArray(sfPriceDataSeries).size() > 5 ? -2 : -1;
@@ -120,9 +108,7 @@ DeleteOracle::doApply()
             keylet::oracle(account_, ctx_.tx[sfOracleDocumentID])))
         return deleteOracle(ctx_.view(), sle, account_, j_);
 
-    // LCOV_EXCL_START
-    return tecINTERNAL;
-    // LCOV_EXCL_STOP
+    return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
 }  // namespace ripple

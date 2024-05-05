@@ -85,11 +85,7 @@ iteratePriceData(
 
         auto const ledger = context.ledgerMaster.getLedgerBySeq(prevSeq);
         if (!ledger)
-        {
-            // LCOV_EXCL_START
-            return;
-            // LCOV_EXCL_STOP
-        }
+            return;  // LCOV_EXCL_LINE
 
         meta = ledger->txRead(prevTx).second;
 
@@ -276,11 +272,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
         std::shared_ptr<ReadView const> ledger;
         result = RPC::lookupLedger(ledger, context);
         if (!ledger)
-        {
-            // LCOV_EXCL_START
-            return result;
-            // LCOV_EXCL_STOP
-        }
+            return result;  // LCOV_EXCL_LINE
 
         auto const sle = ledger->read(keylet::oracle(*account, *documentID));
         iteratePriceData(context, sle, [&](STObject const& node) {
