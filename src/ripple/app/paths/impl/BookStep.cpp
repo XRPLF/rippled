@@ -532,7 +532,7 @@ public:
         // Single path AMM offer has to factor in the transfer in rate
         // when calculating the upper bound quality and the quality function
         // because single path AMM's offer quality is not constant.
-        if (!rules.enabled(fixAMMRounding))
+        if (!rules.enabled(fixAMMv1_1))
             return ofrQ;
         else if (
             offerType == OfferType::CLOB ||

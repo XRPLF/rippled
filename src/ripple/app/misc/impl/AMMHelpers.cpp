@@ -167,7 +167,7 @@ adjustAmountsByLPTokens(
     {
         bool const ammRoundingEnabled = [&]() {
             if (auto const& rules = getCurrentTransactionRules();
-                rules && rules->enabled(fixAMMRounding))
+                rules && rules->enabled(fixAMMv1_1))
                 return true;
             return false;
         }();

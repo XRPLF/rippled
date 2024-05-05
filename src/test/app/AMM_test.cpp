@@ -17,6 +17,7 @@
 */
 //==============================================================================
 #include <ripple/app/misc/AMMHelpers.h>
+#include <ripple/app/misc/AMMUtils.h>
 #include <ripple/app/paths/AMMContext.h>
 #include <ripple/app/paths/AMMOffer.h>
 #include <ripple/app/tx/impl/AMMBid.h>
@@ -3814,7 +3815,7 @@ private:
                 env.close();
                 env(offer(carol, XRP(100), USD(55)));
                 env.close();
-                if (!features[fixAMMRounding])
+                if (!features[fixAMMv1_1])
                 {
                     // Pre-amendment the transfer fee is not taken into
                     // account when calculating the limit out based on
@@ -3865,7 +3866,7 @@ private:
                 env.close();
                 env(offer(carol, XRP(10), USD(5.5)));
                 env.close();
-                if (!features[fixAMMRounding])
+                if (!features[fixAMMv1_1])
                 {
                     BEAST_EXPECT(amm.expectBalances(
                         XRP(990),
@@ -3910,7 +3911,7 @@ private:
                 env.close();
                 env(offer(carol, EUR(100), GBP(100)));
                 env.close();
-                if (!features[fixAMMRounding])
+                if (!features[fixAMMv1_1])
                 {
                     // After the auto-bridge offers are consumed, single path
                     // AMM offer is generated with the limit out not taking
@@ -6738,6 +6739,124 @@ private:
     }
 
     void
+    testLPTokenBalance(FeatureBitset features)
+    {
+        using namespace jtx;
+
+        // Last Liquidity Provider is the issuer of one token
+        {
+            Env env(*this, features);
+            fund(
+                env,
+                gw,
+                {alice, carol},
+                XRP(1'000'000'000),
+                {USD(1'000'000'000)});
+            AMM amm(env, gw, XRP(2), USD(1));
+            amm.deposit(alice, IOUAmount{1'876123487565916, -15});
+            amm.deposit(carol, IOUAmount{1'000'000});
+            amm.withdrawAll(alice);
+            amm.withdrawAll(carol);
+            auto const lpToken = getAccountLines(
+                env, gw, amm.lptIssue())[jss::lines][0u][jss::balance];
+            auto const lpTokenBalance =
+                amm.ammRpcInfo()[jss::amm][jss::lp_token][jss::value];
+            BEAST_EXPECT(
+                lpToken == "1414.213562373095" &&
+                lpTokenBalance == "1414.213562373");
+            if (!features[fixAMMv1_1])
+            {
+                amm.withdrawAll(gw, std::nullopt, ter(tecAMM_BALANCE));
+                BEAST_EXPECT(amm.ammExists());
+            }
+            else
+            {
+                amm.withdrawAll(gw);
+                BEAST_EXPECT(!amm.ammExists());
+            }
+        }
+
+        // Last Liquidity Provider is the issuer of two tokens, or not
+        // the issuer
+        for (auto const& lp : {gw, bob})
+        {
+            Env env(*this, features);
+            auto const ABC = gw["ABC"];
+            fund(
+                env,
+                gw,
+                {alice, carol, bob},
+                XRP(1'000),
+                {USD(1'000'000'000), ABC(1'000'000'000'000)});
+            AMM amm(env, lp, ABC(2'000'000), USD(1));
+            amm.deposit(alice, IOUAmount{1'876123487565916, -15});
+            amm.deposit(carol, IOUAmount{1'000'000});
+            amm.withdrawAll(alice);
+            amm.withdrawAll(carol);
+            auto const lpToken = getAccountLines(
+                env, lp, amm.lptIssue())[jss::lines][0u][jss::balance];
+            auto const lpTokenBalance =
+                amm.ammRpcInfo()[jss::amm][jss::lp_token][jss::value];
+            BEAST_EXPECT(
+                lpToken == "1414.213562373095" &&
+                lpTokenBalance == "1414.213562373");
+            if (!features[fixAMMv1_1])
+            {
+                amm.withdrawAll(lp, std::nullopt, ter(tecAMM_BALANCE));
+                BEAST_EXPECT(amm.ammExists());
+            }
+            else
+            {
+                amm.withdrawAll(lp);
+                BEAST_EXPECT(!amm.ammExists());
+            }
+        }
+
+        // More than one Liquidity Provider
+        // XRP/IOU
+        {
+            Env env(*this, features);
+            fund(env, gw, {alice}, XRP(1'000), {USD(1'000)});
+            AMM amm(env, gw, XRP(10), USD(10));
+            amm.deposit(alice, 1'000);
+            auto res =
+                isOnlyLiquidityProvider(*env.current(), amm.lptIssue(), gw);
+            BEAST_EXPECT(res && !res.value());
+            res =
+                isOnlyLiquidityProvider(*env.current(), amm.lptIssue(), alice);
+            BEAST_EXPECT(res && !res.value());
+        }
+        // IOU/IOU, issuer of both IOU
+        {
+            Env env(*this, features);
+            fund(env, gw, {alice}, XRP(1'000), {USD(1'000), EUR(1'000)});
+            AMM amm(env, gw, EUR(10), USD(10));
+            amm.deposit(alice, 1'000);
+            auto res =
+                isOnlyLiquidityProvider(*env.current(), amm.lptIssue(), gw);
+            BEAST_EXPECT(res && !res.value());
+            res =
+                isOnlyLiquidityProvider(*env.current(), amm.lptIssue(), alice);
+            BEAST_EXPECT(res && !res.value());
+        }
+        // IOU/IOU, issuer of one IOU
+        {
+            Env env(*this, features);
+            Account const gw1("gw1");
+            auto const YAN = gw1["YAN"];
+            fund(env, gw, {gw1}, XRP(1'000), {USD(1'000)});
+            fund(env, gw1, {gw}, XRP(1'000), {YAN(1'000)}, Fund::IOUOnly);
+            AMM amm(env, gw1, YAN(10), USD(10));
+            amm.deposit(gw, 1'000);
+            auto res =
+                isOnlyLiquidityProvider(*env.current(), amm.lptIssue(), gw);
+            BEAST_EXPECT(res && !res.value());
+            res = isOnlyLiquidityProvider(*env.current(), amm.lptIssue(), gw1);
+            BEAST_EXPECT(res && !res.value());
+        }
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{jtx::supported_amendments()};
@@ -6779,6 +6898,8 @@ private:
         testFixChangeSpotPriceQuality(all - fixAMMv1_1);
         testFixAMMOfferBlockedByLOB(all);
         testFixAMMOfferBlockedByLOB(all - fixAMMv1_1);
+        testLPTokenBalance(all);
+        testLPTokenBalance(all - fixAMMv1_1);
     }
 };
 

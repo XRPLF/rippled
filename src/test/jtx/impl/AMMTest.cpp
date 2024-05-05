@@ -137,10 +137,15 @@ AMMTestBase::testAMM(
         else if (asset2.native())
             fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
 
-        AMM ammAlice(env, alice, asset1, asset2, false, tfee);
-        BEAST_EXPECT(
-            ammAlice.expectBalances(asset1, asset2, ammAlice.tokens()));
-        cb(ammAlice, env);
+        AMM ammAlice(
+            env,
+            alice,
+            asset1,
+            asset2,
+            CreateArg{.log = false, .tfee = tfee, .err = ter});
+        if (BEAST_EXPECT(
+                ammAlice.expectBalances(asset1, asset2, ammAlice.tokens())))
+            cb(ammAlice, env);
     }
 }
 
