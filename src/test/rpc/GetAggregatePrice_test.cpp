@@ -56,7 +56,7 @@ public:
 
             // invalid base_asset, quote_asset
             std::vector<AnyValue> invalidAsset = {
-                "%None%",
+                NoneTag,
                 1,
                 -1,
                 1.2,
@@ -100,7 +100,7 @@ public:
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
             // invalid values
             std::vector<AnyValue> invalidDocument = {
-                "%None%", 1.2, -1, "", "none", "1.2"};
+                NoneTag, 1.2, -1, "", "none", "1.2"};
             for (auto const& v : invalidDocument)
             {
                 ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, v}}});
@@ -131,7 +131,7 @@ public:
 
             // invalid trim value
             std::vector<AnyValue> invalidTrim = {
-                "%None%", 0, 26, -1, 1.2, "", "none", "1.2"};
+                NoneTag, 0, 26, -1, 1.2, "", "none", "1.2"};
             for (auto const& v : invalidTrim)
             {
                 ret = Oracle::aggregatePrice(
@@ -141,7 +141,7 @@ public:
 
             // invalid time threshold value
             std::vector<AnyValue> invalidTime = {
-                "%None%", -1, 1.2, "", "none", "1.2"};
+                NoneTag, -1, 1.2, "", "none", "1.2"};
             for (auto const& v : invalidTime)
             {
                 ret = Oracle::aggregatePrice(

@@ -176,7 +176,7 @@ Oracle::aggregatePrice(
         toJson(jv[jss::time_threshold], *timeThreshold);
     // Convert "%None%" to None
     auto str = to_string(jv);
-    str = boost::regex_replace(str, boost::regex("\"%None%\""), "None");
+    str = boost::regex_replace(str, boost::regex(NonePattern), UnquotedNone);
     auto jr = env.rpc("json", "get_aggregate_price", str);
 
     if (jr.isObject())
@@ -312,8 +312,8 @@ Oracle::ledgerEntry(
     }
     // Convert "%None%" to None
     auto str = to_string(jvParams);
-    str = boost::regex_replace(str, boost::regex("\"%None%\""), "None");
-    return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+    str = boost::regex_replace(str, boost::regex(NonePattern), UnquotedNone);
+    return env.rpc("json", "ledger_entry", str)[jss::result];
 }
 
 void

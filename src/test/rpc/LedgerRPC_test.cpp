@@ -2293,7 +2293,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         Oracle oracle(env, {.owner = owner});
 
         // Malformed document id
-        std::vector<AnyValue> invalid = {"%None%", -1, 1.2, "", "Invalid"};
+        std::vector<AnyValue> invalid = {NoneTag, -1, 1.2, "", "Invalid"};
         for (auto const& v : invalid)
         {
             auto const res = Oracle::ledgerEntry(env, owner, v);

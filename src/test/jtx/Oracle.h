@@ -32,6 +32,12 @@ using AnyValue = std::variant<std::string, double, Json::Int, Json::UInt>;
 using OraclesData =
     std::vector<std::pair<std::optional<Account>, std::optional<AnyValue>>>;
 
+// Special string value, which is converted to unquoted string in the string
+// passed to rpc.
+constexpr char const* NoneTag = "%None%";
+constexpr char const* UnquotedNone = "None";
+constexpr char const* NonePattern = "\"%None%\"";
+
 std::uint32_t
 asUInt(AnyValue const& v);
 
