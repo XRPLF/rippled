@@ -17,11 +17,35 @@
 */
 //==============================================================================
 
+#include <ripple/basics/LocalValue.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Rules.h>
 
-#include <ripple/protocol/Indexes.h>
+#include <optional>
 
 namespace ripple {
+
+namespace {
+// Use a static inside a function to help prevent order-of-initialization issues
+LocalValue<std::optional<Rules>>&
+getCurrentTransactionRulesRef()
+{
+    static LocalValue<std::optional<Rules>> r;
+    return r;
+}
+}  // namespace
+
+std::optional<Rules> const&
+getCurrentTransactionRules()
+{
+    return *getCurrentTransactionRulesRef();
+}
+
+void
+setCurrentTransactionRules(std::optional<Rules> r)
+{
+    *getCurrentTransactionRulesRef() = std::move(r);
+}
 
 class Rules::Impl
 {
@@ -40,11 +64,16 @@ public:
         std::unordered_set<uint256, beast::uhash<>> const& presets,
         std::optional<uint256> const& digest,
         STVector256 const& amendments)
-        : presets_(presets)
+        : digest_(digest), presets_(presets)
     {
-        digest_ = digest;
         set_.reserve(amendments.size());
         set_.insert(amendments.begin(), amendments.end());
+    }
+
+    std::unordered_set<uint256, beast::uhash<>> const&
+    presets() const
+    {
+        return presets_;
     }
 
     bool
@@ -62,6 +91,7 @@ public:
             return true;
         if (!digest_ || !other.digest_)
             return false;
+        assert(presets_ == other.presets_);
         return *digest_ == *other.digest_;
     }
 };
@@ -79,10 +109,28 @@ Rules::Rules(
 {
 }
 
+std::unordered_set<uint256, beast::uhash<>> const&
+Rules::presets() const
+{
+    return impl_->presets();
+}
+
 bool
 Rules::enabled(uint256 const& feature) const
 {
     assert(impl_);
+
+    // The functionality of the "NonFungibleTokensV1_1" amendment is
+    // precisely the functionality of the following three amendments
+    // so if their status is ever queried individually, we inject an
+    // extra check here to simplify the checking elsewhere.
+    if (feature == featureNonFungibleTokensV1 ||
+        feature == fixNFTokenNegOffer || feature == fixNFTokenDirV1)
+    {
+        if (impl_->enabled(featureNonFungibleTokensV1_1))
+            return true;
+    }
+
     return impl_->enabled(feature);
 }
 

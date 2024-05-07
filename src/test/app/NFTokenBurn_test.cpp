@@ -26,7 +26,7 @@
 
 namespace ripple {
 
-class NFTokenBurn_test : public beast::unit_test::suite
+class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
 {
     // Helper function that returns the owner count of an account root.
     static std::uint32_t
@@ -47,6 +47,37 @@ class NFTokenBurn_test : public beast::unit_test::suite
         params[jss::type] = "state";
         Json::Value nfts = env.rpc("json", "account_nfts", to_string(params));
         return nfts[jss::result][jss::account_nfts].size();
+    };
+
+    // Helper function that returns new nft id for an account and create
+    // specified number of sell offers
+    uint256
+    createNftAndOffers(
+        test::jtx::Env& env,
+        test::jtx::Account const& owner,
+        std::vector<uint256>& offerIndexes,
+        size_t const tokenCancelCount)
+    {
+        using namespace test::jtx;
+        uint256 const nftokenID =
+            token::getNextID(env, owner, 0, tfTransferable);
+        env(token::mint(owner, 0),
+            token::uri(std::string(maxTokenURILength, 'u')),
+            txflags(tfTransferable));
+        env.close();
+
+        offerIndexes.reserve(tokenCancelCount);
+
+        for (uint32_t i = 0; i < tokenCancelCount; ++i)
+        {
+            // Create sell offer
+            offerIndexes.push_back(keylet::nftoffer(owner, env.seq(owner)).key);
+            env(token::createOffer(owner, nftokenID, drops(1)),
+                txflags(tfSellNFToken));
+            env.close();
+        }
+
+        return nftokenID;
     };
 
     void
@@ -349,8 +380,16 @@ class NFTokenBurn_test : public beast::unit_test::suite
             auto internalTaxon = [&env](
                                      Account const& acct,
                                      std::uint32_t taxon) -> std::uint32_t {
-                std::uint32_t const tokenSeq = {
-                    env.le(acct)->at(~sfMintedNFTokens).value_or(0)};
+                std::uint32_t tokenSeq =
+                    env.le(acct)->at(~sfMintedNFTokens).value_or(0);
+
+                // If fixNFTokenRemint amendment is on, we must
+                // add FirstNFTokenSequence.
+                if (env.current()->rules().enabled(fixNFTokenRemint))
+                    tokenSeq += env.le(acct)
+                                    ->at(~sfFirstNFTokenSequence)
+                                    .value_or(env.seq(acct));
+
                 return toUInt32(
                     nft::cipheredTaxon(tokenSeq, nft::toTaxon(taxon)));
             };
@@ -492,94 +531,251 @@ class NFTokenBurn_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        Env env{*this, features};
-
-        Account const alice("alice");
-        Account const becky("becky");
-        env.fund(XRP(1000), alice, becky);
-        env.close();
-
-        // We structure the test to try and maximize the metadata produced.
-        // This verifies that we don't create too much metadata during a
-        // maximal burn operation.
-        //
-        // 1. alice mints an nft with a full-sized URI.
-        // 2. We create 1000 new accounts, each of which creates an offer for
-        //    alice's nft.
-        // 3. becky creates one more offer for alice's NFT
-        // 4. Attempt to burn the nft which fails because there are too
-        //    many offers.
-        // 5. Cancel becky's offer and the nft should become burnable.
-        uint256 const nftokenID =
-            token::getNextID(env, alice, 0, tfTransferable);
-        env(token::mint(alice, 0),
-            token::uri(std::string(maxTokenURILength, 'u')),
-            txflags(tfTransferable));
-        env.close();
-
-        std::vector<uint256> offerIndexes;
-        offerIndexes.reserve(maxTokenOfferCancelCount);
-        for (uint32_t i = 0; i < maxTokenOfferCancelCount; ++i)
+        // Test what happens if a NFT is unburnable when there are
+        // more than 500 offers, before fixNonFungibleTokensV1_2 goes live
+        if (!features[fixNonFungibleTokensV1_2])
         {
-            Account const acct(std::string("acct") + std::to_string(i));
-            env.fund(XRP(1000), acct);
+            Env env{*this, features};
+
+            Account const alice("alice");
+            Account const becky("becky");
+            env.fund(XRP(1000), alice, becky);
             env.close();
 
-            offerIndexes.push_back(keylet::nftoffer(acct, env.seq(acct)).key);
-            env(token::createOffer(acct, nftokenID, drops(1)),
+            // We structure the test to try and maximize the metadata produced.
+            // This verifies that we don't create too much metadata during a
+            // maximal burn operation.
+            //
+            // 1. alice mints an nft with a full-sized URI.
+            // 2. We create 500 new accounts, each of which creates an offer
+            //    for alice's nft.
+            // 3. becky creates one more offer for alice's NFT
+            // 4. Attempt to burn the nft which fails because there are too
+            //    many offers.
+            // 5. Cancel becky's offer and the nft should become burnable.
+            uint256 const nftokenID =
+                token::getNextID(env, alice, 0, tfTransferable);
+            env(token::mint(alice, 0),
+                token::uri(std::string(maxTokenURILength, 'u')),
+                txflags(tfTransferable));
+            env.close();
+
+            std::vector<uint256> offerIndexes;
+            offerIndexes.reserve(maxTokenOfferCancelCount);
+            for (std::uint32_t i = 0; i < maxTokenOfferCancelCount; ++i)
+            {
+                Account const acct(std::string("acct") + std::to_string(i));
+                env.fund(XRP(1000), acct);
+                env.close();
+
+                offerIndexes.push_back(
+                    keylet::nftoffer(acct, env.seq(acct)).key);
+                env(token::createOffer(acct, nftokenID, drops(1)),
+                    token::owner(alice));
+                env.close();
+            }
+
+            // Verify all offers are present in the ledger.
+            for (uint256 const& offerIndex : offerIndexes)
+            {
+                BEAST_EXPECT(env.le(keylet::nftoffer(offerIndex)));
+            }
+
+            // Create one too many offers.
+            uint256 const beckyOfferIndex =
+                keylet::nftoffer(becky, env.seq(becky)).key;
+            env(token::createOffer(becky, nftokenID, drops(1)),
+                token::owner(alice));
+
+            // Attempt to burn the nft which should fail.
+            env(token::burn(alice, nftokenID), ter(tefTOO_BIG));
+
+            // Close enough ledgers that the burn transaction is no longer
+            // retried.
+            for (int i = 0; i < 10; ++i)
+                env.close();
+
+            // Cancel becky's offer, but alice adds a sell offer.  The token
+            // should still not be burnable.
+            env(token::cancelOffer(becky, {beckyOfferIndex}));
+            env.close();
+
+            uint256 const aliceOfferIndex =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftokenID, drops(1)),
+                txflags(tfSellNFToken));
+            env.close();
+
+            env(token::burn(alice, nftokenID), ter(tefTOO_BIG));
+            env.close();
+
+            // Cancel alice's sell offer.  Now the token should be burnable.
+            env(token::cancelOffer(alice, {aliceOfferIndex}));
+            env.close();
+
+            env(token::burn(alice, nftokenID));
+            env.close();
+
+            // Burning the token should remove all the offers from the ledger.
+            for (uint256 const& offerIndex : offerIndexes)
+            {
+                BEAST_EXPECT(!env.le(keylet::nftoffer(offerIndex)));
+            }
+
+            // Both alice and becky should have ownerCounts of zero.
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, becky) == 0);
+        }
+
+        // Test that up to 499 buy/sell offers will be removed when NFT is
+        // burned after fixNonFungibleTokensV1_2 is enabled. This is to test
+        // that we can successfully remove all offers if the number of offers is
+        // less than 500.
+        if (features[fixNonFungibleTokensV1_2])
+        {
+            Env env{*this, features};
+
+            Account const alice("alice");
+            Account const becky("becky");
+            env.fund(XRP(100000), alice, becky);
+            env.close();
+
+            // alice creates 498 sell offers and becky creates 1 buy offers.
+            // When the token is burned, 498 sell offers and 1 buy offer are
+            // removed. In total, 499 offers are removed
+            std::vector<uint256> offerIndexes;
+            auto const nftokenID = createNftAndOffers(
+                env, alice, offerIndexes, maxDeletableTokenOfferEntries - 2);
+
+            // Verify all sell offers are present in the ledger.
+            for (uint256 const& offerIndex : offerIndexes)
+            {
+                BEAST_EXPECT(env.le(keylet::nftoffer(offerIndex)));
+            }
+
+            // Becky creates a buy offer
+            uint256 const beckyOfferIndex =
+                keylet::nftoffer(becky, env.seq(becky)).key;
+            env(token::createOffer(becky, nftokenID, drops(1)),
                 token::owner(alice));
             env.close();
-        }
 
-        // Verify all offers are present in the ledger.
-        for (uint256 const& offerIndex : offerIndexes)
-        {
-            BEAST_EXPECT(env.le(keylet::nftoffer(offerIndex)));
-        }
-
-        // Create one too many offers.
-        uint256 const beckyOfferIndex =
-            keylet::nftoffer(becky, env.seq(becky)).key;
-        env(token::createOffer(becky, nftokenID, drops(1)),
-            token::owner(alice));
-
-        // Attempt to burn the nft which should fail.
-        env(token::burn(alice, nftokenID), ter(tefTOO_BIG));
-
-        // Close enough ledgers that the burn transaction is no longer retried.
-        for (int i = 0; i < 10; ++i)
+            // Burn the token
+            env(token::burn(alice, nftokenID));
             env.close();
 
-        // Cancel becky's offer, but alice adds a sell offer.  The token
-        // should still not be burnable.
-        env(token::cancelOffer(becky, {beckyOfferIndex}));
-        env.close();
+            // Burning the token should remove all 498 sell offers
+            // that alice created
+            for (uint256 const& offerIndex : offerIndexes)
+            {
+                BEAST_EXPECT(!env.le(keylet::nftoffer(offerIndex)));
+            }
 
-        uint256 const aliceOfferIndex =
-            keylet::nftoffer(alice, env.seq(alice)).key;
-        env(token::createOffer(alice, nftokenID, drops(1)),
-            txflags(tfSellNFToken));
-        env.close();
+            // Burning the token should also remove the one buy offer
+            // that becky created
+            BEAST_EXPECT(!env.le(keylet::nftoffer(beckyOfferIndex)));
 
-        env(token::burn(alice, nftokenID), ter(tefTOO_BIG));
-        env.close();
-
-        // Cancel alice's sell offer.  Now the token should be burnable.
-        env(token::cancelOffer(alice, {aliceOfferIndex}));
-        env.close();
-
-        env(token::burn(alice, nftokenID));
-        env.close();
-
-        // Burning the token should remove all the offers from the ledger.
-        for (uint256 const& offerIndex : offerIndexes)
-        {
-            BEAST_EXPECT(!env.le(keylet::nftoffer(offerIndex)));
+            // alice and becky should have ownerCounts of zero
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, becky) == 0);
         }
 
-        // Both alice and becky should have ownerCounts of zero.
-        BEAST_EXPECT(ownerCount(env, alice) == 0);
-        BEAST_EXPECT(ownerCount(env, becky) == 0);
+        // Test that up to 500 buy offers are removed when NFT is burned
+        // after fixNonFungibleTokensV1_2 is enabled
+        if (features[fixNonFungibleTokensV1_2])
+        {
+            Env env{*this, features};
+
+            Account const alice("alice");
+            Account const becky("becky");
+            env.fund(XRP(100000), alice, becky);
+            env.close();
+
+            // alice creates 501 sell offers for the token
+            // After we burn the token, 500 of the sell offers should be
+            // removed, and one is left over
+            std::vector<uint256> offerIndexes;
+            auto const nftokenID = createNftAndOffers(
+                env, alice, offerIndexes, maxDeletableTokenOfferEntries + 1);
+
+            // Verify all sell offers are present in the ledger.
+            for (uint256 const& offerIndex : offerIndexes)
+            {
+                BEAST_EXPECT(env.le(keylet::nftoffer(offerIndex)));
+            }
+
+            // Burn the token
+            env(token::burn(alice, nftokenID));
+            env.close();
+
+            uint32_t offerDeletedCount = 0;
+            // Count the number of sell offers that have been deleted
+            for (uint256 const& offerIndex : offerIndexes)
+            {
+                if (!env.le(keylet::nftoffer(offerIndex)))
+                    offerDeletedCount++;
+            }
+
+            BEAST_EXPECT(offerIndexes.size() == maxTokenOfferCancelCount + 1);
+
+            // 500 sell offers should be removed
+            BEAST_EXPECT(offerDeletedCount == maxTokenOfferCancelCount);
+
+            // alice should have ownerCounts of one for the orphaned sell offer
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+        }
+
+        // Test that up to 500 buy/sell offers are removed when NFT is burned
+        // after fixNonFungibleTokensV1_2 is enabled
+        if (features[fixNonFungibleTokensV1_2])
+        {
+            Env env{*this, features};
+
+            Account const alice("alice");
+            Account const becky("becky");
+            env.fund(XRP(100000), alice, becky);
+            env.close();
+
+            // alice creates 499 sell offers and becky creates 2 buy offers.
+            // When the token is burned, 499 sell offers and 1 buy offer
+            // are removed.
+            // In total, 500 offers are removed
+            std::vector<uint256> offerIndexes;
+            auto const nftokenID = createNftAndOffers(
+                env, alice, offerIndexes, maxDeletableTokenOfferEntries - 1);
+
+            // Verify all sell offers are present in the ledger.
+            for (uint256 const& offerIndex : offerIndexes)
+            {
+                BEAST_EXPECT(env.le(keylet::nftoffer(offerIndex)));
+            }
+
+            // becky creates 2 buy offers
+            env(token::createOffer(becky, nftokenID, drops(1)),
+                token::owner(alice));
+            env.close();
+            env(token::createOffer(becky, nftokenID, drops(1)),
+                token::owner(alice));
+            env.close();
+
+            // Burn the token
+            env(token::burn(alice, nftokenID));
+            env.close();
+
+            // Burning the token should remove all 499 sell offers from the
+            // ledger.
+            for (uint256 const& offerIndex : offerIndexes)
+            {
+                BEAST_EXPECT(!env.le(keylet::nftoffer(offerIndex)));
+            }
+
+            // alice should have ownerCount of zero because all her
+            // sell offers have been deleted
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+            // becky has ownerCount of one due to an orphaned buy offer
+            BEAST_EXPECT(ownerCount(env, becky) == 1);
+        }
     }
 
     void
@@ -590,19 +786,68 @@ class NFTokenBurn_test : public beast::unit_test::suite
         testBurnTooManyOffers(features);
     }
 
+protected:
+    void
+    run(std::uint32_t instance, bool last = false)
+    {
+        using namespace test::jtx;
+        static FeatureBitset const all{supported_amendments()};
+        static FeatureBitset const fixNFTDir{fixNFTokenDirV1};
+
+        static std::array<FeatureBitset, 4> const feats{
+            all - fixNonFungibleTokensV1_2 - fixNFTDir - fixNFTokenRemint,
+            all - fixNonFungibleTokensV1_2 - fixNFTokenRemint,
+            all - fixNFTokenRemint,
+            all};
+
+        if (BEAST_EXPECT(instance < feats.size()))
+        {
+            testWithFeats(feats[instance]);
+        }
+        BEAST_EXPECT(!last || instance == feats.size() - 1);
+    }
+
 public:
     void
     run() override
     {
-        using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
-        FeatureBitset const fixNFTDir{fixNFTokenDirV1};
-
-        testWithFeats(all - fixNFTDir);
-        testWithFeats(all);
+        run(0);
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurn, tx, ripple, 3);
+class NFTokenBurnWOfixFungTokens_test : public NFTokenBurnBaseUtil_test
+{
+public:
+    void
+    run() override
+    {
+        NFTokenBurnBaseUtil_test::run(1);
+    }
+};
+
+class NFTokenBurnWOFixTokenRemint_test : public NFTokenBurnBaseUtil_test
+{
+public:
+    void
+    run() override
+    {
+        NFTokenBurnBaseUtil_test::run(2);
+    }
+};
+
+class NFTokenBurnAllFeatures_test : public NFTokenBurnBaseUtil_test
+{
+public:
+    void
+    run() override
+    {
+        NFTokenBurnBaseUtil_test::run(3, true);
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnBaseUtil, tx, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnWOfixFungTokens, tx, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnWOFixTokenRemint, tx, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnAllFeatures, tx, ripple, 3);
 
 }  // namespace ripple

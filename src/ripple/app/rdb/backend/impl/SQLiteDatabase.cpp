@@ -1322,7 +1322,6 @@ SQLiteDatabaseImp::oldestAccountTxPage(AccountTxPageOptions const& options)
         return {};
 
     static std::uint32_t const page_length(200);
-    auto& idCache = app_.accountIDCache();
     auto onUnsavedLedger =
         std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1);
     AccountTxs ret;
@@ -1338,15 +1337,10 @@ SQLiteDatabaseImp::oldestAccountTxPage(AccountTxPageOptions const& options)
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        auto newmarker = detail::oldestAccountTxPage(
-                             *db,
-                             idCache,
-                             onUnsavedLedger,
-                             onTransaction,
-                             options,
-                             0,
-                             page_length)
-                             .first;
+        auto newmarker =
+            detail::oldestAccountTxPage(
+                *db, onUnsavedLedger, onTransaction, options, 0, page_length)
+                .first;
         return {ret, newmarker};
     }
 
@@ -1363,7 +1357,6 @@ SQLiteDatabaseImp::oldestAccountTxPage(AccountTxPageOptions const& options)
                     return false;
                 auto [marker, total] = detail::oldestAccountTxPage(
                     session,
-                    idCache,
                     onUnsavedLedger,
                     onTransaction,
                     opt,
@@ -1391,7 +1384,6 @@ SQLiteDatabaseImp::newestAccountTxPage(AccountTxPageOptions const& options)
         return {};
 
     static std::uint32_t const page_length(200);
-    auto& idCache = app_.accountIDCache();
     auto onUnsavedLedger =
         std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1);
     AccountTxs ret;
@@ -1407,15 +1399,10 @@ SQLiteDatabaseImp::newestAccountTxPage(AccountTxPageOptions const& options)
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        auto newmarker = detail::newestAccountTxPage(
-                             *db,
-                             idCache,
-                             onUnsavedLedger,
-                             onTransaction,
-                             options,
-                             0,
-                             page_length)
-                             .first;
+        auto newmarker =
+            detail::newestAccountTxPage(
+                *db, onUnsavedLedger, onTransaction, options, 0, page_length)
+                .first;
         return {ret, newmarker};
     }
 
@@ -1432,7 +1419,6 @@ SQLiteDatabaseImp::newestAccountTxPage(AccountTxPageOptions const& options)
                     return false;
                 auto [marker, total] = detail::newestAccountTxPage(
                     session,
-                    idCache,
                     onUnsavedLedger,
                     onTransaction,
                     opt,
@@ -1460,7 +1446,6 @@ SQLiteDatabaseImp::oldestAccountTxPageB(AccountTxPageOptions const& options)
         return {};
 
     static std::uint32_t const page_length(500);
-    auto& idCache = app_.accountIDCache();
     auto onUnsavedLedger =
         std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1);
     MetaTxsList ret;
@@ -1475,15 +1460,10 @@ SQLiteDatabaseImp::oldestAccountTxPageB(AccountTxPageOptions const& options)
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        auto newmarker = detail::oldestAccountTxPage(
-                             *db,
-                             idCache,
-                             onUnsavedLedger,
-                             onTransaction,
-                             options,
-                             0,
-                             page_length)
-                             .first;
+        auto newmarker =
+            detail::oldestAccountTxPage(
+                *db, onUnsavedLedger, onTransaction, options, 0, page_length)
+                .first;
         return {ret, newmarker};
     }
 
@@ -1500,7 +1480,6 @@ SQLiteDatabaseImp::oldestAccountTxPageB(AccountTxPageOptions const& options)
                     return false;
                 auto [marker, total] = detail::oldestAccountTxPage(
                     session,
-                    idCache,
                     onUnsavedLedger,
                     onTransaction,
                     opt,
@@ -1528,7 +1507,6 @@ SQLiteDatabaseImp::newestAccountTxPageB(AccountTxPageOptions const& options)
         return {};
 
     static std::uint32_t const page_length(500);
-    auto& idCache = app_.accountIDCache();
     auto onUnsavedLedger =
         std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1);
     MetaTxsList ret;
@@ -1543,15 +1521,10 @@ SQLiteDatabaseImp::newestAccountTxPageB(AccountTxPageOptions const& options)
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        auto newmarker = detail::newestAccountTxPage(
-                             *db,
-                             idCache,
-                             onUnsavedLedger,
-                             onTransaction,
-                             options,
-                             0,
-                             page_length)
-                             .first;
+        auto newmarker =
+            detail::newestAccountTxPage(
+                *db, onUnsavedLedger, onTransaction, options, 0, page_length)
+                .first;
         return {ret, newmarker};
     }
 
@@ -1568,7 +1541,6 @@ SQLiteDatabaseImp::newestAccountTxPageB(AccountTxPageOptions const& options)
                     return false;
                 auto [marker, total] = detail::newestAccountTxPage(
                     session,
-                    idCache,
                     onUnsavedLedger,
                     onTransaction,
                     opt,

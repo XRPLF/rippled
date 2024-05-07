@@ -670,7 +670,7 @@ public:
         // confirmed persisted. Otherwise, it can become deleted
         // prematurely if other copies are removed from caches.
         std::shared_ptr<NodeObject> no;
-        NodeStore::EncodedBlob e;
+        std::optional<NodeStore::EncodedBlob> e;
         std::pair<void const*, std::size_t> compressed;
         std::chrono::steady_clock::time_point begin;
         // The data is stored in this buffer. The void* in the above member
@@ -686,10 +686,10 @@ public:
             std::atomic<std::uint64_t>& retries)
             : backend(f), no(nobj), totalWriteRetries(retries)
         {
-            e.prepare(no);
+            e.emplace(no);
 
             compressed =
-                NodeStore::nodeobject_compress(e.getData(), e.getSize(), bf);
+                NodeStore::nodeobject_compress(e->getData(), e->getSize(), bf);
         }
     };
 
@@ -722,7 +722,7 @@ public:
         CassError rc = cass_statement_bind_bytes(
             statement,
             0,
-            static_cast<cass_byte_t const*>(data.e.getKey()),
+            static_cast<cass_byte_t const*>(data.e->getKey()),
             keyBytes_);
         if (rc != CASS_OK)
         {

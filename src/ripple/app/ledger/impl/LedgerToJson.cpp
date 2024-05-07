@@ -17,13 +17,17 @@
 */
 //==============================================================================
 
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/LedgerToJson.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/TxQ.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/core/Pg.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/DeliveredAmount.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 
 namespace ripple {
 
@@ -49,11 +53,17 @@ isBinary(LedgerFill const& fill)
 
 template <class Object>
 void
-fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
+fillJson(
+    Object& json,
+    bool closed,
+    LedgerInfo const& info,
+    bool bFull,
+    unsigned apiVersion)
 {
     json[jss::parent_hash] = to_string(info.parentHash);
-    json[jss::ledger_index] = to_string(info.seq);
-    json[jss::seqNum] = to_string(info.seq);  // DEPRECATED
+    json[jss::ledger_index] = (apiVersion > 1)
+        ? Json::Value(info.seq)
+        : Json::Value(std::to_string(info.seq));
 
     if (closed)
     {
@@ -70,10 +80,6 @@ fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
     json[jss::account_hash] = to_string(info.accountHash);
     json[jss::total_coins] = to_string(info.drops);
 
-    // These next three are DEPRECATED.
-    json[jss::hash] = to_string(info.hash);
-    json[jss::totalCoins] = to_string(info.drops);
-    json[jss::accepted] = closed;
     json[jss::close_flags] = info.closeFlags;
 
     // Always show fields that contribute to the ledger hash
@@ -87,6 +93,7 @@ fillJson(Object& json, bool closed, LedgerInfo const& info, bool bFull)
         json[jss::close_time_human] = to_string(info.closeTime);
         if (!getCloseAgree(info))
             json[jss::close_time_estimated] = true;
+        json[jss::close_time_iso] = to_string_iso(info.closeTime);
     }
 }
 
@@ -122,23 +129,65 @@ fillJsonTx(
     if (bBinary)
     {
         txJson[jss::tx_blob] = serializeHex(*txn);
+        if (fill.context->apiVersion > 1)
+            txJson[jss::hash] = to_string(txn->getTransactionID());
+
+        auto const json_meta =
+            (fill.context->apiVersion > 1 ? jss::meta_blob : jss::meta);
         if (stMeta)
-            txJson[jss::meta] = serializeHex(*stMeta);
+            txJson[json_meta] = serializeHex(*stMeta);
+    }
+    else if (fill.context->apiVersion > 1)
+    {
+        copyFrom(
+            txJson[jss::tx_json],
+            txn->getJson(JsonOptions::disable_API_prior_V2, false));
+        txJson[jss::hash] = to_string(txn->getTransactionID());
+        RPC::insertDeliverMax(
+            txJson[jss::tx_json], txnType, fill.context->apiVersion);
+
+        if (stMeta)
+        {
+            txJson[jss::meta] = stMeta->getJson(JsonOptions::none);
+
+            // If applicable, insert delivered amount
+            if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
+                RPC::insertDeliveredAmount(
+                    txJson[jss::meta],
+                    fill.ledger,
+                    txn,
+                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+        }
+
+        if (!fill.ledger.open())
+            txJson[jss::ledger_hash] = to_string(fill.ledger.info().hash);
+
+        const bool validated =
+            fill.context->ledgerMaster.isValidated(fill.ledger);
+        txJson[jss::validated] = validated;
+        if (validated)
+        {
+            auto const seq = fill.ledger.seq();
+            txJson[jss::ledger_index] = seq;
+            if (fill.closeTime)
+                txJson[jss::close_time_iso] = to_string_iso(*fill.closeTime);
+        }
     }
     else
     {
         copyFrom(txJson, txn->getJson(JsonOptions::none));
+        RPC::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
         if (stMeta)
         {
             txJson[jss::metaData] = stMeta->getJson(JsonOptions::none);
+
+            // If applicable, insert delivered amount
             if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
-            {
-                // Insert delivered amount
-                auto txMeta = std::make_shared<TxMeta>(
-                    txn->getTransactionID(), fill.ledger.seq(), *stMeta);
                 RPC::insertDeliveredAmount(
-                    txJson[jss::metaData], fill.ledger, txn, *txMeta);
-            }
+                    txJson[jss::metaData],
+                    fill.ledger,
+                    txn,
+                    {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
     }
 
@@ -192,9 +241,14 @@ fillJsonTx(Object& json, LedgerFill const& fill)
             appendAll(fill.ledger.txs);
         }
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
         // Nothing the user can do about this.
+        if (fill.context)
+        {
+            JLOG(fill.context->j.error())
+                << "Exception in " << __func__ << ": " << ex.what();
+        }
     }
 }
 
@@ -252,7 +306,11 @@ fillJsonQueue(Object& json, LedgerFill const& fill)
         if (tx.lastResult)
             txJson["last_result"] = transToken(*tx.lastResult);
 
-        txJson[jss::tx] = fillJsonTx(fill, bBinary, bExpanded, tx.txn, nullptr);
+        auto&& temp = fillJsonTx(fill, bBinary, bExpanded, tx.txn, nullptr);
+        if (fill.context->apiVersion > 1)
+            copyFrom(txJson, temp);
+        else
+            copyFrom(txJson[jss::tx], temp);
     }
 }
 
@@ -266,7 +324,13 @@ fillJson(Object& json, LedgerFill const& fill)
     if (isBinary(fill))
         fillJsonBinary(json, !fill.ledger.open(), fill.ledger.info());
     else
-        fillJson(json, !fill.ledger.open(), fill.ledger.info(), bFull);
+        fillJson(
+            json,
+            !fill.ledger.open(),
+            fill.ledger.info(),
+            bFull,
+            (fill.context ? fill.context->apiVersion
+                          : RPC::apiMaximumSupportedVersion));
 
     if (bFull || fill.options & LedgerFill::dumpTxrp)
         fillJsonTx(json, fill);

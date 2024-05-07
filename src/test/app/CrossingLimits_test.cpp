@@ -24,25 +24,6 @@ namespace test {
 
 class CrossingLimits_test : public beast::unit_test::suite
 {
-private:
-    void
-    n_offers(
-        jtx::Env& env,
-        std::size_t n,
-        jtx::Account const& account,
-        STAmount const& in,
-        STAmount const& out)
-    {
-        using namespace jtx;
-        auto const ownerCount = env.le(account)->getFieldU32(sfOwnerCount);
-        for (std::size_t i = 0; i < n; i++)
-        {
-            env(offer(account, in, out));
-            env.close();
-        }
-        env.require(owners(account, ownerCount + n));
-    }
-
 public:
     void
     testStepLimit(FeatureBitset features)

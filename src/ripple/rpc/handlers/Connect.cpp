@@ -19,9 +19,9 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/core/Config.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/SystemParameters.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
@@ -59,13 +59,15 @@ doConnect(RPC::JsonContext& context)
     else
         iPort = DEFAULT_PEER_PORT;
 
-    auto ip =
-        beast::IP::Endpoint::from_string(context.params[jss::ip].asString());
+    auto const ip_str = context.params[jss::ip].asString();
+    auto ip = beast::IP::Endpoint::from_string(ip_str);
 
     if (!is_unspecified(ip))
         context.app.overlay().connect(ip.at_port(iPort));
 
-    return RPC::makeObjectValue("connecting");
+    return RPC::makeObjectValue(
+        "attempting connection to IP:" + ip_str +
+        " port: " + std::to_string(iPort));
 }
 
 }  // namespace ripple

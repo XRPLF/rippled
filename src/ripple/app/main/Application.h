@@ -28,6 +28,7 @@
 #include <ripple/shamap/FullBelowCache.h>
 #include <ripple/shamap/TreeNodeCache.h>
 #include <boost/asio.hpp>
+#include <boost/program_options.hpp>
 #include <memory>
 #include <mutex>
 
@@ -88,8 +89,8 @@ class Overlay;
 class PathRequests;
 class PendingSaves;
 class PublicKey;
+class ServerHandler;
 class SecretKey;
-class AccountIDCache;
 class STLedgerEntry;
 class TimeKeeper;
 class TransactionMaster;
@@ -136,13 +137,14 @@ public:
     virtual ~Application() = default;
 
     virtual bool
-    setup() = 0;
+    setup(boost::program_options::variables_map const& options) = 0;
+
     virtual void
     start(bool withTimers) = 0;
     virtual void
     run() = 0;
     virtual void
-    signalStop() = 0;
+    signalStop(std::string msg = "") = 0;
     virtual bool
     checkSigs() const = 0;
     virtual void
@@ -153,6 +155,10 @@ public:
     //
     // ---
     //
+
+    /** Returns a 64-bit instance identifier, generated at startup */
+    virtual std::uint64_t
+    instanceID() const = 0;
 
     virtual Logs&
     logs() = 0;
@@ -226,6 +232,8 @@ public:
     getOPs() = 0;
     virtual OrderBookDB&
     getOrderBookDB() = 0;
+    virtual ServerHandler&
+    getServerHandler() = 0;
     virtual TransactionMaster&
     getMasterTransaction() = 0;
     virtual perf::PerfLog&
@@ -234,7 +242,7 @@ public:
     virtual std::pair<PublicKey, SecretKey> const&
     nodeIdentity() = 0;
 
-    virtual PublicKey const&
+    virtual std::optional<PublicKey const>
     getValidationPublicKey() const = 0;
 
     virtual Resource::Manager&
@@ -245,8 +253,6 @@ public:
     getSHAMapStore() = 0;
     virtual PendingSaves&
     pendingSaves() = 0;
-    virtual AccountIDCache const&
-    accountIDCache() const = 0;
     virtual OpenLedger&
     openLedger() = 0;
     virtual OpenLedger const&

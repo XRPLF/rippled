@@ -20,8 +20,8 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/base64.h>
 #include <ripple/json/json_value.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 
@@ -51,14 +51,13 @@ doManifest(RPC::JsonContext& context)
 
     // first attempt to use params as ephemeral key,
     // if this lookup succeeds master key will be returned,
-    // else pk will just be returned and we will assume that
-    // is master key anyways
+    // else an unseated optional is returned
     auto const mk = context.app.validatorManifests().getMasterKey(*pk);
 
     auto const ek = context.app.validatorManifests().getSigningKey(mk);
 
     // if ephemeral key not found, we don't have specified manifest
-    if (ek == mk)
+    if (!ek)
         return ret;
 
     if (auto const manifest = context.app.validatorManifests().getManifest(mk))
@@ -66,7 +65,7 @@ doManifest(RPC::JsonContext& context)
     Json::Value details;
 
     details[jss::master_key] = toBase58(TokenType::NodePublic, mk);
-    details[jss::ephemeral_key] = toBase58(TokenType::NodePublic, ek);
+    details[jss::ephemeral_key] = toBase58(TokenType::NodePublic, *ek);
 
     if (auto const seq = context.app.validatorManifests().getSequence(mk))
         details[jss::seq] = *seq;

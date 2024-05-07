@@ -23,9 +23,10 @@
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/jss.h>
+#include <test/jtx.h>
+
 #include <algorithm>
 #include <iterator>
-#include <test/jtx.h>
 
 namespace ripple {
 namespace test {
@@ -60,134 +61,6 @@ struct Escrow_test : public beast::unit_test::suite
          0xA4, 0x26, 0x8B, 0x3F, 0xA6, 0x3B, 0x1B, 0x60, 0x6F, 0x2D,
          0x26, 0x4A, 0x2D, 0x85, 0x7B, 0xE8, 0xA0, 0x9C, 0x1D, 0xFD,
          0x57, 0x0D, 0x15, 0x85, 0x8B, 0xD4, 0x81, 0x01, 0x04}};
-
-    /** Set the "FinishAfter" time tag on a JTx */
-    struct finish_time
-    {
-    private:
-        NetClock::time_point value_;
-
-    public:
-        explicit finish_time(NetClock::time_point const& value) : value_(value)
-        {
-        }
-
-        void
-        operator()(jtx::Env&, jtx::JTx& jt) const
-        {
-            jt.jv[sfFinishAfter.jsonName] = value_.time_since_epoch().count();
-        }
-    };
-
-    /** Set the "CancelAfter" time tag on a JTx */
-    struct cancel_time
-    {
-    private:
-        NetClock::time_point value_;
-
-    public:
-        explicit cancel_time(NetClock::time_point const& value) : value_(value)
-        {
-        }
-
-        void
-        operator()(jtx::Env&, jtx::JTx& jt) const
-        {
-            jt.jv[sfCancelAfter.jsonName] = value_.time_since_epoch().count();
-        }
-    };
-
-    struct condition
-    {
-    private:
-        std::string value_;
-
-    public:
-        explicit condition(Slice cond) : value_(strHex(cond))
-        {
-        }
-
-        template <size_t N>
-        explicit condition(std::array<std::uint8_t, N> c)
-            : condition(makeSlice(c))
-        {
-        }
-
-        void
-        operator()(jtx::Env&, jtx::JTx& jt) const
-        {
-            jt.jv[sfCondition.jsonName] = value_;
-        }
-    };
-
-    struct fulfillment
-    {
-    private:
-        std::string value_;
-
-    public:
-        explicit fulfillment(Slice condition) : value_(strHex(condition))
-        {
-        }
-
-        template <size_t N>
-        explicit fulfillment(std::array<std::uint8_t, N> f)
-            : fulfillment(makeSlice(f))
-        {
-        }
-
-        void
-        operator()(jtx::Env&, jtx::JTx& jt) const
-        {
-            jt.jv[sfFulfillment.jsonName] = value_;
-        }
-    };
-
-    static Json::Value
-    escrow(
-        jtx::Account const& account,
-        jtx::Account const& to,
-        STAmount const& amount)
-    {
-        using namespace jtx;
-        Json::Value jv;
-        jv[jss::TransactionType] = jss::EscrowCreate;
-        jv[jss::Flags] = tfUniversal;
-        jv[jss::Account] = account.human();
-        jv[jss::Destination] = to.human();
-        jv[jss::Amount] = amount.getJson(JsonOptions::none);
-        return jv;
-    }
-
-    static Json::Value
-    finish(
-        jtx::Account const& account,
-        jtx::Account const& from,
-        std::uint32_t seq)
-    {
-        Json::Value jv;
-        jv[jss::TransactionType] = jss::EscrowFinish;
-        jv[jss::Flags] = tfUniversal;
-        jv[jss::Account] = account.human();
-        jv[sfOwner.jsonName] = from.human();
-        jv[sfOfferSequence.jsonName] = seq;
-        return jv;
-    }
-
-    static Json::Value
-    cancel(
-        jtx::Account const& account,
-        jtx::Account const& from,
-        std::uint32_t seq)
-    {
-        Json::Value jv;
-        jv[jss::TransactionType] = jss::EscrowCancel;
-        jv[jss::Flags] = tfUniversal;
-        jv[jss::Account] = account.human();
-        jv[sfOwner.jsonName] = from.human();
-        jv[sfOfferSequence.jsonName] = seq;
-        return jv;
-    }
 
     void
     testEnablement()

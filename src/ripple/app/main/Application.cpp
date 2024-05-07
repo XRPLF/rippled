@@ -52,10 +52,12 @@
 #include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/PerfLog.h>
 #include <ripple/basics/ResolverAsio.h>
+#include <ripple/basics/random.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/asio/io_latency_probe.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/core/DatabaseCon.h>
+#include <ripple/crypto/csprng.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/nodestore/DummyScheduler.h>
@@ -165,6 +167,8 @@ public:
     std::unique_ptr<Logs> logs_;
     std::unique_ptr<TimeKeeper> timeKeeper_;
 
+    std::uint64_t const instanceCookie_;
+
     beast::Journal m_journal;
     std::unique_ptr<perf::PerfLog> perfLog_;
     Application::MutexType m_masterMutex;
@@ -177,12 +181,11 @@ public:
     NodeStoreScheduler m_nodeStoreScheduler;
     std::unique_ptr<SHAMapStore> m_shaMapStore;
     PendingSaves pendingSaves_;
-    AccountIDCache accountIDCache_;
     std::optional<OpenLedger> openLedger_;
 
     NodeCache m_tempNodeCache;
     CachedSLEs cachedSLEs_;
-    std::pair<PublicKey, SecretKey> nodeIdentity_;
+    std::optional<std::pair<PublicKey, SecretKey>> nodeIdentity_;
     ValidatorKeys const validatorKeys_;
 
     std::unique_ptr<Resource::Manager> m_resourceManager;
@@ -274,6 +277,11 @@ public:
         , config_(std::move(config))
         , logs_(std::move(logs))
         , timeKeeper_(std::move(timeKeeper))
+        , instanceCookie_(
+              1 +
+              rand_int(
+                  crypto_prng(),
+                  std::numeric_limits<std::uint64_t>::max() - 1))
         , m_journal(logs_->journal("Application"))
 
         // PerfLog must be started before any other threads are launched.
@@ -326,8 +334,6 @@ public:
               *this,
               m_nodeStoreScheduler,
               logs_->journal("SHAMapStore")))
-
-        , accountIDCache_(128000)
 
         , m_tempNodeCache(
               "NodeCache",
@@ -485,6 +491,8 @@ public:
               config_->reporting() ? std::make_unique<ReportingETL>(*this)
                                    : nullptr)
     {
+        initAccountIdCache(config_->getValueFor(SizedItem::accountIdCacheSize));
+
         add(m_resourceManager.get());
 
         //
@@ -508,13 +516,13 @@ public:
     //--------------------------------------------------------------------------
 
     bool
-    setup() override;
+    setup(boost::program_options::variables_map const& cmdline) override;
     void
     start(bool withTimers) override;
     void
     run() override;
     void
-    signalStop() override;
+    signalStop(std::string msg = "") override;
     bool
     checkSigs() const override;
     void
@@ -525,6 +533,12 @@ public:
     fdRequired() const override;
 
     //--------------------------------------------------------------------------
+
+    std::uint64_t
+    instanceID() const override
+    {
+        return instanceCookie_;
+    }
 
     Logs&
     logs() override
@@ -573,19 +587,33 @@ public:
     std::pair<PublicKey, SecretKey> const&
     nodeIdentity() override
     {
-        return nodeIdentity_;
+        if (nodeIdentity_)
+            return *nodeIdentity_;
+
+        LogicError(
+            "Accessing Application::nodeIdentity() before it is initialized.");
     }
 
-    PublicKey const&
+    std::optional<PublicKey const>
     getValidationPublicKey() const override
     {
-        return validatorKeys_.publicKey;
+        if (!validatorKeys_.keys)
+            return {};
+
+        return validatorKeys_.keys->publicKey;
     }
 
     NetworkOPs&
     getOPs() override
     {
         return *m_networkOPs;
+    }
+
+    virtual ServerHandler&
+    getServerHandler() override
+    {
+        assert(serverHandler_);
+        return *serverHandler_;
     }
 
     boost::asio::io_service&
@@ -841,12 +869,6 @@ public:
         return pendingSaves_;
     }
 
-    AccountIDCache const&
-    accountIDCache() const override
-    {
-        return accountIDCache_;
-    }
-
     OpenLedger&
     openLedger() override
     {
@@ -1050,20 +1072,172 @@ public:
         // VFALCO TODO fix the dependency inversion using an observer,
         //         have listeners register for "onSweep ()" notification.
 
-        nodeFamily_.sweep();
+        {
+            std::shared_ptr<FullBelowCache const> const fullBelowCache =
+                nodeFamily_.getFullBelowCache(0);
+
+            std::shared_ptr<TreeNodeCache const> const treeNodeCache =
+                nodeFamily_.getTreeNodeCache(0);
+
+            std::size_t const oldFullBelowSize = fullBelowCache->size();
+            std::size_t const oldTreeNodeSize = treeNodeCache->size();
+
+            nodeFamily_.sweep();
+
+            JLOG(m_journal.debug())
+                << "NodeFamily::FullBelowCache sweep.  Size before: "
+                << oldFullBelowSize
+                << "; size after: " << fullBelowCache->size();
+
+            JLOG(m_journal.debug())
+                << "NodeFamily::TreeNodeCache sweep.  Size before: "
+                << oldTreeNodeSize << "; size after: " << treeNodeCache->size();
+        }
         if (shardFamily_)
+        {
+            std::size_t const oldFullBelowSize =
+                shardFamily_->getFullBelowCacheSize();
+            std::size_t const oldTreeNodeSize =
+                shardFamily_->getTreeNodeCacheSize().second;
+
             shardFamily_->sweep();
-        getMasterTransaction().sweep();
-        getNodeStore().sweep();
+
+            JLOG(m_journal.debug())
+                << "ShardFamily::FullBelowCache sweep.  Size before: "
+                << oldFullBelowSize
+                << "; size after: " << shardFamily_->getFullBelowCacheSize();
+
+            JLOG(m_journal.debug())
+                << "ShardFamily::TreeNodeCache sweep.  Size before: "
+                << oldTreeNodeSize << "; size after: "
+                << shardFamily_->getTreeNodeCacheSize().second;
+        }
+        {
+            TaggedCache<uint256, Transaction> const& masterTxCache =
+                getMasterTransaction().getCache();
+
+            std::size_t const oldMasterTxSize = masterTxCache.size();
+
+            getMasterTransaction().sweep();
+
+            JLOG(m_journal.debug())
+                << "MasterTransaction sweep.  Size before: " << oldMasterTxSize
+                << "; size after: " << masterTxCache.size();
+        }
+        {
+            // Does not appear to have an associated cache.
+            getNodeStore().sweep();
+        }
         if (shardStore_)
+        {
+            // Does not appear to have an associated cache.
             shardStore_->sweep();
-        getLedgerMaster().sweep();
-        getTempNodeCache().sweep();
-        getValidations().expire(m_journal);
-        getInboundLedgers().sweep();
-        getLedgerReplayer().sweep();
-        m_acceptedLedgerCache.sweep();
-        cachedSLEs_.sweep();
+        }
+        {
+            std::size_t const oldLedgerMasterCacheSize =
+                getLedgerMaster().getFetchPackCacheSize();
+
+            getLedgerMaster().sweep();
+
+            JLOG(m_journal.debug())
+                << "LedgerMaster sweep.  Size before: "
+                << oldLedgerMasterCacheSize << "; size after: "
+                << getLedgerMaster().getFetchPackCacheSize();
+        }
+        {
+            // NodeCache == TaggedCache<SHAMapHash, Blob>
+            std::size_t const oldTempNodeCacheSize = getTempNodeCache().size();
+
+            getTempNodeCache().sweep();
+
+            JLOG(m_journal.debug())
+                << "TempNodeCache sweep.  Size before: " << oldTempNodeCacheSize
+                << "; size after: " << getTempNodeCache().size();
+        }
+        {
+            std::size_t const oldCurrentCacheSize =
+                getValidations().sizeOfCurrentCache();
+            std::size_t const oldSizeSeqEnforcesSize =
+                getValidations().sizeOfSeqEnforcersCache();
+            std::size_t const oldByLedgerSize =
+                getValidations().sizeOfByLedgerCache();
+            std::size_t const oldBySequenceSize =
+                getValidations().sizeOfBySequenceCache();
+
+            getValidations().expire(m_journal);
+
+            JLOG(m_journal.debug())
+                << "Validations Current expire.  Size before: "
+                << oldCurrentCacheSize
+                << "; size after: " << getValidations().sizeOfCurrentCache();
+
+            JLOG(m_journal.debug())
+                << "Validations SeqEnforcer expire.  Size before: "
+                << oldSizeSeqEnforcesSize << "; size after: "
+                << getValidations().sizeOfSeqEnforcersCache();
+
+            JLOG(m_journal.debug())
+                << "Validations ByLedger expire.  Size before: "
+                << oldByLedgerSize
+                << "; size after: " << getValidations().sizeOfByLedgerCache();
+
+            JLOG(m_journal.debug())
+                << "Validations BySequence expire.  Size before: "
+                << oldBySequenceSize
+                << "; size after: " << getValidations().sizeOfBySequenceCache();
+        }
+        {
+            std::size_t const oldInboundLedgersSize =
+                getInboundLedgers().cacheSize();
+
+            getInboundLedgers().sweep();
+
+            JLOG(m_journal.debug())
+                << "InboundLedgers sweep.  Size before: "
+                << oldInboundLedgersSize
+                << "; size after: " << getInboundLedgers().cacheSize();
+        }
+        {
+            size_t const oldTasksSize = getLedgerReplayer().tasksSize();
+            size_t const oldDeltasSize = getLedgerReplayer().deltasSize();
+            size_t const oldSkipListsSize = getLedgerReplayer().skipListsSize();
+
+            getLedgerReplayer().sweep();
+
+            JLOG(m_journal.debug())
+                << "LedgerReplayer tasks sweep.  Size before: " << oldTasksSize
+                << "; size after: " << getLedgerReplayer().tasksSize();
+
+            JLOG(m_journal.debug())
+                << "LedgerReplayer deltas sweep.  Size before: "
+                << oldDeltasSize
+                << "; size after: " << getLedgerReplayer().deltasSize();
+
+            JLOG(m_journal.debug())
+                << "LedgerReplayer skipLists sweep.  Size before: "
+                << oldSkipListsSize
+                << "; size after: " << getLedgerReplayer().skipListsSize();
+        }
+        {
+            std::size_t const oldAcceptedLedgerSize =
+                m_acceptedLedgerCache.size();
+
+            m_acceptedLedgerCache.sweep();
+
+            JLOG(m_journal.debug())
+                << "AcceptedLedgerCache sweep.  Size before: "
+                << oldAcceptedLedgerSize
+                << "; size after: " << m_acceptedLedgerCache.size();
+        }
+        {
+            std::size_t const oldCachedSLEsSize = cachedSLEs_.size();
+
+            cachedSLEs_.sweep();
+
+            JLOG(m_journal.debug())
+                << "CachedSLEs sweep.  Size before: " << oldCachedSLEsSize
+                << "; size after: " << cachedSLEs_.size();
+        }
 
 #ifdef RIPPLED_REPORTING
         if (auto pg = dynamic_cast<PostgresDatabase*>(&*mRelationalDatabase))
@@ -1108,7 +1282,7 @@ private:
 
 // TODO Break this up into smaller, more digestible initialization segments.
 bool
-ApplicationImp::setup()
+ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 {
     // We want to intercept CTRL-C and the standard termination signal SIGTERM
     // and terminate the process. This handler will NEVER be invoked twice.
@@ -1146,8 +1320,10 @@ ApplicationImp::setup()
         if (logs_->threshold() > kDebug)
             logs_->threshold(kDebug);
     }
-    JLOG(m_journal.info()) << "process starting: "
-                           << BuildInfo::getFullVersionString();
+
+    JLOG(m_journal.info()) << "Process starting: "
+                           << BuildInfo::getFullVersionString()
+                           << ", Instance Cookie: " << instanceCookie_;
 
     if (numberOfThreads(*config_) < 2)
     {
@@ -1157,9 +1333,6 @@ ApplicationImp::setup()
 
     // Optionally turn off logging to console.
     logs_->silent(config_->silent());
-
-    if (!config_->standalone())
-        timeKeeper_->run(config_->SNTP_SERVERS);
 
     if (!initRelationalDatabase() || !initNodeStore())
         return false;
@@ -1179,7 +1352,7 @@ ApplicationImp::setup()
         return false;
     }
 
-    if (validatorKeys_.publicKey.size())
+    if (validatorKeys_.keys)
         setMaxDisallowedLedger();
 
     // Configure the amendments the server supports
@@ -1262,10 +1435,16 @@ ApplicationImp::setup()
         }
     }
 
+    if (auto const& forcedRange = config().FORCED_LEDGER_RANGE_PRESENT)
+    {
+        m_ledgerMaster->setLedgerRangePresent(
+            forcedRange->first, forcedRange->second);
+    }
+
     if (!config().reporting())
         m_orderBookDB.setup(getLedgerMaster().getCurrentLedger());
 
-    nodeIdentity_ = getNodeIdentity(*this);
+    nodeIdentity_ = getNodeIdentity(*this, cmdline);
 
     if (!cluster_->load(config().section(SECTION_CLUSTER_NODES)))
     {
@@ -1294,9 +1473,19 @@ ApplicationImp::setup()
 
             publisherManifests_->load(getWalletDB(), "PublisherManifests");
 
+            // It is possible to have a valid ValidatorKeys object without
+            // setting the signingKey or masterKey. This occurs if the
+            // configuration file does not have either
+            // SECTION_VALIDATOR_TOKEN or SECTION_VALIDATION_SEED section.
+
+            // masterKey for the configuration-file specified validator keys
+            std::optional<PublicKey> localSigningKey;
+            if (validatorKeys_.keys)
+                localSigningKey = validatorKeys_.keys->publicKey;
+
             // Setup trusted validators
             if (!validators_->load(
-                    validatorKeys_.publicKey,
+                    localSigningKey,
                     config().section(SECTION_VALIDATORS).values(),
                     config().section(SECTION_VALIDATOR_LIST_KEYS).values()))
             {
@@ -1313,6 +1502,9 @@ ApplicationImp::setup()
                 << "Invalid entry in [" << SECTION_VALIDATOR_LIST_SITES << "]";
             return false;
         }
+
+        // Tell the AmendmentTable who the trusted validators are.
+        m_amendmentTable->trustChanged(validators_->getQuorumKeys().second);
     }
     //----------------------------------------------------------------------
     //
@@ -1627,10 +1819,17 @@ ApplicationImp::run()
 }
 
 void
-ApplicationImp::signalStop()
+ApplicationImp::signalStop(std::string msg)
 {
     if (!isTimeToStop.exchange(true))
+    {
+        if (msg.empty())
+            JLOG(m_journal.warn()) << "Server stopping";
+        else
+            JLOG(m_journal.warn()) << "Server stopping: " << msg;
+
         stoppingCondition_.notify_all();
+    }
 }
 
 bool
@@ -1682,7 +1881,7 @@ ApplicationImp::fdRequired() const
 void
 ApplicationImp::startGenesisLedger()
 {
-    std::vector<uint256> initialAmendments =
+    std::vector<uint256> const initialAmendments =
         (config_->START_UP == Config::FRESH) ? m_amendmentTable->getDesired()
                                              : std::vector<uint256>{};
 
@@ -1693,7 +1892,10 @@ ApplicationImp::startGenesisLedger()
     auto const next =
         std::make_shared<Ledger>(*genesis, timeKeeper().closeTime());
     next->updateSkipList();
-    next->setImmutable(*config_);
+    assert(
+        next->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+        next->read(keylet::fees()));
+    next->setImmutable();
     openLedger_.emplace(next, cachedSLEs_, logs_->journal("OpenLedger"));
     m_ledgerMaster->storeLedger(next);
     m_ledgerMaster->switchLCL(next);
@@ -1711,7 +1913,10 @@ ApplicationImp::getLastFullLedger()
         if (!ledger)
             return ledger;
 
-        ledger->setImmutable(*config_);
+        assert(
+            ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+            ledger->read(keylet::fees()));
+        ledger->setImmutable();
 
         if (getLedgerMaster().haveLedger(seq))
             ledger->setValidated();
@@ -1862,8 +2067,11 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
         loadLedger->stateMap().flushDirty(hotACCOUNT_NODE);
 
+        assert(
+            loadLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+            loadLedger->read(keylet::fees()));
         loadLedger->setAccepted(
-            closeTime, closeTimeResolution, !closeTimeEstimated, *config_);
+            closeTime, closeTimeResolution, !closeTimeEstimated);
 
         return loadLedger;
     }

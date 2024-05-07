@@ -125,8 +125,6 @@ private:
     // Peer IDs expecting to receive a last link notification
     std::set<std::uint32_t> csIDs_;
 
-    std::optional<std::uint32_t> networkID_;
-
     reduce_relay::Slots<UptimeClock> slots_;
 
     // Transaction reduce-relay metrics
@@ -391,7 +389,7 @@ public:
     std::optional<std::uint32_t>
     networkID() const override
     {
-        return networkID_;
+        return setup_.networkID;
     }
 
     Json::Value

@@ -2,3 +2,7 @@
 # To use it by default in git blame:
 # git config blame.ignoreRevsFile .git-blame-ignore-revs
 50760c693510894ca368e90369b0cc2dabfd07f3
+e2384885f5f630c8f0ffe4bf21a169b433a16858
+241b9ddde9e11beb7480600fd5ed90e1ef109b21
+760f16f56835663d9286bd29294d074de26a7ba6
+0eebe6a5f4246fced516d52b83ec4e7f47373edd

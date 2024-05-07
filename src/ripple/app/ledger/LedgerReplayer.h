@@ -105,7 +105,7 @@ public:
     void
     gotSkipList(
         LedgerInfo const& info,
-        std::shared_ptr<SHAMapItem const> const& data);
+        boost::intrusive_ptr<SHAMapItem const> const& data);
 
     /**
      * Process a ledger delta (extracted from a TMReplayDeltaResponse message)
@@ -124,6 +124,27 @@ public:
 
     void
     stop();
+
+    std::size_t
+    tasksSize() const
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        return tasks_.size();
+    }
+
+    std::size_t
+    deltasSize() const
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        return deltas_.size();
+    }
+
+    std::size_t
+    skipListsSize() const
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        return skipLists_.size();
+    }
 
 private:
     mutable std::mutex mtx_;

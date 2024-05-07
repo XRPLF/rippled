@@ -19,9 +19,9 @@
 
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/BasicConfig.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/ShardArchiveHandler.h>

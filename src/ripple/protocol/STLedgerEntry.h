@@ -25,6 +25,7 @@
 
 namespace ripple {
 
+class Rules;
 class Invariants_test;
 
 class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>
@@ -67,7 +68,7 @@ public:
 
     // is this a ledger entry that can be threaded
     bool
-    isThreadedType() const;
+    isThreadedType(Rules const& rules) const;
 
     bool
     thread(

@@ -37,6 +37,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <iterator>
+#include <regex>
 #include <thread>
 
 #if BOOST_OS_WINDOWS
@@ -67,10 +68,8 @@ namespace detail {
 [[nodiscard]] std::uint64_t
 getMemorySize()
 {
-    struct sysinfo si;
-
-    if (sysinfo(&si) == 0)
-        return static_cast<std::uint64_t>(si.totalram);
+    if (struct sysinfo si; sysinfo(&si) == 0)
+        return static_cast<std::uint64_t>(si.totalram) * si.mem_unit;
 
     return 0;
 }
@@ -108,26 +107,27 @@ namespace ripple {
 
 // clang-format off
 // The configurable node sizes are "tiny", "small", "medium", "large", "huge"
-inline constexpr std::array<std::pair<SizedItem, std::array<int, 5>>, 12>
+inline constexpr std::array<std::pair<SizedItem, std::array<int, 5>>, 13>
 sizedItems
 {{
     // FIXME: We should document each of these items, explaining exactly
     //        what they control and whether there exists an explicit
     //        config option that can be used to override the default.
 
-    //                                tiny    small   medium    large     huge
-    {SizedItem::sweepInterval,   {{     10,      30,      60,      90,     120 }}},
-    {SizedItem::treeCacheSize,   {{ 262144,  524288, 2097152, 4194304, 8388608 }}},
-    {SizedItem::treeCacheAge,    {{     30,      60,      90,     120,     900 }}},
-    {SizedItem::ledgerSize,      {{     32,      32,      64,     256,     384 }}},
-    {SizedItem::ledgerAge,       {{     30,      60,     180,     300,     600 }}},
-    {SizedItem::ledgerFetch,     {{      2,       3,       4,       5,       8 }}},
-    {SizedItem::hashNodeDBCache, {{      4,      12,      24,      64,     128 }}},
-    {SizedItem::txnDBCache,      {{      4,      12,      24,      64,     128 }}},
-    {SizedItem::lgrDBCache,      {{      4,       8,      16,      32,     128 }}},
-    {SizedItem::openFinalLimit,  {{      8,      16,      32,      64,     128 }}},
-    {SizedItem::burstSize,       {{      4,       8,      16,      32,      48 }}},
-    {SizedItem::ramSizeGB,       {{      8,      12,      16,      24,      32 }}},
+    //                                   tiny    small   medium    large     huge
+    {SizedItem::sweepInterval,      {{     10,      30,      60,      90,     120 }}},
+    {SizedItem::treeCacheSize,      {{ 262144,  524288, 2097152, 4194304, 8388608 }}},
+    {SizedItem::treeCacheAge,       {{     30,      60,      90,     120,     900 }}},
+    {SizedItem::ledgerSize,         {{     32,      32,      64,     256,     384 }}},
+    {SizedItem::ledgerAge,          {{     30,      60,     180,     300,     600 }}},
+    {SizedItem::ledgerFetch,        {{      2,       3,       4,       5,       8 }}},
+    {SizedItem::hashNodeDBCache,    {{      4,      12,      24,      64,     128 }}},
+    {SizedItem::txnDBCache,         {{      4,      12,      24,      64,     128 }}},
+    {SizedItem::lgrDBCache,         {{      4,       8,      16,      32,     128 }}},
+    {SizedItem::openFinalLimit,     {{      8,      16,      32,      64,     128 }}},
+    {SizedItem::burstSize,          {{      4,       8,      16,      32,      48 }}},
+    {SizedItem::ramSizeGB,          {{      6,       8,      12,      24,       0 }}},
+    {SizedItem::accountIdCacheSize, {{  20047,   50053,   77081,  150061,  300007 }}}
 }};
 
 // Ensure that the order of entries in the table corresponds to the
@@ -206,14 +206,10 @@ parseIniFile(std::string const& strInput, const bool bTrim)
 IniFileSections::mapped_type*
 getIniFileSection(IniFileSections& secSource, std::string const& strSection)
 {
-    IniFileSections::iterator it;
-    IniFileSections::mapped_type* smtResult;
-    it = secSource.find(strSection);
-    if (it == secSource.end())
-        smtResult = nullptr;
-    else
-        smtResult = &(it->second);
-    return smtResult;
+    if (auto it = secSource.find(strSection); it != secSource.end())
+        return &(it->second);
+
+    return nullptr;
 }
 
 bool
@@ -223,22 +219,21 @@ getSingleSection(
     std::string& strValue,
     beast::Journal j)
 {
-    IniFileSections::mapped_type* pmtEntries =
-        getIniFileSection(secSource, strSection);
-    bool bSingle = pmtEntries && 1 == pmtEntries->size();
+    auto const pmtEntries = getIniFileSection(secSource, strSection);
 
-    if (bSingle)
+    if (pmtEntries && pmtEntries->size() == 1)
     {
         strValue = (*pmtEntries)[0];
-    }
-    else if (pmtEntries)
-    {
-        JLOG(j.warn()) << boost::str(
-            boost::format("Section [%s]: requires 1 line not %d lines.") %
-            strSection % pmtEntries->size());
+        return true;
     }
 
-    return bSingle;
+    if (pmtEntries)
+    {
+        JLOG(j.warn()) << "Section '" << strSection << "': requires 1 line not "
+                       << pmtEntries->size() << " lines.";
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------------
@@ -262,10 +257,9 @@ getEnvVar(char const* name)
     return value;
 }
 
-constexpr FeeUnit32 Config::TRANSACTION_FEE_BASE;
-
 Config::Config()
-    : j_(beast::Journal::getNullSink()), ramSize_(detail::getMemorySize())
+    : j_(beast::Journal::getNullSink())
+    , ramSize_(detail::getMemorySize() / (1024 * 1024 * 1024))
 {
 }
 
@@ -290,22 +284,18 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
             threshold.second.begin(),
             threshold.second.end(),
             [this](std::size_t limit) {
-                return (ramSize_ / (1024 * 1024 * 1024)) < limit;
+                return (limit == 0) || (ramSize_ < limit);
             });
+
+        assert(ns != threshold.second.end());
 
         if (ns != threshold.second.end())
             NODE_SIZE = std::distance(threshold.second.begin(), ns);
 
         // Adjust the size based on the number of hardware threads of
         // execution available to us:
-        if (auto const hc = std::thread::hardware_concurrency())
-        {
-            if (hc == 1)
-                NODE_SIZE = 0;
-
-            if (hc < 4)
-                NODE_SIZE = std::min<std::size_t>(NODE_SIZE, 1);
-        }
+        if (auto const hc = std::thread::hardware_concurrency(); hc != 0)
+            NODE_SIZE = std::min<std::size_t>(hc / 2, NODE_SIZE);
     }
 
     assert(NODE_SIZE <= 4);
@@ -466,8 +456,27 @@ Config::loadFromString(std::string const& fileContents)
     if (auto s = getIniFileSection(secConfig, SECTION_IPS_FIXED))
         IPS_FIXED = *s;
 
-    if (auto s = getIniFileSection(secConfig, SECTION_SNTP))
-        SNTP_SERVERS = *s;
+    // if the user has specified ip:port then replace : with a space.
+    {
+        auto replaceColons = [](std::vector<std::string>& strVec) {
+            const static std::regex e(":([0-9]+)$");
+            for (auto& line : strVec)
+            {
+                // skip anything that might be an ipv6 address
+                if (std::count(line.begin(), line.end(), ':') != 1)
+                    continue;
+
+                std::string result = std::regex_replace(line, e, " $1");
+                // sanity check the result of the replace, should be same length
+                // as input
+                if (result.size() == line.size())
+                    line = result;
+            }
+        };
+
+        replaceColons(IPS_FIXED);
+        replaceColons(IPS);
+    }
 
     {
         std::string dbPath;
@@ -479,6 +488,18 @@ Config::loadFromString(std::string const& fileContents)
     }
 
     std::string strTemp;
+
+    if (getSingleSection(secConfig, SECTION_NETWORK_ID, strTemp, j_))
+    {
+        if (strTemp == "main")
+            NETWORK_ID = 0;
+        else if (strTemp == "testnet")
+            NETWORK_ID = 1;
+        else if (strTemp == "devnet")
+            NETWORK_ID = 2;
+        else
+            NETWORK_ID = beast::lexicalCastThrow<uint32_t>(strTemp);
+    }
 
     if (getSingleSection(secConfig, SECTION_PEER_PRIVATE, strTemp, j_))
         PEER_PRIVATE = beast::lexicalCastThrow<bool>(strTemp);
@@ -589,14 +610,12 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_NETWORK_QUORUM, strTemp, j_))
         NETWORK_QUORUM = beast::lexicalCastThrow<std::size_t>(strTemp);
 
-    if (getSingleSection(secConfig, SECTION_FEE_ACCOUNT_RESERVE, strTemp, j_))
-        FEE_ACCOUNT_RESERVE = beast::lexicalCastThrow<std::uint64_t>(strTemp);
-
-    if (getSingleSection(secConfig, SECTION_FEE_OWNER_RESERVE, strTemp, j_))
-        FEE_OWNER_RESERVE = beast::lexicalCastThrow<std::uint64_t>(strTemp);
-
+    FEES = setup_FeeVote(section("voting"));
+    /* [fee_default] is documented in the example config files as useful for
+     * things like offline transaction signing. Until that's completely
+     * deprecated, allow it to override the [voting] section. */
     if (getSingleSection(secConfig, SECTION_FEE_DEFAULT, strTemp, j_))
-        FEE_DEFAULT = beast::lexicalCastThrow<std::uint64_t>(strTemp);
+        FEES.reference_fee = beast::lexicalCastThrow<std::uint64_t>(strTemp);
 
     if (getSingleSection(secConfig, SECTION_LEDGER_HISTORY, strTemp, j_))
     {
@@ -993,6 +1012,26 @@ Config::getValueFor(SizedItem item, std::optional<std::size_t> node) const
     assert(index < sizedItems.size());
     assert(!node || *node <= 4);
     return sizedItems.at(index).second.at(node.value_or(NODE_SIZE));
+}
+
+FeeSetup
+setup_FeeVote(Section const& section)
+{
+    FeeSetup setup;
+    {
+        std::uint64_t temp;
+        if (set(temp, "reference_fee", section) &&
+            temp <= std::numeric_limits<XRPAmount::value_type>::max())
+            setup.reference_fee = temp;
+    }
+    {
+        std::uint32_t temp;
+        if (set(temp, "account_reserve", section))
+            setup.account_reserve = temp;
+        if (set(temp, "owner_reserve", section))
+            setup.owner_reserve = temp;
+    }
+    return setup;
 }
 
 }  // namespace ripple

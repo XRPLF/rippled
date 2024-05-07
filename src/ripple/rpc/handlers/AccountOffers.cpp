@@ -21,8 +21,8 @@
 #include <ripple/json/json_value.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/View.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
@@ -47,7 +47,7 @@ appendOfferJson(std::shared_ptr<SLE const> const& offer, Json::Value& offers)
 };
 
 // {
-//   account: <account>|<account_public_key>
+//   account: <account>
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 //   limit: integer                 // optional
@@ -65,19 +65,16 @@ doAccountOffers(RPC::JsonContext& context)
     if (!ledger)
         return result;
 
-    std::string strIdent(params[jss::account].asString());
-    AccountID accountID;
-
-    if (auto jv = RPC::accountFromString(accountID, strIdent))
+    auto id = parseBase58<AccountID>(params[jss::account].asString());
+    if (!id)
     {
-        for (auto it = jv.begin(); it != jv.end(); ++it)
-            result[it.memberName()] = (*it);
-
+        RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
+    auto const accountID{std::move(id.value())};
 
     // Get info on account.
-    result[jss::account] = context.app.accountIDCache().toBase58(accountID);
+    result[jss::account] = toBase58(accountID);
 
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);
@@ -128,7 +125,7 @@ doAccountOffers(RPC::JsonContext& context)
         if (!sle)
             return rpcError(rpcINVALID_PARAMS);
 
-        if (!RPC::isOwnedByAccount(*ledger, sle, accountID))
+        if (!RPC::isRelatedToAccount(*ledger, sle, accountID))
             return rpcError(rpcINVALID_PARAMS);
     }
 

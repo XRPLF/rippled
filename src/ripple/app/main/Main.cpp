@@ -15,7 +15,7 @@
     ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
-    //==============================================================================
+//==============================================================================
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/DBInit.h>
 #include <ripple/app/rdb/Vacuum.h>
@@ -34,7 +34,7 @@
 #include <ripple/rpc/RPCHandler.h>
 
 #ifdef ENABLE_TESTS
-#include <ripple/beast/unit_test/match.hpp>
+#include <ripple/beast/unit_test/match.h>
 #include <test/unit_test/multi_runner.h>
 #endif  // ENABLE_TESTS
 
@@ -124,16 +124,16 @@ printHelp(const po::options_description& desc)
         << systemName() << "d [options] <command> <params>\n"
         << desc << std::endl
         << "Commands: \n"
-           "     account_currencies <account> [<ledger>] [strict]\n"
-           "     account_info <account>|<seed>|<pass_phrase>|<key> [<ledger>] "
-           "[strict]\n"
+           "     account_currencies <account> [<ledger>]\n"
+           "     account_info <account>|<key> [<ledger>]\n"
            "     account_lines <account> <account>|\"\" [<ledger>]\n"
            "     account_channels <account> <account>|\"\" [<ledger>]\n"
-           "     account_objects <account> [<ledger>] [strict]\n"
-           "     account_offers <account>|<account_public_key> [<ledger>] "
-           "[strict]\n"
-           "     account_tx accountID [ledger_min [ledger_max [limit "
-           "[offset]]]] [binary] [count] [descending]\n"
+           "     account_objects <account> [<ledger>]\n"
+           "     account_offers <account>|<account_public_key> [<ledger>]\n"
+           "     account_tx accountID [ledger_index_min [ledger_index_max "
+           "[limit "
+           "]]] [binary]\n"
+           "     book_changes [<ledger hash|id>]\n"
            "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> "
            "[<limit> [<proof> [<marker>]]]]]\n"
            "     can_delete [<ledgerid>|<ledgerhash>|now|always|never]\n"
@@ -158,6 +158,7 @@ printHelp(const po::options_description& desc)
            "     ledger_request <ledger>\n"
            "     log_level [[<partition>] <severity>]\n"
            "     logrotate\n"
+           "     manifest <public_key>\n"
            "     node_to_shard [status|start|stop]\n"
            "     peers\n"
            "     ping\n"
@@ -167,6 +168,7 @@ printHelp(const po::options_description& desc)
            "     peer_reservations_list\n"
            "     ripple ...\n"
            "     ripple_path_find <json> [<ledger>]\n"
+           "     server_definitions [<hash>]\n"
            "     server_info [counters]\n"
            "     server_state [counters]\n"
            "     sign <private_key> <tx_json> [offline]\n"
@@ -177,6 +179,7 @@ printHelp(const po::options_description& desc)
            "     submit_multisigned <tx_json>\n"
            "     tx <id>\n"
            "     validation_create [<seed>|<pass_phrase>|<key>]\n"
+           "     validator_info\n"
            "     validators\n"
            "     validator_list_sites\n"
            "     version\n"
@@ -345,7 +348,6 @@ run(int argc, char** argv)
 {
     using namespace std;
 
-    
     beast::setCurrentThreadName(
         "rippled: main " + BuildInfo::getVersionString());
 
@@ -368,13 +370,22 @@ run(int argc, char** argv)
         "conf", po::value<std::string>(), "Specify the configuration file.")(
         "debug", "Enable normally suppressed debug logging")(
         "help,h", "Display this message.")(
+        "newnodeid", "Generate a new node identity for this server.")(
+        "nodeid",
+        po::value<std::string>(),
+        "Specify the node identity for this server.")(
         "quorum",
         po::value<std::size_t>(),
         "Override the minimum validation quorum.")(
         "reportingReadOnly", "Run in read-only reporting mode")(
         "silent", "No output to the console after startup.")(
-        "standalone,a", "Run with no peers.")("verbose,v", "Verbose logging.")(
-        "version", "Display the build version.");
+        "standalone,a", "Run with no peers.")("verbose,v", "Verbose logging.")
+
+        ("force_ledger_present_range",
+         po::value<std::string>(),
+         "Specify the range of present ledgers for testing purposes. Min and "
+         "max values are comma separated.")(
+            "version", "Display the build version.");
 
     po::options_description data("Ledger/Data Options");
     data.add_options()("import", importText.c_str())(
@@ -419,9 +430,8 @@ run(int argc, char** argv)
         po::value<std::string>()->implicit_value(""),
         "Perform unit tests. The optional argument specifies one or "
         "more comma-separated selectors. Each selector specifies a suite name, "
-        "full-name (lib.module.suite), module, or library "
-        "(checked in that "
-        "order).")(
+        "suite name prefix, full-name (lib.module.suite), module, or library "
+        "(checked in that order).")(
         "unittest-arg",
         po::value<std::string>()->implicit_value(""),
         "Supplies an argument string to unit tests. If provided, this argument "
@@ -597,6 +607,51 @@ run(int argc, char** argv)
         return 0;
     }
 
+    if (vm.contains("force_ledger_present_range"))
+    {
+        try
+        {
+            auto const r = [&vm]() -> std::vector<std::uint32_t> {
+                std::vector<std::string> strVec;
+                boost::split(
+                    strVec,
+                    vm["force_ledger_present_range"].as<std::string>(),
+                    boost::algorithm::is_any_of(","));
+                std::vector<std::uint32_t> result;
+                for (auto& s : strVec)
+                {
+                    boost::trim(s);
+                    if (!s.empty())
+                        result.push_back(std::stoi(s));
+                }
+                return result;
+            }();
+
+            if (r.size() == 2)
+            {
+                if (r[0] > r[1])
+                {
+                    throw std::runtime_error(
+                        "Invalid force_ledger_present_range parameter");
+                }
+                config->FORCED_LEDGER_RANGE_PRESENT.emplace(r[0], r[1]);
+            }
+            else
+            {
+                throw std::runtime_error(
+                    "Invalid force_ledger_present_range parameter");
+            }
+        }
+        catch (std::exception const& e)
+        {
+            std::cerr << "invalid 'force_ledger_present_range' parameter. The "
+                         "parameter must be two numbers separated by a comma. "
+                         "The first number must be <= the second."
+                      << std::endl;
+            return -1;
+        }
+    }
+
     if (vm.count("start"))
     {
         config->START_UP = Config::FRESH;
@@ -747,12 +802,10 @@ run(int argc, char** argv)
         if (vm.count("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::severities::kTrace));
 
-        auto timeKeeper = make_TimeKeeper(logs->journal("TimeKeeper"));
-
         auto app = make_Application(
-            std::move(config), std::move(logs), std::move(timeKeeper));
+            std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
 
-        if (!app->setup())
+        if (!app->setup(vm))
             return -1;
 
         // With our configuration parsed, ensure we have
@@ -781,7 +834,6 @@ run(int argc, char** argv)
 int
 main(int argc, char** argv)
 {
-
 #if BOOST_OS_WINDOWS
     {
         // Work around for https://svn.boost.org/trac/boost/ticket/10657

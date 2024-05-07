@@ -90,6 +90,13 @@ parseUrl(parsedURL& pUrl, std::string const& strUrl)
     if (!port.empty())
     {
         pUrl.port = beast::lexicalCast<std::uint16_t>(port);
+
+        // For inputs larger than 2^32-1 (65535), lexicalCast returns 0.
+        // parseUrl returns false for such inputs.
+        if (pUrl.port == 0)
+        {
+            return false;
+        }
     }
     pUrl.path = smMatch[6];
 

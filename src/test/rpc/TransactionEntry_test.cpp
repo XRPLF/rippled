@@ -17,9 +17,14 @@
 */
 //==============================================================================
 
+#include <ripple/json/json_reader.h>
+#include <ripple/json/json_value.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
+
+#include <functional>
 
 namespace ripple {
 
@@ -141,36 +146,75 @@ class TransactionEntry_test : public beast::unit_test::suite
     }
 
     void
-    testRequest()
+    testRequest(unsigned apiVersion)
     {
-        testcase("Basic request");
+        testcase("Basic request API version " + std::to_string(apiVersion));
         using namespace test::jtx;
         Env env{*this};
 
-        auto check_tx = [this, &env](
+        auto check_tx = [this, &env, apiVersion](
                             int index,
                             std::string const txhash,
-                            std::string const type = "") {
+                            std::string const expected_json = "",
+                            std::string const expected_ledger_hash = "",
+                            std::string const close_time_iso = "") {
             // first request using ledger_index to lookup
-            Json::Value const resIndex{[&env, index, &txhash]() {
+            Json::Value const resIndex{[&env, index, &txhash, apiVersion]() {
                 Json::Value params{Json::objectValue};
                 params[jss::ledger_index] = index;
                 params[jss::tx_hash] = txhash;
+                params[jss::api_version] = apiVersion;
                 return env.client().invoke(
                     "transaction_entry", params)[jss::result];
             }()};
 
-            if (!BEAST_EXPECTS(resIndex.isMember(jss::tx_json), txhash))
+            if (!BEAST_EXPECT(resIndex.isMember(jss::tx_json)))
                 return;
 
-            BEAST_EXPECT(resIndex[jss::tx_json][jss::hash] == txhash);
-            if (!type.empty())
+            BEAST_EXPECT(resIndex[jss::validated] == true);
+            BEAST_EXPECT(resIndex[jss::ledger_index] == index);
+            BEAST_EXPECT(resIndex[jss::ledger_hash] == expected_ledger_hash);
+            if (apiVersion > 1)
             {
-                BEAST_EXPECTS(
-                    resIndex[jss::tx_json][jss::TransactionType] == type,
-                    txhash + " is " +
-                        resIndex[jss::tx_json][jss::TransactionType]
-                            .asString());
+                BEAST_EXPECT(resIndex[jss::hash] == txhash);
+                BEAST_EXPECT(!resIndex[jss::tx_json].isMember(jss::hash));
+                BEAST_EXPECT(!resIndex[jss::tx_json].isMember(jss::Amount));
+
+                if (BEAST_EXPECT(!close_time_iso.empty()))
+                    BEAST_EXPECT(
+                        resIndex[jss::close_time_iso] == close_time_iso);
+            }
+            else
+            {
+                BEAST_EXPECT(resIndex[jss::tx_json][jss::hash] == txhash);
+                BEAST_EXPECT(!resIndex.isMember(jss::hash));
+                BEAST_EXPECT(!resIndex.isMember(jss::close_time_iso));
+            }
+
+            if (!expected_json.empty())
+            {
+                Json::Value expected;
+                Json::Reader().parse(expected_json, expected);
+                if (RPC::contains_error(expected))
+                    Throw<std::runtime_error>(
+                        "Internal JSONRPC_test error.  Bad test JSON.");
+
+                for (auto memberIt = expected.begin();
+                     memberIt != expected.end();
+                     memberIt++)
+                {
+                    auto const name = memberIt.memberName();
+                    if (BEAST_EXPECT(resIndex[jss::tx_json].isMember(name)))
+                    {
+                        auto const received = resIndex[jss::tx_json][name];
+                        BEAST_EXPECTS(
+                            received == *memberIt,
+                            txhash + " contains \n\"" + name + "\": "  //
+                                + to_string(received)                  //
+                                + " but expected "                     //
+                                + to_string(expected));
+                    }
+                }
             }
 
             // second request using ledger_hash to lookup and verify
@@ -179,26 +223,27 @@ class TransactionEntry_test : public beast::unit_test::suite
                 Json::Value params{Json::objectValue};
                 params[jss::ledger_hash] = resIndex[jss::ledger_hash];
                 params[jss::tx_hash] = txhash;
+                params[jss::api_version] = apiVersion;
                 Json::Value const resHash = env.client().invoke(
                     "transaction_entry", params)[jss::result];
                 BEAST_EXPECT(resHash == resIndex);
             }
 
             // Use the command line form with the index.
-            {
-                Json::Value const clIndex{env.rpc(
-                    "transaction_entry", txhash, std::to_string(index))};
-                BEAST_EXPECT(clIndex["result"] == resIndex);
-            }
+            Json::Value const clIndex{env.rpc(
+                apiVersion,
+                "transaction_entry",
+                txhash,
+                std::to_string(index))};
+            BEAST_EXPECT(clIndex["result"] == resIndex);
 
             // Use the command line form with the ledger_hash.
-            {
-                Json::Value const clHash{env.rpc(
-                    "transaction_entry",
-                    txhash,
-                    resIndex[jss::ledger_hash].asString())};
-                BEAST_EXPECT(clHash["result"] == resIndex);
-            }
+            Json::Value const clHash{env.rpc(
+                apiVersion,
+                "transaction_entry",
+                txhash,
+                resIndex[jss::ledger_hash].asString())};
+            BEAST_EXPECT(clHash["result"] == resIndex);
         };
 
         Account A1{"A1"};
@@ -207,17 +252,49 @@ class TransactionEntry_test : public beast::unit_test::suite
         env.fund(XRP(10000), A1);
         auto fund_1_tx =
             boost::lexical_cast<std::string>(env.tx()->getTransactionID());
+        BEAST_EXPECT(
+            fund_1_tx ==
+            "F4E9DF90D829A9E8B423FF68C34413E240D8D8BB0EFD080DF08114ED398E2506");
 
         env.fund(XRP(10000), A2);
         auto fund_2_tx =
             boost::lexical_cast<std::string>(env.tx()->getTransactionID());
+        BEAST_EXPECT(
+            fund_2_tx ==
+            "6853CD8226A05068C951CB1F54889FF4E40C5B440DC1C5BA38F114C4E0B1E705");
 
         env.close();
 
         // these are actually AccountSet txs because fund does two txs and
         // env.tx only reports the last one
-        check_tx(env.closed()->seq(), fund_1_tx);
-        check_tx(env.closed()->seq(), fund_2_tx);
+        check_tx(
+            env.closed()->seq(),
+            fund_1_tx,
+            R"({
+            "Account" : "r4nmQNH4Fhjfh6cHDbvVSsBv7KySbj4cBf",
+            "Fee" : "10",
+            "Sequence" : 3,
+            "SetFlag" : 8,
+            "SigningPubKey" : "0324CAAFA2212D2AEAB9D42D481535614AED486293E1FB1380FF070C3DD7FB4264",
+            "TransactionType" : "AccountSet",
+            "TxnSignature" : "3044022007B35E3B99460534FF6BC3A66FBBA03591C355CC38E38588968E87CCD01BE229022071A443026DE45041B55ABB1CC76812A87EA701E475BBB7E165513B4B242D3474",
+})",
+            "ADB727BCC74B29421BB01B847740B179B8A0ED3248D76A89ED2E39B02C427784",
+            "2000-01-01T00:00:10Z");
+        check_tx(
+            env.closed()->seq(),
+            fund_2_tx,
+            R"({
+            "Account" : "rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD",
+            "Fee" : "10",
+            "Sequence" : 3,
+            "SetFlag" : 8,
+            "SigningPubKey" : "03CFF28E067A2CCE6CC5A598C0B845CBD3F30A7863BE9C0DD55F4960EFABCCF4D0",
+            "TransactionType" : "AccountSet",
+            "TxnSignature" : "3045022100C8857FC0759A2AC0D2F320684691A66EAD252EAED9EF88C79791BC58BFCC9D860220421722286487DD0ED6BBA626CE6FCBDD14289F7F4726870C3465A4054C2702D7",
+})",
+            "ADB727BCC74B29421BB01B847740B179B8A0ED3248D76A89ED2E39B02C427784",
+            "2000-01-01T00:00:10Z");
 
         env.trust(A2["USD"](1000), A1);
         // the trust tx is actually a payment since the trust method
@@ -225,22 +302,85 @@ class TransactionEntry_test : public beast::unit_test::suite
         // in the check below
         auto trust_tx =
             boost::lexical_cast<std::string>(env.tx()->getTransactionID());
+        BEAST_EXPECT(
+            trust_tx ==
+            "C992D97D88FF444A1AB0C06B27557EC54B7F7DA28254778E60238BEA88E0C101");
 
         env(pay(A2, A1, A2["USD"](5)));
         auto pay_tx =
             boost::lexical_cast<std::string>(env.tx()->getTransactionID());
         env.close();
+        BEAST_EXPECT(
+            pay_tx ==
+            "988046D484ACE9F5F6A8C792D89C6EA2DB307B5DDA9864AEBA88E6782ABD0865");
 
-        check_tx(env.closed()->seq(), trust_tx);
-        check_tx(env.closed()->seq(), pay_tx, jss::Payment.c_str());
+        check_tx(
+            env.closed()->seq(),
+            trust_tx,
+            R"({
+            "Account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+            "DeliverMax" : "10",
+            "Destination" : "r4nmQNH4Fhjfh6cHDbvVSsBv7KySbj4cBf",
+            "Fee" : "10",
+            "Flags" : 2147483648,
+            "Sequence" : 3,
+            "SigningPubKey" : "0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020",
+            "TransactionType" : "Payment",
+            "TxnSignature" : "3044022033D9EBF7F02950AF2F6B13C07AEE641C8FEBDD540A338FCB9027A965A4AED35B02206E4E227DCC226A3456C0FEF953449D21645A24EB63CA0BB7C5B62470147FD1D1",
+})",
+            "3A6E375BFDFF029A571AFBB3BC46C4F52963FAF043B406D0E59A7194C1A8F98E",
+            "2000-01-01T00:00:20Z");
+
+        check_tx(
+            env.closed()->seq(),
+            pay_tx,
+            R"({
+            "Account" : "rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD",
+            "DeliverMax" :
+            {
+                "currency" : "USD",
+                "issuer" : "rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD",
+                "value" : "5"
+            },
+            "Destination" : "r4nmQNH4Fhjfh6cHDbvVSsBv7KySbj4cBf",
+            "Fee" : "10",
+            "Flags" : 2147483648,
+            "Sequence" : 4,
+            "SigningPubKey" : "03CFF28E067A2CCE6CC5A598C0B845CBD3F30A7863BE9C0DD55F4960EFABCCF4D0",
+            "TransactionType" : "Payment",
+            "TxnSignature" : "30450221008A722B7F16EDB2348886E88ED4EC682AE9973CC1EE0FF37C93BB2CEC821D3EDF022059E464472031BA5E0D88A93E944B6A8B8DB3E1D5E5D1399A805F615789DB0BED",
+})",
+            "3A6E375BFDFF029A571AFBB3BC46C4F52963FAF043B406D0E59A7194C1A8F98E",
+            "2000-01-01T00:00:20Z");
 
         env(offer(A2, XRP(100), A2["USD"](1)));
         auto offer_tx =
             boost::lexical_cast<std::string>(env.tx()->getTransactionID());
+        BEAST_EXPECT(
+            offer_tx ==
+            "5FCC1A27A7664F82A0CC4BE5766FBBB7C560D52B93AA7B550CD33B27AEC7EFFB");
 
         env.close();
-
-        check_tx(env.closed()->seq(), offer_tx, jss::OfferCreate.c_str());
+        check_tx(
+            env.closed()->seq(),
+            offer_tx,
+            R"({
+            "Account" : "rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD",
+            "Fee" : "10",
+            "Sequence" : 5,
+            "SigningPubKey" : "03CFF28E067A2CCE6CC5A598C0B845CBD3F30A7863BE9C0DD55F4960EFABCCF4D0",
+            "TakerGets" :
+            {
+                "currency" : "USD",
+                "issuer" : "rGpeQzUWFu4fMhJHZ1Via5aqFC3A5twZUD",
+                "value" : "1"
+            },
+            "TakerPays" : "100000000",
+            "TransactionType" : "OfferCreate",
+            "TxnSignature" : "304502210093FC93ACB77B4E3DE3315441BD010096734859080C1797AB735EB47EBD541BD102205020BB1A7C3B4141279EE4C287C13671E2450EA78914EFD0C6DB2A18344CD4F2",
+})",
+            "73D6C8E66E0DC22F3E6F7D39BF795A6831BEB412823A986C7CC19470C93557C0",
+            "2000-01-01T00:00:30Z");
     }
 
 public:
@@ -248,7 +388,8 @@ public:
     run() override
     {
         testBadInput();
-        testRequest();
+        forAllApiVersions(
+            std::bind_front(&TransactionEntry_test::testRequest, this));
     }
 };
 

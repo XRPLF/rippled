@@ -20,6 +20,8 @@
 #ifndef RIPPLE_BASICS_IOUAMOUNT_H_INCLUDED
 #define RIPPLE_BASICS_IOUAMOUNT_H_INCLUDED
 
+#include <ripple/basics/LocalValue.h>
+#include <ripple/basics/Number.h>
 #include <ripple/beast/utility/Zero.h>
 #include <boost/operators.hpp>
 #include <cstdint>
@@ -56,83 +58,118 @@ private:
 
 public:
     IOUAmount() = default;
-    IOUAmount(IOUAmount const& other) = default;
-    IOUAmount&
-    operator=(IOUAmount const& other) = default;
+    explicit IOUAmount(Number const& other);
+    IOUAmount(beast::Zero);
+    IOUAmount(std::int64_t mantissa, int exponent);
 
-    IOUAmount(beast::Zero)
-    {
-        *this = beast::zero;
-    }
+    IOUAmount& operator=(beast::Zero);
 
-    IOUAmount(std::int64_t mantissa, int exponent)
-        : mantissa_(mantissa), exponent_(exponent)
-    {
-        normalize();
-    }
-
-    IOUAmount& operator=(beast::Zero)
-    {
-        // The -100 is used to allow 0 to sort less than small positive values
-        // which will have a large negative exponent.
-        mantissa_ = 0;
-        exponent_ = -100;
-        return *this;
-    }
+    operator Number() const;
 
     IOUAmount&
     operator+=(IOUAmount const& other);
 
     IOUAmount&
-    operator-=(IOUAmount const& other)
-    {
-        *this += -other;
-        return *this;
-    }
+    operator-=(IOUAmount const& other);
 
     IOUAmount
-    operator-() const
-    {
-        return {-mantissa_, exponent_};
-    }
+    operator-() const;
 
     bool
-    operator==(IOUAmount const& other) const
-    {
-        return exponent_ == other.exponent_ && mantissa_ == other.mantissa_;
-    }
+    operator==(IOUAmount const& other) const;
 
     bool
     operator<(IOUAmount const& other) const;
 
     /** Returns true if the amount is not zero */
-    explicit operator bool() const noexcept
-    {
-        return mantissa_ != 0;
-    }
+    explicit operator bool() const noexcept;
 
     /** Return the sign of the amount */
     int
-    signum() const noexcept
-    {
-        return (mantissa_ < 0) ? -1 : (mantissa_ ? 1 : 0);
-    }
+    signum() const noexcept;
 
     int
-    exponent() const noexcept
-    {
-        return exponent_;
-    }
+    exponent() const noexcept;
 
     std::int64_t
-    mantissa() const noexcept
-    {
-        return mantissa_;
-    }
+    mantissa() const noexcept;
 
     static IOUAmount
     minPositiveAmount();
 };
+
+inline IOUAmount::IOUAmount(beast::Zero)
+{
+    *this = beast::zero;
+}
+
+inline IOUAmount::IOUAmount(std::int64_t mantissa, int exponent)
+    : mantissa_(mantissa), exponent_(exponent)
+{
+    normalize();
+}
+
+inline IOUAmount& IOUAmount::operator=(beast::Zero)
+{
+    // The -100 is used to allow 0 to sort less than small positive values
+    // which will have a large negative exponent.
+    mantissa_ = 0;
+    exponent_ = -100;
+    return *this;
+}
+
+inline IOUAmount::operator Number() const
+{
+    return Number{mantissa_, exponent_};
+}
+
+inline IOUAmount&
+IOUAmount::operator-=(IOUAmount const& other)
+{
+    *this += -other;
+    return *this;
+}
+
+inline IOUAmount
+IOUAmount::operator-() const
+{
+    return {-mantissa_, exponent_};
+}
+
+inline bool
+IOUAmount::operator==(IOUAmount const& other) const
+{
+    return exponent_ == other.exponent_ && mantissa_ == other.mantissa_;
+}
+
+inline bool
+IOUAmount::operator<(IOUAmount const& other) const
+{
+    return Number{*this} < Number{other};
+}
+
+inline IOUAmount::operator bool() const noexcept
+{
+    return mantissa_ != 0;
+}
+
+inline int
+IOUAmount::signum() const noexcept
+{
+    return (mantissa_ < 0) ? -1 : (mantissa_ ? 1 : 0);
+}
+
+inline int
+IOUAmount::exponent() const noexcept
+{
+    return exponent_;
+}
+
+inline std::int64_t
+IOUAmount::mantissa() const noexcept
+{
+    return mantissa_;
+}
 
 std::string
 to_string(IOUAmount const& amount);
@@ -148,6 +185,38 @@ mulRatio(
     std::uint32_t num,
     std::uint32_t den,
     bool roundUp);
+
+// Since many uses of the number class do not have access to a ledger,
+// getSTNumberSwitchover needs to be globally accessible.
+
+bool
+getSTNumberSwitchover();
+
+void
+setSTNumberSwitchover(bool v);
+
+/** RAII class to set and restore the Number switchover.
+ */
+
+class NumberSO
+{
+    bool saved_;
+
+public:
+    ~NumberSO()
+    {
+        setSTNumberSwitchover(saved_);
+    }
+
+    NumberSO(NumberSO const&) = delete;
+    NumberSO&
+    operator=(NumberSO const&) = delete;
+
+    explicit NumberSO(bool v) : saved_(getSTNumberSwitchover())
+    {
+        setSTNumberSwitchover(v);
+    }
+};
 
 }  // namespace ripple
 

@@ -23,8 +23,7 @@
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/impl/secp256k1.h>
 #include <boost/multiprecision/cpp_int.hpp>
-#include <ed25519-donna/ed25519.h>
-#include <type_traits>
+#include <ed25519.h>
 
 namespace ripple {
 
@@ -176,24 +175,29 @@ ed25519Canonical(Slice const& sig)
 
 PublicKey::PublicKey(Slice const& slice)
 {
+    if (slice.size() < size_)
+        LogicError(
+            "PublicKey::PublicKey - Input slice cannot be an undersized "
+            "buffer");
+
     if (!publicKeyType(slice))
         LogicError("PublicKey::PublicKey invalid type");
-    size_ = slice.size();
     std::memcpy(buf_, slice.data(), size_);
 }
 
-PublicKey::PublicKey(PublicKey const& other) : size_(other.size_)
+PublicKey::PublicKey(PublicKey const& other)
 {
-    if (size_)
-        std::memcpy(buf_, other.buf_, size_);
-};
+    std::memcpy(buf_, other.buf_, size_);
+}
 
 PublicKey&
 PublicKey::operator=(PublicKey const& other)
 {
-    size_ = other.size_;
-    if (size_)
+    if (this != &other)
+    {
         std::memcpy(buf_, other.buf_, size_);
+    }
+
     return *this;
 }
 

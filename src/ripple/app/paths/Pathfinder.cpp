@@ -796,8 +796,8 @@ Pathfinder::addPathsForType(
     PathType const& pathType,
     std::function<bool(void)> const& continueCallback)
 {
-    JLOG(j_.warn()) << "addPathsForType "
-                    << CollectionAndDelimiter(pathType, ", ");
+    JLOG(j_.debug()) << "addPathsForType "
+                     << CollectionAndDelimiter(pathType, ", ");
     // See if the set of paths for this type already exists.
     auto it = mPaths.find(pathType);
     if (it != mPaths.end())

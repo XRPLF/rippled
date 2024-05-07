@@ -341,7 +341,8 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
     if (!standalone_)
     {
         auto validations = app_.validators().negativeUNLFilter(
-            app_.getValidations().getTrustedForLedger(l->info().hash));
+            app_.getValidations().getTrustedForLedger(
+                l->info().hash, l->info().seq));
         times.reserve(validations.size());
         for (auto const& val : validations)
             times.push_back(val->getSignTime());
@@ -595,6 +596,54 @@ LedgerMaster::clearLedger(std::uint32_t seq)
 {
     std::lock_guard sl(mCompleteLock);
     mCompleteLedgers.erase(seq);
+}
+
+bool
+LedgerMaster::isValidated(ReadView const& ledger)
+{
+    if (app_.config().reporting())
+        return true;  // Reporting mode only supports validated ledger
+
+    if (ledger.open())
+        return false;
+
+    if (ledger.info().validated)
+        return true;
+
+    auto const seq = ledger.info().seq;
+    try
+    {
+        // Use the skip list in the last validated ledger to see if ledger
+        // comes before the last validated ledger (and thus has been
+        // validated).
+        auto const hash = walkHashBySeq(seq, InboundLedger::Reason::GENERIC);
+
+        if (!hash || ledger.info().hash != *hash)
+        {
+            // This ledger's hash is not the hash of the validated ledger
+            if (hash)
+            {
+                assert(hash->isNonZero());
+                uint256 valHash =
+                    app_.getRelationalDatabase().getHashByIndex(seq);
+                if (valHash == ledger.info().hash)
+                {
+                    // SQL database doesn't match ledger chain
+                    clearLedger(seq);
+                }
+            }
+            return false;
+        }
+    }
+    catch (SHAMapMissingNode const& mn)
+    {
+        JLOG(m_journal.warn()) << "Ledger #" << seq << ": " << mn.what();
+        return false;
+    }
+
+    // Mark ledger as validated to save time if we see it again.
+    ledger.info().validated = true;
+    return true;
 }
 
 // returns Ledgers we have all the nodes for
@@ -865,10 +914,11 @@ LedgerMaster::fixMismatch(ReadView const& ledger)
             {
                 hash = hashOfSeq(ledger, lSeq, m_journal);
             }
-            catch (std::exception const&)
+            catch (std::exception const& ex)
             {
                 JLOG(m_journal.warn())
-                    << "fixMismatch encounters partial ledger";
+                    << "fixMismatch encounters partial ledger. Exception: "
+                    << ex.what();
                 clearLedger(lSeq);
                 return;
             }
@@ -987,7 +1037,7 @@ LedgerMaster::checkAccept(uint256 const& hash, std::uint32_t seq)
             return;
 
         auto validations = app_.validators().negativeUNLFilter(
-            app_.getValidations().getTrustedForLedger(hash));
+            app_.getValidations().getTrustedForLedger(hash, seq));
         valCount = validations.size();
         if (valCount >= app_.validators().quorum())
         {
@@ -1041,8 +1091,9 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
 {
     // Can we accept this ledger as our new last fully-validated ledger
 
-    JLOG(m_journal.info()) << "=========> checkAccept (" << ledger->info().seq << ")\n";
-    
+    JLOG(m_journal.info()) << "=========> checkAccept (" << ledger->info().seq
+                           << ")\n";
+
     if (!canBeCurrent(ledger))
         return;
 
@@ -1055,7 +1106,8 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
 
     auto const minVal = getNeededValidations();
     auto validations = app_.validators().negativeUNLFilter(
-        app_.getValidations().getTrustedForLedger(ledger->info().hash));
+        app_.getValidations().getTrustedForLedger(
+            ledger->info().hash, ledger->info().seq));
     auto const tvc = validations.size();
     if (tvc < minVal)  // nothing we can do
     {
@@ -1071,8 +1123,9 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     ledger->setValidated();
     ledger->setFull();
     setValidLedger(ledger);
-    
-    JLOG(m_journal.info()) << "=========> checkAccept (" << ledger->info().seq << ") = validated\n";
+
+    JLOG(m_journal.info()) << "=========> checkAccept (" << ledger->info().seq
+                           << ") = validated\n";
     if (!mPubLedger)
     {
         pendSaveValidated(app_, ledger, true, true);
@@ -1132,7 +1185,7 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         {
             // Have not printed the warning before, check if need to print.
             auto const vals = app_.getValidations().getTrustedForLedger(
-                ledger->info().parentHash);
+                ledger->info().parentHash, ledger->info().seq - 1);
             std::size_t higherVersionCount = 0;
             std::size_t rippledCount = 0;
             for (auto const& v : vals)
@@ -1409,10 +1462,11 @@ LedgerMaster::findNewLedgersToPublish(
         JLOG(m_journal.trace())
             << "ready to publish " << ret.size() << " ledgers.";
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
         JLOG(m_journal.error())
-            << "Exception while trying to find ledgers to publish.";
+            << "Exception while trying to find ledgers to publish: "
+            << ex.what();
     }
 
     if (app_.config().LEDGER_REPLAY)
@@ -1495,6 +1549,7 @@ LedgerMaster::updatePaths()
         if (app_.getOPs().isNeedNetworkLedger())
         {
             --mPathFindThread;
+            mPathLedger.reset();
             JLOG(m_journal.debug()) << "Need network ledger for updating paths";
             return;
         }
@@ -1520,6 +1575,7 @@ LedgerMaster::updatePaths()
             else
             {  // Nothing to do
                 --mPathFindThread;
+                mPathLedger.reset();
                 JLOG(m_journal.debug()) << "Nothing to do for updating paths";
                 return;
             }
@@ -1536,6 +1592,7 @@ LedgerMaster::updatePaths()
                     << "Published ledger too old for updating paths";
                 std::lock_guard ml(m_mutex);
                 --mPathFindThread;
+                mPathLedger.reset();
                 return;
             }
         }
@@ -1548,6 +1605,7 @@ LedgerMaster::updatePaths()
                 if (!pathRequests.requestsPending())
                 {
                     --mPathFindThread;
+                    mPathLedger.reset();
                     JLOG(m_journal.debug())
                         << "No path requests found. Nothing to do for updating "
                            "paths. "
@@ -1565,6 +1623,7 @@ LedgerMaster::updatePaths()
                     << "No path requests left. No need for further updating "
                        "paths";
                 --mPathFindThread;
+                mPathLedger.reset();
                 return;
             }
         }
@@ -2011,9 +2070,10 @@ LedgerMaster::fetchForHistory(
                     }
                 }
             }
-            catch (std::exception const&)
+            catch (std::exception const& ex)
             {
-                JLOG(m_journal.warn()) << "Threw while prefetching";
+                JLOG(m_journal.warn())
+                    << "Threw while prefetching: " << ex.what();
             }
         }
     }
@@ -2348,9 +2408,10 @@ LedgerMaster::makeFetchPack(
 
         peer->send(msg);
     }
-    catch (std::exception const&)
+    catch (std::exception const& ex)
     {
-        JLOG(m_journal.warn()) << "Exception building fetch pach";
+        JLOG(m_journal.warn())
+            << "Exception building fetch pach. Exception: " << ex.what();
     }
 }
 
@@ -2365,6 +2426,27 @@ std::optional<LedgerIndex>
 LedgerMaster::minSqlSeq()
 {
     return app_.getRelationalDatabase().getMinLedgerSeq();
+}
+
+std::optional<uint256>
+LedgerMaster::txnIdFromIndex(uint32_t ledgerSeq, uint32_t txnIndex)
+{
+    uint32_t first = 0, last = 0;
+
+    if (!getValidatedRange(first, last) || last < ledgerSeq)
+        return {};
+
+    auto const lgr = getLedgerBySeq(ledgerSeq);
+    if (!lgr || lgr->txs.empty())
+        return {};
+
+    for (auto it = lgr->txs.begin(); it != lgr->txs.end(); ++it)
+        if (it->first && it->second &&
+            it->second->isFieldPresent(sfTransactionIndex) &&
+            it->second->getFieldU32(sfTransactionIndex) == txnIndex)
+            return it->first->getTransactionID();
+
+    return {};
 }
 
 }  // namespace ripple

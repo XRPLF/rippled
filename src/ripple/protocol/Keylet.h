@@ -47,7 +47,6 @@ struct Keylet
     /** Returns true if the SLE matches the type */
     bool
     check(STLedgerEntry const&) const;
-
 };
 
 }  // namespace ripple

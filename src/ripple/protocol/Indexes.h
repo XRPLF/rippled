@@ -26,6 +26,7 @@
 #include <ripple/protocol/LedgerFormats.h>
 #include <ripple/protocol/Protocol.h>
 #include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/STXChainBridge.h>
 #include <ripple/protocol/Serializer.h>
 #include <ripple/protocol/UintTypes.h>
 #include <cstdint>
@@ -51,7 +52,8 @@ class SeqProxy;
 */
 namespace keylet {
 
-/** The (fixed) index of the object containing the emitted txns for the ledger. */
+/** The (fixed) index of the object containing the emitted txns for the ledger.
+ */
 Keylet const&
 emittedDir() noexcept;
 
@@ -244,7 +246,10 @@ escrow(AccountID const& src, UInt32or256 const& seq) noexcept;
 
 /** A PaymentChannel */
 Keylet
-payChan(AccountID const& src, AccountID const& dst, UInt32or256 const& seq) noexcept;
+payChan(
+    AccountID const& src,
+    AccountID const& dst,
+    UInt32or256 const& seq) noexcept;
 
 /** NFT page keylets
 
@@ -283,6 +288,28 @@ nft_buys(uint256 const& id) noexcept;
 /** The directory of sell offers for the specified NFT */
 Keylet
 nft_sells(uint256 const& id) noexcept;
+
+/** AMM entry */
+Keylet
+amm(Issue const& issue1, Issue const& issue2) noexcept;
+
+Keylet
+amm(uint256 const& amm) noexcept;
+
+Keylet
+bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType);
+
+Keylet
+xChainClaimID(STXChainBridge const& bridge, std::uint64_t seq);
+
+Keylet
+xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t seq);
+
+Keylet
+did(AccountID const& account) noexcept;
+
+Keylet
+oracle(AccountID const& account, std::uint32_t const& documentID) noexcept;
 
 }  // namespace keylet
 

@@ -20,11 +20,20 @@
 #ifndef RIPPLE_PROTOCOL_TOKENS_H_INCLUDED
 #define RIPPLE_PROTOCOL_TOKENS_H_INCLUDED
 
+#include <ripple/basics/Expected.h>
+#include <ripple/basics/contract.h>
+#include <ripple/protocol/impl/token_errors.h>
+
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string>
+#include <string_view>
 
 namespace ripple {
+
+template <class T>
+using B58Result = Expected<T, std::error_code>;
 
 enum class TokenType : std::uint8_t {
     None = 1,  // unused
@@ -38,11 +47,11 @@ enum class TokenType : std::uint8_t {
 };
 
 template <class T>
-std::optional<T>
+[[nodiscard]] std::optional<T>
 parseBase58(std::string const& s);
 
 template <class T>
-std::optional<T>
+[[nodiscard]] std::optional<T>
 parseBase58(TokenType type, std::string const& s);
 
 /** Encode data in Base58Check format using XRPL alphabet
@@ -56,20 +65,71 @@ parseBase58(TokenType type, std::string const& s);
 
     @return the encoded token.
 */
-std::string
+[[nodiscard]] std::string
 encodeBase58Token(TokenType type, void const* token, std::size_t size);
 
-/** Decode a token of given type encoded using Base58Check and the XRPL alphabet
-
-    @param s The encoded token
-    @param type The type expected for this token.
-
-    @return If the encoded token decodes correctly, the token data without
-    the type or checksum. And empty string otherwise.
-*/
-std::string
+[[nodiscard]] std::string
 decodeBase58Token(std::string const& s, TokenType type);
 
+namespace b58_ref {
+// The reference version does not use gcc extensions (int128 in particular)
+[[nodiscard]] std::string
+encodeBase58Token(TokenType type, void const* token, std::size_t size);
+
+[[nodiscard]] std::string
+decodeBase58Token(std::string const& s, TokenType type);
+
+namespace detail {
+// Expose detail functions for unit tests only
+std::string
+encodeBase58(
+    void const* message,
+    std::size_t size,
+    void* temp,
+    std::size_t temp_size);
+
+std::string
+decodeBase58(std::string const& s);
+}  // namespace detail
+}  // namespace b58_ref
+
+#ifndef _MSC_VER
+namespace b58_fast {
+// Use the fast version (10-15x faster) is using gcc extensions (int128 in
+// particular)
+[[nodiscard]] B58Result<std::span<std::uint8_t>>
+encodeBase58Token(
+    TokenType token_type,
+    std::span<std::uint8_t const> input,
+    std::span<std::uint8_t> out);
+
+[[nodiscard]] B58Result<std::span<std::uint8_t>>
+decodeBase58Token(
+    TokenType type,
+    std::string_view s,
+    std::span<std::uint8_t> outBuf);
+
+// This interface matches the old interface, but requires additional allocation
+[[nodiscard]] std::string
+encodeBase58Token(TokenType type, void const* token, std::size_t size);
+
+// This interface matches the old interface, but requires additional allocation
+[[nodiscard]] std::string
+decodeBase58Token(std::string const& s, TokenType type);
+
+namespace detail {
+// Expose detail functions for unit tests only
+B58Result<std::span<std::uint8_t>>
+b256_to_b58_be(
+    std::span<std::uint8_t const> input,
+    std::span<std::uint8_t> out);
+
+B58Result<std::span<std::uint8_t>>
+b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out);
+}  // namespace detail
+
+}  // namespace b58_fast
+#endif  // _MSC_VER
 }  // namespace ripple
 
 #endif

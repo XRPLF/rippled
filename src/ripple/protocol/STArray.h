@@ -38,9 +38,9 @@ public:
     using iterator = list_type::iterator;
     using const_iterator = list_type::const_iterator;
 
-    // RH NOTE: please don't delete this constructor 
+    // RH NOTE: please don't delete this constructor
     STArray(std::vector<STObject> const& v, SField const& f);
-    
+
     STArray() = default;
     STArray(STArray const&) = default;
 
@@ -64,7 +64,7 @@ public:
     STArray&
     operator=(STArray&&);
 
-    STArray(SField const& f, int n);
+    STArray(SField const& f, std::size_t n);
     STArray(SerialIter& sit, SField const& f, int depth = 0);
     explicit STArray(int n);
     explicit STArray(SField const& f);

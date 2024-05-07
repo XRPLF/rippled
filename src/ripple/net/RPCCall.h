@@ -65,18 +65,22 @@ fromNetwork(
     std::unordered_map<std::string, std::string> headers = {});
 }  // namespace RPCCall
 
-/** Given a rippled command line, return the corresponding JSON.
- */
 Json::Value
-cmdLineToJSONRPC(std::vector<std::string> const& args, beast::Journal j);
+rpcCmdToJson(
+    std::vector<std::string> const& args,
+    Json::Value& retParams,
+    unsigned int apiVersion,
+    beast::Journal j);
 
 /** Internal invocation of RPC client.
+ *  Used by both rippled command line as well as rippled unit tests
  */
 std::pair<int, Json::Value>
 rpcClient(
     std::vector<std::string> const& args,
     Config const& config,
     Logs& logs,
+    unsigned int apiVersion,
     std::unordered_map<std::string, std::string> const& headers = {});
 
 }  // namespace ripple

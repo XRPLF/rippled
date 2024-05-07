@@ -21,6 +21,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/json/json_value.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
@@ -45,21 +46,16 @@ doOwnerInfo(RPC::JsonContext& context)
     Json::Value ret;
 
     // Get info on account.
-
     auto const& closedLedger = context.ledgerMaster.getClosedLedger();
-    AccountID accountID;
-    auto jAccepted = RPC::accountFromString(accountID, strIdent);
-
-    ret[jss::accepted] = !jAccepted
-        ? context.netOps.getOwnerInfo(closedLedger, accountID)
-        : jAccepted;
+    std::optional<AccountID> const accountID = parseBase58<AccountID>(strIdent);
+    ret[jss::accepted] = accountID.has_value()
+        ? context.netOps.getOwnerInfo(closedLedger, accountID.value())
+        : rpcError(rpcACT_MALFORMED);
 
     auto const& currentLedger = context.ledgerMaster.getCurrentLedger();
-    auto jCurrent = RPC::accountFromString(accountID, strIdent);
-
-    ret[jss::current] = !jCurrent
-        ? context.netOps.getOwnerInfo(currentLedger, accountID)
-        : jCurrent;
+    ret[jss::current] = accountID.has_value()
+        ? context.netOps.getOwnerInfo(currentLedger, *accountID)
+        : rpcError(rpcACT_MALFORMED);
     return ret;
 }
 

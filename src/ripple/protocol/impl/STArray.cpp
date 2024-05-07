@@ -46,7 +46,7 @@ STArray::STArray(SField const& f) : STBase(f)
 {
 }
 
-STArray::STArray(SField const& f, int n) : STBase(f)
+STArray::STArray(SField const& f, std::size_t n) : STBase(f)
 {
     v_.reserve(n);
 }

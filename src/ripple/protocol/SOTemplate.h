@@ -35,6 +35,8 @@ enum SOEStyle {
     soeREQUIRED = 0,  // required
     soeOPTIONAL = 1,  // optional, may be present with default value
     soeDEFAULT = 2,   // optional, if present, must not have default value
+                      // inner object with the default fields has to be
+                      // constructed with STObject::makeInnerObject()
 };
 
 //------------------------------------------------------------------------------

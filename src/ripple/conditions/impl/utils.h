@@ -20,6 +20,8 @@
 #ifndef RIPPLE_CONDITIONS_UTILS_H
 #define RIPPLE_CONDITIONS_UTILS_H
 
+#include <ripple/basics/Buffer.h>
+#include <ripple/basics/Slice.h>
 #include <ripple/basics/strHex.h>
 #include <ripple/conditions/impl/error.h>
 #include <boost/dynamic_bitset.hpp>

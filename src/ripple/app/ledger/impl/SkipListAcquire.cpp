@@ -137,7 +137,7 @@ SkipListAcquire::pmDowncast()
 void
 SkipListAcquire::processData(
     std::uint32_t ledgerSeq,
-    std::shared_ptr<SHAMapItem const> const& item)
+    boost::intrusive_ptr<SHAMapItem const> const& item)
 {
     assert(ledgerSeq != 0 && item);
     ScopedLockType sl(mtx_);

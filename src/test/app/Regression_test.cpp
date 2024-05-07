@@ -149,7 +149,9 @@ struct Regression_test : public beast::unit_test::suite
             secp256r1Sig->setFieldVL(sfSigningPubKey, *pubKeyBlob);
             jt.stx.reset(secp256r1Sig.release());
 
-            env(jt, ter(temINVALID));
+            env(jt,
+                rpc("invalidTransaction",
+                    "fails local checks: Invalid signature."));
         };
 
         Account const alice{"alice", KeyType::secp256k1};

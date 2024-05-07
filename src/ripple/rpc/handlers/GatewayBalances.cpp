@@ -23,6 +23,7 @@
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
@@ -68,19 +69,20 @@ doGatewayBalances(RPC::JsonContext& context)
         params.isMember(jss::account) ? params[jss::account].asString()
                                       : params[jss::ident].asString());
 
-    bool const bStrict =
-        params.isMember(jss::strict) && params[jss::strict].asBool();
-
     // Get info on account.
-    AccountID accountID;
-    auto jvAccepted = RPC::accountFromString(accountID, strIdent, bStrict);
-
-    if (jvAccepted)
-        return jvAccepted;
-
+    auto id = parseBase58<AccountID>(strIdent);
+    if (!id)
+        return rpcError(rpcACT_MALFORMED);
+    auto const accountID{std::move(id.value())};
     context.loadType = Resource::feeHighBurdenRPC;
 
-    result[jss::account] = context.app.accountIDCache().toBase58(accountID);
+    result[jss::account] = toBase58(accountID);
+
+    if (context.apiVersion > 1u && !ledger->exists(keylet::account(accountID)))
+    {
+        RPC::inject_error(rpcACT_NOT_FOUND, result);
+        return result;
+    }
 
     // Parse the specified hotwallet(s), if any
     std::set<AccountID> hotWallets;
@@ -90,19 +92,9 @@ doGatewayBalances(RPC::JsonContext& context)
         auto addHotWallet = [&hotWallets](Json::Value const& j) {
             if (j.isString())
             {
-                auto const pk = parseBase58<PublicKey>(
-                    TokenType::AccountPublic, j.asString());
-                if (pk)
+                if (auto id = parseBase58<AccountID>(j.asString()); id)
                 {
-                    hotWallets.insert(calcAccountID(*pk));
-                    return true;
-                }
-
-                auto const id = parseBase58<AccountID>(j.asString());
-
-                if (id)
-                {
-                    hotWallets.insert(*id);
+                    hotWallets.insert(std::move(id.value()));
                     return true;
                 }
             }
@@ -130,7 +122,18 @@ doGatewayBalances(RPC::JsonContext& context)
 
         if (!valid)
         {
-            result[jss::error] = "invalidHotWallet";
+            // The documentation states that invalidParams is used when
+            // One or more fields are specified incorrectly.
+            // invalidHotwallet should be used when the account exists, but does
+            // not have currency issued by the account from the request.
+            if (context.apiVersion < 2u)
+            {
+                RPC::inject_error(rpcINVALID_HOTWALLET, result);
+            }
+            else
+            {
+                RPC::inject_error(rpcINVALID_PARAMS, result);
+            }
             return result;
         }
     }
@@ -184,7 +187,23 @@ doGatewayBalances(RPC::JsonContext& context)
                         bal = -rs->getBalance();
                     }
                     else
-                        bal -= rs->getBalance();
+                    {
+                        try
+                        {
+                            bal -= rs->getBalance();
+                        }
+                        catch (std::runtime_error const&)
+                        {
+                            // Presumably the exception was caused by overflow.
+                            // On overflow return the largest valid STAmount.
+                            // Very large sums of STAmount are approximations
+                            // anyway.
+                            bal = STAmount(
+                                bal.issue(),
+                                STAmount::cMaxValue,
+                                STAmount::cMaxOffset);
+                        }
+                    }
                 }
             });
     }

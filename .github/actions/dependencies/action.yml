@@ -1,0 +1,58 @@
+name: dependencies
+inputs:
+  configuration:
+    required: true
+# An implicit input is the environment variable `build_dir`.
+runs:
+  using: composite
+  steps:
+    - name: unlock Conan
+      shell: bash
+      run: conan remove --locks
+    - name: export custom recipes
+      shell: bash
+      run: |
+        conan config set general.revisions_enabled=1
+        conan export external/snappy snappy/1.1.10@
+        conan export external/rocksdb rocksdb/6.29.5@
+        conan export external/soci soci/4.0.3@
+    - name: add Ripple Conan remote
+      shell: bash
+      run: |
+        conan remote list
+        conan remote remove ripple || true
+        # Do not quote the URL. An empty string will be accepted (with
+        # a non-fatal warning), but a missing argument will not.
+        conan remote add ripple ${{ env.CONAN_URL }} --insert 0
+    - name: try to authenticate to Ripple Conan remote
+      id: remote
+      shell: bash
+      run: |
+        # `conan user` implicitly uses the environment variables
+        # CONAN_LOGIN_USERNAME_<REMOTE> and CONAN_PASSWORD_<REMOTE>.
+        # https://docs.conan.io/1/reference/commands/misc/user.html#using-environment-variables
+        # https://docs.conan.io/1/reference/env_vars.html#conan-login-username-conan-login-username-remote-name
+        # https://docs.conan.io/1/reference/env_vars.html#conan-password-conan-password-remote-name
+        echo outcome=$(conan user --remote ripple --password >&2 \
+          && echo success || echo failure) | tee ${GITHUB_OUTPUT}
+    - name: list missing binaries
+      id: binaries
+      shell: bash
+      # Print the list of dependencies that would need to be built locally.
+      # A non-empty list means we have "failed" to cache binaries remotely.
+      run: |
+        echo missing=$(conan info . --build missing --settings build_type=${{ inputs.configuration }} --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
+    - name: install dependencies
+      shell: bash
+      run: |
+        mkdir ${build_dir}
+        cd ${build_dir}
+        conan install \
+          --output-folder . \
+          --build missing \
+          --settings build_type=${{ inputs.configuration }} \
+          ..
+    - name: upload dependencies to remote
+      if: (steps.binaries.outputs.missing != '[]') && (steps.remote.outputs.outcome == 'success')
+      shell: bash
+      run: conan upload --remote ripple '*' --all --parallel --confirm

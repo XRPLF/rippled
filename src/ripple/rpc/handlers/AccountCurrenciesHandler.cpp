@@ -20,8 +20,8 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/paths/TrustLine.h>
 #include <ripple/ledger/ReadView.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
@@ -46,13 +46,14 @@ doAccountCurrencies(RPC::JsonContext& context)
         params.isMember(jss::account) ? params[jss::account].asString()
                                       : params[jss::ident].asString());
 
-    bool const bStrict =
-        params.isMember(jss::strict) && params[jss::strict].asBool();
-
     // Get info on account.
-    AccountID accountID;  // out param
-    if (auto jvAccepted = RPC::accountFromString(accountID, strIdent, bStrict))
-        return jvAccepted;
+    auto id = parseBase58<AccountID>(strIdent);
+    if (!id)
+    {
+        RPC::inject_error(rpcACT_MALFORMED, result);
+        return result;
+    }
+    auto const accountID{std::move(id.value())};
 
     if (!ledger->exists(keylet::account(accountID)))
         return rpcError(rpcACT_NOT_FOUND);

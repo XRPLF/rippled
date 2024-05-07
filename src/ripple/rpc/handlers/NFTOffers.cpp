@@ -21,8 +21,8 @@
 #include <ripple/json/json_value.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/View.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
@@ -41,12 +41,10 @@ appendNftOfferJson(
 
     obj[jss::nft_offer_index] = to_string(offer->key());
     obj[jss::flags] = (*offer)[sfFlags];
-    obj[jss::owner] =
-        app.accountIDCache().toBase58(offer->getAccountID(sfOwner));
+    obj[jss::owner] = toBase58(offer->getAccountID(sfOwner));
 
     if (offer->isFieldPresent(sfDestination))
-        obj[jss::destination] =
-            app.accountIDCache().toBase58(offer->getAccountID(sfDestination));
+        obj[jss::destination] = toBase58(offer->getAccountID(sfDestination));
 
     if (offer->isFieldPresent(sfExpiration))
         obj[jss::expiration] = offer->getFieldU32(sfExpiration);

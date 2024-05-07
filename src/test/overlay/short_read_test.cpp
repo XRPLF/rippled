@@ -195,8 +195,6 @@ private:
             {
                 acceptor_.listen();
                 server_.endpoint_ = acceptor_.local_endpoint();
-                test_.log << "[server] up on port: " << server_.endpoint_.port()
-                          << std::endl;
             }
 
             void

@@ -103,22 +103,24 @@ updateLedgerDBs(
 
             for (auto const& item : ledger->txs)
             {
-                if (stop)
+                if (stop.load(std::memory_order_relaxed))
                     return false;
 
-                auto const txID{item.first->getTransactionID()};
-                auto const sTxID{to_string(txID)};
-                auto const txMeta{std::make_shared<TxMeta>(
-                    txID, ledger->seq(), *item.second)};
+                TxMeta const txMeta{
+                    item.first->getTransactionID(),
+                    ledger->seq(),
+                    *item.second};
+
+                auto const sTxID = to_string(txMeta.getTxID());
 
                 session << "DELETE FROM AccountTransactions "
                            "WHERE TransID = :txID;",
                     soci::use(sTxID);
 
-                auto const& accounts = txMeta->getAffectedAccounts();
+                auto const& accounts = txMeta.getAffectedAccounts();
                 if (!accounts.empty())
                 {
-                    auto const sTxnSeq{std::to_string(txMeta->getIndex())};
+                    auto const sTxnSeq{std::to_string(txMeta.getIndex())};
                     auto const s{boost::str(
                         boost::format("('%s','%s',%s,%s)") % sTxID % "%s" %
                         sSeq % sTxnSeq)};
@@ -173,6 +175,11 @@ updateLedgerDBs(
 
         auto const sParentHash{to_string(ledger->info().parentHash)};
         auto const sDrops{to_string(ledger->info().drops)};
+        auto const closingTime{
+            ledger->info().closeTime.time_since_epoch().count()};
+        auto const prevClosingTime{
+            ledger->info().parentCloseTime.time_since_epoch().count()};
+        auto const closeTimeRes{ledger->info().closeTimeResolution.count()};
         auto const sAccountHash{to_string(ledger->info().accountHash)};
         auto const sTxHash{to_string(ledger->info().txHash)};
 
@@ -188,11 +195,8 @@ updateLedgerDBs(
                    ":closingTime, :prevClosingTime, :closeTimeRes,"
                    ":closeFlags, :accountSetHash, :transSetHash);",
             soci::use(sHash), soci::use(ledgerSeq), soci::use(sParentHash),
-            soci::use(sDrops),
-            soci::use(ledger->info().closeTime.time_since_epoch().count()),
-            soci::use(
-                ledger->info().parentCloseTime.time_since_epoch().count()),
-            soci::use(ledger->info().closeTimeResolution.count()),
+            soci::use(sDrops), soci::use(closingTime),
+            soci::use(prevClosingTime), soci::use(closeTimeRes),
             soci::use(ledger->info().closeFlags), soci::use(sAccountHash),
             soci::use(sTxHash);
 

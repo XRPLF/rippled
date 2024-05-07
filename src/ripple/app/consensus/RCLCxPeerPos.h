@@ -28,6 +28,7 @@
 #include <ripple/protocol/HashPrefix.h>
 #include <ripple/protocol/PublicKey.h>
 #include <ripple/protocol/SecretKey.h>
+#include <boost/container/static_vector.hpp>
 #include <chrono>
 #include <cstdint>
 #include <string>
@@ -61,10 +62,6 @@ public:
         uint256 const& suppress,
         Proposal&& proposal);
 
-    //! Create the signing hash for the proposal
-    uint256
-    signingHash() const;
-
     //! Verify the signing hash of the proposal
     bool
     checkSign() const;
@@ -73,27 +70,27 @@ public:
     Slice
     signature() const
     {
-        return data_->signature_;
+        return {signature_.data(), signature_.size()};
     }
 
     //! Public key of peer that sent the proposal
     PublicKey const&
     publicKey() const
     {
-        return data_->publicKey_;
+        return publicKey_;
     }
 
     //! Unique id used by hash router to suppress duplicates
     uint256 const&
     suppressionID() const
     {
-        return data_->suppression_;
+        return suppression_;
     }
 
     Proposal const&
     proposal() const
     {
-        return data_->proposal_;
+        return proposal_;
     }
 
     //! JSON representation of proposal
@@ -101,21 +98,10 @@ public:
     getJson() const;
 
 private:
-    struct Data : public CountedObject<Data>
-    {
-        PublicKey publicKey_;
-        Buffer signature_;
-        uint256 suppression_;
-        Proposal proposal_;
-
-        Data(
-            PublicKey const& publicKey,
-            Slice const& signature,
-            uint256 const& suppress,
-            Proposal&& proposal);
-    };
-
-    std::shared_ptr<Data> data_;
+    PublicKey publicKey_;
+    uint256 suppression_;
+    Proposal proposal_;
+    boost::container::static_vector<std::uint8_t, 72> signature_;
 
     template <class Hasher>
     void

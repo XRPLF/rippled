@@ -195,7 +195,7 @@ three database entries upon completion.
 Since downloads execute serially by design, the entries in this table always
 correspond to the contents of a single file.
 
-| Bytes  | Size       | Part |
+| Bytes  | size       | Part |
 |:------:|:----------:|:----:|
 | 0x...  | 2147483647 | 0    |
 | 0x...  | 2147483647 | 1    |

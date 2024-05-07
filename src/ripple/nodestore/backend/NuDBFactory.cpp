@@ -250,8 +250,7 @@ public:
     void
     do_insert(std::shared_ptr<NodeObject> const& no)
     {
-        EncodedBlob e;
-        e.prepare(no);
+        EncodedBlob e(no);
         nudb::error_code ec;
         nudb::detail::buffer bf;
         auto const result = nodeobject_compress(e.getData(), e.getSize(), bf);

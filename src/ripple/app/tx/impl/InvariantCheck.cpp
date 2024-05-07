@@ -23,9 +23,11 @@
 #include <ripple/basics/FeeUnits.h>
 #include <ripple/basics/Log.h>
 #include <ripple/ledger/ReadView.h>
+#include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STArray.h>
 #include <ripple/protocol/SystemParameters.h>
+#include <ripple/protocol/TxFormats.h>
 #include <ripple/protocol/nftPageMask.h>
 
 namespace ripple {
@@ -100,13 +102,13 @@ XRPNotCreated::visitEntry(
                 break;
             case ltPAYCHAN:
                 if (isXRP((*before)[sfAmount]))
-                    drops_ -=
-                        ((*before)[sfAmount] - (*before)[sfBalance]).xrp().drops();
+                    drops_ -= ((*before)[sfAmount] - (*before)[sfBalance])
+                                  .xrp()
+                                  .drops();
                 break;
             case ltESCROW:
                 if (isXRP((*before)[sfAmount]))
-                    drops_ -= 
-                        (*before)[sfAmount].xrp().drops();
+                    drops_ -= (*before)[sfAmount].xrp().drops();
                 break;
             default:
                 break;
@@ -122,13 +124,13 @@ XRPNotCreated::visitEntry(
                 break;
             case ltPAYCHAN:
                 if (!isDelete && isXRP((*after)[sfAmount]))
-                    drops_ += 
-                        ((*after)[sfAmount] - (*after)[sfBalance]).xrp().drops();
+                    drops_ += ((*after)[sfAmount] - (*after)[sfBalance])
+                                  .xrp()
+                                  .drops();
                 break;
             case ltESCROW:
                 if (!isDelete && isXRP((*after)[sfAmount]))
-                    drops_ += 
-                        (*after)[sfAmount].xrp().drops();
+                    drops_ += (*after)[sfAmount].xrp().drops();
                 break;
             default:
                 break;
@@ -138,7 +140,7 @@ XRPNotCreated::visitEntry(
 
 bool
 XRPNotCreated::finalize(
-    STTx const&,
+    STTx const& tx,
     TER const,
     XRPAmount const fee,
     ReadView const&,
@@ -295,15 +297,15 @@ NoZeroEscrow::finalize(
     beast::Journal const& j)
 {
     // bypass this invariant check for IOU escrows
-    if (bad_ &&
-        rv.rules().enabled(featurePaychanAndEscrowForTokens) &&
+    if (bad_ && rv.rules().enabled(featurePaychanAndEscrowForTokens) &&
         txn.isFieldPresent(sfTransactionType))
     {
         uint16_t tt = txn.getFieldU16(sfTransactionType);
         if (tt == ttESCROW_CANCEL || tt == ttESCROW_FINISH)
             return true;
-        
-        if (txn.isFieldPresent(sfAmount) && !isXRP(txn.getFieldAmount(sfAmount)))
+
+        if (txn.isFieldPresent(sfAmount) &&
+            !isXRP(txn.getFieldAmount(sfAmount)))
             return true;
     }
 
@@ -336,7 +338,13 @@ AccountRootsNotDeleted::finalize(
     ReadView const&,
     beast::Journal const& j)
 {
-    if (tx.getTxnType() == ttACCOUNT_DELETE && result == tesSUCCESS)
+    // AMM account root can be deleted as the result of AMM withdraw/delete
+    // transaction when the total AMM LP Tokens balance goes to 0.
+    // A successful AccountDelete or AMMDelete MUST delete exactly
+    // one account root.
+    if ((tx.getTxnType() == ttACCOUNT_DELETE ||
+         tx.getTxnType() == ttAMM_DELETE) &&
+        result == tesSUCCESS)
     {
         if (accountsDeleted_ == 1)
             return true;
@@ -349,6 +357,13 @@ AccountRootsNotDeleted::finalize(
                                "succeeded but deleted multiple accounts!";
         return false;
     }
+
+    // A successful AMMWithdraw MAY delete one account root
+    // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
+    // deletes the AMM account, accountsDeleted_ is set if it is deleted.
+    if (tx.getTxnType() == ttAMM_WITHDRAW && result == tesSUCCESS &&
+        accountsDeleted_ == 1)
+        return true;
 
     if (accountsDeleted_ == 0)
         return true;
@@ -392,6 +407,12 @@ LedgerEntryTypesMatch::visitEntry(
             case ltEMITTED:
             case ltNFTOKEN_PAGE:
             case ltNFTOKEN_OFFER:
+            case ltAMM:
+            case ltBRIDGE:
+            case ltXCHAIN_OWNED_CLAIM_ID:
+            case ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID:
+            case ltDID:
+            case ltORACLE:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -492,7 +513,10 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if (tx.getTxnType() == ttPAYMENT && result == tesSUCCESS)
+    if ((tx.getTxnType() == ttPAYMENT || tx.getTxnType() == ttAMM_CREATE ||
+         tx.getTxnType() == ttXCHAIN_ADD_CLAIM_ATTESTATION ||
+         tx.getTxnType() == ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION) &&
+        result == tesSUCCESS)
     {
         std::uint32_t const startingSeq{
             view.rules().enabled(featureDeletableAccounts) ? view.seq() : 1};
@@ -507,7 +531,8 @@ ValidNewAccountRoot::finalize(
     }
 
     JLOG(j.fatal()) << "Invariant failed: account root created "
-                       "by a non-Payment or by an unsuccessful transaction";
+                       "by a non-Payment, by an unsuccessful transaction, "
+                       "or by AMM";
     return false;
 }
 
@@ -730,6 +755,64 @@ NFTokenCountTracking::finalize(
             JLOG(j.fatal())
                 << "Invariant failed: burning changed the number of "
                    "minted tokens.";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidClawback::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const&)
+{
+    if (before && before->getType() == ltRIPPLE_STATE)
+        trustlinesChanged++;
+}
+
+bool
+ValidClawback::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (tx.getTxnType() != ttCLAWBACK)
+        return true;
+
+    if (result == tesSUCCESS)
+    {
+        if (trustlinesChanged > 1)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: more than one trustline changed.";
+            return false;
+        }
+
+        AccountID const issuer = tx.getAccountID(sfAccount);
+        STAmount const amount = tx.getFieldAmount(sfAmount);
+        AccountID const& holder = amount.getIssuer();
+        STAmount const holderBalance = accountHolds(
+            view, holder, amount.getCurrency(), issuer, fhIGNORE_FREEZE, j);
+
+        if (holderBalance.signum() < 0)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: trustline balance is negative";
+            return false;
+        }
+    }
+    else
+    {
+        if (trustlinesChanged != 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: some trustlines were changed "
+                               "despite failure of the transaction.";
             return false;
         }
     }

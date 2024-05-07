@@ -15,6 +15,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/paths/AMMContext.h>
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/RippleCalc.h>
 #include <ripple/app/paths/impl/Steps.h>
@@ -160,26 +161,6 @@ iape(AccountID const& account)
 {
     return STPathElement(
         STPathElement::typeIssuer, xrpAccount(), xrpCurrency(), account);
-};
-
-// Currency path element
-STPathElement
-cpe(Currency const& c)
-{
-    return STPathElement(
-        STPathElement::typeCurrency, xrpAccount(), c, xrpAccount());
-};
-
-// All path element
-STPathElement
-allpe(AccountID const& a, Issue const& iss)
-{
-    return STPathElement(
-        STPathElement::typeAccount | STPathElement::typeCurrency |
-            STPathElement::typeIssuer,
-        a,
-        iss.currency,
-        iss.account);
 };
 
 class ElementComboIter
@@ -657,6 +638,8 @@ struct PayStrand_test : public beast::unit_test::suite
         using B = ripple::Book;
         using XRPS = XRPEndpointStepInfo;
 
+        AMMContext ammContext(alice, false);
+
         auto test = [&, this](
                         jtx::Env& env,
                         Issue const& deliver,
@@ -673,7 +656,8 @@ struct PayStrand_test : public beast::unit_test::suite
                 sendMaxIssue,
                 path,
                 true,
-                false,
+                OfferCrossing::no,
+                ammContext,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(ter == expTer);
             if (sizeof...(expSteps) != 0)
@@ -700,7 +684,8 @@ struct PayStrand_test : public beast::unit_test::suite
                     /*sendMaxIssue*/ EUR.issue(),
                     path,
                     true,
-                    false,
+                    OfferCrossing::no,
+                    ammContext,
                     env.app().logs().journal("Flow"));
                 (void)_;
                 BEAST_EXPECT(ter == tesSUCCESS);
@@ -716,7 +701,8 @@ struct PayStrand_test : public beast::unit_test::suite
                     /*sendMaxIssue*/ EUR.issue(),
                     path,
                     true,
-                    false,
+                    OfferCrossing::no,
+                    ammContext,
                     env.app().logs().journal("Flow"));
                 (void)_;
                 BEAST_EXPECT(ter == tesSUCCESS);
@@ -835,7 +821,8 @@ struct PayStrand_test : public beast::unit_test::suite
                         USD.issue(),
                         STPath(),
                         true,
-                        false,
+                        OfferCrossing::no,
+                        ammContext,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
                 }
@@ -850,7 +837,8 @@ struct PayStrand_test : public beast::unit_test::suite
                         std::nullopt,
                         STPath(),
                         true,
-                        false,
+                        OfferCrossing::no,
+                        ammContext,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
                 }
@@ -865,7 +853,8 @@ struct PayStrand_test : public beast::unit_test::suite
                         std::nullopt,
                         STPath(),
                         true,
-                        false,
+                        OfferCrossing::no,
+                        ammContext,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
                 }
@@ -1001,7 +990,8 @@ struct PayStrand_test : public beast::unit_test::suite
                 std::nullopt,
                 STPath(),
                 true,
-                false,
+                OfferCrossing::no,
+                ammContext,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(ter == tesSUCCESS);
             BEAST_EXPECT(equal(strand, D{alice, gw, usdC}));
@@ -1027,7 +1017,8 @@ struct PayStrand_test : public beast::unit_test::suite
                 USD.issue(),
                 path,
                 false,
-                false,
+                OfferCrossing::no,
+                ammContext,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(ter == tesSUCCESS);
             BEAST_EXPECT(equal(

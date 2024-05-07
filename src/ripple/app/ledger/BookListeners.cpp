@@ -39,7 +39,7 @@ BookListeners::removeSubscriber(std::uint64_t seq)
 
 void
 BookListeners::publish(
-    Json::Value const& jvObj,
+    MultiApiJson const& jvObj,
     hash_set<std::uint64_t>& havePublished)
 {
     std::lock_guard sl(mLock);
@@ -54,7 +54,9 @@ BookListeners::publish(
             // Only publish jvObj if this is the first occurence
             if (havePublished.emplace(p->getSeq()).second)
             {
-                p->send(jvObj, true);
+                jvObj.visit(
+                    p->getApiVersion(),  //
+                    [&](Json::Value const& jv) { p->send(jv, true); });
             }
             ++it;
         }

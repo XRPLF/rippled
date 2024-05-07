@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/paths/AMMContext.h>
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/impl/Steps.h>
 #include <ripple/app/paths/impl/StrandFlow.h>
@@ -245,6 +246,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
         std::optional<Quality> const& expectedQ = {})
     {
         PaymentSandbox sb(closed.get(), tapNONE);
+        AMMContext ammContext(rcp.srcAccount, false);
 
         auto const sendMaxIssue = [&rcp]() -> std::optional<Issue> {
             if (rcp.sendMax)
@@ -264,7 +266,8 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             rcp.paths,
             /*defaultPaths*/ rcp.paths.empty(),
             sb.rules().enabled(featureOwnerPaysFee),
-            /*offerCrossing*/ false,
+            OfferCrossing::no,
+            ammContext,
             dummyJ);
 
         BEAST_EXPECT(sr.first == tesSUCCESS);

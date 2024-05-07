@@ -59,6 +59,17 @@ trust(
     return jv;
 }
 
+Json::Value
+claw(Account const& account, STAmount const& amount)
+{
+    Json::Value jv;
+    jv[jss::Account] = account.human();
+    jv[jss::Amount] = amount.getJson(JsonOptions::none);
+    jv[jss::TransactionType] = jss::Clawback;
+
+    return jv;
+}
+
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

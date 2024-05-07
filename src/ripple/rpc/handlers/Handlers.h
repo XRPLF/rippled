@@ -43,7 +43,11 @@ doAccountNamespace(RPC::JsonContext&);
 Json::Value
 doAccountTxJson(RPC::JsonContext&);
 Json::Value
+doAMMInfo(RPC::JsonContext&);
+Json::Value
 doBookOffers(RPC::JsonContext&);
+Json::Value
+doBookChanges(RPC::JsonContext&);
 Json::Value
 doBlackList(RPC::JsonContext&);
 Json::Value
@@ -70,6 +74,8 @@ Json::Value
 doGatewayBalances(RPC::JsonContext&);
 Json::Value
 doGetCounts(RPC::JsonContext&);
+Json::Value
+doGetAggregatePrice(RPC::JsonContext&);
 Json::Value
 doLedgerAccept(RPC::JsonContext&);
 Json::Value
@@ -124,6 +130,8 @@ Json::Value
 doPeerReservationsList(RPC::JsonContext&);
 Json::Value
 doRipplePathFind(RPC::JsonContext&);
+Json::Value
+doServerDefinitions(RPC::JsonContext&);
 Json::Value
 doServerInfo(RPC::JsonContext&);  // for humans
 Json::Value

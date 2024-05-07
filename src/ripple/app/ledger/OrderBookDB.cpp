@@ -20,6 +20,7 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/ledger/OrderBookDB.h>
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/AMMUtils.h>
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/Log.h>
 #include <ripple/core/Config.h>
@@ -46,7 +47,7 @@ OrderBookDB::setup(std::shared_ptr<ReadView const> const& ledger)
 
     if (seq != 0)
     {
-        if ((seq > ledger->seq()) && ((ledger->seq() - seq) < 25600))
+        if ((ledger->seq() > seq) && ((ledger->seq() - seq) < 25600))
             return;
 
         if ((ledger->seq() <= seq) && ((seq - ledger->seq()) < 16))
@@ -93,7 +94,7 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
 
     JLOG(j_.debug()) << "Beginning update (" << ledger->seq() << ")";
 
-    // walk through the entire ledger looking for orderbook entries
+    // walk through the entire ledger looking for orderbook/AMM entries
     int cnt = 0;
 
     try
@@ -125,6 +126,21 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
                     xrpBooks.insert(book.in);
 
                 ++cnt;
+            }
+            else if (sle->getType() == ltAMM)
+            {
+                auto const issue1 = (*sle)[sfAsset];
+                auto const issue2 = (*sle)[sfAsset2];
+                auto addBook = [&](Issue const& in, Issue const& out) {
+                    allBooks[in].insert(out);
+
+                    if (isXRP(out))
+                        xrpBooks.insert(in);
+
+                    ++cnt;
+                };
+                addBook(issue1, issue2);
+                addBook(issue2, issue1);
             }
         }
     }
@@ -234,7 +250,7 @@ void
 OrderBookDB::processTxn(
     std::shared_ptr<ReadView const> const& ledger,
     const AcceptedLedgerTx& alTx,
-    Json::Value const& jvObj)
+    MultiApiJson const& jvObj)
 {
     std::lock_guard sl(mLock);
 

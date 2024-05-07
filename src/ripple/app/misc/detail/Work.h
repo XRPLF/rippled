@@ -20,6 +20,10 @@
 #ifndef RIPPLE_APP_MISC_DETAIL_WORK_H_INCLUDED
 #define RIPPLE_APP_MISC_DETAIL_WORK_H_INCLUDED
 
+// TODO: This include <cstdint> is a workaround for beast compilation bug.
+// Remove when fix https://github.com/boostorg/beast/pull/2682/ is available.
+#include <cstdint>
+
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/string_body.hpp>
 

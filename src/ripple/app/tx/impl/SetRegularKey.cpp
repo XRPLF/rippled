@@ -24,7 +24,7 @@
 
 namespace ripple {
 
-FeeUnit64
+XRPAmount
 SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     auto const id = tx.getAccountID(sfAccount);
@@ -39,7 +39,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
             if (sle && (!(sle->getFlags() & lsfPasswordSpent)))
             {
                 // flag is armed and they signed with the right account
-                return FeeUnit64{0};
+                return XRPAmount{0};
             }
         }
     }
@@ -95,6 +95,8 @@ SetRegularKey::doApply()
 
         sle->makeFieldAbsent(sfRegularKey);
     }
+
+    ctx_.view().update(sle);
 
     return tesSUCCESS;
 }

@@ -74,7 +74,7 @@ CreateOffer::preflight(PreflightContext const& ctx)
     }
 
     auto const offerID = tx[~sfOfferID];
-    
+
     auto const cancelSequence = tx[~sfOfferSequence];
     if (cancelSequence && *cancelSequence == 0)
     {
@@ -84,7 +84,8 @@ CreateOffer::preflight(PreflightContext const& ctx)
 
     if (offerID && cancelSequence)
     {
-        JLOG(j.debug()) << "Malformed offer: expect exactly zero or one of: sfOfferID, sfCancelSequence";
+        JLOG(j.debug()) << "Malformed offer: expect exactly zero or one of: "
+                           "sfOfferID, sfCancelSequence";
         return temBAD_SEQUENCE;
     }
 
@@ -745,7 +746,7 @@ CreateOffer::flowCross(
         // additional path with XRP as the intermediate between two books.
         // This second path we have to build ourselves.
         STPathSet paths;
-        if (!takerAmount.in.native() & !takerAmount.out.native())
+        if (!takerAmount.in.native() && !takerAmount.out.native())
         {
             STPath path;
             path.emplace_back(std::nullopt, xrpCurrency(), std::nullopt);
@@ -753,8 +754,10 @@ CreateOffer::flowCross(
         }
         // Special handling for the tfSell flag.
         STAmount deliver = takerAmount.out;
+        OfferCrossing offerCrossing = OfferCrossing::yes;
         if (txFlags & tfSell)
         {
+            offerCrossing = OfferCrossing::sell;
             // We are selling, so we will accept *more* than the offer
             // specified.  Since we don't know how much they might offer,
             // we allow delivery of the largest possible amount.
@@ -781,7 +784,7 @@ CreateOffer::flowCross(
             true,                       // default path
             !(txFlags & tfFillOrKill),  // partial payment
             true,                       // owner pays transfer fee
-            true,                       // offer crossing
+            offerCrossing,
             threshold,
             sendMax,
             j_);
@@ -841,8 +844,22 @@ CreateOffer::flowCross(
                         // what is a good threshold to check?
                         afterCross.in.clear();
 
-                    afterCross.out = divRound(
-                        afterCross.in, rate, takerAmount.out.issue(), true);
+                    afterCross.out = [&]() {
+                        // Careful analysis showed that rounding up this
+                        // divRound result could lead to placing a reduced
+                        // offer in the ledger that blocks order books.  So
+                        // the fixReducedOffersV1 amendment changes the
+                        // behavior to round down instead.
+                        if (psb.rules().enabled(fixReducedOffersV1))
+                            return divRoundStrict(
+                                afterCross.in,
+                                rate,
+                                takerAmount.out.issue(),
+                                false);
+
+                        return divRound(
+                            afterCross.in, rate, takerAmount.out.issue(), true);
+                    }();
                 }
                 else
                 {
@@ -933,7 +950,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     auto const cancelSequence = ctx_.tx[~sfOfferSequence];
     std::optional<uint256> offerID;
     if (hooksEnabled)
-        offerID = ctx_.tx[~sfOfferID];   // this can be used in place of cancel seq
+        offerID =
+            ctx_.tx[~sfOfferID];  // this can be used in place of cancel seq
 
     // Note that we we use the value from the sequence or ticket as the
     // offer sequence.  For more explanation see comments in SeqProxy.h.
@@ -951,9 +969,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // Process a cancellation request that's passed along with an offer.
     if (cancelSequence || offerID)
     {
-        Keylet cancel = offerID
-            ? Keylet(ltOFFER, *offerID)
-            : keylet::offer(account_, *cancelSequence);
+        Keylet cancel = offerID ? Keylet(ltOFFER, *offerID)
+                                : keylet::offer(account_, *cancelSequence);
 
         auto const sleCancel = sb.peek(cancel);
 
@@ -1135,6 +1152,12 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     if (bImmediateOrCancel)
     {
         JLOG(j_.trace()) << "Immediate or cancel: offer canceled";
+        if (!crossed && sb.rules().enabled(featureImmediateOfferKilled))
+            // If the ImmediateOfferKilled amendment is enabled, any
+            // ImmediateOrCancel offer that transfers absolutely no funds
+            // returns tecKILLED rather than tesSUCCESS.  Motivation for the
+            // change is here: https://github.com/ripple/rippled/issues/4115
+            return {tecKILLED, false};
         return {tesSUCCESS, true};
     }
 
@@ -1164,7 +1187,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // We need to place the remainder of the offer into its order book.
-    Keylet offer_index = keylet::offer(account_, seqID(ctx_)); 
+    Keylet offer_index = keylet::offer(account_, seqID(ctx_));
 
     // Add offer to owner's directory.
     auto const ownerNode = sb.dirInsert(

@@ -28,8 +28,7 @@ namespace ripple {
 AcceptedLedgerTx::AcceptedLedgerTx(
     std::shared_ptr<ReadView const> const& ledger,
     std::shared_ptr<STTx const> const& txn,
-    std::shared_ptr<STObject const> const& met,
-    AccountIDCache const& accountCache)
+    std::shared_ptr<STObject const> const& met)
     : mTxn(txn)
     , mMeta(txn->getTransactionID(), ledger->seq(), *met)
     , mAffected(mMeta.getAffectedAccounts())
@@ -52,7 +51,7 @@ AcceptedLedgerTx::AcceptedLedgerTx(
     {
         Json::Value& affected = (mJson[jss::affected] = Json::arrayValue);
         for (auto const& account : mAffected)
-            affected.append(accountCache.toBase58(account));
+            affected.append(toBase58(account));
     }
 
     if (mTxn->getTxnType() == ttOFFER_CREATE)

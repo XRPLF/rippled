@@ -26,6 +26,7 @@
 #include <ripple/basics/KeyCache.h>
 #include <ripple/basics/MathUtilities.h>
 #include <ripple/basics/RangeSet.h>
+#include <ripple/basics/ThreadSafetyAnalysis.h>
 #include <ripple/core/DatabaseCon.h>
 #include <ripple/nodestore/NodeObject.h>
 #include <ripple/nodestore/Scheduler.h>
@@ -210,6 +211,7 @@ public:
     std::string
     getStoredSeqs()
     {
+        std::lock_guard lock(mutex_);
         if (!acquireInfo_)
             return "";
 
@@ -316,29 +318,30 @@ private:
     boost::filesystem::path const dir_;
 
     // Storage space utilized by the shard
-    std::uint64_t fileSz_{0};
+    GUARDED_BY(mutex_) std::uint64_t fileSz_{0};
 
     // Number of file descriptors required by the shard
-    std::uint32_t fdRequired_{0};
+    GUARDED_BY(mutex_) std::uint32_t fdRequired_{0};
 
     // NuDB key/value store for node objects
-    std::unique_ptr<Backend> backend_;
+    std::unique_ptr<Backend> backend_ GUARDED_BY(mutex_);
 
     std::atomic<std::uint32_t> backendCount_{0};
 
     // Ledger SQLite database used for indexes
-    std::unique_ptr<DatabaseCon> lgrSQLiteDB_;
+    std::unique_ptr<DatabaseCon> lgrSQLiteDB_ GUARDED_BY(mutex_);
 
     // Transaction SQLite database used for indexes
-    std::unique_ptr<DatabaseCon> txSQLiteDB_;
+    std::unique_ptr<DatabaseCon> txSQLiteDB_ GUARDED_BY(mutex_);
 
     // Tracking information used only when acquiring a shard from the network.
     // If the shard is finalized, this member will be null.
-    std::unique_ptr<AcquireInfo> acquireInfo_;
+    std::unique_ptr<AcquireInfo> acquireInfo_ GUARDED_BY(mutex_);
+    ;
 
     // Older shard without an acquire database or final key
     // Eventually there will be no need for this and should be removed
-    bool legacy_{false};
+    GUARDED_BY(mutex_) bool legacy_{false};
 
     // Determines if the shard needs to stop processing for shutdown
     std::atomic<bool> stop_{false};
@@ -356,16 +359,17 @@ private:
     std::atomic<bool> removeOnDestroy_{false};
 
     // The time of the last access of a shard with a finalized state
-    std::chrono::steady_clock::time_point lastAccess_;
+    std::chrono::steady_clock::time_point lastAccess_ GUARDED_BY(mutex_);
+    ;
 
     // Open shard databases
     [[nodiscard]] bool
-    open(std::lock_guard<std::mutex> const& lock);
+    open(std::lock_guard<std::mutex> const& lock) REQUIRES(mutex_);
 
     // Open/Create SQLite databases
     // Lock over mutex_ required
     [[nodiscard]] bool
-    initSQLite(std::lock_guard<std::mutex> const&);
+    initSQLite(std::lock_guard<std::mutex> const&) REQUIRES(mutex_);
 
     // Write SQLite entries for this ledger
     [[nodiscard]] bool
@@ -374,7 +378,7 @@ private:
     // Set storage and file descriptor usage stats
     // Lock over mutex_ required
     void
-    setFileStats(std::lock_guard<std::mutex> const&);
+    setFileStats(std::lock_guard<std::mutex> const&) REQUIRES(mutex_);
 
     // Verify this ledger by walking its SHAMaps and verifying its Merkle trees
     // Every node object verified will be stored in the deterministic shard

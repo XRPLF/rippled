@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Rules.h>
 #include <ripple/ledger/ReadView.h>
+#include <ripple/protocol/Rules.h>
 
 namespace ripple {
 
@@ -64,6 +64,12 @@ auto
 ReadView::txs_type::end() const -> iterator
 {
     return iterator(view_, view_->txsEnd());
+}
+
+Rules
+makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current)
+{
+    return makeRulesGivenLedger(ledger, current.presets());
 }
 
 Rules

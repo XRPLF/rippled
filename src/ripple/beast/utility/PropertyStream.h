@@ -78,12 +78,6 @@ protected:
     virtual void
     add(std::string const& key, unsigned char value);
     virtual void
-    add(std::string const& key, wchar_t value);
-#if 0
-    virtual void add (std::string const& key, char16_t value);
-    virtual void add (std::string const& key, char32_t value);
-#endif
-    virtual void
     add(std::string const& key, short value);
     virtual void
     add(std::string const& key, unsigned short value);
@@ -139,12 +133,6 @@ protected:
     add(signed char value);
     virtual void
     add(unsigned char value);
-    virtual void
-    add(wchar_t value);
-#if 0
-    virtual void add (char16_t value);
-    virtual void add (char32_t value);
-#endif
     virtual void
     add(short value);
     virtual void

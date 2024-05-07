@@ -169,8 +169,7 @@ ApplyStateTable::generateTxMeta(
             }
 
             if (!prevs.empty())
-                meta.getAffectedNode(item.first)
-                    .emplace_back(std::move(prevs));
+                meta.getAffectedNode(item.first).emplace_back(std::move(prevs));
 
             STObject finals(sfFinalFields);
             for (auto const& obj : *curNode)
@@ -189,8 +188,9 @@ ApplyStateTable::generateTxMeta(
         {
             assert(curNode && origNode);
 
-            if (curNode->isThreadedType())  // thread transaction to node
-                                            // item modified
+            if (curNode->isThreadedType(
+                    to.rules()))  // thread transaction to node
+                                  // item modified
                 threadItem(meta, curNode);
 
             STObject prevs(sfPreviousFields);
@@ -203,8 +203,7 @@ ApplyStateTable::generateTxMeta(
             }
 
             if (!prevs.empty())
-                meta.getAffectedNode(item.first)
-                    .emplace_back(std::move(prevs));
+                meta.getAffectedNode(item.first).emplace_back(std::move(prevs));
 
             STObject finals(sfFinalFields);
             for (auto const& obj : *curNode)
@@ -224,7 +223,8 @@ ApplyStateTable::generateTxMeta(
             assert(curNode && !origNode);
             threadOwners(to, meta, curNode, newMod, j);
 
-            if (curNode->isThreadedType())  // always thread to self
+            if (curNode->isThreadedType(
+                    to.rules()))  // always thread to self
                 threadItem(meta, curNode);
 
             STObject news(sfNewFields);
@@ -238,8 +238,7 @@ ApplyStateTable::generateTxMeta(
             }
 
             if (!news.empty())
-                meta.getAffectedNode(item.first)
-                    .emplace_back(std::move(news));
+                meta.getAffectedNode(item.first).emplace_back(std::move(news));
         }
         else
         {
@@ -265,11 +264,8 @@ ApplyStateTable::apply(
     std::shared_ptr<Serializer> sMeta;
     if (!to.open())
     {
-
         // generate meta
-        auto [meta, newMod] =
-            generateTxMeta(to, tx, deliver, hookExecution, j);
-
+        auto [meta, newMod] = generateTxMeta(to, tx, deliver, hookExecution, j);
         // add any new modified nodes to the modification set
         for (auto& mod : newMod)
             to.rawReplace(mod.second);
@@ -633,6 +629,8 @@ ApplyStateTable::threadTx(
         JLOG(j.warn()) << "Threading to non-existent account: " << toBase58(to);
         return;
     }
+    // threadItem only applied to AccountRoot
+    assert(sle->isThreadedType(base.rules()));
     threadItem(meta, sle);
 }
 

@@ -324,7 +324,7 @@ public:
 
     /**
      * @brief Returns minimum required fee for tx and two sequences:
-     *        first vaild sequence for this account in current ledger
+     *        first valid sequence for this account in current ledger
      *        and first available sequence for transaction
      * @param view current open ledger
      * @param tx the transaction
@@ -359,7 +359,9 @@ public:
         @returns a `Json objectvalue`
     */
     Json::Value
-    doRPC(Application& app, std::optional<FeeUnit64> hookFeeUnits = std::nullopt) const;
+    doRPC(
+        Application& app,
+        std::optional<XRPAmount> hookFeeUnits = std::nullopt) const;
 
 private:
     // Implementation for nextQueuableSeq().  The passed lock must be held.
@@ -494,7 +496,7 @@ private:
             @param seriesSize Total number of transactions in the series to be
                 processed.
 
-            @return A `std::pair` as returned from @ref `mulDiv` indicating
+            @return A `std::pair` indicating
                 whether the calculation result overflows.
         */
         static std::pair<bool, FeeLevel64>
@@ -863,22 +865,17 @@ setup_TxQ(Config const&);
 
 template <class T>
 XRPAmount
-toDrops(FeeLevel<T> const& level, XRPAmount const& baseFee)
+toDrops(FeeLevel<T> const& level, XRPAmount baseFee)
 {
-    if (auto const drops = mulDiv(level, baseFee, TxQ::baseLevel); drops.first)
-        return drops.second;
-
-    return XRPAmount(STAmount::cMaxNativeN);
+    return mulDiv(level, baseFee, TxQ::baseLevel)
+        .value_or(XRPAmount(STAmount::cMaxNativeN));
 }
 
 inline FeeLevel64
 toFeeLevel(XRPAmount const& drops, XRPAmount const& baseFee)
 {
-    if (auto const feeLevel = mulDiv(drops, TxQ::baseLevel, baseFee);
-        feeLevel.first)
-        return feeLevel.second;
-
-    return FeeLevel64(std::numeric_limits<std::uint64_t>::max());
+    return mulDiv(drops, TxQ::baseLevel, baseFee)
+        .value_or(FeeLevel64(std::numeric_limits<std::uint64_t>::max()));
 }
 
 }  // namespace ripple

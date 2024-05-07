@@ -75,8 +75,10 @@ buildLedgerImpl(
     built->unshare();
 
     // Accept ledger
-    built->setAccepted(
-        closeTime, closeResolution, closeTimeCorrect, app.config());
+    assert(
+        built->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+        built->read(keylet::fees()));
+    built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 
     return built;
 }
@@ -141,9 +143,10 @@ applyTransactions(
                         ++it;
                 }
             }
-            catch (std::exception const&)
+            catch (std::exception const& ex)
             {
-                JLOG(j.warn()) << "Transaction " << txid << " throws";
+                JLOG(j.warn())
+                    << "Transaction " << txid << " throws: " << ex.what();
                 failed.insert(txid);
                 it = txns.erase(it);
             }

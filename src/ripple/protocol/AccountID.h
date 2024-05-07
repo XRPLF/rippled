@@ -26,6 +26,8 @@
 #include <ripple/basics/UnorderedContainers.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/json/json_value.h>
+#include <ripple/protocol/json_get_or_throw.h>
+
 #include <cstddef>
 #include <mutex>
 #include <optional>
@@ -106,43 +108,37 @@ operator<<(std::ostream& os, AccountID const& x)
     return os;
 }
 
-//------------------------------------------------------------------------------
+/** Initialize the global cache used to map AccountID to base58 conversions.
 
-/** Caches the base58 representations of AccountIDs
+    The cache is optional and need not be initialized. But because conversion
+    is expensive (it requires a SHA-256 operation) in most cases the overhead
+    of the cache is worth the benefit.
 
-    This operation occurs with sufficient frequency to
-    justify having a cache. In the future, rippled should
-    require clients to receive "binary" results, where
-    AccountIDs are hex-encoded.
-*/
-class AccountIDCache
-{
-private:
-    std::mutex mutable mutex_;
-    std::size_t capacity_;
-    hash_map<AccountID, std::string> mutable m0_;
-    hash_map<AccountID, std::string> mutable m1_;
+    @param count The number of entries the cache should accomodate. Zero will
+                 disable the cache, releasing any memory associated with it.
 
-public:
-    AccountIDCache(AccountIDCache const&) = delete;
-    AccountIDCache&
-    operator=(AccountIDCache const&) = delete;
-
-    explicit AccountIDCache(std::size_t capacity);
-
-    /** Return ripple::toBase58 for the AccountID
-
-        Thread Safety:
-            Safe to call from any thread concurrently
-
-        @note This function intentionally returns a
-              copy for correctness.
-    */
-    std::string
-    toBase58(AccountID const&) const;
-};
+    @note The function will only initialize the cache the first time it is
+          invoked. Subsequent invocations do nothing.
+ */
+void
+initAccountIdCache(std::size_t count);
 
 }  // namespace ripple
+
+//------------------------------------------------------------------------------
+namespace Json {
+template <>
+inline ripple::AccountID
+getOrThrow(Json::Value const& v, ripple::SField const& field)
+{
+    using namespace ripple;
+
+    std::string const b58 = getOrThrow<std::string>(v, field);
+    if (auto const r = parseBase58<AccountID>(b58))
+        return *r;
+    Throw<JsonTypeMismatchError>(field.getJsonName(), "AccountID");
+}
+}  // namespace Json
 
 //------------------------------------------------------------------------------
 

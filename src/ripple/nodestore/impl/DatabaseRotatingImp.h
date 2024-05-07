@@ -22,6 +22,8 @@
 
 #include <ripple/nodestore/DatabaseRotating.h>
 
+#include <mutex>
+
 namespace ripple {
 namespace NodeStore {
 
@@ -82,7 +84,13 @@ public:
 private:
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
-    mutable std::mutex mutex_;
+    // This needs to be a recursive mutex because callbacks in `rotateWithLock`
+    // can call function that also lock the mutex. A current example of this is
+    // a callback from SHAMapStoreImp, which calls `clearCaches`. This
+    // `clearCaches` call eventually calls `fetchNodeObject` which tries to
+    // relock the mutex. It would be desirable to rewrite the code so the lock
+    // was not held during a callback.
+    mutable std::recursive_mutex mutex_;
 
     std::shared_ptr<NodeObject>
     fetchNodeObject(

@@ -145,111 +145,78 @@ private:
     };
 
     // VFALCO TODO This should only be enabled for maps.
-    class pair_value_compare
-        : public beast::detail::empty_base_optimization<Compare>
-#ifdef _LIBCPP_VERSION
-        ,
-          public std::binary_function<value_type, value_type, bool>
-#endif
+    class pair_value_compare : public Compare
     {
     public:
-#ifndef _LIBCPP_VERSION
         using first_argument = value_type;
         using second_argument = value_type;
         using result_type = bool;
-#endif
 
         bool
         operator()(value_type const& lhs, value_type const& rhs) const
         {
-            return this->member()(lhs.first, rhs.first);
+            return Compare::operator()(lhs.first, rhs.first);
         }
 
         pair_value_compare()
         {
         }
 
-        pair_value_compare(pair_value_compare const& other)
-            : beast::detail::empty_base_optimization<Compare>(other)
+        pair_value_compare(pair_value_compare const& other) : Compare(other)
         {
         }
 
     private:
         friend aged_ordered_container;
 
-        pair_value_compare(Compare const& compare)
-            : beast::detail::empty_base_optimization<Compare>(compare)
+        pair_value_compare(Compare const& compare) : Compare(compare)
         {
         }
     };
 
     // Compares value_type against element, used in insert_check
     // VFALCO TODO hoist to remove template argument dependencies
-    class KeyValueCompare
-        : public beast::detail::empty_base_optimization<Compare>
-#ifdef _LIBCPP_VERSION
-        ,
-          public std::binary_function<Key, element, bool>
-#endif
+    class KeyValueCompare : public Compare
     {
     public:
-#ifndef _LIBCPP_VERSION
         using first_argument = Key;
         using second_argument = element;
         using result_type = bool;
-#endif
 
         KeyValueCompare() = default;
 
-        KeyValueCompare(Compare const& compare)
-            : beast::detail::empty_base_optimization<Compare>(compare)
+        KeyValueCompare(Compare const& compare) : Compare(compare)
         {
         }
-
-        // VFALCO NOTE WE might want only to enable these overloads
-        //                if Compare has is_transparent
-#if 0
-        template <class K>
-        bool operator() (K const& k, element const& e) const
-        {
-            return this->member() (k, extract (e.value));
-        }
-
-        template <class K>
-        bool operator() (element const& e, K const& k) const
-        {
-            return this->member() (extract (e.value), k);
-        }
-#endif
 
         bool
         operator()(Key const& k, element const& e) const
         {
-            return this->member()(k, extract(e.value));
+            return Compare::operator()(k, extract(e.value));
         }
 
         bool
         operator()(element const& e, Key const& k) const
         {
-            return this->member()(extract(e.value), k);
+            return Compare::operator()(extract(e.value), k);
         }
 
         bool
         operator()(element const& x, element const& y) const
         {
-            return this->member()(extract(x.value), extract(y.value));
+            return Compare::operator()(extract(x.value), extract(y.value));
         }
 
         Compare&
         compare()
         {
-            return beast::detail::empty_base_optimization<Compare>::member();
+            return *this;
         }
 
         Compare const&
         compare() const
         {
-            return beast::detail::empty_base_optimization<Compare>::member();
+            return *this;
         }
     };
 
@@ -989,22 +956,20 @@ public:
     template <
         bool is_const,
         class Iterator,
-        class Base,
         class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
-    beast::detail::aged_container_iterator<false, Iterator, Base>
-    erase(beast::detail::aged_container_iterator<is_const, Iterator, Base> pos);
+    beast::detail::aged_container_iterator<false, Iterator>
+    erase(beast::detail::aged_container_iterator<is_const, Iterator> pos);
 
     // enable_if prevents erase (reverse_iterator first, reverse_iterator last)
     // from compiling
     template <
         bool is_const,
         class Iterator,
-        class Base,
         class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
-    beast::detail::aged_container_iterator<false, Iterator, Base>
+    beast::detail::aged_container_iterator<false, Iterator>
     erase(
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> first,
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> last);
+        beast::detail::aged_container_iterator<is_const, Iterator> first,
+        beast::detail::aged_container_iterator<is_const, Iterator> last);
 
     template <class K>
     auto
@@ -1019,10 +984,9 @@ public:
     template <
         bool is_const,
         class Iterator,
-        class Base,
         class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
     void
-    touch(beast::detail::aged_container_iterator<is_const, Iterator, Base> pos)
+    touch(beast::detail::aged_container_iterator<is_const, Iterator> pos)
     {
         touch(pos, clock().now());
     }
@@ -1264,11 +1228,10 @@ private:
     template <
         bool is_const,
         class Iterator,
-        class Base,
         class = std::enable_if_t<!is_boost_reverse_iterator<Iterator>::value>>
     void
     touch(
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> pos,
+        beast::detail::aged_container_iterator<is_const, Iterator> pos,
         typename clock_type::time_point const& now);
 
     template <
@@ -1436,7 +1399,12 @@ template <
     class Allocator>
 aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
     aged_ordered_container(aged_ordered_container const& other)
-    : m_config(other.m_config), m_cont(other.m_cont.comp())
+    : m_config(other.m_config)
+#if BOOST_VERSION >= 108000
+    , m_cont(other.m_cont.get_comp())
+#else
+    , m_cont(other.m_cont.comp())
+#endif
 {
     insert(other.cbegin(), other.cend());
 }
@@ -1453,7 +1421,12 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
     aged_ordered_container(
         aged_ordered_container const& other,
         Allocator const& alloc)
-    : m_config(other.m_config, alloc), m_cont(other.m_cont.comp())
+    : m_config(other.m_config, alloc)
+#if BOOST_VERSION >= 108000
+    , m_cont(other.m_cont.get_comp())
+#else
+    , m_cont(other.m_cont.comp())
+#endif
 {
     insert(other.cbegin(), other.cend());
 }
@@ -1486,7 +1459,12 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
         aged_ordered_container&& other,
         Allocator const& alloc)
     : m_config(std::move(other.m_config), alloc)
+#if BOOST_VERSION >= 108000
+    , m_cont(std::move(other.m_cont.get_comp()))
+#else
     , m_cont(std::move(other.m_cont.comp()))
+#endif
+
 {
     insert(other.cbegin(), other.cend());
     other.clear();
@@ -2010,13 +1988,13 @@ template <
     class Clock,
     class Compare,
     class Allocator>
-template <bool is_const, class Iterator, class Base, class>
-beast::detail::aged_container_iterator<false, Iterator, Base>
+template <bool is_const, class Iterator, class>
+beast::detail::aged_container_iterator<false, Iterator>
 aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    erase(beast::detail::aged_container_iterator<is_const, Iterator, Base> pos)
+    erase(beast::detail::aged_container_iterator<is_const, Iterator> pos)
 {
     unlink_and_delete_element(&*((pos++).iterator()));
-    return beast::detail::aged_container_iterator<false, Iterator, Base>(
+    return beast::detail::aged_container_iterator<false, Iterator>(
         pos.iterator());
 }
 
@@ -2028,17 +2006,17 @@ template <
     class Clock,
     class Compare,
     class Allocator>
-template <bool is_const, class Iterator, class Base, class>
-beast::detail::aged_container_iterator<false, Iterator, Base>
+template <bool is_const, class Iterator, class>
+beast::detail::aged_container_iterator<false, Iterator>
 aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
     erase(
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> first,
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> last)
+        beast::detail::aged_container_iterator<is_const, Iterator> first,
+        beast::detail::aged_container_iterator<is_const, Iterator> last)
 {
     for (; first != last;)
         unlink_and_delete_element(&*((first++).iterator()));
 
-    return beast::detail::aged_container_iterator<false, Iterator, Base>(
+    return beast::detail::aged_container_iterator<false, Iterator>(
         first.iterator());
 }
 
@@ -2173,11 +2151,11 @@ template <
     class Clock,
     class Compare,
     class Allocator>
-template <bool is_const, class Iterator, class Base, class>
+template <bool is_const, class Iterator, class>
 void
 aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
     touch(
-        beast::detail::aged_container_iterator<is_const, Iterator, Base> pos,
+        beast::detail::aged_container_iterator<is_const, Iterator> pos,
         typename clock_type::time_point const& now)
 {
     auto& e(*pos.iterator());

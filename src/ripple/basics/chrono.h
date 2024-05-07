@@ -25,9 +25,12 @@
 #include <ripple/beast/clock/abstract_clock.h>
 #include <ripple/beast/clock/basic_seconds_clock.h>
 #include <ripple/beast/clock/manual_clock.h>
+
 #include <chrono>
 #include <cstdint>
+#include <ratio>
 #include <string>
+#include <type_traits>
 
 namespace ripple {
 
@@ -43,8 +46,19 @@ using weeks = std::chrono::
 /** Clock for measuring the network time.
 
     The epoch is January 1, 2000
-    epoch_offset = days(10957);  // 2000-01-01
+
+    epoch_offset
+    = date(2000-01-01) - date(1970-0-01)
+    = days(10957)
+    = seconds(946684800)
 */
+
+constexpr static std::chrono::seconds epoch_offset =
+    date::sys_days{date::year{2000} / 1 / 1} -
+    date::sys_days{date::year{1970} / 1 / 1};
+
+static_assert(epoch_offset.count() == 946684800);
+
 class NetClock
 {
 public:
@@ -71,7 +85,25 @@ to_string(NetClock::time_point tp)
     // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
     using namespace std::chrono;
     return to_string(
-        system_clock::time_point{tp.time_since_epoch() + 946684800s});
+        system_clock::time_point{tp.time_since_epoch() + epoch_offset});
+}
+
+template <class Duration>
+std::string
+to_string_iso(date::sys_time<Duration> tp)
+{
+    using namespace std::chrono;
+    return date::format("%FT%TZ", tp);
+}
+
+inline std::string
+to_string_iso(NetClock::time_point tp)
+{
+    // 2000-01-01 00:00:00 UTC is 946684800s from 1970-01-01 00:00:00 UTC
+    // Note, NetClock::duration is seconds, as checked by static_assert
+    static_assert(std::is_same_v<NetClock::duration::period, std::ratio<1>>);
+    return to_string_iso(date::sys_time<NetClock::duration>{
+        tp.time_since_epoch() + epoch_offset});
 }
 
 /** A clock for measuring elapsed time.

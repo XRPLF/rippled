@@ -21,6 +21,7 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/app/main/Tuning.h>
 #include <ripple/shamap/NodeFamily.h>
+#include <sstream>
 
 namespace ripple {
 
@@ -65,9 +66,16 @@ NodeFamily::reset()
 }
 
 void
-NodeFamily::missingNode(std::uint32_t seq)
+NodeFamily::missingNodeAcquireBySeq(std::uint32_t seq, uint256 const& nodeHash)
 {
     JLOG(j_.error()) << "Missing node in " << seq;
+    if (app_.config().reporting())
+    {
+        std::stringstream ss;
+        ss << "Node not read, likely a Cassandra error in ledger seq " << seq
+           << " object hash " << nodeHash;
+        Throw<std::runtime_error>(ss.str());
+    }
 
     std::unique_lock<std::mutex> lock(maxSeqMutex_);
     if (maxSeq_ == 0)

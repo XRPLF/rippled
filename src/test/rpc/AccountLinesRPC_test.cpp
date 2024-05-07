@@ -33,7 +33,7 @@ public:
     void
     testAccountLines()
     {
-        testcase("acccount_lines");
+        testcase("account_lines");
 
         using namespace test::jtx;
         Env env(*this);
@@ -53,7 +53,7 @@ public:
                 R"("n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj"})");
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
-                RPC::make_error(rpcBAD_SEED)[jss::error_message]);
+                RPC::make_error(rpcACT_MALFORMED)[jss::error_message]);
         }
         Account const alice{"alice"};
         {
@@ -239,7 +239,7 @@ public:
                     R"("n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj"})");
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
-                RPC::make_error(rpcBAD_SEED)[jss::error_message]);
+                RPC::make_error(rpcACT_MALFORMED)[jss::error_message]);
         }
         {
             // A negative limit should fail.
@@ -524,11 +524,245 @@ public:
             RPC::make_error(rpcINVALID_PARAMS)[jss::error_message]);
     }
 
+    void
+    testAccountLinesWalkMarkers()
+    {
+        testcase("Marker can point to any appropriate ledger entry type");
+        using namespace test::jtx;
+        using namespace std::chrono_literals;
+        Env env(*this);
+
+        // The goal of this test is observe account_lines RPC calls return an
+        // error message when the SLE pointed to by the marker is not owned by
+        // the Account being traversed.
+        //
+        // To start, we'll create an environment with some trust lines, offers
+        // and a signers list.
+        Account const alice{"alice"};
+        Account const becky{"becky"};
+        Account const gw1{"gw1"};
+        env.fund(XRP(10000), alice, becky, gw1);
+        env.close();
+
+        // A couple of helper lambdas
+        auto escrow = [&env](
+                          Account const& account,
+                          Account const& to,
+                          STAmount const& amount) {
+            Json::Value jv;
+            jv[jss::TransactionType] = jss::EscrowCreate;
+            jv[jss::Flags] = tfUniversal;
+            jv[jss::Account] = account.human();
+            jv[jss::Destination] = to.human();
+            jv[jss::Amount] = amount.getJson(JsonOptions::none);
+            NetClock::time_point finish = env.now() + 1s;
+            jv[sfFinishAfter.jsonName] = finish.time_since_epoch().count();
+            return jv;
+        };
+
+        auto payChan = [](Account const& account,
+                          Account const& to,
+                          STAmount const& amount,
+                          NetClock::duration const& settleDelay,
+                          PublicKey const& pk) {
+            Json::Value jv;
+            jv[jss::TransactionType] = jss::PaymentChannelCreate;
+            jv[jss::Flags] = tfUniversal;
+            jv[jss::Account] = account.human();
+            jv[jss::Destination] = to.human();
+            jv[jss::Amount] = amount.getJson(JsonOptions::none);
+            jv["SettleDelay"] = settleDelay.count();
+            jv["PublicKey"] = strHex(pk.slice());
+            return jv;
+        };
+
+        // Test all available object types. Not all of these objects will be
+        // included in the search, nor found by `account_objects`. If that ever
+        // changes for any reason, this test will help catch that.
+        //
+        // SignerList, for alice
+        Account const bogie{"bogie"};
+        env(signers(alice, 2, {{bogie, 3}}));
+        env.close();
+
+        // SignerList, includes alice
+        env(signers(becky, 2, {{alice, 3}}));
+        env.close();
+
+        // Trust lines
+        auto const EUR = gw1["EUR"];
+        env(trust(alice, EUR(200)));
+        env(trust(becky, EUR(200)));
+        env.close();
+
+        // Escrow, in each direction
+        env(escrow(alice, becky, XRP(1000)));
+        env(escrow(becky, alice, XRP(1000)));
+
+        // Pay channels, in each direction
+        env(payChan(alice, becky, XRP(1000), 100s, alice.pk()));
+        env(payChan(becky, alice, XRP(1000), 100s, becky.pk()));
+
+        // Mint NFTs, for each account
+        uint256 const aliceNFtokenID =
+            token::getNextID(env, alice, 0, tfTransferable);
+        env(token::mint(alice, 0), txflags(tfTransferable));
+
+        uint256 const beckyNFtokenID =
+            token::getNextID(env, becky, 0, tfTransferable);
+        env(token::mint(becky, 0), txflags(tfTransferable));
+
+        // NFT Offers, for each other's NFTs
+        env(token::createOffer(alice, beckyNFtokenID, drops(1)),
+            token::owner(becky));
+        env(token::createOffer(becky, aliceNFtokenID, drops(1)),
+            token::owner(alice));
+
+        env(token::createOffer(becky, beckyNFtokenID, drops(1)),
+            txflags(tfSellNFToken),
+            token::destination(alice));
+        env(token::createOffer(alice, aliceNFtokenID, drops(1)),
+            txflags(tfSellNFToken),
+            token::destination(becky));
+
+        env(token::createOffer(gw1, beckyNFtokenID, drops(1)),
+            token::owner(becky),
+            token::destination(alice));
+        env(token::createOffer(gw1, aliceNFtokenID, drops(1)),
+            token::owner(alice),
+            token::destination(becky));
+
+        env(token::createOffer(becky, beckyNFtokenID, drops(1)),
+            txflags(tfSellNFToken));
+        env(token::createOffer(alice, aliceNFtokenID, drops(1)),
+            txflags(tfSellNFToken));
+
+        // Checks, in each direction
+        env(check::create(alice, becky, XRP(50)));
+        env(check::create(becky, alice, XRP(50)));
+
+        // Deposit preauth, in each direction
+        env(deposit::auth(alice, becky));
+        env(deposit::auth(becky, alice));
+
+        // Offers, one where alice is the owner, and one where alice is the
+        // issuer
+        auto const USDalice = alice["USD"];
+        env(offer(alice, EUR(10), XRP(100)));
+        env(offer(becky, USDalice(10), XRP(100)));
+
+        // Tickets
+        env(ticket::create(alice, 2));
+
+        // Add another trustline for good measure
+        auto const BTCbecky = becky["BTC"];
+        env(trust(alice, BTCbecky(200)));
+
+        env.close();
+
+        {
+            // Now make repeated calls to `account_lines` with a limit of 1.
+            // That should iterate all of alice's relevant objects, even though
+            // the list will be empty for most calls.
+            auto getNextLine = [](Env& env,
+                                  Account const& alice,
+                                  std::optional<std::string> const marker) {
+                Json::Value params(Json::objectValue);
+                params[jss::account] = alice.human();
+                params[jss::limit] = 1;
+                if (marker)
+                    params[jss::marker] = *marker;
+
+                return env.rpc("json", "account_lines", to_string(params));
+            };
+
+            auto aliceLines = getNextLine(env, alice, std::nullopt);
+            constexpr std::size_t expectedIterations = 16;
+            constexpr std::size_t expectedLines = 2;
+            constexpr std::size_t expectedNFTs = 1;
+            std::size_t foundLines = 0;
+
+            auto hasMarker = [](auto const& aliceLines) {
+                return aliceLines[jss::result].isMember(jss::marker);
+            };
+            auto marker = [](auto const& aliceLines) {
+                return aliceLines[jss::result][jss::marker].asString();
+            };
+            auto checkLines = [](auto const& aliceLines) {
+                return aliceLines.isMember(jss::result) &&
+                    !aliceLines[jss::result].isMember(jss::error_message) &&
+                    aliceLines[jss::result].isMember(jss::lines) &&
+                    aliceLines[jss::result][jss::lines].isArray() &&
+                    aliceLines[jss::result][jss::lines].size() <= 1;
+            };
+
+            BEAST_EXPECT(hasMarker(aliceLines));
+            BEAST_EXPECT(checkLines(aliceLines));
+            BEAST_EXPECT(aliceLines[jss::result][jss::lines].size() == 0);
+
+            int iterations = 1;
+
+            while (hasMarker(aliceLines))
+            {
+                // Iterate through the markers
+                aliceLines = getNextLine(env, alice, marker(aliceLines));
+                BEAST_EXPECT(checkLines(aliceLines));
+                foundLines += aliceLines[jss::result][jss::lines].size();
+                ++iterations;
+            }
+            BEAST_EXPECT(expectedLines == foundLines);
+
+            Json::Value const aliceObjects = env.rpc(
+                "json",
+                "account_objects",
+                R"({"account": ")" + alice.human() +
+                    R"(", )"
+                    R"("limit": 200})");
+            BEAST_EXPECT(aliceObjects.isMember(jss::result));
+            BEAST_EXPECT(
+                !aliceObjects[jss::result].isMember(jss::error_message));
+            BEAST_EXPECT(
+                aliceObjects[jss::result].isMember(jss::account_objects));
+            BEAST_EXPECT(
+                aliceObjects[jss::result][jss::account_objects].isArray());
+            // account_objects does not currently return NFTPages. If
+            // that ever changes, without also changing account_lines,
+            // this test will need to be updated.
+            BEAST_EXPECT(
+                aliceObjects[jss::result][jss::account_objects].size() ==
+                iterations + expectedNFTs);
+            // If ledger object association ever changes, for whatever
+            // reason, this test will need to be updated.
+            BEAST_EXPECTS(
+                iterations == expectedIterations, std::to_string(iterations));
+
+            // Get becky's objects just to confirm that they're symmetrical
+            Json::Value const beckyObjects = env.rpc(
+                "json",
+                "account_objects",
+                R"({"account": ")" + becky.human() +
+                    R"(", )"
+                    R"("limit": 200})");
+            BEAST_EXPECT(beckyObjects.isMember(jss::result));
+            BEAST_EXPECT(
+                !beckyObjects[jss::result].isMember(jss::error_message));
+            BEAST_EXPECT(
+                beckyObjects[jss::result].isMember(jss::account_objects));
+            BEAST_EXPECT(
+                beckyObjects[jss::result][jss::account_objects].isArray());
+            // becky should have the same number of objects as alice, except the
+            // 2 tickets that only alice created.
+            BEAST_EXPECT(
+                beckyObjects[jss::result][jss::account_objects].size() ==
+                aliceObjects[jss::result][jss::account_objects].size() - 2);
+        }
+    }
+
     // test API V2
     void
     testAccountLines2()
     {
-        testcase("V2: acccount_lines");
+        testcase("V2: account_lines");
 
         using namespace test::jtx;
         Env env(*this);
@@ -581,7 +815,7 @@ public:
                 R"("n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj"}})");
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
-                RPC::make_error(rpcBAD_SEED)[jss::error_message]);
+                RPC::make_error(rpcACT_MALFORMED)[jss::error_message]);
             BEAST_EXPECT(
                 lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(
@@ -888,7 +1122,7 @@ public:
                     R"("n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj"}})");
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
-                RPC::make_error(rpcBAD_SEED)[jss::error_message]);
+                RPC::make_error(rpcACT_MALFORMED)[jss::error_message]);
             BEAST_EXPECT(
                 lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(
@@ -1234,6 +1468,7 @@ public:
         testAccountLines();
         testAccountLinesMarker();
         testAccountLineDelete();
+        testAccountLinesWalkMarkers();
         testAccountLines2();
         testAccountLineDelete2();
     }

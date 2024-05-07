@@ -80,6 +80,9 @@ private:
             case asfDepositAuth:
                 mask_ |= lsfDepositAuth;
                 break;
+            case asfAllowTrustLineClawback:
+                mask_ |= lsfAllowTrustLineClawback;
+                break;
             default:
                 Throw<std::runtime_error>("unknown flag");
         }

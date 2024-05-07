@@ -44,7 +44,9 @@ SOTemplate::SOTemplate(
         // Make sure that this field hasn't already been assigned
         //
         if (getIndex(sField) != -1)
-            Throw<std::runtime_error>(std::string("Duplicate field index for SOTemplate. ") + sField.fieldName);
+            Throw<std::runtime_error>(
+                std::string("Duplicate field index for SOTemplate. ") +
+                sField.fieldName);
 
         // Add the field to the index mapping table
         //

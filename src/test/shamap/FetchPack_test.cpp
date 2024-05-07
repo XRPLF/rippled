@@ -85,13 +85,13 @@ public:
         beast::Journal mJournal;
     };
 
-    std::shared_ptr<Item>
+    boost::intrusive_ptr<Item>
     make_random_item(beast::xor_shift_engine& r)
     {
         Serializer s;
         for (int d = 0; d < 3; ++d)
             s.add32(ripple::rand_int<std::uint32_t>(r));
-        return std::make_shared<Item>(s.getSHA512Half(), s.slice());
+        return make_shamapitem(s.getSHA512Half(), s.slice());
     }
 
     void
@@ -99,9 +99,8 @@ public:
     {
         while (n--)
         {
-            std::shared_ptr<SHAMapItem> item(make_random_item(r));
-            auto const result(
-                t.addItem(SHAMapNodeType::tnACCOUNT_STATE, std::move(*item)));
+            auto const result(t.addItem(
+                SHAMapNodeType::tnACCOUNT_STATE, make_random_item(r)));
             assert(result);
             (void)result;
         }

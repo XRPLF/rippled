@@ -129,22 +129,15 @@ closeChannel(
         if (!view.rules().enabled(featurePaychanAndEscrowForTokens))
             return tefINTERNAL;
 
-        sleLine =
-            view.peek(keylet::line(src, amount.getIssuer(), amount.getCurrency()));
-    
-        // dry run
-        TER result = 
-            trustAdjustLockedBalance(
-                view,
-                sleLine,
-                -amount,
-                -1,
-                j,
-                DryRun);
+        sleLine = view.peek(
+            keylet::line(src, amount.getIssuer(), amount.getCurrency()));
 
-        JLOG(j.trace())
-            << "closeChannel: trustAdjustLockedBalance(dry) result="
-            << result;
+        // dry run
+        TER result =
+            trustAdjustLockedBalance(view, sleLine, -amount, -1, j, DryRun);
+
+        JLOG(j.trace()) << "closeChannel: trustAdjustLockedBalance(dry) result="
+                        << result;
 
         if (!isTesSuccess(result))
             return result;
@@ -185,18 +178,11 @@ closeChannel(
         (*sle)[sfBalance] = (*sle)[sfBalance] + amount;
     else
     {
-        TER result = 
-            trustAdjustLockedBalance(
-                view,
-                sleLine,
-                -amount,
-                -1,
-                j,
-                WetRun);
+        TER result =
+            trustAdjustLockedBalance(view, sleLine, -amount, -1, j, WetRun);
 
-        JLOG(j.trace())
-            << "closeChannel: trustAdjustLockedBalance(wet) result="
-            << result;
+        JLOG(j.trace()) << "closeChannel: trustAdjustLockedBalance(wet) result="
+                        << result;
 
         if (!isTesSuccess(result))
             return result;
@@ -215,8 +201,8 @@ closeChannel(
 TxConsequences
 PayChanCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{ctx.tx,
-        isXRP(ctx.tx[sfAmount]) ? ctx.tx[sfAmount].xrp() : beast::zero};
+    return TxConsequences{
+        ctx.tx, isXRP(ctx.tx[sfAmount]) ? ctx.tx[sfAmount].xrp() : beast::zero};
 }
 
 NotTEC
@@ -228,7 +214,7 @@ PayChanCreate::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    STAmount const amount {ctx.tx[sfAmount]};
+    STAmount const amount{ctx.tx[sfAmount]};
     if (!isXRP(amount))
     {
         if (!ctx.rules.enabled(featurePaychanAndEscrowForTokens))
@@ -268,7 +254,7 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
     if (!sle)
         return terNO_ACCOUNT;
 
-    STAmount const amount {ctx.tx[sfAmount]};
+    STAmount const amount{ctx.tx[sfAmount]};
 
     auto const balance = (*sle)[sfBalance];
     auto const reserve =
@@ -290,12 +276,8 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         // check for any possible bars to a channel existing
         // between these accounts for this asset
         {
-            TER result = 
-                trustTransferAllowed(
-                    ctx.view,
-                    {account, dst},
-                    amount.issue(),
-                    ctx.j);
+            TER result = trustTransferAllowed(
+                ctx.view, {account, dst}, amount.issue(), ctx.j);
             JLOG(ctx.j.trace())
                 << "PayChanCreate::preclaim trustTransferAllowed result="
                 << result;
@@ -306,21 +288,14 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
 
         // check if the amount can be locked
         {
-            auto sleLine = 
-                ctx.view.read(
-                    keylet::line(account, amount.getIssuer(), amount.getCurrency()));
-            TER result = 
-                trustAdjustLockedBalance(
-                    ctx.view,
-                    sleLine,
-                    amount,
-                    1,
-                    ctx.j,
-                    DryRun);
-            
-            JLOG(ctx.j.trace())
-                << "PayChanCreate::preclaim trustAdjustLockedBalance(dry) result="
-                << result;
+            auto sleLine = ctx.view.read(keylet::line(
+                account, amount.getIssuer(), amount.getCurrency()));
+            TER result = trustAdjustLockedBalance(
+                ctx.view, sleLine, amount, 1, ctx.j, DryRun);
+
+            JLOG(ctx.j.trace()) << "PayChanCreate::preclaim "
+                                   "trustAdjustLockedBalance(dry) result="
+                                << result;
 
             if (!isTesSuccess(result))
                 return result;
@@ -332,15 +307,25 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         auto const sled = ctx.view.read(keylet::account(dst));
         if (!sled)
             return tecNO_DST;
-        if (((*sled)[sfFlags] & lsfRequireDestTag) &&
-            !ctx.tx[~sfDestinationTag])
+
+        auto const flags = sled->getFlags();
+
+        // Check if they have disallowed incoming payment channels
+        if (ctx.view.rules().enabled(featureDisallowIncoming) &&
+            (flags & lsfDisallowIncomingPayChan))
+            return tecNO_PERMISSION;
+
+        if ((flags & lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
         // Obeying the lsfDisallowXRP flag was a bug.  Piggyback on
         // featureDepositAuth to remove the bug.
         if (!ctx.view.rules().enabled(featureDepositAuth) &&
-            ((*sled)[sfFlags] & lsfDisallowXRP))
+            (flags & lsfDisallowXRP))
             return tecNO_TARGET;
+
+        if (sled->isFieldPresent(sfAMMID))
+            return tecNO_PERMISSION;
     }
 
     return tesSUCCESS;
@@ -356,7 +341,7 @@ PayChanCreate::doApply()
 
     auto const dst = ctx_.tx[sfDestination];
 
-    STAmount const amount {ctx_.tx[sfAmount]};
+    STAmount const amount{ctx_.tx[sfAmount]};
 
     // Create PayChan in ledger.
     //
@@ -410,20 +395,14 @@ PayChanCreate::doApply()
         if (!ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
             return tefINTERNAL;
 
-        auto sleLine =
-            ctx_.view().peek(keylet::line(account, amount.getIssuer(), amount.getCurrency()));
+        auto sleLine = ctx_.view().peek(
+            keylet::line(account, amount.getIssuer(), amount.getCurrency()));
 
         if (!sleLine)
             return tecUNFUNDED_PAYMENT;
 
-        TER result = 
-            trustAdjustLockedBalance(
-                ctx_.view(),
-                sleLine,
-                amount,
-                1,
-                ctx_.journal,
-                WetRun);
+        TER result = trustAdjustLockedBalance(
+            ctx_.view(), sleLine, amount, 1, ctx_.journal, WetRun);
 
         JLOG(ctx_.journal.trace())
             << "PayChanCreate::doApply trustAdjustLockedBalance(wet) result="
@@ -432,7 +411,7 @@ PayChanCreate::doApply()
         if (!isTesSuccess(result))
             return tefINTERNAL;
     }
-    
+
     adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
     ctx_.view().update(sle);
 
@@ -444,8 +423,8 @@ PayChanCreate::doApply()
 TxConsequences
 PayChanFund::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{ctx.tx,
-        isXRP(ctx.tx[sfAmount]) ? ctx.tx[sfAmount].xrp() : beast::zero};
+    return TxConsequences{
+        ctx.tx, isXRP(ctx.tx[sfAmount]) ? ctx.tx[sfAmount].xrp() : beast::zero};
 }
 
 NotTEC
@@ -457,7 +436,7 @@ PayChanFund::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    STAmount const amount {ctx.tx[sfAmount]};
+    STAmount const amount{ctx.tx[sfAmount]};
     if (!isXRP(amount))
     {
         if (!ctx.rules.enabled(featurePaychanAndEscrowForTokens))
@@ -490,30 +469,21 @@ PayChanFund::doApply()
     auto const slep = ctx_.view().peek(k);
     if (!slep)
         return tecNO_ENTRY;
-    
-    STAmount const amount {ctx_.tx[sfAmount]};
 
-    std::shared_ptr<SLE> sleLine;   // if XRP or featurePaychanAndEscrowForTokens
-                                    // not enabled this remains null
+    STAmount const amount{ctx_.tx[sfAmount]};
+
+    std::shared_ptr<SLE> sleLine;  // if XRP or featurePaychanAndEscrowForTokens
+                                   // not enabled this remains null
 
     // if this is a Fund operation on an IOU then perform a dry run here
     if (!isXRP(amount) &&
-            ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
+        ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
     {
-        sleLine = ctx_.view().peek(
-            keylet::line(
-                (*slep)[sfAccount], 
-                amount.getIssuer(),
-                amount.getCurrency()));
+        sleLine = ctx_.view().peek(keylet::line(
+            (*slep)[sfAccount], amount.getIssuer(), amount.getCurrency()));
 
-        TER result =
-            trustAdjustLockedBalance(
-                ctx_.view(),
-                sleLine,
-                amount,
-                1,
-                ctx_.journal,
-                DryRun);
+        TER result = trustAdjustLockedBalance(
+            ctx_.view(), sleLine, amount, 1, ctx_.journal, DryRun);
 
         JLOG(ctx_.journal.trace())
             << "PayChanFund::doApply trustAdjustLockedBalance(dry) result="
@@ -573,7 +543,6 @@ PayChanFund::doApply()
     if (balance < reserve)
         return tecINSUFFICIENT_RESERVE;
 
-
     if (isXRP(amount))
     {
         if (balance < reserve + amount)
@@ -587,16 +556,9 @@ PayChanFund::doApply()
         if (!ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
             return tefINTERNAL;
 
+        TER result = trustAdjustLockedBalance(
+            ctx_.view(), sleLine, amount, 1, ctx_.journal, WetRun);
 
-        TER result =
-            trustAdjustLockedBalance(
-                ctx_.view(),
-                sleLine,
-                amount,
-                1,
-                ctx_.journal,
-                WetRun);
-        
         JLOG(ctx_.journal.trace())
             << "PayChanFund::doApply trustAdjustLockedBalance(wet) result="
             << result;
@@ -622,7 +584,8 @@ PayChanClaim::preflight(PreflightContext const& ctx)
     auto const bal = ctx.tx[~sfBalance];
     if (bal)
     {
-        if (!isXRP(*bal) && !ctx.rules.enabled(featurePaychanAndEscrowForTokens))
+        if (!isXRP(*bal) &&
+            !ctx.rules.enabled(featurePaychanAndEscrowForTokens))
             return temBAD_AMOUNT;
 
         if (*bal <= beast::zero)
@@ -633,7 +596,8 @@ PayChanClaim::preflight(PreflightContext const& ctx)
 
     if (amt)
     {
-        if (!isXRP(*amt) && !ctx.rules.enabled(featurePaychanAndEscrowForTokens))
+        if (!isXRP(*amt) &&
+            !ctx.rules.enabled(featurePaychanAndEscrowForTokens))
             return temBAD_AMOUNT;
 
         if (*amt <= beast::zero)
@@ -678,7 +642,12 @@ PayChanClaim::preflight(PreflightContext const& ctx)
         if (isXRP(authAmt))
             serializePayChanAuthorization(msg, k.key, authAmt.xrp());
         else
-            serializePayChanAuthorization(msg, k.key, authAmt.iou(), authAmt.getCurrency(), authAmt.getIssuer());
+            serializePayChanAuthorization(
+                msg,
+                k.key,
+                authAmt.iou(),
+                authAmt.getCurrency(),
+                authAmt.getIssuer());
 
         if (!verify(pk, msg.slice(), *sig, /*canonical*/ true))
             return temBAD_SIGNATURE;
@@ -767,7 +736,7 @@ PayChanClaim::doApply()
         assert(reqDelta >= beast::zero);
         if (isXRP(reqDelta))
             (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
-        else 
+        else
         {
             // xfer locked tokens to satisfy claim
             // RH NOTE: there's no ledger modification before this point so
@@ -776,19 +745,19 @@ PayChanClaim::doApply()
                 return tefINTERNAL;
 
             auto sleSrcAcc = ctx_.view().peek(keylet::account(src));
-            TER result =
-                trustTransferLockedBalance(
-                    ctx_.view(),
-                    txAccount,
-                    sleSrcAcc,
-                    sled,
-                    reqDelta,
-                    0,
-                    ctx_.journal,
-                    WetRun);
-            
+            TER result = trustTransferLockedBalance(
+                ctx_.view(),
+                txAccount,
+                sleSrcAcc,
+                sled,
+                reqDelta,
+                0,
+                ctx_.journal,
+                WetRun);
+
             JLOG(ctx_.journal.trace())
-                << "PayChanClaim::doApply trustTransferLockedBalance(wet) result="
+                << "PayChanClaim::doApply trustTransferLockedBalance(wet) "
+                   "result="
                 << result;
 
             if (!isTesSuccess(result))
