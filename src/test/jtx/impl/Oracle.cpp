@@ -313,7 +313,16 @@ Oracle::ledgerEntry(
     // Convert "%None%" to None
     auto str = to_string(jvParams);
     str = boost::regex_replace(str, boost::regex(NonePattern), UnquotedNone);
-    return env.rpc("json", "ledger_entry", str)[jss::result];
+    auto jr = env.rpc("json", "ledger_entry", str);
+
+    if (jr.isObject())
+    {
+        if (jr.isMember(jss::result) && jr[jss::result].isMember(jss::status))
+            return jr[jss::result];
+        else if (jr.isMember(jss::error))
+            return jr;
+    }
+    return Json::nullValue;
 }
 
 void

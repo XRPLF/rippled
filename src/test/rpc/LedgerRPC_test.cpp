@@ -2293,14 +2293,16 @@ class LedgerRPC_test : public beast::unit_test::suite
         Oracle oracle(env, {.owner = owner});
 
         // Malformed document id
-        std::vector<AnyValue> invalid = {NoneTag, -1, 1.2, "", "Invalid"};
+        auto res = Oracle::ledgerEntry(env, owner, NoneTag);
+        BEAST_EXPECT(res[jss::error].asString() == "invalidParams");
+        std::vector<AnyValue> invalid = {-1, 1.2, "", "Invalid"};
         for (auto const& v : invalid)
         {
             auto const res = Oracle::ledgerEntry(env, owner, v);
             BEAST_EXPECT(res[jss::error].asString() == "malformedDocumentID");
         }
         // Missing document id
-        auto res = Oracle::ledgerEntry(env, owner, std::nullopt);
+        res = Oracle::ledgerEntry(env, owner, std::nullopt);
         BEAST_EXPECT(res[jss::error].asString() == "malformedRequest");
 
         // Missing account
