@@ -24,6 +24,7 @@
 #include <boost/iterator/function_output_iterator.hpp>
 #include <map>
 #include <ostream>
+#include <sstream>
 #include <string>
 #include <type_traits>
 

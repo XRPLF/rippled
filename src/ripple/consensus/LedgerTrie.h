@@ -23,6 +23,7 @@
 #include <ripple/basics/ToString.h>
 #include <ripple/json/json_value.h>
 #include <algorithm>
+#include <iomanip>
 #include <memory>
 #include <optional>
 #include <sstream>
