@@ -21,6 +21,7 @@
 #define RIPPLE_TEST_JTX_JTX_H_INCLUDED
 
 #include <ripple/json/json_value.h>
+#include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/STTx.h>
 #include <ripple/protocol/TER.h>
 #include <test/jtx/basic_prop.h>
