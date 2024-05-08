@@ -94,7 +94,7 @@ private:
             sendmax(BTC(1'000)),
             txflags(tfPartialPayment));
 
-        if (!features[fixAMMRounding])
+        if (!features[fixAMMv1_1])
         {
             BEAST_EXPECT(ammCarol.expectBalances(
                 STAmount{BTC, UINT64_C(1'001'000000374812), -12},
@@ -720,7 +720,7 @@ private:
         auto const jrr = env.rpc("json", "submit", to_string(payment));
         BEAST_EXPECT(jrr[jss::result][jss::status] == "success");
         BEAST_EXPECT(jrr[jss::result][jss::engine_result] == "tesSUCCESS");
-        if (!features[fixAMMRounding])
+        if (!features[fixAMMv1_1])
         {
             BEAST_EXPECT(ammAlice.expectBalances(
                 STAmount(XTS, UINT64_C(101'010101010101), -12),
@@ -1291,7 +1291,7 @@ private:
         env(offer(cam, B_BUX(30), A_BUX(30)));
 
         // AMM is consumed up to the first cam Offer quality
-        if (!features[fixAMMRounding])
+        if (!features[fixAMMv1_1])
         {
             BEAST_EXPECT(ammCarol.expectBalances(
                 STAmount{A_BUX, UINT64_C(309'3541659651605), -13},
@@ -1308,16 +1308,16 @@ private:
         else
         {
             BEAST_EXPECT(ammCarol.expectBalances(
-                STAmount{A_BUX, UINT64_C(309'3541659651602), -13},
-                STAmount{B_BUX, UINT64_C(320'021550998442), -12},
+                STAmount{A_BUX, UINT64_C(309'3541659651604), -13},
+                STAmount{B_BUX, UINT64_C(320'0215509984419), -13},
                 ammCarol.tokens()));
             BEAST_EXPECT(expectOffers(
                 env,
                 cam,
                 1,
                 {{Amounts{
-                    STAmount{B_BUX, UINT64_C(20'021550998442), -12},
-                    STAmount{A_BUX, UINT64_C(20'021550998442), -12}}}}));
+                    STAmount{B_BUX, UINT64_C(20'0215509984419), -13},
+                    STAmount{A_BUX, UINT64_C(20'0215509984419), -13}}}}));
         }
     }
 
@@ -1444,7 +1444,7 @@ private:
         using namespace jtx;
         FeatureBitset const all{supported_amendments()};
         testRmFundedOffer(all);
-        testRmFundedOffer(all - fixAMMRounding);
+        testRmFundedOffer(all - fixAMMv1_1);
         testEnforceNoRipple(all);
         testFillModes(all);
         testOfferCrossWithXRP(all);
@@ -1458,7 +1458,7 @@ private:
         testOfferCreateThenCross(all);
         testSellFlagExceedLimit(all);
         testGatewayCrossCurrency(all);
-        testGatewayCrossCurrency(all - fixAMMRounding);
+        testGatewayCrossCurrency(all - fixAMMv1_1);
         // testPartialCross
         // testXRPDirectCross
         // testDirectCross
@@ -1470,7 +1470,7 @@ private:
         testBadPathAssert(all);
         testSellFlagBasic(all);
         testDirectToDirectPath(all);
-        testDirectToDirectPath(all - fixAMMRounding);
+        testDirectToDirectPath(all - fixAMMv1_1);
         // testSelfCrossLowQualityOffer
         // testOfferInScaling
         // testOfferInScalingWithXferRate
@@ -2335,7 +2335,7 @@ private:
                 txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 // alice buys 77.2727USD with 75.5555GBP and pays 25% tr fee
                 // on 75.5555GBP
@@ -2382,7 +2382,7 @@ private:
             env(offer(alice, EUR(100), USD(100)));
             env.close();
 
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 // 95.2380USD is swapped in for 100EUR
                 BEAST_EXPECT(amm.expectBalances(
@@ -2435,7 +2435,7 @@ private:
             env(pay(gw, dan, USD(1'000)));
             AMM ammDan(env, dan, USD(1'000), EUR(1'050));
 
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 // alice -> bob -> gw -> carol. $50 should have transfer fee;
                 // $10, no fee
@@ -2504,7 +2504,7 @@ private:
             // alice buys 107.1428USD with 120GBP and pays 25% tr fee on 120GBP
             // 1,000 - 120*1.25 = 850GBP
             BEAST_EXPECT(expectLine(env, alice, GBP(850)));
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 // 120GBP is swapped in for 107.1428USD
                 BEAST_EXPECT(amm.expectBalances(
@@ -2593,7 +2593,7 @@ private:
             env.close();
 
             BEAST_EXPECT(expectLine(env, alice, GBP(850)));
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 // alice buys 107.1428EUR with 120GBP and pays 25% tr fee on
                 // 120GBP 1,000 - 120*1.25 = 850GBP 120GBP is swapped in for
@@ -2710,7 +2710,7 @@ private:
                 txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 // alice buys 28.125USD with 24GBP and pays 25% tr fee
                 // on 24GBP
@@ -2767,7 +2767,7 @@ private:
                 txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 // alice buys 70.4210EUR with 70.4210GBP via the offer
                 // and pays 25% tr fee on 70.4210GBP
@@ -2859,7 +2859,7 @@ private:
                 txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 // alice buys 53.3322EUR with 56.3368GBP via the amm
                 // and pays 25% tr fee on 56.3368GBP
@@ -2937,7 +2937,7 @@ private:
                 txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 // alice buys 53.3322EUR with 107.5308GBP
                 // 25% on 86.0246GBP is paid in tr fee
@@ -3008,7 +3008,7 @@ private:
                 txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 // 108.1481GBP is swapped in for 97.5935EUR
                 BEAST_EXPECT(amm1.expectBalances(
@@ -3181,7 +3181,7 @@ private:
         // Alice offers to buy 1000 XRP for 1000 USD. She takes Bob's first
         // offer, removes 999 more as unfunded, then hits the step limit.
         env(offer(alice, USD(1'000), XRP(1'000)));
-        if (!features[fixAMMRounding])
+        if (!features[fixAMMv1_1])
             env.require(balance(
                 alice, STAmount{USD, UINT64_C(2'050126257867561), -15}));
         else
@@ -3292,7 +3292,7 @@ private:
             env(offer(bob, XRP(100), USD(100)));
             env(offer(bob, XRP(1'000), USD(100)));
             AMM ammDan(env, dan, XRP(1'000), USD(1'100));
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 env(pay(alice, carol, USD(10'000)),
                     paths(XRP),
@@ -4102,9 +4102,9 @@ private:
         testBookStep(all);
         testBookStep(all | ownerPaysFee);
         testTransferRate(all | ownerPaysFee);
-        testTransferRate((all - fixAMMRounding) | ownerPaysFee);
+        testTransferRate((all - fixAMMv1_1) | ownerPaysFee);
         testTransferRateNoOwnerFee(all);
-        testTransferRateNoOwnerFee(all - fixAMMRounding);
+        testTransferRateNoOwnerFee(all - fixAMMv1_1);
         testLimitQuality();
         testXRPPathLoop();
     }
@@ -4115,7 +4115,7 @@ private:
         using namespace jtx;
         FeatureBitset const all{supported_amendments()};
         testStepLimit(all);
-        testStepLimit(all - fixAMMRounding);
+        testStepLimit(all - fixAMMv1_1);
     }
 
     void
@@ -4124,7 +4124,7 @@ private:
         using namespace jtx;
         FeatureBitset const all{supported_amendments()};
         test_convert_all_of_an_asset(all);
-        test_convert_all_of_an_asset(all - fixAMMRounding);
+        test_convert_all_of_an_asset(all - fixAMMv1_1);
     }
 
     void

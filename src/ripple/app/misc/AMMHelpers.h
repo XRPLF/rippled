@@ -37,6 +37,12 @@
 
 namespace ripple {
 
+namespace detail {
+
+static Number const reducedOfferPct = Number{9999, -4};
+
+}
+
 /** Calculate LP Tokens given AMM pool reserves.
  * @param asset1 AMM one side of the pool reserve
  * @param asset2 AMM another side of the pool reserve
@@ -159,13 +165,13 @@ solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c);
  * from the payment perspective is IOU(in)/XRP(out)
  * Equations:
  * Spot Price Quality after the offer is consumed:
- *     Qsp = (O - o) / (I + i) (1)
+ *     Qsp = (O - o) / (I + i)    -- equation (1)
  *  where O is poolPays, I is poolGets, o is takerGets, i is takerPays
  * Swap out:
- *     i = (I * o) / (O - o) * f (2)
+ *     i = (I * o) / (O - o) * f  -- equation (2)
  *  where f is (1 - tfee/100000), tfee is in basis points
  * Effective price targetQuality:
- *     Qep = o / i (3)
+ *     Qep = o / i                -- equation (3)
  * There are two scenarios to consider
  * A) Qsp = Qep. Substitute i in (1) with (2) and solve for o
  *    and Qsp = targetQuality(Qt):
@@ -186,93 +192,58 @@ getAMMOfferStartWithTakerGets(
     std::uint16_t const& tfee)
 {
     assert(targetQuality.rate() != beast::zero);
-    // calculate a, b, c to minimize quadratic equation solution
-    // b is negative
-    // calculate:
-    // (-b - root2(b * b - 4 * a * c)) / (2 * a)
-    // minimize:
-    // (-b - root2(b * b  - 4 * a * c)) / (2 * a)
-    // b
-    // maximize:
-    // root2(b * b - 4 * a * c)
-    // b * b
-    // minimize:
-    // 4 * a * c
-    // a
-    // c
-    // maximize:
-    // 2 * a
-    // a
-    // a must be maximized and minimized. a is 1, no rounding
-    // b must be maximized and minimized. choose minimize since the effect of
-    // the rounding outside of root2 is greater than the inside of root2.
-    // fee is always maximized
-    // feeMult is always minimized
-    auto const fee = upward()(getFee(tfee));
-    auto const feeMult = downward()(1 - fee);
+    if (targetQuality.rate() == beast::zero)
+        return std::nullopt;
+
+    NumberRoundModeGuard mg(Number::rounding_mode::to_nearest);
+    auto const f = feeMult(tfee);
     auto const a = 1;
-    // minimize b
-    // b = pool.in * (1 - 1 / f) / targetQuality.rate() - 2 * pool.out
-    // minimize:
-    // pool.in * (1 - 1 / f) / targetQuality.rate()
-    // pool.in * (1 - 1 / f)
-    // maximize:
-    // 1 / f
-    // 2 * pool.out
-    auto const b = downward()(
-        pool.in * (1 - upward()(1 / feeMult)) / targetQuality.rate() -
-        upward()(2 * pool.out));
-    // minimize c
-    // c = pool.out * pool.out - pool.in * pool.out / targetQuality.rate()
-    // minimize:
-    // pool.out * pool.out - pool.in * pool.out / targetQuality.rate()
-    // pool.out * pool.out
-    // maximize:
-    // pool.in * pool.out / targetQuality.rate()
-    // pool.in * pool.out
-    auto const c = downward()(
-        pool.out * pool.out -
-        upward()((pool.in * pool.out) / targetQuality.rate()));
+    auto const b = pool.in * (1 - 1 / f) / targetQuality.rate() - 2 * pool.out;
+    auto const c =
+        pool.out * pool.out - (pool.in * pool.out) / targetQuality.rate();
 
     auto nTakerGets = solveQuadraticEqSmallest(a, b, c);
     if (!nTakerGets || *nTakerGets <= 0)
         return std::nullopt;
 
-    // minimize constraint
-    // constraint = pool.out - pool.in / (targetQuality.rate() * f)
-    // minimize:
-    // pool.out - pool.in / (targetQuality.rate() * f)
-    // maximize:
-    // pool.in / (targetQuality.rate() * f)
-    // minimize:
-    // (targetQuality.rate() * f)
-    auto const nTakerGetsConstraint = downward()(
-        pool.out -
-        upward()(pool.in / downward()(targetQuality.rate() * feeMult)));
+    auto const nTakerGetsConstraint =
+        pool.out - pool.in / (targetQuality.rate() * f);
     if (nTakerGetsConstraint <= 0)
         return std::nullopt;
 
-    // Pick the smallest to make the quality better
-    if (nTakerGetsConstraint < nTakerGets)
+    // Select the smallest to maximize the quality
+    if (nTakerGetsConstraint < *nTakerGets)
         nTakerGets = nTakerGetsConstraint;
 
-    auto const takerGets = toAmount<TOut>(
-        getIssue(pool.out), *nTakerGets, Number::rounding_mode::downward);
+    auto getAmounts = [&](Number const& nTakerGets) {
+      // Round downward to minimize the offer and to maximize the quality.
+      // This has the most impact when takerGets is XRP.
+        auto const takerGets = toAmount<TOut>(
+            getIssue(pool.out), nTakerGets, Number::rounding_mode::downward);
+        return TAmounts<TIn, TOut>{
+            swapAssetOut(pool, takerGets, tfee), takerGets};
+    };
 
-    return TAmounts<TIn, TOut>{swapAssetOut(pool, takerGets, tfee), takerGets};
+    // Try to reduce the offer size to improve the quality.
+    // The quality might still not match the targetQuality for a tiny offer.
+    if (auto const amounts = getAmounts(*nTakerGets);
+        Quality{amounts} < targetQuality)
+        return getAmounts(amounts.out * detail::reducedOfferPct);
+    else
+        return amounts;
 }
 
 /** Generate AMM offer starting with takerPays when AMM pool
  * from the payment perspective is XRP(in)/IOU(out) or IOU(in)/IOU(out).
  * Equations:
  * Spot Price Quality after the offer is consumed:
- *     Qsp = (O - o) / (I + i) (1)
+ *     Qsp = (O - o) / (I + i)       -- equation (1)
  *  where O is poolPays, I is poolGets, o is takerGets, i is takerPays
  * Swap in:
- *     o = (O * i * f) / (I + i * f) (2)
+ *     o = (O * i * f) / (I + i * f) -- equation (2)
  *  where f is (1 - tfee/100000), tfee is in basis points
  * Effective price quality:
- *     Qep = o / i (3)
+ *     Qep = o / i                   -- equation (3)
  * There are two scenarios to consider
  * A) Qsp = Qep. Substitute o in (1) with (2) and solve for i
  *    and Qsp = targetQuality(Qt):
@@ -292,67 +263,42 @@ getAMMOfferStartWithTakerPays(
     Quality const& targetQuality,
     std::uint16_t tfee)
 {
-    // calculate a, b, c to minimize quadratic equation solution
-    // b is positive
-    // calculate:
-    // (-b + root2(b * b - 4 * a * c)) / (2 * a)
-    // minimize:
-    // (-b + root2(b * b - 4 * a * c))
-    // maximize
-    // b
-    // minimize:
-    // root2(b * b - 4 * a * c)
-    // b * b
-    // maximize:
-    // 4 * a * c
-    // a
-    // c
-    // maximize:
-    // 2 * a
-    // a
-    // b must be maximized and minimized. choose maximize since the effect of
-    // the rounding outside of root2 is greater than the inside of root2.
-    // fee is always maximized
-    // feeMult is always minimized
-    auto const fee = upward()(getFee(tfee));
-    auto const f = downward()(1 - fee);
+    NumberRoundModeGuard mg(Number::rounding_mode::to_nearest);
+    auto const f = feeMult(tfee);
     auto const& a = f;
-    // maximize b
-    auto const b = upward()(pool.in * (1 + f));
-    // maximize c
-    // c = pool.in * pool.in - pool.in * pool.out * targetQuality.rate()
-    // maximize:
-    // pool.in * pool.in
-    // minimize:
-    // pool.in * pool.out * targetQuality.rate()
-    auto const c = upward()(
-        pool.in * pool.in -
-        downward()(pool.in * pool.out * targetQuality.rate()));
+    auto const b = pool.in * (1 + f);
+    auto const c =
+        pool.in * pool.in - pool.in * pool.out * targetQuality.rate();
 
     auto nTakerPays = solveQuadraticEqSmallest(a, b, c);
     if (!nTakerPays || nTakerPays <= 0)
         return std::nullopt;
 
-    // minimize constraint
-    // constraint = pool.out * targetQuality.rate() - pool.in / f
-    // minimize:
-    // pool.out * targetQuality.rate() - pool.in / f
-    // pool.out * targetQuality.rate()
-    // maximize:
-    // pool.in / f
     auto const nTakerPaysConstraint =
-        downward()(pool.out * targetQuality.rate() - upward()(pool.in / f));
+        pool.out * targetQuality.rate() - pool.in / f;
     if (nTakerPaysConstraint <= 0)
         return std::nullopt;
 
-    // Pick the smallest to make the quality better
-    if (nTakerPaysConstraint < nTakerPays)
+    // Select the smallest to maximize the quality
+    if (nTakerPaysConstraint < *nTakerPays)
         nTakerPays = nTakerPaysConstraint;
 
-    auto const takerPays = toAmount<TIn>(
-        getIssue(pool.in), *nTakerPays, Number::rounding_mode::downward);
+    auto getAmounts = [&](Number const& nTakerPays) {
+        // Round downward to minimize the offer and to maximize the quality.
+        // This has the most impact when takerPays is XRP.
+        auto const takerPays = toAmount<TIn>(
+            getIssue(pool.in), nTakerPays, Number::rounding_mode::downward);
+        return TAmounts<TIn, TOut>{
+            takerPays, swapAssetIn(pool, takerPays, tfee)};
+    };
 
-    return TAmounts<TIn, TOut>{takerPays, swapAssetIn(pool, takerPays, tfee)};
+    // Try to reduce the offer size to improve the quality.
+    // The quality might still not match the targetQuality for a tiny offer.
+    if (auto const amounts = getAmounts(*nTakerPays);
+        Quality{amounts} < targetQuality)
+        return getAmounts(amounts.in * detail::reducedOfferPct);
+    else
+        return amounts;
 }
 
 /**   Generate AMM offer so that either updated Spot Price Quality (SPQ)
@@ -380,7 +326,7 @@ changeSpotPriceQuality(
     Rules const& rules,
     beast::Journal j)
 {
-    if (!rules.enabled(fixAMMRounding))
+    if (!rules.enabled(fixAMMv1_1))
     {
         // Finds takerPays (i) and takerGets (o) such that given pool
         // composition poolGets(I) and poolPays(O): (O - o) / (I + i) = quality.
@@ -412,9 +358,9 @@ changeSpotPriceQuality(
             if (nTakerPays <= 0)
             {
                 JLOG(j.trace())
-                    << "changeSpotPriceQuality negative: " << to_string(pool.in)
-                    << " " << to_string(pool.out) << " " << quality << " "
-                    << tfee;
+                    << "changeSpotPriceQuality calc failed: "
+                    << to_string(pool.in) << " " << to_string(pool.out) << " "
+                    << quality << " " << tfee;
                 return std::nullopt;
             }
             auto const takerPays = toAmount<TIn>(
@@ -430,8 +376,8 @@ changeSpotPriceQuality(
                 JLOG(j.error())
                     << "changeSpotPriceQuality failed: " << to_string(pool.in)
                     << " " << to_string(pool.out) << " "
-                    << to_string(amounts.in) << " " << to_string(amounts.out)
-                    << " " << quality << " " << tfee;
+                    << " " << quality << " " << tfee << " "
+                    << to_string(amounts.in) << " " << to_string(amounts.out);
                 Throw<std::runtime_error>("changeSpotPriceQuality failed");
             }
             else
@@ -439,12 +385,12 @@ changeSpotPriceQuality(
                 JLOG(j.trace())
                     << "changeSpotPriceQuality succeeded: "
                     << to_string(pool.in) << " " << to_string(pool.out) << " "
-                    << to_string(amounts.in) << " " << to_string(amounts.out)
-                    << " " << quality << " " << tfee;
+                    << " " << quality << " " << tfee << " "
+                    << to_string(amounts.in) << " " << to_string(amounts.out);
                 return amounts;
             }
         }
-        JLOG(j.trace()) << "changeSpotPriceQuality negative: "
+        JLOG(j.trace()) << "changeSpotPriceQuality calc failed: "
                         << to_string(pool.in) << " " << to_string(pool.out)
                         << " " << quality << " " << tfee;
         return std::nullopt;
@@ -459,29 +405,26 @@ changeSpotPriceQuality(
     }();
     if (!amounts)
     {
-        JLOG(j.trace()) << "changeSpotPrice negative: " << to_string(pool.in)
-                        << " " << to_string(pool.out) << " "
-                        << Number{1} / quality.rate() << " " << tfee
-                        << std::endl;
+        JLOG(j.trace()) << "changeSpotPrice calc failed: " << to_string(pool.in)
+                        << " " << to_string(pool.out) << " " << quality << " "
+                        << tfee << std::endl;
         return std::nullopt;
     }
 
-    // Might fail due to finite precision. Should the relative difference be
-    // allowed?
     if (Quality{*amounts} < quality)
     {
         JLOG(j.error()) << "changeSpotPriceQuality failed: "
                         << to_string(pool.in) << " " << to_string(pool.out)
-                        << " " << to_string(amounts->in) << " "
-                        << to_string(amounts->out) << " " << quality << " "
-                        << tfee;
+                        << " " << quality << " " << tfee << " "
+                        << to_string(amounts->in) << " "
+                        << to_string(amounts->out);
         return std::nullopt;
     }
 
     JLOG(j.trace()) << "changeSpotPriceQuality succeeded: "
                     << to_string(pool.in) << " " << to_string(pool.out) << " "
-                    << to_string(amounts->in) << " " << to_string(amounts->out)
-                    << " " << quality << " " << tfee;
+                    << " " << quality << " " << tfee << " "
+                    << to_string(amounts->in) << " " << to_string(amounts->out);
 
     return amounts;
 }
@@ -515,7 +458,7 @@ swapAssetIn(
     std::uint16_t tfee)
 {
     if (auto const& rules = getCurrentTransactionRules();
-        rules && rules->enabled(fixAMMRounding))
+        rules && rules->enabled(fixAMMv1_1))
     {
         // set rounding to always favor the amm. Clip to zero.
         // calculate:
@@ -589,7 +532,7 @@ swapAssetOut(
     std::uint16_t tfee)
 {
     if (auto const& rules = getCurrentTransactionRules();
-        rules && rules->enabled(fixAMMRounding))
+        rules && rules->enabled(fixAMMv1_1))
     {
         // set rounding to always favor the amm. Clip to zero.
         // calculate:

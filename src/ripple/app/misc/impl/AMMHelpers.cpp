@@ -207,48 +207,15 @@ solveQuadraticEq(Number const& a, Number const& b, Number const& c)
 std::optional<Number>
 solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c)
 {
-    // calculate:
-    // d = b * b - 4 * a * c
-    // (-b + root2(d)) / (2 * a)
-    // minimize:
-    // (-b + root2(d)) / (2 * a)
-    // (-b + root2(d))
-    // root2(d)
-    // d
-    // b * b
-    // maximize:
-    // 4 * a * c
-    // (2 * a)
+    auto const d = b * b - 4 * a * c;
+    if (d < 0)
+        return std::nullopt;
+    // use numerically stable citardauq formula for quadratic equation solution
+    // https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
     if (b > 0)
-    {
-        auto const d = downward()((downward()(b * b) - upward()(4 * a * c)));
-        if (d < 0)
-            return std::nullopt;
-        return downward()(
-            downward()(-b + downward()(root2(d))) / upward()(2 * a));
-    }
+        return (2 * c) / (-b - root2(d));
     else
-    {
-        // calculate:
-        // d = b * b - 4 * a * c
-        // (-b - root2(d)) / (2 * a)
-        // minimize:
-        // (-b - root2(d)) / (2 * a)
-        // (-b - root2(d))
-        // maximize:
-        // root2(d)
-        // d
-        // b * b
-        // minimize:
-        // 4 * a * c
-        // maximize:
-        // (2 * a)
-        auto const d = upward()((upward()(b * b) - downward()(4 * a * c)));
-        if (d < 0)
-            return std::nullopt;
-        return downward()(
-            downward()(-b - upward()(root2(d))) / upward()(2 * a));
-    }
+        return (2 * c) / (-b + root2(d));
 }
 
 }  // namespace ripple

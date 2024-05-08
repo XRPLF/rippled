@@ -786,7 +786,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         // limit quality to prevent AMM being blocked by a lower quality
         // LOB.
         auto const bestQuality = [&]() -> std::optional<Quality> {
-            if (sb.rules().enabled(fixAMMRounding) && lobQuality)
+            if (sb.rules().enabled(fixAMMv1_1) && lobQuality)
                 return static_cast<TDerived const*>(this)->maxQualityThreshold(
                     *lobQuality);
             return lobQuality;
@@ -903,7 +903,7 @@ BookStep<TIn, TOut, TDerived>::tip(ReadView const& view) const
     // is partially crossed, and it might take a few iterations to fully cross
     // the offer.
     auto const targetQuality = [&]() -> std::optional<Quality> {
-        if (view.rules().enabled(fixAMMRounding) && lobQuality)
+        if (view.rules().enabled(fixAMMv1_1) && lobQuality)
             return static_cast<TDerived const*>(this)->maxQualityThreshold(
                 *lobQuality);
         return std::nullopt;

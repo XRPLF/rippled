@@ -387,69 +387,24 @@ public:
     operator=(saveNumberRoundMode const&) = delete;
 };
 
-// Functors to facilitate intermediate steps rounding mode
-// in complex arithmetic expressions.
-// Class constructor saves the current rounding mode,
-// sets the requested rounding mode, and is called before
-// the arithmetic expression is evaluated. The rounding mode
-// state is restored in the functor call, which sets the outer
-// functor rounding mode or the initial mode. For instance, if
-// the following expression has to be minimized:
-// (a * b) / (c - d) then the functors are called as follows:
-// downard()(downward()(a * b) / upward()(c - d))
-// the call sequence is as follows:
-// set downward; set downward; num = a * b; restore downward; return n;
-// set upward; den = c - d; restore downward; return den; r = num / den;
-// restore to_nearest; return r;
-
-class upward
+// saveNumberRoundMode doesn't do quite enough for us.  What we want is a
+// Number::RoundModeGuard that sets the new mode and restores the old mode
+// when it leaves scope.  Since Number doesn't have that facility, we'll
+// build it here.
+class NumberRoundModeGuard
 {
-private:
-    Number::rounding_mode mode_;
+    saveNumberRoundMode saved_;
 
 public:
-    upward() : mode_(Number::getround())
+    explicit NumberRoundModeGuard(Number::rounding_mode mode) noexcept
+        : saved_{Number::setround(mode)}
     {
-        Number::setround(Number::rounding_mode::upward);
     }
-    ~upward() = default;
-    upward(upward const&) = delete;
-    upward(upward const&&) = delete;
-    upward&
-    operator=(upward const&) = delete;
-    upward&
-    operator=(upward const&&) = delete;
-    Number const&
-    operator()(Number const& n)
-    {
-        Number::setround(mode_);
-        return n;
-    }
-};
 
-class downward
-{
-private:
-    Number::rounding_mode mode_;
+    NumberRoundModeGuard(NumberRoundModeGuard const&) = delete;
 
-public:
-    downward() : mode_(Number::getround())
-    {
-        Number::setround(Number::rounding_mode::downward);
-    }
-    ~downward() = default;
-    downward(downward const&) = delete;
-    downward(downward const&&) = delete;
-    downward&
-    operator=(downward const&) = delete;
-    downward&
-    operator=(downward const&&) = delete;
-    Number const&
-    operator()(Number const& n)
-    {
-        Number::setround(mode_);
-        return n;
-    }
+    NumberRoundModeGuard&
+    operator=(NumberRoundModeGuard const&) = delete;
 };
 
 }  // namespace ripple
