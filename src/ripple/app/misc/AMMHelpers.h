@@ -216,8 +216,8 @@ getAMMOfferStartWithTakerGets(
         nTakerGets = nTakerGetsConstraint;
 
     auto getAmounts = [&](Number const& nTakerGets) {
-      // Round downward to minimize the offer and to maximize the quality.
-      // This has the most impact when takerGets is XRP.
+        // Round downward to minimize the offer and to maximize the quality.
+        // This has the most impact when takerGets is XRP.
         auto const takerGets = toAmount<TOut>(
             getIssue(pool.out), nTakerGets, Number::rounding_mode::downward);
         return TAmounts<TIn, TOut>{
