@@ -5703,6 +5703,10 @@ private:
             {"1.070884664490231", "127604712776", Quality{5268620608623825741}, 293, Status::Fail},
             {"3272.448829820197", "6275124076", Quality{5625710328924117902}, 81, Status::Fail},
             {"0.009059512633902926", "7994028", Quality{5477511954775533172}, 1000, Status::Fail},
+            {"1", "1.0", Quality{0}, 100, Status::Fail},
+            {"1.0", "1", Quality{0}, 100, Status::Fail},
+            {"10", "10.0", Quality{TAmounts{XRPAmount{10}, IOUAmount{100}}}, 100, Status::Fail},
+            {"10.0", "10", Quality{TAmounts{IOUAmount{10}, XRPAmount{100}}}, 100, Status::Fail},
             {"69864389131", "287631.4543025075", Quality{6487623473313516078}, 451, Status::Succeed},
             {"4328342973", "12453825.99247381", Quality{6272522264364865181}, 997, Status::Succeed},
             {"32347017", "7003.93031579449", Quality{6347261126087916670}, 1000, Status::Succeed},
@@ -5846,6 +5850,14 @@ private:
                     !features[fixAMMv1_1] &&
                     status == Status::FailShouldSucceed);
             }
+        }
+
+        // Test negative discriminant
+        {
+            // b**2 - 4 * a * c -> 1 * 1 - 4 * 1 * 1 = -3
+            auto const res =
+                solveQuadraticEqSmallest(Number{1}, Number{1}, Number{1});
+            BEAST_EXPECT(!res.has_value());
         }
     }
 

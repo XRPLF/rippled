@@ -211,7 +211,7 @@ getAMMOfferStartWithTakerGets(
 
     auto nTakerGets = solveQuadraticEqSmallest(a, b, c);
     if (!nTakerGets || *nTakerGets <= 0)
-        return std::nullopt;
+        return std::nullopt;  // LCOV_EXCL_LINE
 
     auto const nTakerGetsConstraint =
         pool.out - pool.in / (targetQuality.rate() * f);
@@ -282,7 +282,7 @@ getAMMOfferStartWithTakerPays(
 
     auto nTakerPays = solveQuadraticEqSmallest(a, b, c);
     if (!nTakerPays || nTakerPays <= 0)
-        return std::nullopt;
+        return std::nullopt;  // LCOV_EXCL_LINE
 
     auto const nTakerPaysConstraint =
         pool.out * targetQuality.rate() - pool.in / f;
@@ -350,7 +350,7 @@ changeSpotPriceQuality(
         Number const c =
             pool.in * pool.in - pool.in * pool.out * quality.rate();
         if (auto const res = b * b - 4 * a * c; res < 0)
-            return std::nullopt;
+            return std::nullopt;  // LCOV_EXCL_LINE
         else if (auto const nTakerPaysPropose = (-b + root2(res)) / (2 * a);
                  nTakerPaysPropose > 0)
         {
