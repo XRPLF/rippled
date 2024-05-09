@@ -222,11 +222,11 @@ getAMMOfferStartWithTakerGets(
     if (nTakerGetsConstraint < *nTakerGets)
         nTakerGets = nTakerGetsConstraint;
 
-    auto getAmounts = [&pool, &tfee](Number const& nTakerGets_) {
+    auto getAmounts = [&pool, &tfee](Number const& nTakerGetsProposed) {
         // Round downward to minimize the offer and to maximize the quality.
         // This has the most impact when takerGets is XRP.
-        auto const takerGets =
-            toAmount<TOut>(getIssue(pool.out), nTakerGets_, Number::downward);
+        auto const takerGets = toAmount<TOut>(
+            getIssue(pool.out), nTakerGetsProposed, Number::downward);
         return TAmounts<TIn, TOut>{
             swapAssetOut(pool, takerGets, tfee), takerGets};
     };
@@ -293,11 +293,11 @@ getAMMOfferStartWithTakerPays(
     if (nTakerPaysConstraint < *nTakerPays)
         nTakerPays = nTakerPaysConstraint;
 
-    auto getAmounts = [&pool, &tfee](Number const& nTakerPays_) {
+    auto getAmounts = [&pool, &tfee](Number const& nTakerPaysProposed) {
         // Round downward to minimize the offer and to maximize the quality.
         // This has the most impact when takerPays is XRP.
-        auto const takerPays =
-            toAmount<TIn>(getIssue(pool.in), nTakerPays_, Number::downward);
+        auto const takerPays = toAmount<TIn>(
+            getIssue(pool.in), nTakerPaysProposed, Number::downward);
         return TAmounts<TIn, TOut>{
             takerPays, swapAssetIn(pool, takerPays, tfee)};
     };
