@@ -20,11 +20,12 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/strHex.h>
+#include <ripple/beast/core/LexicalCast.h>
 #include <ripple/json/json_errors.h>
 #include <ripple/ledger/ReadView.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/STXChainBridge.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
@@ -597,6 +598,51 @@ doLedgerEntry(RPC::JsonContext& context)
                 jvResult[jss::error] = "malformedAddress";
             else
                 uNodeIndex = keylet::did(*account).key;
+        }
+        else if (context.params.isMember(jss::oracle))
+        {
+            expectedType = ltORACLE;
+            if (!context.params[jss::oracle].isObject())
+            {
+                if (!uNodeIndex.parseHex(
+                        context.params[jss::oracle].asString()))
+                {
+                    uNodeIndex = beast::zero;
+                    jvResult[jss::error] = "malformedRequest";
+                }
+            }
+            else if (
+                !context.params[jss::oracle].isMember(
+                    jss::oracle_document_id) ||
+                !context.params[jss::oracle].isMember(jss::account))
+            {
+                jvResult[jss::error] = "malformedRequest";
+            }
+            else
+            {
+                uNodeIndex = beast::zero;
+                auto const& oracle = context.params[jss::oracle];
+                auto const documentID = [&]() -> std::optional<std::uint32_t> {
+                    auto const& id = oracle[jss::oracle_document_id];
+                    if (id.isUInt() || (id.isInt() && id.asInt() >= 0))
+                        return std::make_optional(id.asUInt());
+                    else if (id.isString())
+                    {
+                        std::uint32_t v;
+                        if (beast::lexicalCastChecked(v, id.asString()))
+                            return std::make_optional(v);
+                    }
+                    return std::nullopt;
+                }();
+                auto const account =
+                    parseBase58<AccountID>(oracle[jss::account].asString());
+                if (!account || account->isZero())
+                    jvResult[jss::error] = "malformedAddress";
+                else if (!documentID)
+                    jvResult[jss::error] = "malformedDocumentID";
+                else
+                    uNodeIndex = keylet::oracle(*account, *documentID).key;
+            }
         }
         else
         {

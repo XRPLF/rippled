@@ -322,7 +322,7 @@ public:
 
     /**
      * @brief Returns minimum required fee for tx and two sequences:
-     *        first vaild sequence for this account in current ledger
+     *        first valid sequence for this account in current ledger
      *        and first available sequence for transaction
      * @param view current open ledger
      * @param tx the transaction

@@ -21,7 +21,7 @@
 #include <ripple/basics/ByteUtilities.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/unit_test.h>
-#include <ripple/beast/unit_test/thread.hpp>
+#include <ripple/beast/unit_test/thread.h>
 #include <ripple/beast/utility/temp_dir.h>
 #include <ripple/beast/xor_shift_engine.h>
 #include <ripple/nodestore/DummyScheduler.h>

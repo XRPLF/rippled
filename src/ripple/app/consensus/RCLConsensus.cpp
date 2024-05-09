@@ -98,20 +98,22 @@ RCLConsensus::Adaptor::Adaptor(
     JLOG(j_.info()) << "Consensus engine started (cookie: " +
             std::to_string(valCookie_) + ")";
 
-    if (validatorKeys_.nodeID != beast::zero)
+    if (validatorKeys_.nodeID != beast::zero && validatorKeys_.keys)
     {
         std::stringstream ss;
 
         JLOG(j_.info()) << "Validator identity: "
                         << toBase58(
                                TokenType::NodePublic,
-                               validatorKeys_.masterPublicKey);
+                               validatorKeys_.keys->masterPublicKey);
 
-        if (validatorKeys_.masterPublicKey != validatorKeys_.publicKey)
+        if (validatorKeys_.keys->masterPublicKey !=
+            validatorKeys_.keys->publicKey)
         {
             JLOG(j_.debug())
                 << "Validator ephemeral signing key: "
-                << toBase58(TokenType::NodePublic, validatorKeys_.publicKey)
+                << toBase58(
+                       TokenType::NodePublic, validatorKeys_.keys->publicKey)
                 << " (seq: " << std::to_string(validatorKeys_.sequence) << ")";
         }
     }
@@ -210,13 +212,20 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
         proposal.prevLedger().begin(), proposal.prevLedger().size());
     prop.set_proposeseq(proposal.proposeSeq());
     prop.set_closetime(proposal.closeTime().time_since_epoch().count());
-    prop.set_nodepubkey(
-        validatorKeys_.publicKey.data(), validatorKeys_.publicKey.size());
 
-    auto sig = signDigest(
-        validatorKeys_.publicKey,
-        validatorKeys_.secretKey,
-        proposal.signingHash());
+    if (!validatorKeys_.keys)
+    {
+        JLOG(j_.warn()) << "RCLConsensus::Adaptor::propose: ValidatorKeys "
+                           "not set: \n";
+        return;
+    }
+
+    auto const& keys = *validatorKeys_.keys;
+
+    prop.set_nodepubkey(keys.publicKey.data(), keys.publicKey.size());
+
+    auto sig =
+        signDigest(keys.publicKey, keys.secretKey, proposal.signingHash());
 
     prop.set_signature(sig.data(), sig.size());
 
@@ -225,7 +234,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
         proposal.prevLedger(),
         proposal.proposeSeq(),
         proposal.closeTime(),
-        validatorKeys_.publicKey,
+        keys.publicKey,
         sig);
 
     app_.getHashRouter().addSuppression(suppression);
@@ -799,10 +808,19 @@ RCLConsensus::Adaptor::validate(
         validationTime = lastValidationTime_ + 1s;
     lastValidationTime_ = validationTime;
 
+    if (!validatorKeys_.keys)
+    {
+        JLOG(j_.warn()) << "RCLConsensus::Adaptor::validate: ValidatorKeys "
+                           "not set\n";
+        return;
+    }
+
+    auto const& keys = *validatorKeys_.keys;
+
     auto v = std::make_shared<STValidation>(
         lastValidationTime_,
-        validatorKeys_.publicKey,
-        validatorKeys_.secretKey,
+        keys.publicKey,
+        keys.secretKey,
         validatorKeys_.nodeID,
         [&](STValidation& v) {
             v.setFieldH256(sfLedgerHash, ledger.id());
@@ -960,7 +978,7 @@ RCLConsensus::Adaptor::preStartRound(
 {
     // We have a key, we do not want out of sync validations after a restart
     // and are not amendment blocked.
-    validating_ = validatorKeys_.publicKey.size() != 0 &&
+    validating_ = validatorKeys_.keys &&
         prevLgr.seq() >= app_.getMaxDisallowedLedger() &&
         !app_.getOPs().isBlocked();
 
@@ -1033,7 +1051,7 @@ RCLConsensus::Adaptor::laggards(
 bool
 RCLConsensus::Adaptor::validator() const
 {
-    return !validatorKeys_.publicKey.empty();
+    return validatorKeys_.keys.has_value();
 }
 
 void

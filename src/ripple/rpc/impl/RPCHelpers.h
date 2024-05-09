@@ -22,6 +22,7 @@
 
 #include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
+#include <ripple/protocol/ApiVersion.h>
 #include <ripple/protocol/TxMeta.h>
 
 #include <ripple/app/misc/NetworkOPs.h>
@@ -30,6 +31,7 @@
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/Status.h>
 #include <ripple/rpc/impl/Tuning.h>
+
 #include <optional>
 #include <variant>
 
@@ -207,41 +209,6 @@ extern beast::SemanticVersion const firstVersion;
 extern beast::SemanticVersion const goodVersion;
 extern beast::SemanticVersion const lastVersion;
 
-/**
- * API version numbers used in later API versions
- *
- * Requests with a version number in the range
- * [apiMinimumSupportedVersion, apiMaximumSupportedVersion]
- * are supported.
- *
- * If [beta_rpc_api] is enabled in config, the version numbers
- * in the range [apiMinimumSupportedVersion, apiBetaVersion]
- * are supported.
- *
- * Network Requests without explicit version numbers use
- * apiVersionIfUnspecified. apiVersionIfUnspecified is 1,
- * because all the RPC requests with a version >= 2 must
- * explicitly specify the version in the requests.
- * Note that apiVersionIfUnspecified will be lower than
- * apiMinimumSupportedVersion when we stop supporting API
- * version 1.
- *
- * Command line Requests use apiMaximumSupportedVersion.
- */
-
-constexpr unsigned int apiInvalidVersion = 0;
-constexpr unsigned int apiVersionIfUnspecified = 1;
-constexpr unsigned int apiMinimumSupportedVersion = 1;
-constexpr unsigned int apiMaximumSupportedVersion = 2;
-constexpr unsigned int apiCommandLineVersion = 1;  // TODO Bump to 2 later
-constexpr unsigned int apiBetaVersion = 3;
-constexpr unsigned int apiMaximumValidVersion = apiBetaVersion;
-
-static_assert(apiMinimumSupportedVersion >= apiVersionIfUnspecified);
-static_assert(apiMaximumSupportedVersion >= apiMinimumSupportedVersion);
-static_assert(apiBetaVersion >= apiMaximumSupportedVersion);
-static_assert(apiMaximumValidVersion >= apiMaximumSupportedVersion);
-
 template <class Object>
 void
 setVersion(Object& parent, unsigned int apiVersion, bool betaEnabled)
@@ -256,7 +223,7 @@ setVersion(Object& parent, unsigned int apiVersion, bool betaEnabled)
     }
     else
     {
-        object[jss::first] = apiMinimumSupportedVersion;
+        object[jss::first] = apiMinimumSupportedVersion.value;
         object[jss::last] =
             betaEnabled ? apiBetaVersion : apiMaximumSupportedVersion;
     }
@@ -287,7 +254,7 @@ getAPIVersionNumber(const Json::Value& value, bool betaEnabled);
 std::variant<std::shared_ptr<Ledger const>, Json::Value>
 getLedgerByContext(RPC::JsonContext& context);
 
-std::pair<PublicKey, SecretKey>
+std::optional<std::pair<PublicKey, SecretKey>>
 keypairForSignature(
     Json::Value const& params,
     Json::Value& error,

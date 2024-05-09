@@ -24,8 +24,10 @@
 #include <ripple/basics/Number.h>
 #include <ripple/protocol/AMMCore.h>
 #include <ripple/protocol/AmountConversions.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Issue.h>
 #include <ripple/protocol/Quality.h>
+#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/STAmount.h>
 
@@ -134,7 +136,7 @@ withinRelativeDistance(
 template <typename Amt>
     requires(
         std::is_same_v<Amt, STAmount> || std::is_same_v<Amt, IOUAmount> ||
-        std::is_same_v<Amt, XRPAmount>)
+        std::is_same_v<Amt, XRPAmount> || std::is_same_v<Amt, Number>)
 bool
 withinRelativeDistance(Amt const& calc, Amt const& req, Number const& dist)
 {
@@ -228,10 +230,62 @@ swapAssetIn(
     TIn const& assetIn,
     std::uint16_t tfee)
 {
-    return toAmount<TOut>(
-        getIssue(pool.out),
-        pool.out - (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
-        Number::rounding_mode::downward);
+    if (auto const& rules = getCurrentTransactionRules();
+        rules && rules->enabled(fixAMMRounding))
+    {
+        // set rounding to always favor the amm. Clip to zero.
+        // calculate:
+        // pool.out -
+        // (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
+        // and explicitly set the rounding modes
+        // Favoring the amm means we should:
+        // minimize:
+        // pool.out -
+        // (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
+        // maximize:
+        // (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
+        // (pool.in * pool.out)
+        // minimize:
+        // (pool.in + assetIn * feeMult(tfee)),
+        // minimize:
+        // assetIn * feeMult(tfee)
+        // feeMult is: (1-fee), fee is tfee/100000
+        // minimize:
+        // 1-fee
+        // maximize:
+        // fee
+        saveNumberRoundMode _{Number::getround()};
+
+        Number::setround(Number::upward);
+        auto const numerator = pool.in * pool.out;
+        auto const fee = getFee(tfee);
+
+        Number::setround(Number::downward);
+        auto const denom = pool.in + assetIn * (1 - fee);
+
+        if (denom.signum() <= 0)
+            return toAmount<TOut>(getIssue(pool.out), 0);
+
+        Number::setround(Number::upward);
+        auto const ratio = numerator / denom;
+
+        Number::setround(Number::downward);
+        auto const swapOut = pool.out - ratio;
+
+        if (swapOut.signum() < 0)
+            return toAmount<TOut>(getIssue(pool.out), 0);
+
+        return toAmount<TOut>(
+            getIssue(pool.out), swapOut, Number::rounding_mode::downward);
+    }
+    else
+    {
+        return toAmount<TOut>(
+            getIssue(pool.out),
+            pool.out -
+                (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
+            Number::rounding_mode::downward);
+    }
 }
 
 /** Swap assetOut out of the pool and swap in a proportional amount
@@ -250,11 +304,62 @@ swapAssetOut(
     TOut const& assetOut,
     std::uint16_t tfee)
 {
-    return toAmount<TIn>(
-        getIssue(pool.in),
-        ((pool.in * pool.out) / (pool.out - assetOut) - pool.in) /
-            feeMult(tfee),
-        Number::rounding_mode::upward);
+    if (auto const& rules = getCurrentTransactionRules();
+        rules && rules->enabled(fixAMMRounding))
+    {
+        // set rounding to always favor the amm. Clip to zero.
+        // calculate:
+        // ((pool.in * pool.out) / (pool.out - assetOut) - pool.in) /
+        // (1-tfee/100000)
+        // maximize:
+        // ((pool.in * pool.out) / (pool.out - assetOut) - pool.in)
+        // maximize:
+        // (pool.in * pool.out) / (pool.out - assetOut)
+        // maximize:
+        // (pool.in * pool.out)
+        // minimize
+        // (pool.out - assetOut)
+        // minimize:
+        // (1-tfee/100000)
+        // maximize:
+        // tfee/100000
+
+        saveNumberRoundMode _{Number::getround()};
+
+        Number::setround(Number::upward);
+        auto const numerator = pool.in * pool.out;
+
+        Number::setround(Number::downward);
+        auto const denom = pool.out - assetOut;
+        if (denom.signum() <= 0)
+        {
+            return toMaxAmount<TIn>(getIssue(pool.in));
+        }
+
+        Number::setround(Number::upward);
+        auto const ratio = numerator / denom;
+        auto const numerator2 = ratio - pool.in;
+        auto const fee = getFee(tfee);
+
+        Number::setround(Number::downward);
+        auto const feeMult = 1 - fee;
+
+        Number::setround(Number::upward);
+        auto const swapIn = numerator2 / feeMult;
+        if (swapIn.signum() < 0)
+            return toAmount<TIn>(getIssue(pool.in), 0);
+
+        return toAmount<TIn>(
+            getIssue(pool.in), swapIn, Number::rounding_mode::upward);
+    }
+    else
+    {
+        return toAmount<TIn>(
+            getIssue(pool.in),
+            ((pool.in * pool.out) / (pool.out - assetOut) - pool.in) /
+                feeMult(tfee),
+            Number::rounding_mode::upward);
+    }
 }
 
 /** Return square of n.
@@ -263,12 +368,12 @@ Number
 square(Number const& n);
 
 /** Adjust LP tokens to deposit/withdraw.
- * Amount type keeps 16 digits. Maintaining the LP balance by adding deposited
- * tokens or subtracting withdrawn LP tokens from LP balance results in
- * losing precision in LP balance. I.e. the resulting LP balance
+ * Amount type keeps 16 digits. Maintaining the LP balance by adding
+ * deposited tokens or subtracting withdrawn LP tokens from LP balance
+ * results in losing precision in LP balance. I.e. the resulting LP balance
  * is less than the actual sum of LP tokens. To adjust for this, subtract
- * old tokens balance from the new one for deposit or vice versa for withdraw
- * to cancel out the precision loss.
+ * old tokens balance from the new one for deposit or vice versa for
+ * withdraw to cancel out the precision loss.
  * @param lptAMMBalance LPT AMM Balance
  * @param lpTokens LP tokens to deposit or withdraw
  * @param isDeposit true if deposit, false if withdraw

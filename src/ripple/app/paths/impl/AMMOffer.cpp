@@ -27,7 +27,7 @@ template <typename TIn, typename TOut>
 AMMOffer<TIn, TOut>::AMMOffer(
     AMMLiquidity<TIn, TOut> const& ammLiquidity,
     TAmounts<TIn, TOut> const& amounts,
-    std::optional<TAmounts<TIn, TOut>> const& balances,
+    TAmounts<TIn, TOut> const& balances,
     Quality const& quality)
     : ammLiquidity_(ammLiquidity)
     , amounts_(amounts)
@@ -42,13 +42,6 @@ Issue const&
 AMMOffer<TIn, TOut>::issueIn() const
 {
     return ammLiquidity_.issueIn();
-}
-
-template <typename TIn, typename TOut>
-Issue const&
-AMMOffer<TIn, TOut>::issueOut() const
-{
-    return ammLiquidity_.issueOut();
 }
 
 template <typename TIn, typename TOut>
@@ -110,7 +103,7 @@ AMMOffer<TIn, TOut>::limitOut(
     // Change the offer size according to the conservation function. The offer
     // quality is increased in this case, but it doesn't matter since there is
     // only one path.
-    return {swapAssetOut(*balances_, limit, ammLiquidity_.tradingFee()), limit};
+    return {swapAssetOut(balances_, limit, ammLiquidity_.tradingFee()), limit};
 }
 
 template <typename TIn, typename TOut>
@@ -122,7 +115,7 @@ AMMOffer<TIn, TOut>::limitIn(
     // See the comments above in limitOut().
     if (ammLiquidity_.multiPath())
         return quality().ceil_in(offrAmt, limit);
-    return {limit, swapAssetIn(*balances_, limit, ammLiquidity_.tradingFee())};
+    return {limit, swapAssetIn(balances_, limit, ammLiquidity_.tradingFee())};
 }
 
 template <typename TIn, typename TOut>
@@ -132,7 +125,45 @@ AMMOffer<TIn, TOut>::getQualityFunc() const
     if (ammLiquidity_.multiPath())
         return QualityFunction{quality(), QualityFunction::CLOBLikeTag{}};
     return QualityFunction{
-        *balances_, ammLiquidity_.tradingFee(), QualityFunction::AMMTag{}};
+        balances_, ammLiquidity_.tradingFee(), QualityFunction::AMMTag{}};
+}
+
+template <typename TIn, typename TOut>
+bool
+AMMOffer<TIn, TOut>::checkInvariant(
+    TAmounts<TIn, TOut> const& consumed,
+    beast::Journal j) const
+{
+    if (consumed.in > amounts_.in || consumed.out > amounts_.out)
+    {
+        JLOG(j.error()) << "AMMOffer::checkInvariant failed: consumed "
+                        << to_string(consumed.in) << " "
+                        << to_string(consumed.out) << " amounts "
+                        << to_string(amounts_.in) << " "
+                        << to_string(amounts_.out);
+
+        return false;
+    }
+
+    Number const product = balances_.in * balances_.out;
+    auto const newBalances = TAmounts<TIn, TOut>{
+        balances_.in + consumed.in, balances_.out - consumed.out};
+    Number const newProduct = newBalances.in * newBalances.out;
+
+    if (newProduct >= product ||
+        withinRelativeDistance(product, newProduct, Number{1, -7}))
+        return true;
+
+    JLOG(j.error()) << "AMMOffer::checkInvariant failed: balances "
+                    << to_string(balances_.in) << " "
+                    << to_string(balances_.out) << " new balances "
+                    << to_string(newBalances.in) << " "
+                    << to_string(newBalances.out) << " product/newProduct "
+                    << product << " " << newProduct << " diff "
+                    << (product != Number{0}
+                            ? to_string((product - newProduct) / product)
+                            : "undefined");
+    return false;
 }
 
 template class AMMOffer<STAmount, STAmount>;

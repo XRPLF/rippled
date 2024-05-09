@@ -50,9 +50,8 @@ private:
     // the swap out of the entire side of the pool, in which case
     // the swap in amount is infinite.
     TAmounts<TIn, TOut> const amounts_;
-    // If seated then current pool balances. Used in one-path limiting steps
-    // to swap in/out.
-    std::optional<TAmounts<TIn, TOut>> const balances_;
+    // Current pool balances.
+    TAmounts<TIn, TOut> const balances_;
     // The Spot Price quality if balances != amounts
     // else the amounts quality
     Quality const quality_;
@@ -63,7 +62,7 @@ public:
     AMMOffer(
         AMMLiquidity<TIn, TOut> const& ammLiquidity,
         TAmounts<TIn, TOut> const& amounts,
-        std::optional<TAmounts<TIn, TOut>> const& balances,
+        TAmounts<TIn, TOut> const& balances,
         Quality const& quality);
 
     Quality
@@ -74,9 +73,6 @@ public:
 
     Issue const&
     issueIn() const;
-
-    Issue const&
-    issueOut() const;
 
     AccountID const&
     owner() const;
@@ -142,6 +138,12 @@ public:
         // AMM doesn't pay transfer fee on Payment tx
         return {ofrInRate, QUALITY_ONE};
     }
+
+    /** Check the new pool product is greater or equal to the old pool
+     * product or if decreases then within some threshold.
+     */
+    bool
+    checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::Journal j) const;
 };
 
 }  // namespace ripple

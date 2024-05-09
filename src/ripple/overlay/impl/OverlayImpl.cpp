@@ -473,7 +473,7 @@ OverlayImpl::start()
     PeerFinder::Config config = PeerFinder::Config::makeConfig(
         app_.config(),
         serverHandler_.setup().overlay.port,
-        !app_.getValidationPublicKey().empty(),
+        app_.getValidationPublicKey().has_value(),
         setup_.ipLimit);
 
     m_peerFinder->setConfig(config);
@@ -490,9 +490,6 @@ OverlayImpl::start()
     {
         // Pool of servers operated by Ripple Labs Inc. - https://ripple.com
         bootstrapIps.push_back("r.ripple.com 51235");
-
-        // Pool of servers operated by Alloy Networks - https://www.alloy.ee
-        bootstrapIps.push_back("zaphod.alloy.ee 51235");
 
         // Pool of servers operated by ISRDC - https://isrdc.in
         bootstrapIps.push_back("sahyadri.isrdc.in 51235");

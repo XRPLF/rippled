@@ -24,6 +24,7 @@
 #include <ripple/app/paths/impl/StrandFlow.h>
 #include <ripple/ledger/PaymentSandbox.h>
 #include <ripple/protocol/AMMCore.h>
+#include <ripple/protocol/Feature.h>
 #include <ripple/protocol/STParsedJSON.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/RPCHandler.h>
@@ -42,6 +43,9 @@
 namespace ripple {
 namespace test {
 
+/**
+ * Tests of AMM that use offers too.
+ */
 struct AMMExtended_test : public jtx::AMMTest
 {
 private:
@@ -90,10 +94,20 @@ private:
             sendmax(BTC(1'000)),
             txflags(tfPartialPayment));
 
-        BEAST_EXPECT(ammCarol.expectBalances(
-            STAmount{BTC, UINT64_C(1'001'000000374812), -12},
-            USD(100'000),
-            ammCarol.tokens()));
+        if (!features[fixAMMRounding])
+        {
+            BEAST_EXPECT(ammCarol.expectBalances(
+                STAmount{BTC, UINT64_C(1'001'000000374812), -12},
+                USD(100'000),
+                ammCarol.tokens()));
+        }
+        else
+        {
+            BEAST_EXPECT(ammCarol.expectBalances(
+                STAmount{BTC, UINT64_C(1'001'000000374815), -12},
+                USD(100'000),
+                ammCarol.tokens()));
+        }
 
         env.require(balance(bob, USD(200'100)));
         BEAST_EXPECT(isOffer(env, carol, BTC(49), XRP(49)));
@@ -706,12 +720,24 @@ private:
         auto const jrr = env.rpc("json", "submit", to_string(payment));
         BEAST_EXPECT(jrr[jss::result][jss::status] == "success");
         BEAST_EXPECT(jrr[jss::result][jss::engine_result] == "tesSUCCESS");
-        BEAST_EXPECT(ammAlice.expectBalances(
-            STAmount(XTS, UINT64_C(101'010101010101), -12),
-            XXX(99),
-            ammAlice.tokens()));
-        BEAST_EXPECT(expectLine(
-            env, bob, STAmount{XTS, UINT64_C(98'989898989899), -12}));
+        if (!features[fixAMMRounding])
+        {
+            BEAST_EXPECT(ammAlice.expectBalances(
+                STAmount(XTS, UINT64_C(101'010101010101), -12),
+                XXX(99),
+                ammAlice.tokens()));
+            BEAST_EXPECT(expectLine(
+                env, bob, STAmount{XTS, UINT64_C(98'989898989899), -12}));
+        }
+        else
+        {
+            BEAST_EXPECT(ammAlice.expectBalances(
+                STAmount(XTS, UINT64_C(101'0101010101011), -13),
+                XXX(99),
+                ammAlice.tokens()));
+            BEAST_EXPECT(expectLine(
+                env, bob, STAmount{XTS, UINT64_C(98'9898989898989), -13}));
+        }
         BEAST_EXPECT(expectLine(env, bob, XXX(101)));
     }
 
@@ -1401,6 +1427,7 @@ private:
         using namespace jtx;
         FeatureBitset const all{supported_amendments()};
         testRmFundedOffer(all);
+        testRmFundedOffer(all - fixAMMRounding);
         testEnforceNoRipple(all);
         testFillModes(all);
         testOfferCrossWithXRP(all);
@@ -1414,6 +1441,7 @@ private:
         testOfferCreateThenCross(all);
         testSellFlagExceedLimit(all);
         testGatewayCrossCurrency(all);
+        testGatewayCrossCurrency(all - fixAMMRounding);
         // testPartialCross
         // testXRPDirectCross
         // testDirectCross
@@ -2289,16 +2317,36 @@ private:
                 txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
-            // alice buys 77.2727USD with 75.5555GBP and pays 25% tr fee
-            // on 75.5555GBP
-            // 1,200 - 75.55555*1.25 = 1200 - 94.4444 = 1105.55555GBP
-            BEAST_EXPECT(expectLine(
-                env, alice, STAmount{GBP, UINT64_C(1'105'555555555555), -12}));
-            // 75.5555GBP is swapped in for 77.7272USD
-            BEAST_EXPECT(amm.expectBalances(
-                STAmount{GBP, UINT64_C(1'075'555555555556), -12},
-                STAmount{USD, UINT64_C(1'022'727272727272), -12},
-                amm.tokens()));
+            if (!features[fixAMMRounding])
+            {
+                // alice buys 77.2727USD with 75.5555GBP and pays 25% tr fee
+                // on 75.5555GBP
+                // 1,200 - 75.55555*1.25 = 1200 - 94.4444 = 1105.55555GBP
+                BEAST_EXPECT(expectLine(
+                    env,
+                    alice,
+                    STAmount{GBP, UINT64_C(1'105'555555555555), -12}));
+                // 75.5555GBP is swapped in for 77.7272USD
+                BEAST_EXPECT(amm.expectBalances(
+                    STAmount{GBP, UINT64_C(1'075'555555555556), -12},
+                    STAmount{USD, UINT64_C(1'022'727272727272), -12},
+                    amm.tokens()));
+            }
+            else
+            {
+                // alice buys 77.2727USD with 75.5555GBP and pays 25% tr fee
+                // on 75.5555GBP
+                // 1,200 - 75.55555*1.25 = 1200 - 94.4444 = 1105.55555GBP
+                BEAST_EXPECT(expectLine(
+                    env,
+                    alice,
+                    STAmount{GBP, UINT64_C(1'105'555555555554), -12}));
+                // 75.5555GBP is swapped in for 77.7272USD
+                BEAST_EXPECT(amm.expectBalances(
+                    STAmount{GBP, UINT64_C(1'075'555555555557), -12},
+                    STAmount{USD, UINT64_C(1'022'727272727272), -12},
+                    amm.tokens()));
+            }
             BEAST_EXPECT(expectLine(
                 env, carol, STAmount{USD, UINT64_C(1'277'272727272728), -12}));
         }
@@ -2316,18 +2364,36 @@ private:
             env(offer(alice, EUR(100), USD(100)));
             env.close();
 
-            // 95.2380USD is swapped in for 100EUR
-            BEAST_EXPECT(amm.expectBalances(
-                STAmount{USD, UINT64_C(1'095'238095238095), -12},
-                EUR(1'050),
-                amm.tokens()));
-            // alice pays 25% tr fee on 95.2380USD
-            // 1200-95.2380*1.25 = 1200 - 119.0477 = 1080.9523USD
-            BEAST_EXPECT(expectLine(
-                env,
-                alice,
-                STAmount{USD, UINT64_C(1'080'952380952381), -12},
-                EUR(1'300)));
+            if (!features[fixAMMRounding])
+            {
+                // 95.2380USD is swapped in for 100EUR
+                BEAST_EXPECT(amm.expectBalances(
+                    STAmount{USD, UINT64_C(1'095'238095238095), -12},
+                    EUR(1'050),
+                    amm.tokens()));
+                // alice pays 25% tr fee on 95.2380USD
+                // 1200-95.2380*1.25 = 1200 - 119.0477 = 1080.9523USD
+                BEAST_EXPECT(expectLine(
+                    env,
+                    alice,
+                    STAmount{USD, UINT64_C(1'080'952380952381), -12},
+                    EUR(1'300)));
+            }
+            else
+            {
+                // 95.2380USD is swapped in for 100EUR
+                BEAST_EXPECT(amm.expectBalances(
+                    STAmount{USD, UINT64_C(1'095'238095238096), -12},
+                    EUR(1'050),
+                    amm.tokens()));
+                // alice pays 25% tr fee on 95.2380USD
+                // 1200-95.2380*1.25 = 1200 - 119.0477 = 1080.9523USD
+                BEAST_EXPECT(expectLine(
+                    env,
+                    alice,
+                    STAmount{USD, UINT64_C(1'080'95238095238), -11},
+                    EUR(1'300)));
+            }
             BEAST_EXPECT(expectOffers(env, alice, 0));
         }
 
@@ -2351,20 +2417,42 @@ private:
             env(pay(gw, dan, USD(1'000)));
             AMM ammDan(env, dan, USD(1'000), EUR(1'050));
 
-            // alice -> bob -> gw -> carol. $50 should have transfer fee;
-            // $10, no fee
-            env(pay(alice, carol, EUR(50)),
-                path(bob, gw, ~EUR),
-                sendmax(USDA(60)),
-                txflags(tfNoRippleDirect));
-
-            BEAST_EXPECT(
-                ammDan.expectBalances(USD(1'050), EUR(1'000), ammDan.tokens()));
-            BEAST_EXPECT(expectLine(env, dan, USD(0)));
-            BEAST_EXPECT(expectLine(env, dan, EUR(0)));
-            BEAST_EXPECT(expectLine(env, bob, USD(-10)));
-            BEAST_EXPECT(expectLine(env, bob, USDA(60)));
-            BEAST_EXPECT(expectLine(env, carol, EUR(50)));
+            if (!features[fixAMMRounding])
+            {
+                // alice -> bob -> gw -> carol. $50 should have transfer fee;
+                // $10, no fee
+                env(pay(alice, carol, EUR(50)),
+                    path(bob, gw, ~EUR),
+                    sendmax(USDA(60)),
+                    txflags(tfNoRippleDirect));
+                BEAST_EXPECT(ammDan.expectBalances(
+                    USD(1'050), EUR(1'000), ammDan.tokens()));
+                BEAST_EXPECT(expectLine(env, dan, USD(0)));
+                BEAST_EXPECT(expectLine(env, dan, EUR(0)));
+                BEAST_EXPECT(expectLine(env, bob, USD(-10)));
+                BEAST_EXPECT(expectLine(env, bob, USDA(60)));
+                BEAST_EXPECT(expectLine(env, carol, EUR(50)));
+            }
+            else
+            {
+                // alice -> bob -> gw -> carol. $50 should have transfer fee;
+                // $10, no fee
+                env(pay(alice, carol, EUR(50)),
+                    path(bob, gw, ~EUR),
+                    sendmax(USDA(60.1)),
+                    txflags(tfNoRippleDirect));
+                BEAST_EXPECT(ammDan.expectBalances(
+                    STAmount{USD, UINT64_C(1'050'000000000001), -12},
+                    EUR(1'000),
+                    ammDan.tokens()));
+                BEAST_EXPECT(expectLine(env, dan, USD(0)));
+                BEAST_EXPECT(expectLine(env, dan, EUR(0)));
+                BEAST_EXPECT(expectLine(
+                    env, bob, STAmount{USD, INT64_C(-10'000000000001), -12}));
+                BEAST_EXPECT(expectLine(
+                    env, bob, STAmount{USDA, UINT64_C(60'000000000001), -12}));
+                BEAST_EXPECT(expectLine(env, carol, EUR(50)));
+            }
         }
     }
 
@@ -2398,11 +2486,21 @@ private:
             // alice buys 107.1428USD with 120GBP and pays 25% tr fee on 120GBP
             // 1,000 - 120*1.25 = 850GBP
             BEAST_EXPECT(expectLine(env, alice, GBP(850)));
-            // 120GBP is swapped in for 107.1428USD
-            BEAST_EXPECT(amm.expectBalances(
-                GBP(1'120),
-                STAmount{USD, UINT64_C(892'8571428571428), -13},
-                amm.tokens()));
+            if (!features[fixAMMRounding])
+            {
+                // 120GBP is swapped in for 107.1428USD
+                BEAST_EXPECT(amm.expectBalances(
+                    GBP(1'120),
+                    STAmount{USD, UINT64_C(892'8571428571428), -13},
+                    amm.tokens()));
+            }
+            else
+            {
+                BEAST_EXPECT(amm.expectBalances(
+                    GBP(1'120),
+                    STAmount{USD, UINT64_C(892'8571428571429), -13},
+                    amm.tokens()));
+            }
             // 25% of 85.7142USD is paid in tr fee
             // 85.7142*1.25 = 107.1428USD
             BEAST_EXPECT(expectLine(
@@ -2476,20 +2574,39 @@ private:
                 txflags(tfNoRippleDirect | tfPartialPayment));
             env.close();
 
-            // alice buys 107.1428EUR with 120GBP and pays 25% tr fee on 120GBP
-            // 1,000 - 120*1.25 = 850GBP
             BEAST_EXPECT(expectLine(env, alice, GBP(850)));
-            // 120GBP is swapped in for 107.1428EUR
-            BEAST_EXPECT(amm1.expectBalances(
-                GBP(1'120),
-                STAmount{EUR, UINT64_C(892'8571428571428), -13},
-                amm1.tokens()));
-            // 25% on 85.7142EUR is paid in tr fee 85.7142*1.25 = 107.1428EUR
-            // 85.7142EUR is swapped in for 78.9473USD
-            BEAST_EXPECT(amm2.expectBalances(
-                STAmount(EUR, UINT64_C(1'085'714285714286), -12),
-                STAmount{USD, UINT64_C(921'0526315789471), -13},
-                amm2.tokens()));
+            if (!features[fixAMMRounding])
+            {
+                // alice buys 107.1428EUR with 120GBP and pays 25% tr fee on
+                // 120GBP 1,000 - 120*1.25 = 850GBP 120GBP is swapped in for
+                // 107.1428EUR
+                BEAST_EXPECT(amm1.expectBalances(
+                    GBP(1'120),
+                    STAmount{EUR, UINT64_C(892'8571428571428), -13},
+                    amm1.tokens()));
+                // 25% on 85.7142EUR is paid in tr fee 85.7142*1.25 =
+                // 107.1428EUR 85.7142EUR is swapped in for 78.9473USD
+                BEAST_EXPECT(amm2.expectBalances(
+                    STAmount(EUR, UINT64_C(1'085'714285714286), -12),
+                    STAmount{USD, UINT64_C(921'0526315789471), -13},
+                    amm2.tokens()));
+            }
+            else
+            {
+                // alice buys 107.1428EUR with 120GBP and pays 25% tr fee on
+                // 120GBP 1,000 - 120*1.25 = 850GBP 120GBP is swapped in for
+                // 107.1428EUR
+                BEAST_EXPECT(amm1.expectBalances(
+                    GBP(1'120),
+                    STAmount{EUR, UINT64_C(892'8571428571429), -13},
+                    amm1.tokens()));
+                // 25% on 85.7142EUR is paid in tr fee 85.7142*1.25 =
+                // 107.1428EUR 85.7142EUR is swapped in for 78.9473USD
+                BEAST_EXPECT(amm2.expectBalances(
+                    STAmount(EUR, UINT64_C(1'085'714285714286), -12),
+                    STAmount{USD, UINT64_C(921'052631578948), -12},
+                    amm2.tokens()));
+            }
             // 25% on 63.1578USD is paid in tr fee 63.1578*1.25 = 78.9473USD
             BEAST_EXPECT(expectLine(
                 env, carol, STAmount(USD, UINT64_C(1'063'157894736842), -12)));
@@ -2575,13 +2692,31 @@ private:
                 txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
-            // alice buys 28.125USD with 24GBP and pays 25% tr fee
-            // on 24GBP
-            // 1,200 - 24*1.25 = 1,170GBP
-            BEAST_EXPECT(expectLine(env, alice, GBP(1'170)));
-            // 24GBP is swapped in for 28.125USD
-            BEAST_EXPECT(
-                amm.expectBalances(GBP(1'024), USD(1'171.875), amm.tokens()));
+            if (!features[fixAMMRounding])
+            {
+                // alice buys 28.125USD with 24GBP and pays 25% tr fee
+                // on 24GBP
+                // 1,200 - 24*1.25 = 1,170GBP
+                BEAST_EXPECT(expectLine(env, alice, GBP(1'170)));
+                // 24GBP is swapped in for 28.125USD
+                BEAST_EXPECT(amm.expectBalances(
+                    GBP(1'024), USD(1'171.875), amm.tokens()));
+            }
+            else
+            {
+                // alice buys 28.125USD with 24GBP and pays 25% tr fee
+                // on 24GBP
+                // 1,200 - 24*1.25 =~ 1,170GBP
+                BEAST_EXPECT(expectLine(
+                    env,
+                    alice,
+                    STAmount{GBP, UINT64_C(1'169'999999999999), -12}));
+                // 24GBP is swapped in for 28.125USD
+                BEAST_EXPECT(amm.expectBalances(
+                    STAmount{GBP, UINT64_C(1'024'000000000001), -12},
+                    USD(1'171.875),
+                    amm.tokens()));
+            }
             // 25% on 22.5USD is paid in tr fee
             // 22.5*1.25 = 28.125USD
             BEAST_EXPECT(expectLine(env, carol, USD(1'222.5)));
@@ -2614,31 +2749,66 @@ private:
                 txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
-            // alice buys 70.4210EUR with 70.4210GBP via the offer
-            // and pays 25% tr fee on 70.4210GBP
-            // 1,400 - 70.4210*1.25 = 1400 - 88.0262 = 1311.9736GBP
-            BEAST_EXPECT(expectLine(
-                env, alice, STAmount{GBP, UINT64_C(1'311'973684210527), -12}));
-            // ed doesn't pay tr fee, the balances reflect consumed offer
-            // 70.4210GBP/70.4210EUR
-            BEAST_EXPECT(expectLine(
-                env,
-                ed,
-                STAmount{EUR, UINT64_C(1'329'578947368421), -12},
-                STAmount{GBP, UINT64_C(1'470'421052631579), -12}));
-            BEAST_EXPECT(expectOffers(
-                env,
-                ed,
-                1,
-                {Amounts{
-                    STAmount{GBP, UINT64_C(929'5789473684212), -13},
-                    STAmount{EUR, UINT64_C(929'5789473684212), -13}}}));
-            // 25% on 56.3368EUR is paid in tr fee 56.3368*1.25 = 70.4210EUR
-            // 56.3368EUR is swapped in for 74.6651USD
-            BEAST_EXPECT(amm.expectBalances(
-                STAmount{EUR, UINT64_C(1'056'336842105263), -12},
-                STAmount{USD, UINT64_C(1'325'334821428571), -12},
-                amm.tokens()));
+            if (!features[fixAMMRounding])
+            {
+                // alice buys 70.4210EUR with 70.4210GBP via the offer
+                // and pays 25% tr fee on 70.4210GBP
+                // 1,400 - 70.4210*1.25 = 1400 - 88.0262 = 1311.9736GBP
+                BEAST_EXPECT(expectLine(
+                    env,
+                    alice,
+                    STAmount{GBP, UINT64_C(1'311'973684210527), -12}));
+                // ed doesn't pay tr fee, the balances reflect consumed offer
+                // 70.4210GBP/70.4210EUR
+                BEAST_EXPECT(expectLine(
+                    env,
+                    ed,
+                    STAmount{EUR, UINT64_C(1'329'578947368421), -12},
+                    STAmount{GBP, UINT64_C(1'470'421052631579), -12}));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    ed,
+                    1,
+                    {Amounts{
+                        STAmount{GBP, UINT64_C(929'5789473684212), -13},
+                        STAmount{EUR, UINT64_C(929'5789473684212), -13}}}));
+                // 25% on 56.3368EUR is paid in tr fee 56.3368*1.25 = 70.4210EUR
+                // 56.3368EUR is swapped in for 74.6651USD
+                BEAST_EXPECT(amm.expectBalances(
+                    STAmount{EUR, UINT64_C(1'056'336842105263), -12},
+                    STAmount{USD, UINT64_C(1'325'334821428571), -12},
+                    amm.tokens()));
+            }
+            else
+            {
+                // alice buys 70.4210EUR with 70.4210GBP via the offer
+                // and pays 25% tr fee on 70.4210GBP
+                // 1,400 - 70.4210*1.25 = 1400 - 88.0262 = 1311.9736GBP
+                BEAST_EXPECT(expectLine(
+                    env,
+                    alice,
+                    STAmount{GBP, UINT64_C(1'311'973684210525), -12}));
+                // ed doesn't pay tr fee, the balances reflect consumed offer
+                // 70.4210GBP/70.4210EUR
+                BEAST_EXPECT(expectLine(
+                    env,
+                    ed,
+                    STAmount{EUR, UINT64_C(1'329'57894736842), -11},
+                    STAmount{GBP, UINT64_C(1'470'42105263158), -11}));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    ed,
+                    1,
+                    {Amounts{
+                        STAmount{GBP, UINT64_C(929'57894736842), -11},
+                        STAmount{EUR, UINT64_C(929'57894736842), -11}}}));
+                // 25% on 56.3368EUR is paid in tr fee 56.3368*1.25 = 70.4210EUR
+                // 56.3368EUR is swapped in for 74.6651USD
+                BEAST_EXPECT(amm.expectBalances(
+                    STAmount{EUR, UINT64_C(1'056'336842105264), -12},
+                    STAmount{USD, UINT64_C(1'325'334821428571), -12},
+                    amm.tokens()));
+            }
             // 25% on 59.7321USD is paid in tr fee 59.7321*1.25 = 74.6651USD
             BEAST_EXPECT(expectLine(
                 env, carol, STAmount(USD, UINT64_C(1'459'732142857143), -12)));
@@ -2671,17 +2841,40 @@ private:
                 txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
-            // alice buys 53.3322EUR with 56.3368GBP via the amm
-            // and pays 25% tr fee on 56.3368GBP
-            // 1,400 - 56.3368*1.25 = 1400 - 70.4210 = 1329.5789GBP
-            BEAST_EXPECT(expectLine(
-                env, alice, STAmount{GBP, UINT64_C(1'329'578947368421), -12}));
-            //// 25% on 56.3368EUR is paid in tr fee 56.3368*1.25 = 70.4210EUR
-            // 56.3368GBP is swapped in for 53.3322EUR
-            BEAST_EXPECT(amm.expectBalances(
-                STAmount{GBP, UINT64_C(1'056'336842105263), -12},
-                STAmount{EUR, UINT64_C(946'6677295918366), -13},
-                amm.tokens()));
+            if (!features[fixAMMRounding])
+            {
+                // alice buys 53.3322EUR with 56.3368GBP via the amm
+                // and pays 25% tr fee on 56.3368GBP
+                // 1,400 - 56.3368*1.25 = 1400 - 70.4210 = 1329.5789GBP
+                BEAST_EXPECT(expectLine(
+                    env,
+                    alice,
+                    STAmount{GBP, UINT64_C(1'329'578947368421), -12}));
+                //// 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
+                ///= 70.4210EUR
+                // 56.3368GBP is swapped in for 53.3322EUR
+                BEAST_EXPECT(amm.expectBalances(
+                    STAmount{GBP, UINT64_C(1'056'336842105263), -12},
+                    STAmount{EUR, UINT64_C(946'6677295918366), -13},
+                    amm.tokens()));
+            }
+            else
+            {
+                // alice buys 53.3322EUR with 56.3368GBP via the amm
+                // and pays 25% tr fee on 56.3368GBP
+                // 1,400 - 56.3368*1.25 = 1400 - 70.4210 = 1329.5789GBP
+                BEAST_EXPECT(expectLine(
+                    env,
+                    alice,
+                    STAmount{GBP, UINT64_C(1'329'57894736842), -11}));
+                //// 25% on 56.3368EUR is paid in tr fee 56.3368*1.25
+                ///= 70.4210EUR
+                // 56.3368GBP is swapped in for 53.3322EUR
+                BEAST_EXPECT(amm.expectBalances(
+                    STAmount{GBP, UINT64_C(1'056'336842105264), -12},
+                    STAmount{EUR, UINT64_C(946'6677295918366), -13},
+                    amm.tokens()));
+            }
             // 25% on 42.6658EUR is paid in tr fee 42.6658*1.25 = 53.3322EUR
             // 42.6658EUR/59.7321USD
             BEAST_EXPECT(expectLine(
@@ -2726,22 +2919,48 @@ private:
                 txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
-            // alice buys 53.3322EUR with 107.5308GBP
-            // 25% on 86.0246GBP is paid in tr fee
-            // 1,400 - 86.0246*1.25 = 1400 - 107.5308 = 1229.4691GBP
-            BEAST_EXPECT(expectLine(
-                env, alice, STAmount{GBP, UINT64_C(1'292'469135802469), -12}));
-            // 86.0246GBP is swapped in for 79.2106EUR
-            BEAST_EXPECT(amm1.expectBalances(
-                STAmount{GBP, UINT64_C(1'086'024691358025), -12},
-                STAmount{EUR, UINT64_C(920'78937795562), -11},
-                amm1.tokens()));
-            // 25% on 63.3684EUR is paid in tr fee 63.3684*1.25 = 79.2106EUR
-            // 63.3684EUR is swapped in for 83.4291USD
-            BEAST_EXPECT(amm2.expectBalances(
-                STAmount{EUR, UINT64_C(1'063'368497635504), -12},
-                STAmount{USD, UINT64_C(1'316'570881226053), -12},
-                amm2.tokens()));
+            if (!features[fixAMMRounding])
+            {
+                // alice buys 53.3322EUR with 107.5308GBP
+                // 25% on 86.0246GBP is paid in tr fee
+                // 1,400 - 86.0246*1.25 = 1400 - 107.5308 = 1229.4691GBP
+                BEAST_EXPECT(expectLine(
+                    env,
+                    alice,
+                    STAmount{GBP, UINT64_C(1'292'469135802469), -12}));
+                // 86.0246GBP is swapped in for 79.2106EUR
+                BEAST_EXPECT(amm1.expectBalances(
+                    STAmount{GBP, UINT64_C(1'086'024691358025), -12},
+                    STAmount{EUR, UINT64_C(920'78937795562), -11},
+                    amm1.tokens()));
+                // 25% on 63.3684EUR is paid in tr fee 63.3684*1.25 = 79.2106EUR
+                // 63.3684EUR is swapped in for 83.4291USD
+                BEAST_EXPECT(amm2.expectBalances(
+                    STAmount{EUR, UINT64_C(1'063'368497635504), -12},
+                    STAmount{USD, UINT64_C(1'316'570881226053), -12},
+                    amm2.tokens()));
+            }
+            else
+            {
+                // alice buys 53.3322EUR with 107.5308GBP
+                // 25% on 86.0246GBP is paid in tr fee
+                // 1,400 - 86.0246*1.25 = 1400 - 107.5308 = 1229.4691GBP
+                BEAST_EXPECT(expectLine(
+                    env,
+                    alice,
+                    STAmount{GBP, UINT64_C(1'292'469135802466), -12}));
+                // 86.0246GBP is swapped in for 79.2106EUR
+                BEAST_EXPECT(amm1.expectBalances(
+                    STAmount{GBP, UINT64_C(1'086'024691358027), -12},
+                    STAmount{EUR, UINT64_C(920'7893779556188), -13},
+                    amm1.tokens()));
+                // 25% on 63.3684EUR is paid in tr fee 63.3684*1.25 = 79.2106EUR
+                // 63.3684EUR is swapped in for 83.4291USD
+                BEAST_EXPECT(amm2.expectBalances(
+                    STAmount{EUR, UINT64_C(1'063'368497635505), -12},
+                    STAmount{USD, UINT64_C(1'316'570881226053), -12},
+                    amm2.tokens()));
+            }
             // 25% on 66.7432USD is paid in tr fee 66.7432*1.25 = 83.4291USD
             BEAST_EXPECT(expectLine(
                 env, carol, STAmount(USD, UINT64_C(1'466'743295019157), -12)));
@@ -2771,17 +2990,34 @@ private:
                 txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
-            // 108.1481GBP is swapped in for 97.5935EUR
-            BEAST_EXPECT(amm1.expectBalances(
-                STAmount{GBP, UINT64_C(1'108'148148148149), -12},
-                STAmount{EUR, UINT64_C(902'4064171122988), -13},
-                amm1.tokens()));
-            // 25% on 78.0748EUR is paid in tr fee 78.0748*1.25 = 97.5935EUR
-            // 78.0748EUR is swapped in for 101.3888USD
-            BEAST_EXPECT(amm2.expectBalances(
-                STAmount{EUR, UINT64_C(1'078'074866310161), -12},
-                STAmount{USD, UINT64_C(1'298'611111111111), -12},
-                amm2.tokens()));
+            if (!features[fixAMMRounding])
+            {
+                // 108.1481GBP is swapped in for 97.5935EUR
+                BEAST_EXPECT(amm1.expectBalances(
+                    STAmount{GBP, UINT64_C(1'108'148148148149), -12},
+                    STAmount{EUR, UINT64_C(902'4064171122988), -13},
+                    amm1.tokens()));
+                // 25% on 78.0748EUR is paid in tr fee 78.0748*1.25 = 97.5935EUR
+                // 78.0748EUR is swapped in for 101.3888USD
+                BEAST_EXPECT(amm2.expectBalances(
+                    STAmount{EUR, UINT64_C(1'078'074866310161), -12},
+                    STAmount{USD, UINT64_C(1'298'611111111111), -12},
+                    amm2.tokens()));
+            }
+            else
+            {
+                // 108.1481GBP is swapped in for 97.5935EUR
+                BEAST_EXPECT(amm1.expectBalances(
+                    STAmount{GBP, UINT64_C(1'108'148148148151), -12},
+                    STAmount{EUR, UINT64_C(902'4064171122975), -13},
+                    amm1.tokens()));
+                // 25% on 78.0748EUR is paid in tr fee 78.0748*1.25 = 97.5935EUR
+                // 78.0748EUR is swapped in for 101.3888USD
+                BEAST_EXPECT(amm2.expectBalances(
+                    STAmount{EUR, UINT64_C(1'078'074866310162), -12},
+                    STAmount{USD, UINT64_C(1'298'611111111111), -12},
+                    amm2.tokens()));
+            }
             // 25% on 81.1111USD is paid in tr fee 81.1111*1.25 = 101.3888USD
             BEAST_EXPECT(expectLine(
                 env, carol, STAmount{USD, UINT64_C(1'481'111111111111), -12}));
@@ -3034,15 +3270,33 @@ private:
             env(offer(bob, XRP(100), USD(100)));
             env(offer(bob, XRP(1'000), USD(100)));
             AMM ammDan(env, dan, XRP(1'000), USD(1'100));
-            env(pay(alice, carol, USD(10'000)),
-                paths(XRP),
-                delivermin(USD(200)),
-                txflags(tfPartialPayment),
-                sendmax(XRP(200)));
-            env.require(balance(bob, USD(0)));
-            env.require(balance(carol, USD(200)));
-            BEAST_EXPECT(
-                ammDan.expectBalances(XRP(1'100), USD(1'000), ammDan.tokens()));
+            if (!features[fixAMMRounding])
+            {
+                env(pay(alice, carol, USD(10'000)),
+                    paths(XRP),
+                    delivermin(USD(200)),
+                    txflags(tfPartialPayment),
+                    sendmax(XRP(200)));
+                env.require(balance(bob, USD(0)));
+                env.require(balance(carol, USD(200)));
+                BEAST_EXPECT(ammDan.expectBalances(
+                    XRP(1'100), USD(1'000), ammDan.tokens()));
+            }
+            else
+            {
+                env(pay(alice, carol, USD(10'000)),
+                    paths(XRP),
+                    delivermin(USD(200)),
+                    txflags(tfPartialPayment),
+                    sendmax(XRPAmount(200'000'001)));
+                env.require(balance(bob, USD(0)));
+                env.require(balance(
+                    carol, STAmount{USD, UINT64_C(200'00000090909), -11}));
+                BEAST_EXPECT(ammDan.expectBalances(
+                    XRPAmount{1'100'000'001},
+                    STAmount{USD, UINT64_C(999'99999909091), -11},
+                    ammDan.tokens()));
+            }
         }
     }
 
@@ -3271,7 +3525,7 @@ private:
             if (!BEAST_EXPECT(checkArraySize(affected, 4u)))
                 return;
             auto ff =
-                affected[2u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
+                affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
             BEAST_EXPECT(
                 ff[sfHighLimit.fieldName] ==
                 bob["USD"](100).value().getJson(JsonOptions::none));
@@ -3614,6 +3868,8 @@ private:
         int const signerListOwners{features[featureMultiSignReserve] ? 2 : 5};
         env.require(owners(alice, signerListOwners + 0));
 
+        const msig ms{becky, bogie};
+
         // Multisign all AMM transactions
         AMM ammAlice(
             env,
@@ -3625,7 +3881,7 @@ private:
             ammCrtFee(env).drops(),
             std::nullopt,
             std::nullopt,
-            msig(becky, bogie),
+            ms,
             ter(tesSUCCESS));
         BEAST_EXPECT(ammAlice.expectBalances(
             XRP(10'000), USD(10'000), ammAlice.tokens()));
@@ -3641,7 +3897,7 @@ private:
         ammAlice.vote({}, 1'000);
         BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
 
-        ammAlice.bid(alice, 100);
+        env(ammAlice.bid({.account = alice, .bidMin = 100}), ms).close();
         BEAST_EXPECT(ammAlice.expectAuctionSlot(100, 0, IOUAmount{4'000}));
         // 4000 tokens burnt
         BEAST_EXPECT(ammAlice.expectBalances(
@@ -3824,7 +4080,9 @@ private:
         testBookStep(all);
         testBookStep(all | ownerPaysFee);
         testTransferRate(all | ownerPaysFee);
+        testTransferRate((all - fixAMMRounding) | ownerPaysFee);
         testTransferRateNoOwnerFee(all);
+        testTransferRateNoOwnerFee(all - fixAMMRounding);
         testLimitQuality();
         testXRPPathLoop();
     }
@@ -3843,6 +4101,7 @@ private:
         using namespace jtx;
         FeatureBitset const all{supported_amendments()};
         test_convert_all_of_an_asset(all);
+        test_convert_all_of_an_asset(all - fixAMMRounding);
     }
 
     void

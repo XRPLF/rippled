@@ -3,9 +3,53 @@
    core functionality, useable by some client software perhaps
 #]===================================================================]
 
+include(target_protobuf_sources)
+
 file (GLOB_RECURSE rb_headers
-  src/ripple/beast/*.h
-  src/ripple/beast/*.hpp)
+  src/ripple/beast/*.h)
+
+# Protocol buffers cannot participate in a unity build,
+# because all the generated sources
+# define a bunch of `static const` variables with the same names,
+# so we just build them as a separate library.
+add_library(xrpl.libpb)
+target_protobuf_sources(xrpl.libpb ripple/proto
+  LANGUAGE cpp
+  IMPORT_DIRS src/ripple/proto
+  PROTOS src/ripple/proto/ripple.proto
+)
+
+file(GLOB_RECURSE protos "src/ripple/proto/org/*.proto")
+target_protobuf_sources(xrpl.libpb ripple/proto
+  LANGUAGE cpp
+  IMPORT_DIRS src/ripple/proto
+  PROTOS "${protos}"
+)
+target_protobuf_sources(xrpl.libpb ripple/proto
+  LANGUAGE grpc
+  IMPORT_DIRS src/ripple/proto
+  PROTOS "${protos}"
+  PLUGIN protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>
+  GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc
+)
+
+target_compile_options(xrpl.libpb
+  PUBLIC
+    $<$<BOOL:${MSVC}>:-wd4996>
+    $<$<BOOL:${XCODE}>:
+      --system-header-prefix="google/protobuf"
+      -Wno-deprecated-dynamic-exception-spec
+    >
+  PRIVATE
+    $<$<BOOL:${MSVC}>:-wd4065>
+    $<$<NOT:$<BOOL:${MSVC}>>:-Wno-deprecated-declarations>
+)
+
+target_link_libraries(xrpl.libpb
+  PUBLIC
+    protobuf::libprotobuf
+    gRPC::grpc++
+)
 
 add_library (xrpl_core
   ${rb_headers}) ## headers added here for benefit of IDEs
@@ -17,16 +61,15 @@ add_library(libxrpl INTERFACE)
 target_link_libraries(libxrpl INTERFACE xrpl_core)
 add_library(xrpl::libxrpl ALIAS libxrpl)
 
-
 #[===============================[
     beast/legacy FILES:
     TODO: review these sources for removal or replacement
 #]===============================]
+# BEGIN LIBXRPL SOURCES
 target_sources (xrpl_core PRIVATE
   src/ripple/beast/clock/basic_seconds_clock.cpp
   src/ripple/beast/core/CurrentThreadName.cpp
   src/ripple/beast/core/SemanticVersion.cpp
-  src/ripple/beast/hash/impl/xxhash.cpp
   src/ripple/beast/insight/impl/Collector.cpp
   src/ripple/beast/insight/impl/Groups.cpp
   src/ripple/beast/insight/impl/Hook.cpp
@@ -46,16 +89,23 @@ target_sources (xrpl_core PRIVATE
 target_sources (xrpl_core PRIVATE
   #[===============================[
     main sources:
-      subdir: basics (partial)
+      subdir: basics
   #]===============================]
+  src/ripple/basics/impl/Archive.cpp
   src/ripple/basics/impl/base64.cpp
+  src/ripple/basics/impl/BasicConfig.cpp
   src/ripple/basics/impl/contract.cpp
   src/ripple/basics/impl/CountedObject.cpp
   src/ripple/basics/impl/FileUtilities.cpp
   src/ripple/basics/impl/IOUAmount.cpp
   src/ripple/basics/impl/Log.cpp
+  src/ripple/basics/impl/make_SSLContext.cpp
+  src/ripple/basics/impl/mulDiv.cpp
   src/ripple/basics/impl/Number.cpp
+  src/ripple/basics/impl/partitioned_unordered_map.cpp
+  src/ripple/basics/impl/ResolverAsio.cpp
   src/ripple/basics/impl/StringUtilities.cpp
+  src/ripple/basics/impl/UptimeClock.cpp
   #[===============================[
     main sources:
       subdir: json
@@ -89,6 +139,7 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/PublicKey.cpp
   src/ripple/protocol/impl/Quality.cpp
   src/ripple/protocol/impl/QualityFunction.cpp
+  src/ripple/protocol/impl/RPCErr.cpp
   src/ripple/protocol/impl/Rate2.cpp
   src/ripple/protocol/impl/Rules.cpp
   src/ripple/protocol/impl/SField.cpp
@@ -98,6 +149,7 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/STArray.cpp
   src/ripple/protocol/impl/STBase.cpp
   src/ripple/protocol/impl/STBlob.cpp
+  src/ripple/protocol/impl/STCurrency.cpp
   src/ripple/protocol/impl/STInteger.cpp
   src/ripple/protocol/impl/STLedgerEntry.cpp
   src/ripple/protocol/impl/STObject.cpp
@@ -123,12 +175,27 @@ target_sources (xrpl_core PRIVATE
   src/ripple/protocol/impl/NFTokenID.cpp
   src/ripple/protocol/impl/NFTokenOfferID.cpp
   #[===============================[
+     main sources:
+       subdir: resource
+  #]===============================]
+  src/ripple/resource/impl/Charge.cpp
+  src/ripple/resource/impl/Consumer.cpp
+  src/ripple/resource/impl/Fees.cpp
+  src/ripple/resource/impl/ResourceManager.cpp
+  #[===============================[
+     main sources:
+       subdir: server
+  #]===============================]
+  src/ripple/server/impl/JSONRPCUtil.cpp
+  src/ripple/server/impl/Port.cpp
+  #[===============================[
     main sources:
       subdir: crypto
   #]===============================]
   src/ripple/crypto/impl/RFC1751.cpp
   src/ripple/crypto/impl/csprng.cpp
   src/ripple/crypto/impl/secure_erase.cpp)
+# END LIBXRPL SOURCES
 
 add_library (Ripple::xrpl_core ALIAS xrpl_core)
 target_include_directories (xrpl_core
@@ -146,66 +213,70 @@ target_compile_options (xrpl_core
     $<$<BOOL:${is_gcc}>:-Wno-maybe-uninitialized>)
 target_link_libraries (xrpl_core
   PUBLIC
+    date::date
+    ed25519::ed25519
+    LibArchive::LibArchive
     OpenSSL::Crypto
     Ripple::boost
+    Ripple::opts
     Ripple::syslibs
     secp256k1::secp256k1
-    ed25519::ed25519
-    date::date
-    Ripple::opts)
+    xrpl.libpb
+    xxHash::xxhash)
 #[=================================[
    main/core headers installation
 #]=================================]
+# BEGIN LIBXRPL HEADERS
 install (
   FILES
-    src/ripple/basics/algorithm.h
     src/ripple/basics/Archive.h
-    src/ripple/basics/base64.h
-    src/ripple/basics/base_uint.h
     src/ripple/basics/BasicConfig.h
     src/ripple/basics/Blob.h
     src/ripple/basics/Buffer.h
     src/ripple/basics/ByteUtilities.h
-    src/ripple/basics/chrono.h
-    src/ripple/basics/comparators.h
     src/ripple/basics/CompressionAlgorithms.h
-    src/ripple/basics/contract.h
     src/ripple/basics/CountedObject.h
     src/ripple/basics/DecayingSample.h
     src/ripple/basics/Expected.h
     src/ripple/basics/FeeUnits.h
     src/ripple/basics/FileUtilities.h
-    src/ripple/basics/hardened_hash.h
     src/ripple/basics/IOUAmount.h
-    src/ripple/basics/join.h
     src/ripple/basics/KeyCache.h
     src/ripple/basics/LocalValue.h
     src/ripple/basics/Log.h
-    src/ripple/basics/make_SSLContext.h
     src/ripple/basics/MathUtilities.h
-    src/ripple/basics/mulDiv.h
     src/ripple/basics/Number.h
-    src/ripple/basics/partitioned_unordered_map.h
     src/ripple/basics/PerfLog.h
-    src/ripple/basics/random.h
-    src/ripple/basics/RangeSet.h
     src/ripple/basics/README.md
-    src/ripple/basics/ResolverAsio.h
+    src/ripple/basics/RangeSet.h
     src/ripple/basics/Resolver.h
-    src/ripple/basics/safe_cast.h
-    src/ripple/basics/scope.h
+    src/ripple/basics/ResolverAsio.h
     src/ripple/basics/SHAMapHash.h
     src/ripple/basics/Slice.h
-    src/ripple/basics/spinlock.h
-    src/ripple/basics/strHex.h
     src/ripple/basics/StringUtilities.h
     src/ripple/basics/TaggedCache.h
-    src/ripple/basics/tagged_integer.h
     src/ripple/basics/ThreadSafetyAnalysis.h
     src/ripple/basics/ToString.h
     src/ripple/basics/UnorderedContainers.h
     src/ripple/basics/UptimeClock.h
     src/ripple/basics/XRPAmount.h
+    src/ripple/basics/algorithm.h
+    src/ripple/basics/base64.h
+    src/ripple/basics/base_uint.h
+    src/ripple/basics/chrono.h
+    src/ripple/basics/comparators.h
+    src/ripple/basics/contract.h
+    src/ripple/basics/hardened_hash.h
+    src/ripple/basics/join.h
+    src/ripple/basics/make_SSLContext.h
+    src/ripple/basics/mulDiv.h
+    src/ripple/basics/partitioned_unordered_map.h
+    src/ripple/basics/random.h
+    src/ripple/basics/safe_cast.h
+    src/ripple/basics/scope.h
+    src/ripple/basics/spinlock.h
+    src/ripple/basics/strHex.h
+    src/ripple/basics/tagged_integer.h
   DESTINATION include/ripple/basics)
 install (
   FILES
@@ -216,7 +287,6 @@ install (
 install (
   FILES
     src/ripple/json/JsonPropertyStream.h
-    src/ripple/json/MultivarJson.h
     src/ripple/json/Object.h
     src/ripple/json/Output.h
     src/ripple/json/Writer.h
@@ -230,16 +300,12 @@ install (
   FILES
     src/ripple/json/impl/json_assert.h
   DESTINATION include/ripple/json/impl)
-
-install (
-    FILES
-      src/ripple/net/RPCErr.h
-    DESTINATION include/ripple/net)
 install (
   FILES
     src/ripple/protocol/AccountID.h
     src/ripple/protocol/AMMCore.h
     src/ripple/protocol/AmountConversions.h
+    src/ripple/protocol/ApiVersion.h
     src/ripple/protocol/Book.h
     src/ripple/protocol/BuildInfo.h
     src/ripple/protocol/ErrorCodes.h
@@ -250,91 +316,112 @@ install (
     src/ripple/protocol/InnerObjectFormats.h
     src/ripple/protocol/Issue.h
     src/ripple/protocol/json_get_or_throw.h
-    src/ripple/protocol/KeyType.h
     src/ripple/protocol/Keylet.h
+    src/ripple/protocol/KeyType.h
     src/ripple/protocol/KnownFormats.h
     src/ripple/protocol/LedgerFormats.h
     src/ripple/protocol/LedgerHeader.h
+    src/ripple/protocol/MultiApiJson.h
     src/ripple/protocol/NFTSyntheticSerializer.h
     src/ripple/protocol/NFTokenID.h
     src/ripple/protocol/NFTokenOfferID.h
+    src/ripple/protocol/NFTSyntheticSerializer.h
     src/ripple/protocol/Protocol.h
     src/ripple/protocol/PublicKey.h
     src/ripple/protocol/Quality.h
     src/ripple/protocol/QualityFunction.h
     src/ripple/protocol/Rate.h
+    src/ripple/protocol/RPCErr.h
     src/ripple/protocol/Rules.h
+    src/ripple/protocol/SecretKey.h
+    src/ripple/protocol/Seed.h
+    src/ripple/protocol/SeqProxy.h
+    src/ripple/protocol/Serializer.h
     src/ripple/protocol/SField.h
+    src/ripple/protocol/Sign.h
     src/ripple/protocol/SOTemplate.h
     src/ripple/protocol/STAccount.h
     src/ripple/protocol/STAmount.h
-    src/ripple/protocol/STIssue.h
     src/ripple/protocol/STArray.h
     src/ripple/protocol/STBase.h
     src/ripple/protocol/STBitString.h
     src/ripple/protocol/STBlob.h
+    src/ripple/protocol/STCurrency.h
     src/ripple/protocol/STExchange.h
     src/ripple/protocol/STInteger.h
+    src/ripple/protocol/STIssue.h
     src/ripple/protocol/STLedgerEntry.h
     src/ripple/protocol/STObject.h
     src/ripple/protocol/STParsedJSON.h
     src/ripple/protocol/STPathSet.h
     src/ripple/protocol/STTx.h
-    src/ripple/protocol/XChainAttestations.h
-    src/ripple/protocol/STXChainBridge.h
     src/ripple/protocol/STValidation.h
     src/ripple/protocol/STVector256.h
-    src/ripple/protocol/SecretKey.h
-    src/ripple/protocol/Seed.h
-    src/ripple/protocol/SeqProxy.h
-    src/ripple/protocol/Serializer.h
-    src/ripple/protocol/Sign.h
+    src/ripple/protocol/STXChainBridge.h
     src/ripple/protocol/SystemParameters.h
     src/ripple/protocol/TER.h
     src/ripple/protocol/TxFlags.h
     src/ripple/protocol/TxFormats.h
     src/ripple/protocol/TxMeta.h
     src/ripple/protocol/UintTypes.h
+    src/ripple/protocol/XChainAttestations.h
     src/ripple/protocol/digest.h
     src/ripple/protocol/jss.h
-    src/ripple/protocol/serialize.h
     src/ripple/protocol/nft.h
     src/ripple/protocol/nftPageMask.h
+    src/ripple/protocol/serialize.h
     src/ripple/protocol/tokens.h
   DESTINATION include/ripple/protocol)
 install (
   FILES
-    src/ripple/protocol/impl/STVar.h
+  src/ripple/protocol/impl/STVar.h
+    src/ripple/protocol/impl/b58_utils.h
     src/ripple/protocol/impl/secp256k1.h
+    src/ripple/protocol/impl/token_errors.h
   DESTINATION include/ripple/protocol/impl)
 install (
-    FILES
-      src/ripple/resource/Fees.h
-      src/ripple/resource/Charge.h
-    DESTINATION include/ripple/resource)
+  FILES
+    src/ripple/resource/Charge.h
+    src/ripple/resource/Consumer.h
+    src/ripple/resource/Disposition.h
+    src/ripple/resource/Fees.h
+    src/ripple/resource/Gossip.h
+    src/ripple/resource/ResourceManager.h
+    src/ripple/resource/Types.h
+  DESTINATION include/ripple/resource)
 install (
   FILES
+    src/ripple/resource/impl/Entry.h
+    src/ripple/resource/impl/Import.h
+    src/ripple/resource/impl/Key.h
+    src/ripple/resource/impl/Kind.h
+    src/ripple/resource/impl/Logic.h
+    src/ripple/resource/impl/Tuning.h
+  DESTINATION include/ripple/resource/impl)
+install (
+  FILES
+    src/ripple/server/Handoff.h
     src/ripple/server/Port.h
     src/ripple/server/Server.h
     src/ripple/server/Session.h
     src/ripple/server/SimpleWriter.h
     src/ripple/server/Writer.h
     src/ripple/server/WSSession.h
-    src/ripple/server/Handoff.h
   DESTINATION include/ripple/server)
 install (
   FILES
-    src/ripple/server/impl/ServerImpl.h
-    src/ripple/server/impl/io_list.h
+    src/ripple/server/impl/BaseHTTPPeer.h
+    src/ripple/server/impl/BasePeer.h
+    src/ripple/server/impl/BaseWSPeer.h
     src/ripple/server/impl/Door.h
+    src/ripple/server/impl/JSONRPCUtil.h
+    src/ripple/server/impl/LowestLayer.h
     src/ripple/server/impl/PlainHTTPPeer.h
     src/ripple/server/impl/PlainWSPeer.h
-    src/ripple/server/impl/BaseHTTPPeer.h
-    src/ripple/server/impl/BaseWSPeer.h
-    src/ripple/server/impl/BasePeer.h
-    src/ripple/server/impl/LowestLayer.h
+    src/ripple/server/impl/ServerImpl.h
     src/ripple/server/impl/SSLHTTPPeer.h
     src/ripple/server/impl/SSLWSPeer.h
+    src/ripple/server/impl/io_list.h
   DESTINATION include/ripple/server/impl)
 #[===================================[
    beast/legacy headers installation
@@ -359,15 +446,12 @@ install (
     src/ripple/beast/hash/xxhasher.h
   DESTINATION include/ripple/beast/hash)
 install (
-  FILES src/ripple/beast/hash/impl/xxhash.h
-  DESTINATION include/ripple/beast/hash/impl)
-install (
   FILES
-  src/ripple/beast/net/IPAddress.h
-  src/ripple/beast/net/IPAddressConversion.h
-  src/ripple/beast/net/IPAddressV4.h
-  src/ripple/beast/net/IPAddressV6.h
-  src/ripple/beast/net/IPEndpoint.h
+    src/ripple/beast/net/IPAddress.h
+    src/ripple/beast/net/IPAddressConversion.h
+    src/ripple/beast/net/IPAddressV4.h
+    src/ripple/beast/net/IPAddressV6.h
+    src/ripple/beast/net/IPEndpoint.h
   DESTINATION include/ripple/beast/net)
 install (
   FILES
@@ -378,56 +462,32 @@ install (
   DESTINATION include/ripple/beast)
 install (
   FILES
-    src/ripple/beast/unit_test/amount.hpp
-    src/ripple/beast/unit_test/dstream.hpp
-    src/ripple/beast/unit_test/global_suites.hpp
-    src/ripple/beast/unit_test/main.cpp
-    src/ripple/beast/unit_test/match.hpp
-    src/ripple/beast/unit_test/recorder.hpp
-    src/ripple/beast/unit_test/reporter.hpp
-    src/ripple/beast/unit_test/results.hpp
-    src/ripple/beast/unit_test/runner.hpp
-    src/ripple/beast/unit_test/suite.hpp
-    src/ripple/beast/unit_test/suite_info.hpp
-    src/ripple/beast/unit_test/suite_list.hpp
-    src/ripple/beast/unit_test/thread.hpp
+    src/ripple/beast/unit_test/amount.h
+    src/ripple/beast/unit_test/dstream.h
+    src/ripple/beast/unit_test/global_suites.h
+    src/ripple/beast/unit_test/match.h
+    src/ripple/beast/unit_test/recorder.h
+    src/ripple/beast/unit_test/reporter.h
+    src/ripple/beast/unit_test/results.h
+    src/ripple/beast/unit_test/runner.h
+    src/ripple/beast/unit_test/suite_info.h
+    src/ripple/beast/unit_test/suite_list.h
+    src/ripple/beast/unit_test/suite.h
+    src/ripple/beast/unit_test/thread.h
   DESTINATION include/ripple/beast/unit_test)
 install (
   FILES
-    src/ripple/beast/unit_test/detail/const_container.hpp
+    src/ripple/beast/unit_test/detail/const_container.h
   DESTINATION include/ripple/beast/unit_test/detail)
 install (
   FILES
     src/ripple/beast/utility/Journal.h
     src/ripple/beast/utility/PropertyStream.h
+    src/ripple/beast/utility/WrappedSink.h
     src/ripple/beast/utility/Zero.h
     src/ripple/beast/utility/rngfill.h
-    src/ripple/beast/utility/WrappedSink.h
   DESTINATION include/ripple/beast/utility)
-# WARNING!! -- horrible levelization ahead
-# (these files should be isolated or moved...but
-#  unfortunately unit_test.h above creates this dependency)
-if (tests)
-  install (
-    FILES
-      src/ripple/beast/unit_test/amount.hpp
-      src/ripple/beast/unit_test/dstream.hpp
-      src/ripple/beast/unit_test/global_suites.hpp
-      src/ripple/beast/unit_test/match.hpp
-      src/ripple/beast/unit_test/recorder.hpp
-      src/ripple/beast/unit_test/reporter.hpp
-      src/ripple/beast/unit_test/results.hpp
-      src/ripple/beast/unit_test/runner.hpp
-      src/ripple/beast/unit_test/suite.hpp
-      src/ripple/beast/unit_test/suite_info.hpp
-      src/ripple/beast/unit_test/suite_list.hpp
-      src/ripple/beast/unit_test/thread.hpp
-    DESTINATION include/ripple/beast/extras/unit_test)
-  install (
-    FILES
-      src/ripple/beast/unit_test/detail/const_container.hpp
-    DESTINATION include/ripple/beast/unit_test/detail)
-endif () #tests
+# END LIBXRPL HEADERS
 #[===================================================================[
    rippled executable
 #]===================================================================]
@@ -444,6 +504,7 @@ endif ()
 if (tests)
     target_compile_definitions(rippled PUBLIC ENABLE_TESTS)
 endif()
+# BEGIN XRPLD SOURCES
 target_sources (rippled PRIVATE
   #[===============================[
      main sources:
@@ -553,6 +614,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/CreateOffer.cpp
   src/ripple/app/tx/impl/CreateTicket.cpp
   src/ripple/app/tx/impl/DeleteAccount.cpp
+  src/ripple/app/tx/impl/DeleteOracle.cpp
   src/ripple/app/tx/impl/DepositPreauth.cpp
   src/ripple/app/tx/impl/DID.cpp
   src/ripple/app/tx/impl/Escrow.cpp
@@ -566,6 +628,7 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/PayChan.cpp
   src/ripple/app/tx/impl/Payment.cpp
   src/ripple/app/tx/impl/SetAccount.cpp
+  src/ripple/app/tx/impl/SetOracle.cpp
   src/ripple/app/tx/impl/SetRegularKey.cpp
   src/ripple/app/tx/impl/SetSignerList.cpp
   src/ripple/app/tx/impl/SetTrust.cpp
@@ -576,17 +639,6 @@ target_sources (rippled PRIVATE
   src/ripple/app/tx/impl/apply.cpp
   src/ripple/app/tx/impl/applySteps.cpp
   src/ripple/app/tx/impl/details/NFTokenUtils.cpp
-  #[===============================[
-     main sources:
-       subdir: basics (partial)
-  #]===============================]
-  src/ripple/basics/impl/Archive.cpp
-  src/ripple/basics/impl/BasicConfig.cpp
-  src/ripple/basics/impl/ResolverAsio.cpp
-  src/ripple/basics/impl/UptimeClock.cpp
-  src/ripple/basics/impl/make_SSLContext.cpp
-  src/ripple/basics/impl/mulDiv.cpp
-  src/ripple/basics/impl/partitioned_unordered_map.cpp
   #[===============================[
      main sources:
        subdir: conditions
@@ -638,7 +690,6 @@ target_sources (rippled PRIVATE
   src/ripple/net/impl/HTTPStream.cpp
   src/ripple/net/impl/InfoSub.cpp
   src/ripple/net/impl/RPCCall.cpp
-  src/ripple/net/impl/RPCErr.cpp
   src/ripple/net/impl/RPCSub.cpp
   src/ripple/net/impl/RegisterSSLCerts.cpp
   #[===============================[
@@ -690,14 +741,6 @@ target_sources (rippled PRIVATE
   src/ripple/peerfinder/impl/SourceStrings.cpp
   #[===============================[
      main sources:
-       subdir: resource
-  #]===============================]
-  src/ripple/resource/impl/Charge.cpp
-  src/ripple/resource/impl/Consumer.cpp
-  src/ripple/resource/impl/Fees.cpp
-  src/ripple/resource/impl/ResourceManager.cpp
-  #[===============================[
-     main sources:
        subdir: rpc
   #]===============================]
   src/ripple/rpc/handlers/AccountChannels.cpp
@@ -721,6 +764,7 @@ target_sources (rippled PRIVATE
   src/ripple/rpc/handlers/FetchInfo.cpp
   src/ripple/rpc/handlers/GatewayBalances.cpp
   src/ripple/rpc/handlers/GetCounts.cpp
+  src/ripple/rpc/handlers/GetAggregatePrice.cpp
   src/ripple/rpc/handlers/LedgerAccept.cpp
   src/ripple/rpc/handlers/LedgerCleanerHandler.cpp
   src/ripple/rpc/handlers/LedgerClosed.cpp
@@ -781,13 +825,6 @@ target_sources (rippled PRIVATE
        subdir: perflog
   #]===============================]
   src/ripple/perflog/impl/PerfLogImp.cpp
-
-  #[===============================[
-     main sources:
-       subdir: server
-  #]===============================]
-  src/ripple/server/impl/JSONRPCUtil.cpp
-  src/ripple/server/impl/Port.cpp
   #[===============================[
      main sources:
        subdir: shamap
@@ -801,6 +838,7 @@ target_sources (rippled PRIVATE
   src/ripple/shamap/impl/SHAMapSync.cpp
   src/ripple/shamap/impl/SHAMapTreeNode.cpp
   src/ripple/shamap/impl/ShardFamily.cpp)
+# END XRPLD SOURCES
 
   #[===============================[
      test sources:
@@ -840,6 +878,7 @@ if (tests)
     src/test/app/NFTokenDir_test.cpp
     src/test/app/OfferStream_test.cpp
     src/test/app/Offer_test.cpp
+    src/test/app/Oracle_test.cpp
     src/test/app/OversizeMeta_test.cpp
     src/test/app/Path_test.cpp
     src/test/app/PayChan_test.cpp
@@ -882,6 +921,7 @@ if (tests)
     src/test/basics/StringUtilities_test.cpp
     src/test/basics/TaggedCache_test.cpp
     src/test/basics/XRPAmount_test.cpp
+    src/test/basics/base58_test.cpp
     src/test/basics/base64_test.cpp
     src/test/basics/base_uint_test.cpp
     src/test/basics/contract_test.cpp
@@ -952,7 +992,6 @@ if (tests)
     src/test/json/Output_test.cpp
     src/test/json/Writer_test.cpp
     src/test/json/json_value_test.cpp
-    src/test/json/MultivarJson_test.cpp
     #[===============================[
        test sources:
          subdir: jtx
@@ -964,6 +1003,7 @@ if (tests)
     src/test/jtx/impl/AMMTest.cpp
     src/test/jtx/impl/Env.cpp
     src/test/jtx/impl/JSONRPCClient.cpp
+    src/test/jtx/impl/Oracle.cpp
     src/test/jtx/impl/TestHelpers.cpp
     src/test/jtx/impl/WSClient.cpp
     src/test/jtx/impl/acctdelete.cpp
@@ -1049,11 +1089,13 @@ if (tests)
        test sources:
          subdir: protocol
     #]===============================]
+    src/test/protocol/ApiVersion_test.cpp
     src/test/protocol/BuildInfo_test.cpp
     src/test/protocol/InnerObjectFormats_test.cpp
     src/test/protocol/Issue_test.cpp
     src/test/protocol/Hooks_test.cpp
     src/test/protocol/Memo_test.cpp
+    src/test/protocol/MultiApiJson_test.cpp
     src/test/protocol/PublicKey_test.cpp
     src/test/protocol/Quality_test.cpp
     src/test/protocol/STAccount_test.cpp
@@ -1089,6 +1131,7 @@ if (tests)
     src/test/rpc/DeliveredAmount_test.cpp
     src/test/rpc/Feature_test.cpp
     src/test/rpc/GatewayBalances_test.cpp
+    src/test/rpc/GetAggregatePrice_test.cpp
     src/test/rpc/GetCounts_test.cpp
     src/test/rpc/JSONRPC_test.cpp
     src/test/rpc/KeyGeneration_test.cpp
