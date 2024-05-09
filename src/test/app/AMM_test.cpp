@@ -5799,8 +5799,9 @@ private:
                 {
                     // Fails pre- and post-amendment because the quality can't
                     // be matched. Verify by generating a tiny offer, which
-                    // doesn't match the quality.
-                    if (status == Status::Fail)
+                    // doesn't match the quality. Exclude zero quality since
+                    // no offer is generated in this case.
+                    if (status == Status::Fail && quality != Quality{0})
                     {
                         auto tinyOffer = [&]() {
                             if (isXRP(poolIn))
