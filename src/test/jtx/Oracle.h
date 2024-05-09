@@ -28,6 +28,28 @@ namespace test {
 namespace jtx {
 namespace oracle {
 
+using AnyValue = std::variant<std::string, double, Json::Int, Json::UInt>;
+using OraclesData =
+    std::vector<std::pair<std::optional<Account>, std::optional<AnyValue>>>;
+
+// Special string value, which is converted to unquoted string in the string
+// passed to rpc.
+constexpr char const* NoneTag = "%None%";
+constexpr char const* UnquotedNone = "None";
+constexpr char const* NonePattern = "\"%None%\"";
+
+std::uint32_t
+asUInt(AnyValue const& v);
+
+bool
+validDocumentID(AnyValue const& v);
+
+void
+toJson(Json::Value& jv, AnyValue const& v);
+
+void
+toJsonHex(Json::Value& jv, AnyValue const& v);
+
 // base asset, quote asset, price, scale
 using DataSeries = std::vector<std::tuple<
     std::string,
@@ -39,16 +61,16 @@ using DataSeries = std::vector<std::tuple<
 struct CreateArg
 {
     std::optional<AccountID> owner = std::nullopt;
-    std::optional<std::uint32_t> documentID = 1;
+    std::optional<AnyValue> documentID = 1;
     DataSeries series = {{"XRP", "USD", 740, 1}};
-    std::optional<std::string> assetClass = "currency";
-    std::optional<std::string> provider = "provider";
-    std::optional<std::string> uri = "URI";
-    std::optional<std::uint32_t> lastUpdateTime = std::nullopt;
+    std::optional<AnyValue> assetClass = "currency";
+    std::optional<AnyValue> provider = "provider";
+    std::optional<AnyValue> uri = "URI";
+    std::optional<AnyValue> lastUpdateTime = std::nullopt;
     std::uint32_t flags = 0;
     std::optional<jtx::msig> msig = std::nullopt;
     std::optional<jtx::seq> seq = std::nullopt;
-    std::uint32_t fee = 10;
+    int fee = 10;
     std::optional<ter> err = std::nullopt;
     bool close = false;
 };
@@ -57,26 +79,27 @@ struct CreateArg
 struct UpdateArg
 {
     std::optional<AccountID> owner = std::nullopt;
-    std::optional<std::uint32_t> documentID = std::nullopt;
+    std::optional<AnyValue> documentID = std::nullopt;
     DataSeries series = {};
-    std::optional<std::string> assetClass = std::nullopt;
-    std::optional<std::string> provider = std::nullopt;
-    std::optional<std::string> uri = "URI";
-    std::optional<std::uint32_t> lastUpdateTime = std::nullopt;
+    std::optional<AnyValue> assetClass = std::nullopt;
+    std::optional<AnyValue> provider = std::nullopt;
+    std::optional<AnyValue> uri = "URI";
+    std::optional<AnyValue> lastUpdateTime = std::nullopt;
     std::uint32_t flags = 0;
     std::optional<jtx::msig> msig = std::nullopt;
     std::optional<jtx::seq> seq = std::nullopt;
-    std::uint32_t fee = 10;
+    int fee = 10;
     std::optional<ter> err = std::nullopt;
 };
 
 struct RemoveArg
 {
     std::optional<AccountID> const& owner = std::nullopt;
-    std::optional<std::uint32_t> const& documentID = std::nullopt;
+    std::optional<AnyValue> const& documentID = std::nullopt;
+    std::uint32_t flags = 0;
     std::optional<jtx::msig> const& msig = std::nullopt;
     std::optional<jtx::seq> seq = std::nullopt;
-    std::uint32_t fee = 10;
+    int fee = 10;
     std::optional<ter> const& err = std::nullopt;
 };
 
@@ -123,12 +146,11 @@ public:
     static Json::Value
     aggregatePrice(
         Env& env,
-        std::optional<std::string> const& baseAsset,
-        std::optional<std::string> const& quoteAsset,
-        std::optional<std::vector<std::pair<Account, std::uint32_t>>> const&
-            oracles = std::nullopt,
-        std::optional<std::uint8_t> const& trim = std::nullopt,
-        std::optional<std::uint8_t> const& timeTreshold = std::nullopt);
+        std::optional<AnyValue> const& baseAsset,
+        std::optional<AnyValue> const& quoteAsset,
+        std::optional<OraclesData> const& oracles = std::nullopt,
+        std::optional<AnyValue> const& trim = std::nullopt,
+        std::optional<AnyValue> const& timeTreshold = std::nullopt);
 
     std::uint32_t
     documentID() const
@@ -154,8 +176,8 @@ public:
     static Json::Value
     ledgerEntry(
         Env& env,
-        AccountID const& account,
-        std::variant<std::uint32_t, std::string> const& documentID,
+        std::optional<std::variant<AccountID, std::string>> const& account,
+        std::optional<AnyValue> const& documentID,
         std::optional<std::string> const& index = std::nullopt);
 
     Json::Value

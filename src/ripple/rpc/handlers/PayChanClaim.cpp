@@ -20,9 +20,9 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/ledger/ReadView.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/PayChan.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
@@ -55,10 +55,15 @@ doChannelAuthorize(RPC::JsonContext& context)
         return RPC::missing_field_error(jss::secret);
 
     Json::Value result;
-    auto const [pk, sk] =
+    std::optional<std::pair<PublicKey, SecretKey>> const keyPair =
         RPC::keypairForSignature(params, result, context.apiVersion);
-    if (RPC::contains_error(result))
+
+    assert(keyPair || RPC::contains_error(result));
+    if (!keyPair || RPC::contains_error(result))
         return result;
+
+    PublicKey const& pk = keyPair->first;
+    SecretKey const& sk = keyPair->second;
 
     uint256 channelId;
     if (!channelId.parseHex(params[jss::channel_id].asString()))

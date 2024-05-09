@@ -20,6 +20,7 @@
 #include <ripple/basics/Slice.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/beast/unit_test/suite.h>
 #include <ripple/core/Config.h>
 #include <ripple/peerfinder/impl/Logic.h>
 #include <ripple/protocol/PublicKey.h>
@@ -158,6 +159,86 @@ public:
     }
 
     void
+    test_duplicateOutIn()
+    {
+        testcase("duplicate out/in");
+        TestStore store;
+        TestChecker checker;
+        TestStopwatch clock;
+        Logic<TestChecker> logic(clock, store, checker, journal_);
+        logic.addFixedPeer(
+            "test", beast::IP::Endpoint::from_string("65.0.0.1:5"));
+        {
+            Config c;
+            c.autoConnect = false;
+            c.listeningPort = 1024;
+            c.ipLimit = 2;
+            logic.config(c);
+        }
+
+        auto const list = logic.autoconnect();
+        if (BEAST_EXPECT(!list.empty()))
+        {
+            BEAST_EXPECT(list.size() == 1);
+            auto const remote = list.front();
+            auto const slot1 = logic.new_outbound_slot(remote);
+            if (BEAST_EXPECT(slot1 != nullptr))
+            {
+                BEAST_EXPECT(
+                    logic.connectedAddresses_.count(remote.address()) == 1);
+                auto const local =
+                    beast::IP::Endpoint::from_string("65.0.0.2:1024");
+                auto const slot2 = logic.new_inbound_slot(local, remote);
+                BEAST_EXPECT(
+                    logic.connectedAddresses_.count(remote.address()) == 1);
+                if (!BEAST_EXPECT(slot2 == nullptr))
+                    logic.on_closed(slot2);
+                logic.on_closed(slot1);
+            }
+        }
+    }
+
+    void
+    test_duplicateInOut()
+    {
+        testcase("duplicate in/out");
+        TestStore store;
+        TestChecker checker;
+        TestStopwatch clock;
+        Logic<TestChecker> logic(clock, store, checker, journal_);
+        logic.addFixedPeer(
+            "test", beast::IP::Endpoint::from_string("65.0.0.1:5"));
+        {
+            Config c;
+            c.autoConnect = false;
+            c.listeningPort = 1024;
+            c.ipLimit = 2;
+            logic.config(c);
+        }
+
+        auto const list = logic.autoconnect();
+        if (BEAST_EXPECT(!list.empty()))
+        {
+            BEAST_EXPECT(list.size() == 1);
+            auto const remote = list.front();
+            auto const local =
+                beast::IP::Endpoint::from_string("65.0.0.2:1024");
+            auto const slot1 = logic.new_inbound_slot(local, remote);
+            if (BEAST_EXPECT(slot1 != nullptr))
+            {
+                BEAST_EXPECT(
+                    logic.connectedAddresses_.count(remote.address()) == 1);
+                auto const slot2 = logic.new_outbound_slot(remote);
+                BEAST_EXPECT(
+                    logic.connectedAddresses_.count(remote.address()) == 1);
+                if (!BEAST_EXPECT(slot2 == nullptr))
+                    logic.on_closed(slot2);
+                logic.on_closed(slot1);
+            }
+        }
+    }
+
+    void
     test_config()
     {
         // if peers_max is configured then peers_in_max and peers_out_max are
@@ -279,6 +360,8 @@ public:
     {
         test_backoff1();
         test_backoff2();
+        test_duplicateOutIn();
+        test_duplicateInOut();
         test_config();
         test_invalid_config();
     }

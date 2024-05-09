@@ -417,7 +417,7 @@ toStrand(
                        quality of the tip of the book drops below this value,
                        then evaluating the strand can stop.
    @param sendMax Optional asset to send.
-   @param paths Paths to use to fullfill the payment. Each path in the pathset
+   @param paths Paths to use to fulfill the payment. Each path in the pathset
                 contains an ordered collection of the offer books to use and
                 accounts to ripple through.
    @param addDefaultPath Determines if the default path should be included

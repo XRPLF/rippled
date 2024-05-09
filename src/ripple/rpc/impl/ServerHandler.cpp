@@ -31,9 +31,9 @@
 #include <ripple/core/JobQueue.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/RPCHandler.h>
@@ -643,7 +643,7 @@ ServerHandler::processRequest(
             continue;
         }
 
-        auto apiVersion = RPC::apiVersionIfUnspecified;
+        unsigned apiVersion = RPC::apiVersionIfUnspecified;
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 &&
             jsonRPC[jss::params][0u].isObject())

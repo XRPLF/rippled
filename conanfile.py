@@ -36,6 +36,11 @@ class Xrpl(ConanFile):
         'soci/4.0.3',
         'sqlite3/3.42.0',
         'zlib/1.2.13',
+        'xxhash/0.8.2',
+    ]
+
+    tool_requires = [
+        'protobuf/3.21.9',
     ]
 
     default_options = {
@@ -86,6 +91,7 @@ class Xrpl(ConanFile):
         'soci:shared': False,
         'soci:with_sqlite3': True,
         'soci:with_boost': True,
+        'xxhash:shared': False,
     }
 
     def set_version(self):
@@ -110,7 +116,7 @@ class Xrpl(ConanFile):
             self.requires('rocksdb/6.29.5')
 
     exports_sources = (
-        'CMakeLists.txt', 'Builds/*', 'bin/getRippledInfo', 'src/*', 'cfg/*'
+        'CMakeLists.txt', 'Builds/*', 'bin/getRippledInfo', 'src/*', 'cfg/*', 'external/*'
     )
 
     def layout(self):
@@ -159,4 +165,5 @@ class Xrpl(ConanFile):
             'openssl::crypto',
             'date::date',
             'grpc::grpc++',
+            'xxhash::xxhash',
         ]

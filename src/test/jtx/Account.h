@@ -46,7 +46,7 @@ public:
     /** The master account. */
     static Account const master;
 
-    Account() = default;
+    Account() = delete;
     Account(Account&&) = default;
     Account(Account const&) = default;
     Account&

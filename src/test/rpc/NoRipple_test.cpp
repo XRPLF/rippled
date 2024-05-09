@@ -284,12 +284,9 @@ public:
         testSetAndClear();
 
         auto withFeatsTests = [this](FeatureBitset features) {
-            for (auto testVersion = RPC::apiMinimumSupportedVersion;
-                 testVersion <= RPC::apiBetaVersion;
-                 ++testVersion)
-            {
+            forAllApiVersions([&, this](unsigned testVersion) {
                 testDefaultRipple(features, testVersion);
-            }
+            });
             testNegativeBalance(features);
             testPairwise(features);
         };

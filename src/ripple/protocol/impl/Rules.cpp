@@ -17,10 +17,35 @@
 */
 //==============================================================================
 
+#include <ripple/basics/LocalValue.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Rules.h>
 
+#include <optional>
+
 namespace ripple {
+
+namespace {
+// Use a static inside a function to help prevent order-of-initialization issues
+LocalValue<std::optional<Rules>>&
+getCurrentTransactionRulesRef()
+{
+    static LocalValue<std::optional<Rules>> r;
+    return r;
+}
+}  // namespace
+
+std::optional<Rules> const&
+getCurrentTransactionRules()
+{
+    return *getCurrentTransactionRulesRef();
+}
+
+void
+setCurrentTransactionRules(std::optional<Rules> r)
+{
+    *getCurrentTransactionRulesRef() = std::move(r);
+}
 
 class Rules::Impl
 {

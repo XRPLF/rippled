@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include "ripple/overlay/impl/TxMetrics.h"
-#include "ripple/protocol/jss.h"
+#include <ripple/overlay/impl/TxMetrics.h>
+#include <ripple/protocol/jss.h>
 
 #include <numeric>
 
