@@ -298,6 +298,7 @@ public:
     }
 
     // A payment doesn't use max quality threshold (limitQuality)
+    // since the strand's quality doesn't directly relate to the step's quality.
     Quality const&
     maxQualityThreshold(Quality const& lobQuality) const
     {
@@ -808,7 +809,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     }
     else
     {
-        // Might have AMM offer if there is no CLOB offers.
+        // Might have AMM offer if there are no LOB offers.
         tryAMM(std::nullopt);
     }
 

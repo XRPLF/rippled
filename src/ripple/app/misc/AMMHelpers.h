@@ -39,9 +39,17 @@ namespace ripple {
 
 namespace detail {
 
-static Number const reducedOfferPct = Number{9999, -4};
+Number
+reduceOffer(auto const& amount)
+{
+    static Number const reducedOfferPct(9999, -4);
 
+    // Make sure the result is always less than amount or zero.
+    NumberRoundModeGuard mg(Number::towards_zero);
+    return amount * reducedOfferPct;
 }
+
+}  // namespace detail
 
 /** Calculate LP Tokens given AMM pool reserves.
  * @param asset1 AMM one side of the pool reserve
@@ -179,7 +187,7 @@ solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c);
  * B) Qep = Qsp. Substitute i in (3) with (2) and solve for o
  *    and Qep = targetQuality(Qt):
  *     o = O - I * Qt / f
- * Since the scenario is not know a priori, both A and B are solved and
+ * Since the scenario is not known a priori, both A and B are solved and
  * the lowest value of o is takerGets. takerPays is calculated with
  * swap out eq (2). If o is less or equal to 0 then the offer can't
  * be generated.
@@ -191,11 +199,10 @@ getAMMOfferStartWithTakerGets(
     Quality const& targetQuality,
     std::uint16_t const& tfee)
 {
-    assert(targetQuality.rate() != beast::zero);
     if (targetQuality.rate() == beast::zero)
         return std::nullopt;
 
-    NumberRoundModeGuard mg(Number::rounding_mode::to_nearest);
+    NumberRoundModeGuard mg(Number::to_nearest);
     auto const f = feeMult(tfee);
     auto const a = 1;
     auto const b = pool.in * (1 - 1 / f) / targetQuality.rate() - 2 * pool.out;
@@ -215,11 +222,11 @@ getAMMOfferStartWithTakerGets(
     if (nTakerGetsConstraint < *nTakerGets)
         nTakerGets = nTakerGetsConstraint;
 
-    auto getAmounts = [&](Number const& nTakerGets) {
+    auto getAmounts = [&pool, &tfee](Number const& nTakerGets_) {
         // Round downward to minimize the offer and to maximize the quality.
         // This has the most impact when takerGets is XRP.
-        auto const takerGets = toAmount<TOut>(
-            getIssue(pool.out), nTakerGets, Number::rounding_mode::downward);
+        auto const takerGets =
+            toAmount<TOut>(getIssue(pool.out), nTakerGets_, Number::downward);
         return TAmounts<TIn, TOut>{
             swapAssetOut(pool, takerGets, tfee), takerGets};
     };
@@ -228,7 +235,7 @@ getAMMOfferStartWithTakerGets(
     // The quality might still not match the targetQuality for a tiny offer.
     if (auto const amounts = getAmounts(*nTakerGets);
         Quality{amounts} < targetQuality)
-        return getAmounts(amounts.out * detail::reducedOfferPct);
+        return getAmounts(detail::reduceOffer(amounts.out));
     else
         return amounts;
 }
@@ -251,7 +258,7 @@ getAMMOfferStartWithTakerGets(
  * B) Qep = Qsp. Substitute i in (3) with (2) and solve for i
  *    and Qep = targetQuality(Qt):
  *     i = O / Qt - I / f
- * Since the scenario is not know a priori, both A and B are solved and
+ * Since the scenario is not known a priori, both A and B are solved and
  * the lowest value of i is takerPays. takerGets is calculated with
  * swap in eq (2). If i is less or equal to 0 then the offer can't
  * be generated.
@@ -263,7 +270,10 @@ getAMMOfferStartWithTakerPays(
     Quality const& targetQuality,
     std::uint16_t tfee)
 {
-    NumberRoundModeGuard mg(Number::rounding_mode::to_nearest);
+    if (targetQuality.rate() == beast::zero)
+        return std::nullopt;
+
+    NumberRoundModeGuard mg(Number::to_nearest);
     auto const f = feeMult(tfee);
     auto const& a = f;
     auto const b = pool.in * (1 + f);
@@ -283,11 +293,11 @@ getAMMOfferStartWithTakerPays(
     if (nTakerPaysConstraint < *nTakerPays)
         nTakerPays = nTakerPaysConstraint;
 
-    auto getAmounts = [&](Number const& nTakerPays) {
+    auto getAmounts = [&pool, &tfee](Number const& nTakerPays_) {
         // Round downward to minimize the offer and to maximize the quality.
         // This has the most impact when takerPays is XRP.
-        auto const takerPays = toAmount<TIn>(
-            getIssue(pool.in), nTakerPays, Number::rounding_mode::downward);
+        auto const takerPays =
+            toAmount<TIn>(getIssue(pool.in), nTakerPays_, Number::downward);
         return TAmounts<TIn, TOut>{
             takerPays, swapAssetIn(pool, takerPays, tfee)};
     };
@@ -296,7 +306,7 @@ getAMMOfferStartWithTakerPays(
     // The quality might still not match the targetQuality for a tiny offer.
     if (auto const amounts = getAmounts(*nTakerPays);
         Quality{amounts} < targetQuality)
-        return getAmounts(amounts.in * detail::reducedOfferPct);
+        return getAmounts(detail::reduceOffer(amounts.in));
     else
         return amounts;
 }
@@ -363,8 +373,8 @@ changeSpotPriceQuality(
                     << quality << " " << tfee;
                 return std::nullopt;
             }
-            auto const takerPays = toAmount<TIn>(
-                getIssue(pool.in), nTakerPays, Number::rounding_mode::upward);
+            auto const takerPays =
+                toAmount<TIn>(getIssue(pool.in), nTakerPays, Number::upward);
             // should not fail
             if (auto const amounts =
                     TAmounts<TIn, TOut>{
@@ -502,8 +512,7 @@ swapAssetIn(
         if (swapOut.signum() < 0)
             return toAmount<TOut>(getIssue(pool.out), 0);
 
-        return toAmount<TOut>(
-            getIssue(pool.out), swapOut, Number::rounding_mode::downward);
+        return toAmount<TOut>(getIssue(pool.out), swapOut, Number::downward);
     }
     else
     {
@@ -511,7 +520,7 @@ swapAssetIn(
             getIssue(pool.out),
             pool.out -
                 (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
-            Number::rounding_mode::downward);
+            Number::downward);
     }
 }
 
@@ -576,8 +585,7 @@ swapAssetOut(
         if (swapIn.signum() < 0)
             return toAmount<TIn>(getIssue(pool.in), 0);
 
-        return toAmount<TIn>(
-            getIssue(pool.in), swapIn, Number::rounding_mode::upward);
+        return toAmount<TIn>(getIssue(pool.in), swapIn, Number::upward);
     }
     else
     {
@@ -585,7 +593,7 @@ swapAssetOut(
             getIssue(pool.in),
             ((pool.in * pool.out) / (pool.out - assetOut) - pool.in) /
                 feeMult(tfee),
-            Number::rounding_mode::upward);
+            Number::upward);
     }
 }
 
