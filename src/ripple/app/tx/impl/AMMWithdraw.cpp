@@ -201,7 +201,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.debug())
             << "AMM Withdraw: reserves or tokens balance is zero.";
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     auto const ammAccountID = ammSle->getAccountID(sfAccount);
@@ -300,11 +300,11 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const ePrice = ctx_.tx[~sfEPrice];
     auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
-        return {tecINTERNAL, false};
+        return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const ammAccountID = (*ammSle)[sfAccount];
     auto const accountSle = sb.read(keylet::account(ammAccountID));
     if (!accountSle)
-        return {tecINTERNAL, false};
+        return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const lpTokens =
         ammLPHolds(ctx_.view(), *ammSle, ctx_.tx[sfAccount], ctx_.journal);
     auto const lpTokensWithdraw =
@@ -372,8 +372,10 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                 *lpTokensWithdraw,
                 tfee);
         // should not happen.
+        // LCOV_EXCL_START
         JLOG(j_.error()) << "AMM Withdraw: invalid options.";
         return std::make_pair(tecINTERNAL, STAmount{});
+        // LCOV_EXCL_STOP
     }();
 
     if (result != tesSUCCESS)
@@ -431,7 +433,7 @@ AMMWithdraw::withdraw(
     auto const ammSle =
         ctx_.view().read(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
-        return {tecINTERNAL, STAmount{}};
+        return {tecINTERNAL, STAmount{}};  // LCOV_EXCL_LINE
     auto const lpTokens = ammLPHolds(view, *ammSle, account_, ctx_.journal);
     auto const expected = ammHolds(
         view,
@@ -612,12 +614,14 @@ AMMWithdraw::equalWithdrawTokens(
             lpTokensWithdraw,
             tfee);
     }
+    // LCOV_EXCL_START
     catch (std::exception const& e)
     {
         JLOG(j_.error()) << "AMMWithdraw::equalWithdrawTokens exception "
                          << e.what();
     }
     return {tecINTERNAL, STAmount{}};
+    // LCOV_EXCL_STOP
 }
 
 /** All assets withdrawal with the constraints on the maximum amount

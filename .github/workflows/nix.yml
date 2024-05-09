@@ -1,5 +1,16 @@
 name: nix
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    # If the branches list is ever changed, be sure to change it on all
+    # build/test jobs (nix, macos, windows)
+    branches:
+      # Always build the package branches
+      - develop
+      - release
+      - master
+      # Branches that opt-in to running
+      - 'ci/**'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -54,7 +65,7 @@ jobs:
       build_dir: .build
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
@@ -62,8 +73,6 @@ jobs:
           cmake --version
           env | sort
       - name: configure Conan
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         run: |
           conan profile new default --detect
           conan profile update settings.compiler.cppstd=20 default
@@ -73,33 +82,17 @@ jobs:
           conan profile update env.CC=${{ matrix.profile.cc }} default
           conan profile update env.CXX=${{ matrix.profile.cxx }} default
           conan profile update conf.tools.build:compiler_executables='{"c": "${{ matrix.profile.cc }}", "cpp": "${{ matrix.profile.cxx }}"}' default
-          # Do not quote the URL. An empty string will be accepted (with
-          # a non-fatal warning), but a missing argument will not.
-          conan remote add ripple ${{ env.CONAN_URL }} --insert 0
-      - name: try to authenticate to ripple Conan remote
-        id: remote
-        run: |
-          echo outcome=$(conan user --remote ripple ${{ secrets.CONAN_USERNAME }} --password ${{ secrets.CONAN_TOKEN }} >&2 && echo success || echo failure) | tee ${GITHUB_OUTPUT}
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
         run: tar -czf conan.tar -C ~/.conan .
-      - name: list missing binaries
-        id: binaries
-        # Print the list of dependencies that would need to be built locally.
-        # A non-empty list means we have "failed" to cache binaries remotely.
-        run: |
-          echo missing=$(conan info . --build missing --settings build_type=${{ matrix.configuration }} --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
       - name: build dependencies
-        if: (steps.binaries.outputs.missing != '[]')
         uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+          CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
+          CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:
           configuration: ${{ matrix.configuration }}
-      - name: upload dependencies to remote
-        if: (steps.binaries.outputs.missing != '[]') && (steps.remote.outputs.outcome == 'success')
-        run: conan upload --remote ripple '*' --all --parallel --confirm
-      - name: recreate archive with dependencies
-        if: (steps.binaries.outputs.missing != '[]') && (steps.remote.outputs.outcome == 'failure')
-        run: tar -czf conan.tar -C ~/.conan .
       - name: upload archive
         uses: actions/upload-artifact@v3
         with:
@@ -139,15 +132,16 @@ jobs:
           tar -xzf conan.tar -C ~/.conan
       - name: check environment
         run: |
+          env | sort
           echo ${PATH} | tr ':' '\n'
           conan --version
           cmake --version
-          env | sort
-          ls ~/.conan
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: dependencies
         uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         with:
           configuration: ${{ matrix.configuration }}
       - name: build
@@ -185,6 +179,8 @@ jobs:
         run: |
           mkdir -p ~/.conan
           tar -xzf conan.tar -C ~/.conan
+      - name: install gcovr
+        run: pip install "gcovr>=7,<8"
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
@@ -194,9 +190,11 @@ jobs:
           env | sort
           ls ~/.conan
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: dependencies
         uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         with:
           configuration: ${{ matrix.configuration }}
       - name: build
@@ -211,7 +209,7 @@ jobs:
             -DCMAKE_CXX_FLAGS="-O0"
             -DCMAKE_C_FLAGS="-O0"
           cmake-target: coverage
-      - name: build
+      - name: move coverage report
         shell: bash
         run: |
           mv "${build_dir}/coverage.xml" ./
@@ -222,13 +220,15 @@ jobs:
           path: coverage.xml
           retention-days: 30
       - name: upload coverage report
-        uses: wandalen/wretry.action@v1.3.0
+        uses: wandalen/wretry.action@v1.4.10
         with:
-          action: codecov/codecov-action@v3
+          action: codecov/codecov-action@v4.3.0
           with: |
             files: coverage.xml
             fail_ci_if_error: true
+            disable_search: true
             verbose: true
+            plugin: noop
             token: ${{ secrets.CODECOV_TOKEN }}
           attempt_limit: 5
-          attempt_delay: 35000 # in milliseconds
+          attempt_delay: 210000 # in milliseconds

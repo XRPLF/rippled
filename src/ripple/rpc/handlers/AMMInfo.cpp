@@ -20,9 +20,9 @@
 #include <ripple/app/misc/AMMUtils.h>
 #include <ripple/json/json_value.h>
 #include <ripple/ledger/ReadView.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/AMMCore.h>
 #include <ripple/protocol/Issue.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <grpcpp/support/status.h>
@@ -200,6 +200,9 @@ doAMMInfo(RPC::JsonContext& context)
     }
     if (voteSlots.size() > 0)
         ammResult[jss::vote_slots] = std::move(voteSlots);
+    assert(
+        !ledger->rules().enabled(fixInnerObjTemplate) ||
+        amm->isFieldPresent(sfAuctionSlot));
     if (amm->isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot =
