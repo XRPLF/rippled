@@ -6287,38 +6287,125 @@ private:
         testcase("AMM Offer Blocked By LOB");
         using namespace jtx;
 
-        Env env(*this, features);
+        // Low quality LOB offer blocks AMM liquidity
 
-        fund(env, gw, {alice, carol}, XRP(1'000'000), {USD(1'000'000)});
-        // This offer blocks AMM offer in pre-amendment
-        env(offer(alice, XRP(1), USD(0.01)));
-        env.close();
-
-        AMM amm(env, gw, XRP(200'000), USD(100'000));
-
-        // The offer doesn't cross AMM in pre-amendment code
-        // It crosses AMM in post-amendment code
-        env(offer(carol, USD(0.49), XRP(1)));
-        env.close();
-
-        if (!features[fixAMMv1_1])
+        // USD/XRP crosses AMM
         {
-            BEAST_EXPECT(
-                amm.expectBalances(XRP(200'000), USD(100'000), amm.tokens()));
-            BEAST_EXPECT(
-                expectOffers(env, alice, 1, {{Amounts{XRP(1), USD(0.01)}}}));
-            // Carol's offer is blocked by alice's offer
-            BEAST_EXPECT(
-                expectOffers(env, carol, 1, {{Amounts{USD(0.49), XRP(1)}}}));
+            Env env(*this, features);
+
+            fund(env, gw, {alice, carol}, XRP(1'000'000), {USD(1'000'000)});
+            // This offer blocks AMM offer in pre-amendment
+            env(offer(alice, XRP(1), USD(0.01)));
+            env.close();
+
+            AMM amm(env, gw, XRP(200'000), USD(100'000));
+
+            // The offer doesn't cross AMM in pre-amendment code
+            // It crosses AMM in post-amendment code
+            env(offer(carol, USD(0.49), XRP(1)));
+            env.close();
+
+            if (!features[fixAMMv1_1])
+            {
+                BEAST_EXPECT(amm.expectBalances(
+                    XRP(200'000), USD(100'000), amm.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env, alice, 1, {{Amounts{XRP(1), USD(0.01)}}}));
+                // Carol's offer is blocked by alice's offer
+                BEAST_EXPECT(expectOffers(
+                    env, carol, 1, {{Amounts{USD(0.49), XRP(1)}}}));
+            }
+            else
+            {
+                BEAST_EXPECT(amm.expectBalances(
+                    XRPAmount(200'000'980'005), USD(99'999.51), amm.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env, alice, 1, {{Amounts{XRP(1), USD(0.01)}}}));
+                // Carol's offer crosses AMM
+                BEAST_EXPECT(expectOffers(env, carol, 0));
+            }
         }
-        else
+
+        // There is no blocking offer, the same AMM liquidity is consumed
+        // pre- and post-amendment.
         {
+            Env env(*this, features);
+
+            fund(env, gw, {alice, carol}, XRP(1'000'000), {USD(1'000'000)});
+            // There is no blocking offer
+            // env(offer(alice, XRP(1), USD(0.01)));
+
+            AMM amm(env, gw, XRP(200'000), USD(100'000));
+
+            // The offer crosses AMM
+            env(offer(carol, USD(0.49), XRP(1)));
+            env.close();
+
+            // The same result as with the blocking offer
             BEAST_EXPECT(amm.expectBalances(
                 XRPAmount(200'000'980'005), USD(99'999.51), amm.tokens()));
-            BEAST_EXPECT(
-                expectOffers(env, alice, 1, {{Amounts{XRP(1), USD(0.01)}}}));
             // Carol's offer crosses AMM
             BEAST_EXPECT(expectOffers(env, carol, 0));
+        }
+
+        // XRP/USD crosses AMM
+        {
+            Env env(*this, features);
+            fund(env, gw, {alice, carol, bob}, XRP(10'000), {USD(1'000)});
+
+            // This offer blocks AMM offer in pre-amendment
+            // It crosses AMM in post-amendment code
+            env(offer(bob, USD(1), XRPAmount(500)));
+            env.close();
+            AMM amm(env, alice, XRP(1'000), USD(500));
+            env(offer(carol, XRP(100), USD(55)));
+            env.close();
+            if (!features[fixAMMv1_1])
+            {
+                BEAST_EXPECT(
+                    amm.expectBalances(XRP(1'000), USD(500), amm.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env, bob, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
+                BEAST_EXPECT(expectOffers(
+                    env, carol, 1, {{Amounts{XRP(100), USD(55)}}}));
+            }
+            else
+            {
+                BEAST_EXPECT(amm.expectBalances(
+                    XRPAmount(909'090'909),
+                    STAmount{USD, UINT64_C(550'000000055), -9},
+                    amm.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    carol,
+                    1,
+                    {{Amounts{
+                        XRPAmount{9'090'909},
+                        STAmount{USD, 4'99999995, -8}}}}));
+                BEAST_EXPECT(expectOffers(
+                    env, bob, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
+            }
+        }
+
+        // There is no blocking offer, the same AMM liquidity is consumed
+        // pre- and post-amendment.
+        {
+            Env env(*this, features);
+            fund(env, gw, {alice, carol, bob}, XRP(10'000), {USD(1'000)});
+
+            AMM amm(env, alice, XRP(1'000), USD(500));
+            env(offer(carol, XRP(100), USD(55)));
+            env.close();
+            BEAST_EXPECT(amm.expectBalances(
+                XRPAmount(909'090'909),
+                STAmount{USD, UINT64_C(550'000000055), -9},
+                amm.tokens()));
+            BEAST_EXPECT(expectOffers(
+                env,
+                carol,
+                1,
+                {{Amounts{
+                    XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
         }
     }
 
