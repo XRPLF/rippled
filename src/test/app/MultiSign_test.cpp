@@ -250,7 +250,8 @@ public:
         env(noop(alice),
             msig(demon, demon),
             fee(3 * baseFee),
-            ter(telENV_RPC_FAILED));
+            rpc("invalidTransaction",
+                "fails local checks: Duplicate Signers not allowed."));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
@@ -361,7 +362,10 @@ public:
         msig phantoms{bogie, demon};
         std::reverse(phantoms.signers.begin(), phantoms.signers.end());
         std::uint32_t const aliceSeq = env.seq(alice);
-        env(noop(alice), phantoms, ter(telENV_RPC_FAILED));
+        env(noop(alice),
+            phantoms,
+            rpc("invalidTransaction",
+                "fails local checks: Unsorted Signers array."));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
     }
@@ -1640,7 +1644,8 @@ public:
         env(noop(alice),
             msig(demon, demon),
             fee(3 * baseFee),
-            ter(telENV_RPC_FAILED));
+            rpc("invalidTransaction",
+                "fails local checks: Duplicate Signers not allowed."));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 

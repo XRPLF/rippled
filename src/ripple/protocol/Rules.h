@@ -23,6 +23,7 @@
 #include <ripple/basics/base_uint.h>
 #include <ripple/beast/hash/uhash.h>
 #include <ripple/protocol/STVector256.h>
+
 #include <unordered_set>
 
 namespace ripple {
@@ -42,8 +43,13 @@ private:
 public:
     Rules(Rules const&) = default;
 
+    Rules(Rules&&) = default;
+
     Rules&
     operator=(Rules const&) = default;
+
+    Rules&
+    operator=(Rules&&) = default;
 
     Rules() = delete;
 
@@ -88,6 +94,37 @@ public:
 
     bool
     operator!=(Rules const& other) const;
+};
+
+std::optional<Rules> const&
+getCurrentTransactionRules();
+
+void
+setCurrentTransactionRules(std::optional<Rules> r);
+
+/** RAII class to set and restore the current transaction rules
+ */
+class CurrentTransactionRulesGuard
+{
+public:
+    explicit CurrentTransactionRulesGuard(Rules r)
+        : saved_(getCurrentTransactionRules())
+    {
+        setCurrentTransactionRules(std::move(r));
+    }
+
+    ~CurrentTransactionRulesGuard()
+    {
+        setCurrentTransactionRules(saved_);
+    }
+
+    CurrentTransactionRulesGuard() = delete;
+    CurrentTransactionRulesGuard(CurrentTransactionRulesGuard const&) = delete;
+    CurrentTransactionRulesGuard&
+    operator=(CurrentTransactionRulesGuard const&) = delete;
+
+private:
+    std::optional<Rules> saved_;
 };
 
 }  // namespace ripple
