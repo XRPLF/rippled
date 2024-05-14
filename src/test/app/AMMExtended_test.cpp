@@ -1459,11 +1459,7 @@ private:
         testSellFlagExceedLimit(all);
         testGatewayCrossCurrency(all);
         testGatewayCrossCurrency(all - fixAMMv1_1);
-        // testPartialCross
-        // testXRPDirectCross
-        // testDirectCross
         testBridgedCross(all);
-        // testSellOffer
         testSellWithFillOrKill(all);
         testTransferRateOffer(all);
         testSelfIssueOffer(all);
@@ -1471,16 +1467,8 @@ private:
         testSellFlagBasic(all);
         testDirectToDirectPath(all);
         testDirectToDirectPath(all - fixAMMv1_1);
-        // testSelfCrossLowQualityOffer
-        // testOfferInScaling
-        // testOfferInScalingWithXferRate
-        // testOfferThresholdWithReducedFunds
-        // testTinyOffer
-        // testSelfPayXferFeeOffer
-        // testSelfPayXferFeeOffer
         testRequireAuth(all);
         testMissingAuth(all);
-        // testRCSmoketest
     }
 
     void

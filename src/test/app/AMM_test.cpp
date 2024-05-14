@@ -5652,9 +5652,9 @@ private:
     }
 
     void
-    testFixAMMOfferRounding(FeatureBitset features)
+    testFixChangeSpotPriceQuality(FeatureBitset features)
     {
-        testcase("Fix AMM Offer Rounding");
+        testcase("Fix changeSpotPriceQuality");
         using namespace jtx;
 
         enum class Status {
@@ -5662,70 +5662,76 @@ private:
                                          // error allowance, succeed post-fix
                                          // because of offer resizing
             FailShouldSucceed,           // Fail in pre-fix due to rounding,
-                                         // succeed after fix because of XRP is
+                                         // succeed after fix because of XRP
                                          // side is generated first
             SucceedShouldFail,           // Succeed in pre-fix, fail after fix
                                          // due to small quality difference
             Fail,    // Both fail because the quality can't be matched
             Succeed  // Both succeed
         };
+        using enum Status;
+        auto const xrpIouAmounts10_100 =
+            TAmounts{XRPAmount{10}, IOUAmount{100}};
+        auto const iouXrpAmounts10_100 =
+            TAmounts{IOUAmount{10}, XRPAmount{100}};
         // clang-format off
         std::vector<std::tuple<std::string, std::string, Quality, std::uint16_t, Status>> tests = {
-            {"0.001519763260828713", "1558701", Quality{5414253689393440221}, 1000, Status::FailShouldSucceed},
-            {"0.01099814367603737", "1892611", Quality{5482264816516900274}, 1000, Status::FailShouldSucceed},
-            {"0.78", "796599", Quality{5630392334958379008}, 1000, Status::FailShouldSucceed},
-            {"105439.2955578965", "49398693", Quality{5910869983721805038}, 400, Status::FailShouldSucceed},
-            {"12408293.23445213", "4340810521", Quality{5911611095910090752}, 997, Status::FailShouldSucceed},
-            {"1892611", "0.01099814367603737", Quality{6703103457950430139}, 1000, Status::FailShouldSucceed},
-            {"423028.8508101858", "3392804520", Quality{5837920340654162816}, 600, Status::FailShouldSucceed},
-            {"44565388.41001027", "73890647", Quality{6058976634606450001}, 1000, Status::FailShouldSucceed},
-            {"66831.68494832662", "16", Quality{6346111134641742975}, 0, Status::FailShouldSucceed},
-            {"675.9287302203422", "1242632304", Quality{5625960929244093294}, 300, Status::FailShouldSucceed},
-            {"7047.112186735699", "1649845866", Quality{5696855348026306945}, 504, Status::FailShouldSucceed},
-            {"840236.4402981238", "47419053", Quality{5982561601648018688}, 499, Status::FailShouldSucceed},
-            {"992715.618909774", "189445631733", Quality{5697835648288106944}, 815, Status::SucceedShouldSucceedResize},
-            {"504636667521", "185545883.9506651", Quality{6343802275337659280}, 503, Status::SucceedShouldSucceedResize},
-            {"992706.7218636649", "189447316000", Quality{5697835648288106944}, 797, Status::SucceedShouldSucceedResize},
-            {"1.068737911388205", "127860278877", Quality{5268604356368739396}, 293, Status::SucceedShouldSucceedResize},
-            {"17932506.56880419", "189308.6043676173", Quality{6206460598195440068}, 311, Status::SucceedShouldSucceedResize},
-            {"1.066379294658174", "128042251493", Quality{5268559341368739328}, 270, Status::SucceedShouldSucceedResize},
-            {"350131413924", "1576879.110907892", Quality{6487411636539049449}, 650, Status::Fail},
-            {"422093460", "2.731797662057464", Quality{6702911108534394924}, 1000, Status::Fail},
-            {"76128132223", "367172.7148422662", Quality{6487263463413514240}, 548, Status::Fail},
-            {"132701839250", "280703770.7695443", Quality{6273750681188885075}, 562, Status::Fail},
-            {"994165.7604612011", "189551302411", Quality{5697835592690668727}, 815, Status::Fail},
-            {"45053.33303227917", "86612695359", Quality{5625695218943638190}, 500, Status::Fail},
-            {"199649.077043865", "14017933007", Quality{5766034667318524880}, 324, Status::Fail},
-            {"27751824831.70903", "78896950", Quality{6272538159621630432}, 500, Status::Fail},
-            {"225.3731275781907", "156431793648", Quality{5477818047604078924}, 989, Status::Fail},
-            {"199649.077043865", "14017933007", Quality{5766036094462806309}, 324, Status::Fail},
-            {"3.590272027140361", "20677643641", Quality{5406056147042156356}, 808, Status::Fail},
-            {"1.070884664490231", "127604712776", Quality{5268620608623825741}, 293, Status::Fail},
-            {"3272.448829820197", "6275124076", Quality{5625710328924117902}, 81, Status::Fail},
-            {"0.009059512633902926", "7994028", Quality{5477511954775533172}, 1000, Status::Fail},
-            {"1", "1.0", Quality{0}, 100, Status::Fail},
-            {"1.0", "1", Quality{0}, 100, Status::Fail},
-            {"10", "10.0", Quality{TAmounts{XRPAmount{10}, IOUAmount{100}}}, 100, Status::Fail},
-            {"10.0", "10", Quality{TAmounts{IOUAmount{10}, XRPAmount{100}}}, 100, Status::Fail},
-            {"69864389131", "287631.4543025075", Quality{6487623473313516078}, 451, Status::Succeed},
-            {"4328342973", "12453825.99247381", Quality{6272522264364865181}, 997, Status::Succeed},
-            {"32347017", "7003.93031579449", Quality{6347261126087916670}, 1000, Status::Succeed},
-            {"61697206161", "36631.4583206413", Quality{6558965195382476659}, 500, Status::Succeed},
-            {"1654524979", "7028.659825511603", Quality{6487551345110052981}, 504, Status::Succeed},
-            {"88621.22277293179", "5128418948", Quality{5766347291552869205}, 380, Status::Succeed},
-            {"1892611", "0.01099814367603737", Quality{6703102780512015436}, 1000, Status::Succeed},
-            {"4542.639373338766", "24554809", Quality{5838994982188783710}, 0, Status::Succeed},
-            {"5132932546", "88542.99750172683", Quality{6419203342950054537}, 380, Status::Succeed},
-            {"78929964.1549083", "1506494795", Quality{5986890029845558688}, 589, Status::Succeed},
-            {"10096561906", "44727.72453735605", Quality{6487455290284644551}, 250, Status::Succeed},
-            {"5092.219565514988", "8768257694", Quality{5626349534958379008}, 503, Status::Succeed},
-            {"1819778294", "8305.084302902864", Quality{6487429398998540860}, 415, Status::Succeed},
-            {"6970462.633911943", "57359281", Quality{6054087899185946624}, 850, Status::Succeed},
-            {"3983448845", "2347.543644281467", Quality{6558965195382476659}, 856, Status::Succeed},
+            //Pool In              ,  Pool Out,             Quality                     , Fee,  Status
+            {"0.001519763260828713", "1558701",             Quality{5414253689393440221}, 1000, FailShouldSucceed},
+            {"0.01099814367603737",  "1892611",             Quality{5482264816516900274}, 1000, FailShouldSucceed},
+            {"0.78",                 "796599",              Quality{5630392334958379008}, 1000, FailShouldSucceed},
+            {"105439.2955578965",    "49398693",            Quality{5910869983721805038},  400, FailShouldSucceed},
+            {"12408293.23445213",    "4340810521",          Quality{5911611095910090752},  997, FailShouldSucceed},
+            {"1892611",              "0.01099814367603737", Quality{6703103457950430139}, 1000, FailShouldSucceed},
+            {"423028.8508101858",    "3392804520",          Quality{5837920340654162816},  600, FailShouldSucceed},
+            {"44565388.41001027",    "73890647",            Quality{6058976634606450001}, 1000, FailShouldSucceed},
+            {"66831.68494832662",    "16",                  Quality{6346111134641742975},    0, FailShouldSucceed},
+            {"675.9287302203422",    "1242632304",          Quality{5625960929244093294},  300, FailShouldSucceed},
+            {"7047.112186735699",    "1649845866",          Quality{5696855348026306945},  504, FailShouldSucceed},
+            {"840236.4402981238",    "47419053",            Quality{5982561601648018688},  499, FailShouldSucceed},
+            {"992715.618909774",     "189445631733",        Quality{5697835648288106944},  815, SucceedShouldSucceedResize},
+            {"504636667521",         "185545883.9506651",   Quality{6343802275337659280},  503, SucceedShouldSucceedResize},
+            {"992706.7218636649",    "189447316000",        Quality{5697835648288106944},  797, SucceedShouldSucceedResize},
+            {"1.068737911388205",    "127860278877",        Quality{5268604356368739396},  293, SucceedShouldSucceedResize},
+            {"17932506.56880419",    "189308.6043676173",   Quality{6206460598195440068},  311, SucceedShouldSucceedResize},
+            {"1.066379294658174",    "128042251493",        Quality{5268559341368739328},  270, SucceedShouldSucceedResize},
+            {"350131413924",         "1576879.110907892",   Quality{6487411636539049449},  650, Fail},
+            {"422093460",            "2.731797662057464",   Quality{6702911108534394924}, 1000, Fail},
+            {"76128132223",          "367172.7148422662",   Quality{6487263463413514240},  548, Fail},
+            {"132701839250",         "280703770.7695443",   Quality{6273750681188885075},  562, Fail},
+            {"994165.7604612011",    "189551302411",        Quality{5697835592690668727},  815, Fail},
+            {"45053.33303227917",    "86612695359",         Quality{5625695218943638190},  500, Fail},
+            {"199649.077043865",     "14017933007",         Quality{5766034667318524880},  324, Fail},
+            {"27751824831.70903",    "78896950",            Quality{6272538159621630432},  500, Fail},
+            {"225.3731275781907",    "156431793648",        Quality{5477818047604078924},  989, Fail},
+            {"199649.077043865",     "14017933007",         Quality{5766036094462806309},  324, Fail},
+            {"3.590272027140361",    "20677643641",         Quality{5406056147042156356},  808, Fail},
+            {"1.070884664490231",    "127604712776",        Quality{5268620608623825741},  293, Fail},
+            {"3272.448829820197",    "6275124076",          Quality{5625710328924117902},   81, Fail},
+            {"0.009059512633902926", "7994028",             Quality{5477511954775533172}, 1000, Fail},
+            {"1",                    "1.0",                 Quality{0},                    100, Fail},
+            {"1.0",                  "1",                   Quality{0},                    100, Fail},
+            {"10",                   "10.0",                Quality{xrpIouAmounts10_100},  100, Fail},
+            {"10.0",                 "10",                  Quality{iouXrpAmounts10_100},  100, Fail},
+            {"69864389131",          "287631.4543025075",   Quality{6487623473313516078},  451, Succeed},
+            {"4328342973",           "12453825.99247381",   Quality{6272522264364865181},  997, Succeed},
+            {"32347017",             "7003.93031579449",    Quality{6347261126087916670}, 1000, Succeed},
+            {"61697206161",          "36631.4583206413",    Quality{6558965195382476659},  500, Succeed},
+            {"1654524979",           "7028.659825511603",   Quality{6487551345110052981},  504, Succeed},
+            {"88621.22277293179",    "5128418948",          Quality{5766347291552869205},  380, Succeed},
+            {"1892611",              "0.01099814367603737", Quality{6703102780512015436}, 1000, Succeed},
+            {"4542.639373338766",    "24554809",            Quality{5838994982188783710},    0, Succeed},
+            {"5132932546",           "88542.99750172683",   Quality{6419203342950054537},  380, Succeed},
+            {"78929964.1549083",     "1506494795",          Quality{5986890029845558688},  589, Succeed},
+            {"10096561906",          "44727.72453735605",   Quality{6487455290284644551},  250, Succeed},
+            {"5092.219565514988",    "8768257694",          Quality{5626349534958379008},  503, Succeed},
+            {"1819778294",           "8305.084302902864",   Quality{6487429398998540860},  415, Succeed},
+            {"6970462.633911943",    "57359281",            Quality{6054087899185946624},  850, Succeed},
+            {"3983448845",           "2347.543644281467",   Quality{6558965195382476659},  856, Succeed},
             // This is a tiny offer 12drops/19321952e-15 it succeeds pre-amendment because of the error allowance.
             // Post amendment it is resized to 11drops/17711789e-15 but the quality is still less than
             // the target quality and the offer fails.
-            {"771493171", "1.243473020567508", Quality{6707566798038544272}, 100, Status::SucceedShouldFail},
+            {"771493171",            "1.243473020567508",   Quality{6707566798038544272},  100, SucceedShouldFail},
         };
         // clang-format on
 
@@ -5763,14 +5769,14 @@ private:
                     env.journal);
                 if (amounts)
                 {
-                    if (status == Status::SucceedShouldSucceedResize)
+                    if (status == SucceedShouldSucceedResize)
                     {
                         if (!features[fixAMMv1_1])
                             BEAST_EXPECT(Quality{*amounts} < quality);
                         else
                             BEAST_EXPECT(Quality{*amounts} >= quality);
                     }
-                    else if (status == Status::Succeed)
+                    else if (status == Succeed)
                     {
                         if (!features[fixAMMv1_1])
                             BEAST_EXPECT(
@@ -5780,13 +5786,13 @@ private:
                         else
                             BEAST_EXPECT(Quality{*amounts} >= quality);
                     }
-                    else if (status == Status::FailShouldSucceed)
+                    else if (status == FailShouldSucceed)
                     {
                         BEAST_EXPECT(
                             features[fixAMMv1_1] &&
                             Quality{*amounts} >= quality);
                     }
-                    else if (status == Status::SucceedShouldFail)
+                    else if (status == SucceedShouldFail)
                     {
                         BEAST_EXPECT(
                             !features[fixAMMv1_1] &&
@@ -5801,7 +5807,7 @@ private:
                     // be matched. Verify by generating a tiny offer, which
                     // doesn't match the quality. Exclude zero quality since
                     // no offer is generated in this case.
-                    if (status == Status::Fail && quality != Quality{0})
+                    if (status == Fail && quality != Quality{0})
                     {
                         auto tinyOffer = [&]() {
                             if (isXRP(poolIn))
@@ -5833,11 +5839,11 @@ private:
                         }();
                         BEAST_EXPECT(Quality(tinyOffer) < quality);
                     }
-                    else if (status == Status::FailShouldSucceed)
+                    else if (status == FailShouldSucceed)
                     {
                         BEAST_EXPECT(!features[fixAMMv1_1]);
                     }
-                    else if (status == Status::SucceedShouldFail)
+                    else if (status == SucceedShouldFail)
                     {
                         BEAST_EXPECT(features[fixAMMv1_1]);
                     }
@@ -5848,8 +5854,7 @@ private:
                 BEAST_EXPECT(
                     !strcmp(e.what(), "changeSpotPriceQuality failed"));
                 BEAST_EXPECT(
-                    !features[fixAMMv1_1] &&
-                    status == Status::FailShouldSucceed);
+                    !features[fixAMMv1_1] && status == FailShouldSucceed);
             }
         }
 
@@ -6446,8 +6451,8 @@ private:
         testFixOverflowOffer(all);
         testFixOverflowOffer(all - fixAMMv1_1);
         testSwapRounding();
-        testFixAMMOfferRounding(all);
-        testFixAMMOfferRounding(all - fixAMMv1_1);
+        testFixChangeSpotPriceQuality(all);
+        testFixChangeSpotPriceQuality(all - fixAMMv1_1);
         testFixAMMOfferBlockedByLOB(all);
         testFixAMMOfferBlockedByLOB(all - fixAMMv1_1);
     }
