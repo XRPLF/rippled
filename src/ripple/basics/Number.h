@@ -387,6 +387,26 @@ public:
     operator=(saveNumberRoundMode const&) = delete;
 };
 
+// saveNumberRoundMode doesn't do quite enough for us.  What we want is a
+// Number::RoundModeGuard that sets the new mode and restores the old mode
+// when it leaves scope.  Since Number doesn't have that facility, we'll
+// build it here.
+class NumberRoundModeGuard
+{
+    saveNumberRoundMode saved_;
+
+public:
+    explicit NumberRoundModeGuard(Number::rounding_mode mode) noexcept
+        : saved_{Number::setround(mode)}
+    {
+    }
+
+    NumberRoundModeGuard(NumberRoundModeGuard const&) = delete;
+
+    NumberRoundModeGuard&
+    operator=(NumberRoundModeGuard const&) = delete;
+};
+
 }  // namespace ripple
 
 #endif  // RIPPLE_BASICS_NUMBER_H_INCLUDED

@@ -37,6 +37,8 @@
 #include <utility>
 #include <vector>
 
+#include <boost/regex.hpp>
+
 namespace ripple {
 namespace test {
 
@@ -2955,7 +2957,7 @@ private:
                 // alice pays ~1.011USD in fees, which is ~10 times more
                 // than carol's fee
                 // 100.099431529USD swapped in for 100XRP
-                if (!features[fixAMMRounding])
+                if (!features[fixAMMv1_1])
                 {
                     BEAST_EXPECT(ammAlice.expectBalances(
                         XRPAmount{13'000'000'668},
@@ -2984,7 +2986,7 @@ private:
                 }
                 // carol pays ~9.94USD in fees, which is ~10 times more in
                 // trading fees vs discounted fee.
-                if (!features[fixAMMRounding])
+                if (!features[fixAMMv1_1])
                 {
                     BEAST_EXPECT(
                         env.balance(carol, USD) ==
@@ -3009,7 +3011,7 @@ private:
                 // carol pays ~1.008XRP in trading fee, which is
                 // ~10 times more than the discounted fee.
                 // 99.815876XRP is swapped in for 100USD
-                if (!features[fixAMMRounding])
+                if (!features[fixAMMv1_1])
                 {
                     BEAST_EXPECT(ammAlice.expectBalances(
                         XRPAmount(13'100'824'790),
@@ -3111,7 +3113,7 @@ private:
                 IOUAmount{1'004'487'562112089, -9}));
             // Bob pays the full fee ~0.1USD
             env(pay(bob, alice, XRP(10)), path(~XRP), sendmax(USD(11)));
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 BEAST_EXPECT(amm.expectBalances(
                     XRPAmount{1'000'010'011},
@@ -3520,7 +3522,7 @@ private:
                 XRPAmount(10'030'082'730),
                 STAmount(EUR, UINT64_C(9'970'007498125468), -12),
                 ammEUR_XRP.tokens()));
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 BEAST_EXPECT(ammUSD_EUR.expectBalances(
                     STAmount(USD, UINT64_C(9'970'097277662122), -12),
@@ -3621,7 +3623,7 @@ private:
                     sendmax(XRP(200)),
                     txflags(tfPartialPayment));
                 env.close();
-                if (!features[fixAMMRounding])
+                if (!features[fixAMMv1_1])
                 {
                     BEAST_EXPECT(ammAlice.expectBalances(
                         XRP(10'100), USD(10'000), ammAlice.tokens()));
@@ -3833,7 +3835,7 @@ private:
                 path(~USD),
                 path(~ETH, ~EUR, ~USD),
                 sendmax(XRP(200)));
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 // XRP-ETH-EUR-USD
                 // This path provides ~26.06USD/26.2XRP
@@ -3914,7 +3916,7 @@ private:
                 path(~EUR, ~BTC, ~USD),
                 path(~ETH, ~EUR, ~BTC, ~USD),
                 sendmax(XRP(200)));
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 // XRP-EUR-BTC-USD path provides ~17.8USD/~18.7XRP
                 // XRP-ETH-EUR-BTC-USD path provides ~82.2USD/82.4XRP
@@ -3981,7 +3983,7 @@ private:
                     path(~XRP, ~USD),
                     sendmax(EUR(400)),
                     txflags(tfPartialPayment | tfNoRippleDirect));
-                if (!features[fixAMMRounding])
+                if (!features[fixAMMv1_1])
                 {
                     // Carol gets ~29.91USD because of the AMM offers limit
                     BEAST_EXPECT(ammAlice.expectBalances(
@@ -4028,7 +4030,7 @@ private:
                     txflags(tfPartialPayment | tfNoRippleDirect));
                 BEAST_EXPECT(ammAlice.expectBalances(
                     XRPAmount{10'101'010'102}, USD(9'900), ammAlice.tokens()));
-                if (!features[fixAMMRounding])
+                if (!features[fixAMMv1_1])
                 {
                     // Carol gets ~100USD
                     BEAST_EXPECT(expectLine(
@@ -4060,17 +4062,33 @@ private:
             env(offer(bob, XRP(100), USD(100.001)));
             AMM ammAlice(env, alice, XRP(10'000), USD(10'100));
             env(offer(carol, USD(100), XRP(100)));
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRPAmount{10'049'825'373},
-                STAmount{USD, UINT64_C(10'049'92586949302), -11},
-                ammAlice.tokens()));
-            BEAST_EXPECT(expectOffers(
-                env,
-                bob,
-                1,
-                {{{XRPAmount{50'074'629},
-                   STAmount{USD, UINT64_C(50'07513050698), -11}}}}));
-            BEAST_EXPECT(expectLine(env, carol, USD(30'100)));
+            if (!features[fixAMMv1_1])
+            {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRPAmount{10'049'825'373},
+                    STAmount{USD, UINT64_C(10'049'92586949302), -11},
+                    ammAlice.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    bob,
+                    1,
+                    {{{XRPAmount{50'074'629},
+                       STAmount{USD, UINT64_C(50'07513050698), -11}}}}));
+            }
+            else
+            {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRPAmount{10'049'825'372},
+                    STAmount{USD, UINT64_C(10'049'92587049303), -11},
+                    ammAlice.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    bob,
+                    1,
+                    {{{XRPAmount{50'074'628},
+                       STAmount{USD, UINT64_C(50'07512950697), -11}}}}));
+                BEAST_EXPECT(expectLine(env, carol, USD(30'100)));
+            }
         }
 
         // Individually frozen account
@@ -4342,7 +4360,7 @@ private:
         // Execute with CLOB offer
         prep(
             [&](Env& env) {
-                if (!features[fixAMMRounding])
+                if (!features[fixAMMv1_1])
                     env(offer(
                             LP1,
                             XRPAmount{18'095'133},
@@ -4352,7 +4370,7 @@ private:
                     env(offer(
                             LP1,
                             XRPAmount{18'095'132},
-                            STAmount{TST, UINT64_C(1'68737984885387), -14}),
+                            STAmount{TST, UINT64_C(1'68737976189735), -14}),
                         txflags(tfPassive));
             },
             [&](Env& env) {
@@ -4584,7 +4602,7 @@ private:
                     {{Amounts{
                         STAmount{EUR, UINT64_C(5'025125628140703), -15},
                         STAmount{USD, UINT64_C(5'025125628140703), -15}}}}));
-                if (!features[fixAMMRounding])
+                if (!features[fixAMMv1_1])
                 {
                     BEAST_EXPECT(ammAlice.expectBalances(
                         STAmount{USD, UINT64_C(1'004'974874371859), -12},
@@ -4624,7 +4642,7 @@ private:
                 sendmax(EUR(15)),
                 txflags(tfNoRippleDirect));
             BEAST_EXPECT(expectLine(env, ed, USD(2'010)));
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 BEAST_EXPECT(expectLine(env, bob, EUR(1'990)));
                 BEAST_EXPECT(ammAlice.expectBalances(
@@ -4661,7 +4679,7 @@ private:
                 sendmax(EUR(15)),
                 txflags(tfNoRippleDirect));
             BEAST_EXPECT(expectLine(env, ed, USD(2'010)));
-            if (!features[fixAMMRounding])
+            if (!features[fixAMMv1_1])
             {
                 BEAST_EXPECT(expectLine(
                     env,
@@ -4677,10 +4695,10 @@ private:
                 BEAST_EXPECT(expectLine(
                     env,
                     bob,
-                    STAmount{EUR, UINT64_C(1'989'987453007616), -12}));
+                    STAmount{EUR, UINT64_C(1'989'987453007628), -12}));
                 BEAST_EXPECT(ammAlice.expectBalances(
                     USD(1'000),
-                    STAmount{EUR, UINT64_C(1'005'012546992384), -12},
+                    STAmount{EUR, UINT64_C(1'005'012546992372), -12},
                     ammAlice.tokens()));
             }
             BEAST_EXPECT(expectOffers(env, carol, 0));
@@ -5192,35 +5210,69 @@ private:
                         BEAST_EXPECT(!amm->expectBalances(
                             USD(1'000), ETH(1'000), amm->tokens()));
                     }
-                    if (i == 2 && !features[fixAMMRounding])
+                    if (i == 2 && !features[fixAMMv1_1])
                     {
                         if (rates.first == 1.5)
                         {
-                            BEAST_EXPECT(expectOffers(
-                                env,
-                                ed,
-                                1,
-                                {{Amounts{
-                                    STAmount{
-                                        ETH, UINT64_C(378'6327949540823), -13},
-                                    STAmount{
-                                        USD,
-                                        UINT64_C(283'9745962155617),
-                                        -13}}}}));
+                            if (!features[fixAMMv1_1])
+                                BEAST_EXPECT(expectOffers(
+                                    env,
+                                    ed,
+                                    1,
+                                    {{Amounts{
+                                        STAmount{
+                                            ETH,
+                                            UINT64_C(378'6327949540823),
+                                            -13},
+                                        STAmount{
+                                            USD,
+                                            UINT64_C(283'9745962155617),
+                                            -13}}}}));
+                            else
+                                BEAST_EXPECT(expectOffers(
+                                    env,
+                                    ed,
+                                    1,
+                                    {{Amounts{
+                                        STAmount{
+                                            ETH,
+                                            UINT64_C(378'6327949540813),
+                                            -13},
+                                        STAmount{
+                                            USD,
+                                            UINT64_C(283'974596215561),
+                                            -12}}}}));
                         }
                         else
                         {
-                            BEAST_EXPECT(expectOffers(
-                                env,
-                                ed,
-                                1,
-                                {{Amounts{
-                                    STAmount{
-                                        ETH, UINT64_C(325'299461620749), -12},
-                                    STAmount{
-                                        USD,
-                                        UINT64_C(243'9745962155617),
-                                        -13}}}}));
+                            if (!features[fixAMMv1_1])
+                                BEAST_EXPECT(expectOffers(
+                                    env,
+                                    ed,
+                                    1,
+                                    {{Amounts{
+                                        STAmount{
+                                            ETH,
+                                            UINT64_C(325'299461620749),
+                                            -12},
+                                        STAmount{
+                                            USD,
+                                            UINT64_C(243'9745962155617),
+                                            -13}}}}));
+                            else
+                                BEAST_EXPECT(expectOffers(
+                                    env,
+                                    ed,
+                                    1,
+                                    {{Amounts{
+                                        STAmount{
+                                            ETH,
+                                            UINT64_C(325'299461620748),
+                                            -12},
+                                        STAmount{
+                                            USD,
+                                            UINT64_C(243'974596215561),
+                                            -12}}}}));
                         }
                     }
                     else if (i == 2)
@@ -5292,29 +5344,71 @@ private:
                 {
                     if (rates.first == 1.5)
                     {
-                        BEAST_EXPECT(expectOffers(
-                            env, ed, 1, {{Amounts{ETH(400), USD(250)}}}));
-                        BEAST_EXPECT(expectOffers(
-                            env,
-                            alice,
-                            1,
-                            {{Amounts{
-                                STAmount{USD, UINT64_C(40'5694150420947), -13},
-                                STAmount{ETH, UINT64_C(64'91106406735152), -14},
-                            }}}));
+                        if (!features[fixAMMv1_1])
+                        {
+                            BEAST_EXPECT(expectOffers(
+                                env, ed, 1, {{Amounts{ETH(400), USD(250)}}}));
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                alice,
+                                1,
+                                {{Amounts{
+                                    STAmount{
+                                        USD, UINT64_C(40'5694150420947), -13},
+                                    STAmount{
+                                        ETH, UINT64_C(64'91106406735152), -14},
+                                }}}));
+                        }
+                        else
+                        {
+                            // Ed offer is partially crossed.
+                            // The updated rounding makes limitQuality
+                            // work if both amendments are enabled
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                ed,
+                                1,
+                                {{Amounts{
+                                    STAmount{
+                                        ETH, UINT64_C(335'0889359326475), -13},
+                                    STAmount{
+                                        USD, UINT64_C(209'4305849579047), -13},
+                                }}}));
+                            BEAST_EXPECT(expectOffers(env, alice, 0));
+                        }
                     }
                     else
                     {
-                        // Ed offer is partially crossed.
-                        BEAST_EXPECT(expectOffers(
-                            env,
-                            ed,
-                            1,
-                            {{Amounts{
-                                STAmount{ETH, UINT64_C(335'0889359326485), -13},
-                                STAmount{USD, UINT64_C(209'4305849579053), -13},
-                            }}}));
-                        BEAST_EXPECT(expectOffers(env, alice, 0));
+                        if (!features[fixAMMv1_1])
+                        {
+                            // Ed offer is partially crossed.
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                ed,
+                                1,
+                                {{Amounts{
+                                    STAmount{
+                                        ETH, UINT64_C(335'0889359326485), -13},
+                                    STAmount{
+                                        USD, UINT64_C(209'4305849579053), -13},
+                                }}}));
+                            BEAST_EXPECT(expectOffers(env, alice, 0));
+                        }
+                        else
+                        {
+                            // Ed offer is partially crossed.
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                ed,
+                                1,
+                                {{Amounts{
+                                    STAmount{
+                                        ETH, UINT64_C(335'0889359326475), -13},
+                                    STAmount{
+                                        USD, UINT64_C(209'4305849579047), -13},
+                                }}}));
+                            BEAST_EXPECT(expectOffers(env, alice, 0));
+                        }
                     }
                 }
             }
@@ -5361,7 +5455,7 @@ private:
 
                     BEAST_EXPECT(expectLine(env, bob, USD(2'100)));
 
-                    if (i == 2 && !features[fixAMMRounding])
+                    if (i == 2 && !features[fixAMMv1_1])
                     {
                         if (rates.first == 1.5)
                         {
@@ -5555,6 +5649,222 @@ private:
             tesSUCCESS,
             9,
             false);
+    }
+
+    void
+    testFixChangeSpotPriceQuality(FeatureBitset features)
+    {
+        testcase("Fix changeSpotPriceQuality");
+        using namespace jtx;
+
+        enum class Status {
+            SucceedShouldSucceedResize,  // Succeed in pre-fix because
+                                         // error allowance, succeed post-fix
+                                         // because of offer resizing
+            FailShouldSucceed,           // Fail in pre-fix due to rounding,
+                                         // succeed after fix because of XRP
+                                         // side is generated first
+            SucceedShouldFail,           // Succeed in pre-fix, fail after fix
+                                         // due to small quality difference
+            Fail,    // Both fail because the quality can't be matched
+            Succeed  // Both succeed
+        };
+        using enum Status;
+        auto const xrpIouAmounts10_100 =
+            TAmounts{XRPAmount{10}, IOUAmount{100}};
+        auto const iouXrpAmounts10_100 =
+            TAmounts{IOUAmount{10}, XRPAmount{100}};
+        // clang-format off
+        std::vector<std::tuple<std::string, std::string, Quality, std::uint16_t, Status>> tests = {
+            //Pool In              ,  Pool Out,             Quality                     , Fee,  Status
+            {"0.001519763260828713", "1558701",             Quality{5414253689393440221}, 1000, FailShouldSucceed},
+            {"0.01099814367603737",  "1892611",             Quality{5482264816516900274}, 1000, FailShouldSucceed},
+            {"0.78",                 "796599",              Quality{5630392334958379008}, 1000, FailShouldSucceed},
+            {"105439.2955578965",    "49398693",            Quality{5910869983721805038},  400, FailShouldSucceed},
+            {"12408293.23445213",    "4340810521",          Quality{5911611095910090752},  997, FailShouldSucceed},
+            {"1892611",              "0.01099814367603737", Quality{6703103457950430139}, 1000, FailShouldSucceed},
+            {"423028.8508101858",    "3392804520",          Quality{5837920340654162816},  600, FailShouldSucceed},
+            {"44565388.41001027",    "73890647",            Quality{6058976634606450001}, 1000, FailShouldSucceed},
+            {"66831.68494832662",    "16",                  Quality{6346111134641742975},    0, FailShouldSucceed},
+            {"675.9287302203422",    "1242632304",          Quality{5625960929244093294},  300, FailShouldSucceed},
+            {"7047.112186735699",    "1649845866",          Quality{5696855348026306945},  504, FailShouldSucceed},
+            {"840236.4402981238",    "47419053",            Quality{5982561601648018688},  499, FailShouldSucceed},
+            {"992715.618909774",     "189445631733",        Quality{5697835648288106944},  815, SucceedShouldSucceedResize},
+            {"504636667521",         "185545883.9506651",   Quality{6343802275337659280},  503, SucceedShouldSucceedResize},
+            {"992706.7218636649",    "189447316000",        Quality{5697835648288106944},  797, SucceedShouldSucceedResize},
+            {"1.068737911388205",    "127860278877",        Quality{5268604356368739396},  293, SucceedShouldSucceedResize},
+            {"17932506.56880419",    "189308.6043676173",   Quality{6206460598195440068},  311, SucceedShouldSucceedResize},
+            {"1.066379294658174",    "128042251493",        Quality{5268559341368739328},  270, SucceedShouldSucceedResize},
+            {"350131413924",         "1576879.110907892",   Quality{6487411636539049449},  650, Fail},
+            {"422093460",            "2.731797662057464",   Quality{6702911108534394924}, 1000, Fail},
+            {"76128132223",          "367172.7148422662",   Quality{6487263463413514240},  548, Fail},
+            {"132701839250",         "280703770.7695443",   Quality{6273750681188885075},  562, Fail},
+            {"994165.7604612011",    "189551302411",        Quality{5697835592690668727},  815, Fail},
+            {"45053.33303227917",    "86612695359",         Quality{5625695218943638190},  500, Fail},
+            {"199649.077043865",     "14017933007",         Quality{5766034667318524880},  324, Fail},
+            {"27751824831.70903",    "78896950",            Quality{6272538159621630432},  500, Fail},
+            {"225.3731275781907",    "156431793648",        Quality{5477818047604078924},  989, Fail},
+            {"199649.077043865",     "14017933007",         Quality{5766036094462806309},  324, Fail},
+            {"3.590272027140361",    "20677643641",         Quality{5406056147042156356},  808, Fail},
+            {"1.070884664490231",    "127604712776",        Quality{5268620608623825741},  293, Fail},
+            {"3272.448829820197",    "6275124076",          Quality{5625710328924117902},   81, Fail},
+            {"0.009059512633902926", "7994028",             Quality{5477511954775533172}, 1000, Fail},
+            {"1",                    "1.0",                 Quality{0},                    100, Fail},
+            {"1.0",                  "1",                   Quality{0},                    100, Fail},
+            {"10",                   "10.0",                Quality{xrpIouAmounts10_100},  100, Fail},
+            {"10.0",                 "10",                  Quality{iouXrpAmounts10_100},  100, Fail},
+            {"69864389131",          "287631.4543025075",   Quality{6487623473313516078},  451, Succeed},
+            {"4328342973",           "12453825.99247381",   Quality{6272522264364865181},  997, Succeed},
+            {"32347017",             "7003.93031579449",    Quality{6347261126087916670}, 1000, Succeed},
+            {"61697206161",          "36631.4583206413",    Quality{6558965195382476659},  500, Succeed},
+            {"1654524979",           "7028.659825511603",   Quality{6487551345110052981},  504, Succeed},
+            {"88621.22277293179",    "5128418948",          Quality{5766347291552869205},  380, Succeed},
+            {"1892611",              "0.01099814367603737", Quality{6703102780512015436}, 1000, Succeed},
+            {"4542.639373338766",    "24554809",            Quality{5838994982188783710},    0, Succeed},
+            {"5132932546",           "88542.99750172683",   Quality{6419203342950054537},  380, Succeed},
+            {"78929964.1549083",     "1506494795",          Quality{5986890029845558688},  589, Succeed},
+            {"10096561906",          "44727.72453735605",   Quality{6487455290284644551},  250, Succeed},
+            {"5092.219565514988",    "8768257694",          Quality{5626349534958379008},  503, Succeed},
+            {"1819778294",           "8305.084302902864",   Quality{6487429398998540860},  415, Succeed},
+            {"6970462.633911943",    "57359281",            Quality{6054087899185946624},  850, Succeed},
+            {"3983448845",           "2347.543644281467",   Quality{6558965195382476659},  856, Succeed},
+            // This is a tiny offer 12drops/19321952e-15 it succeeds pre-amendment because of the error allowance.
+            // Post amendment it is resized to 11drops/17711789e-15 but the quality is still less than
+            // the target quality and the offer fails.
+            {"771493171",            "1.243473020567508",   Quality{6707566798038544272},  100, SucceedShouldFail},
+        };
+        // clang-format on
+
+        boost::regex rx("^\\d+$");
+        boost::smatch match;
+        // tests that succeed should have the same amounts pre-fix and post-fix
+        std::vector<std::pair<STAmount, STAmount>> successAmounts;
+        Env env(*this, features);
+        auto rules = env.current()->rules();
+        CurrentTransactionRulesGuard rg(rules);
+        for (auto const& t : tests)
+        {
+            auto getPool = [&](std::string const& v, bool isXRP) {
+                if (isXRP)
+                    return amountFromString(xrpIssue(), v);
+                return amountFromString(noIssue(), v);
+            };
+            auto const& quality = std::get<Quality>(t);
+            auto const tfee = std::get<std::uint16_t>(t);
+            auto const status = std::get<Status>(t);
+            auto const poolInIsXRP =
+                boost::regex_search(std::get<0>(t), match, rx);
+            auto const poolOutIsXRP =
+                boost::regex_search(std::get<1>(t), match, rx);
+            assert(!(poolInIsXRP && poolOutIsXRP));
+            auto const poolIn = getPool(std::get<0>(t), poolInIsXRP);
+            auto const poolOut = getPool(std::get<1>(t), poolOutIsXRP);
+            try
+            {
+                auto const amounts = changeSpotPriceQuality(
+                    Amounts{poolIn, poolOut},
+                    quality,
+                    tfee,
+                    env.current()->rules(),
+                    env.journal);
+                if (amounts)
+                {
+                    if (status == SucceedShouldSucceedResize)
+                    {
+                        if (!features[fixAMMv1_1])
+                            BEAST_EXPECT(Quality{*amounts} < quality);
+                        else
+                            BEAST_EXPECT(Quality{*amounts} >= quality);
+                    }
+                    else if (status == Succeed)
+                    {
+                        if (!features[fixAMMv1_1])
+                            BEAST_EXPECT(
+                                Quality{*amounts} >= quality ||
+                                withinRelativeDistance(
+                                    Quality{*amounts}, quality, Number{1, -7}));
+                        else
+                            BEAST_EXPECT(Quality{*amounts} >= quality);
+                    }
+                    else if (status == FailShouldSucceed)
+                    {
+                        BEAST_EXPECT(
+                            features[fixAMMv1_1] &&
+                            Quality{*amounts} >= quality);
+                    }
+                    else if (status == SucceedShouldFail)
+                    {
+                        BEAST_EXPECT(
+                            !features[fixAMMv1_1] &&
+                            Quality{*amounts} < quality &&
+                            withinRelativeDistance(
+                                Quality{*amounts}, quality, Number{1, -7}));
+                    }
+                }
+                else
+                {
+                    // Fails pre- and post-amendment because the quality can't
+                    // be matched. Verify by generating a tiny offer, which
+                    // doesn't match the quality. Exclude zero quality since
+                    // no offer is generated in this case.
+                    if (status == Fail && quality != Quality{0})
+                    {
+                        auto tinyOffer = [&]() {
+                            if (isXRP(poolIn))
+                            {
+                                auto const takerPays = STAmount{xrpIssue(), 1};
+                                return Amounts{
+                                    takerPays,
+                                    swapAssetIn(
+                                        Amounts{poolIn, poolOut},
+                                        takerPays,
+                                        tfee)};
+                            }
+                            else if (isXRP(poolOut))
+                            {
+                                auto const takerGets = STAmount{xrpIssue(), 1};
+                                return Amounts{
+                                    swapAssetOut(
+                                        Amounts{poolIn, poolOut},
+                                        takerGets,
+                                        tfee),
+                                    takerGets};
+                            }
+                            auto const takerPays = toAmount<STAmount>(
+                                getIssue(poolIn), Number{1, -10} * poolIn);
+                            return Amounts{
+                                takerPays,
+                                swapAssetIn(
+                                    Amounts{poolIn, poolOut}, takerPays, tfee)};
+                        }();
+                        BEAST_EXPECT(Quality(tinyOffer) < quality);
+                    }
+                    else if (status == FailShouldSucceed)
+                    {
+                        BEAST_EXPECT(!features[fixAMMv1_1]);
+                    }
+                    else if (status == SucceedShouldFail)
+                    {
+                        BEAST_EXPECT(features[fixAMMv1_1]);
+                    }
+                }
+            }
+            catch (std::runtime_error const& e)
+            {
+                BEAST_EXPECT(
+                    !strcmp(e.what(), "changeSpotPriceQuality failed"));
+                BEAST_EXPECT(
+                    !features[fixAMMv1_1] && status == FailShouldSucceed);
+            }
+        }
+
+        // Test negative discriminant
+        {
+            // b**2 - 4 * a * c -> 1 * 1 - 4 * 1 * 1 = -3
+            auto const res =
+                solveQuadraticEqSmallest(Number{1}, Number{1}, Number{1});
+            BEAST_EXPECT(!res.has_value());
+        }
     }
 
     void
@@ -5895,18 +6205,14 @@ private:
                     txflags(tfPartialPayment));
                 env.close();
 
-                auto const failUsdGH = features[fixAMMRounding]
-                    ? input.failUsdGHr
-                    : input.failUsdGH;
-                auto const failUsdBIT = features[fixAMMRounding]
-                    ? input.failUsdBITr
-                    : input.failUsdBIT;
-                auto const goodUsdGH = features[fixAMMRounding]
-                    ? input.goodUsdGHr
-                    : input.goodUsdGH;
-                auto const goodUsdBIT = features[fixAMMRounding]
-                    ? input.goodUsdBITr
-                    : input.goodUsdBIT;
+                auto const failUsdGH =
+                    features[fixAMMv1_1] ? input.failUsdGHr : input.failUsdGH;
+                auto const failUsdBIT =
+                    features[fixAMMv1_1] ? input.failUsdBITr : input.failUsdBIT;
+                auto const goodUsdGH =
+                    features[fixAMMv1_1] ? input.goodUsdGHr : input.goodUsdGH;
+                auto const goodUsdBIT =
+                    features[fixAMMv1_1] ? input.goodUsdBITr : input.goodUsdBIT;
                 if (!features[fixAMMOverflowOffer])
                 {
                     BEAST_EXPECT(amm.expectBalances(
@@ -5977,7 +6283,135 @@ private:
             {{xrpPool, iouPool}},
             889,
             std::nullopt,
-            {jtx::supported_amendments() | fixAMMRounding});
+            {jtx::supported_amendments() | fixAMMv1_1});
+    }
+
+    void
+    testFixAMMOfferBlockedByLOB(FeatureBitset features)
+    {
+        testcase("AMM Offer Blocked By LOB");
+        using namespace jtx;
+
+        // Low quality LOB offer blocks AMM liquidity
+
+        // USD/XRP crosses AMM
+        {
+            Env env(*this, features);
+
+            fund(env, gw, {alice, carol}, XRP(1'000'000), {USD(1'000'000)});
+            // This offer blocks AMM offer in pre-amendment
+            env(offer(alice, XRP(1), USD(0.01)));
+            env.close();
+
+            AMM amm(env, gw, XRP(200'000), USD(100'000));
+
+            // The offer doesn't cross AMM in pre-amendment code
+            // It crosses AMM in post-amendment code
+            env(offer(carol, USD(0.49), XRP(1)));
+            env.close();
+
+            if (!features[fixAMMv1_1])
+            {
+                BEAST_EXPECT(amm.expectBalances(
+                    XRP(200'000), USD(100'000), amm.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env, alice, 1, {{Amounts{XRP(1), USD(0.01)}}}));
+                // Carol's offer is blocked by alice's offer
+                BEAST_EXPECT(expectOffers(
+                    env, carol, 1, {{Amounts{USD(0.49), XRP(1)}}}));
+            }
+            else
+            {
+                BEAST_EXPECT(amm.expectBalances(
+                    XRPAmount(200'000'980'005), USD(99'999.51), amm.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env, alice, 1, {{Amounts{XRP(1), USD(0.01)}}}));
+                // Carol's offer crosses AMM
+                BEAST_EXPECT(expectOffers(env, carol, 0));
+            }
+        }
+
+        // There is no blocking offer, the same AMM liquidity is consumed
+        // pre- and post-amendment.
+        {
+            Env env(*this, features);
+
+            fund(env, gw, {alice, carol}, XRP(1'000'000), {USD(1'000'000)});
+            // There is no blocking offer
+            // env(offer(alice, XRP(1), USD(0.01)));
+
+            AMM amm(env, gw, XRP(200'000), USD(100'000));
+
+            // The offer crosses AMM
+            env(offer(carol, USD(0.49), XRP(1)));
+            env.close();
+
+            // The same result as with the blocking offer
+            BEAST_EXPECT(amm.expectBalances(
+                XRPAmount(200'000'980'005), USD(99'999.51), amm.tokens()));
+            // Carol's offer crosses AMM
+            BEAST_EXPECT(expectOffers(env, carol, 0));
+        }
+
+        // XRP/USD crosses AMM
+        {
+            Env env(*this, features);
+            fund(env, gw, {alice, carol, bob}, XRP(10'000), {USD(1'000)});
+
+            // This offer blocks AMM offer in pre-amendment
+            // It crosses AMM in post-amendment code
+            env(offer(bob, USD(1), XRPAmount(500)));
+            env.close();
+            AMM amm(env, alice, XRP(1'000), USD(500));
+            env(offer(carol, XRP(100), USD(55)));
+            env.close();
+            if (!features[fixAMMv1_1])
+            {
+                BEAST_EXPECT(
+                    amm.expectBalances(XRP(1'000), USD(500), amm.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env, bob, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
+                BEAST_EXPECT(expectOffers(
+                    env, carol, 1, {{Amounts{XRP(100), USD(55)}}}));
+            }
+            else
+            {
+                BEAST_EXPECT(amm.expectBalances(
+                    XRPAmount(909'090'909),
+                    STAmount{USD, UINT64_C(550'000000055), -9},
+                    amm.tokens()));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    carol,
+                    1,
+                    {{Amounts{
+                        XRPAmount{9'090'909},
+                        STAmount{USD, 4'99999995, -8}}}}));
+                BEAST_EXPECT(expectOffers(
+                    env, bob, 1, {{Amounts{USD(1), XRPAmount(500)}}}));
+            }
+        }
+
+        // There is no blocking offer, the same AMM liquidity is consumed
+        // pre- and post-amendment.
+        {
+            Env env(*this, features);
+            fund(env, gw, {alice, carol, bob}, XRP(10'000), {USD(1'000)});
+
+            AMM amm(env, alice, XRP(1'000), USD(500));
+            env(offer(carol, XRP(100), USD(55)));
+            env.close();
+            BEAST_EXPECT(amm.expectBalances(
+                XRPAmount(909'090'909),
+                STAmount{USD, UINT64_C(550'000000055), -9},
+                amm.tokens()));
+            BEAST_EXPECT(expectOffers(
+                env,
+                carol,
+                1,
+                {{Amounts{
+                    XRPAmount{9'090'909}, STAmount{USD, 4'99999995, -8}}}}));
+        }
     }
 
     void
@@ -5994,29 +6428,33 @@ private:
         testFeeVote();
         testInvalidBid();
         testBid(all);
-        testBid(all - fixAMMRounding);
+        testBid(all - fixAMMv1_1);
         testInvalidAMMPayment();
         testBasicPaymentEngine(all);
-        testBasicPaymentEngine(all - fixAMMRounding);
+        testBasicPaymentEngine(all - fixAMMv1_1);
         testAMMTokens();
         testAmendment();
         testFlags();
         testRippling();
         testAMMAndCLOB(all);
-        testAMMAndCLOB(all - fixAMMRounding);
+        testAMMAndCLOB(all - fixAMMv1_1);
         testTradingFee(all);
-        testTradingFee(all - fixAMMRounding);
+        testTradingFee(all - fixAMMv1_1);
         testAdjustedTokens();
         testAutoDelete();
         testClawback();
         testAMMID();
         testSelection(all);
-        testSelection(all - fixAMMRounding);
+        testSelection(all - fixAMMv1_1);
         testFixDefaultInnerObj();
         testMalformed();
         testFixOverflowOffer(all);
-        testFixOverflowOffer(all - fixAMMRounding);
+        testFixOverflowOffer(all - fixAMMv1_1);
         testSwapRounding();
+        testFixChangeSpotPriceQuality(all);
+        testFixChangeSpotPriceQuality(all - fixAMMv1_1);
+        testFixAMMOfferBlockedByLOB(all);
+        testFixAMMOfferBlockedByLOB(all - fixAMMv1_1);
     }
 };
 
