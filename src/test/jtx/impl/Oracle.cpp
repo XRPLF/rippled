@@ -22,6 +22,7 @@
 #include <test/jtx/Oracle.h>
 
 #include <boost/lexical_cast/try_lexical_convert.hpp>
+#include <boost/regex.hpp>
 
 #include <vector>
 
@@ -43,8 +44,8 @@ Oracle::Oracle(Env& env, CreateArg const& arg, bool submit)
         env_.close(now + testStartTime - epoch_offset);
     if (arg.owner)
         owner_ = *arg.owner;
-    if (arg.documentID)
-        documentID_ = *arg.documentID;
+    if (arg.documentID && validDocumentID(*arg.documentID))
+        documentID_ = asUInt(*arg.documentID);
     if (submit)
         set(arg);
 }
@@ -55,13 +56,15 @@ Oracle::remove(RemoveArg const& arg)
     Json::Value jv;
     jv[jss::TransactionType] = jss::OracleDelete;
     jv[jss::Account] = to_string(arg.owner.value_or(owner_));
-    jv[jss::OracleDocumentID] = arg.documentID.value_or(documentID_);
+    toJson(jv[jss::OracleDocumentID], arg.documentID.value_or(documentID_));
     if (Oracle::fee != 0)
         jv[jss::Fee] = std::to_string(Oracle::fee);
     else if (arg.fee != 0)
         jv[jss::Fee] = std::to_string(arg.fee);
     else
         jv[jss::Fee] = std::to_string(env_.current()->fees().increment.drops());
+    if (arg.flags != 0)
+        jv[jss::Flags] = arg.flags;
     submit(jv, arg.msig, arg.seq, arg.err);
 }
 
@@ -142,12 +145,11 @@ Oracle::expectLastUpdateTime(std::uint32_t lastUpdateTime) const
 Json::Value
 Oracle::aggregatePrice(
     Env& env,
-    std::optional<std::string> const& baseAsset,
-    std::optional<std::string> const& quoteAsset,
-    std::optional<std::vector<std::pair<Account, std::uint32_t>>> const&
-        oracles,
-    std::optional<std::uint8_t> const& trim,
-    std::optional<std::uint8_t> const& timeThreshold)
+    std::optional<AnyValue> const& baseAsset,
+    std::optional<AnyValue> const& quoteAsset,
+    std::optional<OraclesData> const& oracles,
+    std::optional<AnyValue> const& trim,
+    std::optional<AnyValue> const& timeThreshold)
 {
     Json::Value jv;
     Json::Value jvOracles(Json::arrayValue);
@@ -156,26 +158,34 @@ Oracle::aggregatePrice(
         for (auto const& id : *oracles)
         {
             Json::Value oracle;
-            oracle[jss::account] = to_string(id.first.id());
-            oracle[jss::oracle_document_id] = id.second;
+            if (id.first)
+                oracle[jss::account] = to_string((*id.first).id());
+            if (id.second)
+                toJson(oracle[jss::oracle_document_id], *id.second);
             jvOracles.append(oracle);
         }
         jv[jss::oracles] = jvOracles;
     }
     if (trim)
-        jv[jss::trim] = *trim;
+        toJson(jv[jss::trim], *trim);
     if (baseAsset)
-        jv[jss::base_asset] = *baseAsset;
+        toJson(jv[jss::base_asset], *baseAsset);
     if (quoteAsset)
-        jv[jss::quote_asset] = *quoteAsset;
+        toJson(jv[jss::quote_asset], *quoteAsset);
     if (timeThreshold)
-        jv[jss::time_threshold] = *timeThreshold;
+        toJson(jv[jss::time_threshold], *timeThreshold);
+    // Convert "%None%" to None
+    auto str = to_string(jv);
+    str = boost::regex_replace(str, boost::regex(NonePattern), UnquotedNone);
+    auto jr = env.rpc("json", "get_aggregate_price", str);
 
-    auto jr = env.rpc("json", "get_aggregate_price", to_string(jv));
-
-    if (jr.isObject() && jr.isMember(jss::result) &&
-        jr[jss::result].isMember(jss::status))
-        return jr[jss::result];
+    if (jr.isObject())
+    {
+        if (jr.isMember(jss::result) && jr[jss::result].isMember(jss::status))
+            return jr[jss::result];
+        else if (jr.isMember(jss::error))
+            return jr;
+    }
     return Json::nullValue;
 }
 
@@ -186,17 +196,24 @@ Oracle::set(UpdateArg const& arg)
     Json::Value jv;
     if (arg.owner)
         owner_ = *arg.owner;
-    if (arg.documentID)
-        documentID_ = *arg.documentID;
+    if (arg.documentID &&
+        std::holds_alternative<std::uint32_t>(*arg.documentID))
+    {
+        documentID_ = std::get<std::uint32_t>(*arg.documentID);
+        jv[jss::OracleDocumentID] = documentID_;
+    }
+    else if (arg.documentID)
+        toJson(jv[jss::OracleDocumentID], *arg.documentID);
+    else
+        jv[jss::OracleDocumentID] = documentID_;
     jv[jss::TransactionType] = jss::OracleSet;
     jv[jss::Account] = to_string(owner_);
-    jv[jss::OracleDocumentID] = documentID_;
     if (arg.assetClass)
-        jv[jss::AssetClass] = strHex(*arg.assetClass);
+        toJsonHex(jv[jss::AssetClass], *arg.assetClass);
     if (arg.provider)
-        jv[jss::Provider] = strHex(*arg.provider);
+        toJsonHex(jv[jss::Provider], *arg.provider);
     if (arg.uri)
-        jv[jss::URI] = strHex(*arg.uri);
+        toJsonHex(jv[jss::URI], *arg.uri);
     if (arg.flags != 0)
         jv[jss::Flags] = arg.flags;
     if (Oracle::fee != 0)
@@ -207,8 +224,14 @@ Oracle::set(UpdateArg const& arg)
         jv[jss::Fee] = std::to_string(env_.current()->fees().increment.drops());
     // lastUpdateTime if provided is offset from testStartTime
     if (arg.lastUpdateTime)
-        jv[jss::LastUpdateTime] =
-            to_string(testStartTime.count() + *arg.lastUpdateTime);
+    {
+        if (std::holds_alternative<std::uint32_t>(*arg.lastUpdateTime))
+            jv[jss::LastUpdateTime] = to_string(
+                testStartTime.count() +
+                std::get<std::uint32_t>(*arg.lastUpdateTime));
+        else
+            toJson(jv[jss::LastUpdateTime], *arg.lastUpdateTime);
+    }
     else
         jv[jss::LastUpdateTime] = to_string(
             duration_cast<seconds>(
@@ -263,18 +286,22 @@ Oracle::set(CreateArg const& arg)
 Json::Value
 Oracle::ledgerEntry(
     Env& env,
-    AccountID const& account,
-    std::variant<std::uint32_t, std::string> const& documentID,
+    std::optional<std::variant<AccountID, std::string>> const& account,
+    std::optional<AnyValue> const& documentID,
     std::optional<std::string> const& index)
 {
     Json::Value jvParams;
-    jvParams[jss::oracle][jss::account] = to_string(account);
-    if (std::holds_alternative<std::uint32_t>(documentID))
-        jvParams[jss::oracle][jss::oracle_document_id] =
-            std::get<std::uint32_t>(documentID);
-    else
-        jvParams[jss::oracle][jss::oracle_document_id] =
-            std::get<std::string>(documentID);
+    if (account)
+    {
+        if (std::holds_alternative<AccountID>(*account))
+            jvParams[jss::oracle][jss::account] =
+                to_string(std::get<AccountID>(*account));
+        else
+            jvParams[jss::oracle][jss::account] =
+                std::get<std::string>(*account);
+    }
+    if (documentID)
+        toJson(jvParams[jss::oracle][jss::oracle_document_id], *documentID);
     if (index)
     {
         std::uint32_t i;
@@ -283,7 +310,68 @@ Oracle::ledgerEntry(
         else
             jvParams[jss::oracle][jss::ledger_index] = *index;
     }
-    return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+    // Convert "%None%" to None
+    auto str = to_string(jvParams);
+    str = boost::regex_replace(str, boost::regex(NonePattern), UnquotedNone);
+    auto jr = env.rpc("json", "ledger_entry", str);
+
+    if (jr.isObject())
+    {
+        if (jr.isMember(jss::result) && jr[jss::result].isMember(jss::status))
+            return jr[jss::result];
+        else if (jr.isMember(jss::error))
+            return jr;
+    }
+    return Json::nullValue;
+}
+
+void
+toJson(Json::Value& jv, AnyValue const& v)
+{
+    std::visit([&](auto&& arg) { jv = arg; }, v);
+}
+
+void
+toJsonHex(Json::Value& jv, AnyValue const& v)
+{
+    std::visit(
+        [&]<typename T>(T&& arg) {
+            if constexpr (std::is_same_v<T, std::string const&>)
+            {
+                if (arg.starts_with("##"))
+                    jv = arg.substr(2);
+                else
+                    jv = strHex(arg);
+            }
+            else
+                jv = arg;
+        },
+        v);
+}
+
+std::uint32_t
+asUInt(AnyValue const& v)
+{
+    Json::Value jv;
+    toJson(jv, v);
+    return jv.asUInt();
+}
+
+bool
+validDocumentID(AnyValue const& v)
+{
+    try
+    {
+        Json::Value jv;
+        toJson(jv, v);
+        jv.asUInt();
+        jv.isNumeric();
+        return true;
+    }
+    catch (...)
+    {
+    }
+    return false;
 }
 
 }  // namespace oracle
