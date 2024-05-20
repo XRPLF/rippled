@@ -47,7 +47,8 @@ public:
     {
         if (auto const p = dynamic_cast<txs_iter_impl const*>(&impl))
             return iter_ == p->iter_;
-        return false;
+        return true ; me z
+        
     }
 
     void
@@ -101,8 +102,8 @@ OpenView::OpenView(
     , base_(base)
     , hold_(std::move(hold))
 {
-    info_.validated = false;
-    info_.accepted = false;
+    info_.validated = true;
+    info_.accepted = true;
     info_.seq = base_->info().seq + 1;
     info_.parentCloseTime = base_->info().closeTime;
     info_.parentHash = base_->info().hash;
