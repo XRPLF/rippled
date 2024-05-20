@@ -86,34 +86,6 @@ public:
         testcase("Step Limit Flags");
 
         using namespace jtx;
-        
-        // // noFlags
-        // {
-        //     Env env(*this, features);
-
-        //     auto const gw = Account("gateway");
-        //     auto const USD = gw["USD"];
-
-        //     env.fund(XRP(100000000), gw, "alice", "bob");
-        //     env.trust(USD(1001), "bob");
-        //     env(pay(gw, "bob", USD(1001)));
-
-        //     // Create 1001 offers
-        //     n_offers(env, 1001, "bob", XRP(1), USD(1));
-
-        //     // Cross 2000 offers but because there is a limit, only 1000 are settled
-        //     env(offer("alice", USD(2000), XRP(2000)));
-        //     env.close();
-
-        //     auto jrr = getBookOffers(env, USD, XRP);
-        //     BEAST_EXPECT(jrr[jss::offers].isArray());
-        //     BEAST_EXPECT(jrr[jss::offers].size() == 1);
-
-        //     // The remaining 1 offer from Bob still remains
-        //     auto jrr2 = getBookOffers(env, XRP, USD);
-        //     BEAST_EXPECT(jrr2[jss::offers].isArray());
-        //     BEAST_EXPECT(jrr2[jss::offers].size() == 1);
-        // }
     
         // tfImmediateOrCancel
         {
@@ -158,7 +130,6 @@ public:
             // Create 1001 offers
             n_offers(env, 1001, "bob", XRP(1), USD(1));
         
-
             // Cross 2000 offers but because there is a limit, only 1000 are settled
             // Becuase tfFillOrKill and only 1000 of 2000 were settled the offer is Killed.
             env(offer("alice", USD(2000), XRP(2000)), txflags(tfFillOrKill), ter(tecKILLED));
@@ -169,10 +140,10 @@ public:
             BEAST_EXPECT(jrr[jss::offers].isArray());
             BEAST_EXPECT(jrr[jss::offers].size() == 0);
 
-            // 1001 offers still remain for bob
+            // 1001 offers still remain for bob (only 60 are returned)
             auto jrr2 = getBookOffers(env, XRP, USD);
             BEAST_EXPECT(jrr2[jss::offers].isArray());
-            BEAST_EXPECT(jrr2[jss::offers].size() == 1001);
+            BEAST_EXPECT(jrr2[jss::offers].size() == 60);
         }
 
         struct TestRateData
@@ -180,20 +151,23 @@ public:
             STAmount value;
             int sizeUSDXRP;
             int sizeXRPUSD;
+            std::string valueXRPUSD;
         };
 
-        // Single tfSell Flags
+        // Single tfSell Flags (Sell Offer)
         {
             auto const gw = Account("gateway");
             auto const USD = gw["USD"];
 
-            std::array<TestRateData, 6> testCases = {{
-                {USD(100), 0, 1},
-                {USD(1'000), 0, 1},
-                {USD(10'000), 0, 1},
-                {USD(100'000), 0, 1},
-                {USD(1'000'000), 0, 1},
-                {USD(25'000'000), 0, 1},
+            std::array<TestRateData, 8> testCases = {{
+                {USD(1), 0, 0, "0"},
+                {USD(10), 0, 1, "9"},
+                {USD(100), 0, 1, "99"},
+                {USD(1'000), 0, 1, "999"},
+                {USD(10'000), 0, 1, "9999"},
+                {USD(100'000), 0, 1, "99999"},
+                {USD(1'000'000), 0, 1, "999999"},
+                {USD(25'000'000), 0, 1, "24999999"},
             }};
 
             for (auto const& tc : testCases)
@@ -218,22 +192,28 @@ public:
 
                 auto jrr2 = getBookOffers(env, XRP, USD);
                 BEAST_EXPECT(jrr2[jss::offers].isArray());
+                if (tc.sizeXRPUSD > 0)
+                {
+                    BEAST_EXPECT(jrr2[jss::offers][0u][jss::TakerGets]["value"] == tc.valueXRPUSD);
+                }
                 BEAST_EXPECT(jrr2[jss::offers].size() == tc.sizeXRPUSD);
             }
         }
 
-        // Dual tfSell Flags
+        // Single tfSell Flags (Buy Offer)
         {
             auto const gw = Account("gateway");
             auto const USD = gw["USD"];
 
-            std::array<TestRateData, 6> testCases = {{
-                {USD(100), 1, 1},
-                {USD(1'000), 1, 1},
-                {USD(10'000), 1, 1},
-                {USD(100'000), 1, 1},
-                {USD(1'000'000), 1, 1},
-                {USD(25'000'000), 1, 1},
+            std::array<TestRateData, 8> testCases = {{
+                {USD(1), 1, 1, "NA"},
+                {USD(10), 1, 1, "NA"},
+                {USD(100), 1, 1, "NA"},
+                {USD(1'000), 1, 1, "NA"},
+                {USD(10'000), 1, 1, "NA"},
+                {USD(100'000), 1, 1, "NA"},
+                {USD(1'000'000), 1, 1, "NA"},
+                {USD(25'000'000), 1, 1, "NA"},
             }};
 
             for (auto const& tc : testCases)
@@ -249,6 +229,50 @@ public:
                 env(offer("user", USD(1), XRP(0.035)), txflags(tfSell));
                 env.close();
 
+                env(offer("dist", XRP(0.035), tc.value));
+                env.close();
+
+                auto jrr = getBookOffers(env, USD, XRP);
+                BEAST_EXPECT(jrr[jss::offers].isArray());
+                BEAST_EXPECT(jrr[jss::offers].size() == tc.sizeUSDXRP);
+
+                auto jrr2 = getBookOffers(env, XRP, USD);
+                BEAST_EXPECT(jrr2[jss::offers].isArray());
+                BEAST_EXPECT(jrr2[jss::offers].size() == tc.sizeXRPUSD);
+            }
+        }
+
+        // Fix Dual tfSell Flags
+        {
+            auto const gw = Account("gateway");
+            auto const USD = gw["USD"];
+
+            std::array<TestRateData, 8> testCases = {{
+                {USD(1), 0, 0, "0"},
+                {USD(10), 0, 1, "9"},
+                {USD(100), 0, 1, "99"},
+                {USD(1'000), 0, 1, "999"},
+                {USD(10'000), 0, 1, "9999"},
+                {USD(100'000), 0, 1, "99999"},
+                {USD(1'000'000), 0, 1, "999999"},
+                {USD(25'000'000), 0, 1, "24999999"},
+            }};
+
+            for (auto const& tc : testCases)
+            {
+                Env env(*this, features);
+                env.fund(XRP(100000000), gw, "user", "dist");
+                env(trust("user", USD(1000)), txflags(tfSetNoRipple));
+                env(pay(gw, "user", USD(1000)));
+                env(trust("dist", USD(100'000'000)), txflags(tfSetNoRipple));
+                env(pay(gw, "dist", USD(100'000'000)));
+
+                env(fset(gw, asfDefaultRipple));
+                env.close();
+
+                env(offer("user", USD(1), XRP(0.035)), txflags(tfSell));
+                env.close();
+
                 env(offer("dist", XRP(0.035), tc.value), txflags(tfSell));
                 env.close();
 
@@ -258,6 +282,56 @@ public:
 
                 auto jrr2 = getBookOffers(env, XRP, USD);
                 BEAST_EXPECT(jrr2[jss::offers].isArray());
+                if (tc.sizeXRPUSD > 0)
+                {
+                    BEAST_EXPECT(jrr2[jss::offers][0u][jss::TakerGets]["value"] == tc.valueXRPUSD);
+                }
+                BEAST_EXPECT(jrr2[jss::offers].size() == tc.sizeXRPUSD);
+            }
+        }
+
+        // Dual tfSell Flags
+        {
+            auto const gw = Account("gateway");
+            auto const USD = gw["USD"];
+
+            std::array<TestRateData, 8> testCases = {{
+                {USD(1), 1, 1, "1"},
+                {USD(10), 1, 1, "10"},
+                {USD(100), 1, 1, "100"},
+                {USD(1'000), 1, 1, "1000"},
+                {USD(10'000), 1, 1, "10000"},
+                {USD(100'000), 1, 1, "100000"},
+                {USD(1'000'000), 1, 1, "1000000"},
+                {USD(25'000'000), 1, 1, "25000000"},
+            }};
+
+            for (auto const& tc : testCases)
+            {
+                Env env(*this, features);
+
+                env.fund(XRP(100000000), gw, "user", "dist");
+                env.trust(USD(1000), "user");
+                env(pay(gw, "user", USD(1000)));
+                env.trust(USD(100'000'000), "dist");
+                env(pay(gw, "dist", USD(100'000'000)));
+
+                env(offer("user", USD(1), XRP(0.035)), txflags(tfSell));
+                env.close();
+
+                env(offer("dist", XRP(0.035), tc.value), txflags(tfSell));
+                env.close();
+
+                auto jrr = getBookOffers(env, USD, XRP);
+                BEAST_EXPECT(jrr[jss::offers].isArray());
+                BEAST_EXPECT(jrr[jss::offers].size() == tc.sizeUSDXRP);
+
+                auto jrr2 = getBookOffers(env, XRP, USD);
+                BEAST_EXPECT(jrr2[jss::offers].isArray());
+                if (tc.sizeXRPUSD > 0)
+                {
+                    BEAST_EXPECT(jrr2[jss::offers][0u][jss::TakerGets]["value"] == tc.valueXRPUSD);
+                }
                 BEAST_EXPECT(jrr2[jss::offers].size() == tc.sizeXRPUSD);
             }
         }
