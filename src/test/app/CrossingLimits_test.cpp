@@ -24,6 +24,21 @@ namespace test {
 
 class CrossingLimits_test : public beast::unit_test::suite
 {
+    static auto
+    getBookOffers(
+        jtx::Env& env,
+        Issue const& taker_pays,
+        Issue const& taker_gets)
+    {
+        Json::Value jvbp;
+        jvbp[jss::ledger_index] = "current";
+        jvbp[jss::taker_pays][jss::currency] = to_string(taker_pays.currency);
+        jvbp[jss::taker_pays][jss::issuer] = to_string(taker_pays.account);
+        jvbp[jss::taker_gets][jss::currency] = to_string(taker_gets.currency);
+        jvbp[jss::taker_gets][jss::issuer] = to_string(taker_gets.account);
+        return env.rpc("json", "book_offers", to_string(jvbp))[jss::result];
+    }
+
 public:
     void
     testStepLimit(FeatureBitset features)
@@ -63,6 +78,189 @@ public:
         env.require(owners("bob", 1));
         env.require(balance("dan", USD(1)));
         env.require(owners("dan", 2));
+    }
+
+    void
+    testStepLimitFlags(FeatureBitset features)
+    {
+        testcase("Step Limit Flags");
+
+        using namespace jtx;
+        
+        // // noFlags
+        // {
+        //     Env env(*this, features);
+
+        //     auto const gw = Account("gateway");
+        //     auto const USD = gw["USD"];
+
+        //     env.fund(XRP(100000000), gw, "alice", "bob");
+        //     env.trust(USD(1001), "bob");
+        //     env(pay(gw, "bob", USD(1001)));
+
+        //     // Create 1001 offers
+        //     n_offers(env, 1001, "bob", XRP(1), USD(1));
+
+        //     // Cross 2000 offers but because there is a limit, only 1000 are settled
+        //     env(offer("alice", USD(2000), XRP(2000)));
+        //     env.close();
+
+        //     auto jrr = getBookOffers(env, USD, XRP);
+        //     BEAST_EXPECT(jrr[jss::offers].isArray());
+        //     BEAST_EXPECT(jrr[jss::offers].size() == 1);
+
+        //     // The remaining 1 offer from Bob still remains
+        //     auto jrr2 = getBookOffers(env, XRP, USD);
+        //     BEAST_EXPECT(jrr2[jss::offers].isArray());
+        //     BEAST_EXPECT(jrr2[jss::offers].size() == 1);
+        // }
+    
+        // tfImmediateOrCancel
+        {
+            Env env(*this, features);
+
+            auto const gw = Account("gateway");
+            auto const USD = gw["USD"];
+
+            env.fund(XRP(100000000), gw, "alice", "bob", "carol", "dan");
+            env.trust(USD(1001), "bob");
+            env(pay(gw, "bob", USD(1001)));
+
+            // Create 1001 offers
+            n_offers(env, 1001, "bob", XRP(1), USD(1));
+
+            // Cross 2000 offers but because there is a limit, only 1000 are settled
+            env(offer("alice", USD(2000), XRP(2000)), txflags(tfImmediateOrCancel));
+            env.close();
+
+            // Using tfImmediateOrCancel the hanging offer is canceled
+            auto jrr = getBookOffers(env, USD, XRP);
+            BEAST_EXPECT(jrr[jss::offers].isArray());
+            BEAST_EXPECT(jrr[jss::offers].size() == 0);
+
+            // The remaining 1 offer from Bob still remains
+            auto jrr2 = getBookOffers(env, XRP, USD);
+            BEAST_EXPECT(jrr2[jss::offers].isArray());
+            BEAST_EXPECT(jrr2[jss::offers].size() == 1);
+        }
+
+        // tfFillOrKill
+        {
+            Env env(*this, features);
+
+            auto const gw = Account("gateway");
+            auto const USD = gw["USD"];
+
+            env.fund(XRP(100000000), gw, "alice", "bob", "carol", "dan");
+            env.trust(USD(1001), "bob");
+            env(pay(gw, "bob", USD(1001)));
+
+            // Create 1001 offers
+            n_offers(env, 1001, "bob", XRP(1), USD(1));
+        
+
+            // Cross 2000 offers but because there is a limit, only 1000 are settled
+            // Becuase tfFillOrKill and only 1000 of 2000 were settled the offer is Killed.
+            env(offer("alice", USD(2000), XRP(2000)), txflags(tfFillOrKill), ter(tecKILLED));
+            env.close();
+            
+            // 0 offers for alice
+            auto jrr = getBookOffers(env, USD, XRP);
+            BEAST_EXPECT(jrr[jss::offers].isArray());
+            BEAST_EXPECT(jrr[jss::offers].size() == 0);
+
+            // 1001 offers still remain for bob
+            auto jrr2 = getBookOffers(env, XRP, USD);
+            BEAST_EXPECT(jrr2[jss::offers].isArray());
+            BEAST_EXPECT(jrr2[jss::offers].size() == 1001);
+        }
+
+        struct TestRateData
+        {
+            STAmount value;
+            int sizeUSDXRP;
+            int sizeXRPUSD;
+        };
+
+        // Single tfSell Flags
+        {
+            auto const gw = Account("gateway");
+            auto const USD = gw["USD"];
+
+            std::array<TestRateData, 6> testCases = {{
+                {USD(100), 0, 1},
+                {USD(1'000), 0, 1},
+                {USD(10'000), 0, 1},
+                {USD(100'000), 0, 1},
+                {USD(1'000'000), 0, 1},
+                {USD(25'000'000), 0, 1},
+            }};
+
+            for (auto const& tc : testCases)
+            {
+                Env env(*this, features);
+
+                env.fund(XRP(100000000), gw, "user", "dist");
+                env.trust(USD(1000), "user");
+                env(pay(gw, "user", USD(1)));
+                env.trust(USD(100'000'000), "dist");
+                env(pay(gw, "dist", USD(100'000'000)));
+
+                env(offer("user", USD(1), XRP(0.035)));
+                env.close();
+
+                env(offer("dist", XRP(0.035), tc.value), txflags(tfSell));
+                env.close();
+
+                auto jrr = getBookOffers(env, USD, XRP);
+                BEAST_EXPECT(jrr[jss::offers].isArray());
+                BEAST_EXPECT(jrr[jss::offers].size() == tc.sizeUSDXRP);
+
+                auto jrr2 = getBookOffers(env, XRP, USD);
+                BEAST_EXPECT(jrr2[jss::offers].isArray());
+                BEAST_EXPECT(jrr2[jss::offers].size() == tc.sizeXRPUSD);
+            }
+        }
+
+        // Dual tfSell Flags
+        {
+            auto const gw = Account("gateway");
+            auto const USD = gw["USD"];
+
+            std::array<TestRateData, 6> testCases = {{
+                {USD(100), 1, 1},
+                {USD(1'000), 1, 1},
+                {USD(10'000), 1, 1},
+                {USD(100'000), 1, 1},
+                {USD(1'000'000), 1, 1},
+                {USD(25'000'000), 1, 1},
+            }};
+
+            for (auto const& tc : testCases)
+            {
+                Env env(*this, features);
+
+                env.fund(XRP(100000000), gw, "user", "dist");
+                env.trust(USD(1000), "user");
+                env(pay(gw, "user", USD(1)));
+                env.trust(USD(100'000'000), "dist");
+                env(pay(gw, "dist", USD(100'000'000)));
+
+                env(offer("user", USD(1), XRP(0.035)), txflags(tfSell));
+                env.close();
+
+                env(offer("dist", XRP(0.035), tc.value), txflags(tfSell));
+                env.close();
+
+                auto jrr = getBookOffers(env, USD, XRP);
+                BEAST_EXPECT(jrr[jss::offers].isArray());
+                BEAST_EXPECT(jrr[jss::offers].size() == tc.sizeUSDXRP);
+
+                auto jrr2 = getBookOffers(env, XRP, USD);
+                BEAST_EXPECT(jrr2[jss::offers].isArray());
+                BEAST_EXPECT(jrr2[jss::offers].size() == tc.sizeXRPUSD);
+            }
+        }
     }
 
     void
@@ -553,6 +751,7 @@ public:
             testStepAndCrossingLimit(features);
             testAutoBridgedLimits(features);
             testOfferOverflow(features);
+            testStepLimitFlags(features);
         };
         using namespace jtx;
         auto const sa = supported_amendments();
