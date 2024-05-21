@@ -40,6 +40,8 @@
 #include <sys/statvfs.h>
 #endif
 
+#include <fstream>
+
 namespace ripple {
 
 namespace NodeStore {

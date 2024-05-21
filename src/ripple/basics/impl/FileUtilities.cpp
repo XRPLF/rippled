@@ -19,6 +19,8 @@
 
 #include <ripple/basics/FileUtilities.h>
 
+#include <fstream>
+
 namespace ripple {
 
 std::string
@@ -41,7 +43,7 @@ getFileContents(
         return {};
     }
 
-    ifstream fileStream(fullPath, std::ios::in);
+    std::ifstream fileStream(fullPath, std::ios::in);
 
     if (!fileStream)
     {
@@ -71,7 +73,7 @@ writeFileContents(
     using namespace boost::filesystem;
     using namespace boost::system::errc;
 
-    ofstream fileStream(destPath, std::ios::out | std::ios::trunc);
+    std::ofstream fileStream(destPath, std::ios::out | std::ios::trunc);
 
     if (!fileStream)
     {

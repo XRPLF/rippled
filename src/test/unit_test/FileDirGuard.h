@@ -21,8 +21,11 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define TEST_UNIT_TEST_DIRGUARD_H
 
 #include <ripple/basics/contract.h>
+
 #include <boost/filesystem.hpp>
 #include <test/jtx/TestSuite.h>
+
+#include <fstream>
 
 namespace ripple {
 namespace test {

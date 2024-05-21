@@ -20,6 +20,8 @@
 #include <ripple/app/rdb/Download.h>
 #include <soci/sqlite3/soci-sqlite3.h>
 
+#include <fstream>
+
 namespace ripple {
 
 std::pair<std::unique_ptr<DatabaseCon>, std::optional<std::uint64_t>>
