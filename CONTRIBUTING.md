@@ -197,16 +197,39 @@ existing maintainer without a vote.
 
 ## Current Maintainers
 
+Maintainers are users with admin access to the repo. Maintainers do not typically approve or deny pull requests.
+
+* [intelliot](https://github.com/intelliot) (Ripple)
 * [JoelKatz](https://github.com/JoelKatz) (Ripple)
-* [manojsdoshi](https://github.com/manojsdoshi) (Ripple)
-* [n3tc4t](https://github.com/n3tc4t) (XRPL Labs)
-* [Nik Bougalis](https://github.com/nbougalis)
 * [nixer89](https://github.com/nixer89) (XRP Ledger Foundation)
-* [RichardAH](https://github.com/RichardAH) (XRPL Labs + XRP Ledger Foundation)
-* [seelabs](https://github.com/seelabs) (Ripple)
 * [Silkjaer](https://github.com/Silkjaer) (XRP Ledger Foundation)
 * [WietseWind](https://github.com/WietseWind) (XRPL Labs + XRP Ledger Foundation)
+
+## Current Code Reviewers
+
+Code Reviewers are developers who have the ability to review and approve source code changes.
+
+* [HowardHinnant](https://github.com/HowardHinnant) (Ripple)
+* [scottschurr](https://github.com/scottschurr) (Ripple)
+* [seelabs](https://github.com/seelabs) (Ripple)
 * [Ed Hennis](https://github.com/ximinez) (Ripple)
+* [mvadari](https://github.com/mvadari) (Ripple)
+* [thejohnfreeman](https://github.com/thejohnfreeman) (Ripple)
+* [Bronek](https://github.com/Bronek) (Ripple)
+* [manojsdoshi](https://github.com/manojsdoshi) (Ripple)
+* [godexsoft](https://github.com/godexsoft) (Ripple)
+* [mDuo13](https://github.com/mDuo13) (Ripple)
+* [ckniffen](https://github.com/ckniffen) (Ripple)
+* [arihantkothari](https://github.com/arihantkothari) (Ripple)
+* [pwang200](https://github.com/pwang200) (Ripple)
+* [sophiax851](https://github.com/sophiax851) (Ripple)
+* [shawnxie999](https://github.com/shawnxie999) (Ripple)
+* [gregtatcam](https://github.com/gregtatcam) (Ripple)
+* [mtrippled](https://github.com/mtrippled) (Ripple)
+* [ckeshava](https://github.com/ckeshava) (Ripple)
+* [nbougalis](https://github.com/nbougalis) None
+* [RichardAH](https://github.com/RichardAH) (XRPL Labs + XRP Ledger Foundation)
+* [dangell7](https://github.com/dangell7) (XRPL Labs)
 
 
 [1]: https://docs.github.com/en/get-started/quickstart/contributing-to-projects

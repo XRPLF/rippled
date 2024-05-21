@@ -6,6 +6,27 @@ This document contains the release notes for `rippled`, the reference server imp
 
 Have new ideas? Need help with setting up your node? [Please open an issue here](https://github.com/xrplf/rippled/issues/new/choose).
 
+## Version 2.1.1
+
+The `rippled` 2.1.1 release fixes a critical bug in the integration of AMMs with the payment engine.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+
+## Action Required
+
+One new amendment is now open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators.
+
+If you operate an XRP Ledger server, upgrade to version 2.1.1 by April 8, 2024 to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+
+## Changelog
+
+### Amendments
+
+- **fixAMMOverflowOffer**: Fix improper handling of large synthetic AMM offers in the payment engine. Due to the importance of this fix, the default vote in the source code has been set to YES. For information on how to configure your validator's amendment voting, see [Configure Amendment Voting](https://xrpl.org/docs/infrastructure/configuration/configure-amendment-voting).
+
 # Introducing XRP Ledger version 2.1.0
 
 Version 2.1.0 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release adds a bug fix, build improvements, and introduces the `fixNFTokenReserve` and `fixInnerObjTemplate` amendments.

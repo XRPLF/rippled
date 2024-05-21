@@ -1,6 +1,17 @@
 name: windows
 
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    # If the branches list is ever changed, be sure to change it on all
+    # build/test jobs (nix, macos, windows)
+    branches:
+      # Always build the package branches
+      - develop
+      - release
+      - master
+      # Branches that opt-in to running
+      - 'ci/**'
 
 # https://docs.github.com/en/actions/using-jobs/using-concurrency
 concurrency:
@@ -56,6 +67,7 @@ jobs:
         shell: bash
         run: |
           conan profile new default --detect
+          conan profile update settings.compiler.cppstd=20 default
           conan profile update settings.compiler.runtime=MT${{ matrix.configuration == 'Debug' && 'd' || '' }} default
       - name: build dependencies
         uses: ./.github/actions/dependencies

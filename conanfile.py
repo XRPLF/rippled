@@ -39,6 +39,10 @@ class Xrpl(ConanFile):
         'xxhash/0.8.2',
     ]
 
+    tool_requires = [
+        'protobuf/3.21.9',
+    ]
+
     default_options = {
         'assertions': False,
         'coverage': False,
@@ -112,7 +116,7 @@ class Xrpl(ConanFile):
             self.requires('rocksdb/6.29.5')
 
     exports_sources = (
-        'CMakeLists.txt', 'Builds/*', 'bin/getRippledInfo', 'src/*', 'cfg/*'
+        'CMakeLists.txt', 'Builds/*', 'bin/getRippledInfo', 'src/*', 'cfg/*', 'external/*'
     )
 
     def layout(self):
@@ -150,6 +154,7 @@ class Xrpl(ConanFile):
         libxrpl = self.cpp_info.components['libxrpl']
         libxrpl.libs = [
             'xrpl_core',
+            'xrpl.libpb',
             'ed25519',
             'secp256k1',
         ]
@@ -161,5 +166,5 @@ class Xrpl(ConanFile):
             'openssl::crypto',
             'date::date',
             'grpc::grpc++',
-            'xxHash::xxhash',
+            'xxhash::xxhash',
         ]
