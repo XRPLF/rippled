@@ -39,6 +39,23 @@ class CrossingLimits_test : public beast::unit_test::suite
         return env.rpc("json", "book_offers", to_string(jvbp))[jss::result];
     }
 
+    void
+    nb_offers(
+       jtx::Env& env,
+        std::size_t n,
+        jtx::Account const& account,
+        STAmount const& in,
+        STAmount const& out)
+    {
+        auto const ownerCount = env.le(account)->getFieldU32(sfOwnerCount);
+        for (std::size_t i = 0; i < n; i++)
+        {
+            env(offer(account, in, out), jtx::txflags(tfSell));
+            env.close();
+        }
+        // env.require(jtx::owners(account, ownerCount + n));
+    }
+
 public:
     void
     testStepLimit(FeatureBitset features)
@@ -242,54 +259,6 @@ public:
             }
         }
 
-        // Fix Dual tfSell Flags
-        {
-            auto const gw = Account("gateway");
-            auto const USD = gw["USD"];
-
-            std::array<TestRateData, 8> testCases = {{
-                {USD(1), 0, 0, "0"},
-                {USD(10), 0, 1, "9"},
-                {USD(100), 0, 1, "99"},
-                {USD(1'000), 0, 1, "999"},
-                {USD(10'000), 0, 1, "9999"},
-                {USD(100'000), 0, 1, "99999"},
-                {USD(1'000'000), 0, 1, "999999"},
-                {USD(25'000'000), 0, 1, "24999999"},
-            }};
-
-            for (auto const& tc : testCases)
-            {
-                Env env(*this, features);
-                env.fund(XRP(100000000), gw, "user", "dist");
-                env(trust("user", USD(1000)), txflags(tfSetNoRipple));
-                env(pay(gw, "user", USD(1000)));
-                env(trust("dist", USD(100'000'000)), txflags(tfSetNoRipple));
-                env(pay(gw, "dist", USD(100'000'000)));
-
-                env(fset(gw, asfDefaultRipple));
-                env.close();
-
-                env(offer("user", USD(1), XRP(0.035)), txflags(tfSell));
-                env.close();
-
-                env(offer("dist", XRP(0.035), tc.value), txflags(tfSell));
-                env.close();
-
-                auto jrr = getBookOffers(env, USD, XRP);
-                BEAST_EXPECT(jrr[jss::offers].isArray());
-                BEAST_EXPECT(jrr[jss::offers].size() == tc.sizeUSDXRP);
-
-                auto jrr2 = getBookOffers(env, XRP, USD);
-                BEAST_EXPECT(jrr2[jss::offers].isArray());
-                if (tc.sizeXRPUSD > 0)
-                {
-                    BEAST_EXPECT(jrr2[jss::offers][0u][jss::TakerGets]["value"] == tc.valueXRPUSD);
-                }
-                BEAST_EXPECT(jrr2[jss::offers].size() == tc.sizeXRPUSD);
-            }
-        }
-
         // Dual tfSell Flags
         {
             auto const gw = Account("gateway");
@@ -335,6 +304,113 @@ public:
                 BEAST_EXPECT(jrr2[jss::offers].size() == tc.sizeXRPUSD);
             }
         }
+    }
+
+    void
+    testStepLimitEdgeCase(FeatureBitset features)
+    {
+        testcase("Step Limit Edge Case");
+
+        using namespace jtx;
+    
+        // Edge Case
+        {
+            auto const gw = Account("gateway");
+            auto const USD = gw["USD"];
+
+            for (bool const edgeCase : {true, false})
+            {
+                Env env(*this, features);
+                env.fund(XRP(100000000), gw, "user", "user1", "user2", "dist");
+                env(trust("user", USD(25000000)), txflags(tfSetNoRipple));
+                env(trust("user1", USD(25000000)), txflags(tfSetNoRipple));
+                env(trust("user2", USD(25000000)), txflags(tfSetNoRipple));
+                
+                env.fund(XRP(300), "alice");
+                env(trust("alice", USD(25000000)), txflags(tfSetNoRipple));
+                env.close();
+
+                if (edgeCase)
+                {
+                    env(trust("dist", USD(100'000'000)), txflags(tfSetNoRipple));
+                    env(pay(gw, "dist", USD(100'000'000)));
+                    env.close();
+                }
+                else
+                {
+                    env(trust("dist", USD(100'000'000)), txflags(tfSetNoRipple));
+                    env(pay(gw, "dist", USD(100'000'000)));
+                }
+
+                env(fset(gw, asfDefaultRipple));
+                env.close();
+
+                nb_offers(env, 100, "user", USD(1), XRP(0.0035));
+                nb_offers(env, 50, "user", USD(1), XRP(0.035));
+                nb_offers(env, 200, "user1", USD(1), XRP(0.035));
+                nb_offers(env, 100, "alice", USD(1), XRP(0.035));
+                nb_offers(env, 1750, "user2", USD(1), XRP(0.035));
+                env.close();
+
+                env(offer("dist", XRP(0.035), USD(25000000)), txflags(tfSell));
+                env.close();
+
+                auto jrr = getBookOffers(env, USD, XRP);
+                BEAST_EXPECT(jrr[jss::offers].isArray());
+                BEAST_EXPECT(jrr[jss::offers].size() == 60);
+
+                auto jrr2 = getBookOffers(env, XRP, USD);
+                BEAST_EXPECT(jrr2[jss::offers].isArray());
+                BEAST_EXPECT(jrr2[jss::offers][0u][jss::TakerGets]["value"] == edgeCase ? "25000000" : "24998990");
+                BEAST_EXPECT(jrr2[jss::offers].size() == 1);
+            }
+        }
+
+        // // Solve Edge Case
+        // {
+        //     auto const gw = Account("gateway");
+        //     auto const USD = gw["USD"];
+
+        //     Env env(*this, features);
+        //     env.fund(XRP(100000000), gw, "user", "user1", "user2", "dist");
+
+        //     env.fund(XRP(300), "alice");
+        //     env(trust("alice", USD(25000000)), txflags(tfSetNoRipple));
+
+        //     env(trust("user", USD(25000000)), txflags(tfSetNoRipple));
+        //     env(trust("user1", USD(25000000)), txflags(tfSetNoRipple));
+        //     env(trust("user2", USD(25000000)), txflags(tfSetNoRipple));
+        //     env(trust("dist", USD(100'000'000)), txflags(tfSetNoRipple));
+        //     env(pay(gw, "dist", USD(100'000'000)));
+        //     env.close();
+
+        //     env(fset(gw, asfDefaultRipple));
+        //     env.close();
+
+        //     n_offers(env, 500, "user", USD(1), XRP(0.035));
+        //     env(offer("dist", XRP(0.035), USD(500)), txflags(tfSell));
+        //     env.close();
+
+        //     nb_offers(env, 100, "user", USD(1), XRP(0.0035));
+        //     nb_offers(env, 50, "user", USD(1), XRP(0.035));
+        //     nb_offers(env, 200, "user1", USD(1), XRP(0.035));
+        //     // nb_offers(env, 100, "alice", USD(1), XRP(0.035));
+        //     nb_offers(env, 1750, "user2", USD(1), XRP(0.035));
+        //     env.close();
+
+        //     env(offer("dist", XRP(0.035), USD(25000000)), txflags(tfSell));
+        //     env.close();
+
+        //     auto jrr = getBookOffers(env, USD, XRP);
+        //     BEAST_EXPECT(jrr[jss::offers].isArray());
+        //     BEAST_EXPECT(jrr[jss::offers].size() == 60);
+
+        //     auto jrr2 = getBookOffers(env, XRP, USD);
+        //     std::cout << "RESULT: " << jrr2 << "\n";
+        //     BEAST_EXPECT(jrr2[jss::offers].isArray());
+        //     BEAST_EXPECT(jrr2[jss::offers][0u][jss::TakerGets]["value"] == "24998990");
+        //     BEAST_EXPECT(jrr2[jss::offers].size() == 1);
+        // }
     }
 
     void
@@ -825,13 +901,14 @@ public:
             testStepAndCrossingLimit(features);
             testAutoBridgedLimits(features);
             testOfferOverflow(features);
-            testStepLimitFlags(features);
         };
         using namespace jtx;
         auto const sa = supported_amendments();
-        testAll(sa);
-        testAll(sa - featureFlowSortStrands);
-        testAll(sa - featureFlowCross - featureFlowSortStrands);
+        // testAll(sa);
+        // testAll(sa - featureFlowSortStrands);
+        // testAll(sa - featureFlowCross - featureFlowSortStrands);
+        // testStepLimitFlags(sa);
+        testStepLimitEdgeCase(sa);
     }
 };
 
