@@ -259,7 +259,7 @@ FeatureCollections::registerFeature(
 
         features.emplace_back(name, f);
 
-        auto const getAmendmentSupport = [&]() {
+        auto const getAmendmentSupport = [=]() {
             if (vote == VoteBehavior::Obsolete)
                 return AmendmentSupport::Retired;
             return support == Supported::yes ? AmendmentSupport::Supported

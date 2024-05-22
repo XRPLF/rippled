@@ -70,7 +70,7 @@ namespace ripple {
 enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
 enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported };
 
-/** All amendments libxrpl supports. */
+/** All amendments libxrpl knows about. */
 std::unordered_map<std::string, AmendmentSupport> const&
 allAmendments();
 
