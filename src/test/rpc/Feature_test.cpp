@@ -76,25 +76,29 @@ class Feature_test : public beast::unit_test::suite
         }
         {
             std::size_t supported = 0, unsupported = 0, retired = 0;
-            for (auto const& [name, support] : allAmendments) {
-                switch (support) {
+            for (auto const& [name, support] : allAmendments)
+            {
+                switch (support)
+                {
                     case AmendmentSupport::Supported:
                         ++supported;
                         BEAST_EXPECT(supportedAmendments.contains(name));
-                    break;
+                        break;
                     case AmendmentSupport::Unsupported:
                         ++unsupported;
-                    break;
+                        break;
                     case AmendmentSupport::Retired:
                         ++retired;
-                    break;
+                        break;
                     default:
                         fail("Unknown AmendmentSupport", __FILE__, __LINE__);
                 }
             }
 
             BEAST_EXPECT(supported + retired == supportedAmendments.size());
-            BEAST_EXPECT(allAmendments.size() - unsupported == supportedAmendments.size());
+            BEAST_EXPECT(
+                allAmendments.size() - unsupported ==
+                supportedAmendments.size());
         }
     }
 
