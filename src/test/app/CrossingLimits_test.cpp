@@ -366,51 +366,56 @@ public:
             }
         }
 
-        // // Solve Edge Case
-        // {
-        //     auto const gw = Account("gateway");
-        //     auto const USD = gw["USD"];
+        // Solve Edge Case
+        {
+            auto const gw = Account("gateway");
+            auto const USD = gw["USD"];
 
-        //     Env env(*this, features);
-        //     env.fund(XRP(100000000), gw, "user", "user1", "user2", "dist");
+            Env env(*this, features);
+            env.fund(XRP(100000000), gw, "user", "user1", "user2", "dist");
 
-        //     env.fund(XRP(300), "alice");
-        //     env(trust("alice", USD(25000000)), txflags(tfSetNoRipple));
+            env(fset(gw, asfDefaultRipple));
+            env.close();
 
-        //     env(trust("user", USD(25000000)), txflags(tfSetNoRipple));
-        //     env(trust("user1", USD(25000000)), txflags(tfSetNoRipple));
-        //     env(trust("user2", USD(25000000)), txflags(tfSetNoRipple));
-        //     env(trust("dist", USD(100'000'000)), txflags(tfSetNoRipple));
-        //     env(pay(gw, "dist", USD(100'000'000)));
-        //     env.close();
+            env.fund(XRP(300), "alice");
+            env(trust("alice", USD(25000000)), txflags(tfSetNoRipple));
 
-        //     env(fset(gw, asfDefaultRipple));
-        //     env.close();
+            env(trust("user", USD(25000000)), txflags(tfSetNoRipple));
+            env(trust("user1", USD(25000000)), txflags(tfSetNoRipple));
+            env(trust("user2", USD(25000000)), txflags(tfSetNoRipple));
+            env(trust("dist", USD(100'000'000)), txflags(tfSetNoRipple));
+            env(pay(gw, "dist", USD(25'000'000)));
+            env.close();
 
-        //     n_offers(env, 500, "user", USD(1), XRP(0.035));
-        //     env(offer("dist", XRP(0.035), USD(500)), txflags(tfSell));
-        //     env.close();
+            env(trust("dist", USD(0)));
+            env.close();
+            env(trust("dist", USD(100'000'000)), txflags(tfSetNoRipple));
+            env.close();
 
-        //     nb_offers(env, 100, "user", USD(1), XRP(0.0035));
-        //     nb_offers(env, 50, "user", USD(1), XRP(0.035));
-        //     nb_offers(env, 200, "user1", USD(1), XRP(0.035));
-        //     // nb_offers(env, 100, "alice", USD(1), XRP(0.035));
-        //     nb_offers(env, 1750, "user2", USD(1), XRP(0.035));
-        //     env.close();
+            n_offers(env, 500, "user", USD(1), XRP(0.035));
+            env(offer("dist", XRP(0.035), USD(500)), txflags(tfSell));
+            env.close();
 
-        //     env(offer("dist", XRP(0.035), USD(25000000)), txflags(tfSell));
-        //     env.close();
+            nb_offers(env, 100, "user", USD(1), XRP(0.0035));
+            nb_offers(env, 50, "user", USD(1), XRP(0.035));
+            nb_offers(env, 200, "user1", USD(1), XRP(0.035));
+            // nb_offers(env, 100, "alice", USD(1), XRP(0.035));
+            nb_offers(env, 1750, "user2", USD(1), XRP(0.035));
+            env.close();
 
-        //     auto jrr = getBookOffers(env, USD, XRP);
-        //     BEAST_EXPECT(jrr[jss::offers].isArray());
-        //     BEAST_EXPECT(jrr[jss::offers].size() == 60);
+            env(offer("dist", XRP(0.035), USD(25000000)), txflags(tfSell));
+            env.close();
 
-        //     auto jrr2 = getBookOffers(env, XRP, USD);
-        //     std::cout << "RESULT: " << jrr2 << "\n";
-        //     BEAST_EXPECT(jrr2[jss::offers].isArray());
-        //     BEAST_EXPECT(jrr2[jss::offers][0u][jss::TakerGets]["value"] == "24998990");
-        //     BEAST_EXPECT(jrr2[jss::offers].size() == 1);
-        // }
+            auto jrr = getBookOffers(env, USD, XRP);
+            BEAST_EXPECT(jrr[jss::offers].isArray());
+            BEAST_EXPECT(jrr[jss::offers].size() == 60);
+
+            auto jrr2 = getBookOffers(env, XRP, USD);
+            std::cout << "RESULT: " << jrr2 << "\n";
+            BEAST_EXPECT(jrr2[jss::offers].isArray());
+            BEAST_EXPECT(jrr2[jss::offers][0u][jss::TakerGets]["value"] == "24998990");
+            BEAST_EXPECT(jrr2[jss::offers].size() == 1);
+        }
     }
 
     void
