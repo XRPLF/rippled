@@ -26,6 +26,7 @@
 #include <bitset>
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 /**
  * @page Feature How to add new features
@@ -67,6 +68,11 @@
 namespace ripple {
 
 enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
+enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported };
+
+/** All amendments libxrpl supports. */
+std::unordered_map<std::string, AmendmentSupport> const&
+allAmendments();
 
 namespace detail {
 
