@@ -155,12 +155,22 @@ public:
     // Entries from [ips_fixed] config stanza
     std::vector<std::string> IPS_FIXED;
 
-    enum StartUpType { FRESH, NORMAL, LOAD, LOAD_FILE, REPLAY, NETWORK };
+    enum StartUpType {
+        FRESH,
+        NORMAL,
+        LOAD,
+        LOAD_FILE,
+        REPLAY,
+        NETWORK,
+        REPLAY_TRAP
+    };
     StartUpType START_UP = NORMAL;
 
     bool START_VALID = false;
 
     std::string START_LEDGER;
+
+    uint256 TRAP_TX_HASH = {};
 
     // Network parameters
     uint32_t NETWORK_ID = 0;
