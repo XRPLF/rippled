@@ -683,13 +683,13 @@ run(int argc, char** argv)
         config->START_LEDGER = vm["ledger"].as<std::string>();
         if (vm.count("replay"))
         {
+            config->START_UP = Config::REPLAY;
             if (vm.count("trap_tx_hash"))
             {
                 uint256 tmp = {};
                 auto hash = vm["trap_tx_hash"].as<std::string>();
                 if (tmp.parseHex(hash))
                 {
-                    config->START_UP = Config::REPLAY_TRAP;
                     config->TRAP_TX_HASH = tmp;
                 }
                 else
@@ -700,8 +700,6 @@ run(int argc, char** argv)
                     return -1;
                 }
             }
-            else
-                config->START_UP = Config::REPLAY;
         }
         else
             config->START_UP = Config::LOAD;
@@ -726,8 +724,7 @@ run(int argc, char** argv)
     if (vm.count("net") && !config->FAST_LOAD)
     {
         if ((config->START_UP == Config::LOAD) ||
-            (config->START_UP == Config::REPLAY) ||
-            (config->START_UP == Config::REPLAY_TRAP))
+            (config->START_UP == Config::REPLAY))
         {
             std::cerr << "Net and load/replay options are incompatible"
                       << std::endl;

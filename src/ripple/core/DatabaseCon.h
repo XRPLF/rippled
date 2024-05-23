@@ -118,12 +118,10 @@ public:
         std::array<char const*, M> const& initSQL)
         // Use temporary files or regular DB files?
         : DatabaseCon(
-              setup.standAlone &&          //
-                      !setup.reporting &&  //
+              setup.standAlone && !setup.reporting &&
                       setup.startUp != Config::LOAD &&
                       setup.startUp != Config::LOAD_FILE &&
-                      setup.startUp != Config::REPLAY &&
-                      setup.startUp != Config::REPLAY_TRAP
+                      setup.startUp != Config::REPLAY
                   ? ""
                   : (setup.dataDir / dbName),
               setup.commonPragma(),

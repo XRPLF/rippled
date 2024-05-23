@@ -1407,20 +1407,16 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             startGenesisLedger();
         }
         else if (
-            startUp == Config::LOAD ||  //
-            startUp == Config::LOAD_FILE || startUp == Config::REPLAY ||
-            startUp == Config::REPLAY_TRAP)
+            startUp == Config::LOAD || startUp == Config::LOAD_FILE ||
+            startUp == Config::REPLAY)
         {
             JLOG(m_journal.info()) << "Loading specified Ledger";
 
             if (!loadOldLedger(
                     config_->START_LEDGER,
-                    (startUp == Config::REPLAY ||
-                     startUp == Config::REPLAY_TRAP),
+                    startUp == Config::REPLAY,
                     startUp == Config::LOAD_FILE,
-                    (startUp == Config::REPLAY_TRAP
-                         ? std::optional<uint256>(config_->TRAP_TX_HASH)
-                         : std::nullopt)))
+                    config_->TRAP_TX_HASH))
             {
                 JLOG(m_journal.error())
                     << "The specified ledger could not be loaded.";
