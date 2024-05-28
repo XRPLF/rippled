@@ -116,7 +116,7 @@ class FeatureCollections
     // name, index, and uint256 feature identifier
     boost::multi_index::multi_index_container<Feature, feature_indexing>
         features;
-    std::unordered_map<std::string, AmendmentSupport> all;
+    std::map<std::string, AmendmentSupport> all;
     std::map<std::string, VoteBehavior> supported;
     std::size_t upVotes = 0;
     std::size_t downVotes = 0;
@@ -181,7 +181,7 @@ public:
     featureToName(uint256 const& f) const;
 
     /** All amendments that are registered within the table. */
-    std::unordered_map<std::string, AmendmentSupport> const&
+    std::map<std::string, AmendmentSupport> const&
     allAmendments() const
     {
         return all;
@@ -333,7 +333,7 @@ static FeatureCollections featureCollections;
 }  // namespace
 
 /** All amendments libxrpl knows of. */
-std::unordered_map<std::string, AmendmentSupport> const&
+std::map<std::string, AmendmentSupport> const&
 allAmendments()
 {
     return featureCollections.allAmendments();
