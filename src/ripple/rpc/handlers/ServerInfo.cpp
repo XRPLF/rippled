@@ -143,12 +143,15 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         defs_[jss::TYPES][typeName] = typeValue;
         typeMap[typeValue] = typeName;
     }
-    for (auto const& [code, data] : *SField::pluginSTypesPtr)
+    if (SField::pluginSTypesPtr)
     {
-        std::string typeName =
-            translate(std::string(data.typeName).substr(4) /* remove STI_ */);
-        defs_[jss::TYPES][typeName] = code;
-        typeMap[code] = typeName;
+        for (auto const& [code, data] : *SField::pluginSTypesPtr)
+        {
+            std::string typeName = translate(
+                std::string(data.typeName).substr(4) /* remove STI_ */);
+            defs_[jss::TYPES][typeName] = code;
+            typeMap[code] = typeName;
+        }
     }
 
     // populate LedgerEntryType names and values
