@@ -205,8 +205,8 @@ AMMLiquidity<TIn, TOut>::getOffer(
                 return maxOffer(balances, view.rules());
             }
             else if (
-                auto const amounts =
-                    changeSpotPriceQuality(balances, *clobQuality, tradingFee_))
+                auto const amounts = changeSpotPriceQuality(
+                    balances, *clobQuality, tradingFee_, view.rules(), j_))
             {
                 return AMMOffer<TIn, TOut>(
                     *this, *amounts, balances, Quality{*amounts});
@@ -239,7 +239,12 @@ AMMLiquidity<TIn, TOut>::getOffer(
             return offer;
         }
 
-        JLOG(j_.error()) << "AMMLiquidity::getOffer, failed";
+        JLOG(j_.error()) << "AMMLiquidity::getOffer, failed "
+                         << ammContext_.multiPath() << " "
+                         << ammContext_.curIters() << " "
+                         << (clobQuality ? clobQuality->rate() : STAmount{})
+                         << " " << to_string(balances.in) << " "
+                         << to_string(balances.out);
     }
 
     return std::nullopt;

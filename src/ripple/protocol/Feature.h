@@ -371,7 +371,7 @@ extern uint256 const featurePriceOracle;
 extern uint256 const fixEmptyDID;
 extern uint256 const fixXChainRewardRounding;
 extern uint256 const fixPreviousTxnID;
-extern uint256 const fixAMMRounding;
+extern uint256 const fixAMMv1_1;
 
 }  // namespace ripple
 
