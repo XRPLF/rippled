@@ -67,5 +67,4 @@ jobs:
           configuration: ${{ matrix.configuration }}
       - name: test
         run: |
-          cd ${build_dir}
-          ./rippled --unittest
+          ${build_dir}/rippled --unittest

@@ -21,6 +21,7 @@
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/digest.h>
 #include <ripple/protocol/jss.h>
+#include <boost/dll.hpp>
 #include <test/jtx.h>
 #include <test/jtx/PluginEnv.h>
 #include <test/jtx/TestHelpers.h>
@@ -28,6 +29,12 @@
 namespace ripple {
 
 namespace test {
+
+inline std::string
+getPathToPlugin(std::string pluginName)
+{
+    return (boost::dll::program_location().parent_path() / pluginName).c_str();
+}
 
 static void
 cleanup()
@@ -104,7 +111,7 @@ public:
     makeConfig(std::string pluginPath)
     {
         auto cfg = test::jtx::envconfig();
-        cfg->PLUGINS.push_back(pluginPath);
+        cfg->PLUGINS.push_back(getPathToPlugin(pluginPath));
         return cfg;
     }
 

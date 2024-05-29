@@ -150,8 +150,7 @@ jobs:
           cmake-args: ${{ matrix.cmake-args }}
       - name: test
         run: |
-          cd ${build_dir}
-          ./rippled --unittest --unittest-jobs $(nproc)
+          ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
 
   coverage:
     strategy:
