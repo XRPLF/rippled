@@ -561,6 +561,7 @@ run(int argc, char** argv)
             argc,
             argv);
     }
+    // LCOV_EXCL_START
     else
     {
         if (vm.count("unittest-jobs"))
@@ -856,6 +857,7 @@ run(int argc, char** argv)
     beast::setCurrentThreadName("rippled: rpc");
     return RPCCall::fromCommandLine(
         *config, vm["parameters"].as<std::vector<std::string>>(), *logs);
+    // LCOV_EXCL_STOP
 }
 
 }  // namespace ripple
