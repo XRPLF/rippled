@@ -1255,7 +1255,7 @@ public:
         return maxDisallowedLedger_;
     }
 
-    virtual std::optional<uint256>
+    virtual const std::optional<uint256>&
     trapTxID() const override
     {
         return trapTxID_;
@@ -2246,7 +2246,7 @@ ApplicationImp::loadOldLedger(
             {
                 (void)_;
                 auto txID = tx->getTransactionID();
-                if (trapTxID && *trapTxID == txID)
+                if (trapTxID == txID)
                 {
                     trapTxID_ = txID;
                     JLOG(m_journal.debug()) << "Trap transaction set: " << txID;

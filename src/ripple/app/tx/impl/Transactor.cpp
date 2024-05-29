@@ -854,10 +854,10 @@ Transactor::operator()()
     }
 #endif
 
-    if (auto trap = ctx_.app.trapTxID();
-        trap && ctx_.tx.getTransactionID() == *trap)
+    if (ctx_.app.trapTxID() == ctx_.tx.getTransactionID())
     {
-        JLOG(j_.debug()) << "Transaction trapped: " << *trap;
+        JLOG(j_.debug()) << "Transaction trapped: "
+                         << ctx_.tx.getTransactionID();
     }
 
     auto result = ctx_.preclaimResult;

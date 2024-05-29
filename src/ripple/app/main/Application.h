@@ -285,7 +285,7 @@ public:
     virtual LedgerIndex
     getMaxDisallowedLedger() = 0;
 
-    virtual std::optional<uint256>
+    virtual const std::optional<uint256>&
     trapTxID() const = 0;
 };
 
