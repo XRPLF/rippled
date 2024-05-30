@@ -359,7 +359,7 @@ public:
     {
         testLedgerRequest();
         testEvolution();
-        test::jtx::forAllApiVersions(
+        forAllApiVersions(
             std::bind_front(&LedgerRequestRPC_test::testBadInput, this));
         testMoreThan256Closed();
         testNonAdmin();
