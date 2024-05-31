@@ -26,6 +26,7 @@
 #include <ripple/protocol/STXChainBridge.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <test/jtx/Oracle.h>
 #include <test/jtx/attester.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/xchain_bridge.h>
@@ -2279,6 +2280,87 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testInvalidOracleLedgerEntry()
+    {
+        testcase("Invalid Oracle Ledger Entry");
+        using namespace ripple::test::jtx;
+        using namespace ripple::test::jtx::oracle;
+
+        Env env(*this);
+        Account const owner("owner");
+        env.fund(XRP(1'000), owner);
+        Oracle oracle(env, {.owner = owner});
+
+        // Malformed document id
+        auto res = Oracle::ledgerEntry(env, owner, NoneTag);
+        BEAST_EXPECT(res[jss::error].asString() == "invalidParams");
+        std::vector<AnyValue> invalid = {-1, 1.2, "", "Invalid"};
+        for (auto const& v : invalid)
+        {
+            auto const res = Oracle::ledgerEntry(env, owner, v);
+            BEAST_EXPECT(res[jss::error].asString() == "malformedDocumentID");
+        }
+        // Missing document id
+        res = Oracle::ledgerEntry(env, owner, std::nullopt);
+        BEAST_EXPECT(res[jss::error].asString() == "malformedRequest");
+
+        // Missing account
+        res = Oracle::ledgerEntry(env, std::nullopt, 1);
+        BEAST_EXPECT(res[jss::error].asString() == "malformedRequest");
+
+        // Malformed account
+        std::string malfAccount = to_string(owner.id());
+        malfAccount.replace(10, 1, 1, '!');
+        res = Oracle::ledgerEntry(env, malfAccount, 1);
+        BEAST_EXPECT(res[jss::error].asString() == "malformedAddress");
+    }
+
+    void
+    testOracleLedgerEntry()
+    {
+        testcase("Oracle Ledger Entry");
+        using namespace ripple::test::jtx;
+        using namespace ripple::test::jtx::oracle;
+
+        Env env(*this);
+        std::vector<AccountID> accounts;
+        std::vector<std::uint32_t> oracles;
+        for (int i = 0; i < 10; ++i)
+        {
+            Account const owner(std::string("owner") + std::to_string(i));
+            env.fund(XRP(1'000), owner);
+            // different accounts can have the same asset pair
+            Oracle oracle(env, {.owner = owner, .documentID = i});
+            accounts.push_back(owner.id());
+            oracles.push_back(oracle.documentID());
+            // same account can have different asset pair
+            Oracle oracle1(env, {.owner = owner, .documentID = i + 10});
+            accounts.push_back(owner.id());
+            oracles.push_back(oracle1.documentID());
+        }
+        for (int i = 0; i < accounts.size(); ++i)
+        {
+            auto const jv = [&]() {
+                // document id is uint32
+                if (i % 2)
+                    return Oracle::ledgerEntry(env, accounts[i], oracles[i]);
+                // document id is string
+                return Oracle::ledgerEntry(
+                    env, accounts[i], std::to_string(oracles[i]));
+            }();
+            try
+            {
+                BEAST_EXPECT(
+                    jv[jss::node][jss::Owner] == to_string(accounts[i]));
+            }
+            catch (...)
+            {
+                fail();
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -2304,8 +2386,10 @@ public:
         testQueue();
         testLedgerAccountsOption();
         testLedgerEntryDID();
+        testInvalidOracleLedgerEntry();
+        testOracleLedgerEntry();
 
-        test::jtx::forAllApiVersions(std::bind_front(
+        forAllApiVersions(std::bind_front(
             &LedgerRPC_test::testLedgerEntryInvalidParams, this));
     }
 };

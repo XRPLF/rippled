@@ -25,9 +25,9 @@
 #include <ripple/app/rdb/RelationalDatabase.h>
 #include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/ledger/View.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/nftPageMask.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
@@ -792,7 +792,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
     return seed;
 }
 
-std::pair<PublicKey, SecretKey>
+std::optional<std::pair<PublicKey, SecretKey>>
 keypairForSignature(
     Json::Value const& params,
     Json::Value& error,
@@ -934,29 +934,31 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 20>
+        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 22>
             types{
                 {{jss::account, ltACCOUNT_ROOT},
                  {jss::amendments, ltAMENDMENTS},
+                 {jss::amm, ltAMM},
+                 {jss::bridge, ltBRIDGE},
                  {jss::check, ltCHECK},
                  {jss::deposit_preauth, ltDEPOSIT_PREAUTH},
+                 {jss::did, ltDID},
                  {jss::directory, ltDIR_NODE},
                  {jss::escrow, ltESCROW},
                  {jss::fee, ltFEE_SETTINGS},
                  {jss::hashes, ltLEDGER_HASHES},
+                 {jss::nunl, ltNEGATIVE_UNL},
+                 {jss::oracle, ltORACLE},
+                 {jss::nft_offer, ltNFTOKEN_OFFER},
+                 {jss::nft_page, ltNFTOKEN_PAGE},
                  {jss::offer, ltOFFER},
                  {jss::payment_channel, ltPAYCHAN},
                  {jss::signer_list, ltSIGNER_LIST},
                  {jss::state, ltRIPPLE_STATE},
                  {jss::ticket, ltTICKET},
-                 {jss::nft_offer, ltNFTOKEN_OFFER},
-                 {jss::nft_page, ltNFTOKEN_PAGE},
-                 {jss::amm, ltAMM},
-                 {jss::bridge, ltBRIDGE},
                  {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
                  {jss::xchain_owned_create_account_claim_id,
-                  ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
-                 {jss::did, ltDID}}};
+                  ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID}}};
 
         auto const& p = params[jss::type];
         if (!p.isString())

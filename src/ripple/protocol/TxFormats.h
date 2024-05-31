@@ -194,6 +194,12 @@ enum TxType : std::uint16_t
     ttNFTOKEN_MODIFY = 51,
 
 
+    /** This transaction type creates an Oracle instance */
+    ttORACLE_SET = 51,
+
+    /** This transaction type deletes an Oracle instance */
+    ttORACLE_DELETE = 52,
+
     /** This system-generated transaction type is used to update the status of the various amendments.
 
         For details, see: https://xrpl.org/amendments.html

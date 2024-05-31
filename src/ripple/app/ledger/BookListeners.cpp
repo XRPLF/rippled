@@ -54,8 +54,9 @@ BookListeners::publish(
             // Only publish jvObj if this is the first occurence
             if (havePublished.emplace(p->getSeq()).second)
             {
-                p->send(
-                    jvObj.select(apiVersionSelector(p->getApiVersion())), true);
+                jvObj.visit(
+                    p->getApiVersion(),  //
+                    [&](Json::Value const& jv) { p->send(jv, true); });
             }
             ++it;
         }

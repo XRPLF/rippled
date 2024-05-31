@@ -20,7 +20,9 @@
 #define RIPPLE_TEST_CSF_HISTOGRAM_H_INCLUDED
 
 #include <algorithm>
+#include <cassert>
 #include <chrono>
+#include <cmath>
 #include <map>
 
 namespace ripple {
