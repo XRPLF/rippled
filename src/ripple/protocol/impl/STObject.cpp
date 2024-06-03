@@ -652,6 +652,13 @@ STObject::getFieldArray(SField const& field) const
     return getFieldByConstRef<STArray>(field, empty);
 }
 
+const STObject&
+STObject::getFieldObject(SField const& field) const
+{
+    static STObject const empty(field);
+    return getFieldByConstRef<STObject>(field, empty);
+}
+
 STCurrency const&
 STObject::getFieldCurrency(SField const& field) const
 {
@@ -773,6 +780,12 @@ STObject::setFieldPluginType(SField const& field, STPluginType const& v)
 
 void
 STObject::setFieldArray(SField const& field, STArray const& v)
+{
+    setFieldUsingAssignment(field, v);
+}
+
+void
+STObject::setFieldObject(SField const& field, STObject const& v)
 {
     setFieldUsingAssignment(field, v);
 }

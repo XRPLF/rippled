@@ -31,12 +31,12 @@
 namespace ripple {
 
 inline std::vector<SOElement>
-convertToUniqueFields(Container<SOElementExport> txFormat)
+convertToUniqueFields(Container<SOElementExport> format)
 {
     std::vector<SOElement> uniqueFields;
-    for (int i = 0; i < txFormat.size; i++)
+    for (int i = 0; i < format.size; i++)
     {
-        auto const param = *(txFormat.data + i);
+        auto const param = *(format.data + i);
         uniqueFields.push_back(
             {SField::getField(param.fieldCode), param.style});
     }

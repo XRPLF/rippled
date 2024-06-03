@@ -245,6 +245,8 @@ public:
     getFieldV256(SField const& field) const;
     const STArray&
     getFieldArray(SField const& field) const;
+    const STObject&
+    getFieldObject(SField const& field) const;
     const STCurrency&
     getFieldCurrency(SField const& field) const;
 
@@ -385,6 +387,8 @@ public:
     setFieldV256(SField const& field, STVector256 const& v);
     void
     setFieldArray(SField const& field, STArray const& v);
+    void
+    setFieldObject(SField const& field, STObject const& v);
 
     template <class Tag>
     void
