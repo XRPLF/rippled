@@ -514,6 +514,7 @@ struct Flow_test : public beast::unit_test::suite
             env(pay(gw, alice, USD(1000)));
             env(pay(gw, bob, EUR(1000)));
 
+            Keylet const bobUsdOffer = keylet::offer(bob, env.seq(bob));
             env(offer(bob, USD(1), drops(2)), txflags(tfPassive));
             env(offer(bob, drops(1), EUR(1000)), txflags(tfPassive));
 
@@ -536,6 +537,28 @@ struct Flow_test : public beast::unit_test::suite
                 env.require(balance(carol, EUR(1)));
                 env.require(balance(bob, USD(0.4)));
                 env.require(balance(bob, EUR(999)));
+
+                // Show that bob's USD offer is now a blocker.
+                std::shared_ptr<SLE const> const usdOffer = env.le(bobUsdOffer);
+                if (BEAST_EXPECT(usdOffer))
+                {
+                    std::uint64_t const bookRate = [&usdOffer]() {
+                        // Extract the least significant 64 bits from the
+                        // book page.  That's where the quality is stored.
+                        std::string bookDirStr =
+                            to_string(usdOffer->at(sfBookDirectory));
+                        bookDirStr.erase(0, 48);
+                        return std::stoull(bookDirStr, nullptr, 16);
+                    }();
+                    std::uint64_t const actualRate = getRate(
+                        usdOffer->at(sfTakerGets), usdOffer->at(sfTakerPays));
+
+                    // We expect the actual rate of the offer to be worse
+                    // (larger) than the rate of the book page holding the
+                    // offer.  This is a defect which is corrected by
+                    // fixReducedOffersV2.
+                    BEAST_EXPECT(actualRate > bookRate);
+                }
             }
         }
     }

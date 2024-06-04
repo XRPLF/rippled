@@ -670,8 +670,12 @@ limitStepIn(
         auto const inLmt =
             mulRatio(stpAmt.in, QUALITY_ONE, transferRateIn, /*roundUp*/ false);
         // It turns out we can prevent order book blocking by (strictly)
-        // rounding down the ceil_in() result.  This adjustment changes
-        // transaction outcomes, so it must be made under an amendment.
+        // rounding down the ceil_in() result.  By rounding down we guarantee
+        // that the quality of an offer left in the ledger is as good or
+        // better than the quality of the containing order book page.
+        //
+        // This adjustment changes transaction outcomes, so it must be made
+        // under an amendment.
         ofrAmt = offer.limitIn(ofrAmt, inLmt, rules, /* roundUp */ false);
         stpAmt.out = ofrAmt.out;
         ownerGives = mulRatio(
