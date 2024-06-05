@@ -1413,7 +1413,6 @@ struct Flow_test : public beast::unit_test::suite
 
         testLineQuality(features);
         testFalseDry(features);
-        testDirectStep(features - reducedOffersV2);
         testBookStep(features - reducedOffersV2);
         testDirectStep(features);
         testBookStep(features);
