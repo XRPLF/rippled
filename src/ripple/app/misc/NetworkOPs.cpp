@@ -1219,6 +1219,7 @@ NetworkOPsImp::processTransaction(
     FailHard failType)
 {
     auto ev = m_job_queue.makeLoadEvent(jtTXN_PROC, "ProcessTXN");
+
     auto const newFlags = app_.getHashRouter().getFlags(transaction->getID());
 
     if ((newFlags & SF_BAD) != 0)
@@ -1234,9 +1235,20 @@ NetworkOPsImp::processTransaction(
     // but I'm not 100% sure yet.
     // If so, only cost is looking up HashRouter flags.
     auto const view = m_ledgerMaster.getCurrentLedger();
+
+    // This function is called by several different parts of the codebase
+    // under no circumstances will we ever accept a batch txn from the
+    // network.
+    auto const tx = *transaction->getSTransaction();
+    if (view->rules().enabled(featureBatch) &&
+        tx.isFieldPresent(ripple::sfBatchTxn))
+    {
+        return;
+    }
+    
     auto const [validity, reason] = checkValidity(
         app_.getHashRouter(),
-        *transaction->getSTransaction(),
+        tx,
         view->rules(),
         app_.config());
     assert(validity == Validity::Valid);
@@ -2753,7 +2765,7 @@ NetworkOPsImp::pubProposedTransaction(
     TER result)
 {
 
-    // never publish emitted txns
+    // never publish batch txns
     if (transaction->isFieldPresent(ripple::sfBatchTxn))
         return;
 

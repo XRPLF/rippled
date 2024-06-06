@@ -121,6 +121,11 @@ OpenLedger::accept(
     {
         auto const& tx = txpair.first;
         auto const txId = tx->getTransactionID();
+
+        // skip emitted txns
+        if (tx->isFieldPresent(sfBatchTxn))
+            continue;
+
         if (auto const toSkip = app.getHashRouter().shouldRelay(txId))
         {
             JLOG(j_.debug()) << "Relaying recovered tx " << txId;

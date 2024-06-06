@@ -229,14 +229,14 @@ class Batch_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        test::jtx::Env env{*this, envconfig()};
-        // Env env{
-        //     *this,
-        //     envconfig(),
-        //     features,
-        //     nullptr,
-        //     // beast::severities::kWarning
-        //     beast::severities::kTrace};
+        // test::jtx::Env env{*this, envconfig()};
+        Env env{
+            *this,
+            envconfig(),
+            features,
+            nullptr,
+            // beast::severities::kWarning
+            beast::severities::kTrace};
 
         auto const feeDrops = env.current()->fees().base;
 
@@ -357,14 +357,14 @@ class Batch_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        // test::jtx::Env env{*this, envconfig()};
-        Env env{
-            *this,
-            envconfig(),
-            features,
-            nullptr,
-            // beast::severities::kWarning
-            beast::severities::kTrace};
+        test::jtx::Env env{*this, envconfig()};
+        // Env env{
+        //     *this,
+        //     envconfig(),
+        //     features,
+        //     nullptr,
+        //     // beast::severities::kWarning
+        //     beast::severities::kTrace};
         auto const feeDrops = env.current()->fees().base;
 
         auto const alice = Account("alice");
@@ -421,6 +421,8 @@ class Batch_test : public beast::unit_test::suite
         // testSuccess(features);
         // testAtomicFailure(features);
         testFirstFailure(features);
+
+        // Test Fork From one node having 1 extra txn
     }
 
 public:

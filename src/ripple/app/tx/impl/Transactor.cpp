@@ -316,7 +316,15 @@ Transactor::checkSeqProxy(
     }
 
     SeqProxy const t_seqProx = tx.getSeqProxy();
-    SeqProxy const a_seq = SeqProxy::sequence((*sle)[sfSequence]);
+    SeqProxy a_seq = SeqProxy::sequence((*sle)[sfSequence]);
+
+    if (tx.isFieldPresent(sfBatchTxn))
+    {
+        STObject const batchTxn = const_cast<ripple::STTx&>(tx).getField(sfBatchTxn).downcast<STObject>();
+        std::uint32_t const batchIndex{batchTxn.getFieldU8(sfBatchIndex)};
+        a_seq = SeqProxy::sequence(a_seq.value() - (batchIndex + 1));
+        a_seq = t_seqProx;
+    }
 
     if (t_seqProx.isSeq())
     {
@@ -393,7 +401,8 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
         (ctx.view.seq() > ctx.tx.getFieldU32(sfLastLedgerSequence)))
         return tefMAX_LEDGER;
 
-    if (ctx.view.txExists(ctx.tx.getTransactionID()))
+    JLOG(ctx.j.trace()) << "TXN: " << ctx.tx.getTxnType() << "\n";
+    if (ctx.view.txExists(ctx.tx.getTransactionID()) && ctx.tx.getTxnType() != ttBATCH)
         return tefALREADY;
 
     return tesSUCCESS;

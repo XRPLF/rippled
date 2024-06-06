@@ -419,7 +419,7 @@ Batch::preclaim(PreclaimContext const& ctx)
 TER
 Batch::doApply()
 {
-    std::cout << "Batch::doApply()" << "\n";
+    std::cout << "Batch::doApply(): " << "0" << "\n";
     Sandbox sb(&ctx_.view());
 
     uint32_t flags = ctx_.tx.getFlags();
@@ -446,6 +446,7 @@ Batch::doApply()
     }
 
     // DRY RUN
+    std::cout << "Batch::doApply(): " << "DRY 1" << "\n";
     std::vector<std::pair<std::uint16_t, TER>> dryVector;
     for (std::size_t i = 0; i < stxTxns.size(); ++i)
     {
@@ -463,6 +464,7 @@ Batch::doApply()
         actx.discard();
     }
 
+    std::cout << "Batch::doApply(): " << "DRY 2" << "\n";
     ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
     for (auto const& dryRun : dryVector)
     {
@@ -474,10 +476,27 @@ Batch::doApply()
         // tfAllOrNothing
         if (dryRun.second != tesSUCCESS && flags & tfAllOrNothing)
         {
+            auto const sleBase = ctx_.base_.read(keylet::account(account_));
+            if (!sleBase)
+                return tefINTERNAL;
+
+            auto const sleSrcAcc = sb.peek(keylet::account(account_));
+            if (!sleSrcAcc)
+                return tefINTERNAL;
+
+            auto const feePaid = ctx_.tx[sfFee].xrp();
+            // auto const& txns = ctx_.tx.getFieldArray(sfRawTransactions);
+            sleSrcAcc->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence) + txns.size() + 1);
+            sleSrcAcc->setFieldAmount(sfBalance, sleBase->getFieldAmount(sfBalance).xrp() - feePaid);
+            sb.update(sleSrcAcc);
             sb.apply(ctx_.rawView());
+            ctx_.discard();
+            std::cout << "Batch::doApply(): " << "DRY 3.FAIL" << "\n";
             return tecBATCH_FAILURE;
         }
     }
+
+    std::cout << "Batch::doApply(): " << "1" << "\n";
 
     // ctx_.discard();
 
