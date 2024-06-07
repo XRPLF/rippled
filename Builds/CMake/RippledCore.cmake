@@ -337,6 +337,16 @@ install (
   DESTINATION include/ripple/json/impl)
 install (
   FILES
+    src/ripple/plugin/createSFields.h
+    src/ripple/plugin/exports.h
+    src/ripple/plugin/invariantChecks.h
+    src/ripple/plugin/ledgerObjects.h
+    src/ripple/plugin/macros.h
+    src/ripple/plugin/plugin.h
+    src/ripple/plugin/SField_plugin.h
+  DESTINATION include/ripple/plugin)
+install (
+  FILES
     src/ripple/protocol/AccountID.h
     src/ripple/protocol/AMMCore.h
     src/ripple/protocol/AmountConversions.h
@@ -389,6 +399,7 @@ install (
     src/ripple/protocol/STObject.h
     src/ripple/protocol/STParsedJSON.h
     src/ripple/protocol/STPathSet.h
+    src/ripple/protocol/STPluginType.h
     src/ripple/protocol/STTx.h
     src/ripple/protocol/STValidation.h
     src/ripple/protocol/STVector256.h
