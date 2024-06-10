@@ -91,6 +91,17 @@ target_link_libraries(xrpl.libxrpl
     xxHash::xxhash
 )
 
+if(voidstar)
+  target_compile_options(xrpl.libxrpl
+    PRIVATE
+      -DENABLE_VOIDSTAR
+  )
+  target_include_directories(xrpl.libxrpl
+    PRIVATE
+      ${CMAKE_SOURCE_DIR}/external/antithesis-sdk
+  )
+endif()
+
 add_executable(rippled)
 if(unity)
   set_target_properties(rippled PROPERTIES UNITY_BUILD ON)
@@ -121,6 +132,19 @@ target_link_libraries(rippled
   Ripple::libs
   xrpl.libxrpl
 )
+
+if(voidstar)
+  target_compile_options(rippled
+    PRIVATE
+      -fsanitize-coverage=trace-pc-guard
+      -DENABLE_VOIDSTAR
+  )
+  target_include_directories(rippled
+    PRIVATE
+      ${CMAKE_SOURCE_DIR}/external/antithesis-sdk
+  )
+endif()
+
 exclude_if_included(rippled)
 # define a macro for tests that might need to
 # be exluded or run differently in CI environment
