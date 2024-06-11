@@ -165,6 +165,13 @@ adjustAmountsByLPTokens(
 
     if (lpTokensActual < lpTokens)
     {
+        bool const ammRoundingEnabled = [&]() {
+            if (auto const& rules = getCurrentTransactionRules();
+                rules && rules->enabled(fixAMMv1_1))
+                return true;
+            return false;
+        }();
+
         // Equal trade
         if (amount2)
         {
@@ -172,10 +179,14 @@ adjustAmountsByLPTokens(
             auto const amountActual = toSTAmount(amount.issue(), fr * amount);
             auto const amount2Actual =
                 toSTAmount(amount2->issue(), fr * *amount2);
-            return std::make_tuple(
-                amountActual < amount ? amountActual : amount,
-                amount2Actual < amount2 ? amount2Actual : amount2,
-                lpTokensActual);
+            if (!ammRoundingEnabled)
+                return std::make_tuple(
+                    amountActual < amount ? amountActual : amount,
+                    amount2Actual < amount2 ? amount2Actual : amount2,
+                    lpTokensActual);
+            else
+                return std::make_tuple(
+                    amountActual, amount2Actual, lpTokensActual);
         }
 
         // Single trade
@@ -183,13 +194,19 @@ adjustAmountsByLPTokens(
             if (isDeposit)
                 return ammAssetIn(
                     amountBalance, lptAMMBalance, lpTokensActual, tfee);
-            else
+            else if (!ammRoundingEnabled)
                 return withdrawByTokens(
                     amountBalance, lptAMMBalance, lpTokens, tfee);
+            else
+                return withdrawByTokens(
+                    amountBalance, lptAMMBalance, lpTokensActual, tfee);
         }();
-        return amountActual < amount
-            ? std::make_tuple(amountActual, std::nullopt, lpTokensActual)
-            : std::make_tuple(amount, std::nullopt, lpTokensActual);
+        if (!ammRoundingEnabled)
+            return amountActual < amount
+                ? std::make_tuple(amountActual, std::nullopt, lpTokensActual)
+                : std::make_tuple(amount, std::nullopt, lpTokensActual);
+        else
+            return std::make_tuple(amountActual, std::nullopt, lpTokensActual);
     }
 
     assert(lpTokensActual == lpTokens);
@@ -201,6 +218,21 @@ Number
 solveQuadraticEq(Number const& a, Number const& b, Number const& c)
 {
     return (-b + root2(b * b - 4 * a * c)) / (2 * a);
+}
+
+// Minimize takerGets or takerPays
+std::optional<Number>
+solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c)
+{
+    auto const d = b * b - 4 * a * c;
+    if (d < 0)
+        return std::nullopt;
+    // use numerically stable citardauq formula for quadratic equation solution
+    // https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
+    if (b > 0)
+        return (2 * c) / (-b - root2(d));
+    else
+        return (2 * c) / (-b + root2(d));
 }
 
 }  // namespace ripple

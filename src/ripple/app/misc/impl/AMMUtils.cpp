@@ -348,4 +348,86 @@ initializeFeeAuctionVote(
         auctionSlot.makeFieldAbsent(sfDiscountedFee);  // LCOV_EXCL_LINE
 }
 
+Expected<bool, TER>
+isOnlyLiquidityProvider(
+    ReadView const& view,
+    Issue const& ammIssue,
+    AccountID const& lpAccount)
+{
+    // Liquidity Provider (LP) must have one LPToken trustline
+    std::uint8_t nLPTokenTrustLines = 0;
+    // There are at most two IOU trustlines. One or both could be to the LP
+    // if LP is the issuer, or a different account if LP is not an issuer.
+    // For instance, if AMM has two tokens USD and EUR and LP is not the issuer
+    // of the tokens then the trustlines are between AMM account and the issuer.
+    std::uint8_t nIOUTrustLines = 0;
+    // There is only one AMM object
+    bool hasAMM = false;
+    // AMM LP has at most three trustlines and only one AMM object must exist.
+    // If there are more than five objects then it's either an error or
+    // there are more than one LP. Ten pages should be sufficient to include
+    // five objects.
+    std::uint8_t limit = 10;
+    auto const root = keylet::ownerDir(ammIssue.account);
+    auto currentIndex = root;
+
+    // Iterate over AMM owner directory objects.
+    while (limit-- >= 1)
+    {
+        auto const ownerDir = view.read(currentIndex);
+        if (!ownerDir)
+            return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+        for (auto const& key : ownerDir->getFieldV256(sfIndexes))
+        {
+            auto const sle = view.read(keylet::child(key));
+            if (!sle)
+                return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+            // Only one AMM object
+            if (sle->getFieldU16(sfLedgerEntryType) == ltAMM)
+            {
+                if (hasAMM)
+                    return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                hasAMM = true;
+                continue;
+            }
+            if (sle->getFieldU16(sfLedgerEntryType) != ltRIPPLE_STATE)
+                return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+            auto const lowLimit = sle->getFieldAmount(sfLowLimit);
+            auto const highLimit = sle->getFieldAmount(sfHighLimit);
+            auto const isLPTrustline = lowLimit.getIssuer() == lpAccount ||
+                highLimit.getIssuer() == lpAccount;
+            auto const isLPTokenTrustline =
+                lowLimit.issue() == ammIssue || highLimit.issue() == ammIssue;
+
+            // Liquidity Provider trustline
+            if (isLPTrustline)
+            {
+                // LPToken trustline
+                if (isLPTokenTrustline)
+                {
+                    if (++nLPTokenTrustLines > 1)
+                        return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                }
+                else if (++nIOUTrustLines > 2)
+                    return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+            }
+            // Another Liquidity Provider LPToken trustline
+            else if (isLPTokenTrustline)
+                return false;
+            else if (++nIOUTrustLines > 2)
+                return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+        }
+        auto const uNodeNext = ownerDir->getFieldU64(sfIndexNext);
+        if (uNodeNext == 0)
+        {
+            if (nLPTokenTrustLines != 1 || nIOUTrustLines == 0 ||
+                nIOUTrustLines > 2)
+                return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+            return true;
+        }
+        currentIndex = keylet::page(root, uNodeNext);
+    }
+    return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+}
+
 }  // namespace ripple
