@@ -162,7 +162,7 @@ public:
 
     std::string START_LEDGER;
 
-    std::optional<uint256> TRAP_TX_HASH = {};
+    std::optional<uint256> TRAP_TX_HASH;
 
     // Network parameters
     uint32_t NETWORK_ID = 0;

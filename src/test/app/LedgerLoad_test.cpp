@@ -254,6 +254,7 @@ class LedgerLoad_test : public beast::unit_test::suite
             beast::severities::kDisabled);
         auto const jrb = env.rpc("ledger", "current", "full")[jss::result];
         BEAST_EXPECT(jrb[jss::ledger][jss::accountState].size() == 97);
+        // in replace mode do not automatically accept the ledger being replayed
 
         env.close();
         auto const closed = env.rpc("ledger", "current", "full")[jss::result];
@@ -284,6 +285,7 @@ class LedgerLoad_test : public beast::unit_test::suite
             beast::severities::kDisabled);
         auto const jrb = env.rpc("ledger", "current", "full")[jss::result];
         BEAST_EXPECT(jrb[jss::ledger][jss::accountState].size() == 97);
+        // in replace mode do not automatically accept the ledger being replayed
 
         env.close();
         auto const closed = env.rpc("ledger", "current", "full")[jss::result];
@@ -304,6 +306,8 @@ class LedgerLoad_test : public beast::unit_test::suite
         boost::erase_all(ledgerHash, "\"");
         try
         {
+            // will throw an exception, because we cannot load a ledger for
+            // replay when trapTxHash is set to an invalid transaction
             Env env(
                 *this,
                 envconfig(
