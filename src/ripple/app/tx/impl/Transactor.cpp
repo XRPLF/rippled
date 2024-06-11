@@ -854,6 +854,12 @@ Transactor::operator()()
     }
 #endif
 
+    if (auto const& trap = ctx_.app.trapTxID();
+        trap && *trap == ctx_.tx.getTransactionID())
+    {
+        JLOG(j_.debug()) << "Transaction trapped: " << *trap;
+    }
+
     auto result = ctx_.preclaimResult;
     if (result == tesSUCCESS)
         result = apply();
