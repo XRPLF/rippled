@@ -661,8 +661,7 @@ limitStepIn(
     TOut& ownerGives,
     std::uint32_t transferRateIn,
     std::uint32_t transferRateOut,
-    TIn const& limit,
-    Rules const& rules)
+    TIn const& limit)
 {
     if (limit < stpAmt.in)
     {
@@ -676,7 +675,7 @@ limitStepIn(
         //
         // This adjustment changes transaction outcomes, so it must be made
         // under an amendment.
-        ofrAmt = offer.limitIn(ofrAmt, inLmt, rules, /* roundUp */ false);
+        ofrAmt = offer.limitIn(ofrAmt, inLmt, /* roundUp */ false);
         stpAmt.out = ofrAmt.out;
         ownerGives = mulRatio(
             ofrAmt.out, transferRateOut, QUALITY_ONE, /*roundUp*/ false);
@@ -693,8 +692,7 @@ limitStepOut(
     TOut& ownerGives,
     std::uint32_t transferRateIn,
     std::uint32_t transferRateOut,
-    TOut const& limit,
-    Rules const& rules)
+    TOut const& limit)
 {
     if (limit < stpAmt.out)
     {
@@ -704,7 +702,6 @@ limitStepOut(
         ofrAmt = offer.limitOut(
             ofrAmt,
             stpAmt.out,
-            rules,
             /*roundUp*/ true);
         stpAmt.in =
             mulRatio(ofrAmt.in, transferRateIn, QUALITY_ONE, /*roundUp*/ true);
@@ -824,8 +821,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             // It turns out we can prevent order book blocking by (strictly)
             // rounding down the ceil_out() result.  This adjustment changes
             // transaction outcomes, so it must be made under an amendment.
-            ofrAmt = offer.limitOut(
-                ofrAmt, stpAmt.out, afView.rules(), /*roundUp*/ false);
+            ofrAmt = offer.limitOut(ofrAmt, stpAmt.out, /*roundUp*/ false);
 
             stpAmt.in =
                 mulRatio(ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true);
@@ -1062,8 +1058,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
                 ownerGivesAdj,
                 transferRateIn,
                 transferRateOut,
-                remainingOut,
-                afView.rules());
+                remainingOut);
             remainingOut = beast::zero;
             savedIns.insert(stpAdjAmt.in);
             savedOuts.insert(remainingOut);
@@ -1184,8 +1179,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
                 ownerGivesAdj,
                 transferRateIn,
                 transferRateOut,
-                remainingIn,
-                afView.rules());
+                remainingIn);
             savedIns.insert(remainingIn);
             lastOut = savedOuts.insert(stpAdjAmt.out);
             result.out = sum(savedOuts);
@@ -1216,8 +1210,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
                 ownerGivesAdjRev,
                 transferRateIn,
                 transferRateOut,
-                remainingOut,
-                afView.rules());
+                remainingOut);
 
             if (stpAdjAmtRev.in == remainingIn)
             {

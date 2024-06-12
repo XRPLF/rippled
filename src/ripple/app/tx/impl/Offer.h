@@ -141,15 +141,11 @@ public:
     limitOut(
         TAmounts<TIn, TOut> const& offrAmt,
         TOut const& limit,
-        Rules const& rules,
         bool roundUp) const;
 
     TAmounts<TIn, TOut>
-    limitIn(
-        TAmounts<TIn, TOut> const& offrAmt,
-        TIn const& limit,
-        Rules const& rules,
-        bool roundUp) const;
+    limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit, bool roundUp)
+        const;
 
     template <typename... Args>
     static TER
@@ -224,10 +220,10 @@ TAmounts<TIn, TOut>
 TOffer<TIn, TOut>::limitOut(
     TAmounts<TIn, TOut> const& offrAmt,
     TOut const& limit,
-    Rules const& rules,
     bool roundUp) const
 {
-    if (rules.enabled(fixReducedOffersV1))
+    if (auto const& rules = getCurrentTransactionRules();
+        rules && rules->enabled(fixReducedOffersV1))
         // It turns out that the ceil_out implementation has some slop in
         // it.  ceil_out_strict removes that slop.  But removing that slop
         // affects transaction outcomes, so the change must be made using
@@ -241,10 +237,10 @@ TAmounts<TIn, TOut>
 TOffer<TIn, TOut>::limitIn(
     TAmounts<TIn, TOut> const& offrAmt,
     TIn const& limit,
-    Rules const& rules,
     bool roundUp) const
 {
-    if (rules.enabled(fixReducedOffersV2))
+    if (auto const& rules = getCurrentTransactionRules();
+        rules && rules->enabled(fixReducedOffersV2))
         // It turns out that the ceil_in implementation has some slop in
         // it.  ceil_in_strict removes that slop.  But removing that slop
         // affects transaction outcomes, so the change must be made using
