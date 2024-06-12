@@ -8,11 +8,12 @@
 #include <random>
 #include <string>
 #include <map>
+#include <set>
 #include <variant>
 #include <vector>
 
 namespace antithesis {
-    inline const char* SDK_VERSION = "0.3.0";
+    inline const char* SDK_VERSION = "0.3.1";
     inline const char* PROTOCOL_VERSION = "1.0.0";
 
     struct LocalRandom {
@@ -436,6 +437,13 @@ namespace antithesis {
         assert_impl(cond, message, details, location_info, hit, must_hit, assert_type, display_type, id);
     }
 
+    typedef std::set<std::string> CatalogEntryTracker;
+
+    inline CatalogEntryTracker& get_catalog_entry_tracker() {
+        static CatalogEntryTracker catalog_entry_tracker;
+        return catalog_entry_tracker;
+    }
+
     struct Assertion {
         AssertionState state;
         AssertionType type;
@@ -448,13 +456,17 @@ namespace antithesis {
         }
 
         void add_to_catalog() const {
-            const bool condition = (type == REACHABLE_ASSERTION ? true : false);
-            const bool hit = false;
-            const char* assert_type = get_assert_type_string(type);
-            const bool must_hit = get_must_hit(type);
-            const char* display_type = get_display_type_string(type);
             std::string id = make_key(message, location);
-            assert_impl(condition, message, {}, location, hit, must_hit, assert_type, display_type, id.c_str());
+            CatalogEntryTracker& tracker = get_catalog_entry_tracker();
+            if (!tracker.contains(id)) {
+                tracker.insert(id);
+                const bool condition = (type == REACHABLE_ASSERTION ? true : false);
+                const bool hit = false;
+                const char* assert_type = get_assert_type_string(type);
+                const bool must_hit = get_must_hit(type);
+                const char* display_type = get_display_type_string(type);
+                assert_impl(condition, message, {}, location, hit, must_hit, assert_type, display_type, id.c_str());
+            }
         }
 
         [[clang::always_inline]] inline void check_assertion(bool cond, const JSON& details) {
@@ -478,7 +490,7 @@ namespace antithesis {
                 emit = true;
                 state.true_not_seen = false;   // TODO: is the race OK?
             }
-            
+
             if (emit) {
                 const bool hit = true;
                 const char* assert_type = get_assert_type_string(type);
