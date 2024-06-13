@@ -213,7 +213,7 @@ template <class Object>
 void
 setVersion(Object& parent, unsigned int apiVersion, bool betaEnabled)
 {
-    assert(apiVersion != apiInvalidVersion);
+    XRPL_ASSERT(apiVersion != apiInvalidVersion);
     auto&& object = addObject(parent, jss::version);
     if (apiVersion == apiVersionIfUnspecified)
     {

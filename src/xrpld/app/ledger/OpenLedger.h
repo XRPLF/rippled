@@ -27,8 +27,8 @@
 #include <xrpld/ledger/OpenView.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <cassert>
 #include <mutex>
 
 namespace ripple {
@@ -263,7 +263,7 @@ OpenLedger::apply(
 
     // If there are any transactions left, we must have
     // tried them in at least one final pass
-    assert(retries.empty() || !retry);
+    XRPL_ASSERT(retries.empty() || !retry);
 }
 
 //------------------------------------------------------------------------------

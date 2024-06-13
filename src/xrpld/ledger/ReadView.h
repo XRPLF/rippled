@@ -25,6 +25,7 @@
 #include <xrpl/basics/IOUAmount.h>
 #include <xrpl/basics/XRPAmount.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Fees.h>
@@ -35,7 +36,6 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
-#include <cassert>
 #include <cstdint>
 #include <memory>
 #include <optional>

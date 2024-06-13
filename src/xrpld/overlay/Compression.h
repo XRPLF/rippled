@@ -64,7 +64,7 @@ decompress(
             JLOG(debugLog().warn())
                 << "decompress: invalid compression algorithm "
                 << static_cast<int>(algorithm);
-            assert(0);
+            XRPL_ASSERT(0);
         }
     }
     catch (...)
@@ -99,7 +99,7 @@ compress(
         {
             JLOG(debugLog().warn()) << "compress: invalid compression algorithm"
                                     << static_cast<int>(algorithm);
-            assert(0);
+            XRPL_ASSERT(0);
         }
     }
     catch (...)

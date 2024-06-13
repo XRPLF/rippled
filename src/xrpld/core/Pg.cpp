@@ -31,11 +31,11 @@
 
 #include <xrpld/core/Pg.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/instrumentation.h>
 #include <boost/asio/ssl/detail/openssl_init.hpp>
 #include <boost/format.hpp>
 #include <algorithm>
 #include <array>
-#include <cassert>
 #include <cstdlib>
 #include <cstring>
 #include <exception>
@@ -242,7 +242,7 @@ void
 Pg::bulkInsert(char const* table, std::string const& records)
 {
     // https://www.postgresql.org/docs/12/libpq-copy.html#LIBPQ-COPY-SEND
-    assert(conn_.get());
+    XRPL_ASSERT(conn_.get());
     static auto copyCmd = boost::format(R"(COPY %s FROM stdin)");
     auto res = query(boost::str(copyCmd % table).c_str());
     if (!res || res.status() != PGRES_COPY_IN)
@@ -1326,7 +1326,7 @@ applySchema(
 {
     if (currentVersion != 0 && schemaVersion != currentVersion + 1)
     {
-        assert(false);
+        XRPL_UNREACHABLE();
         std::stringstream ss;
         ss << "Schema upgrade versions past initial deployment must increase "
               "monotonically. Versions: current, target: "

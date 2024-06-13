@@ -282,7 +282,7 @@ WorkBase<Impl>::onResponse(error_code const& ec)
         return fail(ec);
 
     close();
-    assert(cb_);
+    XRPL_ASSERT(cb_);
     cb_(ec, lastEndpoint_, std::move(res_));
     cb_ = nullptr;
 }

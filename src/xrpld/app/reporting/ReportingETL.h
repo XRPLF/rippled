@@ -326,9 +326,9 @@ public:
     start()
     {
         JLOG(journal_.info()) << "Starting reporting etl";
-        assert(app_.config().reporting());
-        assert(app_.config().standalone());
-        assert(app_.config().reportingReadOnly() == readOnly_);
+        XRPL_ASSERT(app_.config().reporting());
+        XRPL_ASSERT(app_.config().standalone());
+        XRPL_ASSERT(app_.config().reportingReadOnly() == readOnly_);
 
         stopping_ = false;
 

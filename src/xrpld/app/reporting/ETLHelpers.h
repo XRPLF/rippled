@@ -176,7 +176,7 @@ public:
 inline std::vector<uint256>
 getMarkers(size_t numMarkers)
 {
-    assert(numMarkers <= 256);
+    XRPL_ASSERT(numMarkers <= 256);
 
     unsigned char incr = 256 / numMarkers;
 

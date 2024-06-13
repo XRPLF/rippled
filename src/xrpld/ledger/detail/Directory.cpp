@@ -60,14 +60,14 @@ const_iterator::operator==(const_iterator const& other) const
     if (view_ == nullptr || other.view_ == nullptr)
         return false;
 
-    assert(view_ == other.view_ && root_.key == other.root_.key);
+    XRPL_ASSERT(view_ == other.view_ && root_.key == other.root_.key);
     return page_.key == other.page_.key && index_ == other.index_;
 }
 
 const_iterator::reference
 const_iterator::operator*() const
 {
-    assert(index_ != beast::zero);
+    XRPL_ASSERT(index_ != beast::zero);
     if (!cache_)
         cache_ = view_->read(keylet::child(index_));
     return *cache_;
@@ -76,7 +76,7 @@ const_iterator::operator*() const
 const_iterator&
 const_iterator::operator++()
 {
-    assert(index_ != beast::zero);
+    XRPL_ASSERT(index_ != beast::zero);
     if (++it_ != std::end(*indexes_))
     {
         index_ = *it_;
@@ -90,7 +90,7 @@ const_iterator::operator++()
 const_iterator
 const_iterator::operator++(int)
 {
-    assert(index_ != beast::zero);
+    XRPL_ASSERT(index_ != beast::zero);
     const_iterator tmp(*this);
     ++(*this);
     return tmp;
@@ -109,7 +109,7 @@ const_iterator::next_page()
     {
         page_ = keylet::page(root_, next);
         sle_ = view_->read(page_);
-        assert(sle_);
+        XRPL_ASSERT(sle_);
         indexes_ = &sle_->getFieldV256(sfIndexes);
         if (indexes_->empty())
         {

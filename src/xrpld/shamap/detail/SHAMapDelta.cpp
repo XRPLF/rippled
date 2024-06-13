@@ -128,7 +128,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
     // many differences throws on corrupt tables or missing nodes CAUTION:
     // otherMap is not locked and must be immutable
 
-    assert(isValid() && otherMap.isValid());
+    XRPL_ASSERT(isValid() && otherMap.isValid());
 
     if (getHash() == otherMap.getHash())
         return true;
@@ -145,7 +145,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
 
         if (!ourNode || !otherNode)
         {
-            assert(false);
+            XRPL_UNREACHABLE();
             Throw<SHAMapMissingNode>(type_, uint256());
         }
 
@@ -226,7 +226,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
                 }
         }
         else
-            assert(false);
+            XRPL_UNREACHABLE();
     }
 
     return true;
@@ -323,7 +323,7 @@ SHAMap::walkMapParallel(
                     {
                         std::shared_ptr<SHAMapInnerNode> node =
                             std::move(nodeStack.top());
-                        assert(node);
+                        XRPL_ASSERT(node);
                         nodeStack.pop();
 
                         for (int i = 0; i < 16; ++i)

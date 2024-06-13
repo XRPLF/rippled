@@ -55,7 +55,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
 
     auto affectedNodes =
         dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
-    assert(affectedNodes);
+    XRPL_ASSERT(affectedNodes);
     if (affectedNodes)
         mNodes = *affectedNodes;
 
@@ -106,7 +106,7 @@ TxMeta::setAffectedNode(
     mNodes.push_back(STObject(type));
     STObject& obj = mNodes.back();
 
-    assert(obj.getFName() == type);
+    XRPL_ASSERT(obj.getFName() == type);
     obj.setFieldH256(sfLedgerIndex, node);
     obj.setFieldU16(sfLedgerEntryType, nodeType);
 }
@@ -127,14 +127,14 @@ TxMeta::getAffectedAccounts() const
         if (index != -1)
         {
             auto inner = dynamic_cast<STObject const*>(&it.peekAtIndex(index));
-            assert(inner);
+            XRPL_ASSERT(inner);
             if (inner)
             {
                 for (auto const& field : *inner)
                 {
                     if (auto sa = dynamic_cast<STAccount const*>(&field))
                     {
-                        assert(!sa->isDefault());
+                        XRPL_ASSERT(!sa->isDefault());
                         if (!sa->isDefault())
                             list.insert(sa->value());
                     }
@@ -145,7 +145,7 @@ TxMeta::getAffectedAccounts() const
                         (field.getFName() == sfTakerGets))
                     {
                         auto lim = dynamic_cast<STAmount const*>(&field);
-                        assert(lim);
+                        XRPL_ASSERT(lim);
 
                         if (lim != nullptr)
                         {
@@ -175,7 +175,7 @@ TxMeta::getAffectedNode(SLE::ref node, SField const& type)
     mNodes.push_back(STObject(type));
     STObject& obj = mNodes.back();
 
-    assert(obj.getFName() == type);
+    XRPL_ASSERT(obj.getFName() == type);
     obj.setFieldH256(sfLedgerIndex, index);
     obj.setFieldU16(sfLedgerEntryType, node->getFieldU16(sfLedgerEntryType));
 
@@ -190,7 +190,7 @@ TxMeta::getAffectedNode(uint256 const& node)
         if (n.getFieldH256(sfLedgerIndex) == node)
             return n;
     }
-    assert(false);
+    XRPL_UNREACHABLE();
     Throw<std::runtime_error>("Affected node not found");
     return *(mNodes.begin());  // Silence compiler warning.
 }
@@ -199,7 +199,7 @@ STObject
 TxMeta::getAsObject() const
 {
     STObject metaData(sfTransactionMetaData);
-    assert(mResult != 255);
+    XRPL_ASSERT(mResult != 255);
     metaData.setFieldU8(sfTransactionResult, mResult);
     metaData.setFieldU32(sfTransactionIndex, mIndex);
     metaData.emplace_back(mNodes);
@@ -213,7 +213,7 @@ TxMeta::addRaw(Serializer& s, TER result, std::uint32_t index)
 {
     mResult = TERtoInt(result);
     mIndex = index;
-    assert((mResult == 0) || ((mResult > 100) && (mResult <= 255)));
+    XRPL_ASSERT((mResult == 0) || ((mResult > 100) && (mResult <= 255)));
 
     mNodes.sort([](STObject const& o1, STObject const& o2) {
         return o1.getFieldH256(sfLedgerIndex) < o2.getFieldH256(sfLedgerIndex);

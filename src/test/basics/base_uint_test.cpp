@@ -44,7 +44,7 @@ struct nonhash
     void
     operator()(void const* key, std::size_t len) noexcept
     {
-        assert(len == WIDTH);
+        XRPL_ASSERT(len == WIDTH);
         memcpy(data_.data(), key, len);
     }
 

@@ -19,8 +19,8 @@
 
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/protocol/Protocol.h>
-#include <cassert>
 
 namespace ripple {
 
@@ -133,7 +133,7 @@ ApplyView::emptyDirDelete(Keylet const& directory)
     if (directory.type != ltDIR_NODE ||
         node->getFieldH256(sfRootIndex) != directory.key)
     {
-        assert(!"emptyDirDelete() called with wrong node type");
+        XRPL_ASSERT(!"emptyDirDelete() called with wrong node type");
         return false;
     }
 

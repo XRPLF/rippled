@@ -73,7 +73,7 @@ void
 LoadManager::start()
 {
     JLOG(journal_.debug()) << "Starting";
-    assert(!thread_.joinable());
+    XRPL_ASSERT(!thread_.joinable());
 
     thread_ = std::thread{&LoadManager::run, this};
 }

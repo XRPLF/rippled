@@ -22,11 +22,11 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/st.h>
-#include <cassert>
 #include <optional>
 
 namespace ripple {
@@ -48,7 +48,7 @@ internalDirNext(
     uint256& entry)
 {
     auto const& svIndexes = page->getFieldV256(sfIndexes);
-    assert(index <= svIndexes.size());
+    XRPL_ASSERT(index <= svIndexes.size());
 
     if (index >= svIndexes.size())
     {
@@ -65,7 +65,7 @@ internalDirNext(
         else
             page = view.peek(keylet::page(root, next));
 
-        assert(page);
+        XRPL_ASSERT(page);
 
         if (!page)
             return false;
@@ -336,7 +336,7 @@ confineOwnerCount(
                     << "Account " << *id << " owner count set below 0!";
             }
             adjusted = 0;
-            assert(!id);
+            XRPL_ASSERT(!id);
         }
     }
     return adjusted;
@@ -386,7 +386,7 @@ forEachItem(
     Keylet const& root,
     std::function<void(std::shared_ptr<SLE const> const&)> const& f)
 {
-    assert(root.type == ltDIR_NODE);
+    XRPL_ASSERT(root.type == ltDIR_NODE);
 
     if (root.type != ltDIR_NODE)
         return;
@@ -416,7 +416,7 @@ forEachItemAfter(
     unsigned int limit,
     std::function<bool(std::shared_ptr<SLE const> const&)> const& f)
 {
-    assert(root.type == ltDIR_NODE);
+    XRPL_ASSERT(root.type == ltDIR_NODE);
 
     if (root.type != ltDIR_NODE)
         return false;
@@ -678,7 +678,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
         auto const hashIndex = ledger.read(keylet::skip());
         if (hashIndex)
         {
-            assert(
+            XRPL_ASSERT(
                 hashIndex->getFieldU32(sfLastLedgerSequence) ==
                 (ledger.seq() - 1));
             STVector256 vec = hashIndex->getFieldV256(sfHashes);
@@ -708,8 +708,8 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     if (hashIndex)
     {
         auto const lastSeq = hashIndex->getFieldU32(sfLastLedgerSequence);
-        assert(lastSeq >= seq);
-        assert((lastSeq & 0xff) == 0);
+        XRPL_ASSERT(lastSeq >= seq);
+        XRPL_ASSERT((lastSeq & 0xff) == 0);
         auto const diff = (lastSeq - seq) >> 8;
         STVector256 vec = hashIndex->getFieldV256(sfHashes);
         if (vec.size() > diff)
@@ -735,7 +735,7 @@ adjustOwnerCount(
 {
     if (!sle)
         return;
-    assert(amount != 0);
+    XRPL_ASSERT(amount != 0);
     std::uint32_t const current{sle->getFieldU32(sfOwnerCount)};
     AccountID const id = (*sle)[sfAccount];
     std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
@@ -800,11 +800,11 @@ trustCreate(
     const bool bSetDst = saLimit.getIssuer() == uDstAccountID;
     const bool bSetHigh = bSrcHigh ^ bSetDst;
 
-    assert(sleAccount);
+    XRPL_ASSERT(sleAccount);
     if (!sleAccount)
         return tefINTERNAL;
 
-    assert(
+    XRPL_ASSERT(
         sleAccount->getAccountID(sfAccount) ==
         (bSetHigh ? uHighAccountID : uLowAccountID));
     auto const slePeer =
@@ -959,17 +959,17 @@ rippleCredit(
     Currency const& currency = saAmount.getCurrency();
 
     // Make sure issuer is involved.
-    assert(!bCheckIssuer || uSenderID == issuer || uReceiverID == issuer);
+    XRPL_ASSERT(!bCheckIssuer || uSenderID == issuer || uReceiverID == issuer);
     (void)issuer;
 
     // Disallow sending to self.
-    assert(uSenderID != uReceiverID);
+    XRPL_ASSERT(uSenderID != uReceiverID);
 
     bool const bSenderHigh = uSenderID > uReceiverID;
     auto const index = keylet::line(uSenderID, uReceiverID, currency);
 
-    assert(!isXRP(uSenderID) && uSenderID != noAccount());
-    assert(!isXRP(uReceiverID) && uReceiverID != noAccount());
+    XRPL_ASSERT(!isXRP(uSenderID) && uSenderID != noAccount());
+    XRPL_ASSERT(!isXRP(uReceiverID) && uReceiverID != noAccount());
 
     // If the line exists, modify it accordingly.
     if (auto const sleRippleState = view.peek(index))
@@ -1103,8 +1103,8 @@ rippleSend(
 {
     auto const issuer = saAmount.getIssuer();
 
-    assert(!isXRP(uSenderID) && !isXRP(uReceiverID));
-    assert(uSenderID != uReceiverID);
+    XRPL_ASSERT(!isXRP(uSenderID) && !isXRP(uReceiverID));
+    XRPL_ASSERT(uSenderID != uReceiverID);
 
     if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
@@ -1156,7 +1156,7 @@ accountSend(
     }
     else
     {
-        assert(saAmount >= beast::zero);
+        XRPL_ASSERT(saAmount >= beast::zero);
     }
 
     /* If we aren't sending anything or if the sender is the same as the
@@ -1317,13 +1317,13 @@ issueIOU(
     Issue const& issue,
     beast::Journal j)
 {
-    assert(!isXRP(account) && !isXRP(issue.account));
+    XRPL_ASSERT(!isXRP(account) && !isXRP(issue.account));
 
     // Consistency check
-    assert(issue == amount.issue());
+    XRPL_ASSERT(issue == amount.issue());
 
     // Can't send to self!
-    assert(issue.account != account);
+    XRPL_ASSERT(issue.account != account);
 
     JLOG(j.trace()) << "issueIOU: " << to_string(account) << ": "
                     << amount.getFullText();
@@ -1413,13 +1413,13 @@ redeemIOU(
     Issue const& issue,
     beast::Journal j)
 {
-    assert(!isXRP(account) && !isXRP(issue.account));
+    XRPL_ASSERT(!isXRP(account) && !isXRP(issue.account));
 
     // Consistency check
-    assert(issue == amount.issue());
+    XRPL_ASSERT(issue == amount.issue());
 
     // Can't send to self!
-    assert(issue.account != account);
+    XRPL_ASSERT(issue.account != account);
 
     JLOG(j.trace()) << "redeemIOU: " << to_string(account) << ": "
                     << amount.getFullText();
@@ -1483,10 +1483,10 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j)
 {
-    assert(from != beast::zero);
-    assert(to != beast::zero);
-    assert(from != to);
-    assert(amount.native());
+    XRPL_ASSERT(from != beast::zero);
+    XRPL_ASSERT(to != beast::zero);
+    XRPL_ASSERT(from != to);
+    XRPL_ASSERT(amount.native());
 
     SLE::pointer const sender = view.peek(keylet::account(from));
     SLE::pointer const receiver = view.peek(keylet::account(to));
@@ -1596,7 +1596,7 @@ cleanupOnAccountDelete(
             //
             //  3. So we verify that uDirEntry is indeed 'it'+1.  Then we jam it
             //     back to 'it' to "un-invalidate" the iterator.
-            assert(uDirEntry >= 1);
+            XRPL_ASSERT(uDirEntry >= 1);
             if (uDirEntry == 0)
             {
                 JLOG(j.error())

@@ -19,6 +19,7 @@
 
 #include <test/unit_test/multi_runner.h>
 
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/unit_test/amount.h>
 
 #include <boost/lexical_cast.hpp>
@@ -419,7 +420,7 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
                     buf.data(), buf.size(), recvd_size, priority);
                 if (!recvd_size)
                     continue;
-                assert(recvd_size == 1);
+                XRPL_ASSERT(recvd_size == 1);
                 MessageType mt{*reinterpret_cast<MessageType*>(buf.data())};
 
                 this->message_queue_->receive(
@@ -440,7 +441,7 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
                             running_suites_.erase(s);
                             break;
                         default:
-                            assert(0);  // unknown message type
+                            XRPL_ASSERT(0);  // unknown message type
                     }
                 }
             }

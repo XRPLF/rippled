@@ -142,7 +142,7 @@ private:
         std::vector<Arg> const& src,
         Args const&... args)
     {
-        assert(dest.capacity() >= dest.size() + src.size());
+        XRPL_ASSERT(dest.capacity() >= dest.size() + src.size());
         std::copy(src.begin(), src.end(), std::back_inserter(dest));
         if constexpr (sizeof...(args) > 0)
             combine_arg(dest, args...);

@@ -53,7 +53,7 @@ JobQueue::Coro::Coro(
 inline JobQueue::Coro::~Coro()
 {
 #ifndef NDEBUG
-    assert(finished_);
+    XRPL_ASSERT(finished_);
 #endif
 }
 
@@ -103,7 +103,7 @@ JobQueue::Coro::resume()
     auto saved = detail::getLocalValues().release();
     detail::getLocalValues().reset(&lvs_);
     std::lock_guard lock(mutex_);
-    assert(coro_);
+    XRPL_ASSERT(coro_);
     coro_();
     detail::getLocalValues().release();
     detail::getLocalValues().reset(saved);

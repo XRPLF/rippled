@@ -32,7 +32,7 @@ LedgerReplayTask::TaskParameter::TaskParameter(
     std::uint32_t totalNumLedgers)
     : reason_(r), finishHash_(finishLedgerHash), totalLedgers_(totalNumLedgers)
 {
-    assert(finishLedgerHash.isNonZero() && totalNumLedgers > 0);
+    XRPL_ASSERT(finishLedgerHash.isNonZero() && totalNumLedgers > 0);
 }
 
 bool
@@ -48,7 +48,7 @@ LedgerReplayTask::TaskParameter::update(
     skipList_ = sList;
     skipList_.emplace_back(finishHash_);
     startHash_ = skipList_[skipList_.size() - totalLedgers_];
-    assert(startHash_.isNonZero());
+    XRPL_ASSERT(startHash_.isNonZero());
     startSeq_ = finishSeq_ - totalLedgers_ + 1;
     full_ = true;
     return true;
@@ -200,7 +200,7 @@ LedgerReplayTask::tryAdvance(ScopedLockType& sl)
         for (; deltaToBuild_ < deltas_.size(); ++deltaToBuild_)
         {
             auto& delta = deltas_[deltaToBuild_];
-            assert(parent_->seq() + 1 == delta->ledgerSeq_);
+            XRPL_ASSERT(parent_->seq() + 1 == delta->ledgerSeq_);
             if (auto l = delta->tryBuild(parent_); l)
             {
                 JLOG(journal_.debug())
@@ -289,7 +289,7 @@ LedgerReplayTask::addDelta(std::shared_ptr<LedgerDeltaAcquire> const& delta)
         JLOG(journal_.trace())
             << "addDelta task " << hash_ << " deltaIndex=" << deltaToBuild_
             << " totalDeltas=" << deltas_.size();
-        assert(
+        XRPL_ASSERT(
             deltas_.empty() ||
             deltas_.back()->ledgerSeq_ + 1 == delta->ledgerSeq_);
         deltas_.push_back(delta);

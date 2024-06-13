@@ -20,9 +20,9 @@
 #ifndef RIPPLE_RPC_STATUS_H_INCLUDED
 #define RIPPLE_RPC_STATUS_H_INCLUDED
 
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TER.h>
-#include <cassert>
 
 namespace ripple {
 namespace RPC {
@@ -95,7 +95,7 @@ public:
     TER
     toTER() const
     {
-        assert(type_ == Type::TER);
+        XRPL_ASSERT(type_ == Type::TER);
         return TER::fromInt(code_);
     }
 
@@ -104,7 +104,7 @@ public:
     error_code_i
     toErrorCode() const
     {
-        assert(type_ == Type::error_code_i);
+        XRPL_ASSERT(type_ == Type::error_code_i);
         return error_code_i(code_);
     }
 

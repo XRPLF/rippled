@@ -21,11 +21,11 @@
 #define RIPPLE_PROTOCOL_B58_UTILS_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/instrumentation.h>
 
 #include <boost/outcome.hpp>
 #include <boost/outcome/result.hpp>
 
-#include <cassert>
 #include <cinttypes>
 #include <span>
 #include <system_error>
@@ -126,7 +126,7 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
     {
         // should never happen, but if it does then it seems natural to define
         // the a null set of numbers to be zero, so the remainder is also zero.
-        assert(0);
+        XRPL_ASSERT(0);
         return 0;
     }
 
@@ -142,8 +142,8 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
         unsigned __int128 const denom128 = denom;
         unsigned __int128 const d = num / denom128;
         unsigned __int128 const r = num - (denom128 * d);
-        assert(d >> 64 == 0);
-        assert(r >> 64 == 0);
+        XRPL_ASSERT(d >> 64 == 0);
+        XRPL_ASSERT(r >> 64 == 0);
         return {static_cast<std::uint64_t>(d), static_cast<std::uint64_t>(r)};
     };
 

@@ -145,7 +145,7 @@ InfoSub::setApiVersion(unsigned int apiVersion)
 unsigned int
 InfoSub::getApiVersion() const noexcept
 {
-    assert(apiVersion_ > 0);
+    XRPL_ASSERT(apiVersion_ > 0);
     return apiVersion_;
 }
 

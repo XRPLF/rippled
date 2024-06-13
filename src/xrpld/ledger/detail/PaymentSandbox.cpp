@@ -20,11 +20,10 @@
 #include <xrpld/app/paths/detail/AmountSpec.h>
 #include <xrpld/ledger/PaymentSandbox.h>
 #include <xrpld/ledger/View.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
-
-#include <cassert>
 
 namespace ripple {
 
@@ -49,8 +48,8 @@ DeferredCredits::credit(
     STAmount const& amount,
     STAmount const& preCreditSenderBalance)
 {
-    assert(sender != receiver);
-    assert(!amount.negative());
+    XRPL_ASSERT(sender != receiver);
+    XRPL_ASSERT(!amount.negative());
 
     auto const k = makeKey(sender, receiver, amount.getCurrency());
     auto i = credits_.find(k);
@@ -253,14 +252,14 @@ PaymentSandbox::adjustOwnerCountHook(
 void
 PaymentSandbox::apply(RawView& to)
 {
-    assert(!ps_);
+    XRPL_ASSERT(!ps_);
     items_.apply(to);
 }
 
 void
 PaymentSandbox::apply(PaymentSandbox& to)
 {
-    assert(ps_ == &to);
+    XRPL_ASSERT(ps_ == &to);
     items_.apply(to);
     tab_.apply(to.tab_);
 }
@@ -344,7 +343,7 @@ PaymentSandbox::balanceChanges(ReadView const& view) const
         {
             // modify
             auto const at = after->getType();
-            assert(at == before->getType());
+            XRPL_ASSERT(at == before->getType());
             switch (at)
             {
                 case ltACCOUNT_ROOT:

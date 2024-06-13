@@ -239,7 +239,7 @@ struct TxCollector
             {
                 Tracker& tracker = it->second;
                 // Should only validated a previously accepted Tx
-                assert(tracker.accepted);
+                XRPL_ASSERT(tracker.accepted);
 
                 tracker.validated = when;
                 validated++;
@@ -501,7 +501,7 @@ struct LedgerCollector
         if (e.prior.id() == e.ledger.parentID())
         {
             auto const it = ledgers_.find(e.ledger.id());
-            assert(it != ledgers_.end());
+            XRPL_ASSERT(it != ledgers_.end());
             auto& tracker = it->second;
             // first time fully validated
             if (!tracker.fullyValidated)

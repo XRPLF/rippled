@@ -21,6 +21,7 @@
 #define RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/server/Session.h>
 #include <xrpl/server/detail/io_list.h>
@@ -34,7 +35,6 @@
 #include <boost/beast/http/parser.hpp>
 #include <boost/beast/http/read.hpp>
 #include <atomic>
-#include <cassert>
 #include <chrono>
 #include <functional>
 #include <memory>

@@ -411,7 +411,7 @@ ValidatorSite::parseJsonResponse(
     }
 
     auto const manifest = body[jss::manifest].asString();
-    assert(version == body[jss::version].asUInt());
+    XRPL_ASSERT(version == body[jss::version].asUInt());
     auto const& uri = sites_[siteIdx].activeResource->uri;
     auto const hash = sha512Half(manifest, blobs, version);
     auto const applyResult = app_.validators().applyListsAndBroadcast(
@@ -586,7 +586,7 @@ ValidatorSite::onSiteFetch(
                     case status::temporary_redirect: {
                         auto newLocation =
                             processRedirect(res, siteIdx, lock_sites);
-                        assert(newLocation);
+                        XRPL_ASSERT(newLocation);
                         // for perm redirects, also update our starting URI
                         if (res.result() == status::moved_permanently ||
                             res.result() == status::permanent_redirect)

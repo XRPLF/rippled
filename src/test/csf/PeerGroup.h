@@ -303,7 +303,7 @@ randomRankedGroups(
     RandomNumberDistribution sizeDist,
     Generator& g)
 {
-    assert(peers.size() == ranks.size());
+    XRPL_ASSERT(peers.size() == ranks.size());
 
     std::vector<PeerGroup> groups;
     groups.reserve(numGroups);

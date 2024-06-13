@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/protocol/SField.h>
-#include <cassert>
 #include <string>
 #include <string_view>
 #include <utility>

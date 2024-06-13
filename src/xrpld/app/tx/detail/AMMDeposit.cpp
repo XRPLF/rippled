@@ -435,7 +435,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
 
     if (result == tesSUCCESS)
     {
-        assert(newLPTokenBalance > beast::zero);
+        XRPL_ASSERT(newLPTokenBalance > beast::zero);
         ammSle->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
         // LP depositing into AMM empty state gets the auction slot
         // and the voting

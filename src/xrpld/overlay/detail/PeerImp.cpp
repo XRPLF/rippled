@@ -575,7 +575,7 @@ PeerImp::hasRange(std::uint32_t uMin, std::uint32_t uMax)
 void
 PeerImp::close()
 {
-    assert(strand_.running_in_this_thread());
+    XRPL_ASSERT(strand_.running_in_this_thread());
     if (socket_.is_open())
     {
         detaching_ = true;  // DEPRECATED
@@ -616,7 +616,7 @@ PeerImp::fail(std::string const& reason)
 void
 PeerImp::fail(std::string const& name, error_code ec)
 {
-    assert(strand_.running_in_this_thread());
+    XRPL_ASSERT(strand_.running_in_this_thread());
     if (socket_.is_open())
     {
         JLOG(journal_.warn())
@@ -636,9 +636,9 @@ PeerImp::getPeerShardInfos() const
 void
 PeerImp::gracefulClose()
 {
-    assert(strand_.running_in_this_thread());
-    assert(socket_.is_open());
-    assert(!gracefulClose_);
+    XRPL_ASSERT(strand_.running_in_this_thread());
+    XRPL_ASSERT(socket_.is_open());
+    XRPL_ASSERT(!gracefulClose_);
     gracefulClose_ = true;
     if (send_queue_.size() > 0)
         return;
@@ -764,7 +764,7 @@ PeerImp::onShutdown(error_code ec)
 void
 PeerImp::doAccept()
 {
-    assert(read_buffer_.size() == 0);
+    XRPL_ASSERT(read_buffer_.size() == 0);
 
     JLOG(journal_.debug()) << "doAccept: " << remote_address_;
 
@@ -962,7 +962,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
 
     metrics_.sent.add_message(bytes_transferred);
 
-    assert(!send_queue_.empty());
+    XRPL_ASSERT(!send_queue_.empty());
     send_queue_.pop();
     if (!send_queue_.empty())
     {
@@ -2319,13 +2319,13 @@ PeerImp::onValidatorListMessage(
         case ListDisposition::pending: {
             std::lock_guard<std::mutex> sl(recentLock_);
 
-            assert(applyResult.publisherKey);
+            XRPL_ASSERT(applyResult.publisherKey);
             auto const& pubKey = *applyResult.publisherKey;
 #ifndef NDEBUG
             if (auto const iter = publisherListSequences_.find(pubKey);
                 iter != publisherListSequences_.end())
             {
-                assert(iter->second < applyResult.sequence);
+                XRPL_ASSERT(iter->second < applyResult.sequence);
             }
 #endif
             publisherListSequences_[pubKey] = applyResult.sequence;
@@ -2336,8 +2336,8 @@ PeerImp::onValidatorListMessage(
 #ifndef NDEBUG
         {
             std::lock_guard<std::mutex> sl(recentLock_);
-            assert(applyResult.sequence && applyResult.publisherKey);
-            assert(
+            XRPL_ASSERT(applyResult.sequence && applyResult.publisherKey);
+            XRPL_ASSERT(
                 publisherListSequences_[*applyResult.publisherKey] <=
                 applyResult.sequence);
         }
@@ -2350,7 +2350,7 @@ PeerImp::onValidatorListMessage(
         case ListDisposition::unsupported_version:
             break;
         default:
-            assert(false);
+            XRPL_UNREACHABLE();
     }
 
     // Charge based on the worst result
@@ -2389,7 +2389,7 @@ PeerImp::onValidatorListMessage(
             fee_ = Resource::feeBadData;
             break;
         default:
-            assert(false);
+            XRPL_UNREACHABLE();
     }
 
     // Log based on all the results.
@@ -2447,7 +2447,7 @@ PeerImp::onValidatorListMessage(
                     << "(s) from peer " << remote_address_;
                 break;
             default:
-                assert(false);
+                XRPL_UNREACHABLE();
         }
     }
 }
@@ -3130,7 +3130,7 @@ PeerImp::checkPropose(
     JLOG(p_journal_.trace())
         << "Checking " << (isTrusted ? "trusted" : "UNTRUSTED") << " proposal";
 
-    assert(packet);
+    XRPL_ASSERT(packet);
 
     if (!cluster() && !peerPos.checkSign())
     {

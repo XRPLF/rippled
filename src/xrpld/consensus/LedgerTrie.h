@@ -21,7 +21,9 @@
 #define RIPPLE_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
 
 #include <xrpl/basics/ToString.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/json/json_value.h>
+
 #include <algorithm>
 #include <iomanip>
 #include <memory>
@@ -62,7 +64,7 @@ public:
     ID
     ancestor(Seq const& s) const
     {
-        assert(s <= seq);
+        XRPL_ASSERT(s <= seq);
         return ledger[s];
     }
 
@@ -88,7 +90,7 @@ public:
     Span() : ledger_{typename Ledger::MakeGenesis{}}
     {
         // Require default ledger to be genesis seq
-        assert(ledger_.seq() == start_);
+        XRPL_ASSERT(ledger_.seq() == start_);
     }
 
     Span(Ledger ledger)
@@ -157,7 +159,7 @@ private:
         : start_{start}, end_{end}, ledger_{l}
     {
         // Spans cannot be empty
-        assert(start < end);
+        XRPL_ASSERT(start < end);
     }
 
     Seq
@@ -230,7 +232,7 @@ struct Node
             [child](std::unique_ptr<Node> const& curr) {
                 return curr.get() == child;
             });
-        assert(it != children.end());
+        XRPL_ASSERT(it != children.end());
         std::swap(*it, children.back());
         children.pop_back();
     }
@@ -338,7 +340,7 @@ struct Node
         // For all Seq s:
         if(a[s] == b[s]);
             for(Seq p = 0; p < s; ++p)
-                assert(a[p] == b[p]);
+                XRPL_ASSERT(a[p] == b[p]);
         @endcode
 
     @tparam Ledger A type representing a ledger and its history
@@ -371,7 +373,7 @@ class LedgerTrie
         Node* curr = root.get();
 
         // Root is always defined and is in common with all ledgers
-        assert(curr);
+        XRPL_ASSERT(curr);
         Seq pos = curr->span.diff(ledger);
 
         bool done = false;
@@ -452,7 +454,7 @@ public:
         auto const [loc, diffSeq] = find(ledger);
 
         // There is always a place to insert
-        assert(loc);
+        XRPL_ASSERT(loc);
 
         // Node from which to start incrementing branchSupport
         Node* incNode = loc;
@@ -487,12 +489,12 @@ public:
             newNode->tipSupport = loc->tipSupport;
             newNode->branchSupport = loc->branchSupport;
             newNode->children = std::move(loc->children);
-            assert(loc->children.empty());
+            XRPL_ASSERT(loc->children.empty());
             for (std::unique_ptr<Node>& child : newNode->children)
                 child->parent = newNode.get();
 
             // Loc truncates to prefix and newNode is its child
-            assert(prefix);
+            XRPL_ASSERT(prefix);
             loc->span = *prefix;
             newNode->parent = loc;
             loc->children.emplace_back(std::move(newNode));
@@ -545,7 +547,7 @@ public:
         loc->tipSupport -= count;
 
         auto const it = seqSupport.find(ledger.seq());
-        assert(it != seqSupport.end() && it->second >= count);
+        XRPL_ASSERT(it != seqSupport.end() && it->second >= count);
         it->second -= count;
         if (it->second == 0)
             seqSupport.erase(it->first);

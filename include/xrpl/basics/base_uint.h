@@ -29,6 +29,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/hardened_hash.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <boost/endian/conversion.hpp>
@@ -289,7 +290,8 @@ public:
             std::is_trivially_copyable<typename Container::value_type>::value>>
     explicit base_uint(Container const& c)
     {
-        assert(c.size() * sizeof(typename Container::value_type) == size());
+        XRPL_ASSERT(
+            c.size() * sizeof(typename Container::value_type) == size());
         std::memcpy(data_.data(), c.data(), size());
     }
 
@@ -300,7 +302,8 @@ public:
         base_uint&>
     operator=(Container const& c)
     {
-        assert(c.size() * sizeof(typename Container::value_type) == size());
+        XRPL_ASSERT(
+            c.size() * sizeof(typename Container::value_type) == size());
         std::memcpy(data_.data(), c.data(), size());
         return *this;
     }

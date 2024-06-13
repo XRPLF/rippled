@@ -19,10 +19,10 @@
 
 #include <xrpld/ledger/detail/ApplyStateTable.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/st.h>
-#include <cassert>
 
 namespace ripple {
 namespace detail {
@@ -155,7 +155,7 @@ ApplyStateTable::apply(
             meta.setAffectedNode(item.first, *type, nodeType);
             if (type == &sfDeletedNode)
             {
-                assert(origNode && curNode);
+                XRPL_ASSERT(origNode && curNode);
                 threadOwners(to, meta, origNode, newMod, j);
 
                 STObject prevs(sfPreviousFields);
@@ -187,7 +187,7 @@ ApplyStateTable::apply(
             }
             else if (type == &sfModifiedNode)
             {
-                assert(curNode && origNode);
+                XRPL_ASSERT(curNode && origNode);
 
                 if (curNode->isThreadedType(
                         to.rules()))  // thread transaction to node
@@ -222,7 +222,7 @@ ApplyStateTable::apply(
             }
             else if (type == &sfCreatedNode)  // if created, thread to owner(s)
             {
-                assert(curNode && !origNode);
+                XRPL_ASSERT(curNode && !origNode);
                 threadOwners(to, meta, curNode, newMod, j);
 
                 if (curNode->isThreadedType(
@@ -245,7 +245,7 @@ ApplyStateTable::apply(
             }
             else
             {
-                assert(false);
+                XRPL_UNREACHABLE();
             }
         }
 
@@ -536,13 +536,13 @@ ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 
         if (node.getFieldIndex(sfPreviousTxnID) == -1)
         {
-            assert(node.getFieldIndex(sfPreviousTxnLgrSeq) == -1);
+            XRPL_ASSERT(node.getFieldIndex(sfPreviousTxnLgrSeq) == -1);
             node.setFieldH256(sfPreviousTxnID, prevTxID);
             node.setFieldU32(sfPreviousTxnLgrSeq, prevLgrID);
         }
 
-        assert(node.getFieldH256(sfPreviousTxnID) == prevTxID);
-        assert(node.getFieldU32(sfPreviousTxnLgrSeq) == prevLgrID);
+        XRPL_ASSERT(node.getFieldH256(sfPreviousTxnID) == prevTxID);
+        XRPL_ASSERT(node.getFieldU32(sfPreviousTxnLgrSeq) == prevLgrID);
     }
 }
 
@@ -557,7 +557,7 @@ ApplyStateTable::getForMod(
         auto miter = mods.find(key);
         if (miter != mods.end())
         {
-            assert(miter->second);
+            XRPL_ASSERT(miter->second);
             return miter->second;
         }
     }
@@ -613,7 +613,7 @@ ApplyStateTable::threadTx(
         return;
     }
     // threadItem only applied to AccountRoot
-    assert(sle->isThreadedType(base.rules()));
+    XRPL_ASSERT(sle->isThreadedType(base.rules()));
     threadItem(meta, sle);
 }
 

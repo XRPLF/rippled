@@ -421,7 +421,7 @@ Payment::doApply()
         return terResult;
     }
 
-    assert(saDstAmount.native());
+    XRPL_ASSERT(saDstAmount.native());
 
     // Direct XRP payment.
 

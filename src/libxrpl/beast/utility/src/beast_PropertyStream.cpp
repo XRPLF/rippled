@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <algorithm>
-#include <cassert>
 #include <iostream>
 #include <limits>
 
@@ -199,7 +199,7 @@ PropertyStream::Source::add(Source& source)
     std::lock_guard lk1(lock_, std::adopt_lock);
     std::lock_guard lk2(source.lock_, std::adopt_lock);
 
-    assert(source.parent_ == nullptr);
+    XRPL_ASSERT(source.parent_ == nullptr);
     children_.push_back(source.item_);
     source.parent_ = this;
 }
@@ -211,7 +211,7 @@ PropertyStream::Source::remove(Source& child)
     std::lock_guard lk1(lock_, std::adopt_lock);
     std::lock_guard lk2(child.lock_, std::adopt_lock);
 
-    assert(child.parent_ == this);
+    XRPL_ASSERT(child.parent_ == this);
     children_.erase(children_.iterator_to(child.item_));
     child.parent_ = nullptr;
 }

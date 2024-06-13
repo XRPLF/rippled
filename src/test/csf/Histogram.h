@@ -19,8 +19,8 @@
 #ifndef RIPPLE_TEST_CSF_HISTOGRAM_H_INCLUDED
 #define RIPPLE_TEST_CSF_HISTOGRAM_H_INCLUDED
 
+#include <xrpl/basics/instrumentation.h>
 #include <algorithm>
-#include <cassert>
 #include <chrono>
 #include <cmath>
 #include <map>
@@ -110,7 +110,7 @@ public:
     T
     percentile(float p) const
     {
-        assert(p >= 0 && p <= 1);
+        XRPL_ASSERT(p >= 0 && p <= 1);
         std::size_t pos = std::round(p * samples);
 
         if (counts_.empty())

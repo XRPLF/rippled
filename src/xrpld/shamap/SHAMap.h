@@ -32,8 +32,8 @@
 #include <xrpld/shamap/SHAMapTreeNode.h>
 #include <xrpld/shamap/TreeNodeCache.h>
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <cassert>
 #include <stack>
 #include <vector>
 
@@ -599,7 +599,7 @@ SHAMap::setLedgerSeq(std::uint32_t lseq)
 inline void
 SHAMap::setImmutable()
 {
-    assert(state_ != SHAMapState::Invalid);
+    XRPL_ASSERT(state_ != SHAMapState::Invalid);
     state_ = SHAMapState::Immutable;
 }
 
@@ -680,7 +680,7 @@ private:
 
 inline SHAMap::const_iterator::const_iterator(SHAMap const* map) : map_(map)
 {
-    assert(map_ != nullptr);
+    XRPL_ASSERT(map_ != nullptr);
 
     if (auto temp = map_->peekFirstItem(stack_))
         item_ = temp->peekItem().get();
@@ -732,7 +732,7 @@ SHAMap::const_iterator::operator++(int)
 inline bool
 operator==(SHAMap::const_iterator const& x, SHAMap::const_iterator const& y)
 {
-    assert(x.map_ == y.map_);
+    XRPL_ASSERT(x.map_ == y.map_);
     return x.item_ == y.item_;
 }
 

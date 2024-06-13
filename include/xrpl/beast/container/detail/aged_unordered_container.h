@@ -1329,7 +1329,7 @@ public:
     size_type
     bucket(Key const& k) const
     {
-        assert(bucket_count() != 0);
+        XRPL_ASSERT(bucket_count() != 0);
         return m_cont.bucket(k, std::cref(m_config.hash_function()));
     }
 
@@ -1470,7 +1470,7 @@ private:
     {
         if (would_exceed(additional))
             m_buck.resize(size() + additional, m_cont);
-        assert(load_factor() <= max_load_factor());
+        XRPL_ASSERT(load_factor() <= max_load_factor());
     }
 
     // map, set

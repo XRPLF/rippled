@@ -4,6 +4,9 @@ Loop: test.jtx test.toplevel
 Loop: test.jtx test.unit_test
   test.unit_test == test.jtx
 
+Loop: xrpl.basics xrpl.beast
+  xrpl.basics > xrpl.beast
+
 Loop: xrpl.basics xrpl.json
   xrpl.json ~= xrpl.basics
 

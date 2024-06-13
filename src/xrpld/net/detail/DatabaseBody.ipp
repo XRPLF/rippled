@@ -89,7 +89,7 @@ DatabaseBody::reader::init(
     boost::system::error_code& ec)
 {
     // The connection must already be available for writing
-    assert(body_.conn_);
+    XRPL_ASSERT(body_.conn_);
 
     // The error_code specification requires that we
     // either set the error to some value, or set it

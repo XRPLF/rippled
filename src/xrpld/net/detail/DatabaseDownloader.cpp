@@ -72,7 +72,7 @@ DatabaseDownloader::closeBody(std::shared_ptr<parser> p)
 
     auto databaseBodyParser =
         std::dynamic_pointer_cast<http::response_parser<DatabaseBody>>(p);
-    assert(databaseBodyParser);
+    XRPL_ASSERT(databaseBodyParser);
 
     databaseBodyParser->get().body().close();
 }
@@ -84,7 +84,7 @@ DatabaseDownloader::size(std::shared_ptr<parser> p)
 
     auto databaseBodyParser =
         std::dynamic_pointer_cast<http::response_parser<DatabaseBody>>(p);
-    assert(databaseBodyParser);
+    XRPL_ASSERT(databaseBodyParser);
 
     return databaseBodyParser->get().body().size();
 }

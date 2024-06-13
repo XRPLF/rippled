@@ -166,7 +166,7 @@ doAccountChannels(RPC::JsonContext& context)
                 std::shared_ptr<SLE const> const& sleCur) {
                 if (!sleCur)
                 {
-                    assert(false);
+                    XRPL_UNREACHABLE();
                     return false;
                 }
 

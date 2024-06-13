@@ -25,11 +25,11 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/SField.h>
-#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <iomanip>
@@ -55,7 +55,7 @@ public:
 
         if (size)
         {
-            assert(data != nullptr);
+            XRPL_ASSERT(data != nullptr);
             std::memcpy(mData.data(), data, size);
         }
     }
@@ -300,7 +300,7 @@ Serializer::addVL(Iter begin, Iter end, int len)
         len -= begin->size();
 #endif
     }
-    assert(len == 0);
+    XRPL_ASSERT(len == 0);
     return ret;
 }
 

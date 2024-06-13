@@ -200,7 +200,7 @@ applyVote(
         }
     }
 
-    assert(
+    XRPL_ASSERT(
         !ctx_.view().rules().enabled(fixInnerObjTemplate) ||
         ammSle->isFieldPresent(sfAuctionSlot));
 

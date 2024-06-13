@@ -42,8 +42,8 @@ creditLimit(
         result.setIssuer(account);
     }
 
-    assert(result.getIssuer() == account);
-    assert(result.getCurrency() == currency);
+    XRPL_ASSERT(result.getIssuer() == account);
+    XRPL_ASSERT(result.getCurrency() == currency);
     return result;
 }
 
@@ -76,8 +76,8 @@ creditBalance(
         result.setIssuer(account);
     }
 
-    assert(result.getIssuer() == account);
-    assert(result.getCurrency() == currency);
+    XRPL_ASSERT(result.getIssuer() == account);
+    XRPL_ASSERT(result.getCurrency() == currency);
     return result;
 }
 

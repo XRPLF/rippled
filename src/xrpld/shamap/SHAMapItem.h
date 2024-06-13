@@ -25,8 +25,8 @@
 #include <xrpl/basics/SlabAllocator.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/instrumentation.h>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
-#include <cassert>
 
 namespace ripple {
 
@@ -159,7 +159,7 @@ intrusive_ptr_release(SHAMapItem const* x)
 inline boost::intrusive_ptr<SHAMapItem>
 make_shamapitem(uint256 const& tag, Slice data)
 {
-    assert(data.size() <= megabytes<std::size_t>(16));
+    XRPL_ASSERT(data.size() <= megabytes<std::size_t>(16));
 
     std::uint8_t* raw = detail::slabber.allocate(data.size());
 

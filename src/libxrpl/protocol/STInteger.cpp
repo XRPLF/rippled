@@ -196,7 +196,7 @@ Json::Value STUInt64::getJson(JsonOptions) const
 {
     std::string str(16, 0);
     auto ret = std::to_chars(str.data(), str.data() + str.size(), value_, 16);
-    assert(ret.ec == std::errc());
+    XRPL_ASSERT(ret.ec == std::errc());
     str.resize(std::distance(str.data(), ret.ptr));
     return str;
 }

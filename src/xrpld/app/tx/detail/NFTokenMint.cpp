@@ -160,7 +160,7 @@ NFTokenMint::createNFTokenID(
 
     std::memcpy(ptr, &tokenSeq, sizeof(tokenSeq));
     ptr += sizeof(tokenSeq);
-    assert(std::distance(buf.data(), ptr) == buf.size());
+    XRPL_ASSERT(std::distance(buf.data(), ptr) == buf.size());
 
     return uint256::fromVoid(buf.data());
 }

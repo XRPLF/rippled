@@ -77,7 +77,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
         196418, 317811, 514229, 832040, 1346269};
     // clang-format on
 
-    assert(!ammContext_.maxItersReached());
+    XRPL_ASSERT(!ammContext_.maxItersReached());
 
     cur.out = toAmount<TOut>(
         getIssue(balances.out),

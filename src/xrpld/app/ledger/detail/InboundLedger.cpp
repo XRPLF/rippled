@@ -155,7 +155,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
 
     JLOG(journal_.debug()) << "Acquiring ledger we already have in "
                            << " local store. " << hash_;
-    assert(
+    XRPL_ASSERT(
         mLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
         mLedger->read(keylet::fees()));
     mLedger->setImmutable();
@@ -389,7 +389,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
     {
         JLOG(journal_.debug()) << "Had everything locally";
         complete_ = true;
-        assert(
+        XRPL_ASSERT(
             mLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
             mLedger->read(keylet::fees()));
         mLedger->setImmutable();
@@ -485,11 +485,11 @@ InboundLedger::done()
                                       std::to_string(timeouts_) + " "))
                            << mStats.get();
 
-    assert(complete_ || failed_);
+    XRPL_ASSERT(complete_ || failed_);
 
     if (complete_ && !failed_ && mLedger)
     {
-        assert(
+        XRPL_ASSERT(
             mLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
             mLedger->read(keylet::fees()));
         mLedger->setImmutable();
@@ -656,7 +656,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     // if we wind up abandoning this fetch.
     if (mHaveHeader && !mHaveState && !failed_)
     {
-        assert(mLedger);
+        XRPL_ASSERT(mLedger);
 
         if (!mLedger->stateMap().isValid())
         {
@@ -728,7 +728,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
     if (mHaveHeader && !mHaveTransactions && !failed_)
     {
-        assert(mLedger);
+        XRPL_ASSERT(mLedger);
 
         if (!mLedger->txMap().isValid())
         {
@@ -994,7 +994,7 @@ InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
 
     if (!mHaveHeader)
     {
-        assert(false);
+        XRPL_UNREACHABLE();
         return false;
     }
 
@@ -1019,7 +1019,7 @@ InboundLedger::takeTxRootNode(Slice const& data, SHAMapAddNode& san)
 
     if (!mHaveHeader)
     {
-        assert(false);
+        XRPL_UNREACHABLE();
         return false;
     }
 

@@ -18,9 +18,7 @@
 //==============================================================================
 
 #include <xrpld/nodestore/detail/TaskQueue.h>
-
-#include <cassert>
-
+#include <xrpl/basics/instrumentation.h>
 namespace ripple {
 namespace NodeStore {
 
@@ -59,7 +57,7 @@ TaskQueue::processTask(int instance)
     {
         std::lock_guard lock{mutex_};
 
-        assert(!tasks_.empty());
+        XRPL_ASSERT(!tasks_.empty());
         task = std::move(tasks_.front());
         tasks_.pop();
 

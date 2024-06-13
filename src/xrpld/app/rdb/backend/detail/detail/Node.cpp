@@ -58,7 +58,7 @@ to_string(TableType type)
         case TableType::AccountTransactions:
             return "AccountTransactions";
         default:
-            assert(false);
+            XRPL_UNREACHABLE();
             return "Unknown";
     }
 }
@@ -201,7 +201,7 @@ saveValidatedLedger(
     if (!ledger->info().accountHash.isNonZero())
     {
         JLOG(j.fatal()) << "AH is zero: " << getJson({*ledger, {}});
-        assert(false);
+        XRPL_UNREACHABLE();
     }
 
     if (ledger->info().accountHash != ledger->stateMap().getHash().as_uint256())
@@ -210,10 +210,11 @@ saveValidatedLedger(
                         << " != " << ledger->stateMap().getHash();
         JLOG(j.fatal()) << "saveAcceptedLedger: seq=" << seq
                         << ", current=" << current;
-        assert(false);
+        XRPL_UNREACHABLE();
     }
 
-    assert(ledger->info().txHash == ledger->txMap().getHash().as_uint256());
+    XRPL_ASSERT(
+        ledger->info().txHash == ledger->txMap().getHash().as_uint256());
 
     // Save the ledger header in the hashed object store
     {

@@ -51,7 +51,7 @@ TOfferStreamBase<TIn, TOut>::TOfferStreamBase(
     , tip_(view, book_)
     , counter_(counter)
 {
-    assert(validBook_);
+    XRPL_ASSERT(validBook_);
 }
 
 // Handle the case where a directory item with no corresponding ledger entry
@@ -339,7 +339,7 @@ TOfferStreamBase<TIn, TOut>::step()
                                 std::is_same_v<TOut, XRPAmount>))
                     return shouldRmSmallIncreasedQOffer<IOUAmount, IOUAmount>();
             }
-            assert(0);  // xrp/xrp offer!?! should never happen
+            XRPL_ASSERT(0);  // xrp/xrp offer!?! should never happen
             return false;
         }();
 

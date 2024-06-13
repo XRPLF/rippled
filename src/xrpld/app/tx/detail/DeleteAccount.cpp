@@ -211,7 +211,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     }
 
     auto sleAccount = ctx.view.read(keylet::account(account));
-    assert(sleAccount);
+    XRPL_ASSERT(sleAccount);
     if (!sleAccount)
         return terNO_ACCOUNT;
 
@@ -314,10 +314,10 @@ TER
 DeleteAccount::doApply()
 {
     auto src = view().peek(keylet::account(account_));
-    assert(src);
+    XRPL_ASSERT(src);
 
     auto dst = view().peek(keylet::account(ctx_.tx[sfDestination]));
-    assert(dst);
+    XRPL_ASSERT(dst);
 
     if (!src || !dst)
         return tefBAD_LEDGER;
@@ -337,7 +337,7 @@ DeleteAccount::doApply()
                 return {result, SkipEntry::No};
             }
 
-            assert(!"Undeletable entry should be found in preclaim.");
+            XRPL_ASSERT(!"Undeletable entry should be found in preclaim.");
             JLOG(j_.error()) << "DeleteAccount undeletable item not "
                                 "found in preclaim.";
             return {tecHAS_OBLIGATIONS, SkipEntry::No};
@@ -351,7 +351,7 @@ DeleteAccount::doApply()
     (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
     ctx_.deliver(mSourceBalance);
 
-    assert((*src)[sfBalance] == XRPAmount(0));
+    XRPL_ASSERT((*src)[sfBalance] == XRPAmount(0));
 
     // If there's still an owner directory associated with the source account
     // delete it.

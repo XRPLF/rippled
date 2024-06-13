@@ -71,7 +71,7 @@ public:
     can_activate(Slot const& s) const
     {
         // Must be handshaked and in the right state
-        assert(s.state() == Slot::connected || s.state() == Slot::accept);
+        XRPL_ASSERT(s.state() == Slot::connected || s.state() == Slot::accept);
 
         if (s.fixed() || s.reserved())
             return true;
@@ -262,13 +262,13 @@ private:
         switch (s.state())
         {
             case Slot::accept:
-                assert(s.inbound());
+                XRPL_ASSERT(s.inbound());
                 m_acceptCount += n;
                 break;
 
             case Slot::connect:
             case Slot::connected:
-                assert(!s.inbound());
+                XRPL_ASSERT(!s.inbound());
                 m_attempts += n;
                 break;
 
@@ -290,7 +290,7 @@ private:
                 break;
 
             default:
-                assert(false);
+                XRPL_UNREACHABLE();
                 break;
         };
     }

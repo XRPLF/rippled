@@ -316,8 +316,8 @@ claim_attestations(
     std::size_t const numAtts,
     std::size_t const fromIdx)
 {
-    assert(fromIdx + numAtts <= rewardAccounts.size());
-    assert(fromIdx + numAtts <= signers.size());
+    XRPL_ASSERT(fromIdx + numAtts <= rewardAccounts.size());
+    XRPL_ASSERT(fromIdx + numAtts <= signers.size());
     JValueVec vec;
     vec.reserve(numAtts);
     for (auto i = fromIdx; i < fromIdx + numAtts; ++i)
@@ -349,8 +349,8 @@ create_account_attestations(
     std::size_t const numAtts,
     std::size_t const fromIdx)
 {
-    assert(fromIdx + numAtts <= rewardAccounts.size());
-    assert(fromIdx + numAtts <= signers.size());
+    XRPL_ASSERT(fromIdx + numAtts <= rewardAccounts.size());
+    XRPL_ASSERT(fromIdx + numAtts <= signers.size());
     JValueVec vec;
     vec.reserve(numAtts);
     for (auto i = fromIdx; i < fromIdx + numAtts; ++i)

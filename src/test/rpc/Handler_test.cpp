@@ -51,7 +51,7 @@ class Handler_test : public beast::unit_test::suite
     time(std::size_t n, auto f, auto prng) -> auto
     {
         using clock = std::chrono::steady_clock;
-        assert(n > 0);
+        XRPL_ASSERT(n > 0);
         double sum = 0;
         double sum_squared = 0;
         std::size_t j = 0;

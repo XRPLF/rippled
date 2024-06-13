@@ -31,12 +31,12 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/digest.h>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/filesystem.hpp>
 #include <atomic>
-#include <cassert>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -164,7 +164,7 @@ public:
     {
         if (open_)
         {
-            assert(false);
+            XRPL_UNREACHABLE();
             JLOG(j_.error()) << "database is already open";
             return;
         }
@@ -342,7 +342,7 @@ public:
         {
             std::this_thread::sleep_for(std::chrono::seconds(1));
             session_.reset(cass_session_new());
-            assert(session_);
+            XRPL_ASSERT(session_);
 
             fut = cass_session_connect_keyspace(
                 session_.get(), cluster, keyspace.c_str());
@@ -625,7 +625,7 @@ public:
                 numHashes));
             read(*cbs[i]);
         }
-        assert(results.size() == cbs.size());
+        XRPL_ASSERT(results.size() == cbs.size());
 
         std::unique_lock<std::mutex> lck(mtx);
         cv.wait(lck, [&numFinished, &numHashes]() {
@@ -789,7 +789,7 @@ public:
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        assert(false);
+        XRPL_UNREACHABLE();
         Throw<std::runtime_error>("not implemented");
     }
 

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/json/json_writer.h>
-#include <cassert>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -70,7 +70,7 @@ valueToString(Int value)
     if (isNegative)
         *--current = '-';
 
-    assert(current >= buffer);
+    XRPL_ASSERT(current >= buffer);
     return current;
 }
 
@@ -80,7 +80,7 @@ valueToString(UInt value)
     char buffer[32];
     char* current = buffer + sizeof(buffer);
     uintToString(value, current);
-    assert(current >= buffer);
+    XRPL_ASSERT(current >= buffer);
     return current;
 }
 
@@ -391,7 +391,7 @@ StyledWriter::writeArrayValue(const Value& value)
         }
         else  // output on a single line
         {
-            assert(childValues_.size() == size);
+            XRPL_ASSERT(childValues_.size() == size);
             document_ += "[ ";
 
             for (unsigned index = 0; index < size; ++index)
@@ -483,7 +483,7 @@ StyledWriter::indent()
 void
 StyledWriter::unindent()
 {
-    assert(int(indentString_.size()) >= indentSize_);
+    XRPL_ASSERT(int(indentString_.size()) >= indentSize_);
     indentString_.resize(indentString_.size() - indentSize_);
 }
 
@@ -613,7 +613,7 @@ StyledStreamWriter::writeArrayValue(const Value& value)
         }
         else  // output on a single line
         {
-            assert(childValues_.size() == size);
+            XRPL_ASSERT(childValues_.size() == size);
             *document_ << "[ ";
 
             for (unsigned index = 0; index < size; ++index)
@@ -706,7 +706,7 @@ StyledStreamWriter::indent()
 void
 StyledStreamWriter::unindent()
 {
-    assert(indentString_.size() >= indentation_.size());
+    XRPL_ASSERT(indentString_.size() >= indentation_.size());
     indentString_.resize(indentString_.size() - indentation_.size());
 }
 

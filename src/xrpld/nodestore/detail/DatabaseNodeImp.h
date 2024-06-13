@@ -76,7 +76,7 @@ public:
                 j);
         }
 
-        assert(backend_);
+        XRPL_ASSERT(backend_);
     }
 
     ~DatabaseNodeImp()

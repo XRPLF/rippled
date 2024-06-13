@@ -188,7 +188,8 @@ Pathfinder::Pathfinder(
     , app_(app)
     , j_(app.journal("Pathfinder"))
 {
-    assert(!uSrcIssuer || isXRP(uSrcCurrency) == isXRP(uSrcIssuer.value()));
+    XRPL_ASSERT(
+        !uSrcIssuer || isXRP(uSrcCurrency) == isXRP(uSrcIssuer.value()));
 }
 
 bool
@@ -577,7 +578,7 @@ Pathfinder::getBestPaths(
     if (mCompletePaths.empty() && extraPaths.empty())
         return mCompletePaths;
 
-    assert(fullLiquidityPath.empty());
+    XRPL_ASSERT(fullLiquidityPath.empty());
     const bool issuerIsSender =
         isXRP(mSrcCurrency) || (srcIssuer == mSrcAccount);
 
@@ -638,7 +639,7 @@ Pathfinder::getBestPaths(
 
         if (path.empty())
         {
-            assert(false);
+            XRPL_UNREACHABLE();
             continue;
         }
 
@@ -681,7 +682,7 @@ Pathfinder::getBestPaths(
 
     if (remaining > beast::zero)
     {
-        assert(fullLiquidityPath.empty());
+        XRPL_ASSERT(fullLiquidityPath.empty());
         JLOG(j_.info()) << "Paths could not send " << remaining << " of "
                         << mDstAmount;
     }
@@ -830,7 +831,7 @@ Pathfinder::addPathsForType(
     {
         case nt_SOURCE:
             // Source must always be at the start, so pathsOut has to be empty.
-            assert(pathsOut.empty());
+            XRPL_ASSERT(pathsOut.empty());
             pathsOut.push_back(STPath());
             break;
 
@@ -1282,7 +1283,7 @@ void
 fillPaths(Pathfinder::PaymentType type, PathCostList const& costs)
 {
     auto& list = mPathTable[type];
-    assert(list.empty());
+    XRPL_ASSERT(list.empty());
     for (auto& cost : costs)
         list.push_back({cost.cost, makePath(cost.path)});
 }

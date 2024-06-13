@@ -271,7 +271,7 @@ public:
         std::optional<Currency> const& existingCur,
         std::optional<AccountID> const& existingIss)
     {
-        assert(!has(SB::last));
+        XRPL_ASSERT(!has(SB::last));
 
         auto const acc = [&]() -> std::optional<AccountID> {
             if (!has(SB::acc))
@@ -322,14 +322,14 @@ struct ExistingElementPool
     jtx::Account
     getAccount(size_t id)
     {
-        assert(id < accounts.size());
+        XRPL_ASSERT(id < accounts.size());
         return accounts[id];
     }
 
     ripple::Currency
     getCurrency(size_t id)
     {
-        assert(id < currencies.size());
+        XRPL_ASSERT(id < currencies.size());
         return currencies[id];
     }
 
@@ -380,7 +380,7 @@ struct ExistingElementPool
     {
         using namespace jtx;
 
-        assert(!offererIndex || offererIndex < numAct);
+        XRPL_ASSERT(!offererIndex || offererIndex < numAct);
 
         accounts.clear();
         accounts.reserve(numAct);

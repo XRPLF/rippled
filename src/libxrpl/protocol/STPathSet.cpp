@@ -208,8 +208,8 @@ STPathSet::getSType() const
 void
 STPathSet::add(Serializer& s) const
 {
-    assert(getFName().isBinary());
-    assert(getFName().fieldType == STI_PATHSET);
+    XRPL_ASSERT(getFName().isBinary());
+    XRPL_ASSERT(getFName().fieldType == STI_PATHSET);
     bool first = true;
 
     for (auto const& spPath : value)

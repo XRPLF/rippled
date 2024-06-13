@@ -90,7 +90,7 @@ ConnectAttempt::run()
 void
 ConnectAttempt::close()
 {
-    assert(strand_.running_in_this_thread());
+    XRPL_ASSERT(strand_.running_in_this_thread());
     if (socket_.is_open())
     {
         error_code ec;

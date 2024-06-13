@@ -23,6 +23,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/insight/Insight.h>
 #include <xrpl/beast/utility/PropertyStream.h>
@@ -31,7 +32,6 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/Gossip.h>
 #include <xrpl/resource/detail/Import.h>
-#include <cassert>
 #include <mutex>
 
 namespace ripple {
@@ -401,7 +401,7 @@ public:
     {
         std::lock_guard _(lock_);
         Entry& entry(iter->second);
-        assert(entry.refcount == 0);
+        XRPL_ASSERT(entry.refcount == 0);
         inactive_.erase(inactive_.iterator_to(entry));
         table_.erase(iter);
     }
@@ -433,7 +433,7 @@ public:
                     admin_.erase(admin_.iterator_to(entry));
                     break;
                 default:
-                    assert(false);
+                    XRPL_UNREACHABLE();
                     break;
             }
             inactive_.push_back(entry);

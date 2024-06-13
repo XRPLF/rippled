@@ -116,7 +116,7 @@ public:
     STAmount
     getDeliveredAmount() const
     {
-        assert(hasDeliveredAmount());
+        XRPL_ASSERT(hasDeliveredAmount());
         return *mDelivered;
     }
 

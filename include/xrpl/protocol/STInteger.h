@@ -110,8 +110,8 @@ template <typename Integer>
 inline void
 STInteger<Integer>::add(Serializer& s) const
 {
-    assert(getFName().isBinary());
-    assert(getFName().fieldType == getSType());
+    XRPL_ASSERT(getFName().isBinary());
+    XRPL_ASSERT(getFName().fieldType == getSType());
     s.addInteger(value_);
 }
 

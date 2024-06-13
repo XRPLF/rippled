@@ -82,7 +82,7 @@ getNextLedgerTimeResolution(
     bool previousAgree,
     Seq ledgerSeq)
 {
-    assert(ledgerSeq != Seq{0});
+    XRPL_ASSERT(ledgerSeq != Seq{0});
 
     using namespace std::chrono;
     // Find the current resolution:
@@ -90,7 +90,7 @@ getNextLedgerTimeResolution(
         std::begin(ledgerPossibleTimeResolutions),
         std::end(ledgerPossibleTimeResolutions),
         previousResolution);
-    assert(iter != std::end(ledgerPossibleTimeResolutions));
+    XRPL_ASSERT(iter != std::end(ledgerPossibleTimeResolutions));
 
     // This should never happen, but just as a precaution
     if (iter == std::end(ledgerPossibleTimeResolutions))

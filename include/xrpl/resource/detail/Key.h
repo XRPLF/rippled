@@ -20,9 +20,9 @@
 #ifndef RIPPLE_RESOURCE_KEY_H_INCLUDED
 #define RIPPLE_RESOURCE_KEY_H_INCLUDED
 
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/resource/detail/Kind.h>
-#include <cassert>
 
 namespace ripple {
 namespace Resource {

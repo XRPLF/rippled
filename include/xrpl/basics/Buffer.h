@@ -21,7 +21,7 @@
 #define RIPPLE_BASICS_BUFFER_H_INCLUDED
 
 #include <xrpl/basics/Slice.h>
-#include <cassert>
+#include <xrpl/basics/instrumentation.h>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -112,7 +112,7 @@ public:
     operator=(Slice s)
     {
         // Ensure the slice isn't a subset of the buffer.
-        assert(
+        XRPL_ASSERT(
             s.size() == 0 || size_ == 0 || s.data() < p_.get() ||
             s.data() >= p_.get() + size_);
 

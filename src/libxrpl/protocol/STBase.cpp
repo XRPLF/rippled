@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/protocol/STBase.h>
 #include <boost/checked_delete.hpp>
-#include <cassert>
 #include <memory>
 
 namespace ripple {
@@ -30,7 +30,7 @@ STBase::STBase() : fName(&sfGeneric)
 
 STBase::STBase(SField const& n) : fName(&n)
 {
-    assert(fName);
+    XRPL_ASSERT(fName);
 }
 
 STBase&
@@ -105,13 +105,13 @@ void
 STBase::add(Serializer& s) const
 {
     // Should never be called
-    assert(false);
+    XRPL_UNREACHABLE();
 }
 
 bool
 STBase::isEquivalent(const STBase& t) const
 {
-    assert(getSType() == STI_NOTPRESENT);
+    XRPL_ASSERT(getSType() == STI_NOTPRESENT);
     return t.getSType() == STI_NOTPRESENT;
 }
 
@@ -125,7 +125,7 @@ void
 STBase::setFName(SField const& n)
 {
     fName = &n;
-    assert(fName);
+    XRPL_ASSERT(fName);
 }
 
 SField const&
@@ -137,7 +137,7 @@ STBase::getFName() const
 void
 STBase::addFieldID(Serializer& s) const
 {
-    assert(fName->isBinary());
+    XRPL_ASSERT(fName->isBinary());
     s.addFieldID(fName->fieldType, fName->fieldValue);
 }
 

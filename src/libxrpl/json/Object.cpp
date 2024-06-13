@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/json/Object.h>
-#include <cassert>
 
 namespace Json {
 
@@ -168,7 +168,7 @@ Array::append(Json::Value const& v)
             return;
         }
     }
-    assert(false);  // Can't get here.
+    XRPL_UNREACHABLE();  // Can't get here.
 }
 
 void
@@ -203,7 +203,7 @@ Object::set(std::string const& k, Json::Value const& v)
             return;
         }
     }
-    assert(false);  // Can't get here.
+    XRPL_UNREACHABLE();  // Can't get here.
 }
 
 //------------------------------------------------------------------------------
@@ -214,7 +214,7 @@ template <class Object>
 void
 doCopyFrom(Object& to, Json::Value const& from)
 {
-    assert(from.isObjectOrNull());
+    XRPL_ASSERT(from.isObjectOrNull());
     auto members = from.getMemberNames();
     for (auto& m : members)
         to[m] = from[m];

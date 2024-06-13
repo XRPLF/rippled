@@ -46,7 +46,7 @@ transferFeeAsRate(std::uint16_t fee)
 STAmount
 multiply(STAmount const& amount, Rate const& rate)
 {
-    assert(rate.value != 0);
+    XRPL_ASSERT(rate.value != 0);
 
     if (rate == parityRate)
         return amount;
@@ -57,7 +57,7 @@ multiply(STAmount const& amount, Rate const& rate)
 STAmount
 multiplyRound(STAmount const& amount, Rate const& rate, bool roundUp)
 {
-    assert(rate.value != 0);
+    XRPL_ASSERT(rate.value != 0);
 
     if (rate == parityRate)
         return amount;
@@ -72,7 +72,7 @@ multiplyRound(
     Issue const& issue,
     bool roundUp)
 {
-    assert(rate.value != 0);
+    XRPL_ASSERT(rate.value != 0);
 
     if (rate == parityRate)
     {
@@ -85,7 +85,7 @@ multiplyRound(
 STAmount
 divide(STAmount const& amount, Rate const& rate)
 {
-    assert(rate.value != 0);
+    XRPL_ASSERT(rate.value != 0);
 
     if (rate == parityRate)
         return amount;
@@ -96,7 +96,7 @@ divide(STAmount const& amount, Rate const& rate)
 STAmount
 divideRound(STAmount const& amount, Rate const& rate, bool roundUp)
 {
-    assert(rate.value != 0);
+    XRPL_ASSERT(rate.value != 0);
 
     if (rate == parityRate)
         return amount;
@@ -111,7 +111,7 @@ divideRound(
     Issue const& issue,
     bool roundUp)
 {
-    assert(rate.value != 0);
+    XRPL_ASSERT(rate.value != 0);
 
     if (rate == parityRate)
         return amount;

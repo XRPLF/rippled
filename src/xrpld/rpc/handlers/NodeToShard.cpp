@@ -78,7 +78,7 @@ doNodeToShard(RPC::JsonContext& context)
     else
     {
         // Shouldn't happen
-        assert(false);
+        XRPL_UNREACHABLE();
         return rpcError(rpcINTERNAL);
     }
 }

@@ -25,7 +25,7 @@ namespace ripple {
 bool
 Keylet::check(STLedgerEntry const& sle) const
 {
-    assert(sle.getType() != ltANY || sle.getType() != ltCHILD);
+    XRPL_ASSERT(sle.getType() != ltANY || sle.getType() != ltCHILD);
 
     if (type == ltANY)
         return true;

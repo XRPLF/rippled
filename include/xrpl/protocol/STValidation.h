@@ -22,10 +22,10 @@
 
 #include <xrpl/basics/FeeUnits.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <cassert>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -176,7 +176,7 @@ STValidation::STValidation(
         Throw<std::runtime_error>("Invalid signature in validation");
     }
 
-    assert(nodeID_.isNonZero());
+    XRPL_ASSERT(nodeID_.isNonZero());
 }
 
 /** Construct, sign and trust a new STValidation issued by this node.
@@ -199,7 +199,7 @@ STValidation::STValidation(
     , nodeID_(nodeID)
     , seenTime_(signTime)
 {
-    assert(nodeID_.isNonZero());
+    XRPL_ASSERT(nodeID_.isNonZero());
 
     // First, set our own public key:
     if (publicKeyType(pk) != KeyType::secp256k1)

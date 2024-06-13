@@ -19,6 +19,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/instrumentation.h>
 #include <cstdlib>
 #include <iostream>
 
@@ -48,6 +49,7 @@ LogicError(std::string const& s) noexcept
 {
     JLOG(debugLog().fatal()) << s;
     std::cerr << "Logic error: " << s << std::endl;
+    UNREACHABLE("LogicError", {{"message", s}});
     detail::accessViolation();
 }
 

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/core/List.h>
 #include <xrpl/beast/insight/CounterImpl.h>
 #include <xrpl/beast/insight/EventImpl.h>
@@ -26,7 +27,6 @@
 #include <xrpl/beast/insight/StatsDCollector.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <boost/asio/ip/tcp.hpp>
-#include <cassert>
 #include <climits>
 #include <deque>
 #include <functional>
@@ -400,7 +400,7 @@ public:
         for (auto const& s : *keepAlive)
         {
             std::size_t const length(s.size());
-            assert(!s.empty());
+            XRPL_ASSERT(!s.empty());
             if (!buffers.empty() && (size + length) > max_packet_size)
             {
                 log(buffers);

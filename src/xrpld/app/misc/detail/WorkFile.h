@@ -23,7 +23,7 @@
 #include <xrpld/app/misc/detail/Work.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
-#include <cassert>
+#include <xrpl/basics/instrumentation.h>
 #include <cerrno>
 
 namespace ripple {
@@ -88,7 +88,7 @@ WorkFile::run()
     error_code ec;
     auto const fileContents = getFileContents(ec, path_, megabytes(1));
 
-    assert(cb_);
+    XRPL_ASSERT(cb_);
     cb_(ec, fileContents);
     cb_ = nullptr;
 }

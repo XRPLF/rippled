@@ -22,10 +22,10 @@
 
 #include <xrpld/nodestore/NodeObject.h>
 #include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/instrumentation.h>
 #include <boost/align/align_up.hpp>
 #include <algorithm>
 #include <array>
-#include <cassert>
 #include <cstdint>
 
 namespace ripple {
@@ -80,7 +80,7 @@ class EncodedBlob
 public:
     explicit EncodedBlob(std::shared_ptr<NodeObject> const& obj)
         : size_([&obj]() {
-            assert(obj);
+            XRPL_ASSERT(obj);
 
             if (!obj)
                 throw std::runtime_error(
@@ -100,7 +100,7 @@ public:
 
     ~EncodedBlob()
     {
-        assert(
+        XRPL_ASSERT(
             ((ptr_ == payload_.data()) && (size_ <= payload_.size())) ||
             ((ptr_ != payload_.data()) && (size_ > payload_.size())));
 

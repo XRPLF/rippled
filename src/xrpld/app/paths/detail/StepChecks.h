@@ -35,7 +35,7 @@ checkFreeze(
     AccountID const& dst,
     Currency const& currency)
 {
-    assert(src != dst);
+    XRPL_ASSERT(src != dst);
 
     // check freeze
     if (auto sle = view.read(keylet::account(dst)))

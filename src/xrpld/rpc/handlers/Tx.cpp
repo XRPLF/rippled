@@ -75,7 +75,7 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
 {
     if (!context.app.config().reporting())
     {
-        assert(false);
+        XRPL_UNREACHABLE();
         Throw<std::runtime_error>(
             "Called doTxPostgres yet not in reporting mode");
     }
@@ -109,13 +109,13 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
                 SHAMapHash{locator.getNodestoreHash()});
             if (!node)
             {
-                assert(false);
+                XRPL_UNREACHABLE();
                 return {res, {rpcINTERNAL, "Error making SHAMap node"}};
             }
             auto item = (static_cast<SHAMapLeafNode*>(node.get()))->peekItem();
             if (!item)
             {
-                assert(false);
+                XRPL_UNREACHABLE();
                 return {res, {rpcINTERNAL, "Error reading SHAMap node"}};
             }
 
@@ -124,7 +124,7 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
 
             if (!sttx || !meta)
             {
-                assert(false);
+                XRPL_UNREACHABLE();
                 return {res, {rpcINTERNAL, "Error deserializing SHAMap node"}};
             }
             std::string reason;
@@ -156,7 +156,7 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
         else
         {
             JLOG(context.j.error()) << "Failed to fetch from db";
-            assert(false);
+            XRPL_UNREACHABLE();
             return {res, {rpcINTERNAL, "Containing SHAMap node not found"}};
         }
         auto end = std::chrono::system_clock::now();
@@ -184,7 +184,7 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
         return {res, rpcTXN_NOT_FOUND};
     }
     // database didn't return anything. This shouldn't happen
-    assert(false);
+    XRPL_UNREACHABLE();
     return {res, {rpcINTERNAL, "unexpected Postgres response"}};
 }
 
@@ -370,7 +370,7 @@ populateJsonResponse(
         // populate binary metadata
         if (auto blob = std::get_if<Blob>(&result.meta))
         {
-            assert(args.binary);
+            XRPL_ASSERT(args.binary);
             auto json_meta =
                 (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
             response[json_meta] = strHex(makeSlice(*blob));

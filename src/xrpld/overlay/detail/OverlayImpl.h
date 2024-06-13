@@ -33,6 +33,7 @@
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
 #include <boost/asio/basic_waitable_timer.hpp>
@@ -41,7 +42,6 @@
 #include <boost/asio/strand.hpp>
 #include <boost/container/flat_map.hpp>
 #include <atomic>
-#include <cassert>
 #include <chrono>
 #include <condition_variable>
 #include <cstdint>
@@ -616,7 +616,7 @@ private:
     {
         auto counts = m_traffic.getCounts();
         std::lock_guard lock(m_statsMutex);
-        assert(counts.size() == m_stats.trafficGauges.size());
+        XRPL_ASSERT(counts.size() == m_stats.trafficGauges.size());
 
         for (std::size_t i = 0; i < counts.size(); ++i)
         {

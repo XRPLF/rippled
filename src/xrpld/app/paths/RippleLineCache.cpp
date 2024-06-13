@@ -79,7 +79,7 @@ RippleLineCache::getRippleLines(
                 // to be replaced by the full set. The full set will be built
                 // below, and will be returned, if needed, on subsequent calls
                 // for either value of outgoing.
-                assert(size <= totalLineCount_);
+                XRPL_ASSERT(size <= totalLineCount_);
                 totalLineCount_ -= size;
                 lines_.erase(otheriter);
             }
@@ -99,7 +99,7 @@ RippleLineCache::getRippleLines(
 
     if (inserted)
     {
-        assert(it->second == nullptr);
+        XRPL_ASSERT(it->second == nullptr);
         auto lines =
             PathFindTrustLine::getItems(accountID, *ledger_, direction);
         if (lines.size())
@@ -110,7 +110,7 @@ RippleLineCache::getRippleLines(
         }
     }
 
-    assert(!it->second || (it->second->size() > 0));
+    XRPL_ASSERT(!it->second || (it->second->size() > 0));
     auto const size = it->second ? it->second->size() : 0;
     JLOG(journal_.trace()) << "getRippleLines for ledger "
                            << ledger_->info().seq << " found " << size

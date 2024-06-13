@@ -171,7 +171,7 @@ flow(
                             << "Re-executed limiting step failed. r.first: "
                             << to_string(get<TInAmt>(r.first))
                             << " maxIn: " << to_string(*maxIn);
-                        assert(0);
+                        XRPL_ASSERT(0);
                         return Result{strand, std::move(ofrsToRm)};
                     }
                 }
@@ -207,7 +207,7 @@ flow(
 #else
                         JLOG(j.fatal()) << "Re-executed limiting step failed";
 #endif
-                        assert(0);
+                        XRPL_ASSERT(0);
                         return Result{strand, std::move(ofrsToRm)};
                     }
                 }
@@ -241,7 +241,7 @@ flow(
 #else
                     JLOG(j.fatal()) << "Re-executed forward pass failed";
 #endif
-                    assert(0);
+                    XRPL_ASSERT(0);
                     return Result{strand, std::move(ofrsToRm)};
                 }
                 stepIn = r.second;
@@ -493,7 +493,7 @@ public:
     {
         if (i >= cur_.size())
         {
-            assert(0);
+            XRPL_ASSERT(0);
             return nullptr;
         }
         return cur_[i];
@@ -700,7 +700,7 @@ flow(
                 flowDebugInfo->pushLiquiditySrc(
                     EitherAmount(f.in), EitherAmount(f.out));
 
-            assert(
+            XRPL_ASSERT(
                 f.out <= remainingOut && f.sandbox &&
                 (!remainingIn || f.in <= *remainingIn));
 
@@ -725,7 +725,7 @@ flow(
 
             if (baseView.rules().enabled(featureFlowSortStrands))
             {
-                assert(!best);
+                XRPL_ASSERT(!best);
                 if (!f.inactive)
                     activeStrands.push(strand);
                 best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
@@ -839,7 +839,7 @@ flow(
             // running debug builds of rippled. While this issue still needs to
             // be resolved, the assert is causing more harm than good at this
             // point.
-            // assert(0);
+            // XRPL_ASSERT(0);
 
             return {tefEXCEPTION, std::move(ofrsToRmOnFail)};
         }
@@ -876,7 +876,7 @@ flow(
         //   Handles both cases 1. and 2.
         // fixFillOrKill amendment:
         //   Handles 2. 1. is handled above and falls through for tfSell.
-        assert(remainingIn);
+        XRPL_ASSERT(remainingIn);
         if (remainingIn && *remainingIn != beast::zero)
             return {
                 tecPATH_PARTIAL,

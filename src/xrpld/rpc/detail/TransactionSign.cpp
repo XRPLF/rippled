@@ -1034,7 +1034,7 @@ transactionSignFor(
     if (!preprocResult.second)
         return preprocResult.first;
 
-    assert(signForParams.validMultiSign());
+    XRPL_ASSERT(signForParams.validMultiSign());
 
     {
         std::shared_ptr<SLE const> account_state =

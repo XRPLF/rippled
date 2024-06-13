@@ -89,7 +89,7 @@ IOU
 Account::operator[](std::string const& s) const
 {
     auto const currency = to_currency(s);
-    assert(currency != noCurrency());
+    XRPL_ASSERT(currency != noCurrency());
     return IOU(*this, currency);
 }
 

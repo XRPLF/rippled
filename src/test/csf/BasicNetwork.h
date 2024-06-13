@@ -215,7 +215,7 @@ BasicNetwork<Peer>::connect(
         return false;
     auto const result = links_.connect(to, from, link_type{true, delay, now});
     (void)result;
-    assert(result);
+    XRPL_ASSERT(result);
     return true;
 }
 
@@ -227,7 +227,7 @@ BasicNetwork<Peer>::disconnect(Peer const& peer1, Peer const& peer2)
         return false;
     bool r = links_.disconnect(peer2, peer1);
     (void)r;
-    assert(r);
+    XRPL_ASSERT(r);
     return true;
 }
 

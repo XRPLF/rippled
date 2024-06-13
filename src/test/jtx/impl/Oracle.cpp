@@ -100,7 +100,7 @@ Oracle::submit(
 bool
 Oracle::exists(Env& env, AccountID const& account, std::uint32_t documentID)
 {
-    assert(account.isNonZero());
+    XRPL_ASSERT(account.isNonZero());
     return env.le(keylet::oracle(account, documentID)) != nullptr;
 }
 
@@ -243,7 +243,7 @@ Oracle::set(UpdateArg const& arg)
         // assume standard currency
         if (s.size() == 3)
             return s;
-        assert(s.size() <= 20);
+        XRPL_ASSERT(s.size() <= 20);
         // anything else must be 160-bit hex string
         std::string h = strHex(s);
         return strHex(s).append(40 - s.size() * 2, '0');

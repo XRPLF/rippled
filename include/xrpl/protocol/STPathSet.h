@@ -21,11 +21,11 @@
 #define RIPPLE_PROTOCOL_STPATHSET_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/UintTypes.h>
-#include <cassert>
 #include <cstddef>
 #include <optional>
 
@@ -257,7 +257,7 @@ inline STPathElement::STPathElement(
         is_offer_ = false;
         mAccountID = *account;
         mType |= typeAccount;
-        assert(mAccountID != noAccount());
+        XRPL_ASSERT(mAccountID != noAccount());
     }
 
     if (currency)
@@ -270,7 +270,7 @@ inline STPathElement::STPathElement(
     {
         mIssuerID = *issuer;
         mType |= typeIssuer;
-        assert(mIssuerID != noAccount());
+        XRPL_ASSERT(mIssuerID != noAccount());
     }
 
     hash_value_ = get_hash(*this);

@@ -162,8 +162,8 @@ template <int Bits>
 void
 STBitString<Bits>::add(Serializer& s) const
 {
-    assert(getFName().isBinary());
-    assert(getFName().fieldType == getSType());
+    XRPL_ASSERT(getFName().isBinary());
+    XRPL_ASSERT(getFName().fieldType == getSType());
     s.addBitString<Bits>(value_);
 }
 

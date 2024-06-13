@@ -19,7 +19,7 @@
 
 #include <xrpld/core/LoadEvent.h>
 #include <xrpld/core/LoadMonitor.h>
-#include <cassert>
+#include <xrpl/basics/instrumentation.h>
 #include <iomanip>
 
 namespace ripple {
@@ -83,7 +83,7 @@ LoadEvent::start()
 void
 LoadEvent::stop()
 {
-    assert(running_);
+    XRPL_ASSERT(running_);
 
     auto const now = std::chrono::steady_clock::now();
 

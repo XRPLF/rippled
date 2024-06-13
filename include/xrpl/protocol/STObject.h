@@ -25,6 +25,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STAmount.h>
@@ -35,7 +36,6 @@
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/detail/STVar.h>
 #include <boost/iterator/transform_iterator.hpp>
-#include <cassert>
 #include <optional>
 #include <stdexcept>
 #include <type_traits>
@@ -715,7 +715,7 @@ STObject::Proxy<T>::assign(U&& u)
         t = dynamic_cast<T*>(st_->getPField(*f_, true));
     else
         t = dynamic_cast<T*>(st_->makeFieldPresent(*f_));
-    assert(t);
+    XRPL_ASSERT(t);
     *t = std::forward<U>(u);
 }
 
@@ -993,13 +993,13 @@ STObject::at(TypedField<T> const& f) const
     if (auto const u = dynamic_cast<T const*>(b))
         return u->value();
 
-    assert(mType);
-    assert(b->getSType() == STI_NOTPRESENT);
+    XRPL_ASSERT(mType);
+    XRPL_ASSERT(b->getSType() == STI_NOTPRESENT);
 
     if (mType->style(f) == soeOPTIONAL)
         Throw<STObject::FieldErr>("Missing optional field: " + f.getName());
 
-    assert(mType->style(f) == soeDEFAULT);
+    XRPL_ASSERT(mType->style(f) == soeDEFAULT);
 
     // Used to help handle the case where value_type is a const reference,
     // otherwise we would return the address of a temporary.
@@ -1017,11 +1017,11 @@ STObject::at(OptionaledField<T> const& of) const
     auto const u = dynamic_cast<T const*>(b);
     if (!u)
     {
-        assert(mType);
-        assert(b->getSType() == STI_NOTPRESENT);
+        XRPL_ASSERT(mType);
+        XRPL_ASSERT(b->getSType() == STI_NOTPRESENT);
         if (mType->style(*of.f) == soeOPTIONAL)
             return std::nullopt;
-        assert(mType->style(*of.f) == soeDEFAULT);
+        XRPL_ASSERT(mType->style(*of.f) == soeDEFAULT);
         return typename T::value_type{};
     }
     return u->value();

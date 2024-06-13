@@ -24,11 +24,11 @@
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/detail/ZeroCopyStream.h>
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/protocol/messages.h>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
 #include <boost/system/error_code.hpp>
-#include <cassert>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -183,7 +183,7 @@ parseMessageHeader(
 
     MessageHeader hdr;
     auto iter = buffersBegin(bufs);
-    assert(iter != buffersEnd(bufs));
+    XRPL_ASSERT(iter != buffersEnd(bufs));
 
     // Check valid header compressed message:
     // - 4 bits are the compression algorithm, 1st bit is always set to 1

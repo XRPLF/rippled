@@ -54,24 +54,24 @@ BasicTaker::BasicTaker(
     , cross_type_(cross_type)
     , journal_(journal)
 {
-    assert(remaining_.in > beast::zero);
-    assert(remaining_.out > beast::zero);
+    XRPL_ASSERT(remaining_.in > beast::zero);
+    XRPL_ASSERT(remaining_.out > beast::zero);
 
-    assert(m_rate_in.value != 0);
-    assert(m_rate_out.value != 0);
+    XRPL_ASSERT(m_rate_in.value != 0);
+    XRPL_ASSERT(m_rate_out.value != 0);
 
     // If we are dealing with a particular flavor, make sure that it's the
     // flavor we expect:
-    assert(
+    XRPL_ASSERT(
         cross_type != CrossType::XrpToIou ||
         (isXRP(issue_in()) && !isXRP(issue_out())));
 
-    assert(
+    XRPL_ASSERT(
         cross_type != CrossType::IouToXrp ||
         (!isXRP(issue_in()) && isXRP(issue_out())));
 
     // And make sure we're not crossing XRP for XRP
-    assert(!isXRP(issue_in()) || !isXRP(issue_out()));
+    XRPL_ASSERT(!isXRP(issue_in()) || !isXRP(issue_out()));
 
     // If this is a passive order, we adjust the quality so as to prevent offers
     // at the same quality level from being consumed.
@@ -150,7 +150,7 @@ BasicTaker::remaining_offer() const
 
     if (sell_)
     {
-        assert(remaining_.in > beast::zero);
+        XRPL_ASSERT(remaining_.in > beast::zero);
 
         // We scale the output based on the remaining input:
         return Amounts(
@@ -158,7 +158,7 @@ BasicTaker::remaining_offer() const
             divRound(remaining_.in, quality_.rate(), issue_out_, true));
     }
 
-    assert(remaining_.out > beast::zero);
+    XRPL_ASSERT(remaining_.out > beast::zero);
 
     // We scale the input based on the remaining output:
     return Amounts(
@@ -424,7 +424,7 @@ BasicTaker::do_cross(Amounts offer, Quality quality, AccountID const& owner)
     remaining_.out -= result.order.out;
     remaining_.in -= result.order.in;
 
-    assert(remaining_.in >= beast::zero);
+    XRPL_ASSERT(remaining_.in >= beast::zero);
 
     return result;
 }
@@ -439,10 +439,10 @@ BasicTaker::do_cross(
     Quality quality2,
     AccountID const& owner2)
 {
-    assert(!offer1.in.native());
-    assert(offer1.out.native());
-    assert(offer2.in.native());
-    assert(!offer2.out.native());
+    XRPL_ASSERT(!offer1.in.native());
+    XRPL_ASSERT(offer1.out.native());
+    XRPL_ASSERT(offer2.in.native());
+    XRPL_ASSERT(!offer2.out.native());
 
     // If the taker owns the first leg of the offer, then the taker's available
     // funds aren't the limiting factor for the input - the offer itself is.
@@ -559,8 +559,8 @@ Taker::Taker(
     , direct_crossings_(0)
     , bridge_crossings_(0)
 {
-    assert(issue_in() == offer.in.issue());
-    assert(issue_out() == offer.out.issue());
+    XRPL_ASSERT(issue_in() == offer.in.issue());
+    XRPL_ASSERT(issue_out() == offer.out.issue());
 
     if (auto stream = journal_.debug())
     {
@@ -689,7 +689,7 @@ Taker::fill(BasicTaker::Flow const& flow, Offer& offer)
 
     if (cross_type() != CrossType::XrpToIou)
     {
-        assert(!isXRP(flow.order.in));
+        XRPL_ASSERT(!isXRP(flow.order.in));
 
         if (result == tesSUCCESS)
             result =
@@ -701,7 +701,7 @@ Taker::fill(BasicTaker::Flow const& flow, Offer& offer)
     }
     else
     {
-        assert(isXRP(flow.order.in));
+        XRPL_ASSERT(isXRP(flow.order.in));
 
         if (result == tesSUCCESS)
             result = transferXRP(account(), offer.owner(), flow.order.in);
@@ -710,7 +710,7 @@ Taker::fill(BasicTaker::Flow const& flow, Offer& offer)
     // Now send funds from the account whose offer we're taking
     if (cross_type() != CrossType::IouToXrp)
     {
-        assert(!isXRP(flow.order.out));
+        XRPL_ASSERT(!isXRP(flow.order.out));
 
         if (result == tesSUCCESS)
             result = redeemIOU(
@@ -722,7 +722,7 @@ Taker::fill(BasicTaker::Flow const& flow, Offer& offer)
     }
     else
     {
-        assert(isXRP(flow.order.out));
+        XRPL_ASSERT(isXRP(flow.order.out));
 
         if (result == tesSUCCESS)
             result = transferXRP(offer.owner(), account(), flow.order.out);

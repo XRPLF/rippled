@@ -204,7 +204,7 @@ template <class Streambuf>
 void
 ZeroCopyOutputStream<Streambuf>::BackUp(int count)
 {
-    assert(count <= commit_);
+    XRPL_ASSERT(count <= commit_);
     auto const n = commit_ - count;
     streambuf_.commit(n);
     count_ += n;

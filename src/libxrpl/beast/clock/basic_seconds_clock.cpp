@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/clock/basic_seconds_clock.h>
 
 #include <atomic>
-#include <cassert>
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
@@ -57,7 +57,7 @@ static_assert(std::atomic<std::chrono::steady_clock::rep>::is_always_lock_free);
 
 seconds_clock_thread::~seconds_clock_thread()
 {
-    assert(thread_.joinable());
+    XRPL_ASSERT(thread_.joinable());
     {
         std::lock_guard lock(mut_);
         stop_ = true;

@@ -137,7 +137,7 @@ STTx::getMentionedAccounts() const
     {
         if (auto sacc = dynamic_cast<STAccount const*>(&it))
         {
-            assert(!sacc->isDefault());
+            XRPL_ASSERT(!sacc->isDefault());
             if (!sacc->isDefault())
                 list.insert(sacc->value());
         }
@@ -298,7 +298,7 @@ STTx::getMetaSQL(
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
     auto format = TxFormats::getInstance().findByType(tx_type_);
-    assert(format != nullptr);
+    XRPL_ASSERT(format != nullptr);
 
     return str(
         boost::format(bfTrans) % to_string(getTransactionID()) %

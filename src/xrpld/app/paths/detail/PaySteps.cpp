@@ -100,11 +100,11 @@ toStep(
         // should already be taken care of
         JLOG(j.error())
             << "Found offer/account payment step. Aborting payment strand.";
-        assert(0);
+        XRPL_ASSERT(0);
         return {temBAD_PATH, std::unique_ptr<Step>{}};
     }
 
-    assert(
+    XRPL_ASSERT(
         (e2->getNodeType() & STPathElement::typeCurrency) ||
         (e2->getNodeType() & STPathElement::typeIssuer));
     auto const outCurrency = e2->getNodeType() & STPathElement::typeCurrency
@@ -120,7 +120,7 @@ toStep(
         return {temBAD_PATH, std::unique_ptr<Step>{}};
     }
 
-    assert(e2->isOffer());
+    XRPL_ASSERT(e2->isOffer());
 
     if (isXRP(outCurrency))
         return make_BookStepIX(ctx, curIssue);
@@ -391,7 +391,7 @@ toStrand(
             next->getCurrency() != curIssue.currency)
         {
             // Should never happen
-            assert(0);
+            XRPL_ASSERT(0);
             return {temBAD_PATH, Strand{}};
         }
 
@@ -457,7 +457,7 @@ toStrand(
     if (!checkStrand())
     {
         JLOG(j.warn()) << "Flow check strand failed";
-        assert(0);
+        XRPL_ASSERT(0);
         return {temBAD_PATH, Strand{}};
     }
 

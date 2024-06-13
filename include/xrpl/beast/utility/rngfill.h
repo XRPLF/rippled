@@ -20,8 +20,8 @@
 #ifndef BEAST_RANDOM_RNGFILL_H_INCLUDED
 #define BEAST_RANDOM_RNGFILL_H_INCLUDED
 
+#include <xrpl/basics/instrumentation.h>
 #include <array>
-#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <type_traits>
@@ -42,7 +42,7 @@ rngfill(void* buffer, std::size_t bytes, Generator& g)
         bytes -= sizeof(v);
     }
 
-    assert(bytes < sizeof(result_type));
+    XRPL_ASSERT(bytes < sizeof(result_type));
 
 #ifdef __GNUC__
     // gcc 11.1 (falsely) warns about an array-bounds overflow in release mode.

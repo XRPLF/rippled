@@ -711,7 +711,7 @@ AMMWithdraw::equalWithdrawLimit(
             tfee);
     frac = Number{amount2} / amount2Balance;
     auto const amountWithdraw = amountBalance * frac;
-    assert(amountWithdraw <= amount);
+    XRPL_ASSERT(amountWithdraw <= amount);
     return withdraw(
         view,
         ammAccount,
