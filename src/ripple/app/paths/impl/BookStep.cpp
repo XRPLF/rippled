@@ -668,7 +668,14 @@ limitStepIn(
         stpAmt.in = limit;
         auto const inLmt =
             mulRatio(stpAmt.in, QUALITY_ONE, transferRateIn, /*roundUp*/ false);
-        ofrAmt = offer.limitIn(ofrAmt, inLmt);
+        // It turns out we can prevent order book blocking by (strictly)
+        // rounding down the ceil_in() result.  By rounding down we guarantee
+        // that the quality of an offer left in the ledger is as good or
+        // better than the quality of the containing order book page.
+        //
+        // This adjustment changes transaction outcomes, so it must be made
+        // under an amendment.
+        ofrAmt = offer.limitIn(ofrAmt, inLmt, /* roundUp */ false);
         stpAmt.out = ofrAmt.out;
         ownerGives = mulRatio(
             ofrAmt.out, transferRateOut, QUALITY_ONE, /*roundUp*/ false);
@@ -685,8 +692,7 @@ limitStepOut(
     TOut& ownerGives,
     std::uint32_t transferRateIn,
     std::uint32_t transferRateOut,
-    TOut const& limit,
-    Rules const& rules)
+    TOut const& limit)
 {
     if (limit < stpAmt.out)
     {
@@ -696,7 +702,6 @@ limitStepOut(
         ofrAmt = offer.limitOut(
             ofrAmt,
             stpAmt.out,
-            rules.enabled(fixReducedOffersV1),
             /*roundUp*/ true);
         stpAmt.in =
             mulRatio(ofrAmt.in, transferRateIn, QUALITY_ONE, /*roundUp*/ true);
@@ -736,7 +741,6 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         sb, afView, book_, sb.parentCloseTime(), counter, j_);
 
     bool const flowCross = afView.rules().enabled(featureFlowCross);
-    bool const fixReduced = afView.rules().enabled(fixReducedOffersV1);
     bool offerAttempted = false;
     std::optional<Quality> ofrQ;
     auto execOffer = [&](auto& offer) {
@@ -817,8 +821,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             // It turns out we can prevent order book blocking by (strictly)
             // rounding down the ceil_out() result.  This adjustment changes
             // transaction outcomes, so it must be made under an amendment.
-            ofrAmt = offer.limitOut(
-                ofrAmt, stpAmt.out, fixReduced, /*roundUp*/ false);
+            ofrAmt = offer.limitOut(ofrAmt, stpAmt.out, /*roundUp*/ false);
 
             stpAmt.in =
                 mulRatio(ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true);
@@ -1055,8 +1058,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
                 ownerGivesAdj,
                 transferRateIn,
                 transferRateOut,
-                remainingOut,
-                afView.rules());
+                remainingOut);
             remainingOut = beast::zero;
             savedIns.insert(stpAdjAmt.in);
             savedOuts.insert(remainingOut);
@@ -1208,8 +1210,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
                 ownerGivesAdjRev,
                 transferRateIn,
                 transferRateOut,
-                remainingOut,
-                afView.rules());
+                remainingOut);
 
             if (stpAdjAmtRev.in == remainingIn)
             {
@@ -1228,7 +1229,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
             }
             else
             {
-                // This is (likely) a problem case, and wil be caught
+                // This is (likely) a problem case, and will be caught
                 // with later checks
                 savedOuts.insert(lastOutAmt);
             }
