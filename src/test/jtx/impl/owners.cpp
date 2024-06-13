@@ -26,7 +26,7 @@ namespace jtx {
 namespace detail {
 
 std::uint32_t
-owned_count_of(ReadView const& view, AccountID const& id, LedgerEntryType type)
+owned_count_of(ReadView const& view, AccountID const& id, std::uint16_t type)
 {
     std::uint32_t count = 0;
     forEachItem(
@@ -41,7 +41,7 @@ void
 owned_count_helper(
     Env& env,
     AccountID const& id,
-    LedgerEntryType type,
+    std::uint16_t type,
     std::uint32_t value)
 {
     env.test.expect(owned_count_of(*env.current(), id, type) == value);

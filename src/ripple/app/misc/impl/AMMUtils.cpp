@@ -208,7 +208,7 @@ deleteAMMTrustLines(
     return cleanupOnAccountDelete(
         sb,
         keylet::ownerDir(ammAccountID),
-        [&](LedgerEntryType nodeType,
+        [&](std::uint16_t nodeType,
             uint256 const&,
             std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM

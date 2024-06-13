@@ -38,7 +38,7 @@ STCurrency::STCurrency(SField const& name, Currency const& currency)
 {
 }
 
-SerializedTypeID
+int
 STCurrency::getSType() const
 {
     return STI_CURRENCY;

@@ -23,7 +23,18 @@
 
 namespace ripple {
 
-LedgerFormats::LedgerFormats()
+std::map<std::uint16_t, PluginLedgerFormat>* pluginObjectsMapPtr;
+
+void
+registerLedgerObjects(
+    std::map<std::uint16_t, PluginLedgerFormat>* pluginObjectsMap)
+{
+    pluginObjectsMapPtr = pluginObjectsMap;
+    LedgerFormats::reset();
+}
+
+void
+LedgerFormats::initialize()
 {
     // clang-format off
     // Fields shared by all ledger formats:
@@ -366,13 +377,52 @@ LedgerFormats::LedgerFormats()
         commonFields);
 
     // clang-format on
+
+    if (pluginObjectsMapPtr != nullptr)
+    {
+        for (auto& e : *pluginObjectsMapPtr)
+        {
+            add(e.second.objectName.c_str(),
+                e.first,
+                e.second.uniqueFields,
+                commonFields);
+        }
+    }
+}
+
+LedgerFormats&
+LedgerFormats::getInstanceHelper()
+{
+    static LedgerFormats instance;
+    if (instance.cleared)
+    {
+        try
+        {
+            instance.initialize();
+        }
+        catch (...)
+        {
+            // If initialization errors, it shouldn't reset
+            instance.cleared = false;
+            throw;
+        }
+        instance.cleared = false;
+    }
+    return instance;
+}
+
+void
+LedgerFormats::reset()
+{
+    auto& instance = getInstanceHelper();
+    instance.clear();
+    instance.cleared = true;
 }
 
 LedgerFormats const&
 LedgerFormats::getInstance()
 {
-    static LedgerFormats instance;
-    return instance;
+    return getInstanceHelper();
 }
 
 }  // namespace ripple

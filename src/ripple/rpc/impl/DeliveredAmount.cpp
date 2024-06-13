@@ -94,7 +94,7 @@ canHaveDeliveredAmountHelp(
         return false;
 
     {
-        TxType const tt{serializedTx->getTxnType()};
+        std::uint16_t const tt{serializedTx->getTxnType()};
         if (tt != ttPAYMENT && tt != ttCHECK_CASH && tt != ttACCOUNT_DELETE)
             return false;
 

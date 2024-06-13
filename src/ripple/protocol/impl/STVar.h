@@ -116,7 +116,7 @@ public:
 private:
     STVar() = default;
 
-    STVar(SerializedTypeID id, SField const& name);
+    STVar(int id, SField const& name);
 
     void
     destroy();

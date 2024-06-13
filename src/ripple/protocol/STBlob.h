@@ -53,7 +53,7 @@ public:
     std::uint8_t const*
     data() const;
 
-    SerializedTypeID
+    int
     getSType() const override;
 
     std::string

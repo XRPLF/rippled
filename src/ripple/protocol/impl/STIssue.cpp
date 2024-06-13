@@ -59,7 +59,7 @@ STIssue::STIssue(SField const& name, Issue const& issue)
             "invalid issue: currency and account native mismatch");
 }
 
-SerializedTypeID
+int
 STIssue::getSType() const
 {
     return STI_ISSUE;

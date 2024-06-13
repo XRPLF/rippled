@@ -65,8 +65,8 @@ STLedgerEntry::STLedgerEntry(STObject const& object, uint256 const& index)
 void
 STLedgerEntry::setSLEType()
 {
-    auto format = LedgerFormats::getInstance().findByType(
-        safe_cast<LedgerEntryType>(getFieldU16(sfLedgerEntryType)));
+    auto format =
+        LedgerFormats::getInstance().findByType(getFieldU16(sfLedgerEntryType));
 
     if (format == nullptr)
         Throw<std::runtime_error>("invalid ledger entry type");
@@ -105,7 +105,7 @@ STLedgerEntry::move(std::size_t n, void* buf)
     return emplace(n, buf, std::move(*this));
 }
 
-SerializedTypeID
+int
 STLedgerEntry::getSType() const
 {
     return STI_LEDGERENTRY;

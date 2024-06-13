@@ -31,7 +31,7 @@ class Invariants_test;
 class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>
 {
     uint256 key_;
-    LedgerEntryType type_;
+    std::uint16_t type_;
 
 public:
     using pointer = std::shared_ptr<STLedgerEntry>;
@@ -39,12 +39,12 @@ public:
 
     /** Create an empty object with the given key and type. */
     explicit STLedgerEntry(Keylet const& k);
-    STLedgerEntry(LedgerEntryType type, uint256 const& key);
+    STLedgerEntry(std::uint16_t type, uint256 const& key);
     STLedgerEntry(SerialIter& sit, uint256 const& index);
     STLedgerEntry(SerialIter&& sit, uint256 const& index);
     STLedgerEntry(STObject const& object, uint256 const& index);
 
-    SerializedTypeID
+    int
     getSType() const override;
 
     std::string
@@ -63,7 +63,7 @@ public:
     uint256 const&
     key() const;
 
-    LedgerEntryType
+    std::uint16_t
     getType() const;
 
     // is this a ledger entry that can be threaded
@@ -96,7 +96,7 @@ private:
 
 using SLE = STLedgerEntry;
 
-inline STLedgerEntry::STLedgerEntry(LedgerEntryType type, uint256 const& key)
+inline STLedgerEntry::STLedgerEntry(std::uint16_t type, uint256 const& key)
     : STLedgerEntry(Keylet(type, key))
 {
 }
@@ -116,7 +116,7 @@ STLedgerEntry::key() const
     return key_;
 }
 
-inline LedgerEntryType
+inline std::uint16_t
 STLedgerEntry::getType() const
 {
     return type_;

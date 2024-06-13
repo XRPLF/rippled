@@ -34,6 +34,7 @@
 namespace ripple {
 
 class SeqProxy;
+
 /** Keylet computation funclets.
 
     Entries in the ledger are located using 256-bit locators. The locators are

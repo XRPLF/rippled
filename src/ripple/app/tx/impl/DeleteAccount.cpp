@@ -27,6 +27,7 @@
 #include <ripple/basics/Log.h>
 #include <ripple/basics/mulDiv.h>
 #include <ripple/ledger/View.h>
+#include <ripple/plugin/ledgerObjects.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Protocol.h>
@@ -62,14 +63,6 @@ DeleteAccount::calculateBaseFee(ReadView const& view, STTx const& tx)
 }
 
 namespace {
-// Define a function pointer type that can be used to delete ledger node types.
-using DeleterFuncPtr = TER (*)(
-    Application& app,
-    ApplyView& view,
-    AccountID const& account,
-    uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
-    beast::Journal j);
 
 // Local function definitions that provides signature compatibility.
 TER
@@ -163,7 +156,7 @@ removeOracleFromLedger(
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
 DeleterFuncPtr
-nonObligationDeleter(LedgerEntryType t)
+nonObligationDeleter(std::uint16_t t)
 {
     switch (t)
     {
@@ -182,6 +175,11 @@ nonObligationDeleter(LedgerEntryType t)
         case ltORACLE:
             return removeOracleFromLedger;
         default:
+            if (auto it = pluginDeleterFunctions.find(t);
+                it != pluginDeleterFunctions.end())
+            {
+                return it->second;
+            }
             return nullptr;
     }
 }
@@ -293,8 +291,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
             return tefBAD_LEDGER;
         }
 
-        LedgerEntryType const nodeType{
-            safe_cast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
+        std::uint16_t const nodeType{(*sleItem)[sfLedgerEntryType]};
 
         if (!nonObligationDeleter(nodeType))
             return tecHAS_OBLIGATIONS;
@@ -326,7 +323,7 @@ DeleteAccount::doApply()
     auto const ter = cleanupOnAccountDelete(
         view(),
         ownerDirKeylet,
-        [&](LedgerEntryType nodeType,
+        [&](std::uint16_t nodeType,
             uint256 const& dirEntry,
             std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
             if (auto deleter = nonObligationDeleter(nodeType))

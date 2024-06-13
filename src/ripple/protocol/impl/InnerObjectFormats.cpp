@@ -23,7 +23,18 @@
 
 namespace ripple {
 
-InnerObjectFormats::InnerObjectFormats()
+std::map<std::uint16_t, PluginInnerObjectFormat>* pluginInnerObjectFormatsPtr;
+
+void
+registerPluginInnerObjectFormats(
+    std::map<std::uint16_t, PluginInnerObjectFormat>* pluginInnerObjectFormats)
+{
+    pluginInnerObjectFormatsPtr = pluginInnerObjectFormats;
+    InnerObjectFormats::reset();
+}
+
+void
+InnerObjectFormats::initialize()
 {
     // inner objects with the default fields have to be
     // constructed with STObject::makeInnerObject()
@@ -147,13 +158,49 @@ InnerObjectFormats::InnerObjectFormats()
             {sfAssetPrice, soeOPTIONAL},
             {sfScale, soeDEFAULT},
         });
+
+    if (pluginInnerObjectFormatsPtr != nullptr)
+    {
+        for (auto& e : *pluginInnerObjectFormatsPtr)
+        {
+            add(e.second.name.c_str(), e.first, e.second.uniqueFields);
+        }
+    }
+}
+
+InnerObjectFormats&
+InnerObjectFormats::getInstanceHelper()
+{
+    static InnerObjectFormats instance;
+    if (instance.cleared)
+    {
+        try
+        {
+            instance.initialize();
+        }
+        catch (...)
+        {
+            // If initialization errors, it shouldn't reset
+            instance.cleared = false;
+            throw;
+        }
+        instance.cleared = false;
+    }
+    return instance;
+}
+
+void
+InnerObjectFormats::reset()
+{
+    auto& instance = getInstanceHelper();
+    instance.clear();
+    instance.cleared = true;
 }
 
 InnerObjectFormats const&
 InnerObjectFormats::getInstance()
 {
-    static InnerObjectFormats instance;
-    return instance;
+    return getInstanceHelper();
 }
 
 SOTemplate const*

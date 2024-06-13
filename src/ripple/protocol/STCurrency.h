@@ -53,7 +53,7 @@ public:
     void
     setCurrency(Currency const& currency);
 
-    SerializedTypeID
+    int
     getSType() const override;
 
     std::string

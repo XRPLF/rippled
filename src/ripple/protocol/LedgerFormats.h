@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_LEDGERFORMATS_H_INCLUDED
 #define RIPPLE_PROTOCOL_LEDGERFORMATS_H_INCLUDED
 
+#include <ripple/plugin/plugin.h>
 #include <ripple/protocol/KnownFormats.h>
 
 namespace ripple {
@@ -314,18 +315,43 @@ enum LedgerSpecificFlags {
 
 /** Holds the list of known ledger entry formats.
  */
-class LedgerFormats : public KnownFormats<LedgerEntryType, LedgerFormats>
+class LedgerFormats : public KnownFormats<std::uint16_t, LedgerFormats>
 {
 private:
+    void
+    initialize();
+
     /** Create the object.
         This will load the object with all the known ledger formats.
     */
-    LedgerFormats();
+    LedgerFormats()
+    {
+        initialize();
+    }
+
+    static LedgerFormats&
+    getInstanceHelper();
+
+    bool cleared = false;
 
 public:
     static LedgerFormats const&
     getInstance();
+
+    static void
+    reset();
 };
+
+struct PluginLedgerFormat
+{
+    std::string objectName;
+    std::vector<SOElement> uniqueFields;
+};
+
+extern std::map<std::uint16_t, PluginLedgerFormat>* pluginObjectsMapPtr;
+
+void
+registerLedgerObjects(std::map<std::uint16_t, PluginLedgerFormat>* pluginObjectsMap);
 
 }  // namespace ripple
 

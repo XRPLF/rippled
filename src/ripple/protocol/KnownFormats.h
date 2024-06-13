@@ -22,12 +22,26 @@
 
 #include <ripple/basics/contract.h>
 #include <ripple/beast/type_name.h>
+#include <ripple/plugin/plugin.h>
 #include <ripple/protocol/SOTemplate.h>
 #include <boost/container/flat_map.hpp>
 #include <algorithm>
 #include <forward_list>
 
 namespace ripple {
+
+inline std::vector<SOElement>
+convertToUniqueFields(Container<SOElementExport> format)
+{
+    std::vector<SOElement> uniqueFields;
+    for (int i = 0; i < format.size; i++)
+    {
+        auto const param = *(format.data + i);
+        uniqueFields.push_back(
+            {SField::getField(param.fieldCode), param.style});
+    }
+    return uniqueFields;
+}
 
 /** Manages a list of known formats.
 
@@ -48,7 +62,7 @@ public:
         Item(
             char const* name,
             KeyType type,
-            std::initializer_list<SOElement> uniqueFields,
+            std::vector<SOElement> uniqueFields,
             std::initializer_list<SOElement> commonFields)
             : soTemplate_(uniqueFields, commonFields), name_(name), type_(type)
         {
@@ -169,12 +183,12 @@ protected:
     Item const&
     add(char const* name,
         KeyType type,
-        std::initializer_list<SOElement> uniqueFields,
+        std::vector<SOElement> uniqueFields,
         std::initializer_list<SOElement> commonFields = {})
     {
         if (auto const item = findByType(type))
         {
-            LogicError(
+            Throw<std::runtime_error>(
                 std::string("Duplicate key for item '") + name +
                 "': already maps to " + item->getName());
         }
@@ -186,6 +200,14 @@ protected:
         types_[type] = &item;
 
         return item;
+    }
+
+    void
+    clear()
+    {
+        names_.clear();
+        types_.clear();
+        formats_.clear();
     }
 
 private:

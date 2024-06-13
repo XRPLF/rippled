@@ -28,22 +28,8 @@ namespace ripple {
 // Storage for static const members.
 SField::IsSigning const SField::notSigning;
 int SField::num = 0;
-std::map<int, SField const*> SField::knownCodeToField;
-
-// Give only this translation unit permission to construct SFields
-struct SField::private_access_tag_t
-{
-    explicit private_access_tag_t() = default;
-};
-
-static SField::private_access_tag_t access;
-
-template <class T>
-template <class... Args>
-TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
-    : SField(pat, std::forward<Args>(args)...)
-{
-}
+std::map<int, SField const*>* SField::knownCodeToFieldPtr =
+    new std::map<int, SField const*>();
 
 // Construct all compile-time SFields, and register them in the knownCodeToField
 // database:
@@ -57,8 +43,7 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 // path because then you cannot grep for the exact SField name and find
 // where it is constructed.  These macros allow that grep to succeed.
 #define CONSTRUCT_UNTYPED_SFIELD(sfName, txtName, stiSuffix, fieldValue, ...) \
-    SField const sfName(                                                      \
-        access, STI_##stiSuffix, fieldValue, txtName, ##__VA_ARGS__);         \
+    SField const sfName(STI_##stiSuffix, fieldValue, txtName, ##__VA_ARGS__); \
     static_assert(                                                            \
         std::string_view(#sfName) == "sf" txtName,                            \
         "Declaration of SField does not match its text name")
@@ -68,7 +53,7 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 
 #define CONSTRUCT_TYPED_SFIELD(sfName, txtName, stiSuffix, fieldValue, ...) \
     SF_##stiSuffix const sfName(                                            \
-        access, STI_##stiSuffix, fieldValue, txtName, ##__VA_ARGS__);       \
+        STI_##stiSuffix, fieldValue, txtName, ##__VA_ARGS__);               \
     static_assert(                                                          \
         std::string_view(#sfName) == "sf" txtName,                          \
         "Declaration of SField does not match its text name")
@@ -76,10 +61,10 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 // clang-format off
 
 // SFields which, for historical reasons, do not follow naming conventions.
-SField const sfInvalid(access, -1);
-SField const sfGeneric(access, 0);
-SField const sfHash(access, STI_UINT256, 257, "hash");
-SField const sfIndex(access, STI_UINT256, 258, "index");
+SField const sfInvalid(-1);
+SField const sfGeneric(0);
+SField const sfHash(STI_UINT256, 257, "hash");
+SField const sfIndex(STI_UINT256, 258, "index");
 
 // Untyped SFields
 CONSTRUCT_UNTYPED_SFIELD(sfLedgerEntry,         "LedgerEntry",          LEDGERENTRY, 257);
@@ -423,19 +408,36 @@ CONSTRUCT_UNTYPED_SFIELD(sfAuthAccounts,        "AuthAccounts",         ARRAY,  
 
 // clang-format on
 
+std::map<int, STypeFunctions>* SField::pluginSTypesPtr;
+
+void
+registerSTypes(std::map<int, STypeFunctions>* pluginSTypes)
+{
+    SField::pluginSTypesPtr = pluginSTypes;
+}
+
+std::vector<int>* pluginSFieldCodesPtr;
+
+void
+registerSFields(
+    std::map<int, SField const*>* knownCodeToFieldPtr,
+    std::vector<int>* pluginSFieldCodes)
+{
+    if (knownCodeToFieldPtr != nullptr)
+    {
+        // SField::getKnownCodeToField()->clear(); // TODO: delete
+        SField::setKnownCodeToField(knownCodeToFieldPtr);
+    }
+    pluginSFieldCodesPtr = pluginSFieldCodes;
+}
+
 #undef CONSTRUCT_TYPED_SFIELD
 #undef CONSTRUCT_UNTYPED_SFIELD
 
 #pragma pop_macro("CONSTRUCT_TYPED_SFIELD")
 #pragma pop_macro("CONSTRUCT_UNTYPED_SFIELD")
 
-SField::SField(
-    private_access_tag_t,
-    SerializedTypeID tid,
-    int fv,
-    const char* fn,
-    int meta,
-    IsSigning signing)
+SField::SField(int tid, int fv, const char* fn, int meta, IsSigning signing)
     : fieldCode(field_code(tid, fv))
     , fieldType(tid)
     , fieldValue(fv)
@@ -445,10 +447,10 @@ SField::SField(
     , signingField(signing)
     , jsonName(fieldName.c_str())
 {
-    knownCodeToField[fieldCode] = this;
+    (*SField::getKnownCodeToField())[fieldCode] = this;
 }
 
-SField::SField(private_access_tag_t, int fc)
+SField::SField(int fc)
     : fieldCode(fc)
     , fieldType(STI_UNKNOWN)
     , fieldValue(0)
@@ -457,15 +459,15 @@ SField::SField(private_access_tag_t, int fc)
     , signingField(IsSigning::yes)
     , jsonName(fieldName.c_str())
 {
-    knownCodeToField[fieldCode] = this;
+    (*SField::getKnownCodeToField())[fieldCode] = this;
 }
 
 SField const&
 SField::getField(int code)
 {
-    auto it = knownCodeToField.find(code);
+    auto it = SField::getKnownCodeToField()->find(code);
 
-    if (it != knownCodeToField.end())
+    if (it != SField::getKnownCodeToField()->end())
     {
         return *(it->second);
     }
@@ -491,13 +493,30 @@ SField::compare(SField const& f1, SField const& f2)
 SField const&
 SField::getField(std::string const& fieldName)
 {
-    for (auto const& [_, f] : knownCodeToField)
+    for (auto const& [_, f] : *SField::getKnownCodeToField())
     {
         (void)_;
         if (f->fieldName == fieldName)
             return *f;
     }
     return sfInvalid;
+}
+
+void
+SField::reset()
+{
+    if (pluginSFieldCodesPtr != nullptr)
+    {
+        for (auto& code : *pluginSFieldCodesPtr)
+        {
+            if (auto const it = SField::getKnownCodeToField()->find(code);
+                it != SField::getKnownCodeToField()->end())
+            {
+                SField::getKnownCodeToField()->erase(code);
+            }
+        }
+        num -= pluginSFieldCodesPtr->size();
+    }
 }
 
 }  // namespace ripple

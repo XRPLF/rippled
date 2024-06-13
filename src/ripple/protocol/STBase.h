@@ -144,7 +144,7 @@ public:
     D const&
     downcast() const;
 
-    virtual SerializedTypeID
+    virtual int
     getSType() const;
 
     virtual std::string

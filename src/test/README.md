@@ -1,4 +1,3 @@
-
 # Unit Tests
 
 ## Running Tests
@@ -12,13 +11,13 @@ just `NoRippleCheckLimits`).
 More than one suite or group of suites can be specified as a comma separated
 list via the argument. For example, `--unittest=beast,OversizeMeta` will run
 all suites in the `beast` library (root identifier) as well as the test suite
-named `OversizeMeta`). All name matches are case sensitive. 
+named `OversizeMeta`. All name matches are case sensitive.
 
 Tests can be executed in parallel using several child processes by specifying
 the `--unittest-jobs=N` parameter. The default behavior is to execute serially
 using a single process.
 
-The order that suites are executed is determined by the suite priority that 
+The order that suites are executed is determined by the suite priority that
 is optionally specified when the suite is declared in the code with one of the
 `BEAST_DEFINE_TESTSUITE` macros. By default, suites have a priority of 0, and
 other suites can choose to declare an integer priority value to make themselves

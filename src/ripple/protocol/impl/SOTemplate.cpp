@@ -22,13 +22,14 @@
 namespace ripple {
 
 SOTemplate::SOTemplate(
-    std::initializer_list<SOElement> uniqueFields,
+    std::vector<SOElement> uniqueFields,
     std::initializer_list<SOElement> commonFields)
     : indices_(SField::getNumFields() + 1, -1)  // Unmapped indices == -1
 {
     // Add all SOElements.
+    assert(indices_.size() > 0);
     elements_.reserve(uniqueFields.size() + commonFields.size());
-    elements_.assign(uniqueFields);
+    elements_.assign(uniqueFields.begin(), uniqueFields.end());
     elements_.insert(elements_.end(), commonFields);
 
     // Validate and index elements_.
@@ -39,16 +40,20 @@ SOTemplate::SOTemplate(
         // Make sure the field's index is in range
         //
         if (sField.getNum() <= 0 || sField.getNum() >= indices_.size())
-            Throw<std::runtime_error>("Invalid field index for SOTemplate.");
+            Throw<std::runtime_error>(
+                "Invalid field index for SOTemplate " + sField.getName() + ".");
 
         // Make sure that this field hasn't already been assigned
         //
         if (getIndex(sField) != -1)
-            Throw<std::runtime_error>("Duplicate field index for SOTemplate.");
+            Throw<std::runtime_error>(
+                "Duplicate field index for SOTemplate " + sField.getName() +
+                ".");
 
         // Add the field to the index mapping table
         //
         indices_[sField.getNum()] = i;
+        assert(indices_.size() > 0);
     }
 }
 

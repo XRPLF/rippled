@@ -39,6 +39,14 @@
 namespace ripple {
 namespace RPC {
 
+static std::vector<std::pair<char const*, std::uint16_t>> pluginLedgerTypes{};
+
+void
+registerPluginLedgerTypes(char const* name, std::uint16_t type)
+{
+    pluginLedgerTypes.push_back({name, type});
+}
+
 std::optional<AccountID>
 accountFromStringStrict(std::string const& account)
 {
@@ -152,14 +160,14 @@ bool
 getAccountObjects(
     ReadView const& ledger,
     AccountID const& account,
-    std::optional<std::vector<LedgerEntryType>> const& typeFilter,
+    std::optional<std::vector<std::uint16_t>> const& typeFilter,
     uint256 dirIndex,
     uint256 entryIndex,
     std::uint32_t const limit,
     Json::Value& jvResult)
 {
-    auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
-                                LedgerEntryType ledgerType) {
+    auto typeMatchesFilter = [](std::vector<std::uint16_t> const& typeFilter,
+                                std::uint16_t ledgerType) {
         auto it = std::find(typeFilter.begin(), typeFilter.end(), ledgerType);
         return it != typeFilter.end();
     };
@@ -928,37 +936,38 @@ keypairForSignature(
     return generateKeyPair(*keyType, *seed);
 }
 
-std::pair<RPC::Status, LedgerEntryType>
+std::pair<RPC::Status, std::uint16_t>
 chooseLedgerEntryType(Json::Value const& params)
 {
-    std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
+    std::pair<RPC::Status, std::uint16_t> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 22>
-            types{
-                {{jss::account, ltACCOUNT_ROOT},
-                 {jss::amendments, ltAMENDMENTS},
-                 {jss::amm, ltAMM},
-                 {jss::bridge, ltBRIDGE},
-                 {jss::check, ltCHECK},
-                 {jss::deposit_preauth, ltDEPOSIT_PREAUTH},
-                 {jss::did, ltDID},
-                 {jss::directory, ltDIR_NODE},
-                 {jss::escrow, ltESCROW},
-                 {jss::fee, ltFEE_SETTINGS},
-                 {jss::hashes, ltLEDGER_HASHES},
-                 {jss::nunl, ltNEGATIVE_UNL},
-                 {jss::oracle, ltORACLE},
-                 {jss::nft_offer, ltNFTOKEN_OFFER},
-                 {jss::nft_page, ltNFTOKEN_PAGE},
-                 {jss::offer, ltOFFER},
-                 {jss::payment_channel, ltPAYCHAN},
-                 {jss::signer_list, ltSIGNER_LIST},
-                 {jss::state, ltRIPPLE_STATE},
-                 {jss::ticket, ltTICKET},
-                 {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
-                 {jss::xchain_owned_create_account_claim_id,
-                  ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID}}};
+        static std::vector<std::pair<char const*, std::uint16_t>> types{
+            {jss::account, ltACCOUNT_ROOT},
+            {jss::amendments, ltAMENDMENTS},
+            {jss::amm, ltAMM},
+            {jss::bridge, ltBRIDGE},
+            {jss::check, ltCHECK},
+            {jss::deposit_preauth, ltDEPOSIT_PREAUTH},
+            {jss::did, ltDID},
+            {jss::directory, ltDIR_NODE},
+            {jss::escrow, ltESCROW},
+            {jss::fee, ltFEE_SETTINGS},
+            {jss::hashes, ltLEDGER_HASHES},
+            {jss::nunl, ltNEGATIVE_UNL},
+            {jss::oracle, ltORACLE},
+            {jss::nft_offer, ltNFTOKEN_OFFER},
+            {jss::nft_page, ltNFTOKEN_PAGE},
+            {jss::offer, ltOFFER},
+            {jss::payment_channel, ltPAYCHAN},
+            {jss::signer_list, ltSIGNER_LIST},
+            {jss::state, ltRIPPLE_STATE},
+            {jss::ticket, ltTICKET},
+            {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
+            {jss::xchain_owned_create_account_claim_id,
+             ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID}};
+        types.insert(
+            types.end(), pluginLedgerTypes.begin(), pluginLedgerTypes.end());
 
         auto const& p = params[jss::type];
         if (!p.isString())

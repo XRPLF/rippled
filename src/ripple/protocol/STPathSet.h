@@ -188,7 +188,7 @@ public:
 
     Json::Value getJson(JsonOptions) const override;
 
-    SerializedTypeID
+    int
     getSType() const override;
 
     bool

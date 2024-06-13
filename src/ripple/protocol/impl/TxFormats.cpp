@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/plugin/plugin.h>
 #include <ripple/protocol/TxFormats.h>
 
 #include <ripple/protocol/SField.h>
@@ -25,7 +26,17 @@
 
 namespace ripple {
 
-TxFormats::TxFormats()
+std::map<std::uint16_t, PluginTxFormat>* pluginTxFormatsPtr = nullptr;
+
+void
+registerTxFormats(std::map<std::uint16_t, PluginTxFormat>* pluginTxFormats)
+{
+    pluginTxFormatsPtr = pluginTxFormats;
+    TxFormats::reset();
+}
+
+void
+TxFormats::initialize()
 {
     // Fields shared by all txFormats:
     static const std::initializer_list<SOElement> commonFields{
@@ -502,13 +513,52 @@ TxFormats::TxFormats()
             {sfOracleDocumentID, soeREQUIRED},
         },
         commonFields);
+
+    if (pluginTxFormatsPtr != nullptr)
+    {
+        for (auto& e : *pluginTxFormatsPtr)
+        {
+            add(e.second.txName.c_str(),
+                e.first,
+                e.second.uniqueFields,
+                commonFields);
+        }
+    }
+}
+
+TxFormats&
+TxFormats::getInstanceHelper()
+{
+    static TxFormats instance;
+    if (instance.cleared)
+    {
+        try
+        {
+            instance.initialize();
+        }
+        catch (...)
+        {
+            // If initialization errors, it shouldn't reset
+            instance.cleared = false;
+            throw;
+        }
+        instance.cleared = false;
+    }
+    return instance;
+}
+
+void
+TxFormats::reset()
+{
+    auto& instance = getInstanceHelper();
+    instance.clear();
+    instance.cleared = true;
 }
 
 TxFormats const&
 TxFormats::getInstance()
 {
-    static TxFormats const instance;
-    return instance;
+    return getInstanceHelper();
 }
 
 }  // namespace ripple
