@@ -259,17 +259,31 @@ doAccountObjects(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::marker);
     }
 
-    if (!RPC::getAccountObjects(
-            *ledger,
-            accountID,
-            typeFilter,
-            dirIndex,
-            entryIndex,
-            limit,
-            result))
+    // check if dirIndex is valid
+    if (!dirIndex.isZero())
     {
-        result[jss::account_objects] = Json::arrayValue;
+        auto sle = ledger->read({ltANY, dirIndex});
+
+        if (!sle || sle->getType() != ltDIR_NODE)
+            return RPC::invalid_field_error(jss::marker);
+
+        if (sle->isFieldPresent(sfOwner) && sle->getAccountID(sfOwner) != accountID)
+            return RPC::invalid_field_error(jss::marker);
     }
+
+    auto accountObjectStatus = RPC::getAccountObjects(
+        *ledger,
+        accountID,
+        typeFilter,
+        dirIndex,
+        entryIndex,
+        limit,
+        result);
+
+    if (accountObjectStatus == RPC::AccountObjectStatus::InvalidMarker)
+        return RPC::invalid_field_error(jss::marker);
+    else if (accountObjectStatus == RPC::AccountObjectStatus::Other)
+        result[jss::account_objects] = Json::arrayValue;
 
     result[jss::account] = toBase58(accountID);
     context.loadType = Resource::feeMediumBurdenRPC;
