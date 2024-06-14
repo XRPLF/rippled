@@ -3618,13 +3618,16 @@ private:
                     STAmount(USD, UINT64_C(9'970'097277662122), -12),
                     STAmount(EUR, UINT64_C(10'029'99250187452), -11),
                     ammUSD_EUR.tokens()));
-                BEAST_EXPECT(expectOffers(
-                    env,
-                    alice,
-                    1,
-                    {{Amounts{
-                        XRPAmount(30'201'749),
-                        STAmount(USD, UINT64_C(29'90272233787818), -14)}}}));
+
+                // fixReducedOffersV2 changes the expected results slightly.
+                Amounts const expectedAmounts =
+                    env.closed()->rules().enabled(fixReducedOffersV2)
+                    ? Amounts{XRPAmount(30'201'749), STAmount(USD, UINT64_C(29'90272233787816), -14)}
+                    : Amounts{
+                          XRPAmount(30'201'749),
+                          STAmount(USD, UINT64_C(29'90272233787818), -14)};
+
+                BEAST_EXPECT(expectOffers(env, alice, 1, {{expectedAmounts}}));
             }
             else
             {
@@ -3632,13 +3635,16 @@ private:
                     STAmount(USD, UINT64_C(9'970'097277662172), -12),
                     STAmount(EUR, UINT64_C(10'029'99250187452), -11),
                     ammUSD_EUR.tokens()));
-                BEAST_EXPECT(expectOffers(
-                    env,
-                    alice,
-                    1,
-                    {{Amounts{
-                        XRPAmount(30'201'749),
-                        STAmount(USD, UINT64_C(29'9027223378284), -13)}}}));
+
+                // fixReducedOffersV2 changes the expected results slightly.
+                Amounts const expectedAmounts =
+                    env.closed()->rules().enabled(fixReducedOffersV2)
+                    ? Amounts{XRPAmount(30'201'749), STAmount(USD, UINT64_C(29'90272233782839), -14)}
+                    : Amounts{
+                          XRPAmount(30'201'749),
+                          STAmount(USD, UINT64_C(29'90272233782840), -14)};
+
+                BEAST_EXPECT(expectOffers(env, alice, 1, {{expectedAmounts}}));
             }
             // Initial 30,000 + 100
             BEAST_EXPECT(expectLine(env, carol, STAmount{USD, 30'100}));
@@ -6874,6 +6880,8 @@ private:
         testInvalidAMMPayment();
         testBasicPaymentEngine(all);
         testBasicPaymentEngine(all - fixAMMv1_1);
+        testBasicPaymentEngine(all - fixReducedOffersV2);
+        testBasicPaymentEngine(all - fixAMMv1_1 - fixReducedOffersV2);
         testAMMTokens();
         testAmendment();
         testFlags();
