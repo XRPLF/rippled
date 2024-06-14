@@ -119,7 +119,7 @@ class Xrpl(ConanFile):
         'CMakeLists.txt',
         'Builds/*',
         'bin/getRippledInfo',
-        'cfg/*'
+        'cfg/*',
         'external/*',
         'src/*',
     )
