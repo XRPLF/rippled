@@ -1033,12 +1033,103 @@ public:
     }
 
     void
+    testNFTsMarker()
+    {
+        testcase("NFTsMarker");
+
+        using namespace jtx;
+        Env env(*this);
+
+        Account const bob{"bob"};
+        env.fund(XRP(10000), bob);
+
+        unsigned nftsSize = 10;
+        for (unsigned i = 0; i < nftsSize; i++)
+        {
+            env(token::mint(bob, 0));
+        }
+
+        env.close();
+
+        // save the NFTokenIDs to use later
+        std::vector<Json::Value> tokenIDs;
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_nfts", to_string(params));
+            auto& nfts = resp[jss::result][jss::account_nfts];
+            for (auto& nft : nfts)
+                tokenIDs.push_back(nft["NFTokenID"]);
+        }
+
+        // test a valid marker which is equal to the third tokenID
+        {
+            unsigned limit = 4;
+            unsigned lastIndex = 2;
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::marker] = tokenIDs[lastIndex];
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_nfts", to_string(params));
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
+            auto& nfts = resp[jss::result][jss::account_nfts];
+            auto nftsCount = nftsSize - lastIndex - 1 < limit ? nftsSize - lastIndex - 1: limit;
+            BEAST_EXPECT(nfts.size() == nftsCount);
+            for (unsigned i = 0; i < nftsCount; i++)
+                BEAST_EXPECT(nfts[i]["NFTokenID"] == tokenIDs[lastIndex + 1 + i]);
+        }
+
+        // test a valid marker which is equal to the 8th tokenID
+        {
+            unsigned limit = 4;
+            unsigned lastIndex = 7;
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::marker] = tokenIDs[lastIndex];
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_nfts", to_string(params));
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
+            auto& nfts = resp[jss::result][jss::account_nfts];
+            auto nftsCount = nftsSize - lastIndex - 1 < limit ? nftsSize - lastIndex - 1 : limit;
+            BEAST_EXPECT(nfts.size() == nftsCount);
+            for (unsigned i = 0; i < nftsCount; i++)
+                BEAST_EXPECT(nfts[i]["NFTokenID"] == tokenIDs[lastIndex + 1 + i]);
+        }
+
+        // test an invalid marker which does not exist in the NFTokenIDs
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = 4;
+            params[jss::ledger_index] = "validated";
+            params[jss::marker] = "00000000F51DFC2A09D62CBBA1DFBDD4691DAC96AD98B9000000000000000000";
+            auto resp = env.rpc("json", "account_nfts", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field \'marker\'.");
+        }
+
+        // test an invalid marker which exceeds the maximum value of the existing NFTokenID
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = 4;
+            params[jss::ledger_index] = "validated";
+            params[jss::marker] = "00000000F51DFC2A09D62CBBA1DFBDD4691DAC96AD98B90FFFFFFFFFFFFFFFFF";
+            auto resp = env.rpc("json", "account_nfts", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field \'marker\'.");
+        }
+    }
+
+    void
     run() override
     {
         testErrors();
         testUnsteppedThenStepped();
         testUnsteppedThenSteppedWithNFTs();
         testObjectTypes();
+        testNFTsMarker();
     }
 };
 

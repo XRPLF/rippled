@@ -135,7 +135,8 @@ doAccountNFTs(RPC::JsonContext& context)
                 continue;
             }
 
-            if (markerSet && !markerFound) {
+            if (markerSet && !markerFound)
+            {
                 return RPC::invalid_field_error(jss::marker);
             }
 
@@ -166,6 +167,11 @@ doAccountNFTs(RPC::JsonContext& context)
             cp = ledger->read(Keylet(ltNFTOKEN_PAGE, *npm));
         else
             cp = nullptr;
+    }
+
+    if (markerSet && !markerFound)
+    {
+        return RPC::invalid_field_error(jss::marker);
     }
 
     result[jss::account] = toBase58(accountID);
