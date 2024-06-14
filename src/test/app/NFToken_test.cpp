@@ -6326,7 +6326,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         }
 
         // When an account mints and burns a batch of NFTokens using tickets,
-        // see if the the account can be deleted.
+        // see if the account can be deleted.
         {
             Env env{*this, features};
 

@@ -89,7 +89,7 @@ public:
        subject to liquidity limits
 
        @param sb view with the strand's state of balances and offers
-       @param afView view the the state of balances before the strand runs
+       @param afView view the state of balances before the strand runs
               this determines if an offer becomes unfunded or is found unfunded
        @param ofrsToRm offers found unfunded or in an error state are added to
        this collection
@@ -107,7 +107,7 @@ public:
        subject to liquidity limits
 
        @param sb view with the strand's state of balances and offers
-       @param afView view the the state of balances before the strand runs
+       @param afView view the state of balances before the strand runs
               this determines if an offer becomes unfunded or is found unfunded
        @param ofrsToRm offers found unfunded or in an error state are added to
        this collection
@@ -256,7 +256,7 @@ public:
        Check that the step can correctly execute in the forward direction
 
        @param sb view with the strands state of balances and offers
-       @param afView view the the state of balances before the strand runs
+       @param afView view the state of balances before the strand runs
        this determines if an offer becomes unfunded or is found unfunded
        @param in requested step input
        @return first element is true if step is valid, second element is out

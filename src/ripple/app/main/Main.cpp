@@ -400,6 +400,9 @@ run(int argc, char** argv)
         "net", "Get the initial ledger from the network.")(
         "nodetoshard", "Import node store into shards")(
         "replay", "Replay a ledger close.")(
+        "trap_tx_hash",
+        po::value<std::string>(),
+        "Trap a specific transaction during replay.")(
         "start", "Start from a fresh Ledger.")(
         "startReporting",
         po::value<std::string>(),
@@ -558,6 +561,7 @@ run(int argc, char** argv)
             argc,
             argv);
     }
+    // LCOV_EXCL_START
     else
     {
         if (vm.count("unittest-jobs"))
@@ -679,7 +683,25 @@ run(int argc, char** argv)
     {
         config->START_LEDGER = vm["ledger"].as<std::string>();
         if (vm.count("replay"))
+        {
             config->START_UP = Config::REPLAY;
+            if (vm.count("trap_tx_hash"))
+            {
+                uint256 tmp = {};
+                auto hash = vm["trap_tx_hash"].as<std::string>();
+                if (tmp.parseHex(hash))
+                {
+                    config->TRAP_TX_HASH = tmp;
+                }
+                else
+                {
+                    std::cerr << "Trap parameter was ill-formed, expected "
+                                 "valid transaction hash but received: "
+                              << hash << std::endl;
+                    return -1;
+                }
+            }
+        }
         else
             config->START_UP = Config::LOAD;
     }
@@ -691,6 +713,13 @@ run(int argc, char** argv)
     else if (vm.count("load") || config->FAST_LOAD)
     {
         config->START_UP = Config::LOAD;
+    }
+
+    if (vm.count("trap_tx_hash") && vm.count("replay") == 0)
+    {
+        std::cerr << "Cannot use trap option without replay option"
+                  << std::endl;
+        return -1;
     }
 
     if (vm.count("net") && !config->FAST_LOAD)
@@ -828,6 +857,7 @@ run(int argc, char** argv)
     beast::setCurrentThreadName("rippled: rpc");
     return RPCCall::fromCommandLine(
         *config, vm["parameters"].as<std::vector<std::string>>(), *logs);
+    // LCOV_EXCL_STOP
 }
 
 }  // namespace ripple
