@@ -201,7 +201,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.debug())
             << "AMM Withdraw: reserves or tokens balance is zero.";
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     auto const ammAccountID = ammSle->getAccountID(sfAccount);
@@ -300,15 +300,40 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const ePrice = ctx_.tx[~sfEPrice];
     auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
-        return {tecINTERNAL, false};
+        return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const ammAccountID = (*ammSle)[sfAccount];
     auto const accountSle = sb.read(keylet::account(ammAccountID));
     if (!accountSle)
-        return {tecINTERNAL, false};
+        return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const lpTokens =
         ammLPHolds(ctx_.view(), *ammSle, ctx_.tx[sfAccount], ctx_.journal);
     auto const lpTokensWithdraw =
         tokensWithdraw(lpTokens, ctx_.tx[~sfLPTokenIn], ctx_.tx.getFlags());
+
+    // Due to rounding, the LPTokenBalance of the last LP
+    // might not match the LP's trustline balance
+    if (sb.rules().enabled(fixAMMv1_1))
+    {
+        if (auto const res =
+                isOnlyLiquidityProvider(sb, lpTokens.issue(), account_);
+            !res)
+            return {res.error(), false};
+        else if (res.value())
+        {
+            if (withinRelativeDistance(
+                    lpTokens,
+                    ammSle->getFieldAmount(sfLPTokenBalance),
+                    Number{1, -3}))
+            {
+                ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
+                sb.update(ammSle);
+            }
+            else
+            {
+                return {tecAMM_INVALID_TOKENS, false};
+            }
+        }
+    }
 
     auto const tfee = getTradingFee(ctx_.view(), *ammSle, account_);
 
@@ -372,8 +397,10 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                 *lpTokensWithdraw,
                 tfee);
         // should not happen.
+        // LCOV_EXCL_START
         JLOG(j_.error()) << "AMM Withdraw: invalid options.";
         return std::make_pair(tecINTERNAL, STAmount{});
+        // LCOV_EXCL_STOP
     }();
 
     if (result != tesSUCCESS)
@@ -431,7 +458,7 @@ AMMWithdraw::withdraw(
     auto const ammSle =
         ctx_.view().read(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
-        return {tecINTERNAL, STAmount{}};
+        return {tecINTERNAL, STAmount{}};  // LCOV_EXCL_LINE
     auto const lpTokens = ammLPHolds(view, *ammSle, account_, ctx_.journal);
     auto const expected = ammHolds(
         view,
@@ -465,10 +492,22 @@ AMMWithdraw::withdraw(
         lpTokensWithdrawActual > lpTokens)
     {
         JLOG(ctx_.journal.debug())
-            << "AMM Withdraw: failed to withdraw, invalid LP tokens "
-            << " tokens: " << lpTokensWithdrawActual << " " << lpTokens << " "
+            << "AMM Withdraw: failed to withdraw, invalid LP tokens: "
+            << lpTokensWithdrawActual << " " << lpTokens << " "
             << lpTokensAMMBalance;
         return {tecAMM_INVALID_TOKENS, STAmount{}};
+    }
+
+    // Should not happen since the only LP on last withdraw
+    // has the balance set to the lp token trustline balance.
+    if (view.rules().enabled(fixAMMv1_1) &&
+        lpTokensWithdrawActual > lpTokensAMMBalance)
+    {
+        JLOG(ctx_.journal.debug())
+            << "AMM Withdraw: failed to withdraw, unexpected LP tokens: "
+            << lpTokensWithdrawActual << " " << lpTokens << " "
+            << lpTokensAMMBalance;
+        return {tecINTERNAL, STAmount{}};
     }
 
     // Withdrawing one side of the pool
@@ -612,12 +651,14 @@ AMMWithdraw::equalWithdrawTokens(
             lpTokensWithdraw,
             tfee);
     }
+    // LCOV_EXCL_START
     catch (std::exception const& e)
     {
         JLOG(j_.error()) << "AMMWithdraw::equalWithdrawTokens exception "
                          << e.what();
     }
     return {tecINTERNAL, STAmount{}};
+    // LCOV_EXCL_STOP
 }
 
 /** All assets withdrawal with the constraints on the maximum amount

@@ -831,8 +831,11 @@ Transactor::operator()()
 {
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
 
+    // raii classes for the current ledger rules. fixSTAmountCanonicalize and
+    // fixSTAmountCanonicalize predate the rulesGuard and should be replaced.
     STAmountSO stAmountSO{view().rules().enabled(fixSTAmountCanonicalize)};
     NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
+    CurrentTransactionRulesGuard currentTransctionRulesGuard(view().rules());
 
 #ifdef DEBUG
     {
@@ -850,6 +853,12 @@ Transactor::operator()()
         }
     }
 #endif
+
+    if (auto const& trap = ctx_.app.trapTxID();
+        trap && *trap == ctx_.tx.getTransactionID())
+    {
+        JLOG(j_.debug()) << "Transaction trapped: " << *trap;
+    }
 
     auto result = ctx_.preclaimResult;
     if (result == tesSUCCESS)

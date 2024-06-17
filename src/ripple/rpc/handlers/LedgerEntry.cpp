@@ -23,9 +23,9 @@
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/json/json_errors.h>
 #include <ripple/ledger/ReadView.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Indexes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/STXChainBridge.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
@@ -624,7 +624,7 @@ doLedgerEntry(RPC::JsonContext& context)
                 auto const& oracle = context.params[jss::oracle];
                 auto const documentID = [&]() -> std::optional<std::uint32_t> {
                     auto const& id = oracle[jss::oracle_document_id];
-                    if (id.isConvertibleTo(Json::ValueType::uintValue))
+                    if (id.isUInt() || (id.isInt() && id.asInt() >= 0))
                         return std::make_optional(id.asUInt());
                     else if (id.isString())
                     {

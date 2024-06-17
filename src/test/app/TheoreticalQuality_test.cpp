@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <ripple/app/paths/AMMContext.h>
 #include <ripple/app/paths/Flow.h>
 #include <ripple/app/paths/impl/Steps.h>
 #include <ripple/app/paths/impl/StrandFlow.h>
@@ -28,7 +29,6 @@
 #include <ripple/ledger/Sandbox.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
-#include "ripple/app/paths/AMMContext.h"
 #include <test/jtx.h>
 #include <test/jtx/PathSet.h>
 

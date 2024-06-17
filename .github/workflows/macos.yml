@@ -1,5 +1,16 @@
 name: macos
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    # If the branches list is ever changed, be sure to change it on all
+    # build/test jobs (nix, macos, windows)
+    branches:
+      # Always build the package branches
+      - develop
+      - release
+      - master
+      # Branches that opt-in to running
+      - 'ci/**'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -22,23 +33,32 @@ jobs:
       NUM_PROCESSORS: 12
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      - name: install Conan
+        run: |
+          brew install conan@1
+          echo '/opt/homebrew/opt/conan@1/bin' >> $GITHUB_PATH
       - name: install Ninja
         if: matrix.generator == 'Ninja'
         run: brew install ninja
       - name: check environment
         run: |
+          env | sort
           echo ${PATH} | tr ':' '\n'
           python --version
           conan --version
           cmake --version
-          env | sort
       - name: configure Conan
         run : |
-          conan profile get env.CXXFLAGS default || true
+          conan profile new default --detect || true
+          conan profile update settings.compiler.cppstd=20 default
           conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
-      - name: dependencies
+      - name: build dependencies
         uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+          CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
+          CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:
           configuration: ${{ matrix.configuration }}
       - name: build

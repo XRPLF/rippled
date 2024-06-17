@@ -163,7 +163,7 @@ private:
             env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner}, false);
 
-            // Symbol class or provider not included on create
+            // Asset class or provider not included on create
             oracle.set(CreateArg{
                 .assetClass = std::nullopt,
                 .provider = "provider",
@@ -174,7 +174,7 @@ private:
                 .uri = "URI",
                 .err = ter(temMALFORMED)});
 
-            // Symbol class or provider are included on update
+            // Asset class or provider are included on update
             // and don't match the current values
             oracle.set(CreateArg{});
             BEAST_EXPECT(oracle.exists());
@@ -194,7 +194,7 @@ private:
             Oracle oracle(env, {.owner = owner}, false);
 
             // Fields too long
-            // Symbol class
+            // Asset class
             std::string assetClass(17, '0');
             oracle.set(
                 CreateArg{.assetClass = assetClass, .err = ter(temMALFORMED)});
@@ -203,6 +203,13 @@ private:
             oracle.set(CreateArg{.provider = large, .err = ter(temMALFORMED)});
             // URI
             oracle.set(CreateArg{.uri = large, .err = ter(temMALFORMED)});
+            // Empty field
+            // Asset class
+            oracle.set(CreateArg{.assetClass = "", .err = ter(temMALFORMED)});
+            // provider
+            oracle.set(CreateArg{.provider = "", .err = ter(temMALFORMED)});
+            // URI
+            oracle.set(CreateArg{.uri = "", .err = ter(temMALFORMED)});
         }
 
         {
@@ -224,6 +231,12 @@ private:
             // Invalid update time
             using namespace std::chrono;
             Env env(*this);
+            auto closeTime = [&]() {
+                return duration_cast<seconds>(
+                           env.current()->info().closeTime.time_since_epoch() -
+                           10'000s)
+                    .count();
+            };
             env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner});
             BEAST_EXPECT(oracle.exists());
@@ -231,20 +244,25 @@ private:
             // Less than the last close time - 300s
             oracle.set(UpdateArg{
                 .series = {{"XRP", "USD", 740, 1}},
-                .lastUpdateTime = testStartTime.count() + 400 - 301,
+                .lastUpdateTime = static_cast<std::uint32_t>(closeTime() - 301),
                 .err = ter(tecINVALID_UPDATE_TIME)});
             // Greater than last close time + 300s
             oracle.set(UpdateArg{
                 .series = {{"XRP", "USD", 740, 1}},
-                .lastUpdateTime = testStartTime.count() + 400 + 301,
+                .lastUpdateTime = static_cast<std::uint32_t>(closeTime() + 311),
                 .err = ter(tecINVALID_UPDATE_TIME)});
             oracle.set(UpdateArg{.series = {{"XRP", "USD", 740, 1}}});
-            BEAST_EXPECT(
-                oracle.expectLastUpdateTime(testStartTime.count() + 450));
+            BEAST_EXPECT(oracle.expectLastUpdateTime(
+                static_cast<std::uint32_t>(testStartTime.count() + 450)));
             // Less than the previous lastUpdateTime
             oracle.set(UpdateArg{
                 .series = {{"XRP", "USD", 740, 1}},
-                .lastUpdateTime = testStartTime.count() + 449,
+                .lastUpdateTime = static_cast<std::uint32_t>(449),
+                .err = ter(tecINVALID_UPDATE_TIME)});
+            // Less than the epoch time
+            oracle.set(UpdateArg{
+                .series = {{"XRP", "USD", 740, 1}},
+                .lastUpdateTime = static_cast<int>(epoch_offset.count() - 1),
                 .err = ter(tecINVALID_UPDATE_TIME)});
         }
 
@@ -283,6 +301,38 @@ private:
                 {.owner = owner,
                  .series = {{"USD", "BTC", 740, maxPriceScale + 1}},
                  .err = ter(temMALFORMED)});
+        }
+
+        {
+            // Updating token pair to add and delete
+            Env env(*this);
+            env.fund(XRP(1'000), owner);
+            Oracle oracle(env, {.owner = owner});
+            oracle.set(UpdateArg{
+                .series =
+                    {{"XRP", "EUR", std::nullopt, std::nullopt},
+                     {"XRP", "EUR", 740, 1}},
+                .err = ter(temMALFORMED)});
+            // Delete token pair that doesn't exist in this oracle
+            oracle.set(UpdateArg{
+                .series = {{"XRP", "EUR", std::nullopt, std::nullopt}},
+                .err = ter(tecTOKEN_PAIR_NOT_FOUND)});
+            // Delete token pair in oracle, which is not in the ledger
+            oracle.set(UpdateArg{
+                .documentID = 10,
+                .series = {{"XRP", "EUR", std::nullopt, std::nullopt}},
+                .err = ter(temMALFORMED)});
+        }
+
+        {
+            // Bad fee
+            Env env(*this);
+            env.fund(XRP(1'000), owner);
+            Oracle oracle(
+                env, {.owner = owner, .fee = -1, .err = ter(temBAD_FEE)});
+            Oracle oracle1(env, {.owner = owner});
+            oracle.set(
+                UpdateArg{.owner = owner, .fee = -1, .err = ter(temBAD_FEE)});
         }
     }
 
@@ -356,13 +406,19 @@ private:
                 {.owner = bad, .seq = seq(1), .err = ter(terNO_ACCOUNT)});
         }
 
-        // Invalid Sequence
+        // Invalid DocumentID
         oracle.remove({.documentID = 2, .err = ter(tecNO_ENTRY)});
 
         // Invalid owner
         Account const invalid("invalid");
         env.fund(XRP(1'000), invalid);
         oracle.remove({.owner = invalid, .err = ter(tecNO_ENTRY)});
+
+        // Invalid flags
+        oracle.remove({.flags = tfSellNFToken, .err = ter(temINVALID_FLAG)});
+
+        // Bad fee
+        oracle.remove({.fee = -1, .err = ter(temBAD_FEE)});
     }
 
     void
@@ -622,50 +678,6 @@ private:
         }
     }
 
-    void
-    testLedgerEntry()
-    {
-        testcase("Ledger Entry");
-        using namespace jtx;
-
-        Env env(*this);
-        std::vector<AccountID> accounts;
-        std::vector<std::uint32_t> oracles;
-        for (int i = 0; i < 10; ++i)
-        {
-            Account const owner(std::string("owner") + std::to_string(i));
-            env.fund(XRP(1'000), owner);
-            // different accounts can have the same asset pair
-            Oracle oracle(env, {.owner = owner, .documentID = i});
-            accounts.push_back(owner.id());
-            oracles.push_back(oracle.documentID());
-            // same account can have different asset pair
-            Oracle oracle1(env, {.owner = owner, .documentID = i + 10});
-            accounts.push_back(owner.id());
-            oracles.push_back(oracle1.documentID());
-        }
-        for (int i = 0; i < accounts.size(); ++i)
-        {
-            auto const jv = [&]() {
-                // document id is uint32
-                if (i % 2)
-                    return Oracle::ledgerEntry(env, accounts[i], oracles[i]);
-                // document id is string
-                return Oracle::ledgerEntry(
-                    env, accounts[i], std::to_string(oracles[i]));
-            }();
-            try
-            {
-                BEAST_EXPECT(
-                    jv[jss::node][jss::Owner] == to_string(accounts[i]));
-            }
-            catch (...)
-            {
-                fail();
-            }
-        }
-    }
-
 public:
     void
     run() override
@@ -683,7 +695,6 @@ public:
               all - featureMultiSignReserve - featureExpandedSignerList,
               all - featureExpandedSignerList})
             testMultisig(features);
-        testLedgerEntry();
     }
 };
 

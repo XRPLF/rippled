@@ -24,6 +24,7 @@
 #include <boost/container/flat_map.hpp>
 #include <array>
 #include <bitset>
+#include <map>
 #include <optional>
 #include <string>
 
@@ -67,6 +68,11 @@
 namespace ripple {
 
 enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
+enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported };
+
+/** All amendments libxrpl knows about. */
+std::map<std::string, AmendmentSupport> const&
+allAmendments();
 
 namespace detail {
 
@@ -74,7 +80,7 @@ namespace detail {
 // Feature.cpp. Because it's only used to reserve storage, and determine how
 // large to make the FeatureBitset, it MAY be larger. It MUST NOT be less than
 // the actual number of amendments. A LogicError on startup will verify this.
-static constexpr std::size_t numFeatures = 68;
+static constexpr std::size_t numFeatures = 75;
 
 /** Amendments that this server supports and the default voting behavior.
    Whether they are enabled depends on the Rules defined in the validated
@@ -354,7 +360,14 @@ extern uint256 const featureDID;
 extern uint256 const fixFillOrKill;
 extern uint256 const fixNFTokenReserve;
 extern uint256 const fixInnerObjTemplate;
+extern uint256 const fixAMMOverflowOffer;
 extern uint256 const featurePriceOracle;
+extern uint256 const fixEmptyDID;
+extern uint256 const fixXChainRewardRounding;
+extern uint256 const fixPreviousTxnID;
+extern uint256 const fixAMMv1_1;
+extern uint256 const featureNFTokenMintOffer;
+extern uint256 const fixReducedOffersV2;
 
 }  // namespace ripple
 

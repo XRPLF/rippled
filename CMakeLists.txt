@@ -45,7 +45,6 @@ endif ()
 include(RippledSanity)
 include(RippledVersion)
 include(RippledSettings)
-include(RippledRelease)
 # this check has to remain in the top-level cmake
 # because of the early return statement
 if (packages_only)
@@ -71,9 +70,10 @@ set_target_properties(OpenSSL::SSL PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS OPENSSL_NO_SSL2
 )
 set(SECP256K1_INSTALL TRUE)
-add_subdirectory(src/secp256k1)
+add_subdirectory(external/secp256k1)
 add_library(secp256k1::secp256k1 ALIAS secp256k1)
-add_subdirectory(src/ed25519-donna)
+add_subdirectory(external/ed25519-donna)
+find_package(gRPC REQUIRED)
 find_package(lz4 REQUIRED)
 # Target names with :: are not allowed in a generator expression.
 # We need to pull the include directories and imported location properties
@@ -94,10 +94,10 @@ endif()
 
 find_package(nudb REQUIRED)
 find_package(date REQUIRED)
+find_package(xxHash REQUIRED)
 
 target_link_libraries(ripple_libs INTERFACE
   ed25519::ed25519
-  LibArchive::LibArchive
   lz4::lz4
   OpenSSL::Crypto
   OpenSSL::SSL
@@ -132,8 +132,6 @@ endif()
 ###
 
 include(RippledCore)
-include(deps/Protobuf)
-include(deps/gRPC)
 include(RippledInstall)
 include(RippledMultiConfig)
 include(RippledValidatorKeys)
