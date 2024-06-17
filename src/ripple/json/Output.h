@@ -22,6 +22,7 @@
 
 #include <boost/beast/core/string.hpp>
 #include <functional>
+#include <string>
 
 namespace Json {
 

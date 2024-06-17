@@ -18,9 +18,7 @@
 //==============================================================================
 
 #include <ripple/rpc/Role.h>
-#include <boost/beast/core/string.hpp>
 #include <boost/beast/http/field.hpp>
-#include <boost/beast/http/rfc7230.hpp>
 #include <boost/utility/string_view.hpp>
 #include <algorithm>
 #include <tuple>
@@ -96,7 +94,7 @@ requestRole(
     Port const& port,
     Json::Value const& params,
     beast::IP::Endpoint const& remoteIp,
-    boost::string_view const& user)
+    std::string_view user)
 {
     if (isAdmin(port, params, remoteIp.address()))
         return Role::ADMIN;
@@ -142,8 +140,8 @@ requestInboundEndpoint(
     Resource::Manager& manager,
     beast::IP::Endpoint const& remoteAddress,
     Role const& role,
-    boost::string_view const& user,
-    boost::string_view const& forwardedFor)
+    std::string_view user,
+    std::string_view forwardedFor)
 {
     if (isUnlimited(role))
         return manager.newUnlimitedEndpoint(remoteAddress);
@@ -152,18 +150,18 @@ requestInboundEndpoint(
         remoteAddress, role == Role::PROXY, forwardedFor);
 }
 
-static boost::string_view
-extractIpAddrFromField(boost::string_view field)
+static std::string_view
+extractIpAddrFromField(std::string_view field)
 {
     // Lambda to trim leading and trailing spaces on the field.
-    auto trim = [](boost::string_view str) -> boost::string_view {
-        boost::string_view ret = str;
+    auto trim = [](std::string_view str) -> std::string_view {
+        std::string_view ret = str;
 
         // Only do the work if there's at least one leading space.
         if (!ret.empty() && ret.front() == ' ')
         {
             std::size_t const firstNonSpace = ret.find_first_not_of(' ');
-            if (firstNonSpace == boost::string_view::npos)
+            if (firstNonSpace == std::string_view::npos)
                 // We know there's at least one leading space.  So if we got
                 // npos, then it must be all spaces.  Return empty string_view.
                 return {};
@@ -178,7 +176,7 @@ extractIpAddrFromField(boost::string_view field)
                 c == ' ' || c == '\r' || c == '\n')
             {
                 std::size_t const lastNonSpace = ret.find_last_not_of(" \r\n");
-                if (lastNonSpace == boost::string_view::npos)
+                if (lastNonSpace == std::string_view::npos)
                     // We know there's at least one leading space.  So if we
                     // got npos, then it must be all spaces.
                     return {};
@@ -189,7 +187,7 @@ extractIpAddrFromField(boost::string_view field)
         return ret;
     };
 
-    boost::string_view ret = trim(field);
+    std::string_view ret = trim(field);
     if (ret.empty())
         return {};
 
@@ -251,13 +249,13 @@ extractIpAddrFromField(boost::string_view field)
 
     // If there's a port appended to the IP address, strip that by
     // terminating at the colon.
-    if (std::size_t colon = ret.find(':'); colon != boost::string_view::npos)
+    if (std::size_t colon = ret.find(':'); colon != std::string_view::npos)
         ret = ret.substr(0, colon);
 
     return ret;
 }
 
-boost::string_view
+std::string_view
 forwardedFor(http_request_type const& request)
 {
     // Look for the Forwarded field in the request.
@@ -286,10 +284,9 @@ forwardedFor(http_request_type const& request)
 
         // We found a "for=".  Scan for the end of the IP address.
         std::size_t const pos = [&found, &it]() {
-            std::size_t pos =
-                boost::string_view(found, it->value().end() - found)
-                    .find_first_of(",;");
-            if (pos != boost::string_view::npos)
+            std::size_t pos = std::string_view(found, it->value().end() - found)
+                                  .find_first_of(",;");
+            if (pos != std::string_view::npos)
                 return pos;
 
             return it->value().size() - forStr.size();
