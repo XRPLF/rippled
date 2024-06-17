@@ -31,34 +31,75 @@ class Feature_test : public beast::unit_test::suite
     {
         testcase("internals");
 
-        std::map<std::string, VoteBehavior> const& supported =
-            ripple::detail::supportedAmendments();
+        auto const& supportedAmendments = ripple::detail::supportedAmendments();
+        auto const& allAmendments = ripple::allAmendments();
+
         BEAST_EXPECT(
-            supported.size() ==
+            supportedAmendments.size() ==
             ripple::detail::numDownVotedAmendments() +
                 ripple::detail::numUpVotedAmendments());
-        std::size_t up = 0, down = 0, obsolete = 0;
-        for (std::pair<std::string const, VoteBehavior> const& amendment :
-             supported)
         {
-            switch (amendment.second)
+            std::size_t up = 0, down = 0, obsolete = 0;
+            for (auto const& [name, vote] : supportedAmendments)
             {
-                case VoteBehavior::DefaultYes:
-                    ++up;
-                    break;
-                case VoteBehavior::DefaultNo:
-                    ++down;
-                    break;
-                case VoteBehavior::Obsolete:
-                    ++obsolete;
-                    break;
-                default:
-                    fail("Unknown VoteBehavior", __FILE__, __LINE__);
+                switch (vote)
+                {
+                    case VoteBehavior::DefaultYes:
+                        ++up;
+                        break;
+                    case VoteBehavior::DefaultNo:
+                        ++down;
+                        break;
+                    case VoteBehavior::Obsolete:
+                        ++obsolete;
+                        break;
+                    default:
+                        fail("Unknown VoteBehavior", __FILE__, __LINE__);
+                }
+
+                if (vote == VoteBehavior::Obsolete)
+                {
+                    BEAST_EXPECT(
+                        allAmendments.contains(name) &&
+                        allAmendments.at(name) == AmendmentSupport::Retired);
+                }
+                else
+                {
+                    BEAST_EXPECT(
+                        allAmendments.contains(name) &&
+                        allAmendments.at(name) == AmendmentSupport::Supported);
+                }
             }
+            BEAST_EXPECT(
+                down + obsolete == ripple::detail::numDownVotedAmendments());
+            BEAST_EXPECT(up == ripple::detail::numUpVotedAmendments());
         }
-        BEAST_EXPECT(
-            down + obsolete == ripple::detail::numDownVotedAmendments());
-        BEAST_EXPECT(up == ripple::detail::numUpVotedAmendments());
+        {
+            std::size_t supported = 0, unsupported = 0, retired = 0;
+            for (auto const& [name, support] : allAmendments)
+            {
+                switch (support)
+                {
+                    case AmendmentSupport::Supported:
+                        ++supported;
+                        BEAST_EXPECT(supportedAmendments.contains(name));
+                        break;
+                    case AmendmentSupport::Unsupported:
+                        ++unsupported;
+                        break;
+                    case AmendmentSupport::Retired:
+                        ++retired;
+                        break;
+                    default:
+                        fail("Unknown AmendmentSupport", __FILE__, __LINE__);
+                }
+            }
+
+            BEAST_EXPECT(supported + retired == supportedAmendments.size());
+            BEAST_EXPECT(
+                allAmendments.size() - unsupported ==
+                supportedAmendments.size());
+        }
     }
 
     void

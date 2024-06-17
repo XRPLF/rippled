@@ -180,7 +180,7 @@ PaymentSandbox::balanceHook(
     algorithm remembers the original balance, and subtracts the debits. The
     post-switchover algorithm should be more numerically stable. Consider a
     large credit with a small initial balance. The pre-switchover algorithm
-    computes (B+C)-C (where B+C will the the amount passed in). The
+    computes (B+C)-C (where B+C will the amount passed in). The
     post-switchover algorithm returns B. When B and C differ by large
     magnitudes, (B+C)-C may not equal B.
     */

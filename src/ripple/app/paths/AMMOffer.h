@@ -103,7 +103,6 @@ public:
     limitOut(
         TAmounts<TIn, TOut> const& offrAmt,
         TOut const& limit,
-        bool fixReducedOffers,
         bool roundUp) const;
 
     /** Limit in of the provided offer. If one-path then swapIn
@@ -111,7 +110,8 @@ public:
      * current quality.
      */
     TAmounts<TIn, TOut>
-    limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit) const;
+    limitIn(TAmounts<TIn, TOut> const& offrAmt, TIn const& limit, bool roundUp)
+        const;
 
     QualityFunction
     getQualityFunc() const;

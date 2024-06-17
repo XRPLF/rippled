@@ -20,6 +20,7 @@
 #ifndef RIPPLE_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED
 #define RIPPLE_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED
 
+#include <ripple/app/tx/impl/Transactor.h>
 #include <ripple/basics/base_uint.h>
 #include <ripple/basics/tagged_integer.h>
 #include <ripple/ledger/ApplyView.h>
@@ -96,6 +97,46 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer);
 
 bool
 compareTokens(uint256 const& a, uint256 const& b);
+
+/** Preflight checks shared by NFTokenCreateOffer and NFTokenMint */
+NotTEC
+tokenOfferCreatePreflight(
+    AccountID const& acctID,
+    STAmount const& amount,
+    std::optional<AccountID> const& dest,
+    std::optional<std::uint32_t> const& expiration,
+    std::uint16_t nftFlags,
+    Rules const& rules,
+    std::optional<AccountID> const& owner = std::nullopt,
+    std::uint32_t txFlags = lsfSellNFToken);
+
+/** Preclaim checks shared by NFTokenCreateOffer and NFTokenMint */
+TER
+tokenOfferCreatePreclaim(
+    ReadView const& view,
+    AccountID const& acctID,
+    AccountID const& nftIssuer,
+    STAmount const& amount,
+    std::optional<AccountID> const& dest,
+    std::uint16_t nftFlags,
+    std::uint16_t xferFee,
+    beast::Journal j,
+    std::optional<AccountID> const& owner = std::nullopt,
+    std::uint32_t txFlags = lsfSellNFToken);
+
+/** doApply implementation shared by NFTokenCreateOffer and NFTokenMint */
+TER
+tokenOfferCreateApply(
+    ApplyView& view,
+    AccountID const& acctID,
+    STAmount const& amount,
+    std::optional<AccountID> const& dest,
+    std::optional<std::uint32_t> const& expiration,
+    SeqProxy seqProxy,
+    uint256 const& nftokenID,
+    XRPAmount const& priorBalance,
+    beast::Journal j,
+    std::uint32_t txFlags = lsfSellNFToken);
 
 }  // namespace nft
 
