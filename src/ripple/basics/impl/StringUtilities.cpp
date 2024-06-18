@@ -120,7 +120,7 @@ to_uint64(std::string const& s)
 }
 
 bool
-isProperlyFormedTomlDomain(std::string const& domain)
+isProperlyFormedTomlDomain(std::string_view domain)
 {
     // The domain must be between 4 and 128 characters long
     if (domain.size() < 4 || domain.size() > 128)
@@ -143,7 +143,7 @@ isProperlyFormedTomlDomain(std::string const& domain)
         ,
         boost::regex_constants::optimize);
 
-    return boost::regex_match(domain, re);
+    return boost::regex_match(domain.begin(), domain.end(), re);
 }
 
 }  // namespace ripple
