@@ -7207,7 +7207,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::mint(minter, 0u));
             env.close();
 
-            // Invalid NFToken flagn
+            // Invalid NFToken flag
             env(token::modify(minter, nftId_not_modifiable),
                 ter(tecNO_PERMISSION));
             env.close();
