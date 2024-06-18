@@ -49,7 +49,7 @@ public:
     newInboundEndpoint(
         beast::IP::Endpoint const& address,
         bool const proxy,
-        boost::string_view const& forwardedFor) = 0;
+        std::string_view forwardedFor) = 0;
 
     /** Create a new endpoint keyed by outbound IP address and port. */
     virtual Consumer
