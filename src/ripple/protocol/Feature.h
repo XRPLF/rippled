@@ -24,6 +24,7 @@
 #include <boost/container/flat_map.hpp>
 #include <array>
 #include <bitset>
+#include <map>
 #include <optional>
 #include <string>
 
@@ -67,6 +68,11 @@
 namespace ripple {
 
 enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
+enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported };
+
+/** All amendments libxrpl knows about. */
+std::map<std::string, AmendmentSupport> const&
+allAmendments();
 
 namespace detail {
 
@@ -360,6 +366,8 @@ extern uint256 const fixEmptyDID;
 extern uint256 const fixXChainRewardRounding;
 extern uint256 const fixPreviousTxnID;
 extern uint256 const fixAMMv1_1;
+extern uint256 const featureNFTokenMintOffer;
+extern uint256 const fixReducedOffersV2;
 extern uint256 const featureDynamicNFT;
 
 }  // namespace ripple

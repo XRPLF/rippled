@@ -806,7 +806,7 @@ public:
         on(csf::PeerID who, csf::SimTime, csf::FullyValidateLedger const& e)
         {
             using namespace std::chrono;
-            // As soon as the the fastC node fully validates C, disconnect
+            // As soon as the fastC node fully validates C, disconnect
             // ALL c nodes from the network. The fast C node needs to disconnect
             // as well to prevent it from relaying the validations it did see
             if (who == groupCfast[0]->id &&
