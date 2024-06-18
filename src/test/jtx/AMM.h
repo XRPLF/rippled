@@ -174,7 +174,8 @@ public:
         std::optional<Issue> issue1 = std::nullopt,
         std::optional<Issue> issue2 = std::nullopt,
         std::optional<AccountID> const& ammAccount = std::nullopt,
-        bool ignoreParams = false) const;
+        bool ignoreParams = false,
+        unsigned apiVersion = RPC::apiInvalidVersion) const;
 
     /** Verify the AMM balances.
      */
