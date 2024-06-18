@@ -7239,8 +7239,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
             {
                 auto nfts = accountNFTs(env, minter);
-                if (!BEAST_EXPECT(nfts.isArray()))
-                    return;
                 BEAST_EXPECT(nfts.size() == 1);
                 BEAST_EXPECT(
                     nfts[0u][sfURI.jsonName] == strHex(std::string("uri")));
@@ -7251,8 +7249,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
             {
                 auto nfts = accountNFTs(env, minter);
-                if (!BEAST_EXPECT(nfts.isArray()))
-                    return;
                 BEAST_EXPECT(nfts.size() == 1);
                 BEAST_EXPECT(
                     nfts[0u][sfURI.jsonName] == strHex(std::string("new_uri")));
@@ -7262,8 +7258,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
             {
                 auto nfts = accountNFTs(env, minter);
-                if (!BEAST_EXPECT(nfts.isArray()))
-                    return;
                 BEAST_EXPECT(nfts.size() == 1);
                 BEAST_EXPECT(!nfts[0u].isMember(sfURI.jsonName));
             }
@@ -7272,8 +7266,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
             {
                 auto nfts = accountNFTs(env, minter);
-                if (!BEAST_EXPECT(nfts.isArray()))
-                    return;
                 BEAST_EXPECT(nfts.size() == 1);
                 BEAST_EXPECT(
                     nfts[0u][sfURI.jsonName] == strHex(std::string("uri")));
