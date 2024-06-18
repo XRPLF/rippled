@@ -116,6 +116,7 @@ class FeatureCollections
     // name, index, and uint256 feature identifier
     boost::multi_index::multi_index_container<Feature, feature_indexing>
         features;
+    std::map<std::string, AmendmentSupport> all;
     std::map<std::string, VoteBehavior> supported;
     std::size_t upVotes = 0;
     std::size_t downVotes = 0;
@@ -178,6 +179,13 @@ public:
 
     std::string
     featureToName(uint256 const& f) const;
+
+    /** All amendments that are registered within the table. */
+    std::map<std::string, AmendmentSupport> const&
+    allAmendments() const
+    {
+        return all;
+    }
 
     /** Amendments that this server supports.
     Whether they are enabled depends on the Rules defined in the validated
@@ -251,6 +259,14 @@ FeatureCollections::registerFeature(
 
         features.emplace_back(name, f);
 
+        auto const getAmendmentSupport = [=]() {
+            if (vote == VoteBehavior::Obsolete)
+                return AmendmentSupport::Retired;
+            return support == Supported::yes ? AmendmentSupport::Supported
+                                             : AmendmentSupport::Unsupported;
+        };
+        all.emplace(name, getAmendmentSupport());
+
         if (support == Supported::yes)
         {
             supported.emplace(name, vote);
@@ -266,6 +282,9 @@ FeatureCollections::registerFeature(
         check(
             supported.size() <= features.size(),
             "More supported features than defined features");
+        check(
+            features.size() == all.size(),
+            "The 'all' features list is populated incorrectly");
         return f;
     }
     else
@@ -312,6 +331,13 @@ FeatureCollections::featureToName(uint256 const& f) const
 static FeatureCollections featureCollections;
 
 }  // namespace
+
+/** All amendments libxrpl knows of. */
+std::map<std::string, AmendmentSupport> const&
+allAmendments()
+{
+    return featureCollections.allAmendments();
+}
 
 /** Amendments that this server supports.
    Whether they are enabled depends on the Rules defined in the validated
@@ -466,7 +492,10 @@ REGISTER_FEATURE(PriceOracle,                   Supported::yes, VoteBehavior::De
 REGISTER_FIX    (fixEmptyDID,                   Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixXChainRewardRounding,       Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixPreviousTxnID,              Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixAMMRounding,                Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixAMMv1_1,                    Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FEATURE(NFTokenMintOffer,              Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixReducedOffersV2,            Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixEnforceNFTokenTrustline,    Supported::yes, VoteBehavior::DefaultNo);
 
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.

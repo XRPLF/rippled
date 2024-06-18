@@ -23,7 +23,6 @@
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/InnerObjectFormats.h>
-#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/digest.h>
 
@@ -97,10 +96,10 @@ SetOracle::preclaim(PreclaimContext const& ctx)
         ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
 
     // token pairs to add/update
-    hash_set<std::pair<Currency, Currency>> pairs;
+    std::set<std::pair<Currency, Currency>> pairs;
     // token pairs to delete. if a token pair doesn't include
     // the price then this pair should be deleted from the object.
-    hash_set<std::pair<Currency, Currency>> pairsDel;
+    std::set<std::pair<Currency, Currency>> pairsDel;
     for (auto const& entry : ctx.tx.getFieldArray(sfPriceDataSeries))
     {
         if (entry[sfBaseAsset] == entry[sfQuoteAsset])
@@ -216,7 +215,7 @@ SetOracle::doApply()
         // the token pair that doesn't have their price updated will not
         // include neither price nor scale in the updated PriceDataSeries
 
-        hash_map<std::pair<Currency, Currency>, STObject> pairs;
+        std::map<std::pair<Currency, Currency>, STObject> pairs;
         // collect current token pairs
         for (auto const& entry : sle->getFieldArray(sfPriceDataSeries))
         {
