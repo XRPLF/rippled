@@ -33,7 +33,6 @@
 #include <ripple/basics/random.h>
 #include <ripple/basics/safe_cast.h>
 #include <ripple/beast/core/LexicalCast.h>
-#include <ripple/beast/core/SemanticVersion.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/impl/PeerImp.h>
@@ -41,7 +40,6 @@
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/digest.h>
 
-#include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/core/ostream.hpp>
 
@@ -160,7 +158,7 @@ PeerImp::run()
         return post(strand_, std::bind(&PeerImp::run, shared_from_this()));
 
     auto parseLedgerHash =
-        [](std::string const& value) -> std::optional<uint256> {
+        [](std::string_view value) -> std::optional<uint256> {
         if (uint256 ret; ret.parseHex(value))
             return ret;
 
@@ -397,15 +395,15 @@ PeerImp::json()
     }
 
     if (auto const d = domain(); !d.empty())
-        ret[jss::server_domain] = domain();
+        ret[jss::server_domain] = std::string{d};
 
     if (auto const nid = headers_["Network-ID"]; !nid.empty())
-        ret[jss::network_id] = std::string(nid);
+        ret[jss::network_id] = std::string{nid};
 
     ret[jss::load] = usage_.balance();
 
     if (auto const version = getVersion(); !version.empty())
-        ret[jss::version] = version;
+        ret[jss::version] = std::string{version};
 
     ret[jss::protocol] = to_string(protocol_);
 

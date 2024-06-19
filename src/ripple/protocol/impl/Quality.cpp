@@ -64,13 +64,20 @@ Quality::operator--(int)
     return prev;
 }
 
-Amounts
-Quality::ceil_in(Amounts const& amount, STAmount const& limit) const
+template <STAmount (
+    *DivRoundFunc)(STAmount const&, STAmount const&, Issue const&, bool)>
+static Amounts
+ceil_in_impl(
+    Amounts const& amount,
+    STAmount const& limit,
+    bool roundUp,
+    Quality const& quality)
 {
     if (amount.in > limit)
     {
         Amounts result(
-            limit, divRound(limit, rate(), amount.out.issue(), true));
+            limit,
+            DivRoundFunc(limit, quality.rate(), amount.out.issue(), roundUp));
         // Clamp out
         if (result.out > amount.out)
             result.out = amount.out;
@@ -79,6 +86,21 @@ Quality::ceil_in(Amounts const& amount, STAmount const& limit) const
     }
     assert(amount.in <= limit);
     return amount;
+}
+
+Amounts
+Quality::ceil_in(Amounts const& amount, STAmount const& limit) const
+{
+    return ceil_in_impl<divRound>(amount, limit, /* roundUp */ true, *this);
+}
+
+Amounts
+Quality::ceil_in_strict(
+    Amounts const& amount,
+    STAmount const& limit,
+    bool roundUp) const
+{
+    return ceil_in_impl<divRoundStrict>(amount, limit, roundUp, *this);
 }
 
 template <STAmount (

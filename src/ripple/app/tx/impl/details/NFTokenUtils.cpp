@@ -636,5 +636,252 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
     return true;
 }
 
+NotTEC
+tokenOfferCreatePreflight(
+    AccountID const& acctID,
+    STAmount const& amount,
+    std::optional<AccountID> const& dest,
+    std::optional<std::uint32_t> const& expiration,
+    std::uint16_t nftFlags,
+    Rules const& rules,
+    std::optional<AccountID> const& owner,
+    std::uint32_t txFlags)
+{
+    if (amount.negative() && rules.enabled(fixNFTokenNegOffer))
+        // An offer for a negative amount makes no sense.
+        return temBAD_AMOUNT;
+
+    if (!isXRP(amount))
+    {
+        if (nftFlags & nft::flagOnlyXRP)
+            return temBAD_AMOUNT;
+
+        if (!amount)
+            return temBAD_AMOUNT;
+    }
+
+    // If this is an offer to buy, you must offer something; if it's an
+    // offer to sell, you can ask for nothing.
+    bool const isSellOffer = txFlags & tfSellNFToken;
+    if (!isSellOffer && !amount)
+        return temBAD_AMOUNT;
+
+    if (expiration.has_value() && expiration.value() == 0)
+        return temBAD_EXPIRATION;
+
+    // The 'Owner' field must be present when offering to buy, but can't
+    // be present when selling (it's implicit):
+    if (owner.has_value() == isSellOffer)
+        return temMALFORMED;
+
+    if (owner && owner == acctID)
+        return temMALFORMED;
+
+    if (dest)
+    {
+        // Some folks think it makes sense for a buy offer to specify a
+        // specific broker using the Destination field.  This change doesn't
+        // deserve it's own amendment, so we're piggy-backing on
+        // fixNFTokenNegOffer.
+        //
+        // Prior to fixNFTokenNegOffer any use of the Destination field on
+        // a buy offer was malformed.
+        if (!isSellOffer && !rules.enabled(fixNFTokenNegOffer))
+            return temMALFORMED;
+
+        // The destination can't be the account executing the transaction.
+        if (dest == acctID)
+            return temMALFORMED;
+    }
+    return tesSUCCESS;
+}
+
+TER
+tokenOfferCreatePreclaim(
+    ReadView const& view,
+    AccountID const& acctID,
+    AccountID const& nftIssuer,
+    STAmount const& amount,
+    std::optional<AccountID> const& dest,
+    std::uint16_t nftFlags,
+    std::uint16_t xferFee,
+    beast::Journal j,
+    std::optional<AccountID> const& owner,
+    std::uint32_t txFlags)
+{
+    if (!(nftFlags & nft::flagCreateTrustLines) && !amount.native() && xferFee)
+    {
+        if (!view.exists(keylet::account(nftIssuer)))
+            return tecNO_ISSUER;
+
+        // If the IOU issuer and the NFToken issuer are the same, then that
+        // issuer does not need a trust line to accept their fee.
+        if (view.rules().enabled(featureNFTokenMintOffer))
+        {
+            if (nftIssuer != amount.getIssuer() &&
+                !view.read(keylet::line(nftIssuer, amount.issue())))
+                return tecNO_LINE;
+        }
+        else if (!view.exists(keylet::line(nftIssuer, amount.issue())))
+        {
+            return tecNO_LINE;
+        }
+
+        if (isFrozen(view, nftIssuer, amount.getCurrency(), amount.getIssuer()))
+            return tecFROZEN;
+    }
+
+    if (nftIssuer != acctID && !(nftFlags & nft::flagTransferable))
+    {
+        auto const root = view.read(keylet::account(nftIssuer));
+        assert(root);
+
+        if (auto minter = (*root)[~sfNFTokenMinter]; minter != acctID)
+            return tefNFTOKEN_IS_NOT_TRANSFERABLE;
+    }
+
+    if (isFrozen(view, acctID, amount.getCurrency(), amount.getIssuer()))
+        return tecFROZEN;
+
+    // If this is an offer to buy the token, the account must have the
+    // needed funds at hand; but note that funds aren't reserved and the
+    // offer may later become unfunded.
+    if ((txFlags & tfSellNFToken) == 0)
+    {
+        // After this amendment, we allow an IOU issuer to make a buy offer
+        // using their own currency.
+        if (view.rules().enabled(fixNonFungibleTokensV1_2))
+        {
+            if (accountFunds(
+                    view, acctID, amount, FreezeHandling::fhZERO_IF_FROZEN, j)
+                    .signum() <= 0)
+                return tecUNFUNDED_OFFER;
+        }
+        else if (
+            accountHolds(
+                view,
+                acctID,
+                amount.getCurrency(),
+                amount.getIssuer(),
+                FreezeHandling::fhZERO_IF_FROZEN,
+                j)
+                .signum() <= 0)
+            return tecUNFUNDED_OFFER;
+    }
+
+    if (dest)
+    {
+        // If a destination is specified, the destination must already be in
+        // the ledger.
+        auto const sleDst = view.read(keylet::account(*dest));
+
+        if (!sleDst)
+            return tecNO_DST;
+
+        // check if the destination has disallowed incoming offers
+        if (view.rules().enabled(featureDisallowIncoming))
+        {
+            // flag cannot be set unless amendment is enabled but
+            // out of an abundance of caution check anyway
+
+            if (sleDst->getFlags() & lsfDisallowIncomingNFTokenOffer)
+                return tecNO_PERMISSION;
+        }
+    }
+
+    if (owner)
+    {
+        // Check if the owner (buy offer) has disallowed incoming offers
+        if (view.rules().enabled(featureDisallowIncoming))
+        {
+            auto const sleOwner = view.read(keylet::account(*owner));
+
+            // defensively check
+            // it should not be possible to specify owner that doesn't exist
+            if (!sleOwner)
+                return tecNO_TARGET;
+
+            if (sleOwner->getFlags() & lsfDisallowIncomingNFTokenOffer)
+                return tecNO_PERMISSION;
+        }
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+tokenOfferCreateApply(
+    ApplyView& view,
+    AccountID const& acctID,
+    STAmount const& amount,
+    std::optional<AccountID> const& dest,
+    std::optional<std::uint32_t> const& expiration,
+    SeqProxy seqProxy,
+    uint256 const& nftokenID,
+    XRPAmount const& priorBalance,
+    beast::Journal j,
+    std::uint32_t txFlags)
+{
+    Keylet const acctKeylet = keylet::account(acctID);
+    if (auto const acct = view.read(acctKeylet);
+        priorBalance < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
+        return tecINSUFFICIENT_RESERVE;
+
+    auto const offerID = keylet::nftoffer(acctID, seqProxy.value());
+
+    // Create the offer:
+    {
+        // Token offers are always added to the owner's owner directory:
+        auto const ownerNode = view.dirInsert(
+            keylet::ownerDir(acctID), offerID, describeOwnerDir(acctID));
+
+        if (!ownerNode)
+            return tecDIR_FULL;
+
+        bool const isSellOffer = txFlags & tfSellNFToken;
+
+        // Token offers are also added to the token's buy or sell offer
+        // directory
+        auto const offerNode = view.dirInsert(
+            isSellOffer ? keylet::nft_sells(nftokenID)
+                        : keylet::nft_buys(nftokenID),
+            offerID,
+            [&nftokenID, isSellOffer](std::shared_ptr<SLE> const& sle) {
+                (*sle)[sfFlags] =
+                    isSellOffer ? lsfNFTokenSellOffers : lsfNFTokenBuyOffers;
+                (*sle)[sfNFTokenID] = nftokenID;
+            });
+
+        if (!offerNode)
+            return tecDIR_FULL;
+
+        std::uint32_t sleFlags = 0;
+
+        if (isSellOffer)
+            sleFlags |= lsfSellNFToken;
+
+        auto offer = std::make_shared<SLE>(offerID);
+        (*offer)[sfOwner] = acctID;
+        (*offer)[sfNFTokenID] = nftokenID;
+        (*offer)[sfAmount] = amount;
+        (*offer)[sfFlags] = sleFlags;
+        (*offer)[sfOwnerNode] = *ownerNode;
+        (*offer)[sfNFTokenOfferNode] = *offerNode;
+
+        if (expiration)
+            (*offer)[sfExpiration] = *expiration;
+
+        if (dest)
+            (*offer)[sfDestination] = *dest;
+
+        view.insert(offer);
+    }
+
+    // Update owner count.
+    adjustOwnerCount(view, view.peek(acctKeylet), 1, j);
+
+    return tesSUCCESS;
+}
+
 }  // namespace nft
 }  // namespace ripple

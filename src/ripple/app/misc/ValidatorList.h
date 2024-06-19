@@ -633,7 +633,7 @@ public:
     */
     std::optional<Json::Value>
     getAvailable(
-        boost::beast::string_view const& pubKey,
+        std::string_view pubKey,
         std::optional<std::uint32_t> forceVersion = {});
 
     /** Return the number of configured validator list sites. */

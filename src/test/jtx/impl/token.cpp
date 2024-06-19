@@ -57,6 +57,12 @@ uri::operator()(Env& env, JTx& jt) const
     jt.jv[sfURI.jsonName] = uri_;
 }
 
+void
+amount::operator()(Env& env, JTx& jt) const
+{
+    jt.jv[sfAmount.jsonName] = amount_.getJson(JsonOptions::none);
+}
+
 uint256
 getNextID(
     jtx::Env const& env,

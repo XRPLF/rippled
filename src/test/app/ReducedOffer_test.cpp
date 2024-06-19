@@ -22,6 +22,8 @@
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 
+#include <initializer_list>
+
 namespace ripple {
 namespace test {
 
@@ -56,13 +58,11 @@ class ReducedOffer_test : public beast::unit_test::suite
     static void
     cleanupOldOffers(
         jtx::Env& env,
-        jtx::Account const& acct1,
-        jtx::Account const& acct2,
-        std::uint32_t acct1OfferSeq,
-        std::uint32_t acct2OfferSeq)
+        std::initializer_list<std::pair<jtx::Account const&, std::uint32_t>>
+            list)
     {
-        env(offer_cancel(acct1, acct1OfferSeq));
-        env(offer_cancel(acct2, acct2OfferSeq));
+        for (auto [acct, offerSeq] : list)
+            env(offer_cancel(acct, offerSeq));
         env.close();
     }
 
@@ -180,7 +180,8 @@ public:
 
                 // In preparation for the next iteration make sure the two
                 // offers are gone from the ledger.
-                cleanupOldOffers(env, alice, bob, aliceOfferSeq, bobOfferSeq);
+                cleanupOldOffers(
+                    env, {{alice, aliceOfferSeq}, {bob, bobOfferSeq}});
                 return badRate;
             };
 
@@ -279,7 +280,7 @@ public:
                     // If the in-ledger offer was not consumed then further
                     // results are meaningless.
                     cleanupOldOffers(
-                        env, alice, bob, aliceOfferSeq, bobOfferSeq);
+                        env, {{alice, aliceOfferSeq}, {bob, bobOfferSeq}});
                     return 1;
                 }
                 // alice's offer should still be in the ledger, but reduced in
@@ -337,7 +338,8 @@ public:
 
                 // In preparation for the next iteration make sure the two
                 // offers are gone from the ledger.
-                cleanupOldOffers(env, alice, bob, aliceOfferSeq, bobOfferSeq);
+                cleanupOldOffers(
+                    env, {{alice, aliceOfferSeq}, {bob, bobOfferSeq}});
                 return badRate;
             };
 
@@ -452,7 +454,7 @@ public:
                     // In preparation for the next iteration clean up any
                     // leftover offers.
                     cleanupOldOffers(
-                        env, alice, bob, aliceOfferSeq, bobOfferSeq);
+                        env, {{alice, aliceOfferSeq}, {bob, bobOfferSeq}});
 
                     // Zero out alice's and bob's USD balances.
                     if (STAmount const aliceBalance = env.balance(alice, USD);
@@ -573,7 +575,8 @@ public:
 
                 // In preparation for the next iteration clean up any
                 // leftover offers.
-                cleanupOldOffers(env, alice, bob, aliceOfferSeq, bobOfferSeq);
+                cleanupOldOffers(
+                    env, {{alice, aliceOfferSeq}, {bob, bobOfferSeq}});
 
                 // Zero out alice's and bob's IOU balances.
                 auto zeroBalance = [&env, &gw](
@@ -606,6 +609,185 @@ public:
         }
     }
 
+    Amounts
+    jsonOfferToAmounts(Json::Value const& json)
+    {
+        STAmount const in =
+            amountFromJson(sfTakerPays, json[sfTakerPays.jsonName]);
+        STAmount const out =
+            amountFromJson(sfTakerGets, json[sfTakerGets.jsonName]);
+        return {in, out};
+    }
+
+    void
+    testSellPartialCrossOldXrpIouQChange()
+    {
+        // This test case was motivated by Issue #4937.  It recreates
+        // the specific failure identified in that issue and samples some other
+        // cases in the same vicinity to make sure that the new behavior makes
+        // sense.
+        testcase("exercise tfSell partial cross old XRP/IOU offer Q change");
+
+        using namespace jtx;
+
+        Account const gw("gateway");
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        auto const USD = gw["USD"];
+
+        // Make one test run without fixReducedOffersV2 and one with.
+        for (FeatureBitset features :
+             {supported_amendments() - fixReducedOffersV2,
+              supported_amendments() | fixReducedOffersV2})
+        {
+            // Make sure none of the offers we generate are under funded.
+            Env env{*this, features};
+            env.fund(XRP(10'000'000), gw, alice, bob, carol);
+            env.close();
+
+            env(trust(alice, USD(10'000'000)));
+            env(trust(bob, USD(10'000'000)));
+            env(trust(carol, USD(10'000'000)));
+            env.close();
+
+            env(pay(gw, alice, USD(10'000'000)));
+            env(pay(gw, bob, USD(10'000'000)));
+            env(pay(gw, carol, USD(10'000'000)));
+            env.close();
+
+            // Lambda that:
+            //  1. Exercises one offer trio,
+            //  2. Collects the results, and
+            //  3. Cleans up for the next offer trio.
+            auto exerciseOfferTrio =
+                [this, &env, &alice, &bob, &carol, &USD](
+                    Amounts const& carolOffer) -> unsigned int {
+                // alice submits an offer that may become a blocker.
+                std::uint32_t const aliceOfferSeq = env.seq(alice);
+                static Amounts const aliceInitialOffer(USD(2), drops(3382562));
+                env(offer(alice, aliceInitialOffer.in, aliceInitialOffer.out));
+                env.close();
+                STAmount const initialRate =
+                    Quality(jsonOfferToAmounts(ledgerEntryOffer(
+                                env, alice, aliceOfferSeq)[jss::node]))
+                        .rate();
+
+                // bob submits an offer that is more desirable than alice's
+                std::uint32_t const bobOfferSeq = env.seq(bob);
+                env(offer(bob, USD(0.97086565812384), drops(1642020)));
+                env.close();
+
+                // Now carol's offer consumes bob's and partially crosses
+                // alice's.  The tfSell flag is important.
+                std::uint32_t const carolOfferSeq = env.seq(carol);
+                env(offer(carol, carolOffer.in, carolOffer.out),
+                    txflags(tfSell));
+                env.close();
+
+                // carol's offer should not have made it into the ledger and
+                // bob's offer should be fully consumed.
+                if (!BEAST_EXPECT(
+                        !offerInLedger(env, carol, carolOfferSeq) &&
+                        !offerInLedger(env, bob, bobOfferSeq)))
+                {
+                    // If carol's or bob's offers are still in the ledger then
+                    // further results are meaningless.
+                    cleanupOldOffers(
+                        env,
+                        {{alice, aliceOfferSeq},
+                         {bob, bobOfferSeq},
+                         {carol, carolOfferSeq}});
+                    return 1;
+                }
+                // alice's offer should still be in the ledger, but reduced in
+                // size.
+                unsigned int badRate = 1;
+                {
+                    Json::Value aliceOffer =
+                        ledgerEntryOffer(env, alice, aliceOfferSeq);
+
+                    Amounts aliceReducedOffer =
+                        jsonOfferToAmounts(aliceOffer[jss::node]);
+
+                    BEAST_EXPECT(aliceReducedOffer.in < aliceInitialOffer.in);
+                    BEAST_EXPECT(aliceReducedOffer.out < aliceInitialOffer.out);
+                    STAmount const inLedgerRate =
+                        Quality(aliceReducedOffer).rate();
+                    badRate = inLedgerRate > initialRate ? 1 : 0;
+
+                    // If the inLedgerRate is less than initial rate, then
+                    // incrementing the mantissa of the reduced TakerGets
+                    // should result in a rate higher than initial.  Check
+                    // this to verify that the largest allowable TakerGets
+                    // was computed.
+                    if (badRate == 0)
+                    {
+                        STAmount const tweakedTakerGets(
+                            aliceReducedOffer.in.issue(),
+                            aliceReducedOffer.in.mantissa() + 1,
+                            aliceReducedOffer.in.exponent(),
+                            aliceReducedOffer.in.negative());
+                        STAmount const tweakedRate =
+                            Quality(
+                                Amounts{aliceReducedOffer.in, tweakedTakerGets})
+                                .rate();
+                        BEAST_EXPECT(tweakedRate > initialRate);
+                    }
+#if 0
+                    std::cout << "Placed rate: " << initialRate
+                              << "; in-ledger rate: " << inLedgerRate
+                              << "; TakerPays: " << aliceReducedOffer.in
+                              << "; TakerGets: " << aliceReducedOffer.out
+                              << std::endl;
+// #else
+                    std::string_view filler = badRate ? "**" : "  ";
+                    std::cout << "| " << aliceReducedOffer.in << "` | `"
+                              << aliceReducedOffer.out << "` | `" << initialRate
+                              << "` | " << filler << "`" << inLedgerRate << "`"
+                              << filler << std::endl;
+#endif
+                }
+
+                // In preparation for the next iteration make sure all three
+                // offers are gone from the ledger.
+                cleanupOldOffers(
+                    env,
+                    {{alice, aliceOfferSeq},
+                     {bob, bobOfferSeq},
+                     {carol, carolOfferSeq}});
+                return badRate;
+            };
+
+            constexpr int loopCount = 100;
+            unsigned int blockedCount = 0;
+            {
+                STAmount increaseGets = USD(0);
+                STAmount const step(increaseGets.issue(), 1, -8);
+                for (unsigned int i = 0; i < loopCount; ++i)
+                {
+                    blockedCount += exerciseOfferTrio(
+                        Amounts(drops(1642020), USD(1) + increaseGets));
+                    increaseGets += step;
+                }
+            }
+
+            // If fixReducedOffersV2 is enabled, then none of the test cases
+            // should produce a potentially blocking rate.
+            //
+            // Also verify that if fixReducedOffersV2 is not enabled then
+            // some of the test cases produced a potentially blocking rate.
+            if (features[fixReducedOffersV2])
+            {
+                BEAST_EXPECT(blockedCount == 0);
+            }
+            else
+            {
+                BEAST_EXPECT(blockedCount > 80);
+            }
+        }
+    }
+
     void
     run() override
     {
@@ -613,6 +795,7 @@ public:
         testPartialCrossOldXrpIouQChange();
         testUnderFundedXrpIouQChange();
         testUnderFundedIouIouQChange();
+        testSellPartialCrossOldXrpIouQChange();
     }
 };
 

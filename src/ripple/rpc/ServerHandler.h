@@ -208,8 +208,8 @@ private:
         beast::IP::Endpoint const& remoteIPAddress,
         Output&&,
         std::shared_ptr<JobQueue::Coro> coro,
-        boost::string_view forwardedFor,
-        boost::string_view user);
+        std::string_view forwardedFor,
+        std::string_view user);
 
     Handoff
     statusResponse(http_request_type const& request) const;

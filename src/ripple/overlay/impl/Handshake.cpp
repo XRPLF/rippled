@@ -20,16 +20,12 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/basics/base64.h>
-#include <ripple/basics/safe_cast.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/beast/rfc2616.h>
 #include <ripple/overlay/impl/Handshake.h>
 #include <ripple/protocol/digest.h>
-
 #include <boost/regex.hpp>
-
 #include <algorithm>
-#include <chrono>
 
 // VFALCO Shouldn't we have to include the OpenSSL
 // headers or something for SSL_get_finished?
@@ -46,8 +42,8 @@ getFeatureValue(
         return {};
     boost::smatch match;
     boost::regex rx(feature + "=([^;\\s]+)");
-    std::string const value = header->value();
-    if (boost::regex_search(value, match, rx))
+    std::string const allFeatures(header->value());
+    if (boost::regex_search(allFeatures, match, rx))
         return {match[1]};
     return {};
 }
@@ -243,7 +239,7 @@ verifyHandshake(
     {
         std::uint32_t nid;
 
-        if (!beast::lexicalCastChecked(nid, std::string(iter->value())))
+        if (!beast::lexicalCastChecked(nid, iter->value()))
             throw std::runtime_error("Invalid peer network identifier");
 
         if (networkID && nid != *networkID)
@@ -252,8 +248,7 @@ verifyHandshake(
 
     if (auto const iter = headers.find("Network-Time"); iter != headers.end())
     {
-        auto const netTime =
-            [str = std::string(iter->value())]() -> TimeKeeper::time_point {
+        auto const netTime = [str = iter->value()]() -> TimeKeeper::time_point {
             TimeKeeper::duration::rep val;
 
             if (beast::lexicalCastChecked(val, str))

@@ -1387,78 +1387,106 @@ public:
 
         using namespace jtx;
 
-        Env env{*this, features};
+        // This is one of the few tests where fixReducedOffersV2 changes the
+        // results.  So test both with and without fixReducedOffersV2.
+        for (FeatureBitset localFeatures :
+             {features - fixReducedOffersV2, features | fixReducedOffersV2})
+        {
+            Env env{*this, localFeatures};
 
-        auto const gw = Account{"gateway"};
-        auto const alice = Account{"alice"};
-        auto const bob = Account{"bob"};
-        auto const USD = gw["USD"];
-        auto const BTC = gw["BTC"];
+            auto const gw = Account{"gateway"};
+            auto const alice = Account{"alice"};
+            auto const bob = Account{"bob"};
+            auto const USD = gw["USD"];
+            auto const BTC = gw["BTC"];
 
-        // these *interesting* amounts were taken
-        // from the original JS test that was ported here
-        auto const gw_initial_balance = drops(1149999730);
-        auto const alice_initial_balance = drops(499946999680);
-        auto const bob_initial_balance = drops(10199999920);
-        auto const small_amount =
-            STAmount{bob["USD"].issue(), UINT64_C(2710505431213761), -33};
+            // these *interesting* amounts were taken
+            // from the original JS test that was ported here
+            auto const gw_initial_balance = drops(1149999730);
+            auto const alice_initial_balance = drops(499946999680);
+            auto const bob_initial_balance = drops(10199999920);
+            auto const small_amount =
+                STAmount{bob["USD"].issue(), UINT64_C(2710505431213761), -33};
 
-        env.fund(gw_initial_balance, gw);
-        env.fund(alice_initial_balance, alice);
-        env.fund(bob_initial_balance, bob);
+            env.fund(gw_initial_balance, gw);
+            env.fund(alice_initial_balance, alice);
+            env.fund(bob_initial_balance, bob);
 
-        env(rate(gw, 1.005));
+            env(rate(gw, 1.005));
 
-        env(trust(alice, USD(500)));
-        env(trust(bob, USD(50)));
-        env(trust(gw, alice["USD"](100)));
+            env(trust(alice, USD(500)));
+            env(trust(bob, USD(50)));
+            env(trust(gw, alice["USD"](100)));
 
-        env(pay(gw, alice, alice["USD"](50)));
-        env(pay(gw, bob, small_amount));
+            env(pay(gw, alice, alice["USD"](50)));
+            env(pay(gw, bob, small_amount));
 
-        env(offer(alice, USD(50), XRP(150000)));
+            env(offer(alice, USD(50), XRP(150000)));
 
-        // unfund the offer
-        env(pay(alice, gw, USD(100)));
+            // unfund the offer
+            env(pay(alice, gw, USD(100)));
 
-        // drop the trust line (set to 0)
-        env(trust(gw, alice["USD"](0)));
+            // drop the trust line (set to 0)
+            env(trust(gw, alice["USD"](0)));
 
-        // verify balances
-        auto jrr = ledgerEntryState(env, alice, gw, "USD");
-        BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "50");
+            // verify balances
+            auto jrr = ledgerEntryState(env, alice, gw, "USD");
+            BEAST_EXPECT(
+                jrr[jss::node][sfBalance.fieldName][jss::value] == "50");
 
-        jrr = ledgerEntryState(env, bob, gw, "USD");
-        BEAST_EXPECT(
-            jrr[jss::node][sfBalance.fieldName][jss::value] ==
-            "-2710505431213761e-33");
+            jrr = ledgerEntryState(env, bob, gw, "USD");
+            BEAST_EXPECT(
+                jrr[jss::node][sfBalance.fieldName][jss::value] ==
+                "-2710505431213761e-33");
 
-        // create crossing offer
-        env(offer(bob, XRP(2000), USD(1)));
+            // create crossing offer
+            std::uint32_t const bobOfferSeq = env.seq(bob);
+            env(offer(bob, XRP(2000), USD(1)));
 
-        // verify balances again.
-        //
-        // NOTE :
-        // Here a difference in the rounding modes of our two offer crossing
-        // algorithms becomes apparent.  The old offer crossing would consume
-        // small_amount and transfer no XRP.  The new offer crossing transfers
-        // a single drop, rather than no drops.
-        auto const crossingDelta =
-            features[featureFlowCross] ? drops(1) : drops(0);
+            if (localFeatures[featureFlowCross] &&
+                localFeatures[fixReducedOffersV2])
+            {
+                // With the rounding introduced by fixReducedOffersV2, bob's
+                // offer does not cross alice's offer and goes straight into
+                // the ledger.
+                jrr = ledgerEntryState(env, bob, gw, "USD");
+                BEAST_EXPECT(
+                    jrr[jss::node][sfBalance.fieldName][jss::value] ==
+                    "-2710505431213761e-33");
 
-        jrr = ledgerEntryState(env, alice, gw, "USD");
-        BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "50");
-        BEAST_EXPECT(
-            env.balance(alice, xrpIssue()) ==
-            alice_initial_balance - env.current()->fees().base * 3 -
-                crossingDelta);
+                Json::Value const bobOffer =
+                    ledgerEntryOffer(env, bob, bobOfferSeq)[jss::node];
+                BEAST_EXPECT(bobOffer[sfTakerGets.jsonName][jss::value] == "1");
+                BEAST_EXPECT(bobOffer[sfTakerPays.jsonName] == "2000000000");
+                return;
+            }
 
-        jrr = ledgerEntryState(env, bob, gw, "USD");
-        BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "0");
-        BEAST_EXPECT(
-            env.balance(bob, xrpIssue()) ==
-            bob_initial_balance - env.current()->fees().base * 2 +
-                crossingDelta);
+            // verify balances again.
+            //
+            // NOTE:
+            // Here a difference in the rounding modes of our two offer
+            // crossing algorithms becomes apparent.  The old offer crossing
+            // would consume small_amount and transfer no XRP.  The new offer
+            // crossing transfers a single drop, rather than no drops.
+            auto const crossingDelta =
+                localFeatures[featureFlowCross] ? drops(1) : drops(0);
+
+            jrr = ledgerEntryState(env, alice, gw, "USD");
+            BEAST_EXPECT(
+                jrr[jss::node][sfBalance.fieldName][jss::value] == "50");
+            BEAST_EXPECT(
+                env.balance(alice, xrpIssue()) ==
+                alice_initial_balance - env.current()->fees().base * 3 -
+                    crossingDelta);
+
+            jrr = ledgerEntryState(env, bob, gw, "USD");
+            BEAST_EXPECT(
+                jrr[jss::node][sfBalance.fieldName][jss::value] == "0");
+            BEAST_EXPECT(
+                env.balance(bob, xrpIssue()) ==
+                bob_initial_balance - env.current()->fees().base * 2 +
+                    crossingDelta);
+        }
     }
 
     void
@@ -5439,12 +5467,12 @@ class Offer_manual_test : public OfferBaseUtil_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFlowCross, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWTakerDryOffer, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFillOrKill, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFlowCross, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWTakerDryOffer, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFillOrKill, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, tx, ripple, 20);
 
 }  // namespace test

@@ -107,6 +107,20 @@ then you will need to choose the `libstdc++11` ABI:
    conan profile update settings.compiler.libcxx=libstdc++11 default
    ```
 
+
+Ensure inter-operability between `boost::string_view` and `std::string_view` types:
+
+```
+conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_BEAST_USE_STD_STRING_VIEW"]' default
+conan profile update 'env.CXXFLAGS="-DBOOST_BEAST_USE_STD_STRING_VIEW"' default
+```
+
+If you have other flags in the `conf.tools.build` or `env.CXXFLAGS` sections, make sure to retain the existing flags and append the new ones. You can check them with:
+```
+conan profile show default
+```
+
+
 **Windows** developers may need to use the x64 native build tools.
 An easy way to do that is to run the shortcut "x64 Native Tools Command
 Prompt" for the version of Visual Studio that you have installed.
