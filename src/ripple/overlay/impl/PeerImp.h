@@ -180,6 +180,8 @@ private:
     bool vpReduceRelayEnabled_ = false;
     bool ledgerReplayEnabled_ = false;
     LedgerReplayMsgHandler ledgerReplayMsgHandler_;
+    // close connection when async write is complete
+    bool closeOnWriteComplete_ = false;
 
     friend class OverlayImpl;
 
@@ -196,10 +198,14 @@ private:
 
         void
         add_message(std::uint64_t bytes);
+        void
+        add_message_type(std::uint16_t mtype);
         std::uint64_t
         average_bytes() const;
         std::uint64_t
         total_bytes() const;
+        std::unordered_map<std::uint16_t, std::uint64_t> const&
+        mtype() const;
 
     private:
         boost::shared_mutex mutable mutex_;
@@ -208,6 +214,7 @@ private:
         std::uint64_t totalBytes_{0};
         std::uint64_t accumBytes_{0};
         std::uint64_t rollingAvgBytes_{0};
+        std::unordered_map<std::uint16_t, std::uint64_t> mtype_;
     };
 
     struct
@@ -235,7 +242,7 @@ public:
 
     /** Create outgoing, handshaked peer. */
     // VFALCO legacyPublicKey should be implied by the Slot
-    template <class Buffers>
+    template <typename Buffers>
     PeerImp(
         Application& app,
         std::unique_ptr<stream_type>&& stream_ptr,
@@ -413,7 +420,7 @@ public:
     isHighLatency() const override;
 
     void
-    fail(std::string const& reason);
+    fail(protocol::TMCloseReason reason);
 
     // Return any known shard info from this peer and its sub peers
     [[nodiscard]] hash_map<PublicKey, NodeStore::ShardInfo> const
@@ -457,9 +464,6 @@ private:
     // Called when SSL shutdown completes
     void
     onShutdown(error_code ec);
-
-    void
-    doAccept();
 
     std::string
     name() const;
@@ -584,6 +588,10 @@ public:
     onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMReplayDeltaResponse> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMStartProtocol> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMGracefulClose> const& m);
 
 private:
     //--------------------------------------------------------------------------
@@ -642,6 +650,9 @@ private:
 
     void
     processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m);
+
+    void
+    onStartProtocol();
 };
 
 //------------------------------------------------------------------------------
