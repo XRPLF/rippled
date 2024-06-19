@@ -267,18 +267,13 @@ doAccountObjects(RPC::JsonContext& context)
         if (!sle || sle->getType() != ltDIR_NODE)
             return RPC::invalid_field_error(jss::marker);
 
-        if (sle->isFieldPresent(sfOwner) && sle->getAccountID(sfOwner) != accountID)
+        if (sle->isFieldPresent(sfOwner) &&
+            sle->getAccountID(sfOwner) != accountID)
             return RPC::invalid_field_error(jss::marker);
     }
 
     auto accountObjectStatus = RPC::getAccountObjects(
-        *ledger,
-        accountID,
-        typeFilter,
-        dirIndex,
-        entryIndex,
-        limit,
-        result);
+        *ledger, accountID, typeFilter, dirIndex, entryIndex, limit, result);
 
     if (accountObjectStatus == RPC::AccountObjectStatus::InvalidMarker)
         return RPC::invalid_field_error(jss::marker);

@@ -1047,7 +1047,8 @@ public:
         env.fund(XRP(10000), bob);
 
         unsigned accountObjectSize = 30;
-        for (unsigned i = 0; i < accountObjectSize; i++) {
+        for (unsigned i = 0; i < accountObjectSize; i++)
+        {
             env(check::create(alice, bob, XRP(10)));
         }
 
@@ -1092,10 +1093,12 @@ public:
             auto resp = env.rpc("json", "account_objects", to_string(params));
             auto& accountObjects = resp[jss::result][jss::account_objects];
             BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
-            BEAST_EXPECT(accountObjects.size() == accountObjectSize - limit * 2);
+            BEAST_EXPECT(
+                accountObjects.size() == accountObjectSize - limit * 2);
         }
 
-        // get account_objects with an invalid marker containing invalid dirIndex
+        // get account_objects with an invalid marker containing invalid
+        // dirIndex
         {
             std::string s = marker.asString();
             s.replace(0, 7, "FFFFFFF");
@@ -1105,10 +1108,13 @@ public:
             params[jss::marker] = s;
             params[jss::ledger_index] = "validated";
             auto resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field \'marker\'.");
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field \'marker\'.");
         }
 
-        // get account_objects with an invalid marker containing invalid entryIndex
+        // get account_objects with an invalid marker containing invalid
+        // entryIndex
         {
             // construct an invalid entry
             std::stringstream ss(marker.asString());
@@ -1122,7 +1128,9 @@ public:
             params[jss::marker] = s;
             params[jss::ledger_index] = "validated";
             auto resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field \'marker\'.");
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field \'marker\'.");
         }
     }
 
