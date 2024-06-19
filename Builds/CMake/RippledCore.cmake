@@ -236,6 +236,7 @@ install (
     src/ripple/basics/ByteUtilities.h
     src/ripple/basics/CompressionAlgorithms.h
     src/ripple/basics/CountedObject.h
+    src/ripple/basics/Coroutine.h
     src/ripple/basics/DecayingSample.h
     src/ripple/basics/Expected.h
     src/ripple/basics/FeeUnits.h
@@ -271,12 +272,14 @@ install (
     src/ripple/basics/make_SSLContext.h
     src/ripple/basics/mulDiv.h
     src/ripple/basics/partitioned_unordered_map.h
+    src/ripple/basics/promises.h
     src/ripple/basics/random.h
     src/ripple/basics/safe_cast.h
     src/ripple/basics/scope.h
     src/ripple/basics/spinlock.h
     src/ripple/basics/strHex.h
     src/ripple/basics/tagged_integer.h
+    src/ripple/basics/utility.h
   DESTINATION include/ripple/basics)
 install (
   FILES
@@ -731,6 +734,16 @@ target_sources (rippled PRIVATE
   src/ripple/overlay/impl/TxMetrics.cpp
   #[===============================[
      main sources:
+       subdir: peerclient
+  #]===============================]
+  src/ripple/peerclient/impl/CommunicationMeter.cpp
+  src/ripple/peerclient/impl/MessageScheduler.cpp
+  src/ripple/peerclient/impl/ObjectsRequester.cpp
+  src/ripple/peerclient/impl/PeerClient.cpp
+  src/ripple/peerclient/impl/ProofRequester.cpp
+  src/ripple/peerclient/impl/TxSetRequester.cpp
+  #[===============================[
+     main sources:
        subdir: peerfinder
   #]===============================]
   src/ripple/peerfinder/impl/Bootcache.cpp
@@ -837,7 +850,17 @@ target_sources (rippled PRIVATE
   src/ripple/shamap/impl/SHAMapNodeID.cpp
   src/ripple/shamap/impl/SHAMapSync.cpp
   src/ripple/shamap/impl/SHAMapTreeNode.cpp
-  src/ripple/shamap/impl/ShardFamily.cpp)
+  src/ripple/shamap/impl/ShardFamily.cpp
+  #[===============================[
+     main sources:
+       subdir: sync
+  #]===============================]
+  src/ripple/sync/CopyLedger.cpp
+  src/ripple/sync/LedgerGetter.cpp
+  src/ripple/sync/ObjectRequester.cpp
+  src/ripple/sync/ReplayLedger.cpp
+  src/ripple/sync/ReplayLedgers.cpp
+)
 # END XRPLD SOURCES
 
   #[===============================[

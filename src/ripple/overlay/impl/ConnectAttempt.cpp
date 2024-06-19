@@ -22,6 +22,7 @@
 #include <ripple/overlay/impl/ConnectAttempt.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/impl/ProtocolVersion.h>
+#include <ripple/peerclient/MessageScheduler.h>
 
 namespace ripple {
 
@@ -390,6 +391,10 @@ ConnectAttempt::processResponse()
             id_,
             overlay_);
 
+        // Cannot call `shared_from_this()` from the constructor.
+        // We must wait until after the constructor returns
+        // to pass a `std::shared_ptr` to `MessageScheduler`.
+        app_.getMessageScheduler().connect(peer);
         overlay_.add_active(peer);
     }
     catch (std::exception const& e)

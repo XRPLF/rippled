@@ -65,6 +65,7 @@
 #include <ripple/overlay/PeerReservationTable.h>
 #include <ripple/overlay/PeerSet.h>
 #include <ripple/overlay/make_Overlay.h>
+#include <ripple/peerclient/MessageScheduler.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Protocol.h>
@@ -74,6 +75,7 @@
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <ripple/shamap/NodeFamily.h>
 #include <ripple/shamap/ShardFamily.h>
+#include <ripple/sync/LedgerGetter.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -205,6 +207,8 @@ public:
     std::unique_ptr<LedgerReplayer> m_ledgerReplayer;
     TaggedCache<uint256, AcceptedLedger> m_acceptedLedgerCache;
     std::unique_ptr<NetworkOPs> m_networkOPs;
+    std::unique_ptr<MessageScheduler> messageScheduler_;
+    std::unique_ptr<sync::LedgerGetter> ledgerGetter_;
     std::unique_ptr<Cluster> cluster_;
     std::unique_ptr<PeerReservationTable> peerReservations_;
     std::unique_ptr<ManifestCache> validatorManifests_;
@@ -424,6 +428,12 @@ public:
               logs_->journal("NetworkOPs"),
               m_collectorManager->collector()))
 
+        , messageScheduler_(std::make_unique<MessageScheduler>(
+              get_io_service(),
+              logs_->journal("MessageScheduler")))
+
+        , ledgerGetter_(std::make_unique<sync::LedgerGetter>(*this))
+
         , cluster_(std::make_unique<Cluster>(logs_->journal("Overlay")))
 
         , peerReservations_(std::make_unique<PeerReservationTable>(
@@ -627,6 +637,18 @@ public:
     getIOLatency() override
     {
         return m_io_latency_sampler.get();
+    }
+
+    MessageScheduler&
+    getMessageScheduler() override
+    {
+        return *messageScheduler_;
+    }
+
+    sync::LedgerGetter&
+    getLedgerGetter() override
+    {
+        return *ledgerGetter_;
     }
 
     LedgerMaster&
@@ -1809,6 +1831,7 @@ ApplicationImp::run()
     m_jobQueue->stop();
     if (shardArchiveHandler_)
         shardArchiveHandler_->stop();
+    messageScheduler_->stop();
     if (overlay_)
         overlay_->stop();
     if (shardStore_)

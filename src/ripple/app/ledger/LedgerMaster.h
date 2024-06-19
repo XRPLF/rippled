@@ -193,8 +193,13 @@ public:
     std::shared_ptr<Ledger const>
     getLedgerBySeq(std::uint32_t index);
 
+    /**
+     * @param acquire Whether or not to acquire a copy of the ledger from the
+     * network (through `InboundLedgers`) should it be missing in the local
+     * database.
+     */
     std::shared_ptr<Ledger const>
-    getLedgerByHash(uint256 const& hash);
+    getLedgerByHash(uint256 const& hash, bool acquire = true);
 
     void
     setLedgerRangePresent(std::uint32_t minV, std::uint32_t maxV);

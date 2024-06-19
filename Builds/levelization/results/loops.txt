@@ -13,6 +13,9 @@ Loop: ripple.app ripple.nodestore
 Loop: ripple.app ripple.overlay
   ripple.overlay ~= ripple.app
 
+Loop: ripple.app ripple.peerclient
+  ripple.peerclient > ripple.app
+
 Loop: ripple.app ripple.peerfinder
   ripple.app > ripple.peerfinder
 
@@ -21,6 +24,9 @@ Loop: ripple.app ripple.rpc
 
 Loop: ripple.app ripple.shamap
   ripple.app > ripple.shamap
+
+Loop: ripple.app ripple.sync
+  ripple.sync ~= ripple.app
 
 Loop: ripple.basics ripple.core
   ripple.core > ripple.basics
@@ -39,6 +45,9 @@ Loop: ripple.net ripple.rpc
 
 Loop: ripple.nodestore ripple.overlay
   ripple.overlay ~= ripple.nodestore
+
+Loop: ripple.overlay ripple.peerclient
+  ripple.peerclient ~= ripple.overlay
 
 Loop: ripple.overlay ripple.rpc
   ripple.rpc ~= ripple.overlay

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_ALGORITHM_H_INCLUDED
 #define RIPPLE_ALGORITHM_H_INCLUDED
 
+#include <algorithm>
 #include <iterator>
 #include <utility>
 
@@ -113,6 +114,37 @@ remove_if_intersect_or_match(
         // Continue to test *i against [first2, last2) and pred
     }
     return first1;
+}
+
+// Alternative implementation of `std::set_difference`
+// that takes a 3-way comparison function
+// and thus accepts input iterators with different value types.
+template <class InputIt1, class InputIt2, class OutputIt, class Compare>
+OutputIt
+set_diff(
+    InputIt1 first1,
+    InputIt1 last1,
+    InputIt2 first2,
+    InputIt2 last2,
+    OutputIt d_first,
+    Compare comp)
+{
+    while (first1 != last1)
+    {
+        if (first2 == last2)
+            return std::copy(first1, last1, d_first);
+
+        auto c = comp(*first1, *first2);
+        if (c < 0)
+            *d_first++ = *first1++;
+        else
+        {
+            if (c == 0)
+                ++first1;
+            ++first2;
+        }
+    }
+    return d_first;
 }
 
 }  // namespace ripple

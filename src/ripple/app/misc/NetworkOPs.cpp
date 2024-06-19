@@ -68,6 +68,7 @@
 #include <ripple/rpc/BookChanges.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/ServerHandler.h>
+#include <ripple/sync/LedgerGetter.h>
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/steady_timer.hpp>
 
@@ -1715,8 +1716,13 @@ NetworkOPsImp::checkLastClosedLedger(
     auto consensus = m_ledgerMaster.getLedgerByHash(closedLedger);
 
     if (!consensus)
-        consensus = app_.getInboundLedgers().acquire(
-            closedLedger, 0, InboundLedger::Reason::CONSENSUS);
+    {
+        auto future = app_.getLedgerGetter().get(closedLedger);
+        if (future->fulfilled())
+        {
+            consensus = future->value();
+        }
+    }
 
     if (consensus &&
         (!m_ledgerMaster.canBeCurrent(consensus) ||

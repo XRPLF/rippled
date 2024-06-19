@@ -113,7 +113,7 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 }
 
 std::shared_ptr<Ledger const>
-LedgerHistory::getLedgerByHash(LedgerHash const& hash)
+LedgerHistory::getLedgerByHash(LedgerHash const& hash, bool acquire)
 {
     auto ret = m_ledgers_by_hash.fetch(hash);
 
@@ -124,7 +124,7 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
         return ret;
     }
 
-    ret = loadByHash(hash, app_);
+    ret = loadByHash(hash, app_, acquire);
 
     if (!ret)
         return ret;

@@ -323,6 +323,9 @@ public:
         Slice const& rawNode,
         SHAMapSyncFilter* filter);
 
+    void
+    setRootNode(std::shared_ptr<SHAMapTreeNode> const& root);
+
     // status functions
     void
     setImmutable();
@@ -594,6 +597,13 @@ inline void
 SHAMap::setLedgerSeq(std::uint32_t lseq)
 {
     ledgerSeq_ = lseq;
+}
+
+inline void
+SHAMap::setRootNode(std::shared_ptr<SHAMapTreeNode> const& root)
+{
+    assert(cowid_ >= 1);
+    root_ = root;
 }
 
 inline void
