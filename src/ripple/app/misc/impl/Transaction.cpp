@@ -32,6 +32,7 @@
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/jss.h>
+#include <ripple/rpc/CTID.h>
 
 namespace ripple {
 
@@ -59,10 +60,18 @@ Transaction::Transaction(
 //
 
 void
-Transaction::setStatus(TransStatus ts, std::uint32_t lseq)
+Transaction::setStatus(
+    TransStatus ts,
+    std::uint32_t lseq,
+    std::optional<std::uint32_t> tseq,
+    std::optional<std::uint32_t> netID)
 {
     mStatus = ts;
     mLedgerIndex = lseq;
+    if (tseq)
+        mTxnSeq = tseq;
+    if (netID)
+        mNetworkID = netID;
 }
 
 TransStatus
@@ -189,6 +198,20 @@ Transaction::getJson(JsonOptions options, bool binary) const
             auto ct = mApp.getLedgerMaster().getCloseTimeBySeq(mLedgerIndex);
             if (ct)
                 ret[jss::date] = ct->time_since_epoch().count();
+        }
+
+        // compute outgoing CTID
+        // override local network id if it's explicitly in the txn
+        std::optional netID = mNetworkID;
+        if (mTransaction->isFieldPresent(sfNetworkID))
+            netID = mTransaction->getFieldU32(sfNetworkID);
+
+        if (mTxnSeq && netID)
+        {
+            std::optional<std::string> const ctid =
+                RPC::encodeCTID(mLedgerIndex, *mTxnSeq, *netID);
+            if (ctid)
+                ret[jss::ctid] = *ctid;
         }
     }
 
