@@ -671,6 +671,31 @@ class Transaction_test : public beast::unit_test::suite
             BEAST_EXPECT(jrr[jss::hash]);
         }
 
+        // test querying with lowercase ctid
+        {
+            Env env{*this, makeNetworkConfig(11111)};
+            uint32_t netID = env.app().config().NETWORK_ID;
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            auto const startLegSeq = env.current()->info().seq;
+            env.fund(XRP(10000), alice, bob);
+            env(pay(alice, bob, XRP(10)));
+            env.close();
+
+            auto const ctid = *RPC::encodeCTID(startLegSeq, 0, netID);
+            auto lower = ctid;
+            transform(lower.begin(), lower.end(), lower.begin(), tolower);
+            Json::Value jsonTx;
+            jsonTx[jss::binary] = false;
+            jsonTx[jss::ctid] = lower;
+            jsonTx[jss::id] = 1;
+            auto jrr = env.rpc("json", "tx", to_string(jsonTx))[jss::result];
+            BEAST_EXPECT(jrr[jss::ctid] == ctid);
+            BEAST_EXPECT(jrr[jss::hash]);
+        }
+
         // test that if the network is 65535 the ctid is not in the response
         {
             Env env{*this, makeNetworkConfig(65535)};
