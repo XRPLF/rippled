@@ -20,12 +20,12 @@
 #ifndef RIPPLE_APP_BOOK_OFFER_H_INCLUDED
 #define RIPPLE_APP_BOOK_OFFER_H_INCLUDED
 
-#include <ripple/basics/contract.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/protocol/Rules.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/STLedgerEntry.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <ostream>
 #include <stdexcept>
 

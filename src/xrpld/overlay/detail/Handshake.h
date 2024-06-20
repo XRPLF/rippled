@@ -20,10 +20,10 @@
 #ifndef RIPPLE_OVERLAY_HANDSHAKE_H_INCLUDED
 #define RIPPLE_OVERLAY_HANDSHAKE_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/overlay/impl/ProtocolVersion.h>
-#include <ripple/protocol/BuildInfo.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/detail/ProtocolVersion.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/BuildInfo.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/stream.hpp>

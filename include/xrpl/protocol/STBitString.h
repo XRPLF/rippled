@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PROTOCOL_STBITSTRING_H_INCLUDED
 #define RIPPLE_PROTOCOL_STBITSTRING_H_INCLUDED
 
-#include <ripple/basics/CountedObject.h>
-#include <ripple/beast/utility/Zero.h>
-#include <ripple/protocol/STBase.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/STBase.h>
 
 namespace ripple {
 

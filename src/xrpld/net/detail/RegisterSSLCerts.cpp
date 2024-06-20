@@ -16,7 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/net/RegisterSSLCerts.h>
+#include <xrpld/net/RegisterSSLCerts.h>
 #include <boost/predef.h>
 
 #if BOOST_OS_WINDOWS

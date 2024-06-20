@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
-#include <ripple/basics/FileUtilities.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/contract.h>
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/core/Config.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/json/json_reader.h>
-#include <ripple/net/HTTPClient.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/SystemParameters.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpld/net/HTTPClient.h>
+#include <xrpl/basics/FileUtilities.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/predef.h>

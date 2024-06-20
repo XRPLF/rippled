@@ -20,12 +20,12 @@
 #ifndef RIPPLE_TX_APPLYCONTEXT_H_INCLUDED
 #define RIPPLE_TX_APPLYCONTEXT_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/core/Config.h>
-#include <ripple/ledger/ApplyViewImpl.h>
-#include <ripple/protocol/STTx.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/ledger/ApplyViewImpl.h>
+#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/STTx.h>
 #include <optional>
 #include <utility>
 

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/rdb/Download.h>
+#include <xrpld/app/rdb/Download.h>
 #include <soci/sqlite3/soci-sqlite3.h>
 
 namespace ripple {

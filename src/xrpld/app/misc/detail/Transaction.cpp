@@ -17,21 +17,21 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/HashRouter.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/app/rdb/backend/PostgresDatabase.h>
-#include <ripple/app/rdb/backend/SQLiteDatabase.h>
-#include <ripple/app/tx/apply.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/safe_cast.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/core/Pg.h>
-#include <ripple/json/json_reader.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/misc/Transaction.h>
+#include <xrpld/app/rdb/backend/PostgresDatabase.h>
+#include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/app/tx/apply.h>
+#include <xrpld/core/DatabaseCon.h>
+#include <xrpld/core/Pg.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

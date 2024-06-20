@@ -20,9 +20,9 @@
 #ifndef RIPPLE_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
 #define RIPPLE_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
-#include <ripple/overlay/PeerSet.h>
-#include <ripple/shamap/SHAMap.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/PeerSet.h>
+#include <xrpld/shamap/SHAMap.h>
 
 namespace ripple {
 

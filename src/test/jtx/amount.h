@@ -20,16 +20,16 @@
 #ifndef RIPPLE_TEST_JTX_AMOUNT_H_INCLUDED
 #define RIPPLE_TEST_JTX_AMOUNT_H_INCLUDED
 
-#include <ripple/basics/FeeUnits.h>
-#include <ripple/basics/contract.h>
-#include <ripple/protocol/Issue.h>
-#include <ripple/protocol/STAmount.h>
-#include <cstdint>
-#include <ostream>
-#include <string>
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/tags.h>
+#include <xrpl/basics/FeeUnits.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/STAmount.h>
+#include <cstdint>
+#include <ostream>
+#include <string>
 #include <type_traits>
 
 namespace ripple {

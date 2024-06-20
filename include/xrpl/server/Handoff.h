@@ -20,7 +20,7 @@
 #ifndef RIPPLE_SERVER_HANDOFF_H_INCLUDED
 #define RIPPLE_SERVER_HANDOFF_H_INCLUDED
 
-#include <ripple/server/Writer.h>
+#include <xrpl/server/Writer.h>
 #include <boost/beast/http/dynamic_body.hpp>
 #include <boost/beast/http/message.hpp>
 #include <memory>

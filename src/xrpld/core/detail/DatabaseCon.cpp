@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/contract.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/core/SociDB.h>
+#include <xrpld/core/DatabaseCon.h>
+#include <xrpld/core/SociDB.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>

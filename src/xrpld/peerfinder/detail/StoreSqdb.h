@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PEERFINDER_STORESQDB_H_INCLUDED
 #define RIPPLE_PEERFINDER_STORESQDB_H_INCLUDED
 
-#include <ripple/app/rdb/PeerFinder.h>
-#include <ripple/basics/contract.h>
-#include <ripple/core/SociDB.h>
-#include <ripple/peerfinder/impl/Store.h>
+#include <xrpld/app/rdb/PeerFinder.h>
+#include <xrpld/core/SociDB.h>
+#include <xrpld/peerfinder/detail/Store.h>
+#include <xrpl/basics/contract.h>
 #include <boost/optional.hpp>
 
 namespace ripple {

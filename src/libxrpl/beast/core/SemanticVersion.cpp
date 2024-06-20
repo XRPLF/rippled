@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/beast/core/SemanticVersion.h>
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/core/SemanticVersion.h>
 
 #include <algorithm>
 #include <cassert>

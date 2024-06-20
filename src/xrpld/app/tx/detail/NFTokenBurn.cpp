@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/NFTokenBurn.h>
-#include <ripple/app/tx/impl/details/NFTokenUtils.h>
-#include <ripple/ledger/Directory.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/st.h>
+#include <xrpld/app/tx/detail/NFTokenBurn.h>
+#include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/ledger/Directory.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/st.h>
 #include <boost/endian/conversion.hpp>
 #include <array>
 

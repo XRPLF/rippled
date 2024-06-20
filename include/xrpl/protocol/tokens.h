@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PROTOCOL_TOKENS_H_INCLUDED
 #define RIPPLE_PROTOCOL_TOKENS_H_INCLUDED
 
-#include <ripple/basics/Expected.h>
-#include <ripple/basics/contract.h>
-#include <ripple/protocol/impl/token_errors.h>
+#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/detail/token_errors.h>
 
 #include <cstdint>
 #include <optional>

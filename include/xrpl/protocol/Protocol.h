@@ -20,8 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_PROTOCOL_H_INCLUDED
 #define RIPPLE_PROTOCOL_PROTOCOL_H_INCLUDED
 
-#include <ripple/basics/ByteUtilities.h>
-#include <ripple/basics/base_uint.h>
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/base_uint.h>
 #include <cstdint>
 
 namespace ripple {

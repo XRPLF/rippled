@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/contract.h>
-#include <ripple/basics/safe_cast.h>
-#include <ripple/json/to_string.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/Rules.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/jss.h>
 #include <boost/format.hpp>
 #include <algorithm>
 #include <array>

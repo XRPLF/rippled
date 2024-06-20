@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerToJson.h>
-#include <ripple/ledger/ReadView.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/LedgerFormats.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/GRPCHandlers.h>
-#include <ripple/rpc/Role.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <ripple/rpc/impl/Tuning.h>
+#include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/ledger/ReadView.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/GRPCHandlers.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/Tuning.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

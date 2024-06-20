@@ -20,9 +20,9 @@
 #ifndef RIPPLE_BASICS_IOUAMOUNT_H_INCLUDED
 #define RIPPLE_BASICS_IOUAMOUNT_H_INCLUDED
 
-#include <ripple/basics/LocalValue.h>
-#include <ripple/basics/Number.h>
-#include <ripple/beast/utility/Zero.h>
+#include <xrpl/basics/LocalValue.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <boost/operators.hpp>
 #include <cstdint>
 #include <string>

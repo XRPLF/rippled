@@ -20,10 +20,10 @@
 #ifndef RIPPLE_APP_CONSENSUS_RCLCXLEDGER_H_INCLUDED
 #define RIPPLE_APP_CONSENSUS_RCLCXLEDGER_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/LedgerToJson.h>
-#include <ripple/ledger/ReadView.h>
-#include <ripple/protocol/RippleLedgerHash.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/ledger/ReadView.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
 #include <memory>
 
 namespace ripple {

@@ -20,11 +20,11 @@
 #ifndef RIPPLE_RPC_WSINFOSUB_H
 #define RIPPLE_RPC_WSINFOSUB_H
 
-#include <ripple/beast/net/IPAddressConversion.h>
-#include <ripple/json/json_writer.h>
-#include <ripple/net/InfoSub.h>
-#include <ripple/rpc/Role.h>
-#include <ripple/server/WSSession.h>
+#include <xrpld/net/InfoSub.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/json/json_writer.h>
+#include <xrpl/server/WSSession.h>
 #include <boost/utility/string_view.hpp>
 #include <memory>
 #include <string>

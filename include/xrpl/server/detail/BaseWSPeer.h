@@ -20,12 +20,12 @@
 #ifndef RIPPLE_SERVER_BASEWSPEER_H_INCLUDED
 #define RIPPLE_SERVER_BASEWSPEER_H_INCLUDED
 
-#include <ripple/basics/safe_cast.h>
-#include <ripple/beast/utility/rngfill.h>
-#include <ripple/crypto/csprng.h>
-#include <ripple/protocol/BuildInfo.h>
-#include <ripple/server/impl/BasePeer.h>
-#include <ripple/server/impl/LowestLayer.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/rngfill.h>
+#include <xrpl/crypto/csprng.h>
+#include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/server/detail/BasePeer.h>
+#include <xrpl/server/detail/LowestLayer.h>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/websocket.hpp>

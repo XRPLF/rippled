@@ -20,11 +20,11 @@
 #ifndef RIPPLE_APP_CONSENSUSS_VALIDATIONS_H_INCLUDED
 #define RIPPLE_APP_CONSENSUSS_VALIDATIONS_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/consensus/Validations.h>
-#include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/RippleLedgerHash.h>
-#include <ripple/protocol/STValidation.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/consensus/Validations.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/STValidation.h>
 #include <vector>
 
 namespace ripple {

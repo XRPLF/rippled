@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_LEDGER_ABSTRACTFETCHPACKCONTAINER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_ABSTRACTFETCHPACKCONTAINER_H_INCLUDED
 
-#include <ripple/basics/Blob.h>
-#include <ripple/basics/base_uint.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/base_uint.h>
 #include <optional>
 
 namespace ripple {

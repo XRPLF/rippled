@@ -20,13 +20,13 @@
 #ifndef RIPPLE_RPC_HANDLER_H_INCLUDED
 #define RIPPLE_RPC_HANDLER_H_INCLUDED
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/core/Config.h>
-#include <ripple/rpc/RPCHandler.h>
-#include <ripple/rpc/Status.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <ripple/rpc/impl/Tuning.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/rpc/Status.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/Tuning.h>
 #include <vector>
 
 namespace Json {

@@ -21,8 +21,8 @@
 #ifndef BEAST_HASH_UHASH_H_INCLUDED
 #define BEAST_HASH_UHASH_H_INCLUDED
 
-#include <ripple/beast/hash/hash_append.h>
-#include <ripple/beast/hash/xxhasher.h>
+#include <xrpl/beast/hash/hash_append.h>
+#include <xrpl/beast/hash/xxhasher.h>
 
 namespace beast {
 

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_PATHS_H_INCLUDED
 #define RIPPLE_TEST_JTX_PATHS_H_INCLUDED
 
-#include <ripple/protocol/Issue.h>
 #include <test/jtx/Env.h>
+#include <xrpl/protocol/Issue.h>
 #include <type_traits>
 
 namespace ripple {

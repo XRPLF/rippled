@@ -20,7 +20,7 @@
 #ifndef RIPPLE_BASICS_CONTRACT_H_INCLUDED
 #define RIPPLE_BASICS_CONTRACT_H_INCLUDED
 
-#include <ripple/beast/type_name.h>
+#include <xrpl/beast/type_name.h>
 #include <exception>
 #include <string>
 #include <typeinfo>

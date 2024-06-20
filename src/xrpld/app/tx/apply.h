@@ -20,11 +20,11 @@
 #ifndef RIPPLE_TX_APPLY_H_INCLUDED
 #define RIPPLE_TX_APPLY_H_INCLUDED
 
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/core/Config.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/STTx.h>
-#include <ripple/protocol/TER.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <memory>
 #include <utility>
 

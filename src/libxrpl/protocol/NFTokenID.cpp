@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/NFTokenID.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/protocol/NFTokenID.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

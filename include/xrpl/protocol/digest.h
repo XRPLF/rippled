@@ -20,8 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_DIGEST_H_INCLUDED
 #define RIPPLE_PROTOCOL_DIGEST_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
-#include <ripple/crypto/secure_erase.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/crypto/secure_erase.h>
 #include <boost/endian/conversion.hpp>
 #include <algorithm>
 #include <array>

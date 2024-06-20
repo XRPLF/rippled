@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_CONSENSUS_RCLCENSORSHIPDETECTOR_H_INCLUDED
 #define RIPPLE_APP_CONSENSUS_RCLCENSORSHIPDETECTOR_H_INCLUDED
 
-#include <ripple/basics/algorithm.h>
-#include <ripple/shamap/SHAMap.h>
+#include <xrpld/shamap/SHAMap.h>
+#include <xrpl/basics/algorithm.h>
 #include <algorithm>
 #include <utility>
 #include <vector>

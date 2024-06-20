@@ -20,12 +20,12 @@
 #ifndef RIPPLE_NET_INFOSUB_H_INCLUDED
 #define RIPPLE_NET_INFOSUB_H_INCLUDED
 
-#include <ripple/app/misc/Manifest.h>
-#include <ripple/basics/CountedObject.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/Book.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/resource/Consumer.h>
+#include <xrpld/app/misc/Manifest.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/resource/Consumer.h>
 #include <mutex>
 
 namespace ripple {

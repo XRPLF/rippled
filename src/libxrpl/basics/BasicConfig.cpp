@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/basics/StringUtilities.h>
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <boost/regex.hpp>
 #include <algorithm>
 

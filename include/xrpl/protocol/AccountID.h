@@ -20,13 +20,13 @@
 #ifndef RIPPLE_PROTOCOL_ACCOUNTID_H_INCLUDED
 #define RIPPLE_PROTOCOL_ACCOUNTID_H_INCLUDED
 
-#include <ripple/protocol/tokens.h>
+#include <xrpl/protocol/tokens.h>
 // VFALCO Uncomment when the header issues are resolved
 //#include <ripple/protocol/PublicKey.h>
-#include <ripple/basics/UnorderedContainers.h>
-#include <ripple/basics/base_uint.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/json_get_or_throw.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/json_get_or_throw.h>
 
 #include <cstddef>
 #include <mutex>

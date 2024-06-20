@@ -20,11 +20,11 @@
 #ifndef RIPPLE_PROTOCOL_STPATHSET_H_INCLUDED
 #define RIPPLE_PROTOCOL_STPATHSET_H_INCLUDED
 
-#include <ripple/basics/CountedObject.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/STBase.h>
-#include <ripple/protocol/UintTypes.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <cassert>
 #include <cstddef>
 #include <optional>

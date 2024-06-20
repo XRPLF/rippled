@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/ByteUtilities.h>
-#include <ripple/shamap/SHAMapInnerNode.h>
-#include <ripple/shamap/impl/TaggedPointer.h>
+#include <xrpld/shamap/SHAMapInnerNode.h>
+#include <xrpld/shamap/detail/TaggedPointer.h>
+#include <xrpl/basics/ByteUtilities.h>
 
 #include <array>
 #include <bit>

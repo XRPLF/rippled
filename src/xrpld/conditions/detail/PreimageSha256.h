@@ -20,12 +20,12 @@
 #ifndef RIPPLE_CONDITIONS_PREIMAGE_SHA256_H
 #define RIPPLE_CONDITIONS_PREIMAGE_SHA256_H
 
-#include <ripple/basics/Buffer.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/conditions/Condition.h>
-#include <ripple/conditions/Fulfillment.h>
-#include <ripple/conditions/impl/error.h>
-#include <ripple/protocol/digest.h>
+#include <xrpld/conditions/Condition.h>
+#include <xrpld/conditions/Fulfillment.h>
+#include <xrpld/conditions/detail/error.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/protocol/digest.h>
 #include <memory>
 
 namespace ripple {

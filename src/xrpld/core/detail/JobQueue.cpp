@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/PerfLog.h>
-#include <ripple/basics/contract.h>
-#include <ripple/core/JobQueue.h>
+#include <xrpld/core/JobQueue.h>
+#include <xrpld/perflog/PerfLog.h>
+#include <xrpl/basics/contract.h>
 #include <mutex>
 
 namespace ripple {

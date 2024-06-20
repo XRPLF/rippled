@@ -20,8 +20,8 @@
 #ifndef RIPPLE_OVERLAY_PREDICATES_H_INCLUDED
 #define RIPPLE_OVERLAY_PREDICATES_H_INCLUDED
 
-#include <ripple/overlay/Message.h>
-#include <ripple/overlay/Peer.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Peer.h>
 
 #include <set>
 

@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PEERFINDER_HANDOUTS_H_INCLUDED
 #define RIPPLE_PEERFINDER_HANDOUTS_H_INCLUDED
 
-#include <ripple/beast/container/aged_set.h>
-#include <ripple/peerfinder/impl/SlotImp.h>
-#include <ripple/peerfinder/impl/Tuning.h>
+#include <xrpld/peerfinder/detail/SlotImp.h>
+#include <xrpld/peerfinder/detail/Tuning.h>
+#include <xrpl/beast/container/aged_set.h>
 #include <cassert>
 #include <iterator>
 #include <type_traits>

@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PROTOCOL_STBASE_H_INCLUDED
 #define RIPPLE_PROTOCOL_STBASE_H_INCLUDED
 
-#include <ripple/basics/contract.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/Serializer.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/Serializer.h>
 #include <memory>
 #include <ostream>
 #include <string>

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_JSON_JSON_WRITER_H_INCLUDED
 #define RIPPLE_JSON_JSON_WRITER_H_INCLUDED
 
-#include <ripple/json/json_forwards.h>
-#include <ripple/json/json_value.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
 #include <ostream>
 #include <vector>
 

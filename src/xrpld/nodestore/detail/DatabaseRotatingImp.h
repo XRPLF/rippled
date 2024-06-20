@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NODESTORE_DATABASEROTATINGIMP_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASEROTATINGIMP_H_INCLUDED
 
-#include <ripple/nodestore/DatabaseRotating.h>
+#include <xrpld/nodestore/DatabaseRotating.h>
 
 #include <mutex>
 

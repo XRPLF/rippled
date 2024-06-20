@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/Quality.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/Quality.h>
 #include <type_traits>
 
 namespace ripple {

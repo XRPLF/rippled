@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PROTOCOL_STXCHAINBRIDGE_H_INCLUDED
 #define RIPPLE_PROTOCOL_STXCHAINBRIDGE_H_INCLUDED
 
-#include <ripple/basics/CountedObject.h>
-#include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/STBase.h>
-#include <ripple/protocol/STIssue.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STIssue.h>
 
 namespace ripple {
 

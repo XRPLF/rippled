@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NODESTORE_DUMMYSCHEDULER_H_INCLUDED
 #define RIPPLE_NODESTORE_DUMMYSCHEDULER_H_INCLUDED
 
-#include <ripple/nodestore/Scheduler.h>
+#include <xrpld/nodestore/Scheduler.h>
 
 namespace ripple {
 namespace NodeStore {

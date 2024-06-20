@@ -20,9 +20,9 @@
 #ifndef RIPPLE_SHAMAP_SHAMAPLEAFNODE_H_INCLUDED
 #define RIPPLE_SHAMAP_SHAMAPLEAFNODE_H_INCLUDED
 
-#include <ripple/shamap/SHAMapItem.h>
-#include <ripple/shamap/SHAMapNodeID.h>
-#include <ripple/shamap/SHAMapTreeNode.h>
+#include <xrpld/shamap/SHAMapItem.h>
+#include <xrpld/shamap/SHAMapNodeID.h>
+#include <xrpld/shamap/SHAMapTreeNode.h>
 
 #include <cstdint>
 #include <memory>

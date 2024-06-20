@@ -20,8 +20,8 @@
 #ifndef RIPPLE_SERVER_PORT_H_INCLUDED
 #define RIPPLE_SERVER_PORT_H_INCLUDED
 
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/beast/net/IPEndpoint.h>
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/network_v4.hpp>
 #include <boost/asio/ip/network_v6.hpp>

@@ -20,12 +20,12 @@
 #ifndef RIPPLE_APP_RDB_DOWNLOAD_H_INCLUDED
 #define RIPPLE_APP_RDB_DOWNLOAD_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/misc/Manifest.h>
-#include <ripple/core/Config.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/overlay/PeerReservationTable.h>
-#include <ripple/peerfinder/impl/Store.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/misc/Manifest.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/core/DatabaseCon.h>
+#include <xrpld/overlay/PeerReservationTable.h>
+#include <xrpld/peerfinder/detail/Store.h>
 #include <boost/filesystem.hpp>
 
 namespace ripple {

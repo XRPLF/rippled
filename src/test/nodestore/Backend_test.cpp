@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/beast/utility/temp_dir.h>
-#include <ripple/nodestore/DummyScheduler.h>
-#include <ripple/nodestore/Manager.h>
-#include <ripple/unity/rocksdb.h>
-#include <algorithm>
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
+#include <xrpld/nodestore/DummyScheduler.h>
+#include <xrpld/nodestore/Manager.h>
+#include <xrpld/unity/rocksdb.h>
+#include <xrpl/beast/utility/temp_dir.h>
+#include <algorithm>
 
 namespace ripple {
 

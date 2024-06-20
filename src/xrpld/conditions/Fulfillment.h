@@ -20,10 +20,10 @@
 #ifndef RIPPLE_CONDITIONS_FULFILLMENT_H
 #define RIPPLE_CONDITIONS_FULFILLMENT_H
 
-#include <ripple/basics/Buffer.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/conditions/Condition.h>
-#include <ripple/conditions/impl/utils.h>
+#include <xrpld/conditions/Condition.h>
+#include <xrpld/conditions/detail/utils.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
 
 namespace ripple {
 namespace cryptoconditions {

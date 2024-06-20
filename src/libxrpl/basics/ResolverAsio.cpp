@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/ResolverAsio.h>
-#include <ripple/beast/net/IPAddressConversion.h>
-#include <ripple/beast/net/IPEndpoint.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/ResolverAsio.h>
+#include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <boost/asio.hpp>
 #include <atomic>
 #include <cassert>

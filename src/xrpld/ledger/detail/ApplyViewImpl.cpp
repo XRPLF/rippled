@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/ledger/ApplyViewImpl.h>
+#include <xrpld/ledger/ApplyViewImpl.h>
+#include <xrpl/basics/contract.h>
 #include <cassert>
 
 namespace ripple {
