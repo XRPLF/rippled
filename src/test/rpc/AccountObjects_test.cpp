@@ -1098,19 +1098,30 @@ public:
             params[jss::ledger_index] = "validated";
             auto const resp =
                 env.rpc("json", "account_nfts", to_string(params));
-            BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
+
+            if (resp[jss::result].isMember(jss::error))
+                return false;
+
             auto const& nfts = resp[jss::result][jss::account_nfts];
             auto nftsCount = nftsSize - lastIndex - 1 < limit ? nftsSize - lastIndex - 1: limit;
-            BEAST_EXPECT(nfts.size() == nftsCount);
+
+            if (nfts.size() != nftsCount)
+                return false;
+
             for (unsigned i = 0; i < nftsCount; i++)
-                BEAST_EXPECT(nfts[i]["NFTokenID"] == tokenIDs[lastIndex + 1 + i]);
+            {
+                if (nfts[i]["NFTokenID"] != tokenIDs[lastIndex + 1 + i])
+                    return false;
+            }
+
+            return true;
         };
 
         // test a valid marker which is equal to the third tokenID
-        compareNFTs(4, 2);
+        BEAST_EXPECT(compareNFTs(4, 2));
 
         // test a valid marker which is equal to the 8th tokenID
-        compareNFTs(4, 7);
+        BEAST_EXPECT(compareNFTs(4, 7));
 
         // test an invalid marker which does not exist in the NFTokenIDs
         {
