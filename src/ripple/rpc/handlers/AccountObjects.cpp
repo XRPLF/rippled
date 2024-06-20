@@ -136,9 +136,7 @@ doAccountNFTs(RPC::JsonContext& context)
             }
 
             if (markerSet && !markerFound)
-            {
                 return RPC::invalid_field_error(jss::marker);
-            }
 
             pastMarker = true;
 
@@ -170,9 +168,7 @@ doAccountNFTs(RPC::JsonContext& context)
     }
 
     if (markerSet && !markerFound)
-    {
         return RPC::invalid_field_error(jss::marker);
-    }
 
     result[jss::account] = toBase58(accountID);
     context.loadType = Resource::feeMediumBurdenRPC;
