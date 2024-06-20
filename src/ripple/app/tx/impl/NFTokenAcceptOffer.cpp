@@ -270,6 +270,28 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    // Fix a bug where the transfer of an NFToken with a transfer fee could
+    // give the NFToken issuer an undesired trust line.
+    if (ctx.view.rules().enabled(fixEnforceNFTokenTrustline))
+    {
+        std::shared_ptr<SLE const> const& offer = bo ? bo : so;
+        if (!offer)
+            // Should be caught in preflight.
+            return tecINTERNAL;
+
+        uint256 const& tokenID = offer->at(sfNFTokenID);
+        STAmount const& amount = offer->at(sfAmount);
+        if (nft::getTransferFee(tokenID) != 0 &&
+            (nft::getFlags(tokenID) & nft::flagCreateTrustLines) == 0 &&
+            !amount.native())
+        {
+            auto const issuer = nft::getIssuer(tokenID);
+            // Issuer doesn't need a trust line to accept their own currency.
+            if (issuer != amount.getIssuer() &&
+                !ctx.view.read(keylet::line(issuer, amount.issue())))
+                return tecNO_LINE;
+        }
+    }
     return tesSUCCESS;
 }
 

@@ -56,15 +56,15 @@ requestRole(
     Port const& port,
     Json::Value const& params,
     beast::IP::Endpoint const& remoteIp,
-    boost::string_view const& user);
+    std::string_view user);
 
 Resource::Consumer
 requestInboundEndpoint(
     Resource::Manager& manager,
     beast::IP::Endpoint const& remoteAddress,
     Role const& role,
-    boost::string_view const& user,
-    boost::string_view const& forwardedFor);
+    std::string_view user,
+    std::string_view forwardedFor);
 
 /**
  * Check if the role entitles the user to unlimited resources.
@@ -85,7 +85,7 @@ ipAllowed(
     std::vector<boost::asio::ip::network_v4> const& nets4,
     std::vector<boost::asio::ip::network_v6> const& nets6);
 
-boost::string_view
+std::string_view
 forwardedFor(http_request_type const& request);
 
 }  // namespace ripple
