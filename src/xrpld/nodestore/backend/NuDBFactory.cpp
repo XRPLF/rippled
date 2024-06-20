@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/nodestore/Factory.h>
-#include <ripple/nodestore/Manager.h>
-#include <ripple/nodestore/impl/DecodedBlob.h>
-#include <ripple/nodestore/impl/EncodedBlob.h>
-#include <ripple/nodestore/impl/codec.h>
+#include <xrpld/nodestore/Factory.h>
+#include <xrpld/nodestore/Manager.h>
+#include <xrpld/nodestore/detail/DecodedBlob.h>
+#include <xrpld/nodestore/detail/EncodedBlob.h>
+#include <xrpld/nodestore/detail/codec.h>
+#include <xrpl/basics/contract.h>
 #include <boost/filesystem.hpp>
 #include <cassert>
 #include <chrono>

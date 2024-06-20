@@ -17,22 +17,22 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/TransactionMaster.h>
-#include <ripple/app/misc/DeliverMax.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/app/rdb/RelationalDatabase.h>
-#include <ripple/basics/ToString.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/NFTSyntheticSerializer.h>
-#include <ripple/protocol/RPCErr.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/CTID.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/DeliveredAmount.h>
-#include <ripple/rpc/GRPCHandlers.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/TransactionMaster.h>
+#include <xrpld/app/misc/DeliverMax.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/misc/Transaction.h>
+#include <xrpld/app/rdb/RelationalDatabase.h>
+#include <xrpld/rpc/CTID.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/DeliveredAmount.h>
+#include <xrpld/rpc/GRPCHandlers.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/basics/ToString.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/NFTSyntheticSerializer.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/jss.h>
 
 #include <charconv>
 #include <regex>

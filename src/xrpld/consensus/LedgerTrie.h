@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
 #define RIPPLE_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
 
-#include <ripple/basics/ToString.h>
-#include <ripple/json/json_value.h>
+#include <xrpl/basics/ToString.h>
+#include <xrpl/json/json_value.h>
 #include <algorithm>
 #include <iomanip>
 #include <memory>

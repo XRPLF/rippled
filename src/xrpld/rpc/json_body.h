@@ -20,8 +20,8 @@
 #ifndef RIPPLE_RPC_JSON_BODY_H
 #define RIPPLE_RPC_JSON_BODY_H
 
-#include <ripple/json/json_value.h>
-#include <ripple/json/to_string.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/message.hpp>

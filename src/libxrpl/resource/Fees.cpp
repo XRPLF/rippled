@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/resource/Fees.h>
+#include <xrpl/resource/Fees.h>
 
 namespace ripple {
 namespace Resource {

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_ERRORCODES_H_INCLUDED
 #define RIPPLE_PROTOCOL_ERRORCODES_H_INCLUDED
 
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

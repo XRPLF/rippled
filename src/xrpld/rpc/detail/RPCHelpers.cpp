@@ -17,22 +17,22 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/LedgerToJson.h>
-#include <ripple/app/ledger/OpenLedger.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/app/paths/TrustLine.h>
-#include <ripple/app/rdb/RelationalDatabase.h>
-#include <ripple/app/tx/impl/details/NFTokenUtils.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/RPCErr.h>
-#include <ripple/protocol/nftPageMask.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/DeliveredAmount.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/app/misc/Transaction.h>
+#include <xrpld/app/paths/TrustLine.h>
+#include <xrpld/app/rdb/RelationalDatabase.h>
+#include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/ledger/View.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/DeliveredAmount.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/nftPageMask.h>
+#include <xrpl/resource/Fees.h>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <regex>
 

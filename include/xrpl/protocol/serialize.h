@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PROTOCOL_SERIALIZE_H_INCLUDED
 #define RIPPLE_PROTOCOL_SERIALIZE_H_INCLUDED
 
-#include <ripple/basics/strHex.h>
-#include <ripple/protocol/STObject.h>
-#include <ripple/protocol/Serializer.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/Serializer.h>
 
 namespace ripple {
 

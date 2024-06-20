@@ -20,9 +20,9 @@
 #ifndef RIPPLE_SERVER_WSSESSION_H_INCLUDED
 #define RIPPLE_SERVER_WSSESSION_H_INCLUDED
 
-#include <ripple/server/Handoff.h>
-#include <ripple/server/Port.h>
-#include <ripple/server/Writer.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Port.h>
+#include <xrpl/server/Writer.h>
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ip/tcp.hpp>

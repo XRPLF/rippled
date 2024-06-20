@@ -20,10 +20,10 @@
 #ifndef RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
 #define RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
 
-#include <ripple/basics/Log.h>
-#include <ripple/beast/net/IPAddressConversion.h>
-#include <ripple/server/Session.h>
-#include <ripple/server/impl/io_list.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/server/Session.h>
+#include <xrpl/server/detail/io_list.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/ssl/stream.hpp>

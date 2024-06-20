@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/net/HTTPDownloader.h>
+#include <xrpld/net/HTTPDownloader.h>
 #include <boost/asio/ssl.hpp>
 
 namespace ripple {

@@ -20,12 +20,12 @@
 #ifndef RIPPLE_PROTOCOL_SECRETKEY_H_INCLUDED
 #define RIPPLE_PROTOCOL_SECRETKEY_H_INCLUDED
 
-#include <ripple/basics/Buffer.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/protocol/KeyType.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/Seed.h>
-#include <ripple/protocol/tokens.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/tokens.h>
 #include <array>
 #include <cstring>
 #include <string>

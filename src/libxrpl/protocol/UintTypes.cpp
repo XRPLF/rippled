@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/beast/utility/Zero.h>
-#include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/SystemParameters.h>
-#include <ripple/protocol/UintTypes.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <string_view>
 
 namespace ripple {

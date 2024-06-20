@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
+#include <xrpl/basics/Log.h>
 
 namespace ripple {
 namespace test {

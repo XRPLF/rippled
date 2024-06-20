@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/LedgerToJson.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/app/misc/impl/AccountTxPaging.h>
-#include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/UintTypes.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/Transaction.h>
+#include <xrpld/app/misc/detail/AccountTxPaging.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <boost/format.hpp>
 #include <memory>
 

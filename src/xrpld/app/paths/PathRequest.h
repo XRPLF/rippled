@@ -20,12 +20,12 @@
 #ifndef RIPPLE_APP_PATHS_PATHREQUEST_H_INCLUDED
 #define RIPPLE_APP_PATHS_PATHREQUEST_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/paths/Pathfinder.h>
-#include <ripple/app/paths/RippleLineCache.h>
-#include <ripple/json/json_value.h>
-#include <ripple/net/InfoSub.h>
-#include <ripple/protocol/UintTypes.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/paths/Pathfinder.h>
+#include <xrpld/app/paths/RippleLineCache.h>
+#include <xrpld/net/InfoSub.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <map>
 #include <mutex>
 #include <optional>

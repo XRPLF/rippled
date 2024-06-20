@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/NFTokenAcceptOffer.h>
-#include <ripple/app/tx/impl/details/NFTokenUtils.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Rate.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/st.h>
+#include <xrpld/app/tx/detail/NFTokenAcceptOffer.h>
+#include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/st.h>
 
 namespace ripple {
 

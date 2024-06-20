@@ -20,8 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_SYSTEMPARAMETERS_H_INCLUDED
 #define RIPPLE_PROTOCOL_SYSTEMPARAMETERS_H_INCLUDED
 
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/basics/chrono.h>
+#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/basics/chrono.h>
 #include <cstdint>
 #include <string>
 

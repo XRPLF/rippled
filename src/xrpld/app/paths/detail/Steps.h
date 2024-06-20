@@ -20,12 +20,12 @@
 #ifndef RIPPLE_APP_PATHS_IMPL_PAYSTEPS_H_INCLUDED
 #define RIPPLE_APP_PATHS_IMPL_PAYSTEPS_H_INCLUDED
 
-#include <ripple/app/paths/impl/AmountSpec.h>
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/protocol/QualityFunction.h>
-#include <ripple/protocol/STLedgerEntry.h>
-#include <ripple/protocol/TER.h>
+#include <xrpld/app/paths/detail/AmountSpec.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/QualityFunction.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 
 #include <boost/container/flat_set.hpp>
 #include <optional>

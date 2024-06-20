@@ -20,8 +20,8 @@
 #ifndef RIPPLE_RPC_GRPCHANDLER_H_INCLUDED
 #define RIPPLE_RPC_GRPCHANDLER_H_INCLUDED
 
-#include <ripple/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
-#include <ripple/rpc/Context.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
 #include <grpcpp/grpcpp.h>
 
 namespace ripple {

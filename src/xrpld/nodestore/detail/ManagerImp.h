@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NODESTORE_MANAGERIMP_H_INCLUDED
 #define RIPPLE_NODESTORE_MANAGERIMP_H_INCLUDED
 
-#include <ripple/nodestore/Manager.h>
+#include <xrpld/nodestore/Manager.h>
 
 namespace ripple {
 

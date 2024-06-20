@@ -16,15 +16,15 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/misc/AMMUtils.h>
-#include <ripple/json/json_value.h>
-#include <ripple/ledger/ReadView.h>
-#include <ripple/protocol/AMMCore.h>
-#include <ripple/protocol/Issue.h>
-#include <ripple/protocol/RPCErr.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/ledger/ReadView.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/RPCErr.h>
 #include <grpcpp/support/status.h>
 
 namespace ripple {

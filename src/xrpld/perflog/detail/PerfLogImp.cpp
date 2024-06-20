@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/perflog/impl/PerfLogImp.h>
+#include <xrpld/perflog/detail/PerfLogImp.h>
 
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/beast/core/CurrentThreadName.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/core/JobTypes.h>
-#include <ripple/json/json_writer.h>
-#include <ripple/json/to_string.h>
-#include <ripple/nodestore/DatabaseShard.h>
+#include <xrpld/core/JobTypes.h>
+#include <xrpld/nodestore/DatabaseShard.h>
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_writer.h>
+#include <xrpl/json/to_string.h>
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>

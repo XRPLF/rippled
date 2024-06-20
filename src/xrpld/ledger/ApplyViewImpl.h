@@ -20,10 +20,10 @@
 #ifndef RIPPLE_LEDGER_APPLYVIEWIMPL_H_INCLUDED
 #define RIPPLE_LEDGER_APPLYVIEWIMPL_H_INCLUDED
 
-#include <ripple/ledger/OpenView.h>
-#include <ripple/ledger/detail/ApplyViewBase.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/TER.h>
+#include <xrpld/ledger/OpenView.h>
+#include <xrpld/ledger/detail/ApplyViewBase.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
 
 namespace ripple {
 

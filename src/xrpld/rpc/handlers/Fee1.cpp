@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/OpenLedger.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/TxQ.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/GRPCHandlers.h>
+#include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/TxQ.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/GRPCHandlers.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Feature.h>
 
 namespace ripple {
 Json::Value

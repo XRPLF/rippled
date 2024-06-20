@@ -20,9 +20,9 @@
 #ifndef RIPPLE_APP_LEDGER_CONSENSUSTRANSSETSF_H_INCLUDED
 #define RIPPLE_APP_LEDGER_CONSENSUSTRANSSETSF_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
-#include <ripple/basics/TaggedCache.h>
-#include <ripple/shamap/SHAMapSyncFilter.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/shamap/SHAMapSyncFilter.h>
+#include <xrpl/basics/TaggedCache.h>
 
 namespace ripple {
 

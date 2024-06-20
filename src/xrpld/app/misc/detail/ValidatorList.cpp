@@ -17,20 +17,20 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/HashRouter.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/misc/ValidatorList.h>
-#include <ripple/basics/FileUtilities.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/base64.h>
-#include <ripple/json/json_reader.h>
-#include <ripple/overlay/Overlay.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/STValidation.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/protocol/messages.h>
+#include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/overlay/Overlay.h>
+#include <xrpl/basics/FileUtilities.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base64.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/messages.h>
 #include <boost/regex.hpp>
 
 #include <cmath>

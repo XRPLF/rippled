@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NET_DATABASEBODY_H
 #define RIPPLE_NET_DATABASEBODY_H
 
-#include <ripple/core/DatabaseCon.h>
+#include <xrpld/core/DatabaseCon.h>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/beast/http/message.hpp>
@@ -174,6 +174,6 @@ public:
 
 }  // namespace ripple
 
-#include <ripple/net/impl/DatabaseBody.ipp>
+#include <xrpld/net/detail/DatabaseBody.ipp>
 
 #endif  // RIPPLE_NET_DATABASEBODY_H

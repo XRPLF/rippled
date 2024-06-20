@@ -20,7 +20,7 @@
 #ifndef RIPPLE_SERVER_SIMPLEWRITER_H_INCLUDED
 #define RIPPLE_SERVER_SIMPLEWRITER_H_INCLUDED
 
-#include <ripple/server/Writer.h>
+#include <xrpl/server/Writer.h>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/core/ostream.hpp>
 #include <boost/beast/http/message.hpp>

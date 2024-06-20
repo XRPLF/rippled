@@ -20,10 +20,10 @@
 #ifndef RIPPLE_OVERLAY_SQUELCH_H_INCLUDED
 #define RIPPLE_OVERLAY_SQUELCH_H_INCLUDED
 
-#include <ripple/basics/random.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/overlay/ReduceRelayCommon.h>
-#include <ripple/protocol/PublicKey.h>
+#include <xrpld/overlay/ReduceRelayCommon.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/PublicKey.h>
 
 #include <algorithm>
 #include <chrono>

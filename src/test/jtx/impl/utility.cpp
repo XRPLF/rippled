@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/json/Object.h>
-#include <ripple/net/RPCCall.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/STParsedJSON.h>
-#include <ripple/protocol/UintTypes.h>
-#include <ripple/protocol/jss.h>
-#include <cstring>
 #include <test/jtx/utility.h>
+#include <xrpld/net/RPCCall.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/Object.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
+#include <cstring>
 
 namespace ripple {
 namespace test {

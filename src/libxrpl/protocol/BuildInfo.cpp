@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/beast/core/SemanticVersion.h>
-#include <ripple/protocol/BuildInfo.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/core/SemanticVersion.h>
+#include <xrpl/protocol/BuildInfo.h>
 #include <boost/preprocessor/stringize.hpp>
 #include <algorithm>
 

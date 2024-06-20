@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/main/Tuning.h>
-#include <ripple/shamap/NodeFamily.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/main/Tuning.h>
+#include <xrpld/shamap/NodeFamily.h>
 #include <sstream>
 
 namespace ripple {

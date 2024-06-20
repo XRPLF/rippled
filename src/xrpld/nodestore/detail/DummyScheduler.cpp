@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/nodestore/DummyScheduler.h>
+#include <xrpld/nodestore/DummyScheduler.h>
 
 namespace ripple {
 namespace NodeStore {

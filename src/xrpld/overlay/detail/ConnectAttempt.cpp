@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/json/json_reader.h>
-#include <ripple/overlay/Cluster.h>
-#include <ripple/overlay/impl/ConnectAttempt.h>
-#include <ripple/overlay/impl/PeerImp.h>
-#include <ripple/overlay/impl/ProtocolVersion.h>
+#include <xrpld/overlay/Cluster.h>
+#include <xrpld/overlay/detail/ConnectAttempt.h>
+#include <xrpld/overlay/detail/PeerImp.h>
+#include <xrpld/overlay/detail/ProtocolVersion.h>
+#include <xrpl/json/json_reader.h>
 
 namespace ripple {
 

@@ -20,11 +20,11 @@
 #ifndef RIPPLE_OVERLAY_PEER_RESERVATION_TABLE_H_INCLUDED
 #define RIPPLE_OVERLAY_PEER_RESERVATION_TABLE_H_INCLUDED
 
-#include <ripple/beast/hash/hash_append.h>
-#include <ripple/beast/hash/uhash.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/json/json_forwards.h>
-#include <ripple/protocol/PublicKey.h>
+#include <xrpl/beast/hash/hash_append.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/protocol/PublicKey.h>
 
 #include <mutex>
 #include <optional>

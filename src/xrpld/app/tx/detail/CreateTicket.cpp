@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/tx/impl/CreateTicket.h>
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/st.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/tx/detail/CreateTicket.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/st.h>
 
 namespace ripple {
 

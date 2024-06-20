@@ -20,17 +20,17 @@
 #ifndef RIPPLE_RPC_HANDLERS_LEDGER_H_INCLUDED
 #define RIPPLE_RPC_HANDLERS_LEDGER_H_INCLUDED
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/LedgerToJson.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/json/Object.h>
-#include <ripple/ledger/ReadView.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/Role.h>
-#include <ripple/rpc/Status.h>
-#include <ripple/rpc/impl/Handler.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/ledger/ReadView.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/Status.h>
+#include <xrpld/rpc/detail/Handler.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/json/Object.h>
+#include <xrpl/protocol/jss.h>
 
 namespace Json {
 class Object;

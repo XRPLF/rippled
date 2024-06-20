@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/protocol/STVector256.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

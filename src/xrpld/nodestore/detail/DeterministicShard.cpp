@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/beast/hash/hash_append.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/nodestore/Manager.h>
-#include <ripple/nodestore/impl/DeterministicShard.h>
-#include <ripple/nodestore/impl/Shard.h>
-#include <ripple/protocol/digest.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpld/nodestore/Manager.h>
+#include <xrpld/nodestore/detail/DeterministicShard.h>
+#include <xrpld/nodestore/detail/Shard.h>
+#include <xrpl/beast/hash/hash_append.h>
+#include <xrpl/protocol/digest.h>
 #include <fstream>
 #include <nudb/detail/format.hpp>
 #include <nudb/nudb.hpp>

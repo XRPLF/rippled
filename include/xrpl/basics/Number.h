@@ -20,7 +20,7 @@
 #ifndef RIPPLE_BASICS_NUMBER_H_INCLUDED
 #define RIPPLE_BASICS_NUMBER_H_INCLUDED
 
-#include <ripple/basics/XRPAmount.h>
+#include <xrpl/basics/XRPAmount.h>
 #include <cstdint>
 #include <limits>
 #include <ostream>

@@ -17,22 +17,22 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/Escrow.h>
+#include <xrpld/app/tx/detail/Escrow.h>
 
-#include <ripple/app/misc/HashRouter.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/basics/safe_cast.h>
-#include <ripple/conditions/Condition.h>
-#include <ripple/conditions/Fulfillment.h>
-#include <ripple/ledger/ApplyView.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/st.h>
+#include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/conditions/Condition.h>
+#include <xrpld/conditions/Fulfillment.h>
+#include <xrpld/ledger/ApplyView.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/st.h>
 
 // During an EscrowFinish, the transaction must specify both
 // a condition and a fulfillment. We track whether that

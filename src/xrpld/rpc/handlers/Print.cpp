@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/json/JsonPropertyStream.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/Context.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpl/json/JsonPropertyStream.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NET_DATABASEDOWNLOADER_H
 #define RIPPLE_NET_DATABASEDOWNLOADER_H
 
-#include <ripple/net/DatabaseBody.h>
-#include <ripple/net/HTTPDownloader.h>
+#include <xrpld/net/DatabaseBody.h>
+#include <xrpld/net/HTTPDownloader.h>
 
 namespace ripple {
 

@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/UptimeClock.h>
-#include <ripple/core/LoadMonitor.h>
+#include <xrpld/core/LoadMonitor.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UptimeClock.h>
 
 namespace ripple {
 

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/overlay/impl/TrafficCount.h>
+#include <xrpld/overlay/detail/TrafficCount.h>
 
 namespace ripple {
 

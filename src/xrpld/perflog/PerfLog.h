@@ -20,9 +20,9 @@
 #ifndef RIPPLE_BASICS_PERFLOG_H
 #define RIPPLE_BASICS_PERFLOG_H
 
-#include <ripple/core/Config.h>
-#include <ripple/core/JobTypes.h>
-#include <ripple/json/json_value.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/core/JobTypes.h>
+#include <xrpl/json/json_value.h>
 #include <boost/filesystem.hpp>
 #include <chrono>
 #include <cstdint>

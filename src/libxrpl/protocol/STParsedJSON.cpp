@@ -17,29 +17,29 @@
 */
 //==============================================================================
 
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/contract.h>
-#include <ripple/basics/safe_cast.h>
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/LedgerFormats.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/STArray.h>
-#include <ripple/protocol/STBitString.h>
-#include <ripple/protocol/STBlob.h>
-#include <ripple/protocol/STInteger.h>
-#include <ripple/protocol/STIssue.h>
-#include <ripple/protocol/STParsedJSON.h>
-#include <ripple/protocol/STPathSet.h>
-#include <ripple/protocol/STVector256.h>
-#include <ripple/protocol/STXChainBridge.h>
-#include <ripple/protocol/TER.h>
-#include <ripple/protocol/TxFormats.h>
-#include <ripple/protocol/UintTypes.h>
-#include <ripple/protocol/XChainAttestations.h>
-#include <ripple/protocol/impl/STVar.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STBitString.h>
+#include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XChainAttestations.h>
+#include <xrpl/protocol/detail/STVar.h>
 
 #include <cassert>
 #include <charconv>

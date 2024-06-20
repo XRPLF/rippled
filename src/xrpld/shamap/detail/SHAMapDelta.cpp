@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/shamap/SHAMap.h>
+#include <xrpld/shamap/SHAMap.h>
+#include <xrpl/basics/contract.h>
 
 #include <array>
 #include <stack>

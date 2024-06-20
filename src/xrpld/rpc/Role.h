@@ -20,11 +20,11 @@
 #ifndef RIPPLE_SERVER_ROLE_H_INCLUDED
 #define RIPPLE_SERVER_ROLE_H_INCLUDED
 
-#include <ripple/beast/net/IPEndpoint.h>
-#include <ripple/json/json_value.h>
-#include <ripple/resource/ResourceManager.h>
-#include <ripple/server/Handoff.h>
-#include <ripple/server/Port.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/resource/ResourceManager.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Port.h>
 #include <boost/asio/ip/network_v4.hpp>
 #include <boost/asio/ip/network_v6.hpp>
 #include <boost/utility/string_view.hpp>

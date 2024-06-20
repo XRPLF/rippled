@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/ledger/CachedView.h>
-#include <ripple/protocol/Serializer.h>
+#include <xrpld/ledger/CachedView.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/Serializer.h>
 
 namespace ripple {
 namespace detail {

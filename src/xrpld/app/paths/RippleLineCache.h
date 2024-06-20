@@ -20,10 +20,10 @@
 #ifndef RIPPLE_APP_PATHS_RIPPLELINECACHE_H_INCLUDED
 #define RIPPLE_APP_PATHS_RIPPLELINECACHE_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/paths/TrustLine.h>
-#include <ripple/basics/CountedObject.h>
-#include <ripple/basics/hardened_hash.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/paths/TrustLine.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/hardened_hash.h>
 
 #include <cstddef>
 #include <memory>

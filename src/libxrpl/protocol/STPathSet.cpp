@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/contract.h>
-#include <ripple/basics/strHex.h>
-#include <ripple/protocol/STPathSet.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

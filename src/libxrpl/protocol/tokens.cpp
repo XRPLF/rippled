@@ -25,11 +25,11 @@
  * file COPYING or http://www.opensource.org/licenses/mit-license.php.
  */
 
-#include <ripple/protocol/tokens.h>
+#include <xrpl/protocol/tokens.h>
 
-#include <ripple/basics/safe_cast.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/impl/b58_utils.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/protocol/detail/b58_utils.h>
+#include <xrpl/protocol/digest.h>
 
 #include <boost/container/small_vector.hpp>
 #include <boost/endian.hpp>

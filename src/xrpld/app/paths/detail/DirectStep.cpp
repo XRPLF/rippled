@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/Credit.h>
-#include <ripple/app/paths/impl/StepChecks.h>
-#include <ripple/app/paths/impl/Steps.h>
-#include <ripple/basics/IOUAmount.h>
-#include <ripple/basics/Log.h>
-#include <ripple/ledger/PaymentSandbox.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Quality.h>
+#include <xrpld/app/paths/Credit.h>
+#include <xrpld/app/paths/detail/StepChecks.h>
+#include <xrpld/app/paths/detail/Steps.h>
+#include <xrpld/ledger/PaymentSandbox.h>
+#include <xrpl/basics/IOUAmount.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Quality.h>
 
 #include <boost/container/flat_set.hpp>
 

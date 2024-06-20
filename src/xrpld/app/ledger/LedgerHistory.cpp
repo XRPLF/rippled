@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerHistory.h>
-#include <ripple/app/ledger/LedgerToJson.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/basics/contract.h>
-#include <ripple/json/to_string.h>
+#include <xrpld/app/ledger/LedgerHistory.h>
+#include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/to_string.h>
 
 namespace ripple {
 

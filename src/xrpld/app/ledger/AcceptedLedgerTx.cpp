@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/AcceptedLedgerTx.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/protocol/UintTypes.h>
-#include <ripple/protocol/jss.h>
+#include <xrpld/app/ledger/AcceptedLedgerTx.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

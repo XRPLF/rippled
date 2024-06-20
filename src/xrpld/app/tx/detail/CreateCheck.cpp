@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/tx/impl/CreateCheck.h>
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/TER.h>
-#include <ripple/protocol/TxFlags.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/tx/detail/CreateCheck.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 

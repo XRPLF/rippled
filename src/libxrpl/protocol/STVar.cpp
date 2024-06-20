@@ -17,23 +17,23 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/impl/STVar.h>
+#include <xrpl/protocol/detail/STVar.h>
 
-#include <ripple/basics/contract.h>
-#include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/STArray.h>
-#include <ripple/protocol/STBase.h>
-#include <ripple/protocol/STBitString.h>
-#include <ripple/protocol/STBlob.h>
-#include <ripple/protocol/STCurrency.h>
-#include <ripple/protocol/STInteger.h>
-#include <ripple/protocol/STIssue.h>
-#include <ripple/protocol/STObject.h>
-#include <ripple/protocol/STPathSet.h>
-#include <ripple/protocol/STVector256.h>
-#include <ripple/protocol/STXChainBridge.h>
-#include <ripple/protocol/XChainAttestations.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STBitString.h>
+#include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/XChainAttestations.h>
 
 namespace ripple {
 namespace detail {

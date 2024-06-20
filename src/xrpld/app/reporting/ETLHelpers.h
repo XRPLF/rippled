@@ -19,8 +19,8 @@
 
 #ifndef RIPPLE_APP_REPORTING_ETLHELPERS_H_INCLUDED
 #define RIPPLE_APP_REPORTING_ETLHELPERS_H_INCLUDED
-#include <ripple/app/main/Application.h>
-#include <ripple/ledger/ReadView.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/ledger/ReadView.h>
 #include <condition_variable>
 #include <mutex>
 #include <optional>
