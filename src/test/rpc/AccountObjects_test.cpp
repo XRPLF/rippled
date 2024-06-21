@@ -1051,6 +1051,8 @@ public:
 
         env.close();
 
+        // this lambda function is used to create some fake marker using given taxon and sequence
+        // because we want to test some invalid markers later
         auto createFakeMarker = [](AccountID const& issuer,
                                    std::string taxonStr,
                                    std::string tokenSeqStr,
