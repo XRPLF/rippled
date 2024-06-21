@@ -1047,14 +1047,6 @@ public:
         Account const bob{"bob"};
         env.fund(XRP(10000), bob);
 
-        unsigned nftsSize = 10;
-        for (unsigned i = 0; i < nftsSize; i++)
-        {
-            env(token::mint(bob, 0));
-        }
-
-        env.close();
-
         // this lambda function is used to create some fake marker using given
         // taxon and sequence because we want to test some unassociated markers
         // later
@@ -1082,23 +1074,12 @@ public:
             return uint256::fromVoid(buf.data());
         };
 
-        // save the NFTokenIDs to use later
-        std::vector<Json::Value> tokenIDs;
-        {
-            Json::Value params;
-            params[jss::account] = bob.human();
-            params[jss::ledger_index] = "validated";
-            auto const resp =
-                env.rpc("json", "account_nfts", to_string(params));
-            auto const& nfts = resp[jss::result][jss::account_nfts];
-            for (auto const& nft : nfts)
-                tokenIDs.push_back(nft["NFTokenID"]);
-        }
-
         // this lambda function is used to check if the account_nfts method
         // returns the correct token information. lastIndex is used to query the
         // last marker.
-        auto compareNFTs = [&](unsigned const limit, unsigned const lastIndex) {
+        auto compareNFTs = [&](unsigned const limit,
+                               unsigned const lastIndex,
+                               const std::vector<Json::Value>& tokenIDs) {
             Json::Value params;
             params[jss::account] = bob.human();
             params[jss::limit] = limit;
@@ -1127,11 +1108,32 @@ public:
             return true;
         };
 
+        unsigned nftsSize = 10;
+        for (unsigned i = 0; i < nftsSize; i++)
+        {
+            env(token::mint(bob, 0));
+        }
+
+        env.close();
+
+        // save the NFTokenIDs to use later
+        std::vector<Json::Value> tokenIDs;
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::ledger_index] = "validated";
+            auto const resp =
+                env.rpc("json", "account_nfts", to_string(params));
+            auto const& nfts = resp[jss::result][jss::account_nfts];
+            for (auto const& nft : nfts)
+                tokenIDs.push_back(nft["NFTokenID"]);
+        }
+
         // test a valid marker which is equal to the third tokenID
-        BEAST_EXPECT(compareNFTs(4, 2));
+        BEAST_EXPECT(compareNFTs(4, 2, tokenIDs));
 
         // test a valid marker which is equal to the 8th tokenID
-        BEAST_EXPECT(compareNFTs(4, 7));
+        BEAST_EXPECT(compareNFTs(4, 7, tokenIDs));
 
         // test an unassociated marker which does not exist in the NFTokenIDs
         {
