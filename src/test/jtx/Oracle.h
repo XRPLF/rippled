@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_ORACLE_H_INCLUDED
 #define RIPPLE_TEST_JTX_ORACLE_H_INCLUDED
 
-#include <date/date.h>
 #include <test/jtx.h>
+#include <date/date.h>
 
 namespace ripple {
 namespace test {

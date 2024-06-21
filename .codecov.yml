@@ -33,5 +33,5 @@ slack_app: false
 
 ignore:
   - "src/test/"
-  - "src/ripple/beast/test/"
-  - "src/ripple/beast/unit_test/"
+  - "include/xrpl/beast/test/"
+  - "include/xrpl/beast/unit_test/"

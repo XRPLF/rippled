@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/beast/utility/rngfill.h>
-#include <ripple/crypto/csprng.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/Seed.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/utility/rngfill.h>
+#include <xrpl/crypto/csprng.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <algorithm>
 #include <string>
 #include <vector>

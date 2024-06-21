@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/jss.h>
 
 #include <boost/format.hpp>
 

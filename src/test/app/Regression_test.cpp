@@ -15,13 +15,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/apply.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/json/json_reader.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
+#include <xrpld/app/tx/apply.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {

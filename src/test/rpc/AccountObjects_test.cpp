@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/json/json_reader.h>
-#include <ripple/json/json_value.h>
-#include <ripple/json/to_string.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/xchain_bridge.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/jss.h>
 
 #include <boost/utility/string_ref.hpp>
 

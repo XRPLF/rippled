@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test/suite.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/Issue.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/STXChainBridge.h>
-#include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/TER.h>
-#include <ripple/protocol/XChainAttestations.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XChainAttestations.h>
 
 #include <test/jtx.h>
 #include <test/jtx/Env.h>

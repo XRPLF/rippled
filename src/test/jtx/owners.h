@@ -20,11 +20,11 @@
 #ifndef RIPPLE_TEST_JTX_OWNERS_H_INCLUDED
 #define RIPPLE_TEST_JTX_OWNERS_H_INCLUDED
 
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/LedgerFormats.h>
-#include <ripple/protocol/UintTypes.h>
-#include <cstdint>
 #include <test/jtx/Env.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <cstdint>
 
 namespace ripple {
 namespace test {

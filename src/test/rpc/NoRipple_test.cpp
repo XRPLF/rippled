@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

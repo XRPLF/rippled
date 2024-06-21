@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/rpc/Status.h>
+#include <xrpld/rpc/Status.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test.h>
 #include <algorithm>
 
 namespace ripple {

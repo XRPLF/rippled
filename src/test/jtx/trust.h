@@ -20,9 +20,9 @@
 #ifndef RIPPLE_TEST_JTX_TRUST_H_INCLUDED
 #define RIPPLE_TEST_JTX_TRUST_H_INCLUDED
 
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/STAmount.h>
 #include <test/jtx/Account.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/STAmount.h>
 
 namespace ripple {
 namespace test {

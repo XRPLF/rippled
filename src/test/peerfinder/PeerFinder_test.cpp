@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/beast/unit_test/suite.h>
-#include <ripple/core/Config.h>
-#include <ripple/peerfinder/impl/Logic.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SecretKey.h>
 #include <test/unit_test/SuiteJournal.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/peerfinder/detail/Logic.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
 
 namespace ripple {
 namespace PeerFinder {

@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/basics/strHex.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
 #include <algorithm>
 #include <iterator>

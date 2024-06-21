@@ -19,12 +19,13 @@
 #ifndef RIPPLE_TEST_TRUSTED_PUBLISHER_SERVER_H_INCLUDED
 #define RIPPLE_TEST_TRUSTED_PUBLISHER_SERVER_H_INCLUDED
 
-#include <ripple/basics/base64.h>
-#include <ripple/basics/random.h>
-#include <ripple/basics/strHex.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/Sign.h>
+#include <test/jtx/envconfig.h>
+#include <xrpl/basics/base64.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Sign.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -33,7 +34,6 @@
 #include <boost/beast/ssl.hpp>
 #include <boost/beast/version.hpp>
 #include <boost/lexical_cast.hpp>
-#include <test/jtx/envconfig.h>
 
 #include <memory>
 #include <thread>

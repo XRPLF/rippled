@@ -18,15 +18,15 @@
 */
 //==============================================================================
 
-#include <ripple/app/reporting/P2pProxy.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/rpc/impl/Tuning.h>
+#include <xrpld/app/reporting/P2pProxy.h>
+#include <xrpld/rpc/detail/Tuning.h>
+#include <xrpl/beast/unit_test.h>
 
-#include <ripple/core/ConfigSections.h>
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
 #include <test/rpc/GRPCTestClientBase.h>
+#include <xrpld/core/ConfigSections.h>
 
 namespace ripple {
 namespace test {

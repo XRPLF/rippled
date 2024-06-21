@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
-#include <ripple/basics/chrono.h>
-#include <ripple/ledger/Directory.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/PayChan.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <chrono>
 #include <test/jtx.h>
+#include <xrpld/ledger/Directory.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/PayChan.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
+#include <chrono>
 
 namespace ripple {
 namespace test {

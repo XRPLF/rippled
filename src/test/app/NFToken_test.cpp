@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/details/NFTokenUtils.h>
-#include <ripple/basics/random.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 #include <initializer_list>
 

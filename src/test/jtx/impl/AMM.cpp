@@ -19,12 +19,12 @@
 
 #include <test/jtx/AMM.h>
 
-#include <ripple/app/misc/AMMUtils.h>
-#include <ripple/protocol/AMMCore.h>
-#include <ripple/protocol/AmountConversions.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx/Env.h>
+#include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {

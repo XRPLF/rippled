@@ -16,12 +16,12 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/beast/clock/manual_clock.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/consensus/Consensus.h>
-#include <ripple/consensus/ConsensusProposal.h>
 #include <test/csf.h>
 #include <test/unit_test/SuiteJournal.h>
+#include <xrpld/consensus/Consensus.h>
+#include <xrpld/consensus/ConsensusProposal.h>
+#include <xrpl/beast/clock/manual_clock.h>
+#include <xrpl/beast/unit_test.h>
 #include <utility>
 
 namespace ripple {

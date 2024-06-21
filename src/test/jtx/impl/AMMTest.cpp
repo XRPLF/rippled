@@ -19,13 +19,13 @@
 
 #include <test/jtx/AMMTest.h>
 
-#include <ripple/protocol/STParsedJSON.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/rpc/RPCHandler.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/pay.h>
+#include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/resource/Fees.h>
 
 namespace ripple {
 namespace test {
