@@ -15,12 +15,12 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/impl/Tuning.h>
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
+#include <xrpld/rpc/detail/Tuning.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {

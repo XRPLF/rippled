@@ -20,7 +20,7 @@
 #ifndef RIPPLE_TEST_MANUALTIMEKEEPER_H_INCLUDED
 #define RIPPLE_TEST_MANUALTIMEKEEPER_H_INCLUDED
 
-#include <ripple/core/TimeKeeper.h>
+#include <xrpld/core/TimeKeeper.h>
 #include <atomic>
 
 namespace ripple {
