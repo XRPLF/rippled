@@ -20,15 +20,15 @@
 #ifndef RIPPLE_TEST_JTX_AMM_H_INCLUDED
 #define RIPPLE_TEST_JTX_AMM_H_INCLUDED
 
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/rpc/GRPCHandlers.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/ter.h>
+#include <xrpld/rpc/GRPCHandlers.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 namespace test {

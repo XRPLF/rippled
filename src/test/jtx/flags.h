@@ -20,10 +20,10 @@
 #ifndef RIPPLE_TEST_JTX_FLAGS_H_INCLUDED
 #define RIPPLE_TEST_JTX_FLAGS_H_INCLUDED
 
-#include <ripple/basics/contract.h>
-#include <ripple/protocol/LedgerFormats.h>
-#include <ripple/protocol/TxFlags.h>
 #include <test/jtx/Env.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 namespace test {

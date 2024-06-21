@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/nodestore/impl/varint.h>
+#include <xrpld/nodestore/detail/varint.h>
+#include <xrpl/beast/unit_test.h>
 #include <array>
 #include <vector>
 

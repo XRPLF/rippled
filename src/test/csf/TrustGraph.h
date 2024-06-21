@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_CSF_UNL_H_INCLUDED
 #define RIPPLE_TEST_CSF_UNL_H_INCLUDED
 
-#include <boost/container/flat_set.hpp>
 #include <test/csf/random.h>
+#include <boost/container/flat_set.hpp>
 
 #include <chrono>
 #include <numeric>
