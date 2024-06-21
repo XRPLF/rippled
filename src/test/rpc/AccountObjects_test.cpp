@@ -1092,6 +1092,9 @@ public:
                 tokenIDs.push_back(nft["NFTokenID"]);
         }
 
+        // this lambda function is used to check if the account_nfts method
+        // returns the correct token information. lastIndex is used to query the
+        // last marker.
         auto compareNFTs = [&](unsigned const limit, unsigned const lastIndex) {
             Json::Value params;
             params[jss::account] = bob.human();
