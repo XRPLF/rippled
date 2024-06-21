@@ -1079,6 +1079,7 @@ public:
         // last marker.
         auto compareNFTs = [&](unsigned const limit,
                                unsigned const lastIndex,
+                               unsigned const nftsSize,
                                const std::vector<Json::Value>& tokenIDs) {
             Json::Value params;
             params[jss::account] = bob.human();
@@ -1130,10 +1131,10 @@ public:
         }
 
         // test a valid marker which is equal to the third tokenID
-        BEAST_EXPECT(compareNFTs(4, 2, tokenIDs));
+        BEAST_EXPECT(compareNFTs(4, 2, nftsSize, tokenIDs));
 
         // test a valid marker which is equal to the 8th tokenID
-        BEAST_EXPECT(compareNFTs(4, 7, tokenIDs));
+        BEAST_EXPECT(compareNFTs(4, 7, nftsSize, tokenIDs));
 
         // test an unassociated marker which does not exist in the NFTokenIDs
         {
