@@ -20,10 +20,12 @@
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/xchain_bridge.h>
+#include <xrpld/app/tx/detail/NFTokenMint.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/nft.h>
 
 #include <boost/utility/string_ref.hpp>
 
@@ -1047,54 +1049,46 @@ public:
         Account const bob{"bob"};
         env.fund(XRP(10000), bob);
 
-        // this lambda function is used to create some fake marker using given
-        // taxon and sequence because we want to test some unassociated markers
-        // later
-        auto createFakeNFTMarker = [](AccountID const& issuer,
-                                      uint32_t taxon,
-                                      uint32_t tokenSeq,
-                                      std::uint16_t flags = 0,
-                                      std::uint16_t fee = 0) {
-            taxon = boost::endian::native_to_big(taxon);
-            tokenSeq = boost::endian::native_to_big(tokenSeq);
-            flags = boost::endian::native_to_big(flags);
-            fee = boost::endian::native_to_big(fee);
-            std::array<std::uint8_t, 32> buf{};
-            auto ptr = buf.data();
-            std::memcpy(ptr, &flags, sizeof(flags));
-            ptr += sizeof(flags);
-            std::memcpy(ptr, &fee, sizeof(fee));
-            ptr += sizeof(fee);
-            std::memcpy(ptr, issuer.data(), issuer.size());
-            ptr += issuer.size();
-            std::memcpy(ptr, &taxon, sizeof(taxon));
-            ptr += sizeof(taxon);
-            std::memcpy(ptr, &tokenSeq, sizeof(tokenSeq));
-            ptr += sizeof(tokenSeq);
-            return uint256::fromVoid(buf.data());
-        };
+        static constexpr unsigned nftsSize = 10;
+        for (unsigned i = 0; i < nftsSize; i++)
+        {
+            env(token::mint(bob, 0));
+        }
+
+        env.close();
+
+        // save the NFTokenIDs to use later
+        std::vector<Json::Value> tokenIDs;
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::ledger_index] = "validated";
+            Json::Value const resp =
+                env.rpc("json", "account_nfts", to_string(params));
+            Json::Value const& nfts = resp[jss::result][jss::account_nfts];
+            for (Json::Value const& nft : nfts)
+                tokenIDs.push_back(nft["NFTokenID"]);
+        }
 
         // this lambda function is used to check if the account_nfts method
         // returns the correct token information. lastIndex is used to query the
         // last marker.
-        auto compareNFTs = [&](unsigned const limit,
-                               unsigned const lastIndex,
-                               unsigned const nftsSize,
-                               const std::vector<Json::Value>& tokenIDs) {
+        auto compareNFTs = [&tokenIDs, &env, &bob](
+                               unsigned const limit, unsigned const lastIndex) {
             Json::Value params;
             params[jss::account] = bob.human();
             params[jss::limit] = limit;
             params[jss::marker] = tokenIDs[lastIndex];
             params[jss::ledger_index] = "validated";
-            auto const resp =
+            Json::Value const resp =
                 env.rpc("json", "account_nfts", to_string(params));
 
             if (resp[jss::result].isMember(jss::error))
                 return false;
 
-            auto const& nfts = resp[jss::result][jss::account_nfts];
-            auto nftsCount = nftsSize - lastIndex - 1 < limit
-                ? nftsSize - lastIndex - 1
+            Json::Value const& nfts = resp[jss::result][jss::account_nfts];
+            unsigned const nftsCount = tokenIDs.size() - lastIndex - 1 < limit
+                ? tokenIDs.size() - lastIndex - 1
                 : limit;
 
             if (nfts.size() != nftsCount)
@@ -1109,65 +1103,56 @@ public:
             return true;
         };
 
-        unsigned nftsSize = 10;
-        for (unsigned i = 0; i < nftsSize; i++)
-        {
-            env(token::mint(bob, 0));
-        }
-
-        env.close();
-
-        // save the NFTokenIDs to use later
-        std::vector<Json::Value> tokenIDs;
-        {
-            Json::Value params;
-            params[jss::account] = bob.human();
-            params[jss::ledger_index] = "validated";
-            auto const resp =
-                env.rpc("json", "account_nfts", to_string(params));
-            auto const& nfts = resp[jss::result][jss::account_nfts];
-            for (auto const& nft : nfts)
-                tokenIDs.push_back(nft["NFTokenID"]);
-        }
-
         // test a valid marker which is equal to the third tokenID
-        BEAST_EXPECT(compareNFTs(4, 2, nftsSize, tokenIDs));
+        BEAST_EXPECT(compareNFTs(4, 2));
 
         // test a valid marker which is equal to the 8th tokenID
-        BEAST_EXPECT(compareNFTs(4, 7, nftsSize, tokenIDs));
+        BEAST_EXPECT(compareNFTs(4, 7));
 
-        // test an unassociated marker which does not exist in the NFTokenIDs
-        {
+        // lambda that holds common code for invalid cases.
+        auto testInvalidMarker = [this, &env, &bob](
+                                     auto marker, char const* errorMessage) {
             Json::Value params;
             params[jss::account] = bob.human();
             params[jss::limit] = 4;
-            params[jss::ledger_index] = "validated";
-            auto const marker =
-                createFakeNFTMarker(bob.id(), 0x00000000, 0x00000000);
-            params[jss::marker] = to_string(marker);
-            auto const resp =
+            params[jss::ledger_index] = jss::validated;
+            params[jss::marker] = marker;
+            Json::Value const resp =
                 env.rpc("json", "account_nfts", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Invalid field \'marker\'.");
-        }
+            BEAST_EXPECT(resp[jss::result][jss::error_message] == errorMessage);
+        };
+
+        // test an invalid marker that is not a string
+        testInvalidMarker(17, "Invalid field \'marker\', not string.");
+
+        // test an invalid marker that has a non-hex character
+        testInvalidMarker(
+            "00000000F51DFC2A09D62CBBA1DFBDD4691DAC96AD98B900000000000000000G",
+            "Invalid field \'marker\'.");
+
+        // this lambda function is used to create some fake marker using given
+        // taxon and sequence because we want to test some unassociated markers
+        // later
+        auto createFakeNFTMarker = [](AccountID const& issuer,
+                                      std::uint32_t taxon,
+                                      std::uint32_t tokenSeq,
+                                      std::uint16_t flags = 0,
+                                      std::uint16_t fee = 0) {
+            // the marker has the exact same format as an NFTokenID
+            return to_string(NFTokenMint::createNFTokenID(
+                flags, fee, issuer, nft::toTaxon(taxon), tokenSeq));
+        };
+
+        // test an unassociated marker which does not exist in the NFTokenIDs
+        testInvalidMarker(
+            createFakeNFTMarker(bob.id(), 0x000000000, 0x00000000),
+            "Invalid field \'marker\'.");
 
         // test an unassociated marker which exceeds the maximum value of the
         // existing NFTokenID
-        {
-            Json::Value params;
-            params[jss::account] = bob.human();
-            params[jss::limit] = 4;
-            params[jss::ledger_index] = "validated";
-            auto const marker =
-                createFakeNFTMarker(bob.id(), 0xFFFFFFFF, 0xFFFFFFFF);
-            params[jss::marker] = to_string(marker);
-            auto const resp =
-                env.rpc("json", "account_nfts", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Invalid field \'marker\'.");
-        }
+        testInvalidMarker(
+            createFakeNFTMarker(bob.id(), 0xFFFFFFFF, 0xFFFFFFFF),
+            "Invalid field \'marker\'.");
     }
 
     void

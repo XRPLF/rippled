@@ -75,11 +75,10 @@ doAccountNFTs(RPC::JsonContext& context)
         return *err;
 
     uint256 marker;
-    bool markerSet = false;
+    bool const markerSet = params.isMember(jss::marker);
 
-    if (params.isMember(jss::marker))
+    if (markerSet)
     {
-        markerSet = true;
         auto const& m = params[jss::marker];
         if (!m.isString())
             return RPC::expected_field_error(jss::marker, "string");
@@ -122,17 +121,19 @@ doAccountNFTs(RPC::JsonContext& context)
             uint256 const nftokenID = o[sfNFTokenID];
             uint256 const maskedNftokenID = nftokenID & nft::pageMask;
 
-            if (!pastMarker && maskedNftokenID < maskedMarker)
-                continue;
-
-            if (!pastMarker && maskedNftokenID == maskedMarker &&
-                nftokenID < marker)
-                continue;
-
-            if (nftokenID == marker)
+            if (!pastMarker)
             {
-                markerFound = true;
-                continue;
+                if (maskedNftokenID < maskedMarker)
+                    continue;
+
+                if (maskedNftokenID == maskedMarker && nftokenID < marker)
+                    continue;
+
+                if (nftokenID == marker)
+                {
+                    markerFound = true;
+                    continue;
+                }
             }
 
             if (markerSet && !markerFound)
