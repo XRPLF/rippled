@@ -220,6 +220,9 @@ doAccountObjects(RPC::JsonContext& context)
     {
         auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
 
+        if (!RPC::isAccountObjectsValidType(type))
+            return RPC::invalid_field_error(jss::type);
+
         if (rpcStatus)
         {
             result.clear();

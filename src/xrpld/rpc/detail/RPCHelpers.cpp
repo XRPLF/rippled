@@ -986,6 +986,20 @@ chooseLedgerEntryType(Json::Value const& params)
     return result;
 }
 
+bool
+isAccountObjectsValidType(LedgerEntryType const& type)
+{
+    switch (type)
+    {
+        case LedgerEntryType::ltAMENDMENTS:
+        case LedgerEntryType::ltDIR_NODE:
+        case LedgerEntryType::ltFEE_SETTINGS:
+        case LedgerEntryType::ltLEDGER_HASHES:
+            return false;
+    }
+    return true;
+}
+
 beast::SemanticVersion const firstVersion("1.0.0");
 beast::SemanticVersion const goodVersion("1.0.0");
 beast::SemanticVersion const lastVersion("1.0.0");

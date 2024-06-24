@@ -579,19 +579,34 @@ public:
                 (resp[jss::result][jss::account_objects].size() == size);
         };
 
+        // Make a lambda that checks if the response has error for invalid type
+        auto acct_objs_type_is_invalid = [](Json::Value const& resp) {
+            return resp[jss::result].isMember(jss::error) &&
+                resp[jss::result][jss::error_message] ==
+                "Invalid field \'type\'.";
+        };
+
+        // Make a lambda that checks if different filtering type is invalid
+        auto check_invalid_filter_types = [&](AccountID const& acct) {
+            // we expect invalid field type reported for the following types
+            if (!acct_objs_type_is_invalid(acct_objs(acct, jss::amendments)) ||
+                !acct_objs_type_is_invalid(acct_objs(acct, jss::directory)) ||
+                !acct_objs_type_is_invalid(acct_objs(acct, jss::fee)) ||
+                !acct_objs_type_is_invalid(acct_objs(acct, jss::hashes)))
+                return false;
+
+            return true;
+        };
+
         env.fund(XRP(10000), gw, alice);
         env.close();
 
         // Since the account is empty now, all account objects should come
         // back empty.
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::account), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::amendments), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::check), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::deposit_preauth), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::directory), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::escrow), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::fee), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::hashes), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::nft_page), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::offer), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::payment_channel), 0));
@@ -600,6 +615,9 @@ public:
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::ticket), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::amm), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::did), 0));
+
+        // invalid filter type should get invalid type response
+        BEAST_EXPECT(check_invalid_filter_types(gw));
 
         // gw mints an NFT so we can find it.
         uint256 const nftID{token::getNextID(env, gw, 0u, tfTransferable)};
@@ -1016,6 +1034,10 @@ public:
             BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::amm), 0));
         }
 
+        // check invalid filter type again which should get invalid type
+        // response
+        BEAST_EXPECT(check_invalid_filter_types(gw));
+
         // Run up the number of directory entries so gw has two
         // directory nodes.
         for (int d = 1'000'032; d >= 1'000'000; --d)
@@ -1026,10 +1048,6 @@ public:
 
         // Verify that the non-returning types still don't return anything.
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::account), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::amendments), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::directory), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::fee), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::hashes), 0));
     }
 
     void
