@@ -26,7 +26,6 @@
 namespace ripple {
 
 class Rules;
-class Invariants_test;
 
 class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>
 {
@@ -83,8 +82,6 @@ private:
     */
     void
     setSLEType();
-
-    friend Invariants_test;  // this test wants access to the private type_
 
     STBase*
     copy(std::size_t n, void* buf) const override;

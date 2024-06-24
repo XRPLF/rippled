@@ -23,7 +23,7 @@
 #include <xrpld/app/tx/detail/ApplyContext.h>
 #include <xrpld/app/tx/detail/Transactor.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/digest.h>
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {
@@ -188,15 +188,19 @@ class Invariants_test : public beast::unit_test::suite
                 if (!sle)
                     return false;
 
-                // make a dummy escrow ledger entry, then change the type to an
-                // unsupported value so that the valid type invariant check
-                // will fail.
-                auto sleNew = std::make_shared<SLE>(
-                    keylet::escrow(A1, (*sle)[sfSequence] + 2));
+                // Mock class that avoids checking LedgerFormats on construction.
+                class STLedgerEntryMock : public STObject, public CountedObject<STLedgerEntry> 
+                {
+                    public:
+                    STLedgerEntryMock(Keylet const& k): STObject(sfLedgerEntry)
+                    {
+                    }
+                };
 
-                // We don't use ltNICKNAME directly since it's marked deprecated
-                // to prevent accidental use elsewhere.
-                sleNew->type_ = static_cast<LedgerEntryType>('n');
+                // Make a dummy Nickname ledger entry to trigger an invalid ledger entry error.
+                Keylet nickname = {static_cast<LedgerEntryType>(0x006e), sha512Half('n', A1, (*sle)[sfSequence] + 2)};
+                auto sleNew = std::reinterpret_pointer_cast<STLedgerEntry>(std::make_shared<STLedgerEntryMock>(nickname));
+
                 ac.view().insert(sleNew);
                 return true;
             });
