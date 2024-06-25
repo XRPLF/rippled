@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/OrderBookDB.h>
-#include <ripple/app/paths/Flow.h>
-#include <ripple/app/tx/impl/CreateOffer.h>
-#include <ripple/beast/utility/WrappedSink.h>
-#include <ripple/ledger/PaymentSandbox.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/protocol/st.h>
+#include <xrpld/app/ledger/OrderBookDB.h>
+#include <xrpld/app/paths/Flow.h>
+#include <xrpld/app/tx/detail/CreateOffer.h>
+#include <xrpld/ledger/PaymentSandbox.h>
+#include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/st.h>
 
 namespace ripple {
 

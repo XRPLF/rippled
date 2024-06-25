@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_PATHS_ACCOUNTCURRENCIES_H_INCLUDED
 #define RIPPLE_APP_PATHS_ACCOUNTCURRENCIES_H_INCLUDED
 
-#include <ripple/app/paths/RippleLineCache.h>
-#include <ripple/protocol/UintTypes.h>
+#include <xrpld/app/paths/RippleLineCache.h>
+#include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {
 

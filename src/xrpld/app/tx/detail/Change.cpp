@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/AmendmentTable.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/tx/impl/Change.h>
-#include <ripple/basics/Log.h>
-#include <ripple/ledger/Sandbox.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/TxFlags.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/AmendmentTable.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/tx/detail/Change.h>
+#include <xrpld/ledger/Sandbox.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <string_view>
 
 namespace ripple {

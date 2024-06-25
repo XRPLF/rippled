@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_PATHS_AMMCONTEXT_H_INCLUDED
 #define RIPPLE_APP_PATHS_AMMCONTEXT_H_INCLUDED
 
-#include <ripple/protocol/AccountID.h>
+#include <xrpl/protocol/AccountID.h>
 
 #include <cstdint>
 

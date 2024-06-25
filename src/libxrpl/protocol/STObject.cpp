@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/InnerObjectFormats.h>
-#include <ripple/protocol/Rules.h>
-#include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/STArray.h>
-#include <ripple/protocol/STBlob.h>
-#include <ripple/protocol/STCurrency.h>
-#include <ripple/protocol/STObject.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/InnerObjectFormats.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STObject.h>
 
 namespace ripple {
 

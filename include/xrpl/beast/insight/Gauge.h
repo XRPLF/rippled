@@ -20,7 +20,7 @@
 #ifndef BEAST_INSIGHT_GAUGE_H_INCLUDED
 #define BEAST_INSIGHT_GAUGE_H_INCLUDED
 
-#include <ripple/beast/insight/GaugeImpl.h>
+#include <xrpl/beast/insight/GaugeImpl.h>
 
 #include <memory>
 

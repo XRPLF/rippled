@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/AMMContext.h>
-#include <ripple/app/paths/Credit.h>
-#include <ripple/app/paths/Flow.h>
-#include <ripple/app/paths/impl/AmountSpec.h>
-#include <ripple/app/paths/impl/Steps.h>
-#include <ripple/app/paths/impl/StrandFlow.h>
-#include <ripple/basics/IOUAmount.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/XRPAmount.h>
+#include <xrpld/app/paths/AMMContext.h>
+#include <xrpld/app/paths/Credit.h>
+#include <xrpld/app/paths/Flow.h>
+#include <xrpld/app/paths/detail/AmountSpec.h>
+#include <xrpld/app/paths/detail/Steps.h>
+#include <xrpld/app/paths/detail/StrandFlow.h>
+#include <xrpl/basics/IOUAmount.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/XRPAmount.h>
 
 #include <boost/container/flat_set.hpp>
 

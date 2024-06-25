@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/AMMCore.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Rules.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/STObject.h>
-#include <ripple/protocol/digest.h>
+#include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/digest.h>
 
 namespace ripple {
 

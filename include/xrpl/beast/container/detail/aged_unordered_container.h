@@ -20,11 +20,11 @@
 #ifndef BEAST_CONTAINER_DETAIL_AGED_UNORDERED_CONTAINER_H_INCLUDED
 #define BEAST_CONTAINER_DETAIL_AGED_UNORDERED_CONTAINER_H_INCLUDED
 
-#include <ripple/beast/clock/abstract_clock.h>
-#include <ripple/beast/container/aged_container.h>
-#include <ripple/beast/container/detail/aged_associative_container.h>
-#include <ripple/beast/container/detail/aged_container_iterator.h>
-#include <ripple/beast/container/detail/empty_base_optimization.h>
+#include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/beast/container/aged_container.h>
+#include <xrpl/beast/container/detail/aged_associative_container.h>
+#include <xrpl/beast/container/detail/aged_container_iterator.h>
+#include <xrpl/beast/container/detail/empty_base_optimization.h>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/unordered_set.hpp>
 #include <algorithm>

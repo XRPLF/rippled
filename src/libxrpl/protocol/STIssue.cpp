@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/STIssue.h>
+#include <xrpl/protocol/STIssue.h>
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/contract.h>
-#include <ripple/protocol/SystemParameters.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/jss.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/multiprecision/cpp_int.hpp>

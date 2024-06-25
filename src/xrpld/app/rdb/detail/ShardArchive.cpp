@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/rdb/ShardArchive.h>
+#include <xrpld/app/rdb/ShardArchive.h>
 
 namespace ripple {
 

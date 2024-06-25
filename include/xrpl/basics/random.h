@@ -20,7 +20,7 @@
 #ifndef RIPPLE_BASICS_RANDOM_H_INCLUDED
 #define RIPPLE_BASICS_RANDOM_H_INCLUDED
 
-#include <ripple/beast/xor_shift_engine.h>
+#include <xrpl/beast/xor_shift_engine.h>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>

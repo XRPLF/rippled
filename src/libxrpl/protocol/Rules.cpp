@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/LocalValue.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Rules.h>
+#include <xrpl/basics/LocalValue.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Rules.h>
 
 #include <optional>
 

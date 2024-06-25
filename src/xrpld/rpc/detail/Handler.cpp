@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/rpc/handlers/Handlers.h>
-#include <ripple/rpc/handlers/Version.h>
-#include <ripple/rpc/impl/Handler.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
+#include <xrpld/rpc/detail/Handler.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/handlers/Handlers.h>
+#include <xrpld/rpc/handlers/Version.h>
+#include <xrpl/basics/contract.h>
 
 #include <map>
 

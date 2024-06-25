@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
 
-#include <ripple/basics/CountedObject.h>
-#include <ripple/basics/contract.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/contract.h>
 #include <mutex>
 
 namespace ripple {

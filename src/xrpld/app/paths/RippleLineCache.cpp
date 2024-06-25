@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/RippleLineCache.h>
-#include <ripple/app/paths/TrustLine.h>
-#include <ripple/ledger/OpenView.h>
+#include <xrpld/app/paths/RippleLineCache.h>
+#include <xrpld/app/paths/TrustLine.h>
+#include <xrpld/ledger/OpenView.h>
 
 namespace ripple {
 

@@ -8,17 +8,17 @@
 #ifndef BEAST_TEST_PIPE_STREAM_HPP
 #define BEAST_TEST_PIPE_STREAM_HPP
 
+#include <xrpl/beast/core/async_result.hpp>
+#include <xrpl/beast/core/bind_handler.hpp>
+#include <xrpl/beast/core/flat_buffer.hpp>
+#include <xrpl/beast/core/string.hpp>
+#include <xrpl/beast/core/type_traits.hpp>
+#include <xrpl/beast/test/fail_counter.hpp>
+#include <xrpl/beast/websocket/teardown.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/assert.hpp>
 #include <boost/throw_exception.hpp>
-#include <beast/core/async_result.hpp>
-#include <beast/core/bind_handler.hpp>
-#include <beast/core/flat_buffer.hpp>
-#include <beast/core/string.hpp>
-#include <beast/core/type_traits.hpp>
-#include <beast/test/fail_counter.hpp>
-#include <beast/websocket/teardown.hpp>
 #include <condition_variable>
 #include <limits>
 #include <mutex>

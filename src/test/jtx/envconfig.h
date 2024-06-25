@@ -20,7 +20,7 @@
 #ifndef RIPPLE_TEST_JTX_ENVCONFIG_H_INCLUDED
 #define RIPPLE_TEST_JTX_ENVCONFIG_H_INCLUDED
 
-#include <ripple/core/Config.h>
+#include <xrpld/core/Config.h>
 
 namespace ripple {
 namespace test {

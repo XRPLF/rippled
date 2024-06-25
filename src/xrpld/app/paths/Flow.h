@@ -20,9 +20,9 @@
 #ifndef RIPPLE_APP_PATHS_FLOW_H_INCLUDED
 #define RIPPLE_APP_PATHS_FLOW_H_INCLUDED
 
-#include <ripple/app/paths/RippleCalc.h>
-#include <ripple/app/paths/impl/Steps.h>
-#include <ripple/protocol/Quality.h>
+#include <xrpld/app/paths/RippleCalc.h>
+#include <xrpld/app/paths/detail/Steps.h>
+#include <xrpl/protocol/Quality.h>
 
 namespace ripple {
 

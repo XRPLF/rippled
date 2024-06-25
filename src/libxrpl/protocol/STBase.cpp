@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/STBase.h>
+#include <xrpl/protocol/STBase.h>
 #include <boost/checked_delete.hpp>
 #include <cassert>
 #include <memory>

@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/DeleteOracle.h>
-#include <ripple/ledger/Sandbox.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Rules.h>
-#include <ripple/protocol/TxFlags.h>
+#include <xrpld/app/tx/detail/DeleteOracle.h>
+#include <xrpld/ledger/Sandbox.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 

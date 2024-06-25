@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/STCurrency.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/jss.h>
 
-#include <ripple/basics/contract.h>
+#include <xrpl/basics/contract.h>
 
 namespace ripple {
 

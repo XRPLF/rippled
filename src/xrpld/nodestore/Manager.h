@@ -20,9 +20,9 @@
 #ifndef RIPPLE_NODESTORE_MANAGER_H_INCLUDED
 #define RIPPLE_NODESTORE_MANAGER_H_INCLUDED
 
-#include <ripple/nodestore/DatabaseRotating.h>
-#include <ripple/nodestore/DatabaseShard.h>
-#include <ripple/nodestore/Factory.h>
+#include <xrpld/nodestore/DatabaseRotating.h>
+#include <xrpld/nodestore/DatabaseShard.h>
+#include <xrpld/nodestore/Factory.h>
 
 namespace ripple {
 

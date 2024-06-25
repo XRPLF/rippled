@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_MISC_IMPL_ACCOUNTTXPAGING_H_INCLUDED
 #define RIPPLE_APP_MISC_IMPL_ACCOUNTTXPAGING_H_INCLUDED
 
-#include <ripple/app/rdb/RelationalDatabase.h>
+#include <xrpld/app/rdb/RelationalDatabase.h>
 #include <cstdint>
 #include <string>
 #include <utility>

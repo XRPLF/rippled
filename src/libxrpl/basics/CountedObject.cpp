@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/basics/CountedObject.h>
+#include <xrpl/basics/CountedObject.h>
 #include <algorithm>
 #include <type_traits>
 

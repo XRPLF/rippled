@@ -17,18 +17,18 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/SHAMapStoreImp.h>
+#include <xrpld/app/misc/SHAMapStoreImp.h>
 
-#include <ripple/app/ledger/TransactionMaster.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/rdb/State.h>
-#include <ripple/app/rdb/backend/SQLiteDatabase.h>
-#include <ripple/beast/core/CurrentThreadName.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/core/Pg.h>
-#include <ripple/nodestore/Scheduler.h>
-#include <ripple/nodestore/impl/DatabaseRotatingImp.h>
-#include <ripple/shamap/SHAMapMissingNode.h>
+#include <xrpld/app/ledger/TransactionMaster.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/rdb/State.h>
+#include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpld/core/Pg.h>
+#include <xrpld/nodestore/Scheduler.h>
+#include <xrpld/nodestore/detail/DatabaseRotatingImp.h>
+#include <xrpld/shamap/SHAMapMissingNode.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 

@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/AMMDeposit.h>
+#include <xrpld/app/tx/detail/AMMDeposit.h>
 
-#include <ripple/app/misc/AMMHelpers.h>
-#include <ripple/app/misc/AMMUtils.h>
-#include <ripple/ledger/Sandbox.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/AMMCore.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/TxFlags.h>
+#include <xrpld/app/misc/AMMHelpers.h>
+#include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/ledger/Sandbox.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/TxFlags.h>
 
 #include <bit>
 

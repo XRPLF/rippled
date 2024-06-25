@@ -20,11 +20,11 @@
 #ifndef RIPPLE_APP_MISC_HASHROUTER_H_INCLUDED
 #define RIPPLE_APP_MISC_HASHROUTER_H_INCLUDED
 
-#include <ripple/basics/CountedObject.h>
-#include <ripple/basics/UnorderedContainers.h>
-#include <ripple/basics/base_uint.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/container/aged_unordered_map.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/container/aged_unordered_map.h>
 
 #include <optional>
 

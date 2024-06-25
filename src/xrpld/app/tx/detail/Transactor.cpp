@@ -17,22 +17,22 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/app/tx/apply.h>
-#include <ripple/app/tx/impl/SignerEntries.h>
-#include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/app/tx/impl/details/NFTokenUtils.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/contract.h>
-#include <ripple/core/Config.h>
-#include <ripple/json/to_string.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/UintTypes.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/LoadFeeTrack.h>
+#include <xrpld/app/tx/apply.h>
+#include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/app/tx/detail/SignerEntries.h>
+#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {
 

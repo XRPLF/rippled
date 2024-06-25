@@ -20,11 +20,11 @@
 #ifndef RIPPLE_BASICS_TAGGEDCACHE_H_INCLUDED
 #define RIPPLE_BASICS_TAGGEDCACHE_H_INCLUDED
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/UnorderedContainers.h>
-#include <ripple/basics/hardened_hash.h>
-#include <ripple/beast/clock/abstract_clock.h>
-#include <ripple/beast/insight/Insight.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/hardened_hash.h>
+#include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/beast/insight/Insight.h>
 #include <atomic>
 #include <functional>
 #include <mutex>

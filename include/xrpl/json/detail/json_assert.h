@@ -20,7 +20,7 @@
 #ifndef RIPPLE_JSON_JSON_ASSERT_H_INCLUDED
 #define RIPPLE_JSON_JSON_ASSERT_H_INCLUDED
 
-#include <ripple/json/json_errors.h>
+#include <xrpl/json/json_errors.h>
 
 #define JSON_ASSERT_UNREACHABLE assert(false)
 #define JSON_ASSERT(condition) \

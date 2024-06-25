@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PROTOCOL_STBLOB_H_INCLUDED
 #define RIPPLE_PROTOCOL_STBLOB_H_INCLUDED
 
-#include <ripple/basics/Buffer.h>
-#include <ripple/basics/CountedObject.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/protocol/STBase.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/protocol/STBase.h>
 
 #include <cassert>
 #include <cstring>

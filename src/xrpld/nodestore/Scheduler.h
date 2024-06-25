@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NODESTORE_SCHEDULER_H_INCLUDED
 #define RIPPLE_NODESTORE_SCHEDULER_H_INCLUDED
 
-#include <ripple/nodestore/Task.h>
+#include <xrpld/nodestore/Task.h>
 #include <chrono>
 
 namespace ripple {

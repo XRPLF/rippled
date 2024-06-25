@@ -20,12 +20,12 @@
 #ifndef RIPPLE_TEST_JTX_UTILITY_H_INCLUDED
 #define RIPPLE_TEST_JTX_UTILITY_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/STObject.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <stdexcept>
 #include <test/jtx/Account.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/STObject.h>
+#include <stdexcept>
 
 namespace ripple {
 namespace test {

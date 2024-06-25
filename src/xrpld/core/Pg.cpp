@@ -29,8 +29,8 @@
 #include <sys/types.h>
 #endif
 
-#include <ripple/basics/contract.h>
-#include <ripple/core/Pg.h>
+#include <xrpld/core/Pg.h>
+#include <xrpl/basics/contract.h>
 #include <boost/asio/ssl/detail/openssl_init.hpp>
 #include <boost/format.hpp>
 #include <algorithm>

@@ -20,9 +20,9 @@
 #ifndef RIPPLE_APP_MISC_DETAIL_WORKFILE_H_INCLUDED
 #define RIPPLE_APP_MISC_DETAIL_WORKFILE_H_INCLUDED
 
-#include <ripple/app/misc/detail/Work.h>
-#include <ripple/basics/ByteUtilities.h>
-#include <ripple/basics/FileUtilities.h>
+#include <xrpld/app/misc/detail/Work.h>
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <cassert>
 #include <cerrno>
 

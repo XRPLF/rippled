@@ -20,10 +20,10 @@
 #ifndef RIPPLE_APP_LEDGER_ORDERBOOKDB_H_INCLUDED
 #define RIPPLE_APP_LEDGER_ORDERBOOKDB_H_INCLUDED
 
-#include <ripple/app/ledger/AcceptedLedgerTx.h>
-#include <ripple/app/ledger/BookListeners.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/protocol/MultiApiJson.h>
+#include <xrpld/app/ledger/AcceptedLedgerTx.h>
+#include <xrpld/app/ledger/BookListeners.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpl/protocol/MultiApiJson.h>
 
 #include <mutex>
 

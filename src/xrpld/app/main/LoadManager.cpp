@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/app/main/LoadManager.h>
-#include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/basics/UptimeClock.h>
-#include <ripple/beast/core/CurrentThreadName.h>
-#include <ripple/json/to_string.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/main/LoadManager.h>
+#include <xrpld/app/misc/LoadFeeTrack.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpl/basics/UptimeClock.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/json/to_string.h>
 #include <memory>
 #include <mutex>
 #include <thread>

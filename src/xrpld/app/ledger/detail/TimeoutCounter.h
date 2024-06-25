@@ -20,10 +20,10 @@
 #ifndef RIPPLE_APP_LEDGER_TIMEOUTCOUNTER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_TIMEOUTCOUNTER_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
-#include <ripple/beast/clock/abstract_clock.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/core/Job.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/core/Job.h>
+#include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <mutex>
 

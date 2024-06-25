@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/HashRouter.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/unit_test.h>
+#include <xrpld/app/misc/HashRouter.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 namespace test {

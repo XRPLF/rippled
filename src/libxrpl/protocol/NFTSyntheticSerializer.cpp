@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/NFTSyntheticSerializer.h>
-#include <ripple/protocol/NFTokenID.h>
-#include <ripple/protocol/NFTokenOfferID.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/protocol/NFTSyntheticSerializer.h>
+#include <xrpl/protocol/NFTokenID.h>
+#include <xrpl/protocol/NFTokenOfferID.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

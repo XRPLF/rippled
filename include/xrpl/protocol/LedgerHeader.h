@@ -20,12 +20,12 @@
 #ifndef RIPPLE_PROTOCOL_LEDGERHEADER_H_INCLUDED
 #define RIPPLE_PROTOCOL_LEDGERHEADER_H_INCLUDED
 
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/basics/base_uint.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/Serializer.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Serializer.h>
 
 namespace ripple {
 

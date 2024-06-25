@@ -20,9 +20,9 @@
 #ifndef RIPPLE_NODESTORE_SHARDINFO_H_INCLUDED
 #define RIPPLE_NODESTORE_SHARDINFO_H_INCLUDED
 
-#include <ripple/basics/RangeSet.h>
-#include <ripple/nodestore/Types.h>
-#include <ripple/protocol/messages.h>
+#include <xrpld/nodestore/Types.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/protocol/messages.h>
 
 namespace ripple {
 namespace NodeStore {

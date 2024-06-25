@@ -20,8 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_BOOK_H_INCLUDED
 #define RIPPLE_PROTOCOL_BOOK_H_INCLUDED
 
-#include <ripple/basics/CountedObject.h>
-#include <ripple/protocol/Issue.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/protocol/Issue.h>
 #include <boost/utility/base_from_member.hpp>
 
 namespace ripple {

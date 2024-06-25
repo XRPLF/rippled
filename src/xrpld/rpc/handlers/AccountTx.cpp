@@ -17,26 +17,26 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/DeliverMax.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/app/rdb/backend/PostgresDatabase.h>
-#include <ripple/app/rdb/backend/SQLiteDatabase.h>
-#include <ripple/core/Pg.h>
-#include <ripple/json/json_reader.h>
-#include <ripple/json/json_value.h>
-#include <ripple/ledger/ReadView.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/NFTSyntheticSerializer.h>
-#include <ripple/protocol/RPCErr.h>
-#include <ripple/protocol/UintTypes.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/DeliveredAmount.h>
-#include <ripple/rpc/Role.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/DeliverMax.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/misc/Transaction.h>
+#include <xrpld/app/rdb/backend/PostgresDatabase.h>
+#include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/core/Pg.h>
+#include <xrpld/ledger/ReadView.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/DeliveredAmount.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/NFTSyntheticSerializer.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Fees.h>
 
 #include <grpcpp/grpcpp.h>
 

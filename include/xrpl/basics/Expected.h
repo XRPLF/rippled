@@ -20,7 +20,7 @@
 #ifndef RIPPLE_BASICS_EXPECTED_H_INCLUDED
 #define RIPPLE_BASICS_EXPECTED_H_INCLUDED
 
-#include <ripple/basics/contract.h>
+#include <xrpl/basics/contract.h>
 
 #include <boost/outcome.hpp>
 
@@ -136,7 +136,7 @@ class [[nodiscard]] Expected
 
 public:
     template <typename U>
-    requires std::convertible_to<U, T> constexpr Expected(U && r)
+    requires std::convertible_to<U, T> constexpr Expected(U&& r)
         : Base(T(std::forward<U>(r)))
     {
     }
@@ -148,27 +148,32 @@ public:
     {
     }
 
-    constexpr bool has_value() const
+    constexpr bool
+    has_value() const
     {
         return Base::has_value();
     }
 
-    constexpr T const& value() const
+    constexpr T const&
+    value() const
     {
         return Base::value();
     }
 
-    constexpr T& value()
+    constexpr T&
+    value()
     {
         return Base::value();
     }
 
-    constexpr E const& error() const
+    constexpr E const&
+    error() const
     {
         return Base::error();
     }
 
-    constexpr E& error()
+    constexpr E&
+    error()
     {
         return Base::error();
     }
@@ -181,22 +186,26 @@ public:
     // Add operator* and operator-> so the Expected API looks a bit more like
     // what std::expected is likely to look like.  See:
     // http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p0323r10.html
-    [[nodiscard]] constexpr T& operator*()
+    [[nodiscard]] constexpr T&
+    operator*()
     {
         return this->value();
     }
 
-    [[nodiscard]] constexpr T const& operator*() const
+    [[nodiscard]] constexpr T const&
+    operator*() const
     {
         return this->value();
     }
 
-    [[nodiscard]] constexpr T* operator->()
+    [[nodiscard]] constexpr T*
+    operator->()
     {
         return &this->value();
     }
 
-    [[nodiscard]] constexpr T const* operator->() const
+    [[nodiscard]] constexpr T const*
+    operator->() const
     {
         return &this->value();
     }
@@ -224,12 +233,14 @@ public:
     {
     }
 
-    constexpr E const& error() const
+    constexpr E const&
+    error() const
     {
         return Base::error();
     }
 
-    constexpr E& error()
+    constexpr E&
+    error()
     {
         return Base::error();
     }

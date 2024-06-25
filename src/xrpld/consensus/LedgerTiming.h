@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGERTIMING_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGERTIMING_H_INCLUDED
 
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/utility/Journal.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <chrono>
 #include <cstdint>
 

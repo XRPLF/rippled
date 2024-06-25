@@ -20,9 +20,9 @@
 #ifndef RIPPLE_NET_RPCCALL_H_INCLUDED
 #define RIPPLE_NET_RPCCALL_H_INCLUDED
 
-#include <ripple/basics/Log.h>
-#include <ripple/core/Config.h>
-#include <ripple/json/json_value.h>
+#include <xrpld/core/Config.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/json/json_value.h>
 #include <boost/asio/io_service.hpp>
 #include <functional>
 #include <string>

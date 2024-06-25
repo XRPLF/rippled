@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_PEERS_CLUSTERNODESTATUS_H_INCLUDED
 #define RIPPLE_APP_PEERS_CLUSTERNODESTATUS_H_INCLUDED
 
-#include <ripple/basics/chrono.h>
-#include <ripple/protocol/PublicKey.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <cstdint>
 #include <string>
 

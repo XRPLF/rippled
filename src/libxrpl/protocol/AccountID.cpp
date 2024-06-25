@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/basics/hardened_hash.h>
-#include <ripple/basics/spinlock.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/tokens.h>
+#include <xrpl/basics/hardened_hash.h>
+#include <xrpl/basics/spinlock.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/tokens.h>
 #include <array>
 #include <cstring>
 #include <mutex>

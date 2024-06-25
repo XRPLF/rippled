@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/ValidatorKeys.h>
-#include <ripple/basics/base64.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/Context.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/ValidatorKeys.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpl/basics/base64.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 Json::Value

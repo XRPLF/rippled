@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/TransactionStateSF.h>
+#include <xrpld/app/ledger/TransactionStateSF.h>
 
 namespace ripple {
 

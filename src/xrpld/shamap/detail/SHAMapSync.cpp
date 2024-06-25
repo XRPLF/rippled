@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/random.h>
-#include <ripple/shamap/SHAMap.h>
-#include <ripple/shamap/SHAMapSyncFilter.h>
+#include <xrpld/shamap/SHAMap.h>
+#include <xrpld/shamap/SHAMapSyncFilter.h>
+#include <xrpl/basics/random.h>
 
 namespace ripple {
 

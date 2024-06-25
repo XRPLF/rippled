@@ -20,8 +20,8 @@
 #ifndef RIPPLE_BASICS_STRINGUTILITIES_H_INCLUDED
 #define RIPPLE_BASICS_STRINGUTILITIES_H_INCLUDED
 
-#include <ripple/basics/Blob.h>
-#include <ripple/basics/strHex.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/strHex.h>
 
 #include <boost/format.hpp>
 #include <boost/utility/string_view.hpp>

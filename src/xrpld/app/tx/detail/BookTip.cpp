@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/BookTip.h>
-#include <ripple/basics/Log.h>
+#include <xrpld/app/tx/detail/BookTip.h>
+#include <xrpl/basics/Log.h>
 
 namespace ripple {
 

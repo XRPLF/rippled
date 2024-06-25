@@ -17,29 +17,29 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/OpenLedger.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/DeliverMax.h>
-#include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/app/misc/TxQ.h>
-#include <ripple/app/paths/Pathfinder.h>
-#include <ripple/app/tx/apply.h>  // Validity::Valid
-#include <ripple/basics/Log.h>
-#include <ripple/basics/mulDiv.h>
-#include <ripple/json/json_writer.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/RPCErr.h>
-#include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/STParsedJSON.h>
-#include <ripple/protocol/Sign.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/rpc/impl/LegacyPathFind.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <ripple/rpc/impl/TransactionSign.h>
-#include <ripple/rpc/impl/Tuning.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/DeliverMax.h>
+#include <xrpld/app/misc/LoadFeeTrack.h>
+#include <xrpld/app/misc/Transaction.h>
+#include <xrpld/app/misc/TxQ.h>
+#include <xrpld/app/paths/Pathfinder.h>
+#include <xrpld/app/tx/apply.h>  // Validity::Valid
+#include <xrpld/rpc/detail/LegacyPathFind.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/TransactionSign.h>
+#include <xrpld/rpc/detail/Tuning.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/mulDiv.h>
+#include <xrpl/json/json_writer.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <algorithm>
 #include <iterator>
 
