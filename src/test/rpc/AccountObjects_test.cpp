@@ -1110,7 +1110,7 @@ public:
         BEAST_EXPECT(compareNFTs(4, 7));
 
         // lambda that holds common code for invalid cases.
-        auto testInvalidMarker = [this, &env, &bob](
+        auto testInvalidMarker = [&env, &bob](
                                      auto marker, char const* errorMessage) {
             Json::Value params;
             params[jss::account] = bob.human();
@@ -1119,16 +1119,17 @@ public:
             params[jss::marker] = marker;
             Json::Value const resp =
                 env.rpc("json", "account_nfts", to_string(params));
-            BEAST_EXPECT(resp[jss::result][jss::error_message] == errorMessage);
+            return resp[jss::result][jss::error_message] == errorMessage;
         };
 
         // test an invalid marker that is not a string
-        testInvalidMarker(17, "Invalid field \'marker\', not string.");
+        BEAST_EXPECT(
+            testInvalidMarker(17, "Invalid field \'marker\', not string."));
 
         // test an invalid marker that has a non-hex character
-        testInvalidMarker(
+        BEAST_EXPECT(testInvalidMarker(
             "00000000F51DFC2A09D62CBBA1DFBDD4691DAC96AD98B900000000000000000G",
-            "Invalid field \'marker\'.");
+            "Invalid field \'marker\'."));
 
         // this lambda function is used to create some fake marker using given
         // taxon and sequence because we want to test some unassociated markers
@@ -1144,15 +1145,15 @@ public:
         };
 
         // test an unassociated marker which does not exist in the NFTokenIDs
-        testInvalidMarker(
+        BEAST_EXPECT(testInvalidMarker(
             createFakeNFTMarker(bob.id(), 0x000000000, 0x00000000),
-            "Invalid field \'marker\'.");
+            "Invalid field \'marker\'."));
 
         // test an unassociated marker which exceeds the maximum value of the
         // existing NFTokenID
-        testInvalidMarker(
+        BEAST_EXPECT(testInvalidMarker(
             createFakeNFTMarker(bob.id(), 0xFFFFFFFF, 0xFFFFFFFF),
-            "Invalid field \'marker\'.");
+            "Invalid field \'marker\'."));
     }
 
     void
