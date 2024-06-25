@@ -995,9 +995,11 @@ isAccountObjectsValidType(LedgerEntryType const& type)
         case LedgerEntryType::ltDIR_NODE:
         case LedgerEntryType::ltFEE_SETTINGS:
         case LedgerEntryType::ltLEDGER_HASHES:
+        case LedgerEntryType::ltNEGATIVE_UNL:
             return false;
+        default:
+            return true;
     }
-    return true;
 }
 
 beast::SemanticVersion const firstVersion("1.0.0");

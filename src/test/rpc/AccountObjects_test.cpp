@@ -592,7 +592,8 @@ public:
             if (!acct_objs_type_is_invalid(acct_objs(acct, jss::amendments)) ||
                 !acct_objs_type_is_invalid(acct_objs(acct, jss::directory)) ||
                 !acct_objs_type_is_invalid(acct_objs(acct, jss::fee)) ||
-                !acct_objs_type_is_invalid(acct_objs(acct, jss::hashes)))
+                !acct_objs_type_is_invalid(acct_objs(acct, jss::hashes)) ||
+                !acct_objs_type_is_invalid(acct_objs(acct, jss::NegativeUNL)))
                 return false;
 
             return true;
