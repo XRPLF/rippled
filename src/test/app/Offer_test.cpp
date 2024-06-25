@@ -5467,12 +5467,12 @@ class Offer_manual_test : public OfferBaseUtil_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFlowCross, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWTakerDryOffer, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFillOrKill, tx, ripple, 4);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, tx, ripple, 4);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFlowCross, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWTakerDryOffer, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFillOrKill, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, tx, ripple, 20);
 
 }  // namespace test
