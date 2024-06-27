@@ -22,6 +22,7 @@
 
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpl/protocol/nft.h>
 
 namespace ripple {
 
