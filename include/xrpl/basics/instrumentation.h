@@ -23,7 +23,11 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <cassert>
 
 #ifdef ENABLE_VOIDSTAR
+#ifndef NDEBUG
 #include <antithesis_sdk.h>
+#else
+#pragma GCC error "Antithesis instrumentation requires Debug build"
+#endif
 #else
 #define ALWAYS(cond, message, ...)
 #define ALWAYS_OR_UNREACHABLE(cond, message, ...) assert(message&& cond)
