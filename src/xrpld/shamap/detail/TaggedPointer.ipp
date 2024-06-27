@@ -258,7 +258,7 @@ TaggedPointer::getChildIndex(std::uint16_t isBranch, int i) const
     // of a child in the array is the number of non-empty children
     // before it. Since `isBranch_` is a bitset of the stored
     // children, we simply need to mask out (and set to zero) all
-    // the bits in `isBranch_` equal to to higher than `i` and count
+    // the bits in `isBranch_` equal to higher than `i` and count
     // the bits.
 
     // mask sets all the bits >=i to zero and all the bits <i to
