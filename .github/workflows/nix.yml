@@ -222,7 +222,7 @@ jobs:
       - name: upload coverage report
         uses: wandalen/wretry.action@v1.4.10
         with:
-          action: codecov/codecov-action@v4.3.0
+          action: codecov/codecov-action@v4.5.0
           with: |
             files: coverage.xml
             fail_ci_if_error: true
