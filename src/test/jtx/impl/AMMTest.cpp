@@ -249,7 +249,8 @@ AMMTest::find_paths(
 
     STAmount da;
     if (result.isMember(jss::destination_amount))
-        da = amountFromJson(sfGeneric, result[jss::destination_amount]);
+        da = get<STAmount>(
+            amountFromJson(sfGeneric, result[jss::destination_amount]));
 
     STAmount sa;
     STPathSet paths;
@@ -261,10 +262,12 @@ AMMTest::find_paths(
             auto const& path = alts[0u];
 
             if (path.isMember(jss::source_amount))
-                sa = amountFromJson(sfGeneric, path[jss::source_amount]);
+                sa = get<STAmount>(
+                    amountFromJson(sfGeneric, path[jss::source_amount]));
 
             if (path.isMember(jss::destination_amount))
-                da = amountFromJson(sfGeneric, path[jss::destination_amount]);
+                da = get<STAmount>(
+                    amountFromJson(sfGeneric, path[jss::destination_amount]));
 
             if (path.isMember(jss::paths_computed))
             {

@@ -144,7 +144,7 @@ TxMeta::getAffectedAccounts() const
                         (field.getFName() == sfTakerPays) ||
                         (field.getFName() == sfTakerGets))
                     {
-                        auto lim = dynamic_cast<STAmount const*>(&field);
+                        auto lim = dynamic_cast<STEitherAmount const*>(&field);
                         assert(lim);
 
                         if (lim != nullptr)

@@ -364,6 +364,36 @@ LedgerFormats::LedgerFormats()
             {sfPreviousTxnLgrSeq,   soeREQUIRED}
         },
         commonFields);
+		
+	add(jss::MPTokenIssuance,
+        ltMPTOKEN_ISSUANCE,
+        {
+            {sfIssuer,               soeREQUIRED},
+            {sfSequence,             soeREQUIRED},
+            {sfTransferFee,          soeDEFAULT},
+            {sfOwnerNode,            soeREQUIRED},
+            {sfAssetScale,           soeDEFAULT},
+            {sfMaximumAmount,        soeOPTIONAL},
+            {sfOutstandingAmount,    soeREQUIRED},
+            {sfLockedAmount,         soeDEFAULT},
+            {sfMPTokenMetadata,      soeOPTIONAL},
+            {sfPreviousTxnID,        soeREQUIRED},
+            {sfPreviousTxnLgrSeq,    soeREQUIRED}
+        },
+        commonFields);
+
+    add(jss::MPToken,
+        ltMPTOKEN,
+        {
+            {sfAccount,           soeREQUIRED},
+            {sfMPTokenIssuanceID, soeREQUIRED},
+            {sfMPTAmount, soeDEFAULT},
+            {sfLockedAmount, soeDEFAULT},
+            {sfOwnerNode,            soeREQUIRED},
+            {sfPreviousTxnID,        soeREQUIRED},
+            {sfPreviousTxnLgrSeq,    soeREQUIRED}
+        },
+        commonFields);
 
     // clang-format on
 }

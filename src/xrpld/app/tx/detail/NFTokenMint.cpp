@@ -105,7 +105,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
         // because a Mint is only allowed to create a sell offer.
         if (NotTEC notTec = nft::tokenOfferCreatePreflight(
                 ctx.tx[sfAccount],
-                ctx.tx[sfAmount],
+                get<STAmount>(ctx.tx[sfAmount]),
                 ctx.tx[~sfDestination],
                 ctx.tx[~sfExpiration],
                 extractNFTokenFlagsFromTxFlags(ctx.tx.getFlags()),
@@ -195,7 +195,7 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
                 ctx.view,
                 ctx.tx[sfAccount],
                 ctx.tx[~sfIssuer].value_or(ctx.tx[sfAccount]),
-                ctx.tx[sfAmount],
+                get<STAmount>(ctx.tx[sfAmount]),
                 ctx.tx[~sfDestination],
                 extractNFTokenFlagsFromTxFlags(ctx.tx.getFlags()),
                 ctx.tx[~sfTransferFee].value_or(0),
@@ -323,7 +323,7 @@ NFTokenMint::doApply()
         if (TER const ter = nft::tokenOfferCreateApply(
                 view(),
                 ctx_.tx[sfAccount],
-                ctx_.tx[sfAmount],
+                get<STAmount>(ctx_.tx[sfAmount]),
                 ctx_.tx[~sfDestination],
                 ctx_.tx[~sfExpiration],
                 ctx_.tx.getSeqProxy(),

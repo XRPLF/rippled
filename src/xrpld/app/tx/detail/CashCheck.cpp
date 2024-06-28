@@ -50,7 +50,7 @@ CashCheck::preflight(PreflightContext const& ctx)
     }
 
     // Exactly one of Amount or DeliverMin must be present.
-    auto const optAmount = ctx.tx[~sfAmount];
+    auto const optAmount = get<STAmount>(ctx.tx[~sfAmount]);
     auto const optDeliverMin = ctx.tx[~sfDeliverMin];
 
     if (static_cast<bool>(optAmount) == static_cast<bool>(optDeliverMin))
@@ -136,7 +136,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
         // Preflight verified exactly one of Amount or DeliverMin is present.
         // Make sure the requested amount is reasonable.
         STAmount const value{[](STTx const& tx) {
-            auto const optAmount = tx[~sfAmount];
+            auto const optAmount = get<STAmount>(tx[~sfAmount]);
             return optAmount ? *optAmount : tx[sfDeliverMin];
         }(ctx.tx)};
 
@@ -307,7 +307,7 @@ CashCheck::doApply()
             STAmount const xrpDeliver{
                 optDeliverMin
                     ? std::max(*optDeliverMin, std::min(sendMax, srcLiquid))
-                    : ctx_.tx.getFieldAmount(sfAmount)};
+                    : get<STAmount>(ctx_.tx.getFieldAmount(sfAmount))};
 
             if (srcLiquid < xrpDeliver)
             {
@@ -340,11 +340,12 @@ CashCheck::doApply()
             // transfer rate to account for.  Since the transfer rate cannot
             // exceed 200%, we use 1/2 maxValue as our limit.
             STAmount const flowDeliver{
-                optDeliverMin ? STAmount(
-                                    optDeliverMin->issue(),
-                                    STAmount::cMaxValue / 2,
-                                    STAmount::cMaxOffset)
-                              : ctx_.tx.getFieldAmount(sfAmount)};
+                optDeliverMin
+                    ? STAmount(
+                          optDeliverMin->issue(),
+                          STAmount::cMaxValue / 2,
+                          STAmount::cMaxOffset)
+                    : get<STAmount>(ctx_.tx.getFieldAmount(sfAmount))};
 
             // If a trust line does not exist yet create one.
             Issue const& trustLineIssue = flowDeliver.issue();

@@ -211,7 +211,7 @@ class Check_test : public beast::unit_test::suite
 
         Env env{*this, features};
 
-        STAmount const startBalance{XRP(1000).value()};
+        STAmount const startBalance{XRP(1000)};
         env.fund(startBalance, gw, alice, bob);
 
         // Note that no trust line has been set up for alice, but alice can
@@ -321,7 +321,7 @@ class Check_test : public beast::unit_test::suite
 
         Env env{*this, features | disallowIncoming};
 
-        STAmount const startBalance{XRP(1000).value()};
+        STAmount const startBalance{XRP(1000)};
         env.fund(startBalance, gw, alice, bob);
 
         /*
@@ -405,7 +405,7 @@ class Check_test : public beast::unit_test::suite
 
         Env env{*this, features};
 
-        STAmount const startBalance{XRP(1000).value()};
+        STAmount const startBalance{XRP(1000)};
         env.fund(startBalance, gw1, gwF, alice, bob);
 
         // Bad fee.
@@ -587,7 +587,7 @@ class Check_test : public beast::unit_test::suite
         Env env{*this, features};
 
         XRPAmount const baseFeeDrops{env.current()->fees().base};
-        STAmount const startBalance{XRP(300).value()};
+        STAmount const startBalance{XRP(300)};
         env.fund(startBalance, alice, bob);
         {
             // Basic XRP check.
@@ -1192,8 +1192,8 @@ class Check_test : public beast::unit_test::suite
                                      double pct,
                                      double amount) {
             // Capture bob's and alice's balances so we can test at the end.
-            STAmount const aliceStart{env.balance(alice, USD.issue()).value()};
-            STAmount const bobStart{env.balance(bob, USD.issue()).value()};
+            STAmount const aliceStart{env.balance(alice, USD.issue())};
+            STAmount const bobStart{env.balance(bob, USD.issue())};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
@@ -1217,8 +1217,8 @@ class Check_test : public beast::unit_test::suite
                                        double pct,
                                        double amount) {
             // Capture bob's and alice's balances so we can test at the end.
-            STAmount const aliceStart{env.balance(alice, USD.issue()).value()};
-            STAmount const bobStart{env.balance(bob, USD.issue()).value()};
+            STAmount const aliceStart{env.balance(alice, USD.issue())};
+            STAmount const bobStart{env.balance(bob, USD.issue())};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
@@ -1281,7 +1281,7 @@ class Check_test : public beast::unit_test::suite
                                   double max2) {
             // Capture alice's balance so we can test at the end.  It doesn't
             // make any sense to look at the balance of a gateway.
-            STAmount const aliceStart{env.balance(alice, USD.issue()).value()};
+            STAmount const aliceStart{env.balance(alice, USD.issue())};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
@@ -1314,7 +1314,7 @@ class Check_test : public beast::unit_test::suite
                                     double max2) {
             // Capture alice's balance so we can test at the end.  It doesn't
             // make any sense to look at the balance of the issuer.
-            STAmount const aliceStart{env.balance(alice, USD.issue()).value()};
+            STAmount const aliceStart{env.balance(alice, USD.issue())};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));

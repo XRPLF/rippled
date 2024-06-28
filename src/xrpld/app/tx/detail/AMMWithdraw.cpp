@@ -48,7 +48,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    auto const amount = ctx.tx[~sfAmount];
+    auto const amount = get<STAmount>(ctx.tx[~sfAmount]);
     auto const amount2 = ctx.tx[~sfAmount2];
     auto const ePrice = ctx.tx[~sfEPrice];
     auto const lpTokens = ctx.tx[~sfLPTokenIn];
@@ -181,7 +181,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         return terNO_AMM;
     }
 
-    auto const amount = ctx.tx[~sfAmount];
+    auto const amount = get<STAmount>(ctx.tx[~sfAmount]);
     auto const amount2 = ctx.tx[~sfAmount2];
 
     auto const expected = ammHolds(
@@ -295,7 +295,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 std::pair<TER, bool>
 AMMWithdraw::applyGuts(Sandbox& sb)
 {
-    auto const amount = ctx_.tx[~sfAmount];
+    auto const amount = get<STAmount>(ctx_.tx[~sfAmount]);
     auto const amount2 = ctx_.tx[~sfAmount2];
     auto const ePrice = ctx_.tx[~sfEPrice];
     auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));

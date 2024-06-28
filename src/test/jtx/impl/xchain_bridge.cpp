@@ -115,7 +115,7 @@ Json::Value
 xchain_create_claim_id(
     Account const& acc,
     Json::Value const& bridge,
-    STAmount const& reward,
+    STEitherAmount const& reward,
     Account const& otherChainSource)
 {
     Json::Value jv;

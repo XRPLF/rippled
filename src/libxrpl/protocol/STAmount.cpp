@@ -85,10 +85,9 @@ areComparable(STAmount const& v1, STAmount const& v2)
         v1.issue().currency == v2.issue().currency;
 }
 
-STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
+STAmount::STAmount(SerialIter& sit)
 {
     std::uint64_t value = sit.get64();
-
     // native
     if ((value & cNotNative) == 0)
     {
@@ -159,23 +158,6 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
 }
 
 STAmount::STAmount(
-    SField const& name,
-    Issue const& issue,
-    mantissa_type mantissa,
-    exponent_type exponent,
-    bool native,
-    bool negative,
-    unchecked)
-    : STBase(name)
-    , mIssue(issue)
-    , mValue(mantissa)
-    , mOffset(exponent)
-    , mIsNative(native)
-    , mIsNegative(negative)
-{
-}
-
-STAmount::STAmount(
     Issue const& issue,
     mantissa_type mantissa,
     exponent_type exponent,
@@ -191,62 +173,17 @@ STAmount::STAmount(
 }
 
 STAmount::STAmount(
-    SField const& name,
     Issue const& issue,
     mantissa_type mantissa,
     exponent_type exponent,
     bool native,
     bool negative)
-    : STBase(name)
-    , mIssue(issue)
+    : mIssue(issue)
     , mValue(mantissa)
     , mOffset(exponent)
     , mIsNative(native)
     , mIsNegative(negative)
 {
-    canonicalize();
-}
-
-STAmount::STAmount(SField const& name, std::int64_t mantissa)
-    : STBase(name), mOffset(0), mIsNative(true)
-{
-    set(mantissa);
-}
-
-STAmount::STAmount(SField const& name, std::uint64_t mantissa, bool negative)
-    : STBase(name)
-    , mValue(mantissa)
-    , mOffset(0)
-    , mIsNative(true)
-    , mIsNegative(negative)
-{
-    assert(mValue <= std::numeric_limits<std::int64_t>::max());
-}
-
-STAmount::STAmount(
-    SField const& name,
-    Issue const& issue,
-    std::uint64_t mantissa,
-    int exponent,
-    bool negative)
-    : STBase(name)
-    , mIssue(issue)
-    , mValue(mantissa)
-    , mOffset(exponent)
-    , mIsNegative(negative)
-{
-    assert(mValue <= std::numeric_limits<std::int64_t>::max());
-    canonicalize();
-}
-
-STAmount::STAmount(SField const& name, STAmount const& from)
-    : STBase(name)
-    , mIssue(from.mIssue)
-    , mValue(from.mValue)
-    , mOffset(from.mOffset)
-    , mIsNegative(from.mIsNegative)
-{
-    assert(mValue <= std::numeric_limits<std::int64_t>::max());
     canonicalize();
 }
 
@@ -319,21 +256,9 @@ STAmount::STAmount(XRPAmount const& amount)
 }
 
 std::unique_ptr<STAmount>
-STAmount::construct(SerialIter& sit, SField const& name)
+STAmount::construct(SerialIter& sit)
 {
-    return std::make_unique<STAmount>(sit, name);
-}
-
-STBase*
-STAmount::copy(std::size_t n, void* buf) const
-{
-    return emplace(n, buf, *this);
-}
-
-STBase*
-STAmount::move(std::size_t n, void* buf)
-{
-    return emplace(n, buf, std::move(*this));
+    return std::make_unique<STAmount>(sit);
 }
 
 //------------------------------------------------------------------------------
@@ -416,16 +341,16 @@ operator+(STAmount const& v1, STAmount const& v2)
     if (v1 == beast::zero)
     {
         // Result must be in terms of v1 currency and issuer.
-        return {
-            v1.getFName(),
-            v1.issue(),
-            v2.mantissa(),
-            v2.exponent(),
-            v2.negative()};
+        return {v1.issue(), v2.mantissa(), v2.exponent(), v2.negative()};
     }
 
     if (v1.native())
-        return {v1.getFName(), getSNValue(v1) + getSNValue(v2)};
+    {
+        auto const res = getSNValue(v1) + getSNValue(v2);
+        auto const negative = res < 0;
+        return STAmount{
+            static_cast<std::uint64_t>(negative ? -res : res), negative};
+    }
 
     if (getSTNumberSwitchover())
     {
@@ -462,18 +387,12 @@ operator+(STAmount const& v1, STAmount const& v2)
     std::int64_t fv = vv1 + vv2;
 
     if ((fv >= -10) && (fv <= 10))
-        return {v1.getFName(), v1.issue()};
+        return {v1.issue()};
 
     if (fv >= 0)
-        return STAmount{
-            v1.getFName(),
-            v1.issue(),
-            static_cast<std::uint64_t>(fv),
-            ov1,
-            false};
+        return STAmount{v1.issue(), static_cast<std::uint64_t>(fv), ov1, false};
 
-    return STAmount{
-        v1.getFName(), v1.issue(), static_cast<std::uint64_t>(-fv), ov1, true};
+    return STAmount{v1.issue(), static_cast<std::uint64_t>(-fv), ov1, true};
 }
 
 STAmount
@@ -542,12 +461,6 @@ STAmount::setJson(Json::Value& elem) const
         elem = getText();
     }
 }
-
-//------------------------------------------------------------------------------
-//
-// STBase
-//
-//------------------------------------------------------------------------------
 
 SerializedTypeID
 STAmount::getSType() const
@@ -686,13 +599,6 @@ STAmount::add(Serializer& s) const
         s.addBitString(mIssue.currency);
         s.addBitString(mIssue.account);
     }
-}
-
-bool
-STAmount::isEquivalent(const STBase& t) const
-{
-    const STAmount* v = dynamic_cast<const STAmount*>(&t);
-    return v && (*v == *this);
 }
 
 bool
@@ -920,128 +826,7 @@ amountFromString(Issue const& issue, std::string const& amount)
             exponent += beast::lexicalCastThrow<int>(std::string(match[7]));
     }
 
-    return {issue, mantissa, exponent, negative};
-}
-
-STAmount
-amountFromJson(SField const& name, Json::Value const& v)
-{
-    STAmount::mantissa_type mantissa = 0;
-    STAmount::exponent_type exponent = 0;
-    bool negative = false;
-    Issue issue;
-
-    Json::Value value;
-    Json::Value currency;
-    Json::Value issuer;
-
-    if (v.isNull())
-    {
-        Throw<std::runtime_error>(
-            "XRP may not be specified with a null Json value");
-    }
-    else if (v.isObject())
-    {
-        value = v[jss::value];
-        currency = v[jss::currency];
-        issuer = v[jss::issuer];
-    }
-    else if (v.isArray())
-    {
-        value = v.get(Json::UInt(0), 0);
-        currency = v.get(Json::UInt(1), Json::nullValue);
-        issuer = v.get(Json::UInt(2), Json::nullValue);
-    }
-    else if (v.isString())
-    {
-        std::string val = v.asString();
-        std::vector<std::string> elements;
-        boost::split(elements, val, boost::is_any_of("\t\n\r ,/"));
-
-        if (elements.size() > 3)
-            Throw<std::runtime_error>("invalid amount string");
-
-        value = elements[0];
-
-        if (elements.size() > 1)
-            currency = elements[1];
-
-        if (elements.size() > 2)
-            issuer = elements[2];
-    }
-    else
-    {
-        value = v;
-    }
-
-    bool const native = !currency.isString() || currency.asString().empty() ||
-        (currency.asString() == systemCurrencyCode());
-
-    if (native)
-    {
-        if (v.isObjectOrNull())
-            Throw<std::runtime_error>("XRP may not be specified as an object");
-        issue = xrpIssue();
-    }
-    else
-    {
-        // non-XRP
-        if (!to_currency(issue.currency, currency.asString()))
-            Throw<std::runtime_error>("invalid currency");
-
-        if (!issuer.isString() || !to_issuer(issue.account, issuer.asString()))
-            Throw<std::runtime_error>("invalid issuer");
-
-        if (isXRP(issue.currency))
-            Throw<std::runtime_error>("invalid issuer");
-    }
-
-    if (value.isInt())
-    {
-        if (value.asInt() >= 0)
-        {
-            mantissa = value.asInt();
-        }
-        else
-        {
-            mantissa = -value.asInt();
-            negative = true;
-        }
-    }
-    else if (value.isUInt())
-    {
-        mantissa = v.asUInt();
-    }
-    else if (value.isString())
-    {
-        auto const ret = amountFromString(issue, value.asString());
-
-        mantissa = ret.mantissa();
-        exponent = ret.exponent();
-        negative = ret.negative();
-    }
-    else
-    {
-        Throw<std::runtime_error>("invalid amount type");
-    }
-
-    return {name, issue, mantissa, exponent, native, negative};
-}
-
-bool
-amountFromJsonNoThrow(STAmount& result, Json::Value const& jvSource)
-{
-    try
-    {
-        result = amountFromJson(sfGeneric, jvSource);
-        return true;
-    }
-    catch (const std::exception& e)
-    {
-        JLOG(debugLog().warn())
-            << "amountFromJsonNoThrow: caught: " << e.what();
-    }
-    return false;
+    return STAmount{issue, mantissa, exponent, negative};
 }
 
 //------------------------------------------------------------------------------
@@ -1098,7 +883,6 @@ operator-(STAmount const& value)
     if (value.mantissa() == 0)
         return value;
     return STAmount(
-        value.getFName(),
         value.issue(),
         value.mantissa(),
         value.exponent(),
@@ -1224,7 +1008,7 @@ multiply(STAmount const& v1, STAmount const& v2, Issue const& issue)
         if (((maxV >> 32) * minV) > 2095475792ull)  // cMaxNative / 2^32
             Throw<std::runtime_error>("Native value overflow");
 
-        return STAmount(v1.getFName(), minV * maxV);
+        return STAmount(minV * maxV);
     }
 
     if (getSTNumberSwitchover())
@@ -1416,7 +1200,7 @@ mulRoundImpl(
         if (((maxV >> 32) * minV) > 2095475792ull)  // cMaxNative / 2^32
             Throw<std::runtime_error>("Native value overflow");
 
-        return STAmount(v1.getFName(), minV * maxV);
+        return STAmount(minV * maxV);
     }
 
     std::uint64_t value1 = v1.mantissa(), value2 = v2.mantissa();
@@ -1608,6 +1392,13 @@ divRoundStrict(
     bool roundUp)
 {
     return divRoundImpl<NumberRoundModeGuard>(num, den, issue, roundUp);
+}
+
+std::ostream&
+operator<<(std::ostream& out, const STAmount& t)
+{
+    out << t.getFullText();
+    return out;
 }
 
 }  // namespace ripple

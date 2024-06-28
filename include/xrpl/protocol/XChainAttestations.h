@@ -143,7 +143,7 @@ struct AttestationClaim : AttestationBase
     message(
         STXChainBridge const& bridge,
         AccountID const& sendingAccount,
-        STAmount const& sendingAmount,
+        STEitherAmount const& sendingAmount,
         AccountID const& rewardAccount,
         bool wasLockingChainSend,
         std::uint64_t claimID,
@@ -226,8 +226,8 @@ struct AttestationCreateAccount : AttestationBase
     message(
         STXChainBridge const& bridge,
         AccountID const& sendingAccount,
-        STAmount const& sendingAmount,
-        STAmount const& rewardAmount,
+        STEitherAmount const& sendingAmount,
+        STEitherAmount const& rewardAmount,
         AccountID const& rewardAccount,
         bool wasLockingChainSend,
         std::uint64_t createCount,

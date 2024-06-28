@@ -26,10 +26,11 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SOTemplate.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STEitherAmount.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
@@ -54,11 +55,11 @@ throwFieldNotFound(SField const& field)
 class STObject : public STBase, public CountedObject<STObject>
 {
     // Proxy value for a STBase derived class
-    template <class T>
+    template <class T, class H = T>
     class Proxy;
-    template <class T>
+    template <class T, class H = T>
     class ValueProxy;
-    template <class T>
+    template <class T, class H = T>
     class OptionalProxy;
 
     struct Transform
@@ -226,6 +227,8 @@ public:
 
     uint160
     getFieldH160(SField const& field) const;
+    uint192
+    getFieldH192(SField const& field) const;
     uint256
     getFieldH256(SField const& field) const;
     AccountID
@@ -233,8 +236,11 @@ public:
 
     Blob
     getFieldVL(SField const& field) const;
-    STAmount const&
+    STEitherAmount const&
     getFieldAmount(SField const& field) const;
+    STAmount const&
+    getFieldAmount(
+        TypedVariantField<STEitherAmount, STAmount> const& field) const;
     STPathSet const&
     getFieldPathSet(SField const& field) const;
     const STVector256&
@@ -255,6 +261,12 @@ public:
     typename T::value_type
     operator[](TypedField<T> const& f) const;
 
+    /** Overload for amount field
+     */
+    template <class T, class H = T>
+    typename H::value_type
+    operator[](TypedVariantField<T, H> const& f) const;
+
     /** Get the value of a field as a std::optional
 
         @param An OptionaledField built from an SField value representing the
@@ -267,6 +279,12 @@ public:
     std::optional<std::decay_t<typename T::value_type>>
     operator[](OptionaledField<T> const& of) const;
 
+    /** Overload for a variant field
+     */
+    template <class T, class H>
+    std::optional<std::decay_t<typename H::value_type>>
+    operator[](OptionaledVariantField<T, H> const& of) const;
+
     /** Get a modifiable field value.
         @param A TypedField built from an SField value representing the desired
             object field. In typical use, the TypedField will be implicitly
@@ -277,6 +295,12 @@ public:
     template <class T>
     ValueProxy<T>
     operator[](TypedField<T> const& f);
+
+    /** Overload for a variant field
+     */
+    template <class T, class H = T>
+    ValueProxy<T, H>
+    operator[](TypedVariantField<T, H> const& f);
 
     /** Return a modifiable field value as std::optional
 
@@ -291,6 +315,12 @@ public:
     OptionalProxy<T>
     operator[](OptionaledField<T> const& of);
 
+    /** Overload for a variant field
+     */
+    template <class T, class H = T>
+    OptionalProxy<T, H>
+    operator[](OptionaledVariantField<T, H> const& of);
+
     /** Get the value of a field.
         @param A TypedField built from an SField value representing the desired
             object field. In typical use, the TypedField will be implicitly
@@ -301,6 +331,12 @@ public:
     template <class T>
     typename T::value_type
     at(TypedField<T> const& f) const;
+
+    /** Overload for a variant field
+     */
+    template <class T, class H = T>
+    typename H::value_type
+    at(TypedVariantField<T, H> const& f) const;
 
     /** Get the value of a field as std::optional
 
@@ -314,6 +350,12 @@ public:
     std::optional<std::decay_t<typename T::value_type>>
     at(OptionaledField<T> const& of) const;
 
+    /** Overload for a variant field
+     */
+    template <class T, class H = T>
+    std::optional<std::decay_t<typename H::value_type>>
+    at(OptionaledVariantField<T, H> const& of) const;
+
     /** Get a modifiable field value.
         @param A TypedField built from an SField value representing the desired
             object field. In typical use, the TypedField will be implicitly
@@ -324,6 +366,12 @@ public:
     template <class T>
     ValueProxy<T>
     at(TypedField<T> const& f);
+
+    /** Overload for a variant field
+     */
+    template <class T, class H = T>
+    ValueProxy<T, H>
+    at(TypedVariantField<T, H> const& f);
 
     /** Return a modifiable field value as std::optional
 
@@ -337,6 +385,12 @@ public:
     template <class T>
     OptionalProxy<T>
     at(OptionaledField<T> const& of);
+
+    /** Overload for a variant field
+     */
+    template <class T, class H = T>
+    OptionalProxy<T, H>
+    at(OptionaledVariantField<T, H> const& of);
 
     /** Set a field.
         if the field already exists, it is replaced.
@@ -368,7 +422,7 @@ public:
     setAccountID(SField const& field, AccountID const&);
 
     void
-    setFieldAmount(SField const& field, STAmount const&);
+    setFieldAmount(SField const& field, STEitherAmount const&);
     void
     setFieldIssue(SField const& field, STIssue const&);
     void
@@ -427,6 +481,14 @@ private:
     static std::vector<STBase const*>
     getSortedFields(STObject const& objToSort, WhichFields whichFields);
 
+    template <class T>
+    typename T::value_type
+    atImpl(TypedField<T> const& f) const;
+
+    template <class T>
+    std::optional<std::decay_t<typename T::value_type>>
+    atImpl(OptionaledField<T> const& of) const;
+
     // Implementation for getting (most) fields that return by value.
     //
     // The remove_cv and remove_reference are necessitated by the STBitString
@@ -473,11 +535,11 @@ private:
 
 //------------------------------------------------------------------------------
 
-template <class T>
+template <class T, class H>
 class STObject::Proxy
 {
 protected:
-    using value_type = typename T::value_type;
+    using value_type = typename H::value_type;
 
     STObject* st_;
     SOEStyle style_;
@@ -498,11 +560,11 @@ protected:
     assign(U&& u);
 };
 
-template <class T>
-class STObject::ValueProxy : private Proxy<T>
+template <class T, class H>
+class STObject::ValueProxy : private Proxy<T, H>
 {
 private:
-    using value_type = typename T::value_type;
+    using value_type = typename H::value_type;
 
 public:
     ValueProxy(ValueProxy const&) = default;
@@ -521,11 +583,11 @@ private:
     ValueProxy(STObject* st, TypedField<T> const* f);
 };
 
-template <class T>
-class STObject::OptionalProxy : private Proxy<T>
+template <class T, class H>
+class STObject::OptionalProxy : private Proxy<T, H>
 {
 private:
-    using value_type = typename T::value_type;
+    using value_type = typename H::value_type;
 
     using optional_type = std::optional<typename std::decay<value_type>::type>;
 
@@ -657,8 +719,9 @@ class STObject::FieldErr : public std::runtime_error
     using std::runtime_error::runtime_error;
 };
 
-template <class T>
-STObject::Proxy<T>::Proxy(STObject* st, TypedField<T> const* f) : st_(st), f_(f)
+template <class T, class H>
+STObject::Proxy<T, H>::Proxy(STObject* st, TypedField<T> const* f)
+    : st_(st), f_(f)
 {
     if (st_->mType)
     {
@@ -674,13 +737,18 @@ STObject::Proxy<T>::Proxy(STObject* st, TypedField<T> const* f) : st_(st), f_(f)
     }
 }
 
-template <class T>
+template <class T, class H>
 auto
-STObject::Proxy<T>::value() const -> value_type
+STObject::Proxy<T, H>::value() const -> value_type
 {
     auto const t = find();
     if (t)
-        return t->value();
+    {
+        if constexpr (std::is_same_v<T, H>)
+            return t->value();
+        else
+            return get<H>(t->value());
+    }
     if (style_ == soeINVALID)
     {
         Throw<STObject::FieldErr>("Value requested from invalid STObject.");
@@ -693,17 +761,17 @@ STObject::Proxy<T>::value() const -> value_type
     return value_type{};
 }
 
-template <class T>
+template <class T, class H>
 inline T const*
-STObject::Proxy<T>::find() const
+STObject::Proxy<T, H>::find() const
 {
     return dynamic_cast<T const*>(st_->peekAtPField(*f_));
 }
 
-template <class T>
+template <class T, class H>
 template <class U>
 void
-STObject::Proxy<T>::assign(U&& u)
+STObject::Proxy<T, H>::assign(U&& u)
 {
     if (style_ == soeDEFAULT && u == value_type{})
     {
@@ -721,67 +789,68 @@ STObject::Proxy<T>::assign(U&& u)
 
 //------------------------------------------------------------------------------
 
-template <class T>
+template <class T, class H>
 template <class U>
-std::enable_if_t<std::is_assignable_v<T, U>, STObject::ValueProxy<T>&>
-STObject::ValueProxy<T>::operator=(U&& u)
+std::enable_if_t<std::is_assignable_v<T, U>, STObject::ValueProxy<T, H>&>
+STObject::ValueProxy<T, H>::operator=(U&& u)
 {
     this->assign(std::forward<U>(u));
     return *this;
 }
 
-template <class T>
-STObject::ValueProxy<T>::operator value_type() const
+template <class T, class H>
+STObject::ValueProxy<T, H>::operator value_type() const
 {
     return this->value();
 }
 
-template <class T>
-STObject::ValueProxy<T>::ValueProxy(STObject* st, TypedField<T> const* f)
-    : Proxy<T>(st, f)
+template <class T, class H>
+STObject::ValueProxy<T, H>::ValueProxy(STObject* st, TypedField<T> const* f)
+    : Proxy<T, H>(st, f)
 {
 }
 
 //------------------------------------------------------------------------------
 
-template <class T>
-STObject::OptionalProxy<T>::operator bool() const noexcept
+template <class T, class H>
+STObject::OptionalProxy<T, H>::operator bool() const noexcept
 {
     return engaged();
 }
 
-template <class T>
+template <class T, class H>
 auto
-STObject::OptionalProxy<T>::operator*() const -> value_type
+STObject::OptionalProxy<T, H>::operator*() const -> value_type
 {
     return this->value();
 }
 
-template <class T>
-STObject::OptionalProxy<T>::operator typename STObject::OptionalProxy<
-    T>::optional_type() const
+template <class T, class H>
+STObject::OptionalProxy<T, H>::operator typename STObject::OptionalProxy<T, H>::
+    optional_type() const
 {
     return optional_value();
 }
 
-template <class T>
-typename STObject::OptionalProxy<T>::optional_type
-STObject::OptionalProxy<T>::operator~() const
+template <class T, class H>
+typename STObject::OptionalProxy<T, H>::optional_type
+STObject::OptionalProxy<T, H>::operator~() const
 {
     return optional_value();
 }
 
-template <class T>
+template <class T, class H>
 auto
-STObject::OptionalProxy<T>::operator=(std::nullopt_t const&) -> OptionalProxy&
+STObject::OptionalProxy<T, H>::operator=(std::nullopt_t const&)
+    -> OptionalProxy&
 {
     disengage();
     return *this;
 }
 
-template <class T>
+template <class T, class H>
 auto
-STObject::OptionalProxy<T>::operator=(optional_type&& v) -> OptionalProxy&
+STObject::OptionalProxy<T, H>::operator=(optional_type&& v) -> OptionalProxy&
 {
     if (v)
         this->assign(std::move(*v));
@@ -790,9 +859,10 @@ STObject::OptionalProxy<T>::operator=(optional_type&& v) -> OptionalProxy&
     return *this;
 }
 
-template <class T>
+template <class T, class H>
 auto
-STObject::OptionalProxy<T>::operator=(optional_type const& v) -> OptionalProxy&
+STObject::OptionalProxy<T, H>::operator=(optional_type const& v)
+    -> OptionalProxy&
 {
     if (v)
         this->assign(*v);
@@ -801,31 +871,33 @@ STObject::OptionalProxy<T>::operator=(optional_type const& v) -> OptionalProxy&
     return *this;
 }
 
-template <class T>
+template <class T, class H>
 template <class U>
-std::enable_if_t<std::is_assignable_v<T, U>, STObject::OptionalProxy<T>&>
-STObject::OptionalProxy<T>::operator=(U&& u)
+std::enable_if_t<std::is_assignable_v<T, U>, STObject::OptionalProxy<T, H>&>
+STObject::OptionalProxy<T, H>::operator=(U&& u)
 {
     this->assign(std::forward<U>(u));
     return *this;
 }
 
-template <class T>
-STObject::OptionalProxy<T>::OptionalProxy(STObject* st, TypedField<T> const* f)
-    : Proxy<T>(st, f)
+template <class T, class H>
+STObject::OptionalProxy<T, H>::OptionalProxy(
+    STObject* st,
+    TypedField<T> const* f)
+    : Proxy<T, H>(st, f)
 {
 }
 
-template <class T>
+template <class T, class H>
 bool
-STObject::OptionalProxy<T>::engaged() const noexcept
+STObject::OptionalProxy<T, H>::engaged() const noexcept
 {
     return this->style_ == soeDEFAULT || this->find() != nullptr;
 }
 
-template <class T>
+template <class T, class H>
 void
-STObject::OptionalProxy<T>::disengage()
+STObject::OptionalProxy<T, H>::disengage()
 {
     if (this->style_ == soeREQUIRED || this->style_ == soeDEFAULT)
         Throw<STObject::FieldErr>(
@@ -836,18 +908,18 @@ STObject::OptionalProxy<T>::disengage()
         this->st_->makeFieldAbsent(*this->f_);
 }
 
-template <class T>
+template <class T, class H>
 auto
-STObject::OptionalProxy<T>::optional_value() const -> optional_type
+STObject::OptionalProxy<T, H>::optional_value() const -> optional_type
 {
     if (!engaged())
         return std::nullopt;
     return this->value();
 }
 
-template <class T>
-typename STObject::OptionalProxy<T>::value_type
-STObject::OptionalProxy<T>::value_or(value_type val) const
+template <class T, class H>
+typename STObject::OptionalProxy<T, H>::value_type
+STObject::OptionalProxy<T, H>::value_or(value_type val) const
 {
     return engaged() ? this->value() : val;
 }
@@ -959,9 +1031,23 @@ STObject::operator[](TypedField<T> const& f) const
     return at(f);
 }
 
+template <class T, class H>
+typename H::value_type
+STObject::operator[](TypedVariantField<T, H> const& f) const
+{
+    return at(f);
+}
+
 template <class T>
 std::optional<std::decay_t<typename T::value_type>>
 STObject::operator[](OptionaledField<T> const& of) const
+{
+    return at(of);
+}
+
+template <class T, class H>
+std::optional<std::decay_t<typename H::value_type>>
+STObject::operator[](OptionaledVariantField<T, H> const& of) const
 {
     return at(of);
 }
@@ -973,6 +1059,13 @@ STObject::operator[](TypedField<T> const& f) -> ValueProxy<T>
     return at(f);
 }
 
+template <class T, class H>
+inline auto
+STObject::operator[](TypedVariantField<T, H> const& f) -> ValueProxy<T, H>
+{
+    return at(f);
+}
+
 template <class T>
 inline auto
 STObject::operator[](OptionaledField<T> const& of) -> OptionalProxy<T>
@@ -980,9 +1073,17 @@ STObject::operator[](OptionaledField<T> const& of) -> OptionalProxy<T>
     return at(of);
 }
 
+template <class T, class H>
+inline auto
+STObject::operator[](OptionaledVariantField<T, H> const& of)
+    -> OptionalProxy<T, H>
+{
+    return at(of);
+}
+
 template <class T>
 typename T::value_type
-STObject::at(TypedField<T> const& f) const
+STObject::atImpl(TypedField<T> const& f) const
 {
     auto const b = peekAtPField(f);
     if (!b)
@@ -1008,8 +1109,25 @@ STObject::at(TypedField<T> const& f) const
 }
 
 template <class T>
+typename T::value_type
+STObject::at(TypedField<T> const& f) const
+{
+    return atImpl(f);
+}
+
+template <class T, class H>
+typename H::value_type
+STObject::at(TypedVariantField<T, H> const& f) const
+{
+    if constexpr (std::is_same_v<T, H>)
+        return atImpl(f);
+    else
+        return get<H>(atImpl(f));
+}
+
+template <class T>
 std::optional<std::decay_t<typename T::value_type>>
-STObject::at(OptionaledField<T> const& of) const
+STObject::atImpl(OptionaledField<T> const& of) const
 {
     auto const b = peekAtPField(*of.f);
     if (!b)
@@ -1028,10 +1146,34 @@ STObject::at(OptionaledField<T> const& of) const
 }
 
 template <class T>
+std::optional<std::decay_t<typename T::value_type>>
+STObject::at(OptionaledField<T> const& of) const
+{
+    return atImpl(of);
+}
+
+template <class T, class H>
+std::optional<std::decay_t<typename H::value_type>>
+STObject::at(OptionaledVariantField<T, H> const& of) const
+{
+    if constexpr (std::is_same_v<T, H>)
+        return atImpl(of);
+    else
+        return get<H>(atImpl(of));
+}
+
+template <class T>
 inline auto
 STObject::at(TypedField<T> const& f) -> ValueProxy<T>
 {
     return ValueProxy<T>(this, &f);
+}
+
+template <class T, class H>
+inline auto
+STObject::at(TypedVariantField<T, H> const& f) -> ValueProxy<T, H>
+{
+    return ValueProxy<T, H>(this, &f);
 }
 
 template <class T>
@@ -1039,6 +1181,13 @@ inline auto
 STObject::at(OptionaledField<T> const& of) -> OptionalProxy<T>
 {
     return OptionalProxy<T>(this, of.f);
+}
+
+template <class T, class H>
+inline auto
+STObject::at(OptionaledVariantField<T, H> const& of) -> OptionalProxy<T, H>
+{
+    return OptionalProxy<T, H>(this, of.f);
 }
 
 template <class Tag>

@@ -763,7 +763,7 @@ struct Flow_test : public beast::unit_test::suite
             sendmax(EUR(500)),
             txflags(tfNoRippleDirect | tfPartialPayment));
 
-        auto const carolUSD = env.balance(carol, USD).value();
+        auto const carolUSD = get<STAmount>(env.balance(carol, USD));
         BEAST_EXPECT(carolUSD > USD(0) && carolUSD < USD(50));
     }
 

@@ -27,8 +27,8 @@ namespace jtx {
 Json::Value
 offer(
     Account const& account,
-    STAmount const& takerPays,
-    STAmount const& takerGets,
+    STEitherAmount const& takerPays,
+    STEitherAmount const& takerGets,
     std::uint32_t flags)
 {
     Json::Value jv;

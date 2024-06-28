@@ -28,6 +28,7 @@
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
+#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
@@ -361,6 +362,8 @@ populateJsonResponse(
                         insertDeliveredAmount(
                             jvObj[jss::meta], context, txn, *txnMeta);
                         insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
+                        RPC::insertMPTokenIssuanceID(
+                            jvObj[jss::meta], sttx, *txnMeta);
                     }
                     else
                         assert(false && "Missing transaction medatata");

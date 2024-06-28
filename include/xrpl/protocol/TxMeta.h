@@ -108,12 +108,12 @@ public:
     }
 
     void
-    setDeliveredAmount(STAmount const& delivered)
+    setDeliveredAmount(STEitherAmount const& delivered)
     {
         mDelivered = delivered;
     }
 
-    STAmount
+    STEitherAmount
     getDeliveredAmount() const
     {
         assert(hasDeliveredAmount());
@@ -132,7 +132,7 @@ private:
     std::uint32_t mIndex;
     int mResult;
 
-    std::optional<STAmount> mDelivered;
+    std::optional<STEitherAmount> mDelivered;
 
     STArray mNodes;
 };

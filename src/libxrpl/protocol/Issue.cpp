@@ -26,6 +26,12 @@
 
 namespace ripple {
 
+AccountID const&
+Issue::getIssuer() const
+{
+    return account;
+}
+
 std::string
 Issue::getText() const
 {

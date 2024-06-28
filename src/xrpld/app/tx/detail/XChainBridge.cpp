@@ -1676,7 +1676,7 @@ XChainClaim::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
 
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
-    auto const amount = ctx.tx[sfAmount];
+    auto const amount = get<STAmount>(ctx.tx[sfAmount]);
 
     if (amount.signum() <= 0 ||
         (amount.issue() != bridgeSpec.lockingChainIssue() &&
@@ -1693,7 +1693,7 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
 {
     AccountID const account = ctx.tx[sfAccount];
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
-    STAmount const& thisChainAmount = ctx.tx[sfAmount];
+    STAmount const& thisChainAmount = get<STAmount>(ctx.tx[sfAmount]);
     auto const claimID = ctx.tx[sfXChainClaimID];
 
     auto const sleBridge = readBridge(ctx.view, bridgeSpec);
@@ -1780,7 +1780,7 @@ XChainClaim::doApply()
     AccountID const account = ctx_.tx[sfAccount];
     auto const dst = ctx_.tx[sfDestination];
     STXChainBridge const bridgeSpec = ctx_.tx[sfXChainBridge];
-    STAmount const& thisChainAmount = ctx_.tx[sfAmount];
+    STAmount const& thisChainAmount = get<STAmount>(ctx_.tx[sfAmount]);
     auto const claimID = ctx_.tx[sfXChainClaimID];
     auto const claimIDKeylet = keylet::xChainClaimID(bridgeSpec, claimID);
 
@@ -1892,7 +1892,7 @@ TxConsequences
 XChainCommit::makeTxConsequences(PreflightContext const& ctx)
 {
     auto const maxSpend = [&] {
-        auto const amount = ctx.tx[sfAmount];
+        auto const amount = get<STAmount>(ctx.tx[sfAmount]);
         if (amount.native() && amount.signum() > 0)
             return amount.xrp();
         return XRPAmount{beast::zero};
@@ -1913,7 +1913,7 @@ XChainCommit::preflight(PreflightContext const& ctx)
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    auto const amount = ctx.tx[sfAmount];
+    auto const amount = get<STAmount>(ctx.tx[sfAmount]);
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
 
     if (amount.signum() <= 0 || !isLegalNet(amount))
@@ -1959,12 +1959,14 @@ XChainCommit::preclaim(PreclaimContext const& ctx)
 
     if (isLockingChain)
     {
-        if (bridgeSpec.lockingChainIssue() != ctx.tx[sfAmount].issue())
+        if (bridgeSpec.lockingChainIssue() !=
+            get<STAmount>(ctx.tx[sfAmount]).issue())
             return tecXCHAIN_BAD_TRANSFER_ISSUE;
     }
     else
     {
-        if (bridgeSpec.issuingChainIssue() != ctx.tx[sfAmount].issue())
+        if (bridgeSpec.issuingChainIssue() !=
+            get<STAmount>(ctx.tx[sfAmount]).issue())
             return tecXCHAIN_BAD_TRANSFER_ISSUE;
     }
 
@@ -1977,7 +1979,7 @@ XChainCommit::doApply()
     PaymentSandbox psb(&ctx_.view());
 
     auto const account = ctx_.tx[sfAccount];
-    auto const amount = ctx_.tx[sfAmount];
+    auto const amount = get<STAmount>(ctx_.tx[sfAmount]);
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
 
     if (!psb.read(keylet::account(account)))
@@ -2182,7 +2184,7 @@ XChainCreateAccountCommit::preflight(PreflightContext const& ctx)
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    auto const amount = ctx.tx[sfAmount];
+    auto const amount = get<STAmount>(ctx.tx[sfAmount]);
 
     if (amount.signum() <= 0 || !amount.native())
         return temBAD_AMOUNT;
@@ -2201,7 +2203,7 @@ TER
 XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
 {
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
-    STAmount const amount = ctx.tx[sfAmount];
+    STAmount const amount = get<STAmount>(ctx.tx[sfAmount]);
     STAmount const reward = ctx.tx[sfSignatureReward];
 
     auto const sleBridge = readBridge(ctx.view, bridgeSpec);
@@ -2247,7 +2249,7 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
     STXChainBridge::ChainType const dstChain =
         STXChainBridge::otherChain(srcChain);
 
-    if (bridgeSpec.issue(srcChain) != ctx.tx[sfAmount].issue())
+    if (bridgeSpec.issue(srcChain) != get<STAmount>(ctx.tx[sfAmount]).issue())
         return tecXCHAIN_BAD_TRANSFER_ISSUE;
 
     if (!isXRP(bridgeSpec.issue(dstChain)))
@@ -2262,7 +2264,7 @@ XChainCreateAccountCommit::doApply()
     PaymentSandbox psb(&ctx_.view());
 
     AccountID const account = ctx_.tx[sfAccount];
-    STAmount const amount = ctx_.tx[sfAmount];
+    STAmount const amount = get<STAmount>(ctx_.tx[sfAmount]);
     STAmount const reward = ctx_.tx[sfSignatureReward];
     STXChainBridge const bridge = ctx_.tx[sfXChainBridge];
 

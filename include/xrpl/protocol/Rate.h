@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_RATE_H_INCLUDED
 
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STMPTAmount.h>
 #include <boost/operators.hpp>
 #include <cassert>
 #include <cstdint>
@@ -66,6 +67,9 @@ operator<<(std::ostream& os, Rate const& rate)
 
 STAmount
 multiply(STAmount const& amount, Rate const& rate);
+
+STMPTAmount
+multiply(STMPTAmount const& amount, Rate const& rate);
 
 STAmount
 multiplyRound(STAmount const& amount, Rate const& rate, bool roundUp);

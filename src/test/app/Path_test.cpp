@@ -197,7 +197,8 @@ public:
 
         STAmount da;
         if (result.isMember(jss::destination_amount))
-            da = amountFromJson(sfGeneric, result[jss::destination_amount]);
+            da = get<STAmount>(
+                amountFromJson(sfGeneric, result[jss::destination_amount]));
 
         STAmount sa;
         STPathSet paths;
@@ -209,11 +210,12 @@ public:
                 auto const& path = alts[0u];
 
                 if (path.isMember(jss::source_amount))
-                    sa = amountFromJson(sfGeneric, path[jss::source_amount]);
+                    sa = get<STAmount>(
+                        amountFromJson(sfGeneric, path[jss::source_amount]));
 
                 if (path.isMember(jss::destination_amount))
-                    da = amountFromJson(
-                        sfGeneric, path[jss::destination_amount]);
+                    da = get<STAmount>(amountFromJson(
+                        sfGeneric, path[jss::destination_amount]));
 
                 if (path.isMember(jss::paths_computed))
                 {
@@ -1244,8 +1246,7 @@ public:
             env.close();
             env(offer(charlie, XRP(10), USD(10)));
             env.close();
-            auto [st, sa, da] =
-                find_paths(env, alice, bob, USD(-1), XRP(100).value());
+            auto [st, sa, da] = find_paths(env, alice, bob, USD(-1), XRP(100));
             BEAST_EXPECT(sa == XRP(10));
             BEAST_EXPECT(equal(da, USD(10)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
@@ -1268,7 +1269,7 @@ public:
             env(offer(charlie, USD(10), XRP(10)));
             env.close();
             auto [st, sa, da] =
-                find_paths(env, alice, bob, drops(-1), USD(100).value());
+                find_paths(env, alice, bob, drops(-1), USD(100));
             BEAST_EXPECT(sa == USD(10));
             BEAST_EXPECT(equal(da, XRP(10)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))

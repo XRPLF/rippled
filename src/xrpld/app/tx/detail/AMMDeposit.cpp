@@ -48,7 +48,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    auto const amount = ctx.tx[~sfAmount];
+    auto const amount = get<STAmount>(ctx.tx[~sfAmount]);
     auto const amount2 = ctx.tx[~sfAmount2];
     auto const ePrice = ctx.tx[~sfEPrice];
     auto const lpTokens = ctx.tx[~sfLPTokenOut];
@@ -244,7 +244,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             : tecUNFUNDED_AMM;
     };
 
-    auto const amount = ctx.tx[~sfAmount];
+    auto const amount = get<STAmount>(ctx.tx[~sfAmount]);
     auto const amount2 = ctx.tx[~sfAmount2];
     auto const ammAccountID = ammSle->getAccountID(sfAccount);
 
@@ -339,7 +339,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 std::pair<TER, bool>
 AMMDeposit::applyGuts(Sandbox& sb)
 {
-    auto const amount = ctx_.tx[~sfAmount];
+    auto const amount = get<STAmount>(ctx_.tx[~sfAmount]);
     auto const amount2 = ctx_.tx[~sfAmount2];
     auto const ePrice = ctx_.tx[~sfEPrice];
     auto const lpTokensDeposit = ctx_.tx[~sfLPTokenOut];

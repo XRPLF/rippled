@@ -344,6 +344,10 @@ public:
         return static_cast<int>(remain_);
     }
 
+    // peek function, throw on error
+    unsigned char
+    peek8();
+
     // get functions throw on error
     unsigned char
     get8();
@@ -371,6 +375,12 @@ public:
     get160()
     {
         return getBitString<160>();
+    }
+
+    uint192
+    get192()
+    {
+        return getBitString<192>();
     }
 
     uint256

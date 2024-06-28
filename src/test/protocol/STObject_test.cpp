@@ -560,10 +560,10 @@ public:
 
         {
             STObject st(sfGeneric);
-            st[sfAmount] = STAmount{};
+            st[sfAmount] = STEitherAmount{};
             st[sfAccount] = AccountID{};
             st[sfDigest] = uint256{};
-            [&](STAmount) {}(st[sfAmount]);
+            [&](STEitherAmount) {}(st[sfAmount]);
             [&](AccountID) {}(st[sfAccount]);
             [&](uint256) {}(st[sfDigest]);
         }

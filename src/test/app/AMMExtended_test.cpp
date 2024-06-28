@@ -1547,8 +1547,7 @@ private:
             Env env = pathTestEnv();
             fund(env, gw, {alice, bob, charlie}, {USD(11)}, Fund::All);
             AMM ammCharlie(env, charlie, XRP(10), USD(11));
-            auto [st, sa, da] =
-                find_paths(env, alice, bob, USD(-1), XRP(1).value());
+            auto [st, sa, da] = find_paths(env, alice, bob, USD(-1), XRP(1));
             BEAST_EXPECT(sa == XRP(1));
             BEAST_EXPECT(equal(da, USD(1)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
@@ -1565,8 +1564,7 @@ private:
             fund(env, gw, {alice, bob, charlie}, {USD(11)}, Fund::All);
             AMM ammCharlie(env, charlie, XRP(11), USD(10));
             env.close();
-            auto [st, sa, da] =
-                find_paths(env, alice, bob, drops(-1), USD(1).value());
+            auto [st, sa, da] = find_paths(env, alice, bob, drops(-1), USD(1));
             BEAST_EXPECT(sa == USD(1));
             BEAST_EXPECT(equal(da, XRP(1)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
@@ -1916,7 +1914,7 @@ private:
             sendmax(EUR(500)),
             txflags(tfNoRippleDirect | tfPartialPayment));
 
-        auto const carolUSD = env.balance(carol, USD).value();
+        auto const carolUSD = get<STAmount>(env.balance(carol, USD));
         BEAST_EXPECT(carolUSD > USD(0) && carolUSD < USD(50));
     }
 

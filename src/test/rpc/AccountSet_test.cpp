@@ -388,7 +388,7 @@ public:
             auto const amount = USD(1);
             Rate const rate(transferRate * QUALITY_ONE);
             auto const amountWithRate =
-                toAmount<STAmount>(multiply(amount.value(), rate));
+                toAmount<STAmount>(multiply(amount, rate));
 
             env(pay(gw, alice, USD(10)));
             env.close();
@@ -455,7 +455,7 @@ public:
 
             auto const amount = USD(1);
             auto const amountWithRate = toAmount<STAmount>(
-                multiply(amount.value(), Rate(transferRate * QUALITY_ONE)));
+                multiply(amount, Rate(transferRate * QUALITY_ONE)));
 
             env(pay(gw, alice, USD(10)));
             env(pay(alice, bob, amount), sendmax(USD(10)));

@@ -604,6 +604,12 @@ STObject::getFieldH160(SField const& field) const
     return getFieldByValue<STUInt160>(field);
 }
 
+uint192
+STObject::getFieldH192(SField const& field) const
+{
+    return getFieldByValue<STUInt192>(field);
+}
+
 uint256
 STObject::getFieldH256(SField const& field) const
 {
@@ -624,11 +630,19 @@ STObject::getFieldVL(SField const& field) const
     return Blob(b.data(), b.data() + b.size());
 }
 
-STAmount const&
+STEitherAmount const&
 STObject::getFieldAmount(SField const& field) const
 {
-    static STAmount const empty{};
-    return getFieldByConstRef<STAmount>(field, empty);
+    static STEitherAmount const empty{};
+    return getFieldByConstRef<STEitherAmount>(field, empty);
+}
+
+STAmount const&
+STObject::getFieldAmount(
+    TypedVariantField<STEitherAmount, STAmount> const& field) const
+{
+    static STEitherAmount const empty{};
+    return get<STAmount>(getFieldByConstRef<STEitherAmount>(field, empty));
 }
 
 STPathSet const&
@@ -742,7 +756,7 @@ STObject::setFieldVL(SField const& field, Slice const& s)
 }
 
 void
-STObject::setFieldAmount(SField const& field, STAmount const& v)
+STObject::setFieldAmount(SField const& field, STEitherAmount const& v)
 {
     setFieldUsingAssignment(field, v);
 }

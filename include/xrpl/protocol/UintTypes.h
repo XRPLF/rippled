@@ -58,6 +58,13 @@ using Currency = base_uint<160, detail::CurrencyTag>;
 /** NodeID is a 160-bit hash representing one node. */
 using NodeID = base_uint<160, detail::NodeIDTag>;
 
+/** MPT is a 192-bit hash representing MPTID.
+ * Currently MPTID is the only 192-bit field.
+ * If other 192-bit fields with different semantics
+ * are added then MPTID must change to a unique tag.
+ */
+using MPTID = base_uint<192>;
+
 /** XRP currency. */
 Currency const&
 xrpCurrency();
@@ -65,6 +72,10 @@ xrpCurrency();
 /** A placeholder for empty currencies. */
 Currency const&
 noCurrency();
+
+/** A placeholder for empty MPTID. */
+MPTID const&
+noMPT();
 
 /** We deliberately disallow the currency that looks like "XRP" because too
     many people were using it instead of the correct XRP currency. */

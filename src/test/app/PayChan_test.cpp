@@ -65,7 +65,7 @@ struct PayChan_test : public beast::unit_test::suite
         auto const slep = view.read({ltPAYCHAN, chan});
         if (!slep)
             return XRPAmount{-1};
-        return (*slep)[sfAmount];
+        return get<STAmount>((*slep)[sfAmount]);
     }
 
     static std::optional<std::int64_t>
@@ -137,9 +137,9 @@ struct PayChan_test : public beast::unit_test::suite
 
         {
             // No signature claim with bad amounts (negative and non-xrp)
-            auto const iou = USDA(100).value();
-            auto const negXRP = XRP(-100).value();
-            auto const posXRP = XRP(100).value();
+            auto const iou = USDA(100);
+            auto const negXRP = XRP(-100);
+            auto const posXRP = XRP(100);
             env(claim(alice, chan, iou, iou), ter(temBAD_AMOUNT));
             env(claim(alice, chan, posXRP, iou), ter(temBAD_AMOUNT));
             env(claim(alice, chan, iou, posXRP), ter(temBAD_AMOUNT));
@@ -215,13 +215,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             // Wrong signing key
             auto const sig = signClaimAuth(bob.pk(), bob.sk(), chan, XRP(1500));
-            env(claim(
-                    bob,
-                    chan,
-                    XRP(1500).value(),
-                    XRP(1500).value(),
-                    Slice(sig),
-                    bob.pk()),
+            env(claim(bob, chan, XRP(1500), XRP(1500), Slice(sig), bob.pk()),
                 ter(temBAD_SIGNER));
             BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
             BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
@@ -229,13 +223,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             // Bad signature
             auto const sig = signClaimAuth(bob.pk(), bob.sk(), chan, XRP(1500));
-            env(claim(
-                    bob,
-                    chan,
-                    XRP(1500).value(),
-                    XRP(1500).value(),
-                    Slice(sig),
-                    alice.pk()),
+            env(claim(bob, chan, XRP(1500), XRP(1500), Slice(sig), alice.pk()),
                 ter(temBAD_SIGNATURE));
             BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
             BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
@@ -551,7 +539,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             // claim the entire amount
             auto const preBob = env.balance(bob);
-            env(claim(alice, chan, channelFunds.value(), channelFunds.value()));
+            env(claim(alice, chan, channelFunds, channelFunds));
             BEAST_EXPECT(channelBalance(*env.current(), chan) == channelFunds);
             BEAST_EXPECT(env.balance(bob) == preBob + channelFunds);
         }
@@ -659,7 +647,7 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(channelExists(*env.current(), chan));
 
             env(fset(bob, asfDisallowXRP));
-            auto const reqBal = XRP(500).value();
+            auto const reqBal = XRP(500);
             env(claim(alice, chan, reqBal, reqBal), ter(tecNO_TARGET));
         }
         {
@@ -673,7 +661,7 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(channelExists(*env.current(), chan));
 
             env(fset(bob, asfDisallowXRP));
-            auto const reqBal = XRP(500).value();
+            auto const reqBal = XRP(500);
             env(claim(alice, chan, reqBal, reqBal));
         }
     }
@@ -741,15 +729,14 @@ struct PayChan_test : public beast::unit_test::suite
             env.close();
 
             // alice claims. Fails because bob's lsfDepositAuth flag is set.
-            env(claim(alice, chan, XRP(500).value(), XRP(500).value()),
-                ter(tecNO_PERMISSION));
+            env(claim(alice, chan, XRP(500), XRP(500)), ter(tecNO_PERMISSION));
             env.close();
 
             // Claim with signature
             auto const baseFee = env.current()->fees().base;
             auto const preBob = env.balance(bob);
             {
-                auto const delta = XRP(500).value();
+                auto const delta = XRP(500);
                 auto const sig = signClaimAuth(pk, alice.sk(), chan, delta);
 
                 // alice claims with signature.  Fails since bob has
@@ -773,7 +760,7 @@ struct PayChan_test : public beast::unit_test::suite
             }
             {
                 // Explore the limits of deposit preauthorization.
-                auto const delta = XRP(600).value();
+                auto const delta = XRP(600);
                 auto const sig = signClaimAuth(pk, alice.sk(), chan, delta);
 
                 // carol claims and fails.  Only channel participants (bob or
@@ -810,7 +797,7 @@ struct PayChan_test : public beast::unit_test::suite
             {
                 // bob removes preauthorization of alice.  Once again she
                 // cannot submit a claim.
-                auto const delta = XRP(800).value();
+                auto const delta = XRP(800);
 
                 env(deposit::unauth(bob, alice));
                 env.close();
@@ -1543,13 +1530,7 @@ struct PayChan_test : public beast::unit_test::suite
 
         auto const authAmt = XRP(100);
         auto const sig = signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
-        jv = claim(
-            bob,
-            chan,
-            authAmt.value(),
-            authAmt.value(),
-            Slice(sig),
-            alice.pk());
+        jv = claim(bob, chan, authAmt, authAmt, Slice(sig), alice.pk());
         jv["PublicKey"] = pkHex.substr(2, pkHex.size() - 2);
         env(jv, ter(temMALFORMED));
         jv["PublicKey"] = pkHex.substr(0, pkHex.size() - 2);

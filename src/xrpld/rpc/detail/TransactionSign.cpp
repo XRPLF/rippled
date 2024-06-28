@@ -200,7 +200,7 @@ checkPayment(
     if (!tx_json.isMember(jss::Amount))
         return RPC::missing_field_error("tx_json.Amount");
 
-    STAmount amount;
+    STEitherAmount amount;
 
     if (!amountFromJsonNoThrow(amount, tx_json[jss::Amount]))
         return RPC::invalid_field_error("tx_json.Amount");
@@ -213,7 +213,8 @@ checkPayment(
     if (!dstAccountID)
         return RPC::invalid_field_error("tx_json.Destination");
 
-    if ((doPath == false) && params.isMember(jss::build_path))
+    if (((doPath == false) && params.isMember(jss::build_path)) ||
+        (params.isMember(jss::build_path) && !amount.isIssue()))
         return RPC::make_error(
             rpcINVALID_PARAMS,
             "Field 'build_path' not allowed in this context.");
@@ -235,7 +236,7 @@ checkPayment(
         else
         {
             // If no SendMax, default to Amount with sender as issuer.
-            sendMax = amount;
+            sendMax = get<STAmount>(amount);
             sendMax.setIssuer(srcAddressID);
         }
 
@@ -259,7 +260,7 @@ checkPayment(
                     *dstAccountID,
                     sendMax.issue().currency,
                     sendMax.issue().account,
-                    amount,
+                    get<STAmount>(amount),
                     std::nullopt,
                     app);
                 if (pf.findPaths(app.config().PATH_SEARCH_OLD))

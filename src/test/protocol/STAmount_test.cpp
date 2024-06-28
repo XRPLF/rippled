@@ -34,7 +34,7 @@ public:
         s.add(ser);
 
         SerialIter sit(ser.slice());
-        return STAmount(sit, sfGeneric);
+        return STAmount(sit);
     }
 
     //--------------------------------------------------------------------------

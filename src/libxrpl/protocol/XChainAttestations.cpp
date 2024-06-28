@@ -107,7 +107,7 @@ AttestationBase::AttestationBase(STObject const& o)
     , publicKey{o[sfPublicKey]}
     , signature{o[sfSignature]}
     , sendingAccount{o[sfAccount]}
-    , sendingAmount{o[sfAmount]}
+    , sendingAmount{get<STAmount>(o[sfAmount])}
     , rewardAccount{o[sfAttestationRewardAccount]}
     , wasLockingChainSend{bool(o[sfWasLockingChainSend])}
 {
@@ -132,7 +132,7 @@ AttestationBase::addHelper(STObject& o) const
     o[sfAttestationSignerAccount] = attestationSignerAccount;
     o[sfPublicKey] = publicKey;
     o[sfSignature] = signature;
-    o[sfAmount] = sendingAmount;
+    o[sfAmount] = STEitherAmount{sendingAmount};
     o[sfAccount] = sendingAccount;
     o[sfAttestationRewardAccount] = rewardAccount;
     o[sfWasLockingChainSend] = wasLockingChainSend;
@@ -216,7 +216,7 @@ std::vector<std::uint8_t>
 AttestationClaim::message(
     STXChainBridge const& bridge,
     AccountID const& sendingAccount,
-    STAmount const& sendingAmount,
+    STEitherAmount const& sendingAmount,
     AccountID const& rewardAccount,
     bool wasLockingChainSend,
     std::uint64_t claimID,
@@ -361,8 +361,8 @@ std::vector<std::uint8_t>
 AttestationCreateAccount::message(
     STXChainBridge const& bridge,
     AccountID const& sendingAccount,
-    STAmount const& sendingAmount,
-    STAmount const& rewardAmount,
+    STEitherAmount const& sendingAmount,
+    STEitherAmount const& rewardAmount,
     AccountID const& rewardAccount,
     bool wasLockingChainSend,
     std::uint64_t createCount,
@@ -371,7 +371,7 @@ AttestationCreateAccount::message(
     STObject o{sfGeneric};
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainAccountCreateCount] = createCount;
-    o[sfAmount] = sendingAmount;
+    o[sfAmount] = STEitherAmount{sendingAmount};
     o[sfSignatureReward] = rewardAmount;
     o[sfDestination] = dst;
     o[sfOtherChainSource] = sendingAccount;
@@ -438,7 +438,7 @@ XChainClaimAttestation::XChainClaimAttestation(
     std::optional<AccountID> const& dst_)
     : keyAccount(keyAccount_)
     , publicKey(publicKey_)
-    , amount(sfAmount, amount_)
+    , amount(amount_)
     , rewardAccount(rewardAccount_)
     , wasLockingChainSend(wasLockingChainSend_)
     , dst(dst_)
@@ -466,7 +466,7 @@ XChainClaimAttestation::XChainClaimAttestation(STObject const& o)
     : XChainClaimAttestation{
           o[sfAttestationSignerAccount],
           PublicKey{o[sfPublicKey]},
-          o[sfAmount],
+          get<STAmount>(o[sfAmount]),
           o[sfAttestationRewardAccount],
           o[sfWasLockingChainSend] != 0,
           o[~sfDestination]} {};
@@ -503,7 +503,7 @@ XChainClaimAttestation::toSTObject() const
     o[sfAttestationSignerAccount] =
         STAccount{sfAttestationSignerAccount, keyAccount};
     o[sfPublicKey] = publicKey;
-    o[sfAmount] = STAmount{sfAmount, amount};
+    o[sfAmount] = STEitherAmount(amount);
     o[sfAttestationRewardAccount] =
         STAccount{sfAttestationRewardAccount, rewardAccount};
     o[sfWasLockingChainSend] = wasLockingChainSend;
@@ -563,8 +563,8 @@ XChainCreateAccountAttestation::XChainCreateAccountAttestation(
     AccountID const& dst_)
     : keyAccount(keyAccount_)
     , publicKey(publicKey_)
-    , amount(sfAmount, amount_)
-    , rewardAmount(sfSignatureReward, rewardAmount_)
+    , amount(amount_)
+    , rewardAmount(rewardAmount_)
     , rewardAccount(rewardAccount_)
     , wasLockingChainSend(wasLockingChainSend_)
     , dst(dst_)
@@ -576,7 +576,7 @@ XChainCreateAccountAttestation::XChainCreateAccountAttestation(
     : XChainCreateAccountAttestation{
           o[sfAttestationSignerAccount],
           PublicKey{o[sfPublicKey]},
-          o[sfAmount],
+          get<STAmount>(o[sfAmount]),
           o[sfSignatureReward],
           o[sfAttestationRewardAccount],
           o[sfWasLockingChainSend] != 0,
@@ -616,8 +616,8 @@ XChainCreateAccountAttestation::toSTObject() const
     o[sfAttestationSignerAccount] =
         STAccount{sfAttestationSignerAccount, keyAccount};
     o[sfPublicKey] = publicKey;
-    o[sfAmount] = STAmount{sfAmount, amount};
-    o[sfSignatureReward] = STAmount{sfSignatureReward, rewardAmount};
+    o[sfAmount] = STEitherAmount{sfAmount, amount};
+    o[sfSignatureReward] = STAmount{rewardAmount};
     o[sfAttestationRewardAccount] =
         STAccount{sfAttestationRewardAccount, rewardAccount};
     o[sfWasLockingChainSend] = wasLockingChainSend;

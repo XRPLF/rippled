@@ -1876,8 +1876,7 @@ public:
         jrr = ledgerEntryRoot(env, bob);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            std::to_string(
-                XRP(10000).value().mantissa() + XRP(250).value().mantissa()));
+            std::to_string((XRP(10000) + XRP(250)).value().mantissa()));
 
         auto jro = ledgerEntryOffer(env, carol, carolOfferSeq);
         BEAST_EXPECT(
@@ -2302,12 +2301,12 @@ public:
         jtx::Account const& account,
         jtx::PrettyAmount const& expectBalance)
     {
-        auto const sleTrust =
-            env.le(keylet::line(account.id(), expectBalance.value().issue()));
+        auto const sleTrust = env.le(
+            keylet::line(account.id(), get<STAmount>(expectBalance).issue()));
         BEAST_EXPECT(sleTrust);
         if (sleTrust)
         {
-            Issue const issue = expectBalance.value().issue();
+            Issue const issue = get<STAmount>(expectBalance).issue();
             bool const accountLow = account.id() < issue.account;
 
             STAmount low{issue};
@@ -5134,12 +5133,12 @@ public:
         env(pay(issuer, maker, EUR(1'000)));
         env.close();
 
-        auto makerUSDBalance = env.balance(maker, USD).value();
-        auto takerUSDBalance = env.balance(taker, USD).value();
-        auto makerEURBalance = env.balance(maker, EUR).value();
-        auto takerEURBalance = env.balance(taker, EUR).value();
-        auto makerXRPBalance = env.balance(maker, XRP).value();
-        auto takerXRPBalance = env.balance(taker, XRP).value();
+        auto makerUSDBalance = get<STAmount>(env.balance(maker, USD));
+        auto takerUSDBalance = get<STAmount>(env.balance(taker, USD));
+        auto makerEURBalance = get<STAmount>(env.balance(maker, EUR));
+        auto takerEURBalance = get<STAmount>(env.balance(taker, EUR));
+        auto makerXRPBalance = get<STAmount>(env.balance(maker, XRP));
+        auto takerXRPBalance = get<STAmount>(env.balance(taker, XRP));
 
         // tfFillOrKill, TakerPays must be filled
         {
@@ -5162,8 +5161,8 @@ public:
             {
                 makerUSDBalance -= USD(100);
                 takerUSDBalance += USD(100);
-                makerXRPBalance += XRP(100).value();
-                takerXRPBalance -= XRP(100).value();
+                makerXRPBalance += XRP(100);
+                takerXRPBalance -= XRP(100);
             }
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
@@ -5181,8 +5180,8 @@ public:
             {
                 makerUSDBalance += USD(100);
                 takerUSDBalance -= USD(100);
-                makerXRPBalance -= XRP(100).value();
-                takerXRPBalance += XRP(100).value();
+                makerXRPBalance -= XRP(100);
+                takerXRPBalance += XRP(100);
             }
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
@@ -5217,8 +5216,8 @@ public:
 
             makerUSDBalance -= USD(101);
             takerUSDBalance += USD(101);
-            makerXRPBalance += XRP(101).value() - txfee(env, 1);
-            takerXRPBalance -= XRP(101).value() + txfee(env, 1);
+            makerXRPBalance += XRP(101) - txfee(env, 1);
+            takerXRPBalance -= XRP(101) + txfee(env, 1);
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
             env(offer(maker, USD(101), XRP(101)));
@@ -5230,8 +5229,8 @@ public:
 
             makerUSDBalance += USD(101);
             takerUSDBalance -= USD(101);
-            makerXRPBalance -= XRP(101).value() + txfee(env, 1);
-            takerXRPBalance += XRP(101).value() - txfee(env, 1);
+            makerXRPBalance -= XRP(101) + txfee(env, 1);
+            takerXRPBalance += XRP(101) - txfee(env, 1);
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
             env(offer(maker, USD(101), EUR(101)));

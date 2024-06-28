@@ -48,7 +48,7 @@ struct RippleCalcTestParams
     explicit RippleCalcTestParams(Json::Value const& jv)
         : srcAccount{*parseBase58<AccountID>(jv[jss::Account].asString())}
         , dstAccount{*parseBase58<AccountID>(jv[jss::Destination].asString())}
-        , dstAmt{amountFromJson(sfAmount, jv[jss::Amount])}
+        , dstAmt{get<STAmount>(amountFromJson(sfAmount, jv[jss::Amount]))}
     {
         if (jv.isMember(jss::SendMax))
             sendMax = amountFromJson(sfSendMax, jv[jss::SendMax]);

@@ -72,7 +72,7 @@ insertDeliveredAmount(
     std::shared_ptr<STTx const> const&,
     TxMeta const&);
 
-std::optional<STAmount>
+std::optional<STEitherAmount>
 getDeliveredAmount(
     RPC::Context const& context,
     std::shared_ptr<STTx const> const& serializedTx,

@@ -31,10 +31,13 @@ namespace jtx {
 class sendmax
 {
 private:
-    STAmount amount_;
+    STEitherAmount amount_;
 
 public:
     sendmax(STAmount const& amount) : amount_(amount)
+    {
+    }
+    sendmax(STMPTAmount const& amount) : amount_(amount)
     {
     }
 

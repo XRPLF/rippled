@@ -359,6 +359,15 @@ SerialIter::skip(int length)
 }
 
 unsigned char
+SerialIter::peek8()
+{
+    if (remain_ < 1)
+        Throw<std::runtime_error>("invalid SerialIter peek8");
+    unsigned char t = *p_;
+    return t;
+}
+
+unsigned char
 SerialIter::get8()
 {
     if (remain_ < 1)

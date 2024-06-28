@@ -133,13 +133,16 @@ STVar::STVar(SerialIter& sit, SField const& name, int depth)
             construct<STUInt64>(sit, name);
             return;
         case STI_AMOUNT:
-            construct<STAmount>(sit, name);
+            construct<STEitherAmount>(sit, name);
             return;
         case STI_UINT128:
             construct<STUInt128>(sit, name);
             return;
         case STI_UINT160:
             construct<STUInt160>(sit, name);
+            return;
+        case STI_UINT192:
+            construct<STUInt192>(sit, name);
             return;
         case STI_UINT256:
             construct<STUInt256>(sit, name);
@@ -197,13 +200,16 @@ STVar::STVar(SerializedTypeID id, SField const& name)
             construct<STUInt64>(name);
             return;
         case STI_AMOUNT:
-            construct<STAmount>(name);
+            construct<STEitherAmount>(name);
             return;
         case STI_UINT128:
             construct<STUInt128>(name);
             return;
         case STI_UINT160:
             construct<STUInt160>(name);
+            return;
+        case STI_UINT192:
+            construct<STUInt192>(name);
             return;
         case STI_UINT256:
             construct<STUInt256>(name);

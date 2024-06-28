@@ -44,7 +44,7 @@ namespace RPC {
                std::optional<NetClock::time_point>
  */
 template <class GetLedgerIndex, class GetCloseTime>
-std::optional<STAmount>
+std::optional<STEitherAmount>
 getDeliveredAmount(
     GetLedgerIndex const& getLedgerIndex,
     GetCloseTime const& getCloseTime,
@@ -174,7 +174,7 @@ insertDeliveredAmount(
 }
 
 template <class GetLedgerIndex>
-static std::optional<STAmount>
+static std::optional<STEitherAmount>
 getDeliveredAmount(
     RPC::Context const& context,
     std::shared_ptr<STTx const> const& serializedTx,
@@ -195,7 +195,7 @@ getDeliveredAmount(
     return {};
 }
 
-std::optional<STAmount>
+std::optional<STEitherAmount>
 getDeliveredAmount(
     RPC::Context const& context,
     std::shared_ptr<STTx const> const& serializedTx,

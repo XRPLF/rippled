@@ -72,29 +72,40 @@ to_places(const T d, std::uint8_t places)
 std::ostream&
 operator<<(std::ostream& os, PrettyAmount const& amount)
 {
-    if (amount.value().native())
+    if (amount.value().isIssue())
     {
-        // measure in hundredths
-        auto const c = dropsPerXRP.drops() / 100;
-        auto const n = amount.value().mantissa();
-        if (n < c)
+        auto const& stAmount = get<STAmount>(amount);
+        if (stAmount.native())
         {
-            if (amount.value().negative())
-                os << "-" << n << " drops";
-            else
-                os << n << " drops";
-            return os;
-        }
-        auto const d = double(n) / dropsPerXRP.drops();
-        if (amount.value().negative())
-            os << "-";
+            // measure in hundredths
+            auto const c = dropsPerXRP.drops() / 100;
+            auto const n = stAmount.mantissa();
+            if (n < c)
+            {
+                if (stAmount.negative())
+                    os << "-" << n << " drops";
+                else
+                    os << n << " drops";
+                return os;
+            }
+            auto const d = double(n) / dropsPerXRP.drops();
+            if (stAmount.negative())
+                os << "-";
 
-        os << to_places(d, 6) << " XRP";
+            os << to_places(d, 6) << " XRP";
+        }
+        else
+        {
+            os << stAmount.getText() << "/"
+               << to_string(stAmount.issue().currency) << "(" << amount.name()
+               << ")";
+        }
     }
     else
     {
-        os << amount.value().getText() << "/"
-           << to_string(amount.value().issue().currency) << "(" << amount.name()
+        auto const& mptAmount = get<STMPTAmount>(amount);
+        os << mptAmount.getText() << "/"
+           << to_string(mptAmount.issue().getMptID()) << "(" << amount.name()
            << ")";
     }
     return os;

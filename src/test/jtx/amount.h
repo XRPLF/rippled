@@ -73,8 +73,7 @@ constexpr XRPAmount dropsPerXRP{1'000'000};
 struct PrettyAmount
 {
 private:
-    // VFALCO TODO should be Amount
-    STAmount amount_;
+    STEitherAmount amount_;
     std::string name_;
 
 public:
@@ -87,6 +86,10 @@ public:
         : amount_(amount), name_(name)
     {
     }
+    PrettyAmount(STMPTAmount const& amount, std::string const& name)
+        : amount_(amount), name_(name)
+    {
+    }
 
     /** drops */
     template <class T>
@@ -95,7 +98,7 @@ public:
         std::enable_if_t<
             sizeof(T) >= sizeof(int) && std::is_integral_v<T> &&
             std::is_signed_v<T>>* = nullptr)
-        : amount_((v > 0) ? v : -v, v < 0)
+        : amount_(STAmount((v > 0) ? v : -v, v < 0))
     {
     }
 
@@ -105,7 +108,7 @@ public:
         T v,
         std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_unsigned_v<T>>* =
             nullptr)
-        : amount_(v)
+        : amount_(STAmount(v))
     {
     }
 
@@ -120,7 +123,7 @@ public:
         return name_;
     }
 
-    STAmount const&
+    STEitherAmount const&
     value() const
     {
         return amount_;
@@ -128,11 +131,23 @@ public:
 
     operator STAmount const &() const
     {
+        return get<STAmount>(amount_);
+    }
+
+    operator STEitherAmount const &() const
+    {
         return amount_;
     }
 
     operator AnyAmount() const;
 };
+
+template <ValidAmountType A>
+A const&
+get(PrettyAmount const& pa)
+{
+    return get<A>(pa.value());
+}
 
 inline bool
 operator==(PrettyAmount const& lhs, PrettyAmount const& rhs)
@@ -351,6 +366,53 @@ operator<<(std::ostream& os, IOU const& iou);
 
 //------------------------------------------------------------------------------
 
+/** Converts to MPT Issue or STMPTAmount.
+
+    Examples:
+        MPT         Converts to the underlying Issue
+        MPT(10)     Returns STMPTAmount of 10 of
+                        the underlying MPT
+*/
+class MPT
+{
+public:
+    std::string name;
+    ripple::MPTID mptID;
+
+    MPT(std::string const& n, ripple::MPTID const& mptID_)
+        : name(n), mptID(mptID_)
+    {
+    }
+
+    ripple::MPTID const&
+    mpt() const
+    {
+        return mptID;
+    }
+
+    /** Implicit conversion to MPTIssue.
+
+        This allows passing an MPT
+        value where an Issue is expected.
+    */
+    operator ripple::MPTID() const
+    {
+        return mpt();
+    }
+
+    template <class T>
+    requires(sizeof(T) >= sizeof(int) && std::is_arithmetic_v<T>) STMPTAmount
+    operator()(T v) const
+    {
+        return amountFromString(mptID, std::to_string(v));
+    }
+};
+
+std::ostream&
+operator<<(std::ostream& os, MPT const& mpt);
+
+//------------------------------------------------------------------------------
+
 struct any_t
 {
     inline AnyAmount
@@ -361,12 +423,21 @@ struct any_t
 struct AnyAmount
 {
     bool is_any;
-    STAmount value;
+    STEitherAmount value;
 
     AnyAmount() = delete;
     AnyAmount(AnyAmount const&) = default;
     AnyAmount&
     operator=(AnyAmount const&) = default;
+
+    AnyAmount(STEitherAmount const& amount) : is_any(false), value(amount)
+    {
+    }
+
+    AnyAmount(STEitherAmount const& amount, any_t const*)
+        : is_any(true), value(amount)
+    {
+    }
 
     AnyAmount(STAmount const& amount) : is_any(false), value(amount)
     {
@@ -377,13 +448,25 @@ struct AnyAmount
     {
     }
 
+    AnyAmount(STMPTAmount const& amount) : is_any(false), value(amount)
+    {
+    }
+
+    AnyAmount(STMPTAmount const& amount, any_t const*)
+        : is_any(true), value(amount)
+    {
+    }
+
     // Reset the issue to a specific account
     void
     to(AccountID const& id)
     {
         if (!is_any)
             return;
-        value.setIssuer(id);
+        if (value.isIssue())
+            get<STAmount>(value).setIssuer(id);
+        else
+            Throw<std::logic_error>("AnyAmount: Amount is not STAmount");
     }
 };
 

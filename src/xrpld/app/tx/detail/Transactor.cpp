@@ -843,7 +843,7 @@ Transactor::operator()()
     // fixSTAmountCanonicalize predate the rulesGuard and should be replaced.
     STAmountSO stAmountSO{view().rules().enabled(fixSTAmountCanonicalize)};
     NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
-    CurrentTransactionRulesGuard currentTransctionRulesGuard(view().rules());
+    CurrentTransactionRulesGuard currentTransactionRulesGuard(view().rules());
 
 #ifdef DEBUG
     {

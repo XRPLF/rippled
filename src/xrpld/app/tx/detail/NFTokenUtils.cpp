@@ -1020,7 +1020,7 @@ tokenOfferCreateApply(
         auto offer = std::make_shared<SLE>(offerID);
         (*offer)[sfOwner] = acctID;
         (*offer)[sfNFTokenID] = nftokenID;
-        (*offer)[sfAmount] = amount;
+        (*offer)[sfAmount] = STEitherAmount{amount};
         (*offer)[sfFlags] = sleFlags;
         (*offer)[sfOwnerNode] = *ownerNode;
         (*offer)[sfNFTokenOfferNode] = *offerNode;

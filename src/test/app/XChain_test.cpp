@@ -122,13 +122,13 @@ struct SEnv
     STAmount
     balance(jtx::Account const& account) const
     {
-        return env_.balance(account).value();
+        return env_.balance(account);
     }
 
     STAmount
     balance(jtx::Account const& account, Issue const& issue) const
     {
-        return env_.balance(account, issue).value();
+        return env_.balance(account, issue);
     }
 
     XRPAmount

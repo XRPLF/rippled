@@ -46,6 +46,9 @@ public:
     {
     }
 
+    AccountID const&
+    getIssuer() const;
+
     std::string
     getText() const;
 };

@@ -31,10 +31,13 @@ namespace jtx {
 class delivermin
 {
 private:
-    STAmount amount_;
+    STEitherAmount amount_;
 
 public:
     delivermin(STAmount const& amount) : amount_(amount)
+    {
+    }
+    delivermin(STMPTAmount const& amount) : amount_(amount)
     {
     }
 
