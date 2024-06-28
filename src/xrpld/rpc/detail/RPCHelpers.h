@@ -48,6 +48,8 @@ namespace RPC {
 
 struct JsonContext;
 
+enum AccountObjectStatus { Success, InvalidMarker, Other };
+
 /** Get an AccountID from an account ID or public key. */
 std::optional<AccountID>
 accountFromStringStrict(std::string const&);
@@ -102,7 +104,7 @@ isRelatedToAccount(
     @param limit Maximum number of objects to find.
     @param jvResult A JSON result that holds the request objects.
 */
-bool
+AccountObjectStatus
 getAccountObjects(
     ReadView const& ledger,
     AccountID const& account,

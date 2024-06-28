@@ -148,7 +148,7 @@ isRelatedToAccount(
     return false;
 }
 
-bool
+AccountObjectStatus
 getAccountObjects(
     ReadView const& ledger,
     AccountID const& account,
@@ -219,7 +219,7 @@ getAccountObjects(
                 {
                     jvResult[jss::limit] = limit;
                     jvResult[jss::marker] = std::string("0,") + to_string(ck);
-                    return true;
+                    return AccountObjectStatus::Success;
                 }
             }
 
@@ -250,7 +250,10 @@ getAccountObjects(
     {
         // it's possible the user had nftoken pages but no
         // directory entries
-        return mlimit < limit;
+        if (mlimit < limit)
+            return AccountObjectStatus::Success;
+        else
+            return AccountObjectStatus::Other;
     }
 
     std::uint32_t i = 0;
@@ -262,8 +265,9 @@ getAccountObjects(
         if (!found)
         {
             iter = std::find(iter, entries.end(), entryIndex);
+            // can't find entryIndex provided invalid entryIndex
             if (iter == entries.end())
-                return false;
+                return AccountObjectStatus::InvalidMarker;
 
             found = true;
         }
@@ -275,7 +279,7 @@ getAccountObjects(
             jvResult[jss::limit] = limit;
             jvResult[jss::marker] =
                 to_string(dirIndex) + ',' + to_string(*iter);
-            return true;
+            return AccountObjectStatus::Success;
         }
 
         for (; iter != entries.end(); ++iter)
@@ -295,7 +299,7 @@ getAccountObjects(
                     jvResult[jss::limit] = limit;
                     jvResult[jss::marker] =
                         to_string(dirIndex) + ',' + to_string(*iter);
-                    return true;
+                    return AccountObjectStatus::Success;
                 }
 
                 break;
@@ -304,12 +308,12 @@ getAccountObjects(
 
         auto const nodeIndex = dir->getFieldU64(sfIndexNext);
         if (nodeIndex == 0)
-            return true;
+            return AccountObjectStatus::Success;
 
         dirIndex = keylet::page(root, nodeIndex).key;
         dir = ledger.read({ltDIR_NODE, dirIndex});
         if (!dir)
-            return true;
+            return AccountObjectStatus::Success;
 
         if (i == mlimit)
         {
@@ -321,7 +325,7 @@ getAccountObjects(
                     to_string(dirIndex) + ',' + to_string(*e.begin());
             }
 
-            return true;
+            return AccountObjectStatus::Success;
         }
     }
 }
