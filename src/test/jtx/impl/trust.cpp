@@ -64,12 +64,18 @@ trust(
 }
 
 Json::Value
-claw(Account const& account, STAmount const& amount)
+claw(
+    Account const& account,
+    STAmount const& amount,
+    std::optional<Account> const& mptHolder)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::Amount] = amount.getJson(JsonOptions::none);
     jv[jss::TransactionType] = jss::Clawback;
+
+    if (mptHolder)
+        jv[sfMPTokenHolder.jsonName] = mptHolder->human();
 
     return jv;
 }

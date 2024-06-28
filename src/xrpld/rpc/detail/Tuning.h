@@ -57,6 +57,9 @@ static LimitRange constexpr accountNFTokens = {20, 100, 400};
 /** Limits for the nft_buy_offers & nft_sell_offers commands. */
 static LimitRange constexpr nftOffers = {50, 250, 500};
 
+/** Limits for the nft_buy_offers & nft_sell_offers commands. */
+static LimitRange constexpr mptHolders = {10, 200, 400};
+
 static int constexpr defaultAutoFillFeeMultiplier = 10;
 static int constexpr defaultAutoFillFeeDivisor = 1;
 static int constexpr maxPathfindsInProgress = 2;

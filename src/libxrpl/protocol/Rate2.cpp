@@ -51,7 +51,7 @@ multiply(STAmount const& amount, Rate const& rate)
     if (rate == parityRate)
         return amount;
 
-    return multiply(amount, detail::as_amount(rate), amount.issue());
+    return multiply(amount, detail::as_amount(rate), amount.asset());
 }
 
 STAmount
@@ -62,7 +62,7 @@ multiplyRound(STAmount const& amount, Rate const& rate, bool roundUp)
     if (rate == parityRate)
         return amount;
 
-    return mulRound(amount, detail::as_amount(rate), amount.issue(), roundUp);
+    return mulRound(amount, detail::as_amount(rate), amount.asset(), roundUp);
 }
 
 STAmount
