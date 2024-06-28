@@ -26,6 +26,7 @@
 #include <xrpld/ledger/RawView.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -78,8 +79,14 @@ hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp);
 /** Controls the treatment of frozen account balances */
 enum FreezeHandling { fhIGNORE_FREEZE, fhZERO_IF_FROZEN };
 
+/** Controls the treatment of unauthorized MPT balances */
+enum AuthHandling { ahIGNORE_AUTH, ahZERO_IF_UNAUTHORIZED };
+
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, AccountID const& issuer);
+
+[[nodiscard]] bool
+isGlobalFrozen(ReadView const& view, MPTIssue const& mpt);
 
 [[nodiscard]] bool
 isIndividualFrozen(
@@ -97,6 +104,12 @@ isIndividualFrozen(
     return isIndividualFrozen(view, account, issue.currency, issue.account);
 }
 
+[[nodiscard]] inline bool
+isIndividualFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mpt);
+
 [[nodiscard]] bool
 isFrozen(
     ReadView const& view,
@@ -109,6 +122,9 @@ isFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
 {
     return isFrozen(view, account, issue.currency, issue.account);
 }
+
+[[nodiscard]] bool
+isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mpt);
 
 // Returns the amount an account can spend without going into debt.
 //
@@ -128,6 +144,15 @@ accountHolds(
     AccountID const& account,
     Issue const& issue,
     FreezeHandling zeroIfFrozen,
+    beast::Journal j);
+
+[[nodiscard]] STAmount
+accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& issue,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
     beast::Journal j);
 
 // Returns the amount an account can spend of the currency type saDefault, or
@@ -208,6 +233,9 @@ forEachItemAfter(
 
 [[nodiscard]] Rate
 transferRate(ReadView const& view, AccountID const& issuer);
+
+[[nodiscard]] Rate
+transferRate(ReadView const& view, MPTID const& id);
 
 /** Returns `true` if the directory is empty
     @param key The key of the directory
@@ -420,7 +448,24 @@ rippleCredit(
     beast::Journal j);
 
 [[nodiscard]] TER
+rippleMPTCredit(
+    ApplyView& view,
+    AccountID const& uSenderID,
+    AccountID const& uReceiverID,
+    STAmount saAmount,
+    beast::Journal j);
+
+[[nodiscard]] TER
 accountSend(
+    ApplyView& view,
+    AccountID const& from,
+    AccountID const& to,
+    const STAmount& saAmount,
+    beast::Journal j,
+    WaiveTransferFee waiveFee = WaiveTransferFee::No);
+
+[[nodiscard]] TER
+accountSendMPT(
     ApplyView& view,
     AccountID const& from,
     AccountID const& to,
@@ -458,6 +503,22 @@ transferXRP(
  */
 [[nodiscard]] TER
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
+[[nodiscard]] TER
+requireAuth(
+    ReadView const& view,
+    MPTIssue const& mpt,
+    AccountID const& account);
+
+/** Check if the destination account is allowed
+ *  to receive MPT. Return tecNO_AUTH if it doesn't
+ *  and tesSUCCESS otherwise.
+ */
+[[nodiscard]] TER
+canTransfer(
+    ReadView const& view,
+    MPTIssue const& mpt,
+    AccountID const& from,
+    AccountID const& to);
 
 /** Deleter function prototype. Returns the status of the entry deletion
  * (if should not be skipped) and if the entry should be skipped. The status

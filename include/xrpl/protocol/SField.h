@@ -373,6 +373,7 @@ extern SF_UINT8 const sfScale;
 extern SF_UINT8 const sfTickSize;
 extern SF_UINT8 const sfUNLModifyDisabling;
 extern SF_UINT8 const sfHookResult;
+extern SF_UINT8 const sfAssetScale;
 
 // 16-bit integers (common)
 extern SF_UINT16 const sfLedgerEntryType;
@@ -467,6 +468,10 @@ extern SF_UINT64 const sfXChainClaimID;
 extern SF_UINT64 const sfXChainAccountCreateCount;
 extern SF_UINT64 const sfXChainAccountClaimCount;
 extern SF_UINT64 const sfAssetPrice;
+extern SF_UINT64 const sfMaximumAmount;
+extern SF_UINT64 const sfOutstandingAmount;
+extern SF_UINT64 const sfLockedAmount;
+extern SF_UINT64 const sfMPTAmount;
 
 // 128-bit
 extern SF_UINT128 const sfEmailHash;
@@ -476,6 +481,9 @@ extern SF_UINT160 const sfTakerPaysCurrency;
 extern SF_UINT160 const sfTakerPaysIssuer;
 extern SF_UINT160 const sfTakerGetsCurrency;
 extern SF_UINT160 const sfTakerGetsIssuer;
+
+// 192-bit (common)
+extern SF_UINT192 const sfMPTokenIssuanceID;
 
 // 256-bit (common)
 extern SF_UINT256 const sfLedgerHash;
@@ -564,6 +572,7 @@ extern SF_VL const sfDIDDocument;
 extern SF_VL const sfData;
 extern SF_VL const sfAssetClass;
 extern SF_VL const sfProvider;
+extern SF_VL const sfMPTokenMetadata;
 
 // variable length (uncommon)
 extern SF_VL const sfFulfillment;
@@ -587,6 +596,7 @@ extern SF_ACCOUNT const sfUnauthorize;
 extern SF_ACCOUNT const sfRegularKey;
 extern SF_ACCOUNT const sfNFTokenMinter;
 extern SF_ACCOUNT const sfEmitCallback;
+extern SF_ACCOUNT const sfMPTokenHolder;
 
 // account (uncommon)
 extern SF_ACCOUNT const sfHookAccount;
@@ -651,6 +661,7 @@ extern SField const sfXChainClaimProofSig;
 extern SField const sfXChainCreateAccountProofSig;
 extern SField const sfXChainClaimAttestationCollectionElement;
 extern SField const sfXChainCreateAccountAttestationCollectionElement;
+extern SField const MPToken;
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array

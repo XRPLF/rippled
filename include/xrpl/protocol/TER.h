@@ -125,6 +125,7 @@ enum TEMcodes : TERUnderlyingType {
 
     temSEQ_AND_TICKET,
     temBAD_NFTOKEN_TRANSFER_FEE,
+    temBAD_MPTOKEN_TRANSFER_FEE,
 
     temBAD_AMM_TOKENS,
 
@@ -138,7 +139,7 @@ enum TEMcodes : TERUnderlyingType {
     temEMPTY_DID,
 
     temARRAY_EMPTY,
-    temARRAY_TOO_LARGE,
+    temARRAY_TOO_LARGE
 };
 
 //------------------------------------------------------------------------------
@@ -339,7 +340,12 @@ enum TECcodes : TERUnderlyingType {
     tecINVALID_UPDATE_TIME = 188,
     tecTOKEN_PAIR_NOT_FOUND = 189,
     tecARRAY_EMPTY = 190,
-    tecARRAY_TOO_LARGE = 191
+    tecARRAY_TOO_LARGE = 191,
+    tecMPTOKEN_EXISTS = 192,
+    tecMPT_MAX_AMOUNT_EXCEEDED = 193,
+    tecMPT_LOCKED = 194,
+    tecMPT_NOT_SUPPORTED = 195,
+    tecMPT_ISSUANCE_NOT_FOUND = 196
 };
 
 //------------------------------------------------------------------------------
