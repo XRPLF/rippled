@@ -8157,8 +8157,8 @@ BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDisallowIncoming, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOfixV1, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenRemint, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenReserve, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOModify, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOMintOffer, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOModify, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAllFeatures, tx, ripple, 2);
 
 }  // namespace ripple
