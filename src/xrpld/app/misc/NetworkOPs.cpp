@@ -288,6 +288,9 @@ public:
         bool bLocal,
         FailHard failType) override;
 
+    void
+    processTransactionSet(CanonicalTXSet const& set) override;
+
     /**
      * For transactions submitted directly by a client, apply batch of
      * transactions and wait for this transaction to complete.
@@ -317,6 +320,16 @@ public:
         bool bUnlimited,
         FailHard failtype);
 
+private:
+    bool
+    preProcessTransaction(std::shared_ptr<Transaction>& transaction);
+
+    void
+    doTransactionSyncBatch(
+        std::unique_lock<std::mutex>& lock,
+        std::function<bool(std::unique_lock<std::mutex>&)> retryCallback);
+
+public:
     /**
      * Apply transactions in batches. Continue until none are queued.
      */
@@ -1187,14 +1200,9 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
     });
 }
 
-void
-NetworkOPsImp::processTransaction(
-    std::shared_ptr<Transaction>& transaction,
-    bool bUnlimited,
-    bool bLocal,
-    FailHard failType)
+bool
+NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
 {
-    auto ev = m_job_queue.makeLoadEvent(jtTXN_PROC, "ProcessTXN");
     auto const newFlags = app_.getHashRouter().getFlags(transaction->getID());
 
     if ((newFlags & SF_BAD) != 0)
@@ -1203,7 +1211,7 @@ NetworkOPsImp::processTransaction(
         JLOG(m_journal.warn()) << transaction->getID() << ": cached bad!\n";
         transaction->setStatus(INVALID);
         transaction->setResult(temBAD_SIGNATURE);
-        return;
+        return false;
     }
 
     // NOTE eahennis - I think this check is redundant,
@@ -1224,11 +1232,27 @@ NetworkOPsImp::processTransaction(
         transaction->setStatus(INVALID);
         transaction->setResult(temBAD_SIGNATURE);
         app_.getHashRouter().setFlags(transaction->getID(), SF_BAD);
-        return;
+        return false;
     }
 
     // canonicalize can change our pointer
     app_.getMasterTransaction().canonicalize(&transaction);
+
+    return true;
+}
+
+void
+NetworkOPsImp::processTransaction(
+    std::shared_ptr<Transaction>& transaction,
+    bool bUnlimited,
+    bool bLocal,
+    FailHard failType)
+{
+    auto ev = m_job_queue.makeLoadEvent(jtTXN_PROC, "ProcessTXN");
+
+    // preProcessTransaction can change our pointer
+    if (!preProcessTransaction(transaction))
+        return;
 
     if (bLocal)
         doTransactionSync(transaction, bUnlimited, failType);
@@ -1276,6 +1300,17 @@ NetworkOPsImp::doTransactionSync(
         transaction->setApplying();
     }
 
+    doTransactionSyncBatch(
+        lock, [&transaction](std::unique_lock<std::mutex>& lock) {
+            return transaction->getApplying();
+        });
+}
+
+void
+NetworkOPsImp::doTransactionSyncBatch(
+    std::unique_lock<std::mutex>& lock,
+    std::function<bool(std::unique_lock<std::mutex>&)> retryCallback)
+{
     do
     {
         if (mDispatchState == DispatchState::running)
@@ -1298,7 +1333,59 @@ NetworkOPsImp::doTransactionSync(
                 }
             }
         }
-    } while (transaction->getApplying());
+    } while (retryCallback(lock));
+}
+
+void
+NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
+{
+    auto ev = m_job_queue.makeLoadEvent(jtTXN_PROC, "ProcessTXNSet");
+    std::vector<TransactionStatus> transactions;
+    transactions.reserve(set.size());
+    for (auto const& [_, tx] : set)
+    {
+        std::string reason;
+        auto transaction = std::make_shared<Transaction>(tx, reason, app_);
+
+        if (transaction->getStatus() == INVALID)
+        {
+            if (!reason.empty())
+            {
+                JLOG(m_journal.trace())
+                    << "Exception checking transaction: " << reason;
+            }
+            app_.getHashRouter().setFlags(tx->getTransactionID(), SF_BAD);
+            continue;
+        }
+
+        // preProcessTransaction can change our pointer
+        if (!preProcessTransaction(transaction))
+            continue;
+
+        if (!transaction->getApplying())
+        {
+            transactions.emplace_back(transaction, false, false, FailHard::no);
+            transaction->setApplying();
+        }
+    }
+
+    std::unique_lock lock(mMutex);
+
+    if (mTransactions.empty())
+        mTransactions.swap(transactions);
+    else
+    {
+        for (auto& t : transactions)
+            mTransactions.push_back(std::move(t));
+    }
+
+    doTransactionSyncBatch(lock, [&](std::unique_lock<std::mutex>& lock) {
+        assert(lock.owns_lock());
+        return std::any_of(
+            mTransactions.begin(), mTransactions.end(), [](auto const& t) {
+                return t.transaction->getApplying();
+            });
+    });
 }
 
 void
@@ -1401,15 +1488,20 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     << "Transaction is now included in open ledger";
                 e.transaction->setStatus(INCLUDED);
 
+                // Pop as many "reasonable" transactions for this account as
+                // possible. "Reasonable" means they have sequential sequence
+                // numbers, or use tickets.
                 auto const& txCur = e.transaction->getSTransaction();
-                auto const txNext = m_ledgerMaster.popAcctTransaction(txCur);
-                if (txNext)
+                auto txNext = m_ledgerMaster.popAcctTransaction(txCur);
+                while (txNext)
                 {
                     std::string reason;
                     auto const trans = sterilize(*txNext);
                     auto t = std::make_shared<Transaction>(trans, reason, app_);
                     submit_held.emplace_back(t, false, false, FailHard::no);
                     t->setApplying();
+
+                    txNext = m_ledgerMaster.popAcctTransaction(trans);
                 }
             }
             else if (e.result == tefPAST_SEQ)
@@ -1432,16 +1524,54 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 e.transaction->setQueued();
                 e.transaction->setKept();
             }
-            else if (isTerRetry(e.result))
+            else if (
+                isTerRetry(e.result) || isTelLocal(e.result) ||
+                isTefFailure(e.result))
             {
                 if (e.failType != FailHard::yes)
                 {
-                    // transaction should be held
-                    JLOG(m_journal.debug())
-                        << "Transaction should be held: " << e.result;
-                    e.transaction->setStatus(HELD);
-                    m_ledgerMaster.addHeldTransaction(e.transaction);
-                    e.transaction->setKept();
+                    auto const lastLedgerSeq =
+                        e.transaction->getSTransaction()->at(
+                            ~sfLastLedgerSequence);
+                    auto const ledgersLeft = lastLedgerSeq
+                        ? *lastLedgerSeq -
+                            m_ledgerMaster.getCurrentLedgerIndex()
+                        : std::optional<LedgerIndex>{};
+                    // If any of these conditions are met, the transaction can
+                    // be held:
+                    // 1. It was submitted locally. (Note that this flag is only
+                    //    true on the initial submission.)
+                    // 2. The transaction has a LastLedgerSequence, and the
+                    //    LastLedgerSequence is fewer than LocalTxs::holdLedgers
+                    //    (5) ledgers into the future. (Remember that an
+                    //    unseated optional compares as less than all seated
+                    //    values, so it has to be checked explicitly first.)
+                    // 3. The SF_HELD flag is not set on the txID. (setFlags
+                    //    checks before setting. If the flag is set, it returns
+                    //    false, which means it's been held once without one of
+                    //    the other conditions, so don't hold it again. Time's
+                    //    up!)
+                    //
+                    if (e.local ||
+                        (ledgersLeft && ledgersLeft <= LocalTxs::holdLedgers) ||
+                        app_.getHashRouter().setFlags(
+                            e.transaction->getID(), SF_HELD))
+                    {
+                        // transaction should be held
+                        JLOG(m_journal.debug())
+                            << "Transaction should be held: " << e.result;
+                        e.transaction->setStatus(HELD);
+                        m_ledgerMaster.addHeldTransaction(e.transaction);
+                        e.transaction->setKept();
+                    }
+                    else
+                        JLOG(m_journal.debug())
+                            << "Not holding transaction "
+                            << e.transaction->getID() << ": "
+                            << (e.local ? "local" : "network") << ", "
+                            << "result: " << e.result << " ledgers left: "
+                            << (ledgersLeft ? to_string(*ledgersLeft)
+                                            : "unspecified");
                 }
             }
             else
