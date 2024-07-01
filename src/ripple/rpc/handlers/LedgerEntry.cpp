@@ -624,7 +624,7 @@ doLedgerEntry(RPC::JsonContext& context)
                 auto const& oracle = context.params[jss::oracle];
                 auto const documentID = [&]() -> std::optional<std::uint32_t> {
                     auto const& id = oracle[jss::oracle_document_id];
-                    if (id.isConvertibleTo(Json::ValueType::uintValue))
+                    if (id.isUInt() || (id.isInt() && id.asInt() >= 0))
                         return std::make_optional(id.asUInt());
                     else if (id.isString())
                     {

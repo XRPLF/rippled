@@ -310,6 +310,31 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const lpTokensWithdraw =
         tokensWithdraw(lpTokens, ctx_.tx[~sfLPTokenIn], ctx_.tx.getFlags());
 
+    // Due to rounding, the LPTokenBalance of the last LP
+    // might not match the LP's trustline balance
+    if (sb.rules().enabled(fixAMMv1_1))
+    {
+        if (auto const res =
+                isOnlyLiquidityProvider(sb, lpTokens.issue(), account_);
+            !res)
+            return {res.error(), false};
+        else if (res.value())
+        {
+            if (withinRelativeDistance(
+                    lpTokens,
+                    ammSle->getFieldAmount(sfLPTokenBalance),
+                    Number{1, -3}))
+            {
+                ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
+                sb.update(ammSle);
+            }
+            else
+            {
+                return {tecAMM_INVALID_TOKENS, false};
+            }
+        }
+    }
+
     auto const tfee = getTradingFee(ctx_.view(), *ammSle, account_);
 
     auto const expected = ammHolds(
@@ -467,10 +492,22 @@ AMMWithdraw::withdraw(
         lpTokensWithdrawActual > lpTokens)
     {
         JLOG(ctx_.journal.debug())
-            << "AMM Withdraw: failed to withdraw, invalid LP tokens "
-            << " tokens: " << lpTokensWithdrawActual << " " << lpTokens << " "
+            << "AMM Withdraw: failed to withdraw, invalid LP tokens: "
+            << lpTokensWithdrawActual << " " << lpTokens << " "
             << lpTokensAMMBalance;
         return {tecAMM_INVALID_TOKENS, STAmount{}};
+    }
+
+    // Should not happen since the only LP on last withdraw
+    // has the balance set to the lp token trustline balance.
+    if (view.rules().enabled(fixAMMv1_1) &&
+        lpTokensWithdrawActual > lpTokensAMMBalance)
+    {
+        JLOG(ctx_.journal.debug())
+            << "AMM Withdraw: failed to withdraw, unexpected LP tokens: "
+            << lpTokensWithdrawActual << " " << lpTokens << " "
+            << lpTokensAMMBalance;
+        return {tecINTERNAL, STAmount{}};
     }
 
     // Withdrawing one side of the pool

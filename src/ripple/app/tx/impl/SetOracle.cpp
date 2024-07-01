@@ -23,7 +23,6 @@
 #include <ripple/ledger/View.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/InnerObjectFormats.h>
-#include <ripple/protocol/Rules.h>
 #include <ripple/protocol/TxFlags.h>
 #include <ripple/protocol/digest.h>
 
@@ -74,7 +73,7 @@ SetOracle::preclaim(PreclaimContext const& ctx)
     auto const sleSetter =
         ctx.view.read(keylet::account(ctx.tx.getAccountID(sfAccount)));
     if (!sleSetter)
-        return terNO_ACCOUNT;
+        return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
     // lastUpdateTime must be within maxLastUpdateTimeDelta seconds
     // of the last closed ledger
@@ -88,8 +87,7 @@ SetOracle::preclaim(PreclaimContext const& ctx)
     std::size_t const lastUpdateTimeEpoch =
         lastUpdateTime - epoch_offset.count();
     if (closeTime < maxLastUpdateTimeDelta)
-        Throw<std::runtime_error>(
-            "Oracle: close time is less than maxLastUpdateTimeDelta");
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     if (lastUpdateTimeEpoch < (closeTime - maxLastUpdateTimeDelta) ||
         lastUpdateTimeEpoch > (closeTime + maxLastUpdateTimeDelta))
         return tecINVALID_UPDATE_TIME;
@@ -98,10 +96,10 @@ SetOracle::preclaim(PreclaimContext const& ctx)
         ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
 
     // token pairs to add/update
-    hash_set<std::pair<Currency, Currency>> pairs;
+    std::set<std::pair<Currency, Currency>> pairs;
     // token pairs to delete. if a token pair doesn't include
     // the price then this pair should be deleted from the object.
-    hash_set<std::pair<Currency, Currency>> pairsDel;
+    std::set<std::pair<Currency, Currency>> pairsDel;
     for (auto const& entry : ctx.tx.getFieldArray(sfPriceDataSeries))
     {
         if (entry[sfBaseAsset] == entry[sfQuoteAsset])
@@ -194,7 +192,7 @@ adjustOwnerCount(ApplyContext& ctx, int count)
         return true;
     }
 
-    return false;
+    return false;  // LCOV_EXCL_LINE
 }
 
 static void
@@ -217,7 +215,7 @@ SetOracle::doApply()
         // the token pair that doesn't have their price updated will not
         // include neither price nor scale in the updated PriceDataSeries
 
-        hash_map<std::pair<Currency, Currency>, STObject> pairs;
+        std::map<std::pair<Currency, Currency>, STObject> pairs;
         // collect current token pairs
         for (auto const& entry : sle->getFieldArray(sfPriceDataSeries))
         {
@@ -274,7 +272,7 @@ SetOracle::doApply()
         auto const newCount = pairs.size() > 5 ? 2 : 1;
         auto const adjust = newCount - oldCount;
         if (adjust != 0 && !adjustOwnerCount(ctx_, adjust))
-            return tefINTERNAL;
+            return tefINTERNAL;  // LCOV_EXCL_LINE
 
         ctx_.view().update(sle);
     }
@@ -295,13 +293,13 @@ SetOracle::doApply()
         auto page = ctx_.view().dirInsert(
             keylet::ownerDir(account_), sle->key(), describeOwnerDir(account_));
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         (*sle)[sfOwnerNode] = *page;
 
         auto const count = series.size() > 5 ? 2 : 1;
         if (!adjustOwnerCount(ctx_, count))
-            return tefINTERNAL;
+            return tefINTERNAL;  // LCOV_EXCL_LINE
 
         ctx_.view().insert(sle);
     }

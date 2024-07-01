@@ -313,7 +313,7 @@ ApplyView::dirRemove(
         prev->setFieldU64(sfIndexNext, rootPage);
         update(prev);
 
-        // And the root points to the the last page:
+        // And the root points to the last page:
         auto root = peek(keylet::page(directory, rootPage));
         if (!root)
             LogicError("Directory chain: root link broken.");
