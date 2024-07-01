@@ -25,8 +25,7 @@ file(GLOB_RECURSE doxygen_input
   src/ripple/*.cpp
   src/ripple/*.md
   src/test/*.h
-  src/test/*.md
-  Builds/*/README.md)
+  src/test/*.md)
 list(APPEND doxygen_input
   README.md
   RELEASENOTES.md
