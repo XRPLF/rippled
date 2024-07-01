@@ -281,3 +281,4 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE:FILEPATH=./build/${configuration}/generators/conan_toolchain.cmake \
             -DCMAKE_BUILD_TYPE=${configuration}
           cmake --build .
+          ./example | grep '^[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\'
