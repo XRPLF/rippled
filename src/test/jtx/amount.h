@@ -126,7 +126,7 @@ public:
         return amount_;
     }
 
-    operator STAmount const&() const
+    operator STAmount const &() const
     {
         return amount_;
     }
@@ -211,8 +211,7 @@ struct XRP_t
     /** @} */
 
     /** Returns None-of-XRP */
-    None
-    operator()(none_t) const
+    None operator()(none_t) const
     {
         return {xrpIssue()};
     }
@@ -335,8 +334,7 @@ public:
     // STAmount operator()(char const* s) const;
 
     /** Returns None-of-Issue */
-    None
-    operator()(none_t) const
+    None operator()(none_t) const
     {
         return {issue()};
     }

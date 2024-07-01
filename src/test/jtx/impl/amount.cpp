@@ -104,8 +104,7 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
 
 XRP_t const XRP{};
 
-PrettyAmount
-IOU::operator()(epsilon_t) const
+PrettyAmount IOU::operator()(epsilon_t) const
 {
     return {STAmount(issue(), 1, -81), account.name()};
 }
