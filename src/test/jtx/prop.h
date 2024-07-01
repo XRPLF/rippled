@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_PROP_H_INCLUDED
 #define RIPPLE_TEST_JTX_PROP_H_INCLUDED
 
-#include <memory>
 #include <test/jtx/Env.h>
+#include <memory>
 
 namespace ripple {
 namespace test {

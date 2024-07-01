@@ -17,26 +17,26 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/app/main/DBInit.h>
-#include <ripple/app/rdb/Vacuum.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/contract.h>
-#include <ripple/beast/clock/basic_seconds_clock.h>
-#include <ripple/beast/core/CurrentThreadName.h>
-#include <ripple/core/Config.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/core/TimeKeeper.h>
-#include <ripple/json/to_string.h>
-#include <ripple/net/RPCCall.h>
-#include <ripple/protocol/BuildInfo.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/rpc/RPCHandler.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/main/DBInit.h>
+#include <xrpld/app/rdb/Vacuum.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpld/core/TimeKeeper.h>
+#include <xrpld/net/RPCCall.h>
+#include <xrpld/rpc/RPCHandler.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/clock/basic_seconds_clock.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/resource/Fees.h>
 
 #ifdef ENABLE_TESTS
-#include <ripple/beast/unit_test/match.h>
 #include <test/unit_test/multi_runner.h>
+#include <xrpl/beast/unit_test/match.h>
 #endif  // ENABLE_TESTS
 
 #include <google/protobuf/stubs/common.h>

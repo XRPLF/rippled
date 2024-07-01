@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/crypto/csprng.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/crypto/csprng.h>
 #include <array>
 #include <cassert>
 #include <openssl/rand.h>

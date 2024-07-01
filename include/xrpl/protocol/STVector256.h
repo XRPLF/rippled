@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PROTOCOL_STVECTOR256_H_INCLUDED
 #define RIPPLE_PROTOCOL_STVECTOR256_H_INCLUDED
 
-#include <ripple/basics/CountedObject.h>
-#include <ripple/protocol/STBase.h>
-#include <ripple/protocol/STBitString.h>
-#include <ripple/protocol/STInteger.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STBitString.h>
+#include <xrpl/protocol/STInteger.h>
 
 namespace ripple {
 

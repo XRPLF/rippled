@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx/memo.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {

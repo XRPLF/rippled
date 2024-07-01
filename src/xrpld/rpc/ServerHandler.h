@@ -20,14 +20,14 @@
 #ifndef RIPPLE_RPC_SERVERHANDLER_H_INCLUDED
 #define RIPPLE_RPC_SERVERHANDLER_H_INCLUDED
 
-#include <ripple/app/main/CollectorManager.h>
-#include <ripple/core/JobQueue.h>
-#include <ripple/json/Output.h>
-#include <ripple/rpc/RPCHandler.h>
-#include <ripple/rpc/impl/WSInfoSub.h>
-#include <ripple/server/Server.h>
-#include <ripple/server/Session.h>
-#include <ripple/server/WSSession.h>
+#include <xrpld/app/main/CollectorManager.h>
+#include <xrpld/core/JobQueue.h>
+#include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/rpc/detail/WSInfoSub.h>
+#include <xrpl/json/Output.h>
+#include <xrpl/server/Server.h>
+#include <xrpl/server/Session.h>
+#include <xrpl/server/WSSession.h>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 #include <boost/utility/string_view.hpp>

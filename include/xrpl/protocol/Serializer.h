@@ -20,15 +20,15 @@
 #ifndef RIPPLE_PROTOCOL_SERIALIZER_H_INCLUDED
 #define RIPPLE_PROTOCOL_SERIALIZER_H_INCLUDED
 
-#include <ripple/basics/Blob.h>
-#include <ripple/basics/Buffer.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/base_uint.h>
-#include <ripple/basics/contract.h>
-#include <ripple/basics/safe_cast.h>
-#include <ripple/basics/strHex.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/SField.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/SField.h>
 #include <cassert>
 #include <cstdint>
 #include <cstring>

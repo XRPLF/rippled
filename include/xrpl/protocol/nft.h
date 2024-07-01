@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PROTOCOL_NFT_H_INCLUDED
 #define RIPPLE_PROTOCOL_NFT_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
-#include <ripple/basics/tagged_integer.h>
-#include <ripple/protocol/AccountID.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/tagged_integer.h>
+#include <xrpl/protocol/AccountID.h>
 
 #include <boost/endian/conversion.hpp>
 

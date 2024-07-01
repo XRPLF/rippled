@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PEERFINDER_COUNTS_H_INCLUDED
 #define RIPPLE_PEERFINDER_COUNTS_H_INCLUDED
 
-#include <ripple/basics/random.h>
-#include <ripple/peerfinder/PeerfinderManager.h>
-#include <ripple/peerfinder/Slot.h>
-#include <ripple/peerfinder/impl/Tuning.h>
+#include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/Slot.h>
+#include <xrpld/peerfinder/detail/Tuning.h>
+#include <xrpl/basics/random.h>
 
 #include <cmath>
 

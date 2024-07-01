@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Sign.h>
+#include <xrpl/protocol/Sign.h>
 
 namespace ripple {
 

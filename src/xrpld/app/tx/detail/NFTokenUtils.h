@@ -20,13 +20,13 @@
 #ifndef RIPPLE_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED
 #define RIPPLE_TX_IMPL_DETAILS_NFTOKENUTILS_H_INCLUDED
 
-#include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/basics/base_uint.h>
-#include <ripple/basics/tagged_integer.h>
-#include <ripple/ledger/ApplyView.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/TER.h>
-#include <ripple/protocol/nft.h>
+#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpld/ledger/ApplyView.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/tagged_integer.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/nft.h>
 
 namespace ripple {
 

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TX_NFTTOKENMINT_H_INCLUDED
 #define RIPPLE_TX_NFTTOKENMINT_H_INCLUDED
 
-#include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/app/tx/impl/details/NFTokenUtils.h>
+#include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
 

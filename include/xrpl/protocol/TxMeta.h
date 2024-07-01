@@ -20,10 +20,10 @@
 #ifndef RIPPLE_APP_TX_TRANSACTIONMETA_H_INCLUDED
 #define RIPPLE_APP_TX_TRANSACTIONMETA_H_INCLUDED
 
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/protocol/STArray.h>
-#include <ripple/protocol/STLedgerEntry.h>
-#include <ripple/protocol/TER.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 #include <boost/container/flat_set.hpp>
 #include <optional>
 

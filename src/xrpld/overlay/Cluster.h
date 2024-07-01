@@ -20,13 +20,13 @@
 #ifndef RIPPLE_OVERLAY_CLUSTER_H_INCLUDED
 #define RIPPLE_OVERLAY_CLUSTER_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/hash/uhash.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/overlay/ClusterNode.h>
-#include <ripple/protocol/PublicKey.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/ClusterNode.h>
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <functional>
 #include <memory>
 #include <mutex>

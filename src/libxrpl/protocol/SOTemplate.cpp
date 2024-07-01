@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/SOTemplate.h>
+#include <xrpl/protocol/SOTemplate.h>
 
 namespace ripple {
 

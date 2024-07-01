@@ -20,11 +20,11 @@
 #ifndef RIPPLE_RESOURCE_ENTRY_H_INCLUDED
 #define RIPPLE_RESOURCE_ENTRY_H_INCLUDED
 
-#include <ripple/basics/DecayingSample.h>
-#include <ripple/beast/clock/abstract_clock.h>
-#include <ripple/beast/core/List.h>
-#include <ripple/resource/impl/Key.h>
-#include <ripple/resource/impl/Tuning.h>
+#include <xrpl/basics/DecayingSample.h>
+#include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/beast/core/List.h>
+#include <xrpl/resource/detail/Key.h>
+#include <xrpl/resource/detail/Tuning.h>
 #include <cassert>
 
 namespace ripple {

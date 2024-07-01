@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PATH_IMPL_FLOWDEBUGINFO_H_INCLUDED
 #define RIPPLE_PATH_IMPL_FLOWDEBUGINFO_H_INCLUDED
 
-#include <ripple/app/paths/impl/AmountSpec.h>
-#include <ripple/basics/IOUAmount.h>
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/ledger/PaymentSandbox.h>
+#include <xrpld/app/paths/detail/AmountSpec.h>
+#include <xrpld/ledger/PaymentSandbox.h>
+#include <xrpl/basics/IOUAmount.h>
+#include <xrpl/basics/XRPAmount.h>
 
 #include <boost/container/flat_map.hpp>
 

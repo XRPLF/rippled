@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/rdb/Wallet.h>
+#include <xrpld/app/rdb/Wallet.h>
 #include <boost/format.hpp>
 
 namespace ripple {

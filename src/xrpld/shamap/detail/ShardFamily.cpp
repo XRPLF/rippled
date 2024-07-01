@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/main/Tuning.h>
-#include <ripple/nodestore/DatabaseShard.h>
-#include <ripple/shamap/ShardFamily.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/main/Tuning.h>
+#include <xrpld/nodestore/DatabaseShard.h>
+#include <xrpld/shamap/ShardFamily.h>
 #include <tuple>
 
 namespace ripple {

@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/beast/type_name.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/json/json_reader.h>
-#include <ripple/json/json_value.h>
-#include <ripple/json/json_writer.h>
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/type_name.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>
 
 #include <algorithm>
 #include <regex>

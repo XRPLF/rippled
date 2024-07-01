@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/rdb/State.h>
+#include <xrpld/app/rdb/State.h>
 
 namespace ripple {
 

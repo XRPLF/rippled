@@ -20,12 +20,12 @@
 #ifndef RIPPLE_RPC_CONTEXT_H_INCLUDED
 #define RIPPLE_RPC_CONTEXT_H_INCLUDED
 
-#include <ripple/core/Config.h>
-#include <ripple/core/JobQueue.h>
-#include <ripple/net/InfoSub.h>
-#include <ripple/rpc/Role.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/core/JobQueue.h>
+#include <xrpld/net/InfoSub.h>
+#include <xrpld/rpc/Role.h>
 
-#include <ripple/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Journal.h>
 
 namespace ripple {
 

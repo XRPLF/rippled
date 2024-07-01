@@ -20,9 +20,9 @@
 #ifndef RIPPLE_NODESTORE_FACTORY_H_INCLUDED
 #define RIPPLE_NODESTORE_FACTORY_H_INCLUDED
 
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/nodestore/Backend.h>
-#include <ripple/nodestore/Scheduler.h>
+#include <xrpld/nodestore/Backend.h>
+#include <xrpld/nodestore/Scheduler.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <nudb/store.hpp>
 
 namespace ripple {

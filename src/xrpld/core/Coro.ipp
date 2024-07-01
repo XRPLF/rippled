@@ -20,7 +20,7 @@
 #ifndef RIPPLE_CORE_COROINL_H_INCLUDED
 #define RIPPLE_CORE_COROINL_H_INCLUDED
 
-#include <ripple/basics/ByteUtilities.h>
+#include <xrpl/basics/ByteUtilities.h>
 
 namespace ripple {
 

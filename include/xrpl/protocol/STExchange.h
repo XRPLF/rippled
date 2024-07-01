@@ -20,14 +20,14 @@
 #ifndef RIPPLE_PROTOCOL_STEXCHANGE_H_INCLUDED
 #define RIPPLE_PROTOCOL_STEXCHANGE_H_INCLUDED
 
-#include <ripple/basics/Blob.h>
-#include <ripple/basics/Buffer.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/contract.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/STBlob.h>
-#include <ripple/protocol/STInteger.h>
-#include <ripple/protocol/STObject.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/STObject.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>

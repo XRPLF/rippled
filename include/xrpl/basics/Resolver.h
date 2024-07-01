@@ -23,7 +23,7 @@
 #include <functional>
 #include <vector>
 
-#include <ripple/beast/net/IPEndpoint.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 
 namespace ripple {
 

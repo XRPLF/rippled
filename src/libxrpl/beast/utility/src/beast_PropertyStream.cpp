@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/beast/utility/PropertyStream.h>
+#include <xrpl/beast/utility/PropertyStream.h>
 #include <algorithm>
 #include <cassert>
 #include <iostream>

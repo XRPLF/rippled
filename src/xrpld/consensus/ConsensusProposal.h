@@ -19,11 +19,11 @@
 #ifndef RIPPLE_CONSENSUS_CONSENSUSPROPOSAL_H_INCLUDED
 #define RIPPLE_CONSENSUS_CONSENSUSPROPOSAL_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/jss.h>
 #include <cstdint>
 #include <optional>
 

@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/TransactionSign.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/detail/TransactionSign.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/resource/Fees.h>
 
 namespace ripple {
 

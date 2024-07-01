@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/resource/Charge.h>
+#include <xrpl/resource/Charge.h>
 #include <sstream>
 
 namespace ripple {

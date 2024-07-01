@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_PENDINGSAVES_H_INCLUDED
 #define RIPPLE_APP_PENDINGSAVES_H_INCLUDED
 
-#include <ripple/protocol/Protocol.h>
+#include <xrpl/protocol/Protocol.h>
 #include <condition_variable>
 #include <map>
 #include <mutex>

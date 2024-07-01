@@ -20,9 +20,9 @@
 #ifndef RIPPLE_APP_LEDGER_ACCOUNTSTATESF_H_INCLUDED
 #define RIPPLE_APP_LEDGER_ACCOUNTSTATESF_H_INCLUDED
 
-#include <ripple/app/ledger/AbstractFetchPackContainer.h>
-#include <ripple/nodestore/Database.h>
-#include <ripple/shamap/SHAMapSyncFilter.h>
+#include <xrpld/app/ledger/AbstractFetchPackContainer.h>
+#include <xrpld/nodestore/Database.h>
+#include <xrpld/shamap/SHAMapSyncFilter.h>
 
 namespace ripple {
 

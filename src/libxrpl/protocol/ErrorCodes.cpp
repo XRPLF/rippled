@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/ErrorCodes.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <array>
 #include <cassert>
 #include <stdexcept>

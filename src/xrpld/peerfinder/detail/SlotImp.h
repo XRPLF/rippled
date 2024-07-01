@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PEERFINDER_SLOTIMP_H_INCLUDED
 #define RIPPLE_PEERFINDER_SLOTIMP_H_INCLUDED
 
-#include <ripple/beast/container/aged_container_utility.h>
-#include <ripple/beast/container/aged_unordered_map.h>
-#include <ripple/peerfinder/PeerfinderManager.h>
-#include <ripple/peerfinder/Slot.h>
+#include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/Slot.h>
+#include <xrpl/beast/container/aged_container_utility.h>
+#include <xrpl/beast/container/aged_unordered_map.h>
 #include <atomic>
 #include <optional>
 

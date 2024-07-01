@@ -19,7 +19,7 @@
 #ifndef BASICS_FEES_H_INCLUDED
 #define BASICS_FEES_H_INCLUDED
 
-#include <ripple/basics/XRPAmount.h>
+#include <xrpl/basics/XRPAmount.h>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <limits>
 #include <utility>
@@ -110,7 +110,8 @@ public:
     {
     }
 
-    constexpr TaggedFee& operator=(beast::Zero)
+    constexpr TaggedFee&
+    operator=(beast::Zero)
     {
         fee_ = 0;
         return *this;

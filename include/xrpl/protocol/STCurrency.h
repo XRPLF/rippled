@@ -20,11 +20,11 @@
 #ifndef RIPPLE_PROTOCOL_STCURRENCY_H_INCLUDED
 #define RIPPLE_PROTOCOL_STCURRENCY_H_INCLUDED
 
-#include <ripple/basics/CountedObject.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/STBase.h>
-#include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/UintTypes.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {
 

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_OVERLAY_CONNECTATTEMPT_H_INCLUDED
 #define RIPPLE_OVERLAY_CONNECTATTEMPT_H_INCLUDED
 
-#include <ripple/overlay/impl/OverlayImpl.h>
-#include <ripple/overlay/impl/Tuning.h>
+#include <xrpld/overlay/detail/OverlayImpl.h>
+#include <xrpld/overlay/detail/Tuning.h>
 
 namespace ripple {
 

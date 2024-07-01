@@ -20,9 +20,9 @@
 #ifndef RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
 #define RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
 
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/ledger/ApplyView.h>
-#include <ripple/rpc/Role.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/ledger/ApplyView.h>
+#include <xrpld/rpc/Role.h>
 
 namespace ripple {
 

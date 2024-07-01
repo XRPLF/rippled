@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/app/consensus/RCLCxPeerPos.h>
-#include <ripple/core/Config.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/jss.h>
+#include <xrpld/app/consensus/RCLCxPeerPos.h>
+#include <xrpld/core/Config.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

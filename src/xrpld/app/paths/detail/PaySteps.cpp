@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/impl/Steps.h>
-#include <ripple/basics/IOUAmount.h>
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/basics/contract.h>
-#include <ripple/json/json_writer.h>
-#include <ripple/ledger/ReadView.h>
-#include <ripple/protocol/Feature.h>
+#include <xrpld/app/paths/detail/Steps.h>
+#include <xrpld/ledger/ReadView.h>
+#include <xrpl/basics/IOUAmount.h>
+#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/json_writer.h>
+#include <xrpl/protocol/Feature.h>
 
 #include <algorithm>
 #include <numeric>

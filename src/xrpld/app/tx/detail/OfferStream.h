@@ -20,13 +20,13 @@
 #ifndef RIPPLE_APP_BOOK_OFFERSTREAM_H_INCLUDED
 #define RIPPLE_APP_BOOK_OFFERSTREAM_H_INCLUDED
 
-#include <ripple/app/tx/impl/BookTip.h>
-#include <ripple/app/tx/impl/Offer.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Quality.h>
+#include <xrpld/app/tx/detail/BookTip.h>
+#include <xrpld/app/tx/detail/Offer.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/Quality.h>
 
 #include <boost/container/flat_set.hpp>
 

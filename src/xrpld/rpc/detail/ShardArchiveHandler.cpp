@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/rdb/ShardArchive.h>
-#include <ripple/basics/Archive.h>
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/nodestore/DatabaseShard.h>
-#include <ripple/rpc/ShardArchiveHandler.h>
-#include <ripple/rpc/impl/Handler.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/rdb/ShardArchive.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpld/nodestore/DatabaseShard.h>
+#include <xrpld/rpc/ShardArchiveHandler.h>
+#include <xrpld/rpc/detail/Handler.h>
+#include <xrpl/basics/Archive.h>
+#include <xrpl/basics/BasicConfig.h>
 
 #include <memory>
 

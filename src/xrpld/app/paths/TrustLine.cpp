@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/app/paths/TrustLine.h>
-#include <ripple/protocol/STAmount.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/paths/TrustLine.h>
+#include <xrpl/protocol/STAmount.h>
 #include <cstdint>
 #include <memory>
 

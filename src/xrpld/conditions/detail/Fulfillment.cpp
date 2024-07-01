@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/basics/safe_cast.h>
-#include <ripple/conditions/Condition.h>
-#include <ripple/conditions/Fulfillment.h>
-#include <ripple/conditions/impl/PreimageSha256.h>
-#include <ripple/conditions/impl/utils.h>
+#include <xrpld/conditions/Condition.h>
+#include <xrpld/conditions/Fulfillment.h>
+#include <xrpld/conditions/detail/PreimageSha256.h>
+#include <xrpld/conditions/detail/utils.h>
+#include <xrpl/basics/safe_cast.h>
 #include <type_traits>
 #include <vector>
 

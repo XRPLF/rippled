@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/crypto/csprng.h>
-#include <ripple/protocol/Serializer.h>
-#include <ripple/shamap/SHAMap.h>
-#include <ripple/shamap/SHAMapNodeID.h>
+#include <xrpld/shamap/SHAMap.h>
+#include <xrpld/shamap/SHAMapNodeID.h>
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/crypto/csprng.h>
+#include <xrpl/protocol/Serializer.h>
 #include <cassert>
 
 namespace ripple {

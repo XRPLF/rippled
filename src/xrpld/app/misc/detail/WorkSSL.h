@@ -20,10 +20,10 @@
 #ifndef RIPPLE_APP_MISC_DETAIL_WORKSSL_H_INCLUDED
 #define RIPPLE_APP_MISC_DETAIL_WORKSSL_H_INCLUDED
 
-#include <ripple/app/misc/detail/WorkBase.h>
-#include <ripple/basics/contract.h>
-#include <ripple/core/Config.h>
-#include <ripple/net/HTTPClientSSLContext.h>
+#include <xrpld/app/misc/detail/WorkBase.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/net/HTTPClientSSLContext.h>
+#include <xrpl/basics/contract.h>
 #include <boost/asio/ssl.hpp>
 #include <boost/format.hpp>
 

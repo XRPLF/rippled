@@ -20,7 +20,7 @@
 #ifndef RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED
 #define RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED
 
-#include <ripple/basics/contract.h>
+#include <xrpl/basics/contract.h>
 #include <algorithm>
 #include <cstdint>
 #include <lz4.h>

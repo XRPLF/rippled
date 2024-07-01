@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/paths/Flow.h>
-#include <ripple/app/tx/impl/CashCheck.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/scope.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/TER.h>
-#include <ripple/protocol/TxFlags.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/paths/Flow.h>
+#include <xrpld/app/tx/detail/CashCheck.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/scope.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 
 #include <algorithm>
 

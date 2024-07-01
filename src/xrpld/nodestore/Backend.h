@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NODESTORE_BACKEND_H_INCLUDED
 #define RIPPLE_NODESTORE_BACKEND_H_INCLUDED
 
-#include <ripple/nodestore/Types.h>
+#include <xrpld/nodestore/Types.h>
 #include <atomic>
 #include <cstdint>
 

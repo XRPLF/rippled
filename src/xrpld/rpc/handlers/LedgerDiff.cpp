@@ -1,5 +1,5 @@
-#include <ripple/rpc/GRPCHandlers.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
+#include <xrpld/rpc/GRPCHandlers.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
 
 namespace ripple {
 std::pair<org::xrpl::rpc::v1::GetLedgerDiffResponse, grpc::Status>

@@ -20,7 +20,7 @@
 #ifndef BEAST_INSIGHT_NULLCOLLECTOR_H_INCLUDED
 #define BEAST_INSIGHT_NULLCOLLECTOR_H_INCLUDED
 
-#include <ripple/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Collector.h>
 
 namespace beast {
 namespace insight {

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/core/LoadEvent.h>
-#include <ripple/core/LoadMonitor.h>
+#include <xrpld/core/LoadEvent.h>
+#include <xrpld/core/LoadMonitor.h>
 #include <cassert>
 #include <iomanip>
 

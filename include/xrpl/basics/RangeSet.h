@@ -20,7 +20,7 @@
 #ifndef RIPPLE_BASICS_RANGESET_H_INCLUDED
 #define RIPPLE_BASICS_RANGESET_H_INCLUDED
 
-#include <ripple/beast/core/LexicalCast.h>
+#include <xrpl/beast/core/LexicalCast.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/icl/closed_interval.hpp>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/LedgerReplay.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/ledger/LedgerReplay.h>
 
 namespace ripple {
 

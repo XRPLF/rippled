@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/SetRegularKey.h>
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/TxFlags.h>
+#include <xrpld/app/tx/detail/SetRegularKey.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 

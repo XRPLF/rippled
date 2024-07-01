@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/json/to_string.h>
-#include <ripple/ledger/detail/ApplyStateTable.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/st.h>
+#include <xrpld/ledger/detail/ApplyStateTable.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/st.h>
 #include <cassert>
 
 namespace ripple {

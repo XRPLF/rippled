@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_RDB_VACUUM_H_INCLUDED
 #define RIPPLE_APP_RDB_VACUUM_H_INCLUDED
 
-#include <ripple/core/DatabaseCon.h>
+#include <xrpld/core/DatabaseCon.h>
 
 namespace ripple {
 

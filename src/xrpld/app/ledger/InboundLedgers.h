@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_LEDGER_INBOUNDLEDGERS_H_INCLUDED
 #define RIPPLE_APP_LEDGER_INBOUNDLEDGERS_H_INCLUDED
 
-#include <ripple/app/ledger/InboundLedger.h>
-#include <ripple/protocol/RippleLedgerHash.h>
+#include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
 #include <memory>
 
 namespace ripple {

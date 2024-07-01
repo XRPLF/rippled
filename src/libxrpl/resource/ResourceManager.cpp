@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/core/CurrentThreadName.h>
-#include <ripple/beast/net/IPAddressConversion.h>
-#include <ripple/resource/ResourceManager.h>
-#include <ripple/resource/impl/Logic.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/resource/ResourceManager.h>
+#include <xrpl/resource/detail/Logic.h>
 #include <boost/asio/ip/address_v4.hpp>
 #include <boost/core/ignore_unused.hpp>
 #include <boost/system/error_code.hpp>

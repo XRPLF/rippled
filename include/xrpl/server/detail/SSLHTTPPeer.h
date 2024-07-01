@@ -20,8 +20,8 @@
 #ifndef RIPPLE_SERVER_SSLHTTPPEER_H_INCLUDED
 #define RIPPLE_SERVER_SSLHTTPPEER_H_INCLUDED
 
-#include <ripple/server/impl/BaseHTTPPeer.h>
-#include <ripple/server/impl/SSLWSPeer.h>
+#include <xrpl/server/detail/BaseHTTPPeer.h>
+#include <xrpl/server/detail/SSLWSPeer.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/stream.hpp>

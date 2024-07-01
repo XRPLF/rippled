@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/ValidatorList.h>
-#include <ripple/app/misc/ValidatorSite.h>
-#include <ripple/app/misc/detail/WorkFile.h>
-#include <ripple/app/misc/detail/WorkPlain.h>
-#include <ripple/app/misc/detail/WorkSSL.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/base64.h>
-#include <ripple/json/json_reader.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/jss.h>
+#include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/app/misc/ValidatorSite.h>
+#include <xrpld/app/misc/detail/WorkFile.h>
+#include <xrpld/app/misc/detail/WorkPlain.h>
+#include <xrpld/app/misc/detail/WorkSSL.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base64.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/jss.h>
 #include <algorithm>
 
 namespace ripple {

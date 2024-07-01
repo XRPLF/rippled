@@ -17,21 +17,21 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/AMMUtils.h>
-#include <ripple/app/paths/AMMLiquidity.h>
-#include <ripple/app/paths/AMMOffer.h>
-#include <ripple/app/paths/impl/FlatSets.h>
-#include <ripple/app/paths/impl/Steps.h>
-#include <ripple/app/tx/impl/OfferStream.h>
-#include <ripple/basics/IOUAmount.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/basics/contract.h>
-#include <ripple/ledger/Directory.h>
-#include <ripple/ledger/PaymentSandbox.h>
-#include <ripple/protocol/Book.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Quality.h>
+#include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/app/paths/AMMLiquidity.h>
+#include <xrpld/app/paths/AMMOffer.h>
+#include <xrpld/app/paths/detail/FlatSets.h>
+#include <xrpld/app/paths/detail/Steps.h>
+#include <xrpld/app/tx/detail/OfferStream.h>
+#include <xrpld/ledger/Directory.h>
+#include <xrpld/ledger/PaymentSandbox.h>
+#include <xrpl/basics/IOUAmount.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Quality.h>
 
 #include <boost/container/flat_set.hpp>
 

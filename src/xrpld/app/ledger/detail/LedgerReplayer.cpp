@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerReplayer.h>
-#include <ripple/app/ledger/impl/LedgerDeltaAcquire.h>
-#include <ripple/app/ledger/impl/SkipListAcquire.h>
-#include <ripple/core/JobQueue.h>
+#include <xrpld/app/ledger/LedgerReplayer.h>
+#include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
+#include <xrpld/app/ledger/detail/SkipListAcquire.h>
+#include <xrpld/core/JobQueue.h>
 
 namespace ripple {
 

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_BASICS_KEYCACHE_H
 #define RIPPLE_BASICS_KEYCACHE_H
 
-#include <ripple/basics/TaggedCache.h>
-#include <ripple/basics/base_uint.h>
+#include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/base_uint.h>
 
 namespace ripple {
 

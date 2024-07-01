@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Number.h>
+#include <xrpl/basics/Number.h>
 #include <boost/predef.h>
 #include <algorithm>
 #include <cassert>

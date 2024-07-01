@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/contract.h>
-#include <ripple/basics/safe_cast.h>
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/SystemParameters.h>
-#include <ripple/protocol/UintTypes.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/regex.hpp>
@@ -650,7 +650,8 @@ STAmount::getText() const
     return ret;
 }
 
-Json::Value STAmount::getJson(JsonOptions) const
+Json::Value
+STAmount::getJson(JsonOptions) const
 {
     Json::Value elem;
     setJson(elem);

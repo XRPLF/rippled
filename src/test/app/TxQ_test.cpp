@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/app/misc/TxQ.h>
-#include <ripple/app/tx/apply.h>
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/protocol/st.h>
 #include <test/jtx.h>
 #include <test/jtx/TestSuite.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/ticket.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/LoadFeeTrack.h>
+#include <xrpld/app/misc/TxQ.h>
+#include <xrpld/app/tx/apply.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/st.h>
 
 namespace ripple {
 

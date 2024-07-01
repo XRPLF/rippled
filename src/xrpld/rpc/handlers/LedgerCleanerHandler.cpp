@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerCleaner.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/json/json_value.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/Handler.h>
+#include <xrpld/app/ledger/LedgerCleaner.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/detail/Handler.h>
+#include <xrpl/json/json_value.h>
 
 namespace ripple {
 

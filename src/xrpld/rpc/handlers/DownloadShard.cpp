@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/nodestore/DatabaseShard.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/RPCErr.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/ShardArchiveHandler.h>
-#include <ripple/rpc/impl/Handler.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/nodestore/DatabaseShard.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/ShardArchiveHandler.h>
+#include <xrpld/rpc/detail/Handler.h>
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/jss.h>
 
 #include <boost/algorithm/string.hpp>
 

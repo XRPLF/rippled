@@ -17,21 +17,21 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/AccountStateSF.h>
-#include <ripple/app/ledger/InboundLedger.h>
-#include <ripple/app/ledger/InboundLedgers.h>
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/TransactionStateSF.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/basics/Log.h>
-#include <ripple/core/JobQueue.h>
-#include <ripple/nodestore/DatabaseShard.h>
-#include <ripple/overlay/Overlay.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/shamap/SHAMapNodeID.h>
+#include <xrpld/app/ledger/AccountStateSF.h>
+#include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/TransactionStateSF.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/core/JobQueue.h>
+#include <xrpld/nodestore/DatabaseShard.h>
+#include <xrpld/overlay/Overlay.h>
+#include <xrpld/shamap/SHAMapNodeID.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Fees.h>
 
 #include <boost/iterator/function_output_iterator.hpp>
 

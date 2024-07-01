@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/beast/net/IPAddressV4.h>
-#include <ripple/beast/net/IPAddressV6.h>
+#include <xrpl/beast/net/IPAddressV4.h>
+#include <xrpl/beast/net/IPAddressV6.h>
 
 namespace beast {
 namespace IP {

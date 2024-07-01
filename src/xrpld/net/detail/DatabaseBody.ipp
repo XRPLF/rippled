@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/rdb/Download.h>
+#include <xrpld/app/rdb/Download.h>
 
 namespace ripple {
 

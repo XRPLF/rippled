@@ -20,8 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_KEYLET_H_INCLUDED
 #define RIPPLE_PROTOCOL_KEYLET_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
-#include <ripple/protocol/LedgerFormats.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/LedgerFormats.h>
 
 namespace ripple {
 

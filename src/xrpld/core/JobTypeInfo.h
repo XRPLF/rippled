@@ -20,7 +20,7 @@
 #ifndef RIPPLE_CORE_JOBTYPEINFO_H_INCLUDED
 #define RIPPLE_CORE_JOBTYPEINFO_H_INCLUDED
 
-#include <ripple/core/Job.h>
+#include <xrpld/core/Job.h>
 
 namespace ripple {
 

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/HashRouter.h>
+#include <xrpld/app/misc/HashRouter.h>
 
 namespace ripple {
 

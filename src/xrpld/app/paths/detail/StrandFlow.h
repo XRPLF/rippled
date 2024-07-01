@@ -20,18 +20,18 @@
 #ifndef RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
 #define RIPPLE_APP_PATHS_IMPL_STRANDFLOW_H_INCLUDED
 
-#include <ripple/app/misc/AMMHelpers.h>
-#include <ripple/app/paths/AMMContext.h>
-#include <ripple/app/paths/Credit.h>
-#include <ripple/app/paths/Flow.h>
-#include <ripple/app/paths/impl/AmountSpec.h>
-#include <ripple/app/paths/impl/FlatSets.h>
-#include <ripple/app/paths/impl/FlowDebugInfo.h>
-#include <ripple/app/paths/impl/Steps.h>
-#include <ripple/basics/IOUAmount.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/protocol/Feature.h>
+#include <xrpld/app/misc/AMMHelpers.h>
+#include <xrpld/app/paths/AMMContext.h>
+#include <xrpld/app/paths/Credit.h>
+#include <xrpld/app/paths/Flow.h>
+#include <xrpld/app/paths/detail/AmountSpec.h>
+#include <xrpld/app/paths/detail/FlatSets.h>
+#include <xrpld/app/paths/detail/FlowDebugInfo.h>
+#include <xrpld/app/paths/detail/Steps.h>
+#include <xrpl/basics/IOUAmount.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/protocol/Feature.h>
 
 #include <boost/container/flat_set.hpp>
 

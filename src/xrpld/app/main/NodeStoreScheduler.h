@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_MAIN_NODESTORESCHEDULER_H_INCLUDED
 #define RIPPLE_APP_MAIN_NODESTORESCHEDULER_H_INCLUDED
 
-#include <ripple/core/JobQueue.h>
-#include <ripple/nodestore/Scheduler.h>
+#include <xrpld/core/JobQueue.h>
+#include <xrpld/nodestore/Scheduler.h>
 #include <atomic>
 
 namespace ripple {

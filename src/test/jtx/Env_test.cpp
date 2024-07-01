@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/misc/TxQ.h>
-#include <ripple/beast/hash/uhash.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/json/to_string.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/misc/TxQ.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
 #include <boost/lexical_cast.hpp>
 #include <optional>

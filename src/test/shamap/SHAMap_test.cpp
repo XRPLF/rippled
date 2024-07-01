@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Blob.h>
-#include <ripple/basics/Buffer.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/shamap/SHAMap.h>
 #include <test/shamap/common.h>
 #include <test/unit_test/SuiteJournal.h>
+#include <xrpld/shamap/SHAMap.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/utility/Journal.h>
 
 namespace ripple {
 namespace tests {

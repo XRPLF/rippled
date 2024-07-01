@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/Manifest.h>
-#include <ripple/app/misc/TxQ.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/STXChainBridge.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/Oracle.h>
 #include <test/jtx/attester.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/xchain_bridge.h>
+#include <xrpld/app/misc/Manifest.h>
+#include <xrpld/app/misc/TxQ.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 
