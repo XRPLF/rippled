@@ -91,7 +91,7 @@ target_link_libraries(xrpl.libxrpl
     xxHash::xxhash
 )
 
-if(with_xrpld)
+if(xrpld)
   add_executable(rippled)
   if(unity)
     set_target_properties(rippled PROPERTIES UNITY_BUILD ON)

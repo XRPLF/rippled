@@ -19,7 +19,7 @@ class Example(ConanFile):
     default_options = {
         'shared': False,
         'fPIC': True,
-        'xrpl:with_xrpld': False,
+        'xrpl:xrpld': False,
     }
 
     requires = ['xrpl/2.2.0-rc1@jfreeman/nodestore']

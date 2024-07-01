@@ -21,7 +21,7 @@ class Xrpl(ConanFile):
         'static': [True, False],
         'tests': [True, False],
         'unity': [True, False],
-        'with_xrpld': [True, False],
+        'xrpld': [True, False],
     }
 
     requires = [
@@ -50,7 +50,7 @@ class Xrpl(ConanFile):
         'static': True,
         'tests': False,
         'unity': False,
-        'with_xrpld': False,
+        'xrpld': False,
 
         'cassandra-cpp-driver/*:shared': False,
         'cassandra-cpp-driver/*:use_atomic': None,
@@ -144,7 +144,7 @@ class Xrpl(ConanFile):
         tc.variables['BUILD_SHARED_LIBS'] = self.options.shared
         tc.variables['static'] = self.options.static
         tc.variables['unity'] = self.options.unity
-        tc.variables['with_xrpld'] = self.options.with_xrpld
+        tc.variables['xrpld'] = self.options.xrpld
         tc.generate()
 
     def build(self):
