@@ -165,6 +165,36 @@ public:
 };
 
 /**
+ * @brief Invariant: a deleted account must not have any objects left
+ *
+ * We iterate all deleted account roots, and ensure that there are no
+ * objects left that are directly accessible with that account's ID.
+ *
+ * There should only be one deleted account, but that's checked by
+ * AccountRootsNotDeleted. This invariant will handle multiple deleted account
+ * roots without a problem.
+ */
+class AccountRootsDeletedClean
+{
+    std::vector<std::shared_ptr<SLE const>> accountsDeleted_;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
+/**
  * @brief Invariant: An account XRP balance must be in XRP and take a value
  *                   between 0 and INITIAL_XRP drops, inclusive.
  *
@@ -423,6 +453,7 @@ public:
 using InvariantChecks = std::tuple<
     TransactionFeeCheck,
     AccountRootsNotDeleted,
+    AccountRootsDeletedClean,
     LedgerEntryTypesMatch,
     XRPBalanceChecks,
     XRPNotCreated,

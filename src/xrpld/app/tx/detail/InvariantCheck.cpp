@@ -359,6 +359,91 @@ AccountRootsNotDeleted::finalize(
 //------------------------------------------------------------------------------
 
 void
+AccountRootsDeletedClean::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const&)
+{
+    if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
+        accountsDeleted_.emplace_back(before);
+}
+
+bool
+AccountRootsDeletedClean::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    // Always check for objects in the ledger, but to prevent differing
+    // transaction processing results, however unlikely, only fail if the
+    // feature is enabled. Enabled, or not, though, a fatal-level message will
+    // be logged
+    bool const enforce = view.rules().enabled(featureInvariantsV1_1);
+
+    auto const objectExists = [&view, enforce, &j](auto const& keylet) {
+        if (auto const sle = view.read(keylet))
+        {
+            // Finding the object is bad
+            auto const typeName = [&sle]() {
+                auto item =
+                    LedgerFormats::getInstance().findByType(sle->getType());
+
+                if (item != nullptr)
+                    return item->getName();
+                return std::to_string(sle->getType());
+            }();
+
+            JLOG(j.fatal())
+                << "Invariant failed: account deletion left behind a "
+                << typeName << " object";
+            (void)enforce;
+            assert(enforce);
+            return true;
+        }
+        return false;
+    };
+
+    for (auto const& accountSLE : accountsDeleted_)
+    {
+        auto const accountID = accountSLE->getAccountID(sfAccount);
+        // Simple types
+        for (auto const& [keyletfunc, _, __] : directAccountKeylets)
+        {
+            if (objectExists(std::invoke(keyletfunc, accountID)) && enforce)
+                return false;
+        }
+
+        {
+            // NFT pages. ntfpage_min and nftpage_max were already explicitly
+            // checked above as entries in directAccountKeylets. This uses
+            // view.succ() to check for any NFT pages in between the two
+            // endpoints.
+            Keylet const first = keylet::nftpage_min(accountID);
+            Keylet const last = keylet::nftpage_max(accountID);
+
+            std::optional<uint256> key = view.succ(first.key, last.key.next());
+
+            // current page
+            if (key && objectExists(Keylet{ltNFTOKEN_PAGE, *key}) && enforce)
+                return false;
+        }
+
+        // Keys directly stored in the AccountRoot object
+        if (auto const ammKey = accountSLE->at(~sfAMMID))
+        {
+            if (objectExists(keylet::amm(*ammKey)) && enforce)
+                return false;
+        }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
 LedgerEntryTypesMatch::visitEntry(
     bool,
     std::shared_ptr<SLE const> const& before,
