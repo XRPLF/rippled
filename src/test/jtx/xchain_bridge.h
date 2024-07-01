@@ -20,12 +20,12 @@
 #ifndef RIPPLE_TEST_JTX_XCHAINBRIDGE_H_INCLUDED
 #define RIPPLE_TEST_JTX_XCHAINBRIDGE_H_INCLUDED
 
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/XChainAttestations.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/multisign.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/XChainAttestations.h>
 
 namespace ripple {
 namespace test {

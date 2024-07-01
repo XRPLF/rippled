@@ -17,20 +17,20 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/DBInit.h>
-#include <ripple/app/misc/Manifest.h>
-#include <ripple/app/misc/ValidatorList.h>
-#include <ripple/app/rdb/Wallet.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/base64.h>
-#include <ripple/basics/contract.h>
-#include <ripple/protocol/STExchange.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/Sign.h>
+#include <test/jtx.h>
+#include <xrpld/app/main/DBInit.h>
+#include <xrpld/app/misc/Manifest.h>
+#include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/app/rdb/Wallet.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base64.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/STExchange.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Sign.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/utility/in_place_factory.hpp>
-#include <test/jtx.h>
 
 namespace ripple {
 namespace test {

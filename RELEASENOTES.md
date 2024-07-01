@@ -6,6 +6,95 @@ This document contains the release notes for `rippled`, the reference server imp
 
 Have new ideas? Need help with setting up your node? [Please open an issue here](https://github.com/xrplf/rippled/issues/new/choose).
 
+# Version 2.2.0
+
+Version 2.2.0 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release adds performance optimizations, several bug fixes, and introduces the `featurePriceOracle`, `fixEmptyDID`, `fixXChainRewardRounding`, `fixPreviousTxnID`, and `fixAMMv1_1` amendments.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+## Action Required
+
+Five new amendments are now open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators.
+
+If you operate an XRP Ledger server, upgrade to version 2.2.0 by June 17, 2024 to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+
+If you operate a Clio server, Clio needs to be updated to 2.1.2 before updating to rippled 2.2.0. Clio will be blocked if it is not updated.
+
+## Changelog
+
+### Amendments and New Features
+(These are changes which may impact or be useful to end users. For example, you may be able to update your code/workflow to take advantage of these changes.)
+
+- **featurePriceOracle** amendment: Implements a price oracle as defined in the [XLS-47](https://github.com/XRPLF/XRPL-Standards/blob/master/XLS-47d-PriceOracles/README.md) spec. A Price Oracle is used to bring real-world data, such as market prices, onto the blockchain, enabling dApps to access and utilize information that resides outside the blockchain. [#4789](https://github.com/XRPLF/rippled/pull/4789) 
+
+- **fixEmptyDID** amendment: Modifies the behavior of the DID amendment: adds an additional check to ensure that DIDs are non-empty when created, and returns a `tecEMPTY_DID` error if the DID would be empty. [#4950](https://github.com/XRPLF/rippled/pull/4950)
+
+- **fixXChainRewardRounding** amendment: Modifies the behavior of the XChainBridge amendment: fixes rounding so reward shares are always rounded down, even when the `fixUniversalNumber` amendment is active. [#4933](https://github.com/XRPLF/rippled/pull/4933)
+
+- **fixPreviousTxnID** amendment: Adds `PreviousTxnID` and `PreviousTxnLgrSequence` as fields to all ledger entries that did not already have them included (`DirectoryNode`, `Amendments`, `FeeSettings`, `NegativeUNL`, and `AMM`). Existing ledger entries will gain the fields whenever transactions modify those entries. [#4751](https://github.com/XRPLF/rippled/pull/4751). 
+
+- **fixAMMv1_1** amendment: Fixes AMM offer rounding and low quality order book offers from blocking the AMM. [#4983](https://github.com/XRPLF/rippled/pull/4983)
+
+- Add a non-admin version of `feature` API method. [#4781](https://github.com/XRPLF/rippled/pull/4781)
+
+### Bug Fixes and Performance Improvements
+(These are behind-the-scenes improvements, such as internal changes to the code, which are not expected to impact end users.)
+
+- Optimize the base58 encoder and decoder. The algorithm is now about 10 times faster for encoding and 15 times faster for decoding. [#4327](https://github.com/XRPLF/rippled/pull/4327)
+
+- Optimize the `account_tx` SQL query. [#4955](https://github.com/XRPLF/rippled/pull/4955)
+
+- Don't reach consensus as quickly if no other proposals are seen. [#4763](https://github.com/XRPLF/rippled/pull/4763)
+
+- Fix a potential deadlock in the database module. [#4989](https://github.com/XRPLF/rippled/pull/4989)
+
+- Enforce no duplicate slots from incoming connections. [#4944](https://github.com/XRPLF/rippled/pull/4944)
+
+- Fix an order book update variable swap. [#4890](https://github.com/XRPLF/rippled/pull/4890)
+
+### Docs and Build System
+
+- Add unit test to raise the test coverage of the AMM. [#4971](https://github.com/XRPLF/rippled/pull/4971)
+
+- Improve test coverage reporting. [#4977](https://github.com/XRPLF/rippled/pull/4977)
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+
+## Credits
+
+The following people contributed directly to this release:
+
+Alex Kremer <akremer@ripple.com>
+Alloy Networks <45832257+alloynetworks@users.noreply.github.com>
+Bronek Kozicki <brok@incorrekt.com>
+Chenna Keshava <ckeshavabs@gmail.com>
+Denis Angell <dangell@transia.co>
+Ed Hennis <ed@ripple.com>
+Gregory Tsipenyuk <gtsipenyuk@ripple.com>
+Howard Hinnant <howard.hinnant@gmail.com>
+John Freeman <jfreeman08@gmail.com>
+Mark Travis <mtrippled@users.noreply.github.com>
+Mayukha Vadari <mvadari@gmail.com>
+Michael Legleux <mlegleux@ripple.com>
+Nik Bougalis <nikb@bougalis.net>
+Olek <115580134+oleks-rip@users.noreply.github.com>
+Scott Determan <scott.determan@yahoo.com>
+Snoppy <michaleli@foxmail.com>
+
+Bug Bounties and Responsible Disclosures:
+
+We welcome reviews of the `rippled` code and urge researchers to responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to: <bugs@xrpl.org>
+
+
 ## Version 2.1.1
 
 The `rippled` 2.1.1 release fixes a critical bug in the integration of AMMs with the payment engine.

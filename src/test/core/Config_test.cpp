@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/core/Config.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/server/Port.h>
+#include <test/jtx/TestSuite.h>
+#include <test/unit_test/FileDirGuard.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/server/Port.h>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 #include <fstream>
 #include <iostream>
-#include <test/jtx/TestSuite.h>
-#include <test/unit_test/FileDirGuard.h>
 
 namespace ripple {
 namespace detail {

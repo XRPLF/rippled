@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/mulDiv.h>
-#include <ripple/beast/unit_test.h>
+#include <xrpl/basics/mulDiv.h>
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 namespace test {

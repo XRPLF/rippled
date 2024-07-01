@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/jss.h>
 #include <test/jtx/delivermin.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {

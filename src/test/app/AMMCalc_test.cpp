@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/AMMHelpers.h>
-#include <ripple/protocol/Quality.h>
 #include <test/jtx.h>
+#include <xrpld/app/misc/AMMHelpers.h>
+#include <xrpl/protocol/Quality.h>
 
 #include <boost/regex.hpp>
 
@@ -413,13 +413,18 @@ class AMMCalc_test : public beast::unit_test::suite
             //     10 is AMM trading fee
             else if (*p == "changespq")
             {
+                Env env(*this);
                 if (auto const pool = getAmounts(++p))
                 {
                     if (auto const offer = getAmounts(p))
                     {
                         auto const fee = getFee(p);
                         if (auto const ammOffer = changeSpotPriceQuality(
-                                pool->first, Quality{offer->first}, fee);
+                                pool->first,
+                                Quality{offer->first},
+                                fee,
+                                env.current()->rules(),
+                                beast::Journal(beast::Journal::getNullSink()));
                             ammOffer)
                             std::cout
                                 << "amm offer: " << toString(ammOffer->in)

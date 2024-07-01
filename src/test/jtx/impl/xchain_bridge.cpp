@@ -19,17 +19,17 @@
 
 #include <test/jtx/xchain_bridge.h>
 
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/Issue.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/STBase.h>
-#include <ripple/protocol/STInteger.h>
-#include <ripple/protocol/STObject.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/XChainAttestations.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/attester.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XChainAttestations.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {

@@ -9,9 +9,9 @@ endif()
 
 # Fix "unrecognized escape" issues when passing CMAKE_MODULE_PATH on Windows.
 file(TO_CMAKE_PATH "${CMAKE_MODULE_PATH}" CMAKE_MODULE_PATH)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-project(rippled)
+project(xrpl)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -81,7 +81,6 @@ find_package(lz4 REQUIRED)
 find_package(LibArchive REQUIRED)
 find_package(SOCI REQUIRED)
 find_package(SQLite3 REQUIRED)
-find_package(Snappy REQUIRED)
 
 option(rocksdb "Enable RocksDB" ON)
 if(rocksdb)
@@ -129,9 +128,7 @@ if(coverage)
   include(RippledCov)
 endif()
 
-###
-
+set(PROJECT_EXPORT_SET RippleExports)
 include(RippledCore)
 include(RippledInstall)
-include(RippledMultiConfig)
 include(RippledValidatorKeys)

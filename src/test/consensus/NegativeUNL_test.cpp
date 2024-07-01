@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/app/consensus/RCLValidations.h>
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/misc/NegativeUNLVote.h>
-#include <ripple/app/misc/ValidatorList.h>
-#include <ripple/app/tx/apply.h>
-#include <ripple/basics/Log.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/ledger/View.h>
 #include <test/jtx.h>
+#include <xrpld/app/consensus/RCLValidations.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/misc/NegativeUNLVote.h>
+#include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/app/tx/apply.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 namespace test {

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Buffer.h>
-#include <ripple/beast/unit_test.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/beast/unit_test.h>
 #include <cstdint>
 #include <type_traits>
 

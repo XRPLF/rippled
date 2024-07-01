@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/beast/utility/temp_dir.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/nodestore/DummyScheduler.h>
-#include <ripple/nodestore/Manager.h>
 #include <test/jtx.h>
 #include <test/jtx/CheckMessageLogs.h>
 #include <test/jtx/envconfig.h>
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
+#include <xrpld/core/DatabaseCon.h>
+#include <xrpld/nodestore/DummyScheduler.h>
+#include <xrpld/nodestore/Manager.h>
+#include <xrpl/beast/utility/temp_dir.h>
 
 namespace ripple {
 

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_DELIVERMIN_H_INCLUDED
 #define RIPPLE_TEST_JTX_DELIVERMIN_H_INCLUDED
 
-#include <ripple/protocol/STAmount.h>
 #include <test/jtx/Env.h>
+#include <xrpl/protocol/STAmount.h>
 
 namespace ripple {
 namespace test {

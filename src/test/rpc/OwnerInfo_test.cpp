@@ -18,10 +18,10 @@
 //==============================================================================
 #include <test/jtx.h>
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

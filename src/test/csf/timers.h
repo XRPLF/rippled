@@ -19,10 +19,10 @@
 #ifndef RIPPLE_TEST_CSF_TIMERS_H_INCLUDED
 #define RIPPLE_TEST_CSF_TIMERS_H_INCLUDED
 
-#include <chrono>
-#include <ostream>
 #include <test/csf/Scheduler.h>
 #include <test/csf/SimTime.h>
+#include <chrono>
+#include <ostream>
 
 namespace ripple {
 namespace test {

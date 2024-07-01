@@ -15,8 +15,8 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/PendingSaves.h>
-#include <ripple/beast/unit_test.h>
+#include <xrpld/app/ledger/PendingSaves.h>
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 namespace test {

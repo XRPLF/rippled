@@ -15,17 +15,17 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/LoadManager.h>
-#include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/envconfig.h>
+#include <xrpld/app/main/LoadManager.h>
+#include <xrpld/app/misc/LoadFeeTrack.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 #include <tuple>
 
 namespace ripple {
