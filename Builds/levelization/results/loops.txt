@@ -1,51 +1,51 @@
-Loop: ripple.app ripple.core
-  ripple.app > ripple.core
-
-Loop: ripple.app ripple.ledger
-  ripple.app > ripple.ledger
-
-Loop: ripple.app ripple.net
-  ripple.app > ripple.net
-
-Loop: ripple.app ripple.nodestore
-  ripple.app > ripple.nodestore
-
-Loop: ripple.app ripple.overlay
-  ripple.overlay ~= ripple.app
-
-Loop: ripple.app ripple.peerfinder
-  ripple.app > ripple.peerfinder
-
-Loop: ripple.app ripple.rpc
-  ripple.rpc > ripple.app
-
-Loop: ripple.app ripple.shamap
-  ripple.app > ripple.shamap
-
-Loop: ripple.basics ripple.core
-  ripple.core > ripple.basics
-
-Loop: ripple.basics ripple.json
-  ripple.json ~= ripple.basics
-
-Loop: ripple.basics ripple.protocol
-  ripple.protocol > ripple.basics
-
-Loop: ripple.core ripple.net
-  ripple.net > ripple.core
-
-Loop: ripple.net ripple.rpc
-  ripple.rpc > ripple.net
-
-Loop: ripple.nodestore ripple.overlay
-  ripple.overlay ~= ripple.nodestore
-
-Loop: ripple.overlay ripple.rpc
-  ripple.rpc ~= ripple.overlay
-
 Loop: test.jtx test.toplevel
   test.toplevel > test.jtx
 
 Loop: test.jtx test.unit_test
   test.unit_test == test.jtx
+
+Loop: xrpl.basics xrpl.json
+  xrpl.json ~= xrpl.basics
+
+Loop: xrpld.app xrpld.core
+  xrpld.app > xrpld.core
+
+Loop: xrpld.app xrpld.ledger
+  xrpld.app > xrpld.ledger
+
+Loop: xrpld.app xrpld.net
+  xrpld.app > xrpld.net
+
+Loop: xrpld.app xrpld.nodestore
+  xrpld.app > xrpld.nodestore
+
+Loop: xrpld.app xrpld.overlay
+  xrpld.overlay ~= xrpld.app
+
+Loop: xrpld.app xrpld.peerfinder
+  xrpld.app > xrpld.peerfinder
+
+Loop: xrpld.app xrpld.rpc
+  xrpld.rpc > xrpld.app
+
+Loop: xrpld.app xrpld.shamap
+  xrpld.app > xrpld.shamap
+
+Loop: xrpld.core xrpld.net
+  xrpld.net > xrpld.core
+
+Loop: xrpld.core xrpld.perflog
+  xrpld.perflog ~= xrpld.core
+
+Loop: xrpld.net xrpld.rpc
+  xrpld.rpc > xrpld.net
+
+Loop: xrpld.nodestore xrpld.overlay
+  xrpld.overlay ~= xrpld.nodestore
+
+Loop: xrpld.overlay xrpld.rpc
+  xrpld.rpc ~= xrpld.overlay
+
+Loop: xrpld.perflog xrpld.rpc
+  xrpld.rpc ~= xrpld.perflog
 
