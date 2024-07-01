@@ -50,6 +50,8 @@ runs:
         conan install \
           --output-folder . \
           --build missing \
+          --options tests=True \
+          --options xrpld=True \
           --settings build_type=${{ inputs.configuration }} \
           ..
     - name: upload dependencies to remote

@@ -20,6 +20,8 @@ runs:
           ${{ inputs.generator && format('-G "{0}"', inputs.generator) || '' }} \
           -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
           -DCMAKE_BUILD_TYPE=${{ inputs.configuration }} \
+          -Dtests=TRUE \
+          -Dxrpld=TRUE \
           ${{ inputs.cmake-args }} \
           ..
     - name: build
