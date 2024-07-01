@@ -85,10 +85,11 @@ iteratePriceData(
 
         auto const ledger = context.ledgerMaster.getLedgerBySeq(prevSeq);
         if (!ledger)
-            return;
+            return;  // LCOV_EXCL_LINE
 
         meta = ledger->txRead(prevTx).second;
 
+        prevChain = chain;
         for (STObject const& node : meta->getFieldArray(sfAffectedNodes))
         {
             if (node.getFieldU16(sfLedgerEntryType) != ltORACLE)
@@ -96,7 +97,6 @@ iteratePriceData(
                 continue;
             }
 
-            prevChain = chain;
             chain = &node;
             isNew = node.isFieldPresent(sfNewFields);
             // if a meta is for the new and this is the first
@@ -170,19 +170,47 @@ doGetAggregatePrice(RPC::JsonContext& context)
     if (!params.isMember(jss::quote_asset))
         return RPC::missing_field_error(jss::quote_asset);
 
+    // Lambda to validate uint type
+    // support positive int, uint, and a number represented as a string
+    auto validUInt = [](Json::Value const& params,
+                        Json::StaticString const& field) {
+        auto const& jv = params[field];
+        std::uint32_t v;
+        return jv.isUInt() || (jv.isInt() && jv.asInt() >= 0) ||
+            (jv.isString() && beast::lexicalCastChecked(v, jv.asString()));
+    };
+
     // Lambda to get `trim` and `time_threshold` fields. If the field
     // is not included in the input then a default value is returned.
-    auto getField = [&params](
+    auto getField = [&params, &validUInt](
                         Json::StaticString const& field,
                         unsigned int def =
                             0) -> std::variant<std::uint32_t, error_code_i> {
         if (params.isMember(field))
         {
-            if (!params[field].isConvertibleTo(Json::ValueType::uintValue))
-                return rpcORACLE_MALFORMED;
+            if (!validUInt(params, field))
+                return rpcINVALID_PARAMS;
             return params[field].asUInt();
         }
         return def;
+    };
+
+    // Lambda to get `base_asset` and `quote_asset`. The values have
+    // to conform to the Currency type.
+    auto getCurrency =
+        [&params](SField const& sField, Json::StaticString const& field)
+        -> std::variant<Json::Value, error_code_i> {
+        try
+        {
+            if (params[field].asString().empty())
+                return rpcINVALID_PARAMS;
+            currencyFromJson(sField, params[field]);
+            return params[field];
+        }
+        catch (...)
+        {
+            return rpcINVALID_PARAMS;
+        }
     };
 
     auto const trim = getField(jss::trim);
@@ -206,8 +234,18 @@ doGetAggregatePrice(RPC::JsonContext& context)
         return result;
     }
 
-    auto const& baseAsset = params[jss::base_asset];
-    auto const& quoteAsset = params[jss::quote_asset];
+    auto const baseAsset = getCurrency(sfBaseAsset, jss::base_asset);
+    if (std::holds_alternative<error_code_i>(baseAsset))
+    {
+        RPC::inject_error(std::get<error_code_i>(baseAsset), result);
+        return result;
+    }
+    auto const quoteAsset = getCurrency(sfQuoteAsset, jss::quote_asset);
+    if (std::holds_alternative<error_code_i>(quoteAsset))
+    {
+        RPC::inject_error(std::get<error_code_i>(quoteAsset), result);
+        return result;
+    }
 
     // Collect the dataset into bimap keyed by lastUpdateTime and
     // STAmount (Number is int64 and price is uint64)
@@ -220,8 +258,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
             RPC::inject_error(rpcORACLE_MALFORMED, result);
             return result;
         }
-        auto const documentID = oracle[jss::oracle_document_id].isConvertibleTo(
-                                    Json::ValueType::uintValue)
+        auto const documentID = validUInt(oracle, jss::oracle_document_id)
             ? std::make_optional(oracle[jss::oracle_document_id].asUInt())
             : std::nullopt;
         auto const account =
@@ -235,7 +272,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
         std::shared_ptr<ReadView const> ledger;
         result = RPC::lookupLedger(ledger, context);
         if (!ledger)
-            return result;
+            return result;  // LCOV_EXCL_LINE
 
         auto const sle = ledger->read(keylet::oracle(*account, *documentID));
         iteratePriceData(context, sle, [&](STObject const& node) {
@@ -246,9 +283,9 @@ doGetAggregatePrice(RPC::JsonContext& context)
                     series.end(),
                     [&](STObject const& o) -> bool {
                         return o.getFieldCurrency(sfBaseAsset).getText() ==
-                            baseAsset &&
+                            std::get<Json::Value>(baseAsset) &&
                             o.getFieldCurrency(sfQuoteAsset).getText() ==
-                            quoteAsset &&
+                            std::get<Json::Value>(quoteAsset) &&
                             o.isFieldPresent(sfAssetPrice);
                     });
                 iter != series.end())
@@ -287,10 +324,15 @@ doGetAggregatePrice(RPC::JsonContext& context)
             prices.left.erase(
                 prices.left.upper_bound(upperBound), prices.left.end());
 
+        // At least one element should remain since upperBound is either
+        // equal to oldestTime or is less than latestTime, in which case
+        // the data is deleted between the oldestTime and upperBound.
         if (prices.empty())
         {
-            RPC::inject_error(rpcOBJECT_NOT_FOUND, result);
+            // LCOV_EXCL_START
+            RPC::inject_error(rpcINTERNAL, result);
             return result;
+            // LCOV_EXCL_STOP
         }
     }
     result[jss::time] = latestTime;

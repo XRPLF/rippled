@@ -20,6 +20,7 @@
 #ifndef BEAST_MODULE_CORE_TEXT_LEXICALCAST_H_INCLUDED
 #define BEAST_MODULE_CORE_TEXT_LEXICALCAST_H_INCLUDED
 
+#include <boost/core/detail/string_view.hpp>
 #include <algorithm>
 #include <cassert>
 #include <cerrno>
@@ -64,9 +65,9 @@ struct LexicalCast<std::string, In>
     }
 };
 
-// Parse std::string to number
-template <class Out>
-struct LexicalCast<Out, std::string>
+// Parse a std::string_view into a number
+template <typename Out>
+struct LexicalCast<Out, std::string_view>
 {
     explicit LexicalCast() = default;
 
@@ -78,7 +79,7 @@ struct LexicalCast<Out, std::string>
     std::enable_if_t<
         std::is_integral_v<Integral> && !std::is_same_v<Integral, bool>,
         bool>
-    operator()(Integral& out, std::string const& in) const
+    operator()(Integral& out, std::string_view in) const
     {
         auto first = in.data();
         auto last = in.data() + in.size();
@@ -92,20 +93,23 @@ struct LexicalCast<Out, std::string>
     }
 
     bool
-    operator()(bool& out, std::string in) const
+    operator()(bool& out, std::string_view in) const
     {
-        // Convert the input to lowercase
-        std::transform(in.begin(), in.end(), in.begin(), [](auto c) {
-            return std::tolower(static_cast<unsigned char>(c));
-        });
+        std::string result;
 
-        if (in == "1" || in == "true")
+        // Convert the input to lowercase
+        std::transform(
+            in.begin(), in.end(), std::back_inserter(result), [](auto c) {
+                return std::tolower(static_cast<unsigned char>(c));
+            });
+
+        if (result == "1" || result == "true")
         {
             out = true;
             return true;
         }
 
-        if (in == "0" || in == "false")
+        if (result == "0" || result == "false")
         {
             out = false;
             return true;
@@ -114,8 +118,37 @@ struct LexicalCast<Out, std::string>
         return false;
     }
 };
-
 //------------------------------------------------------------------------------
+
+// Parse boost library's string_view to number or boolean value
+// Note: As of Jan 2024, Boost contains three different types of string_view
+// (boost::core::basic_string_view<char>, boost::string_ref and
+// boost::string_view). The below template specialization is included because
+// it is used in the handshake.cpp file
+template <class Out>
+struct LexicalCast<Out, boost::core::basic_string_view<char>>
+{
+    explicit LexicalCast() = default;
+
+    bool
+    operator()(Out& out, boost::core::basic_string_view<char> in) const
+    {
+        return LexicalCast<Out, std::string_view>()(out, in);
+    }
+};
+
+// Parse std::string to number or boolean value
+template <class Out>
+struct LexicalCast<Out, std::string>
+{
+    explicit LexicalCast() = default;
+
+    bool
+    operator()(Out& out, std::string in) const
+    {
+        return LexicalCast<Out, std::string_view>()(out, in);
+    }
+};
 
 // Conversion from null terminated char const*
 template <class Out>
@@ -126,7 +159,8 @@ struct LexicalCast<Out, char const*>
     bool
     operator()(Out& out, char const* in) const
     {
-        return LexicalCast<Out, std::string>()(out, in);
+        assert(in);
+        return LexicalCast<Out, std::string_view>()(out, in);
     }
 };
 
@@ -140,7 +174,8 @@ struct LexicalCast<Out, char*>
     bool
     operator()(Out& out, char* in) const
     {
-        return LexicalCast<Out, std::string>()(out, in);
+        assert(in);
+        return LexicalCast<Out, std::string_view>()(out, in);
     }
 };
 

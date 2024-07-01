@@ -333,6 +333,9 @@ TxFormats::TxFormats()
             {sfTransferFee, soeOPTIONAL},
             {sfIssuer, soeOPTIONAL},
             {sfURI, soeOPTIONAL},
+            {sfAmount, soeOPTIONAL},
+            {sfDestination, soeOPTIONAL},
+            {sfExpiration, soeOPTIONAL},
         },
         commonFields);
 

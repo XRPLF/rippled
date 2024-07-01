@@ -252,8 +252,8 @@ applyCreate(
             : 1};
     sleAMMRoot->setFieldU32(sfSequence, seqno);
     // Ignore reserves requirement, disable the master key, allow default
-    // rippling (AMM LPToken can be used as a token in another AMM, which must
-    // support payments and offer crossing), and enable deposit authorization to
+    // rippling (AMM LPToken can be used in payments and offer crossing but
+    // not as a token in another AMM), and enable deposit authorization to
     // prevent payments into AMM.
     // Note, that the trustlines created by AMM have 0 credit limit.
     // This prevents shifting the balance between accounts via AMM,

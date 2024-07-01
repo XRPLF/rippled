@@ -181,71 +181,71 @@ public:
         Math is avoided if the result is exact. The output is clamped
         to prevent money creation.
     */
-    Amounts
+    [[nodiscard]] Amounts
     ceil_in(Amounts const& amount, STAmount const& limit) const;
 
     template <class In, class Out>
-    TAmounts<In, Out>
-    ceil_in(TAmounts<In, Out> const& amount, In const& limit) const
-    {
-        if (amount.in <= limit)
-            return amount;
+    [[nodiscard]] TAmounts<In, Out>
+    ceil_in(TAmounts<In, Out> const& amount, In const& limit) const;
 
-        // Use the existing STAmount implementation for now, but consider
-        // replacing with code specific to IOUAMount and XRPAmount
-        Amounts stAmt(toSTAmount(amount.in), toSTAmount(amount.out));
-        STAmount stLim(toSTAmount(limit));
-        auto const stRes = ceil_in(stAmt, stLim);
-        return TAmounts<In, Out>(
-            toAmount<In>(stRes.in), toAmount<Out>(stRes.out));
-    }
+    // Some of the underlying rounding functions called by ceil_in() ignored
+    // low order bits that could influence rounding decisions.  This "strict"
+    // method uses underlying functions that pay attention to all the bits.
+    [[nodiscard]] Amounts
+    ceil_in_strict(Amounts const& amount, STAmount const& limit, bool roundUp)
+        const;
+
+    template <class In, class Out>
+    [[nodiscard]] TAmounts<In, Out>
+    ceil_in_strict(
+        TAmounts<In, Out> const& amount,
+        In const& limit,
+        bool roundUp) const;
 
     /** Returns the scaled amount with out capped.
         Math is avoided if the result is exact. The input is clamped
         to prevent money creation.
     */
-    Amounts
+    [[nodiscard]] Amounts
     ceil_out(Amounts const& amount, STAmount const& limit) const;
 
     template <class In, class Out>
-    TAmounts<In, Out>
-    ceil_out(TAmounts<In, Out> const& amount, Out const& limit) const
-    {
-        if (amount.out <= limit)
-            return amount;
+    [[nodiscard]] TAmounts<In, Out>
+    ceil_out(TAmounts<In, Out> const& amount, Out const& limit) const;
 
-        // Use the existing STAmount implementation for now, but consider
-        // replacing with code specific to IOUAMount and XRPAmount
-        Amounts stAmt(toSTAmount(amount.in), toSTAmount(amount.out));
-        STAmount stLim(toSTAmount(limit));
-        auto const stRes = ceil_out(stAmt, stLim);
-        return TAmounts<In, Out>(
-            toAmount<In>(stRes.in), toAmount<Out>(stRes.out));
-    }
-
-    Amounts
+    // Some of the underlying rounding functions called by ceil_out() ignored
+    // low order bits that could influence rounding decisions.  This "strict"
+    // method uses underlying functions that pay attention to all the bits.
+    [[nodiscard]] Amounts
     ceil_out_strict(Amounts const& amount, STAmount const& limit, bool roundUp)
         const;
 
     template <class In, class Out>
-    TAmounts<In, Out>
+    [[nodiscard]] TAmounts<In, Out>
     ceil_out_strict(
         TAmounts<In, Out> const& amount,
         Out const& limit,
-        bool roundUp) const
-    {
-        if (amount.out <= limit)
-            return amount;
+        bool roundUp) const;
 
-        // Use the existing STAmount implementation for now, but consider
-        // replacing with code specific to IOUAMount and XRPAmount
-        Amounts stAmt(toSTAmount(amount.in), toSTAmount(amount.out));
-        STAmount stLim(toSTAmount(limit));
-        auto const stRes = ceil_out_strict(stAmt, stLim, roundUp);
-        return TAmounts<In, Out>(
-            toAmount<In>(stRes.in), toAmount<Out>(stRes.out));
-    }
+private:
+    // The ceil_in and ceil_out methods that deal in TAmount all convert
+    // their arguments to STAoumout and convert the result back to TAmount.
+    // This helper function takes care of all the conversion operations.
+    template <
+        class In,
+        class Out,
+        class Lim,
+        typename FnPtr,
+        std::same_as<bool>... Round>
+    [[nodiscard]] TAmounts<In, Out>
+    ceil_TAmounts_helper(
+        TAmounts<In, Out> const& amount,
+        Lim const& limit,
+        Lim const& limit_cmp,
+        FnPtr ceil_function,
+        Round... round) const;
 
+public:
     /** Returns `true` if lhs is lower quality than `rhs`.
         Lower quality means the taker receives a worse deal.
         Higher quality is better for the taker.
@@ -326,6 +326,84 @@ public:
         return (maxVD - minVD) / minVD;
     }
 };
+
+template <
+    class In,
+    class Out,
+    class Lim,
+    typename FnPtr,
+    std::same_as<bool>... Round>
+TAmounts<In, Out>
+Quality::ceil_TAmounts_helper(
+    TAmounts<In, Out> const& amount,
+    Lim const& limit,
+    Lim const& limit_cmp,
+    FnPtr ceil_function,
+    Round... roundUp) const
+{
+    if (limit_cmp <= limit)
+        return amount;
+
+    // Use the existing STAmount implementation for now, but consider
+    // replacing with code specific to IOUAMount and XRPAmount
+    Amounts stAmt(toSTAmount(amount.in), toSTAmount(amount.out));
+    STAmount stLim(toSTAmount(limit));
+    Amounts const stRes = ((*this).*ceil_function)(stAmt, stLim, roundUp...);
+    return TAmounts<In, Out>(toAmount<In>(stRes.in), toAmount<Out>(stRes.out));
+}
+
+template <class In, class Out>
+TAmounts<In, Out>
+Quality::ceil_in(TAmounts<In, Out> const& amount, In const& limit) const
+{
+    // Construct a function pointer to the function we want to call.
+    static constexpr Amounts (Quality::*ceil_in_fn_ptr)(
+        Amounts const&, STAmount const&) const = &Quality::ceil_in;
+
+    return ceil_TAmounts_helper(amount, limit, amount.in, ceil_in_fn_ptr);
+}
+
+template <class In, class Out>
+TAmounts<In, Out>
+Quality::ceil_in_strict(
+    TAmounts<In, Out> const& amount,
+    In const& limit,
+    bool roundUp) const
+{
+    // Construct a function pointer to the function we want to call.
+    static constexpr Amounts (Quality::*ceil_in_fn_ptr)(
+        Amounts const&, STAmount const&, bool) const = &Quality::ceil_in_strict;
+
+    return ceil_TAmounts_helper(
+        amount, limit, amount.in, ceil_in_fn_ptr, roundUp);
+}
+
+template <class In, class Out>
+TAmounts<In, Out>
+Quality::ceil_out(TAmounts<In, Out> const& amount, Out const& limit) const
+{
+    // Construct a function pointer to the function we want to call.
+    static constexpr Amounts (Quality::*ceil_out_fn_ptr)(
+        Amounts const&, STAmount const&) const = &Quality::ceil_out;
+
+    return ceil_TAmounts_helper(amount, limit, amount.out, ceil_out_fn_ptr);
+}
+
+template <class In, class Out>
+TAmounts<In, Out>
+Quality::ceil_out_strict(
+    TAmounts<In, Out> const& amount,
+    Out const& limit,
+    bool roundUp) const
+{
+    // Construct a function pointer to the function we want to call.
+    static constexpr Amounts (Quality::*ceil_out_fn_ptr)(
+        Amounts const&, STAmount const&, bool) const =
+        &Quality::ceil_out_strict;
+
+    return ceil_TAmounts_helper(
+        amount, limit, amount.out, ceil_out_fn_ptr, roundUp);
+}
 
 /** Calculate the quality of a two-hop path given the two hops.
     @param lhs  The first leg of the path: input to intermediate.
