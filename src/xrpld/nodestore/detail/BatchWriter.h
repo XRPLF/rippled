@@ -20,9 +20,9 @@
 #ifndef RIPPLE_NODESTORE_BATCHWRITER_H_INCLUDED
 #define RIPPLE_NODESTORE_BATCHWRITER_H_INCLUDED
 
-#include <ripple/nodestore/Scheduler.h>
-#include <ripple/nodestore/Task.h>
-#include <ripple/nodestore/Types.h>
+#include <xrpld/nodestore/Scheduler.h>
+#include <xrpld/nodestore/Task.h>
+#include <xrpld/nodestore/Types.h>
 #include <condition_variable>
 #include <mutex>
 

@@ -20,10 +20,10 @@
 #ifndef RIPPLE_APP_TX_TRANSACTOR_H_INCLUDED
 #define RIPPLE_APP_TX_TRANSACTOR_H_INCLUDED
 
-#include <ripple/app/tx/applySteps.h>
-#include <ripple/app/tx/impl/ApplyContext.h>
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/beast/utility/Journal.h>
+#include <xrpld/app/tx/applySteps.h>
+#include <xrpld/app/tx/detail/ApplyContext.h>
+#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/beast/utility/Journal.h>
 
 namespace ripple {
 

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/contract.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
 #include <cstdlib>
 #include <iostream>
 

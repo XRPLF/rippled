@@ -20,17 +20,17 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGER_H_INCLUDED
 
-#include <ripple/basics/CountedObject.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/core/TimeKeeper.h>
-#include <ripple/ledger/CachedView.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Book.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/STLedgerEntry.h>
-#include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/TxMeta.h>
-#include <ripple/shamap/SHAMap.h>
+#include <xrpld/core/TimeKeeper.h>
+#include <xrpld/ledger/CachedView.h>
+#include <xrpld/ledger/View.h>
+#include <xrpld/shamap/SHAMap.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxMeta.h>
 #include <mutex>
 
 namespace ripple {

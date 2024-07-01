@@ -21,9 +21,9 @@
 #ifndef RIPPLE_CORE_PG_H_INCLUDED
 #define RIPPLE_CORE_PG_H_INCLUDED
 
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/Protocol.h>
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Protocol.h>
 #include <boost/lexical_cast.hpp>
 #include <atomic>
 #include <chrono>

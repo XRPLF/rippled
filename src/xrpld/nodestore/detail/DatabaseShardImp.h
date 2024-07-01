@@ -20,9 +20,9 @@
 #ifndef RIPPLE_NODESTORE_DATABASESHARDIMP_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASESHARDIMP_H_INCLUDED
 
-#include <ripple/nodestore/DatabaseShard.h>
-#include <ripple/nodestore/impl/Shard.h>
-#include <ripple/nodestore/impl/TaskQueue.h>
+#include <xrpld/nodestore/DatabaseShard.h>
+#include <xrpld/nodestore/detail/Shard.h>
+#include <xrpld/nodestore/detail/TaskQueue.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
 

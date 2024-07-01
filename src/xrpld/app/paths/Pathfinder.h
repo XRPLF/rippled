@@ -20,12 +20,12 @@
 #ifndef RIPPLE_APP_PATHS_PATHFINDER_H_INCLUDED
 #define RIPPLE_APP_PATHS_PATHFINDER_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/paths/RippleLineCache.h>
-#include <ripple/basics/CountedObject.h>
-#include <ripple/core/LoadEvent.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/STPathSet.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/paths/RippleLineCache.h>
+#include <xrpld/core/LoadEvent.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STPathSet.h>
 
 namespace ripple {
 

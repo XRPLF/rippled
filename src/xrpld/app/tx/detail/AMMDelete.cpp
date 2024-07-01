@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/AMMDelete.h>
+#include <xrpld/app/tx/detail/AMMDelete.h>
 
-#include <ripple/app/misc/AMMUtils.h>
-#include <ripple/ledger/Sandbox.h>
-#include <ripple/protocol/AMMCore.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/TER.h>
-#include <ripple/protocol/TxFlags.h>
+#include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/ledger/Sandbox.h>
+#include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 

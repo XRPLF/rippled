@@ -20,7 +20,7 @@
 #ifndef BEAST_INSIGHT_GROUP_H_INCLUDED
 #define BEAST_INSIGHT_GROUP_H_INCLUDED
 
-#include <ripple/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Collector.h>
 
 #include <memory>
 #include <string>

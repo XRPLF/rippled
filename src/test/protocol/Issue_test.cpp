@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/UnorderedContainers.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/Book.h>
-#include <ripple/protocol/Issue.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Issue.h>
 #include <map>
 #include <set>
 #include <typeinfo>

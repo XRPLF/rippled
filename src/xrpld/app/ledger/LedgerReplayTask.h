@@ -20,9 +20,9 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGERREPLAYTASK_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGERREPLAYTASK_H_INCLUDED
 
-#include <ripple/app/ledger/InboundLedger.h>
-#include <ripple/app/ledger/impl/TimeoutCounter.h>
-#include <ripple/app/main/Application.h>
+#include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/detail/TimeoutCounter.h>
+#include <xrpld/app/main/Application.h>
 
 #include <memory>
 #include <vector>

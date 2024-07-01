@@ -20,8 +20,8 @@
 #ifndef RIPPLE_BASICS_LOG_H_INCLUDED
 #define RIPPLE_BASICS_LOG_H_INCLUDED
 
-#include <ripple/basics/UnorderedContainers.h>
-#include <ripple/beast/utility/Journal.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <boost/beast/core/string.hpp>
 #include <boost/filesystem.hpp>
 #include <map>

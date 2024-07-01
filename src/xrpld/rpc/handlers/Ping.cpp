@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/Role.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

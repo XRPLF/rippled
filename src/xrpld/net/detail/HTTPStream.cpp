@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/net/HTTPStream.h>
+#include <xrpld/net/HTTPStream.h>
 
 namespace ripple {
 

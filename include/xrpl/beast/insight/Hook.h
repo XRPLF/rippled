@@ -20,7 +20,7 @@
 #ifndef BEAST_INSIGHT_HOOK_H_INCLUDED
 #define BEAST_INSIGHT_HOOK_H_INCLUDED
 
-#include <ripple/beast/insight/HookImpl.h>
+#include <xrpl/beast/insight/HookImpl.h>
 
 #include <memory>
 

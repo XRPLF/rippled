@@ -20,8 +20,8 @@
 #ifndef RIPPLE_LEDGER_SANDBOX_H_INCLUDED
 #define RIPPLE_LEDGER_SANDBOX_H_INCLUDED
 
-#include <ripple/ledger/RawView.h>
-#include <ripple/ledger/detail/ApplyViewBase.h>
+#include <xrpld/ledger/RawView.h>
+#include <xrpld/ledger/detail/ApplyViewBase.h>
 
 namespace ripple {
 

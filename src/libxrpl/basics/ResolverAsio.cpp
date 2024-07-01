@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/ResolverAsio.h>
-#include <ripple/beast/net/IPAddressConversion.h>
-#include <ripple/beast/net/IPEndpoint.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/ResolverAsio.h>
+#include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <boost/asio.hpp>
 #include <atomic>
 #include <cassert>
@@ -232,7 +232,8 @@ public:
 
     //-------------------------------------------------------------------------
     // Resolver
-    void do_stop(CompletionCounter)
+    void
+    do_stop(CompletionCounter)
     {
         assert(m_stop_called == true);
 
@@ -330,7 +331,8 @@ public:
             std::string(port_first, port_last));
     }
 
-    void do_work(CompletionCounter)
+    void
+    do_work(CompletionCounter)
     {
         if (m_stop_called == true)
             return;

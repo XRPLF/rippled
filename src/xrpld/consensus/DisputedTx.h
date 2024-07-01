@@ -20,13 +20,13 @@
 #ifndef RIPPLE_APP_CONSENSUS_IMPL_DISPUTEDTX_H_INCLUDED
 #define RIPPLE_APP_CONSENSUS_IMPL_DISPUTEDTX_H_INCLUDED
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/base_uint.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/consensus/ConsensusParms.h>
-#include <ripple/json/json_writer.h>
-#include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/UintTypes.h>
+#include <xrpld/consensus/ConsensusParms.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_writer.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <boost/container/flat_map.hpp>
 #include <memory>
 

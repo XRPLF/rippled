@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Archive.h>
-#include <ripple/basics/contract.h>
+#include <xrpl/basics/Archive.h>
+#include <xrpl/basics/contract.h>
 
 #include <archive.h>
 #include <archive_entry.h>

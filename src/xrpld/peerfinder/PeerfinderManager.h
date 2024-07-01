@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
 #define RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
 
-#include <ripple/beast/clock/abstract_clock.h>
-#include <ripple/beast/utility/PropertyStream.h>
-#include <ripple/core/Config.h>
-#include <ripple/peerfinder/Slot.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/peerfinder/Slot.h>
+#include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/beast/utility/PropertyStream.h>
 #include <boost/asio/ip/tcp.hpp>
 
 namespace ripple {

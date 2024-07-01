@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/HashRouter.h>
-#include <ripple/app/tx/apply.h>
-#include <ripple/app/tx/applySteps.h>
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/Feature.h>
+#include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/tx/apply.h>
+#include <xrpld/app/tx/applySteps.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Feature.h>
 
 namespace ripple {
 

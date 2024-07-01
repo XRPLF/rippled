@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/app/reporting/P2pProxy.h>
-#include <ripple/app/reporting/ReportingETL.h>
-#include <ripple/json/json_reader.h>
-#include <ripple/json/json_writer.h>
+#include <xrpld/app/reporting/P2pProxy.h>
+#include <xrpld/app/reporting/ReportingETL.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_writer.h>
 
 namespace ripple {
 

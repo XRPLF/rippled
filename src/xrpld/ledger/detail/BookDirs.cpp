@@ -18,9 +18,9 @@
 */
 //==============================================================================
 
-#include <ripple/ledger/BookDirs.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Indexes.h>
+#include <xrpld/ledger/BookDirs.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/protocol/Indexes.h>
 
 namespace ripple {
 

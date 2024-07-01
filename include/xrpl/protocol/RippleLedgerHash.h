@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_RIPPLELEDGERHASH_H_INCLUDED
 #define RIPPLE_PROTOCOL_RIPPLELEDGERHASH_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
+#include <xrpl/basics/base_uint.h>
 
 namespace ripple {
 

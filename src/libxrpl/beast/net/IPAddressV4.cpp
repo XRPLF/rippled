@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/beast/net/IPAddressV4.h>
+#include <xrpl/beast/net/IPAddressV4.h>
 
 #include <sstream>
 #include <stdexcept>

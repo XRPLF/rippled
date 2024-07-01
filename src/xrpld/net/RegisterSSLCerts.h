@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NET_REGISTER_SSL_CERTS_H_INCLUDED
 #define RIPPLE_NET_REGISTER_SSL_CERTS_H_INCLUDED
 
-#include <ripple/basics/Log.h>
+#include <xrpl/basics/Log.h>
 #include <boost/asio/ssl/context.hpp>
 
 namespace ripple {

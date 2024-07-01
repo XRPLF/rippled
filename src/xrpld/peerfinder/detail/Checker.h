@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_CHECKER_H_INCLUDED
 #define RIPPLE_PEERFINDER_CHECKER_H_INCLUDED
 
-#include <ripple/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/net/IPAddressConversion.h>
 #include <boost/asio/detail/handler_invoke_helpers.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>

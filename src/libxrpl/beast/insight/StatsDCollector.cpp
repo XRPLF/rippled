@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/beast/core/List.h>
-#include <ripple/beast/insight/CounterImpl.h>
-#include <ripple/beast/insight/EventImpl.h>
-#include <ripple/beast/insight/GaugeImpl.h>
-#include <ripple/beast/insight/HookImpl.h>
-#include <ripple/beast/insight/MeterImpl.h>
-#include <ripple/beast/insight/StatsDCollector.h>
-#include <ripple/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/core/List.h>
+#include <xrpl/beast/insight/CounterImpl.h>
+#include <xrpl/beast/insight/EventImpl.h>
+#include <xrpl/beast/insight/GaugeImpl.h>
+#include <xrpl/beast/insight/HookImpl.h>
+#include <xrpl/beast/insight/MeterImpl.h>
+#include <xrpl/beast/insight/StatsDCollector.h>
+#include <xrpl/beast/net/IPAddressConversion.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <cassert>
 #include <climits>

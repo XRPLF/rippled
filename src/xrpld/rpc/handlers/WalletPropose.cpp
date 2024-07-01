@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
-#include <ripple/basics/strHex.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/KeyType.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/RPCErr.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/Seed.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/handlers/WalletPropose.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/handlers/WalletPropose.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/jss.h>
 #include <cmath>
 #include <ed25519.h>
 #include <map>

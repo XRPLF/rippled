@@ -20,16 +20,16 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGERTOJSON_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGERTOJSON_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/misc/TxQ.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/json/Object.h>
-#include <ripple/protocol/STTx.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/protocol/serialize.h>
-#include <ripple/rpc/Context.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/misc/TxQ.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/json/Object.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/serialize.h>
 
 namespace ripple {
 

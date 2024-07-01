@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/GRPCServer.h>
-#include <ripple/app/reporting/P2pProxy.h>
-#include <ripple/beast/core/CurrentThreadName.h>
-#include <ripple/resource/Fees.h>
+#include <xrpld/app/main/GRPCServer.h>
+#include <xrpld/app/reporting/P2pProxy.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/resource/Fees.h>
 
-#include <ripple/beast/net/IPAddressConversion.h>
-#include <ripple/core/ConfigSections.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpl/beast/net/IPAddressConversion.h>
 
 namespace ripple {
 

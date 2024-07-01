@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/STCurrency.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/jss.h>
 
-#include <ripple/basics/contract.h>
+#include <xrpl/basics/contract.h>
 
 namespace ripple {
 
@@ -50,7 +50,8 @@ STCurrency::getText() const
     return to_string(currency_);
 }
 
-Json::Value STCurrency::getJson(JsonOptions) const
+Json::Value
+STCurrency::getJson(JsonOptions) const
 {
     return to_string(currency_);
 }

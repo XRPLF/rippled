@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/AmendmentTable.h>
-#include <ripple/app/rdb/Wallet.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/STValidation.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/jss.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/AmendmentTable.h>
+#include <xrpld/app/rdb/Wallet.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 #include <boost/format.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>

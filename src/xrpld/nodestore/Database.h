@@ -20,11 +20,11 @@
 #ifndef RIPPLE_NODESTORE_DATABASE_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASE_H_INCLUDED
 
-#include <ripple/basics/TaggedCache.h>
-#include <ripple/nodestore/Backend.h>
-#include <ripple/nodestore/NodeObject.h>
-#include <ripple/nodestore/Scheduler.h>
-#include <ripple/protocol/SystemParameters.h>
+#include <xrpld/nodestore/Backend.h>
+#include <xrpld/nodestore/NodeObject.h>
+#include <xrpld/nodestore/Scheduler.h>
+#include <xrpl/basics/TaggedCache.h>
+#include <xrpl/protocol/SystemParameters.h>
 
 #include <condition_variable>
 #include <thread>

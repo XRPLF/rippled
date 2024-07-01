@@ -20,9 +20,9 @@
 #ifndef RIPPLE_NODESTORE_DATABASENODEIMP_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASENODEIMP_H_INCLUDED
 
-#include <ripple/basics/TaggedCache.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/nodestore/Database.h>
+#include <xrpld/nodestore/Database.h>
+#include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/chrono.h>
 
 namespace ripple {
 namespace NodeStore {
@@ -106,7 +106,8 @@ public:
     store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
         override;
 
-    bool isSameDB(std::uint32_t, std::uint32_t) override
+    bool
+    isSameDB(std::uint32_t, std::uint32_t) override
     {
         // only one database
         return true;

@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/strHex.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

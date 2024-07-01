@@ -17,18 +17,18 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/InvariantCheck.h>
+#include <xrpld/app/tx/detail/InvariantCheck.h>
 
-#include <ripple/app/tx/impl/details/NFTokenUtils.h>
-#include <ripple/basics/FeeUnits.h>
-#include <ripple/basics/Log.h>
-#include <ripple/ledger/ReadView.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/STArray.h>
-#include <ripple/protocol/SystemParameters.h>
-#include <ripple/protocol/TxFormats.h>
-#include <ripple/protocol/nftPageMask.h>
+#include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/ledger/ReadView.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/basics/FeeUnits.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/nftPageMask.h>
 
 namespace ripple {
 

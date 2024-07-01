@@ -20,11 +20,11 @@
 #ifndef RIPPLE_PROTOCOL_AMMCORE_H_INCLUDED
 #define RIPPLE_PROTOCOL_AMMCORE_H_INCLUDED
 
-#include <ripple/basics/Number.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/Issue.h>
-#include <ripple/protocol/TER.h>
-#include <ripple/protocol/UintTypes.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {
 

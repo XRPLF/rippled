@@ -20,8 +20,8 @@
 #ifndef RIPPLE_CORE_TIMEKEEPER_H_INCLUDED
 #define RIPPLE_CORE_TIMEKEEPER_H_INCLUDED
 
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/clock/abstract_clock.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/clock/abstract_clock.h>
 
 #include <atomic>
 

@@ -20,11 +20,11 @@
 #ifndef RIPPLE_APP_RDB_BACKEND_DETAIL_SHARD_H_INCLUDED
 #define RIPPLE_APP_RDB_BACKEND_DETAIL_SHARD_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/rdb/RelationalDatabase.h>
-#include <ripple/app/rdb/UnitaryShard.h>
-#include <ripple/core/Config.h>
-#include <ripple/protocol/RippleLedgerHash.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/rdb/RelationalDatabase.h>
+#include <xrpld/app/rdb/UnitaryShard.h>
+#include <xrpld/core/Config.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
 #include <boost/filesystem.hpp>
 
 namespace ripple {

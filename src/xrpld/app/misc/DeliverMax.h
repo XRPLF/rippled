@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_MISC_DELIVERMAX_H_INCLUDED
 #define RIPPLE_APP_MISC_DELIVERMAX_H_INCLUDED
 
-#include <ripple/protocol/TxFormats.h>
+#include <xrpl/protocol/TxFormats.h>
 
 #include <functional>
 #include <memory>

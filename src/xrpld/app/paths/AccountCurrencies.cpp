@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/AccountCurrencies.h>
+#include <xrpld/app/paths/AccountCurrencies.h>
 
 namespace ripple {
 

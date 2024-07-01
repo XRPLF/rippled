@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/PayChan.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/ledger/ApplyView.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/PayChan.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/st.h>
+#include <xrpld/app/tx/detail/PayChan.h>
+#include <xrpld/ledger/ApplyView.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/PayChan.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/st.h>
 
 namespace ripple {
 

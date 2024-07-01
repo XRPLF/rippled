@@ -17,16 +17,18 @@
 */
 //==============================================================================
 
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/basics/ByteUtilities.h>
-#include <ripple/basics/safe_cast.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/beast/unit_test/thread.h>
-#include <ripple/beast/utility/temp_dir.h>
-#include <ripple/beast/xor_shift_engine.h>
-#include <ripple/nodestore/DummyScheduler.h>
-#include <ripple/nodestore/Manager.h>
-#include <ripple/unity/rocksdb.h>
+#include <test/nodestore/TestBase.h>
+#include <test/unit_test/SuiteJournal.h>
+#include <xrpld/nodestore/DummyScheduler.h>
+#include <xrpld/nodestore/Manager.h>
+#include <xrpld/unity/rocksdb.h>
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/thread.h>
+#include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/beast/xor_shift_engine.h>
 #include <boost/algorithm/string.hpp>
 #include <atomic>
 #include <chrono>
@@ -36,8 +38,6 @@
 #include <random>
 #include <sstream>
 #include <stdexcept>
-#include <test/nodestore/TestBase.h>
-#include <test/unit_test/SuiteJournal.h>
 #include <thread>
 #include <type_traits>
 #include <utility>

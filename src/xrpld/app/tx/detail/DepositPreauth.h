@@ -20,7 +20,7 @@
 #ifndef RIPPLE_TX_DEPOSIT_PREAUTH_H_INCLUDED
 #define RIPPLE_TX_DEPOSIT_PREAUTH_H_INCLUDED
 
-#include <ripple/app/tx/impl/Transactor.h>
+#include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
 

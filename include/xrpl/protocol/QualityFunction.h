@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PROTOCOL_QUALITYFUNCTION_H_INCLUDED
 #define RIPPLE_PROTOCOL_QUALITYFUNCTION_H_INCLUDED
 
-#include <ripple/basics/Number.h>
-#include <ripple/protocol/AMMCore.h>
-#include <ripple/protocol/Quality.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/Quality.h>
 
 namespace ripple {
 

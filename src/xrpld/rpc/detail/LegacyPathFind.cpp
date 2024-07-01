@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/core/Job.h>
-#include <ripple/core/JobQueue.h>
-#include <ripple/rpc/impl/LegacyPathFind.h>
-#include <ripple/rpc/impl/Tuning.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/LoadFeeTrack.h>
+#include <xrpld/core/Job.h>
+#include <xrpld/core/JobQueue.h>
+#include <xrpld/rpc/detail/LegacyPathFind.h>
+#include <xrpld/rpc/detail/Tuning.h>
 
 namespace ripple {
 namespace RPC {

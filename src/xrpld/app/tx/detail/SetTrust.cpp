@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/SetTrust.h>
-#include <ripple/basics/Log.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/AMMCore.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/protocol/st.h>
+#include <xrpld/app/tx/detail/SetTrust.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/st.h>
 
 namespace ripple {
 

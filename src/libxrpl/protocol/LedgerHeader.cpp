@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/LedgerHeader.h>
+#include <xrpl/protocol/LedgerHeader.h>
 
 namespace ripple {
 

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NET_HTTPSTREAM_H_INCLUDED
 #define RIPPLE_NET_HTTPSTREAM_H_INCLUDED
 
-#include <ripple/core/Config.h>
-#include <ripple/net/HTTPClientSSLContext.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/net/HTTPClientSSLContext.h>
 
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/strand.hpp>

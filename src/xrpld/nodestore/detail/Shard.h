@@ -20,17 +20,17 @@
 #ifndef RIPPLE_NODESTORE_SHARD_H_INCLUDED
 #define RIPPLE_NODESTORE_SHARD_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/rdb/RelationalDatabase.h>
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/basics/KeyCache.h>
-#include <ripple/basics/MathUtilities.h>
-#include <ripple/basics/RangeSet.h>
-#include <ripple/basics/ThreadSafetyAnalysis.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/nodestore/NodeObject.h>
-#include <ripple/nodestore/Scheduler.h>
-#include <ripple/nodestore/impl/DeterministicShard.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/rdb/RelationalDatabase.h>
+#include <xrpld/core/DatabaseCon.h>
+#include <xrpld/nodestore/NodeObject.h>
+#include <xrpld/nodestore/Scheduler.h>
+#include <xrpld/nodestore/detail/DeterministicShard.h>
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/KeyCache.h>
+#include <xrpl/basics/MathUtilities.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/ThreadSafetyAnalysis.h>
 
 #include <boost/filesystem.hpp>
 #include <nudb/nudb.hpp>

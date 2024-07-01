@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NODESTORE_ENCODEDBLOB_H_INCLUDED
 #define RIPPLE_NODESTORE_ENCODEDBLOB_H_INCLUDED
 
-#include <ripple/basics/Buffer.h>
-#include <ripple/nodestore/NodeObject.h>
+#include <xrpld/nodestore/NodeObject.h>
+#include <xrpl/basics/Buffer.h>
 #include <boost/align/align_up.hpp>
 #include <algorithm>
 #include <array>

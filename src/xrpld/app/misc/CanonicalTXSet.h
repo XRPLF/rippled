@@ -20,10 +20,10 @@
 #ifndef RIPPLE_APP_MISC_CANONICALTXSET_H_INCLUDED
 #define RIPPLE_APP_MISC_CANONICALTXSET_H_INCLUDED
 
-#include <ripple/basics/CountedObject.h>
-#include <ripple/protocol/RippleLedgerHash.h>
-#include <ripple/protocol/STTx.h>
-#include <ripple/protocol/SeqProxy.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 
 namespace ripple {
 

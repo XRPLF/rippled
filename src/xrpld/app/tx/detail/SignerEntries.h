@@ -20,13 +20,13 @@
 #ifndef RIPPLE_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED
 #define RIPPLE_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED
 
-#include <ripple/app/tx/impl/Transactor.h>  // NotTEC
-#include <ripple/basics/Expected.h>         //
-#include <ripple/beast/utility/Journal.h>   // beast::Journal
-#include <ripple/protocol/Rules.h>          // Rules
-#include <ripple/protocol/STTx.h>           // STTx::maxMultiSigners
-#include <ripple/protocol/TER.h>            // temMALFORMED
-#include <ripple/protocol/UintTypes.h>      // AccountID
+#include <xrpld/app/tx/detail/Transactor.h>  // NotTEC
+#include <xrpl/basics/Expected.h>            //
+#include <xrpl/beast/utility/Journal.h>      // beast::Journal
+#include <xrpl/protocol/Rules.h>             // Rules
+#include <xrpl/protocol/STTx.h>              // STTx::maxMultiSigners
+#include <xrpl/protocol/TER.h>               // temMALFORMED
+#include <xrpl/protocol/UintTypes.h>         // AccountID
 #include <optional>
 
 namespace ripple {

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NODESTORE_DATABASEROTATINGIMP_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASEROTATINGIMP_H_INCLUDED
 
-#include <ripple/nodestore/DatabaseRotating.h>
+#include <xrpld/nodestore/DatabaseRotating.h>
 
 #include <mutex>
 
@@ -62,7 +62,8 @@ public:
     void
     importDatabase(Database& source) override;
 
-    bool isSameDB(std::uint32_t, std::uint32_t) override
+    bool
+    isSameDB(std::uint32_t, std::uint32_t) override
     {
         // rotating store acts as one logical database
         return true;

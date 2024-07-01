@@ -20,8 +20,8 @@
 #ifndef RIPPLE_SERVER_SSLWSPEER_H_INCLUDED
 #define RIPPLE_SERVER_SSLWSPEER_H_INCLUDED
 
-#include <ripple/server/WSSession.h>
-#include <ripple/server/impl/BaseHTTPPeer.h>
+#include <xrpl/server/WSSession.h>
+#include <xrpl/server/detail/BaseHTTPPeer.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/stream.hpp>

@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_MAIN_LOADMANAGER_H_INCLUDED
 #define RIPPLE_APP_MAIN_LOADMANAGER_H_INCLUDED
 
-#include <ripple/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <atomic>
 #include <condition_variable>
 #include <memory>

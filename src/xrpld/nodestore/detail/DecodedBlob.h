@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NODESTORE_DECODEDBLOB_H_INCLUDED
 #define RIPPLE_NODESTORE_DECODEDBLOB_H_INCLUDED
 
-#include <ripple/nodestore/NodeObject.h>
+#include <xrpld/nodestore/NodeObject.h>
 
 namespace ripple {
 namespace NodeStore {

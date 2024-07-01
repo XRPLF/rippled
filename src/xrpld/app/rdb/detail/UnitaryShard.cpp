@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/app/rdb/UnitaryShard.h>
-#include <ripple/basics/StringUtilities.h>
+#include <xrpld/app/rdb/UnitaryShard.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <boost/format.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/CollectorManager.h>
+#include <xrpld/app/main/CollectorManager.h>
 #include <memory>
 
 namespace ripple {

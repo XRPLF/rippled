@@ -17,20 +17,20 @@
 */
 //==============================================================================
 
-#include <ripple/unity/rocksdb.h>
+#include <xrpld/unity/rocksdb.h>
 
 #if RIPPLE_ROCKSDB_AVAILABLE
 
-#include <ripple/basics/ByteUtilities.h>
-#include <ripple/basics/contract.h>
-#include <ripple/basics/safe_cast.h>
-#include <ripple/beast/core/CurrentThreadName.h>
-#include <ripple/core/Config.h>  // VFALCO Bad dependency
-#include <ripple/nodestore/Factory.h>
-#include <ripple/nodestore/Manager.h>
-#include <ripple/nodestore/impl/BatchWriter.h>
-#include <ripple/nodestore/impl/DecodedBlob.h>
-#include <ripple/nodestore/impl/EncodedBlob.h>
+#include <xrpld/core/Config.h>  // VFALCO Bad dependency
+#include <xrpld/nodestore/Factory.h>
+#include <xrpld/nodestore/Manager.h>
+#include <xrpld/nodestore/detail/BatchWriter.h>
+#include <xrpld/nodestore/detail/DecodedBlob.h>
+#include <xrpld/nodestore/detail/EncodedBlob.h>
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
 
 #include <atomic>
 #include <memory>

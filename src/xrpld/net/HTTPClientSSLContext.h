@@ -20,10 +20,10 @@
 #ifndef RIPPLE_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
 #define RIPPLE_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/contract.h>
-#include <ripple/core/Config.h>
-#include <ripple/net/RegisterSSLCerts.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/net/RegisterSSLCerts.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>

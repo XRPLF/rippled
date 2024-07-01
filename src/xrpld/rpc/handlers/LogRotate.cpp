@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/PerfLog.h>
-#include <ripple/rpc/impl/Handler.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/perflog/PerfLog.h>
+#include <xrpld/rpc/detail/Handler.h>
+#include <xrpl/basics/Log.h>
 
 namespace ripple {
 

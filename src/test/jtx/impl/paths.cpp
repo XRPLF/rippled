@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/Pathfinder.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx/paths.h>
+#include <xrpld/app/paths/Pathfinder.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
