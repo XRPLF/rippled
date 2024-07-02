@@ -8,13 +8,18 @@ install (
     opts
     ripple_syslibs
     ripple_boost
-    xrpl_core
     xrpl.libpb
+    xrpl.libxrpl
   EXPORT RippleExports
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
   INCLUDES DESTINATION include)
+
+install(
+  DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/xrpl"
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+)
 
 install (EXPORT RippleExports
   FILE RippleTargets.cmake
@@ -31,7 +36,7 @@ if (is_root_project)
   set_target_properties(rippled PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
   install (
     FILES
-      ${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake/RippleConfig.cmake
+      ${CMAKE_CURRENT_SOURCE_DIR}/cmake/RippleConfig.cmake
       ${CMAKE_CURRENT_BINARY_DIR}/RippleConfigVersion.cmake
     DESTINATION lib/cmake/ripple)
   # sample configs should not overwrite existing files
@@ -49,3 +54,17 @@ if (is_root_project)
     copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/validators-example.txt\" etc validators.txt)
   ")
 endif ()
+
+if(NOT WIN32)
+  install(
+    CODE "file(CREATE_LINK xrpl \
+      \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/ripple SYMBOLIC)"
+  )
+endif()
+
+if(NOT WIN32)
+  install(
+    CODE "file(CREATE_LINK rippled${suffix} \
+      \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/xrpld${suffix} SYMBOLIC)"
+  )
+endif()
