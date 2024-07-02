@@ -113,6 +113,16 @@ initializeFeeAuctionVote(
     Issue const& lptIssue,
     std::uint16_t tfee);
 
+/** Return true if the Liquidity Provider is the only AMM provider, false
+ * otherwise. Return tecINTERNAL if encountered an unexpected condition,
+ * for instance Liquidity Provider has more than one LPToken trustline.
+ */
+Expected<bool, TER>
+isOnlyLiquidityProvider(
+    ReadView const& view,
+    Issue const& ammIssue,
+    AccountID const& lpAccount);
+
 }  // namespace ripple
 
 #endif  // RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED

@@ -73,7 +73,7 @@ base64_encode(std::string const& s)
 }
 
 std::string
-base64_decode(std::string const& data);
+base64_decode(std::string_view data);
 
 }  // namespace ripple
 
