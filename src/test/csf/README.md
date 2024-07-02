@@ -81,7 +81,7 @@ for (Peer * p : validators)
 sim.run(1);
 
 std::cout << (simDur.stop - simDur.start).count() << std::endl;
-assert(sim.synchronized());
+XRPL_ASSERT(sim.synchronized());
 ```
 
 ### `Sim` and `PeerGroup`

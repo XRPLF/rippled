@@ -318,7 +318,7 @@ populateJsonResponse(
 
         if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
         {
-            assert(!args.binary);
+            XRPL_ASSERT(!args.binary);
 
             for (auto const& [txn, txnMeta] : *txnsData)
             {
@@ -363,13 +363,13 @@ populateJsonResponse(
                         insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
                     }
                     else
-                        assert(false && "Missing transaction medatata");
+                        XRPL_ASSERT(false && "Missing transaction medatata");
                 }
             }
         }
         else
         {
-            assert(args.binary);
+            XRPL_ASSERT(args.binary);
 
             for (auto const& binaryData :
                  std::get<TxnsDataBinary>(result.transactions))

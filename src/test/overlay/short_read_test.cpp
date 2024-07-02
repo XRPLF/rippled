@@ -21,12 +21,12 @@
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
-#include <cassert>
 #include <condition_variable>
 #include <functional>
 #include <memory>
@@ -112,7 +112,7 @@ private:
         ~Base()
         {
             // Derived class must call wait() in the destructor
-            assert(list_.empty());
+            XRPL_ASSERT(list_.empty());
         }
 
         void

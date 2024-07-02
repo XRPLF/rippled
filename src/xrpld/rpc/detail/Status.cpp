@@ -37,7 +37,7 @@ Status::codeString() const
         std::string s1, s2;
 
         auto success = transResultInfo(toTER(), s1, s2);
-        assert(success);
+        XRPL_ASSERT(success);
         (void)success;
 
         return s1 + ": " + s2;
@@ -51,7 +51,7 @@ Status::codeString() const
         return sStr.str();
     }
 
-    assert(false);
+    XRPL_UNREACHABLE();
     return "";
 }
 

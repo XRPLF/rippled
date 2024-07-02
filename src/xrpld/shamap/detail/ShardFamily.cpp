@@ -30,7 +30,7 @@ static NodeStore::Database&
 getShardStore(Application& app)
 {
     auto const dbPtr = app.getShardStore();
-    assert(dbPtr);
+    XRPL_ASSERT(dbPtr);
     return *dbPtr;
 }
 

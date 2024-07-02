@@ -83,7 +83,7 @@ BatchWriter::writeBatch()
             std::lock_guard sl(mWriteMutex);
 
             mWriteSet.swap(set);
-            assert(mWriteSet.empty());
+            XRPL_ASSERT(mWriteSet.empty());
             mWriteLoad = set.size();
 
             if (set.empty())

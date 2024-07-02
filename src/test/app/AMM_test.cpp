@@ -6086,7 +6086,7 @@ private:
                 boost::regex_search(std::get<0>(t), match, rx);
             auto const poolOutIsXRP =
                 boost::regex_search(std::get<1>(t), match, rx);
-            assert(!(poolInIsXRP && poolOutIsXRP));
+            XRPL_ASSERT(!(poolInIsXRP && poolOutIsXRP));
             auto const poolIn = getPool(std::get<0>(t), poolInIsXRP);
             auto const poolOut = getPool(std::get<1>(t), poolOutIsXRP);
             try

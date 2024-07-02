@@ -131,7 +131,7 @@ public:
     Status
     fetch(void const* key, std::shared_ptr<NodeObject>* pObject) override
     {
-        assert(db_);
+        XRPL_ASSERT(db_);
         uint256 const hash(uint256::fromVoid(key));
 
         std::lock_guard _(db_->mutex);
@@ -167,7 +167,7 @@ public:
     void
     store(std::shared_ptr<NodeObject> const& object) override
     {
-        assert(db_);
+        XRPL_ASSERT(db_);
         std::lock_guard _(db_->mutex);
         db_->table.emplace(object->getHash(), object);
     }
@@ -187,7 +187,7 @@ public:
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        assert(db_);
+        XRPL_ASSERT(db_);
         for (auto const& e : db_->table)
             f(e.second);
     }

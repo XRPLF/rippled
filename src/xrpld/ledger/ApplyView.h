@@ -276,7 +276,7 @@ public:
     {
         if (key.type != ltOFFER)
         {
-            assert(!"Only Offers are appended to book directories.  "
+            XRPL_ASSERT(!"Only Offers are appended to book directories.  "
                 "Call dirInsert() instead.");
             return std::nullopt;
         }

@@ -51,7 +51,7 @@ constexpr int numTokenTypeIndexes = 9;
 [[nodiscard]] inline auto
 tokenTypeAndSize(int i) -> std::tuple<ripple::TokenType, std::size_t>
 {
-    assert(i < numTokenTypeIndexes);
+    XRPL_ASSERT(i < numTokenTypeIndexes);
 
     switch (i)
     {

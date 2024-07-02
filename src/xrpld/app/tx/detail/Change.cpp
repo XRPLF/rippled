@@ -149,7 +149,7 @@ Change::doApply()
         case ttUNL_MODIFY:
             return applyUNLModify();
         default:
-            assert(0);
+            XRPL_ASSERT(0);
             return tefFAILURE;
     }
 }
@@ -157,7 +157,7 @@ Change::doApply()
 void
 Change::preCompute()
 {
-    assert(account_ == beast::zero);
+    XRPL_ASSERT(account_ == beast::zero);
 }
 
 void

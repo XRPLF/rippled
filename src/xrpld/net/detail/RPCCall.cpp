@@ -992,7 +992,7 @@ private:
     parseTransactionEntry(Json::Value const& jvParams)
     {
         // Parameter count should have already been verified.
-        assert(jvParams.size() == 2);
+        XRPL_ASSERT(jvParams.size() == 2);
 
         std::string const txHash = jvParams[0u].asString();
         if (txHash.length() != 64)

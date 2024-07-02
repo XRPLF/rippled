@@ -225,7 +225,7 @@ OrderBookDB::makeBookListeners(Book const& book)
         ret = std::make_shared<BookListeners>();
 
         mListeners[book] = ret;
-        assert(getBookListeners(book) == ret);
+        XRPL_ASSERT(getBookListeners(book) == ret);
     }
 
     return ret;

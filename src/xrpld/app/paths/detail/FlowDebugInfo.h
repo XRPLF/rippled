@@ -89,7 +89,7 @@ struct FlowDebugInfo
         void
         pushLiquiditySrc(EitherAmount const& eIn, EitherAmount const& eOut)
         {
-            assert(!liquiditySrcIn.empty());
+            XRPL_ASSERT(!liquiditySrcIn.empty());
             liquiditySrcIn.back().push_back(eIn);
             liquiditySrcOut.back().push_back(eOut);
         }
@@ -122,7 +122,7 @@ struct FlowDebugInfo
         auto i = timePoints.find(tag);
         if (i == timePoints.end())
         {
-            assert(0);
+            XRPL_ASSERT(0);
             return std::chrono::duration<double>(0);
         }
         auto const& t = i->second;

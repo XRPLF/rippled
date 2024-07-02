@@ -152,7 +152,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = XRP(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + XRP(-100);
-            assert(reqBal <= chanAmt);
+            XRPL_ASSERT(reqBal <= chanAmt);
             env(claim(alice, chan, reqBal, authAmt), ter(temBAD_AMOUNT));
         }
         {
@@ -161,7 +161,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = XRP(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + XRP(100);
-            assert(reqBal <= chanAmt);
+            XRPL_ASSERT(reqBal <= chanAmt);
             env(claim(alice, chan, reqBal, authAmt));
             BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
             BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
@@ -174,7 +174,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = XRP(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + XRP(100);
-            assert(reqBal <= chanAmt);
+            XRPL_ASSERT(reqBal <= chanAmt);
             auto const sig =
                 signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
@@ -197,7 +197,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const preBob = env.balance(bob);
             STAmount const authAmt = chanBal + XRP(500);
             STAmount const reqAmt = authAmt + STAmount{1};
-            assert(reqAmt <= chanAmt);
+            XRPL_ASSERT(reqAmt <= chanAmt);
             auto const sig =
                 signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqAmt, authAmt, Slice(sig), alice.pk()),
@@ -248,7 +248,7 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(!channelExists(*env.current(), chan));
             auto const feeDrops = env.current()->fees().base;
             auto const delta = chanAmt - chanBal;
-            assert(delta > beast::zero);
+            XRPL_ASSERT(delta > beast::zero);
             BEAST_EXPECT(env.balance(alice) == preAlice + delta);
             BEAST_EXPECT(env.balance(bob) == preBob - feeDrops);
         }
@@ -369,7 +369,7 @@ struct PayChan_test : public beast::unit_test::suite
                 auto const delta = XRP(500);
                 auto const reqBal = chanBal + delta;
                 auto const authAmt = reqBal + XRP(100);
-                assert(reqBal <= chanAmt);
+                XRPL_ASSERT(reqBal <= chanAmt);
                 auto const sig =
                     signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
                 env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
@@ -499,7 +499,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = XRP(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + XRP(100);
-            assert(reqBal <= chanAmt);
+            XRPL_ASSERT(reqBal <= chanAmt);
             auto const sig =
                 signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
@@ -518,7 +518,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = XRP(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + XRP(100);
-            assert(reqBal <= chanAmt);
+            XRPL_ASSERT(reqBal <= chanAmt);
             auto const sig =
                 signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
@@ -590,7 +590,7 @@ struct PayChan_test : public beast::unit_test::suite
 
             auto const delta = XRP(500);
             auto const reqBal = chanBal + delta;
-            assert(reqBal <= chanAmt);
+            XRPL_ASSERT(reqBal <= chanAmt);
             auto const sig =
                 signClaimAuth(alice.pk(), alice.sk(), chan, reqBal);
             env(claim(bob, chan, reqBal, std::nullopt, Slice(sig), alice.pk()));
@@ -607,7 +607,7 @@ struct PayChan_test : public beast::unit_test::suite
 
             auto const delta = XRP(500);
             auto const reqBal = chanBal + delta;
-            assert(reqBal <= chanAmt);
+            XRPL_ASSERT(reqBal <= chanAmt);
             auto const sig =
                 signClaimAuth(alice.pk(), alice.sk(), chan, reqBal);
             env(claim(bob, chan, reqBal, std::nullopt, Slice(sig), alice.pk()));
@@ -1736,7 +1736,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = XRP(50);
             auto reqBal = chanBal + delta;
             auto authAmt = reqBal + XRP(100);
-            assert(reqBal <= chanAmt);
+            XRPL_ASSERT(reqBal <= chanAmt);
 
             // claim should fail if the dst was removed
             if (withOwnerDirFix)
@@ -1822,7 +1822,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = XRP(50);
             auto reqBal = chanBal + delta;
             auto authAmt = reqBal + XRP(100);
-            assert(reqBal <= chanAmt);
+            XRPL_ASSERT(reqBal <= chanAmt);
 
             {
                 // claim should fail, since bob doesn't exist
@@ -1959,7 +1959,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = XRP(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + XRP(100);
-            assert(reqBal <= chanAmt);
+            XRPL_ASSERT(reqBal <= chanAmt);
             env(claim(alice, chan, reqBal, authAmt),
                 ticket::use(aliceTicketSeq++));
 
@@ -1977,7 +1977,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const delta = XRP(500);
             auto const reqBal = chanBal + delta;
             auto const authAmt = reqBal + XRP(100);
-            assert(reqBal <= chanAmt);
+            XRPL_ASSERT(reqBal <= chanAmt);
             auto const sig =
                 signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
             env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()),
@@ -2011,7 +2011,7 @@ struct PayChan_test : public beast::unit_test::suite
             auto const preBob = env.balance(bob);
             STAmount const authAmt = chanBal + XRP(500);
             STAmount const reqAmt = authAmt + drops(1);
-            assert(reqAmt <= chanAmt);
+            XRPL_ASSERT(reqAmt <= chanAmt);
             // Note that since claim() returns a tem (neither tec nor tes),
             // the ticket is not consumed.  So we don't increment bobTicket.
             auto const sig =
@@ -2053,7 +2053,7 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(!channelExists(*env.current(), chan));
             auto const feeDrops = env.current()->fees().base;
             auto const delta = chanAmt - chanBal;
-            assert(delta > beast::zero);
+            XRPL_ASSERT(delta > beast::zero);
             BEAST_EXPECT(env.balance(alice) == preAlice + delta);
             BEAST_EXPECT(env.balance(bob) == preBob - feeDrops);
         }

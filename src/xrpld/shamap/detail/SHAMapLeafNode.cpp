@@ -28,7 +28,7 @@ SHAMapLeafNode::SHAMapLeafNode(
     std::uint32_t cowid)
     : SHAMapTreeNode(cowid), item_(std::move(item))
 {
-    assert(item_->size() >= 12);
+    XRPL_ASSERT(item_->size() >= 12);
 }
 
 SHAMapLeafNode::SHAMapLeafNode(
@@ -37,7 +37,7 @@ SHAMapLeafNode::SHAMapLeafNode(
     SHAMapHash const& hash)
     : SHAMapTreeNode(cowid, hash), item_(std::move(item))
 {
-    assert(item_->size() >= 12);
+    XRPL_ASSERT(item_->size() >= 12);
 }
 
 boost::intrusive_ptr<SHAMapItem const> const&
@@ -49,7 +49,7 @@ SHAMapLeafNode::peekItem() const
 bool
 SHAMapLeafNode::setItem(boost::intrusive_ptr<SHAMapItem const> item)
 {
-    assert(cowid_ != 0);
+    XRPL_ASSERT(cowid_ != 0);
     item_ = std::move(item);
 
     auto const oldHash = hash_;
@@ -87,8 +87,8 @@ SHAMapLeafNode::getString(const SHAMapNodeID& id) const
 void
 SHAMapLeafNode::invariants(bool) const
 {
-    assert(hash_.isNonZero());
-    assert(item_ != nullptr);
+    XRPL_ASSERT(hash_.isNonZero());
+    XRPL_ASSERT(item_ != nullptr);
 }
 
 }  // namespace ripple

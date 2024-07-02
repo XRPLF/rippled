@@ -158,7 +158,7 @@ PathRequest::updateComplete()
 {
     std::lock_guard sl(mIndexLock);
 
-    assert(mInProgress);
+    XRPL_ASSERT(mInProgress);
     mInProgress = false;
 
     if (fCompletion)

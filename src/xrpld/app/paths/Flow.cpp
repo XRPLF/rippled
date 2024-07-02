@@ -193,7 +193,7 @@ flow(
                 flowDebugInfo));
     }
 
-    assert(!srcIsXRP && !dstIsXRP);
+    XRPL_ASSERT(!srcIsXRP && !dstIsXRP);
     return finishFlow(
         sb,
         srcIssue,

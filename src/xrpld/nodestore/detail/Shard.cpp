@@ -711,7 +711,7 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
         if (writeSQLite && !storeSQLite(ledger))
             return fail("failed storing to SQLite databases");
 
-        assert(
+        XRPL_ASSERT(
             ledger->info().seq == ledgerSeq &&
             (ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
              ledger->read(keylet::fees())));
@@ -813,7 +813,7 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
         if (!open(lock))
             return fail("failed to open");
 
-        assert(state_ == ShardState::finalized);
+        XRPL_ASSERT(state_ == ShardState::finalized);
 
         // Allow all other threads work with the shard
         busy_ = false;

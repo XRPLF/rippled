@@ -145,14 +145,14 @@ doAMMInfo(RPC::JsonContext& context)
         if (context.apiVersion >= 3 && invalid(params))
             return Unexpected(rpcINVALID_PARAMS);
 
-        assert(
+        XRPL_ASSERT(
             (issue1.has_value() == issue2.has_value()) &&
             (issue1.has_value() != ammID.has_value()));
 
         auto const ammKeylet = [&]() {
             if (issue1 && issue2)
                 return keylet::amm(*issue1, *issue2);
-            assert(ammID);
+            XRPL_ASSERT(ammID);
             return keylet::amm(*ammID);
         }();
         auto const amm = ledger->read(ammKeylet);
@@ -211,7 +211,7 @@ doAMMInfo(RPC::JsonContext& context)
     }
     if (voteSlots.size() > 0)
         ammResult[jss::vote_slots] = std::move(voteSlots);
-    assert(
+    XRPL_ASSERT(
         !ledger->rules().enabled(fixInnerObjTemplate) ||
         amm->isFieldPresent(sfAuctionSlot));
     if (amm->isFieldPresent(sfAuctionSlot))

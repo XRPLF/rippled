@@ -77,7 +77,7 @@ public:
         auto ret =
             encodeBase58Token(TokenType::AccountID, id.data(), id.size());
 
-        assert(ret.size() <= 38);
+        XRPL_ASSERT(ret.size() <= 38);
 
         {
             std::lock_guard lock(sl);

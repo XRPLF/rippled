@@ -4426,7 +4426,8 @@ private:
                             c.num_create_attn_sent += sendCreateAttestations(
                                 i, bridge, create_claims);
                         }
-                        assert(claims.create_claims[c.claim_count].empty());
+                        XRPL_ASSERT(
+                            claims.create_claims[c.claim_count].empty());
                     }
                 }
                 for (auto& [bridge, c] : counters)
@@ -4705,11 +4706,11 @@ private:
             auto complete_cb = [&](std::vector<size_t> const& signers) {
                 auto num_attestors = signers.size();
                 st.env.close();
-                assert(
+                XRPL_ASSERT(
                     num_attestors <=
                     std::count(cr.attested.begin(), cr.attested.end(), true));
-                assert(num_attestors >= bridge_.quorum);
-                assert(cr.claim_id - 1 == counters.claim_count);
+                XRPL_ASSERT(num_attestors >= bridge_.quorum);
+                XRPL_ASSERT(cr.claim_id - 1 == counters.claim_count);
 
                 auto r = cr.reward;
                 auto reward = divide(r, STAmount(num_attestors), r.issue());
@@ -4741,7 +4742,7 @@ private:
                     break;
 
                 default:
-                    assert(0);
+                    XRPL_ASSERT(0);
                     break;
 
                 case st_completed:
@@ -4905,14 +4906,14 @@ private:
                     break;
 
                 case st_attested:
-                    assert(xfer.with_claim == WithClaim::yes);
+                    XRPL_ASSERT(xfer.with_claim == WithClaim::yes);
                     claim();
                     sm_state = st_completed;
                     break;
 
                 default:
                 case st_completed:
-                    assert(0);  // should have been removed
+                    XRPL_ASSERT(0);  // should have been removed
                     break;
             }
             return sm_state;

@@ -213,7 +213,7 @@ page(uint256 const& root, std::uint64_t index = 0) noexcept;
 inline Keylet
 page(Keylet const& root, std::uint64_t index = 0) noexcept
 {
-    assert(root.type == ltDIR_NODE);
+    XRPL_ASSERT(root.type == ltDIR_NODE);
     return page(root.key, index);
 }
 /** @} */

@@ -242,7 +242,7 @@ compareTokens(uint256 const& a, uint256 const& b)
 TER
 insertToken(ApplyView& view, AccountID owner, STObject&& nft)
 {
-    assert(nft.isFieldPresent(sfNFTokenID));
+    XRPL_ASSERT(nft.isFieldPresent(sfNFTokenID));
 
     // First, we need to locate the page the NFT belongs to, creating it
     // if necessary. This operation may fail if it is impossible to insert
@@ -734,7 +734,7 @@ tokenOfferCreatePreclaim(
     if (nftIssuer != acctID && !(nftFlags & nft::flagTransferable))
     {
         auto const root = view.read(keylet::account(nftIssuer));
-        assert(root);
+        XRPL_ASSERT(root);
 
         if (auto minter = (*root)[~sfNFTokenMinter]; minter != acctID)
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;

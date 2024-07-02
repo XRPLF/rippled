@@ -151,14 +151,14 @@ public:
 
     explicit FeatureBitset(base const& b) : base(b)
     {
-        assert(b.count() == count());
+        XRPL_ASSERT(b.count() == count());
     }
 
     template <class... Fs>
     explicit FeatureBitset(uint256 const& f, Fs&&... fs)
     {
         initFromFeatures(f, std::forward<Fs>(fs)...);
-        assert(count() == (sizeof...(fs) + 1));
+        XRPL_ASSERT(count() == (sizeof...(fs) + 1));
     }
 
     template <class Col>
@@ -166,7 +166,7 @@ public:
     {
         for (auto const& f : fs)
             set(featureToBitsetIndex(f));
-        assert(fs.size() == count());
+        XRPL_ASSERT(fs.size() == count());
     }
 
     auto

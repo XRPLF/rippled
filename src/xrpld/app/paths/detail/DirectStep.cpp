@@ -514,7 +514,7 @@ DirectStepI<TDerived>::revImp(
 
     auto const [srcQOut, dstQIn] =
         qualities(sb, srcDebtDir, StrandDirection::reverse);
-    assert(static_cast<TDerived const*>(this)->verifyDstQualityIn(dstQIn));
+    XRPL_ASSERT(static_cast<TDerived const*>(this)->verifyDstQualityIn(dstQIn));
 
     Issue const srcToDstIss(currency_, redeems(srcDebtDir) ? dst_ : src_);
 
@@ -633,7 +633,7 @@ DirectStepI<TDerived>::fwdImp(
     boost::container::flat_set<uint256>& /*ofrsToRm*/,
     IOUAmount const& in)
 {
-    assert(cache_);
+    XRPL_ASSERT(cache_);
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
@@ -720,7 +720,7 @@ DirectStepI<TDerived>::validFwd(
 
     auto const savCache = *cache_;
 
-    assert(!in.native);
+    XRPL_ASSERT(!in.native);
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
@@ -784,7 +784,7 @@ DirectStepI<TDerived>::qualitiesSrcIssues(
 {
     // Charge a transfer rate when issuing and previous step redeems
 
-    assert(static_cast<TDerived const*>(this)->verifyPrevStepDebtDirection(
+    XRPL_ASSERT(static_cast<TDerived const*>(this)->verifyPrevStepDebtDirection(
         prevStepDebtDirection));
 
     std::uint32_t const srcQOut = redeems(prevStepDebtDirection)
@@ -924,7 +924,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         {
             if (!ctx.prevStep)
             {
-                assert(0);  // prev seen book without a prev step!?!
+                XRPL_ASSERT(0);  // prev seen book without a prev step!?!
                 return temBAD_PATH_LOOP;
             }
 

@@ -55,7 +55,7 @@ PerfLogImp::Counters::Counters(
             if (!inserted)
             {
                 // Ensure that no other function populates this entry.
-                assert(false);
+                XRPL_UNREACHABLE();
             }
         }
     }
@@ -68,7 +68,7 @@ PerfLogImp::Counters::Counters(
             if (!inserted)
             {
                 // Ensure that no other function populates this entry.
-                assert(false);
+                XRPL_UNREACHABLE();
             }
         }
     }
@@ -330,7 +330,7 @@ PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
     auto counter = counters_.rpc_.find(method);
     if (counter == counters_.rpc_.end())
     {
-        assert(false);
+        XRPL_UNREACHABLE();
         return;
     }
 
@@ -352,7 +352,7 @@ PerfLogImp::rpcEnd(
     auto counter = counters_.rpc_.find(method);
     if (counter == counters_.rpc_.end())
     {
-        assert(false);
+        XRPL_UNREACHABLE();
         return;
     }
     steady_time_point startTime;
@@ -366,7 +366,7 @@ PerfLogImp::rpcEnd(
         }
         else
         {
-            assert(false);
+            XRPL_UNREACHABLE();
         }
     }
     std::lock_guard lock(counter->second.mutex);
@@ -384,7 +384,7 @@ PerfLogImp::jobQueue(JobType const type)
     auto counter = counters_.jq_.find(type);
     if (counter == counters_.jq_.end())
     {
-        assert(false);
+        XRPL_UNREACHABLE();
         return;
     }
     std::lock_guard lock(counter->second.mutex);
@@ -401,7 +401,7 @@ PerfLogImp::jobStart(
     auto counter = counters_.jq_.find(type);
     if (counter == counters_.jq_.end())
     {
-        assert(false);
+        XRPL_UNREACHABLE();
         return;
     }
     {
@@ -420,7 +420,7 @@ PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
     auto counter = counters_.jq_.find(type);
     if (counter == counters_.jq_.end())
     {
-        assert(false);
+        XRPL_UNREACHABLE();
         return;
     }
     {

@@ -49,7 +49,8 @@ RCLValidatedLedger::RCLValidatedLedger(
     auto const hashIndex = ledger->read(keylet::skip());
     if (hashIndex)
     {
-        assert(hashIndex->getFieldU32(sfLastLedgerSequence) == (seq() - 1));
+        XRPL_ASSERT(
+            hashIndex->getFieldU32(sfLastLedgerSequence) == (seq() - 1));
         ancestors_ = hashIndex->getFieldV256(sfHashes).value();
     }
     else
@@ -142,8 +143,8 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
         return std::nullopt;
     }
 
-    assert(!ledger->open() && ledger->isImmutable());
-    assert(ledger->info().hash == hash);
+    XRPL_ASSERT(!ledger->open() && ledger->isImmutable());
+    XRPL_ASSERT(ledger->info().hash == hash);
 
     return RCLValidatedLedger(std::move(ledger), j_);
 }

@@ -21,6 +21,7 @@
 #define RIPPLE_OVERLAY_TRAFFIC_H_INCLUDED
 
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/messages.h>
 
 #include <array>
@@ -172,7 +173,7 @@ public:
     void
     addCount(category cat, bool inbound, int bytes)
     {
-        assert(cat <= category::unknown);
+        XRPL_ASSERT(cat <= category::unknown);
 
         if (inbound)
         {

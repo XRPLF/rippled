@@ -357,7 +357,7 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
     {
         // Use the provided parameters, and go straight
         // to the (RPC) client.
-        assert(params.isObject());
+        XRPL_ASSERT(params.isObject());
         if (!params.isMember(jss::secret) && !params.isMember(jss::key_type) &&
             !params.isMember(jss::seed) && !params.isMember(jss::seed_hex) &&
             !params.isMember(jss::passphrase))

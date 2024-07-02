@@ -232,7 +232,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                        "nodes storing large amounts of history, because of the "
                        "difficulty inherent in rebuilding corrupted data.";
             }
-            assert(result->size() == 3);
+            XRPL_ASSERT(result->size() == 3);
             return result;
         }();
     }

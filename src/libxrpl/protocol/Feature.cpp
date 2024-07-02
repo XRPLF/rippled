@@ -221,7 +221,7 @@ FeatureCollections::FeatureCollections()
 std::optional<uint256>
 FeatureCollections::getRegisteredFeature(std::string const& name) const
 {
-    assert(readOnly);
+    XRPL_ASSERT(readOnly);
     Feature const* feature = getByName(name);
     if (feature)
         return feature->feature;
@@ -303,7 +303,7 @@ FeatureCollections::registrationIsDone()
 size_t
 FeatureCollections::featureToBitsetIndex(uint256 const& f) const
 {
-    assert(readOnly);
+    XRPL_ASSERT(readOnly);
 
     Feature const* feature = getByFeature(f);
     if (!feature)
@@ -315,7 +315,7 @@ FeatureCollections::featureToBitsetIndex(uint256 const& f) const
 uint256 const&
 FeatureCollections::bitsetIndexToFeature(size_t i) const
 {
-    assert(readOnly);
+    XRPL_ASSERT(readOnly);
     Feature const& feature = getByIndex(i);
     return feature.feature;
 }
@@ -323,7 +323,7 @@ FeatureCollections::bitsetIndexToFeature(size_t i) const
 std::string
 FeatureCollections::featureToName(uint256 const& f) const
 {
-    assert(readOnly);
+    XRPL_ASSERT(readOnly);
     Feature const* feature = getByFeature(f);
     return feature ? feature->name : to_string(f);
 }

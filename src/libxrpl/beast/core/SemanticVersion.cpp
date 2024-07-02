@@ -19,9 +19,9 @@
 
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/core/SemanticVersion.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <algorithm>
-#include <cassert>
 #include <locale>
 
 namespace beast {
@@ -304,7 +304,7 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
 
             if (isNumeric(left))
             {
-                assert(isNumeric(right));
+                XRPL_ASSERT(isNumeric(right));
 
                 int const iLeft(lexicalCastThrow<int>(left));
                 int const iRight(lexicalCastThrow<int>(right));
@@ -316,7 +316,7 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
             }
             else
             {
-                assert(!isNumeric(right));
+                XRPL_ASSERT(!isNumeric(right));
 
                 int result = left.compare(right);
 

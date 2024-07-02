@@ -22,9 +22,9 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <algorithm>
 #include <array>
-#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <limits>
@@ -103,7 +103,7 @@ public:
     std::uint8_t
     operator[](std::size_t i) const noexcept
     {
-        assert(i < size_);
+        XRPL_ASSERT(i < size_);
         return data_[i];
     }
 

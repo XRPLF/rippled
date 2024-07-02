@@ -20,7 +20,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 #include <xrpl/basics/safe_cast.h>
-#include <cassert>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <cmath>
 #include <iomanip>
 
@@ -56,7 +56,7 @@ template <typename T>
 static std::string
 to_places(const T d, std::uint8_t places)
 {
-    assert(places <= std::numeric_limits<T>::digits10);
+    XRPL_ASSERT(places <= std::numeric_limits<T>::digits10);
 
     std::ostringstream oss;
     oss << std::setprecision(places) << std::fixed << d;

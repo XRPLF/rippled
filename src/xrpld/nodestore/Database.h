@@ -256,7 +256,7 @@ public:
     [[nodiscard]] std::uint32_t
     firstLedgerSeq(std::uint32_t shardIndex) const noexcept
     {
-        assert(shardIndex >= earliestShardIndex_);
+        XRPL_ASSERT(shardIndex >= earliestShardIndex_);
         if (shardIndex <= earliestShardIndex_)
             return earliestLedgerSeq_;
         return 1 + (shardIndex * ledgersPerShard_);
@@ -270,7 +270,7 @@ public:
     [[nodiscard]] std::uint32_t
     lastLedgerSeq(std::uint32_t shardIndex) const noexcept
     {
-        assert(shardIndex >= earliestShardIndex_);
+        XRPL_ASSERT(shardIndex >= earliestShardIndex_);
         return (shardIndex + 1) * ledgersPerShard_;
     }
 
@@ -282,7 +282,7 @@ public:
     [[nodiscard]] std::uint32_t
     seqToShardIndex(std::uint32_t ledgerSeq) const noexcept
     {
-        assert(ledgerSeq >= earliestLedgerSeq_);
+        XRPL_ASSERT(ledgerSeq >= earliestLedgerSeq_);
         return (ledgerSeq - 1) / ledgersPerShard_;
     }
 
@@ -332,7 +332,7 @@ protected:
     void
     storeStats(std::uint64_t count, std::uint64_t sz)
     {
-        assert(count <= sz);
+        XRPL_ASSERT(count <= sz);
         storeCount_ += count;
         storeSz_ += sz;
     }

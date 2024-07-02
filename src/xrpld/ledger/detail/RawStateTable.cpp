@@ -63,7 +63,7 @@ public:
     {
         if (auto const p = dynamic_cast<sles_iter_impl const*>(&impl))
         {
-            assert(end1_ == p->end1_ && end0_ == p->end0_);
+            XRPL_ASSERT(end1_ == p->end1_ && end0_ == p->end0_);
             return iter1_ == p->iter1_ && iter0_ == p->iter0_;
         }
 
@@ -73,7 +73,7 @@ public:
     void
     increment() override
     {
-        assert(sle1_ || sle0_);
+        XRPL_ASSERT(sle1_ || sle0_);
 
         if (sle1_ && !sle0_)
         {
@@ -179,7 +179,7 @@ RawStateTable::apply(RawView& to) const
 bool
 RawStateTable::exists(ReadView const& base, Keylet const& k) const
 {
-    assert(k.key.isNonZero());
+    XRPL_ASSERT(k.key.isNonZero());
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
         return base.exists(k);

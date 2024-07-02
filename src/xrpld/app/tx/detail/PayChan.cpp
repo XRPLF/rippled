@@ -149,7 +149,7 @@ closeChannel(
     if (!sle)
         return tefINTERNAL;
 
-    assert((*slep)[sfAmount] >= (*slep)[sfBalance]);
+    XRPL_ASSERT((*slep)[sfAmount] >= (*slep)[sfBalance]);
     (*sle)[sfBalance] =
         (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
     adjustOwnerCount(view, sle, -1, j);
@@ -532,7 +532,7 @@ PayChanClaim::doApply()
 
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
         XRPAmount const reqDelta = reqBalance - chanBalance;
-        assert(reqDelta >= beast::zero);
+        XRPL_ASSERT(reqDelta >= beast::zero);
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
         ctx_.view().update(sled);
         ctx_.view().update(slep);

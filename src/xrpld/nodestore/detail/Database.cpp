@@ -46,7 +46,7 @@ Database::Database(
     , requestBundle_(get<int>(config, "rq_bundle", 4))
     , readThreads_(std::max(1, readThreads))
 {
-    assert(readThreads != 0);
+    XRPL_ASSERT(readThreads != 0);
 
     if (ledgersPerShard_ == 0 || ledgersPerShard_ % 256 != 0)
         Throw<std::runtime_error>("Invalid ledgers_per_shard");
@@ -96,7 +96,7 @@ Database::Database(
 
                     for (auto it = read.begin(); it != read.end(); ++it)
                     {
-                        assert(!it->second.empty());
+                        XRPL_ASSERT(!it->second.empty());
 
                         auto const& hash = it->first;
                         auto const& data = it->second;
@@ -157,7 +157,7 @@ Database::maxLedgers(std::uint32_t shardIndex) const noexcept
     if (shardIndex == earliestShardIndex_)
         return lastLedgerSeq(shardIndex) - firstLedgerSeq(shardIndex) + 1;
 
-    assert(!"Invalid shard index");
+    XRPL_ASSERT(!"Invalid shard index");
     return 0;
 }
 
@@ -183,7 +183,7 @@ Database::stop()
 
     while (readThreads_.load() != 0)
     {
-        assert(steady_clock::now() - start < 30s);
+        XRPL_ASSERT(steady_clock::now() - start < 30s);
         std::this_thread::yield();
     }
 
@@ -234,7 +234,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
     };
 
     srcDB.for_each([&](std::shared_ptr<NodeObject> nodeObject) {
-        assert(nodeObject);
+        XRPL_ASSERT(nodeObject);
         if (!nodeObject)  // This should never happen
             return;
 
@@ -377,7 +377,7 @@ Database::storeLedger(
 void
 Database::getCountsJson(Json::Value& obj)
 {
-    assert(obj.isObject());
+    XRPL_ASSERT(obj.isObject());
 
     {
         std::unique_lock<std::mutex> lock(readLock_);

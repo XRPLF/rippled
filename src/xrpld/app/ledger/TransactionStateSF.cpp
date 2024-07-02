@@ -30,7 +30,7 @@ TransactionStateSF::gotNode(
     SHAMapNodeType type) const
 
 {
-    assert(type != SHAMapNodeType::tnTRANSACTION_NM);
+    XRPL_ASSERT(type != SHAMapNodeType::tnTRANSACTION_NM);
     db_.store(
         hotTRANSACTION_NODE,
         std::move(nodeData),

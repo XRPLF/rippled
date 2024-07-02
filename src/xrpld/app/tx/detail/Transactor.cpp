@@ -367,7 +367,7 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 TER
 Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
-    assert(sleAccount);
+    XRPL_ASSERT(sleAccount);
     SeqProxy const seqProx = ctx_.tx.getSeqProxy();
     if (seqProx.isSeq())
     {
@@ -439,7 +439,7 @@ Transactor::ticketDelete(
 void
 Transactor::preCompute()
 {
-    assert(account_ != beast::zero);
+    XRPL_ASSERT(account_ != beast::zero);
 }
 
 TER
@@ -453,7 +453,7 @@ Transactor::apply()
 
     // sle must exist except for transactions
     // that allow zero account.
-    assert(sle != nullptr || account_ == beast::zero);
+    XRPL_ASSERT(sle != nullptr || account_ == beast::zero);
 
     if (sle)
     {
@@ -578,8 +578,8 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
 
     // We have plans to support multiple SignerLists in the future.  The
     // presence and defaulted value of the SignerListID field will enable that.
-    assert(sleAccountSigners->isFieldPresent(sfSignerListID));
-    assert(sleAccountSigners->getFieldU32(sfSignerListID) == 0);
+    XRPL_ASSERT(sleAccountSigners->isFieldPresent(sfSignerListID));
+    XRPL_ASSERT(sleAccountSigners->getFieldU32(sfSignerListID) == 0);
 
     auto accountSigners =
         SignerEntries::deserialize(*sleAccountSigners, ctx.j, "ledger");
@@ -802,7 +802,7 @@ Transactor::reset(XRPAmount fee)
     auto const balance = txnAcct->getFieldAmount(sfBalance).xrp();
 
     // balance should have already been checked in checkFee / preFlight.
-    assert(balance != beast::zero && (!view().open() || balance >= fee));
+    XRPL_ASSERT(balance != beast::zero && (!view().open() || balance >= fee));
 
     // We retry/reject the transaction if the account balance is zero or we're
     // applying against an open ledger and the balance is less than the fee
@@ -817,7 +817,7 @@ Transactor::reset(XRPAmount fee)
     // reject the transaction.
     txnAcct->setFieldAmount(sfBalance, balance - fee);
     TER const ter{consumeSeqProxy(txnAcct)};
-    assert(isTesSuccess(ter));
+    XRPL_ASSERT(isTesSuccess(ter));
 
     if (isTesSuccess(ter))
         view().update(txnAcct);
@@ -849,7 +849,7 @@ Transactor::operator()()
             JLOG(j_.fatal()) << "Transaction serdes mismatch";
             JLOG(j_.info()) << to_string(ctx_.tx.getJson(JsonOptions::none));
             JLOG(j_.fatal()) << s2.getJson(JsonOptions::none);
-            assert(false);
+            XRPL_UNREACHABLE();
         }
     }
 #endif
@@ -866,7 +866,7 @@ Transactor::operator()()
 
     // No transaction can return temUNKNOWN from apply,
     // and it can't be passed in from a preclaim.
-    assert(result != temUNKNOWN);
+    XRPL_ASSERT(result != temUNKNOWN);
 
     if (auto stream = j_.trace())
         stream << "preclaim result: " << transToken(result);
@@ -918,7 +918,7 @@ Transactor::operator()()
                            std::shared_ptr<SLE const> const& after) {
                 if (isDelete)
                 {
-                    assert(before && after);
+                    XRPL_ASSERT(before && after);
                     if (doOffers && before && after &&
                         (before->getType() == ltOFFER) &&
                         (before->getFieldAmount(sfTakerPays) ==

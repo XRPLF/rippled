@@ -101,7 +101,7 @@ public:
         {
             auto const result(t.addItem(
                 SHAMapNodeType::tnACCOUNT_STATE, make_random_item(r)));
-            assert(result);
+            XRPL_ASSERT(result);
             (void)result;
         }
     }

@@ -2016,7 +2016,7 @@ class Check_test : public beast::unit_test::suite
         // This capability is enabled by the featureCheckCashMakesTrustLine
         // amendment.  So this test executes only when that amendment is
         // active.
-        assert(features[featureCheckCashMakesTrustLine]);
+        XRPL_ASSERT(features[featureCheckCashMakesTrustLine]);
 
         testcase("Trust Line Creation");
 

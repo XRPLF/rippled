@@ -193,7 +193,7 @@ private:
         peers.emplace_back(peer);  // overlay stores week ptr to PeerImp
         lid_ += 2;
         rid_ += 2;
-        assert(lid_ <= 254);
+        XRPL_ASSERT(lid_ <= 254);
     }
 
     void

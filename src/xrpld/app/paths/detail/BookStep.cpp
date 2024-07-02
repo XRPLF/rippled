@@ -381,7 +381,7 @@ private:
     getQuality(std::optional<Quality> const& limitQuality)
     {
         // It's really a programming error if the quality is missing.
-        assert(limitQuality);
+        XRPL_ASSERT(limitQuality);
         if (!limitQuality)
             Throw<FlowException>(tefINTERNAL, "Offer requires quality.");
         return *limitQuality;
@@ -1109,7 +1109,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
             // something went very wrong
             JLOG(j_.error())
                 << "BookStep remainingOut < 0 " << to_string(remainingOut);
-            assert(0);
+            XRPL_ASSERT(0);
             cache_.emplace(beast::zero, beast::zero);
             return {beast::zero, beast::zero};
         }
@@ -1132,7 +1132,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
     boost::container::flat_set<uint256>& ofrsToRm,
     TIn const& in)
 {
-    assert(cache_);
+    XRPL_ASSERT(cache_);
 
     TAmounts<TIn, TOut> result(beast::zero, beast::zero);
 
@@ -1151,7 +1151,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
                          TOut const& ownerGives,
                          std::uint32_t transferRateIn,
                          std::uint32_t transferRateOut) mutable -> bool {
-        assert(cache_);
+        XRPL_ASSERT(cache_);
 
         if (remainingIn <= beast::zero)
             return false;
@@ -1279,7 +1279,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
             // something went very wrong
             JLOG(j_.error())
                 << "BookStep remainingIn < 0 " << to_string(remainingIn);
-            assert(0);
+            XRPL_ASSERT(0);
             cache_.emplace(beast::zero, beast::zero);
             return {beast::zero, beast::zero};
         }
@@ -1414,7 +1414,7 @@ bookStepEqual(Step const& step, ripple::Book const& book)
     bool const outXRP = isXRP(book.out.currency);
     if (inXRP && outXRP)
     {
-        assert(0);
+        XRPL_ASSERT(0);
         return false;  // no such thing as xrp/xrp book step
     }
     if (inXRP && !outXRP)

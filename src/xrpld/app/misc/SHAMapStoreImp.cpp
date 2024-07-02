@@ -281,7 +281,7 @@ SHAMapStoreImp::run()
 {
     if (app_.config().reporting())
     {
-        assert(false);
+        XRPL_UNREACHABLE();
         Throw<std::runtime_error>(
             "Reporting does not support online_delete. Remove "
             "online_delete info from config");
@@ -553,7 +553,7 @@ SHAMapStoreImp::clearSql(
     std::function<std::optional<LedgerIndex>()> const& getMinSeq,
     std::function<void(LedgerIndex)> const& deleteBeforeSeq)
 {
-    assert(deleteInterval_);
+    XRPL_ASSERT(deleteInterval_);
     LedgerIndex min = std::numeric_limits<LedgerIndex>::max();
 
     {
@@ -618,7 +618,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
 {
     if (app_.config().reporting())
     {
-        assert(false);
+        XRPL_UNREACHABLE();
         Throw<std::runtime_error>(
             "Reporting does not support online_delete. Remove "
             "online_delete info from config");

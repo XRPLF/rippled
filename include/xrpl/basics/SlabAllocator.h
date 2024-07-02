@@ -21,6 +21,7 @@
 #define RIPPLE_BASICS_SLABALLOCATOR_H_INCLUDED
 
 #include <xrpl/beast/type_name.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/align.hpp>
 #include <boost/container/static_vector.hpp>
@@ -28,7 +29,6 @@
 
 #include <algorithm>
 #include <atomic>
-#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <mutex>
@@ -141,7 +141,7 @@ class SlabAllocator
         void
         deallocate(std::uint8_t* ptr) noexcept
         {
-            assert(own(ptr));
+            XRPL_ASSERT(own(ptr));
 
             std::lock_guard l(m_);
 
@@ -184,7 +184,7 @@ public:
               boost::alignment::align_up(sizeof(Type) + extra, itemAlignment_))
         , slabSize_(alloc)
     {
-        assert((itemAlignment_ & (itemAlignment_ - 1)) == 0);
+        XRPL_ASSERT((itemAlignment_ & (itemAlignment_ - 1)) == 0);
     }
 
     SlabAllocator(SlabAllocator const& other) = delete;
@@ -294,7 +294,7 @@ public:
     bool
     deallocate(std::uint8_t* ptr) noexcept
     {
-        assert(ptr);
+        XRPL_ASSERT(ptr);
 
         for (auto slab = slabs_.load(); slab != nullptr; slab = slab->next_)
         {

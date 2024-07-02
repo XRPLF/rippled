@@ -83,7 +83,7 @@ ShardArchiveHandler::ShardArchiveHandler(Application& app)
               app.config().section(ConfigSection::shardDatabase()),
               "shard_verification_max_attempts"))
 {
-    assert(app_.getShardStore());
+    XRPL_ASSERT(app_.getShardStore());
 }
 
 bool
@@ -135,7 +135,7 @@ ShardArchiveHandler::initFromDB(std::lock_guard<std::mutex> const& lock)
     {
         using namespace boost::filesystem;
 
-        assert(
+        XRPL_ASSERT(
             exists(downloadDir_ / stateDBName) &&
             is_regular_file(downloadDir_ / stateDBName));
 

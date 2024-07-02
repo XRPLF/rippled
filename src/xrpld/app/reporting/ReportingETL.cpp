@@ -59,7 +59,7 @@ ReportingETL::consumeLedgerData(
     size_t num = 0;
     while (!stopping_ && (sle = writeQueue.pop()))
     {
-        assert(sle);
+        XRPL_ASSERT(sle);
         if (!ledger->exists(sle->key()))
             ledger->rawInsert(sle);
 
@@ -113,7 +113,7 @@ ReportingETL::loadInitialLedger(uint32_t startingSequence)
     {
         JLOG(journal_.fatal()) << __func__ << " : "
                                << "Database is not empty";
-        assert(false);
+        XRPL_UNREACHABLE();
         return {};
     }
 
@@ -189,7 +189,7 @@ ReportingETL::flushLedger(std::shared_ptr<Ledger>& ledger)
     auto& txHash = ledger->info().txHash;
     auto& ledgerHash = ledger->info().hash;
 
-    assert(
+    XRPL_ASSERT(
         ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
         ledger->read(keylet::fees()));
     ledger->setImmutable(false);
@@ -230,7 +230,7 @@ ReportingETL::flushLedger(std::shared_ptr<Ledger>& ledger)
     {
         JLOG(journal_.fatal()) << __func__ << " : "
                                << "Flushed 0 nodes from state map";
-        assert(false);
+        XRPL_UNREACHABLE();
     }
     if (numTxFlushed == 0)
     {
@@ -495,7 +495,7 @@ ReportingETL::runETLPipeline(uint32_t startSequence)
         app_.getLedgerMaster().getLedgerBySeq(startSequence - 1));
     if (!parent)
     {
-        assert(false);
+        XRPL_UNREACHABLE();
         Throw<std::runtime_error>("runETLPipeline: parent ledger is null");
     }
 
@@ -564,7 +564,7 @@ ReportingETL::runETLPipeline(uint32_t startSequence)
                              &transformQueue]() {
         beast::setCurrentThreadName("rippled: ReportingETL transform");
 
-        assert(parent);
+        XRPL_ASSERT(parent);
         parent = std::make_shared<Ledger>(*parent, NetClock::time_point{});
         while (!writeConflict)
         {

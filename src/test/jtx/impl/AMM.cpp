@@ -436,7 +436,7 @@ AMM::deposit(
     std::optional<std::uint32_t> const& flags,
     std::optional<ter> const& ter)
 {
-    assert(!(asset2In && maxEP));
+    XRPL_ASSERT(!(asset2In && maxEP));
     return deposit(
         account,
         std::nullopt,
@@ -560,7 +560,7 @@ AMM::withdraw(
     std::optional<IOUAmount> const& maxEP,
     std::optional<ter> const& ter)
 {
-    assert(!(asset2Out && maxEP));
+    XRPL_ASSERT(!(asset2Out && maxEP));
     return withdraw(
         account,
         std::nullopt,
@@ -665,7 +665,7 @@ AMM::bid(BidArg const& arg)
     if (auto const amm =
             env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
     {
-        assert(
+        XRPL_ASSERT(
             !env_.current()->rules().enabled(fixInnerObjTemplate) ||
             amm->isFieldPresent(sfAuctionSlot));
         if (amm->isFieldPresent(sfAuctionSlot))
@@ -760,7 +760,7 @@ AMM::expectAuctionSlot(auto&& cb) const
     if (auto const amm =
             env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
     {
-        assert(
+        XRPL_ASSERT(
             !env_.current()->rules().enabled(fixInnerObjTemplate) ||
             amm->isFieldPresent(sfAuctionSlot));
         if (amm->isFieldPresent(sfAuctionSlot))

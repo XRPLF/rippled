@@ -258,7 +258,7 @@ rangeCheckedCast(C c)
          c < std::numeric_limits<T>::lowest()))
     {
         /* This should never happen */
-        assert(0);
+        XRPL_ASSERT(0);
         JLOG(debugLog().error())
             << "rangeCheckedCast domain error:"
             << " value = " << c << " min = " << std::numeric_limits<T>::lowest()

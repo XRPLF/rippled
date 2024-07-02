@@ -59,7 +59,7 @@ toSTAmount(XRPAmount const& xrp)
 inline STAmount
 toSTAmount(XRPAmount const& xrp, Issue const& iss)
 {
-    assert(isXRP(iss.account) && isXRP(iss.currency));
+    XRPL_ASSERT(isXRP(iss.account) && isXRP(iss.currency));
     return toSTAmount(xrp);
 }
 
@@ -78,12 +78,12 @@ template <>
 inline IOUAmount
 toAmount<IOUAmount>(STAmount const& amt)
 {
-    assert(amt.mantissa() < std::numeric_limits<std::int64_t>::max());
+    XRPL_ASSERT(amt.mantissa() < std::numeric_limits<std::int64_t>::max());
     bool const isNeg = amt.negative();
     std::int64_t const sMant =
         isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
 
-    assert(!isXRP(amt));
+    XRPL_ASSERT(!isXRP(amt));
     return IOUAmount(sMant, amt.exponent());
 }
 
@@ -91,12 +91,12 @@ template <>
 inline XRPAmount
 toAmount<XRPAmount>(STAmount const& amt)
 {
-    assert(amt.mantissa() < std::numeric_limits<std::int64_t>::max());
+    XRPL_ASSERT(amt.mantissa() < std::numeric_limits<std::int64_t>::max());
     bool const isNeg = amt.negative();
     std::int64_t const sMant =
         isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
 
-    assert(isXRP(amt));
+    XRPL_ASSERT(isXRP(amt));
     return XRPAmount(sMant);
 }
 

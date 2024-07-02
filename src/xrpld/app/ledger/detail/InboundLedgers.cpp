@@ -69,8 +69,8 @@ public:
         std::uint32_t seq,
         InboundLedger::Reason reason) override
     {
-        assert(hash.isNonZero());
-        assert(
+        XRPL_ASSERT(hash.isNonZero());
+        XRPL_ASSERT(
             reason != InboundLedger::Reason::SHARD ||
             (seq != 0 && app_.getShardStore()));
 
@@ -144,7 +144,7 @@ public:
     std::shared_ptr<InboundLedger>
     find(uint256 const& hash) override
     {
-        assert(hash.isNonZero());
+        XRPL_ASSERT(hash.isNonZero());
 
         std::shared_ptr<InboundLedger> ret;
 
@@ -306,7 +306,7 @@ public:
             acqs.reserve(mLedgers.size());
             for (auto const& it : mLedgers)
             {
-                assert(it.second);
+                XRPL_ASSERT(it.second);
                 acqs.push_back(it);
             }
             for (auto const& it : mRecentFailures)
@@ -341,7 +341,7 @@ public:
             acquires.reserve(mLedgers.size());
             for (auto const& it : mLedgers)
             {
-                assert(it.second);
+                XRPL_ASSERT(it.second);
                 acquires.push_back(it.second);
             }
         }

@@ -84,7 +84,7 @@ Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
             return INCLUDED;
     }
 
-    assert(c == txnSqlUnknown);
+    XRPL_ASSERT(c == txnSqlUnknown);
     return INVALID;
 }
 

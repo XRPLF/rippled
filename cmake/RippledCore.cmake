@@ -74,6 +74,7 @@ target_compile_definitions(xrpl.libxrpl
 target_compile_options(xrpl.libxrpl
   PUBLIC
     $<$<BOOL:${is_gcc}>:-Wno-maybe-uninitialized>
+    $<$<BOOL:${voidstar}>:-DENABLE_VOIDSTAR>
 )
 
 target_link_libraries(xrpl.libxrpl
@@ -89,6 +90,7 @@ target_link_libraries(xrpl.libxrpl
     secp256k1::secp256k1
     xrpl.libpb
     xxHash::xxhash
+    $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>
 )
 
 add_executable(rippled)
@@ -121,12 +123,26 @@ target_link_libraries(rippled
   Ripple::libs
   xrpl.libxrpl
 )
+
+if(voidstar)
+  target_compile_options(rippled
+    PRIVATE
+      -fsanitize-coverage=trace-pc-guard
+  )
+  # rippled requries access to antithesis-sdk-cpp implementation file
+  # antithesis_instrumentation.h , which is not exported as INTERFACE
+  target_include_directories(rippled
+    PRIVATE
+      ${CMAKE_SOURCE_DIR}/external/antithesis-sdk
+  )
+endif()
+
 exclude_if_included(rippled)
 # define a macro for tests that might need to
 # be exluded or run differently in CI environment
 if(is_ci)
   target_compile_definitions(rippled PRIVATE RIPPLED_RUNNING_IN_CI)
-endif ()
+endif()
 
 if(reporting)
   set(suffix -reporting)

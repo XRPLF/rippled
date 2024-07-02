@@ -209,7 +209,7 @@ void
 TOffer<TIn, TOut>::setFieldAmounts()
 {
 #ifdef _MSC_VER
-    assert(0);
+    XRPL_ASSERT(0);
 #else
     static_assert(sizeof(TOut) == -1, "Must be specialized");
 #endif

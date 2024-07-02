@@ -54,8 +54,8 @@ STBlob::getText() const
 void
 STBlob::add(Serializer& s) const
 {
-    assert(getFName().isBinary());
-    assert(
+    XRPL_ASSERT(getFName().isBinary());
+    XRPL_ASSERT(
         (getFName().fieldType == STI_VL) ||
         (getFName().fieldType == STI_ACCOUNT));
     s.addVL(value_.data(), value_.size());

@@ -222,7 +222,7 @@ claimHelper(
         auto i = signersList.find(a.keyAccount);
         if (i == signersList.end())
         {
-            assert(0);  // should have already been checked
+            XRPL_ASSERT(0);  // should have already been checked
             continue;
         }
         weight += i->second;
@@ -437,7 +437,7 @@ transferHelper(
     if (amt.native())
     {
         auto const sleSrc = psb.peek(keylet::account(src));
-        assert(sleSrc);
+        XRPL_ASSERT(sleSrc);
         if (!sleSrc)
             return tecINTERNAL;
 

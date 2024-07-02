@@ -173,7 +173,7 @@ public:
             }
             else
             {
-                assert(minAndMax.size() == 2);
+                XRPL_ASSERT(minAndMax.size() == 2);
                 uint32_t min = std::stoll(minAndMax[0]);
                 uint32_t max = std::stoll(minAndMax[1]);
                 pairs.push_back(std::make_pair(min, max));
@@ -206,7 +206,7 @@ public:
         JLOG(journal_.debug()) << __func__ << " : "
                                << "Closing websocket";
 
-        assert(ws_);
+        XRPL_ASSERT(ws_);
         close(false);
     }
 
@@ -378,7 +378,7 @@ public:
     {
         for (auto& src : sources_)
         {
-            assert(src);
+            XRPL_ASSERT(src);
             // We pick the first ETLSource encountered that is connected
             if (src->isConnected())
             {

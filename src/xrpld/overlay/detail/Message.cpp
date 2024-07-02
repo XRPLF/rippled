@@ -34,7 +34,7 @@ Message::Message(
 
     auto const messageBytes = messageSize(message);
 
-    assert(messageBytes != 0);
+    XRPL_ASSERT(messageBytes != 0);
 
     buffer_.resize(headerBytes + messageBytes);
 
@@ -43,7 +43,7 @@ Message::Message(
     if (messageBytes != 0)
         message.SerializeToArray(buffer_.data() + headerBytes, messageBytes);
 
-    assert(getBufferSize() == totalSize(message));
+    XRPL_ASSERT(getBufferSize() == totalSize(message));
 }
 
 // static

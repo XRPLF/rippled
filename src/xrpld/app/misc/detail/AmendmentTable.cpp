@@ -656,7 +656,7 @@ AmendmentTableImpl::persistVote(
     std::string const& name,
     AmendmentVote vote) const
 {
-    assert(vote != AmendmentVote::obsolete);
+    XRPL_ASSERT(vote != AmendmentVote::obsolete);
     auto db = db_.checkoutDb();
     voteAmendment(*db, amendment, name, vote);
 }

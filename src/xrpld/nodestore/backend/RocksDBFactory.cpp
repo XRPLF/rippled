@@ -228,7 +228,7 @@ public:
     {
         if (m_db)
         {
-            assert(false);
+            XRPL_UNREACHABLE();
             JLOG(m_journal.error()) << "database is already open";
             return;
         }
@@ -273,7 +273,7 @@ public:
     Status
     fetch(void const* key, std::shared_ptr<NodeObject>* pObject) override
     {
-        assert(m_db);
+        XRPL_ASSERT(m_db);
         pObject->reset();
 
         Status status(ok);
@@ -349,7 +349,7 @@ public:
     void
     storeBatch(Batch const& batch) override
     {
-        assert(m_db);
+        XRPL_ASSERT(m_db);
         rocksdb::WriteBatch wb;
 
         for (auto const& e : batch)
@@ -381,7 +381,7 @@ public:
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        assert(m_db);
+        XRPL_ASSERT(m_db);
         rocksdb::ReadOptions const options;
 
         std::unique_ptr<rocksdb::Iterator> it(m_db->NewIterator(options));

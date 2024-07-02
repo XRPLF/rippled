@@ -305,7 +305,7 @@ public:
         // Add slot to table
         auto const result(slots_.emplace(slot->remote_endpoint(), slot));
         // Remote address must not already exist
-        assert(result.second);
+        XRPL_ASSERT(result.second);
         // Add to the connected address list
         connectedAddresses_.emplace(remote_endpoint.address());
 
@@ -340,7 +340,7 @@ public:
         // Add slot to table
         auto const result = slots_.emplace(slot->remote_endpoint(), slot);
         // Remote address must not already exist
-        assert(result.second);
+        XRPL_ASSERT(result.second);
 
         // Add to the connected address list
         connectedAddresses_.emplace(remote_endpoint.address());
@@ -363,7 +363,7 @@ public:
         std::lock_guard _(lock_);
 
         // The object must exist in our table
-        assert(slots_.find(slot->remote_endpoint()) != slots_.end());
+        XRPL_ASSERT(slots_.find(slot->remote_endpoint()) != slots_.end());
         // Assign the local endpoint now that it's known
         slot->local_endpoint(local_endpoint);
 
@@ -372,7 +372,7 @@ public:
             auto const iter(slots_.find(local_endpoint));
             if (iter != slots_.end())
             {
-                assert(
+                XRPL_ASSERT(
                     iter->second->local_endpoint() == slot->remote_endpoint());
                 JLOG(m_journal.warn())
                     << beast::leftw(18) << "Logic dropping "
@@ -398,9 +398,9 @@ public:
         std::lock_guard _(lock_);
 
         // The object must exist in our table
-        assert(slots_.find(slot->remote_endpoint()) != slots_.end());
+        XRPL_ASSERT(slots_.find(slot->remote_endpoint()) != slots_.end());
         // Must be accepted or connected
-        assert(
+        XRPL_ASSERT(
             slot->state() == Slot::accept || slot->state() == Slot::connected);
 
         // Check for duplicate connection by key
@@ -427,7 +427,7 @@ public:
         {
             [[maybe_unused]] bool const inserted = keys_.insert(key).second;
             // Public key must not already exist
-            assert(inserted);
+            XRPL_ASSERT(inserted);
         }
 
         // Change state and update counts
@@ -789,10 +789,10 @@ public:
         std::lock_guard _(lock_);
 
         // The object must exist in our table
-        assert(slots_.find(slot->remote_endpoint()) != slots_.end());
+        XRPL_ASSERT(slots_.find(slot->remote_endpoint()) != slots_.end());
 
         // Must be handshaked!
-        assert(slot->state() == Slot::active);
+        XRPL_ASSERT(slot->state() == Slot::active);
 
         clock_type::time_point const now(m_clock.now());
 
@@ -804,7 +804,7 @@ public:
 
         for (auto const& ep : list)
         {
-            assert(ep.hops != 0);
+            XRPL_ASSERT(ep.hops != 0);
 
             slot->recent.insert(ep.address, ep.hops);
 
@@ -957,7 +957,7 @@ public:
                 break;
 
             default:
-                assert(false);
+                XRPL_UNREACHABLE();
                 break;
         }
     }

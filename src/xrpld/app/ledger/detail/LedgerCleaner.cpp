@@ -231,7 +231,7 @@ private:
                 });
                 if (shouldExit_)
                     break;
-                assert(state_ == State::cleaning);
+                XRPL_ASSERT(state_ == State::cleaning);
             }
             doLedgerCleaner();
         }
@@ -353,7 +353,7 @@ private:
                 LedgerHash refHash = getLedgerHash(referenceLedger, refIndex);
 
                 bool const nonzero(refHash.isNonZero());
-                assert(nonzero);
+                XRPL_ASSERT(nonzero);
                 if (nonzero)
                 {
                     // We found the hash and sequence of a better reference

@@ -294,7 +294,7 @@ struct DepositAuth_test : public beast::unit_test::suite
                               bool noRipplePrev,
                               bool noRippleNext,
                               bool withDepositAuth) {
-            assert(!withDepositAuth || features[featureDepositAuth]);
+            XRPL_ASSERT(!withDepositAuth || features[featureDepositAuth]);
 
             Env env(*this, features);
 
@@ -317,7 +317,7 @@ struct DepositAuth_test : public beast::unit_test::suite
                                  bool noRipplePrev,
                                  bool noRippleNext,
                                  bool withDepositAuth) {
-            assert(!withDepositAuth || features[featureDepositAuth]);
+            XRPL_ASSERT(!withDepositAuth || features[featureDepositAuth]);
 
             Env env(*this, features);
 

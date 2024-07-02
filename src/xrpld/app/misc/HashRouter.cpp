@@ -101,7 +101,7 @@ HashRouter::getFlags(uint256 const& key)
 bool
 HashRouter::setFlags(uint256 const& key, int flags)
 {
-    assert(flags != 0);
+    XRPL_ASSERT(flags != 0);
 
     std::lock_guard lock(mutex_);
 

@@ -134,7 +134,7 @@ private:
         static_assert(
             Generator::min() == 0, "If non-zero we have handle the offset");
         const resultType range = b - a + 1;
-        assert(Generator::max() >= range);  // Just for safety
+        XRPL_ASSERT(Generator::max() >= range);  // Just for safety
         const resultType rejectLim = g.max() % range;
         resultType n;
         do
@@ -148,7 +148,7 @@ template <class Engine, class Integral>
 Integral
 randInt(Engine& engine, Integral min, Integral max)
 {
-    assert(max > min);
+    XRPL_ASSERT(max > min);
 
     // This should have no state and constructing it should
     // be very cheap. If that turns out not to be the case

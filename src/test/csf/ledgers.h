@@ -345,7 +345,7 @@ struct LedgerHistoryHelper
             return it->second;
 
         // enforce that the new suffix has never been seen
-        assert(seen.emplace(s.back()).second);
+        XRPL_ASSERT(seen.emplace(s.back()).second);
 
         Ledger const& parent = (*this)[s.substr(0, s.size() - 1)];
         return ledgers.emplace(s, oracle.accept(parent, Tx{++nextTx}))
