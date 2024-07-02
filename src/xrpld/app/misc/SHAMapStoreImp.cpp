@@ -272,6 +272,12 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
         if (healthWait() == stopping)
             return false;
     }
+    if (!(nodeCount % backoffInterval_))
+    {
+        JLOG(journal_.trace())
+            << "copyNode backing off after " << nodeCount << " node writes";
+        std::this_thread::sleep_for(backOff_);
+    }
 
     return true;
 }
