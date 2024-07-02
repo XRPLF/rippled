@@ -1051,7 +1051,7 @@ transactionSignFor(
     auto& sttx = preprocResult.second;
     {
         // Make the signer object that we'll inject.
-        STObject signer(sfSigner);
+        STObject signer = STObject::makeInnerObject(sfSigner);
         signer[sfAccount] = *signerAccountID;
         signer.setFieldVL(sfTxnSignature, signForParams.getSignature());
         signer.setFieldVL(
