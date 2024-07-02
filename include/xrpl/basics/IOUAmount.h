@@ -109,8 +109,7 @@ inline IOUAmount::IOUAmount(std::int64_t mantissa, int exponent)
     normalize();
 }
 
-inline IOUAmount&
-IOUAmount::operator=(beast::Zero)
+inline IOUAmount& IOUAmount::operator=(beast::Zero)
 {
     // The -100 is used to allow 0 to sort less than small positive values
     // which will have a large negative exponent.

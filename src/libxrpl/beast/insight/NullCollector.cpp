@@ -41,8 +41,7 @@ class NullCounterImpl : public CounterImpl
 public:
     explicit NullCounterImpl() = default;
 
-    void
-    increment(value_type) override
+    void increment(value_type) override
     {
     }
 
@@ -75,13 +74,11 @@ class NullGaugeImpl : public GaugeImpl
 public:
     explicit NullGaugeImpl() = default;
 
-    void
-    set(value_type) override
+    void set(value_type) override
     {
     }
 
-    void
-    increment(difference_type) override
+    void increment(difference_type) override
     {
     }
 
@@ -97,8 +94,7 @@ class NullMeterImpl : public MeterImpl
 public:
     explicit NullMeterImpl() = default;
 
-    void
-    increment(value_type) override
+    void increment(value_type) override
     {
     }
 
