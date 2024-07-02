@@ -80,8 +80,7 @@ STVector256::isEquivalent(const STBase& t) const
     return v && (mValue == v->mValue);
 }
 
-Json::Value
-STVector256::getJson(JsonOptions) const
+Json::Value STVector256::getJson(JsonOptions) const
 {
     Json::Value ret(Json::arrayValue);
 
