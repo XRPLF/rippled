@@ -23,7 +23,7 @@
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Slice.h>
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/STBase.h>
 
 #include <cstring>

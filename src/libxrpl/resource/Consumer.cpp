@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/detail/Entry.h>
 #include <xrpl/resource/detail/Logic.h>

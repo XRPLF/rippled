@@ -31,7 +31,7 @@
 
 #include <xrpld/core/Pg.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <boost/asio/ssl/detail/openssl_init.hpp>
 #include <boost/format.hpp>
 #include <algorithm>

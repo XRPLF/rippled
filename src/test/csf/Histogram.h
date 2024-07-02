@@ -19,7 +19,7 @@
 #ifndef RIPPLE_TEST_CSF_HISTOGRAM_H_INCLUDED
 #define RIPPLE_TEST_CSF_HISTOGRAM_H_INCLUDED
 
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <algorithm>
 #include <chrono>
 #include <cmath>

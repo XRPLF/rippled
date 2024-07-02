@@ -17,20 +17,19 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_INSTRUMENTATION_H_INCLUDED
-#define RIPPLE_BASICS_INSTRUMENTATION_H_INCLUDED
+#ifndef BEAST_UTILITY_INSTRUMENTATION_H_INCLUDED
+#define BEAST_UTILITY_INSTRUMENTATION_H_INCLUDED
 
 #include <cassert>
 
 #ifdef ENABLE_VOIDSTAR
-#ifndef NDEBUG
+#ifdef NDEBUG
+#error "Antithesis instrumentation requires Debug build"
+#endif
 #include <antithesis_sdk.h>
 #else
-#pragma GCC error "Antithesis instrumentation requires Debug build"
-#endif
-#else
 #define ALWAYS(cond, message, ...)
-#define ALWAYS_OR_UNREACHABLE(cond, message, ...) assert(message&& cond)
+#define ALWAYS_OR_UNREACHABLE(cond, message, ...) assert(message && (cond))
 #define SOMETIMES(cond, message, ...)
 #define REACHABLE(message, ...)
 #define UNREACHABLE(message, ...) assert(message && false)

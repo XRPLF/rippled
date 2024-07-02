@@ -20,8 +20,8 @@
 #ifndef RIPPLE_BASICS_SLABALLOCATOR_H_INCLUDED
 #define RIPPLE_BASICS_SLABALLOCATOR_H_INCLUDED
 
-#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/type_name.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/align.hpp>
 #include <boost/container/static_vector.hpp>

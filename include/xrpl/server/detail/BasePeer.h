@@ -20,8 +20,8 @@
 #ifndef RIPPLE_SERVER_BASEPEER_H_INCLUDED
 #define RIPPLE_SERVER_BASEPEER_H_INCLUDED
 
-#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/server/Port.h>
 #include <xrpl/server/detail/LowestLayer.h>
 #include <xrpl/server/detail/io_list.h>

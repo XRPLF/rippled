@@ -47,8 +47,8 @@
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/instrumentation.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>

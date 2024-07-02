@@ -27,8 +27,8 @@
 
 #include <xrpl/protocol/tokens.h>
 
-#include <xrpl/basics/instrumentation.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/detail/b58_utils.h>
 #include <xrpl/protocol/digest.h>
 

@@ -21,7 +21,7 @@
 #define RIPPLE_PROTOCOL_B58_UTILS_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/outcome.hpp>
 #include <boost/outcome/result.hpp>

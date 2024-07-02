@@ -21,7 +21,7 @@
 #define RIPPLE_BASICS_BUFFER_H_INCLUDED
 
 #include <xrpl/basics/Slice.h>
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <cstdint>
 #include <cstring>
 #include <memory>

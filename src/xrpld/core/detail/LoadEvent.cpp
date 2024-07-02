@@ -19,7 +19,7 @@
 
 #include <xrpld/core/LoadEvent.h>
 #include <xrpld/core/LoadMonitor.h>
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <iomanip>
 
 namespace ripple {

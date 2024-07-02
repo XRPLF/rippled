@@ -19,9 +19,9 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/ResolverAsio.h>
-#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <boost/asio.hpp>
 #include <atomic>
 #include <condition_variable>

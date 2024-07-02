@@ -23,7 +23,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
 
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <array>
 #include <concepts>
 #include <cstdlib>

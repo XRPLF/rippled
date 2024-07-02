@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <xrpld/nodestore/detail/DecodedBlob.h>
-#include <xrpl/basics/instrumentation.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <algorithm>
 
 namespace ripple {

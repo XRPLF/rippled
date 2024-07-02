@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/core/SemanticVersion.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <algorithm>
 #include <locale>

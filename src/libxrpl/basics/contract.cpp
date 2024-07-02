@@ -19,7 +19,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <cstdlib>
 #include <iostream>
 

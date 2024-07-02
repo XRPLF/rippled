@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_writer.h>
 #include <iomanip>
 #include <sstream>

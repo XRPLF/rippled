@@ -21,8 +21,8 @@
 #define RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/server/Session.h>
 #include <xrpl/server/detail/io_list.h>
 #include <boost/asio/ip/tcp.hpp>

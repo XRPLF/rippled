@@ -20,8 +20,8 @@
 #ifndef BEAST_CHRONO_MANUAL_CLOCK_H_INCLUDED
 #define BEAST_CHRONO_MANUAL_CLOCK_H_INCLUDED
 
-#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 namespace beast {
 

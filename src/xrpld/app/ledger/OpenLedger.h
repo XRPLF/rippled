@@ -27,8 +27,8 @@
 #include <xrpld/ledger/OpenView.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
-#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <mutex>
 
 namespace ripple {

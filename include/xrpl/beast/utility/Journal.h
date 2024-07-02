@@ -20,7 +20,7 @@
 #ifndef BEAST_UTILITY_JOURNAL_H_INCLUDED
 #define BEAST_UTILITY_JOURNAL_H_INCLUDED
 
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <sstream>
 
 namespace beast {

@@ -19,8 +19,8 @@
 
 #include <xrpld/shamap/SHAMap.h>
 #include <xrpld/shamap/SHAMapNodeID.h>
-#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/protocol/Serializer.h>
 

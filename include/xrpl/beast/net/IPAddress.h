@@ -20,11 +20,11 @@
 #ifndef BEAST_NET_IPADDRESS_H_INCLUDED
 #define BEAST_NET_IPADDRESS_H_INCLUDED
 
-#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/net/IPAddressV4.h>
 #include <xrpl/beast/net/IPAddressV6.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <boost/asio/ip/address.hpp>
 #include <boost/functional/hash.hpp>
 #include <cstdint>

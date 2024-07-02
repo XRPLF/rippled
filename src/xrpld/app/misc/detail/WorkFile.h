@@ -23,7 +23,7 @@
 #include <xrpld/app/misc/detail/Work.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <cerrno>
 
 namespace ripple {

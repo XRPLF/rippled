@@ -19,7 +19,7 @@
 
 #include <xrpld/ledger/detail/ApplyStateTable.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/st.h>

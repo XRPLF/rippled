@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <array>
 #include <stdexcept>

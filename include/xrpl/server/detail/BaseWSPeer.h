@@ -20,8 +20,8 @@
 #ifndef RIPPLE_SERVER_BASEWSPEER_H_INCLUDED
 #define RIPPLE_SERVER_BASEWSPEER_H_INCLUDED
 
-#include <xrpl/basics/instrumentation.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/protocol/BuildInfo.h>

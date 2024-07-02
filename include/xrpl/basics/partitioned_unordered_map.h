@@ -20,7 +20,7 @@
 #ifndef RIPPLE_BASICS_PARTITIONED_UNORDERED_MAP_H
 #define RIPPLE_BASICS_PARTITIONED_UNORDERED_MAP_H
 
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <functional>
 #include <optional>
 #include <thread>

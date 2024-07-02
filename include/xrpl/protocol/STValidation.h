@@ -22,7 +22,7 @@
 
 #include <xrpl/basics/FeeUnits.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>

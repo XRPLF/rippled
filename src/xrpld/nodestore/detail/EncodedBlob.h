@@ -22,7 +22,7 @@
 
 #include <xrpld/nodestore/NodeObject.h>
 #include <xrpl/basics/Buffer.h>
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <boost/align/align_up.hpp>
 #include <algorithm>
 #include <array>

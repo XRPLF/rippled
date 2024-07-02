@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <boost/predef.h>
 #include <algorithm>
 #include <numeric>

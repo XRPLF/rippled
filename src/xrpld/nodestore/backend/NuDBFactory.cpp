@@ -23,7 +23,7 @@
 #include <xrpld/nodestore/detail/EncodedBlob.h>
 #include <xrpld/nodestore/detail/codec.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <boost/filesystem.hpp>
 #include <chrono>
 #include <cstdint>

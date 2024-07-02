@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/clock/basic_seconds_clock.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <atomic>
 #include <chrono>

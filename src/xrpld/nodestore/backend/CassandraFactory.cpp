@@ -31,8 +31,8 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/instrumentation.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/digest.h>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/filesystem.hpp>

@@ -19,7 +19,7 @@
 
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Protocol.h>
 
 namespace ripple {

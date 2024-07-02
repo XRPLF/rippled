@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/instrumentation.h>
 #include <xrpl/beast/core/List.h>
 #include <xrpl/beast/insight/CounterImpl.h>
 #include <xrpl/beast/insight/EventImpl.h>
@@ -26,6 +25,7 @@
 #include <xrpl/beast/insight/MeterImpl.h>
 #include <xrpl/beast/insight/StatsDCollector.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <climits>
 #include <deque>

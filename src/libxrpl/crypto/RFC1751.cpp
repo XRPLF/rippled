@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/crypto/RFC1751.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/copied.hpp>

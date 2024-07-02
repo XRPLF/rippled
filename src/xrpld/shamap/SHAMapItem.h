@@ -25,7 +25,7 @@
 #include <xrpl/basics/SlabAllocator.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
 namespace ripple {

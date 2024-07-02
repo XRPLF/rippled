@@ -20,7 +20,7 @@
 #define BASICS_FEES_H_INCLUDED
 
 #include <xrpl/basics/XRPAmount.h>
-#include <xrpl/basics/instrumentation.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <boost/multiprecision/cpp_int.hpp>
 
 #include <cmath>
