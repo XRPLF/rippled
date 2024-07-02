@@ -20,11 +20,11 @@
 #ifndef RIPPLE_PROTOCOL_STVALIDATION_H_INCLUDED
 #define RIPPLE_PROTOCOL_STVALIDATION_H_INCLUDED
 
-#include <ripple/basics/FeeUnits.h>
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/STObject.h>
-#include <ripple/protocol/SecretKey.h>
+#include <xrpl/basics/FeeUnits.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <cassert>
 #include <cstdint>
 #include <functional>

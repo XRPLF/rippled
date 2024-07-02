@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/AcceptedLedger.h>
-#include <ripple/app/main/Application.h>
+#include <xrpld/app/ledger/AcceptedLedger.h>
+#include <xrpld/app/main/Application.h>
 #include <algorithm>
 
 namespace ripple {

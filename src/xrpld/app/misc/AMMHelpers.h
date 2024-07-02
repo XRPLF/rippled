@@ -20,18 +20,18 @@
 #ifndef RIPPLE_APP_MISC_AMMHELPERS_H_INCLUDED
 #define RIPPLE_APP_MISC_AMMHELPERS_H_INCLUDED
 
-#include <ripple/basics/IOUAmount.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/Number.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/protocol/AMMCore.h>
-#include <ripple/protocol/AmountConversions.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Issue.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/protocol/Rules.h>
-#include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/STAmount.h>
+#include <xrpl/basics/IOUAmount.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/STAmount.h>
 
 #include <type_traits>
 

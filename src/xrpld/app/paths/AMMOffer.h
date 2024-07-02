@@ -20,10 +20,10 @@
 #ifndef RIPPLE_APP_AMMOFFER_H_INCLUDED
 #define RIPPLE_APP_AMMOFFER_H_INCLUDED
 
-#include <ripple/ledger/ApplyView.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/protocol/TER.h>
+#include <xrpld/ledger/ApplyView.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/TER.h>
 
 namespace ripple {
 

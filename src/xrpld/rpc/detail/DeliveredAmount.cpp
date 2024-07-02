@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
-#include <ripple/rpc/DeliveredAmount.h>
+#include <xrpld/rpc/DeliveredAmount.h>
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/OpenLedger.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/RPCErr.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/app/misc/Transaction.h>
+#include <xrpld/ledger/View.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/RPCErr.h>
 #include <boost/algorithm/string/case_conv.hpp>
 
 namespace ripple {

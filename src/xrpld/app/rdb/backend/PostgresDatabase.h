@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_RDB_BACKEND_POSTGRESDATABASE_H_INCLUDED
 #define RIPPLE_APP_RDB_BACKEND_POSTGRESDATABASE_H_INCLUDED
 
-#include <ripple/app/rdb/RelationalDatabase.h>
+#include <xrpld/app/rdb/RelationalDatabase.h>
 
 namespace ripple {
 

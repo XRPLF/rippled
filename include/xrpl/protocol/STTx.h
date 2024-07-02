@@ -20,14 +20,14 @@
 #ifndef RIPPLE_PROTOCOL_STTX_H_INCLUDED
 #define RIPPLE_PROTOCOL_STTX_H_INCLUDED
 
-#include <ripple/basics/Expected.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/Rules.h>
-#include <ripple/protocol/STObject.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/SeqProxy.h>
-#include <ripple/protocol/TxFormats.h>
+#include <xrpl/basics/Expected.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <boost/container/flat_set.hpp>
 
 #include <functional>

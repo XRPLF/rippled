@@ -24,7 +24,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
 
-#include <ripple/basics/strHex.h>
+#include <xrpl/basics/strHex.h>
 
 #include <initializer_list>
 

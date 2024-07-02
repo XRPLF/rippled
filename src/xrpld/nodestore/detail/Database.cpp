@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/core/CurrentThreadName.h>
-#include <ripple/json/json_value.h>
-#include <ripple/nodestore/Database.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/jss.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/nodestore/Database.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/jss.h>
 #include <chrono>
 
 namespace ripple {

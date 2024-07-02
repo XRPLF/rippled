@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/OrderBookDB.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/AMMUtils.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/basics/Log.h>
-#include <ripple/core/Config.h>
-#include <ripple/core/JobQueue.h>
-#include <ripple/protocol/Indexes.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/OrderBookDB.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/core/JobQueue.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Indexes.h>
 
 namespace ripple {
 

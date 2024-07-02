@@ -20,7 +20,7 @@
 #ifndef RIPPLE_RPC_HANDLERS_HANDLERS_H_INCLUDED
 #define RIPPLE_RPC_HANDLERS_HANDLERS_H_INCLUDED
 
-#include <ripple/rpc/handlers/LedgerHandler.h>
+#include <xrpld/rpc/handlers/LedgerHandler.h>
 
 namespace ripple {
 

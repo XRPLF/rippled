@@ -20,12 +20,12 @@
 #ifndef RIPPLE_APP_RDB_BACKEND_DETAIL_NODE_H_INCLUDED
 #define RIPPLE_APP_RDB_BACKEND_DETAIL_NODE_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/misc/Manifest.h>
-#include <ripple/app/rdb/RelationalDatabase.h>
-#include <ripple/core/Config.h>
-#include <ripple/overlay/PeerReservationTable.h>
-#include <ripple/peerfinder/impl/Store.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/misc/Manifest.h>
+#include <xrpld/app/rdb/RelationalDatabase.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/overlay/PeerReservationTable.h>
+#include <xrpld/peerfinder/detail/Store.h>
 #include <boost/filesystem.hpp>
 
 namespace ripple {

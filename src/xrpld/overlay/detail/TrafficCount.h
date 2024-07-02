@@ -20,8 +20,8 @@
 #ifndef RIPPLE_OVERLAY_TRAFFIC_H_INCLUDED
 #define RIPPLE_OVERLAY_TRAFFIC_H_INCLUDED
 
-#include <ripple/basics/safe_cast.h>
-#include <ripple/protocol/messages.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/protocol/messages.h>
 
 #include <array>
 #include <atomic>

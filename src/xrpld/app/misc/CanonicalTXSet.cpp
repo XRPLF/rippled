@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/CanonicalTXSet.h>
+#include <xrpld/app/misc/CanonicalTXSet.h>
 
 namespace ripple {
 

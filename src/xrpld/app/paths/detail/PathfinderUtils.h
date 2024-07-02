@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PATH_IMPL_PATHFINDERUTILS_H_INCLUDED
 #define RIPPLE_PATH_IMPL_PATHFINDERUTILS_H_INCLUDED
 
-#include <ripple/protocol/STAmount.h>
+#include <xrpl/protocol/STAmount.h>
 
 namespace ripple {
 

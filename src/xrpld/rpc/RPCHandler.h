@@ -20,10 +20,10 @@
 #ifndef RIPPLE_RPC_RPCHANDLER_H_INCLUDED
 #define RIPPLE_RPC_RPCHANDLER_H_INCLUDED
 
-#include <ripple/core/Config.h>
-#include <ripple/net/InfoSub.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/Status.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/net/InfoSub.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Status.h>
 
 namespace ripple {
 namespace RPC {

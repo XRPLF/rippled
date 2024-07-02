@@ -20,8 +20,8 @@
 #ifndef RIPPLE_SHAMAP_SHAMAPSYNCFILTER_H_INCLUDED
 #define RIPPLE_SHAMAP_SHAMAPSYNCFILTER_H_INCLUDED
 
-#include <ripple/shamap/SHAMapNodeID.h>
-#include <ripple/shamap/SHAMapTreeNode.h>
+#include <xrpld/shamap/SHAMapNodeID.h>
+#include <xrpld/shamap/SHAMapTreeNode.h>
 #include <optional>
 
 /** Callback for filtering SHAMap during sync. */

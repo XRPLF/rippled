@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/contract.h>
-#include <ripple/protocol/STArray.h>
-#include <ripple/protocol/STBase.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STBase.h>
 
 namespace ripple {
 

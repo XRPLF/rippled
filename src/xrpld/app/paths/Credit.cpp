@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/ledger/ReadView.h>
-#include <ripple/protocol/AmountConversions.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/STAmount.h>
+#include <xrpld/ledger/ReadView.h>
+#include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/STAmount.h>
 
 namespace ripple {
 

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/json/Output.h>
-#include <ripple/json/Writer.h>
+#include <xrpl/json/Output.h>
+#include <xrpl/json/Writer.h>
 #include <set>
 #include <stack>
 
@@ -285,7 +285,8 @@ Writer::output(double f)
     impl_->output({s.data(), lengthWithoutTrailingZeros(s)});
 }
 
-void Writer::output(std::nullptr_t)
+void
+Writer::output(std::nullptr_t)
 {
     impl_->output("null");
 }

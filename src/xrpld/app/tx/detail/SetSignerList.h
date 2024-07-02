@@ -20,15 +20,15 @@
 #ifndef RIPPLE_TX_SETSIGNERLIST_H_INCLUDED
 #define RIPPLE_TX_SETSIGNERLIST_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/tx/impl/SignerEntries.h>
-#include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/Rules.h>
-#include <ripple/protocol/STArray.h>
-#include <ripple/protocol/STObject.h>
-#include <ripple/protocol/STTx.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/tx/detail/SignerEntries.h>
+#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <algorithm>
 #include <cstdint>
 #include <vector>

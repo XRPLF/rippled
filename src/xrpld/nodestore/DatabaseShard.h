@@ -20,11 +20,11 @@
 #ifndef RIPPLE_NODESTORE_DATABASESHARD_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASESHARD_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/core/SociDB.h>
-#include <ripple/nodestore/Database.h>
-#include <ripple/nodestore/ShardInfo.h>
-#include <ripple/nodestore/Types.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/core/SociDB.h>
+#include <xrpld/nodestore/Database.h>
+#include <xrpld/nodestore/ShardInfo.h>
+#include <xrpld/nodestore/Types.h>
 
 #include <memory>
 #include <optional>

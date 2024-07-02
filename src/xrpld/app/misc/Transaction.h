@@ -20,14 +20,14 @@
 #ifndef RIPPLE_APP_MISC_TRANSACTION_H_INCLUDED
 #define RIPPLE_APP_MISC_TRANSACTION_H_INCLUDED
 
-#include <ripple/basics/RangeSet.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/STBase.h>
-#include <ripple/protocol/STTx.h>
-#include <ripple/protocol/TER.h>
-#include <ripple/protocol/TxMeta.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxMeta.h>
 
 #include <optional>
 #include <variant>

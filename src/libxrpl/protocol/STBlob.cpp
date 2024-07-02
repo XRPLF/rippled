@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/protocol/STBlob.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/protocol/STBlob.h>
 
 namespace ripple {
 

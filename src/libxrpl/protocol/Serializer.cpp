@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/contract.h>
-#include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/digest.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/digest.h>
 #include <type_traits>
 
 namespace ripple {

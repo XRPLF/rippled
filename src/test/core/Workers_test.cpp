@@ -17,11 +17,11 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
 
-#include <ripple/basics/PerfLog.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/core/JobTypes.h>
-#include <ripple/core/impl/Workers.h>
-#include <ripple/json/json_value.h>
+#include <xrpld/core/JobTypes.h>
+#include <xrpld/core/detail/Workers.h>
+#include <xrpld/perflog/PerfLog.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/json/json_value.h>
 #include <chrono>
 #include <condition_variable>
 #include <cstdint>

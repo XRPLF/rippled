@@ -20,11 +20,11 @@
 #ifndef RIPPLE_APP_LEDGER_SKIPLISTACQUIRE_H_INCLUDED
 #define RIPPLE_APP_LEDGER_SKIPLISTACQUIRE_H_INCLUDED
 
-#include <ripple/app/ledger/InboundLedger.h>
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/impl/TimeoutCounter.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/shamap/SHAMap.h>
+#include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/ledger/detail/TimeoutCounter.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/shamap/SHAMap.h>
 #include <queue>
 
 namespace ripple {

@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/LocalTxs.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/protocol/Indexes.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/ledger/LocalTxs.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpl/protocol/Indexes.h>
 
 /*
  This code prevents scenarios like the following:

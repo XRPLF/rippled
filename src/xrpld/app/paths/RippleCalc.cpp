@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/Flow.h>
-#include <ripple/app/paths/RippleCalc.h>
-#include <ripple/app/paths/impl/FlowDebugInfo.h>
-#include <ripple/basics/Log.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Feature.h>
+#include <xrpld/app/paths/Flow.h>
+#include <xrpld/app/paths/RippleCalc.h>
+#include <xrpld/app/paths/detail/FlowDebugInfo.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Feature.h>
 
 namespace ripple {
 namespace path {

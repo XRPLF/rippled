@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/ledger/ApplyViewImpl.h>
-#include <ripple/ledger/OpenView.h>
-#include <ripple/ledger/PaymentSandbox.h>
-#include <ripple/ledger/Sandbox.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Protocol.h>
 #include <test/jtx.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpld/ledger/ApplyViewImpl.h>
+#include <xrpld/ledger/OpenView.h>
+#include <xrpld/ledger/PaymentSandbox.h>
+#include <xrpld/ledger/Sandbox.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Protocol.h>
 #include <type_traits>
 
 namespace ripple {

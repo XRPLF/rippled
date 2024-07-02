@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/net/DatabaseDownloader.h>
+#include <xrpld/net/DatabaseDownloader.h>
 
 namespace ripple {
 

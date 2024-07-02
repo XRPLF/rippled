@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
 #define RIPPLE_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
 
-#include <ripple/net/InfoSub.h>
-#include <ripple/protocol/MultiApiJson.h>
+#include <xrpld/net/InfoSub.h>
+#include <xrpl/protocol/MultiApiJson.h>
 
 #include <memory>
 #include <mutex>

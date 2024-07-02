@@ -16,9 +16,9 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/app/paths/AMMLiquidity.h>
+#include <xrpld/app/paths/AMMLiquidity.h>
 
-#include <ripple/app/paths/AMMOffer.h>
+#include <xrpld/app/paths/AMMOffer.h>
 
 namespace ripple {
 

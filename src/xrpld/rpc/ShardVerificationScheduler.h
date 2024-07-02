@@ -20,7 +20,7 @@
 #ifndef RIPPLE_RPC_SHARDVERIFICATIONSCHEDULER_H_INCLUDED
 #define RIPPLE_RPC_SHARDVERIFICATIONSCHEDULER_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
+#include <xrpld/app/main/Application.h>
 #include <functional>
 
 namespace ripple {

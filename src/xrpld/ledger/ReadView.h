@@ -20,21 +20,21 @@
 #ifndef RIPPLE_LEDGER_READVIEW_H_INCLUDED
 #define RIPPLE_LEDGER_READVIEW_H_INCLUDED
 
-#include <ripple/basics/FeeUnits.h>
-#include <ripple/basics/IOUAmount.h>
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/hash/uhash.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/ledger/detail/ReadViewFwdRange.h>
-#include <ripple/protocol/Fees.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/LedgerHeader.h>
-#include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/Rules.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/STLedgerEntry.h>
-#include <ripple/protocol/STTx.h>
+#include <xrpld/ledger/detail/ReadViewFwdRange.h>
+#include <xrpl/basics/FeeUnits.h>
+#include <xrpl/basics/IOUAmount.h>
+#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <cassert>
 #include <cstdint>
 #include <memory>
@@ -283,6 +283,6 @@ makeRulesGivenLedger(
 
 }  // namespace ripple
 
-#include <ripple/ledger/detail/ReadViewFwdRange.ipp>
+#include <xrpld/ledger/detail/ReadViewFwdRange.ipp>
 
 #endif

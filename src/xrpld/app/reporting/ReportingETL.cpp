@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/app/rdb/backend/PostgresDatabase.h>
-#include <ripple/app/reporting/ReportingETL.h>
+#include <xrpld/app/rdb/backend/PostgresDatabase.h>
+#include <xrpld/app/reporting/ReportingETL.h>
 
-#include <ripple/beast/core/CurrentThreadName.h>
-#include <ripple/json/json_reader.h>
-#include <ripple/json/json_writer.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_writer.h>
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core.hpp>

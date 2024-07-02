@@ -19,12 +19,12 @@
 #ifndef RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED
 #define RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED
 
-#include <ripple/basics/Expected.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/STLedgerEntry.h>
-#include <ripple/protocol/TER.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/basics/Expected.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 
 namespace ripple {
 

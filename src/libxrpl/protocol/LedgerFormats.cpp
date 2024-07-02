@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/LedgerFormats.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/jss.h>
 #include <utility>
 
 namespace ripple {

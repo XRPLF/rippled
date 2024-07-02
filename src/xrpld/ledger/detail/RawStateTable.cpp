@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/ledger/detail/RawStateTable.h>
+#include <xrpld/ledger/detail/RawStateTable.h>
+#include <xrpl/basics/contract.h>
 
 namespace ripple {
 namespace detail {

@@ -31,6 +31,6 @@
 #undef TYPE_BOOL
 #endif
 
-#include <ripple/proto/ripple.pb.h>
+#include <xrpl/proto/ripple.pb.h>
 
 #endif

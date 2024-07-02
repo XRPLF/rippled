@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/RippleCalc.h>
-#include <ripple/app/tx/impl/Payment.h>
-#include <ripple/basics/Log.h>
-#include <ripple/core/Config.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/protocol/st.h>
+#include <xrpld/app/paths/RippleCalc.h>
+#include <xrpld/app/tx/detail/Payment.h>
+#include <xrpld/core/Config.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/st.h>
 
 namespace ripple {
 

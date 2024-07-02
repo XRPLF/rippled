@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/InboundLedgers.h>
-#include <ripple/app/ledger/LedgerCleaner.h>
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/beast/core/CurrentThreadName.h>
-#include <ripple/protocol/jss.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
+#include <xrpld/app/ledger/LedgerCleaner.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/misc/LoadFeeTrack.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

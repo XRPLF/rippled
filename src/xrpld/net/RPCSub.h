@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NET_RPCSUB_H_INCLUDED
 #define RIPPLE_NET_RPCSUB_H_INCLUDED
 
-#include <ripple/core/JobQueue.h>
-#include <ripple/net/InfoSub.h>
+#include <xrpld/core/JobQueue.h>
+#include <xrpld/net/InfoSub.h>
 #include <boost/asio/io_service.hpp>
 
 namespace ripple {

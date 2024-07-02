@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/basics/make_SSLContext.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/make_SSLContext.h>
 #include <ctime>
 #include <stdexcept>
 

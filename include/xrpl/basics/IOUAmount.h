@@ -20,9 +20,9 @@
 #ifndef RIPPLE_BASICS_IOUAMOUNT_H_INCLUDED
 #define RIPPLE_BASICS_IOUAMOUNT_H_INCLUDED
 
-#include <ripple/basics/LocalValue.h>
-#include <ripple/basics/Number.h>
-#include <ripple/beast/utility/Zero.h>
+#include <xrpl/basics/LocalValue.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <boost/operators.hpp>
 #include <cstdint>
 #include <string>
@@ -109,7 +109,8 @@ inline IOUAmount::IOUAmount(std::int64_t mantissa, int exponent)
     normalize();
 }
 
-inline IOUAmount& IOUAmount::operator=(beast::Zero)
+inline IOUAmount&
+IOUAmount::operator=(beast::Zero)
 {
     // The -100 is used to allow 0 to sort less than small positive values
     // which will have a large negative exponent.

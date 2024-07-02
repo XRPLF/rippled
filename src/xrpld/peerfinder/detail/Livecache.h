@@ -20,13 +20,13 @@
 #ifndef RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
 #define RIPPLE_PEERFINDER_LIVECACHE_H_INCLUDED
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/random.h>
-#include <ripple/beast/container/aged_map.h>
-#include <ripple/beast/utility/maybe_const.h>
-#include <ripple/peerfinder/PeerfinderManager.h>
-#include <ripple/peerfinder/impl/Tuning.h>
-#include <ripple/peerfinder/impl/iosformat.h>
+#include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/detail/Tuning.h>
+#include <xrpld/peerfinder/detail/iosformat.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/beast/container/aged_map.h>
+#include <xrpl/beast/utility/maybe_const.h>
 #include <boost/intrusive/list.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 

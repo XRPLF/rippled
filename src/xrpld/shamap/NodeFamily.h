@@ -20,8 +20,8 @@
 #ifndef RIPPLE_SHAMAP_NODEFAMILY_H_INCLUDED
 #define RIPPLE_SHAMAP_NODEFAMILY_H_INCLUDED
 
-#include <ripple/app/main/CollectorManager.h>
-#include <ripple/shamap/Family.h>
+#include <xrpld/app/main/CollectorManager.h>
+#include <xrpld/shamap/Family.h>
 
 namespace ripple {
 
@@ -66,12 +66,14 @@ public:
         return false;
     }
 
-    std::shared_ptr<FullBelowCache> getFullBelowCache(std::uint32_t) override
+    std::shared_ptr<FullBelowCache>
+    getFullBelowCache(std::uint32_t) override
     {
         return fbCache_;
     }
 
-    std::shared_ptr<TreeNodeCache> getTreeNodeCache(std::uint32_t) override
+    std::shared_ptr<TreeNodeCache>
+    getTreeNodeCache(std::uint32_t) override
     {
         return tnCache_;
     }

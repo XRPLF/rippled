@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/AcceptedLedger.h>
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/rdb/backend/detail/Shard.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/core/SociDB.h>
-#include <ripple/json/to_string.h>
+#include <xrpld/app/ledger/AcceptedLedger.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/rdb/backend/detail/Shard.h>
+#include <xrpld/core/DatabaseCon.h>
+#include <xrpld/core/SociDB.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/json/to_string.h>
 
 namespace ripple {
 namespace detail {

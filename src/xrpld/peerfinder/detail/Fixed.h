@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_FIXED_H_INCLUDED
 #define RIPPLE_PEERFINDER_FIXED_H_INCLUDED
 
-#include <ripple/peerfinder/impl/Tuning.h>
+#include <xrpld/peerfinder/detail/Tuning.h>
 
 namespace ripple {
 namespace PeerFinder {

@@ -19,11 +19,11 @@
 
 #ifndef RIPPLE_APP_REPORTING_ETLSOURCE_H_INCLUDED
 #define RIPPLE_APP_REPORTING_ETLSOURCE_H_INCLUDED
-#include <ripple/app/main/Application.h>
-#include <ripple/app/reporting/ETLHelpers.h>
-#include <ripple/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
-#include <ripple/protocol/STLedgerEntry.h>
-#include <ripple/rpc/Context.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/reporting/ETLHelpers.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/beast/core.hpp>

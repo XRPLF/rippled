@@ -20,10 +20,10 @@
 #ifndef RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
 #define RIPPLE_SERVER_BASEHTTPPEER_H_INCLUDED
 
-#include <ripple/basics/Log.h>
-#include <ripple/beast/net/IPAddressConversion.h>
-#include <ripple/server/Session.h>
-#include <ripple/server/impl/io_list.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/server/Session.h>
+#include <xrpl/server/detail/io_list.h>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/ssl/stream.hpp>
@@ -244,7 +244,7 @@ BaseHTTPPeer<Handler, Impl>::close()
         return post(
             strand_,
             std::bind(
-                (void (BaseHTTPPeer::*)(void)) & BaseHTTPPeer::close,
+                (void(BaseHTTPPeer::*)(void)) & BaseHTTPPeer::close,
                 impl().shared_from_this()));
     boost::beast::get_lowest_layer(impl().stream_).close();
 }
@@ -507,7 +507,7 @@ BaseHTTPPeer<Handler, Impl>::close(bool graceful)
         return post(
             strand_,
             std::bind(
-                (void (BaseHTTPPeer::*)(bool)) &
+                (void(BaseHTTPPeer::*)(bool)) &
                     BaseHTTPPeer<Handler, Impl>::close,
                 impl().shared_from_this(),
                 graceful));

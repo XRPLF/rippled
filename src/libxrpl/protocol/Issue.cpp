@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Issue.h>
+#include <xrpl/protocol/Issue.h>
 
-#include <ripple/json/json_errors.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/UintTypes.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/json/json_errors.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 
