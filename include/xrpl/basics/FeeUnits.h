@@ -110,8 +110,7 @@ public:
     {
     }
 
-    constexpr TaggedFee&
-    operator=(beast::Zero)
+    constexpr TaggedFee& operator=(beast::Zero)
     {
         fee_ = 0;
         return *this;
