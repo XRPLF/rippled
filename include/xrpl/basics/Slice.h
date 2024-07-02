@@ -20,8 +20,8 @@
 #ifndef RIPPLE_BASICS_SLICE_H_INCLUDED
 #define RIPPLE_BASICS_SLICE_H_INCLUDED
 
-#include <ripple/basics/contract.h>
-#include <ripple/basics/strHex.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
 #include <algorithm>
 #include <array>
 #include <cassert>

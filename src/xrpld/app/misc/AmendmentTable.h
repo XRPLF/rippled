@@ -20,11 +20,11 @@
 #ifndef RIPPLE_APP_MISC_AMENDMENTTABLE_H_INCLUDED
 #define RIPPLE_APP_MISC_AMENDMENTTABLE_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/STValidation.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/STValidation.h>
 
 #include <optional>
 

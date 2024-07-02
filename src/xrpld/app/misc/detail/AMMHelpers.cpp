@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/AMMHelpers.h>
+#include <xrpld/app/misc/AMMHelpers.h>
 
 namespace ripple {
 

@@ -20,10 +20,10 @@
 #ifndef RIPPLE_BASICS_XRPAMOUNT_H_INCLUDED
 #define RIPPLE_BASICS_XRPAMOUNT_H_INCLUDED
 
-#include <ripple/basics/contract.h>
-#include <ripple/basics/safe_cast.h>
-#include <ripple/beast/utility/Zero.h>
-#include <ripple/json/json_value.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/json/json_value.h>
 
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/operators.hpp>
@@ -65,7 +65,8 @@ public:
     {
     }
 
-    constexpr XRPAmount& operator=(beast::Zero)
+    constexpr XRPAmount&
+    operator=(beast::Zero)
     {
         drops_ = 0;
         return *this;

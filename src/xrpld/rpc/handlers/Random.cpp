@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/basics/base_uint.h>
-#include <ripple/beast/utility/rngfill.h>
-#include <ripple/crypto/csprng.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/RPCErr.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/rngfill.h>
+#include <xrpl/crypto/csprng.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

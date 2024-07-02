@@ -20,11 +20,11 @@
 #ifndef RIPPLE_SERVER_SERVERIMPL_H_INCLUDED
 #define RIPPLE_SERVER_SERVERIMPL_H_INCLUDED
 
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/core/List.h>
-#include <ripple/server/Server.h>
-#include <ripple/server/impl/Door.h>
-#include <ripple/server/impl/io_list.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/core/List.h>
+#include <xrpl/server/Server.h>
+#include <xrpl/server/detail/Door.h>
+#include <xrpl/server/detail/io_list.h>
 #include <boost/asio.hpp>
 #include <array>
 #include <chrono>

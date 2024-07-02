@@ -20,8 +20,8 @@
 #ifndef RIPPLE_LEDGER_RAWSTATETABLE_H_INCLUDED
 #define RIPPLE_LEDGER_RAWSTATETABLE_H_INCLUDED
 
-#include <ripple/ledger/RawView.h>
-#include <ripple/ledger/ReadView.h>
+#include <xrpld/ledger/RawView.h>
+#include <xrpld/ledger/ReadView.h>
 
 #include <boost/container/pmr/monotonic_buffer_resource.hpp>
 #include <boost/container/pmr/polymorphic_allocator.hpp>

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_MAIN_COLLECTORMANAGER_H_INCLUDED
 #define RIPPLE_APP_MAIN_COLLECTORMANAGER_H_INCLUDED
 
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/beast/insight/Insight.h>
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/beast/insight/Insight.h>
 
 namespace ripple {
 

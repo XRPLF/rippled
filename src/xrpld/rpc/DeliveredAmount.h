@@ -20,8 +20,8 @@
 #ifndef RIPPLE_RPC_DELIVEREDAMOUNT_H_INCLUDED
 #define RIPPLE_RPC_DELIVEREDAMOUNT_H_INCLUDED
 
-#include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/STAmount.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/STAmount.h>
 
 #include <functional>
 #include <memory>

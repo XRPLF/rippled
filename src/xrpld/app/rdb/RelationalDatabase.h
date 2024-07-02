@@ -20,13 +20,13 @@
 #ifndef RIPPLE_APP_RDB_RELATIONALDATABASE_H_INCLUDED
 #define RIPPLE_APP_RDB_RELATIONALDATABASE_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/core/Config.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/peerfinder/impl/Store.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/Transaction.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/core/DatabaseCon.h>
+#include <xrpld/peerfinder/detail/Store.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>

@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/core/TimeKeeper.h>
-#include <ripple/nodestore/ShardInfo.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/digest.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/core/TimeKeeper.h>
+#include <xrpld/nodestore/ShardInfo.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/digest.h>
 
 namespace ripple {
 namespace NodeStore {

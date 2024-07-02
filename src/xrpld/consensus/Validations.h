@@ -20,13 +20,13 @@
 #ifndef RIPPLE_CONSENSUS_VALIDATIONS_H_INCLUDED
 #define RIPPLE_CONSENSUS_VALIDATIONS_H_INCLUDED
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/UnorderedContainers.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/container/aged_container_utility.h>
-#include <ripple/beast/container/aged_unordered_map.h>
-#include <ripple/consensus/LedgerTrie.h>
-#include <ripple/protocol/PublicKey.h>
+#include <xrpld/consensus/LedgerTrie.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/container/aged_container_utility.h>
+#include <xrpl/beast/container/aged_unordered_map.h>
+#include <xrpl/protocol/PublicKey.h>
 
 #include <mutex>
 #include <optional>

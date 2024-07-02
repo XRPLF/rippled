@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_SOURCESTRINGS_H_INCLUDED
 #define RIPPLE_PEERFINDER_SOURCESTRINGS_H_INCLUDED
 
-#include <ripple/peerfinder/impl/Source.h>
+#include <xrpld/peerfinder/detail/Source.h>
 #include <memory>
 
 namespace ripple {

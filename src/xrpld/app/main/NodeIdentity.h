@@ -20,9 +20,9 @@
 #ifndef RIPPLE_APP_MAIN_NODEIDENTITY_H_INCLUDED
 #define RIPPLE_APP_MAIN_NODEIDENTITY_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SecretKey.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <boost/program_options.hpp>
 #include <utility>
 

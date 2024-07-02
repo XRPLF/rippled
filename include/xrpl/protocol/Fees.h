@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_FEES_H_INCLUDED
 #define RIPPLE_PROTOCOL_FEES_H_INCLUDED
 
-#include <ripple/basics/XRPAmount.h>
+#include <xrpl/basics/XRPAmount.h>
 
 namespace ripple {
 

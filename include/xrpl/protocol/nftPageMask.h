@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_NFT_PAGE_MASK_H_INCLUDED
 #define RIPPLE_PROTOCOL_NFT_PAGE_MASK_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
+#include <xrpl/basics/base_uint.h>
 #include <string_view>
 
 namespace ripple {

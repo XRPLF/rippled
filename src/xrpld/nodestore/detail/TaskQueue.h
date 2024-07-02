@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NODESTORE_TASKQUEUE_H_INCLUDED
 #define RIPPLE_NODESTORE_TASKQUEUE_H_INCLUDED
 
-#include <ripple/core/impl/Workers.h>
+#include <xrpld/core/detail/Workers.h>
 
 #include <functional>
 #include <queue>

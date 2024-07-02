@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Keylet.h>
-#include <ripple/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 
 namespace ripple {
 

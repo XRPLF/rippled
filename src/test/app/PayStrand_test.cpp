@@ -15,20 +15,20 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/AMMContext.h>
-#include <ripple/app/paths/Flow.h>
-#include <ripple/app/paths/RippleCalc.h>
-#include <ripple/app/paths/impl/Steps.h>
-#include <ripple/basics/contract.h>
-#include <ripple/basics/safe_cast.h>
-#include <ripple/core/Config.h>
-#include <ripple/ledger/ApplyViewImpl.h>
-#include <ripple/ledger/PaymentSandbox.h>
-#include <ripple/ledger/Sandbox.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/PathSet.h>
+#include <xrpld/app/paths/AMMContext.h>
+#include <xrpld/app/paths/Flow.h>
+#include <xrpld/app/paths/RippleCalc.h>
+#include <xrpld/app/paths/detail/Steps.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/ledger/ApplyViewImpl.h>
+#include <xrpld/ledger/PaymentSandbox.h>
+#include <xrpld/ledger/Sandbox.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {

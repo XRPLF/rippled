@@ -20,10 +20,10 @@
 #ifndef RIPPLE_APP_MISC_MANIFEST_H_INCLUDED
 #define RIPPLE_APP_MISC_MANIFEST_H_INCLUDED
 
-#include <ripple/basics/UnorderedContainers.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SecretKey.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
 
 #include <optional>
 #include <shared_mutex>

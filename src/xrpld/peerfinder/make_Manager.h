@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PEERFINDER_MAKE_MANAGER_H_INCLUDED
 #define RIPPLE_PEERFINDER_MAKE_MANAGER_H_INCLUDED
 
-#include <ripple/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/PeerfinderManager.h>
 #include <boost/asio/io_service.hpp>
 #include <memory>
 

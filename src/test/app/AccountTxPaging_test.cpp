@@ -16,15 +16,15 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/jss.h>
-#include <cstdlib>
 #include <test/jtx.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/jss.h>
+#include <cstdlib>
 
-#include <ripple/rpc/GRPCHandlers.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/rpc/GRPCTestClientBase.h>
+#include <xrpld/rpc/GRPCHandlers.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
 
 namespace ripple {
 

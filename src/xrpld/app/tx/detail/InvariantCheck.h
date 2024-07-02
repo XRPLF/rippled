@@ -20,11 +20,11 @@
 #ifndef RIPPLE_APP_TX_INVARIANTCHECK_H_INCLUDED
 #define RIPPLE_APP_TX_INVARIANTCHECK_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/protocol/STLedgerEntry.h>
-#include <ripple/protocol/STTx.h>
-#include <ripple/protocol/TER.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 
 #include <cstdint>
 #include <map>

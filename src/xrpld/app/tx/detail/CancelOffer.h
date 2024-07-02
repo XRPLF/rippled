@@ -20,10 +20,10 @@
 #ifndef RIPPLE_TX_CANCELOFFER_H_INCLUDED
 #define RIPPLE_TX_CANCELOFFER_H_INCLUDED
 
-#include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/TxFlags.h>
+#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 

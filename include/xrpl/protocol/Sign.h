@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PROTOCOL_SIGN_H_INCLUDED
 #define RIPPLE_PROTOCOL_SIGN_H_INCLUDED
 
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/STObject.h>
-#include <ripple/protocol/SecretKey.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <utility>
 
 namespace ripple {

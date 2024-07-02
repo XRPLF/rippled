@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/InboundLedger.h>
-#include <ripple/app/main/DBInit.h>
-#include <ripple/app/rdb/backend/detail/Shard.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/nodestore/Manager.h>
-#include <ripple/nodestore/impl/DeterministicShard.h>
-#include <ripple/nodestore/impl/Shard.h>
-#include <ripple/protocol/LedgerHeader.h>
-#include <ripple/protocol/digest.h>
+#include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/main/DBInit.h>
+#include <xrpld/app/rdb/backend/detail/Shard.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpld/nodestore/Manager.h>
+#include <xrpld/nodestore/detail/DeterministicShard.h>
+#include <xrpld/nodestore/detail/Shard.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/digest.h>
 
 namespace ripple {
 namespace NodeStore {

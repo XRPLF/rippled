@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/ApplyContext.h>
-#include <ripple/app/tx/impl/InvariantCheck.h>
-#include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/basics/Log.h>
-#include <ripple/json/to_string.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
+#include <xrpld/app/tx/detail/ApplyContext.h>
+#include <xrpld/app/tx/detail/InvariantCheck.h>
+#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <cassert>
 
 namespace ripple {

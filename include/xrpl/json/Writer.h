@@ -20,10 +20,10 @@
 #ifndef RIPPLE_JSON_WRITER_H_INCLUDED
 #define RIPPLE_JSON_WRITER_H_INCLUDED
 
-#include <ripple/basics/ToString.h>
-#include <ripple/basics/contract.h>
-#include <ripple/json/Output.h>
-#include <ripple/json/json_value.h>
+#include <xrpl/basics/ToString.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/Output.h>
+#include <xrpl/json/json_value.h>
 #include <memory>
 
 namespace Json {

@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/rdb/PeerFinder.h>
+#include <xrpld/app/rdb/PeerFinder.h>
 
 namespace ripple {
 

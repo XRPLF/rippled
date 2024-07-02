@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/json/json_writer.h>
-#include <ripple/json/to_string.h>
+#include <xrpl/json/json_writer.h>
+#include <xrpl/json/to_string.h>
 
 namespace Json {
 

@@ -17,26 +17,26 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/misc/HashRouter.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/misc/ValidatorList.h>
-#include <ripple/app/misc/ValidatorSite.h>
-#include <ripple/app/rdb/RelationalDatabase.h>
-#include <ripple/app/rdb/Wallet.h>
-#include <ripple/basics/base64.h>
-#include <ripple/basics/make_SSLContext.h>
-#include <ripple/basics/random.h>
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/nodestore/DatabaseShard.h>
-#include <ripple/overlay/Cluster.h>
-#include <ripple/overlay/impl/ConnectAttempt.h>
-#include <ripple/overlay/impl/PeerImp.h>
-#include <ripple/overlay/predicates.h>
-#include <ripple/peerfinder/make_Manager.h>
-#include <ripple/rpc/handlers/GetCounts.h>
-#include <ripple/rpc/json_body.h>
-#include <ripple/server/SimpleWriter.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/app/misc/ValidatorSite.h>
+#include <xrpld/app/rdb/RelationalDatabase.h>
+#include <xrpld/app/rdb/Wallet.h>
+#include <xrpld/nodestore/DatabaseShard.h>
+#include <xrpld/overlay/Cluster.h>
+#include <xrpld/overlay/detail/ConnectAttempt.h>
+#include <xrpld/overlay/detail/PeerImp.h>
+#include <xrpld/overlay/predicates.h>
+#include <xrpld/peerfinder/make_Manager.h>
+#include <xrpld/rpc/handlers/GetCounts.h>
+#include <xrpld/rpc/json_body.h>
+#include <xrpl/basics/base64.h>
+#include <xrpl/basics/make_SSLContext.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/server/SimpleWriter.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 

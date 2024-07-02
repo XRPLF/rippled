@@ -20,10 +20,10 @@
 #ifndef RIPPLE_APP_PATHS_RIPPLECALC_H_INCLUDED
 #define RIPPLE_APP_PATHS_RIPPLECALC_H_INCLUDED
 
-#include <ripple/basics/Log.h>
-#include <ripple/ledger/PaymentSandbox.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/TER.h>
+#include <xrpld/ledger/PaymentSandbox.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
 
 #include <boost/container/flat_set.hpp>
 

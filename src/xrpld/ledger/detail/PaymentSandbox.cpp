@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/impl/AmountSpec.h>
-#include <ripple/ledger/PaymentSandbox.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/STAccount.h>
+#include <xrpld/app/paths/detail/AmountSpec.h>
+#include <xrpld/ledger/PaymentSandbox.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAccount.h>
 
 #include <cassert>
 

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_JSON_MULTIAPIJSON_H_INCLUDED
 #define RIPPLE_JSON_MULTIAPIJSON_H_INCLUDED
 
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/ApiVersion.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ApiVersion.h>
 
 #include <array>
 #include <cassert>
@@ -80,9 +80,8 @@ struct MultiApiJson
     }
 
     void
-    set(const char* key,
-        auto const&
-            v) requires std::constructible_from<Json::Value, decltype(v)>
+    set(const char* key, auto const& v) requires
+        std::constructible_from<Json::Value, decltype(v)>
     {
         for (auto& a : this->val)
             a[key] = v;
@@ -110,7 +109,8 @@ struct MultiApiJson
             unsigned int Version,
             typename... Args,
             typename Fn>
-        requires std::same_as<std::remove_cvref_t<Json>, MultiApiJson> auto
+        requires std::same_as<std::remove_cvref_t<Json>, MultiApiJson>
+        auto
         operator()(
             Json& json,
             std::integral_constant<unsigned int, Version> const version,
@@ -133,7 +133,8 @@ struct MultiApiJson
 
         // integral_constant version, Json only
         template <typename Json, unsigned int Version, typename Fn>
-        requires std::same_as<std::remove_cvref_t<Json>, MultiApiJson> auto
+        requires std::same_as<std::remove_cvref_t<Json>, MultiApiJson>
+        auto
         operator()(
             Json& json,
             std::integral_constant<unsigned int, Version> const,
@@ -150,7 +151,7 @@ struct MultiApiJson
             typename Version,
             typename... Args,
             typename Fn>
-            requires(!some_integral_constant<Version>) &&
+        requires(!some_integral_constant<Version>) &&
             std::convertible_to<Version, unsigned>&& std::same_as<
                 std::remove_cvref_t<Json>,
                 MultiApiJson> auto
@@ -169,7 +170,7 @@ struct MultiApiJson
 
         // unsigned int version, Json only
         template <typename Json, typename Version, typename Fn>
-            requires(!some_integral_constant<Version>) &&
+        requires(!some_integral_constant<Version>) &&
             std::convertible_to<Version, unsigned>&& std::
                 same_as<std::remove_cvref_t<Json>, MultiApiJson> auto
                 operator()(Json& json, Version version, Fn fn) const
@@ -210,11 +211,10 @@ struct MultiApiJson
     }
 
     template <typename... Args>
-        auto
-        visit(Args... args)
-            -> std::invoke_result_t<visitor_t, MultiApiJson&, Args...> requires(
-                sizeof...(args) > 0) &&
-        requires
+    auto
+    visit(Args... args)
+        -> std::invoke_result_t<visitor_t, MultiApiJson&, Args...>
+    requires(sizeof...(args) > 0) && requires
     {
         visitor(*this, std::forward<decltype(args)>(args)...);
     }
@@ -223,11 +223,10 @@ struct MultiApiJson
     }
 
     template <typename... Args>
-        auto
-        visit(Args... args) const -> std::
-            invoke_result_t<visitor_t, MultiApiJson const&, Args...> requires(
-                sizeof...(args) > 0) &&
-        requires
+    auto
+    visit(Args... args) const
+        -> std::invoke_result_t<visitor_t, MultiApiJson const&, Args...>
+    requires(sizeof...(args) > 0) && requires
     {
         visitor(*this, std::forward<decltype(args)>(args)...);
     }

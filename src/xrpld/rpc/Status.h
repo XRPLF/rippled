@@ -20,8 +20,8 @@
 #ifndef RIPPLE_RPC_STATUS_H_INCLUDED
 #define RIPPLE_RPC_STATUS_H_INCLUDED
 
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/TER.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/TER.h>
 #include <cassert>
 
 namespace ripple {

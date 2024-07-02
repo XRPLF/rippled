@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/safe_cast.h>
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/protocol/LedgerFormats.h>
-#include <ripple/protocol/STInteger.h>
-#include <ripple/protocol/TER.h>
-#include <ripple/protocol/TxFormats.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <charconv>
 
 namespace ripple {
@@ -61,7 +61,8 @@ STUInt8::getText() const
 }
 
 template <>
-Json::Value STUInt8::getJson(JsonOptions) const
+Json::Value
+STUInt8::getJson(JsonOptions) const
 {
     if (getFName() == sfTransactionResult)
     {
@@ -118,7 +119,8 @@ STUInt16::getText() const
 }
 
 template <>
-Json::Value STUInt16::getJson(JsonOptions) const
+Json::Value
+STUInt16::getJson(JsonOptions) const
 {
     if (getFName() == sfLedgerEntryType)
     {
@@ -164,7 +166,8 @@ STUInt32::getText() const
 }
 
 template <>
-Json::Value STUInt32::getJson(JsonOptions) const
+Json::Value
+STUInt32::getJson(JsonOptions) const
 {
     return value_;
 }
@@ -192,7 +195,8 @@ STUInt64::getText() const
 }
 
 template <>
-Json::Value STUInt64::getJson(JsonOptions) const
+Json::Value
+STUInt64::getJson(JsonOptions) const
 {
     std::string str(16, 0);
     auto ret = std::to_chars(str.data(), str.data() + str.size(), value_, 16);

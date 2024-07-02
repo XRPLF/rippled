@@ -20,9 +20,9 @@
 #ifndef RIPPLE_APP_RDB_PEERFINDER_H_INCLUDED
 #define RIPPLE_APP_RDB_PEERFINDER_H_INCLUDED
 
-#include <ripple/core/Config.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/peerfinder/impl/Store.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/core/DatabaseCon.h>
+#include <xrpld/peerfinder/detail/Store.h>
 
 namespace ripple {
 

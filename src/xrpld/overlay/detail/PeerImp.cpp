@@ -17,28 +17,28 @@
 */
 //==============================================================================
 
-#include <ripple/app/consensus/RCLValidations.h>
-#include <ripple/app/ledger/InboundLedgers.h>
-#include <ripple/app/ledger/InboundTransactions.h>
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/TransactionMaster.h>
-#include <ripple/app/misc/HashRouter.h>
-#include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/app/misc/ValidatorList.h>
-#include <ripple/app/tx/apply.h>
-#include <ripple/basics/UptimeClock.h>
-#include <ripple/basics/base64.h>
-#include <ripple/basics/random.h>
-#include <ripple/basics/safe_cast.h>
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/nodestore/DatabaseShard.h>
-#include <ripple/overlay/Cluster.h>
-#include <ripple/overlay/impl/PeerImp.h>
-#include <ripple/overlay/impl/Tuning.h>
-#include <ripple/overlay/predicates.h>
-#include <ripple/protocol/digest.h>
+#include <xrpld/app/consensus/RCLValidations.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
+#include <xrpld/app/ledger/InboundTransactions.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/TransactionMaster.h>
+#include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/misc/LoadFeeTrack.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/misc/Transaction.h>
+#include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/app/tx/apply.h>
+#include <xrpld/nodestore/DatabaseShard.h>
+#include <xrpld/overlay/Cluster.h>
+#include <xrpld/overlay/detail/PeerImp.h>
+#include <xrpld/overlay/detail/Tuning.h>
+#include <xrpld/overlay/predicates.h>
+#include <xrpl/basics/UptimeClock.h>
+#include <xrpl/basics/base64.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/protocol/digest.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/core/ostream.hpp>
@@ -601,7 +601,7 @@ PeerImp::fail(std::string const& reason)
         return post(
             strand_,
             std::bind(
-                (void (Peer::*)(std::string const&)) & PeerImp::fail,
+                (void(Peer::*)(std::string const&)) & PeerImp::fail,
                 shared_from_this(),
                 reason));
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())

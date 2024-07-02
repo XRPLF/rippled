@@ -20,11 +20,11 @@
 #ifndef RIPPLE_BASICS_PERFLOGIMP_H
 #define RIPPLE_BASICS_PERFLOGIMP_H
 
-#include <ripple/basics/PerfLog.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/impl/Handler.h>
+#include <xrpld/perflog/PerfLog.h>
+#include <xrpld/rpc/detail/Handler.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/jss.h>
 #include <boost/asio/ip/host_name.hpp>
 #include <condition_variable>
 #include <cstdint>

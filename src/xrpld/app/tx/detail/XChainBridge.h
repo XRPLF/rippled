@@ -20,9 +20,9 @@
 #ifndef RIPPLE_TX_XCHAINBRIDGE_H_INCLUDED
 #define RIPPLE_TX_XCHAINBRIDGE_H_INCLUDED
 
-#include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/XChainAttestations.h>
+#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/XChainAttestations.h>
 
 namespace ripple {
 

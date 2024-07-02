@@ -20,10 +20,10 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGERREPLAYER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGERREPLAYER_H_INCLUDED
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/LedgerReplayTask.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/beast/utility/Journal.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerReplayTask.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpl/beast/utility/Journal.h>
 
 #include <memory>
 #include <mutex>

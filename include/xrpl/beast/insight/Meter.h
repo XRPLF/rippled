@@ -22,7 +22,7 @@
 
 #include <memory>
 
-#include <ripple/beast/insight/MeterImpl.h>
+#include <xrpl/beast/insight/MeterImpl.h>
 
 namespace beast {
 namespace insight {

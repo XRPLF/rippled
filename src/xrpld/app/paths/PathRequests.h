@@ -20,10 +20,10 @@
 #ifndef RIPPLE_APP_PATHS_PATHREQUESTS_H_INCLUDED
 #define RIPPLE_APP_PATHS_PATHREQUESTS_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
-#include <ripple/app/paths/PathRequest.h>
-#include <ripple/app/paths/RippleLineCache.h>
-#include <ripple/core/Job.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/paths/PathRequest.h>
+#include <xrpld/app/paths/RippleLineCache.h>
+#include <xrpld/core/Job.h>
 #include <atomic>
 #include <mutex>
 #include <vector>

@@ -20,13 +20,13 @@
 #ifndef RIPPLE_TEST_JTX_MULTISIGN_H_INCLUDED
 #define RIPPLE_TEST_JTX_MULTISIGN_H_INCLUDED
 
-#include <concepts>
-#include <cstdint>
-#include <optional>
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/tags.h>
+#include <concepts>
+#include <cstdint>
+#include <optional>
 
 namespace ripple {
 namespace test {
@@ -100,9 +100,8 @@ public:
     msig(std::vector<Reg> signers_);
 
     template <class AccountType, class... Accounts>
-    requires std::convertible_to<AccountType, Reg> explicit msig(
-        AccountType&& a0,
-        Accounts&&... aN)
+    requires std::convertible_to<AccountType, Reg>
+    explicit msig(AccountType&& a0, Accounts&&... aN)
         : msig{std::vector<Reg>{
               std::forward<AccountType>(a0),
               std::forward<Accounts>(aN)...}}

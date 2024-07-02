@@ -20,14 +20,14 @@
 #ifndef RIPPLE_APP_CONSENSUS_RCLCXPEERPOS_H_INCLUDED
 #define RIPPLE_APP_CONSENSUS_RCLCXPEERPOS_H_INCLUDED
 
-#include <ripple/basics/CountedObject.h>
-#include <ripple/basics/base_uint.h>
-#include <ripple/beast/hash/hash_append.h>
-#include <ripple/consensus/ConsensusProposal.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SecretKey.h>
+#include <xrpld/consensus/ConsensusProposal.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/hash/hash_append.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <boost/container/static_vector.hpp>
 #include <chrono>
 #include <cstdint>

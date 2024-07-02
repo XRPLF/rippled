@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/DeliverMax.h>
+#include <xrpld/app/misc/DeliverMax.h>
 
-#include <ripple/protocol/jss.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace RPC {

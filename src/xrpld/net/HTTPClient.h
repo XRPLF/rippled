@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NET_HTTPCLIENT_H_INCLUDED
 #define RIPPLE_NET_HTTPCLIENT_H_INCLUDED
 
-#include <ripple/basics/ByteUtilities.h>
-#include <ripple/core/Config.h>
+#include <xrpld/core/Config.h>
+#include <xrpl/basics/ByteUtilities.h>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/streambuf.hpp>
 

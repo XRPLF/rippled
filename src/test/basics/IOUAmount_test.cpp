@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/IOUAmount.h>
-#include <ripple/beast/unit_test.h>
+#include <xrpl/basics/IOUAmount.h>
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 

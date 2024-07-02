@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/nodestore/impl/DatabaseNodeImp.h>
-#include <ripple/nodestore/impl/ManagerImp.h>
+#include <xrpld/nodestore/detail/DatabaseNodeImp.h>
+#include <xrpld/nodestore/detail/ManagerImp.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 

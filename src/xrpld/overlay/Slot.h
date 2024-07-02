@@ -20,15 +20,15 @@
 #ifndef RIPPLE_OVERLAY_SLOT_H_INCLUDED
 #define RIPPLE_OVERLAY_SLOT_H_INCLUDED
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/container/aged_unordered_map.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/overlay/Peer.h>
-#include <ripple/overlay/ReduceRelayCommon.h>
-#include <ripple/overlay/Squelch.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/messages.h>
+#include <xrpld/overlay/Peer.h>
+#include <xrpld/overlay/ReduceRelayCommon.h>
+#include <xrpld/overlay/Squelch.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/container/aged_unordered_map.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/messages.h>
 
 #include <algorithm>
 #include <memory>

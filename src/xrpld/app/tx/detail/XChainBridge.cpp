@@ -17,31 +17,31 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/Flow.h>
-#include <ripple/app/tx/impl/SignerEntries.h>
-#include <ripple/app/tx/impl/Transactor.h>
-#include <ripple/app/tx/impl/XChainBridge.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/Number.h>
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/ledger/ApplyView.h>
-#include <ripple/ledger/PaymentSandbox.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/STObject.h>
-#include <ripple/protocol/STXChainBridge.h>
-#include <ripple/protocol/TER.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/XChainAttestations.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/st.h>
+#include <xrpld/app/paths/Flow.h>
+#include <xrpld/app/tx/detail/SignerEntries.h>
+#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpld/app/tx/detail/XChainBridge.h>
+#include <xrpld/ledger/ApplyView.h>
+#include <xrpld/ledger/PaymentSandbox.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XChainAttestations.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/st.h>
 #include <unordered_map>
 #include <unordered_set>
 

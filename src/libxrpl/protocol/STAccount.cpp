@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/STAccount.h>
+#include <xrpl/protocol/STAccount.h>
 
 #include <cstring>
 

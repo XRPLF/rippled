@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/basics/RangeSet.h>
-#include <ripple/nodestore/DatabaseShard.h>
-#include <ripple/overlay/Overlay.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/RPCErr.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/rpc/Context.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/nodestore/DatabaseShard.h>
+#include <xrpld/overlay/Overlay.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Fees.h>
 
 namespace ripple {
 

@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/nodestore/Factory.h>
-#include <ripple/nodestore/Manager.h>
+#include <xrpld/nodestore/Factory.h>
+#include <xrpld/nodestore/Manager.h>
+#include <xrpl/basics/contract.h>
 #include <memory>
 
 namespace ripple {

@@ -17,21 +17,21 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/DeliverMax.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/app/rdb/RelationalDatabase.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/core/Pg.h>
-#include <ripple/core/SociDB.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/RPCErr.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/Role.h>
-#include <ripple/rpc/Status.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/DeliverMax.h>
+#include <xrpld/app/misc/Transaction.h>
+#include <xrpld/app/rdb/RelationalDatabase.h>
+#include <xrpld/core/DatabaseCon.h>
+#include <xrpld/core/Pg.h>
+#include <xrpld/core/SociDB.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/Status.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Fees.h>
 #include <boost/format.hpp>
 
 namespace ripple {

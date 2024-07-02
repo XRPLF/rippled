@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/InnerObjectFormats.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/SOTemplate.h>
+#include <xrpl/protocol/InnerObjectFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
 
 namespace ripple {
 

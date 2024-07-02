@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_LEDGERFORMATS_H_INCLUDED
 #define RIPPLE_PROTOCOL_LEDGERFORMATS_H_INCLUDED
 
-#include <ripple/protocol/KnownFormats.h>
+#include <xrpl/protocol/KnownFormats.h>
 
 namespace ripple {
 

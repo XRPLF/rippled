@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/SetAccount.h>
-#include <ripple/basics/Log.h>
-#include <ripple/core/Config.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/protocol/st.h>
+#include <xrpld/app/tx/detail/SetAccount.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/st.h>
 
 namespace ripple {
 

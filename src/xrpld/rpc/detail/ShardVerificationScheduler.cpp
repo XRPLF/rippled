@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/rpc/ShardVerificationScheduler.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/rpc/ShardVerificationScheduler.h>
 
 namespace ripple {
 namespace RPC {

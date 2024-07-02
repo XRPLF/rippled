@@ -8,8 +8,8 @@
 #ifndef BEAST_UNIT_TEST_RECORDER_HPP
 #define BEAST_UNIT_TEST_RECORDER_HPP
 
-#include <ripple/beast/unit_test/results.h>
-#include <ripple/beast/unit_test/runner.h>
+#include <xrpl/beast/unit_test/results.h>
+#include <xrpl/beast/unit_test/runner.h>
 
 namespace beast {
 namespace unit_test {

@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/ValidatorSite.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/RPCErr.h>
-#include <ripple/rpc/Context.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/ValidatorSite.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/RPCErr.h>
 
 namespace ripple {
 

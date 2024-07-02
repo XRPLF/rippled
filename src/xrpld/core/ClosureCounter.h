@@ -20,7 +20,7 @@
 #ifndef RIPPLE_CORE_CLOSURE_COUNTER_H_INCLUDED
 #define RIPPLE_CORE_CLOSURE_COUNTER_H_INCLUDED
 
-#include <ripple/basics/Log.h>
+#include <xrpl/basics/Log.h>
 #include <atomic>
 #include <condition_variable>
 #include <mutex>

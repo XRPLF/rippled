@@ -20,7 +20,7 @@
 #ifndef BEAST_NET_IPADDRESSCONVERSION_H_INCLUDED
 #define BEAST_NET_IPADDRESSCONVERSION_H_INCLUDED
 
-#include <ripple/beast/net/IPEndpoint.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 
 #include <sstream>
 

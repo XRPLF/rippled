@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/paths/PathRequests.h>
-#include <ripple/protocol/RPCErr.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/LegacyPathFind.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/paths/PathRequests.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/detail/LegacyPathFind.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/resource/Fees.h>
 
 namespace ripple {
 

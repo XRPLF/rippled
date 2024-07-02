@@ -8,14 +8,14 @@
 #ifndef BEAST_TEST_STRING_IOSTREAM_HPP
 #define BEAST_TEST_STRING_IOSTREAM_HPP
 
+#include <xrpl/beast/core/async_result.hpp>
+#include <xrpl/beast/core/bind_handler.hpp>
+#include <xrpl/beast/core/buffer_prefix.hpp>
+#include <xrpl/beast/core/error.hpp>
+#include <xrpl/beast/websocket/teardown.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/throw_exception.hpp>
-#include <beast/core/async_result.hpp>
-#include <beast/core/bind_handler.hpp>
-#include <beast/core/buffer_prefix.hpp>
-#include <beast/core/error.hpp>
-#include <beast/websocket/teardown.hpp>
 #include <string>
 
 namespace beast {

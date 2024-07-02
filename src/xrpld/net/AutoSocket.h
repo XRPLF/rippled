@@ -20,8 +20,8 @@
 #ifndef RIPPLE_WEBSOCKET_AUTOSOCKET_AUTOSOCKET_H_INCLUDED
 #define RIPPLE_WEBSOCKET_AUTOSOCKET_AUTOSOCKET_H_INCLUDED
 
-#include <ripple/basics/Log.h>
-#include <ripple/beast/net/IPAddressConversion.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/net/IPAddressConversion.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_NODESTORE_DETERMINISTICSHARD_H_INCLUDED
 #define RIPPLE_NODESTORE_DETERMINISTICSHARD_H_INCLUDED
 
-#include <ripple/nodestore/DatabaseShard.h>
-#include <ripple/nodestore/DummyScheduler.h>
+#include <xrpld/nodestore/DatabaseShard.h>
+#include <xrpld/nodestore/DummyScheduler.h>
 #include <nudb/nudb.hpp>
 #include <set>
 
