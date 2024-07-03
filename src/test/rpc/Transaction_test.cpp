@@ -27,6 +27,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
 
+#include <cctype>
 #include <optional>
 #include <tuple>
 
