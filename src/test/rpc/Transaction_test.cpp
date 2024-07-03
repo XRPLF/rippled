@@ -674,26 +674,43 @@ class Transaction_test : public beast::unit_test::suite
         // test querying with lowercase ctid
         {
             Env env{*this, makeNetworkConfig(11111)};
-            uint32_t netID = env.app().config().NETWORK_ID;
+            std::uint32_t const netID = env.app().config().NETWORK_ID;
 
-            auto const alice = Account("alice");
-            auto const bob = Account("bob");
+            Account const alice = Account("alice");
+            Account const bob = Account("bob");
 
-            auto const startLegSeq = env.current()->info().seq;
+            std::uint32_t const startLegSeq = env.current()->info().seq;
             env.fund(XRP(10000), alice, bob);
             env(pay(alice, bob, XRP(10)));
             env.close();
 
-            auto const ctid = *RPC::encodeCTID(startLegSeq, 0, netID);
-            auto lower = ctid;
-            transform(lower.begin(), lower.end(), lower.begin(), tolower);
-            Json::Value jsonTx;
-            jsonTx[jss::binary] = false;
-            jsonTx[jss::ctid] = lower;
-            jsonTx[jss::id] = 1;
-            auto jrr = env.rpc("json", "tx", to_string(jsonTx))[jss::result];
-            BEAST_EXPECT(jrr[jss::ctid] == ctid);
-            BEAST_EXPECT(jrr[jss::hash]);
+            std::string const ctid = *RPC::encodeCTID(startLegSeq, 0, netID);
+            std::string lower = ctid;
+
+            auto isUpper = [](char c) { return std::isupper(c) != 0; };
+            // Verify that there are at least two upper case letters in ctid and
+            // test a mixed case
+            if (BEAST_EXPECT(
+                    std::count_if(ctid.begin(), ctid.end(), isUpper) > 1))
+            {
+                // Change the first upper case letter to lower case.
+                std::string mixedCase = ctid;
+                {
+                    auto const iter = std::find_if(
+                        mixedCase.begin(), mixedCase.end(), isUpper);
+                    *iter = std::tolower(*iter);
+                }
+                BEAST_EXPECT(ctid != mixedCase);
+
+                Json::Value jsonTx;
+                jsonTx[jss::binary] = false;
+                jsonTx[jss::ctid] = mixedCase;
+                jsonTx[jss::id] = 1;
+                Json::Value const jrr =
+                    env.rpc("json", "tx", to_string(jsonTx))[jss::result];
+                BEAST_EXPECT(jrr[jss::ctid] == ctid);
+                BEAST_EXPECT(jrr[jss::hash]);
+            }
         }
 
         // test that if the network is 65535 the ctid is not in the response
