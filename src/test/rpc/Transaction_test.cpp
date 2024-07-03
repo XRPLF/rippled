@@ -686,9 +686,8 @@ class Transaction_test : public beast::unit_test::suite
             env.close();
 
             std::string const ctid = *RPC::encodeCTID(startLegSeq, 0, netID);
-            std::string lower = ctid;
-
             auto isUpper = [](char c) { return std::isupper(c) != 0; };
+
             // Verify that there are at least two upper case letters in ctid and
             // test a mixed case
             if (BEAST_EXPECT(
