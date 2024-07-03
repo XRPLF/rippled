@@ -17,13 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/json/json_reader.h>
-#include <ripple/json/json_value.h>
-#include <ripple/json/to_string.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/xchain_bridge.h>
+#include <xrpld/app/tx/detail/NFTokenMint.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/nft.h>
 
 #include <boost/utility/string_ref.hpp>
 
@@ -1033,12 +1035,135 @@ public:
     }
 
     void
+    testNFTsMarker()
+    {
+        // there's some bug found in account_nfts method that it did not
+        // return invalid params when providing unassociated nft marker.
+        // this test tests both situations when providing valid nft marker
+        // and unassociated nft marker.
+        testcase("NFTsMarker");
+
+        using namespace jtx;
+        Env env(*this);
+
+        Account const bob{"bob"};
+        env.fund(XRP(10000), bob);
+
+        static constexpr unsigned nftsSize = 10;
+        for (unsigned i = 0; i < nftsSize; i++)
+        {
+            env(token::mint(bob, 0));
+        }
+
+        env.close();
+
+        // save the NFTokenIDs to use later
+        std::vector<Json::Value> tokenIDs;
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::ledger_index] = "validated";
+            Json::Value const resp =
+                env.rpc("json", "account_nfts", to_string(params));
+            Json::Value const& nfts = resp[jss::result][jss::account_nfts];
+            for (Json::Value const& nft : nfts)
+                tokenIDs.push_back(nft["NFTokenID"]);
+        }
+
+        // this lambda function is used to check if the account_nfts method
+        // returns the correct token information. lastIndex is used to query the
+        // last marker.
+        auto compareNFTs = [&tokenIDs, &env, &bob](
+                               unsigned const limit, unsigned const lastIndex) {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::marker] = tokenIDs[lastIndex];
+            params[jss::ledger_index] = "validated";
+            Json::Value const resp =
+                env.rpc("json", "account_nfts", to_string(params));
+
+            if (resp[jss::result].isMember(jss::error))
+                return false;
+
+            Json::Value const& nfts = resp[jss::result][jss::account_nfts];
+            unsigned const nftsCount = tokenIDs.size() - lastIndex - 1 < limit
+                ? tokenIDs.size() - lastIndex - 1
+                : limit;
+
+            if (nfts.size() != nftsCount)
+                return false;
+
+            for (unsigned i = 0; i < nftsCount; i++)
+            {
+                if (nfts[i]["NFTokenID"] != tokenIDs[lastIndex + 1 + i])
+                    return false;
+            }
+
+            return true;
+        };
+
+        // test a valid marker which is equal to the third tokenID
+        BEAST_EXPECT(compareNFTs(4, 2));
+
+        // test a valid marker which is equal to the 8th tokenID
+        BEAST_EXPECT(compareNFTs(4, 7));
+
+        // lambda that holds common code for invalid cases.
+        auto testInvalidMarker = [&env, &bob](
+                                     auto marker, char const* errorMessage) {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = 4;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::marker] = marker;
+            Json::Value const resp =
+                env.rpc("json", "account_nfts", to_string(params));
+            return resp[jss::result][jss::error_message] == errorMessage;
+        };
+
+        // test an invalid marker that is not a string
+        BEAST_EXPECT(
+            testInvalidMarker(17, "Invalid field \'marker\', not string."));
+
+        // test an invalid marker that has a non-hex character
+        BEAST_EXPECT(testInvalidMarker(
+            "00000000F51DFC2A09D62CBBA1DFBDD4691DAC96AD98B900000000000000000G",
+            "Invalid field \'marker\'."));
+
+        // this lambda function is used to create some fake marker using given
+        // taxon and sequence because we want to test some unassociated markers
+        // later
+        auto createFakeNFTMarker = [](AccountID const& issuer,
+                                      std::uint32_t taxon,
+                                      std::uint32_t tokenSeq,
+                                      std::uint16_t flags = 0,
+                                      std::uint16_t fee = 0) {
+            // the marker has the exact same format as an NFTokenID
+            return to_string(NFTokenMint::createNFTokenID(
+                flags, fee, issuer, nft::toTaxon(taxon), tokenSeq));
+        };
+
+        // test an unassociated marker which does not exist in the NFTokenIDs
+        BEAST_EXPECT(testInvalidMarker(
+            createFakeNFTMarker(bob.id(), 0x000000000, 0x00000000),
+            "Invalid field \'marker\'."));
+
+        // test an unassociated marker which exceeds the maximum value of the
+        // existing NFTokenID
+        BEAST_EXPECT(testInvalidMarker(
+            createFakeNFTMarker(bob.id(), 0xFFFFFFFF, 0xFFFFFFFF),
+            "Invalid field \'marker\'."));
+    }
+
+    void
     run() override
     {
         testErrors();
         testUnsteppedThenStepped();
         testUnsteppedThenSteppedWithNFTs();
         testObjectTypes();
+        testNFTsMarker();
     }
 };
 

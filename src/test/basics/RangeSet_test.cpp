@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/RangeSet.h>
-#include <ripple/beast/unit_test.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 class RangeSet_test : public beast::unit_test::suite

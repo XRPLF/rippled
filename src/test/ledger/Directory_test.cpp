@@ -15,15 +15,15 @@
 */
 //==============================================================================
 
-#include <ripple/basics/random.h>
-#include <ripple/ledger/BookDirs.h>
-#include <ripple/ledger/Directory.h>
-#include <ripple/ledger/Sandbox.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/jss.h>
-#include <algorithm>
 #include <test/jtx.h>
+#include <xrpld/ledger/BookDirs.h>
+#include <xrpld/ledger/Directory.h>
+#include <xrpld/ledger/Sandbox.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/jss.h>
+#include <algorithm>
 
 namespace ripple {
 namespace test {

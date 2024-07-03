@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_REQUIRE_H_INCLUDED
 #define RIPPLE_TEST_JTX_REQUIRE_H_INCLUDED
 
-#include <functional>
 #include <test/jtx/requires.h>
+#include <functional>
 #include <vector>
 
 namespace ripple {
