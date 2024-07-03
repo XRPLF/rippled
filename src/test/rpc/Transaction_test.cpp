@@ -672,7 +672,7 @@ class Transaction_test : public beast::unit_test::suite
             BEAST_EXPECT(jrr[jss::hash]);
         }
 
-        // test querying with lowercase ctid
+        // test querying with mixed case ctid
         {
             Env env{*this, makeNetworkConfig(11111)};
             std::uint32_t const netID = env.app().config().NETWORK_ID;
