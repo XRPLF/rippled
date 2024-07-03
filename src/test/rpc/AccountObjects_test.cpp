@@ -580,23 +580,10 @@ public:
         };
 
         // Make a lambda that checks if the response has error for invalid type
-        auto acct_objs_type_is_invalid = [](Json::Value const& resp) {
+        auto acctObjsTypeIsInvalid = [](Json::Value const& resp) {
             return resp[jss::result].isMember(jss::error) &&
                 resp[jss::result][jss::error_message] ==
                 "Invalid field \'type\'.";
-        };
-
-        // Make a lambda that checks if different filtering type is invalid
-        auto check_invalid_filter_types = [&](AccountID const& acct) {
-            // we expect invalid field type reported for the following types
-            if (!acct_objs_type_is_invalid(acct_objs(acct, jss::amendments)) ||
-                !acct_objs_type_is_invalid(acct_objs(acct, jss::directory)) ||
-                !acct_objs_type_is_invalid(acct_objs(acct, jss::fee)) ||
-                !acct_objs_type_is_invalid(acct_objs(acct, jss::hashes)) ||
-                !acct_objs_type_is_invalid(acct_objs(acct, jss::NegativeUNL)))
-                return false;
-
-            return true;
         };
 
         env.fund(XRP(10000), gw, alice);
@@ -617,8 +604,12 @@ public:
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::amm), 0));
         BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::did), 0));
 
-        // invalid filter type should get invalid type response
-        BEAST_EXPECT(check_invalid_filter_types(gw));
+        // we expect invalid field type reported for the following types
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::amendments)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::directory)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::fee)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::hashes)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::NegativeUNL)));
 
         // gw mints an NFT so we can find it.
         uint256 const nftID{token::getNextID(env, gw, 0u, tfTransferable)};
@@ -1035,9 +1026,12 @@ public:
             BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::amm), 0));
         }
 
-        // check invalid filter type again which should get invalid type
-        // response
-        BEAST_EXPECT(check_invalid_filter_types(gw));
+        // we still expect invalid field type reported for the following types
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::amendments)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::directory)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::fee)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::hashes)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::NegativeUNL)));
 
         // Run up the number of directory entries so gw has two
         // directory nodes.
