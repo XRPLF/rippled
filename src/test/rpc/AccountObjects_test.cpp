@@ -556,11 +556,11 @@ public:
         Env env(*this, features);
 
         // Make a lambda we can use to get "account_objects" easily.
-        auto acct_objs = [&env](
-                             AccountID const& acct,
-                             std::optional<Json::StaticString> const& type,
-                             std::optional<std::uint16_t> limit = std::nullopt,
-                             std::optional<std::string> marker = std::nullopt) {
+        auto acctObjs = [&env](
+                            AccountID const& acct,
+                            std::optional<Json::StaticString> const& type,
+                            std::optional<std::uint16_t> limit = std::nullopt,
+                            std::optional<std::string> marker = std::nullopt) {
             Json::Value params;
             params[jss::account] = to_string(acct);
             if (type)
@@ -574,7 +574,7 @@ public:
         };
 
         // Make a lambda that easily identifies the size of account objects.
-        auto acct_objs_is_size = [](Json::Value const& resp, unsigned size) {
+        auto acctObjsIsSize = [](Json::Value const& resp, unsigned size) {
             return resp[jss::result][jss::account_objects].isArray() &&
                 (resp[jss::result][jss::account_objects].size() == size);
         };
@@ -591,25 +591,25 @@ public:
 
         // Since the account is empty now, all account objects should come
         // back empty.
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::account), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::check), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::deposit_preauth), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::escrow), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::nft_page), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::offer), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::payment_channel), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::signer_list), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::state), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::ticket), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::amm), 0));
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::did), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::account), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::check), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::deposit_preauth), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::escrow), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::nft_page), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::offer), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::payment_channel), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::signer_list), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::state), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::ticket), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::amm), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::did), 0));
 
         // we expect invalid field type reported for the following types
-        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::amendments)));
-        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::directory)));
-        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::fee)));
-        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::hashes)));
-        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::NegativeUNL)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acctObjs(gw, jss::amendments)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acctObjs(gw, jss::directory)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acctObjs(gw, jss::fee)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acctObjs(gw, jss::hashes)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acctObjs(gw, jss::NegativeUNL)));
 
         // gw mints an NFT so we can find it.
         uint256 const nftID{token::getNextID(env, gw, 0u, tfTransferable)};
@@ -617,8 +617,8 @@ public:
         env.close();
         {
             // Find the NFToken page and make sure it's the right one.
-            Json::Value const resp = acct_objs(gw, jss::nft_page);
-            BEAST_EXPECT(acct_objs_is_size(resp, 1));
+            Json::Value const resp = acctObjs(gw, jss::nft_page);
+            BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
             auto const& nftPage = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(nftPage[sfNFTokens.jsonName].size() == 1);
@@ -634,8 +634,8 @@ public:
         env.close();
         {
             // Find the trustline and make sure it's the right one.
-            Json::Value const resp = acct_objs(gw, jss::state);
-            BEAST_EXPECT(acct_objs_is_size(resp, 1));
+            Json::Value const resp = acctObjs(gw, jss::state);
+            BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
             auto const& state = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(state[sfBalance.jsonName][jss::value].asInt() == -5);
@@ -647,8 +647,8 @@ public:
         env.close();
         {
             // Find the check.
-            Json::Value const resp = acct_objs(gw, jss::check);
-            BEAST_EXPECT(acct_objs_is_size(resp, 1));
+            Json::Value const resp = acctObjs(gw, jss::check);
+            BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
             auto const& check = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(check[sfAccount.jsonName] == gw.human());
@@ -660,8 +660,8 @@ public:
         env.close();
         {
             // Find the preauthorization.
-            Json::Value const resp = acct_objs(gw, jss::deposit_preauth);
-            BEAST_EXPECT(acct_objs_is_size(resp, 1));
+            Json::Value const resp = acctObjs(gw, jss::deposit_preauth);
+            BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
             auto const& preauth = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(preauth[sfAccount.jsonName] == gw.human());
@@ -682,8 +682,8 @@ public:
         }
         {
             // Find the escrow.
-            Json::Value const resp = acct_objs(gw, jss::escrow);
-            BEAST_EXPECT(acct_objs_is_size(resp, 1));
+            Json::Value const resp = acctObjs(gw, jss::escrow);
+            BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
             auto const& escrow = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(escrow[sfAccount.jsonName] == gw.human());
@@ -696,7 +696,7 @@ public:
             Env scEnv(*this, envconfig(port_increment, 3), features);
             x.createScBridgeObjects(scEnv);
 
-            auto scenv_acct_objs = [&](Account const& acct, char const* type) {
+            auto scEnvAcctObjs = [&](Account const& acct, char const* type) {
                 Json::Value params;
                 params[jss::account] = acct.human();
                 params[jss::type] = type;
@@ -705,9 +705,9 @@ public:
             };
 
             Json::Value const resp =
-                scenv_acct_objs(Account::master, jss::bridge);
+                scEnvAcctObjs(Account::master, jss::bridge);
 
-            BEAST_EXPECT(acct_objs_is_size(resp, 1));
+            BEAST_EXPECT(acctObjsIsSize(resp, 1));
             auto const& acct_bridge =
                 resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(
@@ -743,7 +743,7 @@ public:
             scEnv(xchain_create_claim_id(x.scBob, x.jvb, x.reward, x.mcBob));
             scEnv.close();
 
-            auto scenv_acct_objs = [&](Account const& acct, char const* type) {
+            auto scEnvAcctObjs = [&](Account const& acct, char const* type) {
                 Json::Value params;
                 params[jss::account] = acct.human();
                 params[jss::type] = type;
@@ -754,8 +754,8 @@ public:
             {
                 // Find the xchain sequence number for Andrea.
                 Json::Value const resp =
-                    scenv_acct_objs(x.scAlice, jss::xchain_owned_claim_id);
-                BEAST_EXPECT(acct_objs_is_size(resp, 1));
+                    scEnvAcctObjs(x.scAlice, jss::xchain_owned_claim_id);
+                BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
                 auto const& xchain_seq =
                     resp[jss::result][jss::account_objects][0u];
@@ -767,8 +767,8 @@ public:
             {
                 // and the one for Bob
                 Json::Value const resp =
-                    scenv_acct_objs(x.scBob, jss::xchain_owned_claim_id);
-                BEAST_EXPECT(acct_objs_is_size(resp, 1));
+                    scEnvAcctObjs(x.scBob, jss::xchain_owned_claim_id);
+                BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
                 auto const& xchain_seq =
                     resp[jss::result][jss::account_objects][0u];
@@ -800,7 +800,7 @@ public:
                 x.signers[0]));
             scEnv.close();
 
-            auto scenv_acct_objs = [&](Account const& acct, char const* type) {
+            auto scEnvAcctObjs = [&](Account const& acct, char const* type) {
                 Json::Value params;
                 params[jss::account] = acct.human();
                 params[jss::type] = type;
@@ -810,9 +810,9 @@ public:
 
             {
                 // Find the xchain_create_account_claim_id
-                Json::Value const resp = scenv_acct_objs(
+                Json::Value const resp = scEnvAcctObjs(
                     Account::master, jss::xchain_owned_create_account_claim_id);
-                BEAST_EXPECT(acct_objs_is_size(resp, 1));
+                BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
                 auto const& xchain_create_account_claim_id =
                     resp[jss::result][jss::account_objects][0u];
@@ -831,8 +831,8 @@ public:
         env.close();
         {
             // Find the offer.
-            Json::Value const resp = acct_objs(gw, jss::offer);
-            BEAST_EXPECT(acct_objs_is_size(resp, 1));
+            Json::Value const resp = acctObjs(gw, jss::offer);
+            BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
             auto const& offer = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(offer[sfAccount.jsonName] == gw.human());
@@ -856,8 +856,8 @@ public:
         }
         {
             // Find the payment channel.
-            Json::Value const resp = acct_objs(gw, jss::payment_channel);
-            BEAST_EXPECT(acct_objs_is_size(resp, 1));
+            Json::Value const resp = acctObjs(gw, jss::payment_channel);
+            BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
             auto const& payChan = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(payChan[sfAccount.jsonName] == gw.human());
@@ -878,8 +878,8 @@ public:
         }
         {
             // Find the DID.
-            Json::Value const resp = acct_objs(gw, jss::did);
-            BEAST_EXPECT(acct_objs_is_size(resp, 1));
+            Json::Value const resp = acctObjs(gw, jss::did);
+            BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
             auto const& did = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(did[sfAccount.jsonName] == gw.human());
@@ -890,8 +890,8 @@ public:
         env.close();
         {
             // Find the signer list.
-            Json::Value const resp = acct_objs(gw, jss::signer_list);
-            BEAST_EXPECT(acct_objs_is_size(resp, 1));
+            Json::Value const resp = acctObjs(gw, jss::signer_list);
+            BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
             auto const& signerList =
                 resp[jss::result][jss::account_objects][0u];
@@ -906,8 +906,8 @@ public:
         env.close();
         {
             // Find the ticket.
-            Json::Value const resp = acct_objs(gw, jss::ticket);
-            BEAST_EXPECT(acct_objs_is_size(resp, 1));
+            Json::Value const resp = acctObjs(gw, jss::ticket);
+            BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
             auto const& ticket = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(ticket[sfAccount.jsonName] == gw.human());
@@ -935,7 +935,7 @@ public:
             std::uint32_t const expectedAccountObjects{
                 static_cast<std::uint32_t>(std::size(expectedLedgerTypes))};
 
-            if (BEAST_EXPECT(acct_objs_is_size(resp, expectedAccountObjects)))
+            if (BEAST_EXPECT(acctObjsIsSize(resp, expectedAccountObjects)))
             {
                 auto const& aobjs = resp[jss::result][jss::account_objects];
                 std::vector<std::string> gotLedgerTypes;
@@ -958,7 +958,7 @@ public:
             params[jss::type] = jss::escrow;
             auto resp = env.rpc("json", "account_objects", to_string(params));
 
-            if (BEAST_EXPECT(acct_objs_is_size(resp, 1u)))
+            if (BEAST_EXPECT(acctObjsIsSize(resp, 1u)))
             {
                 auto const& aobjs = resp[jss::result][jss::account_objects];
                 BEAST_EXPECT(aobjs[0u]["LedgerEntryType"] == jss::Escrow);
@@ -979,7 +979,7 @@ public:
             auto expectObjects =
                 [&](Json::Value const& resp,
                     std::vector<std::string> const& types) -> bool {
-                if (!acct_objs_is_size(resp, types.size()))
+                if (!acctObjsIsSize(resp, types.size()))
                     return false;
                 std::vector<std::string> typesOut;
                 getTypes(resp, typesOut);
@@ -993,13 +993,13 @@ public:
             BEAST_EXPECT(lines[jss::lines].size() == 3);
             // request AMM only, doesn't depend on the limit
             BEAST_EXPECT(
-                acct_objs_is_size(acct_objs(amm.ammAccount(), jss::amm), 1));
+                acctObjsIsSize(acctObjs(amm.ammAccount(), jss::amm), 1));
             // request first two objects
-            auto resp = acct_objs(amm.ammAccount(), std::nullopt, 2);
+            auto resp = acctObjs(amm.ammAccount(), std::nullopt, 2);
             std::vector<std::string> typesOut;
             getTypes(resp, typesOut);
             // request next two objects
-            resp = acct_objs(
+            resp = acctObjs(
                 amm.ammAccount(),
                 std::nullopt,
                 10,
@@ -1013,7 +1013,7 @@ public:
                      jss::RippleState.c_str(),
                      jss::RippleState.c_str()}));
             // filter by state: there are three trustlines
-            resp = acct_objs(amm.ammAccount(), jss::state, 10);
+            resp = acctObjs(amm.ammAccount(), jss::state, 10);
             BEAST_EXPECT(expectObjects(
                 resp,
                 {jss::RippleState.c_str(),
@@ -1021,17 +1021,17 @@ public:
                  jss::RippleState.c_str()}));
             // AMM account doesn't own offers
             BEAST_EXPECT(
-                acct_objs_is_size(acct_objs(amm.ammAccount(), jss::offer), 0));
+                acctObjsIsSize(acctObjs(amm.ammAccount(), jss::offer), 0));
             // gw account doesn't own AMM object
-            BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::amm), 0));
+            BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::amm), 0));
         }
 
         // we still expect invalid field type reported for the following types
-        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::amendments)));
-        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::directory)));
-        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::fee)));
-        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::hashes)));
-        BEAST_EXPECT(acctObjsTypeIsInvalid(acct_objs(gw, jss::NegativeUNL)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acctObjs(gw, jss::amendments)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acctObjs(gw, jss::directory)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acctObjs(gw, jss::fee)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acctObjs(gw, jss::hashes)));
+        BEAST_EXPECT(acctObjsTypeIsInvalid(acctObjs(gw, jss::NegativeUNL)));
 
         // Run up the number of directory entries so gw has two
         // directory nodes.
@@ -1042,7 +1042,7 @@ public:
         }
 
         // Verify that the non-returning types still don't return anything.
-        BEAST_EXPECT(acct_objs_is_size(acct_objs(gw, jss::account), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::account), 0));
     }
 
     void
