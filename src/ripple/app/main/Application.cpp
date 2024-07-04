@@ -2071,6 +2071,7 @@ ApplicationImp::loadOldLedger(
 
                 forceValidity(getHashRouter(), txID, Validity::SigGoodOnly);
 
+                JLOG(m_journal.trace()) << "loadOldLedger.rawTxInsert" << "\n";
                 openLedger_->modify(
                     [&txID, &s](OpenView& view, beast::Journal j) {
                         view.rawTxInsert(txID, std::move(s), nullptr);

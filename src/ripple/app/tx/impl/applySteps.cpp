@@ -250,6 +250,8 @@ invoke_preclaim(PreclaimContext const& ctx)
                 if (result != tesSUCCESS)
                     return result;
 
+                JLOG(ctx.j.trace()) << "invoke_preclaim.applySteps: " << ctx.tx.getTxnType() << "\n";
+                JLOG(ctx.j.trace()) << "invoke_preclaim.applySteps: " << "\n";
                 result = T::checkPriorTxAndLastLedger(ctx);
 
                 if (result != tesSUCCESS)

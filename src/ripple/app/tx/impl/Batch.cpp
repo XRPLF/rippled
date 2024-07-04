@@ -245,6 +245,7 @@ invoke_preclaim(PreclaimContext const& ctx)
                 // Ignore Sequence Validation on ttBATCH txns
                 TER result = tesSUCCESS;
 
+                JLOG(ctx.j.trace()) << "invoke_preclaim.Batch: " << "\n";
                 result = T::checkPriorTxAndLastLedger(ctx);
 
                 if (result != tesSUCCESS)
@@ -420,7 +421,7 @@ TER
 Batch::doApply()
 {
     std::cout << "Batch::doApply(): " << "0" << "\n";
-    Sandbox sb(&ctx_.view());
+    Sandbox sb(&ctx_.view(), tapRETRY);
 
     uint32_t flags = ctx_.tx.getFlags();
     if (flags & tfBatchMask)
@@ -498,13 +499,13 @@ Batch::doApply()
 
     std::cout << "Batch::doApply(): " << "1" << "\n";
 
-    // ctx_.discard();
-
-    // reset avi
     std::vector<STObject> batch;
     avi.setHookMetaData(std::move(batch));
+
+    // ApplyViewImpl& aviWet = dynamic_cast<ApplyViewImpl&>(ctx_.view());
     
     // WET RUN
+    std::cout << "Batch::doApply(): " << ctx_.base_.open() << "\n";
     TER result = tesSUCCESS;
     for (std::size_t i = 0; i < stxTxns.size(); ++i)
     {
@@ -515,14 +516,15 @@ Batch::doApply()
             stx,
             preclaimResponses[i],
             ctx_.view().fees().base,
-            view().flags(),
+            ctx_.base_.open() == 1 ? tapPREFLIGHT_BATCH : ctx_.view().flags(),
             ctx_.journal);
         auto const _result = invoke_apply(actx);
 
         STObject meta{sfBatchExecution};
         meta.setFieldU8(sfTransactionResult, TERtoInt(_result.first));
         meta.setFieldU16(sfTransactionType, stx.getTxnType());
-        meta.setFieldH256(sfTransactionHash, stx.getTransactionID());
+        if (_result.first == tesSUCCESS)
+            meta.setFieldH256(sfTransactionHash, stx.getTransactionID());
 
         avi.addBatchExecutionMetaData(std::move(meta));
 
@@ -549,7 +551,7 @@ Batch::doApply()
 
         if (_result.first == tesSUCCESS && flags & tfOnlyOne)
         {
-            result = tecBATCH_FAILURE;
+            result = tesSUCCESS;
             break;
         }
     }
@@ -572,6 +574,7 @@ Batch::doApply()
     sleSrcAcc->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence) + txns.size() + 1);
     sleSrcAcc->setFieldAmount(sfBalance, sleBase->getFieldAmount(sfBalance).xrp() - feePaid);
     sb.update(sleSrcAcc);
+    JLOG(ctx_.journal.trace()) << "Batch: FINAL>>>";
     sb.apply(ctx_.rawView());
     return result;
 }

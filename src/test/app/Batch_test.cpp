@@ -357,14 +357,14 @@ class Batch_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        test::jtx::Env env{*this, envconfig()};
-        // Env env{
-        //     *this,
-        //     envconfig(),
-        //     features,
-        //     nullptr,
-        //     // beast::severities::kWarning
-        //     beast::severities::kTrace};
+        // test::jtx::Env env{*this, envconfig()};
+        Env env{
+            *this,
+            envconfig(),
+            features,
+            nullptr,
+            // beast::severities::kWarning
+            beast::severities::kTrace};
         auto const feeDrops = env.current()->fees().base;
 
         auto const alice = Account("alice");

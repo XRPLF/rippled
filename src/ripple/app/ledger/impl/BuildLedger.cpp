@@ -117,15 +117,23 @@ applyTransactions(
         while (it != txns.end())
         {
             auto const txid = it->first.getTXID();
-
+            auto const isBatch = it->second->isFieldPresent(sfBatchTxn);
+            JLOG(j.trace()) << "isBatch: " << isBatch << "\n";
+            JLOG(j.trace()) << "view.txExists(txid): " << view.txExists(txid) << "\n";
+            JLOG(j.trace()) << "built->txExists(txid): " << built->txExists(txid) << "\n";
             try
             {
+                if (isBatch && view.txExists(txid))
+                {
+                    it = txns.erase(it);
+                    continue;
+                }
                 if (pass == 0 && built->txExists(txid))
                 {
                     it = txns.erase(it);
                     continue;
                 }
-
+                JLOG(j.trace()) << "applyTransactions.applyTransaction: " << txid << "\n";
                 switch (applyTransaction(
                     app, view, *it->second, certainRetry, tapNONE, j))
                 {
@@ -232,6 +240,7 @@ buildLedger(
         app,
         j,
         [&](OpenView& accum, std::shared_ptr<Ledger> const& built) {
+            JLOG(j.trace()) << "replayData.orderedTxns(): " << replayData.orderedTxns().size() << "\n";
             for (auto& tx : replayData.orderedTxns())
                 applyTransaction(app, accum, *tx.second, false, applyFlags, j);
         });

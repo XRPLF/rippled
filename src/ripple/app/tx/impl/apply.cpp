@@ -129,6 +129,7 @@ apply(
     ApplyFlags flags,
     beast::Journal j)
 {
+    JLOG(j.trace()) << "apply.apply" << "\n";
     STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
     NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
@@ -152,11 +153,10 @@ applyTransaction(
 
     JLOG(j.trace()) << "TXN " << txn.getTransactionID()
                     << (retryAssured ? "/retry" : "/final");
-
     try
     {
         auto const result = apply(app, view, txn, flags, j);
-        if (result.second)
+        if (result.second || result.first == tecBATCH_FAILURE)
         {
             JLOG(j.trace())
                 << "Transaction applied: " << transHuman(result.first);
@@ -171,6 +171,14 @@ applyTransaction(
                 << "Transaction failure: " << transHuman(result.first);
             return ApplyResult::Fail;
         }
+
+        // if (result.first == tecBATCH_FAILURE)
+        // {
+        //     // failure
+        //     JLOG(j.trace())
+        //         << "Transaction failure: " << transHuman(result.first);
+        //     return ApplyResult::Fail;
+        // }
 
         JLOG(j.trace()) << "Transaction retry: " << transHuman(result.first);
         return ApplyResult::Retry;

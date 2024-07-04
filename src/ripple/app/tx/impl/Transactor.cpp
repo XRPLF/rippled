@@ -401,8 +401,11 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
         (ctx.view.seq() > ctx.tx.getFieldU32(sfLastLedgerSequence)))
         return tefMAX_LEDGER;
 
-    JLOG(ctx.j.trace()) << "TXN: " << ctx.tx.getTxnType() << "\n";
-    if (ctx.view.txExists(ctx.tx.getTransactionID()) && ctx.tx.getTxnType() != ttBATCH)
+    JLOG(ctx.j.trace()) << "TXN TT: " << ctx.tx.getTxnType() << "\n";
+    JLOG(ctx.j.trace()) << "TXN JSON: " << ctx.tx.getJson(JsonOptions::none) << "\n";
+    JLOG(ctx.j.trace()) << "TXN ID: " << ctx.tx.getTransactionID() << "\n";
+    if (ctx.view.txExists(ctx.tx.getTransactionID()) &&
+        ctx.tx.getTxnType() != ttBATCH && !ctx.tx.isFieldPresent(sfBatchTxn))
         return tefALREADY;
 
     return tesSUCCESS;
@@ -920,6 +923,7 @@ Transactor::operator()()
     if ((isTecClaim(result) && (view().flags() & tapFAIL_HARD)) ||
         view().flags() & tapPREFLIGHT_BATCH)
     {
+        JLOG(j_.trace()) << "isTecClaim.view().flags() tapFAIL_HARD | tapPREFLIGHT_BATCH" << "\n";
         // If the tapFAIL_HARD flag is set, a tec result
         // must not do anything
         ctx_.discard();
@@ -1057,7 +1061,7 @@ Transactor::operator()()
         ctx_.apply(result);
     }
 
-    JLOG(j_.trace()) << (applied ? "applied" : "not applied")
+    JLOG(j_.trace()) << (applied ? "applied: " : "not applied: ")
                      << transToken(result);
 
     return {result, applied};

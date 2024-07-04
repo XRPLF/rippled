@@ -129,9 +129,19 @@ OpenView::txCount() const
 void
 OpenView::apply(TxsRawView& to) const
 {
+    std::cout << "txs_ Size 1: " << txs_.size() << "\n";
     items_.apply(to);
     for (auto const& item : txs_)
         to.rawTxInsert(item.first, item.second.txn, item.second.meta);
+    // for (auto const& item : txs_)
+    // {
+    //     SerialIter sit(item.second.txn->slice());
+    //     auto const _txn = std::make_shared<STTx const>(sit);
+    //     if (!_txn->isFieldPresent(sfBatchTxn))
+    //     {
+    //         to.rawTxInsert(item.first, item.second.txn, item.second.meta);
+    //     }
+    // }
 }
 
 //---
@@ -207,6 +217,18 @@ OpenView::txsEnd() const -> std::unique_ptr<txs_type::iter_base>
 bool
 OpenView::txExists(key_type const& key) const
 {
+    std::cout << "txs_ Size 2: " << txs_.size() << "\n";
+    for (const auto& pair : txs_) {
+        std::cout << "Key: " << pair.first << "\n";
+        if (pair.second.txn)
+        {
+            std::cout << "Txn: " << strHex(pair.second.txn->getData()) << "\n";
+        }
+        if (pair.second.meta)
+        {
+            std::cout << "Meta: " << strHex(pair.second.meta->getData()) << "\n";
+        }
+    }
     return txs_.find(key) != txs_.end();
 }
 
@@ -268,7 +290,7 @@ OpenView::rawTxInsert(
         std::forward_as_tuple(key),
         std::forward_as_tuple(txn, metaData));
     if (!result.second)
-        LogicError("rawTxInsert: duplicate TX id" + to_string(key));
+        LogicError("rawTxInsert: duplicate TX id: " + to_string(key));
 }
 
 }  // namespace ripple

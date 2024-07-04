@@ -282,6 +282,8 @@ ApplyStateTable::apply(
         //        metadata even when the base view is open?
         JLOG(j.trace()) << "metadata " << meta.getJson(JsonOptions::none);
     }
+    JLOG(j.trace()) << "ApplyStateTable.apply.rawTxInsert" << "\n";
+    JLOG(j.trace()) << "tx: " << tx.getJson(JsonOptions::none) << "\n";
     to.rawTxInsert(tx.getTransactionID(), sTx, sMeta);
     apply(to);
 }

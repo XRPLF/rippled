@@ -140,7 +140,7 @@ InnerObjectFormats::InnerObjectFormats()
         sfBatchExecution.getCode(),
         {{sfTransactionType, soeREQUIRED},
          {sfTransactionResult, soeREQUIRED},
-         {sfTransactionHash, soeREQUIRED}});
+         {sfTransactionHash, soeOPTIONAL}});
 
     add(sfBatchTxn.jsonName.c_str(),
         sfBatchTxn.getCode(),
