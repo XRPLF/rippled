@@ -44,7 +44,8 @@ class AccountCurrencies_test : public beast::unit_test::suite
             auto const result = env.rpc(
                 "json",
                 "account_currencies",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                boost::lexical_cast<std::string>(
+                    to_string(params)))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::error_message] == "ledgerHashNotString");
         }
@@ -108,7 +109,8 @@ class AccountCurrencies_test : public beast::unit_test::suite
             auto const result = env.rpc(
                 "json",
                 "account_currencies",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                boost::lexical_cast<std::string>(
+                    to_string(params)))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
         }
@@ -120,7 +122,8 @@ class AccountCurrencies_test : public beast::unit_test::suite
             auto const result = env.rpc(
                 "json",
                 "account_currencies",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                boost::lexical_cast<std::string>(
+                    to_string(params)))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
         }
@@ -131,7 +134,8 @@ class AccountCurrencies_test : public beast::unit_test::suite
             auto const result = env.rpc(
                 "json",
                 "account_currencies",
-                boost::lexical_cast<std::string>(params))[jss::result];
+                boost::lexical_cast<std::string>(
+                    to_string(params)))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actNotFound");
             BEAST_EXPECT(result[jss::error_message] == "Account not found.");
         }
@@ -162,7 +166,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         auto result = env.rpc(
             "json",
             "account_currencies",
-            boost::lexical_cast<std::string>(params))[jss::result];
+            boost::lexical_cast<std::string>(to_string(params)))[jss::result];
 
         auto arrayCheck =
             [&result](
@@ -190,7 +194,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         result = env.rpc(
             "json",
             "account_currencies",
-            boost::lexical_cast<std::string>(params))[jss::result];
+            boost::lexical_cast<std::string>(to_string(params)))[jss::result];
         BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrencies));
         BEAST_EXPECT(arrayCheck(jss::send_currencies, gwCurrencies));
 
@@ -204,7 +208,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         result = env.rpc(
             "json",
             "account_currencies",
-            boost::lexical_cast<std::string>(params))[jss::result];
+            boost::lexical_cast<std::string>(to_string(params)))[jss::result];
         BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrencies));
         BEAST_EXPECT(arrayCheck(jss::send_currencies, gwCurrencies));
         // clear the freeze
@@ -216,7 +220,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         result = env.rpc(
             "json",
             "account_currencies",
-            boost::lexical_cast<std::string>(params))[jss::result];
+            boost::lexical_cast<std::string>(to_string(params)))[jss::result];
         decltype(gwCurrencies) gwCurrenciesNoUSA(
             gwCurrencies.begin() + 1, gwCurrencies.end());
         BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrenciesNoUSA));
@@ -229,7 +233,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         result = env.rpc(
             "json",
             "account_currencies",
-            boost::lexical_cast<std::string>(params))[jss::result];
+            boost::lexical_cast<std::string>(to_string(params)))[jss::result];
         BEAST_EXPECT(arrayCheck(jss::receive_currencies, gwCurrencies));
         BEAST_EXPECT(arrayCheck(jss::send_currencies, gwCurrenciesNoUSA));
     }

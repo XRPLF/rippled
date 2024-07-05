@@ -22,6 +22,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STObject.h>
@@ -190,7 +191,7 @@ STValidation::STValidation(
     if (checkSignature && !isValid())
     {
         JLOG(debugLog().error()) << "Invalid signature in validation: "
-                                 << getJson(JsonOptions::none);
+                                 << to_string(getJson(JsonOptions::none));
         Throw<std::runtime_error>("Invalid signature in validation");
     }
 

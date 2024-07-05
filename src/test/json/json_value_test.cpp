@@ -23,6 +23,7 @@
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/json/to_string.h>
 
 #include <algorithm>
 #include <regex>
@@ -834,7 +835,8 @@ struct json_value_test : beast::unit_test::suite
         BEAST_EXPECT(r.parse(s, j));
         {
             std::stringstream ss;
-            ss << j;
+            // UNDO
+            ss << pretty(j);
             BEAST_EXPECT(countLines(ss.str()) > 1);
         }
         {

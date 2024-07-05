@@ -414,7 +414,7 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
                 Json::Value jrr = env.rpc(
                     "json",
                     "ledger_data",
-                    boost::lexical_cast<std::string>(jvParams));
+                    boost::lexical_cast<std::string>(to_string(jvParams)));
 
                 Json::Value& state = jrr[jss::result][jss::state];
 
@@ -461,7 +461,7 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
                 Json::Value jrr = env.rpc(
                     "json",
                     "ledger_data",
-                    boost::lexical_cast<std::string>(jvParams));
+                    boost::lexical_cast<std::string>(to_string(jvParams)));
 
                 Json::Value& state = jrr[jss::result][jss::state];
 

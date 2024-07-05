@@ -86,7 +86,7 @@ public:
         }
 
         auto jm = broadcast ? j_.debug() : j_.info();
-        JLOG(jm) << "RPCCall::fromNetwork push: " << jvObj;
+        JLOG(jm) << "RPCCall::fromNetwork push: " << to_string(jvObj);
 
         mDeque.push_back(std::make_pair(mSeq++, jvObj));
 

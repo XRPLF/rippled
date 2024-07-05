@@ -210,8 +210,8 @@ valueToQuotedString(const char* value);
 
 /// \brief Output using the StyledStreamWriter.
 /// \see Json::operator>>()
-std::ostream&
-operator<<(std::ostream&, const Value& root);
+// std::ostream&
+// operator<<(std::ostream&, const Value& root);
 
 //------------------------------------------------------------------------------
 

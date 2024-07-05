@@ -201,7 +201,7 @@ saveValidatedLedger(
 
     if (!ledger->info().accountHash.isNonZero())
     {
-        JLOG(j.fatal()) << "AH is zero: " << getJson({*ledger, {}});
+        JLOG(j.fatal()) << "AH is zero: " << to_string(getJson({*ledger, {}}));
         UNREACHABLE("ripple::detail::saveValidatedLedger : zero account hash");
     }
 
@@ -329,7 +329,8 @@ saveValidatedLedger(
                     // accounts.  But otherwise...
                     JLOG(j.warn()) << "Transaction in ledger " << seq
                                    << " affects no accounts";
-                    JLOG(j.warn()) << sleTxn->getJson(JsonOptions::none);
+                    JLOG(j.warn())
+                        << to_string(sleTxn->getJson(JsonOptions::none));
                 }
 
                 *db

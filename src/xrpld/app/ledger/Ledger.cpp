@@ -874,7 +874,7 @@ Ledger::assertSensible(beast::Journal ledgerJ) const
     j[jss::accountTreeHash] = to_string(info_.accountHash);
     j[jss::transTreeHash] = to_string(info_.txHash);
 
-    JLOG(ledgerJ.fatal()) << "ledger is not sensible" << j;
+    JLOG(ledgerJ.fatal()) << "ledger is not sensible" << to_string(j);
 
     UNREACHABLE("ripple::Ledger::assertSensible : ledger is not sensible");
 

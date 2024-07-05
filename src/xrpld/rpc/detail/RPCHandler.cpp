@@ -158,7 +158,7 @@ fillHandler(JsonContext& context, Handler const*& result)
         : context.params[jss::method].asString();
 
     JLOG(context.j.trace()) << "COMMAND:" << strCommand;
-    JLOG(context.j.trace()) << "REQUEST:" << context.params;
+    JLOG(context.j.trace()) << "REQUEST:" << to_string(context.params);
     auto handler = getHandler(
         context.apiVersion, context.app.config().BETA_RPC_API, strCommand);
 
@@ -230,30 +230,28 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
         return error;
     }
 
-    if (auto method = handler->valueMethod_)
-    {
+    auto const extra = [&context]() {
+        using namespace std::string_literals;
         if (!context.headers.user.empty() ||
             !context.headers.forwardedFor.empty())
         {
-            JLOG(context.j.debug())
-                << "start command: " << handler->name_
-                << ", user: " << context.headers.user
-                << ", forwarded for: " << context.headers.forwardedFor;
-
-            auto ret = callMethod(context, method, handler->name_, result);
-
-            JLOG(context.j.debug())
-                << "finish command: " << handler->name_
-                << ", user: " << context.headers.user
-                << ", forwarded for: " << context.headers.forwardedFor;
-
-            return ret;
+            return ", user: "s + std::string(context.headers.user) +
+                ", forwarded for: "s +
+                std::string(context.headers.forwardedFor);
         }
-        else
-        {
-            auto ret = callMethod(context, method, handler->name_, result);
-            return ret;
-        }
+        return ""s;
+    }();
+    if (auto method = handler->valueMethod_)
+    {
+        JLOG(context.j.debug()) << "start command: " << handler->name_ << extra
+                                << to_string(context.params);
+
+        auto ret = callMethod(context, method, handler->name_, result);
+
+        JLOG(context.j.debug()) << "finish command: " << handler->name_ << extra
+                                << to_string(context.params);
+
+        return ret;
     }
 
     return rpcUNKNOWN_COMMAND;

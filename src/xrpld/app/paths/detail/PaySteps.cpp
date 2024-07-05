@@ -22,6 +22,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -556,8 +557,9 @@ toStrands(
         if (ter != tesSUCCESS)
         {
             lastFailTer = ter;
-            JLOG(j.trace()) << "failed to add path: ter: " << ter
-                            << "path: " << p.getJson(JsonOptions::none);
+            JLOG(j.trace())
+                << "failed to add path: ter: " << ter
+                << "path: " << to_string(p.getJson(JsonOptions::none));
             if (isTemMalformed(ter))
                 return {ter, std::vector<Strand>{}};
         }

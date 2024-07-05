@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/Oracle.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -482,10 +483,8 @@ private:
                 jvParams[field] = value;
                 jvParams[jss::binary] = false;
                 jvParams[jss::type] = jss::oracle;
-                Json::Value jrr = env.rpc(
-                    "json",
-                    "ledger_data",
-                    boost::lexical_cast<std::string>(jvParams));
+                Json::Value jrr =
+                    env.rpc("json", "ledger_data", to_string(jvParams));
                 BEAST_EXPECT(jrr[jss::result][jss::state].size() == 2);
             };
             verifyLedgerData(jss::ledger_index, index);

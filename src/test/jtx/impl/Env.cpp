@@ -359,7 +359,7 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
     if (params.isNull())
     {
         // Use the command line interface
-        auto const jv = boost::lexical_cast<std::string>(jt.jv);
+        auto const jv = boost::lexical_cast<std::string>(to_string(jt.jv));
         jr = rpc("submit", passphrase, jv);
     }
     else

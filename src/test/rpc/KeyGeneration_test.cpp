@@ -111,8 +111,8 @@ public:
         BEAST_EXPECT(result.isMember(jss::key_type));
 
         expectEquals(
-            result[jss::key_type],
-            params.isMember(jss::key_type) ? params[jss::key_type]
+            to_string(result[jss::key_type]),
+            params.isMember(jss::key_type) ? to_string(params[jss::key_type])
                                            : "secp256k1");
         BEAST_EXPECT(!result.isMember(jss::warning));
 
@@ -130,14 +130,15 @@ public:
         Json::Value result = walletPropose(params);
 
         BEAST_EXPECT(!contains_error(result));
-        expectEquals(result[jss::account_id], s.account_id);
-        expectEquals(result[jss::master_seed], s.master_seed);
-        expectEquals(result[jss::master_seed_hex], s.master_seed_hex);
-        expectEquals(result[jss::public_key], s.public_key);
-        expectEquals(result[jss::public_key_hex], s.public_key_hex);
+        expectEquals(to_string(result[jss::account_id]), s.account_id);
+        expectEquals(to_string(result[jss::master_seed]), s.master_seed);
         expectEquals(
-            result[jss::key_type],
-            params.isMember(jss::key_type) ? params[jss::key_type]
+            to_string(result[jss::master_seed_hex]), s.master_seed_hex);
+        expectEquals(to_string(result[jss::public_key]), s.public_key);
+        expectEquals(to_string(result[jss::public_key_hex]), s.public_key_hex);
+        expectEquals(
+            to_string(result[jss::key_type]),
+            params.isMember(jss::key_type) ? to_string(params[jss::key_type])
                                            : "secp256k1");
         return result;
     }

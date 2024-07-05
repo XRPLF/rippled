@@ -32,6 +32,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -275,7 +276,7 @@ checkPayment(
 
             auto j = app.journal("RPCHandler");
             JLOG(j.debug()) << "transactionSign: build_path: "
-                            << result.getJson(JsonOptions::none);
+                            << to_string(result.getJson(JsonOptions::none));
 
             if (!result.empty())
                 tx_json[jss::Paths] = result.getJson(JsonOptions::none);
@@ -906,7 +907,7 @@ transactionSign(
     using namespace detail;
 
     auto j = app.journal("RPCHandler");
-    JLOG(j.debug()) << "transactionSign: " << jvRequest;
+    JLOG(j.debug()) << "transactionSign: " << to_string(jvRequest);
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
@@ -942,7 +943,7 @@ transactionSubmit(
 
     auto const& ledger = app.openLedger().current();
     auto j = app.journal("RPCHandler");
-    JLOG(j.debug()) << "transactionSubmit: " << jvRequest;
+    JLOG(j.debug()) << "transactionSubmit: " << to_string(jvRequest);
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
@@ -1069,7 +1070,7 @@ transactionSignFor(
 {
     auto const& ledger = app.openLedger().current();
     auto j = app.journal("RPCHandler");
-    JLOG(j.debug()) << "transactionSignFor: " << jvRequest;
+    JLOG(j.debug()) << "transactionSignFor: " << to_string(jvRequest);
 
     // Verify presence of the signer's account field.
     const char accountField[] = "account";
@@ -1180,7 +1181,7 @@ transactionSubmitMultiSigned(
 {
     auto const& ledger = app.openLedger().current();
     auto j = app.journal("RPCHandler");
-    JLOG(j.debug()) << "transactionSubmitMultiSigned: " << jvRequest;
+    JLOG(j.debug()) << "transactionSubmitMultiSigned: " << to_string(jvRequest);
 
     // When multi-signing, the "Sequence" and "SigningPubKey" fields must
     // be passed in by the caller.

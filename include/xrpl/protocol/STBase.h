@@ -155,7 +155,8 @@ public:
     virtual std::string
     getText() const;
 
-    virtual Json::Value getJson(JsonOptions /*options*/) const;
+    virtual Json::Value getJson(
+        JsonOptions = JsonOptions::none /*options*/) const;
 
     virtual void
     add(Serializer& s) const;

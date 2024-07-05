@@ -522,8 +522,8 @@ private:
         Json::Reader reader;
         Json::Value jvRequest;
 
-        JLOG(j_.trace()) << "RPC method: " << jvParams[0u];
-        JLOG(j_.trace()) << "RPC json: " << jvParams[1u];
+        JLOG(j_.trace()) << "RPC method: " << to_string(jvParams[0u]);
+        JLOG(j_.trace()) << "RPC json: " << to_string(jvParams[1u]);
 
         if (reader.parse(jvParams[1u].asString(), jvRequest))
         {
@@ -894,7 +894,7 @@ private:
         Json::Value jvRequest{Json::objectValue};
         bool bLedger = 2 == jvParams.size();
 
-        JLOG(j_.trace()) << "RPC json: " << jvParams[0u];
+        JLOG(j_.trace()) << "RPC json: " << to_string(jvParams[0u]);
 
         if (reader.parse(jvParams[0u].asString(), jvRequest))
         {
@@ -1186,7 +1186,7 @@ public:
         if (auto stream = j_.trace())
         {
             stream << "Method: '" << strMethod << "'";
-            stream << "Params: " << jvParams;
+            stream << "Params: " << to_string(jvParams);
         }
 
         struct Command
@@ -1454,7 +1454,7 @@ rpcCmdToJson(
     else if (jvRequest.isArray())
         std::for_each(jvRequest.begin(), jvRequest.end(), insert_api_version);
 
-    JLOG(j.trace()) << "RPC Request: " << jvRequest << std::endl;
+    JLOG(j.trace()) << "RPC Request: " << to_string(jvRequest) << std::endl;
     return jvRequest;
 }
 
