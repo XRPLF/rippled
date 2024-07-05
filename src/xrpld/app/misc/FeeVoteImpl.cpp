@@ -277,9 +277,9 @@ FeeVoteImpl::doVoting(
     }
 
     // choose our positions
-    // TODO: Use structured binding once LLVM issue
-    // https://github.com/llvm/llvm-project/issues/48582
-    // is fixed.
+    // TODO: Use structured binding once LLVM 16 is the minimum supported
+    // version. See also: https://github.com/llvm/llvm-project/issues/48582
+    // https://github.com/llvm/llvm-project/commit/127bf44385424891eb04cff8e52d3f157fc2cb7c
     auto const baseFee = baseFeeVote.getVotes();
     auto const baseReserve = baseReserveVote.getVotes();
     auto const incReserve = incReserveVote.getVotes();
