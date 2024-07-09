@@ -25,6 +25,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpld/app/tx/detail/Transactor.h>
 #include <memory>
 #include <utility>
 
@@ -119,7 +120,7 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity);
     @return A pair with the `TER` and a `bool` indicating
             whether or not the transaction was applied.
 */
-std::pair<TER, bool>
+TxApplyResult
 apply(
     Application& app,
     OpenView& view,

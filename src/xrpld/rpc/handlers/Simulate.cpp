@@ -30,6 +30,23 @@
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
+#include <ripple/app/ledger/LedgerMaster.h>
+#include <ripple/app/ledger/TransactionMaster.h>
+#include <ripple/app/misc/DeliverMax.h>
+#include <ripple/app/misc/NetworkOPs.h>
+#include <ripple/app/misc/Transaction.h>
+#include <ripple/app/rdb/RelationalDatabase.h>
+#include <ripple/basics/ToString.h>
+#include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/NFTSyntheticSerializer.h>
+#include <ripple/protocol/RPCErr.h>
+#include <ripple/protocol/jss.h>
+#include <ripple/rpc/CTID.h>
+#include <ripple/rpc/Context.h>
+#include <ripple/rpc/DeliveredAmount.h>
+#include <ripple/rpc/GRPCHandlers.h>
+#include <ripple/rpc/impl/RPCHelpers.h>
+
 namespace ripple {
 
 class OpenLedger;
@@ -88,7 +105,7 @@ doSimulate(RPC::JsonContext& context)
         // if (getFailHard(context) == NetworkOps::FailHard::yes)
         //     flags |= tapFAIL_HARD;
 
-        auto view = *context.app.openLedger().current();
+        OpenView view = *context.app.openLedger().current();
         auto const result = context.app.getTxQ().apply(
             context.app, view, tpTrans->getSTransaction(), flags, context.j);
         // e.result = result.first;
@@ -103,60 +120,14 @@ doSimulate(RPC::JsonContext& context)
         jvResult[jss::engine_result_code] = result.first;
         jvResult[jss::engine_result_message] = sHuman;
         jvResult[jss::applied] = result.second;
+        if (result.metadata)
+            jvResult[jss::metadata] =
+                result.metadata->getJson(JsonOptions::none);
+        return jvResult;
     }
     catch (std::exception& e)
     {
         jvResult[jss::error] = "internalSimulate";
-        jvResult[jss::error_exception] = e.what();
-
-        return jvResult;
-    }
-
-    try
-    {
-        jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
-        jvResult[jss::tx_blob] =
-            strHex(tpTrans->getSTransaction()->getSerializer().peekData());
-
-        // if (temUNCERTAIN != tpTrans->getResult())
-        // {
-        std::string sToken;
-        std::string sHuman;
-
-        transResultInfo(tpTrans->getResult(), sToken, sHuman);
-
-        // jvResult[jss::engine_result] = sToken;
-        // jvResult[jss::engine_result_code] = tpTrans->getResult();
-        // jvResult[jss::engine_result_message] = sHuman;
-
-        auto const submitResult = tpTrans->getSubmitResult();
-
-        jvResult[jss::accepted] = submitResult.any();
-        // jvResult[jss::applied] = submitResult.applied;
-        jvResult[jss::broadcast] = submitResult.broadcast;
-        jvResult[jss::queued] = submitResult.queued;
-        jvResult[jss::kept] = submitResult.kept;
-
-        if (auto currentLedgerState = tpTrans->getCurrentLedgerState())
-        {
-            jvResult[jss::account_sequence_next] = safe_cast<Json::Value::UInt>(
-                currentLedgerState->accountSeqNext);
-            jvResult[jss::account_sequence_available] =
-                safe_cast<Json::Value::UInt>(
-                    currentLedgerState->accountSeqAvail);
-            jvResult[jss::open_ledger_cost] =
-                to_string(currentLedgerState->minFeeRequired);
-            jvResult[jss::validated_ledger_index] =
-                safe_cast<Json::Value::UInt>(
-                    currentLedgerState->validatedLedger);
-        }
-        // }
-
-        return jvResult;
-    }
-    catch (std::exception& e)
-    {
-        jvResult[jss::error] = "internalJson";
         jvResult[jss::error_exception] = e.what();
 
         return jvResult;

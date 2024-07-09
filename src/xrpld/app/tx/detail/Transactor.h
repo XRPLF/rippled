@@ -82,6 +82,13 @@ public:
 class TxConsequences;
 struct PreflightResult;
 
+struct TxApplyResult
+{
+    TER first;
+    bool second;
+    std::optional<TxMeta> metadata = std::nullopt;
+};
+
 class Transactor
 {
 protected:
@@ -100,7 +107,7 @@ protected:
 public:
     enum ConsequencesFactoryType { Normal, Blocker, Custom };
     /** Process the transaction. */
-    std::pair<TER, bool>
+    TxApplyResult
     operator()();
 
     ApplyView&

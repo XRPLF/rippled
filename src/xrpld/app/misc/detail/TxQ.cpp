@@ -288,7 +288,7 @@ TxQ::MaybeTx::MaybeTx(
 {
 }
 
-std::pair<TER, bool>
+TxApplyResult
 TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
 {
     // If the rules or flags change, preflight again
@@ -500,7 +500,7 @@ TxQ::erase(
     return txQAccount.transactions.erase(begin, end);
 }
 
-std::pair<TER, bool>
+TxApplyResult
 TxQ::tryClearAccountQueueUpThruTx(
     Application& app,
     OpenView& view,
@@ -710,7 +710,7 @@ TxQ::tryClearAccountQueueUpThruTx(
 //    b. The entire queue also has a (dynamic) maximum size.  Transactions
 //       beyond that limit are rejected.
 //
-std::pair<TER, bool>
+TxApplyResult
 TxQ::apply(
     Application& app,
     OpenView& view,
@@ -1456,7 +1456,7 @@ TxQ::accept(Application& app, OpenView& view)
             JLOG(j_.trace()) << "Applying queued transaction "
                              << candidateIter->txID << " to open ledger.";
 
-            auto const [txnResult, didApply] =
+            auto const [txnResult, didApply, _metadata] =
                 candidateIter->apply(app, view, j_);
 
             if (didApply)
@@ -1653,7 +1653,7 @@ TxQ::getRequiredFeeLevel(
     return FeeMetrics::scaleFeeLevel(metricsSnapshot, view);
 }
 
-std::optional<std::pair<TER, bool>>
+std::optional<TxApplyResult>
 TxQ::tryDirectApply(
     Application& app,
     OpenView& view,
@@ -1693,7 +1693,7 @@ TxQ::tryDirectApply(
         JLOG(j_.trace()) << "Applying transaction " << transactionID
                          << " to open ledger.";
 
-        auto const [txnResult, didApply] =
+        auto const [txnResult, didApply, metadata] =
             ripple::apply(app, view, *tx, flags, j);
 
         JLOG(j_.trace()) << "New transaction " << transactionID
@@ -1719,7 +1719,7 @@ TxQ::tryDirectApply(
                 }
             }
         }
-        return {std::pair(txnResult, didApply)};
+        return TxApplyResult{txnResult, didApply, metadata};
     }
     return {};
 }

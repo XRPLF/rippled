@@ -27,6 +27,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpld/app/tx/detail/Transactor.h>
 #include <boost/circular_buffer.hpp>
 #include <boost/intrusive/set.hpp>
 #include <optional>
@@ -267,7 +268,7 @@ public:
                 the open ledger. If the transaction is queued,
                 will return `{ terQUEUED, false }`.
     */
-    std::pair<TER, bool>
+    TxApplyResult
     apply(
         Application& app,
         OpenView& view,
@@ -596,7 +597,7 @@ private:
             PreflightResult const& pfresult);
 
         /// Attempt to apply the queued transaction to the open ledger.
-        std::pair<TER, bool>
+        TxApplyResult
         apply(Application& app, OpenView& view, beast::Journal j);
 
         /// Potential @ref TxConsequences of applying this transaction
@@ -730,7 +731,7 @@ private:
 
     // Helper function for TxQ::apply.  If a transaction's fee is high enough,
     // attempt to directly apply that transaction to the ledger.
-    std::optional<std::pair<TER, bool>>
+    std::optional<TxApplyResult>
     tryDirectApply(
         Application& app,
         OpenView& view,
@@ -837,7 +838,7 @@ private:
         `accountIter` up to and including `tx`.  Transactions following
         `tx` are not cleared.
     */
-    std::pair<TER, bool>
+    TxApplyResult
     tryClearAccountQueueUpThruTx(
         Application& app,
         OpenView& view,

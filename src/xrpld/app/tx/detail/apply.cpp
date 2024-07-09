@@ -105,7 +105,7 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
         router.setFlags(txid, flags);
 }
 
-std::pair<TER, bool>
+TxApplyResult
 apply(
     Application& app,
     OpenView& view,

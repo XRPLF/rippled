@@ -28,6 +28,7 @@ namespace ripple {
 class Application;
 class STTx;
 class TxQ;
+struct TxApplyResult;
 
 /** Return true if the transaction can claim a fee (tec),
     and the `ApplyFlags` do not allow soft failures.
@@ -333,7 +334,7 @@ calculateDefaultBaseFee(ReadView const& view, STTx const& tx);
     @return A pair with the `TER` and a `bool` indicating
     whether or not the transaction was applied.
 */
-std::pair<TER, bool>
+TxApplyResult
 doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view);
 
 }  // namespace ripple

@@ -486,7 +486,10 @@ NotTEC
 Transactor::checkSign(PreclaimContext const& ctx)
 {
     if (ctx.flags & tapDRY_RUN)
+    {
+        // TODO: ensure there is no signature included
         return tesSUCCESS;
+    }
     // If the pk is empty, then we must be multi-signing.
     if (ctx.tx.getSigningPubKey().empty())
         return checkMultiSign(ctx);
@@ -833,7 +836,7 @@ Transactor::reset(XRPAmount fee)
 }
 
 //------------------------------------------------------------------------------
-std::pair<TER, bool>
+TxApplyResult
 Transactor::operator()()
 {
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
@@ -1002,6 +1005,7 @@ Transactor::operator()()
             applied = false;
     }
 
+    std::optional<TxMeta> metadata;
     if (applied)
     {
         // Transaction succeeded fully or (retries are not allowed and the
@@ -1021,13 +1025,13 @@ Transactor::operator()()
             ctx_.destroyXRP(fee);
 
         // Once we call apply, we will no longer be able to look at view()
-        ctx_.apply(result);
+        metadata = ctx_.apply(result);
     }
 
     JLOG(j_.trace()) << (applied ? "applied " : "not applied ")
                      << transToken(result);
 
-    return {result, applied};
+    return {result, applied, metadata};
 }
 
 }  // namespace ripple
