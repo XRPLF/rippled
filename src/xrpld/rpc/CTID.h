@@ -63,7 +63,7 @@ decodeCTID(const T ctid) noexcept
         if (ctidString.length() != 16)
             return {};
 
-        if (!boost::regex_match(ctidString, boost::regex("^[0-9A-F]+$")))
+        if (!boost::regex_match(ctidString, boost::regex("^[0-9A-Fa-f]+$")))
             return {};
 
         ctidValue = std::stoull(ctidString, nullptr, 16);
