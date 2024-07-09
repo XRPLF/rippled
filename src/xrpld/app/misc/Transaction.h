@@ -148,6 +148,8 @@ public:
     void
     setApplying()
     {
+        // Note that all access to mApplying are made by NetworkOPsImp, and must
+        // be done under that class's lock.
         mApplying = true;
     }
 
@@ -159,6 +161,8 @@ public:
     bool
     getApplying()
     {
+        // Note that all access to mApplying are made by NetworkOPsImp, and must
+        // be done under that class's lock.
         return mApplying;
     }
 
@@ -168,6 +172,8 @@ public:
     void
     clearApplying()
     {
+        // Note that all access to mApplying are made by NetworkOPsImp, and must
+        // be done under that class's lock.
         mApplying = false;
     }
 
@@ -390,6 +396,8 @@ private:
     LedgerIndex mLedgerIndex = 0;
     TransStatus mStatus = INVALID;
     TER mResult = temUNCERTAIN;
+    // Note that all access to mApplying are made by NetworkOPsImp, and must be
+    // done under that class's lock.
     bool mApplying = false;
 
     /** different ways for transaction to be accepted */

@@ -28,6 +28,7 @@
 #include <xrpld/app/ledger/OrderBookDB.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/main/LoadManager.h>
+#include <xrpld/app/main/Tuning.h>
 #include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/HashRouter.h>
@@ -1340,8 +1341,8 @@ void
 NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
 {
     auto ev = m_job_queue.makeLoadEvent(jtTXN_PROC, "ProcessTXNSet");
-    std::vector<TransactionStatus> transactions;
-    transactions.reserve(set.size());
+    std::vector<std::shared_ptr<Transaction>> candidates;
+    candidates.reserve(set.size());
     for (auto const& [_, tx] : set)
     {
         std::string reason;
@@ -1362,6 +1363,16 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
         if (!preProcessTransaction(transaction))
             continue;
 
+        candidates.emplace_back(transaction);
+    }
+
+    std::vector<TransactionStatus> transactions;
+    transactions.reserve(candidates.size());
+
+    std::unique_lock lock(mMutex);
+
+    for (auto& transaction : candidates)
+    {
         if (!transaction->getApplying())
         {
             transactions.emplace_back(transaction, false, false, FailHard::no);
@@ -1369,12 +1380,11 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
         }
     }
 
-    std::unique_lock lock(mMutex);
-
     if (mTransactions.empty())
         mTransactions.swap(transactions);
     else
     {
+        mTransactions.reserve(mTransactions.size() + transactions.size());
         for (auto& t : transactions)
             mTransactions.push_back(std::move(t));
     }
@@ -1492,17 +1502,24 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 // possible. "Reasonable" means they have sequential sequence
                 // numbers, or use tickets.
                 auto const& txCur = e.transaction->getSTransaction();
-                auto txNext = m_ledgerMaster.popAcctTransaction(txCur);
-                while (txNext)
+
+                std::size_t count = 0;
+                for (auto txNext = m_ledgerMaster.popAcctTransaction(txCur);
+                     txNext && count < maxPoppedTransactions;
+                     txNext = m_ledgerMaster.popAcctTransaction(txCur), ++count)
                 {
+                    if (!batchLock.owns_lock())
+                        batchLock.lock();
                     std::string reason;
                     auto const trans = sterilize(*txNext);
                     auto t = std::make_shared<Transaction>(trans, reason, app_);
+                    if (!t->getApplying())
+                        break;
                     submit_held.emplace_back(t, false, false, FailHard::no);
                     t->setApplying();
-
-                    txNext = m_ledgerMaster.popAcctTransaction(trans);
                 }
+                if (batchLock.owns_lock())
+                    batchLock.unlock();
             }
             else if (e.result == tefPAST_SEQ)
             {
@@ -1639,8 +1656,11 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
         if (mTransactions.empty())
             mTransactions.swap(submit_held);
         else
+        {
+            mTransactions.reserve(mTransactions.size() + submit_held.size());
             for (auto& e : submit_held)
                 mTransactions.push_back(std::move(e));
+        }
     }
 
     mCond.notify_all();
