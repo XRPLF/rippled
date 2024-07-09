@@ -15,12 +15,12 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -172,10 +172,7 @@ public:
         qry2[jss::account] = alice.human();
         qry2[jss::hotwallet] = "asdf";
 
-        for (auto apiVersion = RPC::apiMinimumSupportedVersion;
-             apiVersion <= RPC::apiBetaVersion;
-             ++apiVersion)
-        {
+        forAllApiVersions([&, this](unsigned apiVersion) {
             qry2[jss::api_version] = apiVersion;
             auto jv = wsc->invoke("gateway_balances", qry2);
             expect(jv[jss::status] == "error");
@@ -184,7 +181,7 @@ public:
             auto const error =
                 apiVersion < 2u ? "invalidHotWallet" : "invalidParams";
             BEAST_EXPECT(response[jss::error] == error);
-        }
+        });
     }
 
     void

@@ -24,7 +24,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
 
-#include <ripple/basics/strHex.h>
+#include <xrpl/basics/strHex.h>
 
 #include <initializer_list>
 
@@ -76,6 +76,21 @@ private:
 
 public:
     explicit uri(std::string const& u) : uri_(strHex(u))
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jtx) const;
+};
+
+/** Sets the optional amount field on an NFTokenMint. */
+class amount
+{
+private:
+    STAmount const amount_;
+
+public:
+    explicit amount(STAmount const amount) : amount_(amount)
     {
     }
 

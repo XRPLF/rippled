@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -128,7 +128,7 @@ public:
                 depositAuthArgs(carol, becky).toStyledString()),
             false);
 
-        // becky clears the the DepositAuth flag so carol becomes authorized.
+        // becky clears the DepositAuth flag so carol becomes authorized.
         env(fclear(becky, asfDepositAuth));
         env.close();
 

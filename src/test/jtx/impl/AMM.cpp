@@ -19,12 +19,12 @@
 
 #include <test/jtx/AMM.h>
 
-#include <ripple/app/misc/AMMUtils.h>
-#include <ripple/protocol/AMMCore.h>
-#include <ripple/protocol/AmountConversions.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx/Env.h>
+#include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -163,7 +163,8 @@ AMM::ammRpcInfo(
     std::optional<Issue> issue1,
     std::optional<Issue> issue2,
     std::optional<AccountID> const& ammAccount,
-    bool ignoreParams) const
+    bool ignoreParams,
+    unsigned apiVersion) const
 {
     Json::Value jv;
     if (account)
@@ -191,7 +192,10 @@ AMM::ammRpcInfo(
         if (ammAccount)
             jv[jss::amm_account] = to_string(*ammAccount);
     }
-    auto jr = env_.rpc("json", "amm_info", to_string(jv));
+    auto jr =
+        (apiVersion == RPC::apiInvalidVersion
+             ? env_.rpc("json", "amm_info", to_string(jv))
+             : env_.rpc(apiVersion, "json", "amm_info", to_string(jv)));
     if (jr.isObject() && jr.isMember(jss::result) &&
         jr[jss::result].isMember(jss::status))
         return jr[jss::result];
@@ -234,7 +238,6 @@ AMM::expectBalances(
         balances(asset1.issue(), asset2.issue(), account);
     return asset1 == asset1Balance && asset2 == asset2Balance &&
         lptAMMBalance == STAmount{lpt, lptIssue_};
-    return false;
 }
 
 IOUAmount
@@ -656,16 +659,8 @@ AMM::vote(VoteArg const& arg)
     return vote(arg.account, arg.tfee, arg.flags, arg.seq, arg.assets, arg.err);
 }
 
-void
-AMM::bid(
-    std::optional<Account> const& account,
-    std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMin,
-    std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMax,
-    std::vector<Account> const& authAccounts,
-    std::optional<std::uint32_t> const& flags,
-    std::optional<jtx::seq> const& seq,
-    std::optional<std::pair<Issue, Issue>> const& assets,
-    std::optional<ter> const& ter)
+Json::Value
+AMM::bid(BidArg const& arg)
 {
     if (auto const amm =
             env_.current()->read(keylet::amm(asset1_.issue(), asset2_.issue())))
@@ -684,8 +679,9 @@ AMM::bid(
     bidMax_ = std::nullopt;
 
     Json::Value jv;
-    jv[jss::Account] = account ? account->human() : creatorAccount_.human();
-    setTokens(jv, assets);
+    jv[jss::Account] =
+        arg.account ? arg.account->human() : creatorAccount_.human();
+    setTokens(jv, arg.assets);
     auto getBid = [&](auto const& bid) {
         if (std::holds_alternative<int>(bid))
             return STAmount{lptIssue_, std::get<int>(bid)};
@@ -694,22 +690,22 @@ AMM::bid(
         else
             return std::get<STAmount>(bid);
     };
-    if (bidMin)
+    if (arg.bidMin)
     {
-        STAmount saTokens = getBid(*bidMin);
+        STAmount saTokens = getBid(*arg.bidMin);
         saTokens.setJson(jv[jss::BidMin]);
         bidMin_ = saTokens.iou();
     }
-    if (bidMax)
+    if (arg.bidMax)
     {
-        STAmount saTokens = getBid(*bidMax);
+        STAmount saTokens = getBid(*arg.bidMax);
         saTokens.setJson(jv[jss::BidMax]);
         bidMax_ = saTokens.iou();
     }
-    if (authAccounts.size() > 0)
+    if (arg.authAccounts.size() > 0)
     {
         Json::Value accounts(Json::arrayValue);
-        for (auto const& account : authAccounts)
+        for (auto const& account : arg.authAccounts)
         {
             Json::Value acct;
             Json::Value authAcct;
@@ -719,26 +715,12 @@ AMM::bid(
         }
         jv[jss::AuthAccounts] = accounts;
     }
-    if (flags)
-        jv[jss::Flags] = *flags;
+    if (arg.flags)
+        jv[jss::Flags] = *arg.flags;
     jv[jss::TransactionType] = jss::AMMBid;
     if (fee_ != 0)
         jv[jss::Fee] = std::to_string(fee_);
-    submit(jv, seq, ter);
-}
-
-void
-AMM::bid(BidArg const& arg)
-{
-    return bid(
-        arg.account,
-        arg.bidMin,
-        arg.bidMax,
-        arg.authAccounts,
-        arg.flags,
-        arg.seq,
-        arg.assets,
-        arg.err);
+    return jv;
 }
 
 void

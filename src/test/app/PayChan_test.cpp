@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
-#include <ripple/basics/chrono.h>
-#include <ripple/ledger/Directory.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/PayChan.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-#include <chrono>
 #include <test/jtx.h>
+#include <xrpld/ledger/Directory.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/PayChan.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
+#include <chrono>
 
 namespace ripple {
 namespace test {
@@ -1088,10 +1088,7 @@ struct PayChan_test : public beast::unit_test::suite
         args[jss::amount] = 51110000;
 
         // test for all api versions
-        for (auto apiVersion = RPC::apiMinimumSupportedVersion;
-             apiVersion <= RPC::apiBetaVersion;
-             ++apiVersion)
-        {
+        forAllApiVersions([&, this](unsigned apiVersion) {
             testcase(
                 "PayChan Channel_Auth RPC Api " + std::to_string(apiVersion));
             args[jss::api_version] = apiVersion;
@@ -1101,7 +1098,7 @@ struct PayChan_test : public beast::unit_test::suite
                 args.toStyledString())[jss::result];
             auto const error = apiVersion < 2u ? "invalidParams" : "badKeyType";
             BEAST_EXPECT(rs[jss::error] == error);
-        }
+        });
     }
 
     void

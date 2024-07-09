@@ -1,8 +1,0 @@
-build.rippled-reporting/rippled-reporting opt/rippled-reporting/bin
-cfg/rippled-reporting.cfg opt/rippled-reporting/etc
-debian/tmp/opt/rippled-reporting/etc/validators.txt opt/rippled-reporting/etc
-
-opt/rippled-reporting/bin/update-rippled-reporting.sh
-opt/rippled-reporting/bin/getRippledReportingInfo
-opt/rippled-reporting/etc/update-rippled-reporting-cron
-etc/logrotate.d/rippled-reporting

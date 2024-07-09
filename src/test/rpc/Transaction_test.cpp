@@ -17,16 +17,17 @@
 */
 //==============================================================================
 
-#include <ripple/app/rdb/backend/SQLiteDatabase.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/STBase.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/protocol/serialize.h>
-#include <ripple/rpc/CTID.h>
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
+#include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/rpc/CTID.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/serialize.h>
 
+#include <cctype>
 #include <optional>
 #include <tuple>
 
@@ -671,6 +672,47 @@ class Transaction_test : public beast::unit_test::suite
             BEAST_EXPECT(jrr[jss::hash]);
         }
 
+        // test querying with mixed case ctid
+        {
+            Env env{*this, makeNetworkConfig(11111)};
+            std::uint32_t const netID = env.app().config().NETWORK_ID;
+
+            Account const alice = Account("alice");
+            Account const bob = Account("bob");
+
+            std::uint32_t const startLegSeq = env.current()->info().seq;
+            env.fund(XRP(10000), alice, bob);
+            env(pay(alice, bob, XRP(10)));
+            env.close();
+
+            std::string const ctid = *RPC::encodeCTID(startLegSeq, 0, netID);
+            auto isUpper = [](char c) { return std::isupper(c) != 0; };
+
+            // Verify that there are at least two upper case letters in ctid and
+            // test a mixed case
+            if (BEAST_EXPECT(
+                    std::count_if(ctid.begin(), ctid.end(), isUpper) > 1))
+            {
+                // Change the first upper case letter to lower case.
+                std::string mixedCase = ctid;
+                {
+                    auto const iter = std::find_if(
+                        mixedCase.begin(), mixedCase.end(), isUpper);
+                    *iter = std::tolower(*iter);
+                }
+                BEAST_EXPECT(ctid != mixedCase);
+
+                Json::Value jsonTx;
+                jsonTx[jss::binary] = false;
+                jsonTx[jss::ctid] = mixedCase;
+                jsonTx[jss::id] = 1;
+                Json::Value const jrr =
+                    env.rpc("json", "tx", to_string(jsonTx))[jss::result];
+                BEAST_EXPECT(jrr[jss::ctid] == ctid);
+                BEAST_EXPECT(jrr[jss::hash]);
+            }
+        }
+
         // test that if the network is 65535 the ctid is not in the response
         {
             Env env{*this, makeNetworkConfig(65535)};
@@ -849,7 +891,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        test::jtx::forAllApiVersions(
+        forAllApiVersions(
             std::bind_front(&Transaction_test::testBinaryRequest, this));
 
         FeatureBitset const all{supported_amendments()};
@@ -863,7 +905,7 @@ public:
         testRangeCTIDRequest(features);
         testCTIDValidation(features);
         testCTIDRPC(features);
-        test::jtx::forAllApiVersions(
+        forAllApiVersions(
             std::bind_front(&Transaction_test::testRequest, this, features));
     }
 };

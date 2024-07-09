@@ -19,11 +19,11 @@
 #ifndef RIPPLE_TEST_JTX_AMMTEST_H_INCLUDED
 #define RIPPLE_TEST_JTX_AMMTEST_H_INCLUDED
 
-#include <ripple/beast/unit_test/suite.hpp>
-#include <ripple/protocol/Feature.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/ter.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/Feature.h>
 
 namespace ripple {
 namespace test {
@@ -84,7 +84,7 @@ protected:
         std::optional<std::pair<STAmount, STAmount>> const& pool = std::nullopt,
         std::uint16_t tfee = 0,
         std::optional<jtx::ter> const& ter = std::nullopt,
-        std::optional<FeatureBitset> const& features = std::nullopt);
+        std::vector<FeatureBitset> const& features = {supported_amendments()});
 };
 
 class AMMTest : public jtx::AMMTestBase

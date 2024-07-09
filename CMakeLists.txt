@@ -9,9 +9,9 @@ endif()
 
 # Fix "unrecognized escape" issues when passing CMAKE_MODULE_PATH on Windows.
 file(TO_CMAKE_PATH "${CMAKE_MODULE_PATH}" CMAKE_MODULE_PATH)
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/Builds/CMake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-project(rippled)
+project(xrpl)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -45,7 +45,6 @@ endif ()
 include(RippledSanity)
 include(RippledVersion)
 include(RippledSettings)
-include(RippledRelease)
 # this check has to remain in the top-level cmake
 # because of the early return statement
 if (packages_only)
@@ -71,9 +70,10 @@ set_target_properties(OpenSSL::SSL PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS OPENSSL_NO_SSL2
 )
 set(SECP256K1_INSTALL TRUE)
-add_subdirectory(src/secp256k1)
+add_subdirectory(external/secp256k1)
 add_library(secp256k1::secp256k1 ALIAS secp256k1)
-add_subdirectory(src/ed25519-donna)
+add_subdirectory(external/ed25519-donna)
+find_package(gRPC REQUIRED)
 find_package(lz4 REQUIRED)
 # Target names with :: are not allowed in a generator expression.
 # We need to pull the include directories and imported location properties
@@ -81,7 +81,6 @@ find_package(lz4 REQUIRED)
 find_package(LibArchive REQUIRED)
 find_package(SOCI REQUIRED)
 find_package(SQLite3 REQUIRED)
-find_package(Snappy REQUIRED)
 
 option(rocksdb "Enable RocksDB" ON)
 if(rocksdb)
@@ -98,7 +97,6 @@ find_package(xxHash REQUIRED)
 
 target_link_libraries(ripple_libs INTERFACE
   ed25519::ed25519
-  LibArchive::LibArchive
   lz4::lz4
   OpenSSL::Crypto
   OpenSSL::SSL
@@ -130,11 +128,7 @@ if(coverage)
   include(RippledCov)
 endif()
 
-###
-
+set(PROJECT_EXPORT_SET RippleExports)
 include(RippledCore)
-include(deps/Protobuf)
-include(deps/gRPC)
 include(RippledInstall)
-include(RippledMultiConfig)
 include(RippledValidatorKeys)
