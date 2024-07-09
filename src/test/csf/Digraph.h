@@ -220,7 +220,7 @@ public:
         @param fileName The output file (creates)
         @param vertexName A invokable T vertexName(Vertex const &) that
                           returns the name target use for the vertex in the file
-                          T must be be ostream-able
+                          T must be ostream-able
     */
     template <class VertexName>
     void
