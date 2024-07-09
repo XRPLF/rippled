@@ -82,7 +82,9 @@ distinct changes and have
 
 ### Good commit messages
 
-Refer to ["How to Write a Git Commit Message"](https://cbea.ms/git-commit/) for general rules on writing a good commit message.
+Refer to
+["How to Write a Git Commit Message"](https://cbea.ms/git-commit/)
+for general rules on writing a good commit message.
 
 In addition to those guidelines, please add one of the following
 prefixes to the subject line if appropriate.
@@ -112,11 +114,11 @@ In general, pull requests use `develop` as the base branch.
 Changes to pull requests must be added as new commits.
 Once code reviewers have started looking at your code, please avoid
 force-pushing a branch in a pull request.
-This preserves the ability for reviewers to filter changes since their last
-review.
+This preserves the ability for reviewers to filter changes since their
+last review.
 
-A pull request must obtain **approvals from at least two reviewers** before it
-can be considered for merge by a Maintainer.
+A pull request must obtain **approvals from at least two reviewers**
+before it can be considered for merge by a Maintainer.
 Maintainers retain discretion to require more approvals if they feel the
 credibility of the existing approvals is insufficient.
 
@@ -160,7 +162,7 @@ any time, so don't use it lightly.
 
 The maintainer should double-check that the PR has met all the
 necessary criteria, and can request additional information from the
-owner, or additional reviews, and can always fee free to remove the
+owner, or additional reviews, and can always feel free to remove the
 "Passed" label if appropriate. The maintainer has final say on
 whether a PR gets merged, and are encouraged to communicate and
 issues or concerns to other maintainers.
@@ -259,7 +261,8 @@ git merge --ff-only origin/develop-next
 git log -1 --oneline
 # The output should look like:
 # 02ec8b7962 (HEAD -> upstream--master, origin/develop-next, upstream--release, upstream--develop, develop-next) Set version to 2.2.0-rc1
-# Note that all of the upstream--develop/release/master are on this commit. (Master will be missing for betas, etc.)
+# Note that all of the upstream--develop/release/master are on this commit.
+# (Master will be missing for betas, etc.)
 # Just to be safe, do a dry run first:
 git push --dry-run upstream-push HEAD:develop
 git push --dry-run upstream-push HEAD:release
@@ -272,7 +275,8 @@ git push upstream-push HEAD:release
 git tag <version number>
 git push upstream-push <version number>
 ```
-6. Finally [create a new release on Github](https://github.com/XRPLF/rippled/releases).
+6. Finally
+[create a new release on Github](https://github.com/XRPLF/rippled/releases).
 
 
 # Style guide
