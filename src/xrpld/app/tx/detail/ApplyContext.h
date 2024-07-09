@@ -69,6 +69,12 @@ public:
         return *view_;
     }
 
+    ApplyFlags const&
+    flags()
+    {
+        return flags_;
+    }
+
     /** Sets the DeliveredAmount field in the metadata */
     void
     deliver(STAmount const& amount)

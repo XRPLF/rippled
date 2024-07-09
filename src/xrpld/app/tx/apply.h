@@ -25,7 +25,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpld/app/tx/applySteps.h>
 #include <memory>
 #include <utility>
 

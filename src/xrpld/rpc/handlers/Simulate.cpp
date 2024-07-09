@@ -30,34 +30,7 @@
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/TransactionMaster.h>
-#include <ripple/app/misc/DeliverMax.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/app/rdb/RelationalDatabase.h>
-#include <ripple/basics/ToString.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/NFTSyntheticSerializer.h>
-#include <ripple/protocol/RPCErr.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/CTID.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/DeliveredAmount.h>
-#include <ripple/rpc/GRPCHandlers.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
-
 namespace ripple {
-
-class OpenLedger;
-
-// static NetworkOPs::FailHard
-// getFailHard(RPC::JsonContext const& context)
-// {
-//     return NetworkOPs::doFailHard(
-//         context.params.isMember("fail_hard") &&
-//         context.params["fail_hard"].asBool());
-// }
 
 // {
 //   tx_blob: <object>
@@ -105,24 +78,33 @@ doSimulate(RPC::JsonContext& context)
         // if (getFailHard(context) == NetworkOps::FailHard::yes)
         //     flags |= tapFAIL_HARD;
 
+        // Process the transaction
         OpenView view = *context.app.openLedger().current();
         auto const result = context.app.getTxQ().apply(
             context.app, view, tpTrans->getSTransaction(), flags, context.j);
-        // e.result = result.first;
-        // e.applied = result.second;
 
+        jvResult[jss::applied] = result.second;
+
+        // Convert the TER to human-readable values
         std::string sToken;
         std::string sHuman;
-
         transResultInfo(result.first, sToken, sHuman);
 
+        // Engine result
         jvResult[jss::engine_result] = sToken;
         jvResult[jss::engine_result_code] = result.first;
         jvResult[jss::engine_result_message] = sHuman;
-        jvResult[jss::applied] = result.second;
+        if (sToken == "tesSUCCESS")
+        {
+            static const std::string alternateSuccessMessage =
+                "The simulated transaction would have been applied.";
+            jvResult[jss::engine_result_message] = alternateSuccessMessage;
+        }
+
         if (result.metadata)
             jvResult[jss::metadata] =
                 result.metadata->getJson(JsonOptions::none);
+
         return jvResult;
     }
     catch (std::exception& e)

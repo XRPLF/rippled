@@ -28,7 +28,13 @@ namespace ripple {
 class Application;
 class STTx;
 class TxQ;
-struct TxApplyResult;
+
+struct TxApplyResult
+{
+    TER first;
+    bool second;
+    std::optional<TxMeta> metadata = std::nullopt;
+};
 
 /** Return true if the transaction can claim a fee (tec),
     and the `ApplyFlags` do not allow soft failures.

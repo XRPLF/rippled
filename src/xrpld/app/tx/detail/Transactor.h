@@ -82,13 +82,6 @@ public:
 class TxConsequences;
 struct PreflightResult;
 
-struct TxApplyResult
-{
-    TER first;
-    bool second;
-    std::optional<TxMeta> metadata = std::nullopt;
-};
-
 class Transactor
 {
 protected:
