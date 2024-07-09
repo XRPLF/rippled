@@ -203,7 +203,8 @@ AttestationClaim::AttestationClaim(Json::Value const& v)
 STObject
 AttestationClaim::toSTObject() const
 {
-    STObject o{sfXChainClaimAttestationCollectionElement};
+    STObject o =
+        STObject::makeInnerObject(sfXChainClaimAttestationCollectionElement);
     addHelper(o);
     o[sfXChainClaimID] = claimID;
     if (dst)
@@ -345,7 +346,8 @@ AttestationCreateAccount::AttestationCreateAccount(
 STObject
 AttestationCreateAccount::toSTObject() const
 {
-    STObject o{sfXChainCreateAccountAttestationCollectionElement};
+    STObject o = STObject::makeInnerObject(
+        sfXChainCreateAccountAttestationCollectionElement);
     addHelper(o);
 
     o[sfXChainAccountCreateCount] = createCount;
@@ -497,7 +499,7 @@ XChainClaimAttestation::XChainClaimAttestation(
 STObject
 XChainClaimAttestation::toSTObject() const
 {
-    STObject o{sfXChainClaimProofSig};
+    STObject o = STObject::makeInnerObject(sfXChainClaimProofSig);
     o[sfAttestationSignerAccount] =
         STAccount{sfAttestationSignerAccount, keyAccount};
     o[sfPublicKey] = publicKey;
@@ -609,7 +611,7 @@ XChainCreateAccountAttestation::XChainCreateAccountAttestation(
 STObject
 XChainCreateAccountAttestation::toSTObject() const
 {
-    STObject o{sfXChainCreateAccountProofSig};
+    STObject o = STObject::makeInnerObject(sfXChainCreateAccountProofSig);
 
     o[sfAttestationSignerAccount] =
         STAccount{sfAttestationSignerAccount, keyAccount};
