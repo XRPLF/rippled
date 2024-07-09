@@ -29,6 +29,7 @@
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
+#include <xrpl/protocol/STParsedJSON.h>
 
 namespace ripple {
 
@@ -40,31 +41,65 @@ doSimulate(RPC::JsonContext& context)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
 
-    // TODO: also support tx_json, and fee/sequence autofill
-    if (!context.params.isMember(jss::tx_blob))
-        return rpcError(rpcINVALID_PARAMS);
-
+    std::shared_ptr<STTx const> stpTrans;
     Json::Value jvResult;
 
-    auto ret = strUnHex(context.params[jss::tx_blob].asString());
-
-    if (!ret || !ret->size())
-        return rpcError(rpcINVALID_PARAMS);
-
-    SerialIter sitTrans(makeSlice(*ret));
-
-    std::shared_ptr<STTx const> stpTrans;
-
-    try
+    // TODO: also support fee/sequence autofill
+    if (context.params.isMember(jss::tx_blob))
     {
-        stpTrans = std::make_shared<STTx const>(std::ref(sitTrans));
+        if (context.params.isMember(jss::tx_json))
+        {
+            return rpcError(rpcINVALID_PARAMS);
+        }
+
+        auto ret = strUnHex(context.params[jss::tx_blob].asString());
+
+        if (!ret || !ret->size())
+            return rpcError(rpcINVALID_PARAMS);
+
+        SerialIter sitTrans(makeSlice(*ret));
+
+        try
+        {
+            stpTrans = std::make_shared<STTx const>(std::ref(sitTrans));
+        }
+        catch (std::exception& e)
+        {
+            jvResult[jss::error] = "invalidTransaction";
+            jvResult[jss::error_exception] = e.what();
+
+            return jvResult;
+        }
     }
-    catch (std::exception& e)
+    else
     {
-        jvResult[jss::error] = "invalidTransaction";
-        jvResult[jss::error_exception] = e.what();
+        if (!context.params.isMember(jss::tx_json))
+        {
+            return rpcError(rpcINVALID_PARAMS);
+        }
 
-        return jvResult;
+        Json::Value& tx_json(context.params[jss::tx_json]);
+
+        STParsedJSONObject parsed(std::string(jss::tx_json), tx_json);
+        if (!parsed.object.has_value())
+        {
+            jvResult[jss::error] = parsed.error[jss::error];
+            jvResult[jss::error_code] = parsed.error[jss::error_code];
+            jvResult[jss::error_message] = parsed.error[jss::error_message];
+            return jvResult;
+        }
+
+        try
+        {
+            stpTrans = std::make_shared<STTx>(std::move(parsed.object.value()));
+        }
+        catch (std::exception& e)
+        {
+            jvResult[jss::error] = "invalidTransaction";
+            jvResult[jss::error_exception] = e.what();
+
+            return jvResult;
+        }
     }
 
     std::string reason;
