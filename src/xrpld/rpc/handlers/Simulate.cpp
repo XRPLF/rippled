@@ -106,7 +106,8 @@ doSimulate(RPC::JsonContext& context)
         auto ret = strUnHex(context.params[jss::tx_blob].asString());
 
         if (!ret || !ret->size())
-            return rpcError(rpcINVALID_PARAMS);
+            return RPC::make_error(
+                rpcINVALID_PARAMS, RPC::invalid_field_message("tx_blob"));
 
         SerialIter sitTrans(makeSlice(*ret));
 
@@ -121,8 +122,6 @@ doSimulate(RPC::JsonContext& context)
 
             return jvResult;
         }
-
-        jvResult[jss::tx_blob] = context.params[jss::tx_blob];
     }
     else
     {
@@ -140,9 +139,21 @@ doSimulate(RPC::JsonContext& context)
         {
             tx_json[sfSigningPubKey.jsonName] = "";
         }
+        else if (tx_json[sfSigningPubKey.jsonName] != "")
+        {
+            return RPC::make_error(
+                rpcINVALID_PARAMS,
+                RPC::invalid_field_message("tx_json.SigningPubKey"));
+        }
         if (!tx_json.isMember(sfTxnSignature.jsonName))
         {
             tx_json[sfTxnSignature.jsonName] = "";
+        }
+        else if (tx_json[sfTxnSignature.jsonName] != "")
+        {
+            return RPC::make_error(
+                rpcINVALID_PARAMS,
+                RPC::invalid_field_message("tx_json.TxnSignature"));
         }
         if (!tx_json.isMember(jss::Sequence))
         {
@@ -192,8 +203,6 @@ doSimulate(RPC::JsonContext& context)
 
             return jvResult;
         }
-
-        jvResult[jss::tx_json] = tx_json;
     }
 
     std::string reason;
@@ -243,6 +252,15 @@ doSimulate(RPC::JsonContext& context)
                 jvResult[jss::metadata] =
                     result.metadata->getJson(JsonOptions::none);
             }
+        }
+        if (isBinaryOutput)
+        {
+            auto const txBlob = stpTrans->getSerializer().getData();
+            jvResult[jss::tx_blob] = strHex(makeSlice(txBlob));
+        }
+        else
+        {
+            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
         }
 
         return jvResult;
