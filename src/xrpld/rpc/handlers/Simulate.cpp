@@ -82,7 +82,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         if (!hasTicketSeq && !sle)
         {
             JLOG(context.app.journal("Simulate").debug())
-                << "simulate: Failed to find source account "
+                << "Failed to find source account "
                 << "in current ledger: " << toBase58(srcAddressID);
 
             return rpcError(rpcSRC_ACT_NOT_FOUND);
