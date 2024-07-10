@@ -245,13 +245,15 @@ invoke_preclaim(PreclaimContext const& ctx)
                 // Ignore Sequence Validation on ttBATCH txns
                 TER result = tesSUCCESS;
 
-                JLOG(ctx.j.trace()) << "invoke_preclaim.Batch: " << "\n";
+                JLOG(ctx.j.trace()) << "invoke_preclaim.Batch: "
+                                    << "\n";
                 result = T::checkPriorTxAndLastLedger(ctx);
 
                 if (result != tesSUCCESS)
                     return result;
 
-                // result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
+                // result = T::checkFee(ctx, calculateBaseFee(ctx.view,
+                // ctx.tx));
 
                 // if (result != tesSUCCESS)
                 //     return result;
@@ -339,11 +341,7 @@ Batch::preflight(PreflightContext const& ctx)
         auto const stx =
             STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
         PreflightContext const pfctx(
-            ctx.app,
-            stx,
-            ctx.rules,
-            tapPREFLIGHT_BATCH,
-            ctx.j);
+            ctx.app, stx, ctx.rules, tapPREFLIGHT_BATCH, ctx.j);
         auto const response = invoke_preflight(pfctx);
         preflightResponses.push_back(response.first);
     }
@@ -365,7 +363,8 @@ Batch::preclaim(PreclaimContext const& ctx)
         // Cannot continue on failed txns
         if (preflightResponses[i] != tesSUCCESS)
         {
-            JLOG(ctx.j.error()) << "Batch: Failed Preflight Response: " << preflightResponses[i];
+            JLOG(ctx.j.error()) << "Batch: Failed Preflight Response: "
+                                << preflightResponses[i];
             preclaimResponses.push_back(TER(preflightResponses[i]));
             continue;
         }
@@ -406,7 +405,7 @@ Batch::doApply()
 
     uint32_t flags = ctx_.tx.getFlags();
     if (flags & tfBatchMask)
-            return temINVALID_FLAG;
+        return temINVALID_FLAG;
 
     // SANITIZE
     std::vector<STTx> stxTxns;
@@ -423,7 +422,8 @@ Batch::doApply()
 
         auto const tt = txn.getFieldU16(sfTransactionType);
         auto const txtype = safe_cast<TxType>(tt);
-        auto const stx = STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
+        auto const stx =
+            STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
         stxTxns.push_back(stx);
     }
 
@@ -460,7 +460,7 @@ Batch::doApply()
             preResult = tecBATCH_FAILURE;
         }
     }
-    
+
     // WET RUN
     TER result = tesSUCCESS;
     if (preResult == tesSUCCESS)
@@ -476,7 +476,8 @@ Batch::doApply()
                 stx,
                 preclaimResponses[i],
                 ctx_.view().fees().base,
-                ctx_.base_.open() == 1 ? tapPREFLIGHT_BATCH : ctx_.view().flags(),
+                ctx_.base_.open() == 1 ? tapPREFLIGHT_BATCH
+                                       : ctx_.view().flags(),
                 ctx_.journal);
             auto const _result = invoke_apply(actx);
 
@@ -519,15 +520,11 @@ Batch::doApply()
     if (!sleSrcAcc)
         return tefINTERNAL;
 
-    // std::cout << "ACCOUNT BASE SEQ: " << sleBase->getFieldU32(sfSequence) << "\n";
-    // std::cout << "ACCOUNT BASE BALANCE: " << sleBase->getFieldAmount(sfBalance) << "\n";
-    // std::cout << "ACCOUNT SEQ: " << sleSrcAcc->getFieldU32(sfSequence) << "\n";
-    // std::cout << "ACCOUNT BALANCE: " << sleSrcAcc->getFieldAmount(sfBalance) << "\n";
-
     auto const feePaid = ctx_.tx[sfFee].xrp();
-    // auto const& txns = ctx_.tx.getFieldArray(sfRawTransactions);
-    sleSrcAcc->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence) + txns.size() + 1);
-    sleSrcAcc->setFieldAmount(sfBalance, sleBase->getFieldAmount(sfBalance).xrp() - feePaid);
+    sleSrcAcc->setFieldU32(
+        sfSequence, ctx_.tx.getFieldU32(sfSequence) + txns.size() + 1);
+    sleSrcAcc->setFieldAmount(
+        sfBalance, sleBase->getFieldAmount(sfBalance).xrp() - feePaid);
     sb.update(sleSrcAcc);
     sb.apply(ctx_.rawView());
     return result;
@@ -545,7 +542,8 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         {
             auto const tt = txn.getFieldU16(sfTransactionType);
             auto const txtype = safe_cast<TxType>(tt);
-            auto const stx = STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
+            auto const stx =
+                STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
             txFees += Transactor::calculateBaseFee(view, tx);
         }
         extraFee += txFees;

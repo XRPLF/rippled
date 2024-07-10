@@ -43,7 +43,7 @@ TxMeta::TxMeta(
 
     if (obj.isFieldPresent(sfDeliveredAmount))
         setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
-    
+
     if (obj.isFieldPresent(sfBatchExecutions))
         setBatchExecutions(obj.getFieldArray(sfBatchExecutions));
 }
@@ -64,7 +64,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
 
     if (obj.isFieldPresent(sfDeliveredAmount))
         setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
-    
+
     if (obj.isFieldPresent(sfBatchExecutions))
         setBatchExecutions(obj.getFieldArray(sfBatchExecutions));
 }

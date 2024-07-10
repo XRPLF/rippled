@@ -147,7 +147,7 @@ InnerObjectFormats::InnerObjectFormats()
             {sfAssetPrice, soeOPTIONAL},
             {sfScale, soeDEFAULT},
         });
-    
+
     add(sfBatchExecution.jsonName.c_str(),
         sfBatchExecution.getCode(),
         {{sfTransactionType, soeREQUIRED},

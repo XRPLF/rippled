@@ -213,18 +213,11 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
             auto const& txn = txns[i];
             if (!txn.isFieldPresent(sfFee))
             {
-                JLOG(ctx.j.warn())
-                    << "Batch: sfFee missing in array entry.";
+                JLOG(ctx.j.warn()) << "Batch: sfFee missing in array entry.";
                 return telINSUF_FEE_P;
             }
             auto const _fee = txn.getFieldAmount(sfFee);
             feeDue += _fee.xrp();
-
-            // auto const tt = txn.getFieldU16(sfTransactionType);
-            // auto const txtype = safe_cast<TxType>(tt);
-            // auto const stx = STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
-            // auto const _fee = Transactor::calculateBaseFee(ctx.view, stx);
-            // feeDue += _fee;
         }
 
         if (feePaid < feeDue)

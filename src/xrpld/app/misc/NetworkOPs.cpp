@@ -1221,11 +1221,8 @@ NetworkOPsImp::processTransaction(
         return;
     }
 
-    auto const [validity, reason] = checkValidity(
-        app_.getHashRouter(),
-        tx,
-        view->rules(),
-        app_.config());
+    auto const [validity, reason] =
+        checkValidity(app_.getHashRouter(), tx, view->rules(), app_.config());
     assert(validity == Validity::Valid);
 
     // Not concerned with local checks at this point.
@@ -2766,7 +2763,6 @@ NetworkOPsImp::pubProposedTransaction(
     std::shared_ptr<STTx const> const& transaction,
     TER result)
 {
-
     // never publish batch txns
     if (transaction->isFieldPresent(ripple::sfBatchTxn))
         return;
