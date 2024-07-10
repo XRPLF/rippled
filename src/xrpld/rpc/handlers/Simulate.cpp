@@ -30,8 +30,49 @@
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpld/app/misc/LoadFeeTrack.h>
 
 namespace ripple {
+
+Json::Value
+getFee(Application& app, Role& role)
+{
+    XRPAmount const feeDefault = app.config().FEES.reference_fee;
+
+    auto ledger = app.openLedger().current();
+    // Administrative and identified endpoints are exempt from local fees.
+    XRPAmount const loadFee = scaleFeeLoad(
+        feeDefault, app.getFeeTrack(), ledger->fees(), isUnlimited(role));
+    XRPAmount fee = loadFee;
+    {
+        auto const metrics = app.getTxQ().getMetrics(*ledger);
+        auto const baseFee = ledger->fees().base;
+        auto escalatedFee =
+            toDrops(metrics.openLedgerFeeLevel - FeeLevel64(1), baseFee) + 1;
+        fee = std::max(fee, escalatedFee);
+    }
+
+    auto const limit = [&]() {
+        // Scale fee units to drops:
+        auto const result = mulDiv(
+            feeDefault,
+            RPC::Tuning::defaultAutoFillFeeMultiplier,
+            RPC::Tuning::defaultAutoFillFeeDivisor);
+        if (!result)
+            Throw<std::overflow_error>("mulDiv");
+        return *result;
+    }();
+
+    if (fee > limit)
+    {
+        std::stringstream ss;
+        ss << "Fee of " << fee << " exceeds the requested tx limit of "
+           << limit;
+        return RPC::make_error(rpcHIGH_FEE, ss.str());
+    }
+
+    return fee.jsonClipped();
+}
 
 // {
 //   tx_blob: <object>
@@ -43,6 +84,16 @@ doSimulate(RPC::JsonContext& context)
 
     std::shared_ptr<STTx const> stpTrans;
     Json::Value jvResult;
+
+    // check validity of `binary` param
+    if (context.params.isMember(jss::binary))
+    {
+        auto const binary = context.params[jss::binary];
+        if (!binary.isBool())
+        {
+            return rpcError(rpcINVALID_PARAMS);
+        }
+    }
 
     // TODO: also support fee/sequence autofill
     if (context.params.isMember(jss::tx_blob))
@@ -70,6 +121,8 @@ doSimulate(RPC::JsonContext& context)
 
             return jvResult;
         }
+
+        jvResult[jss::tx_blob] = context.params[jss::tx_blob];
     }
     else
     {
@@ -79,6 +132,10 @@ doSimulate(RPC::JsonContext& context)
         }
 
         Json::Value& tx_json(context.params[jss::tx_json]);
+        if (!tx_json.isMember(jss::Fee))
+        {
+            tx_json[jss::Fee] = getFee(context.app, context.role);
+        }
 
         STParsedJSONObject parsed(std::string(jss::tx_json), tx_json);
         if (!parsed.object.has_value())
@@ -100,6 +157,8 @@ doSimulate(RPC::JsonContext& context)
 
             return jvResult;
         }
+
+        jvResult[jss::tx_json] = tx_json;
     }
 
     std::string reason;
@@ -110,15 +169,15 @@ doSimulate(RPC::JsonContext& context)
         // we check before adding to the batch
         ApplyFlags flags = tapDRY_RUN;
 
-        // if (getFailHard(context) == NetworkOps::FailHard::yes)
-        //     flags |= tapFAIL_HARD;
-
         // Process the transaction
         OpenView view = *context.app.openLedger().current();
         auto const result = context.app.getTxQ().apply(
             context.app, view, tpTrans->getSTransaction(), flags, context.j);
 
         jvResult[jss::applied] = result.second;
+
+        const bool isBinaryOutput =
+            context.params.get(jss::binary, false).asBool();
 
         // Convert the TER to human-readable values
         std::string sToken;
@@ -137,8 +196,19 @@ doSimulate(RPC::JsonContext& context)
         }
 
         if (result.metadata)
-            jvResult[jss::metadata] =
-                result.metadata->getJson(JsonOptions::none);
+        {
+            if (isBinaryOutput)
+            {
+                auto const metaBlob =
+                    result.metadata->getAsObject().getSerializer().getData();
+                jvResult[jss::metadata] = strHex(makeSlice(metaBlob));
+            }
+            else
+            {
+                jvResult[jss::metadata] =
+                    result.metadata->getJson(JsonOptions::none);
+            }
+        }
 
         return jvResult;
     }

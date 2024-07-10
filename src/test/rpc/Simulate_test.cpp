@@ -67,6 +67,15 @@ class Simulate_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Invalid parameters.");
         }
+
+        {
+            Json::Value params;
+            params[jss::tx_blob] = "1200";
+            params[jss::binary] = "100";
+            auto resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] == "Invalid parameters.");
+        }
     }
     void
     testBasic()
