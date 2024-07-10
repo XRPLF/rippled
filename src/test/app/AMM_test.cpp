@@ -416,21 +416,6 @@ private:
             AMM ammAlice1(
                 env, alice, USD(10'000), USD1(10'000), ter(terNO_RIPPLE));
         }
-
-        // Issuer has clawback enabled
-        {
-            Env env(*this);
-            env.fund(XRP(1'000), gw);
-            env(fset(gw, asfAllowTrustLineClawback));
-            fund(env, gw, {alice}, XRP(1'000), {USD(1'000)}, Fund::Acct);
-            env.close();
-            AMM amm(env, gw, XRP(100), USD(100), ter(tecNO_PERMISSION));
-            AMM amm1(env, alice, USD(100), XRP(100), ter(tecNO_PERMISSION));
-            env(fclear(gw, asfAllowTrustLineClawback));
-            env.close();
-            // Can't be cleared
-            AMM amm2(env, gw, XRP(100), USD(100), ter(tecNO_PERMISSION));
-        }
     }
 
     void
@@ -6863,6 +6848,37 @@ private:
     }
 
     void
+    testIssuerClawback(FeatureBitset features)
+    {
+        testcase("Issuer Clawback");
+        using namespace jtx;
+
+        // Issuer has clawback enabled
+        {
+            Env env(*this, features);
+            env.fund(XRP(1'000), gw);
+            env(fset(gw, asfAllowTrustLineClawback));
+            fund(env, gw, {alice}, XRP(1'000), {USD(1'000)}, Fund::Acct);
+            env.close();
+
+            if (!features[featureAMMClawback])
+            {
+                AMM amm(env, gw, XRP(100), USD(100), ter(tecNO_PERMISSION));
+                AMM amm1(env, alice, USD(100), XRP(100), ter(tecNO_PERMISSION));
+                env(fclear(gw, asfAllowTrustLineClawback));
+                env.close();
+                // Can't be cleared
+                AMM amm2(env, gw, XRP(100), USD(100), ter(tecNO_PERMISSION));
+            }
+            else
+            {
+                AMM amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
+                AMM amm1(env, alice, USD(100), XRP(100), ter(tesSUCCESS));
+            }
+        }
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{jtx::supported_amendments()};
@@ -6908,6 +6924,7 @@ private:
         testFixAMMOfferBlockedByLOB(all - fixAMMv1_1);
         testLPTokenBalance(all);
         testLPTokenBalance(all - fixAMMv1_1);
+        testIssuerClawback(all - featureAMMClawback);
     }
 };
 
