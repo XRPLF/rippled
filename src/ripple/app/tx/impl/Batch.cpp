@@ -395,27 +395,9 @@ Batch::preclaim(PreclaimContext const& ctx)
             return response;
         }
     }
-    
 
     return tesSUCCESS;
 }
-
-// void
-// Batch::updateAccount(Sandbox& sb)
-// {
-//     auto const sle = ctx_.base_.read(keylet::account(account_));
-//     if (!sle)
-//         return tefINTERNAL;
-
-//     auto const sleSrcAcc = sb.peek(keylet::account(account_));
-//     if (!sleSrcAcc)
-//         return tefINTERNAL;
-
-//     auto const feePaid = ctx_.tx[sfFee].xrp();
-//     sleSrcAcc->setFieldAmount(sfBalance, sle->getFieldAmount(sfBalance).xrp() - feePaid);
-//     sb.update(sleSrcAcc);
-//     sb.apply(ctx_.rawView());
-// }
 
 TER
 Batch::doApply()
@@ -465,6 +447,7 @@ Batch::doApply()
         actx.discard();
     }
 
+    TER preResult = tesSUCCESS;
     std::cout << "Batch::doApply(): " << "DRY 2" << "\n";
     ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
     for (auto const& dryRun : dryVector)
@@ -477,82 +460,66 @@ Batch::doApply()
         // tfAllOrNothing
         if (dryRun.second != tesSUCCESS && flags & tfAllOrNothing)
         {
-            auto const sleBase = ctx_.base_.read(keylet::account(account_));
-            if (!sleBase)
-                return tefINTERNAL;
-
-            auto const sleSrcAcc = sb.peek(keylet::account(account_));
-            if (!sleSrcAcc)
-                return tefINTERNAL;
-
-            auto const feePaid = ctx_.tx[sfFee].xrp();
-            // auto const& txns = ctx_.tx.getFieldArray(sfRawTransactions);
-            sleSrcAcc->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence) + txns.size() + 1);
-            sleSrcAcc->setFieldAmount(sfBalance, sleBase->getFieldAmount(sfBalance).xrp() - feePaid);
-            sb.update(sleSrcAcc);
-            sb.apply(ctx_.rawView());
-            ctx_.discard();
-            std::cout << "Batch::doApply(): " << "DRY 3.FAIL" << "\n";
-            return tecBATCH_FAILURE;
+            preResult = tecBATCH_FAILURE;
         }
     }
 
     std::cout << "Batch::doApply(): " << "1" << "\n";
-
-    std::vector<STObject> batch;
-    avi.setHookMetaData(std::move(batch));
-
-    // ApplyViewImpl& aviWet = dynamic_cast<ApplyViewImpl&>(ctx_.view());
     
     // WET RUN
-    std::cout << "Batch::doApply(): " << ctx_.base_.open() << "\n";
     TER result = tesSUCCESS;
-    for (std::size_t i = 0; i < stxTxns.size(); ++i)
+    std::cout << "Batch::doApply(): " << ctx_.base_.open() << "\n";
+    if (preResult == tesSUCCESS)
     {
-        auto const& stx = stxTxns[i];
-        ApplyContext actx(
-            ctx_.app,
-            ctx_.base_,
-            stx,
-            preclaimResponses[i],
-            ctx_.view().fees().base,
-            ctx_.base_.open() == 1 ? tapPREFLIGHT_BATCH : ctx_.view().flags(),
-            ctx_.journal);
-        auto const _result = invoke_apply(actx);
-
-        STObject meta{sfBatchExecution};
-        meta.setFieldU8(sfTransactionResult, TERtoInt(_result.first));
-        meta.setFieldU16(sfTransactionType, stx.getTxnType());
-        if (_result.first == tesSUCCESS)
-            meta.setFieldH256(sfTransactionHash, stx.getTransactionID());
-
-        avi.addBatchExecutionMetaData(std::move(meta));
-
-        std::cout << "tfAllOrNothing: " << (flags & tfAllOrNothing) << "\n";
-        std::cout << "tfOnlyOne: " << (flags & tfOnlyOne) << "\n";
-        std::cout << "tfUntilFailure: " << (flags & tfUntilFailure) << "\n";
-        std::cout << "tfIndependent: " << (flags & tfIndependent) << "\n";
-        std::cout << "tfBatchAtomic: " << _result.first << "\n";
-
-        if (_result.first != tesSUCCESS)
+        std::vector<STObject> batch;
+        avi.setHookMetaData(std::move(batch));
+        for (std::size_t i = 0; i < stxTxns.size(); ++i)
         {
-            if (flags & tfUntilFailure)
+            auto const& stx = stxTxns[i];
+            ApplyContext actx(
+                ctx_.app,
+                ctx_.base_,
+                stx,
+                preclaimResponses[i],
+                ctx_.view().fees().base,
+                ctx_.base_.open() == 1 ? tapPREFLIGHT_BATCH : ctx_.view().flags(),
+                ctx_.journal);
+            auto const _result = invoke_apply(actx);
+
+            STObject meta{sfBatchExecution};
+            meta.setFieldU8(sfTransactionResult, TERtoInt(_result.first));
+            meta.setFieldU16(sfTransactionType, stx.getTxnType());
+            if (_result.first == tesSUCCESS)
+                meta.setFieldH256(sfTransactionHash, stx.getTransactionID());
+
+            avi.addBatchExecutionMetaData(std::move(meta));
+
+            std::cout << "tfAllOrNothing: " << (flags & tfAllOrNothing) << "\n";
+            std::cout << "tfOnlyOne: " << (flags & tfOnlyOne) << "\n";
+            std::cout << "tfUntilFailure: " << (flags & tfUntilFailure) << "\n";
+            std::cout << "tfIndependent: " << (flags & tfIndependent) << "\n";
+            std::cout << "tfBatchAtomic: " << _result.first << "\n";
+
+            if (_result.first != tesSUCCESS)
             {
-                actx.discard();
-                result = tecBATCH_FAILURE;
+                if (flags & tfUntilFailure)
+                {
+                    actx.discard();
+                    result = tesSUCCESS;
+                    break;
+                }
+                if (flags & tfOnlyOne)
+                {
+                    actx.discard();
+                    continue;
+                }
+            }
+
+            if (_result.first == tesSUCCESS && flags & tfOnlyOne)
+            {
+                result = tesSUCCESS;
                 break;
             }
-            if (flags & tfOnlyOne)
-            {
-                actx.discard();
-                continue;
-            }
-        }
-
-        if (_result.first == tesSUCCESS && flags & tfOnlyOne)
-        {
-            result = tesSUCCESS;
-            break;
         }
     }
 
