@@ -499,8 +499,8 @@ REGISTER_FIX    (fixEnforceNFTokenTrustline,    Supported::yes, VoteBehavior::De
 REGISTER_FIX    (fixInnerObjTemplate2,          Supported::yes, VoteBehavior::DefaultNo);
 // InvariantsV1_1 will be changes to Supported::yes when all the
 // invariants expected to be included under it are complete.
-REGISTER_FEATURE(InvariantsV1_1,                Supported::no,  VoteBehavior::DefaultNo);
-REGISTER_FEATURE(AMMClawback,                   Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FEATURE(InvariantsV1_1,                Supported::no, VoteBehavior::DefaultNo);
+REGISTER_FEATURE(AMMClawback,                   Supported::no, VoteBehavior::DefaultNo);
 
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.

@@ -6873,7 +6873,7 @@ private:
             else
             {
                 AMM amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
-                AMM amm1(env, alice, USD(100), XRP(100), ter(tesSUCCESS));
+                AMM amm1(env, alice, USD(100), XRP(200), ter(tecDUPLICATE));
             }
         }
     }
@@ -6925,7 +6925,7 @@ private:
         testLPTokenBalance(all);
         testLPTokenBalance(all - fixAMMv1_1);
         testIssuerClawback(all);
-        testIssuerClawback(all - featureAMMClawback);
+        testIssuerClawback(all | featureAMMClawback);
     }
 };
 
