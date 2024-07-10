@@ -21,7 +21,6 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/paths/Pathfinder.h>
@@ -29,7 +28,6 @@
 #include <xrpld/rpc/detail/LegacyPathFind.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
-#include <xrpld/rpc/detail/Tuning.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/json/json_writer.h>
@@ -710,6 +708,50 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 //------------------------------------------------------------------------------
 
 Json::Value
+getCurrentFee(
+    Role const role,
+    Config const& config,
+    LoadFeeTrack const& feeTrack,
+    TxQ const& txQ,
+    Application const& app,
+    int mult,
+    int div)
+{
+    XRPAmount const feeDefault = config.FEES.reference_fee;
+
+    auto ledger = app.openLedger().current();
+    // Administrative and identified endpoints are exempt from local fees.
+    XRPAmount const loadFee =
+        scaleFeeLoad(feeDefault, feeTrack, ledger->fees(), isUnlimited(role));
+    XRPAmount fee = loadFee;
+    {
+        auto const metrics = txQ.getMetrics(*ledger);
+        auto const baseFee = ledger->fees().base;
+        auto escalatedFee =
+            toDrops(metrics.openLedgerFeeLevel - FeeLevel64(1), baseFee) + 1;
+        fee = std::max(fee, escalatedFee);
+    }
+
+    auto const limit = [&]() {
+        // Scale fee units to drops:
+        auto const result = mulDiv(feeDefault, mult, div);
+        if (!result)
+            Throw<std::overflow_error>("mulDiv");
+        return *result;
+    }();
+
+    if (fee > limit)
+    {
+        std::stringstream ss;
+        ss << "Fee of " << fee << " exceeds the requested tx limit of "
+           << limit;
+        return RPC::make_error(rpcHIGH_FEE, ss.str());
+    }
+
+    return fee.jsonClipped();
+}
+
+Json::Value
 checkFee(
     Json::Value& request,
     Role const role,
@@ -798,7 +840,7 @@ checkFee(
         return RPC::make_error(rpcHIGH_FEE, ss.str());
     }
 
-    tx[jss::Fee] = fee.jsonClipped();
+    tx[jss::Fee] = getCurrentFee(role, config, feeTrack, txQ, app, mult, div);
     return Json::Value();
 }
 

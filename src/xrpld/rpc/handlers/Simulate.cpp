@@ -30,60 +30,84 @@
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 #include <xrpl/protocol/STParsedJSON.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
 
 namespace ripple {
 
-Json::Value
-getFee(Application& app, Role& role)
+std::optional<Json::Value>
+autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
 {
-    XRPAmount const feeDefault = app.config().FEES.reference_fee;
-
-    auto ledger = app.openLedger().current();
-    // Administrative and identified endpoints are exempt from local fees.
-    XRPAmount const loadFee = scaleFeeLoad(
-        feeDefault, app.getFeeTrack(), ledger->fees(), isUnlimited(role));
-    XRPAmount fee = loadFee;
+    if (!tx_json.isMember(jss::Fee))
     {
-        auto const metrics = app.getTxQ().getMetrics(*ledger);
-        auto const baseFee = ledger->fees().base;
-        auto escalatedFee =
-            toDrops(metrics.openLedgerFeeLevel - FeeLevel64(1), baseFee) + 1;
-        fee = std::max(fee, escalatedFee);
+        tx_json[jss::Fee] = RPC::getCurrentFee(
+            context.role,
+            context.app.config(),
+            context.app.getFeeTrack(),
+            context.app.getTxQ(),
+            context.app);
+    }
+    if (!tx_json.isMember(sfSigningPubKey.jsonName))
+    {
+        tx_json[sfSigningPubKey.jsonName] = "";
+    }
+    else if (tx_json[sfSigningPubKey.jsonName] != "")
+    {
+        return RPC::make_error(
+            rpcINVALID_PARAMS,
+            RPC::invalid_field_message("tx_json.SigningPubKey"));
+    }
+    if (!tx_json.isMember(sfTxnSignature.jsonName))
+    {
+        tx_json[sfTxnSignature.jsonName] = "";
+    }
+    else if (tx_json[sfTxnSignature.jsonName] != "")
+    {
+        return RPC::make_error(
+            rpcINVALID_PARAMS,
+            RPC::invalid_field_message("tx_json.TxnSignature"));
+    }
+    if (!tx_json.isMember(jss::Sequence))
+    {
+        bool const hasTicketSeq = tx_json.isMember(sfTicketSequence.jsonName);
+        auto const srcAddressID =
+            *(parseBase58<AccountID>(tx_json[jss::Account].asString()));
+        if (!srcAddressID)
+        {
+            return RPC::make_error(
+                rpcSRC_ACT_MALFORMED,
+                RPC::invalid_field_message("tx_json.Account"));
+        }
+        std::shared_ptr<SLE const> sle =
+            context.app.openLedger().current()->read(
+                keylet::account(srcAddressID));
+        if (!hasTicketSeq && !sle)
+        {
+            JLOG(context.app.journal("Simulate").debug())
+                << "simulate: Failed to find source account "
+                << "in current ledger: " << toBase58(srcAddressID);
+
+            return rpcError(rpcSRC_ACT_NOT_FOUND);
+        }
+        tx_json[jss::Sequence] = hasTicketSeq
+            ? 0
+            : context.app.getTxQ().nextQueuableSeq(sle).value();
     }
 
-    auto const limit = [&]() {
-        // Scale fee units to drops:
-        auto const result = mulDiv(
-            feeDefault,
-            RPC::Tuning::defaultAutoFillFeeMultiplier,
-            RPC::Tuning::defaultAutoFillFeeDivisor);
-        if (!result)
-            Throw<std::overflow_error>("mulDiv");
-        return *result;
-    }();
-
-    if (fee > limit)
-    {
-        std::stringstream ss;
-        ss << "Fee of " << fee << " exceeds the requested tx limit of "
-           << limit;
-        return RPC::make_error(rpcHIGH_FEE, ss.str());
-    }
-
-    return fee.jsonClipped();
+    return std::nullopt;
 }
 
 // {
-//   tx_blob: <object>
+//   tx_blob: <string>,
+//   tx_json: <object>,
+//   binary: <bool>
 // }
+// tx_blob XOR tx_json
 Json::Value
 doSimulate(RPC::JsonContext& context)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
 
-    std::shared_ptr<STTx const> stpTrans;
-    Json::Value jvResult;
+    Json::Value jvResult;  // the returned result
+    Json::Value tx_json;   // the tx as a JSON
 
     // check validity of `binary` param
     if (context.params.isMember(jss::binary))
@@ -95,122 +119,67 @@ doSimulate(RPC::JsonContext& context)
         }
     }
 
-    // TODO: also support fee/sequence autofill
     if (context.params.isMember(jss::tx_blob))
     {
         if (context.params.isMember(jss::tx_json))
         {
+            // both `tx_blob` and `tx_json` included
             return rpcError(rpcINVALID_PARAMS);
         }
 
-        auto ret = strUnHex(context.params[jss::tx_blob].asString());
+        auto unHexed = strUnHex(context.params[jss::tx_blob].asString());
 
-        if (!ret || !ret->size())
+        if (!unHexed || !unHexed->size())
             return RPC::make_error(
                 rpcINVALID_PARAMS, RPC::invalid_field_message("tx_blob"));
 
-        SerialIter sitTrans(makeSlice(*ret));
-
-        try
-        {
-            stpTrans = std::make_shared<STTx const>(std::ref(sitTrans));
-        }
-        catch (std::exception& e)
-        {
-            jvResult[jss::error] = "invalidTransaction";
-            jvResult[jss::error_exception] = e.what();
-
-            return jvResult;
-        }
+        SerialIter sitTrans(makeSlice(*unHexed));
+        tx_json =
+            STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::none);
     }
     else
     {
         if (!context.params.isMember(jss::tx_json))
         {
+            // neither `tx_blob` nor `tx_json` included`
             return rpcError(rpcINVALID_PARAMS);
         }
 
-        Json::Value& tx_json(context.params[jss::tx_json]);
-        if (!tx_json.isMember(jss::Fee))
-        {
-            tx_json[jss::Fee] = getFee(context.app, context.role);
-        }
-        if (!tx_json.isMember(sfSigningPubKey.jsonName))
-        {
-            tx_json[sfSigningPubKey.jsonName] = "";
-        }
-        else if (tx_json[sfSigningPubKey.jsonName] != "")
-        {
-            return RPC::make_error(
-                rpcINVALID_PARAMS,
-                RPC::invalid_field_message("tx_json.SigningPubKey"));
-        }
-        if (!tx_json.isMember(sfTxnSignature.jsonName))
-        {
-            tx_json[sfTxnSignature.jsonName] = "";
-        }
-        else if (tx_json[sfTxnSignature.jsonName] != "")
-        {
-            return RPC::make_error(
-                rpcINVALID_PARAMS,
-                RPC::invalid_field_message("tx_json.TxnSignature"));
-        }
-        if (!tx_json.isMember(jss::Sequence))
-        {
-            bool const hasTicketSeq =
-                tx_json.isMember(sfTicketSequence.jsonName);
-            auto const srcAddressID =
-                *(parseBase58<AccountID>(tx_json[jss::Account].asString()));
-            if (!srcAddressID)
-            {
-                return RPC::make_error(
-                    rpcSRC_ACT_MALFORMED,
-                    RPC::invalid_field_message("tx_json.Account"));
-            }
-            std::shared_ptr<SLE const> sle =
-                context.app.openLedger().current()->read(
-                    keylet::account(srcAddressID));
-            if (!hasTicketSeq && !sle)
-            {
-                JLOG(context.app.journal("Simulate").debug())
-                    << "simulate: Failed to find source account "
-                    << "in current ledger: " << toBase58(srcAddressID);
+        tx_json = context.params[jss::tx_json];
+    }
 
-                return rpcError(rpcSRC_ACT_NOT_FOUND);
-            }
-            tx_json[jss::Sequence] = hasTicketSeq
-                ? 0
-                : context.app.getTxQ().nextQueuableSeq(sle).value();
-        }
+    // autofill fields if they're not included (e.g. `Fee`, `Sequence`)
+    if (auto error = autofillTx(tx_json, context))
+        return *error;
 
-        STParsedJSONObject parsed(std::string(jss::tx_json), tx_json);
-        if (!parsed.object.has_value())
-        {
-            jvResult[jss::error] = parsed.error[jss::error];
-            jvResult[jss::error_code] = parsed.error[jss::error_code];
-            jvResult[jss::error_message] = parsed.error[jss::error_message];
-            return jvResult;
-        }
+    STParsedJSONObject parsed(std::string(jss::tx_json), tx_json);
+    if (!parsed.object.has_value())
+    {
+        jvResult[jss::error] = parsed.error[jss::error];
+        jvResult[jss::error_code] = parsed.error[jss::error_code];
+        jvResult[jss::error_message] = parsed.error[jss::error_message];
+        return jvResult;
+    }
 
-        try
-        {
-            stpTrans = std::make_shared<STTx>(std::move(parsed.object.value()));
-        }
-        catch (std::exception& e)
-        {
-            jvResult[jss::error] = "invalidTransaction";
-            jvResult[jss::error_exception] = e.what();
+    std::shared_ptr<STTx const> stpTrans;
+    try
+    {
+        stpTrans = std::make_shared<STTx>(std::move(parsed.object.value()));
+    }
+    catch (std::exception& e)
+    {
+        jvResult[jss::error] = "invalidTransaction";
+        jvResult[jss::error_exception] = e.what();
 
-            return jvResult;
-        }
+        return jvResult;
     }
 
     std::string reason;
     auto tpTrans = std::make_shared<Transaction>(stpTrans, reason, context.app);
 
+    // Actually run the transaction through the transaction processor
     try
     {
-        // we check before adding to the batch
         ApplyFlags flags = tapDRY_RUN;
 
         // Process the transaction

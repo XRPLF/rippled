@@ -23,6 +23,8 @@
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/app/misc/LoadFeeTrack.h>
+#include <xrpld/rpc/detail/Tuning.h>
 
 namespace ripple {
 
@@ -33,6 +35,16 @@ class Transaction;
 class TxQ;
 
 namespace RPC {
+
+Json::Value
+getCurrentFee(
+    Role const role,
+    Config const& config,
+    LoadFeeTrack const& feeTrack,
+    TxQ const& txQ,
+    Application const& app,
+    int mult = Tuning::defaultAutoFillFeeMultiplier,
+    int div = Tuning::defaultAutoFillFeeDivisor);
 
 /** Fill in the fee on behalf of the client.
     This is called when the client does not explicitly specify the fee.
