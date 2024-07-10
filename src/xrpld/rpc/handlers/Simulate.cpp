@@ -136,6 +136,41 @@ doSimulate(RPC::JsonContext& context)
         {
             tx_json[jss::Fee] = getFee(context.app, context.role);
         }
+        if (!tx_json.isMember(sfSigningPubKey.jsonName))
+        {
+            tx_json[sfSigningPubKey.jsonName] = "";
+        }
+        if (!tx_json.isMember(sfTxnSignature.jsonName))
+        {
+            tx_json[sfTxnSignature.jsonName] = "";
+        }
+        if (!tx_json.isMember(jss::Sequence))
+        {
+            bool const hasTicketSeq =
+                tx_json.isMember(sfTicketSequence.jsonName);
+            auto const srcAddressID =
+                *(parseBase58<AccountID>(tx_json[jss::Account].asString()));
+            if (!srcAddressID)
+            {
+                return RPC::make_error(
+                    rpcSRC_ACT_MALFORMED,
+                    RPC::invalid_field_message("tx_json.Account"));
+            }
+            std::shared_ptr<SLE const> sle =
+                context.app.openLedger().current()->read(
+                    keylet::account(srcAddressID));
+            if (!hasTicketSeq && !sle)
+            {
+                JLOG(context.app.journal("Simulate").debug())
+                    << "simulate: Failed to find source account "
+                    << "in current ledger: " << toBase58(srcAddressID);
+
+                return rpcError(rpcSRC_ACT_NOT_FOUND);
+            }
+            tx_json[jss::Sequence] = hasTicketSeq
+                ? 0
+                : context.app.getTxQ().nextQueuableSeq(sle).value();
+        }
 
         STParsedJSONObject parsed(std::string(jss::tx_json), tx_json);
         if (!parsed.object.has_value())
