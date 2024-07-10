@@ -1210,9 +1210,20 @@ NetworkOPsImp::processTransaction(
     // but I'm not 100% sure yet.
     // If so, only cost is looking up HashRouter flags.
     auto const view = m_ledgerMaster.getCurrentLedger();
+
+    // This function is called by several different parts of the codebase
+    // under no circumstances will we ever accept a batch txn from the
+    // network.
+    auto const tx = *transaction->getSTransaction();
+    if (view->rules().enabled(featureBatch) &&
+        tx.isFieldPresent(ripple::sfBatchTxn))
+    {
+        return;
+    }
+
     auto const [validity, reason] = checkValidity(
         app_.getHashRouter(),
-        *transaction->getSTransaction(),
+        tx,
         view->rules(),
         app_.config());
     assert(validity == Validity::Valid);
@@ -2755,6 +2766,11 @@ NetworkOPsImp::pubProposedTransaction(
     std::shared_ptr<STTx const> const& transaction,
     TER result)
 {
+
+    // never publish batch txns
+    if (transaction->isFieldPresent(ripple::sfBatchTxn))
+        return;
+
     MultiApiJson jvObj =
         transJson(transaction, result, false, ledger, std::nullopt);
 

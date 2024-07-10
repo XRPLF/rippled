@@ -39,6 +39,9 @@ enum ApplyFlags : std::uint32_t {
 
     // Transaction came from a privileged source
     tapUNLIMITED = 0x400,
+
+    // Transaction is being tested against preflight before emission
+    tapPREFLIGHT_BATCH = 0x800,
 };
 
 constexpr ApplyFlags

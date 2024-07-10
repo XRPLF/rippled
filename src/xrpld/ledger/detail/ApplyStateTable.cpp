@@ -115,6 +115,7 @@ ApplyStateTable::apply(
     STTx const& tx,
     TER ter,
     std::optional<STAmount> const& deliver,
+    std::vector<STObject> const& batchExecution,
     beast::Journal j)
 {
     // Build metadata and insert
@@ -126,6 +127,15 @@ ApplyStateTable::apply(
         TxMeta meta(tx.getTransactionID(), to.seq());
         if (deliver)
             meta.setDeliveredAmount(*deliver);
+
+        if (!batchExecution.empty())
+        {
+            auto array = STArray{sfBatchExecutions};
+            for (auto element : batchExecution)
+                array.push_back(element);
+            meta.setBatchExecutions(array);
+        }
+
         Mods newMod;
         for (auto& item : items_)
         {

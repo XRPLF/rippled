@@ -49,6 +49,7 @@ public:
     TER const preclaimResult;
     XRPAmount const baseFee;
     beast::Journal const journal;
+    OpenView& base_;
 
     ApplyView&
     view()
@@ -121,7 +122,7 @@ private:
         XRPAmount const fee,
         std::index_sequence<Is...>);
 
-    OpenView& base_;
+    // OpenView& base_;
     ApplyFlags flags_;
     std::optional<ApplyViewImpl> view_;
 };

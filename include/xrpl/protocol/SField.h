@@ -373,6 +373,7 @@ extern SF_UINT8 const sfScale;
 extern SF_UINT8 const sfTickSize;
 extern SF_UINT8 const sfUNLModifyDisabling;
 extern SF_UINT8 const sfHookResult;
+extern SF_UINT8 const sfBatchIndex;
 
 // 16-bit integers (common)
 extern SF_UINT16 const sfLedgerEntryType;
@@ -441,6 +442,7 @@ extern SF_UINT32 const sfEmitGeneration;
 extern SF_UINT32 const sfVoteWeight;
 extern SF_UINT32 const sfFirstNFTokenSequence;
 extern SF_UINT32 const sfOracleDocumentID;
+extern SF_UINT32 const sfOuterSequence;
 
 // 64-bit integers (common)
 extern SF_UINT64 const sfIndexNext;
@@ -650,6 +652,9 @@ extern SField const sfXChainClaimProofSig;
 extern SField const sfXChainCreateAccountProofSig;
 extern SField const sfXChainClaimAttestationCollectionElement;
 extern SField const sfXChainCreateAccountAttestationCollectionElement;
+extern SField const sfRawTransaction;
+extern SField const sfBatchExecution;
+extern SField const sfBatchTxn;
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array
@@ -675,6 +680,8 @@ extern SField const sfHookParameters;
 extern SField const sfHookGrants;
 extern SField const sfXChainClaimAttestations;
 extern SField const sfXChainCreateAccountAttestations;
+extern SField const sfBatchExecutions;
+extern SField const sfRawTransactions;
 
 //------------------------------------------------------------------------------
 

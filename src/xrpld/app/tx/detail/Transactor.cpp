@@ -133,7 +133,11 @@ NotTEC
 preflight2(PreflightContext const& ctx)
 {
     auto const sigValid = checkValidity(
-        ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
+        ctx.app.getHashRouter(),
+        ctx.tx,
+        ctx.rules,
+        ctx.app.config(),
+        ctx.flags);
     if (sigValid.first == Validity::SigBad)
     {
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
@@ -200,7 +204,39 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         return temBAD_FEE;
 
     // Only check fee is sufficient when the ledger is open.
-    if (ctx.view.open())
+    if (ctx.view.open() && ctx.tx.getTxnType() == ttBATCH)
+    {
+        XRPAmount feeDue = XRPAmount{0};
+        auto const& txns = ctx.tx.getFieldArray(sfRawTransactions);
+        for (std::size_t i = 0; i < txns.size(); ++i)
+        {
+            auto const& txn = txns[i];
+            if (!txn.isFieldPresent(sfFee))
+            {
+                JLOG(ctx.j.warn())
+                    << "Batch: sfFee missing in array entry.";
+                return telINSUF_FEE_P;
+            }
+            auto const _fee = txn.getFieldAmount(sfFee);
+            feeDue += _fee.xrp();
+
+            // auto const tt = txn.getFieldU16(sfTransactionType);
+            // auto const txtype = safe_cast<TxType>(tt);
+            // auto const stx = STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
+            // auto const _fee = Transactor::calculateBaseFee(ctx.view, stx);
+            // feeDue += _fee;
+        }
+
+        if (feePaid < feeDue)
+        {
+            JLOG(ctx.j.trace())
+                << "Insufficient fee paid: " << to_string(feePaid) << "/"
+                << to_string(feeDue);
+            return telINSUF_FEE_P;
+        }
+    }
+
+    if (ctx.view.open() && ctx.tx.getTxnType() != ttBATCH)
     {
         auto const feeDue =
             minimumFee(ctx.app, baseFee, ctx.view.fees(), ctx.flags);
@@ -281,7 +317,17 @@ Transactor::checkSeqProxy(
     }
 
     SeqProxy const t_seqProx = tx.getSeqProxy();
-    SeqProxy const a_seq = SeqProxy::sequence((*sle)[sfSequence]);
+    SeqProxy a_seq = SeqProxy::sequence((*sle)[sfSequence]);
+
+    if (tx.isFieldPresent(sfBatchTxn))
+    {
+        STObject const batchTxn = const_cast<ripple::STTx&>(tx)
+                                      .getField(sfBatchTxn)
+                                      .downcast<STObject>();
+        std::uint32_t const batchIndex{batchTxn.getFieldU8(sfBatchIndex)};
+        a_seq = SeqProxy::sequence(a_seq.value() - (batchIndex + 1));
+        a_seq = t_seqProx;
+    }
 
     if (t_seqProx.isSeq())
     {
@@ -358,7 +404,8 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
         (ctx.view.seq() > ctx.tx.getFieldU32(sfLastLedgerSequence)))
         return tefMAX_LEDGER;
 
-    if (ctx.view.txExists(ctx.tx.getTransactionID()))
+    if (ctx.view.txExists(ctx.tx.getTransactionID()) &&
+        ctx.tx.getTxnType() != ttBATCH && !ctx.tx.isFieldPresent(sfBatchTxn))
         return tefALREADY;
 
     return tesSUCCESS;
@@ -371,6 +418,10 @@ Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
     SeqProxy const seqProx = ctx_.tx.getSeqProxy();
     if (seqProx.isSeq())
     {
+        // do not update sequence of sfAccountTxnID for batch tx
+        if (ctx_.tx.isFieldPresent(sfBatchTxn))
+            return tesSUCCESS;
+
         // Note that if this transaction is a TicketCreate, then
         // the transaction will modify the account root sfSequence
         // yet again.
@@ -877,11 +928,11 @@ Transactor::operator()()
     if (ctx_.size() > oversizeMetaDataCap)
         result = tecOVERSIZE;
 
-    if (isTecClaim(result) && (view().flags() & tapFAIL_HARD))
+    if ((isTecClaim(result) && (view().flags() & tapFAIL_HARD)) ||
+        view().flags() & tapPREFLIGHT_BATCH)
     {
         // If the tapFAIL_HARD flag is set, a tec result
         // must not do anything
-
         ctx_.discard();
         applied = false;
     }

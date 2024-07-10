@@ -45,6 +45,7 @@ TxFormats::TxFormats()
         {sfTxnSignature, soeOPTIONAL},
         {sfSigners, soeOPTIONAL},  // submit_multisigned
         {sfNetworkID, soeOPTIONAL},
+        {sfBatchTxn, soeOPTIONAL},
     };
 
     add(jss::AccountSet,
@@ -503,6 +504,13 @@ TxFormats::TxFormats()
         ttORACLE_DELETE,
         {
             {sfOracleDocumentID, soeREQUIRED},
+        },
+        commonFields);
+
+    add(jss::Batch,
+        ttBATCH,
+        {
+            {sfRawTransactions, soeOPTIONAL},
         },
         commonFields);
 }
