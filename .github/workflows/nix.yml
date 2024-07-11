@@ -232,3 +232,53 @@ jobs:
             token: ${{ secrets.CODECOV_TOKEN }}
           attempt_limit: 5
           attempt_delay: 210000 # in milliseconds
+
+  conan:
+    needs: dependencies
+    runs-on: [self-hosted, heavy]
+    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    env:
+      build_dir: .build
+      configuration: Release
+    steps:
+      - name: download cache
+        uses: actions/download-artifact@v3
+        with:
+          name: linux-gcc-${{ env.configuration }}
+      - name: extract cache
+        run: |
+          mkdir -p ~/.conan
+          tar -xzf conan.tar -C ~/.conan
+      - name: check environment
+        run: |
+          env | sort
+          echo ${PATH} | tr ':' '\n'
+          conan --version
+          cmake --version
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: dependencies
+        uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+        with:
+          configuration: ${{ env.configuration }}
+      - name: export
+        run: |
+          version=$(conan inspect --raw version .)
+          reference="xrpl/${version}@local/test"
+          conan remove -f ${reference} || true
+          conan export . local/test
+          echo "reference=${reference}" >> "${GITHUB_ENV}"
+      - name: build
+        run: |
+          cd examples/example
+          mkdir ${build_dir}
+          cd ${build_dir}
+          conan install .. --output-folder . \
+            --require-override ${reference} --build missing
+          cmake .. \
+            -DCMAKE_TOOLCHAIN_FILE:FILEPATH=./build/${configuration}/generators/conan_toolchain.cmake \
+            -DCMAKE_BUILD_TYPE=${configuration}
+          cmake --build .
+          ./example | grep '^[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+'
