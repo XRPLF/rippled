@@ -57,7 +57,9 @@ TaskQueue::processTask(int instance)
     {
         std::lock_guard lock{mutex_};
 
-        XRPL_ASSERT(!tasks_.empty());
+        XRPL_ASSERT(
+            "ripple::NodeStore::TaskQueue::processTask : non-empty tasks",
+            !tasks_.empty());
         task = std::move(tasks_.front());
         tasks_.pop();
 

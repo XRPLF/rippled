@@ -209,7 +209,7 @@ void
 TOffer<TIn, TOut>::setFieldAmounts()
 {
 #ifdef _MSC_VER
-    XRPL_ASSERT(0);
+    XRPL_UNREACHABLE("ripple::TOffer::setFieldAmounts : must be specialized");
 #else
     static_assert(sizeof(TOut) == -1, "Must be specialized");
 #endif

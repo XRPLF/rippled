@@ -305,7 +305,10 @@ public:
         // Add slot to table
         auto const result(slots_.emplace(slot->remote_endpoint(), slot));
         // Remote address must not already exist
-        XRPL_ASSERT(result.second);
+        XRPL_ASSERT(
+            "ripple::PeerFinder::Logic::new_inbound_slot : remote endpoint "
+            "inserted",
+            result.second);
         // Add to the connected address list
         connectedAddresses_.emplace(remote_endpoint.address());
 
@@ -340,7 +343,10 @@ public:
         // Add slot to table
         auto const result = slots_.emplace(slot->remote_endpoint(), slot);
         // Remote address must not already exist
-        XRPL_ASSERT(result.second);
+        XRPL_ASSERT(
+            "ripple::PeerFinder::Logic::new_outbound_slot : remote endpoint "
+            "inserted",
+            result.second);
 
         // Add to the connected address list
         connectedAddresses_.emplace(remote_endpoint.address());
@@ -363,7 +369,9 @@ public:
         std::lock_guard _(lock_);
 
         // The object must exist in our table
-        XRPL_ASSERT(slots_.find(slot->remote_endpoint()) != slots_.end());
+        XRPL_ASSERT(
+            "ripple::PeerFinder::Logic::onConnected : valid slot input",
+            slots_.find(slot->remote_endpoint()) != slots_.end());
         // Assign the local endpoint now that it's known
         slot->local_endpoint(local_endpoint);
 
@@ -373,6 +381,8 @@ public:
             if (iter != slots_.end())
             {
                 XRPL_ASSERT(
+                    "ripple::PeerFinder::Logic::onConnected : local and remote "
+                    "endpoints do match",
                     iter->second->local_endpoint() == slot->remote_endpoint());
                 JLOG(m_journal.warn())
                     << beast::leftw(18) << "Logic dropping "
@@ -398,9 +408,12 @@ public:
         std::lock_guard _(lock_);
 
         // The object must exist in our table
-        XRPL_ASSERT(slots_.find(slot->remote_endpoint()) != slots_.end());
+        XRPL_ASSERT(
+            "ripple::PeerFinder::Logic::activate : valid slot input",
+            slots_.find(slot->remote_endpoint()) != slots_.end());
         // Must be accepted or connected
         XRPL_ASSERT(
+            "ripple::PeerFinder::Logic::activate : valid slot state",
             slot->state() == Slot::accept || slot->state() == Slot::connected);
 
         // Check for duplicate connection by key
@@ -427,7 +440,9 @@ public:
         {
             [[maybe_unused]] bool const inserted = keys_.insert(key).second;
             // Public key must not already exist
-            XRPL_ASSERT(inserted);
+            XRPL_ASSERT(
+                "ripple::PeerFinder::Logic::activate : public key inserted",
+                inserted);
         }
 
         // Change state and update counts
@@ -789,10 +804,14 @@ public:
         std::lock_guard _(lock_);
 
         // The object must exist in our table
-        XRPL_ASSERT(slots_.find(slot->remote_endpoint()) != slots_.end());
+        XRPL_ASSERT(
+            "ripple::PeerFinder::Logic::on_endpoints : valid slot input",
+            slots_.find(slot->remote_endpoint()) != slots_.end());
 
         // Must be handshaked!
-        XRPL_ASSERT(slot->state() == Slot::active);
+        XRPL_ASSERT(
+            "ripple::PeerFinder::Logic::on_endpoints : valid slot state",
+            slot->state() == Slot::active);
 
         clock_type::time_point const now(m_clock.now());
 
@@ -804,7 +823,9 @@ public:
 
         for (auto const& ep : list)
         {
-            XRPL_ASSERT(ep.hops != 0);
+            XRPL_ASSERT(
+                "ripple::PeerFinder::Logic::on_endpoints : nonzero hops",
+                ep.hops != 0);
 
             slot->recent.insert(ep.address, ep.hops);
 
@@ -957,7 +978,9 @@ public:
                 break;
 
             default:
-                XRPL_UNREACHABLE();
+                XRPL_UNREACHABLE(
+                    "ripple::PeerFinder::Logic::on_closed : invalid slot "
+                    "state");
                 break;
         }
     }

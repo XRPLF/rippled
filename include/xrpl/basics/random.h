@@ -114,7 +114,7 @@ std::enable_if_t<
     Integral>
 rand_int(Engine& engine, Integral min, Integral max)
 {
-    XRPL_ASSERT(max > min);
+    XRPL_ASSERT("ripple::rand_int : max over min inputs", max > min);
 
     // This should have no state and constructing it should
     // be very cheap. If that turns out not to be the case

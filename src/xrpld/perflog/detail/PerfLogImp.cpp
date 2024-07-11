@@ -55,7 +55,9 @@ PerfLogImp::Counters::Counters(
             if (!inserted)
             {
                 // Ensure that no other function populates this entry.
-                XRPL_UNREACHABLE();
+                XRPL_UNREACHABLE(
+                    "ripple::perf::PerfLogImp::Counters::Counters : failed to "
+                    "insert label");
             }
         }
     }
@@ -68,7 +70,9 @@ PerfLogImp::Counters::Counters(
             if (!inserted)
             {
                 // Ensure that no other function populates this entry.
-                XRPL_UNREACHABLE();
+                XRPL_UNREACHABLE(
+                    "ripple::perf::PerfLogImp::Counters::Counters : failed to "
+                    "insert job type");
             }
         }
     }
@@ -330,7 +334,8 @@ PerfLogImp::rpcStart(std::string const& method, std::uint64_t const requestId)
     auto counter = counters_.rpc_.find(method);
     if (counter == counters_.rpc_.end())
     {
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::perf::PerfLogImp::rpcStart : valid method input");
         return;
     }
 
@@ -352,7 +357,8 @@ PerfLogImp::rpcEnd(
     auto counter = counters_.rpc_.find(method);
     if (counter == counters_.rpc_.end())
     {
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::perf::PerfLogImp::rpcEnd : valid method input");
         return;
     }
     steady_time_point startTime;
@@ -366,7 +372,8 @@ PerfLogImp::rpcEnd(
         }
         else
         {
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::perf::PerfLogImp::rpcEnd : valid requestId input");
         }
     }
     std::lock_guard lock(counter->second.mutex);
@@ -384,7 +391,8 @@ PerfLogImp::jobQueue(JobType const type)
     auto counter = counters_.jq_.find(type);
     if (counter == counters_.jq_.end())
     {
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::perf::PerfLogImp::jobQueue : valid job type input");
         return;
     }
     std::lock_guard lock(counter->second.mutex);
@@ -401,7 +409,8 @@ PerfLogImp::jobStart(
     auto counter = counters_.jq_.find(type);
     if (counter == counters_.jq_.end())
     {
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::perf::PerfLogImp::jobStart : valid job type input");
         return;
     }
     {
@@ -420,7 +429,8 @@ PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
     auto counter = counters_.jq_.find(type);
     if (counter == counters_.jq_.end())
     {
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::perf::PerfLogImp::jobFinish : valid job type input");
         return;
     }
     {

@@ -46,7 +46,9 @@ Database::Database(
     , requestBundle_(get<int>(config, "rq_bundle", 4))
     , readThreads_(std::max(1, readThreads))
 {
-    XRPL_ASSERT(readThreads != 0);
+    XRPL_ASSERT(
+        "ripple::NodeStore::Database::Database : nonzero threads input",
+        readThreads != 0);
 
     if (ledgersPerShard_ == 0 || ledgersPerShard_ % 256 != 0)
         Throw<std::runtime_error>("Invalid ledgers_per_shard");
@@ -96,7 +98,10 @@ Database::Database(
 
                     for (auto it = read.begin(); it != read.end(); ++it)
                     {
-                        XRPL_ASSERT(!it->second.empty());
+                        XRPL_ASSERT(
+                            "ripple::NodeStore::Database::Database : non-empty "
+                            "data",
+                            !it->second.empty());
 
                         auto const& hash = it->first;
                         auto const& data = it->second;
@@ -157,7 +162,8 @@ Database::maxLedgers(std::uint32_t shardIndex) const noexcept
     if (shardIndex == earliestShardIndex_)
         return lastLedgerSeq(shardIndex) - firstLedgerSeq(shardIndex) + 1;
 
-    XRPL_ASSERT(!"Invalid shard index");
+    XRPL_UNREACHABLE(
+        "ripple::NodeStore::Database::maxLedgers : invalid shard index");
     return 0;
 }
 
@@ -183,7 +189,9 @@ Database::stop()
 
     while (readThreads_.load() != 0)
     {
-        XRPL_ASSERT(steady_clock::now() - start < 30s);
+        XRPL_ASSERT(
+            "ripple::NodeStore::Database::stop : maximum stop duration",
+            steady_clock::now() - start < 30s);
         std::this_thread::yield();
     }
 
@@ -234,7 +242,9 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
     };
 
     srcDB.for_each([&](std::shared_ptr<NodeObject> nodeObject) {
-        XRPL_ASSERT(nodeObject);
+        XRPL_ASSERT(
+            "ripple::NodeStore::Database::importInternal : non-null node",
+            nodeObject);
         if (!nodeObject)  // This should never happen
             return;
 
@@ -377,7 +387,9 @@ Database::storeLedger(
 void
 Database::getCountsJson(Json::Value& obj)
 {
-    XRPL_ASSERT(obj.isObject());
+    XRPL_ASSERT(
+        "ripple::NodeStore::Database::getCountsJson : valid input type",
+        obj.isObject());
 
     {
         std::unique_lock<std::mutex> lock(readLock_);

@@ -117,7 +117,9 @@ public:
     packed_spinlock(std::atomic<T>& lock, int index)
         : bits_(lock), mask_(static_cast<T>(1) << index)
     {
-        XRPL_ASSERT(index >= 0 && (mask_ != 0));
+        XRPL_ASSERT(
+            "ripple::packed_spinlock::packed_spinlock : valid index and mask",
+            index >= 0 && (mask_ != 0));
     }
 
     [[nodiscard]] bool

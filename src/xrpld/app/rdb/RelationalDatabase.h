@@ -27,6 +27,7 @@
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/peerfinder/detail/Store.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
@@ -258,7 +259,7 @@ rangeCheckedCast(C c)
          c < std::numeric_limits<T>::lowest()))
     {
         /* This should never happen */
-        XRPL_ASSERT(0);
+        XRPL_UNREACHABLE("ripple::rangeCheckedCast : domain error");
         JLOG(debugLog().error())
             << "rangeCheckedCast domain error:"
             << " value = " << c << " min = " << std::numeric_limits<T>::lowest()

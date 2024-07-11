@@ -55,7 +55,9 @@ public:
 
         if (size)
         {
-            XRPL_ASSERT(data != nullptr);
+            XRPL_ASSERT(
+                "ripple::Serializer::Serializer(void const*) : non-null input",
+                data != nullptr);
             std::memcpy(mData.data(), data, size);
         }
     }
@@ -300,7 +302,8 @@ Serializer::addVL(Iter begin, Iter end, int len)
         len -= begin->size();
 #endif
     }
-    XRPL_ASSERT(len == 0);
+    XRPL_ASSERT(
+        "ripple::Serializer::addVL : length matches distance", len == 0);
     return ret;
 }
 

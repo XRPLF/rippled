@@ -199,7 +199,9 @@ PropertyStream::Source::add(Source& source)
     std::lock_guard lk1(lock_, std::adopt_lock);
     std::lock_guard lk2(source.lock_, std::adopt_lock);
 
-    XRPL_ASSERT(source.parent_ == nullptr);
+    XRPL_ASSERT(
+        "beast::PropertyStream::Source::add : null source parent",
+        source.parent_ == nullptr);
     children_.push_back(source.item_);
     source.parent_ = this;
 }
@@ -211,7 +213,9 @@ PropertyStream::Source::remove(Source& child)
     std::lock_guard lk1(lock_, std::adopt_lock);
     std::lock_guard lk2(child.lock_, std::adopt_lock);
 
-    XRPL_ASSERT(child.parent_ == this);
+    XRPL_ASSERT(
+        "beast::PropertyStream::Source::remove : child parent match",
+        child.parent_ == this);
     children_.erase(children_.iterator_to(child.item_));
     child.parent_ = nullptr;
 }

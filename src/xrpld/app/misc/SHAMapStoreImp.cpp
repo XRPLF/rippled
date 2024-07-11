@@ -281,7 +281,8 @@ SHAMapStoreImp::run()
 {
     if (app_.config().reporting())
     {
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::SHAMapStoreImp::run : reporting mode not supported");
         Throw<std::runtime_error>(
             "Reporting does not support online_delete. Remove "
             "online_delete info from config");
@@ -553,7 +554,9 @@ SHAMapStoreImp::clearSql(
     std::function<std::optional<LedgerIndex>()> const& getMinSeq,
     std::function<void(LedgerIndex)> const& deleteBeforeSeq)
 {
-    XRPL_ASSERT(deleteInterval_);
+    XRPL_ASSERT(
+        "ripple::SHAMapStoreImp::clearSql : nonzero delete interval",
+        deleteInterval_);
     LedgerIndex min = std::numeric_limits<LedgerIndex>::max();
 
     {
@@ -618,7 +621,9 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
 {
     if (app_.config().reporting())
     {
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::SHAMapStoreImp::clearPrior : reporting mode not "
+            "supported");
         Throw<std::runtime_error>(
             "Reporting does not support online_delete. Remove "
             "online_delete info from config");

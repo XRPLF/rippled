@@ -233,7 +233,10 @@ DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
 
     {
         std::lock_guard lock(mutex_);
-        XRPL_ASSERT(init_);
+        XRPL_ASSERT(
+            "ripple::NodeStore::DatabaseShardImp::prepareLedger : is "
+            "initialized",
+            init_);
 
         if (acquireIndex_ != 0)
         {
@@ -241,7 +244,9 @@ DatabaseShardImp::prepareLedger(std::uint32_t validLedgerSeq)
                 return it->second->prepare();
 
             // Should never get here
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::NodeStore::DatabaseShardImp::prepareLedger  : invalid "
+                "index");
             return std::nullopt;
         }
 
@@ -325,7 +330,9 @@ DatabaseShardImp::prepareShards(std::vector<std::uint32_t> const& shardIndexes)
         return fail("invalid shard indexes");
 
     std::lock_guard lock(mutex_);
-    XRPL_ASSERT(init_);
+    XRPL_ASSERT(
+        "ripple::NodeStore::DatabaseShardImp::prepareShards : is initialized",
+        init_);
 
     if (!canAdd_)
         return fail("cannot be stored at this time");
@@ -417,7 +424,9 @@ void
 DatabaseShardImp::removePreShard(std::uint32_t shardIndex)
 {
     std::lock_guard lock(mutex_);
-    XRPL_ASSERT(init_);
+    XRPL_ASSERT(
+        "ripple::NodeStore::DatabaseShardImp::removePreShard : is initialized",
+        init_);
 
     if (preparedIndexes_.erase(shardIndex))
         updatePeers(lock);
@@ -429,7 +438,10 @@ DatabaseShardImp::getPreShards()
     RangeSet<std::uint32_t> rs;
     {
         std::lock_guard lock(mutex_);
-        XRPL_ASSERT(init_);
+        XRPL_ASSERT(
+            "ripple::NodeStore::DatabaseShardImp::getPreShards : is "
+            "initialized",
+            init_);
 
         for (auto const& shardIndex : preparedIndexes_)
             rs.insert(shardIndex);
@@ -557,7 +569,10 @@ DatabaseShardImp::fetchLedger(uint256 const& hash, std::uint32_t ledgerSeq)
         std::shared_ptr<Shard> shard;
         {
             std::lock_guard lock(mutex_);
-            XRPL_ASSERT(init_);
+            XRPL_ASSERT(
+                "ripple::NodeStore::DatabaseShardImp::fetchLedger : is "
+                "initialized",
+                init_);
 
             auto const it{shards_.find(shardIndex)};
             if (it == shards_.end())
@@ -661,7 +676,9 @@ DatabaseShardImp::setStored(std::shared_ptr<Ledger const> const& ledger)
     std::shared_ptr<Shard> shard;
     {
         std::lock_guard lock(mutex_);
-        XRPL_ASSERT(init_);
+        XRPL_ASSERT(
+            "ripple::NodeStore::DatabaseShardImp::setStored : is initialized",
+            init_);
 
         if (shardIndex != acquireIndex_)
         {
@@ -766,14 +783,20 @@ void
 DatabaseShardImp::importDatabase(Database& source)
 {
     std::lock_guard lock(mutex_);
-    XRPL_ASSERT(init_);
+    XRPL_ASSERT(
+        "ripple::NodeStore::DatabaseShardImp::importDatabase : is initialized",
+        init_);
 
     // Only the application local node store can be imported
-    XRPL_ASSERT(&source == &app_.getNodeStore());
+    XRPL_ASSERT(
+        "ripple::NodeStore::DatabaseShardImp::importDatabase : valid input",
+        &source == &app_.getNodeStore());
 
     if (databaseImporter_.joinable())
     {
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::NodeStore::DatabaseShardImp::importDatabase : database "
+            "import already in progress");
         JLOG(j_.error()) << "database import already in progress";
         return;
     }
@@ -865,7 +888,10 @@ DatabaseShardImp::doImportDatabase()
     {
         std::lock_guard lock(mutex_);
 
-        XRPL_ASSERT(!databaseImportStatus_);
+        XRPL_ASSERT(
+            "ripple::NodeStore::DatabaseShardImp::doImportDatabase : non-null "
+            "import status",
+            !databaseImportStatus_);
         databaseImportStatus_ = std::make_unique<DatabaseImportStatus>(
             earliestIndex, latestIndex, 0);
     }
@@ -1088,7 +1114,10 @@ DatabaseShardImp::getWriteLoad() const
     std::shared_ptr<Shard> shard;
     {
         std::lock_guard lock(mutex_);
-        XRPL_ASSERT(init_);
+        XRPL_ASSERT(
+            "ripple::NodeStore::DatabaseShardImp::getWriteLoad : is "
+            "initialized",
+            init_);
 
         auto const it{shards_.find(acquireIndex_)};
         if (it == shards_.end())
@@ -1141,7 +1170,9 @@ DatabaseShardImp::storeLedger(std::shared_ptr<Ledger const> const& srcLedger)
     std::shared_ptr<Shard> shard;
     {
         std::lock_guard lock(mutex_);
-        XRPL_ASSERT(init_);
+        XRPL_ASSERT(
+            "ripple::NodeStore::DatabaseShardImp::storeLedger : is initialized",
+            init_);
 
         if (shardIndex != acquireIndex_)
         {
@@ -1174,7 +1205,9 @@ DatabaseShardImp::sweep()
     std::vector<std::weak_ptr<Shard>> shards;
     {
         std::lock_guard lock(mutex_);
-        XRPL_ASSERT(init_);
+        XRPL_ASSERT(
+            "ripple::NodeStore::DatabaseShardImp::sweep : is initialized",
+            init_);
 
         shards.reserve(shards_.size());
         for (auto const& e : shards_)
@@ -1460,7 +1493,9 @@ DatabaseShardImp::findAcquireIndex(
         }
     }
 
-    XRPL_UNREACHABLE();
+    XRPL_UNREACHABLE(
+        "ripple::NodeStore::DatabaseShardImp::findAcquireIndex : no index "
+        "available");
     return std::nullopt;
 }
 
@@ -1516,6 +1551,8 @@ DatabaseShardImp::finalizeShard(
             {
                 // Not a historical shard. Shift recent shards if necessary
                 XRPL_ASSERT(
+                    "ripple::NodeStore::DatabaseShardImp::finalizeShard : "
+                    "valid shard index",
                     !boundaryIndex || shard->index() - boundaryIndex <= 1);
                 relocateOutdatedShards(lock);
 

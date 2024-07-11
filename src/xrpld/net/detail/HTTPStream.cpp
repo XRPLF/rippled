@@ -33,7 +33,7 @@ SSLStream::SSLStream(
 boost::asio::ip::tcp::socket&
 SSLStream::getStream()
 {
-    XRPL_ASSERT(stream_);
+    XRPL_ASSERT("ripple:: SSLStream::getStream : stream is set", stream_);
     return stream_->next_layer();
 }
 
@@ -126,7 +126,7 @@ RawStream::RawStream(boost::asio::io_service::strand& strand) : strand_(strand)
 boost::asio::ip::tcp::socket&
 RawStream::getStream()
 {
-    XRPL_ASSERT(stream_);
+    XRPL_ASSERT("ripple:: RawStream::getStream : stream is set", stream_);
     return *stream_;
 }
 

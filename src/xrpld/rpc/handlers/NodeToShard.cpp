@@ -78,7 +78,7 @@ doNodeToShard(RPC::JsonContext& context)
     else
     {
         // Shouldn't happen
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE("ripple::doNodeToShard : invalid action");
         return rpcError(rpcINTERNAL);
     }
 }

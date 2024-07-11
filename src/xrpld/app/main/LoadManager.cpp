@@ -73,7 +73,9 @@ void
 LoadManager::start()
 {
     JLOG(journal_.debug()) << "Starting";
-    XRPL_ASSERT(!thread_.joinable());
+    XRPL_ASSERT(
+        "ripple::LoadManager::start : thread not joinable",
+        !thread_.joinable());
 
     thread_ = std::thread{&LoadManager::run, this};
 }

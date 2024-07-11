@@ -224,7 +224,7 @@ Logs::fromSeverity(beast::severities::Severity level)
             return lsERROR;
 
         default:
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE("ripple::Logs::fromSeverity : invalid severity");
             [[fallthrough]];
         case kFatal:
             break;
@@ -250,7 +250,7 @@ Logs::toSeverity(LogSeverity level)
         case lsERROR:
             return kError;
         default:
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE("ripple::Logs::toSeverity : invalid severity");
             [[fallthrough]];
         case lsFATAL:
             break;
@@ -277,7 +277,7 @@ Logs::toString(LogSeverity s)
         case lsFATAL:
             return "Fatal";
         default:
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE("ripple::Logs::toString : invalid severity");
             return "Unknown";
     }
 }
@@ -341,7 +341,7 @@ Logs::format(
             output += "ERR ";
             break;
         default:
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE("ripple::Logs::format : invalid severity");
             [[fallthrough]];
         case kFatal:
             output += "FTL ";

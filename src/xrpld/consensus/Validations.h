@@ -434,7 +434,9 @@ private:
         Validation const& val,
         std::optional<std::pair<Seq, ID>> prior)
     {
-        XRPL_ASSERT(val.trusted());
+        XRPL_ASSERT(
+            "ripple::Validations::updateTrie : trusted input validation",
+            val.trusted());
 
         // Clear any prior acquiring ledger for this node
         if (prior)
@@ -714,7 +716,8 @@ public:
     setSeqToKeep(Seq const& low, Seq const& high)
     {
         std::lock_guard lock{mutex_};
-        XRPL_ASSERT(low < high);
+        XRPL_ASSERT(
+            "ripple::Validations::setSeqToKeep : valid inputs", low < high);
         toKeep_ = {low, high};
     }
 

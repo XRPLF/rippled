@@ -30,12 +30,13 @@ BookDirs::BookDirs(ReadView const& view, Book const& book)
     , next_quality_(getQualityNext(root_))
     , key_(view_->succ(root_, next_quality_).value_or(beast::zero))
 {
-    XRPL_ASSERT(root_ != beast::zero);
+    XRPL_ASSERT(
+        "ripple::BookDirs::BookDirs : nonzero root", root_ != beast::zero);
     if (key_ != beast::zero)
     {
         if (!cdirFirst(*view_, key_, sle_, entry_, index_))
         {
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE("ripple::BookDirs::BookDirs : directory is empty");
         }
     }
 }
@@ -70,7 +71,10 @@ BookDirs::const_iterator::operator==(
     if (view_ == nullptr || other.view_ == nullptr)
         return false;
 
-    XRPL_ASSERT(view_ == other.view_ && root_ == other.root_);
+    XRPL_ASSERT(
+        "ripple::BookDirs::const_iterator::operator== : views and roots are "
+        "matching",
+        view_ == other.view_ && root_ == other.root_);
     return entry_ == other.entry_ && cur_key_ == other.cur_key_ &&
         index_ == other.index_;
 }
@@ -78,7 +82,9 @@ BookDirs::const_iterator::operator==(
 BookDirs::const_iterator::reference
 BookDirs::const_iterator::operator*() const
 {
-    XRPL_ASSERT(index_ != beast::zero);
+    XRPL_ASSERT(
+        "ripple::BookDirs::const_iterator::operator* : nonzero index",
+        index_ != beast::zero);
     if (!cache_)
         cache_ = view_->read(keylet::offer(index_));
     return *cache_;
@@ -89,7 +95,9 @@ BookDirs::const_iterator::operator++()
 {
     using beast::zero;
 
-    XRPL_ASSERT(index_ != zero);
+    XRPL_ASSERT(
+        "ripple::BookDirs::const_iterator::operator++ : nonzero index",
+        index_ != zero);
     if (!cdirNext(*view_, cur_key_, sle_, entry_, index_))
     {
         if (index_ != 0 ||
@@ -102,7 +110,9 @@ BookDirs::const_iterator::operator++()
         }
         else if (!cdirFirst(*view_, cur_key_, sle_, entry_, index_))
         {
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::BookDirs::const_iterator::operator++ : directory is "
+                "empty");
         }
     }
 
@@ -113,7 +123,9 @@ BookDirs::const_iterator::operator++()
 BookDirs::const_iterator
 BookDirs::const_iterator::operator++(int)
 {
-    XRPL_ASSERT(index_ != beast::zero);
+    XRPL_ASSERT(
+        "ripple::BookDirs::const_iterator::operator++(int) : nonzero index",
+        index_ != beast::zero);
     const_iterator tmp(*this);
     ++(*this);
     return tmp;

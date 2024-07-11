@@ -4426,8 +4426,7 @@ private:
                             c.num_create_attn_sent += sendCreateAttestations(
                                 i, bridge, create_claims);
                         }
-                        assert(
-                            claims.create_claims[c.claim_count].empty());
+                        assert(claims.create_claims[c.claim_count].empty());
                     }
                 }
                 for (auto& [bridge, c] : counters)

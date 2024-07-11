@@ -235,7 +235,9 @@ Number::operator+=(Number const& y)
         *this = Number{};
         return *this;
     }
-    XRPL_ASSERT(isnormal() && y.isnormal());
+    XRPL_ASSERT(
+        "ripple::Number::operator+=(Number) : is normal",
+        isnormal() && y.isnormal());
     auto xm = mantissa();
     auto xe = exponent();
     int xn = 1;
@@ -374,7 +376,9 @@ Number::operator*=(Number const& y)
         *this = y;
         return *this;
     }
-    XRPL_ASSERT(isnormal() && y.isnormal());
+    XRPL_ASSERT(
+        "ripple::Number::operator*=(Number) : is normal",
+        isnormal() && y.isnormal());
     auto xm = mantissa();
     auto xe = exponent();
     int xn = 1;
@@ -428,7 +432,9 @@ Number::operator*=(Number const& y)
             std::to_string(xe));
     mantissa_ = xm * zn;
     exponent_ = xe;
-    XRPL_ASSERT(isnormal() || *this == Number{});
+    XRPL_ASSERT(
+        "ripple::Number::operator*=(Number) : result is normal",
+        isnormal() || *this == Number{});
     return *this;
 }
 
@@ -531,7 +537,8 @@ to_string(Number const& amount)
         negative = true;
     }
 
-    XRPL_ASSERT(exponent + 43 > 0);
+    XRPL_ASSERT(
+        "ripple::to_string(Number) : minimum exponent", exponent + 43 > 0);
 
     ptrdiff_t const pad_prefix = 27;
     ptrdiff_t const pad_suffix = 23;
@@ -557,7 +564,9 @@ to_string(Number const& amount)
     if (std::distance(pre_from, pre_to) > pad_prefix)
         pre_from += pad_prefix;
 
-    XRPL_ASSERT(post_to >= post_from);
+    XRPL_ASSERT(
+        "ripple::to_string(Number) : first distance check",
+        post_to >= post_from);
 
     pre_from = std::find_if(pre_from, pre_to, [](char c) { return c != '0'; });
 
@@ -566,7 +575,9 @@ to_string(Number const& amount)
     if (std::distance(post_from, post_to) > pad_suffix)
         post_to -= pad_suffix;
 
-    XRPL_ASSERT(post_to >= post_from);
+    XRPL_ASSERT(
+        "ripple::to_string(Number) : second distance check",
+        post_to >= post_from);
 
     post_to = std::find_if(
                   std::make_reverse_iterator(post_to),

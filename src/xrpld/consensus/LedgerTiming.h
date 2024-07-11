@@ -82,7 +82,9 @@ getNextLedgerTimeResolution(
     bool previousAgree,
     Seq ledgerSeq)
 {
-    XRPL_ASSERT(ledgerSeq != Seq{0});
+    XRPL_ASSERT(
+        "ripple:getNextLedgerTimeResolution : valid ledger sequence",
+        ledgerSeq != Seq{0});
 
     using namespace std::chrono;
     // Find the current resolution:
@@ -90,7 +92,9 @@ getNextLedgerTimeResolution(
         std::begin(ledgerPossibleTimeResolutions),
         std::end(ledgerPossibleTimeResolutions),
         previousResolution);
-    XRPL_ASSERT(iter != std::end(ledgerPossibleTimeResolutions));
+    XRPL_ASSERT(
+        "ripple:getNextLedgerTimeResolution : found time resolution",
+        iter != std::end(ledgerPossibleTimeResolutions));
 
     // This should never happen, but just as a precaution
     if (iter == std::end(ledgerPossibleTimeResolutions))

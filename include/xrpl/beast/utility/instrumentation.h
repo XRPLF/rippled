@@ -36,11 +36,11 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #endif
 
 #ifndef NDEBUG
-#define XRPL_ASSERT(...) ALWAYS_OR_UNREACHABLE(((bool)(__VA_ARGS__)), "", {})
-#define XRPL_UNREACHABLE() UNREACHABLE("", {})
+#define XRPL_ASSERT(M, ...) ALWAYS_OR_UNREACHABLE(((bool)(__VA_ARGS__)), M, {})
+#define XRPL_UNREACHABLE(M) UNREACHABLE(M, {})
 #else
 #define XRPL_ASSERT(...)
-#define XRPL_UNREACHABLE()
+#define XRPL_UNREACHABLE(M)
 #endif
 
 #endif

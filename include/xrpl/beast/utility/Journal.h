@@ -205,7 +205,9 @@ public:
         */
         Stream(Sink& sink, Severity level) : m_sink(sink), m_level(level)
         {
-            XRPL_ASSERT(m_level < severities::kDisabled);
+            XRPL_ASSERT(
+                "beast::Journal::Stream::Stream : maximum level",
+                m_level < severities::kDisabled);
         }
 
         /** Construct or copy another Stream. */

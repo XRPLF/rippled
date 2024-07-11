@@ -613,7 +613,9 @@ public:
     virtual ServerHandler&
     getServerHandler() override
     {
-        XRPL_ASSERT(serverHandler_);
+        XRPL_ASSERT(
+            "ripple::ApplicationImp::getServerHandler : non-null server handle",
+            serverHandler_);
         return *serverHandler_;
     }
 
@@ -889,35 +891,45 @@ public:
     Overlay&
     overlay() override
     {
-        XRPL_ASSERT(overlay_);
+        XRPL_ASSERT(
+            "ripple::ApplicationImp::overlay : non-null overlay", overlay_);
         return *overlay_;
     }
 
     TxQ&
     getTxQ() override
     {
-        XRPL_ASSERT(txQ_.get() != nullptr);
+        XRPL_ASSERT(
+            "ripple::ApplicationImp::getTxQ : non-null transaction queue",
+            txQ_.get() != nullptr);
         return *txQ_;
     }
 
     RelationalDatabase&
     getRelationalDatabase() override
     {
-        XRPL_ASSERT(mRelationalDatabase.get() != nullptr);
+        XRPL_ASSERT(
+            "ripple::ApplicationImp::getRelationalDatabase : non-null "
+            "relational database",
+            mRelationalDatabase.get() != nullptr);
         return *mRelationalDatabase;
     }
 
     DatabaseCon&
     getWalletDB() override
     {
-        XRPL_ASSERT(mWalletDB.get() != nullptr);
+        XRPL_ASSERT(
+            "ripple::ApplicationImp::getWalletDB : non-null wallet database",
+            mWalletDB.get() != nullptr);
         return *mWalletDB;
     }
 
     ReportingETL&
     getReportingETL() override
     {
-        XRPL_ASSERT(reportingETL_.get() != nullptr);
+        XRPL_ASSERT(
+            "ripple::ApplicationImp::getReportingETL : non-null reporting ETL",
+            reportingETL_.get() != nullptr);
         return *reportingETL_;
     }
 
@@ -932,7 +944,10 @@ public:
     bool
     initRelationalDatabase()
     {
-        XRPL_ASSERT(mWalletDB.get() == nullptr);
+        XRPL_ASSERT(
+            "ripple::ApplicationImp::initRelationalDatabase : null wallet "
+            "database",
+            mWalletDB.get() == nullptr);
 
         try
         {
@@ -1375,7 +1390,8 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             for (auto const& [a, vote] : amendments)
             {
                 auto const f = ripple::getRegisteredFeature(a);
-                XRPL_ASSERT(f);
+                XRPL_ASSERT(
+                    "ripple::ApplicationImp::setup : registered feature", f);
                 if (f)
                     supported.emplace_back(a, *f, vote);
             }
@@ -1905,8 +1921,9 @@ ApplicationImp::startGenesisLedger()
         std::make_shared<Ledger>(*genesis, timeKeeper().closeTime());
     next->updateSkipList();
     XRPL_ASSERT(
+        "ripple::ApplicationImp::startGenesisLedger : valid ledger fees",
         next->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-        next->read(keylet::fees()));
+            next->read(keylet::fees()));
     next->setImmutable();
     openLedger_.emplace(next, cachedSLEs_, logs_->journal("OpenLedger"));
     m_ledgerMaster->storeLedger(next);
@@ -1926,8 +1943,9 @@ ApplicationImp::getLastFullLedger()
             return ledger;
 
         XRPL_ASSERT(
+            "ripple::ApplicationImp::getLastFullLedger : valid ledger fees",
             ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-            ledger->read(keylet::fees()));
+                ledger->read(keylet::fees()));
         ledger->setImmutable();
 
         if (getLedgerMaster().haveLedger(seq))
@@ -2080,8 +2098,9 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
         loadLedger->stateMap().flushDirty(hotACCOUNT_NODE);
 
         XRPL_ASSERT(
+            "ripple::ApplicationImp::loadLedgerFromFile : valid ledger fees",
             loadLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-            loadLedger->read(keylet::fees()));
+                loadLedger->read(keylet::fees()));
         loadLedger->setAccepted(
             closeTime, closeTimeResolution, !closeTimeEstimated);
 
@@ -2179,7 +2198,9 @@ ApplicationImp::loadOldLedger(
                 if (!loadLedger)
                 {
                     JLOG(m_journal.fatal()) << "Replay ledger missing/damaged";
-                    XRPL_UNREACHABLE();
+                    XRPL_UNREACHABLE(
+                        "ripple::ApplicationImp::loadOldLedger : replay ledger "
+                        "missing/damaged");
                     return false;
                 }
             }
@@ -2208,21 +2229,26 @@ ApplicationImp::loadOldLedger(
         if (loadLedger->info().accountHash.isZero())
         {
             JLOG(m_journal.fatal()) << "Ledger is empty.";
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::ApplicationImp::loadOldLedger : ledger is empty");
             return false;
         }
 
         if (!loadLedger->walkLedger(journal("Ledger"), true))
         {
             JLOG(m_journal.fatal()) << "Ledger is missing nodes.";
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::ApplicationImp::loadOldLedger : ledger is missing "
+                "nodes");
             return false;
         }
 
         if (!loadLedger->assertSensible(journal("Ledger")))
         {
             JLOG(m_journal.fatal()) << "Ledger is not sensible.";
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::ApplicationImp::loadOldLedger : ledger is not "
+                "sensible");
             return false;
         }
 
@@ -2348,8 +2374,11 @@ ApplicationImp::journal(std::string const& name)
 bool
 ApplicationImp::nodeToShards()
 {
-    XRPL_ASSERT(overlay_);
-    XRPL_ASSERT(!config_->standalone());
+    XRPL_ASSERT(
+        "ripple::ApplicationImp::nodeToShards : non-null overlay", overlay_);
+    XRPL_ASSERT(
+        "ripple::ApplicationImp::nodeToShards : is not standalone",
+        !config_->standalone());
 
     if (config_->section(ConfigSection::shardDatabase()).empty())
     {

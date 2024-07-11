@@ -149,7 +149,8 @@ Change::doApply()
         case ttUNL_MODIFY:
             return applyUNLModify();
         default:
-            XRPL_ASSERT(0);
+            XRPL_UNREACHABLE(
+                "ripple::Change::doApply : invalid transaction type");
             return tefFAILURE;
     }
 }
@@ -157,7 +158,8 @@ Change::doApply()
 void
 Change::preCompute()
 {
-    XRPL_ASSERT(account_ == beast::zero);
+    XRPL_ASSERT(
+        "ripple::Change::preCompute : zero account", account_ == beast::zero);
 }
 
 void

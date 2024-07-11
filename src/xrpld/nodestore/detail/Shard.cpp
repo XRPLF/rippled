@@ -712,9 +712,11 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
             return fail("failed storing to SQLite databases");
 
         XRPL_ASSERT(
+            "ripple::NodeStore::Shard::finalize : matching ledger and valid "
+            "ledger fees",
             ledger->info().seq == ledgerSeq &&
-            (ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-             ledger->read(keylet::fees())));
+                (ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
+                 ledger->read(keylet::fees())));
 
         hash = ledger->info().parentHash;
         next = std::move(ledger);
@@ -813,7 +815,9 @@ Shard::finalize(bool writeSQLite, std::optional<uint256> const& referenceHash)
         if (!open(lock))
             return fail("failed to open");
 
-        XRPL_ASSERT(state_ == ShardState::finalized);
+        XRPL_ASSERT(
+            "ripple::NodeStore::Shard::finalize : valid shard state",
+            state_ == ShardState::finalized);
 
         // Allow all other threads work with the shard
         busy_ = false;

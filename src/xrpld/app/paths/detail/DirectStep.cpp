@@ -514,7 +514,9 @@ DirectStepI<TDerived>::revImp(
 
     auto const [srcQOut, dstQIn] =
         qualities(sb, srcDebtDir, StrandDirection::reverse);
-    XRPL_ASSERT(static_cast<TDerived const*>(this)->verifyDstQualityIn(dstQIn));
+    XRPL_ASSERT(
+        "ripple::DirectStepI : valid destination quality",
+        static_cast<TDerived const*>(this)->verifyDstQualityIn(dstQIn));
 
     Issue const srcToDstIss(currency_, redeems(srcDebtDir) ? dst_ : src_);
 
@@ -633,7 +635,7 @@ DirectStepI<TDerived>::fwdImp(
     boost::container::flat_set<uint256>& /*ofrsToRm*/,
     IOUAmount const& in)
 {
-    XRPL_ASSERT(cache_);
+    XRPL_ASSERT("ripple::DirectStepI::fwdImp : cache is set", cache_);
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
@@ -720,7 +722,7 @@ DirectStepI<TDerived>::validFwd(
 
     auto const savCache = *cache_;
 
-    XRPL_ASSERT(!in.native);
+    XRPL_ASSERT("ripple::DirectStepI::validFwd : input is not XRP", !in.native);
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
@@ -784,8 +786,11 @@ DirectStepI<TDerived>::qualitiesSrcIssues(
 {
     // Charge a transfer rate when issuing and previous step redeems
 
-    XRPL_ASSERT(static_cast<TDerived const*>(this)->verifyPrevStepDebtDirection(
-        prevStepDebtDirection));
+    XRPL_ASSERT(
+        "ripple::DirectStepI::qualitiesSrcIssues : will prevStepDebtDirection "
+        "issue",
+        static_cast<TDerived const*>(this)->verifyPrevStepDebtDirection(
+            prevStepDebtDirection));
 
     std::uint32_t const srcQOut = redeems(prevStepDebtDirection)
         ? transferRate(sb, src_).value
@@ -924,7 +929,9 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         {
             if (!ctx.prevStep)
             {
-                XRPL_ASSERT(0);  // prev seen book without a prev step!?!
+                XRPL_UNREACHABLE(
+                    "ripple::DirectStepI::check : prev seen book without a "
+                    "prev step");
                 return temBAD_PATH_LOOP;
             }
 

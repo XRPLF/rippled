@@ -201,8 +201,9 @@ applyVote(
     }
 
     XRPL_ASSERT(
+        "ripple::applyVote : has auction slot",
         !ctx_.view().rules().enabled(fixInnerObjTemplate) ||
-        ammSle->isFieldPresent(sfAuctionSlot));
+            ammSle->isFieldPresent(sfAuctionSlot));
 
     // Update the vote entries and the trading/discounted fee.
     ammSle->setFieldArray(sfVoteSlots, updatedVoteSlots);

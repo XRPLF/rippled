@@ -176,7 +176,7 @@ public:
 inline std::vector<uint256>
 getMarkers(size_t numMarkers)
 {
-    XRPL_ASSERT(numMarkers <= 256);
+    XRPL_ASSERT("ripple::getMarkers : maximum input", numMarkers <= 256);
 
     unsigned char incr = 256 / numMarkers;
 

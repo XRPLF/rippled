@@ -48,8 +48,12 @@ DeferredCredits::credit(
     STAmount const& amount,
     STAmount const& preCreditSenderBalance)
 {
-    XRPL_ASSERT(sender != receiver);
-    XRPL_ASSERT(!amount.negative());
+    XRPL_ASSERT(
+        "ripple::detail::DeferredCredits::credit : sender is not receiver",
+        sender != receiver);
+    XRPL_ASSERT(
+        "ripple::detail::DeferredCredits::credit : positive amount",
+        !amount.negative());
 
     auto const k = makeKey(sender, receiver, amount.getCurrency());
     auto i = credits_.find(k);
@@ -252,14 +256,14 @@ PaymentSandbox::adjustOwnerCountHook(
 void
 PaymentSandbox::apply(RawView& to)
 {
-    XRPL_ASSERT(!ps_);
+    XRPL_ASSERT("ripple::PaymentSandbox::apply : non-null sandbox", !ps_);
     items_.apply(to);
 }
 
 void
 PaymentSandbox::apply(PaymentSandbox& to)
 {
-    XRPL_ASSERT(ps_ == &to);
+    XRPL_ASSERT("ripple::PaymentSandbox::apply : matching sandbox", ps_ == &to);
     items_.apply(to);
     tab_.apply(to.tab_);
 }
@@ -343,7 +347,10 @@ PaymentSandbox::balanceChanges(ReadView const& view) const
         {
             // modify
             auto const at = after->getType();
-            XRPL_ASSERT(at == before->getType());
+            XRPL_ASSERT(
+                "ripple::PaymentSandbox::balanceChanges : after and before "
+                "types matching",
+                at == before->getType());
             switch (at)
             {
                 case ltACCOUNT_ROOT:

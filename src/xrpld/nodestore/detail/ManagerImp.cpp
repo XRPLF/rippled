@@ -97,7 +97,9 @@ ManagerImp::erase(Factory& factory)
         std::find_if(list_.begin(), list_.end(), [&factory](Factory* other) {
             return other == &factory;
         });
-    XRPL_ASSERT(iter != list_.end());
+    XRPL_ASSERT(
+        "ripple::NodeStore::ManagerImp::erase : valid input",
+        iter != list_.end());
     list_.erase(iter);
 }
 

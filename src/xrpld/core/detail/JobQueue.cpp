@@ -55,7 +55,9 @@ JobQueue::JobQueue(
                 std::piecewise_construct,
                 std::forward_as_tuple(jt.type()),
                 std::forward_as_tuple(jt, m_collector, logs)));
-            XRPL_ASSERT(result.second == true);
+            XRPL_ASSERT(
+                "ripple::JobQueue::JobQueue : jobs added",
+                result.second == true);
             (void)result.second;
         }
     }
@@ -80,10 +82,14 @@ JobQueue::addRefCountedJob(
     std::string const& name,
     JobFunction const& func)
 {
-    XRPL_ASSERT(type != jtINVALID);
+    XRPL_ASSERT(
+        "ripple::JobQueue::addRefCountedJob : valid input job type",
+        type != jtINVALID);
 
     auto iter(m_jobData.find(type));
-    XRPL_ASSERT(iter != m_jobData.end());
+    XRPL_ASSERT(
+        "ripple::JobQueue::addRefCountedJob : job type found in jobs",
+        iter != m_jobData.end());
     if (iter == m_jobData.end())
         return false;
 
@@ -94,8 +100,10 @@ JobQueue::addRefCountedJob(
     // FIXME: Workaround incorrect client shutdown ordering
     // do not add jobs to a queue with no threads
     XRPL_ASSERT(
+        "ripple::JobQueue::addRefCountedJob : threads available or job "
+        "requires no threads",
         (type >= jtCLIENT && type <= jtCLIENT_WEBSOCKET) ||
-        m_workers.getNumberOfThreads() > 0);
+            m_workers.getNumberOfThreads() > 0);
 
     {
         std::lock_guard lock(m_mutex);
@@ -104,8 +112,12 @@ JobQueue::addRefCountedJob(
         auto const& job = *result.first;
 
         JobType const type(job.getType());
-        XRPL_ASSERT(type != jtINVALID);
-        XRPL_ASSERT(m_jobSet.find(job) != m_jobSet.end());
+        XRPL_ASSERT(
+            "ripple::JobQueue::addRefCountedJob : has valid job type",
+            type != jtINVALID);
+        XRPL_ASSERT(
+            "ripple::JobQueue::addRefCountedJob : job found",
+            m_jobSet.find(job) != m_jobSet.end());
         perfLog_.jobQueue(type);
 
         JobTypeData& data(getJobTypeData(type));
@@ -165,7 +177,9 @@ std::unique_ptr<LoadEvent>
 JobQueue::makeLoadEvent(JobType t, std::string const& name)
 {
     JobDataMap::iterator iter(m_jobData.find(t));
-    XRPL_ASSERT(iter != m_jobData.end());
+    XRPL_ASSERT(
+        "ripple::JobQueue::makeLoadEvent : valid job type input",
+        iter != m_jobData.end());
 
     if (iter == m_jobData.end())
         return {};
@@ -180,7 +194,9 @@ JobQueue::addLoadEvents(JobType t, int count, std::chrono::milliseconds elapsed)
         LogicError("JobQueue::addLoadEvents() called after JobQueue stopped");
 
     JobDataMap::iterator iter(m_jobData.find(t));
-    XRPL_ASSERT(iter != m_jobData.end());
+    XRPL_ASSERT(
+        "ripple::JobQueue::addLoadEvents : valid job type input",
+        iter != m_jobData.end());
     iter->second.load().addSamples(count, elapsed);
 }
 
@@ -206,7 +222,8 @@ JobQueue::getJson(int c)
 
     for (auto& x : m_jobData)
     {
-        XRPL_ASSERT(x.first != jtINVALID);
+        XRPL_ASSERT(
+            "ripple::JobQueue::getJson : valid job type", x.first != jtINVALID);
 
         if (x.first == jtGENERIC)
             continue;
@@ -261,7 +278,9 @@ JobTypeData&
 JobQueue::getJobTypeData(JobType type)
 {
     JobDataMap::iterator c(m_jobData.find(type));
-    XRPL_ASSERT(c != m_jobData.end());
+    XRPL_ASSERT(
+        "ripple::JobQueue::getJobTypeData : valid job type input",
+        c != m_jobData.end());
 
     // NIKB: This is ugly and I hate it. We must remove jtINVALID completely
     //       and use something sane.
@@ -286,9 +305,13 @@ JobQueue::stop()
         std::unique_lock<std::mutex> lock(m_mutex);
         cv_.wait(
             lock, [this] { return m_processCount == 0 && m_jobSet.empty(); });
-        XRPL_ASSERT(m_processCount == 0);
-        XRPL_ASSERT(m_jobSet.empty());
-        XRPL_ASSERT(nSuspend_ == 0);
+        XRPL_ASSERT(
+            "ripple::JobQueue::stop : all processes completed",
+            m_processCount == 0);
+        XRPL_ASSERT(
+            "ripple::JobQueue::stop : all jobs completed", m_jobSet.empty());
+        XRPL_ASSERT(
+            "ripple::JobQueue::stop : no coros suspended", nSuspend_ == 0);
         stopped_ = true;
     }
 }
@@ -302,28 +325,36 @@ JobQueue::isStopped() const
 void
 JobQueue::getNextJob(Job& job)
 {
-    XRPL_ASSERT(!m_jobSet.empty());
+    XRPL_ASSERT(
+        "ripple::JobQueue::getNextJob : non-empty jobs", !m_jobSet.empty());
 
     std::set<Job>::const_iterator iter;
     for (iter = m_jobSet.begin(); iter != m_jobSet.end(); ++iter)
     {
         JobType const type = iter->getType();
-        XRPL_ASSERT(type != jtINVALID);
+        XRPL_ASSERT(
+            "ripple::JobQueue::getNextJob : valid job type", type != jtINVALID);
 
         JobTypeData& data(getJobTypeData(type));
-        XRPL_ASSERT(data.running <= getJobLimit(type));
+        XRPL_ASSERT(
+            "ripple::JobQueue::getNextJob : maximum jobs running",
+            data.running <= getJobLimit(type));
 
         // Run this job if we're running below the limit.
         if (data.running < getJobLimit(data.type()))
         {
-            XRPL_ASSERT(data.waiting > 0);
+            XRPL_ASSERT(
+                "ripple::JobQueue::getNextJob : positive data waiting",
+                data.waiting > 0);
             --data.waiting;
             ++data.running;
             break;
         }
     }
 
-    XRPL_ASSERT(iter != m_jobSet.end());
+    XRPL_ASSERT(
+        "ripple::JobQueue::getNextJob : found next job",
+        iter != m_jobSet.end());
     job = *iter;
     m_jobSet.erase(iter);
 }
@@ -331,14 +362,18 @@ JobQueue::getNextJob(Job& job)
 void
 JobQueue::finishJob(JobType type)
 {
-    XRPL_ASSERT(type != jtINVALID);
+    XRPL_ASSERT(
+        "ripple::JobQueue::finishJob : valid input job type",
+        type != jtINVALID);
 
     JobTypeData& data = getJobTypeData(type);
 
     // Queue a deferred task if possible
     if (data.deferred > 0)
     {
-        XRPL_ASSERT(data.running + data.waiting >= getJobLimit(type));
+        XRPL_ASSERT(
+            "ripple::JobQueue::finishJob : job limit",
+            data.running + data.waiting >= getJobLimit(type));
 
         --data.deferred;
         m_workers.addTask();
@@ -404,7 +439,9 @@ int
 JobQueue::getJobLimit(JobType type)
 {
     JobTypeInfo const& j(JobTypes::instance().get(type));
-    XRPL_ASSERT(j.type() != jtINVALID);
+    XRPL_ASSERT(
+        "ripple::JobQueue::getJobLimit : valid job type",
+        j.type() != jtINVALID);
 
     return j.limit();
 }

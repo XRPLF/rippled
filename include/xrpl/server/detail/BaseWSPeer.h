@@ -25,14 +25,17 @@
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/BasePeer.h>
 #include <xrpl/server/detail/LowestLayer.h>
 
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/websocket.hpp>
+#include <boost/logic/tribool.hpp>
 
 #include <functional>
+#include <list>
 
 namespace ripple {
 
@@ -509,7 +512,9 @@ template <class String>
 void
 BaseWSPeer<Handler, Impl>::fail(error_code ec, String const& what)
 {
-    XRPL_ASSERT(strand_.running_in_this_thread());
+    XRPL_ASSERT(
+        "ripple::BaseWSPeer::fail : strand in this thread",
+        strand_.running_in_this_thread());
 
     cancel_timer();
     if (!ec_ && ec != boost::asio::error::operation_aborted)

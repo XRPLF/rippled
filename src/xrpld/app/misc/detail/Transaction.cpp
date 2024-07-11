@@ -84,7 +84,10 @@ Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
             return INCLUDED;
     }
 
-    XRPL_ASSERT(c == txnSqlUnknown);
+    XRPL_ASSERT(
+        "ripple::Transaction::sqlTransactionStatus : unknown transaction "
+        "status",
+        c == txnSqlUnknown);
     return INVALID;
 }
 

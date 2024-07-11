@@ -59,7 +59,8 @@ ReportingETL::consumeLedgerData(
     size_t num = 0;
     while (!stopping_ && (sle = writeQueue.pop()))
     {
-        XRPL_ASSERT(sle);
+        XRPL_ASSERT(
+            "ripple::ReportingETL::consumeLedgerData : non-null SLE", sle);
         if (!ledger->exists(sle->key()))
             ledger->rawInsert(sle);
 
@@ -113,7 +114,8 @@ ReportingETL::loadInitialLedger(uint32_t startingSequence)
     {
         JLOG(journal_.fatal()) << __func__ << " : "
                                << "Database is not empty";
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::ReportingETL::loadInitialLedger : non-empty database");
         return {};
     }
 
@@ -190,8 +192,9 @@ ReportingETL::flushLedger(std::shared_ptr<Ledger>& ledger)
     auto& ledgerHash = ledger->info().hash;
 
     XRPL_ASSERT(
+        "ripple::ReportingETL::flushLedger : valid ledger fees",
         ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-        ledger->read(keylet::fees()));
+            ledger->read(keylet::fees()));
     ledger->setImmutable(false);
     auto start = std::chrono::system_clock::now();
 
@@ -230,7 +233,9 @@ ReportingETL::flushLedger(std::shared_ptr<Ledger>& ledger)
     {
         JLOG(journal_.fatal()) << __func__ << " : "
                                << "Flushed 0 nodes from state map";
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::ReportingETL::flushLedger : flushed 0 nodes from state "
+            "map");
     }
     if (numTxFlushed == 0)
     {
@@ -495,7 +500,8 @@ ReportingETL::runETLPipeline(uint32_t startSequence)
         app_.getLedgerMaster().getLedgerBySeq(startSequence - 1));
     if (!parent)
     {
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::ReportingETL::runETLPipeline : parent ledger is null");
         Throw<std::runtime_error>("runETLPipeline: parent ledger is null");
     }
 
@@ -564,7 +570,10 @@ ReportingETL::runETLPipeline(uint32_t startSequence)
                              &transformQueue]() {
         beast::setCurrentThreadName("rippled: ReportingETL transform");
 
-        XRPL_ASSERT(parent);
+        XRPL_ASSERT(
+            "ripple::ReportingETL::runETLPipeline::transformer : non-null "
+            "parent",
+            parent);
         parent = std::make_shared<Ledger>(*parent, NetClock::time_point{});
         while (!writeConflict)
         {

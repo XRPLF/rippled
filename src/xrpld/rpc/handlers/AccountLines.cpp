@@ -186,7 +186,7 @@ doAccountLines(RPC::JsonContext& context)
                     std::shared_ptr<SLE const> const& sleCur) {
                     if (!sleCur)
                     {
-                        XRPL_UNREACHABLE();
+                        XRPL_UNREACHABLE("ripple::doAccountLines : null SLE");
                         return false;
                     }
 

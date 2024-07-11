@@ -68,8 +68,11 @@ STVector256::isDefault() const
 void
 STVector256::add(Serializer& s) const
 {
-    XRPL_ASSERT(getFName().isBinary());
-    XRPL_ASSERT(getFName().fieldType == STI_VECTOR256);
+    XRPL_ASSERT(
+        "ripple::STVector256::add : field is binary", getFName().isBinary());
+    XRPL_ASSERT(
+        "ripple::STVector256::add : valid field type",
+        getFName().fieldType == STI_VECTOR256);
     s.addVL(mValue.begin(), mValue.end(), mValue.size() * (256 / 8));
 }
 

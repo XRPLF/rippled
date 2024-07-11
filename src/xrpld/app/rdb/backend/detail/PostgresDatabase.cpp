@@ -61,7 +61,9 @@ public:
 #endif
           )
     {
-        XRPL_ASSERT(config.reporting());
+        XRPL_ASSERT(
+            "ripple::PostgresDatabaseImp::PostgresDatabaseImp : reporting mode",
+            config.reporting());
 #ifdef RIPPLED_REPORTING
         if (config.reporting() && !config.reportingReadOnly())  // use pg
         {
@@ -169,7 +171,7 @@ loadLedgerInfos(
     std::vector<LedgerInfo> infos;
 #ifdef RIPPLED_REPORTING
     auto log = app.journal("Ledger");
-    XRPL_ASSERT(app.config().reporting());
+    XRPL_ASSERT("ripple::loadLedgerInfos : reporting mode", config.reporting());app.config().reporting());
     std::stringstream sql;
     sql << "SELECT ledger_hash, prev_hash, account_set_hash, trans_set_hash, "
            "total_coins, closing_time, prev_closing_time, close_time_res, "
@@ -204,7 +206,7 @@ loadLedgerInfos(
     {
         JLOG(log.error()) << __func__ << " : Postgres response is null - sql = "
                           << sql.str();
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE("ripple::loadLedgerInfos : null response");
         return {};
     }
     else if (res.status() != PGRES_TUPLES_OK)
@@ -214,7 +216,7 @@ loadLedgerInfos(
                              "PGRES_TUPLES_OK but instead was "
                           << res.status() << " - msg  = " << res.msg()
                           << " - sql = " << sql.str();
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE("ripple::loadLedgerInfos : unexpected response");
         return {};
     }
 
@@ -234,7 +236,8 @@ loadLedgerInfos(
                               << " : Wrong number of fields in Postgres "
                                  "response. Expected 10, but got "
                               << res.nfields() << " . sql = " << sql.str();
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::loadLedgerInfos : unexpected number of fields");
             return {};
         }
     }
@@ -267,11 +270,14 @@ loadLedgerInfos(
 
         LedgerInfo info;
         if (!info.parentHash.parseHex(prevHash + 2))
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::loadLedgerInfos : failed to parse prevHash");
         if (!info.txHash.parseHex(txHash + 2))
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::loadLedgerInfos : failed to parse txHash");
         if (!info.accountHash.parseHex(accountHash + 2))
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::loadLedgerInfos : failed to parse accountHash");
         info.drops = totalCoins;
         info.closeTime = time_point{duration{closeTime}};
         info.parentCloseTime = time_point{duration{parentCloseTime}};
@@ -279,7 +285,7 @@ loadLedgerInfos(
         info.closeTimeResolution = duration{closeTimeRes};
         info.seq = ledgerSeq;
         if (!info.hash.parseHex(hash + 2))
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE("ripple::loadLedgerInfos : failed to parse hash");
         info.validated = true;
         infos.push_back(info);
     }
@@ -308,7 +314,8 @@ loadLedgerHelper(
             infos = loadLedgerInfos(pgPool, arg, app);
         },
         whichLedger);
-    XRPL_ASSERT(infos.size() <= 1);
+    XRPL_ASSERT(
+        "ripple::loadLedgerHelper : at most one header", infos.size() <= 1);
     if (!infos.size())
         return {};
     return infos[0];
@@ -410,7 +417,9 @@ processAccountTxStoredProcedureResult(
                     nodestoreHashHex.erase(0, 2);
                     uint256 nodestoreHash;
                     if (!nodestoreHash.parseHex(nodestoreHashHex))
-                        XRPL_UNREACHABLE();
+                        XRPL_UNREACHABLE(
+                            "ripple::processAccountTxStoredProcedureResult : "
+                            "failed to parse nodestoreHashHex");
 
                     if (nodestoreHash.isNonZero())
                     {
@@ -419,18 +428,25 @@ processAccountTxStoredProcedureResult(
                     }
                     else
                     {
-                        XRPL_UNREACHABLE();
+                        XRPL_UNREACHABLE(
+                            "ripple::processAccountTxStoredProcedureResult : "
+                            "nodestoreHashHex is zero");
                         return {ret, {rpcINTERNAL, "nodestoreHash is zero"}};
                     }
                 }
                 else
                 {
-                    XRPL_UNREACHABLE();
+                    XRPL_UNREACHABLE(
+                        "ripple::processAccountTxStoredProcedureResult : "
+                        "missing ledger_seq or nodestore_hash");
                     return {ret, {rpcINTERNAL, "missing postgres fields"}};
                 }
             }
 
-            XRPL_ASSERT(nodestoreHashes.size() == ledgerSequences.size());
+            XRPL_ASSERT(
+                "ripple::processAccountTxStoredProcedureResult : matching "
+                "sizes",
+                nodestoreHashes.size() == ledgerSequences.size());
             ret.transactions = flatFetchTransactions(
                 app,
                 nodestoreHashes,
@@ -442,13 +458,25 @@ processAccountTxStoredProcedureResult(
             if (result.isMember("marker"))
             {
                 auto& marker = result["marker"];
-                XRPL_ASSERT(marker.isMember("ledger"));
-                XRPL_ASSERT(marker.isMember("seq"));
+                XRPL_ASSERT(
+                    "ripple::processAccountTxStoredProcedureResult : has "
+                    "ledger element",
+                    marker.isMember("ledger"));
+                XRPL_ASSERT(
+                    "ripple::processAccountTxStoredProcedureResult : has seq "
+                    "element",
+                    marker.isMember("seq"));
                 ret.marker = {
                     marker["ledger"].asUInt(), marker["seq"].asUInt()};
             }
-            XRPL_ASSERT(result.isMember("ledger_index_min"));
-            XRPL_ASSERT(result.isMember("ledger_index_max"));
+            XRPL_ASSERT(
+                "ripple::processAccountTxStoredProcedureResult : has "
+                "ledger_index_min element",
+                result.isMember("ledger_index_min"));
+            XRPL_ASSERT(
+                "ripple::processAccountTxStoredProcedureResult : has "
+                "ledger_index_max element",
+                result.isMember("ledger_index_max"));
             ret.ledgerRange = {
                 result["ledger_index_min"].asUInt(),
                 result["ledger_index_max"].asUInt()};
@@ -599,7 +627,9 @@ PostgresDatabaseImp::writeLedgerAndTransactions(
         {
             std::stringstream msg;
             msg << "bulkWriteToTable : Postgres insert error: " << res.msg();
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::PostgresDatabaseImp::writeLedgerAndTransactions : "
+                "insert error");
             Throw<std::runtime_error>(msg.str());
         }
 
@@ -612,7 +642,9 @@ PostgresDatabaseImp::writeLedgerAndTransactions(
         JLOG(j_.error()) << __func__
                          << "Caught exception writing to Postgres : "
                          << e.what();
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::PostgresDatabaseImp::writeLedgerAndTransactions : error "
+            "while writing");
         return false;
     }
 #else
@@ -642,7 +674,9 @@ uint256
 PostgresDatabaseImp::getHashByIndex(LedgerIndex ledgerIndex)
 {
     auto infos = loadLedgerInfos(pgPool_, ledgerIndex, app_);
-    XRPL_ASSERT(infos.size() <= 1);
+    XRPL_ASSERT(
+        "ripple::PostgresDatabaseImp::getHashByIndex : at most one header",
+        infos.size() <= 1);
     if (infos.size())
         return infos[0].hash;
     return {};
@@ -653,7 +687,9 @@ PostgresDatabaseImp::getHashesByIndex(LedgerIndex ledgerIndex)
 {
     LedgerHashPair p;
     auto infos = loadLedgerInfos(pgPool_, ledgerIndex, app_);
-    XRPL_ASSERT(infos.size() <= 1);
+    XRPL_ASSERT(
+        "ripple::PostgresDatabaseImp::getHashesByIndex : at most one header",
+        infos.size() <= 1);
     if (infos.size())
     {
         p.ledgerHash = infos[0].hash;
@@ -694,7 +730,8 @@ PostgresDatabaseImp::getTxHashes(LedgerIndex seq)
     {
         JLOG(log.error()) << __func__
                           << " : Postgres response is null - query = " << query;
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::PostgresDatabaseImp::getTxHashes : null response");
         return {};
     }
     else if (res.status() != PGRES_TUPLES_OK)
@@ -704,7 +741,8 @@ PostgresDatabaseImp::getTxHashes(LedgerIndex seq)
                              "PGRES_TUPLES_OK but instead was "
                           << res.status() << " - msg  = " << res.msg()
                           << " - query = " << query;
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::PostgresDatabaseImp::getTxHashes : unexpected response");
         return {};
     }
 
@@ -724,7 +762,9 @@ PostgresDatabaseImp::getTxHashes(LedgerIndex seq)
                               << " : Wrong number of fields in Postgres "
                                  "response. Expected 1, but got "
                               << res.nfields() << " . query = " << query;
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::PostgresDatabaseImp::getTxHashes : unexpected number "
+                "of fields");
             return {};
         }
     }
@@ -736,7 +776,9 @@ PostgresDatabaseImp::getTxHashes(LedgerIndex seq)
         char const* nodestoreHash = res.c_str(i, 0);
         uint256 hash;
         if (!hash.parseHex(nodestoreHash + 2))
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::PostgresDatabaseImp::getTxHashes : failed to parse "
+                "nodestoreHash");
 
         nodestoreHashes.push_back(hash);
     }
@@ -753,7 +795,9 @@ PostgresDatabaseImp::getTxHistory(LedgerIndex startIndex)
 #ifdef RIPPLED_REPORTING
     if (!app_.config().reporting())
     {
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::PostgresDatabaseImp::getTxHistory : not in reporting "
+            "mode");
         Throw<std::runtime_error>(
             "called getTxHistory but not in reporting mode");
     }
@@ -771,7 +815,8 @@ PostgresDatabaseImp::getTxHistory(LedgerIndex startIndex)
     {
         JLOG(j_.error()) << __func__
                          << " : Postgres response is null - sql = " << sql;
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::PostgresDatabaseImp::getTxHistory : null response");
         return {};
     }
     else if (res.status() != PGRES_TUPLES_OK)
@@ -781,7 +826,8 @@ PostgresDatabaseImp::getTxHistory(LedgerIndex startIndex)
                             "PGRES_TUPLES_OK but instead was "
                          << res.status() << " - msg  = " << res.msg()
                          << " - sql = " << sql;
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::PostgresDatabaseImp::getTxHistory : unexpected response");
         return {};
     }
 
@@ -790,7 +836,8 @@ PostgresDatabaseImp::getTxHistory(LedgerIndex startIndex)
     if (res.isNull() || res.ntuples() == 0)
     {
         JLOG(j_.debug()) << __func__ << " : Empty postgres response";
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::PostgresDatabaseImp::getTxHistory : empty response");
         return {};
     }
     else if (res.ntuples() > 0)
@@ -801,7 +848,9 @@ PostgresDatabaseImp::getTxHistory(LedgerIndex startIndex)
                              << " : Wrong number of fields in Postgres "
                                 "response. Expected 1, but got "
                              << res.nfields() << " . sql = " << sql;
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::PostgresDatabaseImp::getTxHistory : unexpected number "
+                "of fields");
             return {};
         }
     }
@@ -814,7 +863,9 @@ PostgresDatabaseImp::getTxHistory(LedgerIndex startIndex)
     {
         uint256 hash;
         if (!hash.parseHex(res.c_str(i, 0) + 2))
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::PostgresDatabaseImp::getTxHistory : failed to parse "
+                "state hash");
         nodestoreHashes.push_back(hash);
         ledgerSequences.push_back(res.asBigInt(i, 1));
     }
@@ -823,7 +874,9 @@ PostgresDatabaseImp::getTxHistory(LedgerIndex startIndex)
     for (size_t i = 0; i < txns.size(); ++i)
     {
         auto const& [sttx, meta] = txns[i];
-        XRPL_ASSERT(sttx);
+        XRPL_ASSERT(
+            "ripple::PostgresDatabaseImp::getTxHistory : non-null transaction",
+            sttx);
 
         std::string reason;
         auto txn = std::make_shared<Transaction>(sttx, reason, app_);
@@ -904,7 +957,8 @@ PostgresDatabaseImp::getAccountTx(AccountTxArgs const& args)
         JLOG(j_.error()) << __func__
                          << " : Postgres response is null - account = "
                          << strHex(args.account);
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::PostgresDatabaseImp::getAccountTx : null reponse");
         return {{}, {rpcINTERNAL, "Postgres error"}};
     }
     else if (res.status() != PGRES_TUPLES_OK)
@@ -914,7 +968,8 @@ PostgresDatabaseImp::getAccountTx(AccountTxArgs const& args)
                             "PGRES_TUPLES_OK but instead was "
                          << res.status() << " - msg  = " << res.msg()
                          << " - account = " << strHex(args.account);
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::PostgresDatabaseImp::getAccountTx : unexpected reponse");
         return {{}, {rpcINTERNAL, "Postgres error"}};
     }
 
@@ -925,7 +980,8 @@ PostgresDatabaseImp::getAccountTx(AccountTxArgs const& args)
                          << " : No data returned from Postgres : account = "
                          << strHex(args.account);
 
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::PostgresDatabaseImp::getAccountTx : empty reponse");
         return {{}, {rpcINTERNAL, "Postgres error"}};
     }
 
@@ -943,7 +999,8 @@ PostgresDatabaseImp::getAccountTx(AccountTxArgs const& args)
     }
 #endif
     // This shouldn't happen. Postgres should return a parseable error
-    XRPL_UNREACHABLE();
+    XRPL_UNREACHABLE(
+        "ripple::PostgresDatabaseImp::getAccountTx : general error");
     return {{}, {rpcINTERNAL, "Failed to deserialize Postgres result"}};
 }
 
@@ -963,7 +1020,8 @@ PostgresDatabaseImp::locateTransaction(uint256 const& id)
         JLOG(app_.journal("Transaction").error())
             << __func__
             << " : Postgres response is null - tx ID = " << strHex(id);
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::PostgresDatabaseImp::locateTransaction : null response");
         return {};
     }
     else if (res.status() != PGRES_TUPLES_OK)
@@ -974,7 +1032,9 @@ PostgresDatabaseImp::locateTransaction(uint256 const& id)
                "PGRES_TUPLES_OK but instead was "
             << res.status() << " - msg  = " << res.msg()
             << " - tx ID = " << strHex(id);
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::PostgresDatabaseImp::locateTransaction : unexpected "
+            "response");
         return {};
     }
 
@@ -986,7 +1046,8 @@ PostgresDatabaseImp::locateTransaction(uint256 const& id)
             << __func__
             << " : No data returned from Postgres : tx ID = " << strHex(id);
         // This shouldn't happen
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::PostgresDatabaseImp::locateTransaction : empty response");
         return {};
     }
 
@@ -1004,7 +1065,9 @@ PostgresDatabaseImp::locateTransaction(uint256 const& id)
             uint256 nodestoreHash;
             if (!nodestoreHash.parseHex(
                     v["nodestore_hash"].asString().substr(2)))
-                XRPL_UNREACHABLE();
+                XRPL_UNREACHABLE(
+                    "ripple::PostgresDatabaseImp::locateTransaction : failed "
+                    "to parse nodestore_hash");
             uint32_t ledgerSeq = v["ledger_seq"].asUInt();
             if (nodestoreHash.isNonZero())
                 return {std::make_pair(nodestoreHash, ledgerSeq)};
@@ -1018,7 +1081,8 @@ PostgresDatabaseImp::locateTransaction(uint256 const& id)
 #endif
     // Shouldn' happen. Postgres should return the ledger range searched if
     // the transaction was not found
-    XRPL_UNREACHABLE();
+    XRPL_UNREACHABLE(
+        "ripple::PostgresDatabaseImp::locateTransaction : general error");
     Throw<std::runtime_error>(
         "Transaction::Locate - Invalid Postgres response");
     return {};

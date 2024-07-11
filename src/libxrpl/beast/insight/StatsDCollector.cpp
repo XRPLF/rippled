@@ -400,7 +400,10 @@ public:
         for (auto const& s : *keepAlive)
         {
             std::size_t const length(s.size());
-            XRPL_ASSERT(!s.empty());
+            XRPL_ASSERT(
+                "beast::insight::detail::StatsDCollectorImp::send_buffers : "
+                "non-empty payload",
+                !s.empty());
             if (!buffers.empty() && (size + length) > max_packet_size)
             {
                 log(buffers);

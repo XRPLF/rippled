@@ -50,6 +50,8 @@ RCLValidatedLedger::RCLValidatedLedger(
     if (hashIndex)
     {
         XRPL_ASSERT(
+            "ripple::RCLValidatedLedger::RCLValidatedLedger(Ledger) : valid "
+            "last ledger sequence",
             hashIndex->getFieldU32(sfLastLedgerSequence) == (seq() - 1));
         ancestors_ = hashIndex->getFieldV256(sfHashes).value();
     }
@@ -143,8 +145,12 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
         return std::nullopt;
     }
 
-    XRPL_ASSERT(!ledger->open() && ledger->isImmutable());
-    XRPL_ASSERT(ledger->info().hash == hash);
+    XRPL_ASSERT(
+        "ripple::RCLValidationsAdaptor::acquire : valid ledger state",
+        !ledger->open() && ledger->isImmutable());
+    XRPL_ASSERT(
+        "ripple::RCLValidationsAdaptor::acquire : ledger hash match",
+        ledger->info().hash == hash);
 
     return RCLValidatedLedger(std::move(ledger), j_);
 }

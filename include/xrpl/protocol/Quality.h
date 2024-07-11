@@ -298,7 +298,9 @@ public:
     friend double
     relativeDistance(Quality const& q1, Quality const& q2)
     {
-        XRPL_ASSERT(q1.m_value > 0 && q2.m_value > 0);
+        XRPL_ASSERT(
+            "ripple::Quality::relativeDistance : minimum inputs",
+            q1.m_value > 0 && q2.m_value > 0);
 
         if (q1.m_value == q2.m_value)  // make expected common case fast
             return 0;

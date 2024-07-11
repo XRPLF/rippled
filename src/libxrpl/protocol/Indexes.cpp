@@ -91,7 +91,8 @@ indexHash(LedgerNameSpace space, Args const&... args)
 uint256
 getBookBase(Book const& book)
 {
-    XRPL_ASSERT(isConsistent(book));
+    XRPL_ASSERT(
+        "ripple::getBookBase : input is consistent", isConsistent(book));
 
     auto const index = indexHash(
         LedgerNameSpace::BOOK_DIR,
@@ -131,7 +132,7 @@ getTicketIndex(AccountID const& account, std::uint32_t ticketSeq)
 uint256
 getTicketIndex(AccountID const& account, SeqProxy ticketSeq)
 {
-    XRPL_ASSERT(ticketSeq.isTicket());
+    XRPL_ASSERT("ripple::getTicketIndex : valid input", ticketSeq.isTicket());
     return getTicketIndex(account, ticketSeq.value());
 }
 
@@ -237,7 +238,8 @@ offer(AccountID const& id, std::uint32_t seq) noexcept
 Keylet
 quality(Keylet const& k, std::uint64_t q) noexcept
 {
-    XRPL_ASSERT(k.type == ltDIR_NODE);
+    XRPL_ASSERT(
+        "ripple::keylet::quality : valid input type", k.type == ltDIR_NODE);
 
     // Indexes are stored in big endian format: they print as hex as stored.
     // Most significant bytes are first and the least significant bytes
@@ -255,7 +257,9 @@ quality(Keylet const& k, std::uint64_t q) noexcept
 Keylet
 next_t::operator()(Keylet const& k) const
 {
-    XRPL_ASSERT(k.type == ltDIR_NODE);
+    XRPL_ASSERT(
+        "ripple::keylet::next_t::operator() : valid input type",
+        k.type == ltDIR_NODE);
     return {ltDIR_NODE, getQualityNext(k.key)};
 }
 
@@ -357,7 +361,8 @@ nftpage_max(AccountID const& owner)
 Keylet
 nftpage(Keylet const& k, uint256 const& token)
 {
-    XRPL_ASSERT(k.type == ltNFTOKEN_PAGE);
+    XRPL_ASSERT(
+        "ripple::keylet::nftpage : valid input type", k.type == ltNFTOKEN_PAGE);
     return {ltNFTOKEN_PAGE, (k.key & ~nft::pageMask) + (token & nft::pageMask)};
 }
 

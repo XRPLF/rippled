@@ -316,8 +316,10 @@ SHAMap::gmn_ProcessDeferredReads(MissingNodes& mn)
 std::vector<std::pair<SHAMapNodeID, uint256>>
 SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
 {
-    XRPL_ASSERT(root_->getHash().isNonZero());
-    XRPL_ASSERT(max > 0);
+    XRPL_ASSERT(
+        "ripple::SHAMap::getMissingNodes : nonzero root hash",
+        root_->getHash().isNonZero());
+    XRPL_ASSERT("ripple::SHAMap::getMissingNodes : valid max input", max > 0);
 
     MissingNodes mn(
         max,
@@ -376,7 +378,9 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
                     // This is a node we are continuing to process
                     fullBelow = fullBelow && was;  // was and still is
                 }
-                XRPL_ASSERT(node);
+                XRPL_ASSERT(
+                    "ripple::SHAMap::getMissingNodes : first non-null node",
+                    node);
             }
         }
 
@@ -407,7 +411,9 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
                 // Resume at the top of the stack
                 pos = mn.stack_.top();
                 mn.stack_.pop();
-                XRPL_ASSERT(node != nullptr);
+                XRPL_ASSERT(
+                    "ripple::SHAMap::getMissingNodes : second non-null node",
+                    node != nullptr);
             }
         }
 
@@ -534,11 +540,13 @@ SHAMap::addRootNode(
     if (root_->getHash().isNonZero())
     {
         JLOG(journal_.trace()) << "got root node, already have one";
-        XRPL_ASSERT(root_->getHash() == hash);
+        XRPL_ASSERT(
+            "ripple::SHAMap::addRootNode : valid hash input",
+            root_->getHash() == hash);
         return SHAMapAddNode::duplicate();
     }
 
-    XRPL_ASSERT(cowid_ >= 1);
+    XRPL_ASSERT("ripple::SHAMap::addRootNode : valid cowid", cowid_ >= 1);
     auto node = SHAMapTreeNode::makeFromWire(rootNode);
     if (!node || node->getHash() != hash)
         return SHAMapAddNode::invalid();
@@ -572,7 +580,8 @@ SHAMap::addKnownNode(
     Slice const& rawNode,
     SHAMapSyncFilter* filter)
 {
-    XRPL_ASSERT(!node.isRoot());
+    XRPL_ASSERT(
+        "ripple::SHAMap::addKnownNode : valid node input", !node.isRoot());
 
     if (!isSynching())
     {
@@ -589,7 +598,7 @@ SHAMap::addKnownNode(
            (iNodeID.getDepth() < node.getDepth()))
     {
         int branch = selectBranch(iNodeID, node.getNodeID());
-        XRPL_ASSERT(branch >= 0);
+        XRPL_ASSERT("ripple::SHAMap::addKnownNode : valid branch", branch >= 0);
         auto inner = static_cast<SHAMapInnerNode*>(iNode);
         if (inner->isEmptyBranch(branch))
         {

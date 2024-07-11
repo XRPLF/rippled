@@ -46,7 +46,7 @@ transferFeeAsRate(std::uint16_t fee)
 STAmount
 multiply(STAmount const& amount, Rate const& rate)
 {
-    XRPL_ASSERT(rate.value != 0);
+    XRPL_ASSERT("ripple::nft::multiply : nonzero rate input", rate.value != 0);
 
     if (rate == parityRate)
         return amount;
@@ -57,7 +57,8 @@ multiply(STAmount const& amount, Rate const& rate)
 STAmount
 multiplyRound(STAmount const& amount, Rate const& rate, bool roundUp)
 {
-    XRPL_ASSERT(rate.value != 0);
+    XRPL_ASSERT(
+        "ripple::nft::multiplyRound : nonzero rate input", rate.value != 0);
 
     if (rate == parityRate)
         return amount;
@@ -72,7 +73,9 @@ multiplyRound(
     Issue const& issue,
     bool roundUp)
 {
-    XRPL_ASSERT(rate.value != 0);
+    XRPL_ASSERT(
+        "ripple::nft::multiplyRound(Issue) : nonzero rate input",
+        rate.value != 0);
 
     if (rate == parityRate)
     {
@@ -85,7 +88,7 @@ multiplyRound(
 STAmount
 divide(STAmount const& amount, Rate const& rate)
 {
-    XRPL_ASSERT(rate.value != 0);
+    XRPL_ASSERT("ripple::nft::divide : nonzero rate input", rate.value != 0);
 
     if (rate == parityRate)
         return amount;
@@ -96,7 +99,8 @@ divide(STAmount const& amount, Rate const& rate)
 STAmount
 divideRound(STAmount const& amount, Rate const& rate, bool roundUp)
 {
-    XRPL_ASSERT(rate.value != 0);
+    XRPL_ASSERT(
+        "ripple::nft::divideRound : nonzero rate input", rate.value != 0);
 
     if (rate == parityRate)
         return amount;
@@ -111,7 +115,9 @@ divideRound(
     Issue const& issue,
     bool roundUp)
 {
-    XRPL_ASSERT(rate.value != 0);
+    XRPL_ASSERT(
+        "ripple::nft::divideRound(Issue) : nonzero rate input",
+        rate.value != 0);
 
     if (rate == parityRate)
         return amount;

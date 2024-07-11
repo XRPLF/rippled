@@ -133,7 +133,8 @@ ApplyView::emptyDirDelete(Keylet const& directory)
     if (directory.type != ltDIR_NODE ||
         node->getFieldH256(sfRootIndex) != directory.key)
     {
-        XRPL_ASSERT(!"emptyDirDelete() called with wrong node type");
+        XRPL_UNREACHABLE(
+            "ripple::ApplyView::emptyDirDelete : invalid node type");
         return false;
     }
 

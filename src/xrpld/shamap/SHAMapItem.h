@@ -159,7 +159,9 @@ intrusive_ptr_release(SHAMapItem const* x)
 inline boost::intrusive_ptr<SHAMapItem>
 make_shamapitem(uint256 const& tag, Slice data)
 {
-    XRPL_ASSERT(data.size() <= megabytes<std::size_t>(16));
+    XRPL_ASSERT(
+        "ripple::make_shamapitem : maximum input size",
+        data.size() <= megabytes<std::size_t>(16));
 
     std::uint8_t* raw = detail::slabber.allocate(data.size());
 

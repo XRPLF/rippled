@@ -452,7 +452,9 @@ public:
             << " . prefix = " << strHex(std::string(1, prefix))
             << " . nextPrefix_ = " << strHex(std::string(1, nextPrefix_));
 
-        XRPL_ASSERT(nextPrefix_ > prefix || nextPrefix_ == 0x00);
+        XRPL_ASSERT(
+            "ripple::AsyncCallData::AsyncCallData : valid next prefix",
+            nextPrefix_ > prefix || nextPrefix_ == 0x00);
 
         cur_ = std::make_unique<org::xrpl::rpc::v1::GetLedgerDataResponse>();
 
@@ -487,7 +489,8 @@ public:
             JLOG(journal_.warn())
                 << "AsyncCallData is_unlimited is false. Make sure "
                    "secure_gateway is set correctly at the ETL source";
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::AsyncCallData::process : false is_unlimited");
         }
 
         std::swap(cur_, next_);
@@ -589,7 +592,7 @@ ETLSource::loadInitialLedger(
     while (numFinished < calls.size() && !etl_.isStopping() &&
            cq.Next(&tag, &ok))
     {
-        XRPL_ASSERT(tag);
+        XRPL_ASSERT("ripple::ETLSource::loadInitialLedger : non-null tag", tag);
 
         auto ptr = static_cast<AsyncCallData*>(tag);
 
@@ -642,7 +645,7 @@ ETLSource::fetchLedger(uint32_t ledgerSequence, bool getObjects)
                                  "false. Make sure secure_gateway is set "
                                  "correctly on the ETL source. source = "
                               << toString();
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE("ripple::ETLSource::fetchLedger : false is_unlimited");
     }
     return {status, std::move(response)};
 }

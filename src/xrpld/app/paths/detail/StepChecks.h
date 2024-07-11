@@ -35,7 +35,7 @@ checkFreeze(
     AccountID const& dst,
     Currency const& currency)
 {
-    XRPL_ASSERT(src != dst);
+    XRPL_ASSERT("ripple::checkFreeze : unequal input accounts", src != dst);
 
     // check freeze
     if (auto sle = view.read(keylet::account(dst)))

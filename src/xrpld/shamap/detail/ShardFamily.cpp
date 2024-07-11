@@ -30,7 +30,7 @@ static NodeStore::Database&
 getShardStore(Application& app)
 {
     auto const dbPtr = app.getShardStore();
-    XRPL_ASSERT(dbPtr);
+    XRPL_ASSERT("ripple::getShardStore : non-null shard store", dbPtr);
     return *dbPtr;
 }
 

@@ -27,6 +27,7 @@
 #include <xrpl/basics/FeeUnits.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/mulDiv.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -211,7 +212,8 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     }
 
     auto sleAccount = ctx.view.read(keylet::account(account));
-    XRPL_ASSERT(sleAccount);
+    XRPL_ASSERT(
+        "ripple::DeleteAccount::preclaim : non-null account", sleAccount);
     if (!sleAccount)
         return terNO_ACCOUNT;
 
@@ -314,10 +316,12 @@ TER
 DeleteAccount::doApply()
 {
     auto src = view().peek(keylet::account(account_));
-    XRPL_ASSERT(src);
+    XRPL_ASSERT(
+        "ripple::DeleteAccount::doApply : non-null source account", src);
 
     auto dst = view().peek(keylet::account(ctx_.tx[sfDestination]));
-    XRPL_ASSERT(dst);
+    XRPL_ASSERT(
+        "ripple::DeleteAccount::doApply : non-null destination account", dst);
 
     if (!src || !dst)
         return tefBAD_LEDGER;
@@ -337,7 +341,9 @@ DeleteAccount::doApply()
                 return {result, SkipEntry::No};
             }
 
-            XRPL_ASSERT(!"Undeletable entry should be found in preclaim.");
+            XRPL_UNREACHABLE(
+                "ripple::DeleteAccount::doApply : undeletable item not found "
+                "in preclaim");
             JLOG(j_.error()) << "DeleteAccount undeletable item not "
                                 "found in preclaim.";
             return {tecHAS_OBLIGATIONS, SkipEntry::No};
@@ -351,7 +357,9 @@ DeleteAccount::doApply()
     (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
     ctx_.deliver(mSourceBalance);
 
-    XRPL_ASSERT((*src)[sfBalance] == XRPAmount(0));
+    XRPL_ASSERT(
+        "ripple::DeleteAccount::doApply : source balance is zero",
+        (*src)[sfBalance] == XRPAmount(0));
 
     // If there's still an owner directory associated with the source account
     // delete it.

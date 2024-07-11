@@ -69,10 +69,13 @@ public:
         std::uint32_t seq,
         InboundLedger::Reason reason) override
     {
-        XRPL_ASSERT(hash.isNonZero());
         XRPL_ASSERT(
+            "ripple::InboundLedgersImp::acquire : nonzero hash input",
+            hash.isNonZero());
+        XRPL_ASSERT(
+            "ripple::InboundLedgersImp::acquire : valid reason input",
             reason != InboundLedger::Reason::SHARD ||
-            (seq != 0 && app_.getShardStore()));
+                (seq != 0 && app_.getShardStore()));
 
         // probably not the right rule
         if (app_.getOPs().isNeedNetworkLedger() &&
@@ -144,7 +147,9 @@ public:
     std::shared_ptr<InboundLedger>
     find(uint256 const& hash) override
     {
-        XRPL_ASSERT(hash.isNonZero());
+        XRPL_ASSERT(
+            "ripple::InboundLedgersImp::find : nonzero input",
+            hash.isNonZero());
 
         std::shared_ptr<InboundLedger> ret;
 
@@ -306,7 +311,9 @@ public:
             acqs.reserve(mLedgers.size());
             for (auto const& it : mLedgers)
             {
-                XRPL_ASSERT(it.second);
+                XRPL_ASSERT(
+                    "ripple::InboundLedgersImp::getInfo : non-null ledger",
+                    it.second);
                 acqs.push_back(it);
             }
             for (auto const& it : mRecentFailures)
@@ -341,7 +348,9 @@ public:
             acquires.reserve(mLedgers.size());
             for (auto const& it : mLedgers)
             {
-                XRPL_ASSERT(it.second);
+                XRPL_ASSERT(
+                    "ripple::InboundLedgersImp::gotFetchPack : non-null ledger",
+                    it.second);
                 acquires.push_back(it.second);
             }
         }

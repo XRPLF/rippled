@@ -109,7 +109,9 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
     // It should be impossible for expiration to be < TOTAL_TIME_SLOT_SECS,
     // but check just to be safe
     auto const expiration = auctionSlot[sfExpiration];
-    XRPL_ASSERT(expiration >= TOTAL_TIME_SLOT_SECS);
+    XRPL_ASSERT(
+        "ripple::ammAuctionTimeSlot : minimum expiration",
+        expiration >= TOTAL_TIME_SLOT_SECS);
     if (expiration >= TOTAL_TIME_SLOT_SECS)
     {
         if (auto const start = expiration - TOTAL_TIME_SLOT_SECS;

@@ -208,8 +208,11 @@ STPathSet::getSType() const
 void
 STPathSet::add(Serializer& s) const
 {
-    XRPL_ASSERT(getFName().isBinary());
-    XRPL_ASSERT(getFName().fieldType == STI_PATHSET);
+    XRPL_ASSERT(
+        "ripple::STPathSet::add : field is binary", getFName().isBinary());
+    XRPL_ASSERT(
+        "ripple::STPathSet::add : valid field type",
+        getFName().fieldType == STI_PATHSET);
     bool first = true;
 
     for (auto const& spPath : value)

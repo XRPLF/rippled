@@ -257,7 +257,9 @@ inline STPathElement::STPathElement(
         is_offer_ = false;
         mAccountID = *account;
         mType |= typeAccount;
-        XRPL_ASSERT(mAccountID != noAccount());
+        XRPL_ASSERT(
+            "ripple::STPathElement::STPathElement : account is set",
+            mAccountID != noAccount());
     }
 
     if (currency)
@@ -270,7 +272,9 @@ inline STPathElement::STPathElement(
     {
         mIssuerID = *issuer;
         mType |= typeIssuer;
-        XRPL_ASSERT(mIssuerID != noAccount());
+        XRPL_ASSERT(
+            "ripple::STPathElement::STPathElement : issuer is set",
+            mIssuerID != noAccount());
     }
 
     hash_value_ = get_hash(*this);

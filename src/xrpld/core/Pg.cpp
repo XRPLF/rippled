@@ -242,7 +242,7 @@ void
 Pg::bulkInsert(char const* table, std::string const& records)
 {
     // https://www.postgresql.org/docs/12/libpq-copy.html#LIBPQ-COPY-SEND
-    XRPL_ASSERT(conn_.get());
+    XRPL_ASSERT("ripple::Pg::bulkInsert : non-null connection", conn_.get());
     static auto copyCmd = boost::format(R"(COPY %s FROM stdin)");
     auto res = query(boost::str(copyCmd % table).c_str());
     if (!res || res.status() != PGRES_COPY_IN)
@@ -1326,7 +1326,7 @@ applySchema(
 {
     if (currentVersion != 0 && schemaVersion != currentVersion + 1)
     {
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE("ripple::applySchema : cannot skip schema upgrade");
         std::stringstream ss;
         ss << "Schema upgrade versions past initial deployment must increase "
               "monotonically. Versions: current, target: "

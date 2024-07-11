@@ -72,7 +72,10 @@ DatabaseDownloader::closeBody(std::shared_ptr<parser> p)
 
     auto databaseBodyParser =
         std::dynamic_pointer_cast<http::response_parser<DatabaseBody>>(p);
-    XRPL_ASSERT(databaseBodyParser);
+    XRPL_ASSERT(
+        "ripple::DatabaseDownloader::closeBody : DatabaseBody type cast "
+        "succeeded",
+        databaseBodyParser);
 
     databaseBodyParser->get().body().close();
 }
@@ -84,7 +87,9 @@ DatabaseDownloader::size(std::shared_ptr<parser> p)
 
     auto databaseBodyParser =
         std::dynamic_pointer_cast<http::response_parser<DatabaseBody>>(p);
-    XRPL_ASSERT(databaseBodyParser);
+    XRPL_ASSERT(
+        "ripple::DatabaseDownloader::size : DatabaseBody type cast succeeded",
+        databaseBodyParser);
 
     return databaseBodyParser->get().body().size();
 }

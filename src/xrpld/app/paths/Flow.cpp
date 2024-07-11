@@ -193,7 +193,7 @@ flow(
                 flowDebugInfo));
     }
 
-    XRPL_ASSERT(!srcIsXRP && !dstIsXRP);
+    XRPL_ASSERT("ripple::flow : neither is XRP", !srcIsXRP && !dstIsXRP);
     return finishFlow(
         sb,
         srcIssue,

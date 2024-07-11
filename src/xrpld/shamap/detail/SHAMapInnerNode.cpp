@@ -225,7 +225,8 @@ SHAMapInnerNode::updateHashDeep()
 void
 SHAMapInnerNode::serializeForWire(Serializer& s) const
 {
-    XRPL_ASSERT(!isEmpty());
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::serializeForWire : is non-empty", !isEmpty());
 
     // If the node is sparse, then only send non-empty branches:
     if (getBranchCount() < 12)
@@ -249,7 +250,9 @@ SHAMapInnerNode::serializeForWire(Serializer& s) const
 void
 SHAMapInnerNode::serializeWithPrefix(Serializer& s) const
 {
-    XRPL_ASSERT(!isEmpty());
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::serializeWithPrefix : is non-empty",
+        !isEmpty());
 
     s.add32(HashPrefix::innerNode);
     iterChildren(
@@ -274,9 +277,14 @@ SHAMapInnerNode::getString(const SHAMapNodeID& id) const
 void
 SHAMapInnerNode::setChild(int m, std::shared_ptr<SHAMapTreeNode> child)
 {
-    XRPL_ASSERT((m >= 0) && (m < branchFactor));
-    XRPL_ASSERT(cowid_ != 0);
-    XRPL_ASSERT(child.get() != this);
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::setChild : valid branch input",
+        (m >= 0) && (m < branchFactor));
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::setChild : nonzero cowid", cowid_ != 0);
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::setChild : valid child input",
+        child.get() != this);
 
     auto const dstIsBranch = [&] {
         if (child)
@@ -303,27 +311,41 @@ SHAMapInnerNode::setChild(int m, std::shared_ptr<SHAMapTreeNode> child)
 
     hash_.zero();
 
-    XRPL_ASSERT(getBranchCount() <= hashesAndChildren_.capacity());
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::setChild : maximum branch count",
+        getBranchCount() <= hashesAndChildren_.capacity());
 }
 
 // finished modifying, now make shareable
 void
 SHAMapInnerNode::shareChild(int m, std::shared_ptr<SHAMapTreeNode> const& child)
 {
-    XRPL_ASSERT((m >= 0) && (m < branchFactor));
-    XRPL_ASSERT(cowid_ != 0);
-    XRPL_ASSERT(child);
-    XRPL_ASSERT(child.get() != this);
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::shareChild : valid branch input",
+        (m >= 0) && (m < branchFactor));
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::shareChild : nonzero cowid", cowid_ != 0);
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::shareChild : non-null child input", child);
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::shareChild : valid child input",
+        child.get() != this);
 
-    XRPL_ASSERT(!isEmptyBranch(m));
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::shareChild : non-empty branch input",
+        !isEmptyBranch(m));
     hashesAndChildren_.getChildren()[*getChildIndex(m)] = child;
 }
 
 SHAMapTreeNode*
 SHAMapInnerNode::getChildPointer(int branch)
 {
-    XRPL_ASSERT(branch >= 0 && branch < branchFactor);
-    XRPL_ASSERT(!isEmptyBranch(branch));
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::getChildPointer : valid branch input",
+        branch >= 0 && branch < branchFactor);
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::getChildPointer : non-empty branch input",
+        !isEmptyBranch(branch));
 
     auto const index = *getChildIndex(branch);
 
@@ -335,8 +357,12 @@ SHAMapInnerNode::getChildPointer(int branch)
 std::shared_ptr<SHAMapTreeNode>
 SHAMapInnerNode::getChild(int branch)
 {
-    XRPL_ASSERT(branch >= 0 && branch < branchFactor);
-    XRPL_ASSERT(!isEmptyBranch(branch));
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::getChild : valid branch input",
+        branch >= 0 && branch < branchFactor);
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::getChild : non-empty branch input",
+        !isEmptyBranch(branch));
 
     auto const index = *getChildIndex(branch);
 
@@ -348,7 +374,9 @@ SHAMapInnerNode::getChild(int branch)
 SHAMapHash const&
 SHAMapInnerNode::getChildHash(int m) const
 {
-    XRPL_ASSERT((m >= 0) && (m < branchFactor));
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::getChildHash : valid branch input",
+        (m >= 0) && (m < branchFactor));
     if (auto const i = getChildIndex(m))
         return hashesAndChildren_.getHashes()[*i];
 
@@ -360,12 +388,20 @@ SHAMapInnerNode::canonicalizeChild(
     int branch,
     std::shared_ptr<SHAMapTreeNode> node)
 {
-    XRPL_ASSERT(branch >= 0 && branch < branchFactor);
-    XRPL_ASSERT(node);
-    XRPL_ASSERT(!isEmptyBranch(branch));
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::canonicalizeChild : valid branch input",
+        branch >= 0 && branch < branchFactor);
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::canonicalizeChild : valid node input", node);
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::canonicalizeChild : non-empty branch input",
+        !isEmptyBranch(branch));
     auto const childIndex = *getChildIndex(branch);
     auto [_, hashes, children] = hashesAndChildren_.getHashesAndChildren();
-    XRPL_ASSERT(node->getHash() == hashes[childIndex]);
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::canonicalizeChild : node and branch inputs "
+        "hash do match",
+        node->getHash() == hashes[childIndex]);
 
     packed_spinlock sl(lock_, childIndex);
     std::lock_guard lock(sl);
@@ -395,7 +431,9 @@ SHAMapInnerNode::invariants(bool is_root) const
         auto const branchCount = getBranchCount();
         for (int i = 0; i < branchCount; ++i)
         {
-            XRPL_ASSERT(hashes[i].isNonZero());
+            XRPL_ASSERT(
+                "ripple::SHAMapInnerNode::invariants : nonzero hash in branch",
+                hashes[i].isNonZero());
             if (children[i] != nullptr)
                 children[i]->invariants();
             ++count;
@@ -407,24 +445,35 @@ SHAMapInnerNode::invariants(bool is_root) const
         {
             if (hashes[i].isNonZero())
             {
-                XRPL_ASSERT((isBranch_ & (1 << i)) != 0);
+                XRPL_ASSERT(
+                    "ripple::SHAMapInnerNode::invariants : valid branch when "
+                    "nonzero hash",
+                    (isBranch_ & (1 << i)) != 0);
                 if (children[i] != nullptr)
                     children[i]->invariants();
                 ++count;
             }
             else
             {
-                XRPL_ASSERT((isBranch_ & (1 << i)) == 0);
+                XRPL_ASSERT(
+                    "ripple::SHAMapInnerNode::invariants : valid branch when "
+                    "zero hash",
+                    (isBranch_ & (1 << i)) == 0);
             }
         }
     }
 
     if (!is_root)
     {
-        XRPL_ASSERT(hash_.isNonZero());
-        XRPL_ASSERT(count >= 1);
+        XRPL_ASSERT(
+            "ripple::SHAMapInnerNode::invariants : nonzero hash",
+            hash_.isNonZero());
+        XRPL_ASSERT(
+            "ripple::SHAMapInnerNode::invariants : minimum count", count >= 1);
     }
-    XRPL_ASSERT((count == 0) ? hash_.isZero() : hash_.isNonZero());
+    XRPL_ASSERT(
+        "ripple::SHAMapInnerNode::invariants : hash and count do match",
+        (count == 0) ? hash_.isZero() : hash_.isNonZero());
 }
 
 }  // namespace ripple

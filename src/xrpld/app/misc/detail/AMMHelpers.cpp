@@ -209,7 +209,9 @@ adjustAmountsByLPTokens(
             return std::make_tuple(amountActual, std::nullopt, lpTokensActual);
     }
 
-    XRPL_ASSERT(lpTokensActual == lpTokens);
+    XRPL_ASSERT(
+        "ripple::adjustAmountsByLPTokens : LP tokens match actual",
+        lpTokensActual == lpTokens);
 
     return {amount, amount2, lpTokensActual};
 }

@@ -35,7 +35,7 @@ Quality::Quality(Amounts const& amount)
 Quality&
 Quality::operator++()
 {
-    XRPL_ASSERT(m_value > 0);
+    XRPL_ASSERT("ripple::Quality::operator++() : minimum value", m_value > 0);
     --m_value;
     return *this;
 }
@@ -51,7 +51,9 @@ Quality::operator++(int)
 Quality&
 Quality::operator--()
 {
-    XRPL_ASSERT(m_value < std::numeric_limits<value_type>::max());
+    XRPL_ASSERT(
+        "ripple::Quality::operator--() : maximum value",
+        m_value < std::numeric_limits<value_type>::max());
     ++m_value;
     return *this;
 }
@@ -81,10 +83,12 @@ ceil_in_impl(
         // Clamp out
         if (result.out > amount.out)
             result.out = amount.out;
-        XRPL_ASSERT(result.in == limit);
+        XRPL_ASSERT(
+            "ripple::ceil_in_impl : result matches limit", result.in == limit);
         return result;
     }
-    XRPL_ASSERT(amount.in <= limit);
+    XRPL_ASSERT(
+        "ripple::ceil_in_impl : result inside limit", amount.in <= limit);
     return amount;
 }
 
@@ -120,10 +124,13 @@ ceil_out_impl(
         // Clamp in
         if (result.in > amount.in)
             result.in = amount.in;
-        XRPL_ASSERT(result.out == limit);
+        XRPL_ASSERT(
+            "ripple::ceil_out_impl : result matches limit",
+            result.out == limit);
         return result;
     }
-    XRPL_ASSERT(amount.out <= limit);
+    XRPL_ASSERT(
+        "ripple::ceil_out_impl : result inside limit", amount.out <= limit);
     return amount;
 }
 
@@ -146,17 +153,23 @@ Quality
 composed_quality(Quality const& lhs, Quality const& rhs)
 {
     STAmount const lhs_rate(lhs.rate());
-    XRPL_ASSERT(lhs_rate != beast::zero);
+    XRPL_ASSERT(
+        "ripple::composed_quality : nonzero left input",
+        lhs_rate != beast::zero);
 
     STAmount const rhs_rate(rhs.rate());
-    XRPL_ASSERT(rhs_rate != beast::zero);
+    XRPL_ASSERT(
+        "ripple::composed_quality : nonzero right input",
+        rhs_rate != beast::zero);
 
     STAmount const rate(mulRound(lhs_rate, rhs_rate, lhs_rate.issue(), true));
 
     std::uint64_t const stored_exponent(rate.exponent() + 100);
     std::uint64_t const stored_mantissa(rate.mantissa());
 
-    XRPL_ASSERT((stored_exponent > 0) && (stored_exponent <= 255));
+    XRPL_ASSERT(
+        "ripple::composed_quality : valid exponent",
+        (stored_exponent > 0) && (stored_exponent <= 255));
 
     return Quality((stored_exponent << (64 - 8)) | stored_mantissa);
 }

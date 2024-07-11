@@ -291,6 +291,7 @@ public:
     explicit base_uint(Container const& c)
     {
         XRPL_ASSERT(
+            "ripple::base_uint::base_uint(Container auto) : input size match",
             c.size() * sizeof(typename Container::value_type) == size());
         std::memcpy(data_.data(), c.data(), size());
     }
@@ -303,6 +304,7 @@ public:
     operator=(Container const& c)
     {
         XRPL_ASSERT(
+            "ripple::base_uint::operator=(Container auto) : input size match",
             c.size() * sizeof(typename Container::value_type) == size());
         std::memcpy(data_.data(), c.data(), size());
         return *this;

@@ -173,7 +173,9 @@ public:
             }
             else
             {
-                XRPL_ASSERT(minAndMax.size() == 2);
+                XRPL_ASSERT(
+                    "ripple::ETLSource::setValidatedRange : size is 2",
+                    minAndMax.size() == 2);
                 uint32_t min = std::stoll(minAndMax[0]);
                 uint32_t max = std::stoll(minAndMax[1]);
                 pairs.push_back(std::make_pair(min, max));
@@ -206,7 +208,7 @@ public:
         JLOG(journal_.debug()) << __func__ << " : "
                                << "Closing websocket";
 
-        XRPL_ASSERT(ws_);
+        XRPL_ASSERT("ripple::ETLSource::stop : non-null websocket", ws_);
         close(false);
     }
 
@@ -378,7 +380,10 @@ public:
     {
         for (auto& src : sources_)
         {
-            XRPL_ASSERT(src);
+            XRPL_ASSERT(
+                "ripple::ETLLoadBalancer::shouldPropagateStream : non-null "
+                "source",
+                src);
             // We pick the first ETLSource encountered that is connected
             if (src->isConnected())
             {

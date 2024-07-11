@@ -142,7 +142,7 @@ doAccountOffers(RPC::JsonContext& context)
                 std::shared_ptr<SLE const> const& sle) {
                 if (!sle)
                 {
-                    XRPL_UNREACHABLE();
+                    XRPL_UNREACHABLE("ripple::doAccountOffers : null SLE");
                     return false;
                 }
 

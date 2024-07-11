@@ -178,7 +178,9 @@ STVar::STVar(SerialIter& sit, SField const& name, int depth)
 
 STVar::STVar(SerializedTypeID id, SField const& name)
 {
-    XRPL_ASSERT((id == STI_NOTPRESENT) || (id == name.fieldType));
+    XRPL_ASSERT(
+        "ripple::detail::STVar::STVar(SerializedTypeID) : valid type input",
+        (id == STI_NOTPRESENT) || (id == name.fieldType));
     switch (id)
     {
         case STI_NOTPRESENT:

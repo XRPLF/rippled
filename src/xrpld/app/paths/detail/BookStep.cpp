@@ -29,6 +29,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/XRPAmount.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
@@ -381,7 +382,9 @@ private:
     getQuality(std::optional<Quality> const& limitQuality)
     {
         // It's really a programming error if the quality is missing.
-        XRPL_ASSERT(limitQuality);
+        XRPL_ASSERT(
+            "ripple::BookOfferCrossingStep::getQuality : nonzero quality",
+            limitQuality);
         if (!limitQuality)
             Throw<FlowException>(tefINTERNAL, "Offer requires quality.");
         return *limitQuality;
@@ -1109,7 +1112,8 @@ BookStep<TIn, TOut, TDerived>::revImp(
             // something went very wrong
             JLOG(j_.error())
                 << "BookStep remainingOut < 0 " << to_string(remainingOut);
-            XRPL_ASSERT(0);
+            XRPL_UNREACHABLE(
+                "ripple::BookStep::revImp : remaining less than zero");
             cache_.emplace(beast::zero, beast::zero);
             return {beast::zero, beast::zero};
         }
@@ -1132,7 +1136,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
     boost::container::flat_set<uint256>& ofrsToRm,
     TIn const& in)
 {
-    XRPL_ASSERT(cache_);
+    XRPL_ASSERT("ripple::BookStep::fwdImp : cache is set", cache_);
 
     TAmounts<TIn, TOut> result(beast::zero, beast::zero);
 
@@ -1151,7 +1155,8 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
                          TOut const& ownerGives,
                          std::uint32_t transferRateIn,
                          std::uint32_t transferRateOut) mutable -> bool {
-        XRPL_ASSERT(cache_);
+        XRPL_ASSERT(
+            "ripple::BookStep::fwdImp::eachOffer : cache is set", cache_);
 
         if (remainingIn <= beast::zero)
             return false;
@@ -1279,7 +1284,8 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
             // something went very wrong
             JLOG(j_.error())
                 << "BookStep remainingIn < 0 " << to_string(remainingIn);
-            XRPL_ASSERT(0);
+            XRPL_UNREACHABLE(
+                "ripple::BookStep::fwdImp : remaining less than zero");
             cache_.emplace(beast::zero, beast::zero);
             return {beast::zero, beast::zero};
         }
@@ -1414,7 +1420,8 @@ bookStepEqual(Step const& step, ripple::Book const& book)
     bool const outXRP = isXRP(book.out.currency);
     if (inXRP && outXRP)
     {
-        XRPL_ASSERT(0);
+        XRPL_UNREACHABLE(
+            "ripple::test::bookStepEqual : no XRP to XRP book step");
         return false;  // no such thing as xrp/xrp book step
     }
     if (inXRP && !outXRP)

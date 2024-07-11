@@ -70,7 +70,9 @@ getSNValue(STAmount const& amount)
 
     auto ret = static_cast<std::int64_t>(amount.mantissa());
 
-    XRPL_ASSERT(static_cast<std::uint64_t>(ret) == amount.mantissa());
+    XRPL_ASSERT(
+        "ripple::getSNValue : mantissa roundtrip",
+        static_cast<std::uint64_t>(ret) == amount.mantissa());
 
     if (amount.negative())
         ret = -ret;
@@ -220,7 +222,10 @@ STAmount::STAmount(SField const& name, std::uint64_t mantissa, bool negative)
     , mIsNative(true)
     , mIsNegative(negative)
 {
-    XRPL_ASSERT(mValue <= std::numeric_limits<std::int64_t>::max());
+    XRPL_ASSERT(
+        "ripple::STAmount::STAmount(SField, std::uint64_t, bool) : maximum "
+        "mantissa input",
+        mValue <= std::numeric_limits<std::int64_t>::max());
 }
 
 STAmount::STAmount(
@@ -235,7 +240,10 @@ STAmount::STAmount(
     , mOffset(exponent)
     , mIsNegative(negative)
 {
-    XRPL_ASSERT(mValue <= std::numeric_limits<std::int64_t>::max());
+    XRPL_ASSERT(
+        "ripple::STAmount::STAmount(SField, Issue, std::uint64_t, int, bool) : "
+        "maximum mantissa input",
+        mValue <= std::numeric_limits<std::int64_t>::max());
     canonicalize();
 }
 
@@ -246,7 +254,9 @@ STAmount::STAmount(SField const& name, STAmount const& from)
     , mOffset(from.mOffset)
     , mIsNegative(from.mIsNegative)
 {
-    XRPL_ASSERT(mValue <= std::numeric_limits<std::int64_t>::max());
+    XRPL_ASSERT(
+        "ripple::STAmount::STAmount(SField, STAmount) : maximum input",
+        mValue <= std::numeric_limits<std::int64_t>::max());
     canonicalize();
 }
 
@@ -258,7 +268,10 @@ STAmount::STAmount(std::uint64_t mantissa, bool negative)
     , mIsNative(true)
     , mIsNegative(mantissa != 0 && negative)
 {
-    XRPL_ASSERT(mValue <= std::numeric_limits<std::int64_t>::max());
+    XRPL_ASSERT(
+        "ripple::STAmount::STAmount(std::uint64_t, bool) : maximum mantissa "
+        "input",
+        mValue <= std::numeric_limits<std::int64_t>::max());
 }
 
 STAmount::STAmount(
@@ -374,7 +387,9 @@ STAmount::iou() const
 STAmount&
 STAmount::operator=(IOUAmount const& iou)
 {
-    XRPL_ASSERT(mIsNative == false);
+    XRPL_ASSERT(
+        "ripple::STAmount::operator=(IOUAmount) : is not XRP",
+        mIsNative == false);
     mOffset = iou.exponent();
     mIsNegative = iou < beast::zero;
     if (mIsNegative)
@@ -512,7 +527,9 @@ getRate(STAmount const& offerOut, STAmount const& offerIn)
         STAmount r = divide(offerIn, offerOut, noIssue());
         if (r == beast::zero)  // offer is too good
             return 0;
-        XRPL_ASSERT((r.exponent() >= -100) && (r.exponent() <= 155));
+        XRPL_ASSERT(
+            "ripple::getRate : exponent inside range",
+            (r.exponent() >= -100) && (r.exponent() <= 155));
         std::uint64_t ret = r.exponent() + 100;
         return (ret << (64 - 8)) | r.mantissa();
     }
@@ -594,7 +611,7 @@ STAmount::getText() const
         return ret;
     }
 
-    XRPL_ASSERT(mOffset + 43 > 0);
+    XRPL_ASSERT("ripple::STAmount::getText : minimum offset", mOffset + 43 > 0);
 
     size_t const pad_prefix = 27;
     size_t const pad_suffix = 23;
@@ -618,7 +635,9 @@ STAmount::getText() const
     if (std::distance(pre_from, pre_to) > pad_prefix)
         pre_from += pad_prefix;
 
-    XRPL_ASSERT(post_to >= post_from);
+    XRPL_ASSERT(
+        "ripple::STAmount::getText : first distance check",
+        post_to >= post_from);
 
     pre_from = std::find_if(pre_from, pre_to, [](char c) { return c != '0'; });
 
@@ -627,7 +646,9 @@ STAmount::getText() const
     if (std::distance(post_from, post_to) > pad_suffix)
         post_to -= pad_suffix;
 
-    XRPL_ASSERT(post_to >= post_from);
+    XRPL_ASSERT(
+        "ripple::STAmount::getText : second distance check",
+        post_to >= post_from);
 
     post_to = std::find_if(
                   std::make_reverse_iterator(post_to),
@@ -662,7 +683,7 @@ STAmount::add(Serializer& s) const
 {
     if (mIsNative)
     {
-        XRPL_ASSERT(mOffset == 0);
+        XRPL_ASSERT("ripple::STAmount::add : zero offset", mOffset == 0);
 
         if (!mIsNegative)
             s.add64(mValue | cPosNative);
@@ -824,10 +845,14 @@ STAmount::canonicalize()
         Throw<std::runtime_error>("value overflow");
 
     XRPL_ASSERT(
+        "ripple::STAmount::canonicalize : value inside range",
         (mValue == 0) || ((mValue >= cMinValue) && (mValue <= cMaxValue)));
     XRPL_ASSERT(
+        "ripple::STAmount::canonicalize : offset inside range",
         (mValue == 0) || ((mOffset >= cMinOffset) && (mOffset <= cMaxOffset)));
-    XRPL_ASSERT((mValue != 0) || (mOffset != -100));
+    XRPL_ASSERT(
+        "ripple::STAmount::canonicalize : value or offset set",
+        (mValue != 0) || (mOffset != -100));
 }
 
 void

@@ -22,9 +22,6 @@
 
 #include <xrpl/json/json_errors.h>
 
-#define JSON_ASSERT_UNREACHABLE XRPL_UNREACHABLE()
-#define JSON_ASSERT(condition) \
-    XRPL_ASSERT(condition);  // @todo <= change this into an exception throw
 #define JSON_ASSERT_MESSAGE(condition, message) \
     if (!(condition))                           \
         ripple::Throw<Json::error>(message);

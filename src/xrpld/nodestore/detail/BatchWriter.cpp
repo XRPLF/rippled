@@ -83,7 +83,9 @@ BatchWriter::writeBatch()
             std::lock_guard sl(mWriteMutex);
 
             mWriteSet.swap(set);
-            XRPL_ASSERT(mWriteSet.empty());
+            XRPL_ASSERT(
+                "ripple::NodeStore::BatchWriter::writeBatch : writes not set",
+                mWriteSet.empty());
             mWriteLoad = set.size();
 
             if (set.empty())

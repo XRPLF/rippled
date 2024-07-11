@@ -159,6 +159,8 @@ struct MultiApiJson
                 invoke_result_t<Fn, decltype(json.val[0]), Version, Args&&...>
         {
             XRPL_ASSERT(
+                "ripple::detail::MultiApiJson::operator<Args...>() : valid "
+                "version",
                 valid(version) && index(version) >= 0 && index(version) < size);
             return std::invoke(
                 fn,
@@ -176,6 +178,7 @@ struct MultiApiJson
             -> std::invoke_result_t<Fn, decltype(json.val[0])>
         {
             XRPL_ASSERT(
+                "ripple::detail::MultiApiJson::operator() : valid version",
                 valid(version) && index(version) >= 0 && index(version) < size);
             return std::invoke(fn, json.val[index(version)]);
         }

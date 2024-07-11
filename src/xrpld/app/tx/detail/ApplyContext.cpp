@@ -146,7 +146,9 @@ ApplyContext::checkInvariantsHelper(
 TER
 ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
 {
-    XRPL_ASSERT(isTesSuccess(result) || isTecClaim(result));
+    XRPL_ASSERT(
+        "ripple::ApplyContext::checkInvariants : is tesSUCCESS or tecCLAIM",
+        isTesSuccess(result) || isTecClaim(result));
 
     return checkInvariantsHelper(
         result,

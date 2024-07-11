@@ -863,7 +863,9 @@ Consensus<Adaptor>::gotTxSet(
     {
         // Our position is added to acquired_ as soon as we create it,
         // so this txSet must differ
-        XRPL_ASSERT(id != result_->position.position());
+        XRPL_ASSERT(
+            "ripple::Consensus::gotTxSet : updated transaction set",
+            id != result_->position.position());
         bool any = false;
         for (auto const& [nodeId, peerPos] : currPeerPositions_)
         {
@@ -1008,7 +1010,9 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::handleWrongLedger(typename Ledger_t::ID const& lgrId)
 {
-    XRPL_ASSERT(lgrId != prevLedgerID_ || previousLedger_.id() != lgrId);
+    XRPL_ASSERT(
+        "ripple::Consensus::handleWrongLedger : have wrong ledger",
+        lgrId != prevLedgerID_ || previousLedger_.id() != lgrId);
 
     // Stop proposing because we are out of sync
     leaveConsensus();
@@ -1261,7 +1265,7 @@ void
 Consensus<Adaptor>::phaseEstablish()
 {
     // can only establish consensus if we already took a stance
-    XRPL_ASSERT(result_);
+    XRPL_ASSERT("ripple::Consensus::phaseEstablish : result is set", result_);
 
     using namespace std::chrono;
     ConsensusParms const& parms = adaptor_.parms();
@@ -1309,7 +1313,7 @@ void
 Consensus<Adaptor>::closeLedger()
 {
     // We should not be closing if we already have a position
-    XRPL_ASSERT(!result_);
+    XRPL_ASSERT("ripple::Consensus::closeLedger : result is not set", !result_);
 
     phase_ = ConsensusPhase::establish;
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::establish";
@@ -1362,7 +1366,8 @@ void
 Consensus<Adaptor>::updateOurPositions()
 {
     // We must have a position if we are updating it
-    XRPL_ASSERT(result_);
+    XRPL_ASSERT(
+        "ripple::Consensus::updateOurPositions : result is set", result_);
     ConsensusParms const& parms = adaptor_.parms();
 
     // Compute a cutoff time
@@ -1546,7 +1551,7 @@ bool
 Consensus<Adaptor>::haveConsensus()
 {
     // Must have a stance if we are checking for consensus
-    XRPL_ASSERT(result_);
+    XRPL_ASSERT("ripple::Consensus::haveConsensus : has result", result_);
 
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
@@ -1621,7 +1626,7 @@ void
 Consensus<Adaptor>::createDisputes(TxSet_t const& o)
 {
     // Cannot create disputes without our stance
-    XRPL_ASSERT(result_);
+    XRPL_ASSERT("ripple::Consensus::createDisputes : result is set", result_);
 
     // Only create disputes if this is a new set
     if (!result_->compares.emplace(o.id()).second)
@@ -1643,8 +1648,9 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o)
         ++dc;
         // create disputed transactions (from the ledger that has them)
         XRPL_ASSERT(
+            "ripple::Consensus::createDisputes : has disputed transactions",
             (inThisSet && result_->txns.find(txId) && !o.find(txId)) ||
-            (!inThisSet && !result_->txns.find(txId) && o.find(txId)));
+                (!inThisSet && !result_->txns.find(txId) && o.find(txId)));
 
         Tx_t tx = inThisSet ? result_->txns.find(txId) : o.find(txId);
         auto txID = tx.id();
@@ -1680,7 +1686,7 @@ void
 Consensus<Adaptor>::updateDisputes(NodeID_t const& node, TxSet_t const& other)
 {
     // Cannot updateDisputes without our stance
-    XRPL_ASSERT(result_);
+    XRPL_ASSERT("ripple::Consensus::updateDisputes : result is set", result_);
 
     // Ensure we have created disputes against this set if we haven't seen
     // it before

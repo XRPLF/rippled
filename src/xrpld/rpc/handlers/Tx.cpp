@@ -75,7 +75,7 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
 {
     if (!context.app.config().reporting())
     {
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE("ripple::doTxPostgres : not in reporting mode");
         Throw<std::runtime_error>(
             "Called doTxPostgres yet not in reporting mode");
     }
@@ -109,13 +109,15 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
                 SHAMapHash{locator.getNodestoreHash()});
             if (!node)
             {
-                XRPL_UNREACHABLE();
+                XRPL_UNREACHABLE(
+                    "ripple::doTxPostgres : error making SHAMap node");
                 return {res, {rpcINTERNAL, "Error making SHAMap node"}};
             }
             auto item = (static_cast<SHAMapLeafNode*>(node.get()))->peekItem();
             if (!item)
             {
-                XRPL_UNREACHABLE();
+                XRPL_UNREACHABLE(
+                    "ripple::doTxPostgres : error reading SHAMap node");
                 return {res, {rpcINTERNAL, "Error reading SHAMap node"}};
             }
 
@@ -124,7 +126,8 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
 
             if (!sttx || !meta)
             {
-                XRPL_UNREACHABLE();
+                XRPL_UNREACHABLE(
+                    "ripple::doTxPostgres : error deserializing SHAMap node");
                 return {res, {rpcINTERNAL, "Error deserializing SHAMap node"}};
             }
             std::string reason;
@@ -156,7 +159,8 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
         else
         {
             JLOG(context.j.error()) << "Failed to fetch from db";
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::doTxPostgres : containing SHAMap node not found");
             return {res, {rpcINTERNAL, "Containing SHAMap node not found"}};
         }
         auto end = std::chrono::system_clock::now();
@@ -184,7 +188,7 @@ doTxPostgres(RPC::Context& context, TxArgs const& args)
         return {res, rpcTXN_NOT_FOUND};
     }
     // database didn't return anything. This shouldn't happen
-    XRPL_UNREACHABLE();
+    XRPL_UNREACHABLE("ripple::doTxPostgres : unexpected response");
     return {res, {rpcINTERNAL, "unexpected Postgres response"}};
 }
 
@@ -370,7 +374,8 @@ populateJsonResponse(
         // populate binary metadata
         if (auto blob = std::get_if<Blob>(&result.meta))
         {
-            XRPL_ASSERT(args.binary);
+            XRPL_ASSERT(
+                "ripple::populateJsonResponse : binary is set", args.binary);
             auto json_meta =
                 (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
             response[json_meta] = strHex(makeSlice(*blob));

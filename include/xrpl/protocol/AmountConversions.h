@@ -59,7 +59,9 @@ toSTAmount(XRPAmount const& xrp)
 inline STAmount
 toSTAmount(XRPAmount const& xrp, Issue const& iss)
 {
-    XRPL_ASSERT(isXRP(iss.account) && isXRP(iss.currency));
+    XRPL_ASSERT(
+        "ripple::toSTAmount : is XRP",
+        isXRP(iss.account) && isXRP(iss.currency));
     return toSTAmount(xrp);
 }
 
@@ -78,12 +80,14 @@ template <>
 inline IOUAmount
 toAmount<IOUAmount>(STAmount const& amt)
 {
-    XRPL_ASSERT(amt.mantissa() < std::numeric_limits<std::int64_t>::max());
+    XRPL_ASSERT(
+        "ripple::toAmount<IOUAmount> : maximum mantissa",
+        amt.mantissa() < std::numeric_limits<std::int64_t>::max());
     bool const isNeg = amt.negative();
     std::int64_t const sMant =
         isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
 
-    XRPL_ASSERT(!isXRP(amt));
+    XRPL_ASSERT("ripple::toAmount<IOUAmount> : is not XRP", !isXRP(amt));
     return IOUAmount(sMant, amt.exponent());
 }
 
@@ -91,12 +95,14 @@ template <>
 inline XRPAmount
 toAmount<XRPAmount>(STAmount const& amt)
 {
-    XRPL_ASSERT(amt.mantissa() < std::numeric_limits<std::int64_t>::max());
+    XRPL_ASSERT(
+        "ripple::toAmount<XRPAmount> : maximum mantissa",
+        amt.mantissa() < std::numeric_limits<std::int64_t>::max());
     bool const isNeg = amt.negative();
     std::int64_t const sMant =
         isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
 
-    XRPL_ASSERT(isXRP(amt));
+    XRPL_ASSERT("ripple::toAmount<XRPAmount> : is XRP", isXRP(amt));
     return XRPAmount(sMant);
 }
 

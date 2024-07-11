@@ -90,7 +90,9 @@ ConnectAttempt::run()
 void
 ConnectAttempt::close()
 {
-    XRPL_ASSERT(strand_.running_in_this_thread());
+    XRPL_ASSERT(
+        "ripple::ConnectAttempt::close : strand in this thread",
+        strand_.running_in_this_thread());
     if (socket_.is_open())
     {
         error_code ec;

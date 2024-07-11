@@ -48,7 +48,9 @@ internalDirNext(
     uint256& entry)
 {
     auto const& svIndexes = page->getFieldV256(sfIndexes);
-    XRPL_ASSERT(index <= svIndexes.size());
+    XRPL_ASSERT(
+        "ripple::detail::internalDirNext : index inside range",
+        index <= svIndexes.size());
 
     if (index >= svIndexes.size())
     {
@@ -65,7 +67,7 @@ internalDirNext(
         else
             page = view.peek(keylet::page(root, next));
 
-        XRPL_ASSERT(page);
+        XRPL_ASSERT("ripple::detail::internalDirNext : non-null root", page);
 
         if (!page)
             return false;
@@ -336,7 +338,7 @@ confineOwnerCount(
                     << "Account " << *id << " owner count set below 0!";
             }
             adjusted = 0;
-            XRPL_ASSERT(!id);
+            XRPL_ASSERT("ripple::confineOwnerCount : id is not set", !id);
         }
     }
     return adjusted;
@@ -386,7 +388,8 @@ forEachItem(
     Keylet const& root,
     std::function<void(std::shared_ptr<SLE const> const&)> const& f)
 {
-    XRPL_ASSERT(root.type == ltDIR_NODE);
+    XRPL_ASSERT(
+        "ripple::forEachItem : valid root type", root.type == ltDIR_NODE);
 
     if (root.type != ltDIR_NODE)
         return;
@@ -416,7 +419,8 @@ forEachItemAfter(
     unsigned int limit,
     std::function<bool(std::shared_ptr<SLE const> const&)> const& f)
 {
-    XRPL_ASSERT(root.type == ltDIR_NODE);
+    XRPL_ASSERT(
+        "ripple::forEachItemAfter : valid root type", root.type == ltDIR_NODE);
 
     if (root.type != ltDIR_NODE)
         return false;
@@ -679,8 +683,9 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
         if (hashIndex)
         {
             XRPL_ASSERT(
+                "ripple::hashOfSeq : matching ledger sequence",
                 hashIndex->getFieldU32(sfLastLedgerSequence) ==
-                (ledger.seq() - 1));
+                    (ledger.seq() - 1));
             STVector256 vec = hashIndex->getFieldV256(sfHashes);
             if (vec.size() >= diff)
                 return vec[vec.size() - diff];
@@ -708,8 +713,9 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     if (hashIndex)
     {
         auto const lastSeq = hashIndex->getFieldU32(sfLastLedgerSequence);
-        XRPL_ASSERT(lastSeq >= seq);
-        XRPL_ASSERT((lastSeq & 0xff) == 0);
+        XRPL_ASSERT("ripple::hashOfSeq : minimum last ledger", lastSeq >= seq);
+        XRPL_ASSERT(
+            "ripple::hashOfSeq : valid last ledger", (lastSeq & 0xff) == 0);
         auto const diff = (lastSeq - seq) >> 8;
         STVector256 vec = hashIndex->getFieldV256(sfHashes);
         if (vec.size() > diff)
@@ -735,7 +741,7 @@ adjustOwnerCount(
 {
     if (!sle)
         return;
-    XRPL_ASSERT(amount != 0);
+    XRPL_ASSERT("ripple::adjustOwnerCount : nonzero amount input", amount != 0);
     std::uint32_t const current{sle->getFieldU32(sfOwnerCount)};
     AccountID const id = (*sle)[sfAccount];
     std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
@@ -800,13 +806,14 @@ trustCreate(
     const bool bSetDst = saLimit.getIssuer() == uDstAccountID;
     const bool bSetHigh = bSrcHigh ^ bSetDst;
 
-    XRPL_ASSERT(sleAccount);
+    XRPL_ASSERT("ripple::trustCreate : non-null SLE", sleAccount);
     if (!sleAccount)
         return tefINTERNAL;
 
     XRPL_ASSERT(
+        "ripple::trustCreate : matching account ID",
         sleAccount->getAccountID(sfAccount) ==
-        (bSetHigh ? uHighAccountID : uLowAccountID));
+            (bSetHigh ? uHighAccountID : uLowAccountID));
     auto const slePeer =
         view.peek(keylet::account(bSetHigh ? uLowAccountID : uHighAccountID));
     if (!slePeer)
@@ -959,17 +966,25 @@ rippleCredit(
     Currency const& currency = saAmount.getCurrency();
 
     // Make sure issuer is involved.
-    XRPL_ASSERT(!bCheckIssuer || uSenderID == issuer || uReceiverID == issuer);
+    XRPL_ASSERT(
+        "ripple::rippleCredit : matching issuer or don't care",
+        !bCheckIssuer || uSenderID == issuer || uReceiverID == issuer);
     (void)issuer;
 
     // Disallow sending to self.
-    XRPL_ASSERT(uSenderID != uReceiverID);
+    XRPL_ASSERT(
+        "ripple::rippleCredit : sender is not receiver",
+        uSenderID != uReceiverID);
 
     bool const bSenderHigh = uSenderID > uReceiverID;
     auto const index = keylet::line(uSenderID, uReceiverID, currency);
 
-    XRPL_ASSERT(!isXRP(uSenderID) && uSenderID != noAccount());
-    XRPL_ASSERT(!isXRP(uReceiverID) && uReceiverID != noAccount());
+    XRPL_ASSERT(
+        "ripple::rippleCredit : sender is not XRP",
+        !isXRP(uSenderID) && uSenderID != noAccount());
+    XRPL_ASSERT(
+        "ripple::rippleCredit : receiver is not XRP",
+        !isXRP(uReceiverID) && uReceiverID != noAccount());
 
     // If the line exists, modify it accordingly.
     if (auto const sleRippleState = view.peek(index))
@@ -1103,8 +1118,12 @@ rippleSend(
 {
     auto const issuer = saAmount.getIssuer();
 
-    XRPL_ASSERT(!isXRP(uSenderID) && !isXRP(uReceiverID));
-    XRPL_ASSERT(uSenderID != uReceiverID);
+    XRPL_ASSERT(
+        "ripple::rippleSend : neither sender nor receiver is XRP",
+        !isXRP(uSenderID) && !isXRP(uReceiverID));
+    XRPL_ASSERT(
+        "ripple::rippleSend : sender is not receiver",
+        uSenderID != uReceiverID);
 
     if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
@@ -1156,7 +1175,8 @@ accountSend(
     }
     else
     {
-        XRPL_ASSERT(saAmount >= beast::zero);
+        XRPL_ASSERT(
+            "ripple::accountSend : minimum amount", saAmount >= beast::zero);
     }
 
     /* If we aren't sending anything or if the sender is the same as the
@@ -1317,13 +1337,16 @@ issueIOU(
     Issue const& issue,
     beast::Journal j)
 {
-    XRPL_ASSERT(!isXRP(account) && !isXRP(issue.account));
+    XRPL_ASSERT(
+        "ripple::issueIOU : neither account nor issuer is XRP",
+        !isXRP(account) && !isXRP(issue.account));
 
     // Consistency check
-    XRPL_ASSERT(issue == amount.issue());
+    XRPL_ASSERT("ripple::issueIOU : matching issue", issue == amount.issue());
 
     // Can't send to self!
-    XRPL_ASSERT(issue.account != account);
+    XRPL_ASSERT(
+        "ripple::issueIOU : not issuer account", issue.account != account);
 
     JLOG(j.trace()) << "issueIOU: " << to_string(account) << ": "
                     << amount.getFullText();
@@ -1413,13 +1436,16 @@ redeemIOU(
     Issue const& issue,
     beast::Journal j)
 {
-    XRPL_ASSERT(!isXRP(account) && !isXRP(issue.account));
+    XRPL_ASSERT(
+        "ripple::redeemIOU : neither account nor issuer is XRP",
+        !isXRP(account) && !isXRP(issue.account));
 
     // Consistency check
-    XRPL_ASSERT(issue == amount.issue());
+    XRPL_ASSERT("ripple::redeemIOU : matching issue", issue == amount.issue());
 
     // Can't send to self!
-    XRPL_ASSERT(issue.account != account);
+    XRPL_ASSERT(
+        "ripple::redeemIOU : not issuer account", issue.account != account);
 
     JLOG(j.trace()) << "redeemIOU: " << to_string(account) << ": "
                     << amount.getFullText();
@@ -1483,10 +1509,11 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j)
 {
-    XRPL_ASSERT(from != beast::zero);
-    XRPL_ASSERT(to != beast::zero);
-    XRPL_ASSERT(from != to);
-    XRPL_ASSERT(amount.native());
+    XRPL_ASSERT(
+        "ripple::transferXRP : nonzero from account", from != beast::zero);
+    XRPL_ASSERT("ripple::transferXRP : nonzero to account", to != beast::zero);
+    XRPL_ASSERT("ripple::transferXRP : from and to are unequal", from != to);
+    XRPL_ASSERT("ripple::transferXRP : amount is XRP", amount.native());
 
     SLE::pointer const sender = view.peek(keylet::account(from));
     SLE::pointer const receiver = view.peek(keylet::account(to));
@@ -1596,7 +1623,9 @@ cleanupOnAccountDelete(
             //
             //  3. So we verify that uDirEntry is indeed 'it'+1.  Then we jam it
             //     back to 'it' to "un-invalidate" the iterator.
-            XRPL_ASSERT(uDirEntry >= 1);
+            XRPL_ASSERT(
+                "ripple::cleanupOnAccountDelete : minimum dir entries",
+                uDirEntry >= 1);
             if (uDirEntry == 0)
             {
                 JLOG(j.error())

@@ -34,7 +34,9 @@ Message::Message(
 
     auto const messageBytes = messageSize(message);
 
-    XRPL_ASSERT(messageBytes != 0);
+    XRPL_ASSERT(
+        "ripple::Message::Message : non-empty message input",
+        messageBytes != 0);
 
     buffer_.resize(headerBytes + messageBytes);
 
@@ -43,7 +45,9 @@ Message::Message(
     if (messageBytes != 0)
         message.SerializeToArray(buffer_.data() + headerBytes, messageBytes);
 
-    XRPL_ASSERT(getBufferSize() == totalSize(message));
+    XRPL_ASSERT(
+        "ripple::Message::Message : message size matches the buffer",
+        getBufferSize() == totalSize(message));
 }
 
 // static

@@ -139,7 +139,9 @@ SkipListAcquire::processData(
     std::uint32_t ledgerSeq,
     boost::intrusive_ptr<SHAMapItem const> const& item)
 {
-    XRPL_ASSERT(ledgerSeq != 0 && item);
+    XRPL_ASSERT(
+        "ripple::SkipListAcquire::processData : valid inputs",
+        ledgerSeq != 0 && item);
     ScopedLockType sl(mtx_);
     if (isDone())
         return;
@@ -224,7 +226,7 @@ SkipListAcquire::onSkipListAcquired(
 void
 SkipListAcquire::notify(ScopedLockType& sl)
 {
-    XRPL_ASSERT(isDone());
+    XRPL_ASSERT("ripple::SkipListAcquire::notify : is done", isDone());
     std::vector<OnSkipListDataCB> toCall;
     std::swap(toCall, dataReadyCallbacks_);
     auto const good = !failed_;

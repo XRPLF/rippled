@@ -28,7 +28,9 @@ doVacuumDB(DatabaseCon::Setup const& setup)
     boost::filesystem::path dbPath = setup.dataDir / TxDBName;
 
     uintmax_t const dbSize = file_size(dbPath);
-    XRPL_ASSERT(dbSize != static_cast<uintmax_t>(-1));
+    XRPL_ASSERT(
+        "ripple:doVacuumDB : file_size succeeded",
+        dbSize != static_cast<uintmax_t>(-1));
 
     if (auto available = space(dbPath.parent_path()).available;
         available < dbSize)
@@ -54,7 +56,8 @@ doVacuumDB(DatabaseCon::Setup const& setup)
     std::cout << "VACUUM beginning. page_size: " << pageSize << std::endl;
 
     session << "VACUUM;";
-    XRPL_ASSERT(setup.globalPragma);
+    XRPL_ASSERT(
+        "ripple:doVacuumDB : non-null global pragma", setup.globalPragma);
     for (auto const& p : *setup.globalPragma)
         session << p;
     session << "PRAGMA page_size;", soci::into(pageSize);

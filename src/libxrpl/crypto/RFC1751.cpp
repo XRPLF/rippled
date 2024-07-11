@@ -270,10 +270,12 @@ RFC1751::extract(char const* s, int start, int length)
     unsigned char cr;
     unsigned long x;
 
-    XRPL_ASSERT(length <= 11);
-    XRPL_ASSERT(start >= 0);
-    XRPL_ASSERT(length >= 0);
-    XRPL_ASSERT(start + length <= 66);
+    XRPL_ASSERT("ripple::RFC1751::extract : maximum length", length <= 11);
+    XRPL_ASSERT("ripple::RFC1751::extract : minimum start", start >= 0);
+    XRPL_ASSERT("ripple::RFC1751::extract : minimum length", length >= 0);
+    XRPL_ASSERT(
+        "ripple::RFC1751::extract : maximum start + length",
+        start + length <= 66);
 
     int const shiftR = 24 - (length + (start % 8));
     cl = s[start / 8];  // get components
@@ -320,10 +322,12 @@ RFC1751::insert(char* s, int x, int start, int length)
     unsigned long y;
     int shift;
 
-    XRPL_ASSERT(length <= 11);
-    XRPL_ASSERT(start >= 0);
-    XRPL_ASSERT(length >= 0);
-    XRPL_ASSERT(start + length <= 66);
+    XRPL_ASSERT("ripple::RFC1751::insert : maximum length", length <= 11);
+    XRPL_ASSERT("ripple::RFC1751::insert : minimum start", start >= 0);
+    XRPL_ASSERT("ripple::RFC1751::insert : minimum length", length >= 0);
+    XRPL_ASSERT(
+        "ripple::RFC1751::insert : maximum start + length",
+        start + length <= 66);
 
     shift = ((8 - ((start + length) % 8)) % 8);
     y = (long)x << shift;

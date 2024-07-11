@@ -113,8 +113,9 @@ public:
     {
         // Ensure the slice isn't a subset of the buffer.
         XRPL_ASSERT(
+            "ripple::Buffer::operator=(Slice) : input not a subset",
             s.size() == 0 || size_ == 0 || s.data() < p_.get() ||
-            s.data() >= p_.get() + size_);
+                s.data() >= p_.get() + size_);
 
         if (auto p = alloc(s.size()))
             std::memcpy(p, s.data(), s.size());

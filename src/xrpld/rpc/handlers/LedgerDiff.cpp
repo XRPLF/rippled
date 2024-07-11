@@ -73,7 +73,9 @@ doLedgerDiffGrpc(
         }
         else
         {
-            XRPL_ASSERT(inDesired->size() > 0);
+            XRPL_ASSERT(
+                "ripple::doLedgerDiffGrpc : non-empty desired",
+                inDesired->size() > 0);
             diff->set_key(k.data(), k.size());
             if (request.include_blobs())
             {

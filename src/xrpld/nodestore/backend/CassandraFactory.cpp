@@ -164,7 +164,9 @@ public:
     {
         if (open_)
         {
-            XRPL_UNREACHABLE();
+            XRPL_UNREACHABLE(
+                "ripple::NodeStore::CassandraBackend::open : database is "
+                "already open");
             JLOG(j_.error()) << "database is already open";
             return;
         }
@@ -342,7 +344,9 @@ public:
         {
             std::this_thread::sleep_for(std::chrono::seconds(1));
             session_.reset(cass_session_new());
-            XRPL_ASSERT(session_);
+            XRPL_ASSERT(
+                "ripple::NodeStore::CassandraBackend::open : non-null session",
+                session_);
 
             fut = cass_session_connect_keyspace(
                 session_.get(), cluster, keyspace.c_str());
@@ -625,7 +629,10 @@ public:
                 numHashes));
             read(*cbs[i]);
         }
-        XRPL_ASSERT(results.size() == cbs.size());
+        XRPL_ASSERT(
+            "ripple::NodeStore::CassandraBackend::fetchBatch : results size do "
+            "match",
+            results.size() == cbs.size());
 
         std::unique_lock<std::mutex> lck(mtx);
         cv.wait(lck, [&numFinished, &numHashes]() {
@@ -789,7 +796,8 @@ public:
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::NodeStore::CassandraBackend::for_each : not implemented");
         Throw<std::runtime_error>("not implemented");
     }
 

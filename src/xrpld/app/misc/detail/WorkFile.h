@@ -88,7 +88,7 @@ WorkFile::run()
     error_code ec;
     auto const fileContents = getFileContents(ec, path_, megabytes(1));
 
-    XRPL_ASSERT(cb_);
+    XRPL_ASSERT("ripple::detail::WorkFile::run : callback is set", cb_);
     cb_(ec, fileContents);
     cb_ = nullptr;
 }

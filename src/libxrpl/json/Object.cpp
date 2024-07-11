@@ -168,7 +168,7 @@ Array::append(Json::Value const& v)
             return;
         }
     }
-    XRPL_UNREACHABLE();  // Can't get here.
+    XRPL_UNREACHABLE("Json::Array::append : invalid type");  // Can't get here.
 }
 
 void
@@ -203,7 +203,7 @@ Object::set(std::string const& k, Json::Value const& v)
             return;
         }
     }
-    XRPL_UNREACHABLE();  // Can't get here.
+    XRPL_UNREACHABLE("Json::Object::set : invalid type");  // Can't get here.
 }
 
 //------------------------------------------------------------------------------
@@ -214,7 +214,7 @@ template <class Object>
 void
 doCopyFrom(Object& to, Json::Value const& from)
 {
-    XRPL_ASSERT(from.isObjectOrNull());
+    XRPL_ASSERT("Json::doCopyFrom : valid input type", from.isObjectOrNull());
     auto members = from.getMemberNames();
     for (auto& m : members)
         to[m] = from[m];

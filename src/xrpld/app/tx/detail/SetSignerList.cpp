@@ -128,7 +128,10 @@ SetSignerList::doApply()
         default:
             break;
     }
-    XRPL_UNREACHABLE();  // Should not be possible to get here.
+    XRPL_UNREACHABLE(
+        "ripple::SetSignerList::doApply : invalid operation");  // Should not be
+                                                                // possible to
+                                                                // get here.
     return temMALFORMED;
 }
 
@@ -137,8 +140,12 @@ SetSignerList::preCompute()
 {
     // Get the quorum and operation info.
     auto result = determineOperation(ctx_.tx, view().flags(), j_);
-    XRPL_ASSERT(std::get<0>(result) == tesSUCCESS);
-    XRPL_ASSERT(std::get<3>(result) != unknown);
+    XRPL_ASSERT(
+        "ripple::SetSignerList::preCompute : result is tesSUCCESS",
+        std::get<0>(result) == tesSUCCESS);
+    XRPL_ASSERT(
+        "ripple::SetSignerList::preCompute : result is known operation",
+        std::get<3>(result) != unknown);
 
     quorum_ = std::get<1>(result);
     signers_ = std::get<2>(result);
@@ -171,8 +178,12 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
     // The static_cast should always be safe since entryCount should always
     // be in the range from 1 to 8 (or 32 if ExpandedSignerList is enabled).
     // We've got a lot of room to grow.
-    XRPL_ASSERT(entryCount >= STTx::minMultiSigners);
-    XRPL_ASSERT(entryCount <= STTx::maxMultiSigners(&rules));
+    XRPL_ASSERT(
+        "ripple::signerCountBasedOwnerCountDelta : minimum signers",
+        entryCount >= STTx::minMultiSigners);
+    XRPL_ASSERT(
+        "ripple::signerCountBasedOwnerCountDelta : maximum signers",
+        entryCount <= STTx::maxMultiSigners(&rules));
     return 2 + static_cast<int>(entryCount);
 }
 
@@ -260,7 +271,10 @@ SetSignerList::validateQuorumAndSignerEntries(
     }
 
     // Make sure there are no duplicate signers.
-    XRPL_ASSERT(std::is_sorted(signers.begin(), signers.end()));
+    XRPL_ASSERT(
+        "ripple::SetSignerList::validateQuorumAndSignerEntries : sorted "
+        "signers",
+        std::is_sorted(signers.begin(), signers.end()));
     if (std::adjacent_find(signers.begin(), signers.end()) != signers.end())
     {
         JLOG(j.trace()) << "Duplicate signers in signer list";

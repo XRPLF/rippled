@@ -243,7 +243,9 @@ GRPCServerImpl::CallData<Request, Response>::forwardToP2p(
     }
     else
     {
-        XRPL_UNREACHABLE();
+        XRPL_UNREACHABLE(
+            "ripple::GRPCServerImpl::CallData::forwardToP2p : client_ip field "
+            "not present");
         Throw<std::runtime_error>(
             "Attempting to forward but no client_ip field in "
             "protobuf message");
@@ -714,7 +716,7 @@ GRPCServer::stop()
 
 GRPCServer::~GRPCServer()
 {
-    XRPL_ASSERT(!running_);
+    XRPL_ASSERT("ripple::GRPCServer::~GRPCServer : is not running", !running_);
 }
 
 }  // namespace ripple

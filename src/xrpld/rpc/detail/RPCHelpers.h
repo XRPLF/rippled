@@ -213,7 +213,9 @@ template <class Object>
 void
 setVersion(Object& parent, unsigned int apiVersion, bool betaEnabled)
 {
-    XRPL_ASSERT(apiVersion != apiInvalidVersion);
+    XRPL_ASSERT(
+        "ripple::RPC::setVersion : input is valid",
+        apiVersion != apiInvalidVersion);
     auto&& object = addObject(parent, jss::version);
     if (apiVersion == apiVersionIfUnspecified)
     {

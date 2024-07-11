@@ -137,7 +137,9 @@ STTx::getMentionedAccounts() const
     {
         if (auto sacc = dynamic_cast<STAccount const*>(&it))
         {
-            XRPL_ASSERT(!sacc->isDefault());
+            XRPL_ASSERT(
+                "ripple::STTx::getMentionedAccounts : account is set",
+                !sacc->isDefault());
             if (!sacc->isDefault())
                 list.insert(sacc->value());
         }
@@ -298,7 +300,8 @@ STTx::getMetaSQL(
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
     auto format = TxFormats::getInstance().findByType(tx_type_);
-    XRPL_ASSERT(format != nullptr);
+    XRPL_ASSERT(
+        "ripple::STTx::getMetaSQL : non-null type format", format != nullptr);
 
     return str(
         boost::format(bfTrans) % to_string(getTransactionID()) %
