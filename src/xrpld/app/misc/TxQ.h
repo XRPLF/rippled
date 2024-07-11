@@ -21,13 +21,13 @@
 #define RIPPLE_TXQ_H_INCLUDED
 
 #include <xrpld/app/tx/applySteps.h>
+#include <xrpld/app/tx/detail/Transactor.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/OpenView.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpld/app/tx/detail/Transactor.h>
 #include <boost/circular_buffer.hpp>
 #include <boost/intrusive/set.hpp>
 #include <optional>
