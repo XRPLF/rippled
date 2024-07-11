@@ -100,22 +100,19 @@ preflight1(PreflightContext const& ctx)
     }
 
     // No point in going any further if the transaction fee is malformed.
-    if (!(ctx.flags & tapDRY_RUN))
+    auto const fee = ctx.tx.getFieldAmount(sfFee);
+    if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
     {
-        auto const fee = ctx.tx.getFieldAmount(sfFee);
-        if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
-        {
-            JLOG(ctx.j.debug()) << "preflight1: invalid fee";
-            return temBAD_FEE;
-        }
+        JLOG(ctx.j.debug()) << "preflight1: invalid fee";
+        return temBAD_FEE;
+    }
 
-        auto const spk = ctx.tx.getSigningPubKey();
+    auto const spk = ctx.tx.getSigningPubKey();
 
-        if (!spk.empty() && !publicKeyType(makeSlice(spk)))
-        {
-            JLOG(ctx.j.debug()) << "preflight1: invalid signing key";
-            return temBAD_SIGNATURE;
-        }
+    if (!spk.empty() && !publicKeyType(makeSlice(spk)))
+    {
+        JLOG(ctx.j.debug()) << "preflight1: invalid signing key";
+        return temBAD_SIGNATURE;
     }
 
     // An AccountTxnID field constrains transaction ordering more than the
@@ -136,7 +133,13 @@ NotTEC
 preflight2(PreflightContext const& ctx)
 {
     if (ctx.flags & tapDRY_RUN)
-        return tesSUCCESS;
+    {
+        if (ctx.tx.getSigningPubKey().empty() && ctx.tx.getSignature().empty())
+            return tesSUCCESS;
+        // NOTE: This code should never be hit because it's checked in the
+        // `simulate` RPC
+        return temINVALID;
+    }
     auto const sigValid = checkValidity(
         ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
     if (sigValid.first == Validity::SigBad)
@@ -487,8 +490,10 @@ Transactor::checkSign(PreclaimContext const& ctx)
 {
     if (ctx.flags & tapDRY_RUN)
     {
-        // TODO: ensure there is no signature included
-        return tesSUCCESS;
+        if (ctx.tx.getSigningPubKey().empty() && ctx.tx.getSignature().empty())
+            return tesSUCCESS;
+        // Already checked in preflight2, should never be hit
+        return temINVALID;
     }
     // If the pk is empty, then we must be multi-signing.
     if (ctx.tx.getSigningPubKey().empty())
