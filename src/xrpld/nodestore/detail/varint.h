@@ -20,12 +20,6 @@
 #ifndef BEAST_NUDB_VARINT_H_INCLUDED
 #define BEAST_NUDB_VARINT_H_INCLUDED
 
-/*
- * Without this header, nudb/detail/stream.hpp fails to build on Windows. Until
- * this is fixed, include it here.
- */
-#include <stdexcept>
-
 #include <cstdint>
 #include <nudb/detail/stream.hpp>
 #include <type_traits>
