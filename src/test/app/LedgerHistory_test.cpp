@@ -52,7 +52,7 @@ public:
     {
         if (!prev)
         {
-            XRPL_ASSERT(!stx);
+            assert(!stx);
             return std::make_shared<Ledger>(
                 create_genesis,
                 env.app().config(),

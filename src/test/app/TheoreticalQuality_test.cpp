@@ -64,7 +64,7 @@ struct RippleCalcTestParams
                 {
                     if (pe.isMember(jss::account))
                     {
-                        XRPL_ASSERT(
+                        assert(
                             !pe.isMember(jss::currency) &&
                             !pe.isMember(jss::issuer));
                         p.emplace_back(
@@ -83,13 +83,13 @@ struct RippleCalcTestParams
                             issuer = *parseBase58<AccountID>(
                                 pe[jss::issuer].asString());
                         else
-                            XRPL_ASSERT(isXRP(*parseBase58<AccountID>(
+                            assert(isXRP(*parseBase58<AccountID>(
                                 pe[jss::issuer].asString())));
                         p.emplace_back(std::nullopt, currency, issuer);
                     }
                     else
                     {
-                        XRPL_ASSERT(0);
+                        assert(0);
                     }
                 }
                 paths.emplace_back(std::move(p));

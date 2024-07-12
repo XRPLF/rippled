@@ -44,7 +44,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         cfg->START_LEDGER = ledger;
         cfg->START_UP = type;
         cfg->TRAP_TX_HASH = trapTxHash;
-        XRPL_ASSERT(!dbPath.empty());
+        assert(!dbPath.empty());
         cfg->legacy("database_path", dbPath);
         return cfg;
     }

@@ -420,7 +420,7 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
                     buf.data(), buf.size(), recvd_size, priority);
                 if (!recvd_size)
                     continue;
-                XRPL_ASSERT(recvd_size == 1);
+                assert(recvd_size == 1);
                 MessageType mt{*reinterpret_cast<MessageType*>(buf.data())};
 
                 this->message_queue_->receive(
@@ -441,7 +441,7 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
                             running_suites_.erase(s);
                             break;
                         default:
-                            XRPL_ASSERT(0);  // unknown message type
+                            assert(0);  // unknown message type
                     }
                 }
             }

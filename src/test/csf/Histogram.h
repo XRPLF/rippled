@@ -110,7 +110,7 @@ public:
     T
     percentile(float p) const
     {
-        XRPL_ASSERT(p >= 0 && p <= 1);
+        assert(p >= 0 && p <= 1);
         std::size_t pos = std::round(p * samples);
 
         if (counts_.empty())

@@ -470,7 +470,7 @@ struct LedgerServer
         , msgHandler(env.app(), env.app().getLedgerReplayer())
         , param(p)
     {
-        XRPL_ASSERT(param.initLedgers > 0);
+        assert(param.initLedgers > 0);
         createAccounts(param.initAccounts);
         createLedgerHistory();
         app.logs().threshold(beast::severities::kWarning);
@@ -499,7 +499,7 @@ struct LedgerServer
     sendPayments(int newTxes)
     {
         int fundedAccounts = accounts.size();
-        XRPL_ASSERT(fundedAccounts >= newTxes);
+        assert(fundedAccounts >= newTxes);
         std::unordered_set<int> senders;
 
         // somewhat random but reproducible
@@ -507,7 +507,7 @@ struct LedgerServer
         int fromIdx = 0;
         int toIdx = 0;
         auto updateIdx = [&]() {
-            XRPL_ASSERT(fundedAccounts > senders.size());
+            assert(fundedAccounts > senders.size());
             fromIdx = (fromIdx + r) % fundedAccounts;
             while (senders.count(fromIdx) != 0)
                 fromIdx = (fromIdx + 1) % fundedAccounts;

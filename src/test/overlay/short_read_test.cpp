@@ -112,7 +112,7 @@ private:
         ~Base()
         {
             // Derived class must call wait() in the destructor
-            XRPL_ASSERT(list_.empty());
+            assert(list_.empty());
         }
 
         void

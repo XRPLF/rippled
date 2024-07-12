@@ -253,7 +253,7 @@ public:
             jtx::Env env(*this);
             DatabaseCon::Setup setup;
             setup.dataDir = getDatabasePath();
-            XRPL_ASSERT(!setup.useGlobalPragma);
+            assert(!setup.useGlobalPragma);
 
             auto dbCon = makeTestWalletDB(setup, dbName);
 

@@ -2586,7 +2586,7 @@ public:
                     auto const signFn = get<0>(testFunc);
                     if (signFn != nullptr)
                     {
-                        XRPL_ASSERT(get<1>(testFunc) == nullptr);
+                        assert(get<1>(testFunc) == nullptr);
                         result = signFn(
                             req,
                             1,
@@ -2598,7 +2598,7 @@ public:
                     else
                     {
                         auto const submitFn = get<1>(testFunc);
-                        XRPL_ASSERT(submitFn != nullptr);
+                        assert(submitFn != nullptr);
                         result = submitFn(
                             req,
                             1,

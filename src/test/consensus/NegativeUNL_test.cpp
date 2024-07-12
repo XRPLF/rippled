@@ -594,7 +594,7 @@ struct NetworkHistory
     void
     createNodes()
     {
-        XRPL_ASSERT(param.numNodes <= 256);
+        assert(param.numNodes <= 256);
         UNLKeys = createPublicKeys(param.numNodes);
         for (int i = 0; i < param.numNodes; ++i)
         {

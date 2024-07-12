@@ -266,7 +266,7 @@ public:
         : validator_(validator), peer_(peer), latency_(latency), up_(true)
     {
         auto sp = peer_.lock();
-        XRPL_ASSERT(sp);
+        assert(sp);
     }
     ~Link() = default;
     void
@@ -275,7 +275,7 @@ public:
         if (!up_)
             return;
         auto sp = peer_.lock();
-        XRPL_ASSERT(sp);
+        assert(sp);
         auto peer = std::dynamic_pointer_cast<PeerPartial>(sp);
         peer->onMessage(m, f);
     }
@@ -293,14 +293,14 @@ public:
     peerId()
     {
         auto p = peer_.lock();
-        XRPL_ASSERT(p);
+        assert(p);
         return p->id();
     }
     PeerSPtr
     getPeer()
     {
         auto p = peer_.lock();
-        XRPL_ASSERT(p);
+        assert(p);
         return p;
     }
 
@@ -376,7 +376,7 @@ public:
     {
         for (auto id : peers)
         {
-            XRPL_ASSERT(links_.find(id) != links_.end());
+            assert(links_.find(id) != links_.end());
             f(*links_[id], message_);
         }
     }
@@ -429,7 +429,7 @@ public:
     linkUp(Peer::id_t id)
     {
         auto it = links_.find(id);
-        XRPL_ASSERT(it != links_.end());
+        assert(it != links_.end());
         it->second->up(true);
     }
 
@@ -437,7 +437,7 @@ public:
     linkDown(Peer::id_t id)
     {
         auto it = links_.find(id);
-        XRPL_ASSERT(it != links_.end());
+        assert(it != links_.end());
         it->second->up(false);
     }
 
@@ -478,7 +478,7 @@ public:
     onMessage(MessageSPtr const& m, SquelchCB f) override
     {
         auto validator = m->getValidatorKey();
-        XRPL_ASSERT(validator);
+        assert(validator);
         if (!squelch_.expireSquelch(*validator))
             return;
 
@@ -584,7 +584,7 @@ public:
     deletePeer(Peer::id_t id, bool useCache = true)
     {
         auto it = peers_.find(id);
-        XRPL_ASSERT(it != peers_.end());
+        assert(it != peers_.end());
         deletePeer(id, [&](PublicKey const&, PeerWPtr) {});
         if (useCache)
             peersCache_.emplace(std::make_pair(id, it->second));
@@ -643,7 +643,7 @@ public:
     getSelectedPeer(PublicKey const& validator)
     {
         auto selected = slots_.getSelected(validator);
-        XRPL_ASSERT(selected.size());
+        assert(selected.size());
         return *selected.begin();
     }
 
@@ -752,7 +752,7 @@ public:
     Validator&
     validator(std::uint16_t v)
     {
-        XRPL_ASSERT(v < validators_.size());
+        assert(v < validators_.size());
         return validators_[v];
     }
 
@@ -769,7 +769,7 @@ public:
             std::find_if(validators_.begin(), validators_.end(), [&](auto& v) {
                 return v.id() == validatorId;
             });
-        XRPL_ASSERT(it != validators_.end());
+        assert(it != validators_.end());
         if (enable)
             it->linkUp(peer);
         else
@@ -911,7 +911,7 @@ protected:
         if (res)
             squelch.set_squelchduration(*duration);
         auto sp = peerPtr.lock();
-        XRPL_ASSERT(sp);
+        assert(sp);
         std::dynamic_pointer_cast<PeerSim>(sp)->send(squelch);
         return sp->id();
     }
@@ -958,7 +958,7 @@ protected:
                 [&](PublicKey const& key,
                     PeerWPtr const& peerPtr,
                     std::uint32_t duration) {
-                    XRPL_ASSERT(key == validator);
+                    assert(key == validator);
                     auto p = sendSquelch(key, peerPtr, duration);
                     squelched = true;
                     str << p << " ";
@@ -1295,7 +1295,7 @@ protected:
                 return std::get<reduce_relay::PeerState>(it.second) ==
                     reduce_relay::PeerState::Squelched;
             });
-            XRPL_ASSERT(it != peers.end());
+            assert(it != peers.end());
             std::uint16_t unsquelched = 0;
             network_.overlay().deletePeer(
                 it->first, [&](PublicKey const& key, PeerWPtr const& peer) {
