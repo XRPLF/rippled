@@ -1119,7 +1119,7 @@ if (tests)
     #]===============================]
     src/test/rpc/AccountCurrencies_test.cpp
     src/test/rpc/AccountInfo_test.cpp
-    src/test/rpc/AccountLinesRPC_test.cpp
+    src/test/rpc/AccountLines_test.cpp
     src/test/rpc/AccountObjects_test.cpp
     src/test/rpc/AccountOffers_test.cpp
     src/test/rpc/AccountSet_test.cpp

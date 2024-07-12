@@ -27,7 +27,7 @@ namespace ripple {
 
 namespace RPC {
 
-class AccountLinesRPC_test : public beast::unit_test::suite
+class AccountLines_test : public beast::unit_test::suite
 {
 public:
     void
@@ -54,6 +54,25 @@ public:
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
                 RPC::make_error(rpcACT_MALFORMED)[jss::error_message]);
+        }
+        {
+            // test account non-string
+            auto testInvalidAccountParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::account] = param;
+                auto jrr = env.rpc(
+                    "json", "account_lines", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(
+                    jrr[jss::error_message] == "Invalid field 'account'.");
+            };
+
+            testInvalidAccountParam(1);
+            testInvalidAccountParam(1.1);
+            testInvalidAccountParam(true);
+            testInvalidAccountParam(Json::Value(Json::nullValue));
+            testInvalidAccountParam(Json::Value(Json::objectValue));
+            testInvalidAccountParam(Json::Value(Json::arrayValue));
         }
         Account const alice{"alice"};
         {
@@ -1474,7 +1493,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountLinesRPC, app, ripple);
+BEAST_DEFINE_TESTSUITE(AccountLines, rpc, ripple);
 
 }  // namespace RPC
 }  // namespace ripple
