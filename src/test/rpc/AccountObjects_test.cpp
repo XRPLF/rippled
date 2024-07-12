@@ -126,6 +126,24 @@ public:
             auto resp = env.rpc("json", "account_objects");
             BEAST_EXPECT(resp[jss::error_message] == "Syntax error.");
         }
+        // test account non-string
+        {
+            auto testInvalidAccountParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::account] = param;
+                auto jrr = env.rpc(
+                    "json", "account_objects", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_message] == "Invalid parameters.");
+            };
+
+            testInvalidAccountParam(1);
+            testInvalidAccountParam(1.1);
+            testInvalidAccountParam(true);
+            testInvalidAccountParam(Json::Value(Json::nullValue));
+            testInvalidAccountParam(Json::Value(Json::objectValue));
+            testInvalidAccountParam(Json::Value(Json::arrayValue));
+        }
         // test error on  malformed account string.
         {
             Json::Value params;
@@ -1042,7 +1060,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountObjects, app, ripple);
+BEAST_DEFINE_TESTSUITE(AccountObjects, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

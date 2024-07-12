@@ -172,6 +172,8 @@ doAccountObjects(RPC::JsonContext& context)
     if (ledger == nullptr)
         return result;
 
+    if (!params[jss::account].isString())
+        return rpcError(rpcINVALID_PARAMS);
     auto const id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
     {
