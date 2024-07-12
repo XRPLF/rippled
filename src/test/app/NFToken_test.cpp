@@ -7747,7 +7747,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     void
     testNFTokenModify(FeatureBitset features)
     {
-        testcase("Test NFTokenModify")
+        testcase("Test NFTokenModify");
 
         using namespace test::jtx;
 
