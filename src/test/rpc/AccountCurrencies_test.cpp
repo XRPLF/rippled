@@ -39,6 +39,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
 
         {  // invalid ledger (hash)
             Json::Value params;
+            params[jss::account] = Account{"bob"}.human();
             params[jss::ledger_hash] = 1;
             auto const result = env.rpc(
                 "json",
@@ -54,6 +55,27 @@ class AccountCurrencies_test : public beast::unit_test::suite
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(
                 result[jss::error_message] == "Missing field 'account'.");
+        }
+
+        {
+            // test account non-string
+            auto testInvalidAccountParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::account] = param;
+                auto jrr = env.rpc(
+                    "json",
+                    "account_currencies",
+                    to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_message] == "Invalid parameters.");
+            };
+
+            testInvalidAccountParam(1);
+            testInvalidAccountParam(1.1);
+            testInvalidAccountParam(true);
+            testInvalidAccountParam(Json::Value(Json::nullValue));
+            testInvalidAccountParam(Json::Value(Json::objectValue));
+            testInvalidAccountParam(Json::Value(Json::arrayValue));
         }
 
         {
@@ -198,6 +220,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountCurrencies, app, ripple);
+BEAST_DEFINE_TESTSUITE(AccountCurrencies, rpc, ripple);
 
 }  // namespace ripple
