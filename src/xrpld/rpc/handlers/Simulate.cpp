@@ -38,6 +38,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
 {
     if (!tx_json.isMember(jss::Fee))
     {
+        // autofill Fee
         tx_json[jss::Fee] = RPC::getCurrentFee(
             context.role,
             context.app.config(),
@@ -47,34 +48,39 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
     }
     if (!tx_json.isMember(sfSigningPubKey.jsonName))
     {
+        // autofill SigningPubKey
         tx_json[sfSigningPubKey.jsonName] = "";
     }
     else if (tx_json[sfSigningPubKey.jsonName] != "")
     {
-        return RPC::make_error(
-            rpcINVALID_PARAMS,
-            RPC::invalid_field_message("tx_json.SigningPubKey"));
+        // Transaction must not be signed
+        return rpcError(rpcTX_SIGNED);
     }
     if (!tx_json.isMember(sfTxnSignature.jsonName))
     {
+        // autofill TxnSignature
         tx_json[sfTxnSignature.jsonName] = "";
     }
     else if (tx_json[sfTxnSignature.jsonName] != "")
     {
-        return RPC::make_error(
-            rpcINVALID_PARAMS,
-            RPC::invalid_field_message("tx_json.TxnSignature"));
+        // Transaction must not be signed
+        return rpcError(rpcTX_SIGNED);
     }
     if (!tx_json.isMember(jss::Sequence))
     {
+        // autofill Sequence
         bool const hasTicketSeq = tx_json.isMember(sfTicketSequence.jsonName);
+        auto const accountStr = tx_json[jss::Account];
+        if (!accountStr.isString())
+        {
+            return RPC::invalid_field_error("tx.Account");
+        }
         auto const srcAddressID =
             *(parseBase58<AccountID>(tx_json[jss::Account].asString()));
         if (!srcAddressID)
         {
             return RPC::make_error(
-                rpcSRC_ACT_MALFORMED,
-                RPC::invalid_field_message("tx_json.Account"));
+                rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx.Account"));
         }
         std::shared_ptr<SLE const> sle =
             context.app.openLedger().current()->read(
@@ -115,7 +121,7 @@ doSimulate(RPC::JsonContext& context)
         auto const binary = context.params[jss::binary];
         if (!binary.isBool())
         {
-            return rpcError(rpcINVALID_PARAMS);
+            return RPC::invalid_field_error(jss::binary);
         }
     }
 
@@ -126,26 +132,42 @@ doSimulate(RPC::JsonContext& context)
             // both `tx_blob` and `tx_json` included
             return rpcError(rpcINVALID_PARAMS);
         }
-
-        auto unHexed = strUnHex(context.params[jss::tx_blob].asString());
+        auto const blob = context.params[jss::tx_blob];
+        if (!blob.isString())
+        {
+            return RPC::invalid_field_message(jss::tx_blob);
+        }
+        auto unHexed = strUnHex(blob.asString());
 
         if (!unHexed || !unHexed->size())
-            return RPC::make_error(
-                rpcINVALID_PARAMS, RPC::invalid_field_message("tx_blob"));
+            return RPC::invalid_field_error(jss::tx_blob);
 
         SerialIter sitTrans(makeSlice(*unHexed));
         tx_json =
             STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::none);
     }
+    else if (context.params.isMember(jss::tx_json))
+    {
+        tx_json = context.params[jss::tx_json];
+        if (!tx_json.isObject())
+        {
+            return RPC::object_field_error(jss::tx_json);
+        }
+    }
     else
     {
-        if (!context.params.isMember(jss::tx_json))
-        {
-            // neither `tx_blob` nor `tx_json` included`
-            return rpcError(rpcINVALID_PARAMS);
-        }
+        // neither `tx_blob` nor `tx_json` included`
+        return rpcError(rpcINVALID_PARAMS);
+    }
 
-        tx_json = context.params[jss::tx_json];
+    // basic sanity checks for transaction shape
+    if (!tx_json.isMember(jss::TransactionType))
+    {
+        return RPC::missing_field_error("tx.TransactionType");
+    }
+    if (!tx_json.isMember(jss::Account))
+    {
+        return RPC::missing_field_error("tx.Account");
     }
 
     // autofill fields if they're not included (e.g. `Fee`, `Sequence`)

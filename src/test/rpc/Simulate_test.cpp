@@ -54,11 +54,12 @@ class Simulate_test : public beast::unit_test::suite
         Env env(*this);
 
         {
+            // No params
             auto resp = env.rpc("json", "simulate");
             BEAST_EXPECT(resp[jss::error_message] == "Syntax error.");
         }
-
         {
+            // Providing both `tx_json` and `tx_blob`
             Json::Value params;
             params[jss::tx_json] = Json::objectValue;
             params[jss::tx_blob] = "1200";
@@ -67,14 +68,35 @@ class Simulate_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Invalid parameters.");
         }
-
         {
+            // `binary` isn't a boolean
             Json::Value params;
             params[jss::tx_blob] = "1200";
             params[jss::binary] = "100";
             auto resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
-                resp[jss::result][jss::error_message] == "Invalid parameters.");
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'binary'.");
+        }
+        {
+            // Empty `tx_json`
+            Json::Value params;
+            params[jss::tx_json] = Json::objectValue;
+
+            auto resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Missing field 'tx.TransactionType'.");
+        }
+        {
+            // Empty `tx_blob`
+            Json::Value params;
+            params[jss::tx_blob] = "";
+
+            auto resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'tx_blob'.");
         }
     }
     void
