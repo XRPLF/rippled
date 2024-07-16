@@ -66,6 +66,10 @@ doNoRippleCheck(RPC::JsonContext& context)
 
     if (!params.isMember("role"))
         return RPC::missing_field_error("role");
+
+    if (!params[jss::account].isString())
+        return rpcError(rpcINVALID_PARAMS);
+
     bool roleGateway = false;
     {
         std::string const role = params["role"].asString();
