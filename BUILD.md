@@ -242,7 +242,7 @@ It patches their CMake to correctly import its dependencies.
     Single-config generators:
 
     ```
-    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
+    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=TRUE ..
     ```
 
     Pass the CMake variable [`CMAKE_BUILD_TYPE`][build_type]
@@ -252,7 +252,7 @@ It patches their CMake to correctly import its dependencies.
     Multi-config generators:
 
     ```
-    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
+    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -Dxrpld=TRUE -Dtests=TRUE  ..
     ```
 
     **Note:** You can pass build options for `rippled` in this step.
