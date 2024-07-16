@@ -439,7 +439,10 @@ doAccountTxJson(RPC::JsonContext& context)
     args.forward =
         params.isMember(jss::forward) && params[jss::forward].asBool();
 
-    if (!params.isMember(jss::account) || !params[jss::account].isString())
+    if (!params.isMember(jss::account))
+        return RPC::missing_field_error(jss::account);
+
+    if (!params[jss::account].isString())
         return rpcError(rpcINVALID_PARAMS);
 
     auto const account =

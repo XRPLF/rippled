@@ -109,6 +109,7 @@ class AccountTx_test : public beast::unit_test::suite
     void
     testParameters(unsigned int apiVersion)
     {
+        testcase("Parameters APIv" + std::to_string(apiVersion));
         using namespace test::jtx;
 
         Env env(*this);
@@ -406,6 +407,8 @@ class AccountTx_test : public beast::unit_test::suite
     void
     testContents()
     {
+        testcase("Contents");
+
         // Get results for all transaction types that can be associated
         // with an account.  Start by generating all transaction types.
         using namespace test::jtx;
@@ -618,6 +621,8 @@ class AccountTx_test : public beast::unit_test::suite
     void
     testAccountDelete()
     {
+        testcase("AccountDelete");
+
         // Verify that if an account is resurrected then the account_tx RPC
         // command still recovers all transactions on that account before
         // and after resurrection.
@@ -758,7 +763,7 @@ public:
         testAccountDelete();
     }
 };
-BEAST_DEFINE_TESTSUITE(AccountTx, app, ripple);
+BEAST_DEFINE_TESTSUITE(AccountTx, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple
