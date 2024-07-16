@@ -1051,12 +1051,41 @@ public:
     }
 
     void
+    testAccountNFTs()
+    {
+        testcase("account_nfts");
+
+        using namespace jtx;
+        Env env(*this);
+
+        // test validation
+        {
+            auto testInvalidAccountParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::account] = param;
+                auto jrr = env.rpc(
+                    "json", "account_nfts", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_message] == "Invalid parameters.");
+            };
+
+            testInvalidAccountParam(1);
+            testInvalidAccountParam(1.1);
+            testInvalidAccountParam(true);
+            testInvalidAccountParam(Json::Value(Json::nullValue));
+            testInvalidAccountParam(Json::Value(Json::objectValue));
+            testInvalidAccountParam(Json::Value(Json::arrayValue));
+        }
+    }
+
+    void
     run() override
     {
         testErrors();
         testUnsteppedThenStepped();
         testUnsteppedThenSteppedWithNFTs();
         testObjectTypes();
+        testAccountNFTs();
     }
 };
 

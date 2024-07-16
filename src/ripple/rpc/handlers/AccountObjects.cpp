@@ -54,17 +54,19 @@ doAccountNFTs(RPC::JsonContext& context)
     if (!params.isMember(jss::account))
         return RPC::missing_field_error(jss::account);
 
-    std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context);
-    if (ledger == nullptr)
-        return result;
+    if (!params[jss::account].isString())
+        return rpcError(rpcINVALID_PARAMS);
 
     auto id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
     {
-        RPC::inject_error(rpcACT_MALFORMED, result);
-        return result;
+        return rpcError(rpcACT_MALFORMED);
     }
+
+    std::shared_ptr<ReadView const> ledger;
+    auto result = RPC::lookupLedger(ledger, context);
+    if (ledger == nullptr)
+        return result;
     auto const accountID{id.value()};
 
     if (!ledger->exists(keylet::account(accountID)))
