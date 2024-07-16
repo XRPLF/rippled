@@ -188,6 +188,7 @@ doSimulate(RPC::JsonContext& context)
             context.app, view, tpTrans->getSTransaction(), flags, context.j);
 
         jvResult[jss::applied] = result.second;
+        jvResult[jss::ledger_index] = view.seq();
 
         const bool isBinaryOutput =
             context.params.get(jss::binary, false).asBool();
