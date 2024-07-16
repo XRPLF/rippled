@@ -169,13 +169,14 @@ doAccountObjects(RPC::JsonContext& context)
     if (!params.isMember(jss::account))
         return RPC::missing_field_error(jss::account);
 
+    if (!params[jss::account].isString())
+        return rpcError(rpcINVALID_PARAMS);
+
     std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger(ledger, context);
     if (ledger == nullptr)
         return result;
 
-    if (!params[jss::account].isString())
-        return rpcError(rpcINVALID_PARAMS);
     auto const id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
     {

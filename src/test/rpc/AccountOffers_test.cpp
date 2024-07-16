@@ -37,6 +37,8 @@ public:
     void
     testNonAdminMinLimit()
     {
+        testcase("Non-Admin Min Limit");
+
         using namespace jtx;
         Env env{*this, envconfig(no_admin)};
         Account const gw("G1");
@@ -81,6 +83,9 @@ public:
     void
     testSequential(bool asAdmin)
     {
+        testcase(
+            std::string("Sequential - ") + (asAdmin ? "admin" : "non-admin"));
+
         using namespace jtx;
         Env env{*this, asAdmin ? envconfig() : envconfig(no_admin)};
         Account const gw("G1");
@@ -215,6 +220,8 @@ public:
     void
     testBadInput()
     {
+        testcase("Bad input");
+
         using namespace jtx;
         Env env(*this);
         Account const gw("G1");
@@ -231,6 +238,25 @@ public:
             BEAST_EXPECT(jrr[jss::error] == "badSyntax");
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Syntax error.");
+        }
+
+        {
+            // test account non-string
+            auto testInvalidAccountParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::account] = param;
+                auto jrr = env.rpc(
+                    "json", "account_objects", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_message] == "Invalid parameters.");
+            };
+
+            testInvalidAccountParam(1);
+            testInvalidAccountParam(1.1);
+            testInvalidAccountParam(true);
+            testInvalidAccountParam(Json::Value(Json::nullValue));
+            testInvalidAccountParam(Json::Value(Json::objectValue));
+            testInvalidAccountParam(Json::Value(Json::arrayValue));
         }
 
         {
@@ -326,7 +352,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountOffers, app, ripple);
+BEAST_DEFINE_TESTSUITE(AccountOffers, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple
