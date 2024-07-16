@@ -55,7 +55,7 @@ doAccountNFTs(RPC::JsonContext& context)
         return RPC::missing_field_error(jss::account);
 
     if (!params[jss::account].isString())
-        return rpcError(rpcINVALID_PARAMS);
+        return RPC::invalid_field_error(jss::account);
 
     auto id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
@@ -170,7 +170,7 @@ doAccountObjects(RPC::JsonContext& context)
         return RPC::missing_field_error(jss::account);
 
     if (!params[jss::account].isString())
-        return rpcError(rpcINVALID_PARAMS);
+        return RPC::invalid_field_error(jss::account);
 
     std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger(ledger, context);

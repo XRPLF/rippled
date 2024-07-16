@@ -40,13 +40,13 @@ doAccountCurrencies(RPC::JsonContext& context)
     if (params.isMember(jss::account))
     {
         if (!params[jss::account].isString())
-            return rpcError(rpcINVALID_PARAMS);
+            return RPC::invalid_field_error(jss::account);
         strIdent = params[jss::account].asString();
     }
     else if (params.isMember(jss::ident))
     {
         if (!params[jss::ident].isString())
-            return rpcError(rpcINVALID_PARAMS);
+            return RPC::invalid_field_error(jss::ident);
         strIdent = params[jss::ident].asString();
     }
 
