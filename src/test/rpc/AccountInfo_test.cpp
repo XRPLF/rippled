@@ -98,7 +98,7 @@ public:
             testInvalidAccountParam(Json::Value(Json::arrayValue));
         }
         {
-            // Cannot pass a non-string into the `account` param
+            // Cannot pass a non-string into the `ident` param
 
             auto testInvalidIdentParam = [&](auto const& param) {
                 Json::Value params;
