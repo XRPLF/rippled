@@ -87,7 +87,8 @@ public:
                 auto jrr = env.rpc(
                     "json", "account_info", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-                BEAST_EXPECT(jrr[jss::error_message] == "Invalid parameters.");
+                BEAST_EXPECT(
+                    jrr[jss::error_message] == "Invalid field 'account'.");
             };
 
             testInvalidAccountParam(1);
@@ -106,7 +107,8 @@ public:
                 auto jrr = env.rpc(
                     "json", "account_info", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-                BEAST_EXPECT(jrr[jss::error_message] == "Invalid parameters.");
+                BEAST_EXPECT(
+                    jrr[jss::error_message] == "Invalid field 'account'.");
             };
 
             testInvalidIdentParam(1);
