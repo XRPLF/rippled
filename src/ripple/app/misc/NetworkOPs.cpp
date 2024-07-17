@@ -29,6 +29,7 @@
 #include <ripple/app/ledger/TransactionMaster.h>
 #include <ripple/app/main/LoadManager.h>
 #include <ripple/app/misc/AmendmentTable.h>
+#include <ripple/app/misc/DeliverMax.h>
 #include <ripple/app/misc/HashRouter.h>
 #include <ripple/app/misc/LoadFeeTrack.h>
 #include <ripple/app/misc/NetworkOPs.h>
@@ -42,7 +43,6 @@
 #include <ripple/app/reporting/ReportingETL.h>
 #include <ripple/app/tx/apply.h>
 #include <ripple/basics/PerfLog.h>
-#include <ripple/basics/SubmitSync.h>
 #include <ripple/basics/UptimeClock.h>
 #include <ripple/basics/mulDiv.h>
 #include <ripple/basics/safe_cast.h>
@@ -53,25 +53,27 @@
 #include <ripple/crypto/RFC1751.h>
 #include <ripple/crypto/csprng.h>
 #include <ripple/json/to_string.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/BuildInfo.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/MultiApiJson.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/STParsedJSON.h>
+#include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/BookChanges.h>
 #include <ripple/rpc/DeliveredAmount.h>
 #include <ripple/rpc/ServerHandler.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/steady_timer.hpp>
 
 #include <algorithm>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -234,7 +236,6 @@ public:
         , heartbeatTimer_(io_svc)
         , clusterTimer_(io_svc)
         , accountHistoryTxTimer_(io_svc)
-        , batchApplyTimer_(io_svc)
         , mConsensus(
               app,
               make_FeeVote(
@@ -284,12 +285,43 @@ public:
     processTransaction(
         std::shared_ptr<Transaction>& transaction,
         bool bUnlimited,
-        RPC::SubmitSync sync,
         bool bLocal,
         FailHard failType) override;
 
-    bool
-    transactionBatch(bool drain) override;
+    /**
+     * For transactions submitted directly by a client, apply batch of
+     * transactions and wait for this transaction to complete.
+     *
+     * @param transaction Transaction object.
+     * @param bUnliimited Whether a privileged client connection submitted it.
+     * @param failType fail_hard setting from transaction submission.
+     */
+    void
+    doTransactionSync(
+        std::shared_ptr<Transaction> transaction,
+        bool bUnlimited,
+        FailHard failType);
+
+    /**
+     * For transactions not submitted by a locally connected client, fire and
+     * forget. Add to batch and trigger it to be processed if there's no batch
+     * currently being applied.
+     *
+     * @param transaction Transaction object
+     * @param bUnlimited Whether a privileged client connection submitted it.
+     * @param failType fail_hard setting from transaction submission.
+     */
+    void
+    doTransactionAsync(
+        std::shared_ptr<Transaction> transaction,
+        bool bUnlimited,
+        FailHard failtype);
+
+    /**
+     * Apply transactions in batches. Continue until none are queued.
+     */
+    void
+    transactionBatch();
 
     /**
      * Attempt to apply transactions and post-process based on the results.
@@ -563,15 +595,6 @@ public:
                     << "NetworkOPs: accountHistoryTxTimer cancel error: "
                     << ec.message();
             }
-
-            ec.clear();
-            batchApplyTimer_.cancel(ec);
-            if (ec)
-            {
-                JLOG(m_journal.error())
-                    << "NetworkOPs: batchApplyTimer cancel error: "
-                    << ec.message();
-            }
         }
         // Make sure that any waitHandlers pending in our timers are done.
         using namespace std::chrono_literals;
@@ -597,12 +620,13 @@ private:
     void
     processClusterTimer();
 
-    Json::Value
+    MultiApiJson
     transJson(
-        const STTx& transaction,
+        std::shared_ptr<STTx const> const& transaction,
         TER result,
         bool validated,
-        std::shared_ptr<ReadView const> const& ledger);
+        std::shared_ptr<ReadView const> const& ledger,
+        std::optional<std::reference_wrapper<TxMeta const>> meta);
 
     void
     pubValidatedTransaction(
@@ -692,9 +716,6 @@ private:
     void
     setAccountHistoryJobTimer(SubAccountHistoryInfoWeak subInfo);
 
-    void
-    setBatchApplyTimer() override;
-
     Application& app_;
     beast::Journal m_journal;
 
@@ -713,8 +734,6 @@ private:
     boost::asio::steady_timer heartbeatTimer_;
     boost::asio::steady_timer clusterTimer_;
     boost::asio::steady_timer accountHistoryTxTimer_;
-    //! This timer is for applying transaction batches.
-    boost::asio::steady_timer batchApplyTimer_;
 
     RCLConsensus mConsensus;
 
@@ -948,24 +967,9 @@ NetworkOPsImp::setTimer(
 void
 NetworkOPsImp::setHeartbeatTimer()
 {
-    // timerDelay is to optimize the timer interval such as for phase establish.
-    // Setting a max of ledgerGRANULARITY allows currently in-flight proposals
-    // to be accounted for at the very beginning of the phase.
-    std::chrono::milliseconds timerDelay;
-    auto td = mConsensus.getTimerDelay();
-    if (td)
-    {
-        timerDelay = std::min(*td, mConsensus.parms().ledgerGRANULARITY);
-        mConsensus.setTimerDelay();
-    }
-    else
-    {
-        timerDelay = mConsensus.parms().ledgerGRANULARITY;
-    }
-
     setTimer(
         heartbeatTimer_,
-        timerDelay,
+        mConsensus.parms().ledgerGRANULARITY,
         [this]() {
             m_job_queue.addJob(jtNETOP_TIMER, "NetOPs.heartbeat", [this]() {
                 processHeartbeatTimer();
@@ -1001,42 +1005,6 @@ NetworkOPsImp::setAccountHistoryJobTimer(SubAccountHistoryInfoWeak subInfo)
         4s,
         [this, subInfo]() { addAccountHistoryJob(subInfo); },
         [this, subInfo]() { setAccountHistoryJobTimer(subInfo); });
-}
-
-void
-NetworkOPsImp::setBatchApplyTimer()
-{
-    using namespace std::chrono_literals;
-    // 100ms lag between batch intervals provides significant throughput gains
-    // with little increased latency. Tuning this figure further will
-    // require further testing. In general, increasing this figure will
-    // also increase theoretical throughput, but with diminishing returns.
-    auto constexpr batchInterval = 100ms;
-
-    setTimer(
-        batchApplyTimer_,
-        batchInterval,
-        [this]() {
-            {
-                std::lock_guard lock(mMutex);
-                // Only do the job if there's work to do and it's not currently
-                // being done.
-                if (mTransactions.size() &&
-                    mDispatchState == DispatchState::none)
-                {
-                    if (m_job_queue.addJob(
-                            jtBATCH, "transactionBatch", [this]() {
-                                transactionBatch(false);
-                            }))
-                    {
-                        mDispatchState = DispatchState::scheduled;
-                    }
-                    return;
-                }
-            }
-            setBatchApplyTimer();
-        },
-        [this]() { setBatchApplyTimer(); });
 }
 
 void
@@ -1215,8 +1183,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 
     m_job_queue.addJob(jtTRANSACTION, "submitTxn", [this, tx]() {
         auto t = tx;
-        processTransaction(
-            t, false, RPC::SubmitSync::async, false, FailHard::no);
+        processTransaction(t, false, false, FailHard::no);
     });
 }
 
@@ -1224,7 +1191,6 @@ void
 NetworkOPsImp::processTransaction(
     std::shared_ptr<Transaction>& transaction,
     bool bUnlimited,
-    RPC::SubmitSync sync,
     bool bLocal,
     FailHard failType)
 {
@@ -1254,7 +1220,7 @@ NetworkOPsImp::processTransaction(
     // Not concerned with local checks at this point.
     if (validity == Validity::SigBad)
     {
-        JLOG(m_journal.trace()) << "Transaction has bad signature: " << reason;
+        JLOG(m_journal.info()) << "Transaction has bad signature: " << reason;
         transaction->setStatus(INVALID);
         transaction->setResult(temBAD_SIGNATURE);
         app_.getHashRouter().setFlags(transaction->getID(), SF_BAD);
@@ -1264,72 +1230,100 @@ NetworkOPsImp::processTransaction(
     // canonicalize can change our pointer
     app_.getMasterTransaction().canonicalize(&transaction);
 
-    std::unique_lock lock(mMutex);
-    if (!transaction->getApplying())
+    if (bLocal)
+        doTransactionSync(transaction, bUnlimited, failType);
+    else
+        doTransactionAsync(transaction, bUnlimited, failType);
+}
+
+void
+NetworkOPsImp::doTransactionAsync(
+    std::shared_ptr<Transaction> transaction,
+    bool bUnlimited,
+    FailHard failType)
+{
+    std::lock_guard lock(mMutex);
+
+    if (transaction->getApplying())
+        return;
+
+    mTransactions.push_back(
+        TransactionStatus(transaction, bUnlimited, false, failType));
+    transaction->setApplying();
+
+    if (mDispatchState == DispatchState::none)
     {
-        transaction->setApplying();
-        mTransactions.push_back(
-            TransactionStatus(transaction, bUnlimited, bLocal, failType));
-    }
-    switch (sync)
-    {
-        using enum RPC::SubmitSync;
-        case sync:
-            do
-            {
-                // If a batch is being processed, then wait. Otherwise,
-                // process a batch.
-                if (mDispatchState == DispatchState::running)
-                    mCond.wait(lock);
-                else
-                    apply(lock);
-            } while (transaction->getApplying());
-            break;
-
-        case async:
-            // It's conceivable for the submitted transaction to be
-            // processed and its result to be modified before being returned
-            // to the client. Make a copy of the transaction and set its
-            // status to guarantee that the client gets the terSUBMITTED
-            // result in all cases.
-            transaction = std::make_shared<Transaction>(*transaction);
-            transaction->setResult(terSUBMITTED);
-            break;
-
-        case wait:
-            mCond.wait(
-                lock, [&transaction] { return !transaction->getApplying(); });
-            break;
-
-        default:
-            assert(false);
+        if (m_job_queue.addJob(
+                jtBATCH, "transactionBatch", [this]() { transactionBatch(); }))
+        {
+            mDispatchState = DispatchState::scheduled;
+        }
     }
 }
 
-bool
-NetworkOPsImp::transactionBatch(bool const drain)
+void
+NetworkOPsImp::doTransactionSync(
+    std::shared_ptr<Transaction> transaction,
+    bool bUnlimited,
+    FailHard failType)
 {
-    {
-        std::unique_lock<std::mutex> lock(mMutex);
-        if (mDispatchState == DispatchState::running || mTransactions.empty())
-            return false;
+    std::unique_lock<std::mutex> lock(mMutex);
 
-        do
-            apply(lock);
-        while (drain && mTransactions.size());
+    if (!transaction->getApplying())
+    {
+        mTransactions.push_back(
+            TransactionStatus(transaction, bUnlimited, true, failType));
+        transaction->setApplying();
     }
-    setBatchApplyTimer();
-    return true;
+
+    do
+    {
+        if (mDispatchState == DispatchState::running)
+        {
+            // A batch processing job is already running, so wait.
+            mCond.wait(lock);
+        }
+        else
+        {
+            apply(lock);
+
+            if (mTransactions.size())
+            {
+                // More transactions need to be applied, but by another job.
+                if (m_job_queue.addJob(jtBATCH, "transactionBatch", [this]() {
+                        transactionBatch();
+                    }))
+                {
+                    mDispatchState = DispatchState::scheduled;
+                }
+            }
+        }
+    } while (transaction->getApplying());
+}
+
+void
+NetworkOPsImp::transactionBatch()
+{
+    std::unique_lock<std::mutex> lock(mMutex);
+
+    if (mDispatchState == DispatchState::running)
+        return;
+
+    while (mTransactions.size())
+    {
+        apply(lock);
+    }
 }
 
 void
 NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 {
-    assert(!mTransactions.empty());
-    assert(mDispatchState != DispatchState::running);
     std::vector<TransactionStatus> submit_held;
     std::vector<TransactionStatus> transactions;
     mTransactions.swap(transactions);
+    assert(!transactions.empty());
+
+    assert(mDispatchState != DispatchState::running);
     mDispatchState = DispatchState::running;
 
     batchLock.unlock();
@@ -1713,9 +1707,7 @@ NetworkOPsImp::checkLastClosedLedger(
         switchLedgers = false;
     }
     else
-    {
         networkClosed = closedLedger;
-    }
 
     if (!switchLedgers)
         return false;
@@ -1977,9 +1969,9 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
 
         jvObj[jss::type] = "manifestReceived";
         jvObj[jss::master_key] = toBase58(TokenType::NodePublic, mo.masterKey);
-        if (!mo.signingKey.empty())
+        if (mo.signingKey)
             jvObj[jss::signing_key] =
-                toBase58(TokenType::NodePublic, mo.signingKey);
+                toBase58(TokenType::NodePublic, *mo.signingKey);
         jvObj[jss::seq] = Json::UInt(mo.sequence);
         if (auto sig = mo.getSignature())
             jvObj[jss::signature] = strHex(*sig);
@@ -2176,8 +2168,10 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (masterKey != signerPublic)
             jvObj[jss::master_key] = toBase58(TokenType::NodePublic, masterKey);
 
+        // NOTE *seq is a number, but old API versions used string. We replace
+        // number with a string using MultiApiJson near end of this function
         if (auto const seq = (*val)[~sfLedgerSequence])
-            jvObj[jss::ledger_index] = to_string(*seq);
+            jvObj[jss::ledger_index] = *seq;
 
         if (val->isFieldPresent(sfAmendments))
         {
@@ -2215,12 +2209,28 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
 
+        // NOTE Use MultiApiJson to publish two slightly different JSON objects
+        // for consumers supporting different API versions
+        MultiApiJson multiObj{jvObj};
+        multiObj.visit(
+            RPC::apiVersion<1>,  //
+            [](Json::Value& jvTx) {
+                // Type conversion for older API versions to string
+                if (jvTx.isMember(jss::ledger_index))
+                {
+                    jvTx[jss::ledger_index] =
+                        std::to_string(jvTx[jss::ledger_index].asUInt());
+                }
+            });
+
         for (auto i = mStreamMaps[sValidations].begin();
              i != mStreamMaps[sValidations].end();)
         {
             if (auto p = i->second.lock())
             {
-                p->send(jvObj, true);
+                multiObj.visit(
+                    p->getApiVersion(),  //
+                    [&](Json::Value const& jv) { p->send(jv, true); });
                 ++i;
             }
             else
@@ -2445,10 +2455,11 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     if (admin)
     {
-        if (!app_.getValidationPublicKey().empty())
+        if (auto const localPubKey = app_.validators().localPublicKey();
+            localPubKey && app_.getValidationPublicKey())
         {
-            info[jss::pubkey_validator] = toBase58(
-                TokenType::NodePublic, app_.validators().localPublicKey());
+            info[jss::pubkey_validator] =
+                toBase58(TokenType::NodePublic, localPubKey.value());
         }
         else
         {
@@ -2708,9 +2719,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             }
         }
 
-        if (app_.config().exists("port_grpc"))
+        if (app_.config().exists(SECTION_PORT_GRPC))
         {
-            auto const& grpcSection = app_.config().section("port_grpc");
+            auto const& grpcSection = app_.config().section(SECTION_PORT_GRPC);
             auto const optPort = grpcSection.get("port");
             if (optPort && grpcSection.get("ip"))
             {
@@ -2744,7 +2755,8 @@ NetworkOPsImp::pubProposedTransaction(
     std::shared_ptr<STTx const> const& transaction,
     TER result)
 {
-    Json::Value jvObj = transJson(*transaction, result, false, ledger);
+    MultiApiJson jvObj =
+        transJson(transaction, result, false, ledger, std::nullopt);
 
     {
         std::lock_guard sl(mSubLock);
@@ -2756,7 +2768,9 @@ NetworkOPsImp::pubProposedTransaction(
 
             if (p)
             {
-                p->send(jvObj, true);
+                jvObj.visit(
+                    p->getApiVersion(),  //
+                    [&](Json::Value const& jv) { p->send(jv, true); });
                 ++it;
             }
             else
@@ -3081,12 +3095,13 @@ NetworkOPsImp::getLocalTxCount()
 
 // This routine should only be used to publish accepted or validated
 // transactions.
-Json::Value
+MultiApiJson
 NetworkOPsImp::transJson(
-    const STTx& transaction,
+    std::shared_ptr<STTx const> const& transaction,
     TER result,
     bool validated,
-    std::shared_ptr<ReadView const> const& ledger)
+    std::shared_ptr<ReadView const> const& ledger,
+    std::optional<std::reference_wrapper<TxMeta const>> meta)
 {
     Json::Value jvObj(Json::objectValue);
     std::string sToken;
@@ -3095,15 +3110,29 @@ NetworkOPsImp::transJson(
     transResultInfo(result, sToken, sHuman);
 
     jvObj[jss::type] = "transaction";
-    jvObj[jss::transaction] = transaction.getJson(JsonOptions::none);
+    // NOTE jvObj is not a finished object for either API version. After
+    // it's populated, we need to finish it for a specific API version. This is
+    // done in a loop, near the end of this function.
+    jvObj[jss::transaction] =
+        transaction->getJson(JsonOptions::disable_API_prior_V2, false);
+
+    if (meta)
+    {
+        jvObj[jss::meta] = meta->get().getJson(JsonOptions::none);
+        RPC::insertDeliveredAmount(
+            jvObj[jss::meta], *ledger, transaction, meta->get());
+    }
+
+    if (!ledger->open())
+        jvObj[jss::ledger_hash] = to_string(ledger->info().hash);
 
     if (validated)
     {
         jvObj[jss::ledger_index] = ledger->info().seq;
-        jvObj[jss::ledger_hash] = to_string(ledger->info().hash);
         jvObj[jss::transaction][jss::date] =
             ledger->info().closeTime.time_since_epoch().count();
         jvObj[jss::validated] = true;
+        jvObj[jss::close_time_iso] = to_string_iso(ledger->info().closeTime);
 
         // WRITEME: Put the account next seq here
     }
@@ -3118,10 +3147,10 @@ NetworkOPsImp::transJson(
     jvObj[jss::engine_result_code] = result;
     jvObj[jss::engine_result_message] = sHuman;
 
-    if (transaction.getTxnType() == ttOFFER_CREATE)
+    if (transaction->getTxnType() == ttOFFER_CREATE)
     {
-        auto const account = transaction.getAccountID(sfAccount);
-        auto const amount = transaction.getFieldAmount(sfTakerGets);
+        auto const account = transaction->getAccountID(sfAccount);
+        auto const amount = transaction->getFieldAmount(sfTakerGets);
 
         // If the offer create is not self funded then add the owner balance
         if (account != amount.issue().account)
@@ -3136,7 +3165,27 @@ NetworkOPsImp::transJson(
         }
     }
 
-    return jvObj;
+    std::string const hash = to_string(transaction->getTransactionID());
+    MultiApiJson multiObj{jvObj};
+    forAllApiVersions(
+        multiObj.visit(),  //
+        [&]<unsigned Version>(
+            Json::Value& jvTx, std::integral_constant<unsigned, Version>) {
+            RPC::insertDeliverMax(
+                jvTx[jss::transaction], transaction->getTxnType(), Version);
+
+            if constexpr (Version > 1)
+            {
+                jvTx[jss::tx_json] = jvTx.removeMember(jss::transaction);
+                jvTx[jss::hash] = hash;
+            }
+            else
+            {
+                jvTx[jss::transaction][jss::hash] = hash;
+            }
+        });
+
+    return multiObj;
 }
 
 void
@@ -3147,14 +3196,10 @@ NetworkOPsImp::pubValidatedTransaction(
 {
     auto const& stTxn = transaction.getTxn();
 
-    Json::Value jvObj =
-        transJson(*stTxn, transaction.getResult(), true, ledger);
-
-    {
-        auto const& meta = transaction.getMeta();
-        jvObj[jss::meta] = meta.getJson(JsonOptions::none);
-        RPC::insertDeliveredAmount(jvObj[jss::meta], *ledger, stTxn, meta);
-    }
+    // Create two different Json objects, for different API versions
+    auto const metaRef = std::ref(transaction.getMeta());
+    auto const trResult = transaction.getResult();
+    MultiApiJson jvObj = transJson(stTxn, trResult, true, ledger, metaRef);
 
     {
         std::lock_guard sl(mSubLock);
@@ -3166,7 +3211,9 @@ NetworkOPsImp::pubValidatedTransaction(
 
             if (p)
             {
-                p->send(jvObj, true);
+                jvObj.visit(
+                    p->getApiVersion(),  //
+                    [&](Json::Value const& jv) { p->send(jv, true); });
                 ++it;
             }
             else
@@ -3181,7 +3228,9 @@ NetworkOPsImp::pubValidatedTransaction(
 
             if (p)
             {
-                p->send(jvObj, true);
+                jvObj.visit(
+                    p->getApiVersion(),  //
+                    [&](Json::Value const& jv) { p->send(jv, true); });
                 ++it;
             }
             else
@@ -3294,30 +3343,35 @@ NetworkOPsImp::pubAccountTransaction(
     {
         auto const& stTxn = transaction.getTxn();
 
-        Json::Value jvObj =
-            transJson(*stTxn, transaction.getResult(), true, ledger);
-
-        {
-            auto const& meta = transaction.getMeta();
-
-            jvObj[jss::meta] = meta.getJson(JsonOptions::none);
-            RPC::insertDeliveredAmount(jvObj[jss::meta], *ledger, stTxn, meta);
-        }
+        // Create two different Json objects, for different API versions
+        auto const metaRef = std::ref(transaction.getMeta());
+        auto const trResult = transaction.getResult();
+        MultiApiJson jvObj = transJson(stTxn, trResult, true, ledger, metaRef);
 
         for (InfoSub::ref isrListener : notify)
-            isrListener->send(jvObj, true);
+        {
+            jvObj.visit(
+                isrListener->getApiVersion(),  //
+                [&](Json::Value const& jv) { isrListener->send(jv, true); });
+        }
 
         if (last)
-            jvObj[jss::account_history_boundary] = true;
+            jvObj.set(jss::account_history_boundary, true);
 
-        assert(!jvObj.isMember(jss::account_history_tx_stream));
+        assert(
+            jvObj.isMember(jss::account_history_tx_stream) ==
+            MultiApiJson::none);
         for (auto& info : accountHistoryNotify)
         {
             auto& index = info.index_;
             if (index->forwardTxIndex_ == 0 && !index->haveHistorical_)
-                jvObj[jss::account_history_tx_first] = true;
-            jvObj[jss::account_history_tx_index] = index->forwardTxIndex_++;
-            info.sink_->send(jvObj, true);
+                jvObj.set(jss::account_history_tx_first, true);
+
+            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex_++);
+
+            jvObj.visit(
+                info.sink_->getApiVersion(),  //
+                [&](Json::Value const& jv) { info.sink_->send(jv, true); });
         }
     }
 }
@@ -3371,19 +3425,26 @@ NetworkOPsImp::pubProposedAccountTransaction(
 
     if (!notify.empty() || !accountHistoryNotify.empty())
     {
-        Json::Value jvObj = transJson(*tx, result, false, ledger);
+        // Create two different Json objects, for different API versions
+        MultiApiJson jvObj = transJson(tx, result, false, ledger, std::nullopt);
 
         for (InfoSub::ref isrListener : notify)
-            isrListener->send(jvObj, true);
+            jvObj.visit(
+                isrListener->getApiVersion(),  //
+                [&](Json::Value const& jv) { isrListener->send(jv, true); });
 
-        assert(!jvObj.isMember(jss::account_history_tx_stream));
+        assert(
+            jvObj.isMember(jss::account_history_tx_stream) ==
+            MultiApiJson::none);
         for (auto& info : accountHistoryNotify)
         {
             auto& index = info.index_;
             if (index->forwardTxIndex_ == 0 && !index->haveHistorical_)
-                jvObj[jss::account_history_tx_first] = true;
-            jvObj[jss::account_history_tx_index] = index->forwardTxIndex_++;
-            info.sink_->send(jvObj, true);
+                jvObj.set(jss::account_history_tx_first, true);
+            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex_++);
+            jvObj.visit(
+                info.sink_->getApiVersion(),  //
+                [&](Json::Value const& jv) { info.sink_->send(jv, true); });
         }
     }
 }
@@ -3574,9 +3635,25 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
             auto send = [&](Json::Value const& jvObj,
                             bool unsubscribe) -> bool {
-                if (auto sptr = subInfo.sinkWptr_.lock(); sptr)
+                if (auto sptr = subInfo.sinkWptr_.lock())
                 {
                     sptr->send(jvObj, true);
+                    if (unsubscribe)
+                        unsubAccountHistory(sptr, accountId, false);
+                    return true;
+                }
+
+                return false;
+            };
+
+            auto sendMultiApiJson = [&](MultiApiJson const& jvObj,
+                                        bool unsubscribe) -> bool {
+                if (auto sptr = subInfo.sinkWptr_.lock())
+                {
+                    jvObj.visit(
+                        sptr->getApiVersion(),  //
+                        [&](Json::Value const& jv) { sptr->send(jv, true); });
+
                     if (unsubscribe)
                         unsubAccountHistory(sptr, accountId, false);
                     return true;
@@ -3743,21 +3820,22 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                             send(rpcError(rpcINTERNAL), true);
                             return;
                         }
-                        Json::Value jvTx = transJson(
-                            *stTxn, meta->getResultTER(), true, curTxLedger);
-                        jvTx[jss::meta] = meta->getJson(JsonOptions::none);
-                        jvTx[jss::account_history_tx_index] = txHistoryIndex--;
 
+                        auto const mRef = std::ref(*meta);
+                        auto const trR = meta->getResultTER();
+                        MultiApiJson jvTx =
+                            transJson(stTxn, trR, true, curTxLedger, mRef);
+
+                        jvTx.set(
+                            jss::account_history_tx_index, txHistoryIndex--);
                         if (i + 1 == num_txns ||
                             txns[i + 1].first->getLedger() != tx->getLedger())
-                            jvTx[jss::account_history_boundary] = true;
+                            jvTx.set(jss::account_history_boundary, true);
 
-                        RPC::insertDeliveredAmount(
-                            jvTx[jss::meta], *curTxLedger, stTxn, *meta);
                         if (isFirstTx(tx, meta))
                         {
-                            jvTx[jss::account_history_tx_first] = true;
-                            send(jvTx, false);
+                            jvTx.set(jss::account_history_tx_first, true);
+                            sendMultiApiJson(jvTx, false);
 
                             JLOG(m_journal.trace())
                                 << "AccountHistory job for account "
@@ -3767,7 +3845,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         }
                         else
                         {
-                            send(jvTx, false);
+                            sendMultiApiJson(jvTx, false);
                         }
                     }
 

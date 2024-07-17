@@ -55,13 +55,13 @@ public:
         }
     }
 
-    boost::string_view
+    std::string_view
     user() const
     {
         return user_;
     }
 
-    boost::string_view
+    std::string_view
     forwarded_for() const
     {
         return fwdfor_;

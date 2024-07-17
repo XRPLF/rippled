@@ -119,11 +119,40 @@ this:
 You can format individual files in place by running `clang-format -i <file>...`
 from any directory within this project.
 
+There is a Continuous Integration job that runs clang-format on pull requests. If the code doesn't comply, a patch file that corrects auto-fixable formatting issues is generated.
+
+To download the patch file:
+
+1. Next to `clang-format / check (pull_request) Failing after #s` -> click **Details** to open the details page.
+2. Left menu -> click **Summary**
+3. Scroll down to near the bottom-right under `Artifacts` -> click **clang-format.patch**
+4. Download the zip file and extract it to your local git repository. Run `git apply [patch-file-name]`.
+5. Commit and push.
+
 You can install a pre-commit hook to automatically run `clang-format` before every commit:
 ```
 pip3 install pre-commit
 pre-commit install
 ```
+
+## Unit Tests
+To execute all unit tests:
+
+```rippled --unittest --unittest-jobs=<number of cores>```
+
+(Note: Using multiple cores on a Mac M1 can cause spurious test failures. The 
+cause is still under investigation. If you observe this problem, try specifying fewer jobs.)
+
+To run a specific set of test suites:
+
+```
+rippled --unittest TestSuiteName
+```
+Note: In this example, all tests with prefix `TestSuiteName` will be run, so if
+`TestSuiteName1` and `TestSuiteName2` both exist, then both tests will run. 
+Alternatively, if the unit test name finds an exact match, it will stop 
+doing partial matches, i.e. if a unit test with a title of `TestSuiteName` 
+exists, then no other unit test will be executed, apart from `TestSuiteName`.
 
 ## Avoid
 
@@ -178,16 +207,39 @@ existing maintainer without a vote.
 
 ## Current Maintainers
 
+Maintainers are users with admin access to the repo. Maintainers do not typically approve or deny pull requests.
+
+* [intelliot](https://github.com/intelliot) (Ripple)
 * [JoelKatz](https://github.com/JoelKatz) (Ripple)
-* [manojsdoshi](https://github.com/manojsdoshi) (Ripple)
-* [n3tc4t](https://github.com/n3tc4t) (XRPL Labs)
-* [Nik Bougalis](https://github.com/nbougalis)
 * [nixer89](https://github.com/nixer89) (XRP Ledger Foundation)
-* [RichardAH](https://github.com/RichardAH) (XRPL Labs + XRP Ledger Foundation)
-* [seelabs](https://github.com/seelabs) (Ripple)
 * [Silkjaer](https://github.com/Silkjaer) (XRP Ledger Foundation)
 * [WietseWind](https://github.com/WietseWind) (XRPL Labs + XRP Ledger Foundation)
+
+## Current Code Reviewers
+
+Code Reviewers are developers who have the ability to review and approve source code changes.
+
+* [HowardHinnant](https://github.com/HowardHinnant) (Ripple)
+* [scottschurr](https://github.com/scottschurr) (Ripple)
+* [seelabs](https://github.com/seelabs) (Ripple)
 * [Ed Hennis](https://github.com/ximinez) (Ripple)
+* [mvadari](https://github.com/mvadari) (Ripple)
+* [thejohnfreeman](https://github.com/thejohnfreeman) (Ripple)
+* [Bronek](https://github.com/Bronek) (Ripple)
+* [manojsdoshi](https://github.com/manojsdoshi) (Ripple)
+* [godexsoft](https://github.com/godexsoft) (Ripple)
+* [mDuo13](https://github.com/mDuo13) (Ripple)
+* [ckniffen](https://github.com/ckniffen) (Ripple)
+* [arihantkothari](https://github.com/arihantkothari) (Ripple)
+* [pwang200](https://github.com/pwang200) (Ripple)
+* [sophiax851](https://github.com/sophiax851) (Ripple)
+* [shawnxie999](https://github.com/shawnxie999) (Ripple)
+* [gregtatcam](https://github.com/gregtatcam) (Ripple)
+* [mtrippled](https://github.com/mtrippled) (Ripple)
+* [ckeshava](https://github.com/ckeshava) (Ripple)
+* [nbougalis](https://github.com/nbougalis) None
+* [RichardAH](https://github.com/RichardAH) (XRPL Labs + XRP Ledger Foundation)
+* [dangell7](https://github.com/dangell7) (XRPL Labs)
 
 
 [1]: https://docs.github.com/en/get-started/quickstart/contributing-to-projects

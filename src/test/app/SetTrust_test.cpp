@@ -30,6 +30,144 @@ class SetTrust_test : public beast::unit_test::suite
 
 public:
     void
+    testTrustLineDelete()
+    {
+        testcase(
+            "Test deletion of trust lines: revert trust line limit to zero");
+
+        using namespace jtx;
+        Env env(*this);
+
+        Account const alice = Account{"alice"};
+        Account const becky = Account{"becky"};
+
+        env.fund(XRP(10000), becky, alice);
+        env.close();
+
+        // becky wants to hold at most 50 tokens of alice["USD"]
+        // becky is the customer, alice is the issuer
+        // becky can be sent at most 50 tokens of alice's USD
+        env(trust(becky, alice["USD"](50)));
+        env.close();
+
+        // Since the settings of the trust lines are non-default for both
+        // alice and becky, both of them will be charged an owner reserve
+        // Irrespective of whether the issuer or the customer initiated
+        // the trust-line creation, both will be charged
+        env.require(lines(alice, 1));
+        env.require(lines(becky, 1));
+
+        // Fetch the trust-lines via RPC for verification
+        Json::Value jv;
+        jv["account"] = becky.human();
+        auto beckyLines = env.rpc("json", "account_lines", to_string(jv));
+
+        jv["account"] = alice.human();
+        auto aliceLines = env.rpc("json", "account_lines", to_string(jv));
+
+        BEAST_EXPECT(aliceLines[jss::result][jss::lines].size() == 1);
+        BEAST_EXPECT(beckyLines[jss::result][jss::lines].size() == 1);
+
+        //         reset the trust line limits to zero
+        env(trust(becky, alice["USD"](0)));
+        env.close();
+
+        // the reset of the trust line limits deletes the trust-line
+        // this occurs despite the authorization of the trust-line by the
+        // issuer(alice, in this unit test)
+        env.require(lines(becky, 0));
+        env.require(lines(alice, 0));
+
+        // second verification check via RPC calls
+        jv["account"] = becky.human();
+        beckyLines = env.rpc("json", "account_lines", to_string(jv));
+
+        jv["account"] = alice.human();
+        aliceLines = env.rpc("json", "account_lines", to_string(jv));
+
+        BEAST_EXPECT(aliceLines[jss::result][jss::lines].size() == 0);
+        BEAST_EXPECT(beckyLines[jss::result][jss::lines].size() == 0);
+
+        // additionally, verify that account_objects is an empty array
+        jv["account"] = becky.human();
+        auto const beckyObj = env.rpc("json", "account_objects", to_string(jv));
+        BEAST_EXPECT(beckyObj[jss::result][jss::account_objects].size() == 0);
+
+        jv["account"] = alice.human();
+        auto const aliceObj = env.rpc("json", "account_objects", to_string(jv));
+        BEAST_EXPECT(aliceObj[jss::result][jss::account_objects].size() == 0);
+    }
+
+    void
+    testTrustLineResetWithAuthFlag()
+    {
+        testcase(
+            "Reset trust line limit with Authorised Lines: Verify "
+            "deletion of trust lines");
+
+        using namespace jtx;
+        Env env(*this);
+
+        Account const alice = Account{"alice"};
+        Account const becky = Account{"becky"};
+
+        env.fund(XRP(10000), becky, alice);
+        env.close();
+
+        // alice wants to ensure that all holders of her tokens are authorised
+        env(fset(alice, asfRequireAuth));
+        env.close();
+
+        // becky wants to hold at most 50 tokens of alice["USD"]
+        // becky is the customer, alice is the issuer
+        // becky can be sent at most 50 tokens of alice's USD
+        env(trust(becky, alice["USD"](50)));
+        env.close();
+
+        // alice authorizes becky to hold alice["USD"] tokens
+        env(trust(alice, alice["USD"](0), becky, tfSetfAuth));
+        env.close();
+
+        // Since the settings of the trust lines are non-default for both
+        // alice and becky, both of them will be charged an owner reserve
+        // Irrespective of whether the issuer or the customer initiated
+        // the trust-line creation, both will be charged
+        env.require(lines(alice, 1));
+        env.require(lines(becky, 1));
+
+        // Fetch the trust-lines via RPC for verification
+        Json::Value jv;
+        jv["account"] = becky.human();
+        auto beckyLines = env.rpc("json", "account_lines", to_string(jv));
+
+        jv["account"] = alice.human();
+        auto aliceLines = env.rpc("json", "account_lines", to_string(jv));
+
+        BEAST_EXPECT(aliceLines[jss::result][jss::lines].size() == 1);
+        BEAST_EXPECT(beckyLines[jss::result][jss::lines].size() == 1);
+
+        //         reset the trust line limits to zero
+        env(trust(becky, alice["USD"](0)));
+        env.close();
+
+        // the reset of the trust line limits deletes the trust-line
+        // this occurs despite the authorization of the trust-line by the
+        // issuer(alice, in this unit test)
+        env.require(lines(becky, 0));
+        env.require(lines(alice, 0));
+
+        // second verification check via RPC calls
+        jv["account"] = becky.human();
+        beckyLines = env.rpc("json", "account_lines", to_string(jv));
+
+        jv["account"] = alice.human();
+        aliceLines = env.rpc("json", "account_lines", to_string(jv));
+
+        BEAST_EXPECT(aliceLines[jss::result][jss::lines].size() == 0);
+        BEAST_EXPECT(beckyLines[jss::result][jss::lines].size() == 0);
+    }
+
+    void
     testFreeTrustlines(
         FeatureBitset features,
         bool thirdLineCreatesLE,
@@ -204,6 +342,100 @@ public:
     }
 
     void
+    testExceedTrustLineLimit()
+    {
+        testcase(
+            "Ensure that trust line limits are respected in payment "
+            "transactions");
+
+        using namespace jtx;
+        Env env{*this};
+
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        env.fund(XRP(10000), gw, alice);
+
+        // alice wants to hold at most 100 of gw's USD tokens
+        env(trust(alice, gw["USD"](100)));
+        env.close();
+
+        // send a payment for a large quantity through the trust line
+        env(pay(gw, alice, gw["USD"](200)), ter(tecPATH_PARTIAL));
+        env.close();
+
+        // on the other hand, smaller payments should succeed
+        env(pay(gw, alice, gw["USD"](20)));
+        env.close();
+    }
+
+    void
+    testAuthFlagTrustLines()
+    {
+        testcase(
+            "Ensure that authorised trust lines do not allow payments "
+            "from unauthorised counter-parties");
+
+        using namespace jtx;
+        Env env{*this};
+
+        auto const bob = Account{"bob"};
+        auto const alice = Account{"alice"};
+        env.fund(XRP(10000), bob, alice);
+
+        // alice wants to ensure that all holders of her tokens are authorised
+        env(fset(alice, asfRequireAuth));
+        env.close();
+
+        // create a trust line from bob to alice. bob wants to hold at most
+        // 100 of alice's USD tokens. Note: alice hasn't authorised this
+        // trust line yet.
+        env(trust(bob, alice["USD"](100)));
+        env.close();
+
+        // send a payment from alice to bob, validate that the payment fails
+        env(pay(alice, bob, alice["USD"](10)), ter(tecPATH_DRY));
+        env.close();
+    }
+
+    void
+    testTrustLineLimitsWithRippling()
+    {
+        testcase(
+            "Check that trust line limits are respected in conjunction "
+            "with rippling feature");
+
+        using namespace jtx;
+        Env env{*this};
+
+        auto const bob = Account{"bob"};
+        auto const alice = Account{"alice"};
+        env.fund(XRP(10000), bob, alice);
+
+        // create a trust line from bob to alice. bob wants to hold at most
+        // 100 of alice's USD tokens.
+        env(trust(bob, alice["USD"](100)));
+        env.close();
+
+        // archetypical payment transaction from alice to bob must succeed
+        env(pay(alice, bob, alice["USD"](20)), ter(tesSUCCESS));
+        env.close();
+
+        // Issued tokens are fungible. i.e. alice's USD is identical to bob's
+        // USD
+        env(pay(bob, alice, bob["USD"](10)), ter(tesSUCCESS));
+        env.close();
+
+        // bob cannot place alice in his debt i.e. alice's balance of the USD
+        // tokens cannot go below zero.
+        env(pay(bob, alice, bob["USD"](11)), ter(tecPATH_PARTIAL));
+        env.close();
+
+        // payments that respect the trust line limits of alice should succeed
+        env(pay(bob, alice, bob["USD"](10)), ter(tesSUCCESS));
+        env.close();
+    }
+
+    void
     testModifyQualityOfTrustline(
         FeatureBitset features,
         bool createQuality,
@@ -273,6 +505,48 @@ public:
             auto const sle = env.le(alice);
             uint32_t flags = sle->getFlags();
             BEAST_EXPECT(!(flags & lsfDisallowIncomingTrustline));
+        }
+
+        // fixDisallowIncomingV1
+        {
+            for (bool const withFix : {true, false})
+            {
+                auto const amend = withFix
+                    ? features | disallowIncoming
+                    : (features | disallowIncoming) - fixDisallowIncomingV1;
+
+                Env env{*this, amend};
+                auto const dist = Account("dist");
+                auto const gw = Account("gw");
+                auto const USD = gw["USD"];
+                auto const distUSD = dist["USD"];
+
+                env.fund(XRP(1000), gw, dist);
+                env.close();
+
+                env(fset(gw, asfRequireAuth));
+                env.close();
+
+                env(fset(dist, asfDisallowIncomingTrustline));
+                env.close();
+
+                env(trust(dist, USD(10000)));
+                env.close();
+
+                // withFix: can set trustline
+                // withOutFix: cannot set trustline
+                auto const trustResult =
+                    withFix ? ter(tesSUCCESS) : ter(tecNO_PERMISSION);
+                env(trust(gw, distUSD(10000)),
+                    txflags(tfSetfAuth),
+                    trustResult);
+                env.close();
+
+                auto const txResult =
+                    withFix ? ter(tesSUCCESS) : ter(tecPATH_DRY);
+                env(pay(gw, dist, USD(1000)), txResult);
+                env.close();
+            }
         }
 
         Env env{*this, features | disallowIncoming};
@@ -360,6 +634,11 @@ public:
         testModifyQualityOfTrustline(features, true, false);
         testModifyQualityOfTrustline(features, true, true);
         testDisallowIncoming(features);
+        testTrustLineResetWithAuthFlag();
+        testTrustLineDelete();
+        testExceedTrustLineLimit();
+        testAuthFlagTrustLines();
+        testTrustLineLimitsWithRippling();
     }
 
 public:

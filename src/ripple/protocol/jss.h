@@ -60,8 +60,11 @@ JSS(Amount);               // in: TransactionSign; field.
 JSS(Amount2);              // in/out: AMM IOU/XRP pool, deposit, withdraw amount
 JSS(Asset);                // in: AMM Asset1
 JSS(Asset2);               // in: AMM Asset2
+JSS(AssetClass);           // in: Oracle
+JSS(AssetPrice);           // in: Oracle
 JSS(AuthAccount);          // in: AMM Auction Slot
 JSS(AuthAccounts);         // in: AMM Auction Slot
+JSS(BaseAsset);            // in: Oracle
 JSS(Bridge);               // ledger type.
 JSS(Check);                // ledger type.
 JSS(CheckCancel);          // transaction type.
@@ -69,6 +72,10 @@ JSS(CheckCash);            // transaction type.
 JSS(CheckCreate);          // transaction type.
 JSS(Clawback);             // transaction type.
 JSS(ClearFlag);            // field.
+JSS(DID);                  // ledger type.
+JSS(DIDDelete);            // transaction type.
+JSS(DIDSet);               // transaction type.
+JSS(DeliverMax);           // out: alias to Amount
 JSS(DeliverMin);           // in: TransactionSign
 JSS(DepositPreauth);       // transaction and ledger type.
 JSS(Destination);          // in: TransactionSign; field.
@@ -85,6 +92,7 @@ JSS(Flags);                // in/out: TransactionSign; field.
 JSS(incomplete_shards);    // out: OverlayImpl, PeerImp
 JSS(Invalid);              //
 JSS(LastLedgerSequence);   // in: TransactionSign; field
+JSS(LastUpdateTime);       // field.
 JSS(LedgerHashes);         // ledger type.
 JSS(LimitAmount);          // field.
 JSS(BidMax);               // in: AMM Bid
@@ -104,16 +112,26 @@ JSS(Offer);                // ledger type.
 JSS(OfferCancel);          // transaction type.
 JSS(OfferCreate);          // transaction type.
 JSS(OfferSequence);        // field.
+JSS(Oracle);               // ledger type.
+JSS(OracleDelete);         // transaction type.
+JSS(OracleDocumentID);     // field
+JSS(OracleSet);            // transaction type.
+JSS(Owner);                // field
 JSS(Paths);                // in/out: TransactionSign
 JSS(PayChannel);           // ledger type.
 JSS(Payment);              // transaction type.
 JSS(PaymentChannelClaim);  // transaction type.
 JSS(PaymentChannelCreate);               // transaction type.
 JSS(PaymentChannelFund);                 // transaction type.
+JSS(PriceDataSeries);                    // field.
+JSS(PriceData);                          // field.
+JSS(Provider);                           // field.
+JSS(QuoteAsset);                         // in: Oracle.
 JSS(RippleState);                        // ledger type.
 JSS(SLE_hit_rate);                       // out: GetCounts.
 JSS(SetFee);                             // transaction type.
 JSS(UNLModify);                          // transaction type.
+JSS(Scale);                              // field.
 JSS(SettleDelay);                        // in: TransactionSign
 JSS(SendMax);                            // in: TransactionSign
 JSS(Sequence);                           // in/out: TransactionSign; field.
@@ -131,6 +149,7 @@ JSS(TradingFee);                         // in/out: AMM trading fee
 JSS(TransactionType);                    // in: TransactionSign.
 JSS(TransferRate);                       // in: TransferRate.
 JSS(TrustSet);                           // transaction type.
+JSS(URI);                                // field.
 JSS(VoteSlots);                          // out: AMM Vote
 JSS(XChainAddAccountCreateAttestation);  // transaction type.
 JSS(XChainAddClaimAttestation);          // transaction type.
@@ -198,6 +217,7 @@ JSS(avg_bps_sent);                // out: Peers
 JSS(balance);                     // out: AccountLines
 JSS(balances);                    // out: GatewayBalances
 JSS(base);                        // out: LogLevel
+JSS(base_asset);                  // in: get_aggregate_price
 JSS(base_fee);                    // out: NetworkOPs
 JSS(base_fee_xrp);                // out: NetworkOPs
 JSS(bids);                        // out: Subscribe
@@ -226,6 +246,8 @@ JSS(close);                       // out: BookChanges
 JSS(close_flags);                 // out: LedgerToJson
 JSS(close_time);                  // in: Application, out: NetworkOPs,
                                   //      RCLCxPeerPos, LedgerToJson
+JSS(close_time_iso);              // out: Tx, NetworkOPs, TransactionEntry
+                                  //      AccountTx, LedgerToJson
 JSS(close_time_estimated);        // in: Application, out: LedgerToJson
 JSS(close_time_human);            // out: LedgerToJson
 JSS(close_time_offset);           // out: NetworkOPs
@@ -278,6 +300,7 @@ JSS(destination_currencies);  // in: PathRequest, RipplePathFind
 JSS(destination_tag);         // in: PathRequest
                               // out: AccountChannels
 JSS(details);                 // out: Manifest, server_info
+JSS(did);                     // in: LedgerEntry
 JSS(dir_entry);               // out: DirectoryEntryIterator
 JSS(dir_index);               // out: DirectoryEntryIterator
 JSS(dir_root);                // out: DirectoryEntryIterator
@@ -292,6 +315,7 @@ JSS(enabled);                 // out: AmendmentTable
 JSS(engine_result);           // out: NetworkOPs, TransactionSign, Submit
 JSS(engine_result_code);      // out: NetworkOPs, TransactionSign, Submit
 JSS(engine_result_message);   // out: NetworkOPs, TransactionSign, Submit
+JSS(entire_set);              // out: get_aggregate_price
 JSS(ephemeral_key);           // out: ValidatorInfo
                               // in/out: Manifest
 JSS(error);                   // out: error
@@ -315,8 +339,10 @@ JSS(fee_base);              // out: NetworkOPs
 JSS(fee_div_max);           // in: TransactionSign
 JSS(fee_level);             // out: AccountInfo
 JSS(fee_mult_max);          // in: TransactionSign
-JSS(fee_ref);               // out: NetworkOPs
+JSS(fee_ref);               // out: NetworkOPs, DEPRECATED
 JSS(fetch_pack);            // out: NetworkOPs
+JSS(FIELDS);                // out: RPC server_definitions
+                            // matches definitions.json format
 JSS(first);                 // out: rpc/Version
 JSS(firstSequence);         // out: NodeToShardStatus
 JSS(firstShardIndex);       // out: NodeToShardStatus
@@ -361,6 +387,12 @@ JSS(invalid_API_version);  // out: Many, when a request has an invalid
 JSS(io_latency_ms);        // out: NetworkOPs
 JSS(ip);                   // in: Connect, out: OverlayImpl
 JSS(is_burned);            // out: nft_info (clio)
+JSS(isSerialized);         // out: RPC server_definitions
+                           // matches definitions.json format
+JSS(isSigningField);       // out: RPC server_definitions
+                           // matches definitions.json format
+JSS(isVLEncoded);          // out: RPC server_definitions
+                           // matches definitions.json format
 JSS(issuer);               // in: RipplePathFind, Subscribe,
                            //     Unsubscribe, BookOffers
                            // out: STPathSet, STAmount
@@ -400,6 +432,8 @@ JSS(ledger_index_min);            // in, out: AccountTx*
 JSS(ledger_max);                  // in, out: AccountTx*
 JSS(ledger_min);                  // in, out: AccountTx*
 JSS(ledger_time);                 // out: NetworkOPs
+JSS(LEDGER_ENTRY_TYPES);          // out: RPC server_definitions
+                                  // matches definitions.json format
 JSS(levels);                      // LogLevels
 JSS(limit);                       // in/out: AccountTx*, AccountOffers,
                                   //         AccountLines, AccountObjects
@@ -443,10 +477,13 @@ JSS(max_ledger);                  // in/out: LedgerCleaner
 JSS(max_queue_size);              // out: TxQ
 JSS(max_spend_drops);             // out: AccountInfo
 JSS(max_spend_drops_total);       // out: AccountInfo
+JSS(mean);                        // out: get_aggregate_price
+JSS(median);                      // out: get_aggregate_price
 JSS(median_fee);                  // out: TxQ
 JSS(median_level);                // out: TxQ
 JSS(message);                     // error.
 JSS(meta);                        // out: NetworkOPs, AccountTx*, Tx
+JSS(meta_blob);                   // out: NetworkOPs, AccountTx*, Tx
 JSS(metaData);
 JSS(metadata);  // out: TransactionEntry
 JSS(method);    // RPC
@@ -488,6 +525,8 @@ JSS(node_written_bytes);         // out: GetCounts
 JSS(node_writes_duration_us);    // out: GetCounts
 JSS(node_write_retries);         // out: GetCounts
 JSS(node_writes_delayed);        // out::GetCounts
+JSS(nth);                        // out: RPC server_definitions
+JSS(nunl);                       // in: AccountObjects
 JSS(obligations);                // out: GatewayBalances
 JSS(offer);                      // in: LedgerEntry
 JSS(offers);                     // out: NetworkOPs, AccountOffers, Subscribe
@@ -498,6 +537,9 @@ JSS(open);                       // out: handlers/Ledger
 JSS(open_ledger_cost);           // out: SubmitTransaction
 JSS(open_ledger_fee);            // out: TxQ
 JSS(open_ledger_level);          // out: TxQ
+JSS(oracle);                     // in: LedgerEntry
+JSS(oracles);                    // in: get_aggregate_price
+JSS(oracle_document_id);         // in: get_aggregate_price
 JSS(owner);                      // in: LedgerEntry, out: NetworkOPs
 JSS(owner_funds);                // in/out: Ledger, NetworkOPs, AcceptedLedgerTx
 JSS(page_index);
@@ -544,6 +586,7 @@ JSS(queue);                       // in: AccountInfo
 JSS(queue_data);                  // out: AccountInfo
 JSS(queued);                      // out: SubmitTransaction
 JSS(queued_duration_us);
+JSS(quote_asset);           // in: get_aggregate_price
 JSS(random);                // out: Random
 JSS(raw_meta);              // out: AcceptedLedgerTx
 JSS(receive_currencies);    // out: AccountCurrencies
@@ -598,12 +641,14 @@ JSS(signing_keys);              // out: ValidatorList
 JSS(signing_time);              // out: NetworkOPs
 JSS(signer_list);               // in: AccountObjects
 JSS(signer_lists);              // in/out: AccountInfo
+JSS(size);                      // out: get_aggregate_price
 JSS(snapshot);                  // in: Subscribe
 JSS(source_account);            // in: PathRequest, RipplePathFind
 JSS(source_amount);             // in: PathRequest, RipplePathFind
 JSS(source_currencies);         // in: PathRequest, RipplePathFind
 JSS(source_tag);                // out: AccountChannels
 JSS(stand_alone);               // out: NetworkOPs
+JSS(standard_deviation);        // out: get_aggregate_price
 JSS(start);                     // in: TxHistory
 JSS(started);
 JSS(state);                 // out: Logic.h, ServerState, LedgerData
@@ -633,9 +678,12 @@ JSS(ticket_count);          // out: AccountInfo
 JSS(ticket_seq);            // in: LedgerEntry
 JSS(time);
 JSS(timeouts);                // out: InboundLedger
+JSS(time_threshold);          // in/out: Oracle aggregate
 JSS(time_interval);           // out: AMM Auction Slot
 JSS(track);                   // out: PeerImp
 JSS(traffic);                 // out: Overlay
+JSS(trim);                    // in: get_aggregate_price
+JSS(trimmed_set);             // out: get_aggregate_price
 JSS(total);                   // out: counters
 JSS(total_bytes_recv);        // out: Peers
 JSS(total_bytes_sent);        // out: Peers
@@ -647,6 +695,12 @@ JSS(transaction);             // in: Tx
 JSS(transaction_hash);        // out: RCLCxPeerPos, LedgerToJson
 JSS(transactions);            // out: LedgerToJson,
                               // in: AccountTx*, Unsubscribe
+JSS(TRANSACTION_RESULTS);     // out: RPC server_definitions
+                              // matches definitions.json format
+JSS(TRANSACTION_TYPES);       // out: RPC server_definitions
+                              // matches definitions.json format
+JSS(TYPES);                   // out: RPC server_definitions
+                              // matches definitions.json format
 JSS(transfer_rate);           // out: nft_info (clio)
 JSS(transitions);             // out: NetworkOPs
 JSS(treenode_cache_size);     // out: GetCounts
@@ -678,7 +732,7 @@ JSS(txr_not_enabled_cnt);     // out: peers with tx reduce-relay disabled count
 JSS(txr_missing_tx_freq);     // out: missing tx frequency average
 JSS(txs);                     // out: TxHistory
 JSS(type);                    // in: AccountObjects
-                              // out: NetworkOPs
+                              // out: NetworkOPs, RPC server_definitions
                               //      OverlayImpl, Logic
 JSS(type_hex);                // out: STPathSet
 JSS(unl);                     // out: UnlList

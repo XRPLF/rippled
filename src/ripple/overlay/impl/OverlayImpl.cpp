@@ -31,7 +31,6 @@
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/impl/ConnectAttempt.h>
-#include <ripple/overlay/impl/InboundHandoff.h>
 #include <ripple/overlay/impl/PeerImp.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/peerfinder/make_Manager.h>
@@ -40,7 +39,6 @@
 #include <ripple/server/SimpleWriter.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/utility/in_place_factory.hpp>
 
 namespace ripple {
 
@@ -280,7 +278,7 @@ OverlayImpl::onHandoff(
             }
         }
 
-        auto const ih = std::make_shared<InboundHandoff>(
+        auto const peer = std::make_shared<PeerImp>(
             app_,
             id,
             slot,
@@ -291,10 +289,18 @@ OverlayImpl::onHandoff(
             std::move(stream_ptr),
             *this);
         {
+            // As we are not on the strand, run() must be called
+            // while holding the lock, otherwise new I/O can be
+            // queued after a call to stop().
             std::lock_guard<decltype(mutex_)> lock(mutex_);
-            list_.emplace(ih.get(), ih);
+            {
+                auto const result = m_peers.emplace(peer->slot(), peer);
+                assert(result.second);
+                (void)result.second;
+            }
+            list_.emplace(peer.get(), peer);
 
-            ih->run();
+            peer->run();
         }
         handoff.moved = true;
         return handoff;
@@ -466,7 +472,7 @@ OverlayImpl::start()
     PeerFinder::Config config = PeerFinder::Config::makeConfig(
         app_.config(),
         serverHandler_.setup().overlay.port,
-        !app_.getValidationPublicKey().empty(),
+        app_.getValidationPublicKey().has_value(),
         setup_.ipLimit);
 
     m_peerFinder->setConfig(config);
@@ -483,9 +489,6 @@ OverlayImpl::start()
     {
         // Pool of servers operated by Ripple Labs Inc. - https://ripple.com
         bootstrapIps.push_back("r.ripple.com 51235");
-
-        // Pool of servers operated by Alloy Networks - https://www.alloy.ee
-        bootstrapIps.push_back("zaphod.alloy.ee 51235");
 
         // Pool of servers operated by ISRDC - https://isrdc.in
         bootstrapIps.push_back("sahyadri.isrdc.in 51235");
@@ -822,7 +825,7 @@ OverlayImpl::getOverlayInfo()
             auto version{sp->getVersion()};
             if (!version.empty())
                 // Could move here if Json::value supported moving from strings
-                pv[jss::version] = version;
+                pv[jss::version] = std::string{version};
         }
 
         std::uint32_t minSeq, maxSeq;
@@ -990,9 +993,9 @@ OverlayImpl::processValidatorList(
         return true;
     };
 
-    auto key = req.target().substr(prefix.size());
+    std::string_view key = req.target().substr(prefix.size());
 
-    if (auto slash = key.find('/'); slash != boost::string_view::npos)
+    if (auto slash = key.find('/'); slash != std::string_view::npos)
     {
         auto verString = key.substr(0, slash);
         if (!boost::conversion::try_lexical_convert(verString, version))

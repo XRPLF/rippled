@@ -407,6 +407,8 @@ LedgerEntryTypesMatch::visitEntry(
             case ltBRIDGE:
             case ltXCHAIN_OWNED_CLAIM_ID:
             case ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID:
+            case ltDID:
+            case ltORACLE:
                 break;
             default:
                 invalidTypeAdded_ = true;

@@ -28,8 +28,8 @@
 #include <ripple/basics/Log.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/core/Config.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/UintTypes.h>
 
 #include <ripple/rpc/impl/Tuning.h>
@@ -538,7 +538,6 @@ PathRequest::findPaths(
             continueCallback);
         if (!pathfinder)
         {
-            assert(continueCallback && !continueCallback());
             JLOG(m_journal.debug()) << iIdentifier << " No paths found";
             continue;
         }

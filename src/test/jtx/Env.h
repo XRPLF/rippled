@@ -30,7 +30,6 @@
 #include <ripple/core/Config.h>
 #include <ripple/json/json_value.h>
 #include <ripple/json/to_string.h>
-#include <ripple/ledger/CachedSLEs.h>
 #include <ripple/protocol/Feature.h>
 #include <ripple/protocol/Indexes.h>
 #include <ripple/protocol/Issue.h>
@@ -120,6 +119,20 @@ public:
     beast::unit_test::suite& test;
 
     Account const& master = Account::master;
+
+    /// Used by parseResult() and postConditions()
+    struct ParsedResult
+    {
+        std::optional<TER> ter{};
+        // RPC errors tend to return either a "code" and a "message" (sometimes
+        // with an "error" that corresponds to the "code"), or with an "error"
+        // and an "exception". However, this structure allows all possible
+        // combinations.
+        std::optional<error_code_i> rpcCode{};
+        std::string rpcMessage;
+        std::string rpcError;
+        std::string rpcException;
+    };
 
 private:
     struct AppBundle
@@ -279,6 +292,17 @@ public:
         The command is examined and used to build
         the correct JSON as per the arguments.
     */
+    template <class... Args>
+    Json::Value
+    rpc(unsigned apiVersion,
+        std::unordered_map<std::string, std::string> const& headers,
+        std::string const& cmd,
+        Args&&... args);
+
+    template <class... Args>
+    Json::Value
+    rpc(unsigned apiVersion, std::string const& cmd, Args&&... args);
+
     template <class... Args>
     Json::Value
     rpc(std::unordered_map<std::string, std::string> const& headers,
@@ -483,7 +507,7 @@ public:
 
     /** Gets the TER result and `didApply` flag from a RPC Json result object.
      */
-    static std::pair<TER, bool>
+    static ParsedResult
     parseResult(Json::Value const& jr);
 
     /** Submit an existing JTx.
@@ -502,22 +526,26 @@ public:
         of JTx submission.
     */
     void
-    postconditions(JTx const& jt, TER ter, bool didApply);
+    postconditions(
+        JTx const& jt,
+        ParsedResult const& parsed,
+        Json::Value const& jr = Json::Value());
 
     /** Apply funclets and submit. */
     /** @{ */
     template <class JsonValue, class... FN>
-    void
+    Env&
     apply(JsonValue&& jv, FN const&... fN)
     {
         submit(jt(std::forward<JsonValue>(jv), fN...));
+        return *this;
     }
 
     template <class JsonValue, class... FN>
-    void
+    Env&
     operator()(JsonValue&& jv, FN const&... fN)
     {
-        apply(std::forward<JsonValue>(jv), fN...);
+        return apply(std::forward<JsonValue>(jv), fN...);
     }
     /** @} */
 
@@ -647,6 +675,13 @@ public:
     }
     /** @} */
 
+    /** Create a STTx from a JTx without sanitizing
+        Use to inject bogus values into test transactions by first
+        editing the JSON.
+    */
+    std::shared_ptr<STTx const>
+    ust(JTx const& jt);
+
 protected:
     int trace_ = 0;
     TestStopwatch stopwatch_;
@@ -655,6 +690,7 @@ protected:
 
     Json::Value
     do_rpc(
+        unsigned apiVersion,
         std::vector<std::string> const& args,
         std::unordered_map<std::string, std::string> const& headers = {});
 
@@ -698,12 +734,39 @@ protected:
 template <class... Args>
 Json::Value
 Env::rpc(
+    unsigned apiVersion,
     std::unordered_map<std::string, std::string> const& headers,
     std::string const& cmd,
     Args&&... args)
 {
     return do_rpc(
-        std::vector<std::string>{cmd, std::forward<Args>(args)...}, headers);
+        apiVersion,
+        std::vector<std::string>{cmd, std::forward<Args>(args)...},
+        headers);
+}
+
+template <class... Args>
+Json::Value
+Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
+{
+    return rpc(
+        apiVersion,
+        std::unordered_map<std::string, std::string>(),
+        cmd,
+        std::forward<Args>(args)...);
+}
+
+template <class... Args>
+Json::Value
+Env::rpc(
+    std::unordered_map<std::string, std::string> const& headers,
+    std::string const& cmd,
+    Args&&... args)
+{
+    return do_rpc(
+        RPC::apiCommandLineVersion,
+        std::vector<std::string>{cmd, std::forward<Args>(args)...},
+        headers);
 }
 
 template <class... Args>
@@ -714,40 +777,6 @@ Env::rpc(std::string const& cmd, Args&&... args)
         std::unordered_map<std::string, std::string>(),
         cmd,
         std::forward<Args>(args)...);
-}
-
-/**
- * The SingleVersionedTestCallable concept checks for a callable that takes
- * an unsigned integer as its argument and returns void.
- */
-template <class T>
-concept SingleVersionedTestCallable = requires(T callable, unsigned int version)
-{
-    {
-        callable(version)
-    }
-    ->std::same_as<void>;
-};
-
-/**
- * The VersionedTestCallable concept checks if a set of callables all satisfy
- * the SingleVersionedTestCallable concept. This allows forAllApiVersions to
- * accept any number of functions. It executes a set of provided functions over
- * a range of versions from RPC::apiMinimumSupportedVersion to
- * RPC::apiBetaVersion. This is useful for running a series of tests or
- * operations that need to be performed on multiple versions of an API.
- */
-template <class... T>
-concept VersionedTestCallable = (... && SingleVersionedTestCallable<T>);
-void
-forAllApiVersions(VersionedTestCallable auto... testCallable)
-{
-    for (auto testVersion = RPC::apiMinimumSupportedVersion;
-         testVersion <= RPC::apiBetaVersion;
-         ++testVersion)
-    {
-        (..., testCallable(testVersion));
-    }
 }
 
 }  // namespace jtx

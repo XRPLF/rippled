@@ -28,7 +28,6 @@
 #include <ripple/app/misc/NegativeUNLVote.h>
 #include <ripple/basics/CountedObject.h>
 #include <ripple/basics/Log.h>
-#include <ripple/basics/chrono.h>
 #include <ripple/beast/utility/Journal.h>
 #include <ripple/consensus/Consensus.h>
 #include <ripple/core/JobQueue.h>
@@ -37,11 +36,8 @@
 #include <ripple/protocol/STValidation.h>
 #include <ripple/shamap/SHAMap.h>
 #include <atomic>
-#include <chrono>
 #include <mutex>
-#include <optional>
 #include <set>
-
 namespace ripple {
 
 class InboundTransactions;
@@ -63,7 +59,6 @@ class RCLConsensus
         Application& app_;
         std::unique_ptr<FeeVote> feeVote_;
         LedgerMaster& ledgerMaster_;
-
         LocalTxs& localTxs_;
         InboundTransactions& inboundTransactions_;
         beast::Journal const j_;
@@ -83,6 +78,7 @@ class RCLConsensus
 
         // These members are queried via public accesors and are atomic for
         // thread safety.
+        std::atomic<bool> validating_{false};
         std::atomic<std::size_t> prevProposers_{0};
         std::atomic<std::chrono::milliseconds> prevRoundTime_{
             std::chrono::milliseconds{0}};
@@ -91,25 +87,14 @@ class RCLConsensus
         RCLCensorshipDetector<TxID, LedgerIndex> censorshipDetector_;
         NegativeUNLVote nUnlVote_;
 
-        // Since Consensus does not provide intrinsic thread-safety, this mutex
-        // needs to guard all calls to consensus_. One reason it is recursive
-        // is because logic in phaseEstablish() around buildAndValidate()
-        // needs to lock and unlock to protect Consensus data members.
-        mutable std::recursive_mutex mutex_;
-        std::optional<std::chrono::milliseconds> validationDelay_;
-        std::optional<std::chrono::milliseconds> timerDelay_;
-        std::atomic<bool> validating_{false};
-
     public:
         using Ledger_t = RCLCxLedger;
         using NodeID_t = NodeID;
         using NodeKey_t = PublicKey;
         using TxSet_t = RCLTxSet;
-        using CanonicalTxSet_t = CanonicalTXSet;
         using PeerPosition_t = RCLCxPeerPos;
 
         using Result = ConsensusResult<Adaptor>;
-        using clock_type = Stopwatch;
 
         Adaptor(
             Application& app,
@@ -165,9 +150,6 @@ class RCLConsensus
         getQuorumKeys() const;
 
         std::size_t
-        quorum() const;
-
-        std::size_t
         laggards(Ledger_t::Seq const seq, hash_set<NodeKey_t>& trustedKeys)
             const;
 
@@ -194,93 +176,6 @@ class RCLConsensus
         parms() const
         {
             return parms_;
-        }
-
-        std::recursive_mutex&
-        peekMutex() const
-        {
-            return mutex_;
-        }
-
-        LedgerMaster&
-        getLedgerMaster() const
-        {
-            return ledgerMaster_;
-        }
-
-        void
-        clearValidating()
-        {
-            validating_ = false;
-        }
-
-        /** Whether to try building another ledger to validate.
-         *
-         * This should be called when a newly-created ledger hasn't been
-         * validated to avoid us forking to an invalid ledger.
-         *
-         * Retry only if all of the below are true:
-         *   * We are synced to the network.
-         *   * Not in standalone mode.
-         *   * We have validated a ledger.
-         *   * The latest validated ledger and the new ledger are different.
-         *   * The new ledger sequence is >= the validated ledger.
-         *   * Less than 5 seconds have elapsed retrying.
-         *
-         * @param newLedger The new ledger which we have created.
-         * @param start When we started possibly retrying ledgers.
-         * @return Whether to retry.
-         */
-        bool
-        retryAccept(
-            Ledger_t const& newLedger,
-            std::optional<std::chrono::time_point<std::chrono::steady_clock>>&
-                start) const;
-
-        /** Amount of time delayed waiting to confirm validation.
-         *
-         * @return Time in milliseconds.
-         */
-        std::optional<std::chrono::milliseconds>
-        getValidationDelay() const
-        {
-            return validationDelay_;
-        }
-
-        /** Set amount of time that has been delayed waiting for validation.
-         *
-         * Clear if nothing passed.
-         *
-         * @param vd Amount of time in milliseconds.
-         */
-        void
-        setValidationDelay(
-            std::optional<std::chrono::milliseconds> vd = std::nullopt)
-        {
-            validationDelay_ = vd;
-        }
-
-        /** Amount of time to wait for heartbeat.
-         *
-         * @return Time in milliseconds.
-         */
-        std::optional<std::chrono::milliseconds>
-        getTimerDelay() const
-        {
-            return timerDelay_;
-        }
-
-        /** Set amount of time to wait for next heartbeat.
-         *
-         * Clear if nothing passed.
-         *
-         * @param td Amount of time in milliseconds.
-         */
-        void
-        setTimerDelay(
-            std::optional<std::chrono::milliseconds> td = std::nullopt)
-        {
-            timerDelay_ = td;
         }
 
     private:
@@ -402,34 +297,34 @@ class RCLConsensus
            @param ledger the ledger we are changing to
            @param closeTime When consensus closed the ledger
            @param mode Current consensus mode
-           @param clock Clock used for Consensus and testing.
            @return Tentative consensus result
         */
         Result
         onClose(
             RCLCxLedger const& ledger,
             NetClock::time_point const& closeTime,
-            ConsensusMode mode,
-            clock_type& clock);
+            ConsensusMode mode);
 
         /** Process the accepted ledger.
 
             @param result The result of consensus
+            @param prevLedger The closed ledger consensus worked from
+            @param closeResolution The resolution used in agreeing on an
+                                   effective closeTime
             @param rawCloseTimes The unrounded closetimes of ourself and our
                                  peers
             @param mode Our participating mode at the time consensus was
                         declared
             @param consensusJson Json representation of consensus state
-            @param txsBuilt The consensus transaction set and new ledger built
-                            around it
         */
         void
         onAccept(
             Result const& result,
+            RCLCxLedger const& prevLedger,
+            NetClock::duration const& closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
-            Json::Value&& consensusJson,
-            std::pair<CanonicalTxSet_t, Ledger_t>&& txsBuilt);
+            Json::Value&& consensusJson);
 
         /** Process the accepted ledger that was a result of simulation/force
             accept.
@@ -457,40 +352,18 @@ class RCLConsensus
             RCLCxLedger const& ledger,
             bool haveCorrectLCL);
 
-        /** Build and attempt to validate a new ledger.
-         *
-         * @param result The result of consensus.
-         * @param prevLedger The closed ledger from which this is to be based.
-         * @param closeResolution The resolution used in agreeing on an
-         *                        effective closeTime.
-         * @param mode Our participating mode at the time consensus was
-         *             declared.
-         * @param consensusJson Json representation of consensus state.
-         * @return The consensus transaction set and resulting ledger.
-         */
-        std::pair<CanonicalTxSet_t, Ledger_t>
-        buildAndValidate(
-            Result const& result,
-            Ledger_t const& prevLedger,
-            NetClock::duration const& closeResolution,
-            ConsensusMode const& mode,
-            Json::Value&& consensusJson);
+        /** Accept a new ledger based on the given transactions.
 
-        /** Prepare the next open ledger.
-         *
-         * @param txsBuilt The consensus transaction set and resulting ledger.
-         * @param result The result of consensus.
-         * @param rawCloseTimes The unrounded closetimes of our peers and
-         *                      ourself.
-         * @param mode Our participating mode at the time consensus was
-                       declared.
+            @ref onAccept
          */
         void
-        prepareOpenLedger(
-            std::pair<CanonicalTxSet_t, Ledger_t>&& txsBuilt,
+        doAccept(
             Result const& result,
+            RCLCxLedger const& prevLedger,
+            NetClock::duration closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
-            ConsensusMode const& mode);
+            ConsensusMode const& mode,
+            Json::Value&& consensusJson);
 
         /** Build the new last closed ledger.
 
@@ -548,7 +421,7 @@ public:
         LedgerMaster& ledgerMaster,
         LocalTxs& localTxs,
         InboundTransactions& inboundTransactions,
-        Consensus<Adaptor>::clock_type& clock,
+        Consensus<Adaptor>::clock_type const& clock,
         ValidatorKeys const& validatorKeys,
         beast::Journal journal);
 
@@ -625,7 +498,7 @@ public:
     RCLCxLedger::ID
     prevLedgerID() const
     {
-        std::lock_guard _{adaptor_.peekMutex()};
+        std::lock_guard _{mutex_};
         return consensus_.prevLedgerID();
     }
 
@@ -647,19 +520,12 @@ public:
         return adaptor_.parms();
     }
 
-    std::optional<std::chrono::milliseconds>
-    getTimerDelay() const
-    {
-        return adaptor_.getTimerDelay();
-    }
-
-    void
-    setTimerDelay(std::optional<std::chrono::milliseconds> td = std::nullopt)
-    {
-        adaptor_.setTimerDelay(td);
-    }
-
 private:
+    // Since Consensus does not provide intrinsic thread-safety, this mutex
+    // guards all calls to consensus_. adaptor_ uses atomics internally
+    // to allow concurrent access of its data members that have getters.
+    mutable std::recursive_mutex mutex_;
+
     Adaptor adaptor_;
     Consensus<Adaptor> consensus_;
     beast::Journal const j_;

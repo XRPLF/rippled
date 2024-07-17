@@ -40,25 +40,28 @@ namespace ripple {
 NotTEC
 preflight0(PreflightContext const& ctx)
 {
-    uint32_t const nodeNID = ctx.app.config().NETWORK_ID;
-    std::optional<uint32_t> const txNID = ctx.tx[~sfNetworkID];
-
-    if (nodeNID <= 1024)
+    if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
     {
-        // legacy networks have IDs 1024 and below. These networks cannot
-        // specify NetworkID in txn
-        if (txNID)
-            return telNETWORK_ID_MAKES_TX_NON_CANONICAL;
-    }
-    else
-    {
-        // new networks both require the field to be present and require it to
-        // match
-        if (!txNID)
-            return telREQUIRES_NETWORK_ID;
+        uint32_t nodeNID = ctx.app.config().NETWORK_ID;
+        std::optional<uint32_t> txNID = ctx.tx[~sfNetworkID];
 
-        if (*txNID != nodeNID)
-            return telWRONG_NETWORK;
+        if (nodeNID <= 1024)
+        {
+            // legacy networks have ids less than 1024, these networks cannot
+            // specify NetworkID in txn
+            if (txNID)
+                return telNETWORK_ID_MAKES_TX_NON_CANONICAL;
+        }
+        else
+        {
+            // new networks both require the field to be present and require it
+            // to match
+            if (!txNID)
+                return telREQUIRES_NETWORK_ID;
+
+            if (*txNID != nodeNID)
+                return telWRONG_NETWORK;
+        }
     }
 
     auto const txID = ctx.tx.getTransactionID();
@@ -828,8 +831,11 @@ Transactor::operator()()
 {
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
 
+    // raii classes for the current ledger rules. fixSTAmountCanonicalize and
+    // fixSTAmountCanonicalize predate the rulesGuard and should be replaced.
     STAmountSO stAmountSO{view().rules().enabled(fixSTAmountCanonicalize)};
     NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
+    CurrentTransactionRulesGuard currentTransctionRulesGuard(view().rules());
 
 #ifdef DEBUG
     {
@@ -847,6 +853,12 @@ Transactor::operator()()
         }
     }
 #endif
+
+    if (auto const& trap = ctx_.app.trapTxID();
+        trap && *trap == ctx_.tx.getTransactionID())
+    {
+        JLOG(j_.debug()) << "Transaction trapped: " << *trap;
+    }
 
     auto result = ctx_.preclaimResult;
     if (result == tesSUCCESS)

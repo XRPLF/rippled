@@ -25,9 +25,9 @@
 #include <ripple/app/rdb/RelationalDatabase.h>
 #include <ripple/app/tx/impl/details/NFTokenUtils.h>
 #include <ripple/ledger/View.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/AccountID.h>
 #include <ripple/protocol/Feature.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/nftPageMask.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/rpc/Context.h>
@@ -600,59 +600,6 @@ getLedger<>(
 template Status
 getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context&);
 
-bool
-isValidated(
-    LedgerMaster& ledgerMaster,
-    ReadView const& ledger,
-    Application& app)
-{
-    if (app.config().reporting())
-        return true;
-
-    if (ledger.open())
-        return false;
-
-    if (ledger.info().validated)
-        return true;
-
-    auto seq = ledger.info().seq;
-    try
-    {
-        // Use the skip list in the last validated ledger to see if ledger
-        // comes before the last validated ledger (and thus has been
-        // validated).
-        auto hash =
-            ledgerMaster.walkHashBySeq(seq, InboundLedger::Reason::GENERIC);
-
-        if (!hash || ledger.info().hash != *hash)
-        {
-            // This ledger's hash is not the hash of the validated ledger
-            if (hash)
-            {
-                assert(hash->isNonZero());
-                uint256 valHash =
-                    app.getRelationalDatabase().getHashByIndex(seq);
-                if (valHash == ledger.info().hash)
-                {
-                    // SQL database doesn't match ledger chain
-                    ledgerMaster.clearLedger(seq);
-                }
-            }
-            return false;
-        }
-    }
-    catch (SHAMapMissingNode const& mn)
-    {
-        auto stream = app.journal("RPCHandler").warn();
-        JLOG(stream) << "Ledger #" << seq << ": " << mn.what();
-        return false;
-    }
-
-    // Mark ledger as validated to save time if we see it again.
-    ledger.info().validated = true;
-    return true;
-}
-
 // The previous version of the lookupLedger command would accept the
 // "ledger_index" argument as a string and silently treat it as a request to
 // return the current ledger which, while not strictly wrong, could cause a lot
@@ -693,8 +640,7 @@ lookupLedger(
         result[jss::ledger_current_index] = info.seq;
     }
 
-    result[jss::validated] =
-        isValidated(context.ledgerMaster, *ledger, context.app);
+    result[jss::validated] = context.ledgerMaster.isValidated(*ledger);
     return Status::OK;
 }
 
@@ -846,7 +792,7 @@ getSeedFromRPC(Json::Value const& params, Json::Value& error)
     return seed;
 }
 
-std::pair<PublicKey, SecretKey>
+std::optional<std::pair<PublicKey, SecretKey>>
 keypairForSignature(
     Json::Value const& params,
     Json::Value& error,
@@ -988,25 +934,28 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 19>
+        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 22>
             types{
                 {{jss::account, ltACCOUNT_ROOT},
                  {jss::amendments, ltAMENDMENTS},
+                 {jss::amm, ltAMM},
+                 {jss::bridge, ltBRIDGE},
                  {jss::check, ltCHECK},
                  {jss::deposit_preauth, ltDEPOSIT_PREAUTH},
+                 {jss::did, ltDID},
                  {jss::directory, ltDIR_NODE},
                  {jss::escrow, ltESCROW},
                  {jss::fee, ltFEE_SETTINGS},
                  {jss::hashes, ltLEDGER_HASHES},
+                 {jss::nunl, ltNEGATIVE_UNL},
+                 {jss::oracle, ltORACLE},
+                 {jss::nft_offer, ltNFTOKEN_OFFER},
+                 {jss::nft_page, ltNFTOKEN_PAGE},
                  {jss::offer, ltOFFER},
                  {jss::payment_channel, ltPAYCHAN},
                  {jss::signer_list, ltSIGNER_LIST},
                  {jss::state, ltRIPPLE_STATE},
                  {jss::ticket, ltTICKET},
-                 {jss::nft_offer, ltNFTOKEN_OFFER},
-                 {jss::nft_page, ltNFTOKEN_PAGE},
-                 {jss::amm, ltAMM},
-                 {jss::bridge, ltBRIDGE},
                  {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
                  {jss::xchain_owned_create_account_claim_id,
                   ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID}}};
@@ -1178,26 +1127,5 @@ getLedgerByContext(RPC::JsonContext& context)
     return RPC::make_error(
         rpcNOT_READY, "findCreate failed to return an inbound ledger");
 }
-
-ripple::Expected<RPC::SubmitSync, Json::Value>
-getSubmitSyncMode(Json::Value const& params)
-{
-    using enum RPC::SubmitSync;
-    if (params.isMember(jss::sync_mode))
-    {
-        std::string const syncMode = params[jss::sync_mode].asString();
-        if (syncMode == "async")
-            return async;
-        else if (syncMode == "wait")
-            return wait;
-        else if (syncMode != "sync")
-            return Unexpected(RPC::make_error(
-                rpcINVALID_PARAMS,
-                "sync_mode parameter must be one of \"sync\", \"async\", or "
-                "\"wait\"."));
-    }
-    return sync;
-}
-
 }  // namespace RPC
 }  // namespace ripple

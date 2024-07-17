@@ -185,7 +185,7 @@ public:
 
     NodeCache m_tempNodeCache;
     CachedSLEs cachedSLEs_;
-    std::pair<PublicKey, SecretKey> nodeIdentity_;
+    std::optional<std::pair<PublicKey, SecretKey>> nodeIdentity_;
     ValidatorKeys const validatorKeys_;
 
     std::unique_ptr<Resource::Manager> m_resourceManager;
@@ -225,6 +225,7 @@ public:
     std::unique_ptr<RelationalDatabase> mRelationalDatabase;
     std::unique_ptr<DatabaseCon> mWalletDB;
     std::unique_ptr<Overlay> overlay_;
+    std::optional<uint256> trapTxID_;
 
     boost::asio::signal_set m_signals;
 
@@ -587,13 +588,20 @@ public:
     std::pair<PublicKey, SecretKey> const&
     nodeIdentity() override
     {
-        return nodeIdentity_;
+        if (nodeIdentity_)
+            return *nodeIdentity_;
+
+        LogicError(
+            "Accessing Application::nodeIdentity() before it is initialized.");
     }
 
-    PublicKey const&
+    std::optional<PublicKey const>
     getValidationPublicKey() const override
     {
-        return validatorKeys_.publicKey;
+        if (!validatorKeys_.keys)
+            return {};
+
+        return validatorKeys_.keys->publicKey;
     }
 
     NetworkOPs&
@@ -1065,20 +1073,172 @@ public:
         // VFALCO TODO fix the dependency inversion using an observer,
         //         have listeners register for "onSweep ()" notification.
 
-        nodeFamily_.sweep();
+        {
+            std::shared_ptr<FullBelowCache const> const fullBelowCache =
+                nodeFamily_.getFullBelowCache(0);
+
+            std::shared_ptr<TreeNodeCache const> const treeNodeCache =
+                nodeFamily_.getTreeNodeCache(0);
+
+            std::size_t const oldFullBelowSize = fullBelowCache->size();
+            std::size_t const oldTreeNodeSize = treeNodeCache->size();
+
+            nodeFamily_.sweep();
+
+            JLOG(m_journal.debug())
+                << "NodeFamily::FullBelowCache sweep.  Size before: "
+                << oldFullBelowSize
+                << "; size after: " << fullBelowCache->size();
+
+            JLOG(m_journal.debug())
+                << "NodeFamily::TreeNodeCache sweep.  Size before: "
+                << oldTreeNodeSize << "; size after: " << treeNodeCache->size();
+        }
         if (shardFamily_)
+        {
+            std::size_t const oldFullBelowSize =
+                shardFamily_->getFullBelowCacheSize();
+            std::size_t const oldTreeNodeSize =
+                shardFamily_->getTreeNodeCacheSize().second;
+
             shardFamily_->sweep();
-        getMasterTransaction().sweep();
-        getNodeStore().sweep();
+
+            JLOG(m_journal.debug())
+                << "ShardFamily::FullBelowCache sweep.  Size before: "
+                << oldFullBelowSize
+                << "; size after: " << shardFamily_->getFullBelowCacheSize();
+
+            JLOG(m_journal.debug())
+                << "ShardFamily::TreeNodeCache sweep.  Size before: "
+                << oldTreeNodeSize << "; size after: "
+                << shardFamily_->getTreeNodeCacheSize().second;
+        }
+        {
+            TaggedCache<uint256, Transaction> const& masterTxCache =
+                getMasterTransaction().getCache();
+
+            std::size_t const oldMasterTxSize = masterTxCache.size();
+
+            getMasterTransaction().sweep();
+
+            JLOG(m_journal.debug())
+                << "MasterTransaction sweep.  Size before: " << oldMasterTxSize
+                << "; size after: " << masterTxCache.size();
+        }
+        {
+            // Does not appear to have an associated cache.
+            getNodeStore().sweep();
+        }
         if (shardStore_)
+        {
+            // Does not appear to have an associated cache.
             shardStore_->sweep();
-        getLedgerMaster().sweep();
-        getTempNodeCache().sweep();
-        getValidations().expire(m_journal);
-        getInboundLedgers().sweep();
-        getLedgerReplayer().sweep();
-        m_acceptedLedgerCache.sweep();
-        cachedSLEs_.sweep();
+        }
+        {
+            std::size_t const oldLedgerMasterCacheSize =
+                getLedgerMaster().getFetchPackCacheSize();
+
+            getLedgerMaster().sweep();
+
+            JLOG(m_journal.debug())
+                << "LedgerMaster sweep.  Size before: "
+                << oldLedgerMasterCacheSize << "; size after: "
+                << getLedgerMaster().getFetchPackCacheSize();
+        }
+        {
+            // NodeCache == TaggedCache<SHAMapHash, Blob>
+            std::size_t const oldTempNodeCacheSize = getTempNodeCache().size();
+
+            getTempNodeCache().sweep();
+
+            JLOG(m_journal.debug())
+                << "TempNodeCache sweep.  Size before: " << oldTempNodeCacheSize
+                << "; size after: " << getTempNodeCache().size();
+        }
+        {
+            std::size_t const oldCurrentCacheSize =
+                getValidations().sizeOfCurrentCache();
+            std::size_t const oldSizeSeqEnforcesSize =
+                getValidations().sizeOfSeqEnforcersCache();
+            std::size_t const oldByLedgerSize =
+                getValidations().sizeOfByLedgerCache();
+            std::size_t const oldBySequenceSize =
+                getValidations().sizeOfBySequenceCache();
+
+            getValidations().expire(m_journal);
+
+            JLOG(m_journal.debug())
+                << "Validations Current expire.  Size before: "
+                << oldCurrentCacheSize
+                << "; size after: " << getValidations().sizeOfCurrentCache();
+
+            JLOG(m_journal.debug())
+                << "Validations SeqEnforcer expire.  Size before: "
+                << oldSizeSeqEnforcesSize << "; size after: "
+                << getValidations().sizeOfSeqEnforcersCache();
+
+            JLOG(m_journal.debug())
+                << "Validations ByLedger expire.  Size before: "
+                << oldByLedgerSize
+                << "; size after: " << getValidations().sizeOfByLedgerCache();
+
+            JLOG(m_journal.debug())
+                << "Validations BySequence expire.  Size before: "
+                << oldBySequenceSize
+                << "; size after: " << getValidations().sizeOfBySequenceCache();
+        }
+        {
+            std::size_t const oldInboundLedgersSize =
+                getInboundLedgers().cacheSize();
+
+            getInboundLedgers().sweep();
+
+            JLOG(m_journal.debug())
+                << "InboundLedgers sweep.  Size before: "
+                << oldInboundLedgersSize
+                << "; size after: " << getInboundLedgers().cacheSize();
+        }
+        {
+            size_t const oldTasksSize = getLedgerReplayer().tasksSize();
+            size_t const oldDeltasSize = getLedgerReplayer().deltasSize();
+            size_t const oldSkipListsSize = getLedgerReplayer().skipListsSize();
+
+            getLedgerReplayer().sweep();
+
+            JLOG(m_journal.debug())
+                << "LedgerReplayer tasks sweep.  Size before: " << oldTasksSize
+                << "; size after: " << getLedgerReplayer().tasksSize();
+
+            JLOG(m_journal.debug())
+                << "LedgerReplayer deltas sweep.  Size before: "
+                << oldDeltasSize
+                << "; size after: " << getLedgerReplayer().deltasSize();
+
+            JLOG(m_journal.debug())
+                << "LedgerReplayer skipLists sweep.  Size before: "
+                << oldSkipListsSize
+                << "; size after: " << getLedgerReplayer().skipListsSize();
+        }
+        {
+            std::size_t const oldAcceptedLedgerSize =
+                m_acceptedLedgerCache.size();
+
+            m_acceptedLedgerCache.sweep();
+
+            JLOG(m_journal.debug())
+                << "AcceptedLedgerCache sweep.  Size before: "
+                << oldAcceptedLedgerSize
+                << "; size after: " << m_acceptedLedgerCache.size();
+        }
+        {
+            std::size_t const oldCachedSLEsSize = cachedSLEs_.size();
+
+            cachedSLEs_.sweep();
+
+            JLOG(m_journal.debug())
+                << "CachedSLEs sweep.  Size before: " << oldCachedSLEsSize
+                << "; size after: " << cachedSLEs_.size();
+        }
 
 #ifdef RIPPLED_REPORTING
         if (auto pg = dynamic_cast<PostgresDatabase*>(&*mRelationalDatabase))
@@ -1093,6 +1253,12 @@ public:
     getMaxDisallowedLedger() override
     {
         return maxDisallowedLedger_;
+    }
+
+    virtual const std::optional<uint256>&
+    trapTxID() const override
+    {
+        return trapTxID_;
     }
 
 private:
@@ -1113,7 +1279,11 @@ private:
     loadLedgerFromFile(std::string const& ledgerID);
 
     bool
-    loadOldLedger(std::string const& ledgerID, bool replay, bool isFilename);
+    loadOldLedger(
+        std::string const& ledgerID,
+        bool replay,
+        bool isFilename,
+        std::optional<uint256> trapTxID);
 
     void
     setMaxDisallowedLedger();
@@ -1193,7 +1363,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         return false;
     }
 
-    if (validatorKeys_.publicKey.size())
+    if (validatorKeys_.keys)
         setMaxDisallowedLedger();
 
     // Configure the amendments the server supports
@@ -1245,7 +1415,8 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             if (!loadOldLedger(
                     config_->START_LEDGER,
                     startUp == Config::REPLAY,
-                    startUp == Config::LOAD_FILE))
+                    startUp == Config::LOAD_FILE,
+                    config_->TRAP_TX_HASH))
             {
                 JLOG(m_journal.error())
                     << "The specified ledger could not be loaded.";
@@ -1314,9 +1485,19 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
             publisherManifests_->load(getWalletDB(), "PublisherManifests");
 
+            // It is possible to have a valid ValidatorKeys object without
+            // setting the signingKey or masterKey. This occurs if the
+            // configuration file does not have either
+            // SECTION_VALIDATOR_TOKEN or SECTION_VALIDATION_SEED section.
+
+            // masterKey for the configuration-file specified validator keys
+            std::optional<PublicKey> localSigningKey;
+            if (validatorKeys_.keys)
+                localSigningKey = validatorKeys_.keys->publicKey;
+
             // Setup trusted validators
             if (!validators_->load(
-                    validatorKeys_.publicKey,
+                    localSigningKey,
                     config().section(SECTION_VALIDATORS).values(),
                     config().section(SECTION_VALIDATOR_LIST_KEYS).values()))
             {
@@ -1533,7 +1714,6 @@ ApplicationImp::start(bool withTimers)
     {
         setSweepTimer();
         setEntropyTimer();
-        m_networkOPs->setBatchApplyTimer();
     }
 
     m_io_latency_sampler.start();
@@ -1918,7 +2098,8 @@ bool
 ApplicationImp::loadOldLedger(
     std::string const& ledgerID,
     bool replay,
-    bool isFileName)
+    bool isFileName,
+    std::optional<uint256> trapTxID)
 {
     try
     {
@@ -2065,6 +2246,11 @@ ApplicationImp::loadOldLedger(
             {
                 (void)_;
                 auto txID = tx->getTransactionID();
+                if (trapTxID == txID)
+                {
+                    trapTxID_ = txID;
+                    JLOG(m_journal.debug()) << "Trap transaction set: " << txID;
+                }
 
                 auto s = std::make_shared<Serializer>();
                 tx->add(*s);
@@ -2079,6 +2265,14 @@ ApplicationImp::loadOldLedger(
             }
 
             m_ledgerMaster->takeReplay(std::move(replayData));
+
+            if (trapTxID && !trapTxID_)
+            {
+                JLOG(m_journal.fatal())
+                    << "Ledger " << replayLedger->info().seq
+                    << " does not contain the transaction hash " << *trapTxID;
+                return false;
+            }
         }
     }
     catch (SHAMapMissingNode const& mn)

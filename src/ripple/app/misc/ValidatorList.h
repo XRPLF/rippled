@@ -247,7 +247,17 @@ class ValidatorList
     // a seed, the signing key is the same as the master key.
     hash_set<PublicKey> trustedSigningKeys_;
 
-    PublicKey localPubKey_;
+    std::optional<PublicKey> localPubKey_;
+
+    // The below variable contains the Publisher list specified in the local
+    // config file under the title of SECTION_VALIDATORS or [validators].
+    // This list is not associated with the masterKey of any publisher.
+
+    // Appropos PublisherListCollection fields, localPublisherList does not
+    // have any "remaining" manifests. It is assumed to be perennially
+    // "available". The "validUntil" field is set to the highest possible
+    // value of the field, hence this list is always valid.
+    PublisherList localPublisherList;
 
     // The master public keys of the current negative UNL
     hash_set<PublicKey> negativeUNL_;
@@ -331,7 +341,7 @@ public:
     */
     bool
     load(
-        PublicKey const& localSigningKey,
+        std::optional<PublicKey> const& localSigningKey,
         std::vector<std::string> const& configKeys,
         std::vector<std::string> const& publisherKeys);
 
@@ -553,13 +563,14 @@ public:
     bool
     trustedPublisher(PublicKey const& identity) const;
 
-    /** Returns local validator public key
+    /** This function returns the local validator public key
+     * or a std::nullopt
 
         @par Thread Safety
 
         May be called concurrently
     */
-    PublicKey
+    std::optional<PublicKey>
     localPublicKey() const;
 
     /** Invokes the callback once for every listed validation public key.
@@ -622,7 +633,7 @@ public:
     */
     std::optional<Json::Value>
     getAvailable(
-        boost::beast::string_view const& pubKey,
+        std::string_view pubKey,
         std::optional<std::uint32_t> forceVersion = {});
 
     /** Return the number of configured validator list sites. */
@@ -766,6 +777,8 @@ private:
         std::optional<uint256> const& hash,
         lock_guard const&);
 
+    // This function updates the keyListings_ counts for all the trusted
+    // master keys
     void
     updatePublisherList(
         PublicKey const& pubKey,
@@ -849,11 +862,10 @@ private:
 
         Calling public member function is expected to lock mutex
     */
-    ListDisposition
+    std::pair<ListDisposition, std::optional<PublicKey>>
     verify(
         lock_guard const&,
         Json::Value& list,
-        PublicKey& pubKey,
         std::string const& manifest,
         std::string const& blob,
         std::string const& signature);

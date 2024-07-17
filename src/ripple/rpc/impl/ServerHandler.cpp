@@ -27,12 +27,13 @@
 #include <ripple/basics/make_SSLContext.h>
 #include <ripple/beast/net/IPAddressConversion.h>
 #include <ripple/beast/rfc2616.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/json/json_reader.h>
 #include <ripple/json/to_string.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/resource/Fees.h>
 #include <ripple/resource/ResourceManager.h>
 #include <ripple/rpc/RPCHandler.h>
@@ -46,9 +47,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/beast/http/fields.hpp>
 #include <boost/beast/http/string_body.hpp>
-#include <boost/type_traits.hpp>
 #include <algorithm>
-#include <mutex>
 #include <stdexcept>
 
 namespace ripple {
@@ -248,6 +247,8 @@ build_map(boost::beast::http::fields const& h)
     std::map<std::string, std::string> c;
     for (auto const& e : h)
     {
+        // key cannot be a std::string_view because it needs to be used in
+        // map and along with iterators
         std::string key(e.name_string());
         std::transform(key.begin(), key.end(), key.begin(), [](auto kc) {
             return std::tolower(static_cast<unsigned char>(kc));
@@ -593,8 +594,8 @@ ServerHandler::processRequest(
     beast::IP::Endpoint const& remoteIPAddress,
     Output&& output,
     std::shared_ptr<JobQueue::Coro> coro,
-    boost::string_view forwardedFor,
-    boost::string_view user)
+    std::string_view forwardedFor,
+    std::string_view user)
 {
     auto rpcJ = app_.journal("RPC");
 
@@ -644,7 +645,7 @@ ServerHandler::processRequest(
             continue;
         }
 
-        auto apiVersion = RPC::apiVersionIfUnspecified;
+        unsigned apiVersion = RPC::apiVersionIfUnspecified;
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 &&
             jsonRPC[jss::params][0u].isObject())
@@ -848,8 +849,8 @@ ServerHandler::processRequest(
          */
         if (role != Role::IDENTIFIED && role != Role::PROXY)
         {
-            forwardedFor.clear();
-            user.clear();
+            forwardedFor.remove_suffix(forwardedFor.size());
+            user.remove_suffix(user.size());
         }
 
         JLOG(m_journal.debug()) << "Query: " << strMethod << params;
@@ -1149,6 +1150,12 @@ parse_Ports(Config const& config, std::ostream& log)
             log << "Missing section: [" << name << "]";
             Throw<std::exception>();
         }
+
+        // grpc ports are parsed by GRPCServer class. Do not validate
+        // grpc port information in this file.
+        if (name == SECTION_PORT_GRPC)
+            continue;
+
         ParsedPort parsed = common;
         parsed.name = name;
         parse_Port(parsed, config[name], log);

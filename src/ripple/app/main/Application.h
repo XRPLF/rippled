@@ -242,7 +242,7 @@ public:
     virtual std::pair<PublicKey, SecretKey> const&
     nodeIdentity() = 0;
 
-    virtual PublicKey const&
+    virtual std::optional<PublicKey const>
     getValidationPublicKey() const = 0;
 
     virtual Resource::Manager&
@@ -284,6 +284,9 @@ public:
      * than the last ledger it persisted. */
     virtual LedgerIndex
     getMaxDisallowedLedger() = 0;
+
+    virtual const std::optional<uint256>&
+    trapTxID() const = 0;
 };
 
 std::unique_ptr<Application>

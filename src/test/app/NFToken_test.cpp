@@ -27,7 +27,7 @@
 
 namespace ripple {
 
-class NFToken0_test : public beast::unit_test::suite
+class NFTokenBaseUtil_test : public beast::unit_test::suite
 {
     FeatureBitset const disallowIncoming{featureDisallowIncoming};
 
@@ -581,7 +581,7 @@ class NFToken0_test : public beast::unit_test::suite
             ter(temMALFORMED));
 
         //----------------------------------------------------------------------
-        // preflight
+        // preclaim
 
         // Non-existent issuer.
         env(token::mint(alice, 0u),
@@ -3169,6 +3169,26 @@ class NFToken0_test : public beast::unit_test::suite
             env(token::createOffer(minter, nftokenID, drops(1)),
                 token::owner(buyer),
                 ter(tecNO_PERMISSION));
+            env.close();
+        }
+
+        // minter mint and offer to buyer
+        if (features[featureNFTokenMintOffer])
+        {
+            // enable flag
+            env(fset(buyer, asfDisallowIncomingNFTokenOffer));
+            // a sell offer from the minter to the buyer should be rejected
+            env(token::mint(minter),
+                token::amount(drops(1)),
+                token::destination(buyer),
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            // disable flag
+            env(fclear(buyer, asfDisallowIncomingNFTokenOffer));
+            env(token::mint(minter),
+                token::amount(drops(1)),
+                token::destination(buyer));
             env.close();
         }
     }
@@ -6306,7 +6326,7 @@ class NFToken0_test : public beast::unit_test::suite
         }
 
         // When an account mints and burns a batch of NFTokens using tickets,
-        // see if the the account can be deleted.
+        // see if the account can be deleted.
         {
             Env env{*this, features};
 
@@ -6567,6 +6587,281 @@ class NFToken0_test : public beast::unit_test::suite
     }
 
     void
+    testFeatMintWithOffer(FeatureBitset features)
+    {
+        testcase("NFTokenMint with Create NFTokenOffer");
+
+        using namespace test::jtx;
+
+        if (!features[featureNFTokenMintOffer])
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const buyer("buyer");
+
+            env.fund(XRP(10000), alice, buyer);
+            env.close();
+
+            env(token::mint(alice),
+                token::amount(XRP(10000)),
+                ter(temDISABLED));
+            env.close();
+
+            env(token::mint(alice),
+                token::destination("buyer"),
+                ter(temDISABLED));
+            env.close();
+
+            env(token::mint(alice),
+                token::expiration(lastClose(env) + 25),
+                ter(temDISABLED));
+            env.close();
+
+            return;
+        }
+
+        // The remaining tests assume featureNFTokenMintOffer is enabled.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const buyer{"buyer"};
+            Account const gw("gw");
+            Account const issuer("issuer");
+            Account const minter("minter");
+            Account const bob("bob");
+            IOU const gwAUD(gw["AUD"]);
+
+            env.fund(XRP(10000), alice, buyer, gw, issuer, minter);
+            env.close();
+
+            {
+                // Destination field specified but Amount field not specified
+                env(token::mint(alice),
+                    token::destination(buyer),
+                    ter(temMALFORMED));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // Expiration field specified but Amount field not specified
+                env(token::mint(alice),
+                    token::expiration(lastClose(env) + 25),
+                    ter(temMALFORMED));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, buyer) == 0);
+            }
+
+            {
+                // The destination may not be the account submitting the
+                // transaction.
+                env(token::mint(alice),
+                    token::amount(XRP(1000)),
+                    token::destination(alice),
+                    ter(temMALFORMED));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // The destination must be an account already established in the
+                // ledger.
+                env(token::mint(alice),
+                    token::amount(XRP(1000)),
+                    token::destination(Account("demon")),
+                    ter(tecNO_DST));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+            }
+
+            {
+                // Set a bad expiration.
+                env(token::mint(alice),
+                    token::amount(XRP(1000)),
+                    token::expiration(0),
+                    ter(temBAD_EXPIRATION));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // The new NFTokenOffer may not have passed its expiration time.
+                env(token::mint(alice),
+                    token::amount(XRP(1000)),
+                    token::expiration(lastClose(env)),
+                    ter(tecEXPIRED));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+            }
+
+            {
+                // Set an invalid amount.
+                env(token::mint(alice),
+                    token::amount(buyer["USD"](1)),
+                    txflags(tfOnlyXRP),
+                    ter(temBAD_AMOUNT));
+                env(token::mint(alice),
+                    token::amount(buyer["USD"](0)),
+                    ter(temBAD_AMOUNT));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // Issuer (alice) must have a trust line for the offered funds.
+                env(token::mint(alice),
+                    token::amount(gwAUD(1000)),
+                    txflags(tfTransferable),
+                    token::xferFee(10),
+                    ter(tecNO_LINE));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // If the IOU issuer and the NFToken issuer are the same,
+                // then that issuer does not need a trust line to accept their
+                // fee.
+                env(token::mint(gw),
+                    token::amount(gwAUD(1000)),
+                    txflags(tfTransferable),
+                    token::xferFee(10));
+                env.close();
+
+                // Give alice the needed trust line, but freeze it.
+                env(trust(gw, alice["AUD"](999), tfSetFreeze));
+                env.close();
+
+                // Issuer (alice) must have a trust line for the offered funds
+                // and the trust line may not be frozen.
+                env(token::mint(alice),
+                    token::amount(gwAUD(1000)),
+                    txflags(tfTransferable),
+                    token::xferFee(10),
+                    ter(tecFROZEN));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // Seller (alice) must have a trust line may not be frozen.
+                env(token::mint(alice),
+                    token::amount(gwAUD(1000)),
+                    ter(tecFROZEN));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // Unfreeze alice's trustline.
+                env(trust(gw, alice["AUD"](999), tfClearFreeze));
+                env.close();
+            }
+
+            {
+                // check reserve
+                auto const acctReserve =
+                    env.current()->fees().accountReserve(0);
+                auto const incReserve = env.current()->fees().increment;
+
+                env.fund(acctReserve + incReserve, bob);
+                env.close();
+
+                // doesn't have reserve for 2 objects (NFTokenPage, Offer)
+                env(token::mint(bob),
+                    token::amount(XRP(0)),
+                    ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+
+                // have reserve for NFTokenPage, Offer
+                env(pay(env.master, bob, incReserve + drops(10)));
+                env.close();
+                env(token::mint(bob), token::amount(XRP(0)));
+                env.close();
+
+                // doesn't have reserve for Offer
+                env(pay(env.master, bob, drops(10)));
+                env.close();
+                env(token::mint(bob),
+                    token::amount(XRP(0)),
+                    ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+
+                // have reserve for Offer
+                env(pay(env.master, bob, incReserve + drops(10)));
+                env.close();
+                env(token::mint(bob), token::amount(XRP(0)));
+                env.close();
+            }
+
+            // Amount field specified
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            env(token::mint(alice), token::amount(XRP(10)));
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+            env.close();
+
+            // Amount field and Destination field, Expiration field specified
+            env(token::mint(alice),
+                token::amount(XRP(10)),
+                token::destination(buyer),
+                token::expiration(lastClose(env) + 25));
+            env.close();
+
+            // With TransferFee field
+            env(trust(alice, gwAUD(1000)));
+            env.close();
+            env(token::mint(alice),
+                token::amount(gwAUD(1)),
+                token::destination(buyer),
+                token::expiration(lastClose(env) + 25),
+                txflags(tfTransferable),
+                token::xferFee(10));
+            env.close();
+
+            // Can be canceled by the issuer.
+            env(token::mint(alice),
+                token::amount(XRP(10)),
+                token::destination(buyer),
+                token::expiration(lastClose(env) + 25));
+            uint256 const offerAliceSellsToBuyer =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::cancelOffer(alice, {offerAliceSellsToBuyer}));
+            env.close();
+
+            // Can be canceled by the buyer.
+            env(token::mint(buyer),
+                token::amount(XRP(10)),
+                token::destination(alice),
+                token::expiration(lastClose(env) + 25));
+            uint256 const offerBuyerSellsToAlice =
+                keylet::nftoffer(buyer, env.seq(buyer)).key;
+            env(token::cancelOffer(alice, {offerBuyerSellsToAlice}));
+            env.close();
+
+            env(token::setMinter(issuer, minter));
+            env.close();
+
+            // Minter will have offer not issuer
+            BEAST_EXPECT(ownerCount(env, minter) == 0);
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            env(token::mint(minter),
+                token::issuer(issuer),
+                token::amount(drops(1)));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, minter) == 2);
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+        }
+
+        // Test sell offers with a destination with and without
+        // fixNFTokenNegOffer.
+        for (auto const& tweakedFeatures :
+             {features - fixNFTokenNegOffer - featureNonFungibleTokensV1_1,
+              features | fixNFTokenNegOffer})
+        {
+            Env env{*this, tweakedFeatures};
+            Account const alice("alice");
+
+            env.fund(XRP(1000000), alice);
+
+            TER const offerCreateTER = tweakedFeatures[fixNFTokenNegOffer]
+                ? static_cast<TER>(temBAD_AMOUNT)
+                : static_cast<TER>(tesSUCCESS);
+
+            // Make offers with negative amounts for the NFTs
+            env(token::mint(alice),
+                token::amount(XRP(-2)),
+                ter(offerCreateTER));
+            env.close();
+        }
+    }
+
+    void
     testTxJsonMetaFields(FeatureBitset features)
     {
         // `nftoken_id` is added in the `tx` response for NFTokenMint and
@@ -6796,6 +7091,657 @@ class NFToken0_test : public beast::unit_test::suite
             env.close();
             verifyNFTokenIDsInCancelOffer({nftId});
         }
+
+        if (features[featureNFTokenMintOffer])
+        {
+            uint256 const aliceMintWithOfferIndex1 =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::mint(alice), token::amount(XRP(0)));
+            env.close();
+            verifyNFTokenOfferID(aliceMintWithOfferIndex1);
+        }
+    }
+
+    void
+    testFixNFTokenBuyerReserve(FeatureBitset features)
+    {
+        testcase("Test buyer reserve when accepting an offer");
+
+        using namespace test::jtx;
+
+        // Lambda that mints an NFT and then creates a sell offer
+        auto mintAndCreateSellOffer = [](test::jtx::Env& env,
+                                         test::jtx::Account const& acct,
+                                         STAmount const amt) -> uint256 {
+            // acct mints a NFT
+            uint256 const nftId{
+                token::getNextID(env, acct, 0u, tfTransferable)};
+            env(token::mint(acct, 0u), txflags(tfTransferable));
+            env.close();
+
+            // acct makes an sell offer
+            uint256 const sellOfferIndex =
+                keylet::nftoffer(acct, env.seq(acct)).key;
+            env(token::createOffer(acct, nftId, amt), txflags(tfSellNFToken));
+            env.close();
+
+            return sellOfferIndex;
+        };
+
+        // Test the behaviors when the buyer makes an accept offer, both before
+        // and after enabling the amendment. Exercises the precise number of
+        // reserve in drops that's required to accept the offer
+        {
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+
+            Env env{*this, features};
+            auto const acctReserve = env.current()->fees().accountReserve(0);
+            auto const incReserve = env.current()->fees().increment;
+
+            env.fund(XRP(10000), alice);
+            env.close();
+
+            // Bob is funded with minimum XRP reserve
+            env.fund(acctReserve, bob);
+            env.close();
+
+            // alice mints an NFT and create a sell offer for 0 XRP
+            auto const sellOfferIndex =
+                mintAndCreateSellOffer(env, alice, XRP(0));
+
+            // Bob owns no object
+            BEAST_EXPECT(ownerCount(env, bob) == 0);
+
+            // Without fixNFTokenReserve amendment, when bob accepts an NFT sell
+            // offer, he can get the NFT free of reserve
+            if (!features[fixNFTokenReserve])
+            {
+                // Bob is able to accept the offer
+                env(token::acceptSellOffer(bob, sellOfferIndex));
+                env.close();
+
+                // Bob now owns an extra objects
+                BEAST_EXPECT(ownerCount(env, bob) == 1);
+
+                // This is the wrong behavior, since Bob should need at least
+                // one incremental reserve.
+            }
+            // With fixNFTokenReserve, bob can no longer accept the offer unless
+            // there is enough reserve. A detail to note is that NFTs(sell
+            // offer) will not allow one to go below the reserve requirement,
+            // because buyer's balance is computed after the transaction fee is
+            // deducted. This means that the reserve requirement will be 10
+            // drops higher than normal.
+            else
+            {
+                // Bob is not able to accept the offer with only the account
+                // reserve (200,000,000 drops)
+                env(token::acceptSellOffer(bob, sellOfferIndex),
+                    ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+
+                // after prev transaction, Bob owns 199,999,990 drops due to
+                // burnt tx fee
+
+                BEAST_EXPECT(ownerCount(env, bob) == 0);
+
+                // Send bob an increment reserve and 10 drops (to make up for
+                // the transaction fee burnt from the prev failed tx) Bob now
+                // owns 250,000,000 drops
+                env(pay(env.master, bob, incReserve + drops(10)));
+                env.close();
+
+                // However, this transaction will still fail because the reserve
+                // requirement is 10 drops higher
+                env(token::acceptSellOffer(bob, sellOfferIndex),
+                    ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+
+                // Send bob an increment reserve and 20 drops
+                // Bob now owns 250,000,010 drops
+                env(pay(env.master, bob, drops(20)));
+                env.close();
+
+                // Bob is now able to accept the offer
+                env(token::acceptSellOffer(bob, sellOfferIndex));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, bob) == 1);
+            }
+        }
+
+        // Now exercise the scenario when the buyer accepts
+        // many sell offers
+        {
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+
+            Env env{*this, features};
+            auto const acctReserve = env.current()->fees().accountReserve(0);
+            auto const incReserve = env.current()->fees().increment;
+
+            env.fund(XRP(10000), alice);
+            env.close();
+
+            env.fund(acctReserve + XRP(1), bob);
+            env.close();
+
+            if (!features[fixNFTokenReserve])
+            {
+                // Bob can accept many NFTs without having a single reserve!
+                for (size_t i = 0; i < 200; i++)
+                {
+                    // alice mints an NFT and creates a sell offer for 0 XRP
+                    auto const sellOfferIndex =
+                        mintAndCreateSellOffer(env, alice, XRP(0));
+
+                    // Bob is able to accept the offer
+                    env(token::acceptSellOffer(bob, sellOfferIndex));
+                    env.close();
+                }
+            }
+            else
+            {
+                // alice mints the first NFT and creates a sell offer for 0 XRP
+                auto const sellOfferIndex1 =
+                    mintAndCreateSellOffer(env, alice, XRP(0));
+
+                // Bob cannot accept this offer because he doesn't have the
+                // reserve for the NFT
+                env(token::acceptSellOffer(bob, sellOfferIndex1),
+                    ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+
+                // Give bob enough reserve
+                env(pay(env.master, bob, drops(incReserve)));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, bob) == 0);
+
+                // Bob now owns his first NFT
+                env(token::acceptSellOffer(bob, sellOfferIndex1));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, bob) == 1);
+
+                // alice now mints 31 more NFTs and creates an offer for each
+                // NFT, then sells to bob
+                for (size_t i = 0; i < 31; i++)
+                {
+                    // alice mints an NFT and creates a sell offer for 0 XRP
+                    auto const sellOfferIndex =
+                        mintAndCreateSellOffer(env, alice, XRP(0));
+
+                    // Bob can accept the offer because the new NFT is stored in
+                    // an existing NFTokenPage so no new reserve is requried
+                    env(token::acceptSellOffer(bob, sellOfferIndex));
+                    env.close();
+                }
+
+                BEAST_EXPECT(ownerCount(env, bob) == 1);
+
+                // alice now mints the 33rd NFT and creates an sell offer for 0
+                // XRP
+                auto const sellOfferIndex33 =
+                    mintAndCreateSellOffer(env, alice, XRP(0));
+
+                // Bob fails to accept this NFT because he does not have enough
+                // reserve for a new NFTokenPage
+                env(token::acceptSellOffer(bob, sellOfferIndex33),
+                    ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+
+                // Send bob incremental reserve
+                env(pay(env.master, bob, drops(incReserve)));
+                env.close();
+
+                // Bob now has enough reserve to accept the offer and now
+                // owns one more NFTokenPage
+                env(token::acceptSellOffer(bob, sellOfferIndex33));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, bob) == 2);
+            }
+        }
+
+        // Test the behavior when the seller accepts a buy offer.
+        // The behavior should not change regardless whether fixNFTokenReserve
+        // is enabled or not, since the ledger is able to guard against
+        // free NFTokenPages when buy offer is accepted. This is merely an
+        // additional test to exercise existing offer behavior.
+        {
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+
+            Env env{*this, features};
+            auto const acctReserve = env.current()->fees().accountReserve(0);
+            auto const incReserve = env.current()->fees().increment;
+
+            env.fund(XRP(10000), alice);
+            env.close();
+
+            // Bob is funded with account reserve + increment reserve + 1 XRP
+            // increment reserve is for the buy offer, and 1 XRP is for offer
+            // price
+            env.fund(acctReserve + incReserve + XRP(1), bob);
+            env.close();
+
+            // Alice mints a NFT
+            uint256 const nftId{
+                token::getNextID(env, alice, 0u, tfTransferable)};
+            env(token::mint(alice, 0u), txflags(tfTransferable));
+            env.close();
+
+            // Bob makes a buy offer for 1 XRP
+            auto const buyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
+            env(token::createOffer(bob, nftId, XRP(1)), token::owner(alice));
+            env.close();
+
+            // accepting the buy offer fails because bob's balance is 10 drops
+            // lower than the required amount, since the previous tx burnt 10
+            // drops for tx fee.
+            env(token::acceptBuyOffer(alice, buyOfferIndex),
+                ter(tecINSUFFICIENT_FUNDS));
+            env.close();
+
+            // send Bob 10 drops
+            env(pay(env.master, bob, drops(10)));
+            env.close();
+
+            // Now bob can buy the offer
+            env(token::acceptBuyOffer(alice, buyOfferIndex));
+            env.close();
+        }
+
+        // Test the reserve behavior in brokered mode.
+        // The behavior should not change regardless whether fixNFTokenReserve
+        // is enabled or not, since the ledger is able to guard against
+        // free NFTokenPages in brokered mode. This is merely an
+        // additional test to exercise existing offer behavior.
+        {
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const broker{"broker"};
+
+            Env env{*this, features};
+            auto const acctReserve = env.current()->fees().accountReserve(0);
+            auto const incReserve = env.current()->fees().increment;
+
+            env.fund(XRP(10000), alice, broker);
+            env.close();
+
+            // Bob is funded with account reserve + incr reserve + 1 XRP(offer
+            // price)
+            env.fund(acctReserve + incReserve + XRP(1), bob);
+            env.close();
+
+            // Alice mints a NFT
+            uint256 const nftId{
+                token::getNextID(env, alice, 0u, tfTransferable)};
+            env(token::mint(alice, 0u), txflags(tfTransferable));
+            env.close();
+
+            // Alice creates sell offer and set broker as destination
+            uint256 const offerAliceToBroker =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId, XRP(1)),
+                token::destination(broker),
+                txflags(tfSellNFToken));
+            env.close();
+
+            // Bob creates buy offer
+            uint256 const offerBobToBroker =
+                keylet::nftoffer(bob, env.seq(bob)).key;
+            env(token::createOffer(bob, nftId, XRP(1)), token::owner(alice));
+            env.close();
+
+            // broker offers.
+            // Returns insufficient funds, because bob burnt tx fee when he
+            // created his buy offer, which makes his spendable balance to be
+            // less than the required amount.
+            env(token::brokerOffers(
+                    broker, offerBobToBroker, offerAliceToBroker),
+                ter(tecINSUFFICIENT_FUNDS));
+            env.close();
+
+            // send Bob 10 drops
+            env(pay(env.master, bob, drops(10)));
+            env.close();
+
+            // broker offers.
+            env(token::brokerOffers(
+                broker, offerBobToBroker, offerAliceToBroker));
+            env.close();
+        }
+    }
+
+    void
+    testUnaskedForAutoTrustline(FeatureBitset features)
+    {
+        testcase("Test fix unasked for auto-trustline.");
+
+        using namespace test::jtx;
+
+        Account const issuer{"issuer"};
+        Account const becky{"becky"};
+        Account const cheri{"cheri"};
+        Account const gw("gw");
+        IOU const gwAUD(gw["AUD"]);
+
+        // This test case covers issue...
+        // https://github.com/XRPLF/rippled/issues/4925
+        //
+        // For an NFToken with a transfer fee, the issuer must be able to
+        // accept the transfer fee or else a transfer should fail.  If the
+        // NFToken is transferred for a non-XRP asset, then the issuer must
+        // have a trustline to that asset to receive the fee.
+        //
+        // This test looks at a situation where issuer would get a trustline
+        // for the fee without the issuer's consent.  Here are the steps:
+        //  1. Issuer has a trustline (i.e., USD)
+        //  2. Issuer mints NFToken with transfer fee.
+        //  3. Becky acquires the NFToken, paying with XRP.
+        //  4. Becky creates offer to sell NFToken for USD(100).
+        //  5. Issuer deletes trustline for USD.
+        //  6. Carol buys NFToken from Becky for USD(100).
+        //  7. The transfer fee from Carol's purchase re-establishes issuer's
+        //     USD trustline.
+        //
+        // The fixEnforceNFTokenTrustline amendment addresses this oversight.
+        //
+        // We run this test case both with and without
+        // fixEnforceNFTokenTrustline enabled so we can see the change
+        // in behavior.
+        //
+        // In both cases we remove the fixRemoveNFTokenAutoTrustLine amendment.
+        // Otherwise we can't create NFTokens with tfTrustLine enabled.
+        FeatureBitset const localFeatures =
+            features - fixRemoveNFTokenAutoTrustLine;
+        for (FeatureBitset feats :
+             {localFeatures - fixEnforceNFTokenTrustline,
+              localFeatures | fixEnforceNFTokenTrustline})
+        {
+            Env env{*this, feats};
+            env.fund(XRP(1000), issuer, becky, cheri, gw);
+            env.close();
+
+            // Set trust lines so becky and cheri can use gw's currency.
+            env(trust(becky, gwAUD(1000)));
+            env(trust(cheri, gwAUD(1000)));
+            env.close();
+            env(pay(gw, cheri, gwAUD(500)));
+            env.close();
+
+            // issuer creates two NFTs: one with and one without AutoTrustLine.
+            std::uint16_t xferFee = 5000;  // 5%
+            uint256 const nftAutoTrustID{token::getNextID(
+                env, issuer, 0u, tfTransferable | tfTrustLine, xferFee)};
+            env(token::mint(issuer, 0u),
+                token::xferFee(xferFee),
+                txflags(tfTransferable | tfTrustLine));
+            env.close();
+
+            uint256 const nftNoAutoTrustID{
+                token::getNextID(env, issuer, 0u, tfTransferable, xferFee)};
+            env(token::mint(issuer, 0u),
+                token::xferFee(xferFee),
+                txflags(tfTransferable));
+            env.close();
+
+            // becky buys the nfts for 1 drop each.
+            {
+                uint256 const beckyBuyOfferIndex1 =
+                    keylet::nftoffer(becky, env.seq(becky)).key;
+                env(token::createOffer(becky, nftAutoTrustID, drops(1)),
+                    token::owner(issuer));
+
+                uint256 const beckyBuyOfferIndex2 =
+                    keylet::nftoffer(becky, env.seq(becky)).key;
+                env(token::createOffer(becky, nftNoAutoTrustID, drops(1)),
+                    token::owner(issuer));
+
+                env.close();
+                env(token::acceptBuyOffer(issuer, beckyBuyOfferIndex1));
+                env(token::acceptBuyOffer(issuer, beckyBuyOfferIndex2));
+                env.close();
+            }
+
+            // becky creates offers to sell the nfts for AUD.
+            uint256 const beckyAutoTrustOfferIndex =
+                keylet::nftoffer(becky, env.seq(becky)).key;
+            env(token::createOffer(becky, nftAutoTrustID, gwAUD(100)),
+                txflags(tfSellNFToken));
+            env.close();
+
+            // Creating an offer for the NFToken without tfTrustLine fails
+            // because issuer does not have a trust line for AUD.
+            env(token::createOffer(becky, nftNoAutoTrustID, gwAUD(100)),
+                txflags(tfSellNFToken),
+                ter(tecNO_LINE));
+            env.close();
+
+            // issuer creates a trust line.  Now the offer create for the
+            // NFToken without tfTrustLine succeeds.
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            env(trust(issuer, gwAUD(1000)));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, issuer) == 1);
+
+            uint256 const beckyNoAutoTrustOfferIndex =
+                keylet::nftoffer(becky, env.seq(becky)).key;
+            env(token::createOffer(becky, nftNoAutoTrustID, gwAUD(100)),
+                txflags(tfSellNFToken));
+            env.close();
+
+            // Now that the offers are in place, issuer removes the trustline.
+            BEAST_EXPECT(ownerCount(env, issuer) == 1);
+            env(trust(issuer, gwAUD(0)));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+
+            // cheri attempts to accept becky's offers.  Behavior with the
+            // AutoTrustline NFT is uniform: issuer gets a new trust line.
+            env(token::acceptSellOffer(cheri, beckyAutoTrustOfferIndex));
+            env.close();
+
+            // Here's evidence that issuer got the new AUD trust line.
+            BEAST_EXPECT(ownerCount(env, issuer) == 1);
+            BEAST_EXPECT(env.balance(issuer, gwAUD) == gwAUD(5));
+
+            // issuer once again removes the trust line for AUD.
+            env(pay(issuer, gw, gwAUD(5)));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+
+            // cheri attempts to accept the NoAutoTrustLine NFT.  Behavior
+            // depends on whether fixEnforceNFTokenTrustline is enabled.
+            if (feats[fixEnforceNFTokenTrustline])
+            {
+                // With fixEnforceNFTokenTrustline cheri can't accept the
+                // offer because issuer could not get their transfer fee
+                // without the appropriate trustline.
+                env(token::acceptSellOffer(cheri, beckyNoAutoTrustOfferIndex),
+                    ter(tecNO_LINE));
+                env.close();
+
+                // But if issuer re-establishes the trustline then the offer
+                // can be accepted.
+                env(trust(issuer, gwAUD(1000)));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, issuer) == 1);
+
+                env(token::acceptSellOffer(cheri, beckyNoAutoTrustOfferIndex));
+                env.close();
+            }
+            else
+            {
+                // Without fixEnforceNFTokenTrustline the offer just works
+                // and issuer gets a trustline that they did not request.
+                env(token::acceptSellOffer(cheri, beckyNoAutoTrustOfferIndex));
+                env.close();
+            }
+            BEAST_EXPECT(ownerCount(env, issuer) == 1);
+            BEAST_EXPECT(env.balance(issuer, gwAUD) == gwAUD(5));
+        }  // for feats
+    }
+
+    void
+    testNFTIssuerIsIOUIssuer(FeatureBitset features)
+    {
+        testcase("Test fix NFT issuer is IOU issuer");
+
+        using namespace test::jtx;
+
+        Account const issuer{"issuer"};
+        Account const becky{"becky"};
+        Account const cheri{"cheri"};
+        IOU const isISU(issuer["ISU"]);
+
+        // This test case covers issue...
+        // https://github.com/XRPLF/rippled/issues/4941
+        //
+        // If an NFToken has a transfer fee then, when an offer is accepted,
+        // a portion of the sale price goes to the issuer.
+        //
+        // It is possible for an issuer to issue both an IOU (for remittances)
+        // and NFTokens.  If the issuer's IOU is used to pay for the transfer
+        // of one of the issuer's NFTokens, then paying the fee for that
+        // transfer will fail with a tecNO_LINE.
+        //
+        // The problem occurs because the NFT code looks for a trust line to
+        // pay the transfer fee.  However the issuer of an IOU does not need
+        // a trust line to accept their own issuance and, in fact, is not
+        // allowed to have a trust line to themselves.
+        //
+        // This test looks at a situation where transfer of an NFToken is
+        // prevented by this bug:
+        //  1. Issuer issues an IOU (e.g, isISU).
+        //  2. Becky and Cheri get trust lines for, and acquire, some isISU.
+        //  3. Issuer mints NFToken with transfer fee.
+        //  4. Becky acquires the NFToken, paying with XRP.
+        //  5. Becky attempts to create an offer to sell the NFToken for
+        //     isISU(100).  The attempt fails with `tecNO_LINE`.
+        //
+        // The featureNFTokenMintOffer amendment addresses this oversight.
+        //
+        // We remove the fixRemoveNFTokenAutoTrustLine amendment.  Otherwise
+        // we can't create NFTokens with tfTrustLine enabled.
+        FeatureBitset const localFeatures =
+            features - fixRemoveNFTokenAutoTrustLine;
+
+        Env env{*this, localFeatures};
+        env.fund(XRP(1000), issuer, becky, cheri);
+        env.close();
+
+        // Set trust lines so becky and cheri can use isISU.
+        env(trust(becky, isISU(1000)));
+        env(trust(cheri, isISU(1000)));
+        env.close();
+        env(pay(issuer, cheri, isISU(500)));
+        env.close();
+
+        // issuer creates two NFTs: one with and one without AutoTrustLine.
+        std::uint16_t xferFee = 5000;  // 5%
+        uint256 const nftAutoTrustID{token::getNextID(
+            env, issuer, 0u, tfTransferable | tfTrustLine, xferFee)};
+        env(token::mint(issuer, 0u),
+            token::xferFee(xferFee),
+            txflags(tfTransferable | tfTrustLine));
+        env.close();
+
+        uint256 const nftNoAutoTrustID{
+            token::getNextID(env, issuer, 0u, tfTransferable, xferFee)};
+        env(token::mint(issuer, 0u),
+            token::xferFee(xferFee),
+            txflags(tfTransferable));
+        env.close();
+
+        // becky buys the nfts for 1 drop each.
+        {
+            uint256 const beckyBuyOfferIndex1 =
+                keylet::nftoffer(becky, env.seq(becky)).key;
+            env(token::createOffer(becky, nftAutoTrustID, drops(1)),
+                token::owner(issuer));
+
+            uint256 const beckyBuyOfferIndex2 =
+                keylet::nftoffer(becky, env.seq(becky)).key;
+            env(token::createOffer(becky, nftNoAutoTrustID, drops(1)),
+                token::owner(issuer));
+
+            env.close();
+            env(token::acceptBuyOffer(issuer, beckyBuyOfferIndex1));
+            env(token::acceptBuyOffer(issuer, beckyBuyOfferIndex2));
+            env.close();
+        }
+
+        // Behavior from here down diverges significantly based on
+        // featureNFTokenMintOffer.
+        if (!localFeatures[featureNFTokenMintOffer])
+        {
+            // Without featureNFTokenMintOffer becky simply can't
+            // create an offer for a non-tfTrustLine NFToken that would
+            // pay the transfer fee in issuer's own IOU.
+            env(token::createOffer(becky, nftNoAutoTrustID, isISU(100)),
+                txflags(tfSellNFToken),
+                ter(tecNO_LINE));
+            env.close();
+
+            // And issuer can't create a trust line to themselves.
+            env(trust(issuer, isISU(1000)), ter(temDST_IS_SRC));
+            env.close();
+
+            // However if the NFToken has the tfTrustLine flag set,
+            // then becky can create the offer.
+            uint256 const beckyAutoTrustOfferIndex =
+                keylet::nftoffer(becky, env.seq(becky)).key;
+            env(token::createOffer(becky, nftAutoTrustID, isISU(100)),
+                txflags(tfSellNFToken));
+            env.close();
+
+            // And cheri can accept the offer.
+            env(token::acceptSellOffer(cheri, beckyAutoTrustOfferIndex));
+            env.close();
+
+            // We verify that issuer got their transfer fee by seeing that
+            // ISU(5) has disappeared out of cheri's and becky's balances.
+            BEAST_EXPECT(env.balance(becky, isISU) == isISU(95));
+            BEAST_EXPECT(env.balance(cheri, isISU) == isISU(400));
+        }
+        else
+        {
+            // With featureNFTokenMintOffer things go better.
+            // becky creates offers to sell the nfts for ISU.
+            uint256 const beckyNoAutoTrustOfferIndex =
+                keylet::nftoffer(becky, env.seq(becky)).key;
+            env(token::createOffer(becky, nftNoAutoTrustID, isISU(100)),
+                txflags(tfSellNFToken));
+            env.close();
+            uint256 const beckyAutoTrustOfferIndex =
+                keylet::nftoffer(becky, env.seq(becky)).key;
+            env(token::createOffer(becky, nftAutoTrustID, isISU(100)),
+                txflags(tfSellNFToken));
+            env.close();
+
+            // cheri accepts becky's offers.  Behavior is uniform:
+            // issuer gets paid.
+            env(token::acceptSellOffer(cheri, beckyAutoTrustOfferIndex));
+            env.close();
+
+            // We verify that issuer got their transfer fee by seeing that
+            // ISU(5) has disappeared out of cheri's and becky's balances.
+            BEAST_EXPECT(env.balance(becky, isISU) == isISU(95));
+            BEAST_EXPECT(env.balance(cheri, isISU) == isISU(400));
+
+            env(token::acceptSellOffer(cheri, beckyNoAutoTrustOfferIndex));
+            env.close();
+
+            // We verify that issuer got their transfer fee by seeing that
+            // an additional ISU(5) has disappeared out of cheri's and
+            // becky's balances.
+            BEAST_EXPECT(env.balance(becky, isISU) == isISU(190));
+            BEAST_EXPECT(env.balance(cheri, isISU) == isISU(300));
+        }
     }
 
     void
@@ -6830,7 +7776,11 @@ class NFToken0_test : public beast::unit_test::suite
         testIOUWithTransferFee(features);
         testBrokeredSaleToSelf(features);
         testFixNFTokenRemint(features);
+        testFeatMintWithOffer(features);
         testTxJsonMetaFields(features);
+        testFixNFTokenBuyerReserve(features);
+        testUnaskedForAutoTrustline(features);
+        testNFTIssuerIsIOUIssuer(features);
     }
 
 public:
@@ -6841,12 +7791,17 @@ public:
         static FeatureBitset const all{supported_amendments()};
         static FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
-        static std::array<FeatureBitset, 5> const feats{
-            all - fixNFTDir - fixNonFungibleTokensV1_2 - fixNFTokenRemint,
+        static std::array<FeatureBitset, 7> const feats{
+            all - fixNFTDir - fixNonFungibleTokensV1_2 - fixNFTokenRemint -
+                fixNFTokenReserve - featureNFTokenMintOffer,
             all - disallowIncoming - fixNonFungibleTokensV1_2 -
-                fixNFTokenRemint,
-            all - fixNonFungibleTokensV1_2 - fixNFTokenRemint,
-            all - fixNFTokenRemint,
+                fixNFTokenRemint - fixNFTokenReserve - featureNFTokenMintOffer,
+            all - fixNonFungibleTokensV1_2 - fixNFTokenRemint -
+                fixNFTokenReserve - featureNFTokenMintOffer,
+            all - fixNFTokenRemint - fixNFTokenReserve -
+                featureNFTokenMintOffer,
+            all - fixNFTokenReserve - featureNFTokenMintOffer,
+            all - featureNFTokenMintOffer,
             all};
 
         if (BEAST_EXPECT(instance < feats.size()))
@@ -6863,46 +7818,66 @@ public:
     }
 };
 
-class NFToken1_test : public NFToken0_test
+class NFTokenDisallowIncoming_test : public NFTokenBaseUtil_test
 {
     void
     run() override
     {
-        NFToken0_test::run(1);
+        NFTokenBaseUtil_test::run(1);
     }
 };
 
-class NFToken2_test : public NFToken0_test
+class NFTokenWOfixV1_test : public NFTokenBaseUtil_test
 {
     void
     run() override
     {
-        NFToken0_test::run(2);
+        NFTokenBaseUtil_test::run(2);
     }
 };
 
-class NFToken3_test : public NFToken0_test
+class NFTokenWOTokenRemint_test : public NFTokenBaseUtil_test
 {
     void
     run() override
     {
-        NFToken0_test::run(3);
+        NFTokenBaseUtil_test::run(3);
     }
 };
 
-class NFToken4_test : public NFToken0_test
+class NFTokenWOTokenReserve_test : public NFTokenBaseUtil_test
 {
     void
     run() override
     {
-        NFToken0_test::run(4, true);
+        NFTokenBaseUtil_test::run(4);
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken0, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken1, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken2, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken3, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFToken4, tx, ripple, 2);
+class NFTokenWOMintOffer_test : public NFTokenBaseUtil_test
+{
+    void
+    run() override
+    {
+        NFTokenBaseUtil_test::run(5);
+    }
+};
+
+class NFTokenAllFeatures_test : public NFTokenBaseUtil_test
+{
+    void
+    run() override
+    {
+        NFTokenBaseUtil_test::run(6, true);
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBaseUtil, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDisallowIncoming, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOfixV1, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenRemint, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenReserve, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOMintOffer, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAllFeatures, tx, ripple, 2);
 
 }  // namespace ripple

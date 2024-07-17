@@ -20,9 +20,9 @@
 #include <ripple/app/main/Application.h>
 #include <ripple/ledger/ReadView.h>
 #include <ripple/ledger/View.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
 #include <ripple/protocol/PublicKey.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/STAccount.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/resource/Fees.h>

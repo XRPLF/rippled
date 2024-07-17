@@ -73,6 +73,8 @@ doGatewayBalances(RPC::JsonContext&);
 Json::Value
 doGetCounts(RPC::JsonContext&);
 Json::Value
+doGetAggregatePrice(RPC::JsonContext&);
+Json::Value
 doLedgerAccept(RPC::JsonContext&);
 Json::Value
 doLedgerCleaner(RPC::JsonContext&);
@@ -126,6 +128,8 @@ Json::Value
 doPeerReservationsList(RPC::JsonContext&);
 Json::Value
 doRipplePathFind(RPC::JsonContext&);
+Json::Value
+doServerDefinitions(RPC::JsonContext&);
 Json::Value
 doServerInfo(RPC::JsonContext&);  // for humans
 Json::Value

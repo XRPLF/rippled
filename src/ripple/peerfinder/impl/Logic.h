@@ -273,7 +273,7 @@ public:
 
         std::lock_guard _(lock_);
 
-        // Check for duplicate connection
+        // Check for connection limit per address
         if (is_public(remote_endpoint))
         {
             auto const count =
@@ -285,6 +285,15 @@ public:
                     << remote_endpoint << " because of ip limits.";
                 return SlotImp::ptr();
             }
+        }
+
+        // Check for duplicate connection
+        if (slots_.find(remote_endpoint) != slots_.end())
+        {
+            JLOG(m_journal.debug())
+                << beast::leftw(18) << "Logic dropping " << remote_endpoint
+                << " as duplicate incoming";
+            return SlotImp::ptr();
         }
 
         // Create the slot
@@ -416,10 +425,9 @@ public:
         // assert later when erasing the key.
         slot->public_key(key);
         {
-            auto const result = keys_.insert(key);
+            [[maybe_unused]] bool const inserted = keys_.insert(key).second;
             // Public key must not already exist
-            assert(result.second);
-            (void)result.second;
+            assert(inserted);
         }
 
         // Change state and update counts
@@ -434,7 +442,11 @@ public:
         if (slot->fixed() && !slot->inbound())
         {
             auto iter(fixed_.find(slot->remote_endpoint()));
-            assert(iter != fixed_.end());
+            if (iter == fixed_.end())
+                LogicError(
+                    "PeerFinder::Logic::activate(): remote_endpoint "
+                    "missing from fixed_");
+
             iter->second.success(m_clock.now());
             JLOG(m_journal.trace()) << beast::leftw(18) << "Logic fixed "
                                     << slot->remote_endpoint() << " success";
@@ -858,7 +870,11 @@ public:
         {
             auto const iter = slots_.find(slot->remote_endpoint());
             // The slot must exist in the table
-            assert(iter != slots_.end());
+            if (iter == slots_.end())
+                LogicError(
+                    "PeerFinder::Logic::remove(): remote_endpoint "
+                    "missing from slots_");
+
             // Remove from slot by IP table
             slots_.erase(iter);
         }
@@ -867,7 +883,11 @@ public:
         {
             auto const iter = keys_.find(*slot->public_key());
             // Key must exist
-            assert(iter != keys_.end());
+            if (iter == keys_.end())
+                LogicError(
+                    "PeerFinder::Logic::remove(): public_key missing "
+                    "from keys_");
+
             keys_.erase(iter);
         }
         // Remove from connected address table
@@ -875,7 +895,11 @@ public:
             auto const iter(
                 connectedAddresses_.find(slot->remote_endpoint().address()));
             // Address must exist
-            assert(iter != connectedAddresses_.end());
+            if (iter == connectedAddresses_.end())
+                LogicError(
+                    "PeerFinder::Logic::remove(): remote_endpont "
+                    "address missing from connectedAddresses_");
+
             connectedAddresses_.erase(iter);
         }
 
@@ -894,7 +918,11 @@ public:
         if (slot->fixed() && !slot->inbound() && slot->state() != Slot::active)
         {
             auto iter(fixed_.find(slot->remote_endpoint()));
-            assert(iter != fixed_.end());
+            if (iter == fixed_.end())
+                LogicError(
+                    "PeerFinder::Logic::on_closed(): remote_endpont "
+                    "missing from fixed_");
+
             iter->second.failure(m_clock.now());
             JLOG(m_journal.debug()) << beast::leftw(18) << "Logic fixed "
                                     << slot->remote_endpoint() << " failed";

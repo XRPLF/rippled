@@ -20,8 +20,9 @@
 #include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/main/Application.h>
 #include <ripple/app/misc/AmendmentTable.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/ErrorCodes.h>
+#include <ripple/protocol/Feature.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/protocol/jss.h>
 #include <ripple/rpc/Context.h>
 
@@ -37,6 +38,7 @@ doFeature(RPC::JsonContext& context)
     if (context.app.config().reporting())
         return rpcError(rpcREPORTING_UNSUPPORTED);
 
+    bool const isAdmin = context.role == Role::ADMIN;
     // Get majority amendment status
     majorityAmendments_t majorities;
 
@@ -47,7 +49,7 @@ doFeature(RPC::JsonContext& context)
 
     if (!context.params.isMember(jss::feature))
     {
-        auto features = table.getJson();
+        auto features = table.getJson(isAdmin);
 
         for (auto const& [h, t] : majorities)
         {
@@ -69,13 +71,18 @@ doFeature(RPC::JsonContext& context)
 
     if (context.params.isMember(jss::vetoed))
     {
+        if (!isAdmin)
+            return rpcError(rpcNO_PERMISSION);
+
         if (context.params[jss::vetoed].asBool())
             table.veto(feature);
         else
             table.unVeto(feature);
     }
 
-    Json::Value jvReply = table.getJson(feature);
+    Json::Value jvReply = table.getJson(feature, isAdmin);
+    if (!jvReply)
+        return rpcError(rpcBAD_FEATURE);
 
     auto m = majorities.find(feature);
     if (m != majorities.end())

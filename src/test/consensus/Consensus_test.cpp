@@ -44,35 +44,34 @@ public:
         // Use default parameters
         ConsensusParms const p{};
 
-        std::optional<std::chrono::milliseconds> delay;
         // Bizarre times forcibly close
         BEAST_EXPECT(shouldCloseLedger(
-            true, 10, 10, 10, -10s, 10s, 1s, delay, 1s, p, journal_));
+            true, 10, 10, 10, -10s, 10s, 1s, 1s, p, journal_));
         BEAST_EXPECT(shouldCloseLedger(
-            true, 10, 10, 10, 100h, 10s, 1s, delay, 1s, p, journal_));
+            true, 10, 10, 10, 100h, 10s, 1s, 1s, p, journal_));
         BEAST_EXPECT(shouldCloseLedger(
-            true, 10, 10, 10, 10s, 100h, 1s, delay, 1s, p, journal_));
+            true, 10, 10, 10, 10s, 100h, 1s, 1s, p, journal_));
 
         // Rest of network has closed
-        BEAST_EXPECT(shouldCloseLedger(
-            true, 10, 3, 5, 10s, 10s, 10s, delay, 10s, p, journal_));
+        BEAST_EXPECT(
+            shouldCloseLedger(true, 10, 3, 5, 10s, 10s, 10s, 10s, p, journal_));
 
         // No transactions means wait until end of internval
-        BEAST_EXPECT(!shouldCloseLedger(
-            false, 10, 0, 0, 1s, 1s, 1s, delay, 10s, p, journal_));
-        BEAST_EXPECT(shouldCloseLedger(
-            false, 10, 0, 0, 1s, 10s, 1s, delay, 10s, p, journal_));
+        BEAST_EXPECT(
+            !shouldCloseLedger(false, 10, 0, 0, 1s, 1s, 1s, 10s, p, journal_));
+        BEAST_EXPECT(
+            shouldCloseLedger(false, 10, 0, 0, 1s, 10s, 1s, 10s, p, journal_));
 
         // Enforce minimum ledger open time
-        BEAST_EXPECT(!shouldCloseLedger(
-            true, 10, 0, 0, 10s, 10s, 1s, delay, 10s, p, journal_));
+        BEAST_EXPECT(
+            !shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 1s, 10s, p, journal_));
 
         // Don't go too much faster than last time
-        BEAST_EXPECT(!shouldCloseLedger(
-            true, 10, 0, 0, 10s, 10s, 3s, delay, 10s, p, journal_));
+        BEAST_EXPECT(
+            !shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 3s, 10s, p, journal_));
 
-        BEAST_EXPECT(shouldCloseLedger(
-            true, 10, 0, 0, 10s, 10s, 10s, delay, 10s, p, journal_));
+        BEAST_EXPECT(
+            shouldCloseLedger(true, 10, 0, 0, 10s, 10s, 10s, 10s, p, journal_));
     }
 
     void
@@ -110,10 +109,15 @@ public:
             ConsensusState::MovedOn ==
             checkConsensus(10, 2, 1, 8, 3s, 10s, p, true, journal_));
 
-        // No peers makes it easy to agree
+        // If no peers, don't agree until time has passed.
+        BEAST_EXPECT(
+            ConsensusState::No ==
+            checkConsensus(0, 0, 0, 0, 3s, 10s, p, true, journal_));
+
+        // Agree if no peers and enough time has passed.
         BEAST_EXPECT(
             ConsensusState::Yes ==
-            checkConsensus(0, 0, 0, 0, 3s, 10s, p, true, journal_));
+            checkConsensus(0, 0, 0, 0, 3s, 16s, p, true, journal_));
     }
 
     void
@@ -802,7 +806,7 @@ public:
         on(csf::PeerID who, csf::SimTime, csf::FullyValidateLedger const& e)
         {
             using namespace std::chrono;
-            // As soon as the the fastC node fully validates C, disconnect
+            // As soon as the fastC node fully validates C, disconnect
             // ALL c nodes from the network. The fast C node needs to disconnect
             // as well to prevent it from relaying the validations it did see
             if (who == groupCfast[0]->id &&

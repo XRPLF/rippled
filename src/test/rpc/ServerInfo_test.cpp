@@ -19,6 +19,7 @@
 
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/beast/unit_test.h>
+#include <ripple/core/ConfigSections.h>
 #include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 
@@ -79,6 +80,8 @@ admin = 127.0.0.1
     void
     testServerInfo()
     {
+        testcase("server_info");
+
         using namespace test::jtx;
 
         {
@@ -105,7 +108,7 @@ admin = 127.0.0.1
             auto const rpc_port =
                 (*config)["port_rpc"].get<unsigned int>("port");
             auto const grpc_port =
-                (*config)["port_grpc"].get<unsigned int>("port");
+                (*config)[SECTION_PORT_GRPC].get<unsigned int>("port");
             auto const ws_port = (*config)["port_ws"].get<unsigned int>("port");
             BEAST_EXPECT(grpc_port);
             BEAST_EXPECT(rpc_port);
@@ -149,9 +152,103 @@ admin = 127.0.0.1
     }
 
     void
+    testServerDefinitions()
+    {
+        testcase("server_definitions");
+
+        using namespace test::jtx;
+
+        {
+            Env env(*this);
+            auto const result = env.rpc("server_definitions");
+            BEAST_EXPECT(!result[jss::result].isMember(jss::error));
+            BEAST_EXPECT(result[jss::result][jss::status] == "success");
+            BEAST_EXPECT(result[jss::result].isMember(jss::FIELDS));
+            BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));
+            BEAST_EXPECT(
+                result[jss::result].isMember(jss::TRANSACTION_RESULTS));
+            BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_TYPES));
+            BEAST_EXPECT(result[jss::result].isMember(jss::TYPES));
+            BEAST_EXPECT(result[jss::result].isMember(jss::hash));
+
+            // test a random element of each result
+            // (testing the whole output would be difficult to maintain)
+
+            {
+                auto const firstField = result[jss::result][jss::FIELDS][0u];
+                BEAST_EXPECT(firstField[0u].asString() == "Generic");
+                BEAST_EXPECT(
+                    firstField[1][jss::isSerialized].asBool() == false);
+                BEAST_EXPECT(
+                    firstField[1][jss::isSigningField].asBool() == false);
+                BEAST_EXPECT(firstField[1][jss::isVLEncoded].asBool() == false);
+                BEAST_EXPECT(firstField[1][jss::nth].asUInt() == 0);
+                BEAST_EXPECT(firstField[1][jss::type].asString() == "Unknown");
+            }
+
+            BEAST_EXPECT(
+                result[jss::result][jss::LEDGER_ENTRY_TYPES]["AccountRoot"]
+                    .asUInt() == 97);
+            BEAST_EXPECT(
+                result[jss::result][jss::TRANSACTION_RESULTS]["tecDIR_FULL"]
+                    .asUInt() == 121);
+            BEAST_EXPECT(
+                result[jss::result][jss::TRANSACTION_TYPES]["Payment"]
+                    .asUInt() == 0);
+            BEAST_EXPECT(
+                result[jss::result][jss::TYPES]["AccountID"].asUInt() == 8);
+        }
+
+        // test providing the same hash
+        {
+            Env env(*this);
+            auto const firstResult = env.rpc("server_definitions");
+            auto const hash = firstResult[jss::result][jss::hash].asString();
+            auto const hashParam =
+                std::string("{ ") + "\"hash\": \"" + hash + "\"}";
+
+            auto const result =
+                env.rpc("json", "server_definitions", hashParam);
+            BEAST_EXPECT(!result[jss::result].isMember(jss::error));
+            BEAST_EXPECT(result[jss::result][jss::status] == "success");
+            BEAST_EXPECT(!result[jss::result].isMember(jss::FIELDS));
+            BEAST_EXPECT(
+                !result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));
+            BEAST_EXPECT(
+                !result[jss::result].isMember(jss::TRANSACTION_RESULTS));
+            BEAST_EXPECT(!result[jss::result].isMember(jss::TRANSACTION_TYPES));
+            BEAST_EXPECT(!result[jss::result].isMember(jss::TYPES));
+            BEAST_EXPECT(result[jss::result].isMember(jss::hash));
+        }
+
+        // test providing a different hash
+        {
+            Env env(*this);
+            std::string const hash =
+                "54296160385A27154BFA70A239DD8E8FD4CC2DB7BA32D970BA3A5B132CF749"
+                "D1";
+            auto const hashParam =
+                std::string("{ ") + "\"hash\": \"" + hash + "\"}";
+
+            auto const result =
+                env.rpc("json", "server_definitions", hashParam);
+            BEAST_EXPECT(!result[jss::result].isMember(jss::error));
+            BEAST_EXPECT(result[jss::result][jss::status] == "success");
+            BEAST_EXPECT(result[jss::result].isMember(jss::FIELDS));
+            BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));
+            BEAST_EXPECT(
+                result[jss::result].isMember(jss::TRANSACTION_RESULTS));
+            BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_TYPES));
+            BEAST_EXPECT(result[jss::result].isMember(jss::TYPES));
+            BEAST_EXPECT(result[jss::result].isMember(jss::hash));
+        }
+    }
+
+    void
     run() override
     {
         testServerInfo();
+        testServerDefinitions();
     }
 };
 

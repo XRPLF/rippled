@@ -16,12 +16,13 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+#include <ripple/app/ledger/LedgerMaster.h>
 #include <ripple/app/misc/AMMUtils.h>
 #include <ripple/json/json_value.h>
 #include <ripple/ledger/ReadView.h>
-#include <ripple/net/RPCErr.h>
 #include <ripple/protocol/AMMCore.h>
 #include <ripple/protocol/Issue.h>
+#include <ripple/protocol/RPCErr.h>
 #include <ripple/rpc/Context.h>
 #include <ripple/rpc/impl/RPCHelpers.h>
 #include <grpcpp/support/status.h>
@@ -66,7 +67,7 @@ to_iso8601(NetClock::time_point tp)
     return date::format(
         "%Y-%Om-%dT%H:%M:%OS%z",
         date::sys_time<system_clock::duration>(
-            system_clock::time_point{tp.time_since_epoch() + 946684800s}));
+            system_clock::time_point{tp.time_since_epoch() + epoch_offset}));
 }
 
 Json::Value
@@ -95,8 +96,15 @@ doAMMInfo(RPC::JsonContext& context)
         std::optional<Issue> issue2;
         std::optional<uint256> ammID;
 
-        if ((params.isMember(jss::asset) != params.isMember(jss::asset2)) ||
-            (params.isMember(jss::asset) == params.isMember(jss::amm_account)))
+        constexpr auto invalid = [](Json::Value const& params) -> bool {
+            return (params.isMember(jss::asset) !=
+                    params.isMember(jss::asset2)) ||
+                (params.isMember(jss::asset) ==
+                 params.isMember(jss::amm_account));
+        };
+
+        // NOTE, identical check for apVersion >= 3 below
+        if (context.apiVersion < 3 && invalid(params))
             return Unexpected(rpcINVALID_PARAMS);
 
         if (params.isMember(jss::asset))
@@ -126,16 +134,20 @@ doAMMInfo(RPC::JsonContext& context)
             ammID = sle->getFieldH256(sfAMMID);
         }
 
-        assert(
-            (issue1.has_value() == issue2.has_value()) &&
-            (issue1.has_value() != ammID.has_value()));
-
         if (params.isMember(jss::account))
         {
             accountID = getAccount(params[jss::account], result);
             if (!accountID || !ledger->read(keylet::account(*accountID)))
                 return Unexpected(rpcACT_MALFORMED);
         }
+
+        // NOTE, identical check for apVersion < 3 above
+        if (context.apiVersion >= 3 && invalid(params))
+            return Unexpected(rpcINVALID_PARAMS);
+
+        assert(
+            (issue1.has_value() == issue2.has_value()) &&
+            (issue1.has_value() != ammID.has_value()));
 
         auto const ammKeylet = [&]() {
             if (issue1 && issue2)
@@ -199,6 +211,9 @@ doAMMInfo(RPC::JsonContext& context)
     }
     if (voteSlots.size() > 0)
         ammResult[jss::vote_slots] = std::move(voteSlots);
+    assert(
+        !ledger->rules().enabled(fixInnerObjTemplate) ||
+        amm->isFieldPresent(sfAuctionSlot));
     if (amm->isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot =
@@ -244,8 +259,7 @@ doAMMInfo(RPC::JsonContext& context)
     if (!result.isMember(jss::ledger_index) &&
         !result.isMember(jss::ledger_hash))
         result[jss::ledger_current_index] = ledger->info().seq;
-    result[jss::validated] =
-        RPC::isValidated(context.ledgerMaster, *ledger, context.app);
+    result[jss::validated] = context.ledgerMaster.isValidated(*ledger);
 
     return result;
 }

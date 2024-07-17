@@ -20,13 +20,10 @@
 #include <ripple/protocol/TER.h>
 #include <boost/range/adaptor/transformed.hpp>
 #include <type_traits>
-#include <unordered_map>
 
 namespace ripple {
 
-namespace detail {
-
-static std::unordered_map<
+std::unordered_map<
     TERUnderlyingType,
     std::pair<char const* const, char const* const>> const&
 transResults()
@@ -95,7 +92,6 @@ transResults()
         MAKE_ERROR(tecINSUFFICIENT_FUNDS,            "Not enough funds available to complete requested transaction."),
         MAKE_ERROR(tecOBJECT_NOT_FOUND,              "A requested object could not be located."),
         MAKE_ERROR(tecINSUFFICIENT_PAYMENT,          "The payment is not sufficient."),
-        MAKE_ERROR(tecPRECISION_LOSS,                "The amounts used by the transaction cannot interact."),
         MAKE_ERROR(tecINCOMPLETE,                    "Some work was completed, but more submissions required to finish."),
         MAKE_ERROR(tecXCHAIN_BAD_TRANSFER_ISSUE,     "Bad xchain transfer issue."),
         MAKE_ERROR(tecXCHAIN_NO_CLAIM_ID,            "No such xchain claim id."),
@@ -114,6 +110,13 @@ transResults()
         MAKE_ERROR(tecXCHAIN_SELF_COMMIT,            "Account cannot commit funds to itself."),
         MAKE_ERROR(tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR, "Bad public key account pair in an xchain transaction."),
         MAKE_ERROR(tecXCHAIN_CREATE_ACCOUNT_DISABLED, "This bridge does not support account creation."),
+        MAKE_ERROR(tecEMPTY_DID,                     "The DID object did not have a URI or DIDDocument field."),
+        MAKE_ERROR(tecINVALID_UPDATE_TIME,           "The Oracle object has invalid LastUpdateTime field."),
+        MAKE_ERROR(tecTOKEN_PAIR_NOT_FOUND,          "Token pair is not found in Oracle object."),
+        MAKE_ERROR(tecARRAY_EMPTY,                   "Array is empty."),
+        MAKE_ERROR(tecARRAY_TOO_LARGE,               "Array is too large."),
+        MAKE_ERROR(tecPRECISION_LOSS,                "The amounts used by the transaction cannot interact."),
+
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
         MAKE_ERROR(tefBAD_AUTH,                    "Transaction's public key is not authorized."),
@@ -152,6 +155,7 @@ transResults()
         MAKE_ERROR(telWRONG_NETWORK,          "Transaction specifies a Network ID that differs from that of the local node."),
         MAKE_ERROR(telREQUIRES_NETWORK_ID,    "Transactions submitted to this node/network must include a correct NetworkID field."),
         MAKE_ERROR(telNETWORK_ID_MAKES_TX_NON_CANONICAL, "Transactions submitted to this node/network must NOT include a NetworkID field."),
+        MAKE_ERROR(telENV_RPC_FAILED,         "Unit test RPC failure."),
 
         MAKE_ERROR(temMALFORMED,                 "Malformed transaction."),
         MAKE_ERROR(temBAD_AMM_TOKENS,            "Malformed: Invalid LPTokens."),
@@ -179,6 +183,7 @@ transResults()
         MAKE_ERROR(temBAD_WEIGHT,                "Malformed: Weight must be a positive value."),
         MAKE_ERROR(temDST_IS_SRC,                "Destination may not be source."),
         MAKE_ERROR(temDST_NEEDED,                "Destination not specified."),
+        MAKE_ERROR(temEMPTY_DID,                 "Malformed: No DID data provided."),
         MAKE_ERROR(temINVALID,                   "The transaction is ill-formed."),
         MAKE_ERROR(temINVALID_FLAG,              "The transaction has an invalid flag."),
         MAKE_ERROR(temREDUNDANT,                 "The transaction is redundant."),
@@ -198,6 +203,8 @@ transResults()
         MAKE_ERROR(temXCHAIN_BRIDGE_NONDOOR_OWNER,   "Malformed: Bridge owner must be one of the door accounts."),
         MAKE_ERROR(temXCHAIN_BRIDGE_BAD_MIN_ACCOUNT_CREATE_AMOUNT,   "Malformed: Bad min account create amount."),
         MAKE_ERROR(temXCHAIN_BRIDGE_BAD_REWARD_AMOUNT, "Malformed: Bad reward amount."),
+        MAKE_ERROR(temARRAY_EMPTY,               "Malformed: Array is empty."),
+        MAKE_ERROR(temARRAY_TOO_LARGE,           "Malformed: Array is too large."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),
@@ -212,7 +219,6 @@ transResults()
         MAKE_ERROR(terQUEUED,                 "Held until escalated fee drops."),
         MAKE_ERROR(terPRE_TICKET,             "Ticket is not yet in ledger."),
         MAKE_ERROR(terNO_AMM,                 "AMM doesn't exist for the asset pair."),
-        MAKE_ERROR(terSUBMITTED,              "Transaction has been submitted."),
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
     };
@@ -223,12 +229,10 @@ transResults()
     return results;
 }
 
-}  // namespace detail
-
 bool
 transResultInfo(TER code, std::string& token, std::string& text)
 {
-    auto& results = detail::transResults();
+    auto& results = transResults();
 
     auto const r = results.find(TERtoInt(code));
 
@@ -262,7 +266,7 @@ std::optional<TER>
 transCode(std::string const& token)
 {
     static auto const results = [] {
-        auto& byTer = detail::transResults();
+        auto& byTer = transResults();
         auto range = boost::make_iterator_range(byTer.begin(), byTer.end());
         auto tRange = boost::adaptors::transform(range, [](auto const& r) {
             return std::make_pair(r.second.first, r.first);
