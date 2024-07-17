@@ -110,6 +110,50 @@ msig::operator()(Env& env, JTx& jt) const
     };
 }
 
+bsig::bsig(std::vector<bsig::Reg> signers_) : signers(std::move(signers_))
+{
+    // Signatures must be applied in sorted order.
+    std::sort(
+        signers.begin(),
+        signers.end(),
+        [](bsig::Reg const& lhs, bsig::Reg const& rhs) {
+            return lhs.acct.id() < rhs.acct.id();
+        });
+}
+
+void
+bsig::operator()(Env& env, JTx& jt) const
+{
+    auto const mySigners = signers;
+    jt.signer = [mySigners, &env](Env&, JTx& jtx) {
+        // jtx[sfSigningPubKey.getJsonName()] = "";
+        std::optional<STObject> st;
+        try
+        {
+            st = parse(jtx.jv);
+        }
+        catch (parse_error const&)
+        {
+            env.test.log << pretty(jtx.jv) << std::endl;
+            Rethrow();
+        }
+        auto& js = jtx[sfBatchSigners.getJsonName()];
+        for (std::size_t i = 0; i < mySigners.size(); ++i)
+        {
+            auto const& e = mySigners[i];
+            auto& jo = js[i][sfBatchSigner.getJsonName()];
+            jo[jss::Account] = e.acct.human();
+            jo[jss::SigningPubKey] = strHex(e.sig.pk().slice());
+
+            Serializer ss{buildMultiSigningData(*st, e.acct.id())};
+            auto const sig = ripple::sign(
+                *publicKeyType(e.sig.pk().slice()), e.sig.sk(), ss.slice());
+            jo[sfTxnSignature.getJsonName()] =
+                strHex(Slice{sig.data(), sig.size()});
+        }
+    };
+}
+
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple
