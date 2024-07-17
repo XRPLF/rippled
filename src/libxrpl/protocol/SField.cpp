@@ -395,6 +395,7 @@ CONSTRUCT_UNTYPED_SFIELD(sfPriceData,            "PriceData",           OBJECT, 
 CONSTRUCT_UNTYPED_SFIELD(sfRawTransaction,       "RawTransaction",      OBJECT,    33);
 CONSTRUCT_UNTYPED_SFIELD(sfBatchExecution,       "BatchExecution",      OBJECT,    34);
 CONSTRUCT_UNTYPED_SFIELD(sfBatchTxn,             "BatchTxn",            OBJECT,    35);
+CONSTRUCT_UNTYPED_SFIELD(sfBatchSigner,          "BatchSigner",         OBJECT,    36);
 
 // array of objects
 //                                                                            ARRAY/1 is reserved for end of array
@@ -427,6 +428,7 @@ CONSTRUCT_UNTYPED_SFIELD(sfPriceDataSeries,     "PriceDataSeries",      ARRAY,  
 CONSTRUCT_UNTYPED_SFIELD(sfAuthAccounts,        "AuthAccounts",         ARRAY,     25);
 CONSTRUCT_UNTYPED_SFIELD(sfBatchExecutions,     "BatchExecutions",      ARRAY,     26);
 CONSTRUCT_UNTYPED_SFIELD(sfRawTransactions,     "RawTransactions",      ARRAY,     27);
+CONSTRUCT_UNTYPED_SFIELD(sfBatchSigners,        "BatchSigners",         ARRAY,     28, SField::sMD_Default, SField::notSigning);
 
 // clang-format on
 

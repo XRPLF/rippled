@@ -160,6 +160,12 @@ InnerObjectFormats::InnerObjectFormats()
          {sfOuterSequence, soeREQUIRED},
          {sfSequence, soeOPTIONAL},
          {sfBatchIndex, soeREQUIRED}});
+    
+    add(sfBatchSigner.jsonName.c_str(),
+        sfBatchSigner.getCode(),
+        {{sfAccount, soeREQUIRED},
+         {sfSigningPubKey, soeREQUIRED},
+         {sfTxnSignature, soeREQUIRED}});
 }
 
 InnerObjectFormats const&

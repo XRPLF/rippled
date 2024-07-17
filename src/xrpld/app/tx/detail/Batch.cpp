@@ -312,6 +312,15 @@ Batch::preflight(PreflightContext const& ctx)
         return ret;
 
     auto& tx = ctx.tx;
+    bool const isSwap = tx.isFieldPresent(sfBatchSigners);
+    if (isSwap)
+    {
+        auto const sigResult = ctx.tx.checkBatchSign();
+        if (!sigResult)
+            return temBAD_SIGNER;
+    }
+
+    AccountID const outerAccount = tx.getAccountID(sfAccount);
 
     auto const& txns = tx.getFieldArray(sfRawTransactions);
     if (txns.empty())
@@ -326,7 +335,7 @@ Batch::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    for (auto const& txn : txns)
+    for (STObject txn : txns)
     {
         if (!txn.isFieldPresent(sfTransactionType))
         {
@@ -334,12 +343,20 @@ Batch::preflight(PreflightContext const& ctx)
                 << "Batch: TransactionType missing in array entry.";
             return temMALFORMED;
         }
+        if (txn.getFieldU16(sfTransactionType) == ttBATCH)
+        {
+            JLOG(ctx.j.error()) << "Batch: batch cannot have inner batch txn.";
+            return temMALFORMED;
+        }
 
-        auto const tt = txn.getFieldU16(sfTransactionType);
-        auto const txtype = safe_cast<TxType>(tt);
-        auto const account = txn.getAccountID(sfAccount);
-        auto const stx =
-            STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
+        AccountID const innerAccount = txn.getAccountID(sfAccount);
+        if (!isSwap && innerAccount != outerAccount)
+        {
+            JLOG(ctx.j.error()) << "Batch: batch signer mismatch.";
+            return temBAD_SIGNER;
+        }
+
+        STTx const stx = STTx{std::move(txn)};
         PreflightContext const pfctx(
             ctx.app, stx, ctx.rules, tapPREFLIGHT_BATCH, ctx.j);
         auto const response = invoke_preflight(pfctx);
@@ -369,7 +386,7 @@ Batch::preclaim(PreclaimContext const& ctx)
             continue;
         }
 
-        auto const& txn = txns[i];
+        STObject txn = txns[i];
         if (!txn.isFieldPresent(sfTransactionType))
         {
             JLOG(ctx.j.error())
@@ -377,10 +394,7 @@ Batch::preclaim(PreclaimContext const& ctx)
             return temMALFORMED;
         }
 
-        auto const tt = txn.getFieldU16(sfTransactionType);
-        auto const txtype = safe_cast<TxType>(tt);
-        auto const stx =
-            STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
+        STTx const stx = STTx{std::move(txn)};
         PreclaimContext const pcctx(
             ctx.app, ctx.view, preflightResponses[i], stx, ctx.flags, ctx.j);
         auto const response = invoke_preclaim(pcctx);
@@ -412,7 +426,7 @@ Batch::doApply()
     auto const& txns = ctx_.tx.getFieldArray(sfRawTransactions);
     for (std::size_t i = 0; i < txns.size(); ++i)
     {
-        auto const& txn = txns[i];
+        STObject txn = txns[i];
         if (!txn.isFieldPresent(sfTransactionType))
         {
             JLOG(ctx_.journal.error())
@@ -420,10 +434,7 @@ Batch::doApply()
             return temMALFORMED;
         }
 
-        auto const tt = txn.getFieldU16(sfTransactionType);
-        auto const txtype = safe_cast<TxType>(tt);
-        auto const stx =
-            STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
+        STTx const stx = STTx{std::move(txn)};
         stxTxns.push_back(stx);
     }
 
@@ -538,12 +549,9 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         XRPAmount txFees{0};
         auto const& txns = tx.getFieldArray(sfRawTransactions);
-        for (auto const& txn : txns)
+        for (STObject txn : txns)
         {
-            auto const tt = txn.getFieldU16(sfTransactionType);
-            auto const txtype = safe_cast<TxType>(tt);
-            auto const stx =
-                STTx(txtype, [&txn](STObject& obj) { obj = std::move(txn); });
+            STTx const stx = STTx{std::move(txn)};
             txFees += Transactor::calculateBaseFee(view, tx);
         }
         extraFee += txFees;

@@ -510,7 +510,8 @@ TxFormats::TxFormats()
     add(jss::Batch,
         ttBATCH,
         {
-            {sfRawTransactions, soeOPTIONAL},
+            {sfRawTransactions, soeREQUIRED},
+            {sfBatchSigners, soeOPTIONAL},
         },
         commonFields);
 }

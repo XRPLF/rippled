@@ -358,6 +358,82 @@ STTx::checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const
 }
 
 Expected<void, std::string>
+STTx::checkBatchSign() const
+{
+    STArray const& signers{getFieldArray(sfBatchSigners)};
+
+    // There are well known bounds that the number of signers must be within.
+    if (signers.size() == 0 || signers.size() > 8)
+        return Unexpected("Invalid Batch Signers array size.");
+
+    // We can ease the computational load inside the loop a bit by
+    // pre-constructing part of the data that we hash.  Fill a Serializer
+    // with the stuff that stays constant from signature to signature.
+    
+    Serializer const dataStart{startMultiSigningData(*this)};
+
+    // We also use the sfAccount field inside the loop.  Get it once.
+    // auto const txnAccountID = getAccountID(sfAccount);
+
+    // Determine whether signatures must be full canonical.
+    bool const fullyCanonical = true;
+
+    // Signers must be in sorted order by AccountID.
+    AccountID lastAccountID(beast::zero);
+
+    for (auto const& signer : signers)
+    {
+        auto const accountID = signer.getAccountID(sfAccount);
+
+        // // The account owner may not multisign for themselves.
+        // if (accountID == txnAccountID)
+        //     return Unexpected("Invalid multisigner.");
+
+        // No duplicate signers allowed.
+        if (lastAccountID == accountID)
+            return Unexpected("Duplicate Signers not allowed.");
+
+        // Accounts must be in order by account ID.  No duplicates allowed.
+        if (lastAccountID > accountID)
+            return Unexpected("Unsorted Signers array.");
+
+        // The next signature must be greater than this one.
+        lastAccountID = accountID;
+
+        // Verify the signature.
+        bool validSig = false;
+        try
+        {
+            Serializer s = dataStart;
+            finishMultiSigningData(accountID, s);
+
+            auto spk = signer.getFieldVL(sfSigningPubKey);
+
+            if (publicKeyType(makeSlice(spk)))
+            {
+                Blob const signature = signer.getFieldVL(sfTxnSignature);
+                validSig = verify(
+                    PublicKey(makeSlice(spk)),
+                    s.slice(),
+                    makeSlice(signature),
+                    fullyCanonical);
+            }
+        }
+        catch (std::exception const&)
+        {
+            // We assume any problem lies with the signature.
+            validSig = false;
+        }
+        if (!validSig)
+            return Unexpected(
+                std::string("Invalid signature on account ") +
+                toBase58(accountID) + ".");
+    }
+    // All signatures verified.
+    return {};
+}
+
+Expected<void, std::string>
 STTx::checkMultiSign(
     RequireFullyCanonicalSig requireCanonicalSig,
     Rules const& rules) const
