@@ -20,7 +20,7 @@
 #ifndef RIPPLE_JSON_OBJECT_H_INCLUDED
 #define RIPPLE_JSON_OBJECT_H_INCLUDED
 
-#include <ripple/json/Writer.h>
+#include <xrpl/json/Writer.h>
 #include <memory>
 
 namespace Json {

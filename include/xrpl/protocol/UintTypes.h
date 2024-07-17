@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PROTOCOL_UINTTYPES_H_INCLUDED
 #define RIPPLE_PROTOCOL_UINTTYPES_H_INCLUDED
 
-#include <ripple/basics/UnorderedContainers.h>
-#include <ripple/basics/base_uint.h>
-#include <ripple/beast/utility/Zero.h>
-#include <ripple/protocol/AccountID.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/AccountID.h>
 
 namespace ripple {
 namespace detail {

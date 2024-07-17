@@ -20,12 +20,12 @@
 #ifndef RIPPLE_PROTOCOL_PUBLICKEY_H_INCLUDED
 #define RIPPLE_PROTOCOL_PUBLICKEY_H_INCLUDED
 
-#include <ripple/basics/Slice.h>
-#include <ripple/protocol/KeyType.h>
-#include <ripple/protocol/STExchange.h>
-#include <ripple/protocol/UintTypes.h>
-#include <ripple/protocol/json_get_or_throw.h>
-#include <ripple/protocol/tokens.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/STExchange.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/json_get_or_throw.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <algorithm>
 #include <cstdint>

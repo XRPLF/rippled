@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/json/JsonPropertyStream.h>
-#include <ripple/json/json_value.h>
+#include <xrpl/json/JsonPropertyStream.h>
+#include <xrpl/json/json_value.h>
 
 namespace ripple {
 

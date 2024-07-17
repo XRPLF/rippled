@@ -20,9 +20,9 @@
 #ifndef RIPPLE_SERVER_PLAINHTTPPEER_H_INCLUDED
 #define RIPPLE_SERVER_PLAINHTTPPEER_H_INCLUDED
 
-#include <ripple/beast/rfc2616.h>
-#include <ripple/server/impl/BaseHTTPPeer.h>
-#include <ripple/server/impl/PlainWSPeer.h>
+#include <xrpl/beast/rfc2616.h>
+#include <xrpl/server/detail/BaseHTTPPeer.h>
+#include <xrpl/server/detail/PlainWSPeer.h>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <memory>
 

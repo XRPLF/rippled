@@ -20,10 +20,10 @@
 #ifndef RIPPLE_SERVER_BASEPEER_H_INCLUDED
 #define RIPPLE_SERVER_BASEPEER_H_INCLUDED
 
-#include <ripple/beast/utility/WrappedSink.h>
-#include <ripple/server/Port.h>
-#include <ripple/server/impl/LowestLayer.h>
-#include <ripple/server/impl/io_list.h>
+#include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/server/Port.h>
+#include <xrpl/server/detail/LowestLayer.h>
+#include <xrpl/server/detail/io_list.h>
 #include <boost/asio.hpp>
 #include <atomic>
 #include <cassert>

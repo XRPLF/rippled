@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Slice.h>
-#include <ripple/beast/unit_test.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/beast/unit_test.h>
 #include <array>
 #include <cstdint>
 

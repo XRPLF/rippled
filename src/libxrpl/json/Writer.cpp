@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/json/Output.h>
-#include <ripple/json/Writer.h>
+#include <xrpl/json/Output.h>
+#include <xrpl/json/Writer.h>
 #include <set>
 #include <stack>
 

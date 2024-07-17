@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/InnerObjectFormats.h>
-#include <ripple/protocol/Rules.h>
-#include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/STArray.h>
-#include <ripple/protocol/STBlob.h>
-#include <ripple/protocol/STCurrency.h>
-#include <ripple/protocol/STObject.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/InnerObjectFormats.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STObject.h>
 
 namespace ripple {
 
@@ -61,10 +61,19 @@ STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(
 }
 
 STObject
-STObject::makeInnerObject(SField const& name, Rules const& rules)
+STObject::makeInnerObject(SField const& name)
 {
     STObject obj{name};
-    if (rules.enabled(fixInnerObjTemplate))
+
+    // The if is complicated because inner object templates were added in
+    // two phases:
+    //  1. If there are no available Rules, then always apply the template.
+    //  2. fixInnerObjTemplate added templates to two AMM inner objects.
+    //  3. fixInnerObjTemplate2 added templates to all remaining inner objects.
+    std::optional<Rules> const& rules = getCurrentTransactionRules();
+    bool const isAMMObj = name == sfAuctionSlot || name == sfVoteEntry;
+    if (!rules || (rules->enabled(fixInnerObjTemplate) && isAMMObj) ||
+        (rules->enabled(fixInnerObjTemplate2) && !isAMMObj))
     {
         if (SOTemplate const* elements =
                 InnerObjectFormats::getInstance().findSOTemplateBySField(name))

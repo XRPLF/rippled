@@ -20,10 +20,10 @@
 #ifndef RIPPLE_SERVER_SESSION_H_INCLUDED
 #define RIPPLE_SERVER_SESSION_H_INCLUDED
 
-#include <ripple/beast/net/IPEndpoint.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/server/WSSession.h>
-#include <ripple/server/Writer.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/WSSession.h>
+#include <xrpl/server/Writer.h>
 #include <boost/beast/http/message.hpp>
 #include <functional>
 #include <memory>

@@ -20,7 +20,7 @@
 #ifndef BEAST_UTILITY_PROPERTYSTREAM_H_INCLUDED
 #define BEAST_UTILITY_PROPERTYSTREAM_H_INCLUDED
 
-#include <ripple/beast/core/List.h>
+#include <xrpl/beast/core/List.h>
 
 #include <cstdint>
 #include <mutex>

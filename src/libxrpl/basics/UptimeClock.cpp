@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/basics/UptimeClock.h>
+#include <xrpl/basics/UptimeClock.h>
 
 namespace ripple {
 

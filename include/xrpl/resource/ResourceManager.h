@@ -20,13 +20,13 @@
 #ifndef RIPPLE_RESOURCE_MANAGER_H_INCLUDED
 #define RIPPLE_RESOURCE_MANAGER_H_INCLUDED
 
-#include <ripple/beast/insight/Collector.h>
-#include <ripple/beast/net/IPEndpoint.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/beast/utility/PropertyStream.h>
-#include <ripple/json/json_value.h>
-#include <ripple/resource/Consumer.h>
-#include <ripple/resource/Gossip.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/Gossip.h>
 #include <boost/utility/string_view.hpp>
 
 namespace ripple {

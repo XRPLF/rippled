@@ -20,8 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_SOTEMPLATE_H_INCLUDED
 #define RIPPLE_PROTOCOL_SOTEMPLATE_H_INCLUDED
 
-#include <ripple/basics/contract.h>
-#include <ripple/protocol/SField.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/SField.h>
 #include <functional>
 #include <initializer_list>
 #include <memory>

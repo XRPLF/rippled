@@ -1,11 +1,11 @@
 #ifndef PROTOCOL_GET_OR_THROW_H_
 #define PROTOCOL_GET_OR_THROW_H_
 
-#include <ripple/basics/Buffer.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/contract.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/SField.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 
 #include <charconv>
 #include <exception>

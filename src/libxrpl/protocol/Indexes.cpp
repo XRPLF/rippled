@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/LedgerFormats.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/STXChainBridge.h>
-#include <ripple/protocol/SeqProxy.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/nftPageMask.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/nftPageMask.h>
 
 #include <algorithm>
 #include <cassert>

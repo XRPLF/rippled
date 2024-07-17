@@ -20,7 +20,7 @@
 #ifndef RIPPLE_BASICS_EXPECTED_H_INCLUDED
 #define RIPPLE_BASICS_EXPECTED_H_INCLUDED
 
-#include <ripple/basics/contract.h>
+#include <xrpl/basics/contract.h>
 
 #include <boost/outcome.hpp>
 

@@ -8,8 +8,8 @@
 #ifndef BEAST_TEST_FAIL_COUNTER_HPP
 #define BEAST_TEST_FAIL_COUNTER_HPP
 
+#include <xrpl/beast/core/error.hpp>
 #include <boost/throw_exception.hpp>
-#include <beast/core/error.hpp>
 
 namespace beast {
 namespace test {

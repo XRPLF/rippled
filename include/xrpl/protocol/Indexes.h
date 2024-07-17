@@ -20,15 +20,16 @@
 #ifndef RIPPLE_PROTOCOL_INDEXES_H_INCLUDED
 #define RIPPLE_PROTOCOL_INDEXES_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
-#include <ripple/protocol/Book.h>
-#include <ripple/protocol/Keylet.h>
-#include <ripple/protocol/LedgerFormats.h>
-#include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/STXChainBridge.h>
-#include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/UintTypes.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
 #include <cstdint>
 
 namespace ripple {
@@ -305,6 +306,26 @@ getTicketIndex(AccountID const& account, std::uint32_t uSequence);
 
 uint256
 getTicketIndex(AccountID const& account, SeqProxy ticketSeq);
+
+template <class... keyletParams>
+struct keyletDesc
+{
+    std::function<Keylet(keyletParams...)> function;
+    Json::StaticString expectedLEName;
+    bool includeInTests;
+};
+
+// This list should include all of the keylet functions that take a single
+// AccountID parameter.
+std::array<keyletDesc<AccountID const&>, 6> const directAccountKeylets{
+    {{&keylet::account, jss::AccountRoot, false},
+     {&keylet::ownerDir, jss::DirectoryNode, true},
+     {&keylet::signers, jss::SignerList, true},
+     // It's normally impossible to create an item at nftpage_min, but
+     // test it anyway, since the invariant checks for it.
+     {&keylet::nftpage_min, jss::NFTokenPage, true},
+     {&keylet::nftpage_max, jss::NFTokenPage, true},
+     {&keylet::did, jss::DID, true}}};
 
 }  // namespace ripple
 

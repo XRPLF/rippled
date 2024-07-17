@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/ToString.h>
-#include <ripple/basics/contract.h>
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/beast/net/IPEndpoint.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/ToString.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>

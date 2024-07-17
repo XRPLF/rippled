@@ -20,11 +20,11 @@
 #ifndef RIPPLE_BASICS_UNORDEREDCONTAINERS_H_INCLUDED
 #define RIPPLE_BASICS_UNORDEREDCONTAINERS_H_INCLUDED
 
-#include <ripple/basics/hardened_hash.h>
-#include <ripple/basics/partitioned_unordered_map.h>
-#include <ripple/beast/hash/hash_append.h>
-#include <ripple/beast/hash/uhash.h>
-#include <ripple/beast/hash/xxhasher.h>
+#include <xrpl/basics/hardened_hash.h>
+#include <xrpl/basics/partitioned_unordered_map.h>
+#include <xrpl/beast/hash/hash_append.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/hash/xxhasher.h>
 #include <unordered_map>
 #include <unordered_set>
 

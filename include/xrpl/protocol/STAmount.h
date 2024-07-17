@@ -20,16 +20,16 @@
 #ifndef RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 #define RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 
-#include <ripple/basics/CountedObject.h>
-#include <ripple/basics/IOUAmount.h>
-#include <ripple/basics/LocalValue.h>
-#include <ripple/basics/Number.h>
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/protocol/Issue.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/STBase.h>
-#include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/json_get_or_throw.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/IOUAmount.h>
+#include <xrpl/basics/LocalValue.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/json_get_or_throw.h>
 
 namespace ripple {
 

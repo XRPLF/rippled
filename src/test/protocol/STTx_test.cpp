@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Slice.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/json/to_string.h>
-#include <ripple/protocol/Rules.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/STParsedJSON.h>
-#include <ripple/protocol/STTx.h>
-#include <ripple/protocol/Sign.h>
-#include <ripple/protocol/TxFormats.h>
-#include <ripple/protocol/UintTypes.h>
-#include <ripple/protocol/messages.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/messages.h>
 #include <memory>
 #include <regex>
 

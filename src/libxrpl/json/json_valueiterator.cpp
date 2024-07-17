@@ -19,7 +19,7 @@
 
 // included by json_value.cpp
 
-#include <ripple/json/json_value.h>
+#include <xrpl/json/json_value.h>
 
 namespace Json {
 

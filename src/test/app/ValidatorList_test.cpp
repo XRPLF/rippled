@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/ValidatorList.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/base64.h>
-#include <ripple/basics/strHex.h>
-#include <ripple/overlay/impl/ProtocolMessage.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/Sign.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/protocol/messages.h>
 #include <test/jtx.h>
+#include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/overlay/detail/ProtocolMessage.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base64.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/messages.h>
 
 #include <boost/beast/core/multi_buffer.hpp>
 

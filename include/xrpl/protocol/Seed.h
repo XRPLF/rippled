@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PROTOCOL_SEED_H_INCLUDED
 #define RIPPLE_PROTOCOL_SEED_H_INCLUDED
 
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/base_uint.h>
-#include <ripple/protocol/tokens.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/tokens.h>
 #include <array>
 #include <optional>
 

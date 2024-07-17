@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/json/json_writer.h>
+#include <xrpl/json/json_writer.h>
 #include <cassert>
 #include <iomanip>
 #include <sstream>

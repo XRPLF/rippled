@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/beast/core/SemanticVersion.h>
-#include <ripple/protocol/BuildInfo.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/core/SemanticVersion.h>
+#include <xrpl/protocol/BuildInfo.h>
 #include <boost/preprocessor/stringize.hpp>
 #include <algorithm>
 
@@ -33,7 +33,7 @@ namespace BuildInfo {
 //  and follow the format described at http://semver.org/
 //------------------------------------------------------------------------------
 // clang-format off
-char const* const versionString = "2.2.0"
+char const* const versionString = "2.3.0-b1"
 // clang-format on
 
 #if defined(DEBUG) || defined(SANITIZER)
