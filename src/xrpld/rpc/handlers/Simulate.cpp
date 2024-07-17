@@ -73,23 +73,24 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         auto const accountStr = tx_json[jss::Account];
         if (!accountStr.isString())
         {
+            // sanity check, should fail earlier
             return RPC::invalid_field_error("tx.Account");
         }
         auto const srcAddressID =
-            *(parseBase58<AccountID>(tx_json[jss::Account].asString()));
-        if (!srcAddressID)
+            parseBase58<AccountID>(tx_json[jss::Account].asString());
+        if (!srcAddressID.has_value())
         {
             return RPC::make_error(
                 rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx.Account"));
         }
         std::shared_ptr<SLE const> sle =
             context.app.openLedger().current()->read(
-                keylet::account(srcAddressID));
+                keylet::account(*srcAddressID));
         if (!hasTicketSeq && !sle)
         {
             JLOG(context.app.journal("Simulate").debug())
                 << "Failed to find source account "
-                << "in current ledger: " << toBase58(srcAddressID);
+                << "in current ledger: " << toBase58(*srcAddressID);
 
             return rpcError(rpcSRC_ACT_NOT_FOUND);
         }
@@ -135,7 +136,7 @@ doSimulate(RPC::JsonContext& context)
         auto const blob = context.params[jss::tx_blob];
         if (!blob.isString())
         {
-            return RPC::invalid_field_message(jss::tx_blob);
+            return RPC::invalid_field_error(jss::tx_blob);
         }
         auto unHexed = strUnHex(blob.asString());
 
@@ -156,7 +157,7 @@ doSimulate(RPC::JsonContext& context)
     }
     else
     {
-        // neither `tx_blob` nor `tx_json` included`
+        // neither `tx_blob` nor `tx_json` included
         return rpcError(rpcINVALID_PARAMS);
     }
 
