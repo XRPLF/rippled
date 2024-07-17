@@ -123,7 +123,7 @@ public:
     Expected<void, std::string>
     checkSign(RequireFullyCanonicalSig requireCanonicalSig, Rules const& rules)
         const;
-    
+
     Expected<void, std::string>
     checkBatchSign() const;
 

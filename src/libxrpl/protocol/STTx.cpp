@@ -369,7 +369,7 @@ STTx::checkBatchSign() const
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
     // with the stuff that stays constant from signature to signature.
-    
+
     Serializer const dataStart{startMultiSigningData(*this)};
 
     // We also use the sfAccount field inside the loop.  Get it once.
