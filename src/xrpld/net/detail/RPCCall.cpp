@@ -935,8 +935,6 @@ private:
         Json::Reader reader;
         Json::Value jvRequest{Json::objectValue};
 
-        if (!jvParams[0u].isString())
-            return rpcError(rpcINVALID_PARAMS);
         if (reader.parse(jvParams[0u].asString(), txJSON))
         {
             jvRequest[jss::tx_json] = txJSON;
