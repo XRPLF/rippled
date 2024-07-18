@@ -70,246 +70,263 @@ class Simulate_test : public beast::unit_test::suite
     }
 
     void
-    testParamErrors()
+    testTx(
+        jtx::Env& env,
+        Json::Value& tx,
+        std::function<void(Json::Value, Json::Value&)> validate){
+        {Json::Value params;
+    params[jss::tx_json] = tx;
+    validate(env.rpc("json", "simulate", to_string(params)), tx);
+    params[jss::binary] = true;
+    validate(env.rpc("json", "simulate", to_string(params)), tx);
+    validate(env.rpc("simulate", to_string(tx)), tx);
+    validate(env.rpc("simulate", to_string(tx), "binary"), tx);
+}
+{
+    STParsedJSONObject parsed(std::string(jss::tx_json), tx);
+    auto const tx_blob = strHex(parsed.object->getSerializer().peekData());
+    if (BEAST_EXPECT(parsed.object.has_value()))
     {
-        testcase("Test parameter errors");
-
-        using namespace jtx;
-        Env env(*this);
-        Account const alice("alice");
-
-        {
-            // No params
-            auto resp = env.rpc("json", "simulate");
-            BEAST_EXPECT(resp[jss::error_message] == "Syntax error.");
-        }
-        {
-            // Providing both `tx_json` and `tx_blob`
-            Json::Value params = Json::objectValue;
-            params[jss::tx_json] = Json::objectValue;
-            params[jss::tx_blob] = "1200";
-
-            auto resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] == "Invalid parameters.");
-        }
-        {
-            // `binary` isn't a boolean
-            Json::Value params = Json::objectValue;
-            params[jss::tx_blob] = "1200";
-            params[jss::binary] = "100";
-            auto resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Invalid field 'binary'.");
-        }
-        {
-            // Empty `tx_json`
-            Json::Value params = Json::objectValue;
-            params[jss::tx_json] = Json::objectValue;
-
-            auto resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Missing field 'tx.TransactionType'.");
-        }
-        {
-            // No tx.account
-            Json::Value params = Json::objectValue;
-            Json::Value tx_json = Json::objectValue;
-            tx_json[jss::TransactionType] = jss::Payment;
-            params[jss::tx_json] = tx_json;
-
-            auto resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Missing field 'tx.Account'.");
-        }
-        {
-            // Empty `tx_blob`
-            Json::Value params = Json::objectValue;
-            params[jss::tx_blob] = "";
-
-            auto resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Invalid field 'tx_blob'.");
-        }
-        {
-            // Non-string `tx_blob`
-            Json::Value params;
-            params[jss::tx_blob] = 1.1;
-
-            auto resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Invalid field 'tx_blob'.");
-        }
-        {
-            // Non-object `tx_json`
-            Json::Value params = Json::objectValue;
-            params[jss::tx_json] = "";
-
-            auto resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Invalid field 'tx_json', not object.");
-        }
-        {
-            // Invalid transaction
-            Json::Value params = Json::objectValue;
-            Json::Value tx_json = Json::objectValue;
-            tx_json[jss::TransactionType] = jss::Payment;
-            tx_json[jss::Account] = env.master.human();
-            params[jss::tx_json] = tx_json;
-
-            auto resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_exception] ==
-                "Field 'Destination' is required but missing.");
-        }
-        {
-            // Bad account
-            Json::Value params;
-            Json::Value tx_json = Json::objectValue;
-            tx_json[jss::TransactionType] = jss::AccountSet;
-            tx_json[jss::Account] = "badAccount";
-            params[jss::tx_json] = tx_json;
-
-            auto resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(resp[jss::result][jss::error] == "srcActMalformed");
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Invalid field 'tx.Account'.");
-        }
-        {
-            // Account doesn't exist for Sequence autofill
-            Json::Value params;
-            Json::Value tx_json = Json::objectValue;
-            tx_json[jss::TransactionType] = jss::AccountSet;
-            tx_json[jss::Account] = alice.human();
-            params[jss::tx_json] = tx_json;
-
-            auto resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Source account not found.");
-        }
-        {
-            // Invalid transaction
-            Json::Value params;
-            Json::Value tx_json = Json::objectValue;
-            tx_json[jss::TransactionType] = jss::AccountSet;
-            tx_json[jss::Account] = alice.human();
-            tx_json[jss::tx_json] = jss::AccountSet;
-            params[jss::tx_json] = tx_json;
-
-            auto resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(
-                resp[jss::result][jss::error_message] ==
-                "Source account not found.");
-        }
+        Json::Value params;
+        params[jss::tx_blob] = tx_blob;
+        validate(env.rpc("json", "simulate", to_string(params)), tx);
+        params[jss::binary] = true;
+        validate(env.rpc("json", "simulate", to_string(params)), tx);
     }
-    void
-    testSuccessfulTransaction()
+    validate(env.rpc("simulate", tx_blob), tx);
+    validate(env.rpc("simulate", tx_blob, "binary"), tx);
+}
+};  // namespace test
+
+void
+testParamErrors()
+{
+    testcase("Test parameter errors");
+
+    using namespace jtx;
+    Env env(*this);
+    Account const alice("alice");
+
     {
-        testcase("Successful transaction");
+        // No params
+        auto resp = env.rpc("json", "simulate");
+        BEAST_EXPECT(resp[jss::error_message] == "Syntax error.");
+    }
+    {
+        // Providing both `tx_json` and `tx_blob`
+        Json::Value params = Json::objectValue;
+        params[jss::tx_json] = Json::objectValue;
+        params[jss::tx_blob] = "1200";
 
-        using namespace jtx;
-        Env env(*this);
-        static auto const newDomain = "123ABC";
+        auto resp = env.rpc("json", "simulate", to_string(params));
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] == "Invalid parameters.");
+    }
+    {
+        // `binary` isn't a boolean
+        Json::Value params = Json::objectValue;
+        params[jss::tx_blob] = "1200";
+        params[jss::binary] = "100";
+        auto resp = env.rpc("json", "simulate", to_string(params));
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] == "Invalid field 'binary'.");
+    }
+    {
+        // Empty `tx_json`
+        Json::Value params = Json::objectValue;
+        params[jss::tx_json] = Json::objectValue;
 
-        {
-            auto testSimulation = [&](Json::Value& params, Json::Value& tx) {
-                auto resp = env.rpc("json", "simulate", to_string(params));
-                auto result = resp[jss::result];
-                checkBasicReturnValidity(result, tx);
+        auto resp = env.rpc("json", "simulate", to_string(params));
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] ==
+            "Missing field 'tx.TransactionType'.");
+    }
+    {
+        // No tx.account
+        Json::Value params = Json::objectValue;
+        Json::Value tx_json = Json::objectValue;
+        tx_json[jss::TransactionType] = jss::Payment;
+        params[jss::tx_json] = tx_json;
 
-                BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
-                BEAST_EXPECT(result[jss::engine_result_code] == 0);
-                BEAST_EXPECT(
-                    result[jss::engine_result_message] ==
-                    "The simulated transaction would have been applied.");
+        auto resp = env.rpc("json", "simulate", to_string(params));
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] ==
+            "Missing field 'tx.Account'.");
+    }
+    {
+        // Empty `tx_blob`
+        Json::Value params = Json::objectValue;
+        params[jss::tx_blob] = "";
 
-                if (BEAST_EXPECT(result.isMember(jss::metadata)))
+        auto resp = env.rpc("json", "simulate", to_string(params));
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] ==
+            "Invalid field 'tx_blob'.");
+    }
+    {
+        // Non-string `tx_blob`
+        Json::Value params;
+        params[jss::tx_blob] = 1.1;
+
+        auto resp = env.rpc("json", "simulate", to_string(params));
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] ==
+            "Invalid field 'tx_blob'.");
+    }
+    {
+        // Non-object `tx_json`
+        Json::Value params = Json::objectValue;
+        params[jss::tx_json] = "";
+
+        auto resp = env.rpc("json", "simulate", to_string(params));
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] ==
+            "Invalid field 'tx_json', not object.");
+    }
+    {
+        // Invalid transaction
+        Json::Value params = Json::objectValue;
+        Json::Value tx_json = Json::objectValue;
+        tx_json[jss::TransactionType] = jss::Payment;
+        tx_json[jss::Account] = env.master.human();
+        params[jss::tx_json] = tx_json;
+
+        auto resp = env.rpc("json", "simulate", to_string(params));
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_exception] ==
+            "Field 'Destination' is required but missing.");
+    }
+    {
+        // Bad account
+        Json::Value params;
+        Json::Value tx_json = Json::objectValue;
+        tx_json[jss::TransactionType] = jss::AccountSet;
+        tx_json[jss::Account] = "badAccount";
+        params[jss::tx_json] = tx_json;
+
+        auto resp = env.rpc("json", "simulate", to_string(params));
+        BEAST_EXPECT(resp[jss::result][jss::error] == "srcActMalformed");
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] ==
+            "Invalid field 'tx.Account'.");
+    }
+    {
+        // Account doesn't exist for Sequence autofill
+        Json::Value params;
+        Json::Value tx_json = Json::objectValue;
+        tx_json[jss::TransactionType] = jss::AccountSet;
+        tx_json[jss::Account] = alice.human();
+        params[jss::tx_json] = tx_json;
+
+        auto resp = env.rpc("json", "simulate", to_string(params));
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] ==
+            "Source account not found.");
+    }
+    {
+        // Invalid transaction
+        Json::Value params;
+        Json::Value tx_json = Json::objectValue;
+        tx_json[jss::TransactionType] = jss::AccountSet;
+        tx_json[jss::Account] = alice.human();
+        tx_json[jss::tx_json] = jss::AccountSet;
+        params[jss::tx_json] = tx_json;
+
+        auto resp = env.rpc("json", "simulate", to_string(params));
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] ==
+            "Source account not found.");
+    }
+}
+void
+testSuccessfulTransaction()
+{
+    testcase("Successful transaction");
+
+    using namespace jtx;
+    Env env(*this);
+    static auto const newDomain = "123ABC";
+
+    {
+        auto validateOutput = [&](Json::Value resp, Json::Value& tx) {
+            auto result = resp[jss::result];
+            checkBasicReturnValidity(result, tx);
+
+            BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
+            BEAST_EXPECT(result[jss::engine_result_code] == 0);
+            BEAST_EXPECT(
+                result[jss::engine_result_message] ==
+                "The simulated transaction would have been applied.");
+
+            if (BEAST_EXPECT(result.isMember(jss::metadata)))
+            {
+                Json::Value metadata;
+                if (result[jss::metadata].isString())
                 {
-                    auto metadata = result[jss::metadata];
-                    if (BEAST_EXPECT(
-                            metadata.isMember(sfAffectedNodes.jsonName)))
-                    {
-                        BEAST_EXPECT(
-                            metadata[sfAffectedNodes.jsonName].size() == 1);
-                        auto node = metadata[sfAffectedNodes.jsonName][0u];
-                        if (BEAST_EXPECT(
-                                node.isMember(sfModifiedNode.jsonName)))
-                        {
-                            auto modifiedNode = node[sfModifiedNode.jsonName];
-                            BEAST_EXPECT(
-                                modifiedNode[sfLedgerEntryType.jsonName] ==
-                                "AccountRoot");
-                            auto finalFields =
-                                modifiedNode[sfFinalFields.jsonName];
-                            BEAST_EXPECT(
-                                finalFields[sfDomain.jsonName] == newDomain);
-                        }
-                    }
-                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
+                    auto unHexed = strUnHex(result[jss::metadata].asString());
+                    SerialIter sitTrans(makeSlice(*unHexed));
+                    metadata = STObject(std::ref(sitTrans), sfGeneric)
+                                   .getJson(JsonOptions::none);
+                }
+                else
+                {
+                    metadata = result[jss::metadata];
+                }
+                if (BEAST_EXPECT(metadata.isMember(sfAffectedNodes.jsonName)))
+                {
                     BEAST_EXPECT(
-                        metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
-                }
-            };
-
-            auto testTx = [&](Json::Value& tx) {
-                {
-                    Json::Value params;
-                    params[jss::tx_json] = tx;
-                    testSimulation(params, tx);
-                }
-                {
-                    STParsedJSONObject parsed(std::string(jss::tx_json), tx);
-                    if (BEAST_EXPECT(parsed.object.has_value()))
+                        metadata[sfAffectedNodes.jsonName].size() == 1);
+                    auto node = metadata[sfAffectedNodes.jsonName][0u];
+                    if (BEAST_EXPECT(node.isMember(sfModifiedNode.jsonName)))
                     {
-                        Json::Value params;
-                        params[jss::tx_blob] =
-                            strHex(parsed.object->getSerializer().peekData());
-                        testSimulation(params, tx);
+                        auto modifiedNode = node[sfModifiedNode.jsonName];
+                        BEAST_EXPECT(
+                            modifiedNode[sfLedgerEntryType.jsonName] ==
+                            "AccountRoot");
+                        auto finalFields = modifiedNode[sfFinalFields.jsonName];
+                        BEAST_EXPECT(
+                            finalFields[sfDomain.jsonName] == newDomain);
                     }
                 }
-            };
+                BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
+                BEAST_EXPECT(
+                    metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
+            }
+        };
 
-            Json::Value tx;
+        Json::Value tx;
 
-            tx[jss::Account] = Account::master.human();
-            tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain.jsonName] = newDomain;
+        tx[jss::Account] = Account::master.human();
+        tx[jss::TransactionType] = jss::AccountSet;
+        tx[sfDomain.jsonName] = newDomain;
 
-            // test with autofill
-            testTx(tx);
+        // test with autofill
+        testTx(env, tx, validateOutput);
 
-            tx[sfSigningPubKey.jsonName] = "";
-            tx[sfTxnSignature.jsonName] = "";
-            tx[sfSequence.jsonName] = 1;
-            tx[sfFee.jsonName] = "12";
+        tx[sfSigningPubKey.jsonName] = "";
+        tx[sfTxnSignature.jsonName] = "";
+        tx[sfSequence.jsonName] = 1;
+        tx[sfFee.jsonName] = "12";
 
-            // test without autofill
-            testTx(tx);
+        // test without autofill
+        testTx(env, tx, validateOutput);
 
-            // TODO: check that the ledger wasn't affected
-        }
+        // TODO: check that the ledger wasn't affected
     }
+}
 
-    void
-    testTransactionNonTecFailure()
+void
+testTransactionNonTecFailure()
+{
+    testcase("Transaction non-tec failure");
+
+    using namespace jtx;
+    Env env(*this);
+    Account const alice("alice");
+
     {
-        testcase("Transaction non-tec failure");
-
-        using namespace jtx;
-        Env env(*this);
-        Account const alice("alice");
-
-        {
-            auto testSimulation = [&](Json::Value& params, Json::Value& tx) {
-                auto resp = env.rpc("json", "simulate", to_string(params));
+        std::function<void(Json::Value, Json::Value&)> testSimulation =
+            [&](Json::Value resp, Json::Value& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx);
 
@@ -322,60 +339,40 @@ class Simulate_test : public beast::unit_test::suite
                 BEAST_EXPECT(!result.isMember(jss::metadata));
             };
 
-            auto testTx = [&](Json::Value& tx) {
-                {
-                    Json::Value params;
-                    params[jss::tx_json] = tx;
-                    testSimulation(params, tx);
-                    params[jss::binary] = true;
-                    testSimulation(params, tx);
-                }
-                {
-                    STParsedJSONObject parsed(std::string(jss::tx_json), tx);
-                    if (BEAST_EXPECT(parsed.object.has_value()))
-                    {
-                        Json::Value params;
-                        params[jss::tx_blob] =
-                            strHex(parsed.object->getSerializer().peekData());
-                        testSimulation(params, tx);
-                    }
-                }
-            };
+        Json::Value tx;
 
-            Json::Value tx;
+        tx[jss::Account] = Account::master.human();
+        tx[jss::TransactionType] = jss::Payment;
+        tx[sfDestination.jsonName] = alice.human();
+        tx[sfAmount.jsonName] = "0";  // invalid amount
 
-            tx[jss::Account] = Account::master.human();
-            tx[jss::TransactionType] = jss::Payment;
-            tx[sfDestination.jsonName] = alice.human();
-            tx[sfAmount.jsonName] = "0";  // invalid amount
+        // test with autofill
+        testTx(env, tx, testSimulation);
 
-            // test with autofill
-            testTx(tx);
+        tx[sfSigningPubKey.jsonName] = "";
+        tx[sfTxnSignature.jsonName] = "";
+        tx[sfSequence.jsonName] = 1;
+        tx[sfFee.jsonName] = "12";
 
-            tx[sfSigningPubKey.jsonName] = "";
-            tx[sfTxnSignature.jsonName] = "";
-            tx[sfSequence.jsonName] = 1;
-            tx[sfFee.jsonName] = "12";
+        // test without autofill
+        testTx(env, tx, testSimulation);
 
-            // test without autofill
-            testTx(tx);
-
-            // TODO: check that the ledger wasn't affected
-        }
+        // TODO: check that the ledger wasn't affected
     }
+}
 
-    void
-    testTransactionTecFailure()
+void
+testTransactionTecFailure()
+{
+    testcase("Transaction tec failure");
+
+    using namespace jtx;
+    Env env(*this);
+    Account const alice("alice");
+
     {
-        testcase("Transaction tec failure");
-
-        using namespace jtx;
-        Env env(*this);
-        Account const alice("alice");
-
-        {
-            auto testSimulation = [&](Json::Value& params, Json::Value& tx) {
-                auto resp = env.rpc("json", "simulate", to_string(params));
+        std::function<void(Json::Value, Json::Value&)> testSimulation =
+            [&](Json::Value resp, Json::Value& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx);
 
@@ -390,7 +387,7 @@ class Simulate_test : public beast::unit_test::suite
                 if (BEAST_EXPECT(result.isMember(jss::metadata)))
                 {
                     Json::Value metadata;
-                    if (params.get(jss::binary, false).asBool())
+                    if (result[jss::metadata].isString())
                     {
                         auto unHexed =
                             strUnHex(result[jss::metadata].asString());
@@ -429,58 +426,38 @@ class Simulate_test : public beast::unit_test::suite
                 }
             };
 
-            auto testTx = [&](Json::Value& tx) {
-                {
-                    Json::Value params;
-                    params[jss::tx_json] = tx;
-                    testSimulation(params, tx);
-                    params[jss::binary] = true;
-                    testSimulation(params, tx);
-                }
-                {
-                    STParsedJSONObject parsed(std::string(jss::tx_json), tx);
-                    if (BEAST_EXPECT(parsed.object.has_value()))
-                    {
-                        Json::Value params;
-                        params[jss::tx_blob] =
-                            strHex(parsed.object->getSerializer().peekData());
-                        testSimulation(params, tx);
-                    }
-                }
-            };
+        Json::Value tx;
 
-            Json::Value tx;
+        tx[jss::Account] = Account::master.human();
+        tx[jss::TransactionType] = jss::Payment;
+        tx[sfDestination.jsonName] = alice.human();
+        tx[sfAmount.jsonName] = "1";  // not enough to create an account
 
-            tx[jss::Account] = Account::master.human();
-            tx[jss::TransactionType] = jss::Payment;
-            tx[sfDestination.jsonName] = alice.human();
-            tx[sfAmount.jsonName] = "1";  // not enough to create an account
+        // test with autofill
+        testTx(env, tx, testSimulation);
 
-            // test with autofill
-            testTx(tx);
+        tx[sfSigningPubKey.jsonName] = "";
+        tx[sfTxnSignature.jsonName] = "";
+        tx[sfSequence.jsonName] = 1;
+        tx[sfFee.jsonName] = "10";
 
-            tx[sfSigningPubKey.jsonName] = "";
-            tx[sfTxnSignature.jsonName] = "";
-            tx[sfSequence.jsonName] = 1;
-            tx[sfFee.jsonName] = "10";
+        // test without autofill
+        testTx(env, tx, testSimulation);
 
-            // test without autofill
-            testTx(tx);
-
-            // TODO: check that the ledger wasn't affected
-        }
+        // TODO: check that the ledger wasn't affected
     }
+}
 
 public:
-    void
-    run() override
-    {
-        testParamErrors();
-        testSuccessfulTransaction();
-        testTransactionNonTecFailure();
-        testTransactionTecFailure();
-    }
-};
+void
+run() override
+{
+    testParamErrors();
+    testSuccessfulTransaction();
+    testTransactionNonTecFailure();
+    testTransactionTecFailure();
+}
+};  // namespace ripple
 
 BEAST_DEFINE_TESTSUITE(Simulate, rpc, ripple);
 
