@@ -24,6 +24,7 @@
 #include <xrpld/rpc/CTID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/serialize.h>
 
@@ -37,26 +38,35 @@ namespace test {
 class Simulate_test : public beast::unit_test::suite
 {
     void
-    checkBasicReturnValidity(Json::Value result, Json::Value tx)
+    checkBasicReturnValidity(Json::Value& result, Json::Value& tx)
     {
         BEAST_EXPECT(result[jss::applied] == false);
         BEAST_EXPECT(result.isMember(jss::engine_result));
         BEAST_EXPECT(result.isMember(jss::engine_result_code));
         BEAST_EXPECT(result.isMember(jss::engine_result_message));
+        BEAST_EXPECT(
+            result.isMember(jss::tx_json) || result.isMember(jss::tx_blob));
 
-        if (BEAST_EXPECT(result.isMember(jss::tx_json)))
+        Json::Value tx_json;
+        if (result.isMember(jss::tx_json))
         {
-            auto const tx_json = result[jss::tx_json];
-            BEAST_EXPECT(
-                tx_json[jss::TransactionType] == tx[jss::TransactionType]);
-            BEAST_EXPECT(tx_json[jss::Account] == tx[jss::Account]);
-            BEAST_EXPECT(
-                tx_json[jss::SigningPubKey] == tx.get(jss::SigningPubKey, ""));
-            BEAST_EXPECT(
-                tx_json[jss::TxnSignature] == tx.get(jss::TxnSignature, ""));
-            BEAST_EXPECT(tx_json[jss::Fee] == tx.get(jss::Fee, "10"));
-            BEAST_EXPECT(tx_json[jss::Sequence] == tx.get(jss::Sequence, 1));
+            tx_json = result[jss::tx_json];
         }
+        else
+        {
+            auto unHexed = strUnHex(result[jss::tx_blob].asString());
+            SerialIter sitTrans(makeSlice(*unHexed));
+            tx_json = STObject(std::ref(sitTrans), sfGeneric)
+                          .getJson(JsonOptions::none);
+        }
+        BEAST_EXPECT(tx_json[jss::TransactionType] == tx[jss::TransactionType]);
+        BEAST_EXPECT(tx_json[jss::Account] == tx[jss::Account]);
+        BEAST_EXPECT(
+            tx_json[jss::SigningPubKey] == tx.get(jss::SigningPubKey, ""));
+        BEAST_EXPECT(
+            tx_json[jss::TxnSignature] == tx.get(jss::TxnSignature, ""));
+        BEAST_EXPECT(tx_json[jss::Fee] == tx.get(jss::Fee, "10"));
+        BEAST_EXPECT(tx_json[jss::Sequence] == tx.get(jss::Sequence, 1));
     }
 
     void
@@ -210,10 +220,7 @@ class Simulate_test : public beast::unit_test::suite
         static auto const newDomain = "123ABC";
 
         {
-            auto testTx = [&](Json::Value tx) {
-                Json::Value params;
-                params[jss::tx_json] = tx;
-
+            auto testSimulation = [&](Json::Value& params, Json::Value& tx) {
                 auto resp = env.rpc("json", "simulate", to_string(params));
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx);
@@ -252,6 +259,24 @@ class Simulate_test : public beast::unit_test::suite
                 }
             };
 
+            auto testTx = [&](Json::Value& tx) {
+                {
+                    Json::Value params;
+                    params[jss::tx_json] = tx;
+                    testSimulation(params, tx);
+                }
+                {
+                    STParsedJSONObject parsed(std::string(jss::tx_json), tx);
+                    if (BEAST_EXPECT(parsed.object.has_value()))
+                    {
+                        Json::Value params;
+                        params[jss::tx_blob] =
+                            strHex(parsed.object->getSerializer().peekData());
+                        testSimulation(params, tx);
+                    }
+                }
+            };
+
             Json::Value tx;
 
             tx[jss::Account] = Account::master.human();
@@ -283,10 +308,7 @@ class Simulate_test : public beast::unit_test::suite
         Account const alice("alice");
 
         {
-            auto testTx = [&](Json::Value tx) {
-                Json::Value params;
-                params[jss::tx_json] = tx;
-
+            auto testSimulation = [&](Json::Value& params, Json::Value& tx) {
                 auto resp = env.rpc("json", "simulate", to_string(params));
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx);
@@ -298,6 +320,26 @@ class Simulate_test : public beast::unit_test::suite
                     "Can only send positive amounts.");
 
                 BEAST_EXPECT(!result.isMember(jss::metadata));
+            };
+
+            auto testTx = [&](Json::Value& tx) {
+                {
+                    Json::Value params;
+                    params[jss::tx_json] = tx;
+                    testSimulation(params, tx);
+                    params[jss::binary] = true;
+                    testSimulation(params, tx);
+                }
+                {
+                    STParsedJSONObject parsed(std::string(jss::tx_json), tx);
+                    if (BEAST_EXPECT(parsed.object.has_value()))
+                    {
+                        Json::Value params;
+                        params[jss::tx_blob] =
+                            strHex(parsed.object->getSerializer().peekData());
+                        testSimulation(params, tx);
+                    }
+                }
             };
 
             Json::Value tx;
@@ -332,10 +374,7 @@ class Simulate_test : public beast::unit_test::suite
         Account const alice("alice");
 
         {
-            auto testTx = [&](Json::Value tx) {
-                Json::Value params;
-                params[jss::tx_json] = tx;
-
+            auto testSimulation = [&](Json::Value& params, Json::Value& tx) {
                 auto resp = env.rpc("json", "simulate", to_string(params));
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx);
@@ -350,7 +389,19 @@ class Simulate_test : public beast::unit_test::suite
 
                 if (BEAST_EXPECT(result.isMember(jss::metadata)))
                 {
-                    auto metadata = result[jss::metadata];
+                    Json::Value metadata;
+                    if (params.get(jss::binary, false).asBool())
+                    {
+                        auto unHexed =
+                            strUnHex(result[jss::metadata].asString());
+                        SerialIter sitTrans(makeSlice(*unHexed));
+                        metadata = STObject(std::ref(sitTrans), sfGeneric)
+                                       .getJson(JsonOptions::none);
+                    }
+                    else
+                    {
+                        metadata = result[jss::metadata];
+                    }
                     if (BEAST_EXPECT(
                             metadata.isMember(sfAffectedNodes.jsonName)))
                     {
@@ -375,6 +426,26 @@ class Simulate_test : public beast::unit_test::suite
                     BEAST_EXPECT(
                         metadata[sfTransactionResult.jsonName] ==
                         "tecNO_DST_INSUF_XRP");
+                }
+            };
+
+            auto testTx = [&](Json::Value& tx) {
+                {
+                    Json::Value params;
+                    params[jss::tx_json] = tx;
+                    testSimulation(params, tx);
+                    params[jss::binary] = true;
+                    testSimulation(params, tx);
+                }
+                {
+                    STParsedJSONObject parsed(std::string(jss::tx_json), tx);
+                    if (BEAST_EXPECT(parsed.object.has_value()))
+                    {
+                        Json::Value params;
+                        params[jss::tx_blob] =
+                            strHex(parsed.object->getSerializer().peekData());
+                        testSimulation(params, tx);
+                    }
                 }
             };
 
