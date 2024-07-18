@@ -36,6 +36,7 @@ public:
     void
     testErrors()
     {
+        testcase("Errors");
         using namespace jtx;
         Env env(*this);
         {
@@ -108,7 +109,7 @@ public:
                     "json", "account_info", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
                 BEAST_EXPECT(
-                    jrr[jss::error_message] == "Invalid field 'account'.");
+                    jrr[jss::error_message] == "Invalid field 'ident'.");
             };
 
             testInvalidIdentParam(1);
@@ -124,6 +125,7 @@ public:
     void
     testSignerLists()
     {
+        testcase("Signer lists");
         using namespace jtx;
         Env env(*this);
         Account const alice{"alice"};
@@ -245,6 +247,7 @@ public:
     void
     testSignerListsApiVersion2()
     {
+        testcase("Signer lists APIv2");
         using namespace jtx;
         Env env{*this};
         Account const alice{"alice"};
@@ -366,6 +369,7 @@ public:
     void
     testSignerListsV2()
     {
+        testcase("Signer lists v2");
         using namespace jtx;
         Env env(*this);
         Account const alice{"alice"};
@@ -555,6 +559,7 @@ public:
     void
     testAccountFlags(FeatureBitset const& features)
     {
+        testcase("Account flags");
         using namespace jtx;
 
         Env env(*this, features);

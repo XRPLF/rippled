@@ -80,6 +80,28 @@ class AccountCurrencies_test : public beast::unit_test::suite
         }
 
         {
+            // test ident non-string
+            auto testInvalidIdentParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::ident] = param;
+                auto jrr = env.rpc(
+                    "json",
+                    "account_currencies",
+                    to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(
+                    jrr[jss::error_message] == "Invalid field 'ident'.");
+            };
+
+            testInvalidIdentParam(1);
+            testInvalidIdentParam(1.1);
+            testInvalidIdentParam(true);
+            testInvalidIdentParam(Json::Value(Json::nullValue));
+            testInvalidIdentParam(Json::Value(Json::objectValue));
+            testInvalidIdentParam(Json::Value(Json::arrayValue));
+        }
+
+        {
             Json::Value params;
             params[jss::account] =
                 "llIIOO";  // these are invalid in bitcoin alphabet

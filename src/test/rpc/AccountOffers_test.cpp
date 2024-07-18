@@ -309,7 +309,9 @@ public:
                 jvParams.toStyledString())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::status] == "error");
-            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'account'.");
+            BEAST_EXPECTS(
+                jrr[jss::error_message] == "Invalid field 'marker'.",
+                jrr.toStyledString());
         }
 
         {
