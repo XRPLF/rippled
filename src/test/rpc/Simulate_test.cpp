@@ -239,6 +239,21 @@ testParamErrors()
             resp[jss::result][jss::error_message] ==
             "Field 'tx_json.foo' is unknown.");
     }
+    {
+        // non-string first param for CLI
+        auto resp = env.rpc("simulate", 1);
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] == "Invalid parameters.");
+    }
+    {
+        // non-string second param for CLI
+        Json::Value tx_json = Json::objectValue;
+        tx_json[jss::TransactionType] = jss::AccountSet;
+        tx_json[jss::Account] = alice.human();
+        auto resp = env.rpc("simulate", to_string(tx_json), 1);
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] == "Invalid parameters.");
+    }
 }
 void
 testSuccessfulTransaction()

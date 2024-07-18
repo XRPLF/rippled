@@ -74,7 +74,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         if (!accountStr.isString())
         {
             // sanity check, should fail earlier
-            return RPC::invalid_field_error("tx.Account");
+            return RPC::invalid_field_error("tx.Account");  // LCOV_EXCL_LINE
         }
         auto const srcAddressID =
             parseBase58<AccountID>(tx_json[jss::Account].asString());
@@ -258,9 +258,9 @@ doSimulate(RPC::JsonContext& context)
 
         return jvResult;
     }
+    // LCOV_EXCL_START this is just in case, so rippled doesn't crash
     catch (std::exception& e)
     {
-        // LCOV_EXCL_START this is just in case, so rippled doesn't crash
         jvResult[jss::error] = "internalSimulate";
         jvResult[jss::error_exception] = e.what();
         return jvResult;
