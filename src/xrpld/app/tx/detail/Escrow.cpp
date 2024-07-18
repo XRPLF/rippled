@@ -273,11 +273,11 @@ EscrowCreate::doApply()
                 return tecNO_LINE;
 
             {
-                TER const result = trustAdjustLockedBalance(
-                    ctx_.view(), sleLine, amount, 1, ctx_.journal, DryRun);
+                TER const result = trustAdjustBalance(
+                    ctx_.view(), sleLine, amount, ctx_.journal, DryRun);
 
                 JLOG(ctx_.journal.trace())
-                    << "EscrowCreate::doApply trustAdjustLockedBalance (dry) "
+                    << "EscrowCreate::doApply trustAdjustBalance (dry) "
                        "result="
                     << result;
 
@@ -360,11 +360,11 @@ EscrowCreate::doApply()
                 return tecNO_LINE;
 
             // do the lock-up for real now
-            TER const result = trustAdjustLockedBalance(
-                ctx_.view(), sleLine, amount, 1, ctx_.journal, WetRun);
+            TER const result = trustAdjustBalance(
+                ctx_.view(), sleLine, amount, ctx_.journal, WetRun);
 
             JLOG(ctx_.journal.trace())
-                << "EscrowCreate::doApply trustAdjustLockedBalance (wet) "
+                << "EscrowCreate::doApply trustAdjustBalance (wet) "
                    "result="
                 << result;
 
@@ -588,20 +588,19 @@ EscrowFinish::doApply()
 
         // perform a dry run of the transfer before we
         // change anything on-ledger
-        TER const result = trustTransferLockedBalance(
+        TER const result = trustTransferBalance(
             ctx_.view(),
             account_,  // txn signing account
             sle,       // src account
             sled,      // dst account
             amount,    // xfer amount
-            -1,
             lockedRate,
             j_,
             DryRun  // dry run
         );
 
         JLOG(j_.trace())
-            << "EscrowFinish::doApply trustTransferLockedBalance (dry) result="
+            << "EscrowFinish::doApply trustTransferBalance (dry) result="
             << result;
 
         if (!isTesSuccess(result))
@@ -648,20 +647,19 @@ EscrowFinish::doApply()
         // all the significant complexity of checking the validity of this
         // transfer and ensuring the lines exist etc is hidden away in this
         // function, all we need to do is call it and return if unsuccessful.
-        TER const result = trustTransferLockedBalance(
+        TER const result = trustTransferBalance(
             ctx_.view(),
             account_,  // txn signing account
             sle,       // src account
             sled,      // dst account
             amount,    // xfer amount
-            -1,
             lockedRate,
             j_,
             WetRun  // wet run;
         );
 
         JLOG(j_.trace())
-            << "EscrowFinish::doApply trustTransferLockedBalance (wet) result="
+            << "EscrowFinish::doApply trustTransferBalance (wet) result="
             << result;
 
         if (!isTesSuccess(result))
@@ -742,8 +740,8 @@ EscrowCancel::doApply()
                 account, amount.getIssuer(), amount.getCurrency()));
 
             // dry run before we make any changes to ledger
-            if (TER const result = trustAdjustLockedBalance(
-                    ctx_.view(), sleLine, -amount, -1, ctx_.journal, DryRun);
+            if (TER const result = trustAdjustBalance(
+                    ctx_.view(), sleLine, -amount, ctx_.journal, DryRun);
                 result != tesSUCCESS)
                 return result;
         }
@@ -786,11 +784,11 @@ EscrowCancel::doApply()
         if (!isIssuer)
         {
             // unlock previously locked tokens from source line
-            TER const result = trustAdjustLockedBalance(
-                ctx_.view(), sleLine, -amount, -1, ctx_.journal, WetRun);
+            TER const result = trustAdjustBalance(
+                ctx_.view(), sleLine, -amount, ctx_.journal, WetRun);
 
             JLOG(ctx_.journal.trace())
-                << "EscrowCancel::doApply trustAdjustLockedBalance (wet) "
+                << "EscrowCancel::doApply trustAdjustBalance (wet) "
                    "result="
                 << result;
 

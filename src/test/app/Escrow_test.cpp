@@ -190,19 +190,6 @@ struct Escrow_test : public beast::unit_test::suite
         return jv;
     }
 
-    static STAmount
-    lockedAmount(
-        jtx::Env const& env,
-        jtx::Account const& account,
-        jtx::Account const& gw,
-        jtx::IOU const& iou)
-    {
-        auto const sle = env.le(keylet::line(account, gw, iou.currency));
-        if (sle->isFieldPresent(sfLockedBalance))
-            return (*sle)[sfLockedBalance];
-        return STAmount(iou, 0);
-    }
-
     static Rate
     escrowRate(
         jtx::Env const& env,
@@ -2262,10 +2249,8 @@ struct Escrow_test : public beast::unit_test::suite
             auto const seq = env.seq(alice);
             env(escrow(alice, alice, USD(1000)), finish_time(env.now() + 5s));
 
-            auto const preLocked = -lockedAmount(env, alice, gw, USD);
             env.require(balance(alice, XRP(5000) - drops(10)));
-            env.require(balance(alice, USD(5000)));
-            BEAST_EXPECT(preLocked == USD(1000));
+            env.require(balance(alice, USD(4000)));
 
             // Not enough time has elapsed for a finish and canceling isn't
             // possible.
@@ -2279,6 +2264,7 @@ struct Escrow_test : public beast::unit_test::suite
             // Finish should succeed. Verify funds.
             env(finish(bob, alice, seq));
             env.require(balance(alice, XRP(5000) - drops(10)));
+            env.require(balance(alice, USD(5000)));
         }
         {
             // Unconditionally pay from Alice to Bob.  Zelda (neither source nor
@@ -2303,10 +2289,8 @@ struct Escrow_test : public beast::unit_test::suite
             env(escrow(alice, bob, USD(1000)), finish_time(env.now() + 5s));
 
             // Verify amounts
-            auto const preLocked = -lockedAmount(env, alice, gw, USD);
             env.require(balance(alice, XRP(5000) - drops(10)));
-            BEAST_EXPECT(preLocked == USD(1000));
-            env.require(balance(alice, USD(5000)));
+            env.require(balance(alice, USD(4000)));
 
             // Not enough time has elapsed for a finish and canceling isn't
             // possible.
@@ -2321,9 +2305,7 @@ struct Escrow_test : public beast::unit_test::suite
             env(finish(carol, alice, seq));
             env.close();
 
-            auto const postLocked = -lockedAmount(env, alice, gw, USD);
             env.require(balance(alice, XRP(5000) - drops(10)));
-            BEAST_EXPECT(postLocked == USD(0));
             env.require(balance(alice, USD(4000)));
             env.require(balance(bob, USD(6000)));
             env.require(balance(carol, XRP(5000) - drops(40)));
@@ -2352,10 +2334,8 @@ struct Escrow_test : public beast::unit_test::suite
             env(escrow(alice, bob, USD(1000)), finish_time(env.now() + 5s));
 
             // Verify amounts
-            auto const preLocked = -lockedAmount(env, alice, gw, USD);
             env.require(balance(alice, XRP(5000) - drops(10)));
-            BEAST_EXPECT(preLocked == USD(1000));
-            env.require(balance(alice, USD(5000)));
+            env.require(balance(alice, USD(4000)));
 
             // Not enough time has elapsed for a finish and canceling isn't
             // possible.
@@ -2379,8 +2359,6 @@ struct Escrow_test : public beast::unit_test::suite
             env.close();
 
             // Verify amounts
-            auto const postLocked = -lockedAmount(env, alice, gw, USD);
-            BEAST_EXPECT(postLocked == USD(0));
             env.require(balance(alice, USD(4000)));
             env.require(balance(bob, USD(6000)));
             auto const baseFee = env.current()->fees().base;
@@ -2414,10 +2392,8 @@ struct Escrow_test : public beast::unit_test::suite
             auto const seq = env.seq(alice);
             env(escrow(alice, bob, USD(1000)), finish_time(env.now() + 5s));
 
-            auto const preLocked = -lockedAmount(env, alice, gw, USD);
             env.require(balance(alice, XRP(5000) - drops(10)));
-            BEAST_EXPECT(preLocked == USD(1000));
-            env.require(balance(alice, USD(5000)));
+            env.require(balance(alice, USD(4000)));
 
             env.close();
 
@@ -2428,8 +2404,6 @@ struct Escrow_test : public beast::unit_test::suite
             env(finish(carol, alice, seq));
             env.close();
 
-            auto const postLocked = -lockedAmount(env, alice, gw, USD);
-            BEAST_EXPECT(postLocked == USD(0));
             env.require(balance(alice, USD(4000)));
             env.require(balance(bob, USD(6000)));
             auto const baseFee = env.current()->fees().base;
@@ -2457,10 +2431,8 @@ struct Escrow_test : public beast::unit_test::suite
                 condition(cb2),
                 finish_time(env.now() + 5s));
 
-            auto const preLocked = -lockedAmount(env, alice, gw, USD);
             env.require(balance(alice, XRP(5000) - drops(10)));
-            BEAST_EXPECT(preLocked == USD(1000));
-            env.require(balance(alice, USD(5000)));
+            env.require(balance(alice, USD(4000)));
 
             // Not enough time has elapsed for a finish and canceling isn't
             // possible.
@@ -2492,6 +2464,9 @@ struct Escrow_test : public beast::unit_test::suite
                 condition(cb2),
                 fulfillment(fb2),
                 fee(1500));
+            env.close();
+
+            env.require(balance(alice, USD(5000)));
         }
         {
             // Self-escrowed conditional with DepositAuth.
@@ -2513,10 +2488,8 @@ struct Escrow_test : public beast::unit_test::suite
                 condition(cb3),
                 finish_time(env.now() + 5s));
 
-            auto const preLocked = -lockedAmount(env, alice, gw, USD);
             env.require(balance(alice, XRP(5000) - drops(10)));
-            BEAST_EXPECT(preLocked == USD(1000));
-            env.require(balance(alice, USD(5000)));
+            env.require(balance(alice, USD(4000)));
 
             env.close();
 
@@ -2543,6 +2516,9 @@ struct Escrow_test : public beast::unit_test::suite
                 condition(cb3),
                 fulfillment(fb3),
                 fee(1500));
+            env.close();
+
+            env.require(balance(alice, USD(5000)));
         }
         {
             // Self-escrowed conditional with DepositAuth and DepositPreauth.
@@ -2566,10 +2542,8 @@ struct Escrow_test : public beast::unit_test::suite
                 condition(cb3),
                 finish_time(env.now() + 5s));
 
-            auto const preLocked = -lockedAmount(env, alice, gw, USD);
             env.require(balance(alice, XRP(5000) - drops(10)));
-            BEAST_EXPECT(preLocked == USD(1000));
-            env.require(balance(alice, USD(5000)));
+            env.require(balance(alice, USD(4000)));
 
             env.close();
 
@@ -2603,6 +2577,9 @@ struct Escrow_test : public beast::unit_test::suite
                 condition(cb3),
                 fulfillment(fb3),
                 fee(1500));
+            env.close();
+            
+            env.require(balance(alice, USD(5000)));
         }
     }
 
@@ -2637,10 +2614,8 @@ struct Escrow_test : public beast::unit_test::suite
                 cancel_time(env.now() + 1s));
 
             BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2);
-            auto const preLocked = -lockedAmount(env, alice, gw, USD);
             env.require(balance(alice, XRP(5000) - drops(10)));
-            BEAST_EXPECT(preLocked == USD(1000));
-            env.require(balance(alice, USD(5000)));
+            env.require(balance(alice, USD(4000)));
             env.require(balance(carol, USD(5000)));
             env(cancel(bob, alice, seq), ter(tecNO_PERMISSION));
             BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2);
@@ -2726,16 +2701,12 @@ struct Escrow_test : public beast::unit_test::suite
                 condition(cb2),
                 cancel_time(env.now() + 1s));
             env.close();
-            auto const preLocked = -lockedAmount(env, alice, gw, USD);
             env.require(balance(alice, XRP(5000) - drops(10)));
-            BEAST_EXPECT(preLocked == USD(1000));
-            env.require(balance(alice, USD(5000)));
+            env.require(balance(alice, USD(4000)));
             // balance restored on cancel
             env(cancel(bob, alice, seq));
 
-            auto const postLocked = -lockedAmount(env, alice, gw, USD);
             env.require(balance(alice, XRP(5000) - drops(10)));
-            BEAST_EXPECT(postLocked == USD(0));
             env.require(balance(alice, USD(5000)));
             // SLE removed on cancel
             BEAST_EXPECT(!env.le(keylet::escrow(Account(alice).id(), seq)));
@@ -2839,8 +2810,6 @@ struct Escrow_test : public beast::unit_test::suite
                 fulfillment(fb1),
                 fee(1500));
 
-            auto const postLocked = -lockedAmount(env, alice, gw, USD);
-            BEAST_EXPECT(postLocked == USD(0));
             env.require(balance(alice, XRP(5000) - drops(100)));
             env.require(balance(alice, USD(4000)));
             env.require(balance(bob, XRP(5000) - drops(1500)));
@@ -3003,8 +2972,6 @@ struct Escrow_test : public beast::unit_test::suite
                 fulfillment(fb2),
                 fee(1500));
 
-            auto const postLocked = -lockedAmount(env, alice, gw, USD);
-            BEAST_EXPECT(postLocked == USD(0));
             env.require(balance(alice, XRP(5000) - drops(100)));
             env.require(balance(alice, USD(4000)));
             env.require(balance(carol, XRP(5000)));
@@ -3064,8 +3031,6 @@ struct Escrow_test : public beast::unit_test::suite
                 fulfillment(fb3),
                 fee(1500));
 
-            auto const postLocked = -lockedAmount(env, alice, gw, USD);
-            BEAST_EXPECT(postLocked == USD(0));
             env.require(balance(alice, XRP(5000) - drops(10)));
             env.require(balance(alice, USD(4000)));
             env.require(balance(carol, XRP(5000)));
@@ -3579,9 +3544,6 @@ struct Escrow_test : public beast::unit_test::suite
                 fee(1500));
             env.close();
 
-            auto const preLocked = lockedAmount(env, t.src, t.gw, USD);
-            BEAST_EXPECT(preLocked == (t.negative ? -delta : delta));
-
             // dst can finish escrow
             auto const preSrc = lineBalance(env, t.src, t.gw, USD);
             auto const preDst = lineBalance(env, t.dst, t.gw, USD);
@@ -3592,16 +3554,11 @@ struct Escrow_test : public beast::unit_test::suite
                 fee(1500));
             env.close();
 
-            auto postLocked = lockedAmount(env, t.src, t.gw, USD);
-            BEAST_EXPECT(
-                lineBalance(env, t.src, t.gw, USD) ==
-                (t.negative ? (preSrc + delta) : (preSrc - delta)));
+            BEAST_EXPECT(lineBalance(env, t.src, t.gw, USD) == preSrc);
             BEAST_EXPECT(
                 lineBalance(env, t.dst, t.gw, USD) ==
                 (t.negative ? (preDst - delta) : (preDst + delta)));
-            BEAST_EXPECT(
-                postLocked ==
-                (t.negative ? (preLocked + delta) : (preLocked - delta)));
+
         }
     }
 
@@ -3776,8 +3733,7 @@ struct Escrow_test : public beast::unit_test::suite
                 fulfillment(fb1),
                 fee(1500));
             env.close();
-            auto const postLocked = -lockedAmount(env, alice, gw, USD);
-            BEAST_EXPECT(postLocked == USD(0));
+
             BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - delta);
             BEAST_EXPECT(env.balance(bob, USD.issue()) == USD(10100));
         }
@@ -3817,8 +3773,7 @@ struct Escrow_test : public beast::unit_test::suite
                 fulfillment(fb1),
                 fee(1500));
             env.close();
-            auto const postLocked = -lockedAmount(env, alice, gw, USD);
-            BEAST_EXPECT(postLocked == USD(0));
+
             BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - delta);
             BEAST_EXPECT(env.balance(bob, USD.issue()) == USD(10100));
         }
@@ -3858,8 +3813,7 @@ struct Escrow_test : public beast::unit_test::suite
                 fulfillment(fb1),
                 fee(1500));
             env.close();
-            auto const postLocked = -lockedAmount(env, alice, gw, USD);
-            BEAST_EXPECT(postLocked == USD(0));
+
             BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - delta);
             BEAST_EXPECT(env.balance(bob, USD.issue()) == USD(10125));
         }
@@ -3896,8 +3850,7 @@ struct Escrow_test : public beast::unit_test::suite
                 fulfillment(fb1),
                 fee(1500));
             env.close();
-            auto const postLocked = -lockedAmount(env, alice, gw, USD);
-            BEAST_EXPECT(postLocked == USD(0));
+
             BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice + delta);
             BEAST_EXPECT(env.balance(alice, USD.issue()) == USD(10125));
         }
@@ -4162,8 +4115,8 @@ struct Escrow_test : public beast::unit_test::suite
         auto const gw = Account{"gateway"};
         auto const USD = gw["USD"];
         {
-            // test pay more than locked amount
-            // ie. has 10000, lock 1000 then try to pay 10000
+            // test tecPATH_PARTIAL
+            // ie. has 10000, escrow 1000 then try to pay 10000
             Env env{*this, features};
             env.fund(XRP(10000), alice, bob, gw);
             env.close();
@@ -4181,12 +4134,11 @@ struct Escrow_test : public beast::unit_test::suite
                 finish_time(env.now() + 1s),
                 fee(1500));
             env.close();
-            BEAST_EXPECT(-lockedAmount(env, alice, gw, USD) == delta);
             env(pay(alice, gw, USD(10000)), ter(tecPATH_PARTIAL));
         }
         {
-            // test lock more than balance + locked
-            // ie. has 10000 lock 1000 then try to lock 10000
+            // test tecINSUFFICIENT_FUNDS
+            // ie. has 10000 escrow 1000 then try to escrow 10000
             Env env{*this, features};
             env.fund(XRP(10000), alice, bob, gw);
             env.close();
@@ -4204,7 +4156,6 @@ struct Escrow_test : public beast::unit_test::suite
                 fee(1500));
             env.close();
 
-            BEAST_EXPECT(-lockedAmount(env, alice, gw, USD) == delta);
             env(escrow(alice, bob, USD(10000)),
                 condition(cb1),
                 finish_time(env.now() + 1s),
@@ -4226,57 +4177,6 @@ struct Escrow_test : public beast::unit_test::suite
         auto const gw = Account{"gateway"};
         auto const USD = gw["USD"];
 
-        // test max trustline precision loss
-        {
-            Env env(*this, features);
-            env.fund(XRP(10000), alice, bob, gw);
-            env.close();
-            env.trust(USD(100000000000000000), alice);
-            env.trust(USD(100000000000000000), bob);
-            env.close();
-            env(pay(gw, alice, USD(10000000000000000)));
-            env(pay(gw, bob, USD(10000000000000000)));
-            env.close();
-
-            // setup tx
-            auto const seq1 = env.seq(alice);
-            auto const delta = USD(10000000000000000);
-
-            // create escrow success
-            env(escrow(alice, bob, delta),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500));
-            env.close();
-
-            // create escrow fails - precision loss
-            env(escrow(alice, bob, USD(1)),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500),
-                ter(tecPRECISION_LOSS));
-            env.close();
-
-            // bob finish escrow success
-            env(finish(bob, alice, seq1),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(1500));
-            env.close();
-            auto postLocked = -lockedAmount(env, alice, gw, USD);
-            BEAST_EXPECT(postLocked == USD(0));
-            // alice CAN fund again
-            env(pay(gw, alice, USD(1)));
-            env.close();
-            // create escrow success
-            env(escrow(alice, bob, USD(1)),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                fee(1500));
-            env.close();
-            postLocked = -lockedAmount(env, alice, gw, USD);
-            BEAST_EXPECT(postLocked == USD(1));
-        }
         // test min create precision loss
         {
             Env env(*this, features);

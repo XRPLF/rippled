@@ -134,9 +134,9 @@ closeChannel(
 
         // dry run
         TER const result =
-            trustAdjustLockedBalance(view, sleLine, -amount, -1, j, DryRun);
+            trustAdjustBalance(view, sleLine, -amount, j, DryRun);
 
-        JLOG(j.trace()) << "closeChannel: trustAdjustLockedBalance(dry) result="
+        JLOG(j.trace()) << "closeChannel: trustAdjustBalance(dry) result="
                         << result;
 
         if (!isTesSuccess(result))
@@ -179,9 +179,9 @@ closeChannel(
     else
     {
         TER const result =
-            trustAdjustLockedBalance(view, sleLine, -amount, -1, j, WetRun);
+            trustAdjustBalance(view, sleLine, -amount, j, WetRun);
 
-        JLOG(j.trace()) << "closeChannel: trustAdjustLockedBalance(wet) result="
+        JLOG(j.trace()) << "closeChannel: trustAdjustBalance(wet) result="
                         << result;
 
         if (!isTesSuccess(result))
@@ -287,10 +287,10 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         {
             auto sleLine = ctx.view.read(keylet::line(
                 account, amount.getIssuer(), amount.getCurrency()));
-            TER const result = trustAdjustLockedBalance(
-                ctx.view, sleLine, amount, 1, ctx.j, DryRun);
+            TER const result = trustAdjustBalance(
+                ctx.view, sleLine, amount, ctx.j, DryRun);
             JLOG(ctx.j.trace()) << "PayChanCreate::preclaim "
-                                   "trustAdjustLockedBalance(dry) result="
+                                   "trustAdjustBalance(dry) result="
                                 << result;
             if (!isTesSuccess(result))
                 return result;
@@ -404,11 +404,11 @@ PayChanCreate::doApply()
             if (!sleLine)
                 return tecNO_LINE;
 
-            TER const result = trustAdjustLockedBalance(
-                ctx_.view(), sleLine, amount, 1, ctx_.journal, WetRun);
+            TER const result = trustAdjustBalance(
+                ctx_.view(), sleLine, amount, ctx_.journal, WetRun);
 
             JLOG(ctx_.journal.trace())
-                << "PayChanCreate::doApply trustAdjustLockedBalance(wet) "
+                << "PayChanCreate::doApply trustAdjustBalance(wet) "
                    "result="
                 << result;
 
@@ -507,11 +507,11 @@ PayChanFund::doApply()
             sleLine = ctx_.view().peek(keylet::line(
                 (*slep)[sfAccount], amount.getIssuer(), amount.getCurrency()));
 
-            TER const result = trustAdjustLockedBalance(
-                ctx_.view(), sleLine, amount, 1, ctx_.journal, DryRun);
+            TER const result = trustAdjustBalance(
+                ctx_.view(), sleLine, amount, ctx_.journal, DryRun);
 
             JLOG(ctx_.journal.trace())
-                << "PayChanFund::doApply trustAdjustLockedBalance(dry) result="
+                << "PayChanFund::doApply trustAdjustBalance(dry) result="
                 << result;
 
             if (!isTesSuccess(result))
@@ -581,11 +581,11 @@ PayChanFund::doApply()
         // issuer does not need to lock anything
         if (!isIssuer)
         {
-            TER const result = trustAdjustLockedBalance(
-                ctx_.view(), sleLine, amount, 1, ctx_.journal, WetRun);
+            TER const result = trustAdjustBalance(
+                ctx_.view(), sleLine, amount, ctx_.journal, WetRun);
 
             JLOG(ctx_.journal.trace())
-                << "PayChanFund::doApply trustAdjustLockedBalance(wet) result="
+                << "PayChanFund::doApply trustAdjustBalance(wet) result="
                 << result;
 
             if (!isTesSuccess(result))
@@ -784,19 +784,18 @@ PayChanClaim::doApply()
             }
 
             auto sleSrcAcc = ctx_.view().peek(keylet::account(src));
-            TER const result = trustTransferLockedBalance(
+            TER const result = trustTransferBalance(
                 ctx_.view(),
                 txAccount,
                 sleSrcAcc,
                 sled,
                 reqDelta,
-                0,
                 lockedRate,
                 ctx_.journal,
                 WetRun);
 
             JLOG(ctx_.journal.trace())
-                << "PayChanClaim::doApply trustTransferLockedBalance(wet) "
+                << "PayChanClaim::doApply trustTransferBalance(wet) "
                    "result="
                 << result;
 

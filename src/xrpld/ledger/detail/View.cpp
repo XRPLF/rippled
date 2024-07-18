@@ -258,28 +258,6 @@ accountHolds(
             amount.negate();
         }
 
-        // If tokens can be escrowed then they can be locked in the trustline
-        // which means we must never spend them until the escrow is released.
-        if (view.rules().enabled(featurePaychanAndEscrowForTokens) &&
-            sle->isFieldPresent(sfLockedBalance))
-        {
-            STAmount const lockedBalance = sle->getFieldAmount(sfLockedBalance);
-            STAmount const spendableBalance =
-                amount - (account > issuer ? -lockedBalance : lockedBalance);
-
-            // RH NOTE: this is defensively programmed, it should never fire
-            // if something bad does happen the trustline acts as a frozen line.
-            if (spendableBalance < beast::zero || spendableBalance > amount)
-            {
-                JLOG(j.error())
-                    << "SpendableBalance has illegal value in accountHolds "
-                    << spendableBalance;
-                amount.clear(Issue{currency, issuer});
-            }
-            else
-                amount = spendableBalance;
-        }
-
         amount.setIssuer(issuer);
     }
     JLOG(j.trace()) << "accountHolds:"
@@ -960,9 +938,6 @@ isTrustDefault(
         return false;
 
     if (line->getFieldAmount(sfBalance) != beast::zero)
-        return false;
-
-    if (line->isFieldPresent(sfLockedBalance))
         return false;
 
     if (line->getFieldAmount(high ? sfHighLimit : sfLowLimit) != beast::zero)
