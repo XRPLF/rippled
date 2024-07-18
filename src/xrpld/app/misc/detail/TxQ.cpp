@@ -552,7 +552,7 @@ TxQ::tryClearAccountQueueUpThruTx(
         // succeeds, the MaybeTx will be destructed, so it'll be
         // moot.
         --it->second.retriesRemaining;
-        it->second.lastResult = txResult.first;
+        it->second.lastResult = txResult.ter;
 
         // In TxQ::apply we note that it's possible for a transaction with
         // a ticket to both be in the queue and in the ledger.  And, while
@@ -570,20 +570,20 @@ TxQ::tryClearAccountQueueUpThruTx(
         // transactions in the account queue.  Then, if clearing the account
         // is successful, we will have removed any ticketed transactions
         // that can never succeed.
-        if (txResult.first == tefNO_TICKET)
+        if (txResult.ter == tefNO_TICKET)
             continue;
 
-        if (!txResult.second)
+        if (!txResult.applied)
         {
             // Transaction failed to apply. Fall back to the normal process.
-            return {txResult.first, false};
+            return {txResult.ter, false};
         }
     }
     // Apply the current tx. Because the state of the view has been changed
     // by the queued txs, we also need to preclaim again.
     auto const txResult = doApply(preclaim(pfresult, app, view), app, view);
 
-    if (txResult.second)
+    if (txResult.applied)
     {
         // All of the queued transactions applied, so remove them from the
         // queue.
@@ -1195,7 +1195,7 @@ TxQ::apply(
             flags,
             metricsSnapshot,
             j);
-        if (result.second)
+        if (result.applied)
         {
             sandbox.apply(view);
             /* Can't erase (*replacedTxIter) here because success

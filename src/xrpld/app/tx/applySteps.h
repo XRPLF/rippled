@@ -31,8 +31,8 @@ class TxQ;
 
 struct TxApplyResult
 {
-    TER first;
-    bool second;
+    TER ter;
+    bool applied;
     std::optional<TxMeta> metadata = std::nullopt;
 };
 

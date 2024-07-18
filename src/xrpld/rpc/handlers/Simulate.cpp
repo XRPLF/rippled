@@ -210,7 +210,7 @@ doSimulate(RPC::JsonContext& context)
         auto const result = context.app.getTxQ().apply(
             context.app, view, tpTrans->getSTransaction(), flags, context.j);
 
-        jvResult[jss::applied] = result.second;
+        jvResult[jss::applied] = result.applied;
         jvResult[jss::ledger_index] = view.seq();
 
         const bool isBinaryOutput =
@@ -219,11 +219,11 @@ doSimulate(RPC::JsonContext& context)
         // Convert the TER to human-readable values
         std::string sToken;
         std::string sHuman;
-        transResultInfo(result.first, sToken, sHuman);
+        transResultInfo(result.ter, sToken, sHuman);
 
         // Engine result
         jvResult[jss::engine_result] = sToken;
-        jvResult[jss::engine_result_code] = result.first;
+        jvResult[jss::engine_result_code] = result.ter;
         jvResult[jss::engine_result_message] = sHuman;
         if (sToken == "tesSUCCESS")
         {

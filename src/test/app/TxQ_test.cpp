@@ -1064,8 +1064,8 @@ public:
                 [&](OpenView& view, beast::Journal j) {
                     auto result = ripple::apply(
                         env.app(), view, *jt.stx, tapNONE, env.journal);
-                    parsed.ter = result.first;
-                    return result.second;
+                    parsed.ter = result.ter;
+                    return result.applied;
                 });
             env.postconditions(jt, parsed);
         }
@@ -4173,8 +4173,8 @@ public:
                 env.jt(noop(alice), seq(aliceSeq), openLedgerFee(env));
             auto const result =
                 ripple::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
-            BEAST_EXPECT(result.first == tesSUCCESS && result.second);
-            return result.second;
+            BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
+            return result.applied;
         });
         // the queued transaction is still there
         checkMetrics(__LINE__, env, 1, std::nullopt, 5, 3, 256);
@@ -4245,8 +4245,8 @@ public:
                 noop(alice), ticket::use(tktSeq0 + 1), openLedgerFee(env));
             auto const result =
                 ripple::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
-            BEAST_EXPECT(result.first == tesSUCCESS && result.second);
-            return result.second;
+            BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
+            return result.applied;
         });
         // the queued transaction is still there
         checkMetrics(__LINE__, env, 1, std::nullopt, 5, 3, 256);
