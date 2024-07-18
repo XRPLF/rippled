@@ -1445,11 +1445,21 @@ LedgerMaster::findNewLedgersToPublish(
             }
 
             // Did we acquire the next ledger we need to publish?
-            if (ledger && (ledger->info().seq == pubSeq))
+            if (ledger && (ledger->info().seq >= pubSeq))
             {
                 ledger->setValidated();
                 ret.push_back(ledger);
-                ++pubSeq;
+                if (ledger->info().seq > pubSeq)
+                {
+                    JLOG(m_journal.info())
+                        << "ready to publish " << ledger->info().seq
+                        << ", but skipping " << pubSeq
+                        << " because it has not been acquired.";
+                }
+                else
+                {
+                    ++pubSeq;
+                }
             }
         }
 
