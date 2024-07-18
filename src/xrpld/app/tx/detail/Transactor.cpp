@@ -138,7 +138,7 @@ preflight2(PreflightContext const& ctx)
             return tesSUCCESS;
         // NOTE: This code should never be hit because it's checked in the
         // `simulate` RPC
-        return temINVALID;
+        return temINVALID;  // LCOV_EXCL_LINE
     }
     auto const sigValid = checkValidity(
         ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
@@ -493,7 +493,7 @@ Transactor::checkSign(PreclaimContext const& ctx)
         if (ctx.tx.getSigningPubKey().empty() && ctx.tx.getSignature().empty())
             return tesSUCCESS;
         // Already checked in preflight2, should never be hit
-        return temINVALID;
+        return temINVALID;  // LCOV_EXCL_LINE
     }
     // If the pk is empty, then we must be multi-signing.
     if (ctx.tx.getSigningPubKey().empty())

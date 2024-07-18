@@ -109,8 +109,10 @@ testParamErrors()
 
     {
         // No params
-        auto resp = env.rpc("json", "simulate");
-        BEAST_EXPECT(resp[jss::error_message] == "Syntax error.");
+        Json::Value params = Json::objectValue;
+        auto resp = env.rpc("json", "simulate", to_string(params));
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] == "Invalid parameters.");
     }
     {
         // Providing both `tx_json` and `tx_blob`
@@ -228,14 +230,14 @@ testParamErrors()
         Json::Value params;
         Json::Value tx_json = Json::objectValue;
         tx_json[jss::TransactionType] = jss::AccountSet;
-        tx_json[jss::Account] = alice.human();
-        tx_json[jss::tx_json] = jss::AccountSet;
+        tx_json[jss::Account] = env.master.human();
+        tx_json["foo"] = "bar";
         params[jss::tx_json] = tx_json;
 
         auto resp = env.rpc("json", "simulate", to_string(params));
         BEAST_EXPECT(
             resp[jss::result][jss::error_message] ==
-            "Source account not found.");
+            "Field 'tx_json.foo' is unknown.");
     }
 }
 void

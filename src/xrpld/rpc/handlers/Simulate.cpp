@@ -260,10 +260,11 @@ doSimulate(RPC::JsonContext& context)
     }
     catch (std::exception& e)
     {
+        // LCOV_EXCL_START this is just in case, so rippled doesn't crash
         jvResult[jss::error] = "internalSimulate";
         jvResult[jss::error_exception] = e.what();
-
         return jvResult;
+        // LCOV_EXCL_STOP
     }
 }
 
