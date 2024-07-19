@@ -98,6 +98,12 @@ Update the compiler settings:
    conan profile update settings.compiler.cppstd=20 default
    ```
 
+Configure Conan to use recipe revisions:
+
+   ```
+   conan config set general.revisions_enabled=1
+   ```
+
 **Linux** developers will commonly have a default Conan [profile][] that compiles
 with GCC and links with libstdc++.
 If you are linking with libstdc++ (see profile setting `compiler.libcxx`),
@@ -185,6 +191,17 @@ It patches their CMake to correctly import its dependencies.
    conan export external/soci soci/4.0.3@
    # Conan 2.x
    conan export --version 4.0.3 external/soci
+   ```
+
+Export our [Conan recipe for NuDB](./external/nudb).
+It fixes some source files to add missing `#include`s.
+
+
+   ```
+   # Conan 1.x
+   conan export external/nudb nudb/2.0.8@
+   # Conan 2.x
+   conan export --version 2.0.8 external/nudb
    ```
 
 ### Build and Test
