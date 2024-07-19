@@ -93,71 +93,72 @@ target_link_libraries(xrpl.libxrpl
     $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>
 )
 
-add_executable(rippled)
-if(unity)
-  set_target_properties(rippled PROPERTIES UNITY_BUILD ON)
-endif()
-if(tests)
-  target_compile_definitions(rippled PUBLIC ENABLE_TESTS)
-endif()
-target_include_directories(rippled
-  PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-)
-
-file(GLOB_RECURSE sources CONFIGURE_DEPENDS
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/xrpld/*.cpp"
-)
-target_sources(rippled PRIVATE ${sources})
-
-if(tests)
-  file(GLOB_RECURSE sources CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
-  )
-  target_sources(rippled PRIVATE ${sources})
-endif()
-
-target_link_libraries(rippled
-  Ripple::boost
-  Ripple::opts
-  Ripple::libs
-  xrpl.libxrpl
-)
-
-if(voidstar)
-  target_compile_options(rippled
-    PRIVATE
-      -fsanitize-coverage=trace-pc-guard
-  )
-  # rippled requries access to antithesis-sdk-cpp implementation file
-  # antithesis_instrumentation.h , which is not exported as INTERFACE
+if(xrpld)
+  add_executable(rippled)
+  if(unity)
+    set_target_properties(rippled PROPERTIES UNITY_BUILD ON)
+  endif()
+  if(tests)
+    target_compile_definitions(rippled PUBLIC ENABLE_TESTS)
+  endif()
   target_include_directories(rippled
     PRIVATE
-      ${CMAKE_SOURCE_DIR}/external/antithesis-sdk
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
   )
-endif()
 
-exclude_if_included(rippled)
-# define a macro for tests that might need to
-# be exluded or run differently in CI environment
-if(is_ci)
-  target_compile_definitions(rippled PRIVATE RIPPLED_RUNNING_IN_CI)
-endif()
+  file(GLOB_RECURSE sources CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/xrpld/*.cpp"
+  )
+  target_sources(rippled PRIVATE ${sources})
 
-if(reporting)
-  set(suffix -reporting)
-  set_target_properties(rippled PROPERTIES OUTPUT_NAME rippled-reporting)
-  get_target_property(BIN_NAME rippled OUTPUT_NAME)
-  message(STATUS "Reporting mode build: rippled renamed ${BIN_NAME}")
-  target_compile_definitions(rippled PRIVATE RIPPLED_REPORTING)
-endif()
+  if(tests)
+    file(GLOB_RECURSE sources CONFIGURE_DEPENDS
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
+    )
+    target_sources(rippled PRIVATE ${sources})
+  endif()
 
-# any files that don't play well with unity should be added here
-if(tests)
-  set_source_files_properties(
-    # these two seem to produce conflicts in beast teardown template methods
-    src/test/rpc/ValidatorRPC_test.cpp
-    src/test/rpc/ShardArchiveHandler_test.cpp
-    src/test/ledger/Invariants_test.cpp
-    PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE)
+  target_link_libraries(rippled
+    Ripple::boost
+    Ripple::opts
+    Ripple::libs
+    xrpl.libxrpl
+  )
+  exclude_if_included(rippled)
+  # define a macro for tests that might need to
+  # be exluded or run differently in CI environment
+  if(is_ci)
+    target_compile_definitions(rippled PRIVATE RIPPLED_RUNNING_IN_CI)
+  endif ()
+
+  if(voidstar)
+    target_compile_options(rippled
+      PRIVATE
+        -fsanitize-coverage=trace-pc-guard
+    )
+    # rippled requries access to antithesis-sdk-cpp implementation file
+    # antithesis_instrumentation.h , which is not exported as INTERFACE
+    target_include_directories(rippled
+      PRIVATE
+        ${CMAKE_SOURCE_DIR}/external/antithesis-sdk
+    )
+  endif()
+
+  if(reporting)
+    set(suffix -reporting)
+    set_target_properties(rippled PROPERTIES OUTPUT_NAME rippled-reporting)
+    get_target_property(BIN_NAME rippled OUTPUT_NAME)
+    message(STATUS "Reporting mode build: rippled renamed ${BIN_NAME}")
+    target_compile_definitions(rippled PRIVATE RIPPLED_REPORTING)
+  endif()
+
+  # any files that don't play well with unity should be added here
+  if(tests)
+    set_source_files_properties(
+      # these two seem to produce conflicts in beast teardown template methods
+      src/test/rpc/ValidatorRPC_test.cpp
+      src/test/rpc/ShardArchiveHandler_test.cpp
+      src/test/ledger/Invariants_test.cpp
+      PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE)
+  endif()
 endif()
