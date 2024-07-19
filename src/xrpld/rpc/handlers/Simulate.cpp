@@ -51,10 +51,27 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         // autofill SigningPubKey
         tx_json[sfSigningPubKey.jsonName] = "";
     }
-    else if (tx_json[sfSigningPubKey.jsonName] != "")
+    if (tx_json.isMember(sfSigners.jsonName))
     {
-        // Transaction must not be signed
-        return rpcError(rpcTX_SIGNED);
+        if (!tx_json[sfSigners.jsonName].isArray())
+            return RPC::invalid_field_error("tx.Signers");
+        // check multisigned signers
+        for (auto& signer : tx_json[sfSigners.jsonName])
+        {
+            if (!signer.isMember(sfSigner.jsonName) ||
+                !signer[sfSigner.jsonName].isObject())
+                return RPC::invalid_field_error("tx.Signers");
+            if (!signer[sfSigner.jsonName].isMember(sfTxnSignature.jsonName))
+            {
+                // autofill TxnSignature
+                signer[sfSigner.jsonName][sfTxnSignature.jsonName] = "";
+            }
+            else if (signer[sfSigner.jsonName][sfTxnSignature.jsonName] != "")
+            {
+                // Transaction must not be signed
+                return rpcError(rpcTX_SIGNED);
+            }
+        }
     }
     if (!tx_json.isMember(sfTxnSignature.jsonName))
     {
