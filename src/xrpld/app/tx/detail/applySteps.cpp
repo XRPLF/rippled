@@ -50,6 +50,7 @@
 #include <xrpld/app/tx/detail/SetRegularKey.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
 #include <xrpld/app/tx/detail/SetTrust.h>
+#include <xrpld/app/tx/detail/SetFirewall.h>
 #include <xrpld/app/tx/detail/XChainBridge.h>
 #include <xrpl/protocol/TxFormats.h>
 
@@ -165,6 +166,8 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<SetOracle>();
         case ttORACLE_DELETE:
             return f.template operator()<DeleteOracle>();
+        case ttFIREWALL_SET:
+            return f.template operator()<SetFirewall>();
         default:
             throw UnknownTxnType(txnType);
     }
@@ -249,6 +252,11 @@ invoke_preclaim(PreclaimContext const& ctx)
             if (id != beast::zero)
             {
                 TER result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
+
+                if (result != tesSUCCESS)
+                    return result;
+
+                result = T::checkFirewall(ctx, ctx.j);
 
                 if (result != tesSUCCESS)
                     return result;

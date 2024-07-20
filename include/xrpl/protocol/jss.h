@@ -89,6 +89,8 @@ JSS(EscrowFinish);         // transaction type.
 JSS(Fee);                  // in/out: TransactionSign; field.
 JSS(FeeSettings);          // ledger type.
 JSS(Flags);                // in/out: TransactionSign; field.
+JSS(FirewallSet);          // transaction type.
+JSS(Firewall);             // ledger type.
 JSS(incomplete_shards);    // out: OverlayImpl, PeerImp
 JSS(Invalid);              //
 JSS(LastLedgerSequence);   // in: TransactionSign; field
@@ -343,6 +345,7 @@ JSS(fee_ref);               // out: NetworkOPs, DEPRECATED
 JSS(fetch_pack);            // out: NetworkOPs
 JSS(FIELDS);                // out: RPC server_definitions
                             // matches definitions.json format
+JSS(firewall);              // in: LedgerEntry
 JSS(first);                 // out: rpc/Version
 JSS(firstSequence);         // out: NodeToShardStatus
 JSS(firstShardIndex);       // out: NodeToShardStatus

@@ -197,6 +197,11 @@ enum LedgerEntryType : std::uint16_t
      */
     ltORACLE = 0x0080,
 
+    /** A ledger object which tracks FIrewall
+        \sa keylet::firewall
+     */
+    ltFIREWALL = 0x0046,
+
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 

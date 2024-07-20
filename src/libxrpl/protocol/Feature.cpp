@@ -500,6 +500,7 @@ REGISTER_FIX    (fixInnerObjTemplate2,          Supported::yes, VoteBehavior::De
 // InvariantsV1_1 will be changes to Supported::yes when all the
 // invariants expected to be included under it are complete.
 REGISTER_FEATURE(InvariantsV1_1,                Supported::no, VoteBehavior::DefaultNo);
+REGISTER_FEATURE(Firewall,                      Supported::yes, VoteBehavior::DefaultNo);
 
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.

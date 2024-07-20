@@ -158,6 +158,11 @@ public:
         uint256 const& ticketIndex,
         beast::Journal j);
 
+    static TER
+    checkFirewall(
+        PreclaimContext const& ctx,
+        beast::Journal j);
+
 protected:
     TER
     apply();

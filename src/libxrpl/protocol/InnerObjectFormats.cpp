@@ -137,6 +137,7 @@ InnerObjectFormats::InnerObjectFormats()
         sfAuthAccount.getCode(),
         {
             {sfAccount, soeREQUIRED},
+            {sfAmount, soeOPTIONAL},
         });
 
     add(sfPriceData.jsonName.c_str(),

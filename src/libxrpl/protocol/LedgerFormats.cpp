@@ -364,6 +364,22 @@ LedgerFormats::LedgerFormats()
             {sfPreviousTxnLgrSeq,   soeREQUIRED}
         },
         commonFields);
+    
+    add(jss::Firewall,
+        ltFIREWALL,
+        {
+            {sfOwner,               soeREQUIRED},
+            {sfPublicKey,           soeREQUIRED},
+            {sfAmount,              soeOPTIONAL},
+            {sfAmount2,             soeOPTIONAL},
+            {sfAuthorize,           soeOPTIONAL},
+            {sfAuthAccounts,        soeOPTIONAL},
+            {sfCloseTime,           soeOPTIONAL},
+            {sfOwnerNode,           soeREQUIRED},
+            {sfPreviousTxnID,       soeREQUIRED},
+            {sfPreviousTxnLgrSeq,   soeREQUIRED}
+        },
+        commonFields);
 
     // clang-format on
 }

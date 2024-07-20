@@ -505,6 +505,18 @@ TxFormats::TxFormats()
             {sfOracleDocumentID, soeREQUIRED},
         },
         commonFields);
+    
+    add(jss::FirewallSet,
+        ttFIREWALL_SET,
+        {
+            {sfAmount, soeOPTIONAL},
+            {sfAmount2, soeOPTIONAL},
+            {sfPublicKey, soeOPTIONAL},
+            {sfAuthorize, soeOPTIONAL},
+            {sfAuthAccounts, soeOPTIONAL},
+            {sfSignature, soeOPTIONAL},
+        },
+        commonFields);
 }
 
 TxFormats const&

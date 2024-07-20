@@ -196,6 +196,9 @@ enum TxType : std::uint16_t
 
     /** This transaction type deletes an Oracle instance */
     ttORACLE_DELETE = 52,
+    
+    /** This transaction type creates an Firewall instance */
+    ttFIREWALL_SET = 53,
 
     /** This system-generated transaction type is used to update the status of the various amendments.
 
