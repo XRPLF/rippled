@@ -1965,7 +1965,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "channel_authorize",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "amount" : {
             "currency" : "USD",
             "issuer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
@@ -2151,7 +2151,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
     "method" : "channel_verify",
     "params" : [
       {
-         "api_version" : %MAX_API_VER%,
+         "api_version" : %API_VER%,
          "amount" : {
             "currency" : "USD",
             "issuer" : "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
