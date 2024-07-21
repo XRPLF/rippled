@@ -613,7 +613,8 @@ transferToEntry(
             {
                 // adjust owner count
                 uint32_t flags = sleLine->getFieldU32(sfFlags);
-                uint32_t fReserve{high ? lsfHighReserve : lsfLowReserve};
+                uint32_t fReserve{static_cast<uint32_t>(
+                    high ? lsfHighReserve : lsfLowReserve)};
                 if (flags & fReserve)
                 {
                     sleLine->setFieldU32(sfFlags, flags & ~fReserve);
