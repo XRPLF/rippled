@@ -521,7 +521,7 @@ TxFormats::TxFormats()
         {
             {sfAuthorize, soeOPTIONAL},
             {sfUnauthorize, soeOPTIONAL},
-            {sfSignature, soeOPTIONAL},
+            {sfSignature, soeREQUIRED},
         },
         commonFields);
 }
