@@ -217,7 +217,7 @@ EscrowCreate::doApply()
     }
 
     auto const account = ctx_.tx[sfAccount];
-    auto const sle = ctx_.view().peek(keylet::account(account));
+    auto sle = ctx_.view().peek(keylet::account(account));
     if (!sle)
         return tefINTERNAL;
 
@@ -273,11 +273,11 @@ EscrowCreate::doApply()
                 return tecNO_LINE;
 
             {
-                TER const result = trustAdjustBalance(
-                    ctx_.view(), sleLine, amount, ctx_.journal, DryRun);
+                TER const result = transferToEntry(
+                    ctx_.view(), sle, sleLine, amount, ctx_.journal, DryRun);
 
                 JLOG(ctx_.journal.trace())
-                    << "EscrowCreate::doApply trustAdjustBalance (dry) "
+                    << "EscrowCreate::doApply transferToEntry (dry) "
                        "result="
                     << result;
 
@@ -360,11 +360,11 @@ EscrowCreate::doApply()
                 return tecNO_LINE;
 
             // do the lock-up for real now
-            TER const result = trustAdjustBalance(
-                ctx_.view(), sleLine, amount, ctx_.journal, WetRun);
+            TER const result = transferToEntry(
+                ctx_.view(), sle, sleLine, amount, ctx_.journal, WetRun);
 
             JLOG(ctx_.journal.trace())
-                << "EscrowCreate::doApply trustAdjustBalance (wet) "
+                << "EscrowCreate::doApply transferToEntry (wet) "
                    "result="
                 << result;
 
@@ -588,7 +588,7 @@ EscrowFinish::doApply()
 
         // perform a dry run of the transfer before we
         // change anything on-ledger
-        TER const result = trustTransferBalance(
+        TER const result = transferFromEntry(
             ctx_.view(),
             account_,  // txn signing account
             sle,       // src account
@@ -600,7 +600,7 @@ EscrowFinish::doApply()
         );
 
         JLOG(j_.trace())
-            << "EscrowFinish::doApply trustTransferBalance (dry) result="
+            << "EscrowFinish::doApply transferFromEntry (dry) result="
             << result;
 
         if (!isTesSuccess(result))
@@ -647,7 +647,7 @@ EscrowFinish::doApply()
         // all the significant complexity of checking the validity of this
         // transfer and ensuring the lines exist etc is hidden away in this
         // function, all we need to do is call it and return if unsuccessful.
-        TER const result = trustTransferBalance(
+        TER const result = transferFromEntry(
             ctx_.view(),
             account_,  // txn signing account
             sle,       // src account
@@ -659,7 +659,7 @@ EscrowFinish::doApply()
         );
 
         JLOG(j_.trace())
-            << "EscrowFinish::doApply trustTransferBalance (wet) result="
+            << "EscrowFinish::doApply transferFromEntry (wet) result="
             << result;
 
         if (!isTesSuccess(result))
@@ -722,7 +722,7 @@ EscrowCancel::doApply()
     }
 
     AccountID const account = (*slep)[sfAccount];
-    auto const sle = ctx_.view().peek(keylet::account(account));
+    auto sle = ctx_.view().peek(keylet::account(account));
     auto const amount = slep->getFieldAmount(sfAmount);
     bool const isIssuer = amount.getIssuer() == account;
 
@@ -740,8 +740,8 @@ EscrowCancel::doApply()
                 account, amount.getIssuer(), amount.getCurrency()));
 
             // dry run before we make any changes to ledger
-            if (TER const result = trustAdjustBalance(
-                    ctx_.view(), sleLine, -amount, ctx_.journal, DryRun);
+            if (TER const result = transferToEntry(
+                    ctx_.view(), sle, sleLine, -amount, ctx_.journal, DryRun);
                 result != tesSUCCESS)
                 return result;
         }
@@ -784,11 +784,11 @@ EscrowCancel::doApply()
         if (!isIssuer)
         {
             // unlock previously locked tokens from source line
-            TER const result = trustAdjustBalance(
-                ctx_.view(), sleLine, -amount, ctx_.journal, WetRun);
+            TER const result = transferToEntry(
+                ctx_.view(), sle, sleLine, -amount, ctx_.journal, WetRun);
 
             JLOG(ctx_.journal.trace())
-                << "EscrowCancel::doApply trustAdjustBalance (wet) "
+                << "EscrowCancel::doApply transferToEntry (wet) "
                    "result="
                 << result;
 

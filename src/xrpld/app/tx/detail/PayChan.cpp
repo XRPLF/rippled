@@ -122,6 +122,11 @@ closeChannel(
     AccountID const src = (*slep)[sfAccount];
     auto const amount = (*slep)[sfAmount] - (*slep)[sfBalance];
 
+    // Transfer amount back to owner, decrement owner count
+    auto sle = view.peek(keylet::account(src));
+    if (!sle)
+        return tefINTERNAL;
+
     std::shared_ptr<SLE> sleLine;
 
     if (!isXRP(amount))
@@ -134,9 +139,9 @@ closeChannel(
 
         // dry run
         TER const result =
-            trustAdjustBalance(view, sleLine, -amount, j, DryRun);
+            transferToEntry(view, sle, sleLine, -amount, j, DryRun);
 
-        JLOG(j.trace()) << "closeChannel: trustAdjustBalance(dry) result="
+        JLOG(j.trace()) << "closeChannel: transferToEntry(dry) result="
                         << result;
 
         if (!isTesSuccess(result))
@@ -167,11 +172,6 @@ closeChannel(
         }
     }
 
-    // Transfer amount back to owner, decrement owner count
-    auto const sle = view.peek(keylet::account(src));
-    if (!sle)
-        return tefINTERNAL;
-
     assert((*slep)[sfAmount] >= (*slep)[sfBalance]);
 
     if (isXRP(amount))
@@ -179,9 +179,9 @@ closeChannel(
     else
     {
         TER const result =
-            trustAdjustBalance(view, sleLine, -amount, j, WetRun);
+            transferToEntry(view, sle, sleLine, -amount, j, WetRun);
 
-        JLOG(j.trace()) << "closeChannel: trustAdjustBalance(wet) result="
+        JLOG(j.trace()) << "closeChannel: transferToEntry(wet) result="
                         << result;
 
         if (!isTesSuccess(result))
@@ -243,7 +243,7 @@ TER
 PayChanCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
-    auto const sle = ctx.view.read(keylet::account(account));
+    auto sle = ctx.view.read(keylet::account(account));
     if (!sle)
         return terNO_ACCOUNT;
 
@@ -287,10 +287,10 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         {
             auto sleLine = ctx.view.read(keylet::line(
                 account, amount.getIssuer(), amount.getCurrency()));
-            TER const result = trustAdjustBalance(
-                ctx.view, sleLine, amount, ctx.j, DryRun);
+            TER const result = transferToEntry(
+                ctx.view, sle, sleLine, amount, ctx.j, DryRun);
             JLOG(ctx.j.trace()) << "PayChanCreate::preclaim "
-                                   "trustAdjustBalance(dry) result="
+                                   "transferToEntry(dry) result="
                                 << result;
             if (!isTesSuccess(result))
                 return result;
@@ -330,7 +330,7 @@ TER
 PayChanCreate::doApply()
 {
     auto const account = ctx_.tx[sfAccount];
-    auto const sle = ctx_.view().peek(keylet::account(account));
+    auto sle = ctx_.view().peek(keylet::account(account));
     if (!sle)
         return tefINTERNAL;
 
@@ -404,11 +404,11 @@ PayChanCreate::doApply()
             if (!sleLine)
                 return tecNO_LINE;
 
-            TER const result = trustAdjustBalance(
-                ctx_.view(), sleLine, amount, ctx_.journal, WetRun);
+            TER const result = transferToEntry(
+                ctx_.view(), sle, sleLine, amount, ctx_.journal, WetRun);
 
             JLOG(ctx_.journal.trace())
-                << "PayChanCreate::doApply trustAdjustBalance(wet) "
+                << "PayChanCreate::doApply transferToEntry(wet) "
                    "result="
                 << result;
 
@@ -478,6 +478,10 @@ PayChanFund::doApply()
     auto const expiration = (*slep)[~sfExpiration];
     bool const isIssuer = amount.getIssuer() == txAccount;
 
+    auto sle = ctx_.view().peek(keylet::account(txAccount));
+    if (!sle)
+        return tefINTERNAL;
+
     // if this is a Fund operation on an IOU then perform a dry run here
     if (!isXRP(amount) &&
         ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
@@ -507,11 +511,11 @@ PayChanFund::doApply()
             sleLine = ctx_.view().peek(keylet::line(
                 (*slep)[sfAccount], amount.getIssuer(), amount.getCurrency()));
 
-            TER const result = trustAdjustBalance(
-                ctx_.view(), sleLine, amount, ctx_.journal, DryRun);
+            TER const result = transferToEntry(
+                ctx_.view(), sle, sleLine, amount, ctx_.journal, DryRun);
 
             JLOG(ctx_.journal.trace())
-                << "PayChanFund::doApply trustAdjustBalance(dry) result="
+                << "PayChanFund::doApply transferToEntry(dry) result="
                 << result;
 
             if (!isTesSuccess(result))
@@ -546,10 +550,6 @@ PayChanFund::doApply()
         ctx_.view().update(slep);
     }
 
-    auto const sle = ctx_.view().peek(keylet::account(txAccount));
-    if (!sle)
-        return tefINTERNAL;
-
     // do not allow adding funds if dst does not exist
     if (AccountID const dst = (*slep)[sfDestination];
         !ctx_.view().read(keylet::account(dst)))
@@ -581,11 +581,11 @@ PayChanFund::doApply()
         // issuer does not need to lock anything
         if (!isIssuer)
         {
-            TER const result = trustAdjustBalance(
-                ctx_.view(), sleLine, amount, ctx_.journal, WetRun);
+            TER const result = transferToEntry(
+                ctx_.view(), sle, sleLine, amount, ctx_.journal, WetRun);
 
             JLOG(ctx_.journal.trace())
-                << "PayChanFund::doApply trustAdjustBalance(wet) result="
+                << "PayChanFund::doApply transferToEntry(wet) result="
                 << result;
 
             if (!isTesSuccess(result))
@@ -784,7 +784,7 @@ PayChanClaim::doApply()
             }
 
             auto sleSrcAcc = ctx_.view().peek(keylet::account(src));
-            TER const result = trustTransferBalance(
+            TER const result = transferFromEntry(
                 ctx_.view(),
                 txAccount,
                 sleSrcAcc,
@@ -795,7 +795,7 @@ PayChanClaim::doApply()
                 WetRun);
 
             JLOG(ctx_.journal.trace())
-                << "PayChanClaim::doApply trustTransferBalance(wet) "
+                << "PayChanClaim::doApply transferFromEntry(wet) "
                    "result="
                 << result;
 

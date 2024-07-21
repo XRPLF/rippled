@@ -509,8 +509,9 @@ isTrustDefault(
 */
 template <class V, class S, class R>
 [[nodiscard]] TER
-trustAdjustBalance(
+transferToEntry(
     V& view,
+    S& sleSrcAcc,
     S& sleLine,
     STAmount const& deltaAmt,
     beast::Journal const& j,
@@ -531,9 +532,13 @@ trustAdjustBalance(
 
     if (!sleLine)
         return tecNO_LINE;
+    
+    if (!sleSrcAcc)
+        return tecNO_TARGET;
 
     auto const issuer = deltaAmt.getIssuer();
-    // bool const srcIssuer = issuer == srcAccID;
+    auto const srcAccID = sleSrcAcc->getAccountID(sfAccount);
+    bool const srcIssuer = issuer == srcAccID;
 
     STAmount const lowLimit = sleLine->getFieldAmount(sfLowLimit);
 
@@ -552,7 +557,7 @@ trustAdjustBalance(
             trustTransferAllowed(view, parties, deltaAmt.issue(), j);
 
         JLOG(j.trace())
-            << "trustAdjustBalance: trustTransferAllowed result="
+            << "transferToEntry: trustTransferAllowed result="
             << result;
 
         if (!isTesSuccess(result))
@@ -572,14 +577,14 @@ trustAdjustBalance(
     // can't lock or unlock a zero balance
     if (balance == beast::zero)
     {
-        JLOG(j.error()) << "trustAdjustBalance failed, zero balance";
+        JLOG(j.error()) << "transferToEntry failed, zero balance";
         return tecUNFUNDED_PAYMENT;
     }
 
     STAmount finalBalance = balance - deltaAmt;
     if (deltaAmt > balance)
     {
-        JLOG(j.trace()) << "trustAdjustBalance: "
+        JLOG(j.trace()) << "transferToEntry: "
                         << "balance(" << finalBalance
                         << ") > balance(" << balance << ") = true\n";
         return tecINSUFFICIENT_FUNDS;
@@ -603,28 +608,26 @@ trustAdjustBalance(
         std::is_same<S, std::shared_ptr<SLE>>::value)
     {
         sleLine->setFieldAmount(sfBalance, high ? -finalBalance : finalBalance);
-        view.update(sleLine);
+        // if source account is not issuer
+        if (!srcIssuer)
+        {
+            // check if source line ended up in default state
+            if (isTrustDefault(sleSrcAcc, sleLine))
+            {
+                // adjust owner count
+                uint32_t flags = sleLine->getFieldU32(sfFlags);
+                uint32_t fReserve{high ? lsfHighReserve : lsfLowReserve};
+                if (flags & fReserve)
+                {
+                    sleLine->setFieldU32(sfFlags, flags & ~fReserve);
+                    adjustOwnerCount(view, sleSrcAcc, -1, j);
+                    view.update(sleSrcAcc);
+                }
+            }
+            // update source line
+            view.update(sleLine);
+        }
     }
-
-    // // if source account is not issuer
-    // if (!srcIssuer)
-    // {
-    //     // check if source line ended up in default state
-    //     if (isTrustDefault(sleSrcAcc, sleLine))
-    //     {
-    //         // adjust owner count
-    //         uint32_t flags = sleLine->getFieldU32(sfFlags);
-    //         uint32_t fReserve{srcHigh ? lsfHighReserve : lsfLowReserve};
-    //         if (flags & fReserve)
-    //         {
-    //             sleLine->setFieldU32(sfFlags, flags & ~fReserve);
-    //             adjustOwnerCount(view, sleSrcAcc, -1, j);
-    //             view.update(sleSrcAcc);
-    //         }
-    //     }
-    //     // update source line
-    //     view.update(sleLine);
-    // }
 
     return tesSUCCESS;
 }
@@ -692,7 +695,7 @@ trustTransferAllowed(
             // missing line is a line in default state, this is not
             // a general bar to xfer, however additional conditions
             // do attach to completing an xfer into a default line
-            // but these are checked in trustTransferBalance at
+            // but these are checked in transferFromEntry at
             // the point of transfer.
             continue;
         }
@@ -756,7 +759,7 @@ trustTransferAllowed(
 */
 template <class V, class S, class R>
 [[nodiscard]] TER
-trustTransferBalance(
+transferFromEntry(
     V& view,
     AccountID const& actingAccID,  // the account whose tx is actioning xfer
     S& sleSrcAcc,
@@ -785,13 +788,13 @@ trustTransferBalance(
 
     if (!sleSrcAcc || !sleDstAcc)
     {
-        JLOG(j.error()) << "trustTransferBalance without sleSrc/sleDst";
+        JLOG(j.error()) << "transferFromEntry without sleSrc/sleDst";
         return tecINTERNAL;
     }
 
     if (amount <= beast::zero)
     {
-        JLOG(j.error()) << "trustTransferBalance with non-positive amount";
+        JLOG(j.error()) << "transferFromEntry with non-positive amount";
         return tecINTERNAL;
     }
 
@@ -811,7 +814,7 @@ trustTransferBalance(
             view, {srcAccID, dstAccID}, {currency, issuerAccID}, j);
 
         JLOG(j.trace())
-            << "trustTransferBalance: trustTransferAllowed result="
+            << "transferFromEntry: trustTransferAllowed result="
             << result;
         if (!isTesSuccess(result))
             return result;
@@ -900,7 +903,7 @@ trustTransferBalance(
             // if final is less than prior - fail
             if (finalBalance < priorBalance)
             {
-                JLOG(j.error()) << "trustTransferBalance resulted in a "
+                JLOG(j.warn()) << "transferFromEntry resulted in a "
                                   "lower/equal final balance on dest line";
                 return tecINTERNAL;
             }
@@ -909,14 +912,15 @@ trustTransferBalance(
             // fail
             if (finalBalance > dstLimit && actingAccID != dstAccID)
             {
-                JLOG(j.error())
-                    << "trustTransferBalance would increase dest "
+                JLOG(j.trace())
+                    << "transferFromEntry would increase dest "
                        "line above limit without permission";
                 return tecPATH_DRY;
             }
 
             // if there is significant precision loss - fail
-            if (!isAddable(priorBalance, dstAmt))
+            if (!isAddable(priorBalance, dstAmt) ||
+                !isAddable(finalBalance, priorBalance))
                 return tecPRECISION_LOSS;
 
             // compute final balance to send - reverse sign for high dest
