@@ -85,27 +85,30 @@ struct FirewallSet_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
-        // setup env
         Account const alice = Account("alice");
+        Account const bob = Account("bob");
+        Account const carol = Account("carol");
 
-        for (bool const withFirewall : {false, true})
+        for (bool const withFirewall : {true, false})
         {
             // If the Firewall amendment is not enabled, you should not be able
             // to set or delete firewall.
             auto const amend =
                 withFirewall ? features : features - featureFirewall;
             Env env{*this, amend};
-            env.fund(XRP(1000), alice);
+            env.fund(XRP(1000), alice, bob);
             env.close();
 
             auto const txResult =
                 withFirewall ? ter(tesSUCCESS) : ter(temDISABLED);
-            auto const ownerDir = withFirewall ? 1 : 0;
+            auto const dirCount = withFirewall ? 2 : 0;
 
-            // SET
-            env(firewall::set(alice), txResult);
+            env(firewall::set(alice),
+                firewall::auth(bob),
+                firewall::pk(carol.pk()),
+                txResult);
             env.close();
-            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == ownerDir);
+            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == dirCount);
         }
     }
 
@@ -128,7 +131,7 @@ struct FirewallSet_test : public beast::unit_test::suite
             env(firewall::set(alice),
                 firewall::auth(carol),
                 firewall::amt(XRP(10)),
-                firewall::pk(strHex(carol.pk().slice())),
+                firewall::pk(carol.pk()),
                 ter(tesSUCCESS));
             env.close();
 
@@ -158,7 +161,7 @@ struct FirewallSet_test : public beast::unit_test::suite
             env(firewall::set(alice),
                 firewall::auth(carol),
                 firewall::amt(XRP(10)),
-                firewall::pk(strHex(carol.pk().slice())),
+                firewall::pk(carol.pk()),
                 ter(tesSUCCESS));
             env.close();
 
@@ -171,7 +174,7 @@ struct FirewallSet_test : public beast::unit_test::suite
                 carol.pk(), carol.sk(), alice.id(), XRP(100));
             env(firewall::set(alice),
                 firewall::amt(XRP(100)),
-                firewall::sig(strHex(Slice(sig))),
+                firewall::sig(sig),
                 ter(tesSUCCESS));
             env.close();
 
@@ -202,7 +205,7 @@ struct FirewallSet_test : public beast::unit_test::suite
             env(firewall::set(alice),
                 firewall::auth(carol),
                 firewall::amt(XRP(10)),
-                firewall::pk(strHex(carol.pk().slice())),
+                firewall::pk(carol.pk()),
                 ter(tesSUCCESS));
             env.close();
 
@@ -214,40 +217,22 @@ struct FirewallSet_test : public beast::unit_test::suite
             auto const sig1 = sigFirewallAuthPK(
                 carol.pk(), carol.sk(), alice.id(), dave.pk());
             env(firewall::set(alice),
-                firewall::pk(strHex(dave.pk().slice())),
-                firewall::sig(strHex(Slice(sig1))),
+                firewall::pk(dave.pk()),
+                firewall::sig(sig1),
                 ter(tesSUCCESS));
             env.close();
 
             verifyFirewall(*env.current(), alice, XRP(10), dave.pk());
 
-            {
-                Json::Value params;
-                params[jss::transaction] =
-                    env.tx()->getJson(JsonOptions::none)[jss::hash];
-                auto jrr =
-                    env.rpc("json", "tx", to_string(params))[jss::result];
-                std::cout << "RESULT: " << jrr << "\n";
-            }
-
             auto const sig2 = sigFirewallAuthAmount(
                 dave.pk(), dave.sk(), alice.id(), XRP(100));
             env(firewall::set(alice),
                 firewall::amt(XRP(100)),
-                firewall::sig(strHex(Slice(sig2))),
+                firewall::sig(sig2),
                 ter(tesSUCCESS));
             env.close();
 
             verifyFirewall(*env.current(), alice, XRP(100), dave.pk());
-
-            {
-                Json::Value params;
-                params[jss::transaction] =
-                    env.tx()->getJson(JsonOptions::none)[jss::hash];
-                auto jrr =
-                    env.rpc("json", "tx", to_string(params))[jss::result];
-                std::cout << "RESULT: " << jrr << "\n";
-            }
 
             env(pay(alice, bob, XRP(100)), ter(tesSUCCESS));
             env.close();
@@ -274,7 +259,7 @@ struct FirewallSet_test : public beast::unit_test::suite
             env(firewall::set(alice),
                 firewall::auth(carol),
                 firewall::amt(XRP(10)),
-                firewall::pk(strHex(carol.pk().slice())),
+                firewall::pk(carol.pk()),
                 ter(tesSUCCESS));
             env.close();
 

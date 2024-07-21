@@ -68,10 +68,10 @@ public:
 class pk
 {
 private:
-    std::string pk_;
+    PublicKey pk_;
 
 public:
-    explicit pk(std::string const& pk) : pk_(pk)
+    explicit pk(PublicKey const& pk) : pk_(pk)
     {
     }
 
@@ -83,10 +83,10 @@ public:
 class sig
 {
 private:
-    std::string sig_;
+    Buffer sig_;
 
 public:
-    explicit sig(std::string const& sig) : sig_(sig)
+    explicit sig(Buffer const& sig) : sig_(sig)
     {
     }
 

@@ -49,13 +49,13 @@ auth::operator()(Env& env, JTx& jt) const
 void
 pk::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfPublicKey.jsonName] = pk_;
+    jt.jv[sfPublicKey.jsonName] = strHex(pk_.slice());
 }
 
 void
 sig::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfSignature.jsonName] = sig_;
+    jt.jv[sfSignature.jsonName] = strHex(Slice(sig_));
 }
 
 }  // namespace firewall

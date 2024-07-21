@@ -83,37 +83,87 @@ TER
 FirewallSet::preclaim(PreclaimContext const& ctx)
 {
     AccountID const accountID = ctx.tx[sfAccount];
-    auto const amount = ctx.tx[~sfAmount];
-
     ripple::Keylet const firewallKeylet = keylet::firewall(accountID);
     auto const sleFirewall = ctx.view.read(firewallKeylet);
 
-    if (!sleFirewall && ctx.tx.isFieldPresent(sfSignature))
+    if (!sleFirewall)
     {
-        JLOG(ctx.j.debug()) << "Firewall: Set must not contain a sfSignature";
-        return temMALFORMED;
+        if (ctx.tx.isFieldPresent(sfSignature))
+        {
+            JLOG(ctx.j.debug())
+                << "Firewall: Set must not contain a sfSignature";
+            return temMALFORMED;
+        }
+        if (!ctx.tx.isFieldPresent(sfAuthorize))
+        {
+            JLOG(ctx.j.debug()) << "Firewall: Set must contain a sfAuthorize";
+            return temMALFORMED;
+        }
+        if (!ctx.tx.isFieldPresent(sfPublicKey))
+        {
+            JLOG(ctx.j.debug()) << "Firewall: Set must contain a sfPublicKey";
+            return temMALFORMED;
+        }
+    }
+    else
+    {
+        if (!ctx.tx.isFieldPresent(sfSignature))
+        {
+            JLOG(ctx.j.debug())
+                << "Firewall: Update must contain a sfSignature";
+            return temMALFORMED;
+        }
+
+        if (ctx.tx.isFieldPresent(sfAuthorize))
+        {
+            JLOG(ctx.j.debug())
+                << "Firewall: Update cannot contain a sfAuthorize";
+            return temMALFORMED;
+        }
+
+        if (ctx.tx.isFieldPresent(sfPublicKey) &&
+            ctx.tx.isFieldPresent(sfAmount))
+        {
+            JLOG(ctx.j.debug()) << "Firewall: Update cannot contain both "
+                                   "sfPublicKey & sfAmount";
+            return temMALFORMED;
+        }
+
+        if (ctx.tx.isFieldPresent(sfSignature) &&
+            ctx.tx.isFieldPresent(sfPublicKey))
+        {
+            PublicKey const txPK(makeSlice(ctx.tx.getFieldVL(sfPublicKey)));
+            auto const sig = ctx.tx.getFieldVL(sfSignature);
+            PublicKey const fPK(
+                makeSlice(sleFirewall->getFieldVL(sfPublicKey)));
+            Serializer msg;
+            serializeFirewallAuthorization(msg, accountID, txPK);
+            if (!verify(fPK, msg.slice(), makeSlice(sig), /*canonical*/ true))
+            {
+                JLOG(ctx.j.debug())
+                    << "Firewall: Bad Signature for update sfPublicKey";
+                return temBAD_SIGNATURE;
+            }
+        }
+
+        if (ctx.tx.isFieldPresent(sfSignature) &&
+            ctx.tx.isFieldPresent(sfAmount))
+        {
+            auto const amount = ctx.tx.getFieldAmount(sfAmount);
+            auto const sig = ctx.tx.getFieldVL(sfSignature);
+            PublicKey const pk(makeSlice(sleFirewall->getFieldVL(sfPublicKey)));
+            Serializer msg;
+            serializeFirewallAuthorization(msg, accountID, amount);
+            if (!verify(pk, msg.slice(), makeSlice(sig), /*canonical*/ true))
+            {
+                JLOG(ctx.j.debug())
+                    << "Firewall: Bad Signature for update sfAmount";
+                return temBAD_SIGNATURE;
+            }
+        }
     }
 
-    if (sleFirewall && !ctx.tx.isFieldPresent(sfSignature))
-    {
-        JLOG(ctx.j.debug()) << "Firewall: Update must contain a sfSignature";
-        return temMALFORMED;
-    }
-
-    if (sleFirewall && ctx.tx.isFieldPresent(sfAuthorize))
-    {
-        JLOG(ctx.j.debug()) << "Firewall: Update cannot contain a sfAuthorize";
-        return temMALFORMED;
-    }
-
-    if (sleFirewall && ctx.tx.isFieldPresent(sfPublicKey) &&
-        ctx.tx.isFieldPresent(sfAmount))
-    {
-        JLOG(ctx.j.debug())
-            << "Firewall: Update cannot contain both sfPublicKey & sfAmount";
-        return temMALFORMED;
-    }
-
+    // auto const amount = ctx.tx[~sfAmount];
     // if (auto const ter = requireAuth(ctx.view, amount.issue(), accountID);
     //     ter != tesSUCCESS)
     // {
@@ -147,37 +197,6 @@ FirewallSet::preclaim(PreclaimContext const& ctx)
     //     return terNO_RIPPLE;
     // }
 
-    if (ctx.tx.isFieldPresent(sfSignature) &&
-        ctx.tx.isFieldPresent(sfPublicKey))
-    {
-        PublicKey const txPK(makeSlice(ctx.tx.getFieldVL(sfPublicKey)));
-        auto const sig = ctx.tx.getFieldVL(sfSignature);
-        PublicKey const fPK(makeSlice(sleFirewall->getFieldVL(sfPublicKey)));
-        Serializer msg;
-        serializeFirewallAuthorization(msg, accountID, txPK);
-        if (!verify(fPK, msg.slice(), makeSlice(sig), /*canonical*/ true))
-        {
-            JLOG(ctx.j.debug())
-                << "Firewall: Bad Signature for update sfPublicKey";
-            return temBAD_SIGNATURE;
-        }
-    }
-
-    if (ctx.tx.isFieldPresent(sfSignature) && ctx.tx.isFieldPresent(sfAmount))
-    {
-        auto const amount = ctx.tx.getFieldAmount(sfAmount);
-        auto const sig = ctx.tx.getFieldVL(sfSignature);
-        PublicKey const pk(makeSlice(sleFirewall->getFieldVL(sfPublicKey)));
-        Serializer msg;
-        serializeFirewallAuthorization(msg, accountID, amount);
-        if (!verify(pk, msg.slice(), makeSlice(sig), /*canonical*/ true))
-        {
-            JLOG(ctx.j.debug())
-                << "Firewall: Bad Signature for update sfAmount";
-            return temBAD_SIGNATURE;
-        }
-    }
-
     return tesSUCCESS;
 }
 
@@ -194,13 +213,13 @@ FirewallSet::doApply()
     auto sleFirewall = sb.peek(firewallKeylet);
     if (!sleFirewall)
     {
-        // Set Firewall
         auto const sleFirewall = std::make_shared<SLE>(firewallKeylet);
         (*sleFirewall)[sfOwner] = account_;
-        (*sleFirewall)[~sfPublicKey] = ctx_.tx[~sfPublicKey];
-        (*sleFirewall)[~sfAmount] = ctx_.tx[~sfAmount];
+        sleFirewall->setFieldVL(sfPublicKey, ctx_.tx.getFieldVL(sfPublicKey));
+        if (ctx_.tx.isFieldPresent(sfAmount))
+            sleFirewall->setFieldAmount(
+                sfAmount, ctx_.tx.getFieldAmount(sfAmount));
 
-        // Add owner directory to link the account and Firewall object.
         if (auto const page = sb.dirInsert(
                 keylet::ownerDir(account_),
                 sleFirewall->key(),
@@ -216,10 +235,6 @@ FirewallSet::doApply()
         sb.insert(sleFirewall);
         adjustOwnerCount(sb, sleOwner, 1, j_);
 
-        // Add Preauth
-        // A preauth counts against the reserve of the issuing account, but we
-        // check the starting balance because we want to allow dipping into the
-        // reserve to pay fees.
         {
             STAmount const reserve{view().fees().accountReserve(
                 sleOwner->getFieldU32(sfOwnerCount) + 1)};
@@ -228,8 +243,6 @@ FirewallSet::doApply()
                 return tecINSUFFICIENT_RESERVE;
         }
 
-        // Preclaim already verified that the Preauth entry does not yet exist.
-        // Create and populate the Preauth entry.
         AccountID const auth{ctx_.tx[sfAuthorize]};
         Keylet const preauthKeylet = keylet::firewallPreauth(account_, auth);
         auto slePreauth = std::make_shared<SLE>(preauthKeylet);
@@ -237,7 +250,6 @@ FirewallSet::doApply()
         slePreauth->setAccountID(sfAccount, account_);
         slePreauth->setAccountID(sfAuthorize, auth);
 
-        // Add owner directory to link the account and Firewall object.
         if (auto const page = sb.dirInsert(
                 keylet::ownerDir(account_),
                 slePreauth->key(),
@@ -255,7 +267,6 @@ FirewallSet::doApply()
     }
     else
     {
-        // Update Firewall
         if (ctx_.tx.isFieldPresent(sfPublicKey))
             sleFirewall->setFieldVL(
                 sfPublicKey, ctx_.tx.getFieldVL(sfPublicKey));
