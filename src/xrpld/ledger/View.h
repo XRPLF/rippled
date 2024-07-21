@@ -801,7 +801,6 @@ transferFromEntry(
     auto const srcAccID = sleSrcAcc->getAccountID(sfAccount);
     auto const dstAccID = sleDstAcc->getAccountID(sfAccount);
 
-    bool const srcHigh = srcAccID > issuerAccID;
     bool const dstHigh = dstAccID > issuerAccID;
     bool const srcIssuer = issuerAccID == srcAccID;
     bool const dstIssuer = issuerAccID == dstAccID;
@@ -931,27 +930,6 @@ transferFromEntry(
     if constexpr (!dryRun)
     {
         static_assert(std::is_same<V, ApplyView>::value);
-
-        // if source account is not issuer
-        if (!srcIssuer)
-        {
-            // check if source line ended up in default state
-            if (isTrustDefault(sleSrcAcc, sleSrcLine))
-            {
-                // adjust owner count
-                uint32_t flags = sleSrcLine->getFieldU32(sfFlags);
-                uint32_t fReserve{srcHigh ? lsfHighReserve : lsfLowReserve};
-                if (flags & fReserve)
-                {
-                    sleSrcLine->setFieldU32(sfFlags, flags & ~fReserve);
-                    adjustOwnerCount(view, sleSrcAcc, -1, j);
-                    view.update(sleSrcAcc);
-                }
-            }
-            // update source line
-            view.update(sleSrcLine);
-        }
-
         // if dest line exists
         if (sleDstLine)
             // update dest line
