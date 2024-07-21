@@ -2223,12 +2223,13 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
             BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
             BEAST_EXPECT(env.balance(bob, USD.issue()) == preBob + delta);
-            
+
             chanBal = reqBal;
 
             // claim again
             preBob = env.balance(bob, USD.issue());
-            env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()), ter(tecUNFUNDED_PAYMENT));
+            env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()),
+                ter(tecUNFUNDED_PAYMENT));
             BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
             BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
             BEAST_EXPECT(env.balance(bob, USD.issue()) == preBob.value());
@@ -2292,13 +2293,12 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(!channelExists(*env.current(), chan));
             auto const delta = chanAmt - chanBal;
             assert(delta > beast::zero);
-            BEAST_EXPECT(env.balance(alice, USD.issue()) == (preAlice.value()) + delta);
+            BEAST_EXPECT(
+                env.balance(alice, USD.issue()) == (preAlice.value()) + delta);
             BEAST_EXPECT(env.balance(bob) == preBobXrp - feeDrops);
             BEAST_EXPECT(env.balance(bob, USD.issue()) == preBob.value());
         }
     }
-
-
 
     void
     testIOUCancelAfter(FeatureBitset features)
@@ -2339,7 +2339,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto chanAmt = channelAmount(*env.current(), chan);
             BEAST_EXPECT(chanBal == USD(0));
             BEAST_EXPECT(chanAmt == USD(1000));
-            BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - channelFunds);
+            BEAST_EXPECT(
+                env.balance(alice, USD.issue()) == preAlice - channelFunds);
 
             env.close(cancelAfter);
             {
@@ -2357,7 +2358,8 @@ struct PayChan_test : public beast::unit_test::suite
                 env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
                 BEAST_EXPECT(!channelExists(*env.current(), chan));
                 BEAST_EXPECT(env.balance(bob) == preBobXrp - feeDrops);
-                // BEAST_EXPECT(env.balance(bob, USD.issue()) == preBob + delta);
+                // BEAST_EXPECT(env.balance(bob, USD.issue()) == preBob +
+                // delta);
             }
         }
         {
@@ -2371,7 +2373,7 @@ struct PayChan_test : public beast::unit_test::suite
             env(pay(gw, bob, USD(10000)));
             env(pay(gw, carol, USD(10000)));
             env.close();
-            
+
             auto preAlice = env.balance(alice, USD.issue());
             auto preBob = env.balance(bob, USD.issue());
             auto const pk = alice.pk();
@@ -2382,7 +2384,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const chan = channel(alice, bob, env.seq(alice));
             env(create(alice, bob, channelFunds, settleDelay, pk, cancelAfter));
             BEAST_EXPECT(channelExists(*env.current(), chan));
-            BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - channelFunds);
+            BEAST_EXPECT(
+                env.balance(alice, USD.issue()) == preAlice - channelFunds);
 
             // third party close before cancelAfter
             env(claim(carol, chan), txflags(tfClose), ter(tecNO_PERMISSION));
@@ -2423,7 +2426,8 @@ struct PayChan_test : public beast::unit_test::suite
         auto const channelFunds = USD(1000);
         auto const chan = channel(alice, bob, env.seq(alice));
         env(create(alice, bob, channelFunds, settleDelay, pk));
-        BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - channelFunds);
+        BEAST_EXPECT(
+            env.balance(alice, USD.issue()) == preAlice - channelFunds);
         BEAST_EXPECT(channelExists(*env.current(), chan));
         // Owner closes, will close after settleDelay
         env(claim(alice, chan), txflags(tfClose));
@@ -2447,9 +2451,7 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
             auto const feeDrops = env.current()->fees().base;
             BEAST_EXPECT(env.balance(bob) == preBobXrp - feeDrops);
-            BEAST_EXPECT(
-                env.balance(bob, USD.issue()) ==
-                preBob + delta);
+            BEAST_EXPECT(env.balance(bob, USD.issue()) == preBob + delta);
         }
         env.close(settleTimepoint);
         {
@@ -2573,7 +2575,8 @@ struct PayChan_test : public beast::unit_test::suite
         auto const channelFunds = USD(1000);
         auto const chan = channel(alice, bob, env.seq(alice));
         env(create(alice, bob, channelFunds, settleDelay, pk));
-        BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - channelFunds);
+        BEAST_EXPECT(
+            env.balance(alice, USD.issue()) == preAlice - channelFunds);
         BEAST_EXPECT(channelExists(*env.current(), chan));
         // Owner tries to close channel, but it will remain open (settle delay)
         env(claim(alice, chan), txflags(tfClose));
@@ -2584,15 +2587,15 @@ struct PayChan_test : public beast::unit_test::suite
             env(claim(alice, chan, channelFunds.value(), channelFunds.value()));
             BEAST_EXPECT(channelBalance(*env.current(), chan) == channelFunds);
             BEAST_EXPECT(
-                env.balance(bob, USD.issue()) ==
-                preBob + channelFunds);
+                env.balance(bob, USD.issue()) == preBob + channelFunds);
         }
         // Channel is now dry, can close before expiration date
         env(claim(alice, chan), txflags(tfClose));
         BEAST_EXPECT(!channelExists(*env.current(), chan));
         auto const feeDrops = env.current()->fees().base;
         BEAST_EXPECT(env.balance(alice) == preAliceXrp - (feeDrops * 4));
-        BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - channelFunds);
+        BEAST_EXPECT(
+            env.balance(alice, USD.issue()) == preAlice - channelFunds);
     }
 
     void
@@ -2620,7 +2623,8 @@ struct PayChan_test : public beast::unit_test::suite
         auto const channelFunds = USD(1000);
         auto const chan = channel(alice, bob, env.seq(alice));
         env(create(alice, bob, channelFunds, settleDelay, pk));
-        BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - channelFunds);
+        BEAST_EXPECT(
+            env.balance(alice, USD.issue()) == preAlice - channelFunds);
         BEAST_EXPECT(channelExists(*env.current(), chan));
         // Owner tries to close channel, but it will remain open (settle delay)
         env(claim(alice, chan), txflags(tfClose));
@@ -2949,7 +2953,8 @@ struct PayChan_test : public beast::unit_test::suite
         auto const channelFunds = USD(1000);
         auto const chan1 = channel(alice, bob, env.seq(alice));
         env(create(alice, bob, channelFunds, settleDelay, pk));
-        BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - channelFunds);
+        BEAST_EXPECT(
+            env.balance(alice, USD.issue()) == preAlice - channelFunds);
         BEAST_EXPECT(channelExists(*env.current(), chan1));
         auto const chan2 = channel(alice, bob, env.seq(alice));
         env(create(alice, bob, channelFunds, settleDelay, pk));
@@ -4039,7 +4044,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const chan = channel(alice, bob, env.seq(alice));
             env(create(alice, bob, USD(1000), settleDelay, pk));
             env.close();
-            BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - USD(1000));
+            BEAST_EXPECT(
+                env.balance(alice, USD.issue()) == preAlice - USD(1000));
             BEAST_EXPECT(channelBalance(*env.current(), chan) == USD(0));
             BEAST_EXPECT(channelAmount(*env.current(), chan) == USD(1000));
 
@@ -4077,8 +4083,7 @@ struct PayChan_test : public beast::unit_test::suite
                 env.close();
                 BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
                 BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
-                BEAST_EXPECT(
-                    env.balance(bob, USD.issue()) == preBob + delta);
+                BEAST_EXPECT(env.balance(bob, USD.issue()) == preBob + delta);
                 chanBal = reqBal;
             }
             else
@@ -4091,8 +4096,7 @@ struct PayChan_test : public beast::unit_test::suite
                 BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
                 BEAST_EXPECT(env.balance(bob, USD.issue()) == preBob.value());
                 BEAST_EXPECT(env.balance(alice) == preAliceXrp - feeDrops);
-                BEAST_EXPECT(
-                    env.balance(alice, USD.issue()) == preAlice);
+                BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice);
             }
 
             // fund should fail if the dst was removed
@@ -4221,8 +4225,7 @@ struct PayChan_test : public beast::unit_test::suite
                 env(claim(alice, chan, reqBal, authAmt));
                 BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
                 BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
-                BEAST_EXPECT(
-                    env.balance(bob, USD.issue()) == preBob + delta);
+                BEAST_EXPECT(env.balance(bob, USD.issue()) == preBob + delta);
                 chanBal = reqBal;
             }
 
@@ -4238,8 +4241,7 @@ struct PayChan_test : public beast::unit_test::suite
                 BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
                 BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
                 BEAST_EXPECT(env.balance(bob) == preBobXrp - feeDrops);
-                BEAST_EXPECT(
-                    env.balance(bob, USD.issue()) == preBob + delta);
+                BEAST_EXPECT(env.balance(bob, USD.issue()) == preBob + delta);
                 chanBal = reqBal;
             }
 
@@ -4323,7 +4325,8 @@ struct PayChan_test : public beast::unit_test::suite
 
             auto const feeDrops = env.current()->fees().base;
             BEAST_EXPECT(env.balance(alice) == preAliceXrp - feeDrops);
-            BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - USD(1000));
+            BEAST_EXPECT(
+                env.balance(alice, USD.issue()) == preAlice - USD(1000));
         }
 
         auto chanBal = channelBalance(*env.current(), chan);
@@ -4346,8 +4349,7 @@ struct PayChan_test : public beast::unit_test::suite
 
             BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
             BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
-            BEAST_EXPECT(
-                env.balance(bob, USD.issue()) == preBob + delta);
+            BEAST_EXPECT(env.balance(bob, USD.issue()) == preBob + delta);
             chanBal = reqBal;
         }
         {
@@ -4370,8 +4372,7 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
             auto const feeDrops = env.current()->fees().base;
             BEAST_EXPECT(env.balance(bob) == preBobXrp - feeDrops);
-            BEAST_EXPECT(
-                env.balance(bob, USD.issue()) == preBob + delta);
+            BEAST_EXPECT(env.balance(bob, USD.issue()) == preBob + delta);
             chanBal = reqBal;
 
             // claim again
@@ -4476,7 +4477,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const chan = channel(alice, bob, env.seq(alice));
             env(create(alice, bob, USD(1000), settleDelay, pk));
             env.close();
-            BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - USD(1000));
+            BEAST_EXPECT(
+                env.balance(alice, USD.issue()) == preAlice - USD(1000));
             BEAST_EXPECT(channelBalance(*env.current(), chan) == USD(0));
             BEAST_EXPECT(channelAmount(*env.current(), chan) == USD(1000));
 
@@ -4512,8 +4514,7 @@ struct PayChan_test : public beast::unit_test::suite
                 env.close();
                 BEAST_EXPECT(preBob == USD(0));
                 BEAST_EXPECT(env.balance(bob) == preBobXrp - feeDrops);
-                BEAST_EXPECT(
-                    env.balance(bob, USD.issue()) == preBob + delta);
+                BEAST_EXPECT(env.balance(bob, USD.issue()) == preBob + delta);
             }
         }
     }
@@ -4719,7 +4720,9 @@ struct PayChan_test : public beast::unit_test::suite
             auto const chan = channel(t.src, t.dst, env.seq(t.src));
             env(create(t.src, t.dst, USD(1000), settleDelay, pk));
             env.close();
-            BEAST_EXPECT(lineBalance(env, t.src, t.dst, USD) == preSrc - (t.negative ? -USD(1000) : USD(1000)));
+            BEAST_EXPECT(
+                lineBalance(env, t.src, t.dst, USD) ==
+                preSrc - (t.negative ? -USD(1000) : USD(1000)));
 
             // dst/gw can claim paychan
             auto chanBal = channelBalance(*env.current(), chan);
@@ -4774,7 +4777,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const transferRate = channelRate(*env.current(), chan);
             BEAST_EXPECT(
                 transferRate.value == std::uint32_t(1000000000 * 1.25));
-            BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - USD(1000));
+            BEAST_EXPECT(
+                env.balance(alice, USD.issue()) == preAlice - USD(1000));
 
             // alice can claim paychan
             auto chanBal = channelBalance(*env.current(), chan);
@@ -4809,7 +4813,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto transferRate = channelRate(*env.current(), chan);
             BEAST_EXPECT(
                 transferRate.value == std::uint32_t(1000000000 * 1.25));
-            BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - USD(1000));
+            BEAST_EXPECT(
+                env.balance(alice, USD.issue()) == preAlice - USD(1000));
 
             auto chanBal = channelBalance(*env.current(), chan);
             auto chanAmt = channelAmount(*env.current(), chan);
@@ -4824,7 +4829,8 @@ struct PayChan_test : public beast::unit_test::suite
             // no change in rate
             BEAST_EXPECT(
                 transferRate.value == std::uint32_t(1000000000 * 1.25));
-            BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - USD(2000));
+            BEAST_EXPECT(
+                env.balance(alice, USD.issue()) == preAlice - USD(2000));
 
             // issuer changes rate lower
             env(rate(gw, 1.00));
@@ -4837,7 +4843,8 @@ struct PayChan_test : public beast::unit_test::suite
             // rate changed to new lower rate
             BEAST_EXPECT(
                 transferRate.value == std::uint32_t(1000000000 * 1.00));
-            BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - USD(3000));
+            BEAST_EXPECT(
+                env.balance(alice, USD.issue()) == preAlice - USD(3000));
 
             // issuer changes rate higher
             env(rate(gw, 1.01));
@@ -5180,7 +5187,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const chan = channel(alice, bob, env.seq(alice));
             env(create(alice, bob, USD(1000), settleDelay, pk));
             env.close();
-            BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - USD(1000));
+            BEAST_EXPECT(
+                env.balance(alice, USD.issue()) == preAlice - USD(1000));
             auto chanBal = channelBalance(*env.current(), chan);
             auto chanAmt = channelAmount(*env.current(), chan);
             BEAST_EXPECT(chanBal == USD(0));
@@ -5210,7 +5218,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const settleDelay = 100s;
             auto const chan = channel(alice, bob, env.seq(alice));
             env(create(alice, bob, USD(1000), settleDelay, pk));
-            BEAST_EXPECT(env.balance(alice, USD.issue()) == preAlice - USD(1000));
+            BEAST_EXPECT(
+                env.balance(alice, USD.issue()) == preAlice - USD(1000));
             env.close();
             auto chanBal = channelBalance(*env.current(), chan);
             auto chanAmt = channelAmount(*env.current(), chan);
@@ -5300,7 +5309,8 @@ struct PayChan_test : public beast::unit_test::suite
             auto const chanAmt = channelAmount(*env.current(), chan);
 
             auto const reqBal = USD(100);
-            auto const sig = signClaimIOUAuth(alice.pk(), alice.sk(), chan, reqBal);
+            auto const sig =
+                signClaimIOUAuth(alice.pk(), alice.sk(), chan, reqBal);
             env(claim(bob, chan, reqBal, reqBal, Slice(sig), alice.pk()));
         }
     }

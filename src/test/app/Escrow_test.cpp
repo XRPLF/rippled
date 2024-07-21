@@ -2578,7 +2578,7 @@ struct Escrow_test : public beast::unit_test::suite
                 fulfillment(fb3),
                 fee(1500));
             env.close();
-            
+
             env.require(balance(alice, USD(5000)));
         }
     }
@@ -3558,7 +3558,6 @@ struct Escrow_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 lineBalance(env, t.dst, t.gw, USD) ==
                 (t.negative ? (preDst - delta) : (preDst + delta)));
-
         }
     }
 

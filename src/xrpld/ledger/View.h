@@ -532,7 +532,7 @@ transferToEntry(
 
     if (!sleLine)
         return tecNO_LINE;
-    
+
     if (!sleSrcAcc)
         return tecNO_TARGET;
 
@@ -556,9 +556,8 @@ transferToEntry(
         TER const result =
             trustTransferAllowed(view, parties, deltaAmt.issue(), j);
 
-        JLOG(j.trace())
-            << "transferToEntry: trustTransferAllowed result="
-            << result;
+        JLOG(j.trace()) << "transferToEntry: trustTransferAllowed result="
+                        << result;
 
         if (!isTesSuccess(result))
             return result;
@@ -585,8 +584,8 @@ transferToEntry(
     if (deltaAmt > balance)
     {
         JLOG(j.trace()) << "transferToEntry: "
-                        << "balance(" << finalBalance
-                        << ") > balance(" << balance << ") = true\n";
+                        << "balance(" << finalBalance << ") > balance("
+                        << balance << ") = true\n";
         return tecINSUFFICIENT_FUNDS;
     }
 
@@ -594,10 +593,8 @@ transferToEntry(
         return tecINTERNAL;
 
     // check if there is significant precision loss
-    if (!isAddable(balance, deltaAmt) ||
-        !isAddable(finalBalance, balance))
+    if (!isAddable(balance, deltaAmt) || !isAddable(finalBalance, balance))
         return tecPRECISION_LOSS;
-
 
     // we won't update any SLEs if it is a dry run
     if (dryRun)
@@ -813,9 +810,8 @@ transferFromEntry(
         TER const result = trustTransferAllowed(
             view, {srcAccID, dstAccID}, {currency, issuerAccID}, j);
 
-        JLOG(j.trace())
-            << "transferFromEntry: trustTransferAllowed result="
-            << result;
+        JLOG(j.trace()) << "transferFromEntry: trustTransferAllowed result="
+                        << result;
         if (!isTesSuccess(result))
             return result;
     }
@@ -912,9 +908,8 @@ transferFromEntry(
             // fail
             if (finalBalance > dstLimit && actingAccID != dstAccID)
             {
-                JLOG(j.trace())
-                    << "transferFromEntry would increase dest "
-                       "line above limit without permission";
+                JLOG(j.trace()) << "transferFromEntry would increase dest "
+                                   "line above limit without permission";
                 return tecPATH_DRY;
             }
 

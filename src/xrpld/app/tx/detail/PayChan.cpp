@@ -287,8 +287,8 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         {
             auto sleLine = ctx.view.read(keylet::line(
                 account, amount.getIssuer(), amount.getCurrency()));
-            TER const result = transferToEntry(
-                ctx.view, sle, sleLine, amount, ctx.j, DryRun);
+            TER const result =
+                transferToEntry(ctx.view, sle, sleLine, amount, ctx.j, DryRun);
             JLOG(ctx.j.trace()) << "PayChanCreate::preclaim "
                                    "transferToEntry(dry) result="
                                 << result;
