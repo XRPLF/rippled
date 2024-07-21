@@ -1513,7 +1513,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     std::string reason;
                     auto const trans = sterilize(*txNext);
                     auto t = std::make_shared<Transaction>(trans, reason, app_);
-                    if (!t->getApplying())
+                    if (t->getApplying())
                         break;
                     submit_held.emplace_back(t, false, false, FailHard::no);
                     t->setApplying();
