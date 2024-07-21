@@ -21,6 +21,7 @@
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Firewall.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/st.h>
@@ -80,6 +81,9 @@ FirewallPreauth::preflight(PreflightContext const& ctx)
 TER
 FirewallPreauth::preclaim(PreclaimContext const& ctx)
 {
+    Serializer msg;
+    AccountID const accountID = ctx.tx[sfAccount];
+
     // Determine which operation we're performing: authorizing or unauthorizing.
     if (ctx.tx.isFieldPresent(sfAuthorize))
     {
@@ -92,6 +96,8 @@ FirewallPreauth::preclaim(PreclaimContext const& ctx)
         // in the ledger.
         if (ctx.view.exists(keylet::firewallPreauth(ctx.tx[sfAccount], auth)))
             return tecDUPLICATE;
+        
+        serializeFirewallAuthorization(msg, accountID, auth);
     }
     else
     {
@@ -100,6 +106,30 @@ FirewallPreauth::preclaim(PreclaimContext const& ctx)
         if (!ctx.view.exists(
                 keylet::firewallPreauth(ctx.tx[sfAccount], unauth)))
             return tecNO_ENTRY;
+        
+        serializeFirewallAuthorization(msg, accountID, unauth);
+    }
+    
+    // Validate Signature
+    ripple::Keylet const firewallKeylet = keylet::firewall(accountID);
+    auto const sleFirewall = ctx.view.read(firewallKeylet);
+    if (!sleFirewall)
+    {
+        JLOG(ctx.j.debug()) << "FirewallPreauth: Firewall does not exist.";
+        return tecNO_TARGET;
+    }
+    if (!sleFirewall->isFieldPresent(sfPublicKey))
+    {
+        JLOG(ctx.j.debug()) << "FirewallPreauth: Missing Firewall Public Key.";
+        return tecINTERNAL;
+    }
+    auto const sig = ctx.tx.getFieldVL(sfSignature);
+    PublicKey const pk(makeSlice(sleFirewall->getFieldVL(sfPublicKey)));
+    if (!verify(pk, msg.slice(), makeSlice(sig), /*canonical*/ true))
+    {
+        JLOG(ctx.j.debug())
+            << "FirewallPreauth: Bad Signature for update.";
+        return temBAD_SIGNATURE;
     }
     return tesSUCCESS;
 }
