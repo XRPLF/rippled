@@ -8,7 +8,7 @@
     copyright notice and this permission notice appear in all copies.
 
     THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+    WITH  REGARD  TO THIS  SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
     MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
     ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
     WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
@@ -27,93 +27,61 @@
 
 namespace ripple {
 
+/**
+ * @brief Serializes firewall authorization data into a message.
+ *
+ * This function serializes the given account and preauthorize account IDs
+ * into the provided Serializer object. It adds a shardInfo hash prefix,
+ * followed by the account and preauthorize account IDs.
+ *
+ * @param msg The Serializer object to serialize the data into.
+ * @param account The account ID to be serialized.
+ * @param preauthorize The preauthorize account ID to be serialized.
+ */
 inline void
-serializeFirewallAuthorization(Serializer& msg, Json::Value const& authAccounts)
+serializeFirewallAuthorization(Serializer& msg, AccountID const& account, AccountID const& preauthorize)
 {
     msg.add32(HashPrefix::shardInfo);
-    for (auto const& authAccount : authAccounts)
-    {
-        auto const account = authAccount[jss::AuthAccount];
-        std::optional<AccountID> accountId =
-            parseBase58<AccountID>(account[jss::Account].asString());
-        msg.addBitString(*accountId);
-        if (account[jss::Amount].isString())
-        {
-            std::cout << "isXRP" << "\n";
-            std::optional<std::uint64_t> const optDrops =
-                to_uint64(account[jss::Amount].asString());
-            if (!optDrops)
-            {
-                // pass
-            }
-            else
-            {
-                msg.add64(XRPAmount(*optDrops).drops());
-            }
-        }
-        else
-        {
-            std::cout << "isIOU" << "\n";
-            STAmount amt;
-            bool isAmount = amountFromJsonNoThrow(amt, account[jss::Amount]);
-            if (!isAmount)
-            {
-                // pass
-            }
-            else
-            {
-                if (amt == beast::zero)
-                    msg.add64(STAmount::cNotNative);
-                else if (amt.signum() == -1)  // Negative amount
-                    msg.add64(
-                        amt.mantissa() |
-                        (static_cast<std::uint64_t>(amt.exponent() + 512 + 97)
-                         << (64 - 10)));
-                else  // Positive amount
-                    msg.add64(
-                        amt.mantissa() |
-                        (static_cast<std::uint64_t>(
-                             amt.exponent() + 512 + 256 + 97)
-                         << (64 - 10)));
-                msg.addBitString(amt.getCurrency());
-                msg.addBitString(amt.getIssuer());
-            }
-        }
-    }
+    msg.addBitString(account);
+    msg.addBitString(preauthorize);
 }
 
+/**
+ * @brief Serializes firewall authorization data into a message.
+ *
+ * This function serializes the given account ID and amount into the provided
+ * Serializer object. It adds a shardInfo hash prefix, followed by the account
+ * ID and the amount's mantissa.
+ *
+ * @param msg The Serializer object to serialize the data into.
+ * @param account The account ID to be serialized.
+ * @param amount The amount to be serialized.
+ */
 inline void
-serializeFirewallAuthorization(Serializer& msg, STArray const& authAccounts)
+serializeFirewallAuthorization(Serializer& msg, AccountID const& account, STAmount const& amount)
 {
     msg.add32(HashPrefix::shardInfo);
-    for (auto const& authAccount : authAccounts)
-    {
-        AccountID accountId = authAccount.getAccountID(sfAccount);
-        msg.addBitString(accountId);
-        STAmount amt = authAccount.getFieldAmount(sfAmount);
-        ;
-        if (isXRP(amt))
-        {
-            msg.add64(amt.mantissa());
-        }
-        else
-        {
-            if (amt == beast::zero)
-                msg.add64(STAmount::cNotNative);
-            else if (amt.signum() == -1)  // Negative amount
-                msg.add64(
-                    amt.mantissa() |
-                    (static_cast<std::uint64_t>(amt.exponent() + 512 + 97)
-                     << (64 - 10)));
-            else  // Positive amount
-                msg.add64(
-                    amt.mantissa() |
-                    (static_cast<std::uint64_t>(amt.exponent() + 512 + 256 + 97)
-                     << (64 - 10)));
-            msg.addBitString(amt.getCurrency());
-            msg.addBitString(amt.getIssuer());
-        }
-    }
+    msg.addBitString(account);
+    msg.add64(amount.mantissa());
+}
+
+/**
+ * @brief Serializes firewall authorization data into a message.
+ *
+ * This function serializes the given account ID and public key into the
+ * provided Serializer object. It adds a shardInfo hash prefix, followed by
+ * the account ID and the raw bytes of the public key.
+ *
+ * @param msg The Serializer object to serialize the data into.
+ * @param account The account ID to be serialized.
+ * @param pk The public key to be serialized.
+ */
+inline void
+serializeFirewallAuthorization(Serializer& msg, AccountID const& account, PublicKey const& pk)
+{
+    msg.add32(HashPrefix::shardInfo);
+    msg.addBitString(account);
+    msg.addRaw(pk.slice());
 }
 
 }  // namespace ripple

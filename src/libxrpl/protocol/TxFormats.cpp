@@ -510,10 +510,17 @@ TxFormats::TxFormats()
         ttFIREWALL_SET,
         {
             {sfAmount, soeOPTIONAL},
-            {sfAmount2, soeOPTIONAL},
             {sfPublicKey, soeOPTIONAL},
             {sfAuthorize, soeOPTIONAL},
-            {sfAuthAccounts, soeOPTIONAL},
+            {sfSignature, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::FirewallPreauth,
+        ttFIREWALL_PREAUTH,
+        {
+            {sfAuthorize, soeOPTIONAL},
+            {sfUnauthorize, soeOPTIONAL},
             {sfSignature, soeOPTIONAL},
         },
         commonFields);

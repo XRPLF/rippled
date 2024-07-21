@@ -25,7 +25,7 @@
 
 namespace ripple {
 namespace test {
-struct SetFirewall_test : public beast::unit_test::suite
+struct FirewallSet_test : public beast::unit_test::suite
 {
 
     static std::size_t
@@ -36,14 +36,49 @@ struct SetFirewall_test : public beast::unit_test::suite
     };
 
     static Buffer
-    sigFirewallAuth(
+    sigFirewallAuthAmount(
         PublicKey const& pk,
         SecretKey const& sk,
-        Json::Value const& authAccounts)
+        AccountID const& account,
+        STAmount const& amount)
     {
         Serializer msg;
-        serializeFirewallAuthorization(msg, authAccounts);
+        serializeFirewallAuthorization(msg, account, amount);
         return sign(pk, sk, msg.slice());
+    }
+
+    static Buffer
+    sigFirewallAuthPK(
+        PublicKey const& pk,
+        SecretKey const& sk,
+        AccountID const& account,
+        PublicKey const& _pk)
+    {
+        Serializer msg;
+        serializeFirewallAuthorization(msg, account, _pk);
+        return sign(pk, sk, msg.slice());
+    }
+
+    static std::pair<uint256, std::shared_ptr<SLE const>>
+    firewallKeyAndSle(
+        ReadView const& view,
+        jtx::Account const& account)
+    {
+        auto const k = keylet::firewall(account);
+        return {k.key, view.read(k)};
+    }
+
+    void
+    verifyFirewall(
+        ReadView const& view,
+        jtx::Account const& account,
+        STAmount const& amount,
+        PublicKey const& pk)
+    {
+        auto [key, sle] = firewallKeyAndSle(view, account);
+        BEAST_EXPECT((*sle)[sfOwner] == account.id());
+        BEAST_EXPECT((*sle)[sfAmount] == amount);
+        BEAST_EXPECT(strHex((*sle)[sfPublicKey]) == strHex(pk.slice()));
     }
 
     void
@@ -76,33 +111,116 @@ struct SetFirewall_test : public beast::unit_test::suite
     }
 
     void
-    testEnabled1(FeatureBitset features)
+    testFirewallSet(FeatureBitset features)
     {
-        testcase("enabled1");
+        testcase("firewall set");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
-        // setup env
         Account const alice = Account("alice");
         Account const bob = Account("bob");
         Account const carol = Account("carol");
 
         {
             Env env{*this, features};
-            // Env env{*this, envconfig(), features, nullptr,
-            //     // beast::severities::kWarning
-            //     beast::severities::kTrace
-            // };
             env.fund(XRP(1000), alice, bob, carol);
             env.close();
 
-            // FIREWALL SET
             env(firewall::set(alice),
                 firewall::auth(carol),
                 firewall::amt(XRP(10)),
                 firewall::pk(strHex(carol.pk().slice())),
                 ter(tesSUCCESS));
             env.close();
+
+            verifyFirewall(*env.current(), alice, XRP(10), carol.pk());
+
+            env(pay(alice, bob, XRP(100)), ter(tecFIREWALL_BLOCK));
+            env.close();
+        }
+    }
+
+    void
+    testUpdateAmount(FeatureBitset features)
+    {
+        testcase("update amount");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        Account const alice = Account("alice");
+        Account const bob = Account("bob");
+        Account const carol = Account("carol");
+
+        {
+            Env env{*this, features};
+            env.fund(XRP(1000), alice, bob, carol);
+            env.close();
+
+            env(firewall::set(alice),
+                firewall::auth(carol),
+                firewall::amt(XRP(10)),
+                firewall::pk(strHex(carol.pk().slice())),
+                ter(tesSUCCESS));
+            env.close();
+
+            verifyFirewall(*env.current(), alice, XRP(10), carol.pk());
+
+            env(pay(alice, bob, XRP(100)), ter(tecFIREWALL_BLOCK));
+            env.close();
+
+            auto const sig = sigFirewallAuthAmount(
+                carol.pk(), carol.sk(), alice.id(), XRP(100));
+            env(firewall::set(alice),
+                firewall::amt(XRP(100)),
+                firewall::sig(strHex(Slice(sig))),
+                ter(tesSUCCESS));
+            env.close();
+
+            verifyFirewall(*env.current(), alice, XRP(100), carol.pk());
+
+            env(pay(alice, bob, XRP(100)), ter(tesSUCCESS));
+            env.close();
+        }
+    }
+
+    void
+    testUpdatePK(FeatureBitset features)
+    {
+        testcase("update pk");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        Account const alice = Account("alice");
+        Account const bob = Account("bob");
+        Account const carol = Account("carol");
+        Account const dave = Account("dave");
+
+        {
+            Env env{*this, features};
+            env.fund(XRP(1000), alice, bob, carol, dave);
+            env.close();
+
+            env(firewall::set(alice),
+                firewall::auth(carol),
+                firewall::amt(XRP(10)),
+                firewall::pk(strHex(carol.pk().slice())),
+                ter(tesSUCCESS));
+            env.close();
+
+            verifyFirewall(*env.current(), alice, XRP(10), carol.pk());
+
+            env(pay(alice, bob, XRP(100)), ter(tecFIREWALL_BLOCK));
+            env.close();
+
+            auto const sig1 = sigFirewallAuthPK(
+                carol.pk(), carol.sk(), alice.id(), dave.pk());
+            env(firewall::set(alice),
+                firewall::pk(strHex(dave.pk().slice())),
+                firewall::sig(strHex(Slice(sig1))),
+                ter(tesSUCCESS));
+            env.close();
+
+            verifyFirewall(*env.current(), alice, XRP(10), dave.pk());
 
             {
                 Json::Value params;
@@ -111,20 +229,15 @@ struct SetFirewall_test : public beast::unit_test::suite
                 std::cout << "RESULT: " << jrr << "\n";
             }
 
-            env(pay(alice, bob, XRP(100)), ter(tecFIREWALL_BLOCK));
-            env.close();
-
-            auto tx = firewall::set(alice);
-            tx[jss::AuthAccounts] = Json::Value{Json::arrayValue};
-            tx[jss::AuthAccounts][0U] = Json::Value{};
-            tx[jss::AuthAccounts][0U][jss::AuthAccount] = Json::Value{};
-            tx[jss::AuthAccounts][0U][jss::AuthAccount][jss::Account] = bob.human();
-            tx[jss::AuthAccounts][0U][jss::AuthAccount][jss::Amount] = "100000000";
-            auto const sig = sigFirewallAuth(carol.pk(), carol.sk(), tx[jss::AuthAccounts]);
-            env(tx,
-                firewall::sig(strHex(Slice(sig))),
+            auto const sig2 = sigFirewallAuthAmount(
+                dave.pk(), dave.sk(), alice.id(), XRP(100));
+            env(firewall::set(alice),
+                firewall::amt(XRP(100)),
+                firewall::sig(strHex(Slice(sig2))),
                 ter(tesSUCCESS));
             env.close();
+
+            verifyFirewall(*env.current(), alice, XRP(100), dave.pk());
 
             {
                 Json::Value params;
@@ -139,10 +252,47 @@ struct SetFirewall_test : public beast::unit_test::suite
     }
 
     void
+    testMasterDisable(FeatureBitset features)
+    {
+        testcase("master disable");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        Account const alice = Account("alice");
+        Account const bob = Account("bob");
+        Account const carol = Account("carol");
+        Account const dave = Account("dave");
+
+        {
+            Env env{*this, features};
+            env.fund(XRP(1000), alice, bob, carol, dave);
+            env.close();
+
+            env(firewall::set(alice),
+                firewall::auth(carol),
+                firewall::amt(XRP(10)),
+                firewall::pk(strHex(carol.pk().slice())),
+                ter(tesSUCCESS));
+            env.close();
+
+            verifyFirewall(*env.current(), alice, XRP(10), carol.pk());
+
+            env(fset(alice, asfDisableMaster), ter(tecNO_PERMISSION));
+            env.close();
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
-        // testEnabled(features);
-        testEnabled1(features);
+        testEnabled(features);
+        // testPreflight(features);
+        // testPreclaim(features);
+        // testDoApply(features);
+        testFirewallSet(features);
+        testUpdateAmount(features);
+        testUpdatePK(features);
+        testMasterDisable(features);
     }
 
 public:
@@ -155,6 +305,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SetFirewall, app, ripple);
+BEAST_DEFINE_TESTSUITE(FirewallSet, app, ripple);
 }  // namespace test
 }  // namespace ripple

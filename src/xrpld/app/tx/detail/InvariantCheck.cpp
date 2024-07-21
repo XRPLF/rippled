@@ -479,6 +479,7 @@ LedgerEntryTypesMatch::visitEntry(
             case ltDID:
             case ltORACLE:
             case ltFIREWALL:
+            case ltFIREWALL_PREAUTH:
                 break;
             default:
                 invalidTypeAdded_ = true;

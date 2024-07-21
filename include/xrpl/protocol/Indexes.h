@@ -290,6 +290,18 @@ oracle(AccountID const& account, std::uint32_t const& documentID) noexcept;
 Keylet
 firewall(AccountID const& account) noexcept;
 
+/** A FireallPreauth */
+/** @{ */
+Keylet
+firewallPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept;
+
+inline Keylet
+firewallPreauth(uint256 const& key) noexcept
+{
+    return {ltFIREWALL_PREAUTH, key};
+}
+/** @} */
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

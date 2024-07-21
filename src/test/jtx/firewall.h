@@ -49,21 +49,6 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-/** Sets the optional Amount2 on a JTx. */
-class amt2
-{
-private:
-    STAmount amt2_;
-
-public:
-    explicit amt2(STAmount const& amt2) : amt2_(amt2)
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jtx) const;
-};
-
 /** Sets the optional Authorize on a JTx. */
 class auth
 {

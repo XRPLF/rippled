@@ -17,22 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_SETFIREWALL_H_INCLUDED
-#define RIPPLE_TX_SETFIREWALL_H_INCLUDED
+#ifndef RIPPLE_TX_FIREWALL_PREAUTH_H_INCLUDED
+#define RIPPLE_TX_FIREWALL_PREAUTH_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 
-class SetFirewall : public Transactor
+class FirewallPreauth : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit SetFirewall(ApplyContext& ctx) : Transactor(ctx)
+    explicit FirewallPreauth(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -44,6 +41,14 @@ public:
 
     TER
     doApply() override;
+
+    // Interface used by DeleteAccount
+    static TER
+    removeFromLedger(
+        Application& app,
+        ApplyView& view,
+        uint256 const& delIndex,
+        beast::Journal j);
 };
 
 }  // namespace ripple

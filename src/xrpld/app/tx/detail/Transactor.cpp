@@ -435,116 +435,62 @@ Transactor::ticketDelete(
     return tesSUCCESS;
 }
 
+/**
+ * @brief Checks if a transaction is blocked by a firewall.
+ *
+ * This function inspects the transaction to determine if it should be blocked
+ * by a firewall rule. It only applies to payment transactions. If the firewall
+ * is active and the transaction does not meet the criteria, it will be blocked.
+ *
+ * @param ctx The context of the transaction, including the transaction itself
+ *            and the current view of the ledger.
+ * @param j   The journal for logging.
+ * @return A status code indicating whether the transaction is allowed or blocked.
+ */
 TER
-isWhitelisted(
-    ReadView const& view,
-    STAmount const& fireAmount,
-    STAmount const& txAmount,
-    STArray const& authAccounts,
-    AccountID const& dest)
+Transactor::checkFirewall(PreclaimContext const& ctx, beast::Journal j)
 {
-    if (txAmount <= fireAmount)
-    {
-        return tesSUCCESS;
-    }
-    else
-    {
-        for (auto const& account : authAccounts)
-        {
-            if (dest != account[sfAccount])
-            {
-                // pass
-            }
-            else
-            {
-                if (!view.read(keylet::account(account[sfAccount])))
-                {
-                    // JLOG(ctx.j.debug()) << "Firewall: Invalid Account.";
-                    return tecINTERNAL;
-                }
-                auto const authAmount = account[~sfAmount];
-                if (authAmount && *authAmount >= fireAmount)
-                {
-                    // Remove Auth Account?
-                    return tesSUCCESS;
-                }
-            }
-        }
-        // JLOG(j.debug()) << "checkFirewall: XRP Txn Blocked";
-        return tecFIREWALL_BLOCK;
-        // return tecFIREWALL;
-    }
-}
-
-// Check for firewall.
-TER
-Transactor::checkFirewall(
-    PreclaimContext const& ctx,
-    beast::Journal j)
-{
-    JLOG(j.error()) << "checkFirewall: START";
-    // if (
-    //     !ctx.tx.isFieldPresent(sfAmount)
-    //     // !ctx.tx.isFieldPresent(sfAmount2) &&
-    //     // !ctx.tx.isFieldPresent(sfTakerGets) &&
-    //     // !ctx.tx.isFieldPresent(sfTakerPays)
-    // )
-    // ttPAYMENT
-    // ttOFFER (Create)
-    // ttESCROW (Create)
-    // ttPAYCHAN (Create)
-    // ttNFTOKEN_MINT (Create)
-    // ttAMM (Create/Deposit)
+    // Only apply firewall checks to payment transactions
     if (ctx.tx.getTxnType() != ttPAYMENT)
     {
-        JLOG(j.error()) << "checkFirewall: Not Firewall Txn";
+        JLOG(j.debug()) << "checkFirewall: Not a payment transaction";
         return tesSUCCESS;
     }
 
+    // Get the account ID of the sender and the destination account
     auto const id = ctx.tx.getAccountID(sfAccount);
     auto const dest = ctx.tx.getAccountID(sfDestination);
 
+    // Read the firewall settings for the sender account
     auto const sleFirewall = ctx.view.read(keylet::firewall(id));
     if (!sleFirewall)
     {
-        JLOG(j.error()) << "checkFirewall: No Firewall Active";
+        JLOG(j.debug()) << "checkFirewall: No firewall settings found";
         return tesSUCCESS;
     }
 
-    if (sleFirewall->getAccountID(sfAuthorize) == dest)
+    // Check if the transaction amount exceeds the firewall limit
+    if (ctx.tx.isFieldPresent(sfAmount) &&
+        sleFirewall->isFieldPresent(sfAmount))
     {
-        JLOG(j.error()) << "checkFirewall: Destination == Authorize";
-        return tesSUCCESS;
-    }
-
-    // Check Whitelist
-    if (sleFirewall->isFieldPresent(sfAuthAccounts))
-    {
-        auto const authAccounts = sleFirewall->getFieldArray(sfAuthAccounts);
-        
-        auto const firewallXRP = sleFirewall->getFieldAmount(sfAmount);
-        auto const firewallIOU = sleFirewall->getFieldAmount(sfAmount2);
-        // auto const txAmount = tx.getFieldAmount(~sfAmount);
-
-        // Check XRP
-        if (ctx.tx.isFieldPresent(sfAmount) && firewallXRP)
+        if (ctx.tx.getFieldAmount(sfAmount) <=
+            sleFirewall->getFieldAmount(sfAmount))
         {
-            auto const txXRP = ctx.tx.getFieldAmount(sfAmount);
-            if (auto const ter = isWhitelisted(ctx.view, firewallXRP, txXRP, authAccounts, dest); ter != tesSUCCESS)
-            {
-                return ter;
-            }
-        }
-        // Check IOU
-        if (ctx.tx.isFieldPresent(sfAmount) && firewallIOU)
-        {
-            auto const txIOU = ctx.tx.getFieldAmount(sfAmount);
-            if (auto const ter = isWhitelisted(ctx.view, firewallIOU, txIOU, authAccounts, dest); ter != tesSUCCESS)
-            {
-                return ter;
-            }
+            JLOG(j.debug()) << "checkFirewall: Transaction amount within limit";
+            return tesSUCCESS;
         }
     }
+
+    // Check if there is a preauthorization for the destination account
+    if (auto const sleFirewallPreauth =
+            ctx.view.read(keylet::firewallPreauth(id, dest));
+        !sleFirewallPreauth)
+    {
+        JLOG(j.debug()) << "checkFirewall: No preauthorization for destination";
+        return tecFIREWALL_BLOCK;
+    }
+
+    JLOG(j.debug()) << "checkFirewall: Firewall block due to amount limit";
     return tecFIREWALL_BLOCK;
 }
 

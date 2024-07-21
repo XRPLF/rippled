@@ -17,49 +17,35 @@
 */
 //==============================================================================
 
-#include <test/jtx/firewall.h>
-#include <xrpl/protocol/jss.h>
+#ifndef RIPPLE_TX_FIREWALLSET_H_INCLUDED
+#define RIPPLE_TX_FIREWALLSET_H_INCLUDED
+
+#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
-namespace test {
-namespace jtx {
-namespace firewall {
 
-Json::Value
-set(Account const& account)
+class FirewallSet : public Transactor
 {
-    Json::Value jv;
-    jv[jss::Account] = account.human();
-    jv[jss::TransactionType] = jss::FirewallSet;
-    return jv;
-}
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-void
-amt::operator()(Env& env, JTx& jt) const
-{
-    jt.jv[sfAmount.jsonName] = amt_.getJson(JsonOptions::none);
-}
+    explicit FirewallSet(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
 
-void
-auth::operator()(Env& env, JTx& jt) const
-{
-    jt.jv[sfAuthorize.jsonName] = auth_.human();
-}
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-void
-pk::operator()(Env& env, JTx& jt) const
-{
-    jt.jv[sfPublicKey.jsonName] = pk_;
-}
+    static TER
+    preclaim(PreclaimContext const& ctx);
 
-void
-sig::operator()(Env& env, JTx& jt) const
-{
-    jt.jv[sfSignature.jsonName] = sig_;
-}
+    TER
+    doApply() override;
+};
 
-
-}  // namespace firewall
-}  // namespace jtx
-}  // namespace test
 }  // namespace ripple
+
+#endif

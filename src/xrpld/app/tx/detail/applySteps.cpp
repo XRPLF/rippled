@@ -50,7 +50,8 @@
 #include <xrpld/app/tx/detail/SetRegularKey.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
 #include <xrpld/app/tx/detail/SetTrust.h>
-#include <xrpld/app/tx/detail/SetFirewall.h>
+#include <xrpld/app/tx/detail/Firewall.h>
+#include <xrpld/app/tx/detail/FirewallPreauth.h>
 #include <xrpld/app/tx/detail/XChainBridge.h>
 #include <xrpl/protocol/TxFormats.h>
 
@@ -167,7 +168,9 @@ with_txn_type(TxType txnType, F&& f)
         case ttORACLE_DELETE:
             return f.template operator()<DeleteOracle>();
         case ttFIREWALL_SET:
-            return f.template operator()<SetFirewall>();
+            return f.template operator()<FirewallSet>();
+        case ttFIREWALL_PREAUTH:
+            return f.template operator()<FirewallPreauth>();
         default:
             throw UnknownTxnType(txnType);
     }

@@ -74,6 +74,7 @@ enum class LedgerNameSpace : std::uint16_t {
     DID = 'I',
     ORACLE = 'R',
     FIREWALL = 'F',
+    FIREWALL_PREAUTH = 'G',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -456,6 +457,14 @@ Keylet
 firewall(AccountID const& account) noexcept
 {
     return {ltFIREWALL, indexHash(LedgerNameSpace::FIREWALL, account)};
+}
+
+Keylet
+firewallPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept
+{
+    return {
+        ltFIREWALL_PREAUTH,
+        indexHash(LedgerNameSpace::FIREWALL_PREAUTH, owner, preauthorized)};
 }
 
 }  // namespace keylet
