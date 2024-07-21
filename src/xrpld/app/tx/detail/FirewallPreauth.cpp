@@ -97,7 +97,8 @@ FirewallPreauth::preclaim(PreclaimContext const& ctx)
     {
         // Verify that the Preauth entry they asked to remove is in the ledger.
         AccountID const unauth{ctx.tx[sfUnauthorize]};
-        if (!ctx.view.exists(keylet::firewallPreauth(ctx.tx[sfAccount], unauth)))
+        if (!ctx.view.exists(
+                keylet::firewallPreauth(ctx.tx[sfAccount], unauth)))
             return tecNO_ENTRY;
     }
     return tesSUCCESS;

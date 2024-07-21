@@ -159,9 +159,7 @@ public:
         beast::Journal j);
 
     static TER
-    checkFirewall(
-        PreclaimContext const& ctx,
-        beast::Journal j);
+    checkFirewall(PreclaimContext const& ctx, beast::Journal j);
 
 protected:
     TER

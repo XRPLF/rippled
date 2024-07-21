@@ -505,7 +505,7 @@ TxFormats::TxFormats()
             {sfOracleDocumentID, soeREQUIRED},
         },
         commonFields);
-    
+
     add(jss::FirewallSet,
         ttFIREWALL_SET,
         {

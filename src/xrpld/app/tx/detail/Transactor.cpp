@@ -445,7 +445,8 @@ Transactor::ticketDelete(
  * @param ctx The context of the transaction, including the transaction itself
  *            and the current view of the ledger.
  * @param j   The journal for logging.
- * @return A status code indicating whether the transaction is allowed or blocked.
+ * @return A status code indicating whether the transaction is allowed or
+ * blocked.
  */
 TER
 Transactor::checkFirewall(PreclaimContext const& ctx, beast::Journal j)

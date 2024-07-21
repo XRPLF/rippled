@@ -38,6 +38,8 @@
 #include <xrpld/app/tx/detail/DeleteOracle.h>
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/app/tx/detail/Escrow.h>
+#include <xrpld/app/tx/detail/Firewall.h>
+#include <xrpld/app/tx/detail/FirewallPreauth.h>
 #include <xrpld/app/tx/detail/NFTokenAcceptOffer.h>
 #include <xrpld/app/tx/detail/NFTokenBurn.h>
 #include <xrpld/app/tx/detail/NFTokenCancelOffer.h>
@@ -50,8 +52,6 @@
 #include <xrpld/app/tx/detail/SetRegularKey.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
 #include <xrpld/app/tx/detail/SetTrust.h>
-#include <xrpld/app/tx/detail/Firewall.h>
-#include <xrpld/app/tx/detail/FirewallPreauth.h>
 #include <xrpld/app/tx/detail/XChainBridge.h>
 #include <xrpl/protocol/TxFormats.h>
 

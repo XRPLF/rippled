@@ -58,7 +58,6 @@ sig::operator()(Env& env, JTx& jt) const
     jt.jv[sfSignature.jsonName] = sig_;
 }
 
-
 }  // namespace firewall
 }  // namespace jtx
 }  // namespace test

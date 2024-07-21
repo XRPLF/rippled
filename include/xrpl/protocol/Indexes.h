@@ -293,7 +293,9 @@ firewall(AccountID const& account) noexcept;
 /** A FireallPreauth */
 /** @{ */
 Keylet
-firewallPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept;
+firewallPreauth(
+    AccountID const& owner,
+    AccountID const& preauthorized) noexcept;
 
 inline Keylet
 firewallPreauth(uint256 const& key) noexcept

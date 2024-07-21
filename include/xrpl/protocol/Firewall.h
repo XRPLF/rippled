@@ -39,7 +39,10 @@ namespace ripple {
  * @param preauthorize The preauthorize account ID to be serialized.
  */
 inline void
-serializeFirewallAuthorization(Serializer& msg, AccountID const& account, AccountID const& preauthorize)
+serializeFirewallAuthorization(
+    Serializer& msg,
+    AccountID const& account,
+    AccountID const& preauthorize)
 {
     msg.add32(HashPrefix::shardInfo);
     msg.addBitString(account);
@@ -58,7 +61,10 @@ serializeFirewallAuthorization(Serializer& msg, AccountID const& account, Accoun
  * @param amount The amount to be serialized.
  */
 inline void
-serializeFirewallAuthorization(Serializer& msg, AccountID const& account, STAmount const& amount)
+serializeFirewallAuthorization(
+    Serializer& msg,
+    AccountID const& account,
+    STAmount const& amount)
 {
     msg.add32(HashPrefix::shardInfo);
     msg.addBitString(account);
@@ -77,7 +83,10 @@ serializeFirewallAuthorization(Serializer& msg, AccountID const& account, STAmou
  * @param pk The public key to be serialized.
  */
 inline void
-serializeFirewallAuthorization(Serializer& msg, AccountID const& account, PublicKey const& pk)
+serializeFirewallAuthorization(
+    Serializer& msg,
+    AccountID const& account,
+    PublicKey const& pk)
 {
     msg.add32(HashPrefix::shardInfo);
     msg.addBitString(account);

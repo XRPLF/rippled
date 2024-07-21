@@ -27,7 +27,6 @@ namespace ripple {
 namespace test {
 struct FirewallSet_test : public beast::unit_test::suite
 {
-
     static std::size_t
     ownerDirCount(ReadView const& view, jtx::Account const& acct)
     {
@@ -60,9 +59,7 @@ struct FirewallSet_test : public beast::unit_test::suite
     }
 
     static std::pair<uint256, std::shared_ptr<SLE const>>
-    firewallKeyAndSle(
-        ReadView const& view,
-        jtx::Account const& account)
+    firewallKeyAndSle(ReadView const& view, jtx::Account const& account)
     {
         auto const k = keylet::firewall(account);
         return {k.key, view.read(k)};
@@ -95,12 +92,14 @@ struct FirewallSet_test : public beast::unit_test::suite
         {
             // If the Firewall amendment is not enabled, you should not be able
             // to set or delete firewall.
-            auto const amend = withFirewall ? features : features - featureFirewall;
+            auto const amend =
+                withFirewall ? features : features - featureFirewall;
             Env env{*this, amend};
             env.fund(XRP(1000), alice);
             env.close();
 
-            auto const txResult = withFirewall ? ter(tesSUCCESS) : ter(temDISABLED);
+            auto const txResult =
+                withFirewall ? ter(tesSUCCESS) : ter(temDISABLED);
             auto const ownerDir = withFirewall ? 1 : 0;
 
             // SET
@@ -224,8 +223,10 @@ struct FirewallSet_test : public beast::unit_test::suite
 
             {
                 Json::Value params;
-                params[jss::transaction] = env.tx()->getJson(JsonOptions::none)[jss::hash];
-                auto jrr = env.rpc("json", "tx", to_string(params))[jss::result];
+                params[jss::transaction] =
+                    env.tx()->getJson(JsonOptions::none)[jss::hash];
+                auto jrr =
+                    env.rpc("json", "tx", to_string(params))[jss::result];
                 std::cout << "RESULT: " << jrr << "\n";
             }
 
@@ -241,8 +242,10 @@ struct FirewallSet_test : public beast::unit_test::suite
 
             {
                 Json::Value params;
-                params[jss::transaction] = env.tx()->getJson(JsonOptions::none)[jss::hash];
-                auto jrr = env.rpc("json", "tx", to_string(params))[jss::result];
+                params[jss::transaction] =
+                    env.tx()->getJson(JsonOptions::none)[jss::hash];
+                auto jrr =
+                    env.rpc("json", "tx", to_string(params))[jss::result];
                 std::cout << "RESULT: " << jrr << "\n";
             }
 
