@@ -177,6 +177,7 @@ class base58_test : public beast::unit_test::suite
         constexpr std::size_t iters = 100000;
         auto eng = randEngine();
         std::uniform_int_distribution<std::uint64_t> dist;
+        std::uniform_int_distribution<std::uint64_t> dist1(1);
         for (int i = 0; i < iters; ++i)
         {
             std::uint64_t const d = dist(eng);
@@ -209,10 +210,29 @@ class base58_test : public beast::unit_test::suite
 
             auto const refAdd = boostBigInt + d;
 
-            b58_fast::detail::inplace_bigint_add(
+            auto const result = b58_fast::detail::inplace_bigint_add(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
+            BEAST_EXPECT(result == TokenCodecErrc::success);
             auto const foundAdd = multiprecision_utils::toBoostMP(bigInt);
             BEAST_EXPECT(refAdd == foundAdd);
+        }
+        for (int i = 0; i < iters; ++i)
+        {
+            std::uint64_t const d = dist1(eng);
+            // Force overflow
+            std::vector<std::uint64_t> bigInt(
+                5, std::numeric_limits<std::uint64_t>::max());
+
+            auto const boostBigInt = multiprecision_utils::toBoostMP(
+                std::span<std::uint64_t>(bigInt.data(), bigInt.size()));
+
+            auto const refAdd = boostBigInt + d;
+
+            auto const result = b58_fast::detail::inplace_bigint_add(
+                std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
+            BEAST_EXPECT(result == TokenCodecErrc::overflowAdd);
+            auto const foundAdd = multiprecision_utils::toBoostMP(bigInt);
+            BEAST_EXPECT(refAdd != foundAdd);
         }
         for (int i = 0; i < iters; ++i)
         {
@@ -226,10 +246,28 @@ class base58_test : public beast::unit_test::suite
 
             auto const refMul = boostBigInt * d;
 
-            b58_fast::detail::inplace_bigint_mul(
+            auto const result = b58_fast::detail::inplace_bigint_mul(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
+            BEAST_EXPECT(result == TokenCodecErrc::success);
             auto const foundMul = multiprecision_utils::toBoostMP(bigInt);
             BEAST_EXPECT(refMul == foundMul);
+        }
+        for (int i = 0; i < iters; ++i)
+        {
+            std::uint64_t const d = dist1(eng);
+            // Force overflow
+            std::vector<std::uint64_t> bigInt(
+                5, std::numeric_limits<std::uint64_t>::max());
+            auto const boostBigInt = multiprecision_utils::toBoostMP(
+                std::span<std::uint64_t>(bigInt.data(), bigInt.size()));
+
+            auto const refMul = boostBigInt * d;
+
+            auto const result = b58_fast::detail::inplace_bigint_mul(
+                std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
+            BEAST_EXPECT(result == TokenCodecErrc::inputTooLarge);
+            auto const foundMul = multiprecision_utils::toBoostMP(bigInt);
+            BEAST_EXPECT(refMul != foundMul);
         }
     }
 

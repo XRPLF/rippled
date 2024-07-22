@@ -32,6 +32,7 @@ enum class TokenCodecErrc {
     mismatchedTokenType,
     mismatchedChecksum,
     invalidEncodingChar,
+    overflowAdd,
     unknown,
 };
 }
