@@ -242,7 +242,7 @@ It patches their CMake to correctly import its dependencies.
     Single-config generators:
 
     ```
-    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON ..
+    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtests=ON ..
     ```
 
     Pass the CMake variable [`CMAKE_BUILD_TYPE`][build_type]
