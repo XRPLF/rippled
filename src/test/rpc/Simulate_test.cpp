@@ -144,7 +144,7 @@ testParamErrors()
             "Missing field 'tx.TransactionType'.");
     }
     {
-        // No tx.account
+        // No tx.Account
         Json::Value params = Json::objectValue;
         Json::Value tx_json = Json::objectValue;
         tx_json[jss::TransactionType] = jss::Payment;
@@ -240,7 +240,7 @@ testParamErrors()
             "Field 'tx_json.foo' is unknown.");
     }
     {
-        // non-string second param for CLI
+        // non-`"binary"` second param for CLI
         Json::Value tx_json = Json::objectValue;
         tx_json[jss::TransactionType] = jss::AccountSet;
         tx_json[jss::Account] = alice.human();
@@ -268,19 +268,21 @@ testSuccessfulTransaction()
                 result[jss::engine_result_message] ==
                 "The simulated transaction would have been applied.");
 
-            if (BEAST_EXPECT(result.isMember(jss::metadata)))
+            if (BEAST_EXPECT(
+                    result.isMember(jss::meta) ||
+                    result.isMember(jss::meta_blob)))
             {
                 Json::Value metadata;
-                if (result[jss::metadata].isString())
+                if (result.isMember(jss::meta_blob))
                 {
-                    auto unHexed = strUnHex(result[jss::metadata].asString());
+                    auto unHexed = strUnHex(result[jss::meta_blob].asString());
                     SerialIter sitTrans(makeSlice(*unHexed));
                     metadata = STObject(std::ref(sitTrans), sfGeneric)
                                    .getJson(JsonOptions::none);
                 }
                 else
                 {
-                    metadata = result[jss::metadata];
+                    metadata = result[jss::meta];
                 }
                 if (BEAST_EXPECT(metadata.isMember(sfAffectedNodes.jsonName)))
                 {
@@ -346,7 +348,9 @@ testTransactionNonTecFailure()
                     result[jss::engine_result_message] ==
                     "Can only send positive amounts.");
 
-                BEAST_EXPECT(!result.isMember(jss::metadata));
+                BEAST_EXPECT(
+                    !result.isMember(jss::meta) &&
+                    !result.isMember(jss::meta_blob));
             };
 
         Json::Value tx;
@@ -394,20 +398,22 @@ testTransactionTecFailure()
                     "Destination does not exist. Too little XRP sent to create "
                     "it.");
 
-                if (BEAST_EXPECT(result.isMember(jss::metadata)))
+                if (BEAST_EXPECT(
+                        result.isMember(jss::meta) ||
+                        result.isMember(jss::meta_blob)))
                 {
                     Json::Value metadata;
-                    if (result[jss::metadata].isString())
+                    if (result.isMember(jss::meta_blob))
                     {
                         auto unHexed =
-                            strUnHex(result[jss::metadata].asString());
+                            strUnHex(result[jss::meta_blob].asString());
                         SerialIter sitTrans(makeSlice(*unHexed));
                         metadata = STObject(std::ref(sitTrans), sfGeneric)
                                        .getJson(JsonOptions::none);
                     }
                     else
                     {
-                        metadata = result[jss::metadata];
+                        metadata = result[jss::meta];
                     }
                     if (BEAST_EXPECT(
                             metadata.isMember(sfAffectedNodes.jsonName)))

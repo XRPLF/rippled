@@ -255,11 +255,11 @@ doSimulate(RPC::JsonContext& context)
             {
                 auto const metaBlob =
                     result.metadata->getAsObject().getSerializer().getData();
-                jvResult[jss::metadata] = strHex(makeSlice(metaBlob));
+                jvResult[jss::meta_blob] = strHex(makeSlice(metaBlob));
             }
             else
             {
-                jvResult[jss::metadata] =
+                jvResult[jss::meta] =
                     result.metadata->getJson(JsonOptions::none);
             }
         }
