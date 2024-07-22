@@ -469,7 +469,18 @@ transactionPreProcessImpl(
     }
 
     {
-        Json::Value err = checkFee(
+        Json::Value err = checkPayment(
+            params,
+            tx_json,
+            srcAddressID,
+            role,
+            app,
+            verify && signingArgs.editFields());
+
+        if (RPC::contains_error(err))
+            return err;
+
+        err = checkFee(
             params,
             role,
             verify && signingArgs.editFields(),
@@ -477,17 +488,6 @@ transactionPreProcessImpl(
             app.getFeeTrack(),
             app.getTxQ(),
             app);
-
-        if (RPC::contains_error(err))
-            return err;
-
-        err = checkPayment(
-            params,
-            tx_json,
-            srcAddressID,
-            role,
-            app,
-            verify && signingArgs.editFields());
 
         if (RPC::contains_error(err))
             return err;
@@ -708,8 +708,8 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 
 //------------------------------------------------------------------------------
 
-Expected<XRPAmount, Json::Value>
-getBaseFee(Application const& app, Json::Value tx)
+XRPAmount
+getBaseFee(Application const& app, Config const& config, Json::Value tx)
 {
     if (!tx.isMember(jss::Fee))
     {
@@ -748,11 +748,7 @@ getBaseFee(Application const& app, Json::Value tx)
     STParsedJSONObject parsed(std::string(jss::tx_json), tx);
     if (!parsed.object.has_value())
     {
-        Json::Value error;
-        error[jss::error] = parsed.error[jss::error];
-        error[jss::error_code] = parsed.error[jss::error_code];
-        error[jss::error_message] = parsed.error[jss::error_message];
-        return Unexpected(error);
+        return config.FEES.reference_fee;
     }
 
     try
@@ -762,11 +758,7 @@ getBaseFee(Application const& app, Json::Value tx)
     }
     catch (std::exception& e)
     {
-        Json::Value error;
-        error[jss::error] = "invalidTransaction";
-        error[jss::error_exception] = e.what();
-
-        return Unexpected(error);
+        return config.FEES.reference_fee;
     }
 }
 
@@ -781,10 +773,7 @@ getCurrentFee(
     int mult,
     int div)
 {
-    auto const baseFeeExpected = getBaseFee(app, tx);
-    if (!baseFeeExpected)
-        return baseFeeExpected.error();
-    XRPAmount const feeDefault = *baseFeeExpected;
+    XRPAmount const feeDefault = getBaseFee(app, config, tx);
 
     auto ledger = app.openLedger().current();
     // Administrative and identified endpoints are exempt from local fees.
