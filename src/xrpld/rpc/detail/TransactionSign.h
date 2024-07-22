@@ -43,6 +43,7 @@ getCurrentFee(
     LoadFeeTrack const& feeTrack,
     TxQ const& txQ,
     Application const& app,
+    Json::Value tx,
     int mult = Tuning::defaultAutoFillFeeMultiplier,
     int div = Tuning::defaultAutoFillFeeDivisor);
 

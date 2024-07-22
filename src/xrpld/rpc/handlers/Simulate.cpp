@@ -36,16 +36,6 @@ namespace ripple {
 std::optional<Json::Value>
 autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
 {
-    if (!tx_json.isMember(jss::Fee))
-    {
-        // autofill Fee
-        tx_json[jss::Fee] = RPC::getCurrentFee(
-            context.role,
-            context.app.config(),
-            context.app.getFeeTrack(),
-            context.app.getTxQ(),
-            context.app);
-    }
     if (!tx_json.isMember(sfSigningPubKey.jsonName))
     {
         // autofill SigningPubKey
@@ -114,6 +104,22 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         tx_json[jss::Sequence] = hasTicketSeq
             ? 0
             : context.app.getTxQ().nextQueuableSeq(sle).value();
+    }
+    if (!tx_json.isMember(jss::Fee))
+    {
+        // autofill Fee
+        // Must happen after all the other autofills happen
+        // Error handling/messaging works better that way
+        auto feeOrError = RPC::getCurrentFee(
+            context.role,
+            context.app.config(),
+            context.app.getFeeTrack(),
+            context.app.getTxQ(),
+            context.app,
+            tx_json);
+        if (feeOrError.isMember(jss::error))
+            return feeOrError;
+        tx_json[jss::Fee] = feeOrError;
     }
 
     return std::nullopt;

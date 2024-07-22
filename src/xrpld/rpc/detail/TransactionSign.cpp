@@ -25,6 +25,7 @@
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/paths/Pathfinder.h>
 #include <xrpld/app/tx/apply.h>  // Validity::Valid
+#include <xrpld/app/tx/applySteps.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
@@ -445,6 +446,28 @@ transactionPreProcessImpl(
         return rpcError(rpcSRC_ACT_NOT_FOUND);
     }
 
+    if (signingArgs.editFields())
+    {
+        if (!tx_json.isMember(jss::Sequence))
+        {
+            bool const hasTicketSeq =
+                tx_json.isMember(sfTicketSequence.jsonName);
+            if (!hasTicketSeq && !sle)
+            {
+                JLOG(j.debug())
+                    << "transactionSign: Failed to find source account "
+                    << "in current ledger: " << toBase58(srcAddressID);
+
+                return rpcError(rpcSRC_ACT_NOT_FOUND);
+            }
+            tx_json[jss::Sequence] =
+                hasTicketSeq ? 0 : app.getTxQ().nextQueuableSeq(sle).value();
+        }
+
+        if (!tx_json.isMember(jss::Flags))
+            tx_json[jss::Flags] = tfFullyCanonicalSig;
+    }
+
     {
         Json::Value err = checkFee(
             params,
@@ -468,28 +491,6 @@ transactionPreProcessImpl(
 
         if (RPC::contains_error(err))
             return err;
-    }
-
-    if (signingArgs.editFields())
-    {
-        if (!tx_json.isMember(jss::Sequence))
-        {
-            bool const hasTicketSeq =
-                tx_json.isMember(sfTicketSequence.jsonName);
-            if (!hasTicketSeq && !sle)
-            {
-                JLOG(j.debug())
-                    << "transactionSign: Failed to find source account "
-                    << "in current ledger: " << toBase58(srcAddressID);
-
-                return rpcError(rpcSRC_ACT_NOT_FOUND);
-            }
-            tx_json[jss::Sequence] =
-                hasTicketSeq ? 0 : app.getTxQ().nextQueuableSeq(sle).value();
-        }
-
-        if (!tx_json.isMember(jss::Flags))
-            tx_json[jss::Flags] = tfFullyCanonicalSig;
     }
 
     // If multisigning there should not be a single signature and vice versa.
@@ -707,6 +708,68 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 
 //------------------------------------------------------------------------------
 
+Expected<XRPAmount, Json::Value>
+getBaseFee(Application const& app, Json::Value tx)
+{
+    if (!tx.isMember(jss::Fee))
+    {
+        tx[jss::Fee] = "0";
+    }
+    if (!tx.isMember(jss::Sequence))
+    {
+        tx[jss::Sequence] = "0";
+    }
+    if (!tx.isMember(jss::SigningPubKey))
+    {
+        tx[jss::SigningPubKey] = "";
+    }
+    if (!tx.isMember(jss::TxnSignature))
+    {
+        tx[jss::TxnSignature] = "";
+    }
+    if (tx.isMember(sfSigners.jsonName))
+    {
+        if (!tx[sfSigners.jsonName].isArray())
+            Throw<std::runtime_error>(RPC::invalid_field_message("tx.Signers"));
+        // check multisigned signers
+        for (auto& signer : tx[sfSigners.jsonName])
+        {
+            if (!signer.isMember(sfSigner.jsonName) ||
+                !signer[sfSigner.jsonName].isObject())
+                Throw<std::runtime_error>(
+                    RPC::invalid_field_message("tx.Signers"));
+            if (!signer[sfSigner.jsonName].isMember(sfTxnSignature.jsonName))
+            {
+                // autofill TxnSignature
+                signer[sfSigner.jsonName][sfTxnSignature.jsonName] = "";
+            }
+        }
+    }
+    STParsedJSONObject parsed(std::string(jss::tx_json), tx);
+    if (!parsed.object.has_value())
+    {
+        Json::Value error;
+        error[jss::error] = parsed.error[jss::error];
+        error[jss::error_code] = parsed.error[jss::error_code];
+        error[jss::error_message] = parsed.error[jss::error_message];
+        return Unexpected(error);
+    }
+
+    try
+    {
+        STTx const& stTx = STTx(std::move(parsed.object.value()));
+        return calculateBaseFee(*app.openLedger().current(), stTx);
+    }
+    catch (std::exception& e)
+    {
+        Json::Value error;
+        error[jss::error] = "invalidTransaction";
+        error[jss::error_exception] = e.what();
+
+        return Unexpected(error);
+    }
+}
+
 Json::Value
 getCurrentFee(
     Role const role,
@@ -714,10 +777,14 @@ getCurrentFee(
     LoadFeeTrack const& feeTrack,
     TxQ const& txQ,
     Application const& app,
+    Json::Value tx,
     int mult,
     int div)
 {
-    XRPAmount const feeDefault = config.FEES.reference_fee;
+    auto const baseFeeExpected = getBaseFee(app, tx);
+    if (!baseFeeExpected)
+        return baseFeeExpected.error();
+    XRPAmount const feeDefault = *baseFeeExpected;
 
     auto ledger = app.openLedger().current();
     // Administrative and identified endpoints are exempt from local fees.
@@ -809,38 +876,11 @@ checkFee(
         }
     }
 
-    XRPAmount const feeDefault = config.FEES.reference_fee;
-
-    auto ledger = app.openLedger().current();
-    // Administrative and identified endpoints are exempt from local fees.
-    XRPAmount const loadFee =
-        scaleFeeLoad(feeDefault, feeTrack, ledger->fees(), isUnlimited(role));
-    XRPAmount fee = loadFee;
-    {
-        auto const metrics = txQ.getMetrics(*ledger);
-        auto const baseFee = ledger->fees().base;
-        auto escalatedFee =
-            toDrops(metrics.openLedgerFeeLevel - FeeLevel64(1), baseFee) + 1;
-        fee = std::max(fee, escalatedFee);
-    }
-
-    auto const limit = [&]() {
-        // Scale fee units to drops:
-        auto const result = mulDiv(feeDefault, mult, div);
-        if (!result)
-            Throw<std::overflow_error>("mulDiv");
-        return *result;
-    }();
-
-    if (fee > limit)
-    {
-        std::stringstream ss;
-        ss << "Fee of " << fee << " exceeds the requested tx limit of "
-           << limit;
-        return RPC::make_error(rpcHIGH_FEE, ss.str());
-    }
-
-    tx[jss::Fee] = getCurrentFee(role, config, feeTrack, txQ, app, mult, div);
+    auto feeOrError =
+        getCurrentFee(role, config, feeTrack, txQ, app, tx, mult, div);
+    if (feeOrError.isMember(jss::error))
+        return feeOrError;
+    tx[jss::Fee] = feeOrError;
     return Json::Value();
 }
 
