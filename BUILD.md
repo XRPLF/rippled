@@ -98,7 +98,7 @@ Update the compiler settings:
    conan profile update settings.compiler.cppstd=20 default
    ```
 
-Configure Conan to use recipe revisions:
+Configure Conan (1.x only) to use recipe revisions:
 
    ```
    conan config set general.revisions_enabled=1
