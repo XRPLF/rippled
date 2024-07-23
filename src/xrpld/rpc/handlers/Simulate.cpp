@@ -57,24 +57,24 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         // autofill SigningPubKey
         tx_json[sfSigningPubKey.jsonName] = "";
     }
-    if (tx_json.isMember(sfSigners.jsonName))
+    if (tx_json.isMember(jss::Signers))
     {
-        if (!tx_json[sfSigners.jsonName].isArray())
+        if (!tx_json[jss::Signers].isArray())
             return RPC::invalid_field_error("tx.Signers");
         // check multisigned signers
-        for (int index = 0; index < tx_json[sfSigners.jsonName].size(); index++)
+        for (int index = 0; index < tx_json[jss::Signers].size(); index++)
         {
-            auto& signer = tx_json[sfSigners.jsonName][index];
-            if (!signer.isObject() || !signer.isMember(sfSigner.jsonName) ||
-                !signer[sfSigner.jsonName].isObject())
+            auto& signer = tx_json[jss::Signers][index];
+            if (!signer.isObject() || !signer.isMember(jss::Signer) ||
+                !signer[jss::Signer].isObject())
                 return RPC::invalid_field_error(
                     "tx.Signers[" + std::to_string(index) + "]");
-            if (!signer[sfSigner.jsonName].isMember(sfTxnSignature.jsonName))
+            if (!signer[jss::Signer].isMember(sfTxnSignature.jsonName))
             {
                 // autofill TxnSignature
-                signer[sfSigner.jsonName][sfTxnSignature.jsonName] = "";
+                signer[jss::Signer][sfTxnSignature.jsonName] = "";
             }
-            else if (signer[sfSigner.jsonName][sfTxnSignature.jsonName] != "")
+            else if (signer[jss::Signer][sfTxnSignature.jsonName] != "")
             {
                 // Transaction must not be signed
                 return rpcError(rpcTX_SIGNED);

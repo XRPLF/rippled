@@ -504,7 +504,7 @@ transactionPreProcessImpl(
     }
     else if (signingArgs.isSingleSigning())
     {
-        if (tx_json.isMember(sfSigners.jsonName))
+        if (tx_json.isMember(jss::Signers))
             return rpcError(rpcALREADY_MULTISIG);
     }
 
@@ -727,20 +727,20 @@ getBaseFee(Application const& app, Config const& config, Json::Value tx)
     {
         tx[jss::TxnSignature] = "";
     }
-    if (tx.isMember(sfSigners.jsonName))
+    if (tx.isMember(jss::Signers))
     {
-        if (!tx[sfSigners.jsonName].isArray())
+        if (!tx[jss::Signers].isArray())
             return config.FEES.reference_fee;
         // check multisigned signers
-        for (auto& signer : tx[sfSigners.jsonName])
+        for (auto& signer : tx[jss::Signers])
         {
-            if (!signer.isMember(sfSigner.jsonName) ||
-                !signer[sfSigner.jsonName].isObject())
+            if (!signer.isMember(jss::Signer) ||
+                !signer[jss::Signer].isObject())
                 return config.FEES.reference_fee;
-            if (!signer[sfSigner.jsonName].isMember(sfTxnSignature.jsonName))
+            if (!signer[jss::Signer].isMember(sfTxnSignature.jsonName))
             {
                 // autofill TxnSignature
-                signer[sfSigner.jsonName][sfTxnSignature.jsonName] = "";
+                signer[jss::Signer][sfTxnSignature.jsonName] = "";
             }
         }
     }
