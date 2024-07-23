@@ -639,7 +639,7 @@ class Simulate_test : public beast::unit_test::suite
             tx[sfSigningPubKey.jsonName] = "";
             tx[sfTxnSignature.jsonName] = "";
             tx[sfSequence.jsonName] = 5;
-            tx[sfFee.jsonName] = "20";
+            tx[sfFee.jsonName] = "20";  // also tests a non-base fee
             tx[sfSigners.jsonName][0u][sfSigner.jsonName][jss::TxnSignature] =
                 "";
 
