@@ -123,11 +123,6 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
             ? 0
             : context.app.getTxQ().nextQueuableSeq(sle).value();
     }
-    if (!tx_json.isMember(jss::NetworkID) &&
-        context.app.config().NETWORK_ID > 1024)
-    {
-        tx_json[jss::NetworkID] = context.app.config().NETWORK_ID;
-    }
 
     return std::nullopt;
 }

@@ -37,16 +37,6 @@ namespace test {
 
 class Simulate_test : public beast::unit_test::suite
 {
-    std::unique_ptr<Config>
-    makeNetworkConfig(uint32_t networkID)
-    {
-        using namespace jtx;
-        return envconfig([&](std::unique_ptr<Config> cfg) {
-            cfg->NETWORK_ID = networkID;
-            return cfg;
-        });
-    }
-
     void
     checkBasicReturnValidity(
         Json::Value& result,
@@ -421,11 +411,10 @@ class Simulate_test : public beast::unit_test::suite
     void
     testTransactionNonTecFailure()
     {
-        testcase("Transaction non-tec failure + NetworkID autofill");
+        testcase("Transaction non-tec failure");
 
         using namespace jtx;
-        // also check NetworkID
-        test::jtx::Env env{*this, makeNetworkConfig(1025)};
+        Env env(*this);
         Account const alice("alice");
 
         {
@@ -433,20 +422,6 @@ class Simulate_test : public beast::unit_test::suite
                 [&](Json::Value resp, Json::Value& tx) {
                     auto result = resp[jss::result];
                     checkBasicReturnValidity(result, tx);
-                    Json::Value tx_json;
-                    if (result.isMember(jss::tx_json))
-                    {
-                        tx_json = result[jss::tx_json];
-                    }
-                    else
-                    {
-                        auto unHexed =
-                            strUnHex(result[jss::tx_blob].asString());
-                        SerialIter sitTrans(makeSlice(*unHexed));
-                        tx_json = STObject(std::ref(sitTrans), sfGeneric)
-                                      .getJson(JsonOptions::none);
-                    }
-                    BEAST_EXPECT(tx_json.get(jss::NetworkID, -1) == 1025);
 
                     BEAST_EXPECT(result[jss::engine_result] == "temBAD_AMOUNT");
                     BEAST_EXPECT(result[jss::engine_result_code] == -298);
