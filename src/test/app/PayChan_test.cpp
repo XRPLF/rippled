@@ -879,7 +879,7 @@ struct PayChan_test : public beast::unit_test::suite
                 Json::Value params;
                 params[jss::account] = param;
                 auto jrr = env.rpc(
-                    "json", "account_tx", to_string(params))[jss::result];
+                    "json", "account_channels", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
                 BEAST_EXPECT(
                     jrr[jss::error_message] == "Invalid field 'account'.");
