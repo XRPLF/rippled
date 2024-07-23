@@ -36,6 +36,22 @@ namespace ripple {
 std::optional<Json::Value>
 autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
 {
+    if (!tx_json.isMember(jss::Fee))
+    {
+        // autofill Fee
+        // Must happen after all the other autofills happen
+        // Error handling/messaging works better that way
+        auto feeOrError = RPC::getCurrentFee(
+            context.role,
+            context.app.config(),
+            context.app.getFeeTrack(),
+            context.app.getTxQ(),
+            context.app,
+            tx_json);
+        if (feeOrError.isMember(jss::error))
+            return feeOrError;
+        tx_json[jss::Fee] = feeOrError;
+    }
     if (!tx_json.isMember(sfSigningPubKey.jsonName))
     {
         // autofill SigningPubKey
@@ -46,11 +62,13 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         if (!tx_json[sfSigners.jsonName].isArray())
             return RPC::invalid_field_error("tx.Signers");
         // check multisigned signers
-        for (auto& signer : tx_json[sfSigners.jsonName])
+        for (int index = 0; index < tx_json[sfSigners.jsonName].size(); index++)
         {
-            if (!signer.isMember(sfSigner.jsonName) ||
+            auto& signer = tx_json[sfSigners.jsonName][index];
+            if (!signer.isObject() || !signer.isMember(sfSigner.jsonName) ||
                 !signer[sfSigner.jsonName].isObject())
-                return RPC::invalid_field_error("tx.Signers");
+                return RPC::invalid_field_error(
+                    "tx.Signers[" + std::to_string(index) + "]");
             if (!signer[sfSigner.jsonName].isMember(sfTxnSignature.jsonName))
             {
                 // autofill TxnSignature
@@ -104,22 +122,6 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         tx_json[jss::Sequence] = hasTicketSeq
             ? 0
             : context.app.getTxQ().nextQueuableSeq(sle).value();
-    }
-    if (!tx_json.isMember(jss::Fee))
-    {
-        // autofill Fee
-        // Must happen after all the other autofills happen
-        // Error handling/messaging works better that way
-        auto feeOrError = RPC::getCurrentFee(
-            context.role,
-            context.app.config(),
-            context.app.getFeeTrack(),
-            context.app.getTxQ(),
-            context.app,
-            tx_json);
-        if (feeOrError.isMember(jss::error))
-            return feeOrError;
-        tx_json[jss::Fee] = feeOrError;
     }
 
     return std::nullopt;

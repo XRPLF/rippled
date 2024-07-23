@@ -730,14 +730,13 @@ getBaseFee(Application const& app, Config const& config, Json::Value tx)
     if (tx.isMember(sfSigners.jsonName))
     {
         if (!tx[sfSigners.jsonName].isArray())
-            Throw<std::runtime_error>(RPC::invalid_field_message("tx.Signers"));
+            return config.FEES.reference_fee;
         // check multisigned signers
         for (auto& signer : tx[sfSigners.jsonName])
         {
             if (!signer.isMember(sfSigner.jsonName) ||
                 !signer[sfSigner.jsonName].isObject())
-                Throw<std::runtime_error>(
-                    RPC::invalid_field_message("tx.Signers"));
+                return config.FEES.reference_fee;
             if (!signer[sfSigner.jsonName].isMember(sfTxnSignature.jsonName))
             {
                 // autofill TxnSignature
