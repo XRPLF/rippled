@@ -44,7 +44,6 @@
 namespace ripple {
 
 class STArray;
-class Rules;
 
 inline void
 throwFieldNotFound(SField const& field)
@@ -105,7 +104,7 @@ public:
     explicit STObject(SField const& name);
 
     static STObject
-    makeInnerObject(SField const& name, Rules const& rules);
+    makeInnerObject(SField const& name);
 
     iterator
     begin() const;

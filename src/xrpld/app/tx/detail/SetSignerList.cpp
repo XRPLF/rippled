@@ -416,11 +416,11 @@ SetSignerList::writeSignersToSLE(
     STArray toLedger(signers_.size());
     for (auto const& entry : signers_)
     {
-        toLedger.emplace_back(sfSignerEntry);
+        toLedger.push_back(STObject::makeInnerObject(sfSignerEntry));
         STObject& obj = toLedger.back();
         obj.reserve(2);
-        obj.setAccountID(sfAccount, entry.account);
-        obj.setFieldU16(sfSignerWeight, entry.weight);
+        obj[sfAccount] = entry.account;
+        obj[sfSignerWeight] = entry.weight;
 
         // This is a defensive check to make absolutely sure we will never write
         // a tag into the ledger while featureExpandedSignerList is not enabled
