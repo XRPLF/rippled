@@ -37,7 +37,7 @@ namespace ripple {
     low bits. When dereferencing the pointer, these low "tag" bits are set to
     zero. When accessing the tag bits, the high "pointer" bits are set to zero.
 
-    The "pointer" part points to to the equivalent to an array of
+    The "pointer" part points to the equivalent to an array of
     `SHAMapHash` followed immediately by an array of
     `shared_ptr<SHAMapTreeNode>`. The sizes of these arrays are
     determined by the tag. The tag is an index into an array (`boundaries`,
