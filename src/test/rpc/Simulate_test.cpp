@@ -145,6 +145,16 @@ class Simulate_test : public beast::unit_test::suite
                 "Invalid field 'binary'.");
         }
         {
+            // Invalid `tx_blob`
+            Json::Value params = Json::objectValue;
+            params[jss::tx_blob] = "12";
+
+            auto resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'tx_blob'.");
+        }
+        {
             // Empty `tx_json`
             Json::Value params = Json::objectValue;
             params[jss::tx_json] = Json::objectValue;

@@ -167,10 +167,16 @@ doSimulate(RPC::JsonContext& context)
 
         if (!unHexed || !unHexed->size())
             return RPC::invalid_field_error(jss::tx_blob);
-
-        SerialIter sitTrans(makeSlice(*unHexed));
-        tx_json =
-            STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::none);
+        try
+        {
+            SerialIter sitTrans(makeSlice(*unHexed));
+            tx_json = STObject(std::ref(sitTrans), sfGeneric)
+                          .getJson(JsonOptions::none);
+        }
+        catch (std::runtime_error& e)
+        {
+            return RPC::invalid_field_error(jss::tx_blob);
+        }
     }
     else if (context.params.isMember(jss::tx_json))
     {
