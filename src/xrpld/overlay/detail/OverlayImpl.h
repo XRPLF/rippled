@@ -627,6 +627,23 @@ private:
         }
         m_stats.peerDisconnects = getPeerDisconnect();
     }
+
+    // Use this function to replace ids_ in a buggy loop similar to this:
+    //
+    // std::unique_lock lock(mutex_);
+    // for (auto p : ids_)
+    // {
+    //     if (auto p = w.lock())
+    //     {
+    //         // . . .
+    //     } // PeerImp owned by p may be destroyed, invalidating the iterator
+    // }
+    auto
+    copyIds(std::unique_lock<std::recursive_mutex>&) const
+    {
+        return std::vector<decltype(ids_)::value_type>(
+            ids_.begin(), ids_.end());
+    }
 };
 
 }  // namespace ripple
