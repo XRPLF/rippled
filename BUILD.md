@@ -259,7 +259,7 @@ It fixes some source files to add missing `#include`s.
     Single-config generators:
 
     ```
-    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
+    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtests=ON ..
     ```
 
     Pass the CMake variable [`CMAKE_BUILD_TYPE`][build_type]
@@ -269,7 +269,7 @@ It fixes some source files to add missing `#include`s.
     Multi-config generators:
 
     ```
-    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
+    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -Dxrpld=ON -Dtests=ON  ..
     ```
 
     **Note:** You can pass build options for `rippled` in this step.
@@ -360,7 +360,7 @@ Example use with some cmake variables set:
 ```
 cd .build
 conan install .. --output-folder . --build missing --settings build_type=Debug
-cmake -DCMAKE_BUILD_TYPE=Debug -Dcoverage=ON -Dcoverage_test_parallelism=2 -Dcoverage_format=html-details -Dcoverage_extra_args="--json coverage.json" -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
+cmake -DCMAKE_BUILD_TYPE=Debug -Dcoverage=ON -Dxrpld=ON -Dtests=ON -Dcoverage_test_parallelism=2 -Dcoverage_format=html-details -Dcoverage_extra_args="--json coverage.json" -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
 cmake --build . --target coverage
 ```
 
