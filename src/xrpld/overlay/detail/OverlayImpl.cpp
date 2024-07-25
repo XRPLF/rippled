@@ -1157,14 +1157,17 @@ OverlayImpl::getActivePeers(
     std::size_t& enabledInSkip) const
 {
     Overlay::PeerSequence ret;
-    std::unique_lock lock(mutex_);
+    std::lock_guard lock(mutex_);
 
     active = ids_.size();
     disabled = enabledInSkip = 0;
     ret.reserve(ids_.size());
 
-    for (auto& [id, w] : copyIds(lock))
+    for (auto i = ids_.begin(); i != ids_.end();)
     {
+        auto w = i->second;
+        auto id = i->first;
+        ++i;  // NOTE: Must increment i before `w.lock()`
         if (auto p = w.lock())
         {
             bool const reduceRelayEnabled = p->txReduceRelayEnabled();
@@ -1204,10 +1207,12 @@ OverlayImpl::findPeerByShortID(Peer::id_t const& id) const
 std::shared_ptr<Peer>
 OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
 {
-    std::unique_lock lock(mutex_);
-    for (auto const& e : copyIds(lock))
+    std::lock_guard lock(mutex_);
+    for (auto i = ids_.begin(); i != ids_.end();)
     {
-        if (auto peer = e.second.lock())
+        auto w = i->second;
+        ++i;  // NOTE: Must increment i before `w.lock()`
+        if (auto peer = w.lock())
         {
             if (peer->getNodePublic() == pubKey)
                 return peer;
