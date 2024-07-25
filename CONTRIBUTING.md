@@ -73,12 +73,23 @@ The source must be formatted according to the style guide below.
 
 Header includes must be [levelized](./Builds/levelization).
 
-Changes should be usually squashed down into one commit with a
-[good commit message](#good-commit-messages).
-In some cases, it is appropriate to organize the changes into
-multiple commits. In that situation, all of the commits should be
-distinct changes and have
-[good commit messages](#good-commit-messages).
+Changes should be usually squashed down into a single commit.
+Some larger or more complicated change sets make more sense,
+and are easier to review if organized into multiple logical commits.
+Either way, all commits should fit the following criteria:
+* Changes should be presented in a single commit or a logical
+  sequence of commits.
+  Specifically, chronological commits that simply
+  reflect the history of how the author implemented
+  the change, "warts and all", are not useful to
+  reviewers.
+* Every commit should have a [good message](#good-commit-messages).
+  to explain a specific aspects of the change.
+* Every commit should be signed.
+* Every commit should be well-formed (builds successfully,
+  unit tests passing), as this helps to resolve merge
+  conflicts, and makes it easier to use `git bisect`
+  to find bugs.
 
 ### Good commit messages
 
@@ -108,14 +119,23 @@ unit tests for Feature X (#1234)`.
 ## Pull requests
 
 In general, pull requests use `develop` as the base branch.
-
 (Hotfixes are an exception.)
 
-Changes to pull requests must be added as new commits.
-Once code reviewers have started looking at your code, please avoid
-force-pushing a branch in a pull request.
-This preserves the ability for reviewers to filter changes since their
-last review.
+If your changes are not quite ready, but you want to make it easily available
+for preliminary examination or review, you can create a "Draft" pull request.
+While a pull request is marked as a "Draft", you can rebase or reorganize the
+commits in the pull request as desired.
+
+Github pull requests are created as "Ready" by default, or you can mark
+a "Draft" pull request as "Ready".
+Once a pull request is marked as "Ready",
+any changes must be added as new commits. Do not
+force-push to a branch in a pull request under review.
+(This includes rebasing your branch onto the updated base branch.
+Use a merge operation, instead or hit the "Update branch" button
+at the bottom of the Github PR page.)
+This preserves the ability for reviewers to filter changes since their last
+review.
 
 A pull request must obtain **approvals from at least two reviewers**
 before it can be considered for merge by a Maintainer.
@@ -184,7 +204,8 @@ Either way, check that:
 * The commits are based on the current tip of `develop`.
 * The commits are clean: No merge commits (except when reverse
   merging), no "[FOLD]" or "fixup!" messages.
-* All commits are signed.
+* All commits are signed. If the commits are not signed by the author, use
+  `git commit --amend -S` to sign them yourself.
 * At least one (but preferably all) of the commits has the PR number
   in the commit message.
 
@@ -218,6 +239,8 @@ the Github UI to merge a release.
 git fetch upstream
 git checkout upstream/develop
 git checkout -b develop-next
+# Use -S on the ff-only merge if prbranch1 isn't signed.
+# Or do another branch first.
 git merge --ff-only user1/prbranch1
 git merge --squash user2/prbranch2
 git commit -S
@@ -249,6 +272,7 @@ rebased, and not using the GitHub UI) to both release and develop.
 git fetch upstream
 git checkout -b upstream--develop -t upstream/develop || git checkout upstream--develop
 git reset --hard upstream/develop
+# develop-next must be signed already!
 git merge --ff-only origin/develop-next
 git checkout -b upstream--release -t upstream/release || git checkout upstream--release
 git reset --hard upstream/release
