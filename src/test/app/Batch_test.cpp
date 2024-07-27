@@ -97,7 +97,6 @@ class Batch_test : public beast::unit_test::suite
         {
             Serializer ss{
                 buildMultiSigningData(jtx::parse(ojv), signer.account.id())};
-            // std::cout << "strHex(ss.slice()): " << strHex(ss.slice()) << "\n";
             auto const sig = ripple::sign(
                 signer.account.pk(), signer.account.sk(), ss.slice());
             jv[sfBatchSigners.jsonName][signer.index][sfBatchSigner.jsonName]
