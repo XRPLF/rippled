@@ -145,13 +145,6 @@ XRPNotCreated::finalize(
 {
     // The net change should never be positive, as this would mean that the
     // transaction created XRP out of thin air. That's not possible.
-
-    // DA: TODO
-    auto const tt = tx.getTxnType();
-    if (tt == ttBATCH && res == tesSUCCESS)
-    {
-        drops_ = -fee.drops();
-    }
     if (drops_ > 0)
     {
         JLOG(j.fatal()) << "Invariant failed: XRP net change was positive: "
