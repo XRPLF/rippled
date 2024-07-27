@@ -415,7 +415,7 @@ Batch::preclaim(PreclaimContext const& ctx)
 TER
 Batch::doApply()
 {
-    Sandbox sb(&ctx_.view(), tapRETRY);
+    Sandbox sb(&ctx_.view());
 
     uint32_t flags = ctx_.tx.getFlags();
     if (flags & tfBatchMask)
