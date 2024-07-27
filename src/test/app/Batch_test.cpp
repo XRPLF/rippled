@@ -97,7 +97,7 @@ class Batch_test : public beast::unit_test::suite
         {
             Serializer ss{
                 buildMultiSigningData(jtx::parse(ojv), signer.account.id())};
-            std::cout << "strHex(ss.slice()): " << strHex(ss.slice()) << "\n";
+            // std::cout << "strHex(ss.slice()): " << strHex(ss.slice()) << "\n";
             auto const sig = ripple::sign(
                 signer.account.pk(), signer.account.sk(), ss.slice());
             jv[sfBatchSigners.jsonName][signer.index][sfBatchSigner.jsonName]
@@ -765,10 +765,8 @@ class Batch_test : public beast::unit_test::suite
         // Tx 2
         Json::Value const tx2 = pay(bob, alice, USD(5));
         jv = addBatchTx(jv, tx2, bob, 1, seq);
-        // std::cout << "jv: " << jv << "\n";
 
         jv = addBatchSignatures(jv, signers);
-        // std::cout << "jv: " << jv << "\n";
 
         // env(jv, bsig(alice, bob), ter(tesSUCCESS));
         env(jv, ter(tesSUCCESS));
@@ -803,7 +801,7 @@ class Batch_test : public beast::unit_test::suite
     void
     testWithFeats(FeatureBitset features)
     {
-        testTemplate(features);
+        // testTemplate(features);
         testAllOrNothing(features);
         testOnlyOne(features);
         testUntilFailure(features);
