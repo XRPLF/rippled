@@ -377,11 +377,10 @@ Batch::preclaim(PreclaimContext const& ctx)
     auto const& txns = ctx.tx.getFieldArray(sfRawTransactions);
     for (std::size_t i = 0; i < txns.size(); ++i)
     {
-        // Cannot continue on failed txns
         if (preflightResults[i] != tesSUCCESS)
         {
-            JLOG(ctx.j.debug()) << "Batch: Failed Preflight Result: "
-                                << preflightResults[i];
+            JLOG(ctx.j.debug())
+                << "Batch: Failed Preflight Result: " << preflightResults[i];
             preclaimResults.push_back(TER(preflightResults[i]));
             continue;
         }
@@ -487,7 +486,8 @@ Batch::doApply()
                 stx,
                 preclaimResults[i],
                 ctx_.view().fees().base,
-                ctx_.base_.open() == 1 ? tapPREFLIGHT_BATCH : ctx_.view().flags(),
+                ctx_.base_.open() == 1 ? tapPREFLIGHT_BATCH
+                                       : ctx_.view().flags(),
                 ctx_.journal);
             auto const _result = invoke_apply(actx);
 
