@@ -303,7 +303,7 @@ Batch::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, TxConsequences::normal};
 }
 
-std::vector<NotTEC> preflightResponses;
+std::vector<NotTEC> preflightResults;
 
 NotTEC
 Batch::preflight(PreflightContext const& ctx)
@@ -325,13 +325,13 @@ Batch::preflight(PreflightContext const& ctx)
     auto const& txns = tx.getFieldArray(sfRawTransactions);
     if (txns.empty())
     {
-        JLOG(ctx.j.error()) << "Batch: txns array empty.";
+        JLOG(ctx.j.debug()) << "Batch: txns array empty.";
         return temMALFORMED;
     }
 
     if (txns.size() > 8)
     {
-        JLOG(ctx.j.error()) << "Batch: txns array exceeds 12 entries.";
+        JLOG(ctx.j.debug()) << "Batch: txns array exceeds 12 entries.";
         return temMALFORMED;
     }
 
@@ -339,34 +339,34 @@ Batch::preflight(PreflightContext const& ctx)
     {
         if (!txn.isFieldPresent(sfTransactionType))
         {
-            JLOG(ctx.j.error())
+            JLOG(ctx.j.debug())
                 << "Batch: TransactionType missing in array entry.";
             return temMALFORMED;
         }
         if (txn.getFieldU16(sfTransactionType) == ttBATCH)
         {
-            JLOG(ctx.j.error()) << "Batch: batch cannot have inner batch txn.";
+            JLOG(ctx.j.debug()) << "Batch: batch cannot have inner batch txn.";
             return temMALFORMED;
         }
 
         AccountID const innerAccount = txn.getAccountID(sfAccount);
         if (!isSwap && innerAccount != outerAccount)
         {
-            JLOG(ctx.j.error()) << "Batch: batch signer mismatch.";
+            JLOG(ctx.j.debug()) << "Batch: batch signer mismatch.";
             return temBAD_SIGNER;
         }
 
         STTx const stx = STTx{std::move(txn)};
         PreflightContext const pfctx(
             ctx.app, stx, ctx.rules, tapPREFLIGHT_BATCH, ctx.j);
-        auto const response = invoke_preflight(pfctx);
-        preflightResponses.push_back(response.first);
+        auto const result = invoke_preflight(pfctx);
+        preflightResults.push_back(result.first);
     }
 
     return preflight2(ctx);
 }
 
-std::vector<TER> preclaimResponses;
+std::vector<TER> preclaimResults;
 
 TER
 Batch::preclaim(PreclaimContext const& ctx)
@@ -378,34 +378,34 @@ Batch::preclaim(PreclaimContext const& ctx)
     for (std::size_t i = 0; i < txns.size(); ++i)
     {
         // Cannot continue on failed txns
-        if (preflightResponses[i] != tesSUCCESS)
+        if (preflightResults[i] != tesSUCCESS)
         {
-            JLOG(ctx.j.error()) << "Batch: Failed Preflight Response: "
-                                << preflightResponses[i];
-            preclaimResponses.push_back(TER(preflightResponses[i]));
+            JLOG(ctx.j.debug()) << "Batch: Failed Preflight Result: "
+                                << preflightResults[i];
+            preclaimResults.push_back(TER(preflightResults[i]));
             continue;
         }
 
         STObject txn = txns[i];
         if (!txn.isFieldPresent(sfTransactionType))
         {
-            JLOG(ctx.j.error())
+            JLOG(ctx.j.debug())
                 << "Batch: TransactionType missing in array entry.";
             return temMALFORMED;
         }
 
         STTx const stx = STTx{std::move(txn)};
         PreclaimContext const pcctx(
-            ctx.app, ctx.view, preflightResponses[i], stx, ctx.flags, ctx.j);
-        auto const response = invoke_preclaim(pcctx);
-        preclaimResponses.push_back(response);
+            ctx.app, ctx.view, preflightResults[i], stx, ctx.flags, ctx.j);
+        auto const result = invoke_preclaim(pcctx);
+        preclaimResults.push_back(result);
     }
 
-    for (auto const& response : preclaimResponses)
+    for (auto const& result : preclaimResults)
     {
-        if (response != tesSUCCESS)
+        if (result != tesSUCCESS)
         {
-            return response;
+            return result;
         }
     }
 
@@ -429,7 +429,7 @@ Batch::doApply()
         STObject txn = txns[i];
         if (!txn.isFieldPresent(sfTransactionType))
         {
-            JLOG(ctx_.journal.error())
+            JLOG(ctx_.journal.debug())
                 << "Batch: TransactionType missing in array entry.";
             return temMALFORMED;
         }
@@ -447,7 +447,7 @@ Batch::doApply()
             ctx_.app,
             ctx_.base_,
             stx,
-            preclaimResponses[i],
+            preclaimResults[i],
             ctx_.view().fees().base,
             tapPREFLIGHT_BATCH,
             ctx_.journal);
@@ -485,10 +485,9 @@ Batch::doApply()
                 ctx_.app,
                 ctx_.base_,
                 stx,
-                preclaimResponses[i],
+                preclaimResults[i],
                 ctx_.view().fees().base,
-                ctx_.base_.open() == 1 ? tapPREFLIGHT_BATCH
-                                       : ctx_.view().flags(),
+                ctx_.base_.open() == 1 ? tapPREFLIGHT_BATCH : ctx_.view().flags(),
                 ctx_.journal);
             auto const _result = invoke_apply(actx);
 
