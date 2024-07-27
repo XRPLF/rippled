@@ -117,14 +117,14 @@ applyTransactions(
         while (it != txns.end())
         {
             auto const txid = it->first.getTXID();
-            auto const isBatch = it->second->isFieldPresent(sfBatchTxn);
+            // auto const isBatch = it->second->isFieldPresent(sfBatchTxn);
             try
             {
-                if (isBatch && view.txExists(txid))
-                {
-                    it = txns.erase(it);
-                    continue;
-                }
+                // if (isBatch && view.txExists(txid))
+                // {
+                //     it = txns.erase(it);
+                //     continue;
+                // }
 
                 if (pass == 0 && built->txExists(txid))
                 {
