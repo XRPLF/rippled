@@ -111,75 +111,6 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
-    testTemplate(FeatureBitset features)
-    {
-        testcase("template");
-
-        using namespace test::jtx;
-        using namespace std::literals;
-
-        // test::jtx::Env env{*this, envconfig()};
-        Env env{
-            *this,
-            envconfig(),
-            features,
-            nullptr,
-            // beast::severities::kWarning
-            beast::severities::kTrace};
-
-        auto const feeDrops = env.current()->fees().base;
-
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
-        auto const carol = Account("carol");
-        env.fund(XRP(1000), alice, bob, carol);
-        env.close();
-
-        auto const seq = env.seq("alice");
-        std::cout << "seq: " << seq << "\n";
-        Json::Value jv;
-        jv[jss::TransactionType] = jss::Batch;
-        jv[jss::Account] = alice.human();
-        jv[jss::Sequence] = seq;
-
-        // Batch Transactions
-        jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
-
-        // Tx 1
-        Json::Value const tx1 = pay(alice, bob, XRP(1));
-        jv = addBatchTx(jv, tx1, alice, 0, seq);
-
-        // Tx 2
-        Json::Value const tx2 = pay(alice, bob, XRP(1));
-        jv = addBatchTx(jv, tx2, alice, 1, seq);
-
-        env(jv, fee(feeDrops * 2), txflags(tfAllOrNothing), ter(tesSUCCESS));
-        env.close();
-
-        std::vector<TestBatchData> testCases = {{
-            {"tesSUCCESS", "Payment", ""},
-            {"tesSUCCESS", "Payment", ""},
-        }};
-
-        Json::Value params;
-        params[jss::ledger_index] = env.current()->seq() - 1;
-        params[jss::transactions] = true;
-        params[jss::expand] = true;
-        auto const jrr = env.rpc("json", "ledger", to_string(params));
-        std::cout << "jrr: " << jrr << "\n";
-        auto const meta = jrr[jss::result][jss::meta];
-        validateBatchTxns(meta, testCases);
-
-        std::cout << "seq: " << env.seq(alice) << "\n";
-        std::cout << "alice: " << env.balance(alice) << "\n";
-        std::cout << "bob: " << env.balance(bob) << "\n";
-
-        BEAST_EXPECT(env.seq(alice) == 7);
-        BEAST_EXPECT(env.balance(alice) == XRP(1000) - XRP(2) - (feeDrops * 2));
-        BEAST_EXPECT(env.balance(bob) == XRP(1000) + XRP(2));
-    }
-
-    void
     testAllOrNothing(FeatureBitset features)
     {
         testcase("all or nothing");
@@ -801,7 +732,6 @@ class Batch_test : public beast::unit_test::suite
     void
     testWithFeats(FeatureBitset features)
     {
-        // testTemplate(features);
         testAllOrNothing(features);
         testOnlyOne(features);
         testUntilFailure(features);
