@@ -1,0 +1,10 @@
+sources:
+  "2.0.8":
+    url: "https://github.com/CPPAlliance/NuDB/archive/2.0.8.tar.gz"
+    sha256: "9b71903d8ba111cd893ab064b9a8b6ac4124ed8bd6b4f67250205bc43c7f13a8"
+patches:
+  "2.0.8":
+    - patch_file: "patches/2.0.8-0001-add-include-stdexcept-for-msvc.patch"
+      patch_description: "Fix build for MSVC by including stdexcept"
+      patch_type: "portability"
+      patch_source: "https://github.com/cppalliance/NuDB/pull/100/files"
