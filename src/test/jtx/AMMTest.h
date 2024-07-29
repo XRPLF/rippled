@@ -19,11 +19,11 @@
 #ifndef RIPPLE_TEST_JTX_AMMTEST_H_INCLUDED
 #define RIPPLE_TEST_JTX_AMMTEST_H_INCLUDED
 
-#include <ripple/beast/unit_test/suite.h>
-#include <ripple/protocol/Feature.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/ter.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/Feature.h>
 
 namespace ripple {
 namespace test {

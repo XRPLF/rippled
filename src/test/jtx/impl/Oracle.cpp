@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx/Oracle.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/jss.h>
 
 #include <boost/lexical_cast/try_lexical_convert.hpp>
 #include <boost/regex.hpp>

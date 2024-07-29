@@ -21,6 +21,7 @@ class Xrpl(ConanFile):
         'static': [True, False],
         'tests': [True, False],
         'unity': [True, False],
+        'xrpld': [True, False],
     }
 
     requires = [
@@ -29,10 +30,9 @@ class Xrpl(ConanFile):
         'libarchive/3.6.2',
         'nudb/2.0.8',
         'openssl/1.1.1u',
-        'snappy/1.1.10',
         'soci/4.0.3',
-        'zlib/1.2.13',
         'xxhash/0.8.2',
+        'zlib/1.2.13',
     ]
 
     tool_requires = [
@@ -48,8 +48,9 @@ class Xrpl(ConanFile):
         'rocksdb': True,
         'shared': False,
         'static': True,
-        'tests': True,
+        'tests': False,
         'unity': False,
+        'xrpld': False,
 
         'cassandra-cpp-driver/*:shared': False,
         'cassandra-cpp-driver/*:use_atomic': None,
@@ -91,7 +92,7 @@ class Xrpl(ConanFile):
     }
 
     def set_version(self):
-        path = f'{self.recipe_folder}/src/ripple/protocol/impl/BuildInfo.cpp'
+        path = f'{self.recipe_folder}/src/libxrpl/protocol/BuildInfo.cpp'
         regex = r'versionString\s?=\s?\"(.*)\"'
         with open(path, 'r') as file:
             matches = (re.search(regex, line) for line in file)
@@ -117,10 +118,11 @@ class Xrpl(ConanFile):
 
     exports_sources = (
         'CMakeLists.txt',
-        'Builds/*',
         'bin/getRippledInfo',
         'cfg/*',
+        'cmake/*',
         'external/*',
+        'include/*',
         'src/*',
     )
 
@@ -142,6 +144,7 @@ class Xrpl(ConanFile):
         tc.variables['BUILD_SHARED_LIBS'] = self.options.shared
         tc.variables['static'] = self.options.static
         tc.variables['unity'] = self.options.unity
+        tc.variables['xrpld'] = self.options.xrpld
         tc.generate()
 
     def build(self):
@@ -158,7 +161,7 @@ class Xrpl(ConanFile):
     def package_info(self):
         libxrpl = self.cpp_info.components['libxrpl']
         libxrpl.libs = [
-            'xrpl_core',
+            'xrpl',
             'xrpl.libpb',
             'ed25519',
             'secp256k1',
@@ -175,7 +178,6 @@ class Xrpl(ConanFile):
             'nudb::nudb',
             'openssl::crypto',
             'protobuf::libprotobuf',
-            'snappy::snappy',
             'soci::soci',
             'sqlite3::sqlite',
             'xxhash::xxhash',

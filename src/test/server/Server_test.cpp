@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/basics/make_SSLContext.h>
-#include <ripple/beast/rfc2616.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/server/Server.h>
-#include <ripple/server/Session.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpl/basics/make_SSLContext.h>
+#include <xrpl/beast/rfc2616.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/server/Server.h>
+#include <xrpl/server/Session.h>
 
 #include <test/jtx.h>
 #include <test/jtx/CaptureLogs.h>
