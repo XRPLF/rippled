@@ -30,7 +30,7 @@ Expected<std::vector<SignerEntries::SignerEntry>, NotTEC>
 SignerEntries::deserialize(
     STObject const& obj,
     beast::Journal journal,
-    std::string const& annotation)
+    std::string_view annotation)
 {
     std::pair<std::vector<SignerEntry>, NotTEC> s;
 
