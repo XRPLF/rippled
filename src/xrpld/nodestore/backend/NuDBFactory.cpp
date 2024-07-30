@@ -30,8 +30,10 @@
 #include <cstdio>
 #include <exception>
 #include <memory>
-#include <stdexcept> // nudb fails to include this header.
+// clang-format off
+#include <stdexcept>  // nudb fails to include this header.
 #include <nudb/nudb.hpp>
+// clang-format on
 
 namespace ripple {
 namespace NodeStore {
