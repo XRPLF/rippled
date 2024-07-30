@@ -665,6 +665,9 @@ class Batch_test : public beast::unit_test::suite
         env(pay(gw, bob, USD(100)));
         env.close();
 
+        env(noop(bob), ter(tesSUCCESS));
+        env.close();
+
         auto const preAlice = env.balance(alice);
         auto const preAliceUSD = env.balance(alice, USD.issue());
         auto const preBob = env.balance(bob);
@@ -675,11 +678,10 @@ class Batch_test : public beast::unit_test::suite
             {1, bob},
         }};
 
-        auto const seq = env.seq(alice);
         Json::Value jv;
         jv[jss::TransactionType] = jss::Batch;
         jv[jss::Account] = alice.human();
-        jv[jss::Sequence] = seq;
+        jv[jss::Sequence] = env.seq(alice);
         auto const batchFee = ((signers.size() + 2) * feeDrops) + feeDrops * 2;
         jv[jss::Fee] = to_string(batchFee);
         jv[jss::Flags] = tfAllOrNothing;
@@ -690,11 +692,11 @@ class Batch_test : public beast::unit_test::suite
 
         // Tx 1
         Json::Value tx1 = pay(alice, bob, USD(10));
-        jv = addBatchTx(jv, tx1, alice, 0, seq);
+        jv = addBatchTx(jv, tx1, alice, 0, env.seq(alice));
 
         // Tx 2
         Json::Value const tx2 = pay(bob, alice, USD(5));
-        jv = addBatchTx(jv, tx2, bob, 1, seq);
+        jv = addBatchTx(jv, tx2, bob, 1, env.seq(bob));
 
         jv = addBatchSignatures(jv, signers);
 
