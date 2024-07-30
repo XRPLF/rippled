@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/impl/TimeoutCounter.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/core/JobQueue.h>
-#include <ripple/overlay/Overlay.h>
+#include <xrpld/app/ledger/detail/TimeoutCounter.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/core/JobQueue.h>
+#include <xrpld/overlay/Overlay.h>
 
 namespace ripple {
 

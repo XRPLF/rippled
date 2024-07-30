@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 #include <unordered_map>
 

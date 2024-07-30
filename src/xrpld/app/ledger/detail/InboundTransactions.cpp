@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/InboundLedgers.h>
-#include <ripple/app/ledger/InboundTransactions.h>
-#include <ripple/app/ledger/impl/TransactionAcquire.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/basics/Log.h>
-#include <ripple/core/JobQueue.h>
-#include <ripple/protocol/RippleLedgerHash.h>
-#include <ripple/resource/Fees.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
+#include <xrpld/app/ledger/InboundTransactions.h>
+#include <xrpld/app/ledger/detail/TransactionAcquire.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/core/JobQueue.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/resource/Fees.h>
 #include <memory>
 #include <mutex>
 

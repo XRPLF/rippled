@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_LEDGER_ACCEPTEDLEDGERTX_H_INCLUDED
 #define RIPPLE_APP_LEDGER_ACCEPTEDLEDGERTX_H_INCLUDED
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/protocol/AccountID.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpl/protocol/AccountID.h>
 #include <boost/container/flat_set.hpp>
 
 namespace ripple {

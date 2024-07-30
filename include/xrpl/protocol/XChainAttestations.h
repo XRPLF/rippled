@@ -20,16 +20,16 @@
 #ifndef RIPPLE_PROTOCOL_STXATTESTATIONS_H_INCLUDED
 #define RIPPLE_PROTOCOL_STXATTESTATIONS_H_INCLUDED
 
-#include <ripple/basics/Buffer.h>
-#include <ripple/basics/Expected.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/Issue.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/STBase.h>
-#include <ripple/protocol/STXChainBridge.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/TER.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Expected.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/TER.h>
 
 #include <boost/container/flat_set.hpp>
 #include <boost/container/vector.hpp>

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_SHAMAP_SHAMAPNODEID_H_INCLUDED
 #define RIPPLE_SHAMAP_SHAMAPNODEID_H_INCLUDED
 
-#include <ripple/basics/CountedObject.h>
-#include <ripple/basics/base_uint.h>
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
 #include <optional>
 #include <ostream>
 #include <string>

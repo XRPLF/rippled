@@ -20,12 +20,12 @@
 #ifndef RIPPLE_RPC_SHARDARCHIVEHANDLER_H_INCLUDED
 #define RIPPLE_RPC_SHARDARCHIVEHANDLER_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/core/DatabaseCon.h>
-#include <ripple/net/DatabaseDownloader.h>
-#include <ripple/rpc/ShardVerificationScheduler.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/core/DatabaseCon.h>
+#include <xrpld/net/DatabaseDownloader.h>
+#include <xrpld/rpc/ShardVerificationScheduler.h>
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/StringUtilities.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/filesystem.hpp>

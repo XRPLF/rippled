@@ -20,17 +20,17 @@
 #ifndef RIPPLE_RESOURCE_LOGIC_H_INCLUDED
 #define RIPPLE_RESOURCE_LOGIC_H_INCLUDED
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/UnorderedContainers.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/clock/abstract_clock.h>
-#include <ripple/beast/insight/Insight.h>
-#include <ripple/beast/utility/PropertyStream.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/resource/Gossip.h>
-#include <ripple/resource/impl/Import.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/beast/insight/Insight.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Fees.h>
+#include <xrpl/resource/Gossip.h>
+#include <xrpl/resource/detail/Import.h>
 #include <cassert>
 #include <mutex>
 

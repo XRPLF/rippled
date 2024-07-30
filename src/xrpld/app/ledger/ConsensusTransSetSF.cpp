@@ -17,16 +17,16 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/ConsensusTransSetSF.h>
-#include <ripple/app/ledger/TransactionMaster.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/basics/Log.h>
-#include <ripple/core/JobQueue.h>
-#include <ripple/nodestore/Database.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/digest.h>
+#include <xrpld/app/ledger/ConsensusTransSetSF.h>
+#include <xrpld/app/ledger/TransactionMaster.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/misc/Transaction.h>
+#include <xrpld/core/JobQueue.h>
+#include <xrpld/nodestore/Database.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/digest.h>
 
 namespace ripple {
 

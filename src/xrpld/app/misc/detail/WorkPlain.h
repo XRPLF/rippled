@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_MISC_DETAIL_WORKPLAIN_H_INCLUDED
 #define RIPPLE_APP_MISC_DETAIL_WORKPLAIN_H_INCLUDED
 
-#include <ripple/app/misc/detail/WorkBase.h>
+#include <xrpld/app/misc/detail/WorkBase.h>
 
 namespace ripple {
 

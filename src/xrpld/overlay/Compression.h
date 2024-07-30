@@ -20,8 +20,8 @@
 #ifndef RIPPLED_COMPRESSION_H_INCLUDED
 #define RIPPLED_COMPRESSION_H_INCLUDED
 
-#include <ripple/basics/CompressionAlgorithms.h>
-#include <ripple/basics/Log.h>
+#include <xrpl/basics/CompressionAlgorithms.h>
+#include <xrpl/basics/Log.h>
 #include <lz4frame.h>
 
 namespace ripple {

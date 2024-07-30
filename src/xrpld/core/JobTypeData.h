@@ -20,9 +20,9 @@
 #ifndef RIPPLE_CORE_JOBTYPEDATA_H_INCLUDED
 #define RIPPLE_CORE_JOBTYPEDATA_H_INCLUDED
 
-#include <ripple/basics/Log.h>
-#include <ripple/beast/insight/Collector.h>
-#include <ripple/core/JobTypeInfo.h>
+#include <xrpld/core/JobTypeInfo.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/insight/Collector.h>
 
 namespace ripple {
 

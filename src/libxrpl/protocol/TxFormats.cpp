@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/TxFormats.h>
+#include <xrpl/protocol/TxFormats.h>
 
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/SOTemplate.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

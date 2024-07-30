@@ -20,11 +20,11 @@
 #ifndef RIPPLE_SERVER_DOOR_H_INCLUDED
 #define RIPPLE_SERVER_DOOR_H_INCLUDED
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/contract.h>
-#include <ripple/server/impl/PlainHTTPPeer.h>
-#include <ripple/server/impl/SSLHTTPPeer.h>
-#include <ripple/server/impl/io_list.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/server/detail/PlainHTTPPeer.h>
+#include <xrpl/server/detail/SSLHTTPPeer.h>
+#include <xrpl/server/detail/io_list.h>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/io_context.hpp>

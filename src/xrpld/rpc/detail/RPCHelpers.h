@@ -20,17 +20,17 @@
 #ifndef RIPPLE_RPC_RPCHELPERS_H_INCLUDED
 #define RIPPLE_RPC_RPCHELPERS_H_INCLUDED
 
-#include <ripple/beast/core/SemanticVersion.h>
-#include <ripple/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
-#include <ripple/protocol/ApiVersion.h>
-#include <ripple/protocol/TxMeta.h>
+#include <xrpl/beast/core/SemanticVersion.h>
+#include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
+#include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/TxMeta.h>
 
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/misc/TxQ.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/Status.h>
-#include <ripple/rpc/impl/Tuning.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/misc/TxQ.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Status.h>
+#include <xrpld/rpc/detail/Tuning.h>
+#include <xrpl/protocol/SecretKey.h>
 
 #include <optional>
 #include <variant>

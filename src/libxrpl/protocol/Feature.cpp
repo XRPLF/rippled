@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Feature.h>
+#include <xrpl/protocol/Feature.h>
 
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/contract.h>
-#include <ripple/protocol/digest.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/digest.h>
 #include <boost/container_hash/hash.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/key_extractors.hpp>

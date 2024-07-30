@@ -20,8 +20,8 @@
 #ifndef RIPPLE_SHAMAP_SHARDFAMILY_H_INCLUDED
 #define RIPPLE_SHAMAP_SHARDFAMILY_H_INCLUDED
 
-#include <ripple/app/main/CollectorManager.h>
-#include <ripple/shamap/Family.h>
+#include <xrpld/app/main/CollectorManager.h>
+#include <xrpld/shamap/Family.h>
 
 namespace ripple {
 

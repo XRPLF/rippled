@@ -54,7 +54,7 @@
 
 */
 
-#include <ripple/basics/base64.h>
+#include <xrpl/basics/base64.h>
 
 #include <cctype>
 #include <utility>

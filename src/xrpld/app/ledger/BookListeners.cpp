@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/OrderBookDB.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/json/to_string.h>
+#include <xrpld/app/ledger/OrderBookDB.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpl/json/to_string.h>
 
 namespace ripple {
 

@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
-#include <ripple/shamap/SHAMapInnerNode.h>
+#include <xrpld/shamap/SHAMapInnerNode.h>
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/contract.h>
-#include <ripple/basics/spinlock.h>
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/shamap/SHAMapTreeNode.h>
-#include <ripple/shamap/impl/TaggedPointer.ipp>
+#include <xrpld/shamap/SHAMapTreeNode.h>
+#include <xrpld/shamap/detail/TaggedPointer.ipp>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/spinlock.h>
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/digest.h>
 
 #include <algorithm>
 #include <iterator>

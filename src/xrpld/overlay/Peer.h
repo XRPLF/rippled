@@ -20,11 +20,11 @@
 #ifndef RIPPLE_OVERLAY_PEER_H_INCLUDED
 #define RIPPLE_OVERLAY_PEER_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
-#include <ripple/beast/net/IPEndpoint.h>
-#include <ripple/json/json_value.h>
-#include <ripple/overlay/Message.h>
-#include <ripple/protocol/PublicKey.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/PublicKey.h>
 
 namespace ripple {
 

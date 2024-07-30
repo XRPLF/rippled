@@ -20,11 +20,11 @@
 #ifndef RIPPLE_SHAMAP_FULLBELOWCACHE_H_INCLUDED
 #define RIPPLE_SHAMAP_FULLBELOWCACHE_H_INCLUDED
 
-#include <ripple/basics/KeyCache.h>
-#include <ripple/basics/TaggedCache.h>
-#include <ripple/basics/base_uint.h>
-#include <ripple/beast/insight/Collector.h>
-#include <ripple/beast/utility/Journal.h>
+#include <xrpl/basics/KeyCache.h>
+#include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <atomic>
 #include <string>
 

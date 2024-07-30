@@ -20,10 +20,10 @@
 #ifndef RIPPLE_APP_REPORTING_P2PPROXY_H_INCLUDED
 #define RIPPLE_APP_REPORTING_P2PPROXY_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
-#include <ripple/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/impl/Handler.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/detail/Handler.h>
+#include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 
 #include <boost/beast/websocket.hpp>
 #include <grpcpp/grpcpp.h>

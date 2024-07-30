@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/contract.h>
-#include <ripple/json/to_string.h>
-#include <ripple/net/RPCCall.h>
-#include <ripple/net/RPCSub.h>
+#include <xrpld/net/RPCCall.h>
+#include <xrpld/net/RPCSub.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/to_string.h>
 #include <deque>
 
 namespace ripple {

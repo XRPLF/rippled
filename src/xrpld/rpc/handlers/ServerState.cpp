@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/RPCErr.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/rpc/Role.h>
-#include <ripple/rpc/impl/TransactionSign.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/TransactionSign.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/json/json_value.h>
-#include <ripple/rpc/impl/Handler.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/rpc/detail/Handler.h>
+#include <xrpl/json/json_value.h>
 
 #include <mutex>
 

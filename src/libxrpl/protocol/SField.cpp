@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/SField.h>
+#include <xrpl/protocol/SField.h>
 #include <cassert>
 #include <string>
 #include <string_view>

@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/basics/strHex.h>
-#include <ripple/beast/utility/rngfill.h>
-#include <ripple/crypto/csprng.h>
-#include <ripple/crypto/secure_erase.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/impl/secp256k1.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/rngfill.h>
+#include <xrpl/crypto/csprng.h>
+#include <xrpl/crypto/secure_erase.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/detail/secp256k1.h>
+#include <xrpl/protocol/digest.h>
 #include <cstring>
 #include <ed25519.h>
 

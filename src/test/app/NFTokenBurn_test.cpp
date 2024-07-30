@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/ApplyContext.h>
-#include <ripple/app/tx/impl/details/NFTokenUtils.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <xrpld/app/tx/detail/ApplyContext.h>
+#include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 #include <random>
 
@@ -324,7 +324,8 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
             // Otherwise either alice or minter can burn.
             AcctStat& burner = owner.acct == becky.acct
                 ? *(stats[acctDist(engine)])
-                : mintDist(engine) ? alice : minter;
+                : mintDist(engine) ? alice
+                                   : minter;
 
             if (owner.acct == burner.acct)
                 env(token::burn(burner, nft));

@@ -17,22 +17,22 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/AcceptedLedger.h>
-#include <ripple/app/ledger/InboundLedgers.h>
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/rdb/backend/SQLiteDatabase.h>
-#include <ripple/basics/UptimeClock.h>
-#include <ripple/json/json_value.h>
-#include <ripple/ledger/CachedSLEs.h>
-#include <ripple/nodestore/Database.h>
-#include <ripple/nodestore/DatabaseShard.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/RPCErr.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/Context.h>
-#include <ripple/shamap/ShardFamily.h>
+#include <xrpld/app/ledger/AcceptedLedger.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/ledger/CachedSLEs.h>
+#include <xrpld/nodestore/Database.h>
+#include <xrpld/nodestore/DatabaseShard.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/shamap/ShardFamily.h>
+#include <xrpl/basics/UptimeClock.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_TER_H_INCLUDED
 #define RIPPLE_PROTOCOL_TER_H_INCLUDED
 
-#include <ripple/basics/safe_cast.h>
-#include <ripple/json/json_value.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/json/json_value.h>
 
 #include <optional>
 #include <ostream>

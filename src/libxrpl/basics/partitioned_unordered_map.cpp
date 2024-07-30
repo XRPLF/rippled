@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/basics/partitioned_unordered_map.h>
+#include <xrpl/basics/partitioned_unordered_map.h>
 
-#include <ripple/basics/SHAMapHash.h>
-#include <ripple/basics/base_uint.h>
-#include <ripple/beast/hash/uhash.h>
-#include <ripple/protocol/Protocol.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/protocol/Protocol.h>
 #include <limits>
 #include <string>
 

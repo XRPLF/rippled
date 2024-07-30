@@ -20,13 +20,13 @@
 #ifndef RIPPLE_LEDGER_APPLYSTATETABLE_H_INCLUDED
 #define RIPPLE_LEDGER_APPLYSTATETABLE_H_INCLUDED
 
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/ledger/OpenView.h>
-#include <ripple/ledger/RawView.h>
-#include <ripple/ledger/ReadView.h>
-#include <ripple/protocol/TER.h>
-#include <ripple/protocol/TxMeta.h>
+#include <xrpld/ledger/OpenView.h>
+#include <xrpld/ledger/RawView.h>
+#include <xrpld/ledger/ReadView.h>
+#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxMeta.h>
 #include <memory>
 
 namespace ripple {

@@ -25,12 +25,12 @@
 #ifndef RIPPLE_BASICS_BASE_UINT_H_INCLUDED
 #define RIPPLE_BASICS_BASE_UINT_H_INCLUDED
 
-#include <ripple/basics/Expected.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/contract.h>
-#include <ripple/basics/hardened_hash.h>
-#include <ripple/basics/strHex.h>
-#include <ripple/beast/utility/Zero.h>
+#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/hardened_hash.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <boost/endian/conversion.hpp>
 #include <boost/functional/hash.hpp>
 #include <algorithm>

@@ -20,11 +20,11 @@
 #ifndef RIPPLE_APP_PEERS_PEERSET_H_INCLUDED
 #define RIPPLE_APP_PEERS_PEERSET_H_INCLUDED
 
-#include <ripple/app/main/Application.h>
-#include <ripple/beast/clock/abstract_clock.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/overlay/Peer.h>
-#include <ripple/overlay/impl/ProtocolMessage.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Peer.h>
+#include <xrpld/overlay/detail/ProtocolMessage.h>
+#include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <mutex>
 #include <set>

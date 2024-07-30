@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/beast/insight/Hook.h>
+#include <xrpl/beast/insight/Hook.h>
 
 namespace beast {
 namespace insight {

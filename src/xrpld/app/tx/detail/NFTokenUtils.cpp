@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/details/NFTokenUtils.h>
-#include <ripple/basics/algorithm.h>
-#include <ripple/ledger/Directory.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/STArray.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/nftPageMask.h>
+#include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/ledger/Directory.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/basics/algorithm.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/nftPageMask.h>
 #include <functional>
 #include <memory>
 

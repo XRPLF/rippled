@@ -20,7 +20,7 @@
 #ifndef RIPPLE_SERVER_PLAINWSPEER_H_INCLUDED
 #define RIPPLE_SERVER_PLAINWSPEER_H_INCLUDED
 
-#include <ripple/server/impl/BaseWSPeer.h>
+#include <xrpl/server/detail/BaseWSPeer.h>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <memory>
 

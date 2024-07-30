@@ -20,9 +20,9 @@
 #ifndef RIPPLE_TX_CREATEOFFER_H_INCLUDED
 #define RIPPLE_TX_CREATEOFFER_H_INCLUDED
 
-#include <ripple/app/tx/impl/OfferStream.h>
-#include <ripple/app/tx/impl/Taker.h>
-#include <ripple/app/tx/impl/Transactor.h>
+#include <xrpld/app/tx/detail/OfferStream.h>
+#include <xrpld/app/tx/detail/Taker.h>
+#include <xrpld/app/tx/detail/Transactor.h>
 #include <utility>
 
 namespace ripple {

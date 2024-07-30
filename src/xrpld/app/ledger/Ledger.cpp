@@ -17,45 +17,45 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/AcceptedLedger.h>
-#include <ripple/app/ledger/InboundLedgers.h>
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/LedgerToJson.h>
-#include <ripple/app/ledger/OrderBookDB.h>
-#include <ripple/app/ledger/PendingSaves.h>
-#include <ripple/app/ledger/TransactionMaster.h>
-#include <ripple/app/main/Application.h>
-#include <ripple/app/misc/HashRouter.h>
-#include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/rdb/backend/PostgresDatabase.h>
-#include <ripple/app/rdb/backend/SQLiteDatabase.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/contract.h>
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/consensus/LedgerTiming.h>
-#include <ripple/core/Config.h>
-#include <ripple/core/JobQueue.h>
-#include <ripple/core/Pg.h>
-#include <ripple/core/SociDB.h>
-#include <ripple/json/to_string.h>
-#include <ripple/nodestore/Database.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/UintTypes.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/jss.h>
+#include <xrpld/app/ledger/AcceptedLedger.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/app/ledger/OrderBookDB.h>
+#include <xrpld/app/ledger/PendingSaves.h>
+#include <xrpld/app/ledger/TransactionMaster.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/misc/LoadFeeTrack.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/rdb/backend/PostgresDatabase.h>
+#include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/consensus/LedgerTiming.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/core/JobQueue.h>
+#include <xrpld/core/Pg.h>
+#include <xrpld/core/SociDB.h>
+#include <xrpld/nodestore/Database.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/jss.h>
 #include <boost/optional.hpp>
 #include <cassert>
 #include <utility>
 #include <vector>
 
-#include <ripple/nodestore/impl/DatabaseNodeImp.h>
+#include <xrpld/nodestore/detail/DatabaseNodeImp.h>
 
 namespace ripple {
 

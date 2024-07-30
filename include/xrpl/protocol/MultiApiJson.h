@@ -20,8 +20,8 @@
 #ifndef RIPPLE_JSON_MULTIAPIJSON_H_INCLUDED
 #define RIPPLE_JSON_MULTIAPIJSON_H_INCLUDED
 
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/ApiVersion.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ApiVersion.h>
 
 #include <array>
 #include <cassert>

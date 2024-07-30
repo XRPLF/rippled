@@ -19,9 +19,9 @@
 
 #include <test/jtx/ledgerStateFix.h>
 
-#include <ripple/app/tx/impl/LedgerStateFix.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/jss.h>
+#include <xrpld/app/tx/detail/LedgerStateFix.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {

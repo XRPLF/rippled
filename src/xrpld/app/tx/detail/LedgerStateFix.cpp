@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/LedgerStateFix.h>
+#include <xrpld/app/tx/detail/LedgerStateFix.h>
 
-#include <ripple/app/tx/impl/details/NFTokenUtils.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/TxFlags.h>
+#include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 

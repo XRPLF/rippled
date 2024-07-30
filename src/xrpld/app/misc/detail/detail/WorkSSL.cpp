@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/detail/WorkSSL.h>
+#include <xrpld/app/misc/detail/WorkSSL.h>
 
 namespace ripple {
 namespace detail {

@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PROTOCOL_NFTSYNTHETICSERIALIZER_H_INCLUDED
 #define RIPPLE_PROTOCOL_NFTSYNTHETICSERIALIZER_H_INCLUDED
 
-#include <ripple/json/json_forwards.h>
-#include <ripple/protocol/STTx.h>
-#include <ripple/protocol/TxMeta.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TxMeta.h>
 
 #include <memory>
 

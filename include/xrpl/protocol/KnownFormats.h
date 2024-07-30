@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PROTOCOL_KNOWNFORMATS_H_INCLUDED
 #define RIPPLE_PROTOCOL_KNOWNFORMATS_H_INCLUDED
 
-#include <ripple/basics/contract.h>
-#include <ripple/beast/type_name.h>
-#include <ripple/protocol/SOTemplate.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/type_name.h>
+#include <xrpl/protocol/SOTemplate.h>
 #include <boost/container/flat_map.hpp>
 #include <algorithm>
 #include <forward_list>

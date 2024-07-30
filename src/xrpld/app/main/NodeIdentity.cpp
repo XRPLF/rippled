@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/Application.h>
-#include <ripple/app/main/NodeIdentity.h>
-#include <ripple/app/rdb/Wallet.h>
-#include <ripple/core/Config.h>
-#include <ripple/core/ConfigSections.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/main/NodeIdentity.h>
+#include <xrpld/app/rdb/Wallet.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/core/ConfigSections.h>
 #include <boost/optional.hpp>
 
 namespace ripple {

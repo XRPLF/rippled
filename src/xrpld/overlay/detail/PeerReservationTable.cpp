@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/overlay/PeerReservationTable.h>
+#include <xrpld/overlay/PeerReservationTable.h>
 
-#include <ripple/app/rdb/RelationalDatabase.h>
-#include <ripple/app/rdb/Wallet.h>
-#include <ripple/basics/Log.h>
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/jss.h>
+#include <xrpld/app/rdb/RelationalDatabase.h>
+#include <xrpld/app/rdb/Wallet.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/jss.h>
 
 #include <boost/optional.hpp>
 

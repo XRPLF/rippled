@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/basics/PerfLog.h>
-#include <ripple/beast/core/CurrentThreadName.h>
-#include <ripple/core/impl/Workers.h>
+#include <xrpld/core/detail/Workers.h>
+#include <xrpld/perflog/PerfLog.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
 #include <cassert>
 
 namespace ripple {

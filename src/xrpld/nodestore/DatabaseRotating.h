@@ -20,7 +20,7 @@
 #ifndef RIPPLE_NODESTORE_DATABASEROTATING_H_INCLUDED
 #define RIPPLE_NODESTORE_DATABASEROTATING_H_INCLUDED
 
-#include <ripple/nodestore/Database.h>
+#include <xrpld/nodestore/Database.h>
 
 namespace ripple {
 namespace NodeStore {

@@ -20,10 +20,10 @@
 #ifndef RIPPLE_CONDITIONS_UTILS_H
 #define RIPPLE_CONDITIONS_UTILS_H
 
-#include <ripple/basics/Buffer.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/strHex.h>
-#include <ripple/conditions/impl/error.h>
+#include <xrpld/conditions/detail/error.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/strHex.h>
 #include <boost/dynamic_bitset.hpp>
 #include <iomanip>
 #include <limits>

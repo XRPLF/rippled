@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/contract.h>
-#include <ripple/beast/core/LexicalCast.h>
-#include <ripple/net/AutoSocket.h>
-#include <ripple/net/HTTPClient.h>
-#include <ripple/net/HTTPClientSSLContext.h>
+#include <xrpld/net/AutoSocket.h>
+#include <xrpld/net/HTTPClient.h>
+#include <xrpld/net/HTTPClientSSLContext.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/core/LexicalCast.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>

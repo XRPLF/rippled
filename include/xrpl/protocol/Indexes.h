@@ -20,15 +20,15 @@
 #ifndef RIPPLE_PROTOCOL_INDEXES_H_INCLUDED
 #define RIPPLE_PROTOCOL_INDEXES_H_INCLUDED
 
-#include <ripple/basics/base_uint.h>
-#include <ripple/protocol/Book.h>
-#include <ripple/protocol/Keylet.h>
-#include <ripple/protocol/LedgerFormats.h>
-#include <ripple/protocol/Protocol.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/STXChainBridge.h>
-#include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/UintTypes.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <cstdint>
 
 namespace ripple {

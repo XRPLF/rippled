@@ -20,12 +20,12 @@
 #ifndef RIPPLE_CORE_JOBQUEUE_H_INCLUDED
 #define RIPPLE_CORE_JOBQUEUE_H_INCLUDED
 
-#include <ripple/basics/LocalValue.h>
-#include <ripple/core/ClosureCounter.h>
-#include <ripple/core/JobTypeData.h>
-#include <ripple/core/JobTypes.h>
-#include <ripple/core/impl/Workers.h>
-#include <ripple/json/json_value.h>
+#include <xrpld/core/ClosureCounter.h>
+#include <xrpld/core/JobTypeData.h>
+#include <xrpld/core/JobTypes.h>
+#include <xrpld/core/detail/Workers.h>
+#include <xrpl/basics/LocalValue.h>
+#include <xrpl/json/json_value.h>
 #include <boost/coroutine/all.hpp>
 #include <boost/range/begin.hpp>  // workaround for boost 1.72 bug
 #include <boost/range/end.hpp>    // workaround for boost 1.72 bug
@@ -402,7 +402,7 @@ private:
 
 }  // namespace ripple
 
-#include <ripple/core/Coro.ipp>
+#include <xrpld/core/Coro.ipp>
 
 namespace ripple {
 

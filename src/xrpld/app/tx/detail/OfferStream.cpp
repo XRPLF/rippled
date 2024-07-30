@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/OfferStream.h>
-#include <ripple/basics/Log.h>
-#include <ripple/protocol/Feature.h>
+#include <xrpld/app/tx/detail/OfferStream.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Feature.h>
 
 namespace ripple {
 

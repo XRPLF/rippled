@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Buffer.h>
-#include <ripple/basics/contract.h>
-#include <ripple/beast/utility/rngfill.h>
-#include <ripple/crypto/RFC1751.h>
-#include <ripple/crypto/csprng.h>
-#include <ripple/crypto/secure_erase.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/Seed.h>
-#include <ripple/protocol/digest.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/rngfill.h>
+#include <xrpl/crypto/RFC1751.h>
+#include <xrpl/crypto/csprng.h>
+#include <xrpl/crypto/secure_erase.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/digest.h>
 #include <algorithm>
 #include <cstring>
 #include <iterator>

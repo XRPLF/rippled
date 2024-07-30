@@ -20,7 +20,7 @@
 #ifndef BEAST_NET_IPADDRESSV4_H_INCLUDED
 #define BEAST_NET_IPADDRESSV4_H_INCLUDED
 
-#include <ripple/beast/hash/hash_append.h>
+#include <xrpl/beast/hash/hash_append.h>
 #include <boost/asio/ip/address_v4.hpp>
 #include <cstdint>
 #include <functional>

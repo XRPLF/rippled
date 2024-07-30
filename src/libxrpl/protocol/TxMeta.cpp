@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/contract.h>
-#include <ripple/json/to_string.h>
-#include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/TxMeta.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/TxMeta.h>
 #include <string>
 
 namespace ripple {

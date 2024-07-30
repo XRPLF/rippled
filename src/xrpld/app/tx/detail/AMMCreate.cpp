@@ -17,18 +17,18 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/AMMCreate.h>
+#include <xrpld/app/tx/detail/AMMCreate.h>
 
-#include <ripple/app/ledger/OrderBookDB.h>
-#include <ripple/app/misc/AMMHelpers.h>
-#include <ripple/app/misc/AMMUtils.h>
-#include <ripple/ledger/Sandbox.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/AMMCore.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/STAccount.h>
-#include <ripple/protocol/STIssue.h>
-#include <ripple/protocol/TxFlags.h>
+#include <xrpld/app/ledger/OrderBookDB.h>
+#include <xrpld/app/misc/AMMHelpers.h>
+#include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/ledger/Sandbox.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 

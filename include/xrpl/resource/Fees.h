@@ -20,7 +20,7 @@
 #ifndef RIPPLE_RESOURCE_FEES_H_INCLUDED
 #define RIPPLE_RESOURCE_FEES_H_INCLUDED
 
-#include <ripple/resource/Charge.h>
+#include <xrpl/resource/Charge.h>
 
 namespace ripple {
 namespace Resource {

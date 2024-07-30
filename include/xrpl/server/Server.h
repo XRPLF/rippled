@@ -20,10 +20,10 @@
 #ifndef RIPPLE_SERVER_SERVER_H_INCLUDED
 #define RIPPLE_SERVER_SERVER_H_INCLUDED
 
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/beast/utility/PropertyStream.h>
-#include <ripple/server/Port.h>
-#include <ripple/server/impl/ServerImpl.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/server/Port.h>
+#include <xrpl/server/detail/ServerImpl.h>
 #include <boost/asio/io_service.hpp>
 
 namespace ripple {

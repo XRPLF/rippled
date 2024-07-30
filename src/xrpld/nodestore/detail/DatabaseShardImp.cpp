@@ -17,22 +17,22 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/InboundLedgers.h>
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/rdb/backend/SQLiteDatabase.h>
-#include <ripple/basics/ByteUtilities.h>
-#include <ripple/basics/RangeSet.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/basics/random.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/nodestore/DummyScheduler.h>
-#include <ripple/nodestore/impl/DatabaseShardImp.h>
-#include <ripple/overlay/Overlay.h>
-#include <ripple/overlay/predicates.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/LedgerHeader.h>
-#include <ripple/protocol/digest.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpld/nodestore/DummyScheduler.h>
+#include <xrpld/nodestore/detail/DatabaseShardImp.h>
+#include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/predicates.h>
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/digest.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 

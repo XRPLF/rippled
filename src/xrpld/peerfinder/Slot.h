@@ -20,8 +20,8 @@
 #ifndef RIPPLE_PEERFINDER_SLOT_H_INCLUDED
 #define RIPPLE_PEERFINDER_SLOT_H_INCLUDED
 
-#include <ripple/beast/net/IPEndpoint.h>
-#include <ripple/protocol/PublicKey.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <memory>
 #include <optional>
 
