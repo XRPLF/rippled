@@ -847,7 +847,7 @@ flow(
             // running debug builds of rippled. While this issue still needs to
             // be resolved, the assert is causing more harm than good at this
             // point.
-            // XRPL_ASSERT(0);
+            // XRPL_UNREACHABLE();
 
             return {tefEXCEPTION, std::move(ofrsToRmOnFail)};
         }
