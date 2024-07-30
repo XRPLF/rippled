@@ -488,6 +488,14 @@ Transactor::apply()
 NotTEC
 Transactor::checkSign(PreclaimContext const& ctx)
 {
+    if (ctx.flags & tapDRY_RUN)
+    {
+        // This code must be different for `simulate`
+        // Since the public key may be empty even for single signing
+        if (ctx.tx.isFieldPresent(sfSigners))
+            return checkMultiSign(ctx);
+        return checkSingleSign(ctx);
+    }
     // If the pk is empty, then we must be multi-signing.
     if (ctx.tx.getSigningPubKey().empty())
         return checkMultiSign(ctx);
@@ -500,7 +508,7 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
 {
     // Check that the value in the signing key slot is a public key.
     auto const pkSigner = ctx.tx.getSigningPubKey();
-    if (!publicKeyType(makeSlice(pkSigner)))
+    if (!(ctx.flags & tapDRY_RUN) && !publicKeyType(makeSlice(pkSigner)))
     {
         JLOG(ctx.j.trace())
             << "checkSingleSign: signing public key type is unknown";
@@ -508,8 +516,11 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
     }
 
     // Look up the account.
-    auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
     auto const idAccount = ctx.tx.getAccountID(sfAccount);
+    // This ternary is only needed to handle `simulate`
+    auto const idSigner = pkSigner.size() > 0
+        ? calcAccountID(PublicKey(makeSlice(pkSigner)))
+        : idAccount;
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
     if (!sleAccount)
         return terNO_ACCOUNT;
