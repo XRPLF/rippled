@@ -157,26 +157,6 @@ inline constexpr std::array<char const*, 6> WalletDBInit{
 
      "END TRANSACTION;"}};
 
-////////////////////////////////////////////////////////////////////////////////
-
-static constexpr auto stateDBName{"state.db"};
-
-// These override the CommonDBPragma values defined above.
-static constexpr std::array<char const*, 2> DownloaderDBPragma{
-    {"PRAGMA synchronous=FULL;", "PRAGMA journal_mode=DELETE;"}};
-
-static constexpr std::array<char const*, 3> DatabaseBodyDBInit{
-    {"BEGIN TRANSACTION;",
-
-     "CREATE TABLE IF NOT EXISTS download (      \
-        Path        TEXT,                       \
-        Data        BLOB,                       \
-        Size        BIGINT UNSIGNED,            \
-        Part        BIGINT UNSIGNED PRIMARY KEY \
-    );",
-
-     "END TRANSACTION;"}};
-
 }  // namespace ripple
 
 #endif
