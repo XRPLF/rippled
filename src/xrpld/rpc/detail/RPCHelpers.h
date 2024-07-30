@@ -233,6 +233,15 @@ std::pair<RPC::Status, LedgerEntryType>
 chooseLedgerEntryType(Json::Value const& params);
 
 /**
+ * Check if the type is a valid filtering type for account_objects method
+ *
+ * Since Amendments, DirectoryNode, FeeSettings, LedgerHashes can not be
+ * owned by an account, this function will return false in these situations.
+ */
+bool
+isAccountObjectsValidType(LedgerEntryType const& type);
+
+/**
  * Retrieve the api version number from the json value
  *
  * Note that APIInvalidVersion will be returned if
