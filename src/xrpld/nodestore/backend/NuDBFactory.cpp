@@ -30,6 +30,7 @@
 #include <cstdio>
 #include <exception>
 #include <memory>
+#include <stdexcept> // nudb fails to include this header.
 #include <nudb/nudb.hpp>
 
 namespace ripple {
