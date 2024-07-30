@@ -488,11 +488,6 @@ Transactor::apply()
 NotTEC
 Transactor::checkSign(PreclaimContext const& ctx)
 {
-    if (ctx.flags & tapDRY_RUN && ctx.tx.getSigningPubKey().empty() &&
-        ctx.tx.getFieldArray(sfSigners).empty())
-    {
-        return tesSUCCESS;
-    }
     // If the pk is empty, then we must be multi-signing.
     if (ctx.tx.getSigningPubKey().empty())
         return checkMultiSign(ctx);
