@@ -74,10 +74,6 @@ test.ledger > xrpld.app
 test.ledger > xrpld.core
 test.ledger > xrpld.ledger
 test.ledger > xrpl.protocol
-test.net > test.jtx
-test.net > test.toplevel
-test.net > test.unit_test
-test.net > xrpld.net
 test.nodestore > test.jtx
 test.nodestore > test.toplevel
 test.nodestore > test.unit_test
