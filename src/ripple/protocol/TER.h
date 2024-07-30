@@ -64,7 +64,8 @@ enum TELcodes : TERUnderlyingType {
     telCAN_NOT_QUEUE_FULL,
     telWRONG_NETWORK,
     telREQUIRES_NETWORK_ID,
-    telNETWORK_ID_MAKES_TX_NON_CANONICAL
+    telNETWORK_ID_MAKES_TX_NON_CANONICAL,
+    telENV_RPC_FAILED
 };
 
 //------------------------------------------------------------------------------

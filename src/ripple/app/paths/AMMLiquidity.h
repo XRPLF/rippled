@@ -20,14 +20,14 @@
 #ifndef RIPPLE_APP_TX_AMMLIQUIDITY_H_INCLUDED
 #define RIPPLE_APP_TX_AMMLIQUIDITY_H_INCLUDED
 
-#include "ripple/app/misc/AMMHelpers.h"
-#include "ripple/app/misc/AMMUtils.h"
-#include "ripple/app/paths/AMMContext.h"
-#include "ripple/basics/Log.h"
-#include "ripple/ledger/ReadView.h"
-#include "ripple/ledger/View.h"
-#include "ripple/protocol/Quality.h"
-#include "ripple/protocol/STLedgerEntry.h"
+#include <ripple/app/misc/AMMHelpers.h>
+#include <ripple/app/misc/AMMUtils.h>
+#include <ripple/app/paths/AMMContext.h>
+#include <ripple/basics/Log.h>
+#include <ripple/ledger/ReadView.h>
+#include <ripple/ledger/View.h>
+#include <ripple/protocol/Quality.h>
+#include <ripple/protocol/STLedgerEntry.h>
 
 namespace ripple {
 
@@ -137,10 +137,17 @@ private:
     TAmounts<TIn, TOut>
     generateFibSeqOffer(TAmounts<TIn, TOut> const& balances) const;
 
-    /** Generate max offer
+    /** Generate max offer.
+     * If `fixAMMOverflowOffer` is active, the offer is generated as:
+     * takerGets = 99% * balances.out takerPays = swapOut(takerGets).
+     * Return nullopt if takerGets is 0 or takerGets == balances.out.
+     *
+     * If `fixAMMOverflowOffer` is not active, the offer is generated as:
+     * takerPays = max input amount;
+     * takerGets = swapIn(takerPays).
      */
-    AMMOffer<TIn, TOut>
-    maxOffer(TAmounts<TIn, TOut> const& balances) const;
+    std::optional<AMMOffer<TIn, TOut>>
+    maxOffer(TAmounts<TIn, TOut> const& balances, Rules const& rules) const;
 };
 
 }  // namespace ripple

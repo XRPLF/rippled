@@ -89,7 +89,7 @@ public:
        subject to liquidity limits
 
        @param sb view with the strand's state of balances and offers
-       @param afView view the the state of balances before the strand runs
+       @param afView view the state of balances before the strand runs
               this determines if an offer becomes unfunded or is found unfunded
        @param ofrsToRm offers found unfunded or in an error state are added to
        this collection
@@ -107,7 +107,7 @@ public:
        subject to liquidity limits
 
        @param sb view with the strand's state of balances and offers
-       @param afView view the the state of balances before the strand runs
+       @param afView view the state of balances before the strand runs
               this determines if an offer becomes unfunded or is found unfunded
        @param ofrsToRm offers found unfunded or in an error state are added to
        this collection
@@ -256,7 +256,7 @@ public:
        Check that the step can correctly execute in the forward direction
 
        @param sb view with the strands state of balances and offers
-       @param afView view the the state of balances before the strand runs
+       @param afView view the state of balances before the strand runs
        this determines if an offer becomes unfunded or is found unfunded
        @param in requested step input
        @return first element is true if step is valid, second element is out
@@ -417,7 +417,7 @@ toStrand(
                        quality of the tip of the book drops below this value,
                        then evaluating the strand can stop.
    @param sendMax Optional asset to send.
-   @param paths Paths to use to fullfill the payment. Each path in the pathset
+   @param paths Paths to use to fulfill the payment. Each path in the pathset
                 contains an ordered collection of the offer books to use and
                 accounts to ripple through.
    @param addDefaultPath Determines if the default path should be included

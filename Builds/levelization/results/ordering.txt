@@ -132,7 +132,6 @@ test.csf > ripple.json
 test.csf > ripple.protocol
 test.json > ripple.beast
 test.json > ripple.json
-test.json > ripple.rpc
 test.json > test.jtx
 test.jtx > ripple.app
 test.jtx > ripple.basics

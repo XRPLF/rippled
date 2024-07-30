@@ -109,10 +109,15 @@ public:
             ConsensusState::MovedOn ==
             checkConsensus(10, 2, 1, 8, 3s, 10s, p, true, journal_));
 
-        // No peers makes it easy to agree
+        // If no peers, don't agree until time has passed.
+        BEAST_EXPECT(
+            ConsensusState::No ==
+            checkConsensus(0, 0, 0, 0, 3s, 10s, p, true, journal_));
+
+        // Agree if no peers and enough time has passed.
         BEAST_EXPECT(
             ConsensusState::Yes ==
-            checkConsensus(0, 0, 0, 0, 3s, 10s, p, true, journal_));
+            checkConsensus(0, 0, 0, 0, 3s, 16s, p, true, journal_));
     }
 
     void
@@ -801,7 +806,7 @@ public:
         on(csf::PeerID who, csf::SimTime, csf::FullyValidateLedger const& e)
         {
             using namespace std::chrono;
-            // As soon as the the fastC node fully validates C, disconnect
+            // As soon as the fastC node fully validates C, disconnect
             // ALL c nodes from the network. The fast C node needs to disconnect
             // as well to prevent it from relaying the validations it did see
             if (who == groupCfast[0]->id &&
