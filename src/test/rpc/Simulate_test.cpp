@@ -41,8 +41,8 @@ class Simulate_test : public beast::unit_test::suite
     checkBasicReturnValidity(
         Json::Value& result,
         Json::Value& tx,
-        std::string fee = "10",
-        int sequence = 1)
+        int sequence = 1,
+        std::string fee = "10")
     {
         BEAST_EXPECT(result[jss::applied] == false);
         BEAST_EXPECT(result.isMember(jss::engine_result));
@@ -578,7 +578,7 @@ class Simulate_test : public beast::unit_test::suite
         {
             auto validateOutput = [&](Json::Value resp, Json::Value& tx) {
                 auto result = resp[jss::result];
-                checkBasicReturnValidity(result, tx, "20", 5);
+                checkBasicReturnValidity(result, tx, 5, "20");
 
                 BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
                 BEAST_EXPECT(result[jss::engine_result_code] == 0);
@@ -660,6 +660,58 @@ class Simulate_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testTransactionSigningFailure()
+    {
+        testcase("Transaction with a key-related failure");
+
+        using namespace jtx;
+        Env env(*this);
+        static auto const newDomain = "123ABC";
+        Account const alice{"alice"};
+        env(regkey(env.master, alice));
+        env(fset(env.master, asfDisableMaster), sig(env.master));
+        env.close();
+
+        {
+            std::function<void(Json::Value, Json::Value&)> testSimulation =
+                [&](Json::Value resp, Json::Value& tx) {
+                    auto result = resp[jss::result];
+                    checkBasicReturnValidity(result, tx, 3);
+
+                    BEAST_EXPECT(
+                        result[jss::engine_result] == "tefMASTER_DISABLED");
+                    BEAST_EXPECT(result[jss::engine_result_code] == -188);
+                    BEAST_EXPECT(
+                        result[jss::engine_result_message] ==
+                        "Master key is disabled.");
+
+                    BEAST_EXPECT(
+                        !result.isMember(jss::meta) &&
+                        !result.isMember(jss::meta_blob));
+                };
+
+            Json::Value tx;
+
+            tx[jss::Account] = env.master.human();
+            tx[jss::TransactionType] = jss::AccountSet;
+            tx[sfDomain.jsonName] = newDomain;
+
+            // test with autofill
+            testTx(env, tx, testSimulation, 3);
+
+            tx[sfSigningPubKey.jsonName] = "";
+            tx[sfTxnSignature.jsonName] = "";
+            tx[sfSequence.jsonName] = 3;
+            tx[sfFee.jsonName] = "12";
+
+            // test without autofill
+            testTx(env, tx, testSimulation, 3);
+
+            // TODO: check that the ledger wasn't affected
+        }
+    }
+
 public:
     void
     run() override
@@ -669,6 +721,7 @@ public:
         testTransactionNonTecFailure();
         testTransactionTecFailure();
         testSuccessfulTransactionMultisigned();
+        testTransactionSigningFailure();
     }
 };
 
