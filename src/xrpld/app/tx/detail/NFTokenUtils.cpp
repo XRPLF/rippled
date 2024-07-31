@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
-#include <xrpld/ledger/Directory.h>
+#include <xrpld/ledger/Dir.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/algorithm.h>
 #include <xrpl/protocol/Feature.h>

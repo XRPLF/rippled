@@ -229,9 +229,28 @@ class Feature_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto jrr = env.rpc("feature", "AllTheThings")[jss::result];
-        BEAST_EXPECT(jrr[jss::error] == "badFeature");
-        BEAST_EXPECT(jrr[jss::error_message] == "Feature unknown or invalid.");
+        auto testInvalidParam = [&](auto const& param) {
+            Json::Value params;
+            params[jss::feature] = param;
+            auto jrr =
+                env.rpc("json", "feature", to_string(params))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid parameters.");
+        };
+
+        testInvalidParam(1);
+        testInvalidParam(1.1);
+        testInvalidParam(true);
+        testInvalidParam(Json::Value(Json::nullValue));
+        testInvalidParam(Json::Value(Json::objectValue));
+        testInvalidParam(Json::Value(Json::arrayValue));
+
+        {
+            auto jrr = env.rpc("feature", "AllTheThings")[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "badFeature");
+            BEAST_EXPECT(
+                jrr[jss::error_message] == "Feature unknown or invalid.");
+        }
     }
 
     void

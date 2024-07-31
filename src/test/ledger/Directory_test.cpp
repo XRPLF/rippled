@@ -17,7 +17,6 @@
 
 #include <test/jtx.h>
 #include <xrpld/ledger/BookDirs.h>
-#include <xrpld/ledger/Directory.h>
 #include <xrpld/ledger/Sandbox.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/protocol/Feature.h>

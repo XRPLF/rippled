@@ -23,7 +23,6 @@
 #include <xrpld/app/paths/detail/FlatSets.h>
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/app/tx/detail/OfferStream.h>
-#include <xrpld/ledger/Directory.h>
 #include <xrpld/ledger/PaymentSandbox.h>
 #include <xrpl/basics/IOUAmount.h>
 #include <xrpl/basics/Log.h>
