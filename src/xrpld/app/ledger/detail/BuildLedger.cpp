@@ -117,9 +117,9 @@ applyTransactions(
         while (it != txns.end())
         {
             auto const txid = it->first.getTXID();
+
             try
             {
-
                 if (pass == 0 && built->txExists(txid))
                 {
                     it = txns.erase(it);
