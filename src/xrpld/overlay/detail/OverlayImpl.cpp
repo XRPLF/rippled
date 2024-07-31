@@ -1207,14 +1207,14 @@ std::shared_ptr<Peer>
 OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
 {
     std::lock_guard lock(mutex_);
-    // NOTE The purpose of p is to delay the destruction of PeerImp
-    std::shared_ptr<PeerImp> p;
-    for (auto [_, w] : ids_)
+    // NOTE The purpose of peer is to delay the destruction of PeerImp
+    std::shared_ptr<PeerImp> peer;
+    for (auto const& e : ids_)
     {
-        if (p = w.lock(); p != nullptr)
+        if (peer = e.second.lock(); peer != nullptr)
         {
-            if (p->getNodePublic() == pubKey)
-                return p;
+            if (peer->getNodePublic() == pubKey)
+                return peer;
         }
     }
     return {};
