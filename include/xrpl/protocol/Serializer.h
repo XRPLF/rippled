@@ -27,9 +27,9 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/SField.h>
-#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <iomanip>
@@ -55,7 +55,9 @@ public:
 
         if (size)
         {
-            assert(data != nullptr);
+            XRPL_ASSERT(
+                "ripple::Serializer::Serializer(void const*) : non-null input",
+                data != nullptr);
             std::memcpy(mData.data(), data, size);
         }
     }
@@ -300,7 +302,8 @@ Serializer::addVL(Iter begin, Iter end, int len)
         len -= begin->size();
 #endif
     }
-    assert(len == 0);
+    XRPL_ASSERT(
+        "ripple::Serializer::addVL : length matches distance", len == 0);
     return ret;
 }
 

@@ -38,7 +38,9 @@ RCLCxPeerPos::RCLCxPeerPos(
 {
     // The maximum allowed size of a signature is 72 bytes; we verify
     // this elsewhere, but we want to be extra careful here:
-    assert(signature.size() != 0 && signature.size() <= signature_.capacity());
+    XRPL_ASSERT(
+        "ripple::RCLCxPeerPos::RCLCxPeerPos : valid signature size",
+        signature.size() != 0 && signature.size() <= signature_.capacity());
 
     if (signature.size() != 0 && signature.size() <= signature_.capacity())
         signature_.assign(signature.begin(), signature.end());

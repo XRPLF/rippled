@@ -20,7 +20,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 #include <xrpl/basics/safe_cast.h>
-#include <cassert>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <cmath>
 #include <iomanip>
 

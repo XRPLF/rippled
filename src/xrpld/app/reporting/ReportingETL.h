@@ -326,9 +326,15 @@ public:
     start()
     {
         JLOG(journal_.info()) << "Starting reporting etl";
-        assert(app_.config().reporting());
-        assert(app_.config().standalone());
-        assert(app_.config().reportingReadOnly() == readOnly_);
+        XRPL_ASSERT(
+            "ripple::ReportingETL::start : reporting mode",
+            app_.config().reporting());
+        XRPL_ASSERT(
+            "ripple::ReportingETL::start : is standalone",
+            app_.config().standalone());
+        XRPL_ASSERT(
+            "ripple::ReportingETL::start : reporting and read only",
+            app_.config().reportingReadOnly() == readOnly_);
 
         stopping_ = false;
 

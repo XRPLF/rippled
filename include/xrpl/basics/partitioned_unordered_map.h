@@ -20,7 +20,7 @@
 #ifndef RIPPLE_BASICS_PARTITIONED_UNORDERED_MAP_H
 #define RIPPLE_BASICS_PARTITIONED_UNORDERED_MAP_H
 
-#include <cassert>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <functional>
 #include <optional>
 #include <thread>
@@ -246,7 +246,10 @@ public:
             ? *partitions
             : std::thread::hardware_concurrency();
         map_.resize(partitions_);
-        assert(partitions_);
+        XRPL_ASSERT(
+            "ripple::partitioned_unordered_map::partitioned_unordered_map : "
+            "nonzero partitions",
+            partitions_);
     }
 
     std::size_t

@@ -83,7 +83,10 @@ ShardArchiveHandler::ShardArchiveHandler(Application& app)
               app.config().section(ConfigSection::shardDatabase()),
               "shard_verification_max_attempts"))
 {
-    assert(app_.getShardStore());
+    XRPL_ASSERT(
+        "ripple::RPC::ShardArchiveHandler::ShardArchiveHandler : non-null "
+        "shard store",
+        app_.getShardStore());
 }
 
 bool
@@ -135,9 +138,11 @@ ShardArchiveHandler::initFromDB(std::lock_guard<std::mutex> const& lock)
     {
         using namespace boost::filesystem;
 
-        assert(
+        XRPL_ASSERT(
+            "ripple::RPC::ShardArchiveHandler::initFromDB : valid state DB "
+            "path",
             exists(downloadDir_ / stateDBName) &&
-            is_regular_file(downloadDir_ / stateDBName));
+                is_regular_file(downloadDir_ / stateDBName));
 
         sqlDB_ = makeArchiveDB(downloadDir_, stateDBName);
 

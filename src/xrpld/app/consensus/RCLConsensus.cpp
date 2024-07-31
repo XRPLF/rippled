@@ -93,7 +93,9 @@ RCLConsensus::Adaptor::Adaptor(
               std::numeric_limits<std::uint64_t>::max() - 1))
     , nUnlVote_(validatorKeys_.nodeID, j_)
 {
-    assert(valCookie_ != 0);
+    XRPL_ASSERT(
+        "ripple::RCLConsensus::Adaptor::Adaptor : nonzero cookie",
+        valCookie_ != 0);
 
     JLOG(j_.info()) << "Consensus engine started (cookie: " +
             std::to_string(valCookie_) + ")";
@@ -143,8 +145,12 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
         return std::nullopt;
     }
 
-    assert(!built->open() && built->isImmutable());
-    assert(built->info().hash == hash);
+    XRPL_ASSERT(
+        "ripple::RCLConsensus::Adaptor::acquireLedger : valid ledger state",
+        !built->open() && built->isImmutable());
+    XRPL_ASSERT(
+        "ripple::RCLConsensus::Adaptor::acquireLedger : ledger hash match",
+        built->info().hash == hash);
 
     // Notify inbound transactions of the new ledger sequence number
     inboundTransactions_.newRound(built->info().seq);
@@ -670,8 +676,12 @@ RCLConsensus::Adaptor::doAccept(
         ledgerMaster_.switchLCL(built.ledger_);
 
         // Do these need to exist?
-        assert(ledgerMaster_.getClosedLedger()->info().hash == built.id());
-        assert(app_.openLedger().current()->info().parentHash == built.id());
+        XRPL_ASSERT(
+            "ripple::RCLConsensus::Adaptor::doAccept : ledger hash match",
+            ledgerMaster_.getClosedLedger()->info().hash == built.id());
+        XRPL_ASSERT(
+            "ripple::RCLConsensus::Adaptor::doAccept : parent hash match",
+            app_.openLedger().current()->info().parentHash == built.id());
     }
 
     //-------------------------------------------------------------------------
@@ -767,7 +777,9 @@ RCLConsensus::Adaptor::buildLCL(
     std::shared_ptr<Ledger> built = [&]() {
         if (auto const replayData = ledgerMaster_.releaseReplay())
         {
-            assert(replayData->parent()->info().hash == previousLedger.id());
+            XRPL_ASSERT(
+                "ripple::RCLConsensus::Adaptor::buildLCL : parent hash match",
+                replayData->parent()->info().hash == previousLedger.id());
             return buildLedger(*replayData, tapNONE, app_, j_);
         }
         return buildLedger(

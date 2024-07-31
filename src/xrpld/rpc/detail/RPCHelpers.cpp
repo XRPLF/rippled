@@ -540,7 +540,8 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
             return {rpcNOT_SYNCED, "notSynced"};
         }
 
-        assert(!ledger->open());
+        XRPL_ASSERT(
+            "ripple::RPC::getLedger : validated is not open", !ledger->open());
     }
     else
     {
@@ -551,7 +552,8 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
                     rpcLGR_NOT_FOUND,
                     "Reporting does not track current ledger"};
             ledger = context.ledgerMaster.getCurrentLedger();
-            assert(ledger->open());
+            XRPL_ASSERT(
+                "ripple::RPC::getLedger : current is open", ledger->open());
         }
         else if (shortcut == LedgerShortcut::CLOSED)
         {
@@ -559,7 +561,8 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
                 return {
                     rpcLGR_NOT_FOUND, "Reporting does not track closed ledger"};
             ledger = context.ledgerMaster.getClosedLedger();
-            assert(!ledger->open());
+            XRPL_ASSERT(
+                "ripple::RPC::getLedger : closed is not open", !ledger->open());
         }
         else
         {
@@ -965,7 +968,9 @@ chooseLedgerEntryType(Json::Value const& params)
         {
             result.first = RPC::Status{
                 rpcINVALID_PARAMS, "Invalid field 'type', not string."};
-            assert(result.first.type() == RPC::Status::Type::error_code_i);
+            XRPL_ASSERT(
+                "ripple::RPC::chooseLedgerEntryType : first valid result type",
+                result.first.type() == RPC::Status::Type::error_code_i);
             return result;
         }
 
@@ -978,7 +983,9 @@ chooseLedgerEntryType(Json::Value const& params)
         {
             result.first =
                 RPC::Status{rpcINVALID_PARAMS, "Invalid field 'type'."};
-            assert(result.first.type() == RPC::Status::Type::error_code_i);
+            XRPL_ASSERT(
+                "ripple::RPC::chooseLedgerEntryType : second valid result type",
+                result.first.type() == RPC::Status::Type::error_code_i);
             return result;
         }
         result.second = iter->second;
@@ -1087,7 +1094,9 @@ getLedgerByContext(RPC::JsonContext& context)
             // ledger
             auto const refIndex = getCandidateLedger(ledgerIndex);
             auto refHash = hashOfSeq(*ledger, refIndex, j);
-            assert(refHash);
+            XRPL_ASSERT(
+                "ripple::RPC::getLedgerByContext : nonzero ledger hash",
+                refHash);
 
             ledger = ledgerMaster.getLedgerByHash(*refHash);
             if (!ledger)
@@ -1121,7 +1130,9 @@ getLedgerByContext(RPC::JsonContext& context)
 
             neededHash = hashOfSeq(*ledger, ledgerIndex, j);
         }
-        assert(neededHash);
+        XRPL_ASSERT(
+            "ripple::RPC::getLedgerByContext : nonzero needed hash",
+            neededHash);
         ledgerHash = neededHash ? *neededHash : beast::zero;  // kludge
     }
 

@@ -399,7 +399,10 @@ AccountRootsDeletedClean::finalize(
                 << "Invariant failed: account deletion left behind a "
                 << typeName << " object";
             (void)enforce;
-            assert(enforce);
+            XRPL_ASSERT(
+                "ripple::AccountRootsDeletedClean::finalize::objectExists : "
+                "account deletion left no objects behind",
+                enforce);
             return true;
         }
         return false;

@@ -58,7 +58,9 @@ LedgerHistory::insert(
     if (!ledger->isImmutable())
         LogicError("mutable Ledger in insert");
 
-    assert(ledger->stateMap().getHash().isNonZero());
+    XRPL_ASSERT(
+        "ripple::LedgerHistory::insert : nonzero hash",
+        ledger->stateMap().getHash().isNonZero());
 
     std::unique_lock sl(m_ledgers_by_hash.peekMutex());
 
@@ -99,13 +101,17 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
     if (!ret)
         return ret;
 
-    assert(ret->info().seq == index);
+    XRPL_ASSERT(
+        "ripple::LedgerHistory::getLedgerBySeq : result sequence match",
+        ret->info().seq == index);
 
     {
         // Add this ledger to the local tracking by index
         std::unique_lock sl(m_ledgers_by_hash.peekMutex());
 
-        assert(ret->isImmutable());
+        XRPL_ASSERT(
+            "ripple::LedgerHistory::getLedgerBySeq : immutable result ledger",
+            ret->isImmutable());
         m_ledgers_by_hash.canonicalize_replace_client(ret->info().hash, ret);
         mLedgersByIndex[ret->info().seq] = ret->info().hash;
         return (ret->info().seq == index) ? ret : nullptr;
@@ -119,8 +125,13 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 
     if (ret)
     {
-        assert(ret->isImmutable());
-        assert(ret->info().hash == hash);
+        XRPL_ASSERT(
+            "ripple::LedgerHistory::getLedgerByHash : immutable fetched ledger",
+            ret->isImmutable());
+        XRPL_ASSERT(
+            "ripple::LedgerHistory::getLedgerByHash : fetched ledger hash "
+            "match",
+            ret->info().hash == hash);
         return ret;
     }
 
@@ -129,10 +140,16 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
     if (!ret)
         return ret;
 
-    assert(ret->isImmutable());
-    assert(ret->info().hash == hash);
+    XRPL_ASSERT(
+        "ripple::LedgerHistory::getLedgerByHash : immutable loaded ledger",
+        ret->isImmutable());
+    XRPL_ASSERT(
+        "ripple::LedgerHistory::getLedgerByHash : loaded ledger hash match",
+        ret->info().hash == hash);
     m_ledgers_by_hash.canonicalize_replace_client(ret->info().hash, ret);
-    assert(ret->info().hash == hash);
+    XRPL_ASSERT(
+        "ripple::LedgerHistory::getLedgerByHash : result hash match",
+        ret->info().hash == hash);
 
     return ret;
 }
@@ -176,7 +193,9 @@ log_metadata_difference(
     auto validMetaData = getMeta(validLedger, tx);
     auto builtMetaData = getMeta(builtLedger, tx);
 
-    assert(validMetaData || builtMetaData);
+    XRPL_ASSERT(
+        "ripple::log_metadata_difference : some metadata present",
+        validMetaData || builtMetaData);
 
     if (validMetaData && builtMetaData)
     {
@@ -322,7 +341,9 @@ LedgerHistory::handleMismatch(
     std::optional<uint256> const& validatedConsensusHash,
     Json::Value const& consensus)
 {
-    assert(built != valid);
+    XRPL_ASSERT(
+        "ripple::LedgerHistory::handleMismatch : unequal hashes",
+        built != valid);
     ++mismatch_counter_;
 
     auto builtLedger = getLedgerByHash(built);
@@ -337,7 +358,9 @@ LedgerHistory::handleMismatch(
         return;
     }
 
-    assert(builtLedger->info().seq == validLedger->info().seq);
+    XRPL_ASSERT(
+        "ripple::LedgerHistory::handleMismatch : sequence match",
+        builtLedger->info().seq == validLedger->info().seq);
 
     if (auto stream = j_.debug())
     {
@@ -430,7 +453,8 @@ LedgerHistory::builtLedger(
 {
     LedgerIndex index = ledger->info().seq;
     LedgerHash hash = ledger->info().hash;
-    assert(!hash.isZero());
+    XRPL_ASSERT(
+        "ripple::LedgerHistory::builtLedger : nonzero hash", !hash.isZero());
 
     std::unique_lock sl(m_consensus_validated.peekMutex());
 
@@ -470,7 +494,9 @@ LedgerHistory::validatedLedger(
 {
     LedgerIndex index = ledger->info().seq;
     LedgerHash hash = ledger->info().hash;
-    assert(!hash.isZero());
+    XRPL_ASSERT(
+        "ripple::LedgerHistory::validatedLedger : nonzero hash",
+        !hash.isZero());
 
     std::unique_lock sl(m_consensus_validated.peekMutex());
 
