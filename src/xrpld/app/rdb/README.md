@@ -7,7 +7,7 @@ The guiding principles of the Relational Database Interface are summarized below
 
 ## Overview
 
-Firstly, the interface `RelationalDatabase` is inherited by the class `SQLiteDatabase` which is used to operate the software's main data store (for storing transactions, accounts, ledgers, etc.). Secondly, the files under the `detail` directory provide supplementary functions that are used by these derived classes to access the underlying databases. Lastly, the remaining files in the interface (located at the top level of the module) are used by varied parts of the software to access any secondary relational databases.
+Firstly, the interface `RelationalDatabase` is inherited by the classes `SQLiteDatabase` and `PostgresDatabase` which are used to operate the software's main data store (for storing transactions, accounts, ledgers, etc.). Secondly, the files under the `detail` directory provide supplementary functions that are used by these derived classes to access the underlying databases. Lastly, the remaining files in the interface (located at the top level of the module) are used by varied parts of the software to access any secondary relational databases.
 
 ## Configuration
 
@@ -27,21 +27,22 @@ src/xrpld/app/rdb/
 ├── backend
 │   ├── detail
 │   │   ├── Node.cpp
-│   │   └── Node.h
-│   └── SQLiteDatabase.cpp
+│   │   ├── Node.h
+│   │   ├── PostgresDatabase.cpp
+│   │   └── SQLiteDatabase.cpp
+│   ├── PostgresDatabase.h
 │   └── SQLiteDatabase.h
-├── Download.cpp
-├── Download.h
-├── PeerFinder.cpp
+├── detail
+│   ├── PeerFinder.cpp
+│   ├── RelationalDatabase.cpp
+│   ├── State.cpp
+│   ├── Vacuum.cpp
+│   └── Wallet.cpp
 ├── PeerFinder.h
-├── README.md
-├── RelationalDatabase.cpp
 ├── RelationalDatabase.h
-├── State.cpp
+├── README.md
 ├── State.h
-├── Vacuum.cpp
 ├── Vacuum.h
-├── Wallet.cpp
 └── Wallet.h
 ```
 
@@ -49,6 +50,7 @@ src/xrpld/app/rdb/
 | File        | Contents    |
 | ----------- | ----------- |
 | `Node.[h\|cpp]` | Defines/Implements methods used by `SQLiteDatabase` for interacting with SQLite node databases|
+| <nobr>`PostgresDatabase.[h\|cpp]`</nobr> | Defines/Implements the class `PostgresDatabase`/`PostgresDatabaseImp` which inherits from `RelationalDatabase` and is used to operate on the main stores |
 |`SQLiteDatabase.[h\|cpp]`| Defines/Implements the class `SQLiteDatabase`/`SQLiteDatabaseImp` which inherits from `RelationalDatabase` and is used to operate on the main stores |
 | `Download.[h\|cpp]` | Defines/Implements methods for persisting file downloads to a SQLite database |
 | `PeerFinder.[h\|cpp]` | Defines/Implements methods for interacting with the PeerFinder SQLite database |
@@ -60,7 +62,7 @@ src/xrpld/app/rdb/
 
 ## Classes
 
-The abstract class `RelationalDatabase` is the primary class of the Relational Database Interface and is defined in the eponymous header file. This class  provides a static method `init()` which, when invoked, creates a concrete instance of a derived class whose type is specified by the system configuration. All other methods in the class are virtual. Presently there exists one class that derives from `RelationalDatabase`, namely `SQLiteDatabase`.
+The abstract class `RelationalDatabase` is the primary class of the Relational Database Interface and is defined in the eponymous header file. This class  provides a static method `init()` which, when invoked, creates a concrete instance of a derived class whose type is specified by the system configuration. All other methods in the class are virtual. Presently there exist two classes that derive from `RelationalDatabase`, namely `SQLiteDatabase` and `PostgresDatabase`.
 
 ## Database Methods
 
@@ -80,4 +82,4 @@ The Relational Database Interface provides three categories of methods for inter
   * `Node.[h|cpp]`
 
 
-* Member functions of `RelationalDatabase` and `SQLiteDatabase` which are used to access the main store (node store). The `SQLiteDatabase` class accesses the node store by default.
+* Member functions of `RelationalDatabase`, `SQLiteDatabase`, and `PostgresDatabase` which are used to access the node store.
