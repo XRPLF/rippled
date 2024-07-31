@@ -242,6 +242,9 @@ public:
 
     void
     rawReplace(std::shared_ptr<SLE> const& sle) override;
+    
+    void
+    rawRevert();
 
     void
     rawDestroyXRP(XRPAmount const& fee) override;

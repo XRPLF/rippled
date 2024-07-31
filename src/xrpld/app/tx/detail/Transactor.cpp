@@ -200,6 +200,16 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         return temBAD_FEE;
 
     auto const feePaid = ctx.tx[sfFee].xrp();
+    if (ctx.tx.isFieldPresent(sfBatchTxn))
+    {
+        if (feePaid == beast::zero)
+        {
+            return tesSUCCESS;
+        }
+        JLOG(ctx.j.warn()) << "Batch: sfFee must be zero.";
+        return temBAD_FEE;
+    }
+
     if (!isLegalAmount(feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
 
@@ -314,12 +324,20 @@ Transactor::checkSeqProxy(
 
     if (tx.isFieldPresent(sfBatchTxn))
     {
+        if (tx.getFieldU32(sfSequence) != 0)
+        {
+            JLOG(j.trace()) << "applyTransaction: has both a Sequence number "
+                               "and a BatchTxn";
+            return temBAD_SEQUENCE;
+        }
+
         STObject const batchTxn = const_cast<ripple::STTx&>(tx)
                                       .getField(sfBatchTxn)
                                       .downcast<STObject>();
+        std::uint32_t const startSequence{
+            batchTxn.getFieldU32(sfOuterSequence)};
         std::uint32_t const batchIndex{batchTxn.getFieldU8(sfBatchIndex)};
-        a_seq = SeqProxy::sequence(a_seq.value() - (batchIndex + 1));
-        a_seq = t_seqProx;
+        a_seq = SeqProxy::sequence(startSequence + batchIndex);
     }
 
     if (t_seqProx.isSeq())
@@ -397,8 +415,7 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
         (ctx.view.seq() > ctx.tx.getFieldU32(sfLastLedgerSequence)))
         return tefMAX_LEDGER;
 
-    if (ctx.view.txExists(ctx.tx.getTransactionID()) &&
-        ctx.tx.getTxnType() != ttBATCH && !ctx.tx.isFieldPresent(sfBatchTxn))
+    if (ctx.view.txExists(ctx.tx.getTransactionID()))
         return tefALREADY;
 
     return tesSUCCESS;

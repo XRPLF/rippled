@@ -237,26 +237,20 @@ invoke_preclaim(PreclaimContext const& ctx)
 
             if (id != beast::zero)
             {
-                // TER result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
+                TER result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
 
-                // if (result != tesSUCCESS)
-                //     return result;
+                if (result != tesSUCCESS)
+                    return result;
 
-                // Ignore Sequence Validation on ttBATCH txns
-                TER result = tesSUCCESS;
-
-                JLOG(ctx.j.trace()) << "invoke_preclaim.Batch: "
-                                    << "\n";
                 result = T::checkPriorTxAndLastLedger(ctx);
 
                 if (result != tesSUCCESS)
                     return result;
 
-                // result = T::checkFee(ctx, calculateBaseFee(ctx.view,
-                // ctx.tx));
+                result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
 
-                // if (result != tesSUCCESS)
-                //     return result;
+                if (result != tesSUCCESS)
+                    return result;
 
                 result = T::checkSign(ctx);
 
@@ -302,8 +296,6 @@ Batch::makeTxConsequences(PreflightContext const& ctx)
 {
     return TxConsequences{ctx.tx, TxConsequences::normal};
 }
-
-std::vector<NotTEC> preflightResults;
 
 NotTEC
 Batch::preflight(PreflightContext const& ctx)
@@ -355,18 +347,10 @@ Batch::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.debug()) << "Batch: batch signer mismatch.";
             return temBAD_SIGNER;
         }
-
-        STTx const stx = STTx{std::move(txn)};
-        PreflightContext const pfctx(
-            ctx.app, stx, ctx.rules, tapPREFLIGHT_BATCH, ctx.j);
-        auto const result = invoke_preflight(pfctx);
-        preflightResults.push_back(result.first);
     }
 
     return preflight2(ctx);
 }
-
-std::vector<TER> preclaimResults;
 
 TER
 Batch::preclaim(PreclaimContext const& ctx)
@@ -377,34 +361,12 @@ Batch::preclaim(PreclaimContext const& ctx)
     auto const& txns = ctx.tx.getFieldArray(sfRawTransactions);
     for (std::size_t i = 0; i < txns.size(); ++i)
     {
-        if (preflightResults[i] != tesSUCCESS)
-        {
-            JLOG(ctx.j.debug())
-                << "Batch: Failed Preflight Result: " << preflightResults[i];
-            preclaimResults.push_back(TER(preflightResults[i]));
-            continue;
-        }
-
         STObject txn = txns[i];
         if (!txn.isFieldPresent(sfTransactionType))
         {
             JLOG(ctx.j.debug())
                 << "Batch: TransactionType missing in array entry.";
             return temMALFORMED;
-        }
-
-        STTx const stx = STTx{std::move(txn)};
-        PreclaimContext const pcctx(
-            ctx.app, ctx.view, preflightResults[i], stx, ctx.flags, ctx.j);
-        auto const result = invoke_preclaim(pcctx);
-        preclaimResults.push_back(result);
-    }
-
-    for (auto const& result : preclaimResults)
-    {
-        if (result != tesSUCCESS)
-        {
-            return result;
         }
     }
 
@@ -420,122 +382,127 @@ Batch::doApply()
     if (flags & tfBatchMask)
         return temINVALID_FLAG;
 
-    // SANITIZE
-    std::vector<STTx> stxTxns;
+    ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
+    TER result = tesSUCCESS;
+    std::map<AccountID, std::uint32_t> accountCount;
     auto const& txns = ctx_.tx.getFieldArray(sfRawTransactions);
-    for (std::size_t i = 0; i < txns.size(); ++i)
+    for (STObject txn : txns)
     {
-        STObject txn = txns[i];
-        if (!txn.isFieldPresent(sfTransactionType))
-        {
-            JLOG(ctx_.journal.debug())
-                << "Batch: TransactionType missing in array entry.";
-            return temMALFORMED;
-        }
-
         STTx const stx = STTx{std::move(txn)};
-        stxTxns.push_back(stx);
-    }
 
-    // DRY RUN
-    std::vector<std::pair<std::uint16_t, TER>> dryVector;
-    for (std::size_t i = 0; i < stxTxns.size(); ++i)
-    {
-        auto const& stx = stxTxns[i];
+        // preflight
+        PreflightContext const pfctx(
+            ctx_.app,
+            stx,
+            ctx_.view().rules(),
+            tapPREFLIGHT_BATCH,
+            ctx_.journal);
+        auto const preflightResult =
+            PreflightResult{pfctx, invoke_preflight(pfctx)};
+
+        // preclaim
+        std::optional<PreclaimContext const> pcctx;
+        pcctx.emplace(
+            ctx_.app,
+            ctx_.base_,
+            preflightResult.ter,
+            preflightResult.tx,
+            preflightResult.flags,
+            preflightResult.j);
+        auto const preclaimResult =
+            PreclaimResult{*pcctx, invoke_preclaim(*pcctx)};
+
+        // doApply
         ApplyContext actx(
             ctx_.app,
             ctx_.base_,
-            stx,
-            preclaimResults[i],
-            ctx_.view().fees().base,
-            tapPREFLIGHT_BATCH,
-            ctx_.journal);
-        auto const result = invoke_apply(actx);
-        dryVector.emplace_back(stx.getTxnType(), result.first);
-        actx.discard();
-    }
+            preclaimResult.tx,
+            preclaimResult.ter,
+            calculateBaseFee(ctx_.base_, preclaimResult.tx),
+            ctx_.base_.open() == 1 ? tapPREFLIGHT_BATCH : ctx_.view().flags(),
+            preclaimResult.j);
+        auto const applyResult = invoke_apply(actx);
 
-    TER preResult = tesSUCCESS;
-    ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
-    for (auto const& dryRun : dryVector)
-    {
         STObject meta{sfBatchExecution};
-        meta.setFieldU8(sfTransactionResult, TERtoInt(dryRun.second));
-        meta.setFieldU16(sfTransactionType, dryRun.first);
+        meta.setFieldU8(sfTransactionResult, TERtoInt(applyResult.first));
+        meta.setFieldU16(sfTransactionType, stx.getTxnType());
+        if (applyResult.first == tesSUCCESS)
+            meta.setFieldH256(sfTransactionHash, stx.getTransactionID());
+
         avi.addBatchExecutionMetaData(std::move(meta));
 
-        // tfAllOrNothing
-        if (dryRun.second != tesSUCCESS && flags & tfAllOrNothing)
+        accountCount[stx.getAccountID(sfAccount)] += 1;
+
+        if (applyResult.first != tesSUCCESS)
         {
-            preResult = tecBATCH_FAILURE;
-        }
-    }
-
-    // WET RUN
-    TER result = tesSUCCESS;
-    if (preResult == tesSUCCESS)
-    {
-        std::vector<STObject> batch;
-        avi.setHookMetaData(std::move(batch));
-        for (std::size_t i = 0; i < stxTxns.size(); ++i)
-        {
-            auto const& stx = stxTxns[i];
-            ApplyContext actx(
-                ctx_.app,
-                ctx_.base_,
-                stx,
-                preclaimResults[i],
-                ctx_.view().fees().base,
-                ctx_.base_.open() == 1 ? tapPREFLIGHT_BATCH
-                                       : ctx_.view().flags(),
-                ctx_.journal);
-            auto const _result = invoke_apply(actx);
-
-            STObject meta{sfBatchExecution};
-            meta.setFieldU8(sfTransactionResult, TERtoInt(_result.first));
-            meta.setFieldU16(sfTransactionType, stx.getTxnType());
-            if (_result.first == tesSUCCESS)
-                meta.setFieldH256(sfTransactionHash, stx.getTransactionID());
-
-            avi.addBatchExecutionMetaData(std::move(meta));
-
-            if (_result.first != tesSUCCESS)
+            if (flags & tfUntilFailure)
             {
-                if (flags & tfUntilFailure)
-                {
-                    actx.discard();
-                    result = tesSUCCESS;
-                    break;
-                }
-                if (flags & tfOnlyOne)
-                {
-                    actx.discard();
-                    continue;
-                }
+                actx.discard();
+                result = tesSUCCESS;
+                break;
             }
-
-            if (_result.first == tesSUCCESS && flags & tfOnlyOne)
+            if (flags & tfOnlyOne)
             {
+                actx.discard();
+                continue;
+            }
+            if (flags & tfAllOrNothing)
+            {
+                accountCount.clear();
+                ctx_.base_.rawRevert();
+                std::vector<STObject> batch;
+                avi.setHookMetaData(std::move(batch));
                 result = tesSUCCESS;
                 break;
             }
         }
+
+        if (applyResult.first == tesSUCCESS && flags & tfOnlyOne)
+        {
+            result = tesSUCCESS;
+            break;
+        }
     }
 
-    auto const sleBase = ctx_.base_.read(keylet::account(account_));
-    if (!sleBase)
-        return tefINTERNAL;
+    {
+        auto const sleBase = ctx_.base_.read(keylet::account(account_));
+        if (!sleBase)
+            return tefINTERNAL;
 
-    auto const sleSrcAcc = sb.peek(keylet::account(account_));
-    if (!sleSrcAcc)
-        return tefINTERNAL;
+        auto const sleSrcAcc = sb.peek(keylet::account(account_));
+        if (!sleSrcAcc)
+            return tefINTERNAL;
 
-    auto const feePaid = ctx_.tx[sfFee].xrp();
-    sleSrcAcc->setFieldU32(
-        sfSequence, ctx_.tx.getFieldU32(sfSequence) + txns.size() + 1);
-    sleSrcAcc->setFieldAmount(
-        sfBalance, sleBase->getFieldAmount(sfBalance).xrp() - feePaid);
-    sb.update(sleSrcAcc);
+        // Update Fee (Source Account)
+        auto const feePaid = ctx_.tx[sfFee].xrp();
+        sleSrcAcc->setFieldAmount(
+            sfBalance, sleBase->getFieldAmount(sfBalance).xrp() - feePaid);
+
+        // Update Sequence (Source Account)
+        sleSrcAcc->setFieldU32(
+            sfSequence,
+            sleSrcAcc->getFieldU32(sfSequence) + accountCount[account_]);
+        sb.update(sleSrcAcc);
+    }
+
+    // Update Sequence (Other Inner Accounts)
+    for (auto const& [_account, count] : accountCount)
+    {
+        if (_account == account_)
+        {
+            // pass
+        }
+        else
+        {
+            auto const _sleSrcAcc = sb.peek(keylet::account(_account));
+            if (!_sleSrcAcc)
+                return tefINTERNAL;
+
+            _sleSrcAcc->setFieldU32(
+                sfSequence, _sleSrcAcc->getFieldU32(sfSequence) + count);
+            sb.update(_sleSrcAcc);
+        }
+    }
     sb.apply(ctx_.rawView());
     return result;
 }
