@@ -75,8 +75,9 @@ doAccountNFTs(RPC::JsonContext& context)
         return *err;
 
     uint256 marker;
+    bool const markerSet = params.isMember(jss::marker);
 
-    if (params.isMember(jss::marker))
+    if (markerSet)
     {
         auto const& m = params[jss::marker];
         if (!m.isString())
@@ -98,6 +99,7 @@ doAccountNFTs(RPC::JsonContext& context)
 
     // Continue iteration from the current page:
     bool pastMarker = marker.isZero();
+    bool markerFound = false;
     uint256 const maskedMarker = marker & nft::pageMask;
     while (cp)
     {
@@ -119,12 +121,23 @@ doAccountNFTs(RPC::JsonContext& context)
             uint256 const nftokenID = o[sfNFTokenID];
             uint256 const maskedNftokenID = nftokenID & nft::pageMask;
 
-            if (!pastMarker && maskedNftokenID < maskedMarker)
-                continue;
+            if (!pastMarker)
+            {
+                if (maskedNftokenID < maskedMarker)
+                    continue;
 
-            if (!pastMarker && maskedNftokenID == maskedMarker &&
-                nftokenID <= marker)
-                continue;
+                if (maskedNftokenID == maskedMarker && nftokenID < marker)
+                    continue;
+
+                if (nftokenID == marker)
+                {
+                    markerFound = true;
+                    continue;
+                }
+            }
+
+            if (markerSet && !markerFound)
+                return RPC::invalid_field_error(jss::marker);
 
             pastMarker = true;
 
@@ -154,6 +167,9 @@ doAccountNFTs(RPC::JsonContext& context)
         else
             cp = nullptr;
     }
+
+    if (markerSet && !markerFound)
+        return RPC::invalid_field_error(jss::marker);
 
     result[jss::account] = toBase58(accountID);
     context.loadType = Resource::feeMediumBurdenRPC;
@@ -219,6 +235,9 @@ doAccountObjects(RPC::JsonContext& context)
     else
     {
         auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
+
+        if (!RPC::isAccountObjectsValidType(type))
+            return RPC::invalid_field_error(jss::type);
 
         if (rpcStatus)
         {
