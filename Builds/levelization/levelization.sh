@@ -13,6 +13,9 @@ then
   git clean -ix
 fi
 
+# Ensure all sorting is ASCII-order consistently across platforms.
+export LANG=C
+
 rm -rfv results
 mkdir results
 includes="$( pwd )/results/rawincludes.txt"
