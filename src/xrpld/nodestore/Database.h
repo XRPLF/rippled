@@ -233,8 +233,8 @@ protected:
     // The default is XRP_LEDGER_EARLIEST_SEQ (32570) to match the XRP ledger
     // network's earliest allowed ledger sequence. Can be set through the
     // configuration file using the 'earliest_seq' field under the 'node_db'
-    // stanza. If specified, the value must be greater than zero
-    // and equally assigned in both stanzas. Only unit tests or alternate
+    // stanza. If specified, the value must be greater than zero.
+    // Only unit tests or alternate
     // networks should change this value.
     std::uint32_t const earliestLedgerSeq_;
 
