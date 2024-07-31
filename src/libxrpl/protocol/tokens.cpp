@@ -467,6 +467,11 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
         {
             continue;
         }
+        static constexpr std::uint64_t B_58_10 = 430804206899405824;  // 58^10;
+        if (base_58_10_coeff[i] >= B_58_10)
+        {
+            return Unexpected(TokenCodecErrc::inputTooLarge);
+        }
         std::array<std::uint8_t, 10> const b58_be =
             ripple::b58_fast::detail::b58_10_to_b58_be(base_58_10_coeff[i]);
         std::size_t to_skip = 0;
@@ -565,10 +570,23 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     for (int i = 1; i < num_b_58_10_coeffs; ++i)
     {
         std::uint64_t const c = b_58_10_coeff[i];
-        ripple::b58_fast::detail::inplace_bigint_mul(
-            std::span(&result[0], cur_result_size + 1), B_58_10);
-        ripple::b58_fast::detail::inplace_bigint_add(
-            std::span(&result[0], cur_result_size + 1), c);
+
+        {
+            auto code = ripple::b58_fast::detail::inplace_bigint_mul(
+                std::span(&result[0], cur_result_size + 1), B_58_10);
+            if (code != TokenCodecErrc::success)
+            {
+                return Unexpected(code);
+            }
+        }
+        {
+            auto code = ripple::b58_fast::detail::inplace_bigint_add(
+                std::span(&result[0], cur_result_size + 1), c);
+            if (code != TokenCodecErrc::success)
+            {
+                return Unexpected(code);
+            }
+        }
         if (result[cur_result_size] != 0)
         {
             cur_result_size += 1;
