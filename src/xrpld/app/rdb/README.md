@@ -52,7 +52,6 @@ src/xrpld/app/rdb/
 | `Node.[h\|cpp]` | Defines/Implements methods used by `SQLiteDatabase` for interacting with SQLite node databases|
 | <nobr>`PostgresDatabase.[h\|cpp]`</nobr> | Defines/Implements the class `PostgresDatabase`/`PostgresDatabaseImp` which inherits from `RelationalDatabase` and is used to operate on the main stores |
 |`SQLiteDatabase.[h\|cpp]`| Defines/Implements the class `SQLiteDatabase`/`SQLiteDatabaseImp` which inherits from `RelationalDatabase` and is used to operate on the main stores |
-| `Download.[h\|cpp]` | Defines/Implements methods for persisting file downloads to a SQLite database |
 | `PeerFinder.[h\|cpp]` | Defines/Implements methods for interacting with the PeerFinder SQLite database |
 |`RelationalDatabase.cpp`| Implements the static method `RelationalDatabase::init` which is used to initialize an instance of `RelationalDatabase` |
 | `RelationalDatabase.h` | Defines the abstract class `RelationalDatabase`, the primary class of the Relational Database Interface |
@@ -70,7 +69,6 @@ The Relational Database Interface provides three categories of methods for inter
 
 * Free functions for interacting with SQLite databases used by various components of the software. These methods feature a `soci::session` parameter which facilitates connecting to SQLite databases, and are defined and implemented in the following files:
 
- * `Download.[h\|cpp]`
  * `PeerFinder.[h\|cpp]`
  * `State.[h\|cpp]`
  * `Vacuum.[h\|cpp]`
