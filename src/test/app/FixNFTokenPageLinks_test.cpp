@@ -67,10 +67,15 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
         // creation of NFT pages that are completely full.  This lambda
         // tells us the taxon value we should pass in in order for the
         // internal representation to match the passed in value.
-        auto internalTaxon =
-            [&env](Account const& acct, std::uint32_t taxon) -> std::uint32_t {
-            std::uint32_t tokenSeq =
-                env.le(acct)->at(~sfMintedNFTokens).value_or(0);
+        auto internalTaxon = [this, &env](
+                                 Account const& acct,
+                                 std::uint32_t taxon) -> std::uint32_t {
+            std::uint32_t tokenSeq = [this, &env, &acct]() {
+                auto const le = env.le(acct);
+                if (BEAST_EXPECT(le))
+                    return le->at(~sfMintedNFTokens).value_or(0u);
+                return 0u;
+            }();
 
             // If fixNFTokenRemint amendment is on, we must
             // add FirstNFTokenSequence.
@@ -104,21 +109,20 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
 
         // Verify that the owner does indeed have exactly three pages
         // of NFTs with 32 entries in each page.
-        Json::Value jvParams;
-        jvParams[jss::ledger_index] = "current";
-        jvParams[jss::binary] = false;
         {
             Json::Value params;
             params[jss::account] = owner.human();
             auto resp = env.rpc("json", "account_objects", to_string(params));
 
-            Json::Value& acctObjs = resp[jss::result][jss::account_objects];
+            Json::Value const& acctObjs =
+                resp[jss::result][jss::account_objects];
 
             int pageCount = 0;
             for (Json::UInt i = 0; i < acctObjs.size(); ++i)
             {
-                if (acctObjs[i].isMember(sfNFTokens.jsonName) &&
-                    acctObjs[i][sfNFTokens.jsonName].isArray())
+                if (BEAST_EXPECT(
+                        acctObjs[i].isMember(sfNFTokens.jsonName) &&
+                        acctObjs[i][sfNFTokens.jsonName].isArray()))
                 {
                     BEAST_EXPECT(acctObjs[i][sfNFTokens.jsonName].size() == 32);
                     ++pageCount;
@@ -177,6 +181,12 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
             txflags(tfPassive),
             ter(temINVALID_FLAG));
 
+        {
+            // ledgerStateFix::nftPageLinks requires an Owner field.
+            Json::Value tx = ledgerStateFix::nftPageLinks(alice, alice);
+            tx.removeMember(sfOwner.jsonName);
+            env(tx, fee(linkFixFee), ter(temINVALID));
+        }
         {
             // Invalid LedgerFixType codes.
             Json::Value tx = ledgerStateFix::nftPageLinks(alice, alice);

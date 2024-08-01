@@ -783,6 +783,7 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
         return didRepair;
     }
 
+    assert(nextPage);
     if (nextPage->isFieldPresent(sfNextPageMin))
     {
         didRepair = true;
