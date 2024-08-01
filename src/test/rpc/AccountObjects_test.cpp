@@ -125,8 +125,30 @@ public:
 
         // test error on no account
         {
-            auto resp = env.rpc("json", "account_objects");
-            BEAST_EXPECT(resp[jss::error_message] == "Syntax error.");
+            Json::Value params;
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Missing field 'account'.");
+        }
+        // test account non-string
+        {
+            auto testInvalidAccountParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::account] = param;
+                auto jrr = env.rpc(
+                    "json", "account_objects", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(
+                    jrr[jss::error_message] == "Invalid field 'account'.");
+            };
+
+            testInvalidAccountParam(1);
+            testInvalidAccountParam(1.1);
+            testInvalidAccountParam(true);
+            testInvalidAccountParam(Json::Value(Json::nullValue));
+            testInvalidAccountParam(Json::Value(Json::objectValue));
+            testInvalidAccountParam(Json::Value(Json::arrayValue));
         }
         // test error on  malformed account string.
         {
@@ -1170,6 +1192,35 @@ public:
     }
 
     void
+    testAccountNFTs()
+    {
+        testcase("account_nfts");
+
+        using namespace jtx;
+        Env env(*this);
+
+        // test validation
+        {
+            auto testInvalidAccountParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::account] = param;
+                auto jrr = env.rpc(
+                    "json", "account_nfts", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(
+                    jrr[jss::error_message] == "Invalid field 'account'.");
+            };
+
+            testInvalidAccountParam(1);
+            testInvalidAccountParam(1.1);
+            testInvalidAccountParam(true);
+            testInvalidAccountParam(Json::Value(Json::nullValue));
+            testInvalidAccountParam(Json::Value(Json::objectValue));
+            testInvalidAccountParam(Json::Value(Json::arrayValue));
+        }
+    }
+
+    void
     run() override
     {
         testErrors();
@@ -1177,10 +1228,11 @@ public:
         testUnsteppedThenSteppedWithNFTs();
         testObjectTypes();
         testNFTsMarker();
+        testAccountNFTs();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountObjects, app, ripple);
+BEAST_DEFINE_TESTSUITE(AccountObjects, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple
