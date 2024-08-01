@@ -16,12 +16,12 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/beast/clock/manual_clock.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/consensus/Consensus.h>
-#include <ripple/consensus/ConsensusProposal.h>
 #include <test/csf.h>
 #include <test/unit_test/SuiteJournal.h>
+#include <xrpld/consensus/Consensus.h>
+#include <xrpld/consensus/ConsensusProposal.h>
+#include <xrpl/beast/clock/manual_clock.h>
+#include <xrpl/beast/unit_test.h>
 #include <utility>
 
 namespace ripple {
@@ -806,7 +806,7 @@ public:
         on(csf::PeerID who, csf::SimTime, csf::FullyValidateLedger const& e)
         {
             using namespace std::chrono;
-            // As soon as the the fastC node fully validates C, disconnect
+            // As soon as the fastC node fully validates C, disconnect
             // ALL c nodes from the network. The fast C node needs to disconnect
             // as well to prevent it from relaying the validations it did see
             if (who == groupCfast[0]->id &&

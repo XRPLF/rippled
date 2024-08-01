@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/net/DatabaseDownloader.h>
-#include <boost/filesystem/operations.hpp>
-#include <condition_variable>
-#include <mutex>
 #include <test/jtx.h>
 #include <test/jtx/TrustedPublisherServer.h>
 #include <test/unit_test/FileDirGuard.h>
+#include <xrpld/net/DatabaseDownloader.h>
+#include <boost/filesystem/operations.hpp>
+#include <condition_variable>
+#include <mutex>
 
 namespace ripple {
 namespace test {

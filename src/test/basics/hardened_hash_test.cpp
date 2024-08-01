@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/hardened_hash.h>
-#include <ripple/beast/unit_test.h>
+#include <xrpl/basics/hardened_hash.h>
+#include <xrpl/beast/unit_test.h>
 #include <boost/functional/hash.hpp>
 #include <array>
 #include <cstdint>

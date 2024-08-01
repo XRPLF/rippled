@@ -16,13 +16,13 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/json/json_value.h>
-#include <ripple/json/json_writer.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/handlers/WalletPropose.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx/TestSuite.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/handlers/WalletPropose.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

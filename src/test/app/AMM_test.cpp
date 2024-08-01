@@ -16,23 +16,23 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/app/misc/AMMHelpers.h>
-#include <ripple/app/misc/AMMUtils.h>
-#include <ripple/app/paths/AMMContext.h>
-#include <ripple/app/paths/AMMOffer.h>
-#include <ripple/app/tx/impl/AMMBid.h>
-#include <ripple/basics/Number.h>
-#include <ripple/protocol/AMMCore.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/STParsedJSON.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/rpc/RPCHandler.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/sendmax.h>
+#include <xrpld/app/misc/AMMHelpers.h>
+#include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/app/paths/AMMContext.h>
+#include <xrpld/app/paths/AMMOffer.h>
+#include <xrpld/app/tx/detail/AMMBid.h>
+#include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/resource/Fees.h>
 
 #include <chrono>
 #include <utility>
@@ -3618,13 +3618,16 @@ private:
                     STAmount(USD, UINT64_C(9'970'097277662122), -12),
                     STAmount(EUR, UINT64_C(10'029'99250187452), -11),
                     ammUSD_EUR.tokens()));
-                BEAST_EXPECT(expectOffers(
-                    env,
-                    alice,
-                    1,
-                    {{Amounts{
-                        XRPAmount(30'201'749),
-                        STAmount(USD, UINT64_C(29'90272233787818), -14)}}}));
+
+                // fixReducedOffersV2 changes the expected results slightly.
+                Amounts const expectedAmounts =
+                    env.closed()->rules().enabled(fixReducedOffersV2)
+                    ? Amounts{XRPAmount(30'201'749), STAmount(USD, UINT64_C(29'90272233787816), -14)}
+                    : Amounts{
+                          XRPAmount(30'201'749),
+                          STAmount(USD, UINT64_C(29'90272233787818), -14)};
+
+                BEAST_EXPECT(expectOffers(env, alice, 1, {{expectedAmounts}}));
             }
             else
             {
@@ -3632,13 +3635,16 @@ private:
                     STAmount(USD, UINT64_C(9'970'097277662172), -12),
                     STAmount(EUR, UINT64_C(10'029'99250187452), -11),
                     ammUSD_EUR.tokens()));
-                BEAST_EXPECT(expectOffers(
-                    env,
-                    alice,
-                    1,
-                    {{Amounts{
-                        XRPAmount(30'201'749),
-                        STAmount(USD, UINT64_C(29'9027223378284), -13)}}}));
+
+                // fixReducedOffersV2 changes the expected results slightly.
+                Amounts const expectedAmounts =
+                    env.closed()->rules().enabled(fixReducedOffersV2)
+                    ? Amounts{XRPAmount(30'201'749), STAmount(USD, UINT64_C(29'90272233782839), -14)}
+                    : Amounts{
+                          XRPAmount(30'201'749),
+                          STAmount(USD, UINT64_C(29'90272233782840), -14)};
+
+                BEAST_EXPECT(expectOffers(env, alice, 1, {{expectedAmounts}}));
             }
             // Initial 30,000 + 100
             BEAST_EXPECT(expectLine(env, carol, STAmount{USD, 30'100}));
@@ -6874,6 +6880,8 @@ private:
         testInvalidAMMPayment();
         testBasicPaymentEngine(all);
         testBasicPaymentEngine(all - fixAMMv1_1);
+        testBasicPaymentEngine(all - fixReducedOffersV2);
+        testBasicPaymentEngine(all - fixAMMv1_1 - fixReducedOffersV2);
         testAMMTokens();
         testAmendment();
         testFlags();

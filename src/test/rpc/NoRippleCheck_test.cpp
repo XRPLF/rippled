@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/TxQ.h>
-#include <ripple/beast/utility/temp_dir.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/resource/ResourceManager.h>
-#include <ripple/resource/impl/Entry.h>
-#include <ripple/resource/impl/Tuning.h>
-#include <ripple/rpc/impl/Tuning.h>
-#include <boost/algorithm/string/predicate.hpp>
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
+#include <xrpld/app/misc/TxQ.h>
+#include <xrpld/rpc/detail/Tuning.h>
+#include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/resource/ResourceManager.h>
+#include <xrpl/resource/detail/Entry.h>
+#include <xrpl/resource/detail/Tuning.h>
+#include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {
 
@@ -62,6 +62,27 @@ class NoRippleCheck_test : public beast::unit_test::suite
                 boost::lexical_cast<std::string>(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::error_message] == "Missing field 'role'.");
+        }
+
+        // test account non-string
+        {
+            auto testInvalidAccountParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::account] = param;
+                params[jss::role] = "user";
+                auto jrr = env.rpc(
+                    "json", "noripple_check", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(
+                    jrr[jss::error_message] == "Invalid field 'account'.");
+            };
+
+            testInvalidAccountParam(1);
+            testInvalidAccountParam(1.1);
+            testInvalidAccountParam(true);
+            testInvalidAccountParam(Json::Value(Json::nullValue));
+            testInvalidAccountParam(Json::Value(Json::objectValue));
+            testInvalidAccountParam(Json::Value(Json::arrayValue));
         }
 
         {  // invalid role field
@@ -369,12 +390,12 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NoRippleCheck, app, ripple);
+BEAST_DEFINE_TESTSUITE(NoRippleCheck, rpc, ripple);
 
 // These tests that deal with limit amounts are slow because of the
 // offer/account setup, so making them manual -- the additional coverage
 // provided by them is minimal
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(NoRippleCheckLimits, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(NoRippleCheckLimits, rpc, ripple, 1);
 
 }  // namespace ripple
