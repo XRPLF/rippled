@@ -248,13 +248,6 @@ OpenView::rawReplace(std::shared_ptr<SLE> const& sle)
 }
 
 void
-OpenView::rawRevert()
-{
-    txs_.clear();
-    items_.revert();
-}
-
-void
 OpenView::rawDestroyXRP(XRPAmount const& fee)
 {
     items_.destroyXRP(fee);

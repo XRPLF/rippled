@@ -303,13 +303,6 @@ RawStateTable::replace(std::shared_ptr<SLE> const& sle)
     }
 }
 
-void
-RawStateTable::revert()
-{
-    // Clear the items_ map
-    items_.clear();
-}
-
 std::shared_ptr<SLE const>
 RawStateTable::read(ReadView const& base, Keylet const& k) const
 {

@@ -83,9 +83,6 @@ public:
     void
     replace(std::shared_ptr<SLE> const& sle);
 
-    void
-    revert();
-
     std::shared_ptr<SLE const>
     read(ReadView const& base, Keylet const& k) const;
 
