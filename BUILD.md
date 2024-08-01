@@ -381,7 +381,7 @@ stored inside the build directory, as either of:
 | `san` | N/A | Enable a sanitizer with Clang. Choices are `thread` and `address`. |
 | `tests` | OFF | Build tests. |
 | `unity` | ON | Configure a unity build. |
-| `xrpld` | OFF | Build the application, xrpld, and not just the library, libxrpl. |
+| `xrpld` | OFF | Build the xrpld (`rippled`) application, and not just the libxrpl library. |
 
 [Unity builds][5] may be faster for the first build
 (at the cost of much more memory) since they concatenate sources into fewer
