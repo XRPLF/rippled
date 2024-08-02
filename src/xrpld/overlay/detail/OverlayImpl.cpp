@@ -1054,9 +1054,11 @@ OverlayImpl::getActivePeers(
     disabled = enabledInSkip = 0;
     ret.reserve(ids_.size());
 
+    // NOTE The purpose of p is to delay the destruction of PeerImp
+    std::shared_ptr<PeerImp> p;
     for (auto& [id, w] : ids_)
     {
-        if (auto p = w.lock())
+        if (p = w.lock(); p != nullptr)
         {
             bool const reduceRelayEnabled = p->txReduceRelayEnabled();
             // tx reduced relay feature disabled
@@ -1096,9 +1098,11 @@ std::shared_ptr<Peer>
 OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
 {
     std::lock_guard lock(mutex_);
+    // NOTE The purpose of peer is to delay the destruction of PeerImp
+    std::shared_ptr<PeerImp> peer;
     for (auto const& e : ids_)
     {
-        if (auto peer = e.second.lock())
+        if (peer = e.second.lock(); peer != nullptr)
         {
             if (peer->getNodePublic() == pubKey)
                 return peer;
