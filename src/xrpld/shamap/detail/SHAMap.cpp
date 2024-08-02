@@ -957,11 +957,8 @@ SHAMap::writeNode(NodeObjectType t, std::shared_ptr<SHAMapTreeNode> node) const
     Serializer s;
     node->serializeWithPrefix(s);
 
-    JLOG(journal_.info()) << "Starting db().store call. Current write load: " << f_.db().getWriteLoad()
-        << ", hash: " << node->getHash().as_uint256();
     f_.db().store(
         t, std::move(s.modData()), node->getHash().as_uint256(), ledgerSeq_);
-    JLOG(journal_.info()) << "Finished db().store call, hash: " << node->getHash().as_uint256();
     return node;
 }
 
