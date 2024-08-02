@@ -627,7 +627,8 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
                 carolMiddleNFTokenPage->isFieldPresent(sfPreviousPageMin));
             BEAST_EXPECT(
                 carolMiddleNFTokenPage->isFieldPresent(sfNextPageMin) &&
-                carolMiddleNFTokenPage->at(sfNextPageMin) == lastPageKeylet.key);
+                carolMiddleNFTokenPage->at(sfNextPageMin) ==
+                    lastPageKeylet.key);
 
             // carol has a "last" page that includes a PreviousPageMin field.
             auto carolLastNFTokenPage = env.le(lastPageKeylet);
@@ -651,7 +652,8 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
                 carolFirstNFTokenPage->isFieldPresent(sfNextPageMin) &&
                 carolFirstNFTokenPage->at(sfNextPageMin) ==
                     carolMiddleNFTokenPageIndex);
-            BEAST_EXPECT(!carolFirstNFTokenPage->isFieldPresent(sfPreviousPageMin));
+            BEAST_EXPECT(
+                !carolFirstNFTokenPage->isFieldPresent(sfPreviousPageMin));
         }
 
         // With the link repair, the server knows that carol has 96 NFTs.
