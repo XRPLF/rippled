@@ -21,15 +21,14 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/paths/Pathfinder.h>
 #include <xrpld/app/tx/apply.h>  // Validity::Valid
+#include <xrpld/app/tx/applySteps.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
-#include <xrpld/rpc/detail/Tuning.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/json/json_writer.h>
@@ -447,31 +446,6 @@ transactionPreProcessImpl(
         return rpcError(rpcSRC_ACT_NOT_FOUND);
     }
 
-    {
-        Json::Value err = checkFee(
-            params,
-            role,
-            verify && signingArgs.editFields(),
-            app.config(),
-            app.getFeeTrack(),
-            app.getTxQ(),
-            app);
-
-        if (RPC::contains_error(err))
-            return err;
-
-        err = checkPayment(
-            params,
-            tx_json,
-            srcAddressID,
-            role,
-            app,
-            verify && signingArgs.editFields());
-
-        if (RPC::contains_error(err))
-            return err;
-    }
-
     if (signingArgs.editFields())
     {
         if (!tx_json.isMember(jss::Sequence))
@@ -494,6 +468,31 @@ transactionPreProcessImpl(
             tx_json[jss::Flags] = tfFullyCanonicalSig;
     }
 
+    {
+        Json::Value err = checkPayment(
+            params,
+            tx_json,
+            srcAddressID,
+            role,
+            app,
+            verify && signingArgs.editFields());
+
+        if (RPC::contains_error(err))
+            return err;
+
+        err = checkFee(
+            params,
+            role,
+            verify && signingArgs.editFields(),
+            app.config(),
+            app.getFeeTrack(),
+            app.getTxQ(),
+            app);
+
+        if (RPC::contains_error(err))
+            return err;
+    }
+
     // If multisigning there should not be a single signature and vice versa.
     if (signingArgs.isMultiSigning())
     {
@@ -505,7 +504,7 @@ transactionPreProcessImpl(
     }
     else if (signingArgs.isSingleSigning())
     {
-        if (tx_json.isMember(sfSigners.jsonName))
+        if (tx_json.isMember(jss::Signers))
             return rpcError(rpcALREADY_MULTISIG);
     }
 
@@ -709,6 +708,104 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 
 //------------------------------------------------------------------------------
 
+XRPAmount
+getBaseFee(Application const& app, Config const& config, Json::Value tx)
+{
+    if (!tx.isMember(jss::Fee))
+    {
+        tx[jss::Fee] = "0";
+    }
+    if (!tx.isMember(jss::Sequence))
+    {
+        tx[jss::Sequence] = "0";
+    }
+    if (!tx.isMember(jss::SigningPubKey))
+    {
+        tx[jss::SigningPubKey] = "";
+    }
+    if (!tx.isMember(jss::TxnSignature))
+    {
+        tx[jss::TxnSignature] = "";
+    }
+    if (tx.isMember(jss::Signers))
+    {
+        if (!tx[jss::Signers].isArray())
+            return config.FEES.reference_fee;
+        // check multisigned signers
+        for (auto& signer : tx[jss::Signers])
+        {
+            if (!signer.isMember(jss::Signer) ||
+                !signer[jss::Signer].isObject())
+                return config.FEES.reference_fee;
+            if (!signer[jss::Signer].isMember(sfTxnSignature.jsonName))
+            {
+                // autofill TxnSignature
+                signer[jss::Signer][sfTxnSignature.jsonName] = "";
+            }
+        }
+    }
+    STParsedJSONObject parsed(std::string(jss::tx_json), tx);
+    if (!parsed.object.has_value())
+    {
+        return config.FEES.reference_fee;
+    }
+
+    try
+    {
+        STTx const& stTx = STTx(std::move(parsed.object.value()));
+        return calculateBaseFee(*app.openLedger().current(), stTx);
+    }
+    catch (std::exception& e)
+    {
+        return config.FEES.reference_fee;
+    }
+}
+
+Json::Value
+getCurrentFee(
+    Role const role,
+    Config const& config,
+    LoadFeeTrack const& feeTrack,
+    TxQ const& txQ,
+    Application const& app,
+    Json::Value tx,
+    int mult,
+    int div)
+{
+    XRPAmount const feeDefault = getBaseFee(app, config, tx);
+
+    auto ledger = app.openLedger().current();
+    // Administrative and identified endpoints are exempt from local fees.
+    XRPAmount const loadFee =
+        scaleFeeLoad(feeDefault, feeTrack, ledger->fees(), isUnlimited(role));
+    XRPAmount fee = loadFee;
+    {
+        auto const metrics = txQ.getMetrics(*ledger);
+        auto const baseFee = ledger->fees().base;
+        auto escalatedFee =
+            toDrops(metrics.openLedgerFeeLevel - FeeLevel64(1), baseFee) + 1;
+        fee = std::max(fee, escalatedFee);
+    }
+
+    auto const limit = [&]() {
+        // Scale fee units to drops:
+        auto const result = mulDiv(feeDefault, mult, div);
+        if (!result)
+            Throw<std::overflow_error>("mulDiv");
+        return *result;
+    }();
+
+    if (fee > limit)
+    {
+        std::stringstream ss;
+        ss << "Fee of " << fee << " exceeds the requested tx limit of "
+           << limit;
+        return RPC::make_error(rpcHIGH_FEE, ss.str());
+    }
+
+    return fee.jsonClipped();
+}
+
 Json::Value
 checkFee(
     Json::Value& request,
@@ -767,38 +864,11 @@ checkFee(
         }
     }
 
-    XRPAmount const feeDefault = config.FEES.reference_fee;
-
-    auto ledger = app.openLedger().current();
-    // Administrative and identified endpoints are exempt from local fees.
-    XRPAmount const loadFee =
-        scaleFeeLoad(feeDefault, feeTrack, ledger->fees(), isUnlimited(role));
-    XRPAmount fee = loadFee;
-    {
-        auto const metrics = txQ.getMetrics(*ledger);
-        auto const baseFee = ledger->fees().base;
-        auto escalatedFee =
-            toDrops(metrics.openLedgerFeeLevel - FeeLevel64(1), baseFee) + 1;
-        fee = std::max(fee, escalatedFee);
-    }
-
-    auto const limit = [&]() {
-        // Scale fee units to drops:
-        auto const result = mulDiv(feeDefault, mult, div);
-        if (!result)
-            Throw<std::overflow_error>("mulDiv");
-        return *result;
-    }();
-
-    if (fee > limit)
-    {
-        std::stringstream ss;
-        ss << "Fee of " << fee << " exceeds the requested tx limit of "
-           << limit;
-        return RPC::make_error(rpcHIGH_FEE, ss.str());
-    }
-
-    tx[jss::Fee] = fee.jsonClipped();
+    auto feeOrError =
+        getCurrentFee(role, config, feeTrack, txQ, app, tx, mult, div);
+    if (feeOrError.isMember(jss::error))
+        return feeOrError;
+    tx[jss::Fee] = feeOrError;
     return Json::Value();
 }
 

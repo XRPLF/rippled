@@ -26,15 +26,25 @@ In `api_version: 2`, the `signer_lists` field [will be moved](#modifications-to-
 
 The `network_id` field was added in the `server_info` response in version 1.5.0 (2019), but it is not returned in [reporting mode](https://xrpl.org/rippled-server-modes.html#reporting-mode).
 
-## XRP Ledger server version 2.0.0
+## XRP Ledger server version 2.3.0
 
-### Additions in 2.2
+### Additions
+
+Additions are intended to be non-breaking (because they are purely additive).
+
+- `simulate`: A new RPC that executes a dry run of a transaction submission without actually submitting it to the network for inclusion.
+
+## XRP Ledger server version 2.2.0
+
+### Additions
 
 Additions are intended to be non-breaking (because they are purely additive).
 
 - `feature`: A non-admin mode that uses the same formatting as admin RPC, but hides potentially-sensitive data.
 
-### Additions in 2.0
+## XRP Ledger server version 2.0.0
+
+### Additions
 
 Additions are intended to be non-breaking (because they are purely additive).
 
@@ -46,7 +56,7 @@ Additions are intended to be non-breaking (because they are purely additive).
 
 [Version 1.12.0](https://github.com/XRPLF/rippled/releases/tag/1.12.0) was released on Sep 6, 2023.
 
-### Additions in 1.12
+### Additions
 
 Additions are intended to be non-breaking (because they are purely additive).
 
@@ -88,7 +98,7 @@ Additions are intended to be non-breaking (because they are purely additive).
 
 [Version 1.11.0](https://github.com/XRPLF/rippled/releases/tag/1.11.0) was released on Jun 20, 2023.
 
-### Breaking changes in 1.11
+### Breaking changes
 
 - Added the ability to mark amendments as obsolete. For the `feature` admin API, there is a new possible value for the `vetoed` field. (https://github.com/XRPLF/rippled/pull/4291)
   - The value of `vetoed` can now be `true`, `false`, or `"Obsolete"`.
@@ -107,7 +117,7 @@ Additions are intended to be non-breaking (because they are purely additive).
     - `telREQUIRES_NETWORK_ID`: a `NetworkID` is required, but is not present. Add the field to the transaction, and try again.
     - `telWRONG_NETWORK`: a `NetworkID` is specified, but it is for a different network. Submit the transaction to a different server which is connected to the correct network.
 
-### Additions and bug fixes in 1.11
+### Additions and bug fixes
 
 - Added `nftoken_id`, `nftoken_ids` and `offer_id` meta fields into NFT `tx` and `account_tx` responses. (https://github.com/XRPLF/rippled/pull/4447)
 - Added an `account_flags` object to the `account_info` method response. (https://github.com/XRPLF/rippled/pull/4459)
@@ -119,7 +129,7 @@ Additions are intended to be non-breaking (because they are purely additive).
 [Version 1.10.0](https://github.com/XRPLF/rippled/releases/tag/1.10.0)
 was released on Mar 14, 2023.
 
-### Breaking changes in 1.10
+### Breaking changes
 
 - If the `XRPFees` feature is enabled, the `fee_ref` field will be
   removed from the [ledger subscription stream](https://xrpl.org/subscribe.html#ledger-stream), because it will no longer
