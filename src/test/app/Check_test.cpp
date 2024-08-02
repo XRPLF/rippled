@@ -546,6 +546,72 @@ class Check_test : public beast::unit_test::suite
             env(trust(alice, USD(0), tfClearFreeze));
             env.close();
         }
+        {
+            // Deep Frozen trust line.  Check creation should be similar to
+            // payment behavior in the face of frozen trust lines.
+            env.trust(USD(1000), alice);
+            env.trust(USD(1000), bob);
+            env.close();
+            env(pay(gw1, alice, USD(25)));
+            env(pay(gw1, bob, USD(25)));
+            env.close();
+
+            // Setting trustline deep freeze in one direction prevents alice
+            // from creating a check for USD.  And bob and gw1 should not be
+            // able to create a check for USD to alice.
+            env(trust(gw1, alice["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+            env(check::create(alice, bob, USD(50)), ter(tecFROZEN));
+            env.close();
+            env(pay(alice, bob, USD(1)), ter(tecPATH_DRY));
+            env.close();
+            env(check::create(bob, alice, USD(50)));
+            env.close();
+            if (features[featureDeepFreeze])
+                env(pay(bob, alice, USD(1)), ter(tecPATH_DRY));
+            else
+                env(pay(bob, alice, USD(1)));
+            env.close();
+            env(check::create(gw1, alice, USD(50)));
+            env.close();
+            env(pay(gw1, alice, USD(1)));
+            env.close();
+
+            // Clear that freeze.  Now check creation works.
+            env(trust(gw1, alice["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+            env(check::create(alice, bob, USD(50)));
+            env.close();
+            env(check::create(bob, alice, USD(50)));
+            env.close();
+            env(check::create(gw1, alice, USD(50)));
+            env.close();
+
+            // Deep Freezing in the other direction does effect alice's USD
+            // check creation, and prevents bob and gw1 from writing a check
+            // for USD to alice.
+            env(trust(alice, USD(0), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+            env(check::create(alice, bob, USD(50)));
+            env.close();
+            if (features[featureDeepFreeze])
+                env(pay(alice, bob, USD(1)), ter(tecPATH_DRY));
+            else
+                env(pay(alice, bob, USD(1)));
+            env.close();
+            env(check::create(bob, alice, USD(50)), ter(tecFROZEN));
+            env.close();
+            env(pay(bob, alice, USD(1)), ter(tecPATH_DRY));
+            env.close();
+            env(check::create(gw1, alice, USD(50)), ter(tecFROZEN));
+            env.close();
+            env(pay(gw1, alice, USD(1)), ter(tecPATH_DRY));
+            env.close();
+
+            // Clear that deep freeze.
+            env(trust(alice, USD(0), tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+        }
 
         // Expired expiration.
         env(check::create(alice, bob, USD(50)),
@@ -2719,6 +2785,7 @@ public:
         auto const sa = supported_amendments();
         testWithFeats(sa - featureCheckCashMakesTrustLine);
         testWithFeats(sa - disallowIncoming);
+        testWithFeats(sa - featureDeepFreeze);
         testWithFeats(sa);
 
         testTrustLineCreation(sa);  // Test with featureCheckCashMakesTrustLine

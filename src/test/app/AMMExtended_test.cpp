@@ -3616,6 +3616,208 @@ private:
     }
 
     void
+    testRippleDeepState(FeatureBitset features)
+    {
+        testcase("RippleState Deep Freeze");
+
+        using namespace test::jtx;
+        Env env(*this, features);
+
+        Account const G1{"G1"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        env.fund(XRP(1'000), G1, alice, bob);
+        env.close();
+
+        env.trust(G1["USD"](100), bob);
+        env.trust(G1["USD"](205), alice);
+        env.close();
+
+        env(pay(G1, bob, G1["USD"](10)));
+        env(pay(G1, alice, G1["USD"](205)));
+        env.close();
+
+        AMM ammAlice(env, alice, XRP(500), G1["USD"](105));
+
+        {
+            auto lines = getAccountLines(env, bob);
+            if (!BEAST_EXPECT(checkArraySize(lines[jss::lines], 1u)))
+                return;
+            BEAST_EXPECT(lines[jss::lines][0u][jss::account] == G1.human());
+            BEAST_EXPECT(lines[jss::lines][0u][jss::limit] == "100");
+            BEAST_EXPECT(lines[jss::lines][0u][jss::balance] == "10");
+        }
+
+        {
+            auto lines = getAccountLines(env, alice, G1["USD"]);
+            if (!BEAST_EXPECT(checkArraySize(lines[jss::lines], 1u)))
+                return;
+            BEAST_EXPECT(lines[jss::lines][0u][jss::account] == G1.human());
+            BEAST_EXPECT(lines[jss::lines][0u][jss::limit] == "205");
+            // 105 transferred to AMM
+            BEAST_EXPECT(lines[jss::lines][0u][jss::balance] == "100");
+        }
+
+        {
+            // Account with line unfrozen (proving operations normally work)
+            //   test: can make Payment on that line
+            env(pay(alice, bob, G1["USD"](1)));
+
+            //   test: can receive Payment on that line
+            env(pay(bob, alice, G1["USD"](1)));
+            env.close();
+        }
+
+        {
+            // Is created via a TrustSet with SetFreeze flag
+            //   test: sets LowFreeze | HighFreeze flags
+            env(trust(G1, bob["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            auto affected = env.meta()->getJson(
+                JsonOptions::none)[sfAffectedNodes.fieldName];
+            if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
+                return;
+            auto ff =
+                affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
+            BEAST_EXPECT(
+                ff[sfLowLimit.fieldName] ==
+                G1["USD"](0).value().getJson(JsonOptions::none));
+            if (features[featureDeepFreeze])
+            {
+                BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfLowDeepFreeze);
+                BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighDeepFreeze));
+            }
+            else
+            {
+                BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfLowDeepFreeze));
+                BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighDeepFreeze));
+            }
+            env.close();
+        }
+
+        {
+            // Account with line deep frozen by issuer
+            //    test: can not buy more assets on that line
+            env(offer(bob, G1["USD"](5), XRP(25)));
+            auto affected = env.meta()->getJson(
+                JsonOptions::none)[sfAffectedNodes.fieldName];
+            if (!BEAST_EXPECT(checkArraySize(affected, 4u)))
+                return;
+            auto ff =
+                affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
+            auto amt = STAmount{Issue{to_currency("USD"), noAccount()}, -15}
+                           .value()
+                           .getJson(JsonOptions::none);
+            if (features[featureDeepFreeze])
+            {
+                BEAST_EXPECT(ff[sfHighLimit.fieldName] == Json::nullValue);
+                BEAST_EXPECT(ff[sfBalance.fieldName] == Json::nullValue);
+            }
+            else
+            {
+                BEAST_EXPECT(
+                    ff[sfHighLimit.fieldName] ==
+                    bob["USD"](100).value().getJson(JsonOptions::none));
+                BEAST_EXPECT(ff[sfBalance.fieldName] == amt);
+            }
+            env.close();
+            if (features[featureDeepFreeze])
+            {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(500), G1["USD"](105), ammAlice.tokens()));
+            }
+            else
+            {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(525), G1["USD"](100), ammAlice.tokens()));
+            }
+        }
+
+        {
+            //    test: can not sell assets from that line
+            env(offer(bob, XRP(1), G1["USD"](5)), ter(tecUNFUNDED_OFFER));
+
+            //    test: can not make Payment from that line
+            env(pay(bob, alice, G1["USD"](1)), ter(tecPATH_DRY));
+
+            if (features[featureDeepFreeze])
+            {
+                //    test: can not receive Payment on that line
+                env(pay(alice, bob, G1["USD"](1)), ter(tecPATH_DRY));
+            }
+            else
+            {
+                //    test: can receive Payment on that line
+                env(pay(alice, bob, G1["USD"](1)));
+            }
+        }
+
+        {
+            // check G1 account lines
+            //    test: shows deep freeze
+            auto lines = getAccountLines(env, G1);
+            Json::Value bobLine;
+            for (auto const& it : lines[jss::lines])
+            {
+                if (it[jss::account] == bob.human())
+                {
+                    bobLine = it;
+                    break;
+                }
+            }
+            if (!BEAST_EXPECT(bobLine))
+                return;
+            BEAST_EXPECT(bobLine[jss::freeze] == true);
+            if (features[featureDeepFreeze])
+                BEAST_EXPECT(bobLine[jss::balance] == "-10");
+            else
+                BEAST_EXPECT(bobLine[jss::balance] == "-16");
+        }
+
+        {
+            //    test: shows deep freeze peer
+            auto lines = getAccountLines(env, bob);
+            Json::Value g1Line;
+            for (auto const& it : lines[jss::lines])
+            {
+                if (it[jss::account] == G1.human())
+                {
+                    g1Line = it;
+                    break;
+                }
+            }
+            if (!BEAST_EXPECT(g1Line))
+                return;
+            BEAST_EXPECT(g1Line[jss::freeze_peer] == true);
+            if (features[featureDeepFreeze])
+                BEAST_EXPECT(g1Line[jss::balance] == "10");
+            else
+                BEAST_EXPECT(g1Line[jss::balance] == "16");
+        }
+
+        {
+            // Is cleared via a TrustSet with ClearDeepFreeze flag
+            //    test: sets LowDeepFreeze | HighDeepFreeze flags
+            env(trust(G1, bob["USD"](0), tfClearDeepFreeze));
+            auto affected = env.meta()->getJson(
+                JsonOptions::none)[sfAffectedNodes.fieldName];
+            if (!features[featureDeepFreeze] &&
+                BEAST_EXPECT(checkArraySize(affected, 1u)))
+                return;
+            if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
+                return;
+            auto ff =
+                affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
+            BEAST_EXPECT(
+                ff[sfLowLimit.fieldName] ==
+                G1["USD"](0).value().getJson(JsonOptions::none));
+            BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfLowDeepFreeze));
+            BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighDeepFreeze));
+            env.close();
+        }
+    }
+
+    void
     testGlobalFreeze(FeatureBitset features)
     {
         testcase("Global Freeze");
@@ -4129,7 +4331,13 @@ private:
     {
         using namespace test::jtx;
         auto const sa = supported_amendments();
+        testRippleState(sa - featureDeepFreeze);
+        testRippleDeepState(sa - featureDeepFreeze);
+        testGlobalFreeze(sa - featureDeepFreeze);
+        testOffersWhenFrozen(sa - featureDeepFreeze);
+
         testRippleState(sa);
+        testRippleDeepState(sa);
         testGlobalFreeze(sa);
         testOffersWhenFrozen(sa);
     }

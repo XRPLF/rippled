@@ -265,6 +265,30 @@ isFrozen(
         isIndividualFrozen(view, account, mptIssue);
 }
 
+bool
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer)
+{
+    if (!view.rules().enabled(featureDeepFreeze))
+        return false;
+    if (isXRP(currency))
+        return false;
+    if (issuer != account)
+    {
+        // Check if the issuer deep froze the line
+        auto sle = view.read(keylet::line(account, issuer, currency));
+        if (sle)
+        {
+            if (sle->isFlag(lsfHighDeepFreeze) || sle->isFlag(lsfLowDeepFreeze))
+                return true;
+        }
+    }
+    return false;
+}
+
 STAmount
 accountHolds(
     ReadView const& view,
@@ -287,8 +311,9 @@ accountHolds(
         amount.clear(Issue{currency, issuer});
     }
     else if (
-        (zeroIfFrozen == fhZERO_IF_FROZEN) &&
-        isFrozen(view, account, currency, issuer))
+        ((zeroIfFrozen == fhZERO_IF_FROZEN) &&
+         isFrozen(view, account, currency, issuer)) ||
+        isDeepFrozen(view, account, currency, issuer))
     {
         amount.clear(Issue{currency, issuer});
     }

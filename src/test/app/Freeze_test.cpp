@@ -99,23 +99,67 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
         }
 
+        if (features[featureDeepFreeze])
+        {
+            {
+                // Is created via a TrustSet with SetDeepFreeze flag
+                //   but not tfSetFreeze
+                //   test: does not set LowDeepFreeze | HighDeepFreeze flags
+                env(trust(G1, bob["USD"](0), tfSetDeepFreeze));
+                auto affected = env.meta()->getJson(
+                    JsonOptions::none)[sfAffectedNodes.fieldName];
+                BEAST_EXPECT(checkArraySize(affected, 1u));
+                auto ff = affected[0u][sfModifiedNode.fieldName]
+                                  [sfFinalFields.fieldName];
+                BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfLowDeepFreeze));
+                BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighDeepFreeze));
+                env.close();
+            }
+
+            {
+                // Is created via a TrustSet with SetDeepFreeze flag
+                //   and tfSetFreeze
+                //   test: sets LowDeepFreeze | HighDeepFreeze flags
+                env(trust(G1, bob["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+                auto affected = env.meta()->getJson(
+                    JsonOptions::none)[sfAffectedNodes.fieldName];
+                if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
+                    return;
+                auto ff = affected[1u][sfModifiedNode.fieldName]
+                                  [sfFinalFields.fieldName];
+                BEAST_EXPECT(
+                    ff[sfLowLimit.fieldName] ==
+                    G1["USD"](0).value().getJson(JsonOptions::none));
+                BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfLowDeepFreeze);
+                BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighDeepFreeze));
+                env.close();
+            }
+        }
+
         {
             // Account with line frozen by issuer
             //    test: can buy more assets on that line
             env(offer(bob, G1["USD"](5), XRP(25)));
             auto affected = env.meta()->getJson(
                 JsonOptions::none)[sfAffectedNodes.fieldName];
-            if (!BEAST_EXPECT(checkArraySize(affected, 5u)))
-                return;
+            BEAST_EXPECT(
+                checkArraySize(affected, 4u) || checkArraySize(affected, 5u));
             auto ff =
                 affected[3u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
-            BEAST_EXPECT(
-                ff[sfHighLimit.fieldName] ==
-                bob["USD"](100).value().getJson(JsonOptions::none));
-            auto amt = STAmount{Issue{to_currency("USD"), noAccount()}, -15}
-                           .value()
-                           .getJson(JsonOptions::none);
-            BEAST_EXPECT(ff[sfBalance.fieldName] == amt);
+            if (affected.size() == 5)
+            {
+                BEAST_EXPECT(
+                    ff[sfHighLimit.fieldName] ==
+                    bob["USD"](100).value().getJson(JsonOptions::none));
+                auto amt = STAmount{Issue{to_currency("USD"), noAccount()}, -15}
+                               .value()
+                               .getJson(JsonOptions::none);
+                BEAST_EXPECT(ff[sfBalance.fieldName] == amt);
+            }
+            else if (affected.size() == 4)
+            {
+                BEAST_EXPECT(ff[sfHighLimit.fieldName] == Json::nullValue);
+            }
             env.close();
         }
 
@@ -123,8 +167,11 @@ class Freeze_test : public beast::unit_test::suite
             //    test: can not sell assets from that line
             env(offer(bob, XRP(1), G1["USD"](5)), ter(tecUNFUNDED_OFFER));
 
-            //    test: can receive Payment on that line
-            env(pay(alice, bob, G1["USD"](1)));
+            //    test: can receive Payment on that line unless deep frozen
+            if (features[featureDeepFreeze])
+                env(pay(alice, bob, G1["USD"](1)), ter(tecPATH_DRY));
+            else
+                env(pay(alice, bob, G1["USD"](1)));
 
             //    test: can not make Payment from that line
             env(pay(bob, alice, G1["USD"](1)), ter(tecPATH_DRY));
@@ -146,7 +193,12 @@ class Freeze_test : public beast::unit_test::suite
             if (!BEAST_EXPECT(bobLine))
                 return;
             BEAST_EXPECT(bobLine[jss::freeze] == true);
-            BEAST_EXPECT(bobLine[jss::balance] == "-16");
+            if (features[featureDeepFreeze] && features[featureFlowCross])
+                BEAST_EXPECT(bobLine[jss::balance] == "-10");
+            else if (features[featureFlowCross])
+                BEAST_EXPECT(bobLine[jss::balance] == "-16");
+            else if (features[featureDeepFreeze])
+                BEAST_EXPECT(bobLine[jss::balance] == "-15");
         }
 
         {
@@ -164,9 +216,13 @@ class Freeze_test : public beast::unit_test::suite
             if (!BEAST_EXPECT(g1Line))
                 return;
             BEAST_EXPECT(g1Line[jss::freeze_peer] == true);
-            BEAST_EXPECT(g1Line[jss::balance] == "16");
+            if (features[featureDeepFreeze] && features[featureFlowCross])
+                BEAST_EXPECT(g1Line[jss::balance] == "10");
+            else if (features[featureFlowCross])
+                BEAST_EXPECT(g1Line[jss::balance] == "16");
+            else if (features[featureDeepFreeze])
+                BEAST_EXPECT(g1Line[jss::balance] == "15");
         }
-
         {
             // Is cleared via a TrustSet with ClearFreeze flag
             //    test: sets LowFreeze | HighFreeze flags
@@ -519,6 +575,7 @@ public:
         using namespace test::jtx;
         auto const sa = supported_amendments();
         testAll(sa - featureFlowCross);
+        testAll(sa - featureDeepFreeze);
         testAll(sa);
     }
 };

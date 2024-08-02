@@ -52,6 +52,13 @@ checkFreeze(
         {
             return terNO_LINE;
         }
+        if (view.rules().enabled(featureDeepFreeze))
+        {
+            if (sle->isFlag(lsfHighDeepFreeze) || sle->isFlag(lsfLowDeepFreeze))
+            {
+                return terNO_LINE;
+            }
+        }
     }
 
     return tesSUCCESS;

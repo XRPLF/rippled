@@ -242,6 +242,11 @@ SetTrust::doApply()
     bool const bClearNoRipple = (uTxFlags & tfClearNoRipple);
     bool const bSetFreeze = (uTxFlags & tfSetFreeze);
     bool const bClearFreeze = (uTxFlags & tfClearFreeze);
+    bool const bDeepFreezeEnabled = view().rules().enabled(featureDeepFreeze);
+    bool const bSetDeepFreeze =
+        bDeepFreezeEnabled && (uTxFlags & tfSetDeepFreeze);
+    bool const bClearDeepFreeze =
+        bDeepFreezeEnabled && (uTxFlags & tfClearDeepFreeze);
 
     auto viewJ = ctx_.app.journal("View");
 
@@ -408,13 +413,27 @@ SetTrust::doApply()
             uFlagsOut &= ~(bHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
 
+        bool willSetFreeze = false;
         if (bSetFreeze && !bClearFreeze && !sle->isFlag(lsfNoFreeze))
         {
             uFlagsOut |= (bHigh ? lsfHighFreeze : lsfLowFreeze);
+            willSetFreeze = true;
         }
         else if (bClearFreeze && !bSetFreeze)
         {
             uFlagsOut &= ~(bHigh ? lsfHighFreeze : lsfLowFreeze);
+        }
+
+        bool const alreadyFrozen =
+            bHigh ? sle->isFlag(lsfHighFreeze) : sle->isFlag(lsfLowFreeze);
+        if (bSetDeepFreeze && !bClearDeepFreeze &&
+            (willSetFreeze || alreadyFrozen))
+        {
+            uFlagsOut |= (bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
+        }
+        else if (bClearDeepFreeze && !bSetDeepFreeze)
+        {
+            uFlagsOut &= ~(bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
         }
 
         if (QUALITY_ONE == uLowQualityOut)
