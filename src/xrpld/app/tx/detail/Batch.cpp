@@ -129,8 +129,8 @@ Batch::doApply()
     for (STObject txn : txns)
     {
         STTx const stx = STTx{std::move(txn)};
-        auto const [ter, applied] = ripple::apply(
-            ctx_.app, subView, stx, tapFAIL_HARD, ctx_.journal);
+        auto const [ter, applied] =
+            ripple::apply(ctx_.app, subView, stx, tapFAIL_HARD, ctx_.journal);
 
         changed = true;
 
@@ -185,19 +185,18 @@ Batch::doApply()
         auto const sleSrcAcc = sb.peek(keylet::account(_account));
         if (!sleSrcAcc)
             return tefINTERNAL;
-        
+
         if (_account == account_)
         {
             // Update Sequence (Source Account)
             sleSrcAcc->setFieldU32(
-                sfSequence,
-                sleSrcAcc->getFieldU32(sfSequence) + count);
+                sfSequence, sleSrcAcc->getFieldU32(sfSequence) + count);
             sb.update(sleSrcAcc);
         }
     }
-    
+
     sb.apply(ctx_.rawView());
-    
+
     return result;
 }
 

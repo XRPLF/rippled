@@ -82,12 +82,14 @@ public:
 
     /** Apply the transaction result to the base. */
     void apply(TER);
-    
+
     /** Apply the transaction result to the base. */
-    void applyOpenView(OpenView& open);
-    
+    void
+    applyOpenView(OpenView& open);
+
     /** Apply the fee to the account. */
-    void applyFee();
+    void
+    applyFee();
 
     /** Get the number of unapplied changes. */
     std::size_t

@@ -43,7 +43,7 @@ checkValidity(
 {
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);
-    
+
     // Validate Inner BatchTxn
     if (rules.enabled(featureBatch) && tx.isFieldPresent(sfBatchTxn))
     {

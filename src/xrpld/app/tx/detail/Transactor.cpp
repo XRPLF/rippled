@@ -1082,7 +1082,6 @@ Transactor::operator()()
         if (!view().open() && fee != beast::zero)
             ctx_.destroyXRP(fee);
 
-
         // Once we call apply, we will no longer be able to look at view()
         ctx_.apply(result);
     }
