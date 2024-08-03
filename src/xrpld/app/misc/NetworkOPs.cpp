@@ -1143,7 +1143,8 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 
     // Enforce Network bar for batch txn
     auto const view = m_ledgerMaster.getCurrentLedger();
-    if (view->rules().enabled(featureBatch) && iTrans->isFieldPresent(sfBatchTxn))
+    if (view->rules().enabled(featureBatch) &&
+        iTrans->isFieldPresent(sfBatchTxn))
     {
         JLOG(m_journal.error())
             << "Submitted transaction invalid: BatchTxn present.";
