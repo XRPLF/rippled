@@ -1083,11 +1083,8 @@ class Batch_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        // test::jtx::Env env{*this, envconfig()};
-        Env env{
-            *this, envconfig(), features, nullptr, beast::severities::kTrace};
+        test::jtx::Env env{*this, envconfig()};
 
-        auto const feeDrops = env.current()->fees().base;
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const gw = Account("gw");
@@ -1101,23 +1098,42 @@ class Batch_test : public beast::unit_test::suite
         env(pay(gw, bob, USD(100)));
         env.close();
 
-        auto jv = pay(alice, bob, USD(1));
-        jv[sfBatchTxn.jsonName] = Json::Value{};
-        jv[sfBatchTxn.jsonName][jss::Account] = alice.human();
-        jv[sfBatchTxn.jsonName][sfSequence.jsonName] = 0;
-        jv[sfBatchTxn.jsonName][sfBatchIndex.jsonName] = 0;
+        {
+            auto jv = pay(alice, bob, USD(1));
+            jv[sfBatchTxn.jsonName] = Json::Value{};
+            jv[sfBatchTxn.jsonName][jss::OuterAccount] = alice.human();
+            jv[sfBatchTxn.jsonName][sfSequence.jsonName] = 0;
+            jv[sfBatchTxn.jsonName][sfBatchIndex.jsonName] = 0;
 
-        Serializer s;
-        auto jt = env.jt(jv);
-        s.erase();
-        jt.stx->add(s);
-        auto const jr = env.rpc("submit", strHex(s.slice()));
-        BEAST_EXPECT(
-            jr.isMember(jss::engine_result) &&
-            jr[jss::engine_result] == "tesSUCCESS");
+            Serializer s;
+            auto jt = env.jt(jv);
+            jv.removeMember(sfTxnSignature.jsonName);
+            s.erase();
+            jt.stx->add(s);
+            auto const jrr = env.rpc("submit", strHex(s.slice()))[jss::result];
+            // std::cout << jrr << std::endl;
+            BEAST_EXPECT(
+                jrr[jss::status] == "error" &&
+                jrr[jss::error] == "invalidTransaction");
 
-        env.close();
-        std::cout << jr << std::endl;
+            env.close();
+        }
+        {
+            std::string txBlob =
+                "1200002280000000240000000561D4838D7EA4C68000000000000000000000"
+                "0000005553440000000000A407AF5856CCF3C42619DAA925813FC955C72983"
+                "68400000000000000A73210388935426E0D08083314842EDFBB2D517BD4769"
+                "9F9A4527318A8E10468C97C0528114AE123A8556F3CF91154711376AFB0F89"
+                "4F832B3D8314F51DFC2A09D62CBBA1DFBDD4691DAC96AD98B90FE023240000"
+                "0000801814AE123A8556F3CF91154711376AFB0F894F832B3D00101400E1";
+            auto const jrr = env.rpc("submit", txBlob)[jss::result];
+            // std::cout << jrr << std::endl;
+            BEAST_EXPECT(
+                jrr[jss::status] == "success" &&
+                jrr[jss::engine_result] == "temINVALID_BATCH");
+
+            env.close();
+        }
     }
 
     void
@@ -1137,7 +1153,7 @@ class Batch_test : public beast::unit_test::suite
         testClawback(features);
         // testOfferCancel(features);
 
-        // testSubmit(features);
+        testSubmit(features);
 
         // Test Fork From one node having 1 extra txn
 

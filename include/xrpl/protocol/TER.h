@@ -139,6 +139,7 @@ enum TEMcodes : TERUnderlyingType {
 
     temARRAY_EMPTY,
     temARRAY_TOO_LARGE,
+    temINVALID_BATCH,
 };
 
 //------------------------------------------------------------------------------

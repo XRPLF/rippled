@@ -122,7 +122,7 @@ OpenLedger::accept(
         auto const& tx = txpair.first;
         auto const txId = tx->getTransactionID();
 
-        // skip emitted txns
+        // skip batch txns
         if (tx->isFieldPresent(sfBatchTxn))
             continue;
 

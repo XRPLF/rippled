@@ -1141,6 +1141,15 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
         return;
     }
 
+    // Enforce Network bar for batch txn
+    auto const view = m_ledgerMaster.getCurrentLedger();
+    if (view->rules().enabled(featureBatch) && iTrans->isFieldPresent(sfBatchTxn))
+    {
+        JLOG(m_journal.error())
+            << "Submitted transaction invalid: BatchTxn present.";
+        return;
+    }
+
     // this is an asynchronous interface
     auto const trans = sterilize(*iTrans);
 
@@ -1217,6 +1226,9 @@ NetworkOPsImp::processTransaction(
     if (view->rules().enabled(featureBatch) &&
         tx.isFieldPresent(ripple::sfBatchTxn))
     {
+        transaction->setStatus(INVALID);
+        transaction->setResult(temINVALID_BATCH);
+        app_.getHashRouter().setFlags(transaction->getID(), SF_BAD);
         return;
     }
 
@@ -1478,12 +1490,13 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 auto const toSkip =
                     app_.getHashRouter().shouldRelay(e.transaction->getID());
 
-                if (toSkip)
+                auto const txn = *(e.transaction->getSTransaction());
+                if (toSkip && !txn.isFieldPresent(sfBatchTxn))
                 {
                     protocol::TMTransaction tx;
                     Serializer s;
 
-                    e.transaction->getSTransaction()->add(s);
+                    txn.add(s);
                     tx.set_rawtransaction(s.data(), s.size());
                     tx.set_status(protocol::tsCURRENT);
                     tx.set_receivetimestamp(

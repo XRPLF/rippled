@@ -2728,7 +2728,7 @@ PeerImp::checkTransaction(
     // VFALCO TODO Rewrite to not use exceptions
     try
     {
-        // charge strongly for relaying Hook emitted txns
+        // charge strongly for relaying batch txns
         if (stx->isFieldPresent(sfBatchTxn))
         {
             JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
