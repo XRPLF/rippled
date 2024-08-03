@@ -38,16 +38,18 @@ Batch::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 Batch::preflight(PreflightContext const& ctx)
 {
+    if (!ctx.rules.enabled(featureBatch))
+        return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
     auto& tx = ctx.tx;
-    bool const isSwap = tx.isFieldPresent(sfBatchSigners);
-    if (isSwap)
+
+    if (tx.getFlags() & tfBatchMask)
     {
-        auto const sigResult = ctx.tx.checkBatchSign();
-        if (!sigResult)
-            return temBAD_SIGNER;
+        JLOG(ctx.j.debug()) << "Batch: invalid flags.";
+        return temINVALID_FLAG;
     }
 
     AccountID const outerAccount = tx.getAccountID(sfAccount);
@@ -65,6 +67,16 @@ Batch::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
+    if (tx.isFieldPresent(sfBatchSigners))
+    {
+        auto const sigResult = ctx.tx.checkBatchSign();
+        if (!sigResult)
+        {
+            JLOG(ctx.j.debug()) << "Batch: invalid batch txn signature.";
+            return temBAD_SIGNATURE;
+        }
+    }
+
     for (STObject txn : txns)
     {
         if (!txn.isFieldPresent(sfTransactionType))
@@ -79,11 +91,21 @@ Batch::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         }
 
-        AccountID const innerAccount = txn.getAccountID(sfAccount);
-        if (!isSwap && innerAccount != outerAccount)
+        if (auto const innerAccount = txn.getAccountID(sfAccount);
+            innerAccount != outerAccount)
         {
-            JLOG(ctx.j.debug()) << "Batch: batch signer mismatch.";
-            return temBAD_SIGNER;
+            if (tx.getFieldArray(sfBatchSigners).end() ==
+                std::find_if(
+                    tx.getFieldArray(sfBatchSigners).begin(),
+                    tx.getFieldArray(sfBatchSigners).end(),
+                    [innerAccount](STObject const& signer) {
+                        return signer.getAccountID(sfAccount) == innerAccount;
+                    }))
+            {
+                JLOG(ctx.j.debug())
+                    << "Batch: inner txn not signed by the right user.";
+                return temBAD_SIGNER;
+            }
         }
     }
     return preflight2(ctx);
@@ -95,18 +117,6 @@ Batch::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.rules().enabled(featureBatch))
         return temDISABLED;
 
-    auto const& txns = ctx.tx.getFieldArray(sfRawTransactions);
-    for (std::size_t i = 0; i < txns.size(); ++i)
-    {
-        STObject txn = txns[i];
-        if (!txn.isFieldPresent(sfTransactionType))
-        {
-            JLOG(ctx.j.debug())
-                << "Batch: TransactionType missing in array entry.";
-            return temMALFORMED;
-        }
-    }
-
     return tesSUCCESS;
 }
 
@@ -115,10 +125,7 @@ Batch::doApply()
 {
     Sandbox sb(&ctx_.view());
     bool changed = false;
-
-    uint32_t flags = ctx_.tx.getFlags();
-    if (flags & tfBatchMask)
-        return temINVALID_FLAG;
+    auto const flags = ctx_.tx.getFlags();
 
     TER result = tesSUCCESS;
     ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
