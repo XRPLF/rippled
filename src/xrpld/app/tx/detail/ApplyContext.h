@@ -49,7 +49,6 @@ public:
     TER const preclaimResult;
     XRPAmount const baseFee;
     beast::Journal const journal;
-    OpenView& base_;
 
     ApplyView&
     view()
@@ -83,6 +82,12 @@ public:
 
     /** Apply the transaction result to the base. */
     void apply(TER);
+    
+    /** Apply the transaction result to the base. */
+    void applyOpenView(OpenView& open);
+    
+    /** Apply the fee to the account. */
+    void applyFee();
 
     /** Get the number of unapplied changes. */
     std::size_t
@@ -122,7 +127,7 @@ private:
         XRPAmount const fee,
         std::index_sequence<Is...>);
 
-    // OpenView& base_;
+    OpenView& base_;
     ApplyFlags flags_;
     std::optional<ApplyViewImpl> view_;
 };

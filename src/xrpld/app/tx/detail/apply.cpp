@@ -43,8 +43,9 @@ checkValidity(
 {
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);
-
-    if (rules.enabled(featureBatch) && applyFlags & tapPREFLIGHT_BATCH)
+    
+    // Validate Inner BatchTxn
+    if (rules.enabled(featureBatch) && tx.isFieldPresent(sfBatchTxn))
     {
         // batched transactions do not contain signatures
         if (tx.isFieldPresent(sfTxnSignature))

@@ -17,279 +17,17 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/applySteps.h>
-#include <xrpld/app/tx/detail/AMMBid.h>
-#include <xrpld/app/tx/detail/AMMCreate.h>
-#include <xrpld/app/tx/detail/AMMDelete.h>
-#include <xrpld/app/tx/detail/AMMDeposit.h>
-#include <xrpld/app/tx/detail/AMMVote.h>
-#include <xrpld/app/tx/detail/AMMWithdraw.h>
-#include <xrpld/app/tx/detail/ApplyContext.h>
+#include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/Batch.h>
-#include <xrpld/app/tx/detail/CancelCheck.h>
-#include <xrpld/app/tx/detail/CancelOffer.h>
-#include <xrpld/app/tx/detail/CashCheck.h>
-#include <xrpld/app/tx/detail/Change.h>
-#include <xrpld/app/tx/detail/Clawback.h>
-#include <xrpld/app/tx/detail/CreateCheck.h>
-#include <xrpld/app/tx/detail/CreateOffer.h>
-#include <xrpld/app/tx/detail/CreateTicket.h>
-#include <xrpld/app/tx/detail/DID.h>
-#include <xrpld/app/tx/detail/DeleteAccount.h>
-#include <xrpld/app/tx/detail/DepositPreauth.h>
-#include <xrpld/app/tx/detail/Escrow.h>
-#include <xrpld/app/tx/detail/NFTokenAcceptOffer.h>
-#include <xrpld/app/tx/detail/NFTokenBurn.h>
-#include <xrpld/app/tx/detail/NFTokenCancelOffer.h>
-#include <xrpld/app/tx/detail/NFTokenCreateOffer.h>
-#include <xrpld/app/tx/detail/NFTokenMint.h>
-#include <xrpld/app/tx/detail/PayChan.h>
-#include <xrpld/app/tx/detail/Payment.h>
-#include <xrpld/app/tx/detail/SetAccount.h>
-#include <xrpld/app/tx/detail/SetRegularKey.h>
-#include <xrpld/app/tx/detail/SetSignerList.h>
-#include <xrpld/app/tx/detail/SetTrust.h>
-#include <xrpld/app/tx/detail/XChainBridge.h>
+#include <xrpld/ledger/Sandbox.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
-
-namespace {
-
-struct UnknownTxnType : std::exception
-{
-    TxType txnType;
-    UnknownTxnType(TxType t) : txnType{t}
-    {
-    }
-};
-
-// Call a lambda with the concrete transaction type as a template parameter
-// throw an "UnknownTxnType" exception on error
-template <class F>
-auto
-with_txn_type(TxType txnType, F&& f)
-{
-    switch (txnType)
-    {
-        case ttACCOUNT_DELETE:
-            return f.template operator()<DeleteAccount>();
-        case ttACCOUNT_SET:
-            return f.template operator()<SetAccount>();
-        case ttCHECK_CANCEL:
-            return f.template operator()<CancelCheck>();
-        case ttCHECK_CASH:
-            return f.template operator()<CashCheck>();
-        case ttCHECK_CREATE:
-            return f.template operator()<CreateCheck>();
-        case ttDEPOSIT_PREAUTH:
-            return f.template operator()<DepositPreauth>();
-        case ttOFFER_CANCEL:
-            return f.template operator()<CancelOffer>();
-        case ttOFFER_CREATE:
-            return f.template operator()<CreateOffer>();
-        case ttESCROW_CREATE:
-            return f.template operator()<EscrowCreate>();
-        case ttESCROW_FINISH:
-            return f.template operator()<EscrowFinish>();
-        case ttESCROW_CANCEL:
-            return f.template operator()<EscrowCancel>();
-        case ttPAYCHAN_CLAIM:
-            return f.template operator()<PayChanClaim>();
-        case ttPAYCHAN_CREATE:
-            return f.template operator()<PayChanCreate>();
-        case ttPAYCHAN_FUND:
-            return f.template operator()<PayChanFund>();
-        case ttPAYMENT:
-            return f.template operator()<Payment>();
-        case ttREGULAR_KEY_SET:
-            return f.template operator()<SetRegularKey>();
-        case ttSIGNER_LIST_SET:
-            return f.template operator()<SetSignerList>();
-        case ttTICKET_CREATE:
-            return f.template operator()<CreateTicket>();
-        case ttTRUST_SET:
-            return f.template operator()<SetTrust>();
-        case ttAMENDMENT:
-        case ttFEE:
-        case ttUNL_MODIFY:
-            return f.template operator()<Change>();
-        case ttNFTOKEN_MINT:
-            return f.template operator()<NFTokenMint>();
-        case ttNFTOKEN_BURN:
-            return f.template operator()<NFTokenBurn>();
-        case ttNFTOKEN_CREATE_OFFER:
-            return f.template operator()<NFTokenCreateOffer>();
-        case ttNFTOKEN_CANCEL_OFFER:
-            return f.template operator()<NFTokenCancelOffer>();
-        case ttNFTOKEN_ACCEPT_OFFER:
-            return f.template operator()<NFTokenAcceptOffer>();
-        case ttCLAWBACK:
-            return f.template operator()<Clawback>();
-        case ttAMM_CREATE:
-            return f.template operator()<AMMCreate>();
-        case ttAMM_DEPOSIT:
-            return f.template operator()<AMMDeposit>();
-        case ttAMM_WITHDRAW:
-            return f.template operator()<AMMWithdraw>();
-        case ttAMM_VOTE:
-            return f.template operator()<AMMVote>();
-        case ttAMM_BID:
-            return f.template operator()<AMMBid>();
-        case ttAMM_DELETE:
-            return f.template operator()<AMMDelete>();
-        case ttXCHAIN_CREATE_BRIDGE:
-            return f.template operator()<XChainCreateBridge>();
-        case ttXCHAIN_MODIFY_BRIDGE:
-            return f.template operator()<BridgeModify>();
-        case ttXCHAIN_CREATE_CLAIM_ID:
-            return f.template operator()<XChainCreateClaimID>();
-        case ttXCHAIN_COMMIT:
-            return f.template operator()<XChainCommit>();
-        case ttXCHAIN_CLAIM:
-            return f.template operator()<XChainClaim>();
-        case ttXCHAIN_ADD_CLAIM_ATTESTATION:
-            return f.template operator()<XChainAddClaimAttestation>();
-        case ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION:
-            return f.template operator()<XChainAddAccountCreateAttestation>();
-        case ttXCHAIN_ACCOUNT_CREATE_COMMIT:
-            return f.template operator()<XChainCreateAccountCommit>();
-        case ttDID_SET:
-            return f.template operator()<DIDSet>();
-        case ttDID_DELETE:
-            return f.template operator()<DIDDelete>();
-        case ttBATCH:
-            return f.template operator()<Batch>();
-        default:
-            throw UnknownTxnType(txnType);
-    }
-}
-}  // namespace
-
-// clang-format off
-// Current formatter for rippled is based on clang-10, which does not handle `requires` clauses
-template <class T>
-requires(T::ConsequencesFactory == Transactor::Normal)
-TxConsequences
-    consequences_helper(PreflightContext const& ctx)
-{
-    return TxConsequences(ctx.tx);
-};
-
-// For Transactor::Blocker
-template <class T>
-requires(T::ConsequencesFactory == Transactor::Blocker)
-TxConsequences
-    consequences_helper(PreflightContext const& ctx)
-{
-    return TxConsequences(ctx.tx, TxConsequences::blocker);
-};
-
-// For Transactor::Custom
-template <class T>
-requires(T::ConsequencesFactory == Transactor::Custom)
-TxConsequences
-    consequences_helper(PreflightContext const& ctx)
-{
-    return T::makeTxConsequences(ctx);
-};
-// clang-format on
-
-static std::pair<NotTEC, TxConsequences>
-invoke_preflight(PreflightContext const& ctx)
-{
-    try
-    {
-        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() {
-            auto const tec = T::preflight(ctx);
-            return std::make_pair(
-                tec,
-                isTesSuccess(tec) ? consequences_helper<T>(ctx)
-                                  : TxConsequences{tec});
-        });
-    }
-    catch (UnknownTxnType const& e)
-    {
-        // Should never happen
-        JLOG(ctx.j.fatal())
-            << "Unknown transaction type in preflight: " << e.txnType;
-        assert(false);
-        return {temUNKNOWN, TxConsequences{temUNKNOWN}};
-    }
-}
-
-static TER
-invoke_preclaim(PreclaimContext const& ctx)
-{
-    try
-    {
-        // use name hiding to accomplish compile-time polymorphism of static
-        // class functions for Transactor and derived classes.
-        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() {
-            // If the transactor requires a valid account and the transaction
-            // doesn't list one, preflight will have already a flagged a
-            // failure.
-            auto const id = ctx.tx.getAccountID(sfAccount);
-
-            if (id != beast::zero)
-            {
-                TER result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
-
-                if (result != tesSUCCESS)
-                    return result;
-
-                result = T::checkPriorTxAndLastLedger(ctx);
-
-                if (result != tesSUCCESS)
-                    return result;
-
-                result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
-
-                if (result != tesSUCCESS)
-                    return result;
-
-                result = T::checkSign(ctx);
-
-                if (result != tesSUCCESS)
-                    return result;
-            }
-
-            return T::preclaim(ctx);
-        });
-    }
-    catch (UnknownTxnType const& e)
-    {
-        // Should never happen
-        JLOG(ctx.j.fatal())
-            << "Unknown transaction type in preclaim: " << e.txnType;
-        assert(false);
-        return temUNKNOWN;
-    }
-}
-
-static std::pair<TER, bool>
-invoke_apply(ApplyContext& ctx)
-{
-    try
-    {
-        return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() {
-            T p(ctx);
-            return p();
-        });
-    }
-    catch (UnknownTxnType const& e)
-    {
-        // Should never happen
-        JLOG(ctx.journal.fatal())
-            << "Unknown transaction type in apply: " << e.txnType;
-        assert(false);
-        return {temUNKNOWN, false};
-    }
-}
 
 TxConsequences
 Batch::makeTxConsequences(PreflightContext const& ctx)
@@ -348,7 +86,6 @@ Batch::preflight(PreflightContext const& ctx)
             return temBAD_SIGNER;
         }
     }
-
     return preflight2(ctx);
 }
 
@@ -377,133 +114,90 @@ TER
 Batch::doApply()
 {
     Sandbox sb(&ctx_.view());
+    bool changed = false;
 
     uint32_t flags = ctx_.tx.getFlags();
     if (flags & tfBatchMask)
         return temINVALID_FLAG;
 
-    ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
     TER result = tesSUCCESS;
+    ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
+    OpenView subView(&sb);
     std::map<AccountID, std::uint32_t> accountCount;
+
     auto const& txns = ctx_.tx.getFieldArray(sfRawTransactions);
     for (STObject txn : txns)
     {
         STTx const stx = STTx{std::move(txn)};
+        auto const [ter, applied] = ripple::apply(
+            ctx_.app, subView, stx, tapFAIL_HARD, ctx_.journal);
 
-        // preflight
-        PreflightContext const pfctx(
-            ctx_.app,
-            stx,
-            ctx_.view().rules(),
-            tapPREFLIGHT_BATCH,
-            ctx_.journal);
-        auto const preflightResult =
-            PreflightResult{pfctx, invoke_preflight(pfctx)};
+        changed = true;
 
-        // preclaim
-        std::optional<PreclaimContext const> pcctx;
-        pcctx.emplace(
-            ctx_.app,
-            ctx_.base_,
-            preflightResult.ter,
-            preflightResult.tx,
-            preflightResult.flags,
-            preflightResult.j);
-        auto const preclaimResult =
-            PreclaimResult{*pcctx, invoke_preclaim(*pcctx)};
-
-        // doApply
-        ApplyContext actx(
-            ctx_.app,
-            ctx_.base_,
-            preclaimResult.tx,
-            preclaimResult.ter,
-            calculateBaseFee(ctx_.base_, preclaimResult.tx),
-            ctx_.base_.open() == 1 ? tapPREFLIGHT_BATCH : ctx_.view().flags(),
-            preclaimResult.j);
-        auto const applyResult = invoke_apply(actx);
-
+        // Add Inner Txn Metadata
         STObject meta{sfBatchExecution};
-        meta.setFieldU8(sfTransactionResult, TERtoInt(applyResult.first));
+        meta.setFieldU8(sfTransactionResult, TERtoInt(ter));
         meta.setFieldU16(sfTransactionType, stx.getTxnType());
-        if (applyResult.first == tesSUCCESS)
+        if (ter == tesSUCCESS || isTecClaim(ter))
             meta.setFieldH256(sfTransactionHash, stx.getTransactionID());
-
         avi.addBatchExecutionMetaData(std::move(meta));
 
+        // Update Account:Count Map
         accountCount[stx.getAccountID(sfAccount)] += 1;
 
-        if (applyResult.first != tesSUCCESS)
+        if (ter != tesSUCCESS)
         {
             if (flags & tfUntilFailure)
             {
-                actx.discard();
                 result = tesSUCCESS;
                 break;
             }
             if (flags & tfOnlyOne)
             {
-                actx.discard();
                 continue;
             }
             if (flags & tfAllOrNothing)
             {
                 accountCount.clear();
-                ctx_.base_.rawRevert();
                 std::vector<STObject> batch;
                 avi.setHookMetaData(std::move(batch));
-                result = tesSUCCESS;
+                result = tecBATCH_FAILURE;
+                changed = false;
                 break;
             }
         }
 
-        if (applyResult.first == tesSUCCESS && flags & tfOnlyOne)
+        if (ter == tesSUCCESS && flags & tfOnlyOne)
         {
             result = tesSUCCESS;
             break;
         }
     }
 
+    // Apply SubView
+    if (changed)
     {
-        auto const sleBase = ctx_.base_.read(keylet::account(account_));
-        if (!sleBase)
-            return tefINTERNAL;
-
-        auto const sleSrcAcc = sb.peek(keylet::account(account_));
-        if (!sleSrcAcc)
-            return tefINTERNAL;
-
-        // Update Fee (Source Account)
-        auto const feePaid = ctx_.tx[sfFee].xrp();
-        sleSrcAcc->setFieldAmount(
-            sfBalance, sleBase->getFieldAmount(sfBalance).xrp() - feePaid);
-
-        // Update Sequence (Source Account)
-        sleSrcAcc->setFieldU32(
-            sfSequence,
-            sleSrcAcc->getFieldU32(sfSequence) + accountCount[account_]);
-        sb.update(sleSrcAcc);
+        ctx_.applyOpenView(subView);
     }
 
-    // Update Sequence (Other Inner Accounts)
     for (auto const& [_account, count] : accountCount)
     {
+        auto const sleSrcAcc = sb.peek(keylet::account(_account));
+        if (!sleSrcAcc)
+            return tefINTERNAL;
+        
         if (_account == account_)
         {
-            // pass
-        }
-        else
-        {
-            auto const _sleSrcAcc = sb.peek(keylet::account(_account));
-            if (!_sleSrcAcc)
-                return tefINTERNAL;
-
-            _sleSrcAcc->setFieldU32(
-                sfSequence, _sleSrcAcc->getFieldU32(sfSequence) + count);
-            sb.update(_sleSrcAcc);
+            // Update Sequence (Source Account)
+            sleSrcAcc->setFieldU32(
+                sfSequence,
+                sleSrcAcc->getFieldU32(sfSequence) + count);
+            sb.update(sleSrcAcc);
         }
     }
+    
     sb.apply(ctx_.rawView());
+    
     return result;
 }
 

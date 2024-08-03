@@ -337,7 +337,10 @@ Transactor::checkSeqProxy(
         std::uint32_t const startSequence{
             batchTxn.getFieldU32(sfOuterSequence)};
         std::uint32_t const batchIndex{batchTxn.getFieldU8(sfBatchIndex)};
-        a_seq = SeqProxy::sequence(startSequence + batchIndex);
+        std::uint8_t const sourceAdj =
+            tx.getAccountID(sfAccount) == batchTxn.getAccountID(sfAccount) ? 1
+                                                                           : 0;
+        a_seq = SeqProxy::sequence(startSequence + batchIndex + sourceAdj);
     }
 
     if (t_seqProx.isSeq())
@@ -428,10 +431,6 @@ Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
     SeqProxy const seqProx = ctx_.tx.getSeqProxy();
     if (seqProx.isSeq())
     {
-        // do not update sequence of sfAccountTxnID for batch tx
-        if (ctx_.tx.isFieldPresent(sfBatchTxn))
-            return tesSUCCESS;
-
         // Note that if this transaction is a TicketCreate, then
         // the transaction will modify the account root sfSequence
         // yet again.
@@ -938,8 +937,8 @@ Transactor::operator()()
     if (ctx_.size() > oversizeMetaDataCap)
         result = tecOVERSIZE;
 
-    if ((isTecClaim(result) && (view().flags() & tapFAIL_HARD)) ||
-        view().flags() & tapPREFLIGHT_BATCH)
+    if ((isTecClaim(result) && (view().flags() & tapFAIL_HARD) &&
+         !ctx_.tx.isFieldPresent(sfBatchTxn)))
     {
         // If the tapFAIL_HARD flag is set, a tec result
         // must not do anything
@@ -1028,6 +1027,15 @@ Transactor::operator()()
         applied = isTecClaim(result);
     }
 
+    // Apply fee for batch transaction if it was successfully applied
+    if (applied && ctx_.tx.getTxnType() == ttBATCH && result == tesSUCCESS)
+    {
+        // If the transaction is a batch transaction, the fee is already
+        // deducted from the account balance before executing the inner txns.
+        // So, we need to "re" apply the fee again.
+        ctx_.applyFee();
+    }
+
     if (applied)
     {
         // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
@@ -1073,6 +1081,7 @@ Transactor::operator()()
         // header.
         if (!view().open() && fee != beast::zero)
             ctx_.destroyXRP(fee);
+
 
         // Once we call apply, we will no longer be able to look at view()
         ctx_.apply(result);

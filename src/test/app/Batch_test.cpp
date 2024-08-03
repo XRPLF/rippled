@@ -42,11 +42,23 @@ class Batch_test : public beast::unit_test::suite
         jtx::Account account;
     };
 
+    Json::Value
+    getTxByIndex(Json::Value jrr, std::uint8_t index)
+    {
+        for (auto const& txn : jrr[jss::result][jss::ledger][jss::transactions])
+        {
+            if (txn[jss::metaData][sfTransactionIndex.jsonName] == index)
+                return txn;
+        }
+        return {};
+    }
+
     void
     validateBatchTxns(
         Json::Value meta,
         std::vector<TestBatchData> const& batchResults)
     {
+        BEAST_EXPECT(meta[sfBatchExecutions.jsonName].size() > 0);
         size_t index = 0;
         for (auto const& _batchTxn : meta[sfBatchExecutions.jsonName])
         {
@@ -66,6 +78,7 @@ class Batch_test : public beast::unit_test::suite
     addBatchTx(
         Json::Value jv,
         Json::Value const& tx,
+        PublicKey const& pk,
         jtx::Account const& account,
         std::uint8_t innerIndex,
         std::uint32_t outerSequence,
@@ -74,7 +87,7 @@ class Batch_test : public beast::unit_test::suite
         jv[sfRawTransactions.jsonName][index] = Json::Value{};
         jv[sfRawTransactions.jsonName][index][jss::RawTransaction] = tx;
         jv[sfRawTransactions.jsonName][index][jss::RawTransaction]
-          [jss::SigningPubKey] = strHex(account.pk());
+          [jss::SigningPubKey] = strHex(pk);
         jv[sfRawTransactions.jsonName][index][jss::RawTransaction]
           [sfFee.jsonName] = 0;
         jv[sfRawTransactions.jsonName][index][jss::RawTransaction]
@@ -143,11 +156,11 @@ class Batch_test : public beast::unit_test::suite
 
             // Tx 1
             Json::Value const tx1 = pay(alice, bob, XRP(1));
-            jv = addBatchTx(jv, tx1, alice, 1, seq, 0);
+            jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, seq, 0);
 
             // Tx 2
             Json::Value const tx2 = pay(alice, bob, XRP(1));
-            jv = addBatchTx(jv, tx2, alice, 2, seq, 1);
+            jv = addBatchTx(jv, tx2, alice.pk(), alice, 1, seq, 1);
 
             env(jv,
                 fee(feeDrops * 2),
@@ -158,12 +171,10 @@ class Batch_test : public beast::unit_test::suite
             std::vector<TestBatchData> testCases = {{
                 {"tesSUCCESS",
                  "Payment",
-                 "FE01269C9BABCE17758CEF4DA45BDB529DDA0105FD2360BE00316345637E1"
-                 "88D"},
+                 "BC50DFE508E921460443261F46383A68610BB929F78030EA700E373654187851"},
                 {"tesSUCCESS",
                  "Payment",
-                 "591CF8801EA7B0465DBF309D2B6D103D5E5926203A10F5A433A704C29C1D3"
-                 "26F"},
+                 "B76CA59CEBEF3B9D64F1ED81BFEA5A6BE4E1A9194F81776916A4A4E4C79BDBAD"},
             }};
 
             Json::Value params;
@@ -171,9 +182,9 @@ class Batch_test : public beast::unit_test::suite
             params[jss::transactions] = true;
             params[jss::expand] = true;
             auto const jrr = env.rpc("json", "ledger", to_string(params));
-            // std::cout << jrr << std::endl;
-            auto const meta = jrr[jss::result][jss::metaData];
-            validateBatchTxns(meta, testCases);
+            std::cout << jrr << std::endl;
+            auto const txn = getTxByIndex(jrr, 2);
+            validateBatchTxns(txn[jss::metaData], testCases);
 
             BEAST_EXPECT(env.seq(alice) == 7);
             BEAST_EXPECT(
@@ -206,31 +217,17 @@ class Batch_test : public beast::unit_test::suite
 
             // Tx 1
             Json::Value const tx1 = pay(alice, bob, XRP(1));
-            jv = addBatchTx(jv, tx1, alice, 1, seq, 0);
+            jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, seq, 0);
 
             // Tx 2
             Json::Value const tx2 = pay(alice, bob, XRP(999));
-            jv = addBatchTx(jv, tx2, alice, 2, seq, 1);
+            jv = addBatchTx(jv, tx2, alice.pk(), alice, 1, seq, 1);
 
             env(jv,
                 fee(feeDrops * 2),
                 txflags(tfAllOrNothing),
-                ter(tesSUCCESS));
+                ter(tecBATCH_FAILURE));
             env.close();
-
-            std::vector<TestBatchData> testCases = {{
-                {"tesSUCCESS", "Payment", ""},
-                {"tecUNFUNDED_PAYMENT", "Payment", ""},
-            }};
-
-            Json::Value params;
-            params[jss::ledger_index] = env.current()->seq() - 1;
-            params[jss::transactions] = true;
-            params[jss::expand] = true;
-            auto const jrr = env.rpc("json", "ledger", to_string(params));
-            // std::cout << jrr << std::endl;
-            auto const meta = jrr[jss::result][jss::metaData];
-            validateBatchTxns(meta, testCases);
 
             BEAST_EXPECT(env.seq(alice) == 5);
             BEAST_EXPECT(env.balance(alice) == preAlice - (feeDrops * 2));
@@ -269,25 +266,24 @@ class Batch_test : public beast::unit_test::suite
 
         // Tx 2
         Json::Value const tx1 = pay(alice, bob, XRP(999));
-        jv = addBatchTx(jv, tx1, alice, 1, seq, 0);
+        jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, seq, 0);
 
         // Tx 2
         Json::Value const tx2 = pay(alice, bob, XRP(1));
-        jv = addBatchTx(jv, tx2, alice, 2, seq, 1);
+        jv = addBatchTx(jv, tx2, alice.pk(), alice, 1, seq, 1);
 
         // Tx 3
         Json::Value const tx3 = pay(alice, bob, XRP(1));
-        jv = addBatchTx(jv, tx3, alice, 3, seq, 2);
+        jv = addBatchTx(jv, tx3, alice.pk(), alice, 2, seq, 2);
 
         env(jv, fee(feeDrops * 3), txflags(tfOnlyOne), ter(tesSUCCESS));
         env.close();
 
         std::vector<TestBatchData> testCases = {{
-            {"tecUNFUNDED_PAYMENT", "Payment", ""},
+            {"tecUNFUNDED_PAYMENT", "Payment", "32B90ABCD36E4601196708F5C93568BA49BE6F1221D58703EAFFB568FAC9807E"},
             {"tesSUCCESS",
              "Payment",
-             "591CF8801EA7B0465DBF309D2B6D103D5E5926203A10F5A433A704C29C1D326"
-             "F"},
+             "B76CA59CEBEF3B9D64F1ED81BFEA5A6BE4E1A9194F81776916A4A4E4C79BDBAD"},
         }};
 
         Json::Value params;
@@ -296,8 +292,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         // std::cout << jrr << std::endl;
-        auto const meta = jrr[jss::result][jss::metaData];
-        validateBatchTxns(meta, testCases);
+        auto const txn = getTxByIndex(jrr, 2);
+        validateBatchTxns(txn[jss::metaData], testCases);
 
         BEAST_EXPECT(env.seq(alice) == 7);
         BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1) - (feeDrops * 3));
@@ -335,19 +331,19 @@ class Batch_test : public beast::unit_test::suite
 
         // Tx 1
         Json::Value const tx1 = pay(alice, bob, XRP(1));
-        jv = addBatchTx(jv, tx1, alice, 1, seq, 0);
+        jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, seq, 0);
 
         // Tx 2
         Json::Value const tx2 = pay(alice, bob, XRP(1));
-        jv = addBatchTx(jv, tx2, alice, 2, seq, 1);
+        jv = addBatchTx(jv, tx2, alice.pk(), alice, 1, seq, 1);
 
         // Tx 3
         Json::Value const tx3 = pay(alice, bob, XRP(999));
-        jv = addBatchTx(jv, tx3, alice, 3, seq, 2);
+        jv = addBatchTx(jv, tx3, alice.pk(), alice, 2, seq, 2);
 
         // Tx 4
         Json::Value const tx4 = pay(alice, bob, XRP(1));
-        jv = addBatchTx(jv, tx4, alice, 4, seq, 3);
+        jv = addBatchTx(jv, tx4, alice.pk(), alice, 3, seq, 3);
 
         env(jv, fee(feeDrops * 4), txflags(tfUntilFailure), ter(tesSUCCESS));
         env.close();
@@ -355,13 +351,16 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "Payment",
-             "FE01269C9BABCE17758CEF4DA45BDB529DDA0105FD2360BE00316345637E188"
-             "D"},
+             "BC50DFE508E921460443261F46383A68610BB929F78030EA700E37365418785"
+             "1"},
             {"tesSUCCESS",
              "Payment",
-             "591CF8801EA7B0465DBF309D2B6D103D5E5926203A10F5A433A704C29C1D326"
-             "F"},
-            {"tecUNFUNDED_PAYMENT", "Payment", ""},
+             "B76CA59CEBEF3B9D64F1ED81BFEA5A6BE4E1A9194F81776916A4A4E4C79BDBA"
+             "D"},
+            {"tecUNFUNDED_PAYMENT",
+             "Payment",
+             "5B3B8F9557B38CABE92B8A420C36508711B921B912C391E7029836CD1BAE0BB"
+             "6"},
         }};
 
         Json::Value params;
@@ -370,8 +369,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         // std::cout << jrr << std::endl;
-        auto const meta = jrr[jss::result][jss::metaData];
-        validateBatchTxns(meta, testCases);
+        auto const txn = getTxByIndex(jrr, 3);
+        validateBatchTxns(txn[jss::metaData], testCases);
 
         BEAST_EXPECT(env.seq(alice) == 8);
         BEAST_EXPECT(env.balance(alice) == preAlice - XRP(2) - (feeDrops * 4));
@@ -409,19 +408,19 @@ class Batch_test : public beast::unit_test::suite
 
         // Tx 1
         Json::Value const tx1 = pay(alice, bob, XRP(1));
-        jv = addBatchTx(jv, tx1, alice, 1, seq, 0);
+        jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, seq, 0);
 
         // Tx 2
         Json::Value const tx2 = pay(alice, bob, XRP(1));
-        jv = addBatchTx(jv, tx2, alice, 2, seq, 1);
+        jv = addBatchTx(jv, tx2, alice.pk(), alice, 1, seq, 1);
 
         // Tx 3
         Json::Value const tx3 = pay(alice, bob, XRP(999));
-        jv = addBatchTx(jv, tx3, alice, 3, seq, 2);
+        jv = addBatchTx(jv, tx3, alice.pk(), alice, 2, seq, 2);
 
         // Tx 4
         Json::Value const tx4 = pay(alice, bob, XRP(1));
-        jv = addBatchTx(jv, tx4, alice, 4, seq, 3);
+        jv = addBatchTx(jv, tx4, alice.pk(), alice, 3, seq, 3);
 
         env(jv, fee(feeDrops * 4), txflags(tfIndependent), ter(tesSUCCESS));
         env.close();
@@ -429,17 +428,16 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "Payment",
-             "FE01269C9BABCE17758CEF4DA45BDB529DDA0105FD2360BE00316345637E188"
-             "D"},
+             "BC50DFE508E921460443261F46383A68610BB929F78030EA700E373654187851"},
             {"tesSUCCESS",
              "Payment",
-             "591CF8801EA7B0465DBF309D2B6D103D5E5926203A10F5A433A704C29C1D326"
-             "F"},
-            {"tecUNFUNDED_PAYMENT", "Payment", ""},
+             "B76CA59CEBEF3B9D64F1ED81BFEA5A6BE4E1A9194F81776916A4A4E4C79BDBAD"},
+            {"tecUNFUNDED_PAYMENT",
+             "Payment",
+             "5B3B8F9557B38CABE92B8A420C36508711B921B912C391E7029836CD1BAE0BB6"},
             {"tesSUCCESS",
              "Payment",
-             "963BCD15F8CC7D6FB3D3154324CDF6CFBEF6A230496676D58DB92109E4A9F1C"
-             "8"},
+             "FCB23E17BDCCC55DC354EF8F6D3D1E7E39E705ADF65106D005731736B190A1EC"},
         }};
 
         Json::Value params;
@@ -448,8 +446,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         // std::cout << jrr << std::endl;
-        auto const meta = jrr[jss::result][jss::metaData];
-        validateBatchTxns(meta, testCases);
+        auto const txn = getTxByIndex(jrr, 4);
+        validateBatchTxns(txn[jss::metaData], testCases);
 
         BEAST_EXPECT(env.seq(alice) == 9);
         BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - (feeDrops * 4));
@@ -509,11 +507,11 @@ class Batch_test : public beast::unit_test::suite
 
         // Tx 1
         Json::Value tx1 = pay(alice, bob, USD(10));
-        jv = addBatchTx(jv, tx1, alice, 1, env.seq(alice), 0);
+        jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, env.seq(alice), 0);
 
         // Tx 2
         Json::Value const tx2 = pay(bob, alice, USD(5));
-        jv = addBatchTx(jv, tx2, bob, 0, env.seq(bob), 1);
+        jv = addBatchTx(jv, tx2, bob.pk(), alice, 0, env.seq(bob), 1);
 
         jv = addBatchSignatures(jv, signers);
 
@@ -524,12 +522,10 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "Payment",
-             "319131912A291734CCF2766390B6010E1C63D2916011EE6A154B6F210BE43A7"
-             "2"},
+             "319131912A291734CCF2766390B6010E1C63D2916011EE6A154B6F210BE43A72"},
             {"tesSUCCESS",
              "Payment",
-             "DF91E311E37F7670DBB31E98AB6C309555B5B0B20A1DBADFAB2BAC8E4DC8E27"
-             "0"},
+             "CBA8ADE2945A4DC41E9E979CE274630E38B606ECB5922366FF77539FE3D01CCD"},
         }};
 
         Json::Value params;
@@ -538,8 +534,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         // std::cout << jrr << std::endl;
-        auto const meta = jrr[jss::result][jss::metaData];
-        validateBatchTxns(meta, testCases);
+        auto const txn = getTxByIndex(jrr, 2);
+        validateBatchTxns(txn[jss::metaData], testCases);
 
         BEAST_EXPECT(env.seq(alice) == 7);
         BEAST_EXPECT(env.seq(bob) == 7);
@@ -580,11 +576,11 @@ class Batch_test : public beast::unit_test::suite
 
         // Tx 1
         Json::Value tx1 = fset(alice, asfRequireAuth);
-        jv = addBatchTx(jv, tx1, alice, 1, seq, 0);
+        jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, seq, 0);
 
         // Tx 2
         Json::Value const tx2 = pay(alice, bob, XRP(1));
-        jv = addBatchTx(jv, tx2, alice, 2, seq, 1);
+        jv = addBatchTx(jv, tx2, alice.pk(), alice, 1, seq, 1);
 
         env(jv, fee(feeDrops * 2), txflags(tfAllOrNothing), ter(tesSUCCESS));
         env.close();
@@ -592,12 +588,10 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "AccountSet",
-             "26F8C5399D4F40DEC5051F57CFBCE27F4A6EB3E013332C05748E7C5450FE074"
-             "4"},
+             "21D36FEF5EE86F7B4B8609661E138AB166780745F48A94981FB9BBFFF94E780C"},
             {"tesSUCCESS",
              "Payment",
-             "591CF8801EA7B0465DBF309D2B6D103D5E5926203A10F5A433A704C29C1D3"
-             "26F"},
+             "B76CA59CEBEF3B9D64F1ED81BFEA5A6BE4E1A9194F81776916A4A4E4C79BDBAD"},
         }};
 
         Json::Value params;
@@ -606,8 +600,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         // std::cout << jrr << std::endl;
-        auto const meta = jrr[jss::result][jss::metaData];
-        validateBatchTxns(meta, testCases);
+        auto const txn = getTxByIndex(jrr, 2);
+        validateBatchTxns(txn[jss::metaData], testCases);
 
         BEAST_EXPECT(env.seq(alice) == 7);
         BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1) - (feeDrops * 2));
@@ -655,14 +649,14 @@ class Batch_test : public beast::unit_test::suite
 
             // bTx 1
             Json::Value const btx1 = pay(alice, bob, XRP(1));
-            btx = addBatchTx(btx, btx1, alice, 0, seq, 0);
+            btx = addBatchTx(btx, btx1, alice.pk(), alice, 0, seq, 0);
         }
 
-        jv = addBatchTx(jv, btx, alice, 1, seq, 0);
+        jv = addBatchTx(jv, btx, alice.pk(), alice, 0, seq, 0);
 
         // Tx 2
         Json::Value const tx2 = pay(alice, bob, XRP(1));
-        jv = addBatchTx(jv, tx2, alice, 2, seq, 1);
+        jv = addBatchTx(jv, tx2, alice.pk(), alice, 1, seq, 1);
 
         env(jv, fee(feeDrops * 2), txflags(tfAllOrNothing), ter(temMALFORMED));
         env.close();
@@ -705,11 +699,11 @@ class Batch_test : public beast::unit_test::suite
 
         // Tx 1
         Json::Value tx1 = check::create(alice, bob, XRP(10));
-        jv = addBatchTx(jv, tx1, alice, 0, seq, 0);
+        jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, seq, 0);
 
         // Tx 2
         Json::Value const tx2 = pay(alice, bob, XRP(1));
-        jv = addBatchTx(jv, tx2, alice, 1, seq, 1);
+        jv = addBatchTx(jv, tx2, alice.pk(), alice, 1, seq, 1);
 
         env(jv, fee(feeDrops * 2), txflags(tfAllOrNothing), ter(tesSUCCESS));
         env.close();
@@ -717,12 +711,10 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "CheckCreate",
-             "26F8C5399D4F40DEC5051F57CFBCE27F4A6EB3E013332C05748E7C5450FE074"
-             "4"},
+             "80229431EBDCF659E1EE1B6E5DC94B195B2E52E81D88663224EC8C06F301FF1F"},
             {"tesSUCCESS",
              "Payment",
-             "591CF8801EA7B0465DBF309D2B6D103D5E5926203A10F5A433A704C29C1D3"
-             "26F"},
+             "B76CA59CEBEF3B9D64F1ED81BFEA5A6BE4E1A9194F81776916A4A4E4C79BDBAD"},
         }};
 
         Json::Value params;
@@ -730,8 +722,9 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const meta = jrr[jss::result][jss::metaData];
-        validateBatchTxns(meta, testCases);
+        // std::cout << jrr << std::endl;
+        auto const txn = getTxByIndex(jrr, 2);
+        validateBatchTxns(txn[jss::metaData], testCases);
 
         BEAST_EXPECT(env.seq(alice) == 7);
         BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1) - (feeDrops * 2));
@@ -747,9 +740,6 @@ class Batch_test : public beast::unit_test::suite
         using namespace std::literals;
 
         test::jtx::Env env{*this, envconfig()};
-        // Env env{*this, envconfig(), features, nullptr,
-        //     beast::severities::kTrace
-        // };
 
         auto const feeDrops = env.current()->fees().base;
         auto const alice = Account("alice");
@@ -791,11 +781,11 @@ class Batch_test : public beast::unit_test::suite
         // Tx 1
         uint256 const chkId{getCheckIndex(alice, seq + 1)};
         Json::Value tx1 = check::create(alice, bob, USD(10));
-        jv = addBatchTx(jv, tx1, alice, 1, env.seq(alice), 0);
+        jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, env.seq(alice), 0);
 
         // Tx 2
         Json::Value const tx2 = check::cash(bob, chkId, USD(10));
-        jv = addBatchTx(jv, tx2, bob, 0, env.seq(bob), 1);
+        jv = addBatchTx(jv, tx2, bob.pk(), alice, 0, env.seq(bob), 1);
 
         jv = addBatchSignatures(jv, signers);
 
@@ -805,12 +795,10 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "CheckCreate",
-             "145CBCD0C29955E43452EF891979DF63CB9D32CDB6F91FEAEE402D39FC53845"
-             "5"},
+             "CE920705201AC0E4B3C50E52170BF1ED31E90457CAC4E79A0E1C1AE82BA5CC46"},
             {"tesSUCCESS",
              "CheckCash",
-             "10C5B1A9861230AD0BC9BA9FD957944B2A06F5A5C888557586D96EE58DD5861"
-             "8"},
+             "165AE829F04BD375DDC3A7F57386B2B2A9386211839C005E1481A4E4282F625F"},
         }};
 
         Json::Value params;
@@ -819,8 +807,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         // std::cout << jrr << std::endl;
-        auto const meta = jrr[jss::result][jss::metaData];
-        validateBatchTxns(meta, testCases);
+        auto const txn = getTxByIndex(jrr, 2);
+        validateBatchTxns(txn[jss::metaData], testCases);
 
         BEAST_EXPECT(env.seq(alice) == 7);
         BEAST_EXPECT(env.seq(bob) == 6);
@@ -880,11 +868,11 @@ class Batch_test : public beast::unit_test::suite
         // Tx 1
         uint256 const chkId{getCheckIndex(alice, seq + 1)};
         Json::Value tx1 = check::create(alice, bob, XRP(10));
-        jv = addBatchTx(jv, tx1, alice, 1, env.seq(alice), 0);
+        jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, env.seq(alice), 0);
 
         // Tx 2
         Json::Value const tx2 = check::cancel(bob, chkId);
-        jv = addBatchTx(jv, tx2, bob, 0, env.seq(bob), 1);
+        jv = addBatchTx(jv, tx2, bob.pk(), alice, 0, env.seq(bob), 1);
 
         jv = addBatchSignatures(jv, signers);
 
@@ -894,12 +882,10 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "CheckCreate",
-             "145CBCD0C29955E43452EF891979DF63CB9D32CDB6F91FEAEE402D39FC53845"
-             "5"},
+             "3C33B38C8804F0FF01BEADE2CFD665C028A53A4220E0D08A73EB7CBBB82D59AC"},
             {"tesSUCCESS",
              "CheckCancel",
-             "10C5B1A9861230AD0BC9BA9FD957944B2A06F5A5C888557586D96EE58DD5861"
-             "8"},
+             "BFED069E7ECDFD313BDAC1A985C9F05EFD2FBBF63D6C42E8DDEF09087C4D233A"},
         }};
 
         Json::Value params;
@@ -908,8 +894,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         // std::cout << jrr << std::endl;
-        auto const meta = jrr[jss::result][jss::metaData];
-        validateBatchTxns(meta, testCases);
+        auto const txn = getTxByIndex(jrr, 2);
+        validateBatchTxns(txn[jss::metaData], testCases);
 
         BEAST_EXPECT(env.seq(alice) == 7);
         BEAST_EXPECT(env.seq(bob) == 6);
@@ -960,11 +946,11 @@ class Batch_test : public beast::unit_test::suite
 
         // Tx 1
         Json::Value tx1 = claw(gw, bob["USD"](10));
-        jv = addBatchTx(jv, tx1, gw, 1, seq, 0);
+        jv = addBatchTx(jv, tx1, gw.pk(), gw, 0, seq, 0);
 
         // Tx 2
         Json::Value const tx2 = pay(gw, bob, XRP(1));
-        jv = addBatchTx(jv, tx2, gw, 2, seq, 1);
+        jv = addBatchTx(jv, tx2, gw.pk(), gw, 1, seq, 1);
 
         env(jv, fee(feeDrops * 2), txflags(tfAllOrNothing), ter(tesSUCCESS));
         env.close();
@@ -972,12 +958,10 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "Clawback",
-             "D08330FED53B479F2949DF85717101ED513B046B06B748BDF19F5951A81DAAE"
-             "2"},
+             "D08330FED53B479F2949DF85717101ED513B046B06B748BDF19F5951A81DAAE2"},
             {"tesSUCCESS",
              "Payment",
-             "897B243D48B813D249F8A1353FC3E537DDCC5BD0139CF2670D0FECD435AB1A6"
-             "6"},
+             "FEB6D7EE4BE48851B1CE9B31DB39A5A4FDFBB59DFFE1A49146FD6D9177C1ECC6"},
         }};
 
         Json::Value params;
@@ -985,8 +969,9 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const meta = jrr[jss::result][jss::metaData];
-        validateBatchTxns(meta, testCases);
+        // std::cout << jrr << std::endl;
+        auto const txn = getTxByIndex(jrr, 2);
+        validateBatchTxns(txn[jss::metaData], testCases);
 
         BEAST_EXPECT(env.seq(gw) == 10);
         BEAST_EXPECT(env.balance(gw) == preGw - XRP(1) - (feeDrops * 2));
@@ -994,14 +979,17 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
-    testOffer(FeatureBitset features)
+    testOfferCancel(FeatureBitset features)
     {
-        testcase("offer");
+        testcase("offer cancel");
 
         using namespace test::jtx;
         using namespace std::literals;
 
         test::jtx::Env env{*this, envconfig()};
+        // Env env{*this, envconfig(), features, nullptr,
+        //     beast::severities::kTrace
+        // };
 
         auto const feeDrops = env.current()->fees().base;
         auto const alice = Account("alice");
@@ -1031,11 +1019,11 @@ class Batch_test : public beast::unit_test::suite
 
         // Tx 1
         Json::Value tx1 = offer(alice, XRP(50), USD(50));
-        jv = addBatchTx(jv, tx1, alice, 0, seq, 0);
+        jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, seq, 0);
 
         // Tx 2
-        Json::Value const tx2 = offer_cancel(alice, seq + 0 + 1);
-        jv = addBatchTx(jv, tx2, alice, 1, seq, 1);
+        Json::Value const tx2 = offer_cancel(alice, seq + 1);
+        jv = addBatchTx(jv, tx2, alice.pk(), alice, 1, seq, 1);
 
         env(jv, fee(feeDrops * 2), txflags(tfAllOrNothing), ter(tesSUCCESS));
         env.close();
@@ -1043,12 +1031,10 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "OfferCreate",
-             "145CBCD0C29955E43452EF891979DF63CB9D32CDB6F91FEAEE402D39FC53845"
-             "5"},
+             "145CBCD0C29955E43452EF891979DF63CB9D32CDB6F91FEAEE402D39FC538455"},
             {"tesSUCCESS",
              "OfferCancel",
-             "10C5B1A9861230AD0BC9BA9FD957944B2A06F5A5C888557586D96EE58DD5861"
-             "8"},
+             "10C5B1A9861230AD0BC9BA9FD957944B2A06F5A5C888557586D96EE58DD58618"},
         }};
 
         Json::Value params;
@@ -1056,12 +1042,59 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const meta = jrr[jss::result][jss::ledger][jss::metaData];
-        validateBatchTxns(meta, testCases);
+        // std::cout << jrr << std::endl;
+        auto const txn = getTxByIndex(jrr, 3);
+        validateBatchTxns(txn[jss::metaData], testCases);
 
-        BEAST_EXPECT(env.seq(alice) == 8);
+        BEAST_EXPECT(env.seq(alice) == 7);
         BEAST_EXPECT(env.balance(alice) == preAlice - (feeDrops * 2));
         BEAST_EXPECT(env.balance(bob) == preBob);
+    }
+
+    void
+    testSubmit(FeatureBitset features)
+    {
+        testcase("submit");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        // test::jtx::Env env{*this, envconfig()};
+        Env env{*this, envconfig(), features, nullptr,
+            beast::severities::kTrace
+        };
+
+        auto const feeDrops = env.current()->fees().base;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const USD = gw["USD"];
+
+        env.fund(XRP(1000), alice, bob, gw);
+        env.close();
+
+        env.trust(USD(1000), alice, bob);
+        env(pay(gw, alice, USD(100)));
+        env(pay(gw, bob, USD(100)));
+        env.close();
+
+        auto jv = pay(alice, bob, USD(1));
+        jv[sfBatchTxn.jsonName] = Json::Value{};
+        jv[sfBatchTxn.jsonName][jss::Account] = alice.human();
+        jv[sfBatchTxn.jsonName][sfOuterSequence.jsonName] = 0;
+        jv[sfBatchTxn.jsonName][sfBatchIndex.jsonName] = 0;
+
+        Serializer s;
+        auto jt = env.jt(jv);
+        s.erase();
+        jt.stx->add(s);
+        auto const jr = env.rpc("submit", strHex(s.slice()));
+        BEAST_EXPECT(
+            jr.isMember(jss::engine_result) &&
+            jr[jss::engine_result] == "tesSUCCESS");
+        
+        env.close();
+        std::cout << jr << std::endl;
     }
 
     void
@@ -1079,9 +1112,14 @@ class Batch_test : public beast::unit_test::suite
         testCheckCash(features);
         testCheckCancel(features);
         testClawback(features);
-        // testOffer(features);
+        // testOfferCancel(features);
+        
+        // testSubmit(features);
 
         // Test Fork From one node having 1 extra txn
+
+        // Multisign Atomic
+        // If the 2nd fails and needs the 3rd
     }
 
 public:
