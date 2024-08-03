@@ -219,15 +219,6 @@ public:
     virtual std::uint64_t
     getPeerDisconnectCharges() const = 0;
 
-    /** Returns information reported to the crawl shard RPC command.
-
-        @param includePublicKey include peer public keys in the result.
-        @param hops the maximum jumps the crawler will attempt.
-        The number of hops achieved is not guaranteed.
-    */
-    virtual Json::Value
-    crawlShards(bool includePublicKey, std::uint32_t hops) = 0;
-
     /** Returns the ID of the network this server is configured for, if any.
 
         The ID is just a numerical identifier, with the IDs 0, 1 and 2 used to
