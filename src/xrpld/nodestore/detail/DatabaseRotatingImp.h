@@ -75,9 +75,6 @@ public:
     void
     sync() override;
 
-    bool
-    storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override;
-
     void
     sweep() override;
 

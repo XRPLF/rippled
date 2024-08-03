@@ -190,36 +190,6 @@ private:
     }
 
     Json::Value
-    parseDownloadShard(Json::Value const& jvParams)
-    {
-        Json::Value jvResult(Json::objectValue);
-        unsigned int sz{jvParams.size()};
-        unsigned int i{0};
-
-        // If odd number of params then 'novalidate' may have been specified
-        if (sz & 1)
-        {
-            if (boost::iequals(jvParams[0u].asString(), "novalidate"))
-                ++i;
-            else if (!boost::iequals(jvParams[--sz].asString(), "novalidate"))
-                return rpcError(rpcINVALID_PARAMS);
-        }
-
-        // Create the 'shards' array
-        Json::Value shards(Json::arrayValue);
-        for (; i < sz; i += 2)
-        {
-            Json::Value shard(Json::objectValue);
-            shard[jss::index] = jvParams[i].asUInt();
-            shard[jss::url] = jvParams[i + 1].asString();
-            shards.append(std::move(shard));
-        }
-        jvResult[jss::shards] = std::move(shards);
-
-        return jvResult;
-    }
-
-    Json::Value
     parseInternal(Json::Value const& jvParams)
     {
         Json::Value v(Json::objectValue);
@@ -870,15 +840,6 @@ private:
         return jvRequest;
     }
 
-    Json::Value
-    parseNodeToShard(Json::Value const& jvParams)
-    {
-        Json::Value jvRequest;
-        jvRequest[jss::action] = jvParams[0u].asString();
-
-        return jvRequest;
-    }
-
     // peer_reservations_add <public_key> [<name>]
     Json::Value
     parsePeerReservationsAdd(Json::Value const& jvParams)
@@ -1200,9 +1161,7 @@ public:
             {"channel_verify", &RPCParser::parseChannelVerify, 4, 4},
             {"connect", &RPCParser::parseConnect, 1, 2},
             {"consensus_info", &RPCParser::parseAsIs, 0, 0},
-            {"crawl_shards", &RPCParser::parseAsIs, 0, 2},
             {"deposit_authorized", &RPCParser::parseDepositAuthorized, 2, 3},
-            {"download_shard", &RPCParser::parseDownloadShard, 2, -1},
             {"feature", &RPCParser::parseFeature, 0, 2},
             {"fetch_info", &RPCParser::parseFetchInfo, 0, 1},
             {"gateway_balances", &RPCParser::parseGatewayBalances, 1, -1},
@@ -1220,7 +1179,6 @@ public:
             {"log_level", &RPCParser::parseLogLevel, 0, 2},
             {"logrotate", &RPCParser::parseAsIs, 0, 0},
             {"manifest", &RPCParser::parseManifest, 1, 1},
-            {"node_to_shard", &RPCParser::parseNodeToShard, 1, 1},
             {"owner_info", &RPCParser::parseAccountItems, 1, 3},
             {"peers", &RPCParser::parseAsIs, 0, 0},
             {"ping", &RPCParser::parseAsIs, 0, 0},

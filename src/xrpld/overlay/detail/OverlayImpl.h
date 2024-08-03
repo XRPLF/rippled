@@ -119,12 +119,6 @@ private:
     std::atomic<uint64_t> peerDisconnects_{0};
     std::atomic<uint64_t> peerDisconnectsCharges_{0};
 
-    // 'cs' = crawl shards
-    std::mutex csMutex_;
-    std::condition_variable csCV_;
-    // Peer IDs expecting to receive a last link notification
-    std::set<std::uint32_t> csIDs_;
-
     reduce_relay::Slots<UptimeClock> slots_;
 
     // Transaction reduce-relay metrics
@@ -391,16 +385,6 @@ public:
     {
         return setup_.networkID;
     }
-
-    Json::Value
-    crawlShards(bool includePublicKey, std::uint32_t relays) override;
-
-    /** Called when the reply from the last peer in a peer chain is received.
-
-        @param id peer id that received the shard info.
-    */
-    void
-    endOfPeerChain(std::uint32_t id);
 
     /** Updates message count for validator/peer. Sends TMSquelch if the number
      * of messages for N peers reaches threshold T. A message is counted

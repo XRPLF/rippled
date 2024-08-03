@@ -39,7 +39,6 @@
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/core/Pg.h>
 #include <xrpld/core/TimeKeeper.h>
-#include <xrpld/nodestore/DatabaseShard.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpl/basics/Log.h>
@@ -830,38 +829,13 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
 void
 LedgerMaster::getFetchPack(LedgerIndex missing, InboundLedger::Reason reason)
 {
-    LedgerIndex const ledgerIndex([&]() {
-        if (reason == InboundLedger::Reason::SHARD)
-        {
-            // Do not acquire a ledger sequence greater
-            // than the last ledger in the shard
-            auto const shardStore{app_.getShardStore()};
-            auto const shardIndex{shardStore->seqToShardIndex(missing)};
-            return std::min(missing + 1, shardStore->lastLedgerSeq(shardIndex));
-        }
-        return missing + 1;
-    }());
+    LedgerIndex const ledgerIndex = missing + 1;
 
     auto const haveHash{getLedgerHashForHistory(ledgerIndex, reason)};
     if (!haveHash || haveHash->isZero())
     {
-        if (reason == InboundLedger::Reason::SHARD)
-        {
-            auto const shardStore{app_.getShardStore()};
-            auto const shardIndex{shardStore->seqToShardIndex(missing)};
-            if (missing < shardStore->lastLedgerSeq(shardIndex))
-            {
-                JLOG(m_journal.error())
-                    << "No hash for fetch pack. "
-                    << "Missing ledger sequence " << missing
-                    << " while acquiring shard " << shardIndex;
-            }
-        }
-        else
-        {
-            JLOG(m_journal.error())
-                << "No hash for fetch pack. Missing Index " << missing;
-        }
+        JLOG(m_journal.error())
+            << "No hash for fetch pack. Missing Index " << missing;
         return;
     }
 
@@ -1342,8 +1316,7 @@ LedgerMaster::getLedgerHashForHistory(
 {
     // Try to get the hash of a ledger we need to fetch for history
     std::optional<LedgerHash> ret;
-    auto const& l{
-        reason == InboundLedger::Reason::SHARD ? mShardLedger : mHistLedger};
+    auto const& l{mHistLedger};
 
     if (l && l->info().seq >= index)
     {
@@ -2001,54 +1974,35 @@ LedgerMaster::fetchForHistory(
             auto seq = ledger->info().seq;
             assert(seq == missing);
             JLOG(m_journal.trace()) << "fetchForHistory acquired " << seq;
-            if (reason == InboundLedger::Reason::SHARD)
+            setFullLedger(ledger, false, false);
+            int fillInProgress;
             {
-                ledger->setFull();
-                {
-                    std::lock_guard lock(m_mutex);
-                    mShardLedger = ledger;
-                }
-                if (!ledger->stateMap().family().isShardBacked())
-                    app_.getShardStore()->storeLedger(ledger);
+                std::lock_guard lock(m_mutex);
+                mHistLedger = ledger;
+                fillInProgress = mFillInProgress;
             }
-            else
+            if (fillInProgress == 0 &&
+                app_.getRelationalDatabase().getHashByIndex(seq - 1) ==
+                    ledger->info().parentHash)
             {
-                setFullLedger(ledger, false, false);
-                int fillInProgress;
                 {
+                    // Previous ledger is in DB
                     std::lock_guard lock(m_mutex);
-                    mHistLedger = ledger;
-                    fillInProgress = mFillInProgress;
+                    mFillInProgress = seq;
                 }
-                if (fillInProgress == 0 &&
-                    app_.getRelationalDatabase().getHashByIndex(seq - 1) ==
-                        ledger->info().parentHash)
-                {
-                    {
-                        // Previous ledger is in DB
-                        std::lock_guard lock(m_mutex);
-                        mFillInProgress = seq;
-                    }
-                    app_.getJobQueue().addJob(
-                        jtADVANCE, "tryFill", [this, ledger]() {
-                            tryFill(ledger);
-                        });
-                }
+                app_.getJobQueue().addJob(
+                    jtADVANCE, "tryFill", [this, ledger]() {
+                        tryFill(ledger);
+                    });
             }
             progress = true;
         }
         else
         {
             std::uint32_t fetchSz;
-            if (reason == InboundLedger::Reason::SHARD)
-                // Do not fetch ledger sequences lower
-                // than the shard's first ledger sequence
-                fetchSz = app_.getShardStore()->firstLedgerSeq(
-                    app_.getShardStore()->seqToShardIndex(missing));
-            else
-                // Do not fetch ledger sequences lower
-                // than the earliest ledger sequence
-                fetchSz = app_.getNodeStore().earliestLedgerSeq();
+            // Do not fetch ledger sequences lower
+            // than the earliest ledger sequence
+            fetchSz = app_.getNodeStore().earliestLedgerSeq();
             fetchSz = missing >= fetchSz
                 ? std::min(ledger_fetch_size_, (missing - fetchSz) + 1)
                 : 0;
@@ -2081,7 +2035,8 @@ LedgerMaster::fetchForHistory(
             << "Ledgers: " << app_.getLedgerMaster().getCompleteLedgers();
         JLOG(m_journal.fatal())
             << "Acquire reason: "
-            << (reason == InboundLedger::Reason::HISTORY ? "HISTORY" : "SHARD");
+            << (reason == InboundLedger::Reason::HISTORY ? "HISTORY"
+                                                         : "NOT HISTORY");
         clearLedger(missing + 1);
         progress = true;
     }
@@ -2133,15 +2088,6 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
                     else
                         missing = std::nullopt;
                 }
-                if (!missing && mFillInProgress == 0)
-                {
-                    if (auto shardStore = app_.getShardStore())
-                    {
-                        missing = shardStore->prepareLedger(mValidLedgerSeq);
-                        if (missing)
-                            reason = InboundLedger::Reason::SHARD;
-                    }
-                }
                 if (missing)
                 {
                     fetchForHistory(*missing, progress, reason, sl);
@@ -2156,7 +2102,6 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
             else
             {
                 mHistLedger.reset();
-                mShardLedger.reset();
                 JLOG(m_journal.trace()) << "tryAdvance not fetching history";
             }
         }

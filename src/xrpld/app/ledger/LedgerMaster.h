@@ -357,9 +357,6 @@ private:
     // The last ledger we handled fetching history
     std::shared_ptr<Ledger const> mHistLedger;
 
-    // The last ledger we handled fetching for a shard
-    std::shared_ptr<Ledger const> mShardLedger;
-
     // Fully validated ledger, whether or not we have the ledger resident.
     std::pair<uint256, LedgerIndex> mLastValidLedger{uint256(), 0};
 

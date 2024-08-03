@@ -64,6 +64,27 @@ class NoRippleCheck_test : public beast::unit_test::suite
             BEAST_EXPECT(result[jss::error_message] == "Missing field 'role'.");
         }
 
+        // test account non-string
+        {
+            auto testInvalidAccountParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::account] = param;
+                params[jss::role] = "user";
+                auto jrr = env.rpc(
+                    "json", "noripple_check", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(
+                    jrr[jss::error_message] == "Invalid field 'account'.");
+            };
+
+            testInvalidAccountParam(1);
+            testInvalidAccountParam(1.1);
+            testInvalidAccountParam(true);
+            testInvalidAccountParam(Json::Value(Json::nullValue));
+            testInvalidAccountParam(Json::Value(Json::objectValue));
+            testInvalidAccountParam(Json::Value(Json::arrayValue));
+        }
+
         {  // invalid role field
             Json::Value params;
             params[jss::account] = alice.human();
@@ -369,12 +390,12 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NoRippleCheck, app, ripple);
+BEAST_DEFINE_TESTSUITE(NoRippleCheck, rpc, ripple);
 
 // These tests that deal with limit amounts are slow because of the
 // offer/account setup, so making them manual -- the additional coverage
 // provided by them is minimal
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(NoRippleCheckLimits, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(NoRippleCheckLimits, rpc, ripple, 1);
 
 }  // namespace ripple

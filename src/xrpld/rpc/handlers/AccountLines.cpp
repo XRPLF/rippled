@@ -80,6 +80,9 @@ doAccountLines(RPC::JsonContext& context)
     if (!params.isMember(jss::account))
         return RPC::missing_field_error(jss::account);
 
+    if (!params[jss::account].isString())
+        return RPC::invalid_field_error(jss::account);
+
     std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger(ledger, context);
     if (!ledger)

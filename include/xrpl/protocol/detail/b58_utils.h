@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_B58_UTILS_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/protocol/detail/token_errors.h>
 
 #include <boost/outcome.hpp>
 #include <boost/outcome/result.hpp>
@@ -71,12 +72,12 @@ carrying_add(std::uint64_t a, std::uint64_t b)
 // (i.e a[0] is the 2^0 coefficient, a[n] is the 2^(64*n) coefficient)
 // panics if overflows (this is a specialized adder for b58 decoding.
 // it should never overflow).
-inline void
+[[nodiscard]] inline TokenCodecErrc
 inplace_bigint_add(std::span<std::uint64_t> a, std::uint64_t b)
 {
     if (a.size() <= 1)
     {
-        ripple::LogicError("Input span too small for inplace_bigint_add");
+        return TokenCodecErrc::inputTooSmall;
     }
 
     std::uint64_t carry;
@@ -86,28 +87,29 @@ inplace_bigint_add(std::span<std::uint64_t> a, std::uint64_t b)
     {
         if (!carry)
         {
-            return;
+            return TokenCodecErrc::success;
         }
         std::tie(v, carry) = carrying_add(v, 1);
     }
     if (carry)
     {
-        LogicError("Overflow in inplace_bigint_add");
+        return TokenCodecErrc::overflowAdd;
     }
+    return TokenCodecErrc::success;
 }
 
-inline void
+[[nodiscard]] inline TokenCodecErrc
 inplace_bigint_mul(std::span<std::uint64_t> a, std::uint64_t b)
 {
     if (a.empty())
     {
-        LogicError("Empty span passed to inplace_bigint_mul");
+        return TokenCodecErrc::inputTooSmall;
     }
 
     auto const last_index = a.size() - 1;
     if (a[last_index] != 0)
     {
-        LogicError("Non-zero element in inplace_bigint_mul last index");
+        return TokenCodecErrc::inputTooLarge;
     }
 
     std::uint64_t carry = 0;
@@ -116,7 +118,9 @@ inplace_bigint_mul(std::span<std::uint64_t> a, std::uint64_t b)
         std::tie(coeff, carry) = carrying_mul(coeff, b, carry);
     }
     a[last_index] = carry;
+    return TokenCodecErrc::success;
 }
+
 // divide a "big uint" value inplace and return the mod
 // numerator is stored so smallest coefficients come first
 [[nodiscard]] inline std::uint64_t
@@ -166,11 +170,7 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
 b58_10_to_b58_be(std::uint64_t input)
 {
     constexpr std::uint64_t B_58_10 = 430804206899405824;  // 58^10;
-    if (input >= B_58_10)
-    {
-        LogicError("Input to b58_10_to_b58_be equals or exceeds 58^10.");
-    }
-
+    assert(input < B_58_10);
     constexpr std::size_t resultSize = 10;
     std::array<std::uint8_t, resultSize> result{};
     int i = 0;

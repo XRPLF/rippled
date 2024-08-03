@@ -20,7 +20,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/core/ConfigSections.h>
-#include <xrpld/nodestore/DatabaseShard.h>
 
 namespace ripple {
 

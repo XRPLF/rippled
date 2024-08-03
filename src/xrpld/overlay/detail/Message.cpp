@@ -94,13 +94,9 @@ Message::compress()
             case protocol::mtSTATUS_CHANGE:
             case protocol::mtHAVE_SET:
             case protocol::mtVALIDATION:
-            case protocol::mtGET_PEER_SHARD_INFO:
-            case protocol::mtPEER_SHARD_INFO:
             case protocol::mtPROOF_PATH_REQ:
             case protocol::mtPROOF_PATH_RESPONSE:
             case protocol::mtREPLAY_DELTA_REQ:
-            case protocol::mtGET_PEER_SHARD_INFO_V2:
-            case protocol::mtPEER_SHARD_INFO_V2:
             case protocol::mtHAVE_TRANSACTIONS:
                 break;
         }

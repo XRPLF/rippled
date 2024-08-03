@@ -66,6 +66,10 @@ doNoRippleCheck(RPC::JsonContext& context)
 
     if (!params.isMember("role"))
         return RPC::missing_field_error("role");
+
+    if (!params[jss::account].isString())
+        return RPC::invalid_field_error(jss::account);
+
     bool roleGateway = false;
     {
         std::string const role = params["role"].asString();
@@ -90,7 +94,7 @@ doNoRippleCheck(RPC::JsonContext& context)
     if (context.apiVersion > 1u && params.isMember(jss::transactions) &&
         !params[jss::transactions].isBool())
     {
-        return rpcError(rpcINVALID_PARAMS);
+        return RPC::invalid_field_error(jss::transactions);
     }
 
     std::shared_ptr<ReadView const> ledger;

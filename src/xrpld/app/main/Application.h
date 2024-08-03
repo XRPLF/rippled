@@ -42,13 +42,9 @@ class Manager;
 }
 namespace NodeStore {
 class Database;
-class DatabaseShard;
 }  // namespace NodeStore
 namespace perf {
 class PerfLog;
-}
-namespace RPC {
-class ShardArchiveHandler;
 }
 
 // VFALCO TODO Fix forward declares required for header dependency loops
@@ -172,8 +168,6 @@ public:
     getCollectorManager() = 0;
     virtual Family&
     getNodeFamily() = 0;
-    virtual Family*
-    getShardFamily() = 0;
     virtual TimeKeeper&
     timeKeeper() = 0;
     virtual JobQueue&
@@ -210,10 +204,6 @@ public:
     getValidations() = 0;
     virtual NodeStore::Database&
     getNodeStore() = 0;
-    virtual NodeStore::DatabaseShard*
-    getShardStore() = 0;
-    virtual RPC::ShardArchiveHandler*
-    getShardArchiveHandler(bool tryRecovery = false) = 0;
     virtual InboundLedgers&
     getInboundLedgers() = 0;
     virtual InboundTransactions&

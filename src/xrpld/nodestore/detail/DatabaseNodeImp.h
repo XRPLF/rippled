@@ -128,12 +128,6 @@ public:
         std::function<void(std::shared_ptr<NodeObject> const&)>&& callback)
         override;
 
-    bool
-    storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override
-    {
-        return Database::storeLedger(*srcLedger, backend_);
-    }
-
     void
     sweep() override;
 

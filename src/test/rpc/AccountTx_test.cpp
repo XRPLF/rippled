@@ -109,6 +109,7 @@ class AccountTx_test : public beast::unit_test::suite
     void
     testParameters(unsigned int apiVersion)
     {
+        testcase("Parameters APIv" + std::to_string(apiVersion));
         using namespace test::jtx;
 
         Env env(*this);
@@ -353,6 +354,25 @@ class AccountTx_test : public beast::unit_test::suite
                     env.rpc("json", "account_tx", to_string(p)),
                     rpcLGR_IDX_MALFORMED));
         }
+        // test account non-string
+        {
+            auto testInvalidAccountParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::account] = param;
+                auto jrr = env.rpc(
+                    "json", "account_tx", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(
+                    jrr[jss::error_message] == "Invalid field 'account'.");
+            };
+
+            testInvalidAccountParam(1);
+            testInvalidAccountParam(1.1);
+            testInvalidAccountParam(true);
+            testInvalidAccountParam(Json::Value(Json::nullValue));
+            testInvalidAccountParam(Json::Value(Json::objectValue));
+            testInvalidAccountParam(Json::Value(Json::arrayValue));
+        }
         // test binary and forward for bool/non bool values
         {
             Json::Value p{jParms};
@@ -388,6 +408,8 @@ class AccountTx_test : public beast::unit_test::suite
     void
     testContents()
     {
+        testcase("Contents");
+
         // Get results for all transaction types that can be associated
         // with an account.  Start by generating all transaction types.
         using namespace test::jtx;
@@ -600,6 +622,8 @@ class AccountTx_test : public beast::unit_test::suite
     void
     testAccountDelete()
     {
+        testcase("AccountDelete");
+
         // Verify that if an account is resurrected then the account_tx RPC
         // command still recovers all transactions on that account before
         // and after resurrection.
@@ -740,7 +764,7 @@ public:
         testAccountDelete();
     }
 };
-BEAST_DEFINE_TESTSUITE(AccountTx, app, ripple);
+BEAST_DEFINE_TESTSUITE(AccountTx, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

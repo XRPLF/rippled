@@ -22,7 +22,6 @@
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
-#include <xrpld/nodestore/ShardInfo.h>
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
@@ -162,10 +161,6 @@ private:
     // The highest sequence of each PublisherList that has
     // been sent to or received from this peer.
     hash_map<PublicKey, std::size_t> publisherListSequences_;
-
-    // Any known shard info from this peer and its sub peers
-    hash_map<PublicKey, NodeStore::ShardInfo> shardInfos_;
-    std::mutex mutable shardInfoMutex_;
 
     Compressed compressionEnabled_ = Compressed::Off;
 
@@ -415,10 +410,6 @@ public:
     void
     fail(std::string const& reason);
 
-    // Return any known shard info from this peer and its sub peers
-    [[nodiscard]] hash_map<PublicKey, NodeStore::ShardInfo> const
-    getPeerShardInfos() const;
-
     bool
     compressionEnabled() const override
     {
@@ -540,14 +531,6 @@ public:
     onMessage(std::shared_ptr<protocol::TMPing> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMCluster> const& m);
-    void
-    onMessage(std::shared_ptr<protocol::TMGetPeerShardInfo> const& m);
-    void
-    onMessage(std::shared_ptr<protocol::TMPeerShardInfo> const& m);
-    void
-    onMessage(std::shared_ptr<protocol::TMGetPeerShardInfoV2> const& m);
-    void
-    onMessage(std::shared_ptr<protocol::TMPeerShardInfoV2> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMEndpoints> const& m);
     void

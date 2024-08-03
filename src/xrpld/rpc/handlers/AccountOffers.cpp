@@ -60,6 +60,9 @@ doAccountOffers(RPC::JsonContext& context)
     if (!params.isMember(jss::account))
         return RPC::missing_field_error(jss::account);
 
+    if (!params[jss::account].isString())
+        return RPC::invalid_field_error(jss::account);
+
     std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger(ledger, context);
     if (!ledger)
@@ -84,7 +87,7 @@ doAccountOffers(RPC::JsonContext& context)
         return *err;
 
     if (limit == 0)
-        return rpcError(rpcINVALID_PARAMS);
+        return RPC::invalid_field_error(jss::limit);
 
     Json::Value& jsonOffers(result[jss::offers] = Json::arrayValue);
     std::vector<std::shared_ptr<SLE const>> offers;
@@ -101,13 +104,13 @@ doAccountOffers(RPC::JsonContext& context)
         std::stringstream marker(params[jss::marker].asString());
         std::string value;
         if (!std::getline(marker, value, ','))
-            return rpcError(rpcINVALID_PARAMS);
+            return RPC::invalid_field_error(jss::marker);
 
         if (!startAfter.parseHex(value))
-            return rpcError(rpcINVALID_PARAMS);
+            return RPC::invalid_field_error(jss::marker);
 
         if (!std::getline(marker, value, ','))
-            return rpcError(rpcINVALID_PARAMS);
+            return RPC::invalid_field_error(jss::marker);
 
         try
         {
@@ -115,7 +118,7 @@ doAccountOffers(RPC::JsonContext& context)
         }
         catch (boost::bad_lexical_cast&)
         {
-            return rpcError(rpcINVALID_PARAMS);
+            return RPC::invalid_field_error(jss::marker);
         }
 
         // We then must check if the object pointed to by the marker is actually

@@ -35,7 +35,6 @@
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/consensus/LedgerTiming.h>
-#include <xrpld/nodestore/DatabaseShard.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
 #include <xrpl/basics/random.h>

@@ -426,12 +426,12 @@ doAccountTxJson(RPC::JsonContext& context)
     if (context.apiVersion > 1u && params.isMember(jss::binary) &&
         !params[jss::binary].isBool())
     {
-        return rpcError(rpcINVALID_PARAMS);
+        return RPC::invalid_field_error(jss::binary);
     }
     if (context.apiVersion > 1u && params.isMember(jss::forward) &&
         !params[jss::forward].isBool())
     {
-        return rpcError(rpcINVALID_PARAMS);
+        return RPC::invalid_field_error(jss::forward);
     }
 
     args.limit = params.isMember(jss::limit) ? params[jss::limit].asUInt() : 0;
@@ -440,7 +440,10 @@ doAccountTxJson(RPC::JsonContext& context)
         params.isMember(jss::forward) && params[jss::forward].asBool();
 
     if (!params.isMember(jss::account))
-        return rpcError(rpcINVALID_PARAMS);
+        return RPC::missing_field_error(jss::account);
+
+    if (!params[jss::account].isString())
+        return RPC::invalid_field_error(jss::account);
 
     auto const account =
         parseBase58<AccountID>(params[jss::account].asString());

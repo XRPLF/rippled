@@ -32,9 +32,6 @@ namespace Resource {
 class Charge;
 }
 
-// Maximum hops to relay the peer shard info request
-static constexpr std::uint32_t relayLimit = 3;
-
 enum class ProtocolFeature {
     ValidatorListPropagation,
     ValidatorList2Propagation,
