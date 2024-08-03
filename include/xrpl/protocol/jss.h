@@ -116,6 +116,7 @@ JSS(Oracle);               // ledger type.
 JSS(OracleDelete);         // transaction type.
 JSS(OracleDocumentID);     // field
 JSS(OracleSet);            // transaction type.
+JSS(OuterAccount);         // field
 JSS(Owner);                // field
 JSS(Paths);                // in/out: TransactionSign
 JSS(PayChannel);           // ledger type.

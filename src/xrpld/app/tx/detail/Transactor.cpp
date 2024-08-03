@@ -334,12 +334,12 @@ Transactor::checkSeqProxy(
         STObject const batchTxn = const_cast<ripple::STTx&>(tx)
                                       .getField(sfBatchTxn)
                                       .downcast<STObject>();
-        std::uint32_t const startSequence{
-            batchTxn.getFieldU32(sfOuterSequence)};
+        std::uint32_t const startSequence{batchTxn.getFieldU32(sfSequence)};
         std::uint32_t const batchIndex{batchTxn.getFieldU8(sfBatchIndex)};
         std::uint8_t const sourceAdj =
-            tx.getAccountID(sfAccount) == batchTxn.getAccountID(sfAccount) ? 1
-                                                                           : 0;
+            tx.getAccountID(sfAccount) == batchTxn.getAccountID(sfOuterAccount)
+            ? 1
+            : 0;
         a_seq = SeqProxy::sequence(startSequence + batchIndex + sourceAdj);
     }
 

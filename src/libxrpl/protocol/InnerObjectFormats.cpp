@@ -156,8 +156,7 @@ InnerObjectFormats::InnerObjectFormats()
 
     add(sfBatchTxn.jsonName.c_str(),
         sfBatchTxn.getCode(),
-        {{sfAccount, soeREQUIRED},
-         {sfOuterSequence, soeREQUIRED},
+        {{sfOuterAccount, soeREQUIRED},
          {sfSequence, soeOPTIONAL},
          {sfBatchIndex, soeREQUIRED}});
 

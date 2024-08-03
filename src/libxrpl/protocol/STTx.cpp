@@ -192,11 +192,12 @@ STTx::getSeqProxy() const
         STObject const batchTxn = const_cast<ripple::STTx&>(*this)
                                       .getField(sfBatchTxn)
                                       .downcast<STObject>();
-        std::uint32_t const startSequence{
-            batchTxn.getFieldU32(sfOuterSequence)};
+        std::uint32_t const startSequence{batchTxn.getFieldU32(sfSequence)};
         std::uint32_t const batchIndex{batchTxn.getFieldU8(sfBatchIndex)};
         std::uint8_t const sourceAdj =
-            getAccountID(sfAccount) == batchTxn.getAccountID(sfAccount) ? 1 : 0;
+            getAccountID(sfAccount) == batchTxn.getAccountID(sfOuterAccount)
+            ? 1
+            : 0;
         return SeqProxy::sequence(startSequence + batchIndex + sourceAdj);
     }
 

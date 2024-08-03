@@ -442,7 +442,6 @@ extern SF_UINT32 const sfEmitGeneration;
 extern SF_UINT32 const sfVoteWeight;
 extern SF_UINT32 const sfFirstNFTokenSequence;
 extern SF_UINT32 const sfOracleDocumentID;
-extern SF_UINT32 const sfOuterSequence;
 
 // 64-bit integers (common)
 extern SF_UINT64 const sfIndexNext;
@@ -597,6 +596,7 @@ extern SF_ACCOUNT const sfAttestationSignerAccount;
 extern SF_ACCOUNT const sfAttestationRewardAccount;
 extern SF_ACCOUNT const sfLockingChainDoor;
 extern SF_ACCOUNT const sfIssuingChainDoor;
+extern SF_ACCOUNT const sfOuterAccount;
 
 // path set
 extern SField const sfPaths;
