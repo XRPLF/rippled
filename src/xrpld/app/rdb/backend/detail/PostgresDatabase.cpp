@@ -29,7 +29,6 @@
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/core/Pg.h>
 #include <xrpld/core/SociDB.h>
-#include <xrpld/nodestore/DatabaseShard.h>
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/json/json_reader.h>
