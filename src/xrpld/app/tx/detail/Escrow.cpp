@@ -93,7 +93,8 @@ after(NetClock::time_point now, std::uint32_t mark)
 TxConsequences
 EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
+    return TxConsequences{
+        ctx.tx, isXRP(ctx.tx[sfAmount]) ? ctx.tx[sfAmount].xrp() : beast::zero};
 }
 
 NotTEC
@@ -105,8 +106,18 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (!isXRP(ctx.tx[sfAmount]))
-        return temBAD_AMOUNT;
+    STAmount const amount{ctx.tx[sfAmount]};
+    if (!isXRP(amount))
+    {
+        if (!ctx.rules.enabled(featurePaychanAndEscrowForTokens))
+            return temBAD_AMOUNT;
+
+        if (!isLegalNet(amount))
+            return temBAD_AMOUNT;
+
+        if (isFakeXRP(amount))
+            return temBAD_CURRENCY;
+    }
 
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
@@ -206,21 +217,74 @@ EscrowCreate::doApply()
     }
 
     auto const account = ctx_.tx[sfAccount];
-    auto const sle = ctx_.view().peek(keylet::account(account));
+    auto sle = ctx_.view().peek(keylet::account(account));
     if (!sle)
         return tefINTERNAL;
 
+    STAmount const amount{ctx_.tx[sfAmount]};
+
+    std::shared_ptr<SLE> sleLine;
+
+    auto const balance = STAmount((*sle)[sfBalance]).xrp();
+    auto const reserve =
+        ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
+    bool const isIssuer = amount.getIssuer() == account;
+
+    if (balance < reserve)
+        return tecINSUFFICIENT_RESERVE;
+
     // Check reserve and funds availability
+    if (isXRP(amount))
     {
-        auto const balance = STAmount((*sle)[sfBalance]).xrp();
-        auto const reserve =
-            ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
-
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-
         if (balance < reserve + STAmount(ctx_.tx[sfAmount]).xrp())
             return tecUNFUNDED;
+        // pass
+    }
+    else
+    {
+        // preflight will prevent this ever firing, included
+        // defensively for completeness
+        if (!ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
+            return temDISABLED;
+
+        TER const result = trustTransferAllowed(
+            ctx_.view(),
+            {account, ctx_.tx[sfDestination]},
+            amount.issue(),
+            ctx_.journal);
+
+        JLOG(ctx_.journal.trace())
+            << "EscrowCreate::doApply trustTransferAllowed result=" << result;
+
+        if (!isTesSuccess(result))
+            return result;
+
+        // issuer does not need to lock anything
+        if (!isIssuer)
+        {
+            // perform the lock as a dry run before
+            // we modify anything on-ledger
+            sleLine = ctx_.view().peek(keylet::line(
+                account, amount.getIssuer(), amount.getCurrency()));
+
+            // check if the escrow is capable of being
+            // finished before we allow it to be created
+            if (!sleLine)
+                return tecNO_LINE;
+
+            {
+                TER const result = transferToEntry(
+                    ctx_.view(), sle, sleLine, amount, ctx_.journal, DryRun);
+
+                JLOG(ctx_.journal.trace())
+                    << "EscrowCreate::doApply transferToEntry (dry) "
+                       "result="
+                    << result;
+
+                if (!isTesSuccess(result))
+                    return result;
+            }
+        }
     }
 
     // Check destination account
@@ -235,7 +299,7 @@ EscrowCreate::doApply()
 
         // Obeying the lsfDissalowXRP flag was a bug.  Piggyback on
         // featureDepositAuth to remove the bug.
-        if (!ctx_.view().rules().enabled(featureDepositAuth) &&
+        if (!ctx_.view().rules().enabled(featureDepositAuth) && isXRP(amount) &&
             ((*sled)[sfFlags] & lsfDisallowXRP))
             return tecNO_TARGET;
     }
@@ -253,6 +317,12 @@ EscrowCreate::doApply()
     (*slep)[~sfCancelAfter] = ctx_.tx[~sfCancelAfter];
     (*slep)[~sfFinishAfter] = ctx_.tx[~sfFinishAfter];
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
+
+    if (ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
+    {
+        auto const xferRate = transferRate(view(), amount.getIssuer());
+        (*slep)[~sfTransferRate] = xferRate.value;
+    }
 
     ctx_.view().insert(slep);
 
@@ -276,7 +346,33 @@ EscrowCreate::doApply()
     }
 
     // Deduct owner's balance, increment owner count
-    (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
+    if (isXRP(amount))
+        (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
+    else
+    {
+        if (!ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
+            return temDISABLED;
+
+        // issuer does not need to lock anything
+        if (!isIssuer)
+        {
+            if (!sleLine)
+                return tecNO_LINE;
+
+            // do the lock-up for real now
+            TER const result = transferToEntry(
+                ctx_.view(), sle, sleLine, amount, ctx_.journal, WetRun);
+
+            JLOG(ctx_.journal.trace())
+                << "EscrowCreate::doApply transferToEntry (wet) "
+                   "result="
+                << result;
+
+            if (!isTesSuccess(result))
+                return result;
+        }
+    }
+
     adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
     ctx_.view().update(sle);
 
@@ -370,6 +466,10 @@ EscrowFinish::doApply()
     auto const slep = ctx_.view().peek(k);
     if (!slep)
         return tecNO_TARGET;
+
+    AccountID const account = (*slep)[sfAccount];
+    auto const sle = ctx_.view().peek(keylet::account(account));
+    auto const amount = slep->getFieldAmount(sfAmount);
 
     // If a cancel time is present, a finish operation should only succeed prior
     // to that time. fix1571 corrects a logic error in the check that would make
@@ -471,7 +571,41 @@ EscrowFinish::doApply()
         }
     }
 
-    AccountID const account = (*slep)[sfAccount];
+    if (!isXRP(amount))
+    {
+        if (!ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
+            return temDISABLED;
+
+        if (!slep->isFieldPresent(sfTransferRate))
+            return tecINTERNAL;
+
+        Rate lockedRate = ripple::Rate(slep->getFieldU32(sfTransferRate));
+        auto const issuerAccID = amount.getIssuer();
+        auto const xferRate = transferRate(view(), issuerAccID);
+        // update if issuer rate is less than locked rate
+        if (xferRate < lockedRate)
+            lockedRate = xferRate;
+
+        // perform a dry run of the transfer before we
+        // change anything on-ledger
+        TER const result = transferFromEntry(
+            ctx_.view(),
+            account_,  // txn signing account
+            sle,       // src account
+            sled,      // dst account
+            amount,    // xfer amount
+            lockedRate,
+            j_,
+            DryRun  // dry run
+        );
+
+        JLOG(j_.trace())
+            << "EscrowFinish::doApply transferFromEntry (dry) result="
+            << result;
+
+        if (!isTesSuccess(result))
+            return result;
+    }
 
     // Remove escrow from owner directory
     {
@@ -495,12 +629,46 @@ EscrowFinish::doApply()
         }
     }
 
-    // Transfer amount to destination
-    (*sled)[sfBalance] = (*sled)[sfBalance] + (*slep)[sfAmount];
+    if (isXRP(amount))
+        (*sled)[sfBalance] = (*sled)[sfBalance] + (*slep)[sfAmount];
+    else
+    {
+        // compute transfer fee, if any
+        if (!slep->isFieldPresent(sfTransferRate))
+            return tecINTERNAL;
+
+        Rate lockedRate = ripple::Rate(slep->getFieldU32(sfTransferRate));
+        auto const issuerAccID = amount.getIssuer();
+        auto const xferRate = transferRate(view(), issuerAccID);
+        // update if issuer rate is less than locked rate
+        if (xferRate < lockedRate)
+            lockedRate = xferRate;
+
+        // all the significant complexity of checking the validity of this
+        // transfer and ensuring the lines exist etc is hidden away in this
+        // function, all we need to do is call it and return if unsuccessful.
+        TER const result = transferFromEntry(
+            ctx_.view(),
+            account_,  // txn signing account
+            sle,       // src account
+            sled,      // dst account
+            amount,    // xfer amount
+            lockedRate,
+            j_,
+            WetRun  // wet run;
+        );
+
+        JLOG(j_.trace())
+            << "EscrowFinish::doApply transferFromEntry (wet) result="
+            << result;
+
+        if (!isTesSuccess(result))
+            return result;
+    }
+
     ctx_.view().update(sled);
 
     // Adjust source owner count
-    auto const sle = ctx_.view().peek(keylet::account(account));
     adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
     ctx_.view().update(sle);
 
@@ -554,6 +722,30 @@ EscrowCancel::doApply()
     }
 
     AccountID const account = (*slep)[sfAccount];
+    auto sle = ctx_.view().peek(keylet::account(account));
+    auto const amount = slep->getFieldAmount(sfAmount);
+    bool const isIssuer = amount.getIssuer() == account;
+
+    std::shared_ptr<SLE> sleLine;
+
+    if (!isXRP(amount))
+    {
+        if (!ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
+            return temDISABLED;
+
+        // issuer does not need to lock anything
+        if (!isIssuer)
+        {
+            sleLine = ctx_.view().peek(keylet::line(
+                account, amount.getIssuer(), amount.getCurrency()));
+
+            // dry run before we make any changes to ledger
+            if (TER const result = transferToEntry(
+                    ctx_.view(), sle, sleLine, -amount, ctx_.journal, DryRun);
+                result != tesSUCCESS)
+                return result;
+        }
+    }
 
     // Remove escrow from owner directory
     {
@@ -580,9 +772,32 @@ EscrowCancel::doApply()
         }
     }
 
-    // Transfer amount back to owner, decrement owner count
-    auto const sle = ctx_.view().peek(keylet::account(account));
-    (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount];
+    // Transfer amount back to the owner (or unlock it in TL case)
+    if (isXRP(amount))
+        (*sle)[sfBalance] = (*sle)[sfBalance] + (*slep)[sfAmount];
+    else
+    {
+        if (!ctx_.view().rules().enabled(featurePaychanAndEscrowForTokens))
+            return temDISABLED;
+
+        // issuer does not need to lock anything
+        if (!isIssuer)
+        {
+            // unlock previously locked tokens from source line
+            TER const result = transferToEntry(
+                ctx_.view(), sle, sleLine, -amount, ctx_.journal, WetRun);
+
+            JLOG(ctx_.journal.trace())
+                << "EscrowCancel::doApply transferToEntry (wet) "
+                   "result="
+                << result;
+
+            if (!isTesSuccess(result))
+                return result;
+        }
+    }
+
+    // Decrement owner count
     adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
     ctx_.view().update(sle);
 

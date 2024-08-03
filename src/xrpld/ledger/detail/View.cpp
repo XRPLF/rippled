@@ -257,6 +257,7 @@ accountHolds(
             // Put balance in account terms.
             amount.negate();
         }
+
         amount.setIssuer(issuer);
     }
     JLOG(j.trace()) << "accountHolds:"
@@ -904,6 +905,56 @@ trustDelete(
     view.erase(sleRippleState);
 
     return tesSUCCESS;
+}
+
+bool
+isTrustDefault(
+    std::shared_ptr<SLE> const& acc,
+    std::shared_ptr<SLE> const& line)
+{
+    assert(acc && line);
+
+    uint32_t const tlFlags = line->getFieldU32(sfFlags);
+
+    AccountID const highAccID =
+        line->getFieldAmount(sfHighLimit).issue().account;
+    AccountID const lowAccID = line->getFieldAmount(sfLowLimit).issue().account;
+
+    AccountID const accID = acc->getAccountID(sfAccount);
+
+    assert(accID == highAccID || accID == lowAccID);
+
+    bool const high = accID == highAccID;
+
+    uint32_t const acFlags = line->getFieldU32(sfFlags);
+
+    const auto fNoRipple{high ? lsfHighNoRipple : lsfLowNoRipple};
+    const auto fFreeze{high ? lsfHighFreeze : lsfLowFreeze};
+
+    if (tlFlags & fFreeze)
+        return false;
+
+    if ((acFlags & lsfDefaultRipple) && (tlFlags & fNoRipple))
+        return false;
+
+    if (line->getFieldAmount(sfBalance) != beast::zero)
+        return false;
+
+    if (line->getFieldAmount(high ? sfHighLimit : sfLowLimit) != beast::zero)
+        return false;
+
+    uint32_t const qualityIn =
+        line->getFieldU32(high ? sfHighQualityIn : sfLowQualityIn);
+    uint32_t const qualityOut =
+        line->getFieldU32(high ? sfHighQualityOut : sfLowQualityOut);
+
+    if (qualityIn && qualityIn != QUALITY_ONE)
+        return false;
+
+    if (qualityOut && qualityOut != QUALITY_ONE)
+        return false;
+
+    return true;
 }
 
 TER

@@ -63,7 +63,7 @@ transResults()
         MAKE_ERROR(tecUNFUNDED_ADD,                  "DEPRECATED."),
         MAKE_ERROR(tecUNFUNDED_AMM,                  "Insufficient balance to fund AMM."),
         MAKE_ERROR(tecUNFUNDED_OFFER,                "Insufficient balance to fund created offer."),
-        MAKE_ERROR(tecUNFUNDED_PAYMENT,              "Insufficient XRP balance to send."),
+        MAKE_ERROR(tecUNFUNDED_PAYMENT,              "Insufficient balance to send."),
         MAKE_ERROR(tecOWNERS,                        "Non-zero owner count."),
         MAKE_ERROR(tecNO_ISSUER,                     "Issuer account does not exist."),
         MAKE_ERROR(tecNO_AUTH,                       "Not authorized to hold asset."),
@@ -115,6 +115,7 @@ transResults()
         MAKE_ERROR(tecTOKEN_PAIR_NOT_FOUND,          "Token pair is not found in Oracle object."),
         MAKE_ERROR(tecARRAY_EMPTY,                   "Array is empty."),
         MAKE_ERROR(tecARRAY_TOO_LARGE,               "Array is too large."),
+        MAKE_ERROR(tecPRECISION_LOSS,                "The amounts used by the transaction cannot interact."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
