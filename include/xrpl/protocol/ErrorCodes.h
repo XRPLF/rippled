@@ -147,8 +147,7 @@ enum error_code_i {
     // Oracle
     rpcORACLE_MALFORMED = 94,
 
-    rpcLAST =
-        rpcORACLE_MALFORMED  // rpcLAST should always equal the last code.
+    rpcLAST = rpcORACLE_MALFORMED  // rpcLAST should always equal the last code.
 };
 
 /** Codes returned in the `warnings` array of certain RPC commands.
