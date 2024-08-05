@@ -8,7 +8,6 @@ on:
     paths:
       - 'src/ripple/protocol/impl/BuildInfo.cpp'
       - '.github/workflows/libxrpl.yml'
-    branches: [release]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
