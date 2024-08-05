@@ -371,6 +371,140 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
+    testOutOfSequence(FeatureBitset features)
+    {
+        testcase("out of sequence");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        test::jtx::Env env{*this, envconfig()};
+
+        auto const feeDrops = env.current()->fees().base;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        env.fund(XRP(1000), alice, bob, carol);
+        env.close();
+
+        // tfAllOrNothing
+        {
+            auto const seq = env.seq("alice");
+            Json::Value jv;
+            jv[jss::TransactionType] = jss::Batch;
+            jv[jss::Account] = alice.human();
+            jv[jss::Sequence] = seq;
+
+            // Batch Transactions
+            jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
+
+            // Tx 1
+            Json::Value const tx1 = pay(alice, bob, XRP(1));
+            jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, seq, 0);
+
+            // Tx 2
+            Json::Value const tx2 =
+                jtx::trust(alice, alice["USD"](1000), tfSetfAuth);
+            jv = addBatchTx(jv, tx2, alice.pk(), alice, 1, seq, 1);
+
+            // Tx 3
+            Json::Value const tx3 = pay(alice, bob, XRP(1));
+            jv = addBatchTx(jv, tx3, alice.pk(), alice, 2, seq, 2);
+
+            env(jv,
+                fee(feeDrops * 3),
+                txflags(tfAllOrNothing),
+                ter(tefNO_AUTH_REQUIRED));
+            env.close();
+        }
+
+        // tfUntilFailure
+        {
+            auto const seq = env.seq("alice");
+            Json::Value jv;
+            jv[jss::TransactionType] = jss::Batch;
+            jv[jss::Account] = alice.human();
+            jv[jss::Sequence] = seq;
+
+            // Batch Transactions
+            jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
+
+            // Tx 1
+            Json::Value const tx1 = pay(alice, bob, XRP(1));
+            jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, seq, 0);
+
+            // Tx 2
+            Json::Value const tx2 =
+                jtx::trust(alice, alice["USD"](1000), tfSetfAuth);
+            jv = addBatchTx(jv, tx2, alice.pk(), alice, 1, seq, 1);
+
+            // Tx 3
+            Json::Value const tx3 = pay(alice, bob, XRP(1));
+            jv = addBatchTx(jv, tx3, alice.pk(), alice, 2, seq, 2);
+
+            env(jv,
+                fee(feeDrops * 3),
+                txflags(tfUntilFailure),
+                ter(tefNO_AUTH_REQUIRED));
+            env.close();
+        }
+
+        // tfOnlyOne
+        {
+            auto const seq = env.seq("alice");
+            Json::Value jv;
+            jv[jss::TransactionType] = jss::Batch;
+            jv[jss::Account] = alice.human();
+            jv[jss::Sequence] = seq;
+
+            // Batch Transactions
+            jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
+
+            // Tx 1
+            Json::Value const tx1 =
+                jtx::trust(alice, alice["USD"](1000), tfSetfAuth);
+            jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, seq, 0);
+
+            // Tx 2
+            Json::Value const tx2 = pay(alice, bob, XRP(1));
+            jv = addBatchTx(jv, tx2, alice.pk(), alice, 1, seq, 1);
+
+            env(jv,
+                fee(feeDrops * 2),
+                txflags(tfOnlyOne),
+                ter(tefNO_AUTH_REQUIRED));
+            env.close();
+        }
+
+        // tfIndependent
+        {
+            auto const seq = env.seq("alice");
+            Json::Value jv;
+            jv[jss::TransactionType] = jss::Batch;
+            jv[jss::Account] = alice.human();
+            jv[jss::Sequence] = seq;
+
+            // Batch Transactions
+            jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
+
+            // Tx 1
+            Json::Value const tx1 =
+                jtx::trust(alice, alice["USD"](1000), tfSetfAuth);
+            jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, seq, 0);
+
+            // Tx 2
+            Json::Value const tx2 = pay(alice, bob, XRP(1));
+            jv = addBatchTx(jv, tx2, alice.pk(), alice, 1, seq, 1);
+
+            env(jv,
+                fee(feeDrops * 3),
+                txflags(tfIndependent),
+                ter(tefNO_AUTH_REQUIRED));
+            env.close();
+        }
+    }
+
+    void
     testAllOrNothing(FeatureBitset features)
     {
         testcase("all or nothing");
@@ -720,9 +854,6 @@ class Batch_test : public beast::unit_test::suite
         using namespace std::literals;
 
         test::jtx::Env env{*this, envconfig()};
-        // Env env{*this, envconfig(), features, nullptr,
-        //     beast::severities::kTrace
-        // };
 
         auto const feeDrops = env.current()->fees().base;
         auto const alice = Account("alice");
@@ -1256,9 +1387,6 @@ class Batch_test : public beast::unit_test::suite
         using namespace std::literals;
 
         test::jtx::Env env{*this, envconfig()};
-        // Env env{*this, envconfig(), features, nullptr,
-        //     beast::severities::kTrace
-        // };
 
         auto const feeDrops = env.current()->fees().base;
         auto const alice = Account("alice");
@@ -1388,6 +1516,7 @@ class Batch_test : public beast::unit_test::suite
     {
         testEnable(features);
         testPreflight(features);
+        testOutOfSequence(features);
         testAllOrNothing(features);
         testOnlyOne(features);
         testUntilFailure(features);
@@ -1406,7 +1535,9 @@ class Batch_test : public beast::unit_test::suite
         // Multisign Atomic
         // If the 2nd fails and needs the 3rd
         // Validatate all errors in checkBatchSign()
-        // tem failure that does not consume the sequence
+        // tem failure that does not consume the sequence: Handled with atomic
+        // revert Assertion failed: (feeLevelPaid >= baseLevel), function apply,
+        // file TxQ.cpp, line 1155.
     }
 
 public:

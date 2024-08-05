@@ -154,6 +154,15 @@ Batch::doApply()
 
         if (ter != tesSUCCESS)
         {
+            // Atomic Revert on non tec failure
+            if (!isTecClaim(ter))
+            {
+                accountCount.clear();
+                result = ter;
+                changed = false;
+                break;
+            }
+
             if (flags & tfUntilFailure)
             {
                 result = tesSUCCESS;
@@ -166,8 +175,6 @@ Batch::doApply()
             if (flags & tfAllOrNothing)
             {
                 accountCount.clear();
-                std::vector<STObject> batch;
-                avi.setHookMetaData(std::move(batch));
                 result = tecBATCH_FAILURE;
                 changed = false;
                 break;
