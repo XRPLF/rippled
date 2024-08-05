@@ -94,7 +94,6 @@ ApplyContext::applyFee()
     assert(sle != nullptr || sleBase != nullptr || account == beast::zero);
     if (sle && sleBase)
     {
-        auto const feePaid = tx[sfFee].xrp();
         sle->setFieldAmount(sfBalance, (*sleBase)[sfBalance].xrp());
         view_->update(sle);
     }
