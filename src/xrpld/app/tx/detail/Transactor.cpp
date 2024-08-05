@@ -850,7 +850,12 @@ removeDeletedTrustLines(
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
 {
+    ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
+    std::vector<STObject> executions;
+    avi.copyBatchMetaData(executions);
     ctx_.discard();
+    ApplyViewImpl& avi2 = dynamic_cast<ApplyViewImpl&>(ctx_.view());
+    avi2.setBatchMetaData(std::move(executions));
 
     auto const txnAcct =
         view().peek(keylet::account(ctx_.tx.getAccountID(sfAccount)));

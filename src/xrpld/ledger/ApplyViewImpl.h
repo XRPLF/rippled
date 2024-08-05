@@ -84,9 +84,18 @@ public:
     }
 
     void
-    setHookMetaData(std::vector<STObject>&& batch)
+    setBatchMetaData(std::vector<STObject>&& batch)
     {
         batchExecution_ = std::move(batch);
+    }
+
+    void
+    copyBatchMetaData(std::vector<STObject>& execution)
+    {
+        std::copy(
+            batchExecution_.begin(),
+            batchExecution_.end(),
+            std::back_inserter(execution));
     }
 
     /** Get the number of modified entries
