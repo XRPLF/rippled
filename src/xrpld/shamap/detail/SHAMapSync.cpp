@@ -192,8 +192,7 @@ SHAMap::gmn_ProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
         }
         else if (
             !backed_ ||
-            !f_.getFullBelowCache(ledgerSeq_)
-                 ->touch_if_exists(childHash.as_uint256()))
+            !f_.getFullBelowCache()->touch_if_exists(childHash.as_uint256()))
         {
             bool pending = false;
             auto d = descendAsync(
@@ -251,8 +250,7 @@ SHAMap::gmn_ProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
         node->setFullBelowGen(mn.generation_);
         if (backed_)
         {
-            f_.getFullBelowCache(ledgerSeq_)
-                ->insert(node->getHash().as_uint256());
+            f_.getFullBelowCache()->insert(node->getHash().as_uint256());
         }
     }
 
@@ -323,7 +321,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
         max,
         filter,
         512,  // number of async reads per pass
-        f_.getFullBelowCache(ledgerSeq_)->getGeneration());
+        f_.getFullBelowCache()->getGeneration());
 
     if (!root_->isInner() ||
         std::static_pointer_cast<SHAMapInnerNode>(root_)->isFullBelow(
@@ -580,7 +578,7 @@ SHAMap::addKnownNode(
         return SHAMapAddNode::duplicate();
     }
 
-    auto const generation = f_.getFullBelowCache(ledgerSeq_)->getGeneration();
+    auto const generation = f_.getFullBelowCache()->getGeneration();
     SHAMapNodeID iNodeID;
     auto iNode = root_.get();
 
@@ -598,8 +596,7 @@ SHAMap::addKnownNode(
         }
 
         auto childHash = inner->getChildHash(branch);
-        if (f_.getFullBelowCache(ledgerSeq_)
-                ->touch_if_exists(childHash.as_uint256()))
+        if (f_.getFullBelowCache()->touch_if_exists(childHash.as_uint256()))
         {
             return SHAMapAddNode::duplicate();
         }

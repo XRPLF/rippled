@@ -45,7 +45,6 @@
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/consensus/Consensus.h>
 #include <xrpld/consensus/ConsensusParms.h>
-#include <xrpld/nodestore/DatabaseShard.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
@@ -2622,10 +2621,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         info[jss::counters] = app_.getPerfLog().countersJson();
 
         Json::Value nodestore(Json::objectValue);
-        if (app_.getShardStore())
-            app_.getShardStore()->getCountsJson(nodestore);
-        else
-            app_.getNodeStore().getCountsJson(nodestore);
+        app_.getNodeStore().getCountsJson(nodestore);
         info[jss::counters][jss::nodestore] = nodestore;
         info[jss::current_activities] = app_.getPerfLog().currentJson();
     }
