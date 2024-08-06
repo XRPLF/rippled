@@ -6,7 +6,7 @@ env:
 on:
   pull_request:
     paths:
-      - 'src/ripple/protocol/impl/BuildInfo.cpp'
+      - 'src/libxrpl/protocol/BuildInfo.cpp'
       - '.github/workflows/libxrpl.yml'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -49,8 +49,8 @@ jobs:
         id: version
         shell: bash
         run: |
-          echo version=$(cat src/ripple/protocol/impl/BuildInfo.cpp \
-            | grep "versionString =" | awk -F '"' '{print $2}') \
+          echo version="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" \
+            | awk -F '"' '{print $2}')@clio/${{ github.event.pull_request.head.sha || github.sha }}" \
             | tee ${GITHUB_OUTPUT}
       - name: Try to authenticate to Ripple Conan remote
         id: remote
@@ -82,4 +82,4 @@ jobs:
         shell: bash
         run: |
           gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
-          /repos/xrplf/clio/dispatches -f "event_type=check_libxrpl" -F "client_payload[version]=${{ needs.publish.outputs.version }}"
+          /repos/godexsoft/clio/dispatches -f "event_type=check_libxrpl" -F "client_payload[version]=${{ needs.publish.outputs.version }}"
