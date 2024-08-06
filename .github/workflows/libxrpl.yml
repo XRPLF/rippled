@@ -37,9 +37,6 @@ jobs:
         shell: bash
         run: |
           echo channel="clio/pr_${{ github.event.pull_request.number }}" | tee ${GITHUB_OUTPUT}
-      - name: Unlock Conan
-        shell: bash
-        run: conan remove --locks
       - name: Export new package
         shell: bash
         run: |
