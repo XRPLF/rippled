@@ -374,6 +374,15 @@ TxFormats::TxFormats()
         },
         commonFields);
 
+    add(jss::NFTokenModify,
+        ttNFTOKEN_MODIFY,
+        {
+            {sfNFTokenID, soeREQUIRED},
+            {sfOwner, soeOPTIONAL},
+            {sfURI, soeOPTIONAL},
+        },
+        commonFields);
+
     add(jss::Clawback,
         ttCLAWBACK,
         {
