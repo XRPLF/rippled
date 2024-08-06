@@ -144,7 +144,6 @@ printHelp(const po::options_description& desc)
            "     consensus_info\n"
            "     deposit_authorized <source_account> <destination_account> "
            "[<ledger>]\n"
-           "     download_shard [[<index> <url>]]\n"
            "     feature [<feature> [accept|reject]]\n"
            "     fetch_info [clear]\n"
            "     gateway_balances [<ledger>] <issuer_account> [ <hotwallet> [ "
@@ -160,7 +159,6 @@ printHelp(const po::options_description& desc)
            "     log_level [[<partition>] <severity>]\n"
            "     logrotate\n"
            "     manifest <public_key>\n"
-           "     node_to_shard [status|start|stop]\n"
            "     peers\n"
            "     ping\n"
            "     random\n"
@@ -398,7 +396,6 @@ run(int argc, char** argv)
         "Load the specified ledger file.")(
         "load", "Load the current ledger from the local DB.")(
         "net", "Get the initial ledger from the network.")(
-        "nodetoshard", "Import node store into shards")(
         "replay", "Replay a ledger close.")(
         "trap_tx_hash",
         po::value<std::string>(),
@@ -675,9 +672,6 @@ run(int argc, char** argv)
 
     if (vm.count("import"))
         config->doImport = true;
-
-    if (vm.count("nodetoshard"))
-        config->nodeToShard = true;
 
     if (vm.count("ledger"))
     {

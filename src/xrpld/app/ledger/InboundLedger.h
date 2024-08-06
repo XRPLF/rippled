@@ -42,7 +42,6 @@ public:
     // These are the reasons we might acquire a ledger
     enum class Reason {
         HISTORY,   // Acquiring past ledger
-        SHARD,     // Acquiring for shard
         GENERIC,   // Generic other reasons
         CONSENSUS  // We believe the consensus round requires this ledger
     };
