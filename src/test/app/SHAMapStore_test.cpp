@@ -547,7 +547,7 @@ public:
         return backend;
     }
     void
-    testRotateWithLockContention()
+    testRotate()
     {
         // The only purpose of this test is to ensure that if something that
         // should never happen happens, we don't get a deadlock.
@@ -596,41 +596,52 @@ public:
         // Check basic functionality
         using namespace std::chrono_literals;
         std::atomic<int> threadNum = 0;
-        auto const cb = [&](std::string const& writableBackendName) {
-            using namespace std::chrono_literals;
-            BEAST_EXPECT(writableBackendName == "write");
+
+        {
             auto newBackend = makeBackendRotating(
                 env, scheduler, std::to_string(++threadNum));
-            // Ensure that dbr functions can be called from within the callback
-            BEAST_EXPECT(dbr->getName() == "write");
 
-            return newBackend;
-        };
+            auto const cb = [&](std::string const& writableName,
+                                std::string const& archiveName) {
+                BEAST_EXPECT(writableName == "1");
+                BEAST_EXPECT(archiveName == "write");
+                // Ensure that dbr functions can be called from within the
+                // callback
+                BEAST_EXPECT(dbr->getName() == "1");
+            };
 
-        dbr->rotateWithLock(cb);
+            dbr->rotate(std::move(newBackend), cb);
+        }
         BEAST_EXPECT(threadNum == 1);
         BEAST_EXPECT(dbr->getName() == "1");
 
         /////////////////////////////////////////////////////////////
-        // Create another impossible situation. Try to re-enter rotateWithLock
-        // inside the callback.
-        auto const cbBasic = [&](std::string const& writableBackendName) {
+        // Do something stupid. Try to re-enter rotate from inside the callback.
+        {
+            auto const cb = [&](std::string const& writableName,
+                                std::string const& archiveName) {
+                BEAST_EXPECT(writableName == "3");
+                BEAST_EXPECT(archiveName == "2");
+                // Ensure that dbr functions can be called from within the
+                // callback
+                BEAST_EXPECT(dbr->getName() == "3");
+            };
+            auto const cbReentrant = [&](std::string const& writableName,
+                                         std::string const& archiveName) {
+                BEAST_EXPECT(writableName == "2");
+                BEAST_EXPECT(archiveName == "1");
+                auto newBackend = makeBackendRotating(
+                    env, scheduler, std::to_string(++threadNum));
+                // Reminder: doing this is stupid and should never happen
+                dbr->rotate(std::move(newBackend), cb);
+            };
             auto newBackend = makeBackendRotating(
                 env, scheduler, std::to_string(++threadNum));
-            return newBackend;
-        };
-        auto const cbReentrant = [&](std::string const& writableBackendName) {
-            BEAST_EXPECT(writableBackendName == "1");
-            auto newBackend = makeBackendRotating(
-                env, scheduler, std::to_string(++threadNum));
-            // Note: doing this is stupid and should never happen
-            dbr->rotateWithLock(cbBasic);
-            return newBackend;
-        };
-        dbr->rotateWithLock(cbReentrant);
+            dbr->rotate(std::move(newBackend), cbReentrant);
+        }
 
         BEAST_EXPECT(threadNum == 3);
-        BEAST_EXPECT(dbr->getName() == "2");
+        BEAST_EXPECT(dbr->getName() == "3");
     }
 
     void
@@ -639,7 +650,7 @@ public:
         testClear();
         testAutomatic();
         testCanDelete();
-        testRotateWithLockContention();
+        testRotate();
     }
 };
 
