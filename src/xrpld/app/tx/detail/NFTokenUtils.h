@@ -95,6 +95,13 @@ removeToken(
 bool
 deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer);
 
+/** Repairs the links in an NFTokenPage directory.
+
+    Returns true if a repair took place, otherwise false.
+*/
+bool
+repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner);
+
 bool
 compareTokens(uint256 const& a, uint256 const& b);
 
