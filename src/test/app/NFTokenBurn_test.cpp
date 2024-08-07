@@ -80,6 +80,73 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
         return nftokenID;
     };
 
+    // printNFTPages is a helper function that may be used for debugging.
+    //
+    // It uses the ledger RPC command to show the NFT pages in the ledger.
+    // This parameter controls how noisy the output is.
+    enum Volume : bool {
+        quiet = false,
+        noisy = true,
+    };
+
+    void
+    printNFTPages(test::jtx::Env& env, Volume vol)
+    {
+        Json::Value jvParams;
+        jvParams[jss::ledger_index] = "current";
+        jvParams[jss::binary] = false;
+        {
+            Json::Value jrr = env.rpc(
+                "json",
+                "ledger_data",
+                boost::lexical_cast<std::string>(jvParams));
+
+            // Iterate the state and print all NFTokenPages.
+            if (!jrr.isMember(jss::result) ||
+                !jrr[jss::result].isMember(jss::state))
+            {
+                std::cout << "No ledger state found!" << std::endl;
+                return;
+            }
+            Json::Value& state = jrr[jss::result][jss::state];
+            if (!state.isArray())
+            {
+                std::cout << "Ledger state is not array!" << std::endl;
+                return;
+            }
+            for (Json::UInt i = 0; i < state.size(); ++i)
+            {
+                if (state[i].isMember(sfNFTokens.jsonName) &&
+                    state[i][sfNFTokens.jsonName].isArray())
+                {
+                    std::uint32_t tokenCount =
+                        state[i][sfNFTokens.jsonName].size();
+                    std::cout << tokenCount << " NFtokens in page "
+                              << state[i][jss::index].asString() << std::endl;
+
+                    if (vol == noisy)
+                    {
+                        std::cout << state[i].toStyledString() << std::endl;
+                    }
+                    else
+                    {
+                        if (tokenCount > 0)
+                            std::cout << "first: "
+                                      << state[i][sfNFTokens.jsonName][0u]
+                                             .toStyledString()
+                                      << std::endl;
+                        if (tokenCount > 1)
+                            std::cout
+                                << "last: "
+                                << state[i][sfNFTokens.jsonName][tokenCount - 1]
+                                       .toStyledString()
+                                << std::endl;
+                    }
+                }
+            }
+        }
+    }
+
     void
     testBurnRandom(FeatureBitset features)
     {
@@ -297,76 +364,10 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
         Env env{*this, features};
         env.fund(XRP(1000), alice);
 
-        // printNFTPages is a lambda that may be used for debugging.
-        //
-        // It uses the ledger RPC command to show the NFT pages in the ledger.
-        // This parameter controls how noisy the output is.
-        enum Volume : bool {
-            quiet = false,
-            noisy = true,
-        };
-
-        [[maybe_unused]] auto printNFTPages = [&env](Volume vol) {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = "current";
-            jvParams[jss::binary] = false;
-            {
-                Json::Value jrr = env.rpc(
-                    "json",
-                    "ledger_data",
-                    boost::lexical_cast<std::string>(jvParams));
-
-                // Iterate the state and print all NFTokenPages.
-                if (!jrr.isMember(jss::result) ||
-                    !jrr[jss::result].isMember(jss::state))
-                {
-                    std::cout << "No ledger state found!" << std::endl;
-                    return;
-                }
-                Json::Value& state = jrr[jss::result][jss::state];
-                if (!state.isArray())
-                {
-                    std::cout << "Ledger state is not array!" << std::endl;
-                    return;
-                }
-                for (Json::UInt i = 0; i < state.size(); ++i)
-                {
-                    if (state[i].isMember(sfNFTokens.jsonName) &&
-                        state[i][sfNFTokens.jsonName].isArray())
-                    {
-                        std::uint32_t tokenCount =
-                            state[i][sfNFTokens.jsonName].size();
-                        std::cout << tokenCount << " NFTokens in page "
-                                  << state[i][jss::index].asString()
-                                  << std::endl;
-
-                        if (vol == noisy)
-                        {
-                            std::cout << state[i].toStyledString() << std::endl;
-                        }
-                        else
-                        {
-                            if (tokenCount > 0)
-                                std::cout << "first: "
-                                          << state[i][sfNFTokens.jsonName][0u]
-                                                 .toStyledString()
-                                          << std::endl;
-                            if (tokenCount > 1)
-                                std::cout << "last: "
-                                          << state[i][sfNFTokens.jsonName]
-                                                  [tokenCount - 1]
-                                                      .toStyledString()
-                                          << std::endl;
-                        }
-                    }
-                }
-            }
-        };
-
         // A lambda that generates 96 nfts packed into three pages of 32 each.
-        auto genPackedTokens = [this, &env, &alice](
-                                   std::vector<uint256>& nfts) {
-            nfts.clear();
+        // Returns a sorted vector of the NFTokenIDs packed into the pages.
+        auto genPackedTokens = [this, &env, &alice]() {
+            std::vector<uint256> nfts;
             nfts.reserve(96);
 
             // We want to create fully packed NFT pages.  This is a little
@@ -441,23 +442,24 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
                 // has changed.
                 BEAST_EXPECT(pageCount == 3);
             }
+            return nfts;
         };
-
-        // Generate three packed pages.  Then burn the tokens in order from
-        // first to last.  This exercises specific cases where coalescing
-        // pages is not possible.
-        std::vector<uint256> nfts;
-        genPackedTokens(nfts);
-        BEAST_EXPECT(nftCount(env, alice) == 96);
-        BEAST_EXPECT(ownerCount(env, alice) == 3);
-
-        for (uint256 const& nft : nfts)
         {
-            env(token::burn(alice, {nft}));
-            env.close();
+            // Generate three packed pages.  Then burn the tokens in order from
+            // first to last.  This exercises specific cases where coalescing
+            // pages is not possible.
+            std::vector<uint256> nfts = genPackedTokens();
+            BEAST_EXPECT(nftCount(env, alice) == 96);
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
+
+            for (uint256 const& nft : nfts)
+            {
+                env(token::burn(alice, {nft}));
+                env.close();
+            }
+            BEAST_EXPECT(nftCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
         }
-        BEAST_EXPECT(nftCount(env, alice) == 0);
-        BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // A lambda verifies that the ledger no longer contains any NFT pages.
         auto checkNoTokenPages = [this, &env]() {
@@ -479,48 +481,421 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
             }
         };
         checkNoTokenPages();
-
-        // Generate three packed pages.  Then burn the tokens in order from
-        // last to first.  This exercises different specific cases where
-        // coalescing pages is not possible.
-        genPackedTokens(nfts);
-        BEAST_EXPECT(nftCount(env, alice) == 96);
-        BEAST_EXPECT(ownerCount(env, alice) == 3);
-
-        std::reverse(nfts.begin(), nfts.end());
-        for (uint256 const& nft : nfts)
         {
-            env(token::burn(alice, {nft}));
+            // Generate three packed pages.  Then burn the tokens in order from
+            // last to first.  This exercises different specific cases where
+            // coalescing pages is not possible.
+            std::vector<uint256> nfts = genPackedTokens();
+            BEAST_EXPECT(nftCount(env, alice) == 96);
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
+
+            // Verify that that all three pages are present and remember the
+            // indexes.
+            auto lastNFTokenPage = env.le(keylet::nftpage_max(alice));
+            if (!BEAST_EXPECT(lastNFTokenPage))
+                return;
+
+            uint256 const middleNFTokenPageIndex =
+                lastNFTokenPage->at(sfPreviousPageMin);
+            auto middleNFTokenPage = env.le(keylet::nftpage(
+                keylet::nftpage_min(alice), middleNFTokenPageIndex));
+            if (!BEAST_EXPECT(middleNFTokenPage))
+                return;
+
+            uint256 const firstNFTokenPageIndex =
+                middleNFTokenPage->at(sfPreviousPageMin);
+            auto firstNFTokenPage = env.le(keylet::nftpage(
+                keylet::nftpage_min(alice), firstNFTokenPageIndex));
+            if (!BEAST_EXPECT(firstNFTokenPage))
+                return;
+
+            // Burn almost all the tokens in the very last page.
+            for (int i = 0; i < 31; ++i)
+            {
+                env(token::burn(alice, {nfts.back()}));
+                nfts.pop_back();
+                env.close();
+            }
+
+            // Verify that the last page is still present and contains just one
+            // NFT.
+            lastNFTokenPage = env.le(keylet::nftpage_max(alice));
+            if (!BEAST_EXPECT(lastNFTokenPage))
+                return;
+
+            BEAST_EXPECT(
+                lastNFTokenPage->getFieldArray(sfNFTokens).size() == 1);
+            BEAST_EXPECT(lastNFTokenPage->isFieldPresent(sfPreviousPageMin));
+            BEAST_EXPECT(!lastNFTokenPage->isFieldPresent(sfNextPageMin));
+
+            // Delete the last token from the last page.
+            env(token::burn(alice, {nfts.back()}));
+            nfts.pop_back();
             env.close();
+
+            if (features[fixNFTokenPageLinks])
+            {
+                // Removing the last token from the last page deletes the
+                // _previous_ page because we need to preserve that last
+                // page an an anchor.  The contents of the next-to-last page
+                // are moved into the last page.
+                lastNFTokenPage = env.le(keylet::nftpage_max(alice));
+                BEAST_EXPECT(lastNFTokenPage);
+                BEAST_EXPECT(
+                    lastNFTokenPage->at(~sfPreviousPageMin) ==
+                    firstNFTokenPageIndex);
+                BEAST_EXPECT(!lastNFTokenPage->isFieldPresent(sfNextPageMin));
+                BEAST_EXPECT(
+                    lastNFTokenPage->getFieldArray(sfNFTokens).size() == 32);
+
+                // The "middle" page should be gone.
+                middleNFTokenPage = env.le(keylet::nftpage(
+                    keylet::nftpage_min(alice), middleNFTokenPageIndex));
+                BEAST_EXPECT(!middleNFTokenPage);
+
+                // The "first" page should still be present and linked to
+                // the last page.
+                firstNFTokenPage = env.le(keylet::nftpage(
+                    keylet::nftpage_min(alice), firstNFTokenPageIndex));
+                BEAST_EXPECT(firstNFTokenPage);
+                BEAST_EXPECT(
+                    !firstNFTokenPage->isFieldPresent(sfPreviousPageMin));
+                BEAST_EXPECT(
+                    firstNFTokenPage->at(~sfNextPageMin) ==
+                    lastNFTokenPage->key());
+                BEAST_EXPECT(
+                    lastNFTokenPage->getFieldArray(sfNFTokens).size() == 32);
+            }
+            else
+            {
+                // Removing the last token from the last page deletes the last
+                // page.  This is a bug.  The contents of the next-to-last page
+                // should have been moved into the last page.
+                lastNFTokenPage = env.le(keylet::nftpage_max(alice));
+                BEAST_EXPECT(!lastNFTokenPage);
+
+                // The "middle" page is still present, but has lost the
+                // NextPageMin field.
+                middleNFTokenPage = env.le(keylet::nftpage(
+                    keylet::nftpage_min(alice), middleNFTokenPageIndex));
+                if (!BEAST_EXPECT(middleNFTokenPage))
+                    return;
+                BEAST_EXPECT(
+                    middleNFTokenPage->isFieldPresent(sfPreviousPageMin));
+                BEAST_EXPECT(!middleNFTokenPage->isFieldPresent(sfNextPageMin));
+            }
+
+            // Delete the rest of the NFTokens.
+            while (!nfts.empty())
+            {
+                env(token::burn(alice, {nfts.back()}));
+                nfts.pop_back();
+                env.close();
+            }
+            BEAST_EXPECT(nftCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
         }
-        BEAST_EXPECT(nftCount(env, alice) == 0);
-        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        checkNoTokenPages();
+        {
+            // Generate three packed pages.  Then burn all tokens in the middle
+            // page.  This exercises the case where a page is removed between
+            // two fully populated pages.
+            std::vector<uint256> nfts = genPackedTokens();
+            BEAST_EXPECT(nftCount(env, alice) == 96);
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
+
+            // Verify that that all three pages are present and remember the
+            // indexes.
+            auto lastNFTokenPage = env.le(keylet::nftpage_max(alice));
+            if (!BEAST_EXPECT(lastNFTokenPage))
+                return;
+
+            uint256 const middleNFTokenPageIndex =
+                lastNFTokenPage->at(sfPreviousPageMin);
+            auto middleNFTokenPage = env.le(keylet::nftpage(
+                keylet::nftpage_min(alice), middleNFTokenPageIndex));
+            if (!BEAST_EXPECT(middleNFTokenPage))
+                return;
+
+            uint256 const firstNFTokenPageIndex =
+                middleNFTokenPage->at(sfPreviousPageMin);
+            auto firstNFTokenPage = env.le(keylet::nftpage(
+                keylet::nftpage_min(alice), firstNFTokenPageIndex));
+            if (!BEAST_EXPECT(firstNFTokenPage))
+                return;
+
+            for (std::size_t i = 32; i < 64; ++i)
+            {
+                env(token::burn(alice, nfts[i]));
+                env.close();
+            }
+            nfts.erase(nfts.begin() + 32, nfts.begin() + 64);
+            BEAST_EXPECT(nftCount(env, alice) == 64);
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+
+            // Verify that middle page is gone and the links in the two
+            // remaining pages are correct.
+            middleNFTokenPage = env.le(keylet::nftpage(
+                keylet::nftpage_min(alice), middleNFTokenPageIndex));
+            BEAST_EXPECT(!middleNFTokenPage);
+
+            lastNFTokenPage = env.le(keylet::nftpage_max(alice));
+            BEAST_EXPECT(!lastNFTokenPage->isFieldPresent(sfNextPageMin));
+            BEAST_EXPECT(
+                lastNFTokenPage->getFieldH256(sfPreviousPageMin) ==
+                firstNFTokenPageIndex);
+
+            firstNFTokenPage = env.le(keylet::nftpage(
+                keylet::nftpage_min(alice), firstNFTokenPageIndex));
+            BEAST_EXPECT(
+                firstNFTokenPage->getFieldH256(sfNextPageMin) ==
+                keylet::nftpage_max(alice).key);
+            BEAST_EXPECT(!firstNFTokenPage->isFieldPresent(sfPreviousPageMin));
+
+            // Burn the remaining nfts.
+            for (uint256 const& nft : nfts)
+            {
+                env(token::burn(alice, {nft}));
+                env.close();
+            }
+            BEAST_EXPECT(nftCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+        }
+        checkNoTokenPages();
+        {
+            // Generate three packed pages.  Then burn all the tokens in the
+            // first page followed by all the tokens in the last page.  This
+            // exercises a specific case where coalescing pages is not possible.
+            std::vector<uint256> nfts = genPackedTokens();
+            BEAST_EXPECT(nftCount(env, alice) == 96);
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
+
+            // Verify that that all three pages are present and remember the
+            // indexes.
+            auto lastNFTokenPage = env.le(keylet::nftpage_max(alice));
+            if (!BEAST_EXPECT(lastNFTokenPage))
+                return;
+
+            uint256 const middleNFTokenPageIndex =
+                lastNFTokenPage->at(sfPreviousPageMin);
+            auto middleNFTokenPage = env.le(keylet::nftpage(
+                keylet::nftpage_min(alice), middleNFTokenPageIndex));
+            if (!BEAST_EXPECT(middleNFTokenPage))
+                return;
+
+            uint256 const firstNFTokenPageIndex =
+                middleNFTokenPage->at(sfPreviousPageMin);
+            auto firstNFTokenPage = env.le(keylet::nftpage(
+                keylet::nftpage_min(alice), firstNFTokenPageIndex));
+            if (!BEAST_EXPECT(firstNFTokenPage))
+                return;
+
+            // Burn all the tokens in the first page.
+            std::reverse(nfts.begin(), nfts.end());
+            for (int i = 0; i < 32; ++i)
+            {
+                env(token::burn(alice, {nfts.back()}));
+                nfts.pop_back();
+                env.close();
+            }
+
+            // Verify the first page is gone.
+            firstNFTokenPage = env.le(keylet::nftpage(
+                keylet::nftpage_min(alice), firstNFTokenPageIndex));
+            BEAST_EXPECT(!firstNFTokenPage);
+
+            // Check the links in the other two pages.
+            middleNFTokenPage = env.le(keylet::nftpage(
+                keylet::nftpage_min(alice), middleNFTokenPageIndex));
+            if (!BEAST_EXPECT(middleNFTokenPage))
+                return;
+            BEAST_EXPECT(!middleNFTokenPage->isFieldPresent(sfPreviousPageMin));
+            BEAST_EXPECT(middleNFTokenPage->isFieldPresent(sfNextPageMin));
+
+            lastNFTokenPage = env.le(keylet::nftpage_max(alice));
+            if (!BEAST_EXPECT(lastNFTokenPage))
+                return;
+            BEAST_EXPECT(lastNFTokenPage->isFieldPresent(sfPreviousPageMin));
+            BEAST_EXPECT(!lastNFTokenPage->isFieldPresent(sfNextPageMin));
+
+            // Burn all the tokens in the last page.
+            std::reverse(nfts.begin(), nfts.end());
+            for (int i = 0; i < 32; ++i)
+            {
+                env(token::burn(alice, {nfts.back()}));
+                nfts.pop_back();
+                env.close();
+            }
+
+            if (features[fixNFTokenPageLinks])
+            {
+                // Removing the last token from the last page deletes the
+                // _previous_ page because we need to preserve that last
+                // page an an anchor.  The contents of the next-to-last page
+                // are moved into the last page.
+                lastNFTokenPage = env.le(keylet::nftpage_max(alice));
+                BEAST_EXPECT(lastNFTokenPage);
+                BEAST_EXPECT(
+                    !lastNFTokenPage->isFieldPresent(sfPreviousPageMin));
+                BEAST_EXPECT(!lastNFTokenPage->isFieldPresent(sfNextPageMin));
+                BEAST_EXPECT(
+                    lastNFTokenPage->getFieldArray(sfNFTokens).size() == 32);
+
+                // The "middle" page should be gone.
+                middleNFTokenPage = env.le(keylet::nftpage(
+                    keylet::nftpage_min(alice), middleNFTokenPageIndex));
+                BEAST_EXPECT(!middleNFTokenPage);
+
+                // The "first" page should still be gone.
+                firstNFTokenPage = env.le(keylet::nftpage(
+                    keylet::nftpage_min(alice), firstNFTokenPageIndex));
+                BEAST_EXPECT(!firstNFTokenPage);
+            }
+            else
+            {
+                // Removing the last token from the last page deletes the last
+                // page.  This is a bug.  The contents of the next-to-last page
+                // should have been moved into the last page.
+                lastNFTokenPage = env.le(keylet::nftpage_max(alice));
+                BEAST_EXPECT(!lastNFTokenPage);
+
+                // The "middle" page is still present, but has lost the
+                // NextPageMin field.
+                middleNFTokenPage = env.le(keylet::nftpage(
+                    keylet::nftpage_min(alice), middleNFTokenPageIndex));
+                if (!BEAST_EXPECT(middleNFTokenPage))
+                    return;
+                BEAST_EXPECT(
+                    !middleNFTokenPage->isFieldPresent(sfPreviousPageMin));
+                BEAST_EXPECT(!middleNFTokenPage->isFieldPresent(sfNextPageMin));
+            }
+
+            // Delete the rest of the NFTokens.
+            while (!nfts.empty())
+            {
+                env(token::burn(alice, {nfts.back()}));
+                nfts.pop_back();
+                env.close();
+            }
+            BEAST_EXPECT(nftCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+        }
         checkNoTokenPages();
 
-        // Generate three packed pages.  Then burn all tokens in the middle
-        // page.  This exercises the case where a page is removed between
-        // two fully populated pages.
-        genPackedTokens(nfts);
-        BEAST_EXPECT(nftCount(env, alice) == 96);
-        BEAST_EXPECT(ownerCount(env, alice) == 3);
-
-        for (std::size_t i = 32; i < 64; ++i)
+        if (features[fixNFTokenPageLinks])
         {
-            env(token::burn(alice, nfts[i]));
-            env.close();
-        }
-        nfts.erase(nfts.begin() + 32, nfts.begin() + 64);
-        BEAST_EXPECT(nftCount(env, alice) == 64);
-        BEAST_EXPECT(ownerCount(env, alice) == 2);
+            // Exercise the invariant that the final NFTokenPage of a directory
+            // may not be removed if there are NFTokens in other pages of the
+            // directory.
+            //
+            // We're going to fire an Invariant failure that is difficult to
+            // cause.  We do it here because the tools are here.
+            //
+            // See Invariants_test.cpp for examples of other invariant tests
+            // that this one is modeled after.
 
-        // Burn the remaining nfts.
-        for (uint256 const& nft : nfts)
-        {
-            env(token::burn(alice, {nft}));
-            env.close();
+            // Generate three closely packed NFTokenPages.
+            std::vector<uint256> nfts = genPackedTokens();
+            BEAST_EXPECT(nftCount(env, alice) == 96);
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
+
+            // Burn almost all the tokens in the very last page.
+            for (int i = 0; i < 31; ++i)
+            {
+                env(token::burn(alice, {nfts.back()}));
+                nfts.pop_back();
+                env.close();
+            }
+            {
+                // Create an ApplyContext we can use to run the invariant
+                // checks.  These variables must outlive the ApplyContext.
+                OpenView ov{*env.current()};
+                STTx tx{ttACCOUNT_SET, [](STObject&) {}};
+                test::StreamSink sink{beast::severities::kWarning};
+                beast::Journal jlog{sink};
+                ApplyContext ac{
+                    env.app(),
+                    ov,
+                    tx,
+                    tesSUCCESS,
+                    env.current()->fees().base,
+                    tapNONE,
+                    jlog};
+
+                // Verify that the last page is present and contains one NFT.
+                auto lastNFTokenPage =
+                    ac.view().peek(keylet::nftpage_max(alice));
+                if (!BEAST_EXPECT(lastNFTokenPage))
+                    return;
+                BEAST_EXPECT(
+                    lastNFTokenPage->getFieldArray(sfNFTokens).size() == 1);
+
+                // Erase that last page.
+                ac.view().erase(lastNFTokenPage);
+
+                // Exercise the invariant.
+                TER terActual = tesSUCCESS;
+                for (TER const& terExpect :
+                     {TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED)})
+                {
+                    terActual = ac.checkInvariants(terActual, XRPAmount{});
+                    BEAST_EXPECT(terExpect == terActual);
+                    BEAST_EXPECT(
+                        sink.messages().str().starts_with("Invariant failed:"));
+                    // uncomment to log the invariant failure message
+                    // log << "   --> " << sink.messages().str() << std::endl;
+                    BEAST_EXPECT(
+                        sink.messages().str().find(
+                            "Last NFT page deleted with non-empty directory") !=
+                        std::string::npos);
+                }
+            }
+            {
+                // Create an ApplyContext we can use to run the invariant
+                // checks.  These variables must outlive the ApplyContext.
+                OpenView ov{*env.current()};
+                STTx tx{ttACCOUNT_SET, [](STObject&) {}};
+                test::StreamSink sink{beast::severities::kWarning};
+                beast::Journal jlog{sink};
+                ApplyContext ac{
+                    env.app(),
+                    ov,
+                    tx,
+                    tesSUCCESS,
+                    env.current()->fees().base,
+                    tapNONE,
+                    jlog};
+
+                // Verify that the middle  page is present.
+                auto lastNFTokenPage =
+                    ac.view().peek(keylet::nftpage_max(alice));
+                auto middleNFTokenPage = ac.view().peek(keylet::nftpage(
+                    keylet::nftpage_min(alice),
+                    lastNFTokenPage->getFieldH256(sfPreviousPageMin)));
+                BEAST_EXPECT(middleNFTokenPage);
+
+                // Remove the NextMinPage link from the middle page to fire
+                // the invariant.
+                middleNFTokenPage->makeFieldAbsent(sfNextPageMin);
+                ac.view().update(middleNFTokenPage);
+
+                // Exercise the invariant.
+                TER terActual = tesSUCCESS;
+                for (TER const& terExpect :
+                     {TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED)})
+                {
+                    terActual = ac.checkInvariants(terActual, XRPAmount{});
+                    BEAST_EXPECT(terExpect == terActual);
+                    BEAST_EXPECT(
+                        sink.messages().str().starts_with("Invariant failed:"));
+                    // uncomment to log the invariant failure message
+                    // log << "   --> " << sink.messages().str() << std::endl;
+                    BEAST_EXPECT(
+                        sink.messages().str().find("Lost NextMinPage link") !=
+                        std::string::npos);
+                }
+            }
         }
-        BEAST_EXPECT(nftCount(env, alice) == 0);
-        checkNoTokenPages();
     }
 
     void
@@ -779,11 +1154,237 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
     }
 
     void
+    exerciseBrokenLinks(FeatureBitset features)
+    {
+        // Amendment fixNFTokenPageLinks prevents the breakage we want
+        // to observe.
+        if (features[fixNFTokenPageLinks])
+            return;
+
+        // a couple of directory merging scenarios that can only be tested by
+        // inserting and deleting in an ordered fashion.  We do that testing
+        // now.
+        testcase("Exercise broken links");
+
+        using namespace test::jtx;
+
+        Account const alice{"alice"};
+        Account const minter{"minter"};
+
+        Env env{*this, features};
+        env.fund(XRP(1000), alice, minter);
+
+        // A lambda that generates 96 nfts packed into three pages of 32 each.
+        // Returns a sorted vector of the NFTokenIDs packed into the pages.
+        auto genPackedTokens = [this, &env, &alice, &minter]() {
+            std::vector<uint256> nfts;
+            nfts.reserve(96);
+
+            // We want to create fully packed NFT pages.  This is a little
+            // tricky since the system currently in place is inclined to
+            // assign consecutive tokens to only 16 entries per page.
+            //
+            // By manipulating the internal form of the taxon we can force
+            // creation of NFT pages that are completely full.  This lambda
+            // tells us the taxon value we should pass in in order for the
+            // internal representation to match the passed in value.
+            auto internalTaxon = [&env](
+                                     Account const& acct,
+                                     std::uint32_t taxon) -> std::uint32_t {
+                std::uint32_t tokenSeq =
+                    env.le(acct)->at(~sfMintedNFTokens).value_or(0);
+
+                // If fixNFTokenRemint amendment is on, we must
+                // add FirstNFTokenSequence.
+                if (env.current()->rules().enabled(fixNFTokenRemint))
+                    tokenSeq += env.le(acct)
+                                    ->at(~sfFirstNFTokenSequence)
+                                    .value_or(env.seq(acct));
+
+                return toUInt32(
+                    nft::cipheredTaxon(tokenSeq, nft::toTaxon(taxon)));
+            };
+
+            for (std::uint32_t i = 0; i < 96; ++i)
+            {
+                // In order to fill the pages we use the taxon to break them
+                // into groups of 16 entries.  By having the internal
+                // representation of the taxon go...
+                //   0, 3, 2, 5, 4, 7...
+                // in sets of 16 NFTs we can get each page to be fully
+                // populated.
+                std::uint32_t const intTaxon = (i / 16) + (i & 0b10000 ? 2 : 0);
+                uint32_t const extTaxon = internalTaxon(minter, intTaxon);
+                nfts.push_back(
+                    token::getNextID(env, minter, extTaxon, tfTransferable));
+                env(token::mint(minter, extTaxon), txflags(tfTransferable));
+                env.close();
+
+                // Minter creates an offer for the NFToken.
+                uint256 const minterOfferIndex =
+                    keylet::nftoffer(minter, env.seq(minter)).key;
+                env(token::createOffer(minter, nfts.back(), XRP(0)),
+                    txflags(tfSellNFToken));
+                env.close();
+
+                // alice accepts the offer.
+                env(token::acceptSellOffer(alice, minterOfferIndex));
+                env.close();
+            }
+
+            // Sort the NFTs so they are listed in storage order, not
+            // creation order.
+            std::sort(nfts.begin(), nfts.end());
+
+            // Verify that the ledger does indeed contain exactly three pages
+            // of NFTs with 32 entries in each page.
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::binary] = false;
+            {
+                Json::Value jrr = env.rpc(
+                    "json",
+                    "ledger_data",
+                    boost::lexical_cast<std::string>(jvParams));
+
+                Json::Value& state = jrr[jss::result][jss::state];
+
+                int pageCount = 0;
+                for (Json::UInt i = 0; i < state.size(); ++i)
+                {
+                    if (state[i].isMember(sfNFTokens.jsonName) &&
+                        state[i][sfNFTokens.jsonName].isArray())
+                    {
+                        BEAST_EXPECT(
+                            state[i][sfNFTokens.jsonName].size() == 32);
+                        ++pageCount;
+                    }
+                }
+                // If this check fails then the internal NFT directory logic
+                // has changed.
+                BEAST_EXPECT(pageCount == 3);
+            }
+            return nfts;
+        };
+
+        // Generate three packed pages.
+        std::vector<uint256> nfts = genPackedTokens();
+        BEAST_EXPECT(nftCount(env, alice) == 96);
+        BEAST_EXPECT(ownerCount(env, alice) == 3);
+
+        // Verify that that all three pages are present and remember the
+        // indexes.
+        auto lastNFTokenPage = env.le(keylet::nftpage_max(alice));
+        if (!BEAST_EXPECT(lastNFTokenPage))
+            return;
+
+        uint256 const middleNFTokenPageIndex =
+            lastNFTokenPage->at(sfPreviousPageMin);
+        auto middleNFTokenPage = env.le(keylet::nftpage(
+            keylet::nftpage_min(alice), middleNFTokenPageIndex));
+        if (!BEAST_EXPECT(middleNFTokenPage))
+            return;
+
+        uint256 const firstNFTokenPageIndex =
+            middleNFTokenPage->at(sfPreviousPageMin);
+        auto firstNFTokenPage = env.le(
+            keylet::nftpage(keylet::nftpage_min(alice), firstNFTokenPageIndex));
+        if (!BEAST_EXPECT(firstNFTokenPage))
+            return;
+
+        // Sell all the tokens in the very last page back to minter.
+        std::vector<uint256> last32NFTs;
+        for (int i = 0; i < 32; ++i)
+        {
+            last32NFTs.push_back(nfts.back());
+            nfts.pop_back();
+
+            // alice creates an offer for the NFToken.
+            uint256 const aliceOfferIndex =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, last32NFTs.back(), XRP(0)),
+                txflags(tfSellNFToken));
+            env.close();
+
+            // minter accepts the offer.
+            env(token::acceptSellOffer(minter, aliceOfferIndex));
+            env.close();
+        }
+
+        // Removing the last token from the last page deletes alice's last
+        // page.  This is a bug.  The contents of the next-to-last page
+        // should have been moved into the last page.
+        lastNFTokenPage = env.le(keylet::nftpage_max(alice));
+        BEAST_EXPECT(!lastNFTokenPage);
+        BEAST_EXPECT(ownerCount(env, alice) == 2);
+
+        // The "middle" page is still present, but has lost the
+        // NextPageMin field.
+        middleNFTokenPage = env.le(keylet::nftpage(
+            keylet::nftpage_min(alice), middleNFTokenPageIndex));
+        if (!BEAST_EXPECT(middleNFTokenPage))
+            return;
+        BEAST_EXPECT(middleNFTokenPage->isFieldPresent(sfPreviousPageMin));
+        BEAST_EXPECT(!middleNFTokenPage->isFieldPresent(sfNextPageMin));
+
+        // Attempt to delete alice's account, but fail because she owns NFTs.
+        auto const acctDelFee{drops(env.current()->fees().increment)};
+        env(acctdelete(alice, minter),
+            fee(acctDelFee),
+            ter(tecHAS_OBLIGATIONS));
+        env.close();
+
+        // minter sells the last 32 NFTs back to alice.
+        for (uint256 nftID : last32NFTs)
+        {
+            // minter creates an offer for the NFToken.
+            uint256 const minterOfferIndex =
+                keylet::nftoffer(minter, env.seq(minter)).key;
+            env(token::createOffer(minter, nftID, XRP(0)),
+                txflags(tfSellNFToken));
+            env.close();
+
+            // alice accepts the offer.
+            env(token::acceptSellOffer(alice, minterOfferIndex));
+            env.close();
+        }
+        BEAST_EXPECT(ownerCount(env, alice) == 3);  // Three NFTokenPages.
+
+        // alice has an NFToken directory with a broken link in the middle.
+        {
+            // Try the account_objects RPC command.  Alice's account only shows
+            // two NFT pages even though she owns more.
+            Json::Value acctObjs = [&env, &alice]() {
+                Json::Value params;
+                params[jss::account] = alice.human();
+                return env.rpc("json", "account_objects", to_string(params));
+            }();
+            BEAST_EXPECT(!acctObjs.isMember(jss::marker));
+            BEAST_EXPECT(
+                acctObjs[jss::result][jss::account_objects].size() == 2);
+        }
+        {
+            // Try the account_nfts RPC command.  It only returns 64 NFTs
+            // although alice owns 96.
+            Json::Value aliceNFTs = [&env, &alice]() {
+                Json::Value params;
+                params[jss::account] = alice.human();
+                params[jss::type] = "state";
+                return env.rpc("json", "account_nfts", to_string(params));
+            }();
+            BEAST_EXPECT(!aliceNFTs.isMember(jss::marker));
+            BEAST_EXPECT(
+                aliceNFTs[jss::result][jss::account_nfts].size() == 64);
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testBurnRandom(features);
         testBurnSequential(features);
         testBurnTooManyOffers(features);
+        exerciseBrokenLinks(features);
     }
 
 protected:
@@ -792,13 +1393,18 @@ protected:
     {
         using namespace test::jtx;
         static FeatureBitset const all{supported_amendments()};
+        static FeatureBitset const fixNFTV1_2{fixNonFungibleTokensV1_2};
         static FeatureBitset const fixNFTDir{fixNFTokenDirV1};
+        static FeatureBitset const fixNFTRemint{fixNFTokenRemint};
+        static FeatureBitset const fixNFTPageLinks{fixNFTokenPageLinks};
 
-        static std::array<FeatureBitset, 4> const feats{
-            all - fixNonFungibleTokensV1_2 - fixNFTDir - fixNFTokenRemint,
-            all - fixNonFungibleTokensV1_2 - fixNFTokenRemint,
-            all - fixNFTokenRemint,
-            all};
+        static std::array<FeatureBitset, 5> const feats{
+            all - fixNFTV1_2 - fixNFTDir - fixNFTRemint - fixNFTPageLinks,
+            all - fixNFTV1_2 - fixNFTRemint - fixNFTPageLinks,
+            all - fixNFTRemint - fixNFTPageLinks,
+            all - fixNFTPageLinks,
+            all,
+        };
 
         if (BEAST_EXPECT(instance < feats.size()))
         {
@@ -835,19 +1441,30 @@ public:
     }
 };
 
+class NFTokenBurnWOFixNFTPageLinks_test : public NFTokenBurnBaseUtil_test
+{
+public:
+    void
+    run() override
+    {
+        NFTokenBurnBaseUtil_test::run(3);
+    }
+};
+
 class NFTokenBurnAllFeatures_test : public NFTokenBurnBaseUtil_test
 {
 public:
     void
     run() override
     {
-        NFTokenBurnBaseUtil_test::run(3, true);
+        NFTokenBurnBaseUtil_test::run(4, true);
     }
 };
 
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnBaseUtil, tx, ripple, 3);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnWOfixFungTokens, tx, ripple, 3);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnWOFixTokenRemint, tx, ripple, 3);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnWOFixNFTPageLinks, tx, ripple, 3);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBurnAllFeatures, tx, ripple, 3);
 
 }  // namespace ripple
