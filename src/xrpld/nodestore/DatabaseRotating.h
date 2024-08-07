@@ -45,6 +45,10 @@ public:
     /** Rotates the backends.
 
         @param f A function executed before the rotation and under the same lock
+
+        This function only has one caller in SHAMapStoreImp::run. The locking
+        for this function will need to be rethought another caller is ever
+        added.
     */
     virtual void
     rotateWithLock(std::function<std::unique_ptr<NodeStore::Backend>(
