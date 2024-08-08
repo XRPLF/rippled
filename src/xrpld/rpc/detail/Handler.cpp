@@ -106,11 +106,7 @@ Handler const handlerArray[]{
     {"feature", byRef(&doFeature), Role::USER, NO_CONDITION},
     {"fee", byRef(&doFee), Role::USER, NEEDS_CURRENT_LEDGER},
     {"fetch_info", byRef(&doFetchInfo), Role::ADMIN, NO_CONDITION},
-#ifdef RIPPLED_REPORTING
-    {"gateway_balances", byRef(&doGatewayBalances), Role::ADMIN, NO_CONDITION},
-#else
     {"gateway_balances", byRef(&doGatewayBalances), Role::USER, NO_CONDITION},
-#endif
     {"get_counts", byRef(&doGetCounts), Role::ADMIN, NO_CONDITION},
     {"get_aggregate_price",
      byRef(&doGetAggregatePrice),

@@ -66,8 +66,6 @@ public:
 
     /** Acquire ledger that has a missing node by ledger sequence
      *
-     * Throw if in reporting mode.
-     *
      * @param refNum Sequence of ledger to acquire.
      * @param nodeHash Hash of missing node to report in throw.
      */

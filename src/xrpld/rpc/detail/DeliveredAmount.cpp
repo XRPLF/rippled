@@ -119,20 +119,10 @@ canHaveDeliveredAmount(
 {
     // These lambdas are used to compute the values lazily
     auto const getFix1623Enabled = [&context]() -> bool {
-        if (context.app.config().reporting())
-        {
-            auto const view = context.ledgerMaster.getValidatedLedger();
-            if (!view)
-                return false;
-            return view->rules().enabled(fix1623);
-        }
-        else
-        {
-            auto const view = context.app.openLedger().current();
-            if (!view)
-                return false;
-            return view->rules().enabled(fix1623);
-        }
+        auto const view = context.app.openLedger().current();
+        if (!view)
+            return false;
+        return view->rules().enabled(fix1623);
     };
 
     return canHaveDeliveredAmountHelp(

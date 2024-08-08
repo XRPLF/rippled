@@ -827,11 +827,7 @@ transactionSign(
     if (!preprocResult.second)
         return preprocResult.first;
 
-    std::shared_ptr<const ReadView> ledger;
-    if (app.config().reporting())
-        ledger = app.getLedgerMaster().getValidatedLedger();
-    else
-        ledger = app.openLedger().current();
+    std::shared_ptr<const ReadView> ledger = app.openLedger().current();
     // Make sure the STTx makes a legitimate Transaction.
     std::pair<Json::Value, Transaction::pointer> txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);

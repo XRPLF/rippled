@@ -376,7 +376,6 @@ stored inside the build directory, as either of:
 | Option | Default Value | Description |
 | --- | ---| ---|
 | `assert` | OFF | Enable assertions.
-| `reporting` | OFF | Build the reporting mode feature. |
 | `coverage` | OFF | Prepare the coverage report. |
 | `tests` | ON | Build tests. |
 | `unity` | ON | Configure a unity build. |

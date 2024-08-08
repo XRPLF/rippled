@@ -128,8 +128,6 @@ doSubscribe(RPC::JsonContext& context)
             std::string streamName = it.asString();
             if (streamName == "server")
             {
-                if (context.app.config().reporting())
-                    return rpcError(rpcREPORTING_UNSUPPORTED);
                 context.netOps.subServer(
                     ispSub, jvResult, context.role == Role::ADMIN);
             }
@@ -161,16 +159,12 @@ doSubscribe(RPC::JsonContext& context)
             }
             else if (streamName == "peer_status")
             {
-                if (context.app.config().reporting())
-                    return rpcError(rpcREPORTING_UNSUPPORTED);
                 if (context.role != Role::ADMIN)
                     return rpcError(rpcNO_PERMISSION);
                 context.netOps.subPeerStatus(ispSub);
             }
             else if (streamName == "consensus")
             {
-                if (context.app.config().reporting())
-                    return rpcError(rpcREPORTING_UNSUPPORTED);
                 context.netOps.subConsensus(ispSub);
             }
             else

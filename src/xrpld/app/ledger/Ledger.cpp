@@ -29,12 +29,10 @@
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/misc/NetworkOPs.h>
-#include <xrpld/app/rdb/backend/PostgresDatabase.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/consensus/LedgerTiming.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/JobQueue.h>
-#include <xrpld/core/Pg.h>
 #include <xrpld/core/SociDB.h>
 #include <xrpld/nodestore/Database.h>
 #include <xrpl/basics/Log.h>
@@ -258,11 +256,6 @@ Ledger::Ledger(
     if (info_.txHash.isNonZero() &&
         !txMap_.fetchRoot(SHAMapHash{info_.txHash}, nullptr))
     {
-        if (config.reporting())
-        {
-            // Reporting should never have incomplete data
-            Throw<std::runtime_error>("Missing tx map root for ledger");
-        }
         loaded = false;
         JLOG(j.warn()) << "Don't have transaction root for ledger" << info_.seq;
     }
@@ -270,11 +263,6 @@ Ledger::Ledger(
     if (info_.accountHash.isNonZero() &&
         !stateMap_.fetchRoot(SHAMapHash{info_.accountHash}, nullptr))
     {
-        if (config.reporting())
-        {
-            // Reporting should never have incomplete data
-            Throw<std::runtime_error>("Missing state map root for ledger");
-        }
         loaded = false;
         JLOG(j.warn()) << "Don't have state data root for ledger" << info_.seq;
     }
@@ -289,7 +277,7 @@ Ledger::Ledger(
     if (!loaded)
     {
         info_.hash = calculateLedgerHash(info_);
-        if (acquire && !config.reporting())
+        if (acquire)
             family.missingNodeAcquireByHash(info_.hash, info_.seq);
     }
 }
@@ -1146,92 +1134,4 @@ loadByHash(uint256 const& ledgerHash, Application& app, bool acquire)
     return {};
 }
 
-std::vector<
-    std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>>
-flatFetchTransactions(Application& app, std::vector<uint256>& nodestoreHashes)
-{
-    if (!app.config().reporting())
-    {
-        assert(false);
-        Throw<std::runtime_error>(
-            "flatFetchTransactions: not running in reporting mode");
-    }
-
-    std::vector<
-        std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>>
-        txns;
-    auto start = std::chrono::system_clock::now();
-    auto nodeDb =
-        dynamic_cast<NodeStore::DatabaseNodeImp*>(&(app.getNodeStore()));
-    if (!nodeDb)
-    {
-        assert(false);
-        Throw<std::runtime_error>(
-            "Called flatFetchTransactions but database is not DatabaseNodeImp");
-    }
-    auto objs = nodeDb->fetchBatch(nodestoreHashes);
-
-    auto end = std::chrono::system_clock::now();
-    JLOG(app.journal("Ledger").debug())
-        << " Flat fetch time : " << ((end - start).count() / 1000000000.0)
-        << " number of transactions " << nodestoreHashes.size();
-    assert(objs.size() == nodestoreHashes.size());
-    for (size_t i = 0; i < objs.size(); ++i)
-    {
-        uint256& nodestoreHash = nodestoreHashes[i];
-        auto& obj = objs[i];
-        if (obj)
-        {
-            auto node = SHAMapTreeNode::makeFromPrefix(
-                makeSlice(obj->getData()), SHAMapHash{nodestoreHash});
-            if (!node)
-            {
-                assert(false);
-                Throw<std::runtime_error>(
-                    "flatFetchTransactions : Error making SHAMap node");
-            }
-            auto item = (static_cast<SHAMapLeafNode*>(node.get()))->peekItem();
-            if (!item)
-            {
-                assert(false);
-                Throw<std::runtime_error>(
-                    "flatFetchTransactions : Error reading SHAMap node");
-            }
-            auto txnPlusMeta = deserializeTxPlusMeta(*item);
-            if (!txnPlusMeta.first || !txnPlusMeta.second)
-            {
-                assert(false);
-                Throw<std::runtime_error>(
-                    "flatFetchTransactions : Error deserializing SHAMap node");
-            }
-            txns.push_back(std::move(txnPlusMeta));
-        }
-        else
-        {
-            assert(false);
-            Throw<std::runtime_error>(
-                "flatFetchTransactions : Containing SHAMap node not found");
-        }
-    }
-    return txns;
-}
-std::vector<
-    std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>>
-flatFetchTransactions(ReadView const& ledger, Application& app)
-{
-    if (!app.config().reporting())
-    {
-        assert(false);
-        return {};
-    }
-
-    auto const db =
-        dynamic_cast<PostgresDatabase*>(&app.getRelationalDatabase());
-    if (!db)
-        Throw<std::runtime_error>("Failed to get relational database");
-
-    auto nodestoreHashes = db->getTxHashes(ledger.info().seq);
-
-    return flatFetchTransactions(app, nodestoreHashes);
-}
 }  // namespace ripple

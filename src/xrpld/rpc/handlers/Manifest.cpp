@@ -29,9 +29,6 @@ namespace ripple {
 Json::Value
 doManifest(RPC::JsonContext& context)
 {
-    if (context.app.config().reporting())
-        return rpcError(rpcREPORTING_UNSUPPORTED);
-
     auto& params = context.params;
 
     if (!params.isMember(jss::public_key))

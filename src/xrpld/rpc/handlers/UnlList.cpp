@@ -29,8 +29,6 @@ namespace ripple {
 Json::Value
 doUnlList(RPC::JsonContext& context)
 {
-    if (context.app.config().reporting())
-        return rpcError(rpcREPORTING_UNSUPPORTED);
     Json::Value obj(Json::objectValue);
 
     context.app.validators().for_each_listed(

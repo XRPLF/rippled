@@ -71,7 +71,7 @@ getCountsJson(Application& app, int minObjectCount)
         ret[k] = v;
     }
 
-    if (!app.config().reporting() && app.config().useTxTables())
+    if (app.config().useTxTables())
     {
         auto const db =
             dynamic_cast<SQLiteDatabase*>(&app.getRelationalDatabase());

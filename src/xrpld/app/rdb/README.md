@@ -28,9 +28,7 @@ src/xrpld/app/rdb/
 │   ├── detail
 │   │   ├── Node.cpp
 │   │   ├── Node.h
-│   │   ├── PostgresDatabase.cpp
 │   │   └── SQLiteDatabase.cpp
-│   ├── PostgresDatabase.h
 │   └── SQLiteDatabase.h
 ├── detail
 │   ├── PeerFinder.cpp
@@ -50,7 +48,6 @@ src/xrpld/app/rdb/
 | File        | Contents    |
 | ----------- | ----------- |
 | `Node.[h\|cpp]` | Defines/Implements methods used by `SQLiteDatabase` for interacting with SQLite node databases|
-| <nobr>`PostgresDatabase.[h\|cpp]`</nobr> | Defines/Implements the class `PostgresDatabase`/`PostgresDatabaseImp` which inherits from `RelationalDatabase` and is used to operate on the main stores |
 |`SQLiteDatabase.[h\|cpp]`| Defines/Implements the class `SQLiteDatabase`/`SQLiteDatabaseImp` which inherits from `RelationalDatabase` and is used to operate on the main stores |
 | `PeerFinder.[h\|cpp]` | Defines/Implements methods for interacting with the PeerFinder SQLite database |
 |`RelationalDatabase.cpp`| Implements the static method `RelationalDatabase::init` which is used to initialize an instance of `RelationalDatabase` |
