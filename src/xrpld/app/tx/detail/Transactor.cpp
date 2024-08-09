@@ -133,7 +133,11 @@ NotTEC
 preflight2(PreflightContext const& ctx)
 {
     auto const sigValid = checkValidity(
-        ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
+        ctx.app.getHashRouter(),
+        ctx.tx,
+        ctx.rules,
+        ctx.app.config(),
+        ctx.flags);
     if (sigValid.first == Validity::SigBad)
     {
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
@@ -196,10 +200,19 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         return temBAD_FEE;
 
     auto const feePaid = ctx.tx[sfFee].xrp();
+    if (ctx.tx.isFieldPresent(sfBatchTxn))
+    {
+        if (feePaid == beast::zero)
+        {
+            return tesSUCCESS;
+        }
+        JLOG(ctx.j.warn()) << "Batch: sfFee must be zero.";
+        return temBAD_FEE;
+    }
+
     if (!isLegalAmount(feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
 
-    // Only check fee is sufficient when the ledger is open.
     if (ctx.view.open())
     {
         auto const feeDue =
@@ -281,7 +294,17 @@ Transactor::checkSeqProxy(
     }
 
     SeqProxy const t_seqProx = tx.getSeqProxy();
-    SeqProxy const a_seq = SeqProxy::sequence((*sle)[sfSequence]);
+    SeqProxy a_seq = SeqProxy::sequence((*sle)[sfSequence]);
+
+    if (tx.isFieldPresent(sfBatchTxn))
+    {
+        if (tx.getFieldU32(sfSequence) != 0)
+        {
+            JLOG(j.trace())
+                << "applyTransaction: BatchTxn has a Sequence number";
+            return temBAD_SEQUENCE;
+        }
+    }
 
     if (t_seqProx.isSeq())
     {
@@ -790,7 +813,12 @@ removeDeletedTrustLines(
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
 {
+    ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
+    std::vector<STObject> executions;
+    avi.copyBatchMetaData(executions);
     ctx_.discard();
+    ApplyViewImpl& avi2 = dynamic_cast<ApplyViewImpl&>(ctx_.view());
+    avi2.setBatchMetaData(std::move(executions));
 
     auto const txnAcct =
         view().peek(keylet::account(ctx_.tx.getAccountID(sfAccount)));
@@ -885,11 +913,11 @@ Transactor::operator()()
     if (ctx_.size() > oversizeMetaDataCap)
         result = tecOVERSIZE;
 
-    if (isTecClaim(result) && (view().flags() & tapFAIL_HARD))
+    if ((isTecClaim(result) && (view().flags() & tapFAIL_HARD) &&
+         !ctx_.tx.isFieldPresent(sfBatchTxn)))
     {
         // If the tapFAIL_HARD flag is set, a tec result
         // must not do anything
-
         ctx_.discard();
         applied = false;
     }
@@ -973,6 +1001,15 @@ Transactor::operator()()
                 view(), removedTrustLines, ctx_.app.journal("View"));
 
         applied = isTecClaim(result);
+    }
+
+    // Apply fee for batch transaction if it was successfully applied
+    if (applied && ctx_.tx.getTxnType() == ttBATCH && result == tesSUCCESS)
+    {
+        // If the transaction is a batch transaction, the fee is already
+        // deducted from the account balance before executing the inner txns.
+        // So, we need to "re" apply the fee again.
+        ctx_.applyFee();
     }
 
     if (applied)

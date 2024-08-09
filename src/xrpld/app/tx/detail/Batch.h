@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,39 +17,41 @@
 */
 //==============================================================================
 
-#include <xrpld/ledger/ApplyViewImpl.h>
-#include <xrpl/basics/contract.h>
-#include <cassert>
+#ifndef RIPPLE_TX_BATCH_H_INCLUDED
+#define RIPPLE_TX_BATCH_H_INCLUDED
+
+#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpld/core/Config.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Indexes.h>
 
 namespace ripple {
 
-ApplyViewImpl::ApplyViewImpl(ReadView const* base, ApplyFlags flags)
-    : ApplyViewBase(base, flags)
+class Batch : public Transactor
 {
-}
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
 
-void
-ApplyViewImpl::apply(OpenView& to, STTx const& tx, TER ter, beast::Journal j)
-{
-    items_.apply(to, tx, ter, deliver_, batchExecution_, j);
-}
+    explicit Batch(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
 
-std::size_t
-ApplyViewImpl::size()
-{
-    return items_.size();
-}
+    static XRPAmount
+    calculateBaseFee(ReadView const& view, STTx const& tx);
 
-void
-ApplyViewImpl::visit(
-    OpenView& to,
-    std::function<void(
-        uint256 const& key,
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after)> const& func)
-{
-    items_.visit(to, func);
-}
+    static TxConsequences
+    makeTxConsequences(PreflightContext const& ctx);
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
+    TER
+    doApply() override;
+};
 
 }  // namespace ripple
+
+#endif

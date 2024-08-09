@@ -124,6 +124,9 @@ public:
     checkSign(RequireFullyCanonicalSig requireCanonicalSig, Rules const& rules)
         const;
 
+    Expected<void, std::string>
+    checkBatchSign() const;
+
     // SQL Functions with metadata.
     static std::string const&
     getMetaSQLInsertReplaceHeader();

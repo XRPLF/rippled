@@ -45,6 +45,7 @@ TxFormats::TxFormats()
         {sfTxnSignature, soeOPTIONAL},
         {sfSigners, soeOPTIONAL},  // submit_multisigned
         {sfNetworkID, soeOPTIONAL},
+        {sfBatchTxn, soeOPTIONAL},
     };
 
     add(jss::AccountSet,
@@ -511,6 +512,14 @@ TxFormats::TxFormats()
         {
             {sfLedgerFixType, soeREQUIRED},
             {sfOwner, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::Batch,
+        ttBATCH,
+        {
+            {sfRawTransactions, soeREQUIRED},
+            {sfBatchSigners, soeOPTIONAL},
         },
         commonFields);
 }

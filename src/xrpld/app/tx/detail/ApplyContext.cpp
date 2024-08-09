@@ -59,6 +59,46 @@ ApplyContext::apply(TER ter)
     view_->apply(base_, tx, ter, journal);
 }
 
+/**
+ * Applies the changes in the given OpenView to the ApplyContext's base.
+ * If the base is not open, the changes in the OpenView are directly applied to
+ * the base.
+ *
+ * @param open The OpenView containing the changes to be applied.
+ */
+void
+ApplyContext::applyOpenView(OpenView& open)
+{
+    if (!base_.open())
+        open.apply(base_);
+}
+
+/**
+ * Applies the fee for the transaction.
+ *
+ * This function retrieves the account ID from the transaction and reads the
+ * corresponding account state from the base ledger. It then updates the balance
+ * field of the account state with the balance from the base ledger and updates
+ * the account state in the current view.
+ *
+ * @note This function assumes that both the account state in the base ledger
+ * and the current view exist. If either of them is missing, the function does
+ * not perform any updates.
+ */
+void
+ApplyContext::applyFee()
+{
+    AccountID const account = tx.getAccountID(sfAccount);
+    auto const sleBase = base_.read(keylet::account(account));
+    auto const sle = view_->peek(keylet::account(account));
+    assert(sle != nullptr || sleBase != nullptr || account == beast::zero);
+    if (sle && sleBase)
+    {
+        sle->setFieldAmount(sfBalance, (*sleBase)[sfBalance].xrp());
+        view_->update(sle);
+    }
+}
+
 std::size_t
 ApplyContext::size()
 {

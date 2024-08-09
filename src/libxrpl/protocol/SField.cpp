@@ -98,6 +98,7 @@ CONSTRUCT_TYPED_SFIELD(sfTickSize,              "TickSize",             UINT8,  
 CONSTRUCT_TYPED_SFIELD(sfUNLModifyDisabling,    "UNLModifyDisabling",   UINT8,     17);
 CONSTRUCT_TYPED_SFIELD(sfHookResult,            "HookResult",           UINT8,     18);
 CONSTRUCT_TYPED_SFIELD(sfWasLockingChainSend,   "WasLockingChainSend",  UINT8,     19);
+CONSTRUCT_TYPED_SFIELD(sfBatchIndex,            "BatchIndex",           UINT8,     20);
 
 // 16-bit integers
 CONSTRUCT_TYPED_SFIELD(sfLedgerEntryType,       "LedgerEntryType",      UINT16,     1, SField::sMD_Never);
@@ -328,6 +329,7 @@ CONSTRUCT_TYPED_SFIELD(sfAttestationSignerAccount, "AttestationSignerAccount", A
 CONSTRUCT_TYPED_SFIELD(sfAttestationRewardAccount, "AttestationRewardAccount", ACCOUNT, 21);
 CONSTRUCT_TYPED_SFIELD(sfLockingChainDoor,      "LockingChainDoor",     ACCOUNT,   22);
 CONSTRUCT_TYPED_SFIELD(sfIssuingChainDoor,      "IssuingChainDoor",     ACCOUNT,   23);
+CONSTRUCT_TYPED_SFIELD(sfOuterAccount,          "OuterAccount",         ACCOUNT,   24);
 
 // vector of 256-bit
 CONSTRUCT_TYPED_SFIELD(sfIndexes,               "Indexes",              VECTOR256,  1, SField::sMD_Never);
@@ -391,6 +393,10 @@ CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement,
                                                  "XChainCreateAccountAttestationCollectionElement",
                                                                         OBJECT,    31);
 CONSTRUCT_UNTYPED_SFIELD(sfPriceData,            "PriceData",           OBJECT,    32);
+CONSTRUCT_UNTYPED_SFIELD(sfRawTransaction,       "RawTransaction",      OBJECT,    33);
+CONSTRUCT_UNTYPED_SFIELD(sfBatchExecution,       "BatchExecution",      OBJECT,    34);
+CONSTRUCT_UNTYPED_SFIELD(sfBatchTxn,             "BatchTxn",            OBJECT,    35);
+CONSTRUCT_UNTYPED_SFIELD(sfBatchSigner,          "BatchSigner",         OBJECT,    36);
 
 // array of objects
 //                                                                            ARRAY/1 is reserved for end of array
@@ -421,6 +427,9 @@ CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountAttestations,
 // 23 is unused and available for use
 CONSTRUCT_UNTYPED_SFIELD(sfPriceDataSeries,     "PriceDataSeries",      ARRAY,     24);
 CONSTRUCT_UNTYPED_SFIELD(sfAuthAccounts,        "AuthAccounts",         ARRAY,     25);
+CONSTRUCT_UNTYPED_SFIELD(sfBatchExecutions,     "BatchExecutions",      ARRAY,     26);
+CONSTRUCT_UNTYPED_SFIELD(sfRawTransactions,     "RawTransactions",      ARRAY,     27);
+CONSTRUCT_UNTYPED_SFIELD(sfBatchSigners,        "BatchSigners",         ARRAY,     28, SField::sMD_Default, SField::notSigning);
 
 // clang-format on
 

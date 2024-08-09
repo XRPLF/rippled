@@ -70,6 +70,7 @@ public:
         STTx const& tx,
         TER ter,
         std::optional<STAmount> const& deliver,
+        std::vector<STObject> const& batchExecution,
         beast::Journal j);
 
     bool

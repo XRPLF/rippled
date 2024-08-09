@@ -65,6 +65,7 @@ JSS(AssetPrice);           // in: Oracle
 JSS(AuthAccount);          // in: AMM Auction Slot
 JSS(AuthAccounts);         // in: AMM Auction Slot
 JSS(BaseAsset);            // in: Oracle
+JSS(Batch);                // transaction type
 JSS(Bridge);               // ledger type.
 JSS(Check);                // ledger type.
 JSS(CheckCancel);          // transaction type.
@@ -116,6 +117,7 @@ JSS(Oracle);               // ledger type.
 JSS(OracleDelete);         // transaction type.
 JSS(OracleDocumentID);     // field
 JSS(OracleSet);            // transaction type.
+JSS(OuterAccount);         // field
 JSS(Owner);                // field
 JSS(Paths);                // in/out: TransactionSign
 JSS(PayChannel);           // ledger type.
@@ -128,6 +130,7 @@ JSS(PriceData);                          // field.
 JSS(Provider);                           // field.
 JSS(QuoteAsset);                         // in: Oracle.
 JSS(RippleState);                        // ledger type.
+JSS(RawTransaction);                     // in: Batch
 JSS(SLE_hit_rate);                       // out: GetCounts.
 JSS(SetFee);                             // transaction type.
 JSS(UNLModify);                          // transaction type.

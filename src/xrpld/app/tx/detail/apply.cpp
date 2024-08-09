@@ -38,10 +38,27 @@ checkValidity(
     HashRouter& router,
     STTx const& tx,
     Rules const& rules,
-    Config const& config)
+    Config const& config,
+    ApplyFlags const& applyFlags)
 {
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);
+
+    // Validate Inner BatchTxn
+    if (rules.enabled(featureBatch) && tx.isFieldPresent(sfBatchTxn))
+    {
+        // batched transactions do not contain signatures
+        if (tx.isFieldPresent(sfTxnSignature))
+            return {Validity::SigBad, "Batch txn contains signature."};
+
+        std::string reason;
+        if (!passesLocalChecks(tx, reason))
+            return {Validity::SigGoodOnly, reason};
+
+        router.setFlags(id, SF_SIGGOOD);
+        return {Validity::Valid, ""};
+    }
+
     if (flags & SF_SIGBAD)
         // Signature is known bad
         return {Validity::SigBad, "Transaction has bad signature."};

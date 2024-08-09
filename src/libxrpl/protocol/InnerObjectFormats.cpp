@@ -147,6 +147,24 @@ InnerObjectFormats::InnerObjectFormats()
             {sfAssetPrice, soeOPTIONAL},
             {sfScale, soeDEFAULT},
         });
+
+    add(sfBatchExecution.jsonName.c_str(),
+        sfBatchExecution.getCode(),
+        {{sfTransactionType, soeREQUIRED},
+         {sfTransactionResult, soeREQUIRED},
+         {sfTransactionHash, soeOPTIONAL}});
+
+    add(sfBatchTxn.jsonName.c_str(),
+        sfBatchTxn.getCode(),
+        {{sfOuterAccount, soeREQUIRED},
+         {sfSequence, soeOPTIONAL},
+         {sfBatchIndex, soeREQUIRED}});
+
+    add(sfBatchSigner.jsonName.c_str(),
+        sfBatchSigner.getCode(),
+        {{sfAccount, soeREQUIRED},
+         {sfSigningPubKey, soeREQUIRED},
+         {sfTxnSignature, soeREQUIRED}});
 }
 
 InnerObjectFormats const&

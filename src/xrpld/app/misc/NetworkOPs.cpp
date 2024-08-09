@@ -1141,6 +1141,16 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
         return;
     }
 
+    // Enforce Network bar for batch txn
+    auto const view = m_ledgerMaster.getCurrentLedger();
+    if (view->rules().enabled(featureBatch) &&
+        iTrans->isFieldPresent(sfBatchTxn))
+    {
+        JLOG(m_journal.error())
+            << "Submitted transaction invalid: BatchTxn present.";
+        return;
+    }
+
     // this is an asynchronous interface
     auto const trans = sterilize(*iTrans);
 
@@ -1209,11 +1219,22 @@ NetworkOPsImp::processTransaction(
     // but I'm not 100% sure yet.
     // If so, only cost is looking up HashRouter flags.
     auto const view = m_ledgerMaster.getCurrentLedger();
-    auto const [validity, reason] = checkValidity(
-        app_.getHashRouter(),
-        *transaction->getSTransaction(),
-        view->rules(),
-        app_.config());
+
+    // This function is called by several different parts of the codebase
+    // under no circumstances will we ever accept a batch txn from the
+    // network.
+    auto const tx = *transaction->getSTransaction();
+    if (view->rules().enabled(featureBatch) &&
+        tx.isFieldPresent(ripple::sfBatchTxn))
+    {
+        transaction->setStatus(INVALID);
+        transaction->setResult(temINVALID_BATCH);
+        app_.getHashRouter().setFlags(transaction->getID(), SF_BAD);
+        return;
+    }
+
+    auto const [validity, reason] =
+        checkValidity(app_.getHashRouter(), tx, view->rules(), app_.config());
     assert(validity == Validity::Valid);
 
     // Not concerned with local checks at this point.
@@ -1470,12 +1491,13 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 auto const toSkip =
                     app_.getHashRouter().shouldRelay(e.transaction->getID());
 
-                if (toSkip)
+                auto const txn = *(e.transaction->getSTransaction());
+                if (toSkip && !txn.isFieldPresent(sfBatchTxn))
                 {
                     protocol::TMTransaction tx;
                     Serializer s;
 
-                    e.transaction->getSTransaction()->add(s);
+                    txn.add(s);
                     tx.set_rawtransaction(s.data(), s.size());
                     tx.set_status(protocol::tsCURRENT);
                     tx.set_receivetimestamp(
@@ -2751,6 +2773,10 @@ NetworkOPsImp::pubProposedTransaction(
     std::shared_ptr<STTx const> const& transaction,
     TER result)
 {
+    // never publish batch txns
+    if (transaction->isFieldPresent(ripple::sfBatchTxn))
+        return;
+
     MultiApiJson jvObj =
         transJson(transaction, result, false, ledger, std::nullopt);
 
