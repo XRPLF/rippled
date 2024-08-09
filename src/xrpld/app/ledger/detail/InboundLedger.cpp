@@ -1036,7 +1036,7 @@ InboundLedger::gotData(
     if (isDone())
         return false;
 
-    mReceivedData.emplace_back(peer, data);
+    mReceivedData.emplace(peer, data);
 
     if (mReceiveDispatched)
         return false;
@@ -1240,9 +1240,6 @@ InboundLedger::runData()
     constexpr std::size_t maxUsefulPeers = 6;
 
     decltype(mReceivedData) data;
-
-    // Reserve some memory so the first couple iterations don't reallocate
-    data.reserve(8);
 
     detail::PeerDataCounts dataCounts;
 

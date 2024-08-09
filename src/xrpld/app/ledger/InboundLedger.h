@@ -189,9 +189,29 @@ private:
 
     // Data we have received from peers
     std::mutex mReceivedDataLock;
-    std::vector<
-        std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>>
+    
+    using PairType = std::pair<std::weak_ptr<ripple::Peer>, std::shared_ptr<protocol::TMLedgerData>>;
+    struct PeerLedgerDataComparator {
+        bool operator()(const PairType& lhs,
+                        const PairType& rhs) const {
+            auto lhsPeer = lhs.first.lock();
+            auto rhsPeer = rhs.first.lock();
+
+            if (!lhsPeer || !rhsPeer) {
+                return lhsPeer < rhsPeer; 
+            }
+
+            if (lhsPeer->id() != rhsPeer->id()) {
+                return lhsPeer->id() < rhsPeer->id(); 
+            }
+
+            return lhs.second->ledgerhash() < rhs.second->ledgerhash(); 
+        }
+    };
+    std::set<
+        PairType, PeerLedgerDataComparator>
         mReceivedData;
+
     bool mReceiveDispatched;
     std::unique_ptr<PeerSet> mPeerSet;
 };
