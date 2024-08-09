@@ -371,6 +371,149 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
+    testBadSequence(FeatureBitset features)
+    {
+        testcase("bad sequence");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        test::jtx::Env env{*this, envconfig()};
+
+        auto const feeDrops = env.current()->fees().base;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const USD = gw["USD"];
+
+        env.fund(XRP(1000), alice, bob, gw);
+        env.close();
+        env.trust(USD(1000), alice, bob);
+        env(pay(gw, alice, USD(100)));
+        env(pay(gw, bob, USD(100)));
+        env.close();
+
+        env(noop(bob), ter(tesSUCCESS));
+        env.close();
+
+        auto const preAliceSeq = env.seq(alice);
+        auto const preAlice = env.balance(alice);
+        auto const preAliceUSD = env.balance(alice, USD.issue());
+        auto const preBobSeq = env.seq(bob);
+        auto const preBob = env.balance(bob);
+        auto const preBobUSD = env.balance(bob, USD.issue());
+
+        std::vector<TestSignData> const signers = {{
+            {0, alice},
+            {1, bob},
+        }};
+
+        Json::Value jv;
+        jv[jss::TransactionType] = jss::Batch;
+        jv[jss::Account] = alice.human();
+        jv[jss::Sequence] = preAliceSeq;
+        auto const batchFee = ((signers.size() + 2) * feeDrops) + feeDrops * 2;
+        jv[jss::Fee] = to_string(batchFee);
+        jv[jss::Flags] = tfAllOrNothing;
+        jv[jss::SigningPubKey] = strHex(alice.pk());
+
+        // Batch Transactions
+        jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
+
+        // Tx 1
+        Json::Value tx1 = pay(alice, bob, USD(10));
+        jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, preAliceSeq, 0);
+
+        // Tx 2
+        Json::Value const tx2 = pay(bob, alice, USD(5));
+        jv = addBatchTx(jv, tx2, bob.pk(), alice, 10, preBobSeq, 1);
+
+        jv = addBatchSignatures(jv, signers);
+
+        env(jv, ter(terPRE_SEQ));
+        env.close();
+
+        // Alice & Bob should not be affected.
+        BEAST_EXPECT(env.seq(alice) == preAliceSeq);
+        BEAST_EXPECT(env.balance(alice) == preAlice);
+        BEAST_EXPECT(env.balance(alice, USD.issue()) == preAliceUSD);
+        BEAST_EXPECT(env.seq(bob) == preBobSeq);
+        BEAST_EXPECT(env.balance(bob) == preBob);
+        BEAST_EXPECT(env.balance(bob, USD.issue()) == preBobUSD);
+    }
+
+    void
+    testBadFee(FeatureBitset features)
+    {
+        testcase("bad fee");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        test::jtx::Env env{*this, envconfig()};
+
+        auto const feeDrops = env.current()->fees().base;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const USD = gw["USD"];
+
+        env.fund(XRP(1000), alice, bob, gw);
+        env.close();
+        env.trust(USD(1000), alice, bob);
+        env(pay(gw, alice, USD(100)));
+        env(pay(gw, bob, USD(100)));
+        env.close();
+
+        env(noop(bob), ter(tesSUCCESS));
+        env.close();
+
+        auto const preAliceSeq = env.seq(alice);
+        auto const preAlice = env.balance(alice);
+        auto const preAliceUSD = env.balance(alice, USD.issue());
+        auto const preBobSeq = env.seq(bob);
+        auto const preBob = env.balance(bob);
+        auto const preBobUSD = env.balance(bob, USD.issue());
+
+        std::vector<TestSignData> const signers = {{
+            {0, alice},
+            {1, bob},
+        }};
+
+        Json::Value jv;
+        jv[jss::TransactionType] = jss::Batch;
+        jv[jss::Account] = alice.human();
+        jv[jss::Sequence] = env.seq(alice);
+        jv[jss::Fee] = to_string(feeDrops * 2);
+        jv[jss::Flags] = tfAllOrNothing;
+        jv[jss::SigningPubKey] = strHex(alice.pk());
+
+        // Batch Transactions
+        jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
+
+        // Tx 1
+        Json::Value tx1 = pay(alice, bob, USD(10));
+        jv = addBatchTx(jv, tx1, alice.pk(), alice, 0, env.seq(alice), 0);
+
+        // Tx 2
+        Json::Value const tx2 = pay(bob, alice, USD(5));
+        jv = addBatchTx(jv, tx2, bob.pk(), alice, 0, env.seq(bob), 1);
+
+        jv = addBatchSignatures(jv, signers);
+
+        env(jv, ter(telINSUF_FEE_P));
+        env.close();
+
+        // Alice & Bob should not be affected.
+        BEAST_EXPECT(env.seq(alice) == preAliceSeq);
+        BEAST_EXPECT(env.balance(alice) == preAlice);
+        BEAST_EXPECT(env.balance(alice, USD.issue()) == preAliceUSD);
+        BEAST_EXPECT(env.seq(bob) == preBobSeq);
+        BEAST_EXPECT(env.balance(bob) == preBob);
+        BEAST_EXPECT(env.balance(bob, USD.issue()) == preBobUSD);
+    }
+
+    void
     testOutOfSequence(FeatureBitset features)
     {
         testcase("out of sequence");
@@ -1516,6 +1659,8 @@ class Batch_test : public beast::unit_test::suite
     {
         testEnable(features);
         testPreflight(features);
+        testBadSequence(features);
+        testBadFee(features);
         testOutOfSequence(features);
         testAllOrNothing(features);
         testOnlyOne(features);
@@ -1530,14 +1675,6 @@ class Batch_test : public beast::unit_test::suite
         testClawback(features);
         // testOfferCancel(features);
         testSubmit(features);
-
-        // DA TODO:
-        // Multisign Atomic
-        // If the 2nd fails and needs the 3rd
-        // Validatate all errors in checkBatchSign()
-        // tem failure that does not consume the sequence: Handled with atomic
-        // revert Assertion failed: (feeLevelPaid >= baseLevel), function apply,
-        // file TxQ.cpp, line 1155.
     }
 
 public:

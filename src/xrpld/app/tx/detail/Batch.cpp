@@ -217,6 +217,7 @@ Batch::doApply()
 XRPAmount
 Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    // Calculate the Inner Txn Fees
     XRPAmount extraFee{0};
     if (tx.isFieldPresent(sfRawTransactions))
     {
@@ -229,6 +230,14 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         }
         extraFee += txFees;
     }
+
+    // Calculate the BatchSigners Fees
+    if (tx.isFieldPresent(sfBatchSigners))
+    {
+        auto const signers = tx.getFieldArray(sfBatchSigners);
+        extraFee += (signers.size() + 2) * view.fees().base;
+    }
+
     return extraFee;
 }
 

@@ -213,33 +213,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     if (!isLegalAmount(feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
 
-    // Only check fee is sufficient when the ledger is open.
-    if (ctx.view.open() && ctx.tx.getTxnType() == ttBATCH)
-    {
-        XRPAmount feeDue = XRPAmount{0};
-        auto const& txns = ctx.tx.getFieldArray(sfRawTransactions);
-        for (std::size_t i = 0; i < txns.size(); ++i)
-        {
-            auto const& txn = txns[i];
-            if (!txn.isFieldPresent(sfFee))
-            {
-                JLOG(ctx.j.warn()) << "Batch: sfFee missing in array entry.";
-                return telINSUF_FEE_P;
-            }
-            auto const _fee = txn.getFieldAmount(sfFee);
-            feeDue += _fee.xrp();
-        }
-
-        if (feePaid < feeDue)
-        {
-            JLOG(ctx.j.trace())
-                << "Insufficient fee paid: " << to_string(feePaid) << "/"
-                << to_string(feeDue);
-            return telINSUF_FEE_P;
-        }
-    }
-
-    if (ctx.view.open() && ctx.tx.getTxnType() != ttBATCH)
+    if (ctx.view.open())
     {
         auto const feeDue =
             minimumFee(ctx.app, baseFee, ctx.view.fees(), ctx.flags);
@@ -326,21 +300,9 @@ Transactor::checkSeqProxy(
     {
         if (tx.getFieldU32(sfSequence) != 0)
         {
-            JLOG(j.trace()) << "applyTransaction: has both a Sequence number "
-                               "and a BatchTxn";
+            JLOG(j.trace()) << "applyTransaction: BatchTxn has a Sequence number";
             return temBAD_SEQUENCE;
         }
-
-        STObject const batchTxn = const_cast<ripple::STTx&>(tx)
-                                      .getField(sfBatchTxn)
-                                      .downcast<STObject>();
-        std::uint32_t const startSequence{batchTxn.getFieldU32(sfSequence)};
-        std::uint32_t const batchIndex{batchTxn.getFieldU8(sfBatchIndex)};
-        std::uint8_t const sourceAdj =
-            tx.getAccountID(sfAccount) == batchTxn.getAccountID(sfOuterAccount)
-            ? 1
-            : 0;
-        a_seq = SeqProxy::sequence(startSequence + batchIndex + sourceAdj);
     }
 
     if (t_seqProx.isSeq())
