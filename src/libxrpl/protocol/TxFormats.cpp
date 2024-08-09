@@ -507,6 +507,14 @@ TxFormats::TxFormats()
         },
         commonFields);
 
+    add(jss::LedgerStateFix,
+        ttLEDGER_STATE_FIX,
+        {
+            {sfLedgerFixType, soeREQUIRED},
+            {sfOwner, soeOPTIONAL},
+        },
+        commonFields);
+  
     add(jss::Batch,
         ttBATCH,
         {

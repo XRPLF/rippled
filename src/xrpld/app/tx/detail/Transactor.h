@@ -198,6 +198,8 @@ private:
     checkSingleSign(PreclaimContext const& ctx);
     static NotTEC
     checkMultiSign(PreclaimContext const& ctx);
+
+    void trapTransaction(uint256) const;
 };
 
 /** Performs early sanity checks on the txid */

@@ -367,6 +367,8 @@ class ValidNFTokenPage
     bool badSort_ = false;
     bool badURI_ = false;
     bool invalidSize_ = false;
+    bool deletedFinalPage_ = false;
+    bool deletedLink_ = false;
 
 public:
     void

@@ -105,6 +105,7 @@ JSS(NFTokenAcceptOffer);   // transaction type.
 JSS(NFTokenCancelOffer);   // transaction type.
 JSS(NFTokenCreateOffer);   // transaction type.
 JSS(NFTokenPage);          // ledger type.
+JSS(LedgerStateFix);       // transaction type.
 JSS(LPTokenOut);           // in: AMM Liquidity Provider deposit tokens
 JSS(LPTokenIn);            // in: AMM Liquidity Provider withdraw tokens
 JSS(LPToken);              // out: AMM Liquidity Provider tokens info
