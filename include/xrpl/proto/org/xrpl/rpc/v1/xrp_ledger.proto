@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package org.xrpl.rpc.v1;
+option java_package = "org.xrpl.rpc.v1";
+option java_multiple_files = true;
+
+import "org/xrpl/rpc/v1/get_ledger.proto";
+import "org/xrpl/rpc/v1/get_ledger_entry.proto";
+import "org/xrpl/rpc/v1/get_ledger_data.proto";
+import "org/xrpl/rpc/v1/get_ledger_diff.proto";
+
+
+// These methods are binary only methods for retrieiving arbitrary ledger state
+// via gRPC. These methods are used by clio and reporting mode, but can also be
+// used by any client that wants to extract ledger state in an efficient manner.
+// They do not directly mimic the JSON equivalent methods.
+service XRPLedgerAPIService {
+
+  // Get a specific ledger, optionally including transactions and any modified,
+  // added or deleted ledger objects
+  rpc GetLedger(GetLedgerRequest) returns (GetLedgerResponse);
+
+  // Get a specific ledger object from a specific ledger
+  rpc GetLedgerEntry(GetLedgerEntryRequest) returns (GetLedgerEntryResponse);
+
+  // Iterate through all ledger objects in a specific ledger
+  rpc GetLedgerData(GetLedgerDataRequest) returns (GetLedgerDataResponse);
+
+  // Get all ledger objects that are different between the two specified
+  // ledgers. Note, this method has no JSON equivalent.
+  rpc GetLedgerDiff(GetLedgerDiffRequest) returns (GetLedgerDiffResponse);
+
+}

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/BuildInfo.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/BuildInfo.h>
 
 namespace ripple {
 

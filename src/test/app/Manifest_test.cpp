@@ -17,20 +17,20 @@
 */
 //==============================================================================
 
-#include <ripple/app/main/DBInit.h>
-#include <ripple/app/misc/Manifest.h>
-#include <ripple/app/misc/ValidatorList.h>
-#include <ripple/app/rdb/Wallet.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/base64.h>
-#include <ripple/basics/contract.h>
-#include <ripple/protocol/STExchange.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/Sign.h>
+#include <test/jtx.h>
+#include <xrpld/app/main/DBInit.h>
+#include <xrpld/app/misc/Manifest.h>
+#include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/app/rdb/Wallet.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base64.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/STExchange.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Sign.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/utility/in_place_factory.hpp>
-#include <test/jtx.h>
 
 namespace ripple {
 namespace test {
@@ -238,12 +238,8 @@ public:
     Manifest
     clone(Manifest const& m)
     {
-        Manifest m2;
-        m2.serialized = m.serialized;
-        m2.masterKey = m.masterKey;
-        m2.signingKey = m.signingKey;
-        m2.sequence = m.sequence;
-        m2.domain = m.domain;
+        Manifest m2(
+            m.serialized, m.masterKey, m.signingKey, m.sequence, m.domain);
         return m2;
     }
 
@@ -313,14 +309,13 @@ public:
             }
             {
                 // save should store all trusted master keys to db
-                PublicKey emptyLocalKey;
                 std::vector<std::string> s1;
                 std::vector<std::string> keys;
                 std::string cfgManifest;
                 for (auto const& man : inManifests)
                     s1.push_back(
                         toBase58(TokenType::NodePublic, man->masterKey));
-                unl->load(emptyLocalKey, s1, keys);
+                unl->load({}, s1, keys);
 
                 m.save(
                     *dbCon,
@@ -852,7 +847,10 @@ public:
 
                         BEAST_EXPECT(manifest);
                         BEAST_EXPECT(manifest->masterKey == pk);
-                        BEAST_EXPECT(manifest->signingKey == PublicKey());
+
+                        // Since this manifest is revoked, it should not have
+                        // a signingKey
+                        BEAST_EXPECT(!manifest->signingKey);
                         BEAST_EXPECT(manifest->revoked());
                         BEAST_EXPECT(manifest->domain.empty());
                         BEAST_EXPECT(manifest->serialized == m);

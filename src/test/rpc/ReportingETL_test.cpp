@@ -18,15 +18,15 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/reporting/P2pProxy.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/rpc/impl/Tuning.h>
+#include <xrpld/app/reporting/P2pProxy.h>
+#include <xrpld/rpc/detail/Tuning.h>
+#include <xrpl/beast/unit_test.h>
 
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
 #include <test/rpc/GRPCTestClientBase.h>
+#include <xrpld/core/ConfigSections.h>
 
 namespace ripple {
 namespace test {
@@ -57,7 +57,8 @@ class ReportingETL_test : public beast::unit_test::suite
         testcase("GetLedger");
         using namespace test::jtx;
         std::unique_ptr<Config> config = envconfig(addGrpcConfig);
-        std::string grpcPort = *(*config)["port_grpc"].get<std::string>("port");
+        std::string grpcPort =
+            *(*config)[SECTION_PORT_GRPC].get<std::string>("port");
         Env env(*this, std::move(config));
 
         env.close();
@@ -499,7 +500,8 @@ class ReportingETL_test : public beast::unit_test::suite
         testcase("GetLedgerData");
         using namespace test::jtx;
         std::unique_ptr<Config> config = envconfig(addGrpcConfig);
-        std::string grpcPort = *(*config)["port_grpc"].get<std::string>("port");
+        std::string grpcPort =
+            *(*config)[SECTION_PORT_GRPC].get<std::string>("port");
         Env env(*this, std::move(config));
         auto grpcLedgerData = [&grpcPort](
                                   auto sequence, std::string marker = "") {
@@ -532,7 +534,7 @@ class ReportingETL_test : public beast::unit_test::suite
             BEAST_EXPECT(status.ok());
 
             BEAST_EXPECT(
-                reply.ledger_objects().objects_size() == num_accounts + 3);
+                reply.ledger_objects().objects_size() == num_accounts + 4);
             BEAST_EXPECT(reply.marker().size() == 0);
             auto ledger = env.closed();
             size_t idx = 0;
@@ -621,7 +623,8 @@ class ReportingETL_test : public beast::unit_test::suite
         testcase("GetLedgerDiff");
         using namespace test::jtx;
         std::unique_ptr<Config> config = envconfig(addGrpcConfig);
-        std::string grpcPort = *(*config)["port_grpc"].get<std::string>("port");
+        std::string grpcPort =
+            *(*config)[SECTION_PORT_GRPC].get<std::string>("port");
         Env env(*this, std::move(config));
 
         auto grpcLedgerDiff = [&grpcPort](
@@ -736,7 +739,8 @@ class ReportingETL_test : public beast::unit_test::suite
         testcase("GetLedgerDiff");
         using namespace test::jtx;
         std::unique_ptr<Config> config = envconfig(addGrpcConfig);
-        std::string grpcPort = *(*config)["port_grpc"].get<std::string>("port");
+        std::string grpcPort =
+            *(*config)[SECTION_PORT_GRPC].get<std::string>("port");
         Env env(*this, std::move(config));
 
         auto grpcLedgerEntry = [&grpcPort](auto sequence, auto key) {
@@ -773,25 +777,6 @@ class ReportingETL_test : public beast::unit_test::suite
     testNeedCurrentOrClosed()
     {
         testcase("NeedCurrentOrClosed");
-        {
-            org::xrpl::rpc::v1::GetAccountInfoRequest request;
-            request.mutable_ledger()->set_sequence(1);
-            BEAST_EXPECT(!needCurrentOrClosed(request));
-            request.mutable_ledger()->set_hash("");
-            BEAST_EXPECT(!needCurrentOrClosed(request));
-            request.mutable_ledger()->set_shortcut(
-                org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_VALIDATED);
-            BEAST_EXPECT(!needCurrentOrClosed(request));
-            request.mutable_ledger()->set_shortcut(
-                org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_UNSPECIFIED);
-            BEAST_EXPECT(!needCurrentOrClosed(request));
-            request.mutable_ledger()->set_shortcut(
-                org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CURRENT);
-            BEAST_EXPECT(needCurrentOrClosed(request));
-            request.mutable_ledger()->set_shortcut(
-                org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CLOSED);
-            BEAST_EXPECT(needCurrentOrClosed(request));
-        }
 
         {
             org::xrpl::rpc::v1::GetLedgerRequest request;
@@ -904,18 +889,6 @@ class ReportingETL_test : public beast::unit_test::suite
                 org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CURRENT);
             BEAST_EXPECT(needCurrentOrClosed(request));
         }
-
-        {
-            org::xrpl::rpc::v1::GetFeeRequest feeRequest;
-            BEAST_EXPECT(!needCurrentOrClosed(feeRequest));
-
-            org::xrpl::rpc::v1::GetAccountTransactionHistoryRequest
-                accountTxRequest;
-            BEAST_EXPECT(!needCurrentOrClosed(accountTxRequest));
-
-            org::xrpl::rpc::v1::GetTransactionRequest txRequest;
-            BEAST_EXPECT(!needCurrentOrClosed(txRequest));
-        }
     }
 
     void
@@ -927,7 +900,7 @@ class ReportingETL_test : public beast::unit_test::suite
             std::unique_ptr<Config> config = envconfig(
                 addGrpcConfigWithSecureGateway, getEnvLocalhostAddr());
             std::string grpcPort =
-                *(*config)["port_grpc"].get<std::string>("port");
+                *(*config)[SECTION_PORT_GRPC].get<std::string>("port");
             Env env(*this, std::move(config));
 
             env.close();
@@ -987,7 +960,7 @@ class ReportingETL_test : public beast::unit_test::suite
             std::unique_ptr<Config> config =
                 envconfig(addGrpcConfigWithSecureGateway, secureGatewayIp);
             std::string grpcPort =
-                *(*config)["port_grpc"].get<std::string>("port");
+                *(*config)[SECTION_PORT_GRPC].get<std::string>("port");
             Env env(*this, std::move(config));
 
             env.close();
@@ -1040,7 +1013,7 @@ class ReportingETL_test : public beast::unit_test::suite
             std::unique_ptr<Config> config = envconfig(
                 addGrpcConfigWithSecureGateway, getEnvLocalhostAddr());
             std::string grpcPort =
-                *(*config)["port_grpc"].get<std::string>("port");
+                *(*config)[SECTION_PORT_GRPC].get<std::string>("port");
             Env env(*this, std::move(config));
 
             env.close();
@@ -1097,7 +1070,7 @@ class ReportingETL_test : public beast::unit_test::suite
             std::unique_ptr<Config> config =
                 envconfig(addGrpcConfigWithSecureGateway, secureGatewayIp);
             std::string grpcPort =
-                *(*config)["port_grpc"].get<std::string>("port");
+                *(*config)[SECTION_PORT_GRPC].get<std::string>("port");
             Env env(*this, std::move(config));
 
             env.close();
