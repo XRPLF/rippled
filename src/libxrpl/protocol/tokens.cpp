@@ -91,7 +91,7 @@ algorithm that converts a number to coefficients from base B2.
 
 There is a useful shortcut that can be used if one of the bases is a power of
 the other base. If B1 == B2^G, then each coefficient from base B1 can be
-converted to base B2 independently to create a a group of "G" B2 coefficient.
+converted to base B2 independently to create a group of "G" B2 coefficient.
 These coefficients can be simply concatenated together. Since 16 == 2^4, this
 property is what makes base 16 useful when dealing with binary numbers. For
 example consider converting the base 16 number "93" to binary. The base 16
