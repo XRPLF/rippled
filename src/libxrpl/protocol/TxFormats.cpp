@@ -514,7 +514,7 @@ TxFormats::TxFormats()
             {sfOwner, soeOPTIONAL},
         },
         commonFields);
-  
+
     add(jss::Batch,
         ttBATCH,
         {

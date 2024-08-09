@@ -300,7 +300,8 @@ Transactor::checkSeqProxy(
     {
         if (tx.getFieldU32(sfSequence) != 0)
         {
-            JLOG(j.trace()) << "applyTransaction: BatchTxn has a Sequence number";
+            JLOG(j.trace())
+                << "applyTransaction: BatchTxn has a Sequence number";
             return temBAD_SEQUENCE;
         }
     }
