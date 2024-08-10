@@ -41,16 +41,23 @@ public:
         resp = env.rpc("json", "book_changes", to_string(params));
         BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
         BEAST_EXPECT(resp[jss::result][jss::status] == "success");
+        BEAST_EXPECT(resp[jss::result][jss::validated] == true);
 
         params["ledger"] = "current";
         resp = env.rpc("json", "book_changes", to_string(params));
         BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
         BEAST_EXPECT(resp[jss::result][jss::status] == "success");
+        BEAST_EXPECT(resp[jss::result][jss::validated] == false);
 
         params["ledger"] = "closed";
         resp = env.rpc("json", "book_changes", to_string(params));
         BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
         BEAST_EXPECT(resp[jss::result][jss::status] == "success");
+
+        // In the unit-test framework, requesting for "closed" ledgers appears
+        // to yield "validated" ledgers. This is not new behavior. It is also
+        // observed in the unit tests for the LedgerHeader class.
+        BEAST_EXPECT(resp[jss::result][jss::validated] == true);
 
         // non-conventional ledger input should throw an error
         params["ledger"] = "non_conventional_ledger_input";
