@@ -1036,7 +1036,7 @@ InboundLedger::gotData(
     if (isDone())
         return false;
 
-    mReceivedData.emplace(peer, data);
+    mReceivedData.emplace_back(peer, data);
 
     if (mReceiveDispatched)
         return false;
