@@ -41,6 +41,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/core/ostream.hpp>
+#include <google/protobuf/util/json_util.h>
 
 #include <algorithm>
 #include <memory>
@@ -1561,16 +1562,31 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
         return;
     }
 
-    uint256 const ledgerHash{m->ledgerhash()};
-    auto const peer_id{shared_from_this()->id()};
+    auto const peer_id = shared_from_this()->id();
 
-    if (!app_.getHashRouter().addSuppressionPeer(ledgerHash, peer_id))
-    {
-        JLOG(p_journal_.info())
-            << "Received duplicate TMLedgerData from peer: " << peer_id << ", ledger hash: " << ledgerHash;
-        return;
+    google::protobuf::util::JsonOptions opts;
+    opts.always_print_enums_as_ints = true;
+    opts.always_print_primitive_fields = true;
+    opts.preserve_proto_field_names = true;
+
+    std::string json;
+    if (auto status = google::protobuf::util::MessageToJsonString(*m, &json, opts); !status.ok()) {
+        JLOG(p_journal_.error()) << "Failed to convert message to JSON: " << status.ToString();
+    } else {
+
+        JLOG(p_journal_.debug()) << "MessageToJsonString: " << json;
+
+        auto const hash = sha512Half(json);
+
+        if (!app_.getHashRouter().addSuppressionPeer(hash, peer_id)) {
+            JLOG(p_journal_.info()) 
+                << "Received duplicate TMLedgerData from peer: " << peer_id 
+                << ", ledger hash: " << hash;
+            return;
+        }
     }
 
+    uint256 const ledgerHash{m->ledgerhash()};
     // Otherwise check if received data for a candidate transaction set
     if (m->type() == protocol::liTS_CANDIDATE)
     {
