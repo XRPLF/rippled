@@ -192,7 +192,6 @@ private:
     std::vector<
         std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>>
         mReceivedData;
-
     bool mReceiveDispatched;
     std::unique_ptr<PeerSet> mPeerSet;
 };
