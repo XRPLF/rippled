@@ -1036,13 +1036,26 @@ InboundLedger::gotData(
     if (isDone())
         return false;
 
-    mReceivedData.emplace(peer, data);
+    if (auto sharedPeer = peer.lock())
+    {
+        const auto [_, added] = mReceivedData.emplace(sharedPeer, data);
 
-    if (mReceiveDispatched)
+        if (!added)
+        {
+            JLOG(journal_.info()) << "Duplicate avoided. id = " << sharedPeer->id() << ", data hash: " << data->ledgerhash();
+        }
+
+        if (mReceiveDispatched)
+            return false;
+
+        mReceiveDispatched = true;
+        return true;
+    }
+    else
+    {
+        JLOG(journal_.warn()) << "Failed to lock Peer. The peer may have expired.";
         return false;
-
-    mReceiveDispatched = true;
-    return true;
+    }
 }
 
 /** Process one TMLedgerData
