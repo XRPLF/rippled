@@ -1562,6 +1562,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     }
 
     uint256 const ledgerHash{m->ledgerhash()};
+    auto const peer_id{shared_from_this()->id()};
+
+    if (!app_.getHashRouter().addSuppressionPeer(ledgerHash, peer_id))
+    {
+        JLOG(p_journal_.info())
+            << "Received duplicate TMLedgerData from peer: " << peer_id << ", ledger hash: " << ledgerHash;
+        return;
+    }
 
     // Otherwise check if received data for a candidate transaction set
     if (m->type() == protocol::liTS_CANDIDATE)
