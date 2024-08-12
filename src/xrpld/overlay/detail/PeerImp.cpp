@@ -1580,8 +1580,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
 
         if (!app_.getHashRouter().addSuppressionPeer(hash, peer_id)) {
             JLOG(p_journal_.info()) 
-                << "Received duplicate TMLedgerData from peer: " << peer_id 
-                << ", ledger hash: " << hash;
+                << "Received duplicate TMLedgerData message from peer: " << peer_id 
+                << ", message hash: " << hash;
             return;
         }
     }
