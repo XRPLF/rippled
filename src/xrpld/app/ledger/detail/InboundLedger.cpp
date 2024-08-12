@@ -1036,26 +1036,13 @@ InboundLedger::gotData(
     if (isDone())
         return false;
 
-    if (auto sharedPeer = peer.lock())
-    {
-        const auto [_, added] = mReceivedData.emplace(sharedPeer, data);
+    mReceivedData.emplace(peer, data);
 
-        if (!added)
-        {
-            JLOG(journal_.info()) << "Duplicate avoided. id = " << sharedPeer->id() << ", data hash: " << data->ledgerhash();
-        }
-
-        if (mReceiveDispatched)
-            return false;
-
-        mReceiveDispatched = true;
-        return true;
-    }
-    else
-    {
-        JLOG(journal_.warn()) << "Failed to lock Peer. The peer may have expired.";
+    if (mReceiveDispatched)
         return false;
-    }
+
+    mReceiveDispatched = true;
+    return true;
 }
 
 /** Process one TMLedgerData
@@ -1253,6 +1240,9 @@ InboundLedger::runData()
     constexpr std::size_t maxUsefulPeers = 6;
 
     decltype(mReceivedData) data;
+
+    // Reserve some memory so the first couple iterations don't reallocate
+    data.reserve(8);
 
     detail::PeerDataCounts dataCounts;
 
