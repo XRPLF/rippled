@@ -18,9 +18,11 @@
 //==============================================================================
 
 #include <ripple/app/main/Application.h>
+#include <ripple/app/misc/HashRouter.h>
 #include <ripple/core/JobQueue.h>
 #include <ripple/overlay/Overlay.h>
 #include <ripple/overlay/PeerSet.h>
+#include <ripple/protocol/digest.h>
 
 namespace ripple {
 
@@ -104,16 +106,56 @@ PeerSetImpl::sendRequest(
     std::shared_ptr<Peer> const& peer)
 {
     auto packet = std::make_shared<Message>(message, type);
+
+    auto const messageHash = [&]() {
+        auto const packetBuffer =
+            packet->getBuffer(compression::Compressed::Off);
+        return sha512Half(Slice(packetBuffer.data(), packetBuffer.size()));
+    }();
+
+    // Allow messages to be re-sent to the same peer after a delay
+    using namespace std::chrono_literals;
+    constexpr std::chrono::seconds interval = 30s;
+
     if (peer)
     {
-        peer->send(packet);
+        if (app_.getHashRouter().shouldProcessForPeer(
+                messageHash, peer->id(), interval))
+        {
+            // Don't merge this as warning. Remove or change it to trace.
+            JLOG(journal_.warn())
+                << "Sending " << protocolMessageName(type) << " message to ["
+                << peer->id() << "]: " << messageHash;
+            peer->send(packet);
+        }
+        else
+            // Don't merge this as warning. Change it to debug.
+            JLOG(journal_.warn())
+                << "Suppressing sending duplicate " << protocolMessageName(type)
+                << " message to [" << peer->id() << "]: " << messageHash;
         return;
     }
 
     for (auto id : peers_)
     {
         if (auto p = app_.overlay().findPeerByShortID(id))
-            p->send(packet);
+        {
+            if (app_.getHashRouter().shouldProcessForPeer(
+                    messageHash, p->id(), interval))
+            {
+                // Don't merge this as warning. Remove or change it to trace.
+                JLOG(journal_.warn())
+                    << "Sending " << protocolMessageName(type)
+                    << " message to [" << p->id() << "]: " << messageHash;
+                p->send(packet);
+            }
+            else
+                // Don't merge this as warning. Change it to debug.
+                JLOG(journal_.warn())
+                    << "Suppressing sending duplicate "
+                    << protocolMessageName(type) << " message to [" << p->id()
+                    << "]: " << messageHash;
+        }
     }
 }
 

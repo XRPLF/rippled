@@ -90,6 +90,20 @@ HashRouter::shouldProcess(
     return s.shouldProcess(suppressionMap_.clock().now(), tx_interval);
 }
 
+bool
+HashRouter::shouldProcessForPeer(
+    uint256 const& key,
+    PeerShortID peer,
+    std::chrono::seconds interval)
+{
+    std::lock_guard lock(mutex_);
+
+    auto& entry = emplace(key).first;
+
+    return entry.shouldProcessForPeer(
+        peer, suppressionMap_.clock().now(), interval);
+}
+
 int
 HashRouter::getFlags(uint256 const& key)
 {

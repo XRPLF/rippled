@@ -125,6 +125,21 @@ private:
             return true;
         }
 
+        bool
+        shouldProcessForPeer(
+            PeerShortID peer,
+            Stopwatch::time_point now,
+            std::chrono::seconds interval)
+        {
+            if (peerProcessed_.contains(peer) &&
+                ((peerProcessed_[peer] + interval) > now))
+                return false;
+            // Peer may already be in the list, but adding it again doesn't hurt
+            addPeer(peer);
+            peerProcessed_[peer] = now;
+            return true;
+        }
+
     private:
         int flags_ = 0;
         std::set<PeerShortID> peers_;
@@ -132,6 +147,7 @@ private:
         // than one flag needs to expire independently.
         std::optional<Stopwatch::time_point> relayed_;
         std::optional<Stopwatch::time_point> processed_;
+        std::map<PeerShortID, Stopwatch::time_point> peerProcessed_;
     };
 
 public:
@@ -179,6 +195,18 @@ public:
         PeerShortID peer,
         int& flags,
         std::chrono::seconds tx_interval);
+
+    /** Determines whether the hashed item should be processed for the given
+       peer. Could be an incoming or outgoing message.
+
+       Items filtered with this function should only be processed for the given
+       peer once. Unlike shouldProcess, it can be processed for other peers.
+     */
+    bool
+    shouldProcessForPeer(
+        uint256 const& key,
+        PeerShortID peer,
+        std::chrono::seconds interval);
 
     /** Set the flags on a hash.
 
