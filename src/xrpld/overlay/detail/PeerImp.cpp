@@ -1563,7 +1563,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     }
 
     auto const peerId = shared_from_this()->id();
-    auto const [hash, error] = hashfProtoBufMessage<protocol::TMLedgerData>(*m);
+    auto const [hash, error] = hashProtoBufMessage<protocol::TMLedgerData>(*m);
     if (hash) {
         if (!app_.getHashRouter().addSuppressionPeer(*hash, peerId)) {
             // TODO: switch to debug before merge

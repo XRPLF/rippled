@@ -487,7 +487,7 @@ invokeProtocolMessage(
 using HashProtoBufResult = std::pair<std::optional<sha512_half_hasher::result_type>, std::string>;
 
 template <typename T, class = std::enable_if_t<std::is_base_of<::google::protobuf::Message, T>::value>>
-HashProtoBufResult hashfProtoBufMessage(const T& message)
+HashProtoBufResult hashProtoBufMessage(const T& message)
 {
     google::protobuf::util::JsonOptions opts;
     opts.always_print_enums_as_ints = true;
