@@ -489,11 +489,14 @@ using HashProtoBufResult = std::pair<std::optional<sha512_half_hasher::result_ty
 template <typename T, class = std::enable_if_t<std::is_base_of<::google::protobuf::Message, T>::value>>
 HashProtoBufResult hashProtoBufMessage(const T& message)
 {
+    if (!message.IsInitialized()) {
+        return {std::nullopt, "Message is not initialized"};
+    }
+
     google::protobuf::util::JsonOptions opts;
     opts.always_print_enums_as_ints = true;
     opts.always_print_primitive_fields = true;
     opts.preserve_proto_field_names = true;
-
     std::string json;
     if (auto status = google::protobuf::util::MessageToJsonString(message, &json, opts); !status.ok()) {
         return {std::nullopt, status.ToString()};
