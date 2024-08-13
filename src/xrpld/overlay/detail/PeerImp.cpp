@@ -32,6 +32,7 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/overlay/predicates.h>
+#include <xrpld/overlay/detail/ProtocolMessage.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/random.h>
@@ -41,7 +42,6 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/core/ostream.hpp>
-#include <google/protobuf/util/json_util.h>
 
 #include <algorithm>
 #include <memory>
@@ -1562,28 +1562,18 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
         return;
     }
 
-    auto const peer_id = shared_from_this()->id();
-
-    google::protobuf::util::JsonOptions opts;
-    opts.always_print_enums_as_ints = true;
-    opts.always_print_primitive_fields = true;
-    opts.preserve_proto_field_names = true;
-
-    std::string json;
-    if (auto status = google::protobuf::util::MessageToJsonString(*m, &json, opts); !status.ok()) {
-        JLOG(p_journal_.error()) << "Failed to convert message to JSON: " << status.ToString();
-    } else {
-
-        JLOG(p_journal_.debug()) << "MessageToJsonString: " << json;
-
-        auto const hash = sha512Half(json);
-
-        if (!app_.getHashRouter().addSuppressionPeer(hash, peer_id)) {
+    auto const peerId = shared_from_this()->id();
+    auto const [hash, error] = hashfProtoBufMessage<protocol::TMLedgerData>(*m);
+    if (hash) {
+        if (!app_.getHashRouter().addSuppressionPeer(*hash, peerId)) {
+            // TODO: switch to debug before merge
             JLOG(p_journal_.info()) 
-                << "Received duplicate TMLedgerData message from peer: " << peer_id 
-                << ", message hash: " << hash;
+                << "Received duplicate TMLedgerData message from peer: " << peerId 
+                << ", message hash: " << *hash;
             return;
         }
+    } else {
+        JLOG(p_journal_.error()) << "Failed to hash TMLedgerData message: " << error;
     }
 
     uint256 const ledgerHash{m->ledgerhash()};

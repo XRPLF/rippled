@@ -25,6 +25,7 @@
 #include <xrpld/overlay/detail/ZeroCopyStream.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/protocol/messages.h>
+#include <xrpl/protocol/digest.h>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
 #include <boost/system/error_code.hpp>
@@ -34,6 +35,7 @@
 #include <optional>
 #include <type_traits>
 #include <vector>
+#include <google/protobuf/util/json_util.h>
 
 namespace ripple {
 
@@ -480,6 +482,24 @@ invokeProtocolMessage(
         result.second = make_error_code(boost::system::errc::bad_message);
 
     return result;
+}
+
+using HashProtoBufResult = std::pair<std::optional<sha512_half_hasher::result_type>, std::string>;
+
+template <typename T, class = std::enable_if_t<std::is_base_of<::google::protobuf::Message, T>::value>>
+HashProtoBufResult hashfProtoBufMessage(const T& message)
+{
+    google::protobuf::util::JsonOptions opts;
+    opts.always_print_enums_as_ints = true;
+    opts.always_print_primitive_fields = true;
+    opts.preserve_proto_field_names = true;
+
+    std::string json;
+    if (auto status = google::protobuf::util::MessageToJsonString(message, &json, opts); !status.ok()) {
+        return {std::nullopt, status.ToString()};
+    } 
+
+    return {sha512Half(json), ""};
 }
 
 }  // namespace ripple
