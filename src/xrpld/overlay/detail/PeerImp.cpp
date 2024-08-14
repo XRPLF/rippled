@@ -30,6 +30,7 @@
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/PeerImp.h>
+#include <xrpld/overlay/detail/ProtocolMessage.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/overlay/predicates.h>
 #include <xrpld/perflog/PerfLog.h>
@@ -38,7 +39,6 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
-// #include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/protocol/digest.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -60,6 +60,9 @@ std::chrono::milliseconds constexpr peerHighLatency{300};
 
 /** How often we PING the peer to check for latency and sendq probe */
 std::chrono::seconds constexpr peerTimerInterval{60};
+
+/** How often we process duplicate incoming TMGetLedger messages */
+std::chrono::seconds constexpr getledgerInterval{15};
 }  // namespace
 
 PeerImp::PeerImp(
@@ -1395,12 +1398,71 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
         }
     }
 
+    // Drop duplicate requests from the same peer for at least
+    // `getLedgerInterval` seconds.
+    // Append a little junk to prevent the hash of an incoming messsage
+    // from matching the hash of the same outgoing message.
+    // `shouldProcessForPeer` does not distingish between incoming and
+    // outgoing, and some of the message relay logic checks the hash to see
+    // if the message has been relayed already. If the hashes are the same,
+    // a duplicate will be detected when sending the message is attempted,
+    // so it will fail.
+    auto const messageHash = sha512Half(*m, nullptr);
+    // Request cookies are not included in the hash. Track them here.
+    auto const requestCookie = [&m]() -> std::optional<uint64_t> {
+        if (m->has_requestcookie())
+            return m->requestcookie();
+        return std::nullopt;
+    }();
+    auto const [inserted, pending] = [&] {
+        std::lock_guard lock{cookieLock_};
+        auto& cookies = messageRequestCookies_[messageHash];
+        bool const pending = !cookies.empty();
+        return std::pair{cookies.emplace(requestCookie).second, pending};
+    }();
+    // Check if the request has been seen from this peer.
+    if (!app_.getHashRouter().shouldProcessForPeer(
+            messageHash, id_, getledgerInterval))
+    {
+        // This request has already been seen from this peer.
+        // Has it been seen with this request cookie (or lack thereof)?
+
+        if (inserted)
+        {
+            // This is a duplicate request, but with a new cookie. When a
+            // response is ready, one will be sent for each request cookie.
+            JLOG(p_journal_.debug())
+                << "TMGetLedger: duplicate request with new request cookie: "
+                << requestCookie.value_or(0)
+                << ". Job pending: " << (pending ? "yes" : "no") << ": "
+                << messageHash;
+            if (pending)
+            {
+                // Don't bother queueing up a new job if other requests are
+                // already pending. This should limit entries in the job queue
+                // to one per peer per unique request.
+                JLOG(p_journal_.debug())
+                    << "TMGetLedger: Suppressing recvGetLedger job, since one "
+                       "is pending: "
+                    << messageHash;
+                return;
+            }
+        }
+        else
+        {
+            return badData("duplicate request: " + to_string(messageHash));
+        }
+    }
+
     // Queue a job to process the request
+    JLOG(p_journal_.debug())
+        << "TMGetLedger: Adding recvGetLedger job: " << messageHash;
     std::weak_ptr<PeerImp> weak = shared_from_this();
-    app_.getJobQueue().addJob(jtLEDGER_REQ, "recvGetLedger", [weak, m]() {
-        if (auto peer = weak.lock())
-            peer->processLedgerRequest(m);
-    });
+    app_.getJobQueue().addJob(
+        jtLEDGER_REQ, "recvGetLedger", [weak, m, messageHash]() {
+            if (auto peer = weak.lock())
+                peer->processLedgerRequest(m, messageHash);
+        });
 }
 
 void
@@ -2885,16 +2947,21 @@ PeerImp::checkValidation(
 // the TX tree with the specified root hash.
 //
 static std::shared_ptr<PeerImp>
-getPeerWithTree(OverlayImpl& ov, uint256 const& rootHash, PeerImp const* skip)
+getPeerWithTree(
+    OverlayImpl& ov,
+    uint256 const& rootHash,
+    PeerImp const* skip,
+    std::function<bool(Peer::id_t)> shouldProcessCallback)
 {
     std::shared_ptr<PeerImp> ret;
     int retScore = 0;
 
+    assert(shouldProcessCallback);
     ov.for_each([&](std::shared_ptr<PeerImp>&& p) {
         if (p->hasTxSet(rootHash) && p.get() != skip)
         {
             auto score = p->getScore(true);
-            if (!ret || (score > retScore))
+            if (!ret || (score > retScore && shouldProcessCallback(p->id())))
             {
                 ret = std::move(p);
                 retScore = score;
@@ -2913,16 +2980,18 @@ getPeerWithLedger(
     OverlayImpl& ov,
     uint256 const& ledgerHash,
     LedgerIndex ledger,
-    PeerImp const* skip)
+    PeerImp const* skip,
+    std::function<bool(Peer::id_t)> shouldProcessCallback)
 {
     std::shared_ptr<PeerImp> ret;
     int retScore = 0;
 
+    assert(shouldProcessCallback);
     ov.for_each([&](std::shared_ptr<PeerImp>&& p) {
         if (p->hasLedger(ledgerHash, ledger) && p.get() != skip)
         {
             auto score = p->getScore(true);
-            if (!ret || (score > retScore))
+            if (!ret || (score > retScore && shouldProcessCallback(p->id())))
             {
                 ret = std::move(p);
                 retScore = score;
@@ -2936,7 +3005,9 @@ getPeerWithLedger(
 void
 PeerImp::sendLedgerBase(
     std::shared_ptr<Ledger const> const& ledger,
-    protocol::TMLedgerData& ledgerData)
+    protocol::TMLedgerData& ledgerData,
+    std::map<std::shared_ptr<Peer>, std::set<std::optional<uint64_t>>> const&
+        destinations)
 {
     JLOG(p_journal_.trace()) << "sendLedgerBase: Base data";
 
@@ -2968,13 +3039,43 @@ PeerImp::sendLedgerBase(
         }
     }
 
-    auto message{
-        std::make_shared<Message>(ledgerData, protocol::mtLEDGER_DATA)};
-    send(message);
+    sendToMultiple(ledgerData, destinations);
+}
+
+void
+PeerImp::sendToMultiple(
+    protocol::TMLedgerData& ledgerData,
+    std::map<std::shared_ptr<Peer>, std::set<std::optional<uint64_t>>> const&
+        destinations)
+{
+    bool foundSelf = false;
+    for (auto const& [peer, cookies] : destinations)
+    {
+        if (peer.get() == this)
+            foundSelf = true;
+        JLOG(p_journal_.debug())
+            << "sendToMultiple: Sending " << cookies.size()
+            << " TMLedgerData messages to peer[" << peer->id() << "]";
+        for (auto const& cookie : cookies)
+        {
+            // Unfortunately, need a separate Message object for every
+            // combination
+            if (cookie)
+                ledgerData.set_requestcookie(*cookie);
+            else
+                ledgerData.clear_requestcookie();
+            auto message{
+                std::make_shared<Message>(ledgerData, protocol::mtLEDGER_DATA)};
+            peer->send(message);
+        }
+    }
+    assert(foundSelf);
 }
 
 std::shared_ptr<Ledger const>
-PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
+PeerImp::getLedger(
+    std::shared_ptr<protocol::TMGetLedger> const& m,
+    uint256 const& mHash)
 {
     JLOG(p_journal_.trace()) << "getLedger: Ledger";
 
@@ -2993,11 +3094,20 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
             if (m->has_querytype() && !m->has_requestcookie())
             {
                 // Attempt to relay the request to a peer
+                // Note repeated messages will not relay to the same peer
+                // before `getLedgerInterval` seconds. This prevents one
+                // peer from getting flooded, and distributes the request
+                // load. If a request has been relayed to all eligible
+                // peers, then this message will not be relayed.
                 if (auto const peer = getPeerWithLedger(
                         overlay_,
                         ledgerHash,
                         m->has_ledgerseq() ? m->ledgerseq() : 0,
-                        this))
+                        this,
+                        [&](Peer::id_t id) {
+                            return app_.getHashRouter().shouldProcessForPeer(
+                                mHash, id, getledgerInterval);
+                        }))
                 {
                     m->set_requestcookie(id());
                     peer->send(
@@ -3008,7 +3118,40 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
                 }
 
                 JLOG(p_journal_.trace())
-                    << "getLedger: Failed to find peer to relay request";
+                    << "getLedger: Don't have ledger with hash " << ledgerHash;
+
+                if (m->has_querytype() && !m->has_requestcookie())
+                {
+                    // Attempt to relay the request to a peer
+                    // Note repeated messages will not relay to the same peer
+                    // before `getLedgerInterval` seconds. This prevents one
+                    // peer from getting flooded, and distributes the request
+                    // load. If a request has been relayed to all eligible
+                    // peers, then this message will not be relayed.
+                    if (auto const peer = getPeerWithLedger(
+                            overlay_,
+                            ledgerHash,
+                            m->has_ledgerseq() ? m->ledgerseq() : 0,
+                            this,
+                            [&](Peer::id_t id) {
+                                return app_.getHashRouter()
+                                    .shouldProcessForPeer(
+                                        mHash, id, getledgerInterval);
+                            }))
+                    {
+                        m->set_requestcookie(id());
+                        peer->send(std::make_shared<Message>(
+                            *m, protocol::mtGET_LEDGER));
+                        JLOG(p_journal_.debug())
+                            << "getLedger: Request relayed to peer ["
+                            << peer->id() << "]: " << mHash;
+                        return ledger;
+                    }
+
+                    JLOG(p_journal_.trace())
+                        << "getLedger: Failed to find peer to relay request: "
+                        << mHash;
+                }
             }
         }
     }
@@ -3069,7 +3212,9 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m)
 }
 
 std::shared_ptr<SHAMap const>
-PeerImp::getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const
+PeerImp::getTxSet(
+    std::shared_ptr<protocol::TMGetLedger> const& m,
+    uint256 const& mHash) const
 {
     JLOG(p_journal_.trace()) << "getTxSet: TX set";
 
@@ -3081,17 +3226,28 @@ PeerImp::getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const
         if (m->has_querytype() && !m->has_requestcookie())
         {
             // Attempt to relay the request to a peer
-            if (auto const peer = getPeerWithTree(overlay_, txSetHash, this))
+            // Note repeated messages will not relay to the same peer
+            // before `getLedgerInterval` seconds. This prevents one
+            // peer from getting flooded, and distributes the request
+            // load. If a request has been relayed to all eligible
+            // peers, then this message will not be relayed.
+            if (auto const peer = getPeerWithTree(
+                    overlay_, txSetHash, this, [&](Peer::id_t id) {
+                        return app_.getHashRouter().shouldProcessForPeer(
+                            mHash, id, getledgerInterval);
+                    }))
             {
                 m->set_requestcookie(id());
                 peer->send(
                     std::make_shared<Message>(*m, protocol::mtGET_LEDGER));
-                JLOG(p_journal_.debug()) << "getTxSet: Request relayed";
+                JLOG(p_journal_.debug())
+                    << "getTxSet: Request relayed to peer [" << peer->id()
+                    << "]: " << mHash;
             }
             else
             {
                 JLOG(p_journal_.debug())
-                    << "getTxSet: Failed to find relay peer";
+                    << "getTxSet: Failed to find relay peer: " << mHash;
             }
         }
         else
@@ -3104,7 +3260,9 @@ PeerImp::getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const
 }
 
 void
-PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
+PeerImp::processLedgerRequest(
+    std::shared_ptr<protocol::TMGetLedger> const& m,
+    uint256 const& mHash)
 {
     // Do not resource charge a peer responding to a relay
     if (!m->has_requestcookie())
@@ -3117,9 +3275,79 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
     bool fatLeaves{true};
     auto const itype{m->itype()};
 
+    auto getDestinations = [&] {
+        // If a ledger data message is generated, it's going to be sent to every
+        // peer that is waiting for it.
+
+        std::map<std::shared_ptr<Peer>, std::set<std::optional<uint64_t>>>
+            result;
+
+        std::size_t numCookies = 0;
+        {
+            // Don't do the work under this peer if this peer is not waiting for
+            // any replies
+            auto myCookies = releaseRequestCookies(mHash);
+            if (myCookies.empty())
+            {
+                JLOG(p_journal_.debug()) << "TMGetLedger: peer is no longer "
+                                            "waiting for response to request: "
+                                         << mHash;
+                return result;
+            }
+            numCookies += myCookies.size();
+            result[shared_from_this()] = myCookies;
+        }
+
+        std::set<HashRouter::PeerShortID> peers;
+        app_.getHashRouter().forEachPeer(
+            mHash, [&](HashRouter::PeerShortID const& peerID) {
+                // callback is called under lock, so finish as fast as
+                // possible.
+                peers.insert(peerID);
+                return true;
+            });
+        for (auto const peerID : peers)
+        {
+            // This loop does not need to be done under the HashRouter
+            // lock because findPeerByShortID and releaseRequestCookies
+            // are thread safe, and everything else is local
+            if (auto p = overlay_.findPeerByShortID(peerID))
+            {
+                auto cookies = p->releaseRequestCookies(mHash);
+                numCookies += cookies.size();
+                if (result.contains(p))
+                {
+                    // Unlikely, but if a request came in to this peer while
+                    // iterating, add the items instead of copying /
+                    // overwriting.
+                    assert(p.get() == this);
+                    for (auto const& cookie : cookies)
+                        result[p].emplace(cookie);
+                }
+                else if (cookies.size())
+                    result[p] = cookies;
+            }
+        }
+
+        JLOG(p_journal_.debug())
+            << "TMGetLedger: Processing request for " << result.size()
+            << " peers. Will send " << numCookies
+            << " messages if successful: " << mHash;
+
+        return result;
+    };
+    // Will only populate this if we're going to do work.
+    std::map<std::shared_ptr<Peer>, std::set<std::optional<uint64_t>>>
+        destinations;
+
     if (itype == protocol::liTS_CANDIDATE)
     {
-        if (sharedMap = getTxSet(m); !sharedMap)
+        destinations = getDestinations();
+        if (destinations.empty())
+            // Nowhere to send the response!
+            return;
+
+        if (sharedMap = getTxSet(m, mHash); !sharedMap)
             return;
         map = sharedMap.get();
 
@@ -3127,8 +3355,6 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
         ledgerData.set_ledgerseq(0);
         ledgerData.set_ledgerhash(m->ledgerhash());
         ledgerData.set_type(protocol::liTS_CANDIDATE);
-        if (m->has_requestcookie())
-            ledgerData.set_requestcookie(m->requestcookie());
 
         // We'll already have most transactions
         fatLeaves = false;
@@ -3147,7 +3373,12 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
             return;
         }
 
-        if (ledger = getLedger(m); !ledger)
+        destinations = getDestinations();
+        if (destinations.empty())
+            // Nowhere to send the response!
+            return;
+
+        if (ledger = getLedger(m, mHash); !ledger)
             return;
 
         // Fill out the reply
@@ -3155,13 +3386,11 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
         ledgerData.set_ledgerhash(ledgerHash.begin(), ledgerHash.size());
         ledgerData.set_ledgerseq(ledger->info().seq);
         ledgerData.set_type(itype);
-        if (m->has_requestcookie())
-            ledgerData.set_requestcookie(m->requestcookie());
 
         switch (itype)
         {
             case protocol::liBASE:
-                sendLedgerBase(ledger, ledgerData);
+                sendLedgerBase(ledger, ledgerData, destinations);
                 return;
 
             case protocol::liTX_NODE:
@@ -3272,7 +3501,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
             << ledgerData.nodes_size() << " nodes";
     }
 
-    send(std::make_shared<Message>(ledgerData, protocol::mtLEDGER_DATA));
+    sendToMultiple(ledgerData, destinations);
 }
 
 int
@@ -3329,6 +3558,19 @@ PeerImp::reduceRelayReady()
             reduce_relay::WAIT_ON_BOOTUP;
     return vpReduceRelayEnabled_ && reduceRelayReady_;
 }
+
+std::set<std::optional<uint64_t>>
+PeerImp::releaseRequestCookies(uint256 const& requestHash)
+{
+    std::set<std::optional<uint64_t>> result;
+    std::lock_guard lock(cookieLock_);
+    if (messageRequestCookies_.contains(requestHash))
+    {
+        std::swap(result, messageRequestCookies_[requestHash]);
+        messageRequestCookies_.erase(requestHash);
+    }
+    return result;
+};
 
 void
 PeerImp::Metrics::add_message(std::uint64_t bytes)

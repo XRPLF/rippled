@@ -484,4 +484,41 @@ invokeProtocolMessage(
 
 }  // namespace ripple
 
+namespace protocol {
+
+template <class Hasher>
+void
+hash_append(Hasher& h, TMGetLedger const& msg)
+{
+    using beast::hash_append;
+    using namespace ripple;
+    hash_append(h, safe_cast<int>(protocolMessageType(msg)));
+    hash_append(h, safe_cast<int>(msg.itype()));
+    if (msg.has_ltype())
+        hash_append(h, safe_cast<int>(msg.ltype()));
+
+    if (msg.has_ledgerhash())
+        hash_append(h, msg.ledgerhash());
+
+    if (msg.has_ledgerseq())
+        hash_append(h, msg.ledgerseq());
+
+    for (auto const& nodeId : msg.nodeids())
+        hash_append(h, nodeId);
+    hash_append(h, msg.nodeids_size());
+
+    // Do NOT include the request cookie. It does not affect the content of the
+    // request, but only where to route the results.
+    // if (msg.has_requestcookie())
+    //    hash_append(h, msg.requestcookie());
+
+    if (msg.has_querytype())
+        hash_append(h, safe_cast<int>(msg.querytype()));
+
+    if (msg.has_querydepth())
+        hash_append(h, msg.querydepth());
+}
+
+}  // namespace protocol
+
 #endif

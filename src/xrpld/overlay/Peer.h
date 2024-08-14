@@ -133,6 +133,13 @@ public:
 
     virtual bool
     txReduceRelayEnabled() const = 0;
+
+    //
+    // Messages
+    //
+
+    virtual std::set<std::optional<uint64_t>>
+    releaseRequestCookies(uint256 const& requestHash) = 0;
 };
 
 }  // namespace ripple
