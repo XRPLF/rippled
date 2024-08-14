@@ -92,6 +92,13 @@ private:
             return std::move(peers_);
         }
 
+        /** Return set of peers waiting for reply. Leaves list unchanged. */
+        std::set<PeerShortID> const&
+        peekPeerSet()
+        {
+            return peers_;
+        }
+
         /** Return seated relay time point if the message has been relayed */
         std::optional<Stopwatch::time_point>
         relayed() const
@@ -232,6 +239,15 @@ public:
     */
     std::optional<std::set<PeerShortID>>
     shouldRelay(uint256 const& key);
+
+    /** Calls a callback for each peer in the Entry for the key
+
+        callback is executed under lock. If callback returns false, the loop
+       will exit.
+
+    */
+    void
+    forEachPeer(uint256 const& key, std::function<bool(PeerShortID)> callback);
 
 private:
     // pair.second indicates whether the entry was created
