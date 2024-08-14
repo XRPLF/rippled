@@ -37,6 +37,7 @@
 #include <ripple/nodestore/DatabaseShard.h>
 #include <ripple/overlay/Cluster.h>
 #include <ripple/overlay/impl/PeerImp.h>
+#include <ripple/overlay/impl/ProtocolMessage.h>
 #include <ripple/overlay/impl/Tuning.h>
 #include <ripple/overlay/predicates.h>
 #include <ripple/protocol/digest.h>
@@ -1937,6 +1938,12 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
             "Invalid Ledger/TXset nodes " + std::to_string(m->nodes_size()));
     }
 
+    auto const messageHash = sha512Half(*m);
+    if (!app_.getHashRouter().addSuppressionPeer(messageHash, id_))
+    {
+        return badData("Duplicate message: " + to_string(messageHash));
+    }
+
     // If there is a request cookie, attempt to relay the message
     if (m->has_requestcookie())
     {
@@ -1953,7 +1960,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     }
 
     uint256 const ledgerHash{m->ledgerhash()};
-
     // Otherwise check if received data for a candidate transaction set
     if (m->type() == protocol::liTS_CANDIDATE)
     {
@@ -3382,7 +3388,8 @@ PeerImp::sendToMultiple(
             foundSelf = true;
         JLOG(p_journal_.debug())
             << "sendToMultiple: Sending " << cookies.size()
-            << " TMLedgerData messages to peer[" << peer->id() << "]";
+            << " TMLedgerData messages to peer[" << peer->id()
+            << "]: " << sha512Half(ledgerData);
         for (auto const& cookie : cookies)
         {
             // Unfortunately, need a separate Message object for every
