@@ -20,7 +20,6 @@
 #include <xrpld/perflog/detail/PerfLogImp.h>
 
 #include <xrpld/core/JobTypes.h>
-#include <xrpld/nodestore/DatabaseShard.h>
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -299,10 +298,7 @@ PerfLogImp::report()
     report[jss::hostid] = hostname_;
     report[jss::counters] = counters_.countersJson();
     report[jss::nodestore] = Json::objectValue;
-    if (app_.getShardStore())
-        app_.getShardStore()->getCountsJson(report[jss::nodestore]);
-    else
-        app_.getNodeStore().getCountsJson(report[jss::nodestore]);
+    app_.getNodeStore().getCountsJson(report[jss::nodestore]);
     report[jss::current_activities] = counters_.currentJson();
     app_.getOPs().stateAccounting(report);
 

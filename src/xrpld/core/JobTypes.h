@@ -84,7 +84,6 @@ private:
         add(jtCLIENT_FEE_CHANGE, "clientFeeChange",      maxLimit,  2000ms,  5000ms);
         add(jtCLIENT_CONSENSUS,  "clientConsensus",      maxLimit,  2000ms,  5000ms);
         add(jtCLIENT_ACCT_HIST,  "clientAccountHistory", maxLimit,  2000ms,  5000ms);
-        add(jtCLIENT_SHARD,      "clientShardArchive",   maxLimit,  2000ms,  5000ms);
         add(jtCLIENT_RPC,        "clientRPC",            maxLimit,  2000ms,  5000ms);
         add(jtCLIENT_WEBSOCKET,  "clientWebsocket",      maxLimit,  2000ms,  5000ms);
         add(jtRPC,               "RPC",                  maxLimit,     0ms,     0ms);

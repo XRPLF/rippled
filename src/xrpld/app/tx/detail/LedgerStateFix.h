@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2019 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,48 +17,41 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_TASKQUEUE_H_INCLUDED
-#define RIPPLE_NODESTORE_TASKQUEUE_H_INCLUDED
+#ifndef RIPPLE_TX_LEDGER_STATE_FIX_H_INCLUDED
+#define RIPPLE_TX_LEDGER_STATE_FIX_H_INCLUDED
 
-#include <xrpld/core/detail/Workers.h>
-
-#include <functional>
-#include <queue>
+#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Indexes.h>
 
 namespace ripple {
-namespace NodeStore {
 
-class TaskQueue : private Workers::Callback
+class LedgerStateFix : public Transactor
 {
 public:
-    TaskQueue();
+    enum FixType : std::uint16_t {
+        nfTokenPageLink = 1,
+    };
 
-    void
-    stop();
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    /** Adds a task to the queue
+    explicit LedgerStateFix(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
 
-        @param task std::function with signature void()
-    */
-    void
-    addTask(std::function<void()> task);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-    /** Return the queue size
-     */
-    [[nodiscard]] size_t
-    size() const;
+    static XRPAmount
+    calculateBaseFee(ReadView const& view, STTx const& tx);
 
-private:
-    mutable std::mutex mutex_;
-    Workers workers_;
-    std::queue<std::function<void()>> tasks_;
-    std::uint64_t processing_{0};
+    static TER
+    preclaim(PreclaimContext const& ctx);
 
-    void
-    processTask(int instance) override;
+    TER
+    doApply() override;
 };
 
-}  // namespace NodeStore
 }  // namespace ripple
 
 #endif
