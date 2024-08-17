@@ -27,7 +27,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           running-workflow-name: wait-for-check-regexp
-          check-regexp: '(dependencies|test).*linux.*' # Ignore windows and mac tests but make sure linux passes
+          check-regexp: '(dependencies|test).*linux.*' # Ignore Windows and MacOS tests, but make sure Linux tests pass
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
       - name: Checkout
