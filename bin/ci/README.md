@@ -1,3 +1,5 @@
+# Continuous Integration (CI) Scripts
+
 In this directory are two scripts, `build.sh` and `test.sh` used for building
 and testing rippled.
 
