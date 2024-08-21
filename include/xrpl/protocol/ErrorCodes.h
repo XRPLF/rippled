@@ -137,7 +137,8 @@ enum error_code_i {
     rpcEXPIRED_VALIDATOR_LIST = 80,
 
     // unused = 90,
-    // unused = 91,
+    // DEPRECATED. New code must not use this value.
+    rpcREPORTING_UNSUPPORTED = 91,
 
     rpcOBJECT_NOT_FOUND = 92,
 
