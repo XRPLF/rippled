@@ -507,6 +507,8 @@ PeerImp::supportsFeature(ProtocolFeature f) const
             return protocol_ >= make_protocol(2, 2);
         case ProtocolFeature::LedgerReplay:
             return ledgerReplayEnabled_;
+        case ProtocolFeature::LedgerDataCookies:
+            return protocol_ >= make_protocol(2, 3);
     }
     return false;
 }
@@ -1320,8 +1322,9 @@ PeerImp::handleTransaction(
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
 {
-    auto badData = [&](std::string const& msg) {
-        charge(Resource::feeBadData);
+    auto badData = [&](std::string const& msg, bool chargefee = true) {
+        if (chargefee)
+            charge(Resource::feeBadData);
         JLOG(p_journal_.warn()) << "TMGetLedger: " << msg;
     };
     auto const itype{m->itype()};
@@ -1450,7 +1453,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
         }
         else
         {
-            return badData("duplicate request: " + to_string(messageHash));
+            // Don't punish nodes that don't know any better
+            return badData(
+                "duplicate request: " + to_string(messageHash),
+                supportsFeature(ProtocolFeature::LedgerDataCookies));
         }
     }
 
@@ -1566,8 +1572,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaResponse> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
 {
-    auto badData = [&](std::string const& msg) {
-        fee_ = Resource::feeBadData;
+    auto badData = [&](std::string const& msg, bool charge = true) {
+        if (charge)
+            fee_ = Resource::feeBadData;
         JLOG(p_journal_.warn()) << "TMLedgerData: " << msg;
     };
 
@@ -1621,22 +1628,83 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     auto const messageHash = sha512Half(*m);
     if (!app_.getHashRouter().addSuppressionPeer(messageHash, id_))
     {
-        return badData("Duplicate message: " + to_string(messageHash));
+        // Don't punish nodes that don't know any better
+        return badData(
+            "Duplicate message: " + to_string(messageHash),
+            supportsFeature(ProtocolFeature::LedgerDataCookies));
     }
 
-    // If there is a request cookie, attempt to relay the message
-    if (m->has_requestcookie())
+    bool const routed = m->has_directresponse() || m->responsecookies_size() ||
+        m->has_requestcookie();
+
     {
-        if (auto peer = overlay_.findPeerByShortID(m->requestcookie()))
+        // Check if this message needs to be forwarded to one or more peers.
+        // Maximum of one of the relevant fields should be populated.
+        assert(!m->has_requestcookie() || !m->responsecookies_size());
+
+        // Make a copy of the response cookies, then wipe the list so it can be
+        // forwarded cleanly
+        auto const responseCookies = m->responsecookies();
+        m->clear_responsecookies();
+        // Flag indicating if this response should be processed locally,
+        // possibly in addition to being forwarded.
+        bool const directResponse =
+            m->has_directresponse() && m->directresponse();
+        m->clear_directresponse();
+
+        auto const relay = [this, m, &messageHash](auto const cookie) {
+            if (auto peer = overlay_.findPeerByShortID(cookie))
+            {
+                assert(!m->has_requestcookie() && !m->responsecookies_size());
+                if (peer->supportsFeature(ProtocolFeature::LedgerDataCookies))
+                    // Setting this flag is not _strictly_ necessary for peers
+                    // that support it if there are no cookies included in the
+                    // message, but it is more accurate.
+                    m->set_directresponse(true);
+                else
+                    m->clear_directresponse();
+                peer->send(
+                    std::make_shared<Message>(*m, protocol::mtLEDGER_DATA));
+            }
+            else
+                JLOG(p_journal_.info())
+                    << "Unable to route TX/ledger data reply to peer ["
+                    << cookie << "]: " << messageHash;
+        };
+        // If there is a request cookie, attempt to relay the message
+        if (m->has_requestcookie())
         {
+            assert(responseCookies.empty());
             m->clear_requestcookie();
-            peer->send(std::make_shared<Message>(*m, protocol::mtLEDGER_DATA));
+            relay(m->requestcookie());
+            if (!directResponse && responseCookies.empty())
+                return;
         }
-        else
+        // If there's a list of request cookies, attempt to relay the message to
+        // all of them.
+        if (responseCookies.size())
         {
-            JLOG(p_journal_.info()) << "Unable to route TX/ledger data reply";
+            for (auto const cookie : responseCookies)
+                relay(cookie);
+            if (!directResponse)
+                return;
         }
-        return;
+    }
+
+    // Now that any forwarding is done check the base message (data only, no
+    // routing info for duplicates)
+    if (routed)
+    {
+        m->clear_directresponse();
+        assert(!m->has_requestcookie() && !m->responsecookies_size());
+        auto const baseMessageHash = sha512Half(*m);
+        if (!app_.getHashRouter().addSuppressionPeer(baseMessageHash, id_))
+        {
+            // Don't punish nodes that don't know any better
+            return badData(
+                "Duplicate message: " + to_string(baseMessageHash),
+                supportsFeature(ProtocolFeature::LedgerDataCookies));
+        }
     }
 
     uint256 const ledgerHash{m->ledgerhash()};
@@ -3058,21 +3126,72 @@ PeerImp::sendToMultiple(
     {
         if (peer.get() == this)
             foundSelf = true;
-        JLOG(p_journal_.debug())
-            << "sendToMultiple: Sending " << cookies.size()
-            << " TMLedgerData messages to peer[" << peer->id()
-            << "]: " << sha512Half(ledgerData);
+        bool const multipleCookies =
+            peer->supportsFeature(ProtocolFeature::LedgerDataCookies);
+        std::vector<std::uint64_t> sendCookies;
+
+        bool directResponse = false;
+        if (!multipleCookies)
+        {
+            JLOG(p_journal_.debug())
+                << "sendToMultiple: Sending " << cookies.size()
+                << " TMLedgerData messages to peer [" << peer->id()
+                << "]: " << sha512Half(ledgerData);
+        }
         for (auto const& cookie : cookies)
         {
             // Unfortunately, need a separate Message object for every
             // combination
             if (cookie)
+            {
+                if (multipleCookies)
+                {
+                    // Save this one for later to send a single message
+                    sendCookies.emplace_back(*cookie);
+                    continue;
+                }
+
+                // Feature not supported, so send a single message with a
+                // single cookie
                 ledgerData.set_requestcookie(*cookie);
+            }
             else
+            {
+                if (multipleCookies)
+                {
+                    // Set this flag later on the single message
+                    directResponse = true;
+                    continue;
+                }
+
                 ledgerData.clear_requestcookie();
+            }
+            assert(!multipleCookies);
             auto message{
                 std::make_shared<Message>(ledgerData, protocol::mtLEDGER_DATA)};
             peer->send(message);
+        }
+        if (multipleCookies)
+        {
+            // Send a single message with all the cookies and/or the direct
+            // response flag, so the receiver can farm out the single message to
+            // multiple peers and/or itself
+            assert(sendCookies.size() || directResponse);
+            ledgerData.clear_requestcookie();
+            ledgerData.clear_responsecookies();
+            ledgerData.set_directresponse(directResponse);
+            for (auto const& cookie : sendCookies)
+                ledgerData.add_responsecookies(cookie);
+            auto message{
+                std::make_shared<Message>(ledgerData, protocol::mtLEDGER_DATA)};
+            peer->send(message);
+
+            JLOG(p_journal_.debug())
+                << "sendToMultiple: Sent 1 TMLedgerData message to peer ["
+                << peer->id() << "]: including "
+                << (directResponse ? "the direct response flag and " : "")
+                << sendCookies.size() << " response cookies. "
+                << ": " << sha512Half(ledgerData);
         }
     }
     assert(foundSelf);
@@ -3083,7 +3202,7 @@ PeerImp::getLedger(
     std::shared_ptr<protocol::TMGetLedger> const& m,
     uint256 const& mHash)
 {
-    JLOG(p_journal_.trace()) << "getLedger: Ledger";
+    JLOG(p_journal_.trace()) << "getLedger: Ledger " << mHash;
 
     std::shared_ptr<Ledger const> ledger;
 
@@ -3124,7 +3243,8 @@ PeerImp::getLedger(
                 }
 
                 JLOG(p_journal_.trace())
-                    << "getLedger: Don't have ledger with hash " << ledgerHash;
+                    << "getLedger: Don't have ledger with hash " << ledgerHash
+                    << ": " << mHash;
 
                 if (m->has_querytype() && !m->has_requestcookie())
                 {
@@ -3167,7 +3287,7 @@ PeerImp::getLedger(
         if (m->ledgerseq() < app_.getLedgerMaster().getEarliestFetch())
         {
             JLOG(p_journal_.debug())
-                << "getLedger: Early ledger sequence request";
+                << "getLedger: Early ledger sequence request " << mHash;
         }
         else
         {
@@ -3176,7 +3296,7 @@ PeerImp::getLedger(
             {
                 JLOG(p_journal_.debug())
                     << "getLedger: Don't have ledger with sequence "
-                    << m->ledgerseq();
+                    << m->ledgerseq() << ": " << mHash;
             }
         }
     }
@@ -3198,20 +3318,22 @@ PeerImp::getLedger(
                     charge(Resource::feeInvalidRequest);
 
                 ledger.reset();
-                JLOG(p_journal_.warn())
-                    << "getLedger: Invalid ledger sequence " << ledgerSeq;
+                JLOG(p_journal_.warn()) << "getLedger: Invalid ledger sequence "
+                                        << ledgerSeq << ": " << mHash;
             }
         }
         else if (ledgerSeq < app_.getLedgerMaster().getEarliestFetch())
         {
             ledger.reset();
             JLOG(p_journal_.debug())
-                << "getLedger: Early ledger sequence request " << ledgerSeq;
+                << "getLedger: Early ledger sequence request " << ledgerSeq
+                << ": " << mHash;
         }
     }
     else
     {
-        JLOG(p_journal_.debug()) << "getLedger: Unable to find ledger";
+        JLOG(p_journal_.debug())
+            << "getLedger: Unable to find ledger " << mHash;
     }
 
     return ledger;
@@ -3222,7 +3344,7 @@ PeerImp::getTxSet(
     std::shared_ptr<protocol::TMGetLedger> const& m,
     uint256 const& mHash) const
 {
-    JLOG(p_journal_.trace()) << "getTxSet: TX set";
+    JLOG(p_journal_.trace()) << "getTxSet: TX set " << mHash;
 
     uint256 const txSetHash{m->ledgerhash()};
     std::shared_ptr<SHAMap> shaMap{
@@ -3258,7 +3380,8 @@ PeerImp::getTxSet(
         }
         else
         {
-            JLOG(p_journal_.debug()) << "getTxSet: Failed to find TX set";
+            JLOG(p_journal_.debug())
+                << "getTxSet: Failed to find TX set " << mHash;
         }
     }
 
