@@ -37,7 +37,9 @@ namespace ripple {
 constexpr ProtocolVersion const supportedProtocolList[]
 {
     {2, 1},
-    {2, 2}
+    {2, 2},
+    // Adds TMLedgerData::responseCookies
+    {2, 3}
 };
 // clang-format on
 
