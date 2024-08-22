@@ -39,13 +39,15 @@ struct DatabasePair
  *        and returns their descriptors.
  * @param config Config object.
  * @param setup Path to the databases and other opening parameters.
+ * @param j Journal.
  * @return Pair of unique pointers to the opened ledger and transaction
  *         databases.
  */
 DatabasePair
 makeShardCompleteLedgerDBs(
     Config const& config,
-    DatabaseCon::Setup const& setup);
+    DatabaseCon::Setup const& setup,
+    beast::Journal j);
 
 /**
  * @brief makeShardIncompleteLedgerDBs Opens shard databases for partially
@@ -53,6 +55,7 @@ makeShardCompleteLedgerDBs(
  * @param config Config object.
  * @param setup Path to the databases and other opening parameters.
  * @param checkpointerSetup Checkpointer parameters.
+ * @param j Journal.
  * @return Pair of unique pointers to the opened ledger and transaction
  *         databases.
  */
@@ -60,7 +63,8 @@ DatabasePair
 makeShardIncompleteLedgerDBs(
     Config const& config,
     DatabaseCon::Setup const& setup,
-    DatabaseCon::CheckpointerSetup const& checkpointerSetup);
+    DatabaseCon::CheckpointerSetup const& checkpointerSetup,
+    beast::Journal j);
 
 /**
  * @brief updateLedgerDBs Saves the given ledger to shard databases.
@@ -86,12 +90,14 @@ updateLedgerDBs(
  *        descriptor.
  * @param setup Path to the database and other opening parameters.
  * @param checkpointerSetup Checkpointer parameters.
+ * @param j Journal.
  * @return Unique pointer to the opened database.
  */
 std::unique_ptr<DatabaseCon>
 makeAcquireDB(
     DatabaseCon::Setup const& setup,
-    DatabaseCon::CheckpointerSetup const& checkpointerSetup);
+    DatabaseCon::CheckpointerSetup const& checkpointerSetup,
+    beast::Journal j);
 
 /**
  * @brief insertAcquireDBIndex Adds a new shard index to the shard acquire

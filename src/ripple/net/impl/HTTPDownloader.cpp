@@ -146,7 +146,7 @@ HTTPDownloader::do_session(
     if (stop_.load())
         return exit();
 
-    auto p = this->getParser(dstPath, complete, ec);
+    auto p = this->getParser(dstPath, complete, ec, j_);
     if (ec)
         return failAndExit("getParser", p);
 

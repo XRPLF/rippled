@@ -113,7 +113,8 @@ private:
     getParser(
         boost::filesystem::path dstPath,
         std::function<void(boost::filesystem::path)> complete,
-        boost::system::error_code& ec) = 0;
+        boost::system::error_code& ec,
+        beast::Journal j) = 0;
 
     virtual bool
     checkPath(boost::filesystem::path const& dstPath) = 0;

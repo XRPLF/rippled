@@ -37,6 +37,7 @@ namespace detail {
  * @param config Config object.
  * @param setup Path to database and opening parameters.
  * @param checkpointerSetup Database checkpointer setup.
+ * @param j Journal.
  * @return Struct DatabasePair which contains unique pointers to the ledger
  *         and transaction databases.
  */
@@ -44,7 +45,8 @@ DatabasePair
 makeMetaDBs(
     Config const& config,
     DatabaseCon::Setup const& setup,
-    DatabaseCon::CheckpointerSetup const& checkpointerSetup);
+    DatabaseCon::CheckpointerSetup const& checkpointerSetup,
+    beast::Journal j);
 
 /**
  * @brief saveLedgerMeta Stores (transaction ID -> shard index) and

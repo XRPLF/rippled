@@ -255,7 +255,7 @@ public:
             setup.dataDir = getDatabasePath();
             assert(!setup.useGlobalPragma);
 
-            auto dbCon = makeTestWalletDB(setup, dbName);
+            auto dbCon = makeTestWalletDB(setup, dbName, env.journal);
 
             auto getPopulatedManifests =
                 [](ManifestCache const& cache) -> std::vector<Manifest const*> {

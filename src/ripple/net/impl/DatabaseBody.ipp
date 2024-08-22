@@ -46,7 +46,8 @@ DatabaseBody::value_type::open(
     boost::filesystem::path const& path,
     Config const& config,
     boost::asio::io_service& io_service,
-    boost::system::error_code& ec)
+    boost::system::error_code& ec,
+    beast::Journal j)
 {
     strand_.reset(new boost::asio::io_service::strand(io_service));
     path_ = path;
@@ -55,7 +56,7 @@ DatabaseBody::value_type::open(
     setup.dataDir = path.parent_path();
     setup.useGlobalPragma = false;
 
-    auto [conn, size] = openDatabaseBodyDb(setup, path);
+    auto [conn, size] = openDatabaseBodyDb(setup, path, j);
     conn_ = std::move(conn);
     if (size)
         fileSize_ = *size;

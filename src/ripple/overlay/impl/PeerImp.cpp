@@ -920,8 +920,17 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
     while (read_buffer_.size() > 0)
     {
         std::size_t bytes_consumed;
+
+        auto start_time = std::chrono::high_resolution_clock::now();
         std::tie(bytes_consumed, ec) =
-            invokeProtocolMessage(read_buffer_.data(), *this, hint);
+            invokeProtocolMessage(read_buffer_.data(), *this, hint);    
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+        std::size_t const MAX_DELAY_MS = 350;
+        if (duration > MAX_DELAY_MS) {
+            JLOG(journal_.warn()) << "invokeProtocolMessage took " << duration << " ms";
+        }
+    
         if (ec)
             return fail("onReadMessage", ec);
         if (!socket_.is_open())

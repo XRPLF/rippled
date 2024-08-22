@@ -278,7 +278,8 @@ private:
                 --(*counter_);
         }
 
-        explicit operator bool() const noexcept
+        explicit
+        operator bool() const noexcept
         {
             return counter_ != nullptr;
         }
@@ -318,10 +319,10 @@ private:
     boost::filesystem::path const dir_;
 
     // Storage space utilized by the shard
-    GUARDED_BY(mutex_) std::uint64_t fileSz_{0};
+    GUARDED_BY(mutex_) std::uint64_t fileSz_ { 0 };
 
     // Number of file descriptors required by the shard
-    GUARDED_BY(mutex_) std::uint32_t fdRequired_{0};
+    GUARDED_BY(mutex_) std::uint32_t fdRequired_ { 0 };
 
     // NuDB key/value store for node objects
     std::unique_ptr<Backend> backend_ GUARDED_BY(mutex_);
@@ -341,7 +342,7 @@ private:
 
     // Older shard without an acquire database or final key
     // Eventually there will be no need for this and should be removed
-    GUARDED_BY(mutex_) bool legacy_{false};
+    GUARDED_BY(mutex_) bool legacy_ { false };
 
     // Determines if the shard needs to stop processing for shutdown
     std::atomic<bool> stop_{false};
