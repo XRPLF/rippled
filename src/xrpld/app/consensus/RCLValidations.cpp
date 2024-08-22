@@ -28,6 +28,7 @@
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpl/basics/Log.h>
+#include <xrpld/perflog/PerfLog.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/chrono.h>
 #include <memory>
@@ -126,14 +127,14 @@ RCLValidationsAdaptor::now() const
 std::optional<RCLValidatedLedger>
 RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 {
-    auto start_time = std::chrono::high_resolution_clock::now();
-    auto ledger = app_.getLedgerMaster().getLedgerByHash(hash);
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-    std::size_t const MAX_DELAY_MS = 10;
-    if (duration > MAX_DELAY_MS) {
-        JLOG(j_.warn()) << "getLedgerByHash took " << duration << " ms";
-    }
+    auto ledger = perf::measureDurationAndLog(
+        [&]() {
+            return app_.getLedgerMaster().getLedgerByHash(hash);
+        },
+        "getLedgerByHash", 
+        10,                 
+        j_                  
+    );
 
     if (!ledger)
     {

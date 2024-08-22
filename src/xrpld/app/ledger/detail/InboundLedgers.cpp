@@ -27,6 +27,7 @@
 #include <xrpl/beast/container/aged_map.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpld/perflog/PerfLog.h>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -68,61 +69,61 @@ public:
         std::uint32_t seq,
         InboundLedger::Reason reason) override
     {
-        auto start_time = std::chrono::high_resolution_clock::now();
-        assert(hash.isNonZero());
+        std::shared_ptr<Ledger const> ledger = perf::measureDurationAndLog(
+            [&, hash, seq, reason, &app = this->app_]() -> std::shared_ptr<Ledger const> {
+                assert(hash.isNonZero());
 
-        // probably not the right rule
-        if (app_.getOPs().isNeedNetworkLedger() &&
-            (reason != InboundLedger::Reason::GENERIC) &&
-            (reason != InboundLedger::Reason::CONSENSUS))
-            return {};
+                if (app.getOPs().isNeedNetworkLedger() &&
+                    (reason != InboundLedger::Reason::GENERIC) &&
+                    (reason != InboundLedger::Reason::CONSENSUS))
+                    return std::shared_ptr<Ledger const>{};
 
-        bool isNew = true;
-        std::shared_ptr<InboundLedger> inbound;
-        {
-            ScopedLockType sl(mLock);
-            if (stopping_)
-            {
-                return {};
-            }
+                bool isNew = true;
+                std::shared_ptr<InboundLedger> inbound;
+                {
+                    ScopedLockType sl(mLock);
+                    if (stopping_)
+                    {
+                        return std::shared_ptr<Ledger const>{};
+                    }
 
-            auto it = mLedgers.find(hash);
-            if (it != mLedgers.end())
-            {
-                isNew = false;
-                inbound = it->second;
-            }
-            else
-            {
-                inbound = std::make_shared<InboundLedger>(
-                    app_,
-                    hash,
-                    seq,
-                    reason,
-                    std::ref(m_clock),
-                    mPeerSetBuilder->build());
-                mLedgers.emplace(hash, inbound);
-                inbound->init(sl);
-                ++mCounter;
-            }
-        }
+                    auto it = mLedgers.find(hash);
+                    if (it != mLedgers.end())
+                    {
+                        isNew = false;
+                        inbound = it->second;
+                    }
+                    else
+                    {
+                        inbound = std::make_shared<InboundLedger>(
+                            app,
+                            hash,
+                            seq,
+                            reason,
+                            std::ref(m_clock),
+                            mPeerSetBuilder->build());
+                        mLedgers.emplace(hash, inbound);
+                        inbound->init(sl);
+                        ++mCounter;
+                    }
+                }
 
-        if (inbound->isFailed())
-            return {};
+                if (inbound->isFailed())
+                    return std::shared_ptr<Ledger const>{};
 
-        if (!isNew)
-            inbound->update(seq);
+                if (!isNew)
+                    inbound->update(seq);
 
-        if (!inbound->isComplete())
-            return {};
+                if (!inbound->isComplete())
+                    return std::shared_ptr<Ledger const>{};
 
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-        auto ledger = inbound->getLedger();
-        std::size_t const MAX_DELAY_MS = 500;
-        if (duration > MAX_DELAY_MS) {
-            JLOG(j_.warn()) << "InboundLedgersImp::acquire took " << duration << " ms";
-        }
+                return inbound->getLedger();
+            },
+            "InboundLedgersImp::acquire",
+            500,
+            j_
+        );
+
         return ledger;
     }
 

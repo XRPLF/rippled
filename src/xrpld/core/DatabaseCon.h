@@ -23,6 +23,7 @@
 #include <xrpld/app/main/DBInit.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/SociDB.h>
+#include <xrpld/perflog/PerfLog.h>
 #include <boost/filesystem/path.hpp>
 #include <mutex>
 #include <optional>
@@ -180,14 +181,14 @@ public:
     LockedSociSession
     checkoutDb()
     {
-        auto start_time = std::chrono::high_resolution_clock::now();
-        auto session = LockedSociSession(session_, lock_);
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-        std::size_t const MAX_DELAY_MS = 10;
-        if (duration > MAX_DELAY_MS) {
-            JLOG(j_.warn()) << "checkoutDb took " << duration << " ms";
-        }
+        LockedSociSession session = perf::measureDurationAndLog(
+            [&]() {
+                return LockedSociSession(session_, lock_);
+            },
+            "checkoutDb", 
+            10,                 
+            j_                  
+        );
 
         return session;
     }

@@ -179,6 +179,22 @@ make_PerfLog(
     beast::Journal journal,
     std::function<void()>&& signalStop);
 
+template<typename Func>
+auto measureDurationAndLog(Func&& func, const std::string& actionDescription, std::size_t maxDelay, const beast::Journal& journal)
+{
+    auto start_time = std::chrono::high_resolution_clock::now();
+    
+    auto result = func();
+    
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+    if (duration > maxDelay) {
+        JLOG(journal.warn()) << actionDescription << " took " << duration << " ms";
+    }
+    
+    return result;
+}
+
 }  // namespace perf
 }  // namespace ripple
 
