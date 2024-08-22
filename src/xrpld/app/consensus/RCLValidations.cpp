@@ -126,7 +126,15 @@ RCLValidationsAdaptor::now() const
 std::optional<RCLValidatedLedger>
 RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 {
+    auto start_time = std::chrono::high_resolution_clock::now();
     auto ledger = app_.getLedgerMaster().getLedgerByHash(hash);
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+    std::size_t const MAX_DELAY_MS = 10;
+    if (duration > MAX_DELAY_MS) {
+        JLOG(j_.warn()) << "getLedgerByHash took " << duration << " ms";
+    }
+
     if (!ledger)
     {
         JLOG(j_.debug())

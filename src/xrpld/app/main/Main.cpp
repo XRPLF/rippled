@@ -596,7 +596,7 @@ run(int argc, char** argv)
         try
         {
             auto setup = setup_DatabaseCon(*config);
-            if (!doVacuumDB(setup))
+            if (!doVacuumDB(setup, config->journal()))
                 return -1;
         }
         catch (std::exception const& e)

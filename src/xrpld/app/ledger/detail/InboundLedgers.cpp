@@ -68,6 +68,7 @@ public:
         std::uint32_t seq,
         InboundLedger::Reason reason) override
     {
+        auto start_time = std::chrono::high_resolution_clock::now();
         assert(hash.isNonZero());
 
         // probably not the right rule
@@ -115,7 +116,14 @@ public:
         if (!inbound->isComplete())
             return {};
 
-        return inbound->getLedger();
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+        auto ledger = inbound->getLedger();
+        std::size_t const MAX_DELAY_MS = 500;
+        if (duration > MAX_DELAY_MS) {
+            JLOG(j_.warn()) << "InboundLedgersImp::acquire took " << duration << " ms";
+        }
+        return ledger;
     }
 
     std::shared_ptr<InboundLedger>
