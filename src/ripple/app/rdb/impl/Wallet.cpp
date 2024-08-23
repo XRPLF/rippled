@@ -23,19 +23,22 @@
 namespace ripple {
 
 std::unique_ptr<DatabaseCon>
-makeWalletDB(DatabaseCon::Setup const& setup)
+makeWalletDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
     // wallet database
     return std::make_unique<DatabaseCon>(
-        setup, WalletDBName, std::array<char const*, 0>(), WalletDBInit);
+        setup, WalletDBName, std::array<char const*, 0>(), WalletDBInit, j);
 }
 
 std::unique_ptr<DatabaseCon>
-makeTestWalletDB(DatabaseCon::Setup const& setup, std::string const& dbname)
+makeTestWalletDB(
+    DatabaseCon::Setup const& setup,
+    std::string const& dbname,
+    beast::Journal j)
 {
     // wallet database
     return std::make_unique<DatabaseCon>(
-        setup, dbname.data(), std::array<char const*, 0>(), WalletDBInit);
+        setup, dbname.data(), std::array<char const*, 0>(), WalletDBInit, j);
 }
 
 void

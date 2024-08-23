@@ -25,6 +25,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/PerfLog.h>
 #include <ripple/basics/StringUtilities.h>
 #include <ripple/basics/chrono.h>
 #include <ripple/consensus/LedgerTiming.h>
@@ -126,7 +127,13 @@ RCLValidationsAdaptor::now() const
 std::optional<RCLValidatedLedger>
 RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 {
-    auto ledger = app_.getLedgerMaster().getLedgerByHash(hash);
+    using namespace std::chrono_literals;
+    auto ledger = perf::measureDurationAndLog(
+        [&]() { return app_.getLedgerMaster().getLedgerByHash(hash); },
+        "getLedgerByHash",
+        10ms,
+        j_);
+
     if (!ledger)
     {
         JLOG(j_.debug())

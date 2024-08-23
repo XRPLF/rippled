@@ -114,7 +114,7 @@ ShardArchiveHandler::init()
         {
             create_directories(downloadDir_);
 
-            sqlDB_ = makeArchiveDB(downloadDir_, stateDBName);
+            sqlDB_ = makeArchiveDB(downloadDir_, stateDBName, j_);
         }
         catch (std::exception const& e)
         {
@@ -139,7 +139,7 @@ ShardArchiveHandler::initFromDB(std::lock_guard<std::mutex> const& lock)
             exists(downloadDir_ / stateDBName) &&
             is_regular_file(downloadDir_ / stateDBName));
 
-        sqlDB_ = makeArchiveDB(downloadDir_, stateDBName);
+        sqlDB_ = makeArchiveDB(downloadDir_, stateDBName, j_);
 
         readArchiveDB(*sqlDB_, [&](std::string const& url_, int state) {
             parsedURL url;

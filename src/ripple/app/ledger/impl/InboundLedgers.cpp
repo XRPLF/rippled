@@ -23,6 +23,7 @@
 #include <ripple/app/misc/NetworkOPs.h>
 #include <ripple/basics/DecayingSample.h>
 #include <ripple/basics/Log.h>
+#include <ripple/basics/PerfLog.h>
 #include <ripple/beast/container/aged_map.h>
 #include <ripple/beast/core/LexicalCast.h>
 #include <ripple/core/JobQueue.h>
@@ -69,76 +70,83 @@ public:
         std::uint32_t seq,
         InboundLedger::Reason reason) override
     {
-        assert(hash.isNonZero());
-        assert(
-            reason != InboundLedger::Reason::SHARD ||
-            (seq != 0 && app_.getShardStore()));
+        auto doAcquire = [&, seq, reason]() -> std::shared_ptr<Ledger const> {
+            assert(hash.isNonZero());
+            assert(
+                reason != InboundLedger::Reason::SHARD ||
+                (seq != 0 && app_.getShardStore()));
 
-        // probably not the right rule
-        if (app_.getOPs().isNeedNetworkLedger() &&
-            (reason != InboundLedger::Reason::GENERIC) &&
-            (reason != InboundLedger::Reason::CONSENSUS))
-            return {};
-
-        bool isNew = true;
-        std::shared_ptr<InboundLedger> inbound;
-        {
-            ScopedLockType sl(mLock);
-            if (stopping_)
-            {
+            // probably not the right rule
+            if (app_.getOPs().isNeedNetworkLedger() &&
+                (reason != InboundLedger::Reason::GENERIC) &&
+                (reason != InboundLedger::Reason::CONSENSUS))
                 return {};
+
+            bool isNew = true;
+            std::shared_ptr<InboundLedger> inbound;
+            {
+                ScopedLockType sl(mLock);
+                if (stopping_)
+                {
+                    return {};
+                }
+
+                auto it = mLedgers.find(hash);
+                if (it != mLedgers.end())
+                {
+                    isNew = false;
+                    inbound = it->second;
+                }
+                else
+                {
+                    inbound = std::make_shared<InboundLedger>(
+                        app_,
+                        hash,
+                        seq,
+                        reason,
+                        std::ref(m_clock),
+                        mPeerSetBuilder->build());
+                    mLedgers.emplace(hash, inbound);
+                    inbound->init(sl);
+                    ++mCounter;
+                }
             }
 
-            auto it = mLedgers.find(hash);
-            if (it != mLedgers.end())
-            {
-                isNew = false;
-                inbound = it->second;
-            }
-            else
-            {
-                inbound = std::make_shared<InboundLedger>(
-                    app_,
-                    hash,
-                    seq,
-                    reason,
-                    std::ref(m_clock),
-                    mPeerSetBuilder->build());
-                mLedgers.emplace(hash, inbound);
-                inbound->init(sl);
-                ++mCounter;
-            }
-        }
-
-        if (inbound->isFailed())
-            return {};
-
-        if (!isNew)
-            inbound->update(seq);
-
-        if (!inbound->isComplete())
-            return {};
-
-        if (reason == InboundLedger::Reason::HISTORY)
-        {
-            if (inbound->getLedger()->stateMap().family().isShardBacked())
-                app_.getNodeStore().storeLedger(inbound->getLedger());
-        }
-        else if (reason == InboundLedger::Reason::SHARD)
-        {
-            auto shardStore = app_.getShardStore();
-            if (!shardStore)
-            {
-                JLOG(j_.error())
-                    << "Acquiring shard with no shard store available";
+            if (inbound->isFailed())
                 return {};
+
+            if (!isNew)
+                inbound->update(seq);
+
+            if (!inbound->isComplete())
+                return {};
+
+            if (reason == InboundLedger::Reason::HISTORY)
+            {
+                if (inbound->getLedger()->stateMap().family().isShardBacked())
+                    app_.getNodeStore().storeLedger(inbound->getLedger());
             }
-            if (inbound->getLedger()->stateMap().family().isShardBacked())
-                shardStore->setStored(inbound->getLedger());
-            else
-                shardStore->storeLedger(inbound->getLedger());
-        }
-        return inbound->getLedger();
+            else if (reason == InboundLedger::Reason::SHARD)
+            {
+                auto shardStore = app_.getShardStore();
+                if (!shardStore)
+                {
+                    JLOG(j_.error())
+                        << "Acquiring shard with no shard store available";
+                    return {};
+                }
+                if (inbound->getLedger()->stateMap().family().isShardBacked())
+                    shardStore->setStored(inbound->getLedger());
+                else
+                    shardStore->storeLedger(inbound->getLedger());
+            }
+            return inbound->getLedger();
+        };
+        using namespace std::chrono_literals;
+        std::shared_ptr<Ledger const> ledger = perf::measureDurationAndLog(
+            doAcquire, "InboundLedgersImp::acquire", 500ms, j_);
+
+        return ledger;
     }
 
     std::shared_ptr<InboundLedger>

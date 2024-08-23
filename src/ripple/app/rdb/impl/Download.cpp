@@ -25,14 +25,15 @@ namespace ripple {
 std::pair<std::unique_ptr<DatabaseCon>, std::optional<std::uint64_t>>
 openDatabaseBodyDb(
     DatabaseCon::Setup const& setup,
-    boost::filesystem::path const& path)
+    boost::filesystem::path const& path,
+    beast::Journal j)
 {
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<std::string> pathFromDb;
     boost::optional<std::uint64_t> size;
 
     auto conn = std::make_unique<DatabaseCon>(
-        setup, "Download", DownloaderDBPragma, DatabaseBodyDBInit);
+        setup, "Download", DownloaderDBPragma, DatabaseBodyDBInit, j);
 
     auto& session = *conn->checkoutDb();
 

@@ -28,6 +28,7 @@
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/basics/PerfLog.h>
 #include <ripple/basics/UptimeClock.h>
 #include <ripple/basics/base64.h>
 #include <ripple/basics/random.h>
@@ -920,8 +921,16 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
     while (read_buffer_.size() > 0)
     {
         std::size_t bytes_consumed;
-        std::tie(bytes_consumed, ec) =
-            invokeProtocolMessage(read_buffer_.data(), *this, hint);
+
+        using namespace std::chrono_literals;
+        std::tie(bytes_consumed, ec) = perf::measureDurationAndLog(
+            [&]() {
+                return invokeProtocolMessage(read_buffer_.data(), *this, hint);
+            },
+            "invokeProtocolMessage",
+            350ms,
+            journal_);
+
         if (ec)
             return fail("onReadMessage", ec);
         if (!socket_.is_open())

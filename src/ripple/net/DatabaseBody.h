@@ -102,13 +102,16 @@ public:
         @param io_service The asio context for running a strand.
 
         @param ec Set to the error, if any occurred
+
+        @param j Journal.
     */
     void
     open(
         boost::filesystem::path const& path,
         Config const& config,
         boost::asio::io_service& io_service,
-        boost::system::error_code& ec);
+        boost::system::error_code& ec,
+        beast::Journal j);
 };
 
 /** Algorithm for storing buffers when parsing.
