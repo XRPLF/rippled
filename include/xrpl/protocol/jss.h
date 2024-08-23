@@ -41,6 +41,8 @@ namespace jss {
    error: Common properties of RPC error responses.
 */
 
+// clang-format off
+
 JSS(AL_size);             // out: GetCounts
 JSS(AL_hit_rate);         // out: GetCounts
 JSS(Account);             // in: TransactionSign; field.
@@ -779,6 +781,8 @@ JSS(xchain_owned_claim_id);                 // in: LedgerEntry, AccountObjects
 JSS(xchain_owned_create_account_claim_id);  // in: LedgerEntry
 JSS(NegativeUNL);                           // out: ValidatorList; ledger type
 #undef JSS
+
+// clang-format on
 
 }  // namespace jss
 }  // namespace ripple
