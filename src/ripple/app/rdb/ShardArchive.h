@@ -30,10 +30,14 @@ namespace ripple {
  *        descriptor.
  * @param dir Path to the database to open.
  * @param dbName Name of the database.
+ * @param j Journal.
  * @return Unique pointer to the opened database.
  */
 std::unique_ptr<DatabaseCon>
-makeArchiveDB(boost::filesystem::path const& dir, std::string const& dbName);
+makeArchiveDB(
+    boost::filesystem::path const& dir,
+    std::string const& dbName,
+    beast::Journal j);
 
 /**
  * @brief readArchiveDB Reads entries from the shard archive database and

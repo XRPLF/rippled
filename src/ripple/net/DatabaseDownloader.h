@@ -43,7 +43,8 @@ private:
     getParser(
         boost::filesystem::path dstPath,
         std::function<void(boost::filesystem::path)> complete,
-        boost::system::error_code& ec) override;
+        boost::system::error_code& ec,
+        beast::Journal j) override;
 
     bool
     checkPath(boost::filesystem::path const& dstPath) override;

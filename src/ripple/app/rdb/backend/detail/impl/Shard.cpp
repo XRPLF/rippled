@@ -32,7 +32,8 @@ DatabasePair
 makeMetaDBs(
     Config const& config,
     DatabaseCon::Setup const& setup,
-    DatabaseCon::CheckpointerSetup const& checkpointerSetup)
+    DatabaseCon::CheckpointerSetup const& checkpointerSetup,
+    beast::Journal j)
 {
     // ledger meta database
     auto lgrMetaDB{std::make_unique<DatabaseCon>(
@@ -40,14 +41,20 @@ makeMetaDBs(
         LgrMetaDBName,
         LgrMetaDBPragma,
         LgrMetaDBInit,
-        checkpointerSetup)};
+        checkpointerSetup,
+        j)};
 
     if (!config.useTxTables())
         return {std::move(lgrMetaDB), nullptr};
 
     // transaction meta database
     auto txMetaDB{std::make_unique<DatabaseCon>(
-        setup, TxMetaDBName, TxMetaDBPragma, TxMetaDBInit, checkpointerSetup)};
+        setup,
+        TxMetaDBName,
+        TxMetaDBPragma,
+        TxMetaDBInit,
+        checkpointerSetup,
+        j)};
 
     return {std::move(lgrMetaDB), std::move(txMetaDB)};
 }

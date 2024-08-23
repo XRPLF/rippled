@@ -45,13 +45,14 @@ auto
 DatabaseDownloader::getParser(
     boost::filesystem::path dstPath,
     std::function<void(boost::filesystem::path)> complete,
-    boost::system::error_code& ec) -> std::shared_ptr<parser>
+    boost::system::error_code& ec,
+    beast::Journal j) -> std::shared_ptr<parser>
 {
     using namespace boost::beast;
 
     auto p = std::make_shared<http::response_parser<DatabaseBody>>();
     p->body_limit(std::numeric_limits<std::uint64_t>::max());
-    p->get().body().open(dstPath, config_, io_service_, ec);
+    p->get().body().open(dstPath, config_, io_service_, ec, j);
 
     if (ec)
         p->get().body().close();

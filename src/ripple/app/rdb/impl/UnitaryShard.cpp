@@ -27,16 +27,17 @@ namespace ripple {
 DatabasePair
 makeShardCompleteLedgerDBs(
     Config const& config,
-    DatabaseCon::Setup const& setup)
+    DatabaseCon::Setup const& setup,
+    beast::Journal j)
 {
     auto tx{std::make_unique<DatabaseCon>(
-        setup, TxDBName, FinalShardDBPragma, TxDBInit)};
+        setup, TxDBName, FinalShardDBPragma, TxDBInit, j)};
     tx->getSession() << boost::str(
         boost::format("PRAGMA cache_size=-%d;") %
         kilobytes(config.getValueFor(SizedItem::txnDBCache, std::nullopt)));
 
     auto lgr{std::make_unique<DatabaseCon>(
-        setup, LgrDBName, FinalShardDBPragma, LgrDBInit)};
+        setup, LgrDBName, FinalShardDBPragma, LgrDBInit, j)};
     lgr->getSession() << boost::str(
         boost::format("PRAGMA cache_size=-%d;") %
         kilobytes(config.getValueFor(SizedItem::lgrDBCache, std::nullopt)));
@@ -48,18 +49,19 @@ DatabasePair
 makeShardIncompleteLedgerDBs(
     Config const& config,
     DatabaseCon::Setup const& setup,
-    DatabaseCon::CheckpointerSetup const& checkpointerSetup)
+    DatabaseCon::CheckpointerSetup const& checkpointerSetup,
+    beast::Journal j)
 {
     // transaction database
     auto tx{std::make_unique<DatabaseCon>(
-        setup, TxDBName, TxDBPragma, TxDBInit, checkpointerSetup)};
+        setup, TxDBName, TxDBPragma, TxDBInit, checkpointerSetup, j)};
     tx->getSession() << boost::str(
         boost::format("PRAGMA cache_size=-%d;") %
         kilobytes(config.getValueFor(SizedItem::txnDBCache)));
 
     // ledger database
     auto lgr{std::make_unique<DatabaseCon>(
-        setup, LgrDBName, LgrDBPragma, LgrDBInit, checkpointerSetup)};
+        setup, LgrDBName, LgrDBPragma, LgrDBInit, checkpointerSetup, j)};
     lgr->getSession() << boost::str(
         boost::format("PRAGMA cache_size=-%d;") %
         kilobytes(config.getValueFor(SizedItem::lgrDBCache)));
@@ -209,14 +211,16 @@ updateLedgerDBs(
 std::unique_ptr<DatabaseCon>
 makeAcquireDB(
     DatabaseCon::Setup const& setup,
-    DatabaseCon::CheckpointerSetup const& checkpointerSetup)
+    DatabaseCon::CheckpointerSetup const& checkpointerSetup,
+    beast::Journal j)
 {
     return std::make_unique<DatabaseCon>(
         setup,
         AcquireShardDBName,
         AcquireShardDBPragma,
         AcquireShardDBInit,
-        checkpointerSetup);
+        checkpointerSetup,
+        j);
 }
 
 void

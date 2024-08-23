@@ -22,10 +22,13 @@
 namespace ripple {
 
 std::unique_ptr<DatabaseCon>
-makeArchiveDB(boost::filesystem::path const& dir, std::string const& dbName)
+makeArchiveDB(
+    boost::filesystem::path const& dir,
+    std::string const& dbName,
+    beast::Journal j)
 {
     return std::make_unique<DatabaseCon>(
-        dir, dbName, DownloaderDBPragma, ShardArchiveHandlerDBInit);
+        dir, dbName, DownloaderDBPragma, ShardArchiveHandlerDBInit, j);
 }
 
 void

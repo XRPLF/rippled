@@ -36,13 +36,15 @@ namespace ripple {
  *        download process or continues an existing one.
  * @param setup Path to the database and other opening parameters.
  * @param path Path of the new file to download.
+ * @param j Journal.
  * @return Pair containing a unique pointer to the database and the amount of
  *         bytes already downloaded if a download is being continued.
  */
 std::pair<std::unique_ptr<DatabaseCon>, std::optional<std::uint64_t>>
 openDatabaseBodyDb(
     DatabaseCon::Setup const& setup,
-    boost::filesystem::path const& path);
+    boost::filesystem::path const& path,
+    beast::Journal j);
 
 /**
  * @brief databaseBodyDoPut Saves a new fragment of a downloaded file.
