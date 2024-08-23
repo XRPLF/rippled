@@ -144,7 +144,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
         app_.getJobQueue().addJob(
             jtADVANCE, "getConsensusLedger", [pApp, hash]() {
                 pApp->getInboundLedgers().acquire(
-                    hash, 0, InboundLedger::Reason::CONSENSUS);
+                    hash, 0, InboundLedger::Reason::CONSENSUS, true);
             });
         return std::nullopt;
     }

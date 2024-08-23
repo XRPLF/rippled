@@ -40,7 +40,11 @@ public:
     // VFALCO TODO Should this be called findOrAdd ?
     //
     virtual std::shared_ptr<Ledger const>
-    acquire(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason) = 0;
+    acquire(
+        uint256 const& hash,
+        std::uint32_t seq,
+        InboundLedger::Reason,
+        bool jq = false) = 0;
 
     virtual std::shared_ptr<InboundLedger>
     find(LedgerHash const& hash) = 0;

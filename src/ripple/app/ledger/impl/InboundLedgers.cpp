@@ -31,6 +31,8 @@
 #include <ripple/protocol/jss.h>
 #include <memory>
 #include <mutex>
+#include <set>
+#include <thread>
 #include <vector>
 
 namespace ripple {
@@ -68,7 +70,8 @@ public:
     acquire(
         uint256 const& hash,
         std::uint32_t seq,
-        InboundLedger::Reason reason) override
+        InboundLedger::Reason reason,
+        bool jq) override
     {
         auto doAcquire = [&, seq, reason]() -> std::shared_ptr<Ledger const> {
             assert(hash.isNonZero());
@@ -116,7 +119,22 @@ public:
                 return {};
 
             if (!isNew)
+            {
+                if (jq)
+                {
+                    std::lock_guard _(mLock);
+                    // If insert returns false as .second, then the hash is
+                    // already in the set, so exit
+                    if (!pendingJobs_.insert(hash).second)
+                        return {};
+                }
                 inbound->update(seq);
+                if (jq)
+                {
+                    std::lock_guard _(mLock);
+                    pendingJobs_.erase(hash);
+                }
+            }
 
             if (!inbound->isComplete())
                 return {};
@@ -441,6 +459,8 @@ private:
     beast::insight::Counter mCounter;
 
     std::unique_ptr<PeerSetBuilder> mPeerSetBuilder;
+
+    std::set<uint256> pendingJobs_;
 };
 
 //------------------------------------------------------------------------------
