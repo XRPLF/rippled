@@ -28,6 +28,7 @@
 #include <ripple/app/misc/Transaction.h>
 #include <ripple/app/misc/ValidatorList.h>
 #include <ripple/app/tx/apply.h>
+#include <ripple/basics/PerfLog.h>
 #include <ripple/basics/UptimeClock.h>
 #include <ripple/basics/base64.h>
 #include <ripple/basics/random.h>
@@ -603,7 +604,7 @@ PeerImp::fail(std::string const& reason)
         return post(
             strand_,
             std::bind(
-                (void (Peer::*)(std::string const&)) & PeerImp::fail,
+                (void(Peer::*)(std::string const&)) & PeerImp::fail,
                 shared_from_this(),
                 reason));
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())
@@ -921,16 +922,14 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
     {
         std::size_t bytes_consumed;
 
-        auto start_time = std::chrono::high_resolution_clock::now();
-        std::tie(bytes_consumed, ec) =
-            invokeProtocolMessage(read_buffer_.data(), *this, hint);    
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-        std::size_t const MAX_DELAY_MS = 350;
-        if (duration > MAX_DELAY_MS) {
-            JLOG(journal_.warn()) << "invokeProtocolMessage took " << duration << " ms";
-        }
-    
+        std::tie(bytes_consumed, ec) = perf::measureDurationAndLog(
+            [&]() {
+                return invokeProtocolMessage(read_buffer_.data(), *this, hint);
+            },
+            "invokeProtocolMessage",
+            350,
+            journal_);
+
         if (ec)
             return fail("onReadMessage", ec);
         if (!socket_.is_open())

@@ -21,6 +21,7 @@
 #define RIPPLE_APP_DATA_DATABASECON_H_INCLUDED
 
 #include <ripple/app/main/DBInit.h>
+#include <ripple/basics/PerfLog.h>
 #include <ripple/core/Config.h>
 #include <ripple/core/SociDB.h>
 #include <boost/filesystem/path.hpp>
@@ -183,17 +184,11 @@ public:
     LockedSociSession
     checkoutDb()
     {
-        auto start_time = std::chrono::high_resolution_clock::now();
-        auto session = LockedSociSession(session_, lock_);
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-                            end_time - start_time)
-                            .count();
-        std::size_t const MAX_DELAY_MS = 10;
-        if (duration > MAX_DELAY_MS)
-        {
-            JLOG(j_.warn()) << "checkoutDb took " << duration << " ms";
-        }
+        LockedSociSession session = perf::measureDurationAndLog(
+            [&]() { return LockedSociSession(session_, lock_); },
+            "checkoutDb",
+            10,
+            j_);
 
         return session;
     }

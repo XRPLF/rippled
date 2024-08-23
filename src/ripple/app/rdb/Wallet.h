@@ -46,7 +46,10 @@ makeWalletDB(DatabaseCon::Setup const& setup, beast::Journal j);
  * @return Unique pointer to the database descriptor.
  */
 std::unique_ptr<DatabaseCon>
-makeTestWalletDB(DatabaseCon::Setup const& setup, std::string const& dbname, beast::Journal j);
+makeTestWalletDB(
+    DatabaseCon::Setup const& setup,
+    std::string const& dbname,
+    beast::Journal j);
 
 /**
  * @brief getManifests Loads a manifest from the wallet database and stores it
