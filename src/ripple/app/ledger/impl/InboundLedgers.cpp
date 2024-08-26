@@ -149,6 +149,22 @@ public:
         return ledger;
     }
 
+    void
+    acquireAsync(
+        uint256 const& hash,
+        std::uint32_t seq,
+        InboundLedger::Reason reason) override
+    {
+        std::unique_lock lock(acquiresMutex_);
+        if (pendingAcquires_.contains(hash))
+            return;
+        pendingAcquires_.insert(hash);
+        lock.unlock();
+        acquire(hash, seq, reason);
+        lock.lock();
+        pendingAcquires_.erase(hash);
+    }
+
     std::shared_ptr<InboundLedger>
     find(uint256 const& hash) override
     {
@@ -441,6 +457,9 @@ private:
     beast::insight::Counter mCounter;
 
     std::unique_ptr<PeerSetBuilder> mPeerSetBuilder;
+
+    std::set<uint256> pendingAcquires_;
+    std::mutex acquiresMutex_;
 };
 
 //------------------------------------------------------------------------------
