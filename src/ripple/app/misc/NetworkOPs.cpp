@@ -72,8 +72,10 @@
 #include <boost/asio/steady_timer.hpp>
 
 #include <algorithm>
+#include <exception>
 #include <mutex>
 #include <optional>
+#include <set>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -780,6 +782,9 @@ private:
     std::vector<TransactionStatus> mTransactions;
 
     StateAccounting accounting_{};
+
+    std::set<uint256> pendingValidations_;
+    std::mutex validationsMutex_;
 
 private:
     struct Stats
@@ -2308,7 +2313,35 @@ NetworkOPsImp::recvValidation(
     JLOG(m_journal.trace())
         << "recvValidation " << val->getLedgerHash() << " from " << source;
 
-    handleNewValidation(app_, val, source);
+    std::unique_lock lock(validationsMutex_);
+    BypassAccept bypassAccept = BypassAccept::no;
+    try
+    {
+        if (pendingValidations_.contains(val->getLedgerHash()))
+            bypassAccept = BypassAccept::yes;
+        else
+            pendingValidations_.insert(val->getLedgerHash());
+        lock.unlock();
+        handleNewValidation(app_, val, source, bypassAccept, m_journal);
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(m_journal.warn())
+            << "Exception thrown for handling new validation "
+            << val->getLedgerHash() << ": " << e.what();
+    }
+    catch (...)
+    {
+        JLOG(m_journal.warn())
+            << "Unknown exception thrown for handling new validation "
+            << val->getLedgerHash();
+    }
+    if (bypassAccept == BypassAccept::no)
+    {
+        lock.lock();
+        pendingValidations_.erase(val->getLedgerHash());
+        lock.unlock();
+    }
 
     pubValidation(val);
 
