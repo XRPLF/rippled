@@ -781,7 +781,7 @@ private:
 
     StateAccounting accounting_{};
 
-    std::set<uint256> pendingValidations_;
+    std::set<std::pair<PublicKey, uint256>> pendingValidations_;
     std::mutex validationsMutex_;
 
 private:
@@ -2311,13 +2311,14 @@ NetworkOPsImp::recvValidation(
         << "recvValidation " << val->getLedgerHash() << " from " << source;
 
     std::unique_lock lock(validationsMutex_);
-    if (pendingValidations_.contains(val->getLedgerHash()))
+    if (pendingValidations_.contains(
+            {val->getSignerPublic(), val->getLedgerHash()}))
         return false;
-    pendingValidations_.insert(val->getLedgerHash());
+    pendingValidations_.insert({val->getSignerPublic(), val->getLedgerHash()});
     lock.unlock();
     handleNewValidation(app_, val, source);
     lock.lock();
-    pendingValidations_.erase(val->getLedgerHash());
+    pendingValidations_.erase({val->getSignerPublic(), val->getLedgerHash()});
     lock.unlock();
 
     pubValidation(val);
