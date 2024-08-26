@@ -781,6 +781,10 @@ private:
 
     StateAccounting accounting_{};
 
+    std::set<uint256> pendingValidations_;
+    std::mutex validationsMutex_;
+
+
 private:
     struct Stats
     {
@@ -2307,7 +2311,15 @@ NetworkOPsImp::recvValidation(
     JLOG(m_journal.trace())
         << "recvValidation " << val->getLedgerHash() << " from " << source;
 
+    std::unique_lock lock(validationsMutex_);
+    if (pendingValidations_.contains(val->getLedgerHash()))
+        return false;
+    pendingValidations_.insert(val->getLedgerHash());
+    lock.unlock();
     handleNewValidation(app_, val, source);
+    lock.lock();
+    pendingValidations_.erase(val->getLedgerHash());
+    lock.unlock();
 
     pubValidation(val);
 
