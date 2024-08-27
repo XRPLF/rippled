@@ -21,6 +21,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
+#include <boost/endian/conversion.hpp>
 #include <type_traits>
 
 namespace ripple {
@@ -68,6 +69,32 @@ Serializer::add64(std::uint64_t i)
     mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
     mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
     mData.push_back(static_cast<unsigned char>(i & 0xff));
+    return ret;
+}
+
+int
+Serializer::addi32(std::int32_t i)
+{
+    int ret = mData.size();
+    static constexpr std::size_t SIZE =
+        sizeof(std::int32_t) / sizeof(unsigned char);
+    static_assert(SIZE == 4);
+    mData.resize(ret + SIZE);
+    unsigned char* p = &mData.back() + 1 - SIZE;
+    boost::endian::store_big_s32(p, i);
+    return ret;
+}
+
+int
+Serializer::addi64(std::int64_t i)
+{
+    int ret = mData.size();
+    static constexpr std::size_t SIZE =
+        sizeof(std::int64_t) / sizeof(unsigned char);
+    static_assert(SIZE == 8);
+    mData.resize(ret + SIZE);
+    unsigned char* p = &mData.back() + 1 - SIZE;
+    boost::endian::store_big_s64(p, i);
     return ret;
 }
 
@@ -408,6 +435,30 @@ SerialIter::get64()
         (std::uint64_t(t[2]) << 40) + (std::uint64_t(t[3]) << 32) +
         (std::uint64_t(t[4]) << 24) + (std::uint64_t(t[5]) << 16) +
         (std::uint64_t(t[6]) << 8) + std::uint64_t(t[7]);
+}
+
+std::int32_t
+SerialIter::geti32()
+{
+    if (remain_ < 4)
+        Throw<std::runtime_error>("invalid SerialIter geti32");
+    auto t = p_;
+    p_ += 4;
+    used_ += 4;
+    remain_ -= 4;
+    return boost::endian::load_big_s32(t);
+}
+
+std::int64_t
+SerialIter::geti64()
+{
+    if (remain_ < 8)
+        Throw<std::runtime_error>("invalid SerialIter geti64");
+    auto t = p_;
+    p_ += 8;
+    used_ += 8;
+    remain_ -= 8;
+    return boost::endian::load_big_s64(t);
 }
 
 void

@@ -70,6 +70,7 @@ class STCurrency;
     STYPE(STI_AMOUNT, 6)                          \
     STYPE(STI_VL, 7)                              \
     STYPE(STI_ACCOUNT, 8)                         \
+    STYPE(STI_NUMBER, 9)                          \
                                                   \
     /* 9-13 are reserved */                       \
     STYPE(STI_OBJECT, 14)                         \
