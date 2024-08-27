@@ -217,7 +217,15 @@ ValidatorList::load(
 
     // Treat local validator key as though it was listed in the config
     if (localPubKey_)
-        keyListings_.insert({*localPubKey_, 1});
+    {
+        auto const [_, inserted] =
+            keyListings_.insert({*localPubKey_, listThreshold_});
+        if (inserted)
+        {
+            JLOG(j_.debug()) << "Added own master key "
+                             << toBase58(TokenType::NodePublic, *localPubKey_);
+        }
+    }
 
     JLOG(j_.debug()) << "Loading configured validator keys";
 
@@ -1772,13 +1780,16 @@ ValidatorList::calculateQuorum(
         return *minimumQuorum_;
     }
 
-    // Do not use achievable quorum until lists from all configured
-    // publishers are available
+    // Do not use achievable quorum until lists from a sufficient number of
+    // configured publishers are available
+    std::size_t unavailable = 0;
     for (auto const& list : publisherLists_)
     {
         if (list.second.status != PublisherStatus::available)
-            return std::numeric_limits<std::size_t>::max();
+            unavailable += 1;
     }
+    if (unavailable >= listThreshold_)
+        return std::numeric_limits<std::size_t>::max();
 
     // Use an 80% quorum to balance fork safety, liveness, and required UNL
     // overlap.
@@ -1911,20 +1922,25 @@ ValidatorList::updateTrusted(
     auto it = trustedMasterKeys_.cbegin();
     while (it != trustedMasterKeys_.cend())
     {
-        if (!keyListings_.count(*it) || validatorManifests_.revoked(*it))
+        auto const kit = keyListings_.find(*it);
+        if (kit == keyListings_.end() ||     //
+            kit->second < listThreshold_ ||  //
+            validatorManifests_.revoked(*it))
         {
             trustChanges.removed.insert(calcNodeID(*it));
             it = trustedMasterKeys_.erase(it);
         }
         else
         {
+            assert(kit->second > 0);
             ++it;
         }
     }
 
     for (auto const& val : keyListings_)
     {
-        if (!validatorManifests_.revoked(val.first) &&
+        if (val.second >= listThreshold_ &&
+            !validatorManifests_.revoked(val.first) &&
             trustedMasterKeys_.emplace(val.first).second)
             trustChanges.added.insert(calcNodeID(val.first));
     }
