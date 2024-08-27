@@ -29,6 +29,7 @@
 #include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
@@ -135,6 +136,9 @@ STVar::STVar(SerialIter& sit, SField const& name, int depth)
         case STI_AMOUNT:
             construct<STAmount>(sit, name);
             return;
+        case STI_NUMBER:
+            construct<STNumber>(sit, name);
+            return;
         case STI_UINT128:
             construct<STUInt128>(sit, name);
             return;
@@ -198,6 +202,9 @@ STVar::STVar(SerializedTypeID id, SField const& name)
             return;
         case STI_AMOUNT:
             construct<STAmount>(name);
+            return;
+        case STI_NUMBER:
+            construct<STNumber>(name);
             return;
         case STI_UINT128:
             construct<STUInt128>(name);
