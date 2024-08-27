@@ -136,7 +136,8 @@ bool
 ValidatorList::load(
     std::optional<PublicKey> const& localSigningKey,
     std::vector<std::string> const& configKeys,
-    std::vector<std::string> const& publisherKeys)
+    std::vector<std::string> const& publisherKeys,
+    std::optional<std::size_t> listThreshold)
 {
     static boost::regex const re(
         "[[:space:]]*"       // skip leading whitespace
@@ -189,6 +190,24 @@ ValidatorList::load(
         publisherLists_[id].status = status;
         ++count;
     }
+
+    if (!listThreshold || *listThreshold == std::size_t(0))
+    {
+        auto const prevThreshold = listThreshold_;
+        auto const publishers = publisherLists_.size();
+        if (publishers < 3)
+            listThreshold_ = 1;
+        else
+            // NOTE: Want truncated result when dividing an odd integer
+            listThreshold_ = publishers / 2 + 1;
+        if (prevThreshold != listThreshold_)
+        {
+            JLOG(j_.info())
+                << "Updated validator trust threshold to " << listThreshold_;
+        }
+    }
+    else
+        listThreshold_ = *listThreshold;
 
     JLOG(j_.debug()) << "Loaded " << count << " keys";
 
@@ -1575,6 +1594,8 @@ ValidatorList::getJson() const
             x[jss::status] = "unknown";
             x[jss::expiration] = "unknown";
         }
+
+        x[jss::validator_list_threshold] = Json::UInt(listThreshold_);
     }
 
     // Validator keys listed in the local config file
@@ -1889,7 +1910,8 @@ ValidatorList::updateTrusted(
     auto it = trustedMasterKeys_.cbegin();
     while (it != trustedMasterKeys_.cend())
     {
-        if (!keyListings_.count(*it) || validatorManifests_.revoked(*it))
+        if (!keyListings_.count(*it) || keyListings_[*it] < listThreshold_ ||
+            validatorManifests_.revoked(*it))
         {
             trustChanges.removed.insert(calcNodeID(*it));
             it = trustedMasterKeys_.erase(it);

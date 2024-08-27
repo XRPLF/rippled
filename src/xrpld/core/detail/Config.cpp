@@ -913,6 +913,13 @@ Config::loadFromString(std::string const& fileContents)
             if (valListKeys)
                 section(SECTION_VALIDATOR_LIST_KEYS).append(*valListKeys);
 
+            auto valListThreshold =
+                getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_THRESHOLD);
+
+            if (valListThreshold)
+                section(SECTION_VALIDATOR_LIST_THRESHOLD)
+                    .append(*valListThreshold);
+
             if (!entries && !valKeyEntries && !valListKeys)
                 Throw<std::runtime_error>(
                     "The file specified in [" SECTION_VALIDATORS_FILE
@@ -926,6 +933,27 @@ Config::loadFromString(std::string const& fileContents)
                     " section: " +
                     validatorsFile.string());
         }
+
+        VALIDATOR_LIST_THRESHOLD = [&]() -> std::optional<std::size_t> {
+            std::string strTemp;
+            if (getSingleSection(
+                    secConfig, SECTION_VALIDATOR_LIST_THRESHOLD, strTemp, j_))
+            {
+                auto const listThreshold =
+                    beast::lexicalCastThrow<std::size_t>(strTemp);
+                if (listThreshold >
+                    section(SECTION_VALIDATOR_LIST_KEYS).values().size())
+                {
+                    Throw<std::runtime_error>(
+                        "The file specified in [" SECTION_VALIDATORS_FILE
+                        "] contains an invalid "
+                        "[" SECTION_VALIDATOR_LIST_THRESHOLD
+                        "] config section");
+                }
+                return listThreshold;
+            }
+            return std::nullopt;
+        }();
 
         // Consolidate [validator_keys] and [validators]
         section(SECTION_VALIDATORS)
