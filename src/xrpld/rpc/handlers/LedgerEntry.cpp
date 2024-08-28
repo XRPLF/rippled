@@ -34,6 +34,30 @@
 
 namespace ripple {
 
+static STArray
+parseAuthorizeCredentials(Json::Value const& jv)
+{
+    STArray arr;
+    for (auto const& jo : jv)
+    {
+        auto const issuer = parseBase58<AccountID>(jo[jss::issuer].asString());
+        if (!issuer || !*issuer)
+            return {};
+
+        auto const credentialType =
+            strUnHex(jo[jss::credential_type].asString());
+        if (!credentialType || credentialType->empty())
+            return {};
+
+        auto o = STObject::makeInnerObject(sfCredential);
+        o.setAccountID(sfIssuer, *issuer);
+        o.setFieldVL(sfCredentialType, *credentialType);
+        arr.push_back(std::move(o));
+    }
+
+    return arr;
+}
+
 // {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
@@ -84,44 +108,55 @@ doLedgerEntry(RPC::JsonContext& context)
         else if (context.params.isMember(jss::deposit_preauth))
         {
             expectedType = ltDEPOSIT_PREAUTH;
+            auto const& dp = context.params[jss::deposit_preauth];
 
-            if (!context.params[jss::deposit_preauth].isObject())
+            if (!dp.isObject())
             {
-                if (!context.params[jss::deposit_preauth].isString() ||
-                    !uNodeIndex.parseHex(
-                        context.params[jss::deposit_preauth].asString()))
+                if (!dp.isString() || !uNodeIndex.parseHex(dp.asString()))
                 {
                     uNodeIndex = beast::zero;
                     jvResult[jss::error] = "malformedRequest";
                 }
             }
+            // clang-format off
             else if (
-                !context.params[jss::deposit_preauth].isMember(jss::owner) ||
-                !context.params[jss::deposit_preauth][jss::owner].isString() ||
-                !context.params[jss::deposit_preauth].isMember(
-                    jss::authorized) ||
-                !context.params[jss::deposit_preauth][jss::authorized]
-                     .isString())
+                (!dp.isMember(jss::owner) || !dp[jss::owner].isString()) ||
+                (!dp.isMember(jss::authorized) && !dp.isMember(jss::authorize_credentials)) ||
+                (dp.isMember(jss::authorized) && !dp[jss::authorized].isString()) ||
+                (dp.isMember(jss::authorize_credentials) && !dp[jss::authorize_credentials].isArray())
+                )
+            // clang-format on
             {
                 jvResult[jss::error] = "malformedRequest";
             }
             else
             {
-                auto const owner = parseBase58<AccountID>(
-                    context.params[jss::deposit_preauth][jss::owner]
-                        .asString());
-
-                auto const authorized = parseBase58<AccountID>(
-                    context.params[jss::deposit_preauth][jss::authorized]
-                        .asString());
-
+                auto const owner =
+                    parseBase58<AccountID>(dp[jss::owner].asString());
                 if (!owner)
+                {
                     jvResult[jss::error] = "malformedOwner";
-                else if (!authorized)
-                    jvResult[jss::error] = "malformedAuthorized";
+                }
+                else if (dp.isMember(jss::authorized))
+                {
+                    auto const authorized =
+                        parseBase58<AccountID>(dp[jss::authorized].asString());
+                    if (!authorized)
+                        jvResult[jss::error] = "malformedAuthorized";
+                    else
+                        uNodeIndex =
+                            keylet::depositPreauth(*owner, *authorized).key;
+                }
                 else
-                    uNodeIndex =
-                        keylet::depositPreauth(*owner, *authorized).key;
+                {
+                    auto const& ac(dp[jss::authorize_credentials]);
+                    STArray const arr = parseAuthorizeCredentials(ac);
+
+                    if (arr.empty() || (arr.size() > credentialsArrayMaxSize))
+                        jvResult[jss::error] = "malformedAuthorizeCredentials";
+                    else
+                        uNodeIndex = keylet::depositPreauth(*owner, arr).key;
+                }
             }
         }
         else if (context.params.isMember(jss::directory))
@@ -642,6 +677,43 @@ doLedgerEntry(RPC::JsonContext& context)
                     jvResult[jss::error] = "malformedDocumentID";
                 else
                     uNodeIndex = keylet::oracle(*account, *documentID).key;
+            }
+        }
+        else if (context.params.isMember(jss::credential))
+        {
+            expectedType = ltCREDENTIAL;
+            auto const& cred = context.params[jss::credential];
+
+            if ((!cred.isMember(jss::subject) ||
+                 !cred[jss::subject].isString()) ||
+                (!cred.isMember(jss::issuer) ||
+                 !cred[jss::issuer].isString()) ||
+                (!cred.isMember(jss::credential_type) ||
+                 !cred[jss::credential_type].isString()))
+            {
+                jvResult[jss::error] = "malformedRequest";
+            }
+            else
+            {
+                auto const subj =
+                    parseBase58<AccountID>(cred[jss::subject].asString());
+                auto const iss =
+                    parseBase58<AccountID>(cred[jss::issuer].asString());
+                auto const credType =
+                    strUnHex(cred[jss::credential_type].asString());
+                if (!subj || subj->isZero() || !iss || iss->isZero() ||
+                    !credType || credType->empty())
+                {
+                    jvResult[jss::error] = "malformedRequest";
+                }
+                else
+                {
+                    uNodeIndex = keylet::credential(
+                                     *subj,
+                                     *iss,
+                                     Slice(credType->data(), credType->size()))
+                                     .key;
+                }
             }
         }
         else

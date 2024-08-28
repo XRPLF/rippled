@@ -168,6 +168,7 @@ TxFormats::TxFormats()
             {sfInvoiceID, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
             {sfDeliverMin, soeOPTIONAL},
+            {sfCredentialIDs, soeOPTIONAL},
         },
         commonFields);
 
@@ -190,6 +191,7 @@ TxFormats::TxFormats()
             {sfOfferSequence, soeREQUIRED},
             {sfFulfillment, soeOPTIONAL},
             {sfCondition, soeOPTIONAL},
+            {sfCredentialIDs, soeOPTIONAL},
         },
         commonFields);
 
@@ -280,6 +282,7 @@ TxFormats::TxFormats()
             {sfBalance, soeOPTIONAL},
             {sfSignature, soeOPTIONAL},
             {sfPublicKey, soeOPTIONAL},
+            {sfCredentialIDs, soeOPTIONAL},
         },
         commonFields);
 
@@ -315,6 +318,7 @@ TxFormats::TxFormats()
         {
             {sfDestination, soeREQUIRED},
             {sfDestinationTag, soeOPTIONAL},
+            {sfCredentialIDs, soeOPTIONAL},
         },
         commonFields);
 
@@ -323,6 +327,8 @@ TxFormats::TxFormats()
         {
             {sfAuthorize, soeOPTIONAL},
             {sfUnauthorize, soeOPTIONAL},
+            {sfAuthorizeCredentials, soeOPTIONAL},
+            {sfUnauthorizeCredentials, soeOPTIONAL},
         },
         commonFields);
 
@@ -511,6 +517,36 @@ TxFormats::TxFormats()
         {
             {sfLedgerFixType, soeREQUIRED},
             {sfOwner, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::CredentialCreate,
+        ttCREDENTIAL_CREATE,
+        {
+            {sfSubject, soeOPTIONAL},
+            {sfIssuer, soeOPTIONAL},
+            {sfCredentialType, soeREQUIRED},
+            {sfIssuerPubKey, soeOPTIONAL},
+            {sfSignature, soeOPTIONAL},
+            {sfExpiration, soeOPTIONAL},
+            {sfURI, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::CredentialAccept,
+        ttCREDENTIAL_ACCEPT,
+        {
+            {sfIssuer, soeREQUIRED},
+            {sfCredentialType, soeREQUIRED},
+        },
+        commonFields);
+
+    add(jss::CredentialDelete,
+        ttCREDENTIAL_DELETE,
+        {
+            {sfSubject, soeOPTIONAL},
+            {sfIssuer, soeOPTIONAL},
+            {sfCredentialType, soeREQUIRED},
         },
         commonFields);
 }

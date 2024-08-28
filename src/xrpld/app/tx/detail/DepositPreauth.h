@@ -45,10 +45,31 @@ public:
     // Interface used by DeleteAccount
     static TER
     removeFromLedger(
-        Application& app,
         ApplyView& view,
         uint256 const& delIndex,
         beast::Journal j);
+
+    // Next preauth... functions are used by transactions that check for
+    // pre-authorization (move funds transactions)
+    static NotTEC
+    preauthPreflightCredentialsCheck(
+        STVector256 const& credentials,
+        beast::Journal const j);
+
+    static TER
+    preauthPreclaimCredentialsCheck(
+        ReadView const& view,
+        AccountID const& src,
+        AccountID const& dst,
+        STVector256 const& credentials,
+        beast::Journal const j);
+
+    // return true if at least 1 expired credentials was found(and deleted)
+    static bool
+    credentialIDsRemoveExpired(
+        ApplyView& view,
+        STTx const& tx,
+        beast::Journal const j);
 };
 
 }  // namespace ripple

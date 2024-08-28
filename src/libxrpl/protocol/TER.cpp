@@ -205,6 +205,7 @@ transResults()
         MAKE_ERROR(temXCHAIN_BRIDGE_BAD_REWARD_AMOUNT, "Malformed: Bad reward amount."),
         MAKE_ERROR(temARRAY_EMPTY,               "Malformed: Array is empty."),
         MAKE_ERROR(temARRAY_TOO_LARGE,           "Malformed: Array is too large."),
+        MAKE_ERROR(temBAD_CREDENTIALS,           "Malformed: Provided credentials aren't authorised by destination."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),

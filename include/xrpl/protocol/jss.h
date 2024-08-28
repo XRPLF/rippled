@@ -72,6 +72,10 @@ JSS(CheckCash);            // transaction type.
 JSS(CheckCreate);          // transaction type.
 JSS(Clawback);             // transaction type.
 JSS(ClearFlag);            // field.
+JSS(Credential);           // ledger type.
+JSS(CredentialAccept);     // transaction type.
+JSS(CredentialCreate);     // transaction type.
+JSS(CredentialDelete);     // transaction type.
 JSS(DID);                  // ledger type.
 JSS(DIDDelete);            // transaction type.
 JSS(DIDSet);               // transaction type.
@@ -137,6 +141,7 @@ JSS(SendMax);                            // in: TransactionSign
 JSS(Sequence);                           // in/out: TransactionSign; field.
 JSS(SetFlag);                            // field.
 JSS(SetRegularKey);                      // transaction type.
+JSS(Signature);                          // in: Credential transactions
 JSS(SignerList);                         // ledger type.
 JSS(SignerListSet);                      // transaction type.
 JSS(SigningPubKey);                      // field.
@@ -208,6 +213,7 @@ JSS(attestations);                //
 JSS(attestation_reward_account);  //
 JSS(auction_slot);                // out: amm_info
 JSS(authorized);                  // out: AccountLines
+JSS(authorize_credentials);       // in: ledger_entry DepositPreauth
 JSS(auth_accounts);               // out: amm_info
 JSS(auth_change);                 // out: AccountInfo
 JSS(auth_change_queued);          // out: AccountInfo
@@ -266,6 +272,9 @@ JSS(converge_time_s);             // out: NetworkOPs
 JSS(cookie);                      // out: NetworkOPs
 JSS(count);                       // in: AccountTx*, ValidatorList
 JSS(counters);                    // in/out: retrieve counters
+JSS(credential);                  // in: LedgerEntry Credential
+JSS(credentials);                 // in: deposit_authorized
+JSS(credential_type);             // in: LedgerEntry DepositPreauth
 JSS(ctid);                        // in/out: Tx RPC
 JSS(currency_a);                  // out: BookChanges
 JSS(currency_b);                  // out: BookChanges
@@ -651,6 +660,7 @@ JSS(streams);               // in: Subscribe, Unsubscribe
 JSS(strict);                // in: AccountCurrencies, AccountInfo
 JSS(sub_index);             // in: LedgerEntry
 JSS(subcommand);            // in: PathFind
+JSS(subject);               // in: LedgerEntry Credential
 JSS(success);               // rpc
 JSS(supported);             // out: AmendmentTableImpl
 JSS(sync_mode);             // in: Submit

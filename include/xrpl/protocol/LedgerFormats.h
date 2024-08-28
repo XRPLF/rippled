@@ -197,6 +197,12 @@ enum LedgerEntryType : std::uint16_t
      */
     ltORACLE = 0x0080,
 
+    /** A ledger object which describes a Verifiable Credentials for DID.
+
+        \sa keylet::credential
+     */
+    ltCREDENTIAL = 0x0081,
+
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 
@@ -308,6 +314,9 @@ enum LedgerSpecificFlags {
 
     // ltNFTOKEN_OFFER
     lsfSellNFToken = 0x00000001,
+
+    // ltCREDENTIAL
+    lsfAccepted = 0x00010000,
 };
 
 //------------------------------------------------------------------------------

@@ -20,6 +20,7 @@
 #include <xrpld/app/tx/detail/Escrow.h>
 
 #include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/conditions/Condition.h>
 #include <xrpld/conditions/Fulfillment.h>
 #include <xrpld/ledger/ApplyView.h>
@@ -347,6 +348,22 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         }
     }
 
+    if (ctx.tx.isFieldPresent(sfCredentialIDs))
+    {
+        if (!ctx.rules.enabled(featureCredentials) ||
+            !ctx.rules.enabled(featureDepositPreauth) ||
+            !ctx.rules.enabled(featureDepositAuth))
+        {
+            JLOG(ctx.j.trace()) << "Credentials rule is disabled.";
+            return temDISABLED;
+        }
+
+        auto const err = DepositPreauth::preauthPreflightCredentialsCheck(
+            ctx.tx.getFieldV256(sfCredentialIDs), ctx.j);
+        if (!isTesSuccess(err))
+            return err;
+    }
+
     return tesSUCCESS;
 }
 
@@ -361,6 +378,35 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     }
 
     return Transactor::calculateBaseFee(view, tx) + extraFee;
+}
+
+TER
+EscrowFinish::preclaim(PreclaimContext const& ctx)
+{
+    auto const kEscrow =
+        keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
+    auto const sleEscrow = ctx.view.read(kEscrow);
+    if (!sleEscrow)
+        return tecNO_TARGET;
+
+    AccountID const dst = sleEscrow->getAccountID(sfDestination);
+    auto const sleDst = ctx.view.read(keylet::account(dst));
+    if (!sleDst)
+        return tecNO_DST;
+
+    if (ctx.tx.isFieldPresent(sfCredentialIDs))
+    {
+        AccountID const src = ctx.tx[sfAccount];
+        if (!(sleDst->getFlags() & lsfDepositAuth) || (src == dst))
+            return tecNO_PERMISSION;
+
+        auto const err = DepositPreauth::preauthPreclaimCredentialsCheck(
+            ctx.view, src, dst, ctx.tx.getFieldV256(sfCredentialIDs), ctx.j);
+        if (!isTesSuccess(err))
+            return err;
+    }
+
+    return tesSUCCESS;
 }
 
 TER
@@ -454,7 +500,12 @@ EscrowFinish::doApply()
     if (!sled)
         return tecNO_DST;
 
-    if (ctx_.view().rules().enabled(featureDepositAuth))
+    if (ctx_.tx.isFieldPresent(sfCredentialIDs))
+    {
+        if (DepositPreauth::credentialIDsRemoveExpired(view(), ctx_.tx, j_))
+            return tecEXPIRED;
+    }
+    else if (ctx_.view().rules().enabled(featureDepositAuth))
     {
         // Is EscrowFinished authorized?
         if (sled->getFlags() & lsfDepositAuth)

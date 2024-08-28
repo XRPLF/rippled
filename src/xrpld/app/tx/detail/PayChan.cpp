@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/app/tx/detail/PayChan.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
@@ -453,7 +454,51 @@ PayChanClaim::preflight(PreflightContext const& ctx)
             return temBAD_SIGNATURE;
     }
 
+    if (ctx.tx.isFieldPresent(sfCredentialIDs))
+    {
+        if (!ctx.rules.enabled(featureCredentials) ||
+            !ctx.rules.enabled(featureDepositPreauth) ||
+            !ctx.rules.enabled(featureDepositAuth))
+        {
+            JLOG(ctx.j.trace()) << "Credentials rule is disabled.";
+            return temDISABLED;
+        }
+
+        auto const err = DepositPreauth::preauthPreflightCredentialsCheck(
+            ctx.tx.getFieldV256(sfCredentialIDs), ctx.j);
+        if (!isTesSuccess(err))
+            return err;
+    }
+
     return preflight2(ctx);
+}
+
+TER
+PayChanClaim::preclaim(PreclaimContext const& ctx)
+{
+    Keylet const k(ltPAYCHAN, ctx.tx[sfChannel]);
+    auto const slep = ctx.view.read(k);
+    if (!slep)
+        return tecNO_TARGET;
+
+    if (ctx.tx.isFieldPresent(sfCredentialIDs))
+    {
+        AccountID const dst = slep->getAccountID(sfDestination);
+        auto const sleDst = ctx.view.read(keylet::account(dst));
+        if (!sleDst)
+            return tecNO_DST;
+
+        AccountID const src = ctx.tx[sfAccount];
+        if (!(sleDst->getFlags() & lsfDepositAuth) || (src == dst))
+            return tecNO_PERMISSION;
+
+        auto const err = DepositPreauth::preauthPreclaimCredentialsCheck(
+            ctx.view, src, dst, ctx.tx.getFieldV256(sfCredentialIDs), ctx.j);
+        if (!isTesSuccess(err))
+            return err;
+    }
+
+    return tesSUCCESS;
 }
 
 TER
@@ -517,7 +562,12 @@ PayChanClaim::doApply()
             return tecNO_TARGET;
 
         // Check whether the destination account requires deposit authorization.
-        if (depositAuth && (sled->getFlags() & lsfDepositAuth))
+        if (ctx_.tx.isFieldPresent(sfCredentialIDs))
+        {
+            if (DepositPreauth::credentialIDsRemoveExpired(view(), ctx_.tx, j_))
+                return tecEXPIRED;
+        }
+        else if (depositAuth && (sled->getFlags() & lsfDepositAuth))
         {
             // A destination account that requires authorization has two
             // ways to get a Payment Channel Claim into the account:

@@ -19,7 +19,6 @@
 
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/jss.h>
-#include <utility>
 
 namespace ripple {
 
@@ -233,10 +232,11 @@ LedgerFormats::LedgerFormats()
         ltDEPOSIT_PREAUTH,
         {
             {sfAccount,              soeREQUIRED},
-            {sfAuthorize,            soeREQUIRED},
+            {sfAuthorize,            soeOPTIONAL},
             {sfOwnerNode,            soeREQUIRED},
             {sfPreviousTxnID,        soeREQUIRED},
             {sfPreviousTxnLgrSeq,    soeREQUIRED},
+            {sfAuthorizeCredentials, soeOPTIONAL},
         },
         commonFields);
 
@@ -362,6 +362,20 @@ LedgerFormats::LedgerFormats()
             {sfOwnerNode,           soeREQUIRED},
             {sfPreviousTxnID,       soeREQUIRED},
             {sfPreviousTxnLgrSeq,   soeREQUIRED}
+        },
+        commonFields);
+
+    add(jss::Credential,
+        ltCREDENTIAL,
+        {
+            {sfSubject,              soeREQUIRED},
+            {sfIssuer,               soeREQUIRED},
+            {sfCredentialType,       soeREQUIRED},
+            {sfExpiration,           soeOPTIONAL},
+            {sfURI,                  soeOPTIONAL},
+            {sfOwnerNode,            soeREQUIRED},
+            {sfPreviousTxnID,        soeREQUIRED},
+            {sfPreviousTxnLgrSeq,    soeREQUIRED},
         },
         commonFields);
 

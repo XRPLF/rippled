@@ -26,12 +26,21 @@ namespace jtx {
 
 // Delete account.  If successful transfer remaining XRP to dest.
 Json::Value
-acctdelete(jtx::Account const& account, jtx::Account const& dest)
+acctdelete(
+    jtx::Account const& account,
+    jtx::Account const& dest,
+    std::vector<std::string> const& credentialIDs)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfDestination.jsonName] = dest.human();
     jv[sfTransactionType.jsonName] = jss::AccountDelete;
+    if (!credentialIDs.empty())
+    {
+        auto& arr(jv[sfCredentialIDs.jsonName] = Json::arrayValue);
+        for (auto const& o : credentialIDs)
+            arr.append(o);
+    }
     return jv;
 }
 
