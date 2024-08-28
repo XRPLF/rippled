@@ -24,7 +24,6 @@
 #include <xrpld/app/rdb/State.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/ConfigSections.h>
-#include <xrpld/core/Pg.h>
 #include <xrpld/nodestore/Scheduler.h>
 #include <xrpld/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpld/shamap/SHAMapMissingNode.h>
@@ -120,13 +119,6 @@ SHAMapStoreImp::SHAMapStoreImp(
 
     if (deleteInterval_)
     {
-        if (app_.config().reporting())
-        {
-            Throw<std::runtime_error>(
-                "Reporting does not support online_delete. Remove "
-                "online_delete info from config");
-        }
-
         // Configuration that affects the behavior of online delete
         get_if_exists(section, "delete_batch", deleteBatch_);
         std::uint32_t temp;
@@ -188,12 +180,6 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
 
     if (deleteInterval_)
     {
-        if (app_.config().reporting())
-        {
-            Throw<std::runtime_error>(
-                "Reporting does not support online_delete. Remove "
-                "online_delete info from config");
-        }
         SavedState state = state_db_.getState();
         auto writableBackend = makeBackendRotating(state.writableDb);
         auto archiveBackend = makeBackendRotating(state.archiveDb);
@@ -279,13 +265,6 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 void
 SHAMapStoreImp::run()
 {
-    if (app_.config().reporting())
-    {
-        assert(false);
-        Throw<std::runtime_error>(
-            "Reporting does not support online_delete. Remove "
-            "online_delete info from config");
-    }
     beast::setCurrentThreadName("SHAMapStore");
     LedgerIndex lastRotated = state_db_.getState().lastRotated;
     netOPs_ = &app_.getOPs();
@@ -597,13 +576,6 @@ SHAMapStoreImp::freshenCaches()
 void
 SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
 {
-    if (app_.config().reporting())
-    {
-        assert(false);
-        Throw<std::runtime_error>(
-            "Reporting does not support online_delete. Remove "
-            "online_delete info from config");
-    }
     // Do not allow ledgers to be acquired from the network
     // that are about to be deleted.
     minimumOnline_ = lastRotated + 1;
