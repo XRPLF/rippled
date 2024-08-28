@@ -377,7 +377,6 @@ stored inside the build directory, as either of:
 | --- | ---| ---|
 | `assert` | OFF | Enable assertions.
 | `coverage` | OFF | Prepare the coverage report. |
-| `reporting` | OFF | Build the reporting mode feature. |
 | `san` | N/A | Enable a sanitizer with Clang. Choices are `thread` and `address`. |
 | `tests` | OFF | Build tests. |
 | `unity` | ON | Configure a unity build. |
