@@ -37,9 +37,6 @@ namespace ripple {
 Json::Value
 doConnect(RPC::JsonContext& context)
 {
-    if (context.app.config().reporting())
-        return rpcError(rpcREPORTING_UNSUPPORTED);
-
     if (context.app.config().standalone())
         return "cannot connect in standalone mode";
 
