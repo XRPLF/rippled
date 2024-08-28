@@ -61,8 +61,6 @@ doConsensusInfo(RPC::JsonContext&);
 Json::Value
 doDepositAuthorized(RPC::JsonContext&);
 Json::Value
-doDownloadShard(RPC::JsonContext&);
-Json::Value
 doFeature(RPC::JsonContext&);
 Json::Value
 doFee(RPC::JsonContext&);
@@ -101,8 +99,6 @@ doNFTBuyOffers(RPC::JsonContext&);
 Json::Value
 doNFTSellOffers(RPC::JsonContext&);
 Json::Value
-doNodeToShard(RPC::JsonContext&);
-Json::Value
 doNoRippleCheck(RPC::JsonContext&);
 Json::Value
 doOwnerInfo(RPC::JsonContext&);
@@ -138,8 +134,6 @@ Json::Value
 doSign(RPC::JsonContext&);
 Json::Value
 doSignFor(RPC::JsonContext&);
-Json::Value
-doCrawlShards(RPC::JsonContext&);
 Json::Value
 doStop(RPC::JsonContext&);
 Json::Value

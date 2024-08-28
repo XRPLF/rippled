@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,45 +17,28 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_TYPES_H_INCLUDED
-#define RIPPLE_NODESTORE_TYPES_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_LEDGER_STATE_FIX_H_INCLUDED
+#define RIPPLE_TEST_JTX_LEDGER_STATE_FIX_H_INCLUDED
 
-#include <xrpld/nodestore/NodeObject.h>
-#include <xrpl/basics/BasicConfig.h>
-#include <vector>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 
 namespace ripple {
-namespace NodeStore {
+namespace test {
+namespace jtx {
 
-enum {
-    // This is only used to pre-allocate the array for
-    // batch objects and does not affect the amount written.
-    //
-    batchWritePreallocationSize = 256,
+/** LedgerStateFix operations. */
+namespace ledgerStateFix {
 
-    // This sets a limit on the maximum number of writes
-    // in a batch. Actual usage can be twice this since
-    // we have a new batch growing as we write the old.
-    //
-    batchWriteLimitSize = 65536
-};
+/** Repair the links in an NFToken directory. */
+Json::Value
+nftPageLinks(jtx::Account const& acct, jtx::Account const& owner);
 
-/** Return codes from Backend operations. */
-enum Status {
-    ok,
-    notFound,
-    dataCorrupt,
-    unknown,
-    backendError,
+}  // namespace ledgerStateFix
 
-    customCode = 100
-};
+}  // namespace jtx
 
-/** A batch of NodeObjects to write at once. */
-using Batch = std::vector<std::shared_ptr<NodeObject>>;
-
-}  // namespace NodeStore
-
+}  // namespace test
 }  // namespace ripple
 
 #endif
