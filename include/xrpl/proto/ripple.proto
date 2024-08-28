@@ -18,10 +18,6 @@ enum MessageType
     mtHAVE_SET                  = 35;
     mtVALIDATION                = 41;
     mtGET_OBJECTS               = 42;
-    mtGET_SHARD_INFO            = 50;
-    mtSHARD_INFO                = 51;
-    mtGET_PEER_SHARD_INFO       = 52;
-    mtPEER_SHARD_INFO           = 53;
     mtVALIDATORLIST             = 54;
     mtSQUELCH                   = 55;
     mtVALIDATORLISTCOLLECTION   = 56;
@@ -29,8 +25,6 @@ enum MessageType
     mtPROOF_PATH_RESPONSE       = 58;
     mtREPLAY_DELTA_REQ          = 59;
     mtREPLAY_DELTA_RESPONSE     = 60;
-    mtGET_PEER_SHARD_INFO_V2    = 61;
-    mtPEER_SHARD_INFO_V2        = 62;
     mtHAVE_TRANSACTIONS         = 63;
     mtTRANSACTIONS              = 64;
 }
@@ -89,69 +83,10 @@ message TMLink
     required bytes nodePubKey       = 1 [deprecated=true]; // node public key
 }
 
-// Request info on shards held
-message TMGetPeerShardInfo
-{
-    required uint32 hops            = 1 [deprecated=true]; // number of hops to travel
-    optional bool lastLink          = 2 [deprecated=true]; // true if last link in the peer chain
-    repeated TMLink peerChain       = 3 [deprecated=true]; // public keys used to route messages
-}
-
-// Info about shards held
-message TMPeerShardInfo
-{
-    required string shardIndexes    = 1 [deprecated=true]; // rangeSet of shard indexes
-    optional bytes nodePubKey       = 2 [deprecated=true]; // node public key
-    optional string endpoint        = 3 [deprecated=true]; // ipv6 or ipv4 address
-    optional bool lastLink          = 4 [deprecated=true]; // true if last link in the peer chain
-    repeated TMLink peerChain       = 5 [deprecated=true]; // public keys used to route messages
-}
-
 // Peer public key
 message TMPublicKey
 {
     required bytes publicKey = 1;
-}
-
-// Request peer shard information
-message TMGetPeerShardInfoV2
-{
-    // Peer public keys used to route messages
-    repeated TMPublicKey peerChain = 1;
-
-    // Remaining times to relay
-    required uint32 relays = 2;
-}
-
-// Peer shard information
-message TMPeerShardInfoV2
-{
-    message TMIncomplete
-    {
-        required uint32 shardIndex = 1;
-        required uint32 state = 2;
-
-        // State completion percent, 1 - 100
-        optional uint32 progress = 3;
-    }
-
-    // Message creation time
-    required uint32 timestamp = 1;
-
-    // Incomplete shards being acquired or verified
-    repeated TMIncomplete incomplete = 2;
-
-    // Verified immutable shards (RangeSet)
-    optional string finalized = 3;
-
-    // Public key of node that authored the shard info
-    required bytes publicKey = 4;
-
-    // Digital signature of node that authored the shard info
-    required bytes signature = 5;
-
-    // Peer public keys used to route messages
-    repeated TMPublicKey peerChain = 6;
 }
 
 // A transaction can have only one input and one output.

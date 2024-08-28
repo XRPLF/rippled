@@ -24,7 +24,9 @@
 #include <xrpld/app/tx/detail/ApplyContext.h>
 #include <xrpld/app/tx/detail/Transactor.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {
@@ -110,10 +112,9 @@ class Invariants_test : public beast::unit_test::suite
             terActual = ac.checkInvariants(terActual, fee);
             BEAST_EXPECT(terExpect == terActual);
             BEAST_EXPECT(
-                boost::starts_with(
-                    sink.messages().str(), "Invariant failed:") ||
-                boost::starts_with(
-                    sink.messages().str(), "Transaction caused an exception"));
+                sink.messages().str().starts_with("Invariant failed:") ||
+                sink.messages().str().starts_with(
+                    "Transaction caused an exception"));
             // uncomment if you want to log the invariant failure message
             // log << "   --> " << sink.messages().str() << std::endl;
             for (auto const& m : expect_logs)
@@ -650,6 +651,153 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttPAYMENT, [](STObject& tx) {}});
     }
 
+    void
+    testNFTokenPageInvariants()
+    {
+        using namespace test::jtx;
+        testcase << "NFTokenPage";
+
+        // lambda that returns an STArray of NFTokenIDs.
+        uint256 const firstNFTID(
+            "0000000000000000000000000000000000000001FFFFFFFFFFFFFFFF00000000");
+        auto makeNFTokenIDs = [&firstNFTID](unsigned int nftCount) {
+            SOTemplate const* nfTokenTemplate =
+                InnerObjectFormats::getInstance().findSOTemplateBySField(
+                    sfNFToken);
+
+            uint256 nftID(firstNFTID);
+            STArray ret;
+            for (int i = 0; i < nftCount; ++i)
+            {
+                STObject newNFToken(
+                    *nfTokenTemplate, sfNFToken, [&nftID](STObject& object) {
+                        object.setFieldH256(sfNFTokenID, nftID);
+                    });
+                ret.push_back(std::move(newNFToken));
+                ++nftID;
+            }
+            return ret;
+        };
+
+        doInvariantCheck(
+            {{"NFT page has invalid size"}},
+            [&makeNFTokenIDs](
+                Account const& A1, Account const&, ApplyContext& ac) {
+                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(A1));
+                nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(0));
+
+                ac.view().insert(nftPage);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"NFT page has invalid size"}},
+            [&makeNFTokenIDs](
+                Account const& A1, Account const&, ApplyContext& ac) {
+                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(A1));
+                nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(33));
+
+                ac.view().insert(nftPage);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"NFTs on page are not sorted"}},
+            [&makeNFTokenIDs](
+                Account const& A1, Account const&, ApplyContext& ac) {
+                STArray nfTokens = makeNFTokenIDs(2);
+                std::iter_swap(nfTokens.begin(), nfTokens.begin() + 1);
+
+                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(A1));
+                nftPage->setFieldArray(sfNFTokens, nfTokens);
+
+                ac.view().insert(nftPage);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"NFT contains empty URI"}},
+            [&makeNFTokenIDs](
+                Account const& A1, Account const&, ApplyContext& ac) {
+                STArray nfTokens = makeNFTokenIDs(1);
+                nfTokens[0].setFieldVL(sfURI, Blob{});
+
+                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(A1));
+                nftPage->setFieldArray(sfNFTokens, nfTokens);
+
+                ac.view().insert(nftPage);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"NFT page is improperly linked"}},
+            [&makeNFTokenIDs](
+                Account const& A1, Account const&, ApplyContext& ac) {
+                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(A1));
+                nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
+                nftPage->setFieldH256(
+                    sfPreviousPageMin, keylet::nftpage_max(A1).key);
+
+                ac.view().insert(nftPage);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"NFT page is improperly linked"}},
+            [&makeNFTokenIDs](
+                Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(A1));
+                nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
+                nftPage->setFieldH256(
+                    sfPreviousPageMin, keylet::nftpage_min(A2).key);
+
+                ac.view().insert(nftPage);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"NFT page is improperly linked"}},
+            [&makeNFTokenIDs](
+                Account const& A1, Account const&, ApplyContext& ac) {
+                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(A1));
+                nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
+                nftPage->setFieldH256(sfNextPageMin, nftPage->key());
+
+                ac.view().insert(nftPage);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"NFT page is improperly linked"}},
+            [&makeNFTokenIDs](
+                Account const& A1, Account const& A2, ApplyContext& ac) {
+                STArray nfTokens = makeNFTokenIDs(1);
+                auto nftPage = std::make_shared<SLE>(keylet::nftpage(
+                    keylet::nftpage_max(A1),
+                    ++(nfTokens[0].getFieldH256(sfNFTokenID))));
+                nftPage->setFieldArray(sfNFTokens, std::move(nfTokens));
+                nftPage->setFieldH256(
+                    sfNextPageMin, keylet::nftpage_max(A2).key);
+
+                ac.view().insert(nftPage);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"NFT found in incorrect page"}},
+            [&makeNFTokenIDs](
+                Account const& A1, Account const&, ApplyContext& ac) {
+                STArray nfTokens = makeNFTokenIDs(2);
+                auto nftPage = std::make_shared<SLE>(keylet::nftpage(
+                    keylet::nftpage_max(A1),
+                    (nfTokens[1].getFieldH256(sfNFTokenID))));
+                nftPage->setFieldArray(sfNFTokens, std::move(nfTokens));
+
+                ac.view().insert(nftPage);
+                return true;
+            });
+    }
+
 public:
     void
     run() override
@@ -664,6 +812,7 @@ public:
         testNoBadOffers();
         testNoZeroEscrow();
         testValidNewAccountRoot();
+        testNFTokenPageInvariants();
     }
 };
 

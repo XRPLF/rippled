@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2019 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,60 +17,33 @@
 */
 //==============================================================================
 
-#include <xrpld/nodestore/detail/TaskQueue.h>
+#include <test/jtx/ledgerStateFix.h>
 
-#include <cassert>
+#include <xrpld/app/tx/detail/LedgerStateFix.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
-namespace NodeStore {
+namespace test {
+namespace jtx {
 
-TaskQueue::TaskQueue() : workers_(*this, nullptr, "Shard store taskQueue", 1)
+namespace ledgerStateFix {
+
+// Fix NFTokenPage links on owner's account.  acct pays fee.
+Json::Value
+nftPageLinks(jtx::Account const& acct, jtx::Account const& owner)
 {
+    Json::Value jv;
+    jv[sfAccount.jsonName] = acct.human();
+    jv[sfLedgerFixType.jsonName] = LedgerStateFix::nfTokenPageLink;
+    jv[sfOwner.jsonName] = owner.human();
+    jv[sfTransactionType.jsonName] = jss::LedgerStateFix;
+    jv[sfFlags.jsonName] = tfUniversal;
+    return jv;
 }
 
-void
-TaskQueue::stop()
-{
-    workers_.stop();
-}
+}  // namespace ledgerStateFix
 
-void
-TaskQueue::addTask(std::function<void()> task)
-{
-    {
-        std::lock_guard lock{mutex_};
-        tasks_.emplace(std::move(task));
-    }
-    workers_.addTask();
-}
-
-size_t
-TaskQueue::size() const
-{
-    std::lock_guard lock{mutex_};
-    return tasks_.size() + processing_;
-}
-
-void
-TaskQueue::processTask(int instance)
-{
-    std::function<void()> task;
-
-    {
-        std::lock_guard lock{mutex_};
-
-        assert(!tasks_.empty());
-        task = std::move(tasks_.front());
-        tasks_.pop();
-
-        ++processing_;
-    }
-
-    task();
-
-    std::lock_guard lock{mutex_};
-    --processing_;
-}
-
-}  // namespace NodeStore
+}  // namespace jtx
+}  // namespace test
 }  // namespace ripple
