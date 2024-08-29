@@ -49,6 +49,7 @@ template <int>
 class STBitString;
 template <class>
 class STInteger;
+class STNumber;
 class STXChainBridge;
 class STVector256;
 class STCurrency;
@@ -350,6 +351,7 @@ using SF_ACCOUNT = TypedField<STAccount>;
 using SF_AMOUNT = TypedField<STAmount>;
 using SF_ISSUE = TypedField<STIssue>;
 using SF_CURRENCY = TypedField<STCurrency>;
+using SF_NUMBER = TypedField<STNumber>;
 using SF_VL = TypedField<STBlob>;
 using SF_VECTOR256 = TypedField<STVector256>;
 using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;

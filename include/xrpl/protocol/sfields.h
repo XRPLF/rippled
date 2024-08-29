@@ -185,6 +185,8 @@ TYPED_SFIELD(HookHash,                 UINT256,   31)
 TYPED_SFIELD(HookNamespace,            UINT256,   32)
 TYPED_SFIELD(HookSetTxnID,             UINT256,   33)
 
+TYPED_SFIELD(Quantity,                 NUMBER,     1)
+
 // currency amount (common)
 TYPED_SFIELD(Amount,                   AMOUNT,     1)
 TYPED_SFIELD(Balance,                  AMOUNT,     2)
