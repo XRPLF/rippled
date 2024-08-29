@@ -72,8 +72,10 @@
 #include <boost/asio/steady_timer.hpp>
 
 #include <algorithm>
+#include <exception>
 #include <mutex>
 #include <optional>
+#include <set>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -781,7 +783,7 @@ private:
 
     StateAccounting accounting_{};
 
-    std::set<std::pair<PublicKey, uint256>> pendingValidations_;
+    std::set<uint256> pendingValidations_;
     std::mutex validationsMutex_;
 
 private:
@@ -2312,14 +2314,30 @@ NetworkOPsImp::recvValidation(
         << "recvValidation " << val->getLedgerHash() << " from " << source;
 
     std::unique_lock lock(validationsMutex_);
-    if (pendingValidations_.contains(
-            {val->getSignerPublic(), val->getLedgerHash()}))
-        return false;
-    pendingValidations_.insert({val->getSignerPublic(), val->getLedgerHash()});
-    lock.unlock();
-    handleNewValidation(app_, val, source);
+    try
+    {
+        BypassAccept bypassAccept = BypassAccept::FALSE;
+        if (pendingValidations_.contains(val->getLedgerHash()))
+            bypassAccept = BypassAccept::TRUE;
+        else
+            pendingValidations_.insert(val->getLedgerHash());
+        lock.unlock();
+        handleNewValidation(app_, val, source, bypassAccept, m_journal);
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(m_journal.warn())
+            << "Exception thrown for handling new validation "
+            << val->getLedgerHash() << ": " << e.what();
+    }
+    catch (...)
+    {
+        JLOG(m_journal.warn())
+            << "Unknown exception thrown for handling new validation "
+            << val->getLedgerHash();
+    }
     lock.lock();
-    pendingValidations_.erase({val->getSignerPublic(), val->getLedgerHash()});
+    pendingValidations_.erase(val->getLedgerHash());
     lock.unlock();
 
     pubValidation(val);

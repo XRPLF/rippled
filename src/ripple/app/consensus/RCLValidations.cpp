@@ -161,7 +161,9 @@ void
 handleNewValidation(
     Application& app,
     std::shared_ptr<STValidation> const& val,
-    std::string const& source)
+    std::string const& source,
+    BypassAccept const bypassAccept,
+    std::optional<beast::Journal> j)
 {
     auto const& signingKey = val->getSignerPublic();
     auto const& hash = val->getLedgerHash();
@@ -186,7 +188,21 @@ handleNewValidation(
     if (outcome == ValStatus::current)
     {
         if (val->isTrusted())
-            app.getLedgerMaster().checkAccept(hash, seq);
+        {
+            if (bypassAccept == BypassAccept::TRUE)
+            {
+                assert(j.has_value());
+                if (j.has_value())
+                {
+                    JLOG(j->trace()) << "Bypassing checkAccept for validation "
+                                     << val->getLedgerHash();
+                }
+            }
+            else
+            {
+                app.getLedgerMaster().checkAccept(hash, seq);
+            }
+        }
         return;
     }
 
