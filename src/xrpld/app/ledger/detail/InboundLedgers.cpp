@@ -23,6 +23,7 @@
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/perflog/PerfLog.h>
+#include <xrpl/basics/CanProcess.h>
 #include <xrpl/basics/DecayingSample.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/container/aged_map.h>
@@ -133,29 +134,25 @@ public:
         std::uint32_t seq,
         InboundLedger::Reason reason) override
     {
-        std::unique_lock lock(acquiresMutex_);
-        try
+        if (CanProcess check{acquiresMutex_, pendingAcquires_, hash})
         {
-            if (pendingAcquires_.contains(hash))
-                return;
-            pendingAcquires_.insert(hash);
-            lock.unlock();
-            acquire(hash, seq, reason);
+            try
+            {
+                acquire(hash, seq, reason);
+            }
+            catch (std::exception const& e)
+            {
+                JLOG(j_.warn())
+                    << "Exception thrown for acquiring new inbound ledger "
+                    << hash << ": " << e.what();
+            }
+            catch (...)
+            {
+                JLOG(j_.warn()) << "Unknown exception thrown for acquiring new "
+                                   "inbound ledger "
+                                << hash;
+            }
         }
-        catch (std::exception const& e)
-        {
-            JLOG(j_.warn())
-                << "Exception thrown for acquiring new inbound ledger " << hash
-                << ": " << e.what();
-        }
-        catch (...)
-        {
-            JLOG(j_.warn())
-                << "Unknown exception thrown for acquiring new inbound ledger "
-                << hash;
-        }
-        lock.lock();
-        pendingAcquires_.erase(hash);
     }
 
     std::shared_ptr<InboundLedger>
