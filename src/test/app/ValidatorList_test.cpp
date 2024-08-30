@@ -2762,8 +2762,349 @@ private:
             return result;
         };
 
+        // All test cases use 5 publishers.
+        {
+            // List threshold = 5 (same as number of trusted publishers)
+            ManifestCache pubManifests;
+            ManifestCache valManifests;
+            std::vector<Publisher> publishers;
+            // Self is a random validator
+            auto const self = randomValidator();
+            auto const keysTotal = valKeys.size() + 1;
+            auto trustedKeys = makeValidatorList(
+                5,  //
+                0,
+                5,
+                pubManifests,
+                valManifests,
+                self,
+                publishers);
+            BEAST_EXPECT(trustedKeys->getListThreshold() == 5);
+            for (auto const& p : publishers)
+                BEAST_EXPECT(trustedKeys->trustedPublisher(p.pubKey));
+
+            TrustChanges changes = trustedKeys->updateTrusted(
+                activeValidators,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().overlay(),
+                env.app().getHashRouter());
+            BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
+            BEAST_EXPECT(
+                trustedKeys->getTrustedMasterKeys().size() == keysTotal);
+
+            hash_set<NodeID> added;
+            added.insert(calcNodeID(self.masterPublic));
+            for (auto const& val : valKeys)
+            {
+                BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
+                added.insert(calcNodeID(val.masterPublic));
+            }
+            BEAST_EXPECT(changes.added == added);
+            BEAST_EXPECT(changes.removed.empty());
+
+            // Expire one publisher - only trusted validator is self
+            env.timeKeeper().set(publishers.back().expiry);
+            changes = trustedKeys->updateTrusted(
+                activeValidators,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().overlay(),
+                env.app().getHashRouter());
+            BEAST_EXPECT(trustedKeys->quorum() == 1);
+            BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
+
+            hash_set<NodeID> removed;
+            BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
+            for (auto const& val : valKeys)
+            {
+                BEAST_EXPECT(trustedKeys->listed(val.masterPublic));
+                BEAST_EXPECT(!trustedKeys->trusted(val.masterPublic));
+                removed.insert(calcNodeID(val.masterPublic));
+            }
+            BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
+            BEAST_EXPECT(changes.added.empty());
+            BEAST_EXPECT(changes.removed == removed);
+        }
+        {
+            // List threshold = 4, 1 publisher is revoked
+            ManifestCache pubManifests;
+            ManifestCache valManifests;
+            std::vector<Publisher> publishers;
+            // Self is in UNL
+            auto const self = valKeys[1];
+            auto const keysTotal = valKeys.size();
+            auto trustedKeys = makeValidatorList(
+                5,  //
+                1,
+                4,
+                pubManifests,
+                valManifests,
+                self,
+                publishers);
+            BEAST_EXPECT(trustedKeys->getListThreshold() == 4);
+            int untrustedCount = 0;
+            for (auto const& p : publishers)
+            {
+                bool const trusted = trustedKeys->trustedPublisher(p.pubKey);
+                BEAST_EXPECT(p.revoked ^ trusted);
+                untrustedCount += trusted ? 0 : 1;
+            }
+            BEAST_EXPECT(untrustedCount == 1);
+
+            TrustChanges changes = trustedKeys->updateTrusted(
+                activeValidators,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().overlay(),
+                env.app().getHashRouter());
+            BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
+            BEAST_EXPECT(
+                trustedKeys->getTrustedMasterKeys().size() == keysTotal);
+
+            hash_set<NodeID> added;
+            for (auto const& val : valKeys)
+            {
+                BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
+                added.insert(calcNodeID(val.masterPublic));
+            }
+            BEAST_EXPECT(changes.added == added);
+            BEAST_EXPECT(changes.removed.empty());
+
+            // Expire one publisher - only trusted validator is self
+            env.timeKeeper().set(publishers.back().expiry);
+            changes = trustedKeys->updateTrusted(
+                activeValidators,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().overlay(),
+                env.app().getHashRouter());
+            BEAST_EXPECT(trustedKeys->quorum() == 1);
+            BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
+
+            hash_set<NodeID> removed;
+            BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
+            for (auto const& val : valKeys)
+            {
+                BEAST_EXPECT(trustedKeys->listed(val.masterPublic));
+                if (val.masterPublic != self.masterPublic)
+                {
+                    BEAST_EXPECT(!trustedKeys->trusted(val.masterPublic));
+                    removed.insert(calcNodeID(val.masterPublic));
+                }
+            }
+            BEAST_EXPECT(changes.added.empty());
+            BEAST_EXPECT(changes.removed == removed);
+        }
+
         constexpr auto quorumDisabled = std::numeric_limits<std::size_t>::max();
         {
+            // List threshold = 3 (default), 2 publishers are revoked
+            ManifestCache pubManifests;
+            ManifestCache valManifests;
+            std::vector<Publisher> publishers;
+            // Self is a random validator
+            auto const self = randomValidator();
+            auto const keysTotal = valKeys.size() + 1;
+            auto trustedKeys = makeValidatorList(
+                5,  //
+                2,
+                0,
+                pubManifests,
+                valManifests,
+                self,
+                publishers);
+            BEAST_EXPECT(trustedKeys->getListThreshold() == 3);
+            int untrustedCount = 0;
+            for (auto const& p : publishers)
+            {
+                bool const trusted = trustedKeys->trustedPublisher(p.pubKey);
+                BEAST_EXPECT(p.revoked ^ trusted);
+                untrustedCount += trusted ? 0 : 1;
+            }
+            BEAST_EXPECT(untrustedCount == 2);
+
+            TrustChanges changes = trustedKeys->updateTrusted(
+                activeValidators,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().overlay(),
+                env.app().getHashRouter());
+            BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
+            BEAST_EXPECT(
+                trustedKeys->getTrustedMasterKeys().size() == keysTotal);
+
+            hash_set<NodeID> added;
+            added.insert(calcNodeID(self.masterPublic));
+            for (auto const& val : valKeys)
+            {
+                BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
+                added.insert(calcNodeID(val.masterPublic));
+            }
+            BEAST_EXPECT(changes.added == added);
+            BEAST_EXPECT(changes.removed.empty());
+
+            // Expire one publisher - no quorum, only trusted validator is self
+            env.timeKeeper().set(publishers.back().expiry);
+            changes = trustedKeys->updateTrusted(
+                activeValidators,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().overlay(),
+                env.app().getHashRouter());
+            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
+
+            hash_set<NodeID> removed;
+            BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
+            for (auto const& val : valKeys)
+            {
+                BEAST_EXPECT(trustedKeys->listed(val.masterPublic));
+                BEAST_EXPECT(!trustedKeys->trusted(val.masterPublic));
+                removed.insert(calcNodeID(val.masterPublic));
+            }
+            BEAST_EXPECT(changes.added.empty());
+            BEAST_EXPECT(changes.removed == removed);
+        }
+        {
+            // List threshold = 3 (default), 2 publishers are revoked
+            ManifestCache pubManifests;
+            ManifestCache valManifests;
+            std::vector<Publisher> publishers;
+            // Self is in UNL
+            auto const self = valKeys[5];
+            auto const keysTotal = valKeys.size();
+            auto trustedKeys = makeValidatorList(
+                5,  //
+                2,
+                0,
+                pubManifests,
+                valManifests,
+                self,
+                publishers);
+            BEAST_EXPECT(trustedKeys->getListThreshold() == 3);
+            int untrustedCount = 0;
+            for (auto const& p : publishers)
+            {
+                bool const trusted = trustedKeys->trustedPublisher(p.pubKey);
+                BEAST_EXPECT(p.revoked ^ trusted);
+                untrustedCount += trusted ? 0 : 1;
+            }
+            BEAST_EXPECT(untrustedCount == 2);
+
+            TrustChanges changes = trustedKeys->updateTrusted(
+                activeValidators,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().overlay(),
+                env.app().getHashRouter());
+            BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
+            BEAST_EXPECT(
+                trustedKeys->getTrustedMasterKeys().size() == keysTotal);
+
+            hash_set<NodeID> added;
+            for (auto const& val : valKeys)
+            {
+                BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
+                added.insert(calcNodeID(val.masterPublic));
+            }
+            BEAST_EXPECT(changes.added == added);
+            BEAST_EXPECT(changes.removed.empty());
+
+            // Expire one publisher - no quorum, only trusted validator is self
+            env.timeKeeper().set(publishers.back().expiry);
+            changes = trustedKeys->updateTrusted(
+                activeValidators,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().overlay(),
+                env.app().getHashRouter());
+            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
+
+            hash_set<NodeID> removed;
+            BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
+            for (auto const& val : valKeys)
+            {
+                BEAST_EXPECT(trustedKeys->listed(val.masterPublic));
+                if (val.masterPublic != self.masterPublic)
+                {
+                    BEAST_EXPECT(!trustedKeys->trusted(val.masterPublic));
+                    removed.insert(calcNodeID(val.masterPublic));
+                }
+            }
+            BEAST_EXPECT(changes.added.empty());
+            BEAST_EXPECT(changes.removed == removed);
+        }
+        {
+            // List threshold = 2, 1 publisher is revoked
+            ManifestCache pubManifests;
+            ManifestCache valManifests;
+            std::vector<Publisher> publishers;
+            // Self is a random validator
+            auto const self = randomValidator();
+            auto const keysTotal = valKeys.size() + 1;
+            auto trustedKeys = makeValidatorList(
+                5,  //
+                1,
+                2,
+                pubManifests,
+                valManifests,
+                self,
+                publishers);
+            BEAST_EXPECT(trustedKeys->getListThreshold() == 2);
+            int untrustedCount = 0;
+            for (auto const& p : publishers)
+            {
+                bool const trusted = trustedKeys->trustedPublisher(p.pubKey);
+                BEAST_EXPECT(p.revoked ^ trusted);
+                untrustedCount += trusted ? 0 : 1;
+            }
+            BEAST_EXPECT(untrustedCount == 1);
+
+            TrustChanges changes = trustedKeys->updateTrusted(
+                activeValidators,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().overlay(),
+                env.app().getHashRouter());
+            BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
+            BEAST_EXPECT(
+                trustedKeys->getTrustedMasterKeys().size() == keysTotal);
+
+            hash_set<NodeID> added;
+            added.insert(calcNodeID(self.masterPublic));
+            for (auto const& val : valKeys)
+            {
+                BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
+                added.insert(calcNodeID(val.masterPublic));
+            }
+            BEAST_EXPECT(changes.added == added);
+            BEAST_EXPECT(changes.removed.empty());
+
+            // Expire one publisher - no quorum
+            env.timeKeeper().set(publishers.back().expiry);
+            changes = trustedKeys->updateTrusted(
+                activeValidators,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().overlay(),
+                env.app().getHashRouter());
+            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
+            BEAST_EXPECT(
+                trustedKeys->getTrustedMasterKeys().size() == keysTotal);
+
+            BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
+            for (auto const& val : valKeys)
+            {
+                BEAST_EXPECT(trustedKeys->listed(val.masterPublic));
+                BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
+            }
+            BEAST_EXPECT(changes.added.empty());
+            BEAST_EXPECT(changes.removed.empty());
+        }
+        {
+            // List threshold = 1
             ManifestCache pubManifests;
             ManifestCache valManifests;
             std::vector<Publisher> publishers;
@@ -2824,6 +3165,7 @@ private:
             BEAST_EXPECT(changes.removed.empty());
         }
         {
+            // List threshold = 1
             ManifestCache pubManifests;
             ManifestCache valManifests;
             std::vector<Publisher> publishers;
