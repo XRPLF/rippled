@@ -2314,9 +2314,9 @@ NetworkOPsImp::recvValidation(
         << "recvValidation " << val->getLedgerHash() << " from " << source;
 
     std::unique_lock lock(validationsMutex_);
+    BypassAccept bypassAccept = BypassAccept::no;
     try
     {
-        BypassAccept bypassAccept = BypassAccept::no;
         if (pendingValidations_.contains(val->getLedgerHash()))
             bypassAccept = BypassAccept::yes;
         else
@@ -2336,9 +2336,12 @@ NetworkOPsImp::recvValidation(
             << "Unknown exception thrown for handling new validation "
             << val->getLedgerHash();
     }
-    lock.lock();
-    pendingValidations_.erase(val->getLedgerHash());
-    lock.unlock();
+    if (bypassAccept == BypassAccept::no)
+    {
+        lock.lock();
+        pendingValidations_.erase(val->getLedgerHash());
+        lock.unlock();
+    }
 
     pubValidation(val);
 
