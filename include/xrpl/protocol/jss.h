@@ -159,6 +159,9 @@ JSS(TransactionType);         // in: TransactionSign.
 JSS(TransferRate);            // in: TransferRate.
 JSS(TrustSet);                // transaction type.
 JSS(URI);                     // field.
+JSS(Vault);                   // ledger type.
+JSS(VaultID);                 // field.
+JSS(VaultSet);                // transaction type.
 JSS(VoteSlots);               // out: AMM Vote
 JSS(XChainAddAccountCreateAttestation);  // transaction type.
 JSS(XChainAddClaimAttestation);          // transaction type.

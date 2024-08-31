@@ -76,6 +76,7 @@ enum class LedgerNameSpace : std::uint16_t {
     ORACLE = 'R',
     MPTOKEN_ISSUANCE = '~',
     MPTOKEN = 't',
+    VAULT = 'V',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -492,6 +493,13 @@ mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept
     return {
         ltMPTOKEN, indexHash(LedgerNameSpace::MPTOKEN, issuanceKey, holder)};
 }
+
+Keylet
+vault(AccountID const& creator, std::uint32_t seq) noexcept
+{
+    return {ltVAULT, indexHash(LedgerNameSpace::VAULT, creator, seq)};
+}
+
 }  // namespace keylet
 
 }  // namespace ripple

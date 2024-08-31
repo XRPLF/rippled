@@ -24,6 +24,7 @@
 // If you add an amendment here, then do not forget to increment `numFeatures`
 // in include/xrpl/protocol/Feature.h.
 
+XRPL_FEATURE(SingleAssetVault,           Supported::yes, VoteBehavior::DefaultNo);
 XRPL_FEATURE(MPTokensV1,                 Supported::yes, VoteBehavior::DefaultNo);
 // InvariantsV1_1 will be changes to Supported::yes when all the
 // invariants expected to be included under it are complete.

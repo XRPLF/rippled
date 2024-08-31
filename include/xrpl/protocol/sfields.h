@@ -184,8 +184,14 @@ TYPED_SFIELD(HookStateKey,             UINT256,   30)
 TYPED_SFIELD(HookHash,                 UINT256,   31)
 TYPED_SFIELD(HookNamespace,            UINT256,   32)
 TYPED_SFIELD(HookSetTxnID,             UINT256,   33)
+TYPED_SFIELD(VaultID,                  UINT256,   34)
 
+// number (common)
 TYPED_SFIELD(Quantity,                 NUMBER,     1)
+TYPED_SFIELD(AssetAvailable,           NUMBER,     2)
+TYPED_SFIELD(AssetMaximum,             NUMBER,     3)
+TYPED_SFIELD(AssetTotal,               NUMBER,     4)
+TYPED_SFIELD(LossUnrealized,           NUMBER,     5)
 
 // currency amount (common)
 TYPED_SFIELD(Amount,                   AMOUNT,     1)
@@ -297,6 +303,7 @@ TYPED_SFIELD(LockingChainIssue,        ISSUE,      1)
 TYPED_SFIELD(IssuingChainIssue,        ISSUE,      2)
 TYPED_SFIELD(Asset,                    ISSUE,      3)
 TYPED_SFIELD(Asset2,                   ISSUE,      4)
+TYPED_SFIELD(Share,                    ISSUE,      4)
 
 // bridge
 TYPED_SFIELD(XChainBridge,             XCHAIN_BRIDGE, 1)

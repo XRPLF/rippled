@@ -417,3 +417,26 @@ OBJECT(ltMPTOKEN, 0x007f, MPToken, ({
     {sfPreviousTxnID,        soeREQUIRED},
     {sfPreviousTxnLgrSeq,    soeREQUIRED}
 }))
+
+/** A ledger object representing a single asset vault.
+
+    \sa keylet::mptoken
+ */
+OBJECT(ltVAULT, 0x007f, Vault, ({
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+    {sfSequence,             soeREQUIRED},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfOwner,                soeREQUIRED},
+    {sfAccount,              soeREQUIRED},
+    // no Data ever (YAGNI)
+    {sfAsset,                soeREQUIRED},
+    {sfAssetTotal,           soeREQUIRED},
+    {sfAssetAvailable,       soeREQUIRED},
+    {sfAssetMaximum,         soeREQUIRED},
+    {sfMPTokenIssuanceID,    soeREQUIRED}, // sfShare
+    // no ShareTotal ever (use MPTIssuance.sfOutstandingAmount)
+    // no WithdrawalPolicy ever (YAGNI)
+    // no PermissionedDomainID yet
+    {sfLossUnrealized,       soeREQUIRED}, // not in spec
+}))

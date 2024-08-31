@@ -403,6 +403,17 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 57, MPTokenIssuanceSet, ({
     {sfMPTokenHolder, soeOPTIONAL},
 }))
 
+/** This transaction creates or updates a single asset vault. */
+TRANSACTION(ttVAULT_SET, 58, VaultSet, ({
+    {sfVaultID, soeOPTIONAL},
+    // no Data ever
+    {sfAsset, soeREQUIRED},
+    {sfAssetMaximum, soeOPTIONAL},
+    // no MPTokenMetadata ever
+    // no WithdrawalPolicy ever
+    // no PermissionedDomainID yet
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html
