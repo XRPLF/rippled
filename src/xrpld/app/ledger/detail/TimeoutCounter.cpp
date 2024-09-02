@@ -33,7 +33,8 @@ TimeoutCounter::TimeoutCounter(
     QueueJobParameter&& jobParameter,
     beast::Journal journal)
     : app_(app)
-    , journal_(journal)
+    , sink_(journal, to_short_string(hash) + " ")
+    , journal_(sink_)
     , hash_(hash)
     , timeouts_(0)
     , complete_(false)
