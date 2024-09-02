@@ -2763,6 +2763,7 @@ private:
         };
 
         // All test cases use 5 publishers.
+        constexpr auto quorumDisabled = std::numeric_limits<std::size_t>::max();
         {
             // List threshold = 5 (same as number of trusted publishers)
             ManifestCache pubManifests;
@@ -2811,7 +2812,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == 1);
+            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -2879,7 +2880,7 @@ private:
                 env.app().getOPs(),
                 env.app().overlay(),
                 env.app().getHashRouter());
-            BEAST_EXPECT(trustedKeys->quorum() == 1);
+            BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
             hash_set<NodeID> removed;
@@ -2896,8 +2897,6 @@ private:
             BEAST_EXPECT(changes.added.empty());
             BEAST_EXPECT(changes.removed == removed);
         }
-
-        constexpr auto quorumDisabled = std::numeric_limits<std::size_t>::max();
         {
             // List threshold = 3 (default), 2 publishers are revoked
             ManifestCache pubManifests;
