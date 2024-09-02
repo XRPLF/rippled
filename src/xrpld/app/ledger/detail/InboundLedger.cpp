@@ -102,7 +102,7 @@ InboundLedger::InboundLedger(
 }
 
 void
-InboundLedger::init(ScopedLockType& collectionLock)
+InboundLedger::init(ScopedLockType& collectionLock, bool broadcast)
 {
     ScopedLockType sl(mtx_);
     collectionLock.unlock();
@@ -113,8 +113,18 @@ InboundLedger::init(ScopedLockType& collectionLock)
 
     if (!complete_)
     {
-        addPeers();
-        queueJob(sl);
+        if (broadcast)
+        {
+            addPeers();
+            queueJob(sl);
+        }
+        else
+        {
+            // Delay to give time to build the ledger before sending
+            JLOG(journal_.debug()) << "init: Deferring peer requests";
+            deferred_ = true;
+            setTimer(sl);
+        }
         return;
     }
 
@@ -145,8 +155,8 @@ InboundLedger::getPeerCount() const
     });
 }
 
-void
-InboundLedger::update(std::uint32_t seq)
+bool
+InboundLedger::update(std::uint32_t seq, bool broadcast)
 {
     ScopedLockType sl(mtx_);
 
@@ -156,6 +166,27 @@ InboundLedger::update(std::uint32_t seq)
 
     // Prevent this from being swept
     touch();
+
+    // If the signal is to broadcast, and this request has never tried to
+    // broadcast before, cancel any waiting timer, then fire off the job to
+    // broadcast. Note that this is calling mPeerSet->getPeerIds(), not
+    // getPeerCount(), because the latter will filter out peers that have been
+    // tried, but are since lost. This wants to check if peers have _ever_ been
+    // tried. If they have, stick with the normal timer flow.
+    if (broadcast && mPeerSet->getPeerIds().empty())
+    {
+        if (cancelTimer(sl))
+        {
+            JLOG(journal_.debug())
+                << "update: cancelling timer to send peer requests";
+            deferred_ = false;
+            skipNext_ = true;
+            addPeers();
+            queueJob(sl);
+            return true;
+        }
+    }
+    return false;
 }
 
 bool

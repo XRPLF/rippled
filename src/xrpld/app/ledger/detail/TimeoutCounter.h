@@ -103,6 +103,10 @@ protected:
     void
     setTimer(ScopedLockType&);
 
+    /** Cancel any waiting timer */
+    std::size_t
+    cancelTimer(ScopedLockType&);
+
     /** Queue a job to call invokeOnTimer(). */
     void
     queueJob(ScopedLockType&);
@@ -134,6 +138,11 @@ protected:
     int timeouts_;
     bool complete_;
     bool failed_;
+    /** Whether the initialization deferred doing any work until the first
+     * timeout. */
+    bool deferred_ = false;
+    /** Skip the next timeout, regardless of ec */
+    bool skipNext_ = false;
     /** Whether forward progress has been made. */
     bool progress_;
     /** The minimum time to wait between calls to execute(). */
