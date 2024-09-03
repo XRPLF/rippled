@@ -28,9 +28,6 @@ namespace ripple {
 Json::Value
 doValidatorListSites(RPC::JsonContext& context)
 {
-    if (context.app.config().reporting())
-        return rpcError(rpcREPORTING_UNSUPPORTED);
-
     return context.app.validatorSites().getJson();
 }
 

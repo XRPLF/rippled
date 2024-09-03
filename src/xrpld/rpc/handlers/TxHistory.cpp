@@ -23,7 +23,6 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/core/DatabaseCon.h>
-#include <xrpld/core/Pg.h>
 #include <xrpld/core/SociDB.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
@@ -60,8 +59,6 @@ doTxHistory(RPC::JsonContext& context)
     Json::Value obj;
     Json::Value& txs = obj[jss::txs];
     obj[jss::index] = startIndex;
-    if (context.app.config().reporting())
-        obj["used_postgres"] = true;
 
     for (auto const& t : trans)
     {
