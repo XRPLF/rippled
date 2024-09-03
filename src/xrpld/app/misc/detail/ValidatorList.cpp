@@ -129,6 +129,7 @@ ValidatorList::ValidatorList(
     , j_(j)
     , quorum_(minimumQuorum.value_or(1))  // Genesis ledger quorum
     , minimumQuorum_(minimumQuorum)
+    , listThreshold_(1)
 {
 }
 
@@ -136,7 +137,8 @@ bool
 ValidatorList::load(
     std::optional<PublicKey> const& localSigningKey,
     std::vector<std::string> const& configKeys,
-    std::vector<std::string> const& publisherKeys)
+    std::vector<std::string> const& publisherKeys,
+    std::optional<std::size_t> listThreshold)
 {
     static boost::regex const re(
         "[[:space:]]*"       // skip leading whitespace
@@ -188,6 +190,24 @@ ValidatorList::load(
 
         publisherLists_[id].status = status;
         ++count;
+    }
+
+    if (listThreshold)
+    {
+        listThreshold_ = *listThreshold;
+        // This should be enforced by Config class
+        assert(listThreshold_ > 0 && listThreshold_ <= publisherLists_.size());
+        JLOG(j_.debug()) << "Validator list threshold set in configuration to "
+                         << listThreshold_;
+    }
+    else
+    {
+        // Want truncated result when dividing an odd integer
+        listThreshold_ = (publisherLists_.size() < 3)
+            ? 1  //
+            : publisherLists_.size() / 2 + 1;
+        JLOG(j_.debug()) << "Validator list threshold set to "
+                         << listThreshold_;
     }
 
     JLOG(j_.debug()) << "Loaded " << count << " keys";
@@ -1575,6 +1595,8 @@ ValidatorList::getJson() const
             x[jss::status] = "unknown";
             x[jss::expiration] = "unknown";
         }
+
+        x[jss::validator_list_threshold] = Json::UInt(listThreshold_);
     }
 
     // Validator keys listed in the local config file
@@ -1978,6 +2000,13 @@ ValidatorList::getTrustedMasterKeys() const
 {
     std::shared_lock read_lock{mutex_};
     return trustedMasterKeys_;
+}
+
+std::size_t
+ValidatorList::getListThreshold() const
+{
+    std::shared_lock read_lock{mutex_};
+    return listThreshold_;
 }
 
 hash_set<PublicKey>

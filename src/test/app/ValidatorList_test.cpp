@@ -426,6 +426,33 @@ private:
             BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers));
             for (auto const& key : keys)
                 BEAST_EXPECT(trustedKeys->trustedPublisher(key));
+            BEAST_EXPECT(
+                trustedKeys->getListThreshold() == keys.size() / 2 + 1);
+        }
+        {
+            ManifestCache manifests;
+            auto trustedKeys = std::make_unique<ValidatorList>(
+                manifests,
+                manifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
+
+            std::vector<PublicKey> keys(
+                {randomMasterKey(),
+                 randomMasterKey(),
+                 randomMasterKey(),
+                 randomMasterKey()});
+            std::vector<std::string> cfgPublishers;
+            for (auto const& key : keys)
+                cfgPublishers.push_back(strHex(key));
+
+            // explicitly set the list threshold
+            BEAST_EXPECT(trustedKeys->load(
+                {}, emptyCfgKeys, cfgPublishers, std::size_t(2)));
+            for (auto const& key : keys)
+                BEAST_EXPECT(trustedKeys->trustedPublisher(key));
+            BEAST_EXPECT(trustedKeys->getListThreshold() == 2);
         }
         {
             // Attempt to load a publisher key that has been revoked.
@@ -452,15 +479,57 @@ private:
                 pubRevokedSigning.second,
                 std::numeric_limits<std::uint32_t>::max())));
 
-            // this one is not revoked (and not in manifest cache at all.)
+            // these two are not revoked (and not in the manifest cache at all.)
+            auto legitKey1 = randomMasterKey();
+            auto legitKey2 = randomMasterKey();
+
+            std::vector<std::string> cfgPublishers = {
+                strHex(pubRevokedPublic), strHex(legitKey1), strHex(legitKey2)};
+            BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers));
+
+            BEAST_EXPECT(!trustedKeys->trustedPublisher(pubRevokedPublic));
+            BEAST_EXPECT(trustedKeys->trustedPublisher(legitKey1));
+            BEAST_EXPECT(trustedKeys->trustedPublisher(legitKey2));
+            // 2 is the threshold for 3 publishers (even though 1 is revoked)
+            BEAST_EXPECT(trustedKeys->getListThreshold() == 2);
+        }
+        {
+            // One (of two) publisher keys has been revoked, the user had
+            // explicitly set validator list threshold to 2.
+            ManifestCache valManifests;
+            ManifestCache pubManifests;
+            auto trustedKeys = std::make_unique<ValidatorList>(
+                valManifests,
+                pubManifests,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
+
+            auto const pubRevokedSecret = randomSecretKey();
+            auto const pubRevokedPublic =
+                derivePublicKey(KeyType::ed25519, pubRevokedSecret);
+            auto const pubRevokedSigning = randomKeyPair(KeyType::secp256k1);
+            // make this manifest revoked (seq num = max)
+            //  -- thus should not be loaded
+            pubManifests.applyManifest(*deserializeManifest(makeManifestString(
+                pubRevokedPublic,
+                pubRevokedSecret,
+                pubRevokedSigning.first,
+                pubRevokedSigning.second,
+                std::numeric_limits<std::uint32_t>::max())));
+
+            // these two are not revoked (and not in the manifest cache at all.)
             auto legitKey = randomMasterKey();
 
             std::vector<std::string> cfgPublishers = {
                 strHex(pubRevokedPublic), strHex(legitKey)};
-            BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers));
+            BEAST_EXPECT(trustedKeys->load(
+                {}, emptyCfgKeys, cfgPublishers, std::size_t(2)));
 
             BEAST_EXPECT(!trustedKeys->trustedPublisher(pubRevokedPublic));
             BEAST_EXPECT(trustedKeys->trustedPublisher(legitKey));
+            // 2 is the threshold, as requested in configuration
+            BEAST_EXPECT(trustedKeys->getListThreshold() == 2);
         }
     }
 
@@ -1530,11 +1599,22 @@ private:
                     calcNodeID(valKeys.back().masterPublic));
             }
 
-            auto addPublishedList = [this,
-                                     &env,
-                                     &trustedKeys,
-                                     &valKeys,
-                                     &siteUri]() {
+            // locals[0]: from 0 to maxKeys - 4
+            // locals[1]: from 1 to maxKeys - 2
+            // locals[2]: from 2 to maxKeys
+            constexpr static int publishers = 3;
+            std::array<
+                std::pair<
+                    decltype(valKeys)::const_iterator,
+                    decltype(valKeys)::const_iterator>,
+                publishers>
+                locals = {
+                    std::make_pair(valKeys.cbegin(), valKeys.cend() - 4),
+                    std::make_pair(valKeys.cbegin() + 1, valKeys.cend() - 2),
+                    std::make_pair(valKeys.cbegin() + 2, valKeys.cend()),
+                };
+
+            auto addPublishedList = [&, this](int i) {
                 auto const publisherSecret = randomSecretKey();
                 auto const publisherPublic =
                     derivePublicKey(KeyType::ed25519, publisherSecret);
@@ -1550,16 +1630,18 @@ private:
                     {strHex(publisherPublic)});
                 std::vector<std::string> emptyCfgKeys;
 
-                BEAST_EXPECT(
-                    trustedKeys->load({}, emptyCfgKeys, cfgPublishers));
+                BEAST_EXPECT(trustedKeys->load(
+                    {}, emptyCfgKeys, cfgPublishers, std::size_t(1)));
 
                 auto const version = 1;
                 auto const sequence = 1;
                 using namespace std::chrono_literals;
                 NetClock::time_point const validUntil =
                     env.timeKeeper().now() + 3600s;
+                std::vector<Validator> localKeys{
+                    locals[i].first, locals[i].second};
                 auto const blob = makeList(
-                    valKeys, sequence, validUntil.time_since_epoch().count());
+                    localKeys, sequence, validUntil.time_since_epoch().count());
                 auto const sig = signList(blob, pubSigningKeys);
 
                 BEAST_EXPECT(
@@ -1571,8 +1653,9 @@ private:
             };
 
             // Apply multiple published lists
-            for (auto i = 0; i < 3; ++i)
-                addPublishedList();
+            for (auto i = 0; i < publishers; ++i)
+                addPublishedList(i);
+            BEAST_EXPECT(trustedKeys->getListThreshold() == 1);
 
             TrustChanges changes = trustedKeys->updateTrusted(
                 activeValidators,
