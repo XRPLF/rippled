@@ -839,7 +839,7 @@ public:
             auto setup = setup_DatabaseCon(*config_, m_journal);
             setup.useGlobalPragma = false;
 
-            mWalletDB = makeWalletDB(setup);
+            mWalletDB = makeWalletDB(setup, m_journal);
         }
         catch (std::exception const& e)
         {
