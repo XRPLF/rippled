@@ -73,7 +73,8 @@ Batch::preflight(PreflightContext const& ctx)
             ctx.rules.enabled(featureRequireFullyCanonicalSig)
             ? STTx::RequireFullyCanonicalSig::yes
             : STTx::RequireFullyCanonicalSig::no;
-        auto const sigResult = ctx.tx.checkBatchSign(requireCanonicalSig, ctx.rules);
+        auto const sigResult =
+            ctx.tx.checkBatchSign(requireCanonicalSig, ctx.rules);
         if (!sigResult)
         {
             JLOG(ctx.j.debug()) << "Batch: invalid batch txn signature.";
@@ -147,7 +148,7 @@ Batch::doApply()
 
         if (applied)
             innerView.apply(subView);
-        
+
         changed = true;
 
         // Add Inner Txn Metadata
@@ -224,7 +225,7 @@ Batch::doApply()
         std::uint32_t const txSeq = ctx_.tx.getFieldU32(sfSequence);
         STAmount const accBal = sleSrcAcc->getFieldAmount(sfBalance);
         std::uint32_t const accSeq = sleSrcAcc->getFieldU32(sfSequence);
-        
+
         // only update if the account_ batch has tes/tec inner txns
         uint32_t const count = accountCount[account_];
         if (count != 0)

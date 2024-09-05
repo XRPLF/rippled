@@ -547,7 +547,9 @@ Transactor::checkBatchSign(PreclaimContext const& ctx)
         {
             STArray const& txSigners(signer.getFieldArray(sfSigners));
             ret = checkMultiSign(ctx.view, idAccount, txSigners, ctx.j);
-        } else {
+        }
+        else
+        {
             if (!publicKeyType(makeSlice(pkSigner)))
                 ret = tefBAD_AUTH;
 
@@ -556,7 +558,8 @@ Transactor::checkBatchSign(PreclaimContext const& ctx)
             if (!sleAccount)
                 ret = terNO_ACCOUNT;
 
-            ret = checkSingleSign(idSigner, idAccount, sleAccount, ctx.view.rules(), ctx.j);
+            ret = checkSingleSign(
+                idSigner, idAccount, sleAccount, ctx.view.rules(), ctx.j);
         }
     }
     return ret;
@@ -609,16 +612,14 @@ Transactor::checkSingleSign(
     else if (sleAccount->isFieldPresent(sfRegularKey))
     {
         // Signing key does not match master or regular key.
-        JLOG(j.trace())
-            << "checkSingleSign: Not authorized to use account.";
+        JLOG(j.trace()) << "checkSingleSign: Not authorized to use account.";
         return tefBAD_AUTH;
     }
     else
     {
         // No regular key on account and signing key does not match master key.
         // FIXME: Why differentiate this case from tefBAD_AUTH?
-        JLOG(j.trace())
-            << "checkSingleSign: Not authorized to use account.";
+        JLOG(j.trace()) << "checkSingleSign: Not authorized to use account.";
         return tefBAD_AUTH_MASTER;
     }
 
@@ -751,7 +752,7 @@ Transactor::checkMultiSign(
             if (!sleTxSignerRoot)
             {
                 JLOG(j.trace()) << "applyTransaction: Non-phantom signer "
-                                       "lacks account root.";
+                                   "lacks account root.";
                 return tefBAD_SIGNATURE;
             }
 
@@ -776,8 +777,7 @@ Transactor::checkMultiSign(
     // Cannot perform transaction if quorum is not met.
     if (weightSum < sleAccountSigners->getFieldU32(sfSignerQuorum))
     {
-        JLOG(j.trace())
-            << "applyTransaction: Signers failed to meet quorum.";
+        JLOG(j.trace()) << "applyTransaction: Signers failed to meet quorum.";
         return tefBAD_QUORUM;
     }
 

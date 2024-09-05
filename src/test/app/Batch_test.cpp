@@ -149,23 +149,32 @@ class Batch_test : public beast::unit_test::suite
     }
 
     Json::Value
-    addBatchMultiSignatures(Json::Value jv, int index, jtx::Account account, std::vector<TestSignData> const& signers)
+    addBatchMultiSignatures(
+        Json::Value jv,
+        int index,
+        jtx::Account account,
+        std::vector<TestSignData> const& signers)
     {
         auto const ojv = jv;
         Json::Value jvSigners = Json::arrayValue;
         for (std::size_t i = 0; i < signers.size(); ++i)
         {
-            Serializer ss{
-                buildMultiSigningData(jtx::parse(ojv), signers[i].account.id())};
+            Serializer ss{buildMultiSigningData(
+                jtx::parse(ojv), signers[i].account.id())};
             auto const sig = ripple::sign(
                 signers[i].account.pk(), signers[i].account.sk(), ss.slice());
 
-            jvSigners[i][sfSigner.jsonName][sfAccount.jsonName] = signers[i].account.human();
-            jvSigners[i][sfSigner.jsonName][sfSigningPubKey.jsonName] = strHex(signers[i].account.pk());
-            jvSigners[i][sfSigner.jsonName][sfTxnSignature.jsonName] = strHex(Slice{sig.data(), sig.size()});
+            jvSigners[i][sfSigner.jsonName][sfAccount.jsonName] =
+                signers[i].account.human();
+            jvSigners[i][sfSigner.jsonName][sfSigningPubKey.jsonName] =
+                strHex(signers[i].account.pk());
+            jvSigners[i][sfSigner.jsonName][sfTxnSignature.jsonName] =
+                strHex(Slice{sig.data(), sig.size()});
         }
-        jv[sfBatchSigners.jsonName][index][sfBatchSigner.jsonName][sfAccount.jsonName] = account.human();
-        jv[sfBatchSigners.jsonName][index][sfBatchSigner.jsonName][sfSigners.jsonName] = jvSigners;
+        jv[sfBatchSigners.jsonName][index][sfBatchSigner.jsonName]
+          [sfAccount.jsonName] = account.human();
+        jv[sfBatchSigners.jsonName][index][sfBatchSigner.jsonName]
+          [sfSigners.jsonName] = jvSigners;
         return jv;
     }
 
@@ -869,10 +878,12 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tecUNFUNDED_PAYMENT",
              "Payment",
-             "1C9CBF5AF5D0AA97CDF7AE7175D7BA27FA4DD274CF0B4C650475C635F5DBEFC0"},
+             "1C9CBF5AF5D0AA97CDF7AE7175D7BA27FA4DD274CF0B4C650475C635F5DBEFC"
+             "0"},
             {"tesSUCCESS",
              "Payment",
-             "CF28B462454DC1651D1705E3C2BD49E0C4D91245C68D3A10D27CF56E5C9B5BE5"},
+             "CF28B462454DC1651D1705E3C2BD49E0C4D91245C68D3A10D27CF56E5C9B5BE"
+             "5"},
         }};
 
         Json::Value params;
@@ -941,13 +952,16 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "Payment",
-             "3FC47334C663DB77520598095095A7C3AB85C9863E56F5687AD1E781325300FF"},
+             "3FC47334C663DB77520598095095A7C3AB85C9863E56F5687AD1E781325300F"
+             "F"},
             {"tesSUCCESS",
              "Payment",
-             "CF28B462454DC1651D1705E3C2BD49E0C4D91245C68D3A10D27CF56E5C9B5BE5"},
+             "CF28B462454DC1651D1705E3C2BD49E0C4D91245C68D3A10D27CF56E5C9B5BE"
+             "5"},
             {"tecUNFUNDED_PAYMENT",
              "Payment",
-             "68803BEF141614DBBB34FA34BE0E485D79A43328891A9A8BDC461B6F22836A5C"},
+             "68803BEF141614DBBB34FA34BE0E485D79A43328891A9A8BDC461B6F22836A5"
+             "C"},
         }};
 
         Json::Value params;
@@ -1016,16 +1030,20 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "Payment",
-             "3FC47334C663DB77520598095095A7C3AB85C9863E56F5687AD1E781325300FF"},
+             "3FC47334C663DB77520598095095A7C3AB85C9863E56F5687AD1E781325300F"
+             "F"},
             {"tesSUCCESS",
              "Payment",
-             "CF28B462454DC1651D1705E3C2BD49E0C4D91245C68D3A10D27CF56E5C9B5BE5"},
+             "CF28B462454DC1651D1705E3C2BD49E0C4D91245C68D3A10D27CF56E5C9B5BE"
+             "5"},
             {"tecUNFUNDED_PAYMENT",
              "Payment",
-             "68803BEF141614DBBB34FA34BE0E485D79A43328891A9A8BDC461B6F22836A5C"},
+             "68803BEF141614DBBB34FA34BE0E485D79A43328891A9A8BDC461B6F22836A5"
+             "C"},
             {"tesSUCCESS",
              "Payment",
-             "37A717146557951C8B1271843A3255C6A3B3465D2DD2E48FF7EB2670168E7841"},
+             "37A717146557951C8B1271843A3255C6A3B3465D2DD2E48FF7EB2670168E784"
+             "1"},
         }};
 
         Json::Value params;
@@ -1108,10 +1126,12 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "Payment",
-             "2071E28FCACC9EBC81E8B94F0A0663F9D808209F2803E02224027C8B9CD57C53"},
+             "2071E28FCACC9EBC81E8B94F0A0663F9D808209F2803E02224027C8B9CD57C5"
+             "3"},
             {"tesSUCCESS",
              "Payment",
-             "F757008AF55CCDE3511016AC2402672A7A08F2F33E1BFA2ED7EE2DD486B6462E"},
+             "F757008AF55CCDE3511016AC2402672A7A08F2F33E1BFA2ED7EE2DD486B6462"
+             "E"},
         }};
 
         Json::Value params;
@@ -1261,11 +1281,13 @@ class Batch_test : public beast::unit_test::suite
 
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
-                "Payment",
-                "9A6D5FD4DB3EBC179D51F9DA2950474DA093E853E7D0C7446413F5101F8C84E5"},
+             "Payment",
+             "9A6D5FD4DB3EBC179D51F9DA2950474DA093E853E7D0C7446413F5101F8C84E"
+             "5"},
             {"tesSUCCESS",
-                "Payment",
-                "21131DBC8CD39D1A514939F988B56235F33A38BD58762CE0CAF8EFA9489DB327"},
+             "Payment",
+             "21131DBC8CD39D1A514939F988B56235F33A38BD58762CE0CAF8EFA9489DB32"
+             "7"},
         }};
 
         Json::Value params;
@@ -1280,7 +1302,8 @@ class Batch_test : public beast::unit_test::suite
 
         BEAST_EXPECT(env.seq(alice) == 8);
         BEAST_EXPECT(
-            env.balance(alice) == preAlice - XRP(2) - (feeDrops * 2 + (feeDrops * 4)));
+            env.balance(alice) ==
+            preAlice - XRP(2) - (feeDrops * 2 + (feeDrops * 4)));
         BEAST_EXPECT(env.balance(bob) == preBob + XRP(2));
     }
 

@@ -136,7 +136,7 @@ public:
 
     static NotTEC
     checkSign(PreclaimContext const& ctx);
-    
+
     static NotTEC
     checkBatchSign(PreclaimContext const& ctx);
 
@@ -203,15 +203,13 @@ private:
         AccountID const& idAccount,
         std::shared_ptr<SLE const> sleAccount,
         Rules const& rules,
-        beast::Journal j
-    );
+        beast::Journal j);
     static NotTEC
     checkMultiSign(
         ReadView const& view,
         AccountID const& idAccount,
         STArray const& txSigners,
-        beast::Journal j
-    );
+        beast::Journal j);
 
     void trapTransaction(uint256) const;
 };
