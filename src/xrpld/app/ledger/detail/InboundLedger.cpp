@@ -390,7 +390,14 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
 
     if (!wasProgress)
     {
-        checkLocal();
+        if (checkLocal())
+        {
+            // Done. Something else (probably consensus) built the ledger
+            // locally while waiting for data (or possibly before requesting)
+            assert(isDone());
+            JLOG(journal_.info()) << "Finished while waiting " << hash_;
+            return;
+        }
 
         mByHash = true;
 

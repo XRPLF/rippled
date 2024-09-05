@@ -52,6 +52,8 @@ TimeoutCounter::setTimer(ScopedLockType& sl)
 {
     if (isDone())
         return;
+    JLOG(journal_.debug()) << "Setting timer for " << timerInterval_.count()
+                           << "ms";
     timer_.expires_after(timerInterval_);
     timer_.async_wait(
         [wptr = pmDowncast()](boost::system::error_code const& ec) {
@@ -60,6 +62,12 @@ TimeoutCounter::setTimer(ScopedLockType& sl)
 
             if (auto ptr = wptr.lock())
             {
+                JLOG(ptr->journal_.debug())
+                    << "timer: ec: " << ec << " (operation_aborted: "
+                    << boost::asio::error::operation_aborted << " - "
+                    << (ec == boost::asio::error::operation_aborted ? "aborted"
+                                                                    : "other")
+                    << ")";
                 ScopedLockType sl(ptr->mtx_);
                 ptr->queueJob(sl);
             }
