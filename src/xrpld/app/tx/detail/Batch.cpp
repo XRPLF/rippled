@@ -153,7 +153,8 @@ Batch::doApply()
 
         // Add Inner Txn Metadata
         STObject meta{sfBatchExecution};
-        meta.setFieldU8(sfTransactionResult, TERtoInt(ter));
+        std::string res = transToken(ter);
+        meta.setFieldVL(sfBatchResult, ripple::Slice{res.data(), res.size()});
         meta.setFieldU16(sfTransactionType, stx.getTxnType());
         if (ter == tesSUCCESS || isTecClaim(ter))
             meta.setFieldH256(sfTransactionHash, stx.getTransactionID());

@@ -577,6 +577,7 @@ extern SF_VL const sfHookStateData;
 extern SF_VL const sfHookReturnString;
 extern SF_VL const sfHookParameterName;
 extern SF_VL const sfHookParameterValue;
+extern SF_VL const sfBatchResult;
 
 // account
 extern SF_ACCOUNT const sfAccount;

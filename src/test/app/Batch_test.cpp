@@ -64,7 +64,7 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const b = _batchTxn[sfBatchExecution.jsonName];
             BEAST_EXPECT(
-                b[sfTransactionResult.jsonName] == batchResults[index].result);
+                b[sfBatchResult.jsonName] == strHex(batchResults[index].result));
             BEAST_EXPECT(
                 b[sfTransactionType.jsonName] == batchResults[index].txType);
             if (batchResults[index].hash != "")
