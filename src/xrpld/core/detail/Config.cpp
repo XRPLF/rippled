@@ -382,11 +382,6 @@ Config::setup(
 
     // Update default values
     load();
-    if (exists("reporting"))
-    {
-        RUN_REPORTING = true;
-        RUN_STANDALONE = true;
-    }
     {
         // load() may have set a new value for the dataDir
         std::string const dbPath(legacy("database_path"));

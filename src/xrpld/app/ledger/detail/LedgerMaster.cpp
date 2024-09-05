@@ -34,10 +34,9 @@
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/paths/PathRequests.h>
-#include <xrpld/app/rdb/backend/PostgresDatabase.h>
+#include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/core/DatabaseCon.h>
-#include <xrpld/core/Pg.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
@@ -274,12 +273,6 @@ LedgerMaster::getValidatedLedgerAge()
 {
     using namespace std::chrono_literals;
 
-#ifdef RIPPLED_REPORTING
-    if (app_.config().reporting())
-        return static_cast<PostgresDatabase*>(&app_.getRelationalDatabase())
-            ->getValidatedLedgerAge();
-#endif
-
     std::chrono::seconds valClose{mValidLedgerSign.load()};
     if (valClose == 0s)
     {
@@ -304,12 +297,6 @@ bool
 LedgerMaster::isCaughtUp(std::string& reason)
 {
     using namespace std::chrono_literals;
-
-#ifdef RIPPLED_REPORTING
-    if (app_.config().reporting())
-        return static_cast<PostgresDatabase*>(&app_.getRelationalDatabase())
-            ->isCaughtUp(reason);
-#endif
 
     if (getPublishedLedgerAge() > 3min)
     {
@@ -600,9 +587,6 @@ LedgerMaster::clearLedger(std::uint32_t seq)
 bool
 LedgerMaster::isValidated(ReadView const& ledger)
 {
-    if (app_.config().reporting())
-        return true;  // Reporting mode only supports validated ledger
-
     if (ledger.open())
         return false;
 
@@ -676,32 +660,6 @@ LedgerMaster::getFullValidatedRange(
 bool
 LedgerMaster::getValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal)
 {
-    if (app_.config().reporting())
-    {
-        std::string res = getCompleteLedgers();
-        try
-        {
-            if (res == "empty" || res == "error" || res.empty())
-                return false;
-            else if (size_t delim = res.find('-'); delim != std::string::npos)
-            {
-                minVal = std::stol(res.substr(0, delim));
-                maxVal = std::stol(res.substr(delim + 1));
-            }
-            else
-            {
-                minVal = maxVal = std::stol(res);
-            }
-            return true;
-        }
-        catch (std::exception const& e)
-        {
-            JLOG(m_journal.error()) << "LedgerMaster::getValidatedRange: "
-                                       "exception parsing complete ledgers: "
-                                    << e.what();
-            return false;
-        }
-    }
     if (!getFullValidatedRange(minVal, maxVal))
         return false;
 
@@ -1679,25 +1637,12 @@ LedgerMaster::peekMutex()
 std::shared_ptr<ReadView const>
 LedgerMaster::getCurrentLedger()
 {
-    if (app_.config().reporting())
-    {
-        Throw<ReportingShouldProxy>();
-    }
     return app_.openLedger().current();
 }
 
 std::shared_ptr<Ledger const>
 LedgerMaster::getValidatedLedger()
 {
-#ifdef RIPPLED_REPORTING
-    if (app_.config().reporting())
-    {
-        auto seq = app_.getRelationalDatabase().getMaxLedgerSeq();
-        if (!seq)
-            return {};
-        return getLedgerBySeq(*seq);
-    }
-#endif
     return mValidLedger.get();
 }
 
@@ -1726,11 +1671,6 @@ LedgerMaster::getPublishedLedger()
 std::string
 LedgerMaster::getCompleteLedgers()
 {
-#ifdef RIPPLED_REPORTING
-    if (app_.config().reporting())
-        return static_cast<PostgresDatabase*>(&app_.getRelationalDatabase())
-            ->getCompleteLedgers();
-#endif
     std::lock_guard sl(mCompleteLock);
     return to_string(mCompleteLedgers);
 }
