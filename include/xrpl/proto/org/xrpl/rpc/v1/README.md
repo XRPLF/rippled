@@ -1,3 +1,5 @@
+# Protocol buffer definitions for gRPC
+
 This folder contains the protocol buffer definitions used by the rippled gRPC API.
 The gRPC API attempts to mimic the JSON/Websocket API as much as possible.
 As of April 2020, the gRPC API supports a subset of the full rippled API:

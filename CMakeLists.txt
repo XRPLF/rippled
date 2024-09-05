@@ -115,15 +115,6 @@ else()
 endif()
 target_link_libraries(ripple_libs INTERFACE ${nudb})
 
-if(reporting)
-  find_package(cassandra-cpp-driver REQUIRED)
-  find_package(PostgreSQL REQUIRED)
-  target_link_libraries(ripple_libs INTERFACE
-    cassandra-cpp-driver::cassandra-cpp-driver
-    PostgreSQL::PostgreSQL
-  )
-endif()
-
 if(coverage)
   include(RippledCov)
 endif()

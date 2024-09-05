@@ -150,12 +150,6 @@ private:
     {
         backend_->for_each(f);
     }
-
-    std::optional<Backend::Counters<std::uint64_t>>
-    getCounters() const override
-    {
-        return backend_->counters();
-    }
 };
 
 }  // namespace NodeStore

@@ -30,9 +30,6 @@ namespace ripple {
 Json::Value
 doFetchInfo(RPC::JsonContext& context)
 {
-    if (context.app.config().reporting())
-        return rpcError(rpcREPORTING_UNSUPPORTED);
-
     Json::Value ret(Json::objectValue);
 
     if (context.params.isMember(jss::clear) &&

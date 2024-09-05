@@ -376,11 +376,11 @@ stored inside the build directory, as either of:
 | Option | Default Value | Description |
 | --- | ---| ---|
 | `assert` | OFF | Enable assertions.
-| `reporting` | OFF | Build the reporting mode feature. |
 | `coverage` | OFF | Prepare the coverage report. |
-| `tests` | ON | Build tests. |
-| `unity` | ON | Configure a unity build. |
 | `san` | N/A | Enable a sanitizer with Clang. Choices are `thread` and `address`. |
+| `tests` | OFF | Build tests. |
+| `unity` | ON | Configure a unity build. |
+| `xrpld` | OFF | Build the xrpld (`rippled`) application, and not just the libxrpl library. |
 
 [Unity builds][5] may be faster for the first build
 (at the cost of much more memory) since they concatenate sources into fewer

@@ -21,15 +21,17 @@ set(doxyfile "${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile")
 
 file(GLOB_RECURSE doxygen_input
   docs/*.md
-  src/ripple/*.h
-  src/ripple/*.cpp
-  src/ripple/*.md
-  src/test/*.h
-  src/test/*.md)
+  include/*.h
+  include/*.cpp
+  include/*.md
+  src/*.h
+  src/*.cpp
+  src/*.md
+  Builds/*.md
+  *.md)
 list(APPEND doxygen_input
-  README.md
-  RELEASENOTES.md
-  src/README.md)
+  external/README.md
+  )
 set(dependencies "${doxygen_input}" "${doxyfile}")
 
 function(verbose_find_path variable name)
