@@ -11,7 +11,7 @@ import "org/xrpl/rpc/v1/get_ledger_diff.proto";
 
 
 // These methods are binary only methods for retrieiving arbitrary ledger state
-// via gRPC. These methods are used by clio and reporting mode, but can also be
+// via gRPC. These methods are used by clio, but can also be
 // used by any client that wants to extract ledger state in an efficient manner.
 // They do not directly mimic the JSON equivalent methods.
 service XRPLedgerAPIService {

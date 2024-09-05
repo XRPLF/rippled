@@ -36,17 +36,8 @@ AcceptedLedger::AcceptedLedger(
                 ledger, item.first, item.second));
     };
 
-    if (app.config().reporting())
-    {
-        auto const txs = flatFetchTransactions(*ledger, app);
-        transactions_.reserve(txs.size());
-        insertAll(txs);
-    }
-    else
-    {
-        transactions_.reserve(256);
-        insertAll(ledger->txs);
-    }
+    transactions_.reserve(256);
+    insertAll(ledger->txs);
 
     std::sort(
         transactions_.begin(),

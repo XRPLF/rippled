@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpld/app/main/GRPCServer.h>
-#include <xrpld/app/reporting/P2pProxy.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/resource/Fees.h>
 
@@ -187,11 +186,6 @@ GRPCServerImpl::CallData<Request, Response>::process(
                  InfoSub::pointer(),
                  apiVersion},
                 request_};
-            if (shouldForwardToP2p(context, requiredCondition_))
-            {
-                forwardToP2p(context);
-                return;
-            }
 
             // Make sure we can currently handle the rpc
             error_code_i conditionMetRes =
@@ -207,64 +201,15 @@ GRPCServerImpl::CallData<Request, Response>::process(
             }
             else
             {
-                try
-                {
-                    std::pair<Response, grpc::Status> result =
-                        handler_(context);
-                    setIsUnlimited(result.first, isUnlimited);
-                    responder_.Finish(result.first, result.second, this);
-                }
-                catch (ReportingShouldProxy&)
-                {
-                    forwardToP2p(context);
-                    return;
-                }
+                std::pair<Response, grpc::Status> result = handler_(context);
+                setIsUnlimited(result.first, isUnlimited);
+                responder_.Finish(result.first, result.second, this);
             }
         }
     }
     catch (std::exception const& ex)
     {
         grpc::Status status{grpc::StatusCode::INTERNAL, ex.what()};
-        responder_.FinishWithError(status, this);
-    }
-}
-
-template <class Request, class Response>
-void
-GRPCServerImpl::CallData<Request, Response>::forwardToP2p(
-    RPC::GRPCContext<Request>& context)
-{
-    if (auto descriptor =
-            Request::GetDescriptor()->FindFieldByName("client_ip"))
-    {
-        Request::GetReflection()->SetString(&request_, descriptor, ctx_.peer());
-        JLOG(app_.journal("gRPCServer").debug())
-            << "Set client_ip to " << ctx_.peer();
-    }
-    else
-    {
-        assert(false);
-        Throw<std::runtime_error>(
-            "Attempting to forward but no client_ip field in "
-            "protobuf message");
-    }
-    auto stub = getP2pForwardingStub(context);
-    if (stub)
-    {
-        grpc::ClientContext clientContext;
-        Response response;
-        auto status = forward_(stub.get(), &clientContext, request_, &response);
-        responder_.Finish(response, status, this);
-        JLOG(app_.journal("gRPCServer").debug()) << "Forwarded request to tx";
-    }
-    else
-    {
-        JLOG(app_.journal("gRPCServer").error())
-            << "Failed to forward request to tx";
-        grpc::Status status{
-            grpc::StatusCode::INTERNAL,
-            "Attempted to act as proxy but failed "
-            "to create forwarding stub"};
         responder_.FinishWithError(status, this);
     }
 }
@@ -289,27 +234,8 @@ GRPCServerImpl::CallData<Request, Response>::getRole(bool isUnlimited)
 {
     if (isUnlimited)
         return Role::IDENTIFIED;
-    else if (wasForwarded())
-        return Role::PROXY;
     else
         return Role::USER;
-}
-
-template <class Request, class Response>
-bool
-GRPCServerImpl::CallData<Request, Response>::wasForwarded()
-{
-    if (auto descriptor =
-            Request::GetDescriptor()->FindFieldByName("client_ip"))
-    {
-        std::string clientIp =
-            Request::GetReflection()->GetString(request_, descriptor);
-        if (!clientIp.empty())
-        {
-            return true;
-        }
-    }
-    return false;
 }
 
 template <class Request, class Response>
@@ -339,35 +265,6 @@ GRPCServerImpl::CallData<Request, Response>::getClientIpAddress()
 }
 
 template <class Request, class Response>
-std::optional<boost::asio::ip::address>
-GRPCServerImpl::CallData<Request, Response>::getProxiedClientIpAddress()
-{
-    auto endpoint = getProxiedClientEndpoint();
-    if (endpoint)
-        return endpoint->address();
-    return {};
-}
-
-template <class Request, class Response>
-std::optional<boost::asio::ip::tcp::endpoint>
-GRPCServerImpl::CallData<Request, Response>::getProxiedClientEndpoint()
-{
-    auto descriptor = Request::GetDescriptor()->FindFieldByName("client_ip");
-    if (descriptor)
-    {
-        std::string clientIp =
-            Request::GetReflection()->GetString(request_, descriptor);
-        if (!clientIp.empty())
-        {
-            JLOG(app_.journal("gRPCServer").debug())
-                << "Got client_ip from request : " << clientIp;
-            return getEndpoint(clientIp);
-        }
-    }
-    return {};
-}
-
-template <class Request, class Response>
 std::optional<boost::asio::ip::tcp::endpoint>
 GRPCServerImpl::CallData<Request, Response>::getClientEndpoint()
 {
@@ -381,8 +278,7 @@ GRPCServerImpl::CallData<Request, Response>::clientIsUnlimited()
     if (!getUser())
         return false;
     auto clientIp = getClientIpAddress();
-    auto proxiedIp = getProxiedClientIpAddress();
-    if (clientIp && !proxiedIp)
+    if (clientIp)
     {
         for (auto& ip : secureGatewayIPs_)
         {
@@ -414,11 +310,7 @@ Resource::Consumer
 GRPCServerImpl::CallData<Request, Response>::getUsage()
 {
     auto endpoint = getClientEndpoint();
-    auto proxiedEndpoint = getProxiedClientEndpoint();
-    if (proxiedEndpoint)
-        return app_.getResourceManager().newInboundEndpoint(
-            beast::IP::from_asio(proxiedEndpoint.value()));
-    else if (endpoint)
+    if (endpoint)
         return app_.getResourceManager().newInboundEndpoint(
             beast::IP::from_asio(endpoint.value()));
     Throw<std::runtime_error>("Failed to get client endpoint");
