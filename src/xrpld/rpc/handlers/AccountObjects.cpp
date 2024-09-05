@@ -224,7 +224,8 @@ doAccountObjects(RPC::JsonContext& context)
              ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
             {jss::bridge, ltBRIDGE},
             {jss::mpt_issuance, ltMPTOKEN_ISSUANCE},
-            {jss::mptoken, ltMPTOKEN}};
+            {jss::mptoken, ltMPTOKEN},
+            {jss::permissioned_domain, ltPERMISSIONED_DOMAIN}};
 
         typeFilter.emplace();
         typeFilter->reserve(std::size(deletionBlockers));

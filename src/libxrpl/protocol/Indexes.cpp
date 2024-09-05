@@ -78,6 +78,7 @@ enum class LedgerNameSpace : std::uint16_t {
     MPTOKEN_ISSUANCE = '~',
     MPTOKEN = 't',
     CREDENTIAL = 'D',
+    PERMISSIONED_DOMAIN = 'm',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -525,6 +526,14 @@ credential(
     return {
         ltCREDENTIAL,
         indexHash(LedgerNameSpace::CREDENTIAL, subject, issuer, credType)};
+}
+
+Keylet
+permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept
+{
+    return {
+        ltPERMISSIONED_DOMAIN,
+        indexHash(LedgerNameSpace::PERMISSIONED_DOMAIN, account, seq)};
 }
 
 }  // namespace keylet

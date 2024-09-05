@@ -28,6 +28,7 @@
 
 #include <cstdint>
 #include <map>
+#include <optional>
 #include <tuple>
 #include <utility>
 
@@ -475,6 +476,33 @@ public:
         beast::Journal const&);
 };
 
+/**
+ * @brief Invariants: Permissioned Domains must have some rules and
+ * AcceptedCredentials must have length between 1 and 10 inclusive.
+ *
+ * Since only permissions constitute rules, an empty credentials list
+ * means that there are no rules and the invariant is violated.
+ */
+class ValidPermissionedDomain
+{
+    std::size_t credentialsSize_{0};
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -491,7 +519,8 @@ using InvariantChecks = std::tuple<
     ValidNFTokenPage,
     NFTokenCountTracking,
     ValidClawback,
-    ValidMPTIssuance>;
+    ValidMPTIssuance,
+    ValidPermissionedDomain>;
 
 /**
  * @brief get a tuple of all invariant checks
