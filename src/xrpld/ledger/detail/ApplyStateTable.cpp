@@ -116,6 +116,7 @@ ApplyStateTable::apply(
     TER ter,
     std::optional<STAmount> const& deliver,
     std::vector<STObject> const& batchExecution,
+    std::optional<STObject> const& batchPrev,
     beast::Journal j)
 {
     // Build metadata and insert
@@ -210,6 +211,13 @@ ApplyStateTable::apply(
                     // search the original node for values saved on modify
                     if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) &&
                         !curNode->hasMatchingEntry(obj))
+                        prevs.emplace_back(obj);
+                }
+
+                if (tx.getTxnType() == ttBATCH && nodeType == ltACCOUNT_ROOT)
+                {
+                    // TODO: This could fail if the fields already exist
+                    for (auto const& obj : *batchPrev)
                         prevs.emplace_back(obj);
                 }
 

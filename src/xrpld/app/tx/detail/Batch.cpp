@@ -69,7 +69,11 @@ Batch::preflight(PreflightContext const& ctx)
 
     if (tx.isFieldPresent(sfBatchSigners))
     {
-        auto const sigResult = ctx.tx.checkBatchSign();
+        auto const requireCanonicalSig =
+            ctx.rules.enabled(featureRequireFullyCanonicalSig)
+            ? STTx::RequireFullyCanonicalSig::yes
+            : STTx::RequireFullyCanonicalSig::no;
+        auto const sigResult = ctx.tx.checkBatchSign(requireCanonicalSig, ctx.rules);
         if (!sigResult)
         {
             JLOG(ctx.j.debug()) << "Batch: invalid batch txn signature.";
@@ -135,10 +139,15 @@ Batch::doApply()
     auto const& txns = ctx_.tx.getFieldArray(sfRawTransactions);
     for (STObject txn : txns)
     {
+        OpenView innerView(&subView);
+
         STTx const stx = STTx{std::move(txn)};
         auto const [ter, applied] =
-            ripple::apply(ctx_.app, subView, stx, tapFAIL_HARD, ctx_.journal);
+            ripple::apply(ctx_.app, innerView, stx, tapFAIL_HARD, ctx_.journal);
 
+        if (applied)
+            innerView.apply(subView);
+        
         changed = true;
 
         // Add Inner Txn Metadata
@@ -158,7 +167,7 @@ Batch::doApply()
             if (!isTecClaim(ter))
             {
                 accountCount.clear();
-                result = ter;
+                result = tecBATCH_FAILURE;
                 changed = false;
                 break;
             }
@@ -194,19 +203,41 @@ Batch::doApply()
         ctx_.applyOpenView(subView);
     }
 
-    for (auto const& [_account, count] : accountCount)
+    // Clean Up
+    // 1. Update the account_ sfSequence to include any tes/tec inner txns
+
+    // Reason: The sequence (1) is consumed before the inner batch txns
+    // however we dont know how many of the inner txns will succeed depending
+    // on the batch type. (This could be moved to `getSeqProxy()`)
+
+    // 2. Set the batch prevFields so they are included in metadata
+
+    // Reason: When the outer batch is applied (at the end), the Sequence and
+    // Balance have already been updated, therefore there are no PreviousFields
+    // when adding the metadata. This adds them.
     {
-        auto const sleSrcAcc = sb.peek(keylet::account(_account));
+        auto const sleSrcAcc = sb.peek(keylet::account(account_));
         if (!sleSrcAcc)
             return tefINTERNAL;
 
-        if (_account == account_)
+        STAmount const txFee = ctx_.tx.getFieldAmount(sfFee);
+        std::uint32_t const txSeq = ctx_.tx.getFieldU32(sfSequence);
+        STAmount const accBal = sleSrcAcc->getFieldAmount(sfBalance);
+        std::uint32_t const accSeq = sleSrcAcc->getFieldU32(sfSequence);
+        
+        // only update if the account_ batch has tes/tec inner txns
+        uint32_t const count = accountCount[account_];
+        if (count != 0)
         {
-            // Update Sequence (Source Account)
-            sleSrcAcc->setFieldU32(
-                sfSequence, sleSrcAcc->getFieldU32(sfSequence) + count);
+            sleSrcAcc->setFieldU32(sfSequence, accSeq + count);
             sb.update(sleSrcAcc);
         }
+
+        // update the batch prev fields
+        STObject prevFields{sfPreviousFields};
+        prevFields.setFieldU32(sfSequence, txSeq);
+        prevFields.setFieldAmount(sfBalance, accBal + txFee);
+        avi.addBatchPrevMetaData(std::move(prevFields));
     }
 
     sb.apply(ctx_.rawView());

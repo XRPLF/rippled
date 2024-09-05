@@ -71,6 +71,7 @@ public:
         TER ter,
         std::optional<STAmount> const& deliver,
         std::vector<STObject> const& batchExecution,
+        std::optional<STObject> const& batchPrev,
         beast::Journal j);
 
     bool

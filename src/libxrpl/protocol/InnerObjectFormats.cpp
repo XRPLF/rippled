@@ -163,8 +163,9 @@ InnerObjectFormats::InnerObjectFormats()
     add(sfBatchSigner.jsonName.c_str(),
         sfBatchSigner.getCode(),
         {{sfAccount, soeREQUIRED},
-         {sfSigningPubKey, soeREQUIRED},
-         {sfTxnSignature, soeREQUIRED}});
+         {sfSigningPubKey, soeOPTIONAL},
+         {sfTxnSignature, soeOPTIONAL},
+         {sfSigners, soeOPTIONAL}});
 }
 
 InnerObjectFormats const&

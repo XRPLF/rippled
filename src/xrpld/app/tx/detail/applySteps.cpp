@@ -271,6 +271,9 @@ invoke_preclaim(PreclaimContext const& ctx)
 
                 result = T::checkSign(ctx);
 
+                if (ctx.tx.getTxnType() == ttBATCH)
+                    result = T::checkBatchSign(ctx);
+
                 if (result != tesSUCCESS)
                     return result;
             }

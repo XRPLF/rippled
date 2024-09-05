@@ -361,25 +361,114 @@ STTx::checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const
 }
 
 Expected<void, std::string>
-STTx::checkBatchSign() const
+STTx::checkBatchSign(
+    RequireFullyCanonicalSig requireCanonicalSig,
+    Rules const& rules) const
 {
-    STArray const& signers{getFieldArray(sfBatchSigners)};
+    try
+    {
+        STArray const& signers{getFieldArray(sfBatchSigners)};
+        for (auto const& signer : signers)
+        {
+            Blob const& signingPubKey = signer.getFieldVL(sfSigningPubKey);
+            auto const result = signingPubKey.empty()
+                ? checkBatchMultiSign(signer, requireCanonicalSig, rules)
+                : checkBatchSingleSign(signer, requireCanonicalSig);
+
+            if (!result)
+                return result;
+        }
+        return {};
+    }
+    catch (std::exception const&)
+    {
+    }
+    return Unexpected("Internal signature check failure.");
+}
+
+Expected<void, std::string>
+STTx::checkBatchSingleSign(
+    STObject const& batchSigner,
+    RequireFullyCanonicalSig requireCanonicalSig) const
+{
+    // We don't allow both a non-empty sfSigningPubKey and an sfSigners.
+    // That would allow the transaction to be signed two ways.  So if both
+    // fields are present the signature is invalid.
+    if (batchSigner.isFieldPresent(sfSigners))
+        return Unexpected("Cannot both single- and multi-sign.");
+
+    Serializer const dataStart{startMultiSigningData(*this)};
+
+    auto const accountID = batchSigner.getAccountID(sfAccount);
+
+    bool validSig = false;
+    try
+    {
+        Serializer s = dataStart;
+        finishMultiSigningData(accountID, s);
+
+        bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
+            (requireCanonicalSig == RequireFullyCanonicalSig::yes);
+
+        auto const spk = batchSigner.getFieldVL(sfSigningPubKey);
+
+        if (publicKeyType(makeSlice(spk)))
+        {
+            Blob const signature = batchSigner.getFieldVL(sfTxnSignature);
+            Blob const data = getSigningData(*this);
+
+            validSig = verify(
+                PublicKey(makeSlice(spk)),
+                s.slice(),
+                makeSlice(signature),
+                fullyCanonical);
+        }
+    }
+    catch (std::exception const&)
+    {
+        // Assume it was a signature failure.
+        validSig = false;
+    }
+    if (validSig == false)
+        return Unexpected("Invalid signature.");
+    // Signature was verified.
+    return {};
+}
+
+Expected<void, std::string>
+STTx::checkBatchMultiSign(
+    STObject const& batchSigner,
+    RequireFullyCanonicalSig requireCanonicalSig,
+    Rules const& rules) const
+{
+    // Make sure the MultiSigners are present.  Otherwise they are not
+    // attempting multi-signing and we just have a bad SigningPubKey.
+    if (!batchSigner.isFieldPresent(sfSigners))
+        return Unexpected("Empty SigningPubKey.");
+
+    // We don't allow both an sfSigners and an sfTxnSignature.  Both fields
+    // being present would indicate that the transaction is signed both ways.
+    if (batchSigner.isFieldPresent(sfTxnSignature))
+        return Unexpected("Cannot both single- and multi-sign.");
+
+    STArray const& signers{batchSigner.getFieldArray(sfSigners)};
 
     // There are well known bounds that the number of signers must be within.
-    if (signers.size() == 0 || signers.size() > 8)
-        return Unexpected("Invalid Batch Signers array size.");
+    if (signers.size() < minMultiSigners ||
+        signers.size() > maxMultiSigners(&rules))
+        return Unexpected("Invalid Signers array size.");
 
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
     // with the stuff that stays constant from signature to signature.
-
     Serializer const dataStart{startMultiSigningData(*this)};
 
     // We also use the sfAccount field inside the loop.  Get it once.
-    // auto const txnAccountID = getAccountID(sfAccount);
+    auto const txnAccountID = batchSigner.getAccountID(sfAccount);
 
     // Determine whether signatures must be full canonical.
-    bool const fullyCanonical = true;
+    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
+        (requireCanonicalSig == RequireFullyCanonicalSig::yes);
 
     // Signers must be in sorted order by AccountID.
     AccountID lastAccountID(beast::zero);
@@ -388,9 +477,9 @@ STTx::checkBatchSign() const
     {
         auto const accountID = signer.getAccountID(sfAccount);
 
-        // // The account owner may not multisign for themselves.
-        // if (accountID == txnAccountID)
-        //     return Unexpected("Invalid multisigner.");
+        // The account owner may not multisign for themselves.
+        if (accountID == txnAccountID)
+            return Unexpected("Invalid multisigner.");
 
         // No duplicate signers allowed.
         if (lastAccountID == accountID)
@@ -415,6 +504,7 @@ STTx::checkBatchSign() const
             if (publicKeyType(makeSlice(spk)))
             {
                 Blob const signature = signer.getFieldVL(sfTxnSignature);
+
                 validSig = verify(
                     PublicKey(makeSlice(spk)),
                     s.slice(),
