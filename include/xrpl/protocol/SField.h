@@ -511,6 +511,7 @@ extern SF_UINT256 const sfHookStateKey;
 extern SF_UINT256 const sfHookHash;
 extern SF_UINT256 const sfHookNamespace;
 extern SF_UINT256 const sfHookSetTxnID;
+extern SF_UINT256 const sfDomainID;
 
 // currency amount (common)
 extern SF_AMOUNT const sfAmount;
@@ -564,6 +565,7 @@ extern SF_VL const sfDIDDocument;
 extern SF_VL const sfData;
 extern SF_VL const sfAssetClass;
 extern SF_VL const sfProvider;
+extern SF_VL const sfCredentialType;
 
 // variable length (uncommon)
 extern SF_VL const sfFulfillment;
@@ -638,6 +640,7 @@ extern SField const sfVoteEntry;
 extern SField const sfAuctionSlot;
 extern SField const sfAuthAccount;
 extern SField const sfPriceData;
+extern SField const sfAcceptedCredential;
 
 extern SField const sfSigner;
 extern SField const sfMajority;
@@ -667,6 +670,7 @@ extern SField const sfHooks;
 extern SField const sfVoteSlots;
 extern SField const sfAuthAccounts;
 extern SField const sfPriceDataSeries;
+extern SField const sfAcceptedCredentials;
 
 // array of objects (uncommon)
 extern SField const sfMajorities;

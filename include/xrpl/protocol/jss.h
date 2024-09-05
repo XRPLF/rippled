@@ -123,6 +123,9 @@ JSS(Payment);              // transaction type.
 JSS(PaymentChannelClaim);  // transaction type.
 JSS(PaymentChannelCreate);               // transaction type.
 JSS(PaymentChannelFund);                 // transaction type.
+JSS(PermissionedDomain);                 // ledger type.
+JSS(PermissionedDomainSet);              // transaction type.
+JSS(PermissionedDomainDelete);           // transaction type.
 JSS(PriceDataSeries);                    // field.
 JSS(PriceData);                          // field.
 JSS(Provider);                           // field.
@@ -551,6 +554,7 @@ JSS(peers);                       // out: InboundLedger, handlers/Peers, Overlay
 JSS(peer_disconnects);            // Severed peer connection counter.
 JSS(peer_disconnects_resources);  // Severed peer connections because of
                                   // excess resource consumption.
+JSS(permissioned_domain);         // out: AccountObjects
 JSS(port);                        // in: Connect, out: NetworkOPs
 JSS(ports);                       // out: NetworkOPs
 JSS(previous);                    // out: Reservations

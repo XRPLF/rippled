@@ -513,6 +513,21 @@ TxFormats::TxFormats()
             {sfOwner, soeOPTIONAL},
         },
         commonFields);
+
+    add(jss::PermissionedDomainSet,
+        ttPERMISSIONED_DOMAIN_SET,
+        {
+            {sfDomainID, soeOPTIONAL},
+            {sfAcceptedCredentials, soeREQUIRED},
+        },
+        commonFields);
+
+    add(jss::PermissionedDomainDelete,
+        ttPERMISSIONED_DOMAIN_DELETE,
+        {
+            {sfDomainID, soeREQUIRED},
+        },
+        commonFields);
 }
 
 TxFormats const&
