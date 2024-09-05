@@ -798,6 +798,46 @@ class Invariants_test : public beast::unit_test::suite
             });
     }
 
+    void
+    testPermissionedDomainInvariants()
+    {
+        using namespace test::jtx;
+        testcase << "PermissionedDomain";
+        doInvariantCheck(
+            {{"permissioned domain with no rules"}},
+            [](Account const& A1, Account const&, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+                slePd->setAccountID(sfOwner, A1);
+                slePd->setFieldU32(sfSequence, 10);
+
+                ac.view().insert(slePd);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        doInvariantCheck(
+            {{"permissioned domain bad credentials size 11"}},
+            [](Account const& A1, Account const&, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+                slePd->setAccountID(sfOwner, A1);
+                slePd->setFieldU32(sfSequence, 10);
+
+                STArray credentials(sfAcceptedCredentials);
+                for (std::size_t n = 0; n < 11; ++n)
+                    credentials.push_back(STObject(sfSequence));
+                slePd->setFieldArray(sfAcceptedCredentials, credentials);
+                ac.view().insert(slePd);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+    }
+
 public:
     void
     run() override
@@ -813,6 +853,7 @@ public:
         testNoZeroEscrow();
         testValidNewAccountRoot();
         testNFTokenPageInvariants();
+        testPermissionedDomainInvariants();
     }
 };
 
