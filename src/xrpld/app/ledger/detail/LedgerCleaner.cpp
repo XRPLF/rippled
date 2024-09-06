@@ -237,7 +237,8 @@ private:
             app_.getInboundLedgers().acquire(
                 ledger->info().hash,
                 ledger->info().seq,
-                InboundLedger::Reason::GENERIC);
+                InboundLedger::Reason::GENERIC,
+                "getLedgerHash");
         }
         return hash ? *hash : beast::zero;  // kludge
     }
@@ -257,13 +258,19 @@ private:
         bool doTxns)
     {
         auto nodeLedger = app_.getInboundLedgers().acquire(
-            ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
+            ledgerHash,
+            ledgerIndex,
+            InboundLedger::Reason::GENERIC,
+            "doLedger");
         if (!nodeLedger)
         {
             JLOG(j_.debug()) << "Ledger " << ledgerIndex << " not available";
             app_.getLedgerMaster().clearLedger(ledgerIndex);
             app_.getInboundLedgers().acquire(
-                ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
+                ledgerHash,
+                ledgerIndex,
+                InboundLedger::Reason::GENERIC,
+                "doLedger not available");
             return false;
         }
 
@@ -289,7 +296,10 @@ private:
             JLOG(j_.debug()) << "Ledger " << ledgerIndex << " is missing nodes";
             app_.getLedgerMaster().clearLedger(ledgerIndex);
             app_.getInboundLedgers().acquire(
-                ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
+                ledgerHash,
+                ledgerIndex,
+                InboundLedger::Reason::GENERIC,
+                "doLedger missing nodes");
             return false;
         }
 
@@ -345,7 +355,10 @@ private:
                     // We found the hash and sequence of a better reference
                     // ledger.
                     referenceLedger = app_.getInboundLedgers().acquire(
-                        refHash, refIndex, InboundLedger::Reason::GENERIC);
+                        refHash,
+                        refIndex,
+                        InboundLedger::Reason::GENERIC,
+                        "getHash");
                     if (referenceLedger)
                         ledgerHash =
                             getLedgerHash(referenceLedger, ledgerIndex);

@@ -848,7 +848,8 @@ void
 LedgerMaster::failedSave(std::uint32_t seq, uint256 const& hash)
 {
     clearLedger(seq);
-    app_.getInboundLedgers().acquire(hash, seq, InboundLedger::Reason::GENERIC);
+    app_.getInboundLedgers().acquire(
+        hash, seq, InboundLedger::Reason::GENERIC, "failedSave");
 }
 
 // Check if the specified ledger can become the new last fully-validated
@@ -896,7 +897,7 @@ LedgerMaster::checkAccept(uint256 const& hash, std::uint32_t seq)
         // FIXME: We may not want to fetch a ledger with just one
         // trusted validation
         ledger = app_.getInboundLedgers().acquire(
-            hash, seq, InboundLedger::Reason::GENERIC);
+            hash, seq, InboundLedger::Reason::GENERIC, "checkAccept");
     }
 
     if (ledger)
@@ -1273,7 +1274,10 @@ LedgerMaster::findNewLedgersToPublish(
                 // Can we try to acquire the ledger we need?
                 if (!ledger && (++acqCount < ledger_fetch_size_))
                     ledger = app_.getInboundLedgers().acquire(
-                        *hash, seq, InboundLedger::Reason::GENERIC);
+                        *hash,
+                        seq,
+                        InboundLedger::Reason::GENERIC,
+                        "findNewLedgersToPublish");
             }
 
             // Did we acquire the next ledger we need to publish?
@@ -1464,7 +1468,8 @@ LedgerMaster::updatePaths()
                 app_.getInboundLedgers().acquire(
                     lastLedger->info().parentHash,
                     lastLedger->info().seq - 1,
-                    InboundLedger::Reason::GENERIC);
+                    InboundLedger::Reason::GENERIC,
+                    "updatePaths open");
             }
             else
             {
@@ -1472,7 +1477,8 @@ LedgerMaster::updatePaths()
                 app_.getInboundLedgers().acquire(
                     lastLedger->info().hash,
                     lastLedger->info().seq,
-                    InboundLedger::Reason::GENERIC);
+                    InboundLedger::Reason::GENERIC,
+                    "updatePaths closed");
             }
         }
     }
@@ -1673,7 +1679,7 @@ LedgerMaster::walkHashBySeq(
         if (!ledger)
         {
             if (auto const l = app_.getInboundLedgers().acquire(
-                    *refHash, refIndex, reason))
+                    *refHash, refIndex, reason, "walkHashBySeq"))
             {
                 ledgerHash = hashOfSeq(*l, index, m_journal);
                 XRPL_ASSERT(
@@ -1799,8 +1805,8 @@ LedgerMaster::fetchForHistory(
         {
             if (!app_.getInboundLedgers().isFailure(*hash))
             {
-                ledger =
-                    app_.getInboundLedgers().acquire(*hash, missing, reason);
+                ledger = app_.getInboundLedgers().acquire(
+                    *hash, missing, reason, "fetchForHistory");
                 if (!ledger && missing != fetch_seq_ &&
                     missing > app_.getNodeStore().earliestLedgerSeq())
                 {
@@ -1867,7 +1873,8 @@ LedgerMaster::fetchForHistory(
                             h->isNonZero(),
                             "ripple::LedgerMaster::fetchForHistory : "
                             "prefetched ledger");
-                        app_.getInboundLedgers().acquire(*h, seq, reason);
+                        app_.getInboundLedgers().acquire(
+                            *h, seq, reason, "fetchForHistory no ledger");
                     }
                 }
             }

@@ -142,7 +142,8 @@ LedgerReplayTask::trigger(ScopedLockType& sl)
             parent_ = inboundLedgers_.acquire(
                 parameter_.startHash_,
                 parameter_.startSeq_,
-                InboundLedger::Reason::GENERIC);
+                InboundLedger::Reason::GENERIC,
+                "LedgerReplayTask::trigger");
         }
         if (parent_)
         {
