@@ -1946,7 +1946,10 @@ NetworkOPsImp::checkLastClosedLedger(
 
     if (!consensus)
         consensus = app_.getInboundLedgers().acquire(
-            closedLedger, 0, InboundLedger::Reason::CONSENSUS);
+            closedLedger,
+            0,
+            InboundLedger::Reason::CONSENSUS,
+            "checkLastClosedLedger");
 
     if (consensus &&
         (!m_ledgerMaster.canBeCurrent(consensus) ||
