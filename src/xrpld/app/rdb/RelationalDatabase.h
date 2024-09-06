@@ -111,29 +111,6 @@ public:
         std::optional<AccountTxMarker> marker;
     };
 
-    /// Struct used to keep track of what to write to transactions and
-    /// account_transactions tables in Postgres
-    struct AccountTransactionsData
-    {
-        boost::container::flat_set<AccountID> accounts;
-        uint32_t ledgerSequence;
-        uint32_t transactionIndex;
-        uint256 txHash;
-        uint256 nodestoreHash;
-
-        AccountTransactionsData(
-            TxMeta const& meta,
-            uint256 const& nodestoreHash,
-            beast::Journal j)
-            : accounts(meta.getAffectedAccounts())
-            , ledgerSequence(meta.getLgrSeq())
-            , transactionIndex(meta.getIndex())
-            , txHash(meta.getTxID())
-            , nodestoreHash(nodestoreHash)
-        {
-        }
-    };
-
     /**
      * @brief init Creates and returns an appropriate RelationalDatabase
      *        instance based on configuration.
