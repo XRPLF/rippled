@@ -1091,7 +1091,10 @@ getLedgerByContext(RPC::JsonContext& context)
                 // ledger they want. Try to get it.
 
                 if (auto il = context.app.getInboundLedgers().acquire(
-                        *refHash, refIndex, InboundLedger::Reason::GENERIC))
+                        *refHash,
+                        refIndex,
+                        InboundLedger::Reason::GENERIC,
+                        "getLedgerByContext no hash"))
                 {
                     Json::Value jvResult = RPC::make_error(
                         rpcLGR_NOT_FOUND,
@@ -1125,7 +1128,10 @@ getLedgerByContext(RPC::JsonContext& context)
     // Try to get the desired ledger
     // Verify all nodes even if we think we have it
     auto ledger = context.app.getInboundLedgers().acquire(
-        ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
+        ledgerHash,
+        ledgerIndex,
+        InboundLedger::Reason::GENERIC,
+        "getLedgerByContext");
 
     // In standalone mode, accept the ledger from the ledger cache
     if (!ledger && context.app.config().standalone())
