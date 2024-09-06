@@ -34,21 +34,30 @@ public:
     STNumber(SField const& n, Number const& v = Number());
     STNumber(SerialIter& sit, SField const& name);
 
-    SerializedTypeID getSType() const override;
-    std::string getText() const override;
+    SerializedTypeID
+    getSType() const override;
+    std::string
+    getText() const override;
     Json::Value getJson(JsonOptions) const override;
-    void add(Serializer& s) const override;
+    void
+    add(Serializer& s) const override;
 
-    Number value() const;
-    void setValue(Number const& v);
+    Number
+    value() const;
+    void
+    setValue(Number const& v);
 
-    STBase* copy(std::size_t n, void* buf) const override;
-    STBase* move(std::size_t n, void* buf) override;
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
 
-    bool isEquivalent(const STBase& t) const override;
-    bool isDefault() const override;
+    bool
+    isEquivalent(const STBase& t) const override;
+    bool
+    isDefault() const override;
 };
 
-} // namespace ripple
+}  // namespace ripple
 
 #endif

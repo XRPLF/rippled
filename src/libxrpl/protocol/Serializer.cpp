@@ -76,7 +76,8 @@ int
 Serializer::addi32(std::int32_t i)
 {
     int ret = mData.size();
-    static constexpr std::size_t SIZE = sizeof(std::int32_t) / sizeof(unsigned char);
+    static constexpr std::size_t SIZE =
+        sizeof(std::int32_t) / sizeof(unsigned char);
     static_assert(SIZE == 4);
     mData.resize(ret + SIZE);
     unsigned char* p = &mData.back() + 1 - SIZE;
@@ -88,7 +89,8 @@ int
 Serializer::addi64(std::int64_t i)
 {
     int ret = mData.size();
-    static constexpr std::size_t SIZE = sizeof(std::int64_t) / sizeof(unsigned char);
+    static constexpr std::size_t SIZE =
+        sizeof(std::int64_t) / sizeof(unsigned char);
     static_assert(SIZE == 8);
     mData.resize(ret + SIZE);
     unsigned char* p = &mData.back() + 1 - SIZE;

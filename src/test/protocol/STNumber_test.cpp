@@ -42,8 +42,7 @@ struct STNumber_test : public beast::unit_test::suite
             -1,
             0,
             1,
-            std::numeric_limits<std::int64_t>::max()
-        };
+            std::numeric_limits<std::int64_t>::max()};
         for (std::int64_t value : values)
         {
             STNumber const before{sfQuantity, value};
