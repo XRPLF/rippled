@@ -913,6 +913,172 @@ public:
     }
 
     void
+    testDestCreds()
+    {
+        {
+            testcase("Destination Constraints with Credentials");
+
+            using namespace test::jtx;
+
+            Account const alice{"alice"};
+            Account const becky{"becky"};
+            Account const carol{"carol"};
+
+            const char credType[] = "abcd";
+
+            Env env{*this};
+            env.fund(XRP(100000), alice, becky, carol);
+            env.close();
+
+            // carol issue credentials for becky
+            env(credentials::create(becky, carol, credType));
+            env.close();
+            // becky accept the credentials
+            env(credentials::accept(becky, carol, credType));
+            env.close();
+            // get credentials index
+            auto const jCred =
+                credentials::ledgerEntryCredential(env, becky, carol, credType);
+            std::string const credIdx =
+                jCred[jss::result][jss::index].asString();
+
+            // Close enough ledgers to be able to delete becky's account.
+            incLgrSeqForAccDel(env, becky);
+
+            auto const acctDelFee{drops(env.current()->fees().increment)};
+
+            // becky use credentialsm but lsfDepositAuth not set and can't
+            // delete account
+            env(acctdelete(
+                    becky,
+                    alice,
+                    {"48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6E"
+                     "A288BE4"}),
+                fee(acctDelFee),
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            {
+                // alice sets the lsfDepositAuth flag on her account.  This
+                // should prevent becky from deleting her account while using
+                // alice as the destination.
+                env(fset(alice, asfDepositAuth), fee(drops(10)));
+                env.close();
+                // and create DepositPreauth Object
+                env(deposit::auth(
+                    alice,
+                    std::vector<deposit::AuthorizeCredentials>{
+                        {carol, credType}}));
+                env.close();
+            }
+
+            // becky attempts to delete her account, but alice won't take her
+            // XRP, so the delete is blocked.
+            env(acctdelete(becky, alice),
+                fee(acctDelFee),
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            // becky use empty credentials and can't delete account
+            {
+                auto jv = acctdelete(becky, alice);
+                jv[sfCredentialIDs.jsonName] = Json::arrayValue;
+                env(jv, fee(acctDelFee), ter(temMALFORMED));
+            }
+
+            // becky use bad credentials and can't delete account
+            env(acctdelete(
+                    becky,
+                    alice,
+                    {"48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6E"
+                     "A288BE4"}),
+                fee(acctDelFee),
+                ter(temBAD_CREDENTIALS));
+            env.close();
+
+            // becky use credentials and can delete account
+            env(acctdelete(becky, alice, {credIdx}), fee(acctDelFee));
+            env.close();
+
+            // check that credential object deleted too
+            auto const jNoCred =
+                credentials::ledgerEntryCredential(env, becky, carol, credType);
+            BEAST_EXPECT(
+                jNoCred.isObject() && jNoCred.isMember(jss::result) &&
+                jNoCred[jss::result].isMember(jss::error));
+
+            {
+                Account const john{"john"};
+
+                env.fund(XRP(100000), john);
+                env.close();
+
+                auto jv = credentials::create(john, carol, credType);
+                uint32_t const t = env.now().time_since_epoch().count() + 20;
+                jv[sfExpiration.jsonName] = t;
+                env(jv);
+                env.close();
+                env(credentials::accept(john, carol, credType));
+                env.close();
+                auto const jCred = credentials::ledgerEntryCredential(
+                    env, john, carol, credType);
+                std::string const credIdx =
+                    jCred[jss::result][jss::index].asString();
+
+                incLgrSeqForAccDel(env, john);
+
+                // credentials are expired
+                // john use credentials but can't delete account
+                env(acctdelete(john, alice, {credIdx}),
+                    fee(acctDelFee),
+                    ter(tecEXPIRED));
+                env.close();
+
+                // check that credential object deleted
+                auto const jNoCred = credentials::ledgerEntryCredential(
+                    env, john, carol, credType);
+                BEAST_EXPECT(
+                    jNoCred.isObject() && jNoCred.isMember(jss::result) &&
+                    jNoCred[jss::result].isMember(jss::error));
+            }
+        }
+
+        {
+            testcase("Credentials feature disabled");
+            using namespace test::jtx;
+
+            Account const alice{"alice"};
+            Account const becky{"becky"};
+            Account const carol{"carol"};
+
+            Env env{*this, supported_amendments() - featureCredentials};
+            env.fund(XRP(100000), alice, becky, carol);
+            env.close();
+
+            // alice sets the lsfDepositAuth flag on her account.  This should
+            // prevent becky from deleting her account while using alice as the
+            // destination.
+            env(fset(alice, asfDepositAuth), fee(drops(10)));
+            env.close();
+
+            // Close enough ledgers to be able to delete becky's account.
+            incLgrSeqForAccDel(env, becky);
+
+            auto const acctDelFee{drops(env.current()->fees().increment)};
+
+            // becky can't delete account as feature disabled
+            env(acctdelete(
+                    becky,
+                    alice,
+                    {"098B7F1B146470A1C5084DC7832C04A72939E3EBC58E68AB8B579BA07"
+                     "2B0CECB"}),
+                fee(acctDelFee),
+                ter(temDISABLED));
+            env.close();
+        }
+    }
+
+    void
     run() override
     {
         testBasics();
@@ -925,6 +1091,7 @@ public:
         testBalanceTooSmallForFee();
         testWithTickets();
         testDest();
+        testDestCreds();
     }
 };
 

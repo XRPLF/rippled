@@ -26,7 +26,10 @@ namespace test {
 namespace jtx {
 
 Json::Value
-pay(AccountID const& account, AccountID const& to, AnyAmount amount)
+pay(AccountID const& account,
+    AccountID const& to,
+    AnyAmount amount,
+    std::vector<std::string> const& credentialIDs)
 {
     amount.to(to);
     Json::Value jv;
@@ -35,12 +38,22 @@ pay(AccountID const& account, AccountID const& to, AnyAmount amount)
     jv[jss::Destination] = to_string(to);
     jv[jss::TransactionType] = jss::Payment;
     jv[jss::Flags] = tfUniversal;
+    if (!credentialIDs.empty())
+    {
+        auto& arr(jv[sfCredentialIDs.jsonName] = Json::arrayValue);
+        for (auto const& o : credentialIDs)
+            arr.append(o);
+    }
     return jv;
 }
+
 Json::Value
-pay(Account const& account, Account const& to, AnyAmount amount)
+pay(Account const& account,
+    Account const& to,
+    AnyAmount amount,
+    std::vector<std::string> const& credentialIDs)
 {
-    return pay(account.id(), to.id(), amount);
+    return pay(account.id(), to.id(), amount, credentialIDs);
 }
 
 }  // namespace jtx

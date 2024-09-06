@@ -221,7 +221,11 @@ escrow(AccountID const& account, AccountID const& to, STAmount const& amount)
 }
 
 Json::Value
-finish(AccountID const& account, AccountID const& from, std::uint32_t seq)
+finish(
+    AccountID const& account,
+    AccountID const& from,
+    std::uint32_t seq,
+    std::vector<std::string> const& credentialIDs)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::EscrowFinish;
@@ -229,6 +233,12 @@ finish(AccountID const& account, AccountID const& from, std::uint32_t seq)
     jv[jss::Account] = to_string(account);
     jv[sfOwner.jsonName] = to_string(from);
     jv[sfOfferSequence.jsonName] = seq;
+    if (!credentialIDs.empty())
+    {
+        auto& arr(jv[sfCredentialIDs.jsonName] = Json::arrayValue);
+        for (auto const& o : credentialIDs)
+            arr.append(o);
+    }
     return jv;
 }
 
@@ -296,7 +306,8 @@ claim(
     std::optional<STAmount> const& balance,
     std::optional<STAmount> const& amount,
     std::optional<Slice> const& signature,
-    std::optional<PublicKey> const& pk)
+    std::optional<PublicKey> const& pk,
+    std::vector<std::string> const& credentialIDs)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::PaymentChannelClaim;
@@ -311,6 +322,12 @@ claim(
         jv["Signature"] = strHex(*signature);
     if (pk)
         jv["PublicKey"] = strHex(pk->slice());
+    if (!credentialIDs.empty())
+    {
+        auto& arr(jv[sfCredentialIDs.jsonName] = Json::arrayValue);
+        for (auto const& o : credentialIDs)
+            arr.append(o);
+    }
     return jv;
 }
 

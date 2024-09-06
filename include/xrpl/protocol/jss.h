@@ -94,6 +94,7 @@ JSS(Fee);                  // in/out: TransactionSign; field.
 JSS(FeeSettings);          // ledger type.
 JSS(Flags);                // in/out: TransactionSign; field.
 JSS(Invalid);              //
+JSS(Issuer);               // in: Credential transactions
 JSS(LastLedgerSequence);   // in: TransactionSign; field
 JSS(LastUpdateTime);       // field.
 JSS(LedgerHashes);         // ledger type.
@@ -145,6 +146,7 @@ JSS(Signature);                          // in: Credential transactions
 JSS(SignerList);                         // ledger type.
 JSS(SignerListSet);                      // transaction type.
 JSS(SigningPubKey);                      // field.
+JSS(Subject);                            // in: Credential transactions
 JSS(TakerGets);                          // field.
 JSS(TakerPays);                          // field.
 JSS(Ticket);                             // ledger type.

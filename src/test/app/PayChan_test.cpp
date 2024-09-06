@@ -833,6 +833,151 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
+    testDepositAuthCreds()
+    {
+        testcase("Deposit Authorization with Credentials");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        const char credType[] = "abcde";
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+
+        {
+            Env env{*this};
+            env.fund(XRP(10000), alice, bob, carol);
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env.close();
+
+            // alice can add more funds to the channel even though bob has
+            // asfDepositAuth set.
+            env(fund(alice, chan, XRP(1000)));
+            env.close();
+
+            std::string const credBadIdx =
+                "D007AE4B6E1274B4AF872588267B810C2F82716726351D1C7D38D3E5499FC6"
+                "E1";
+
+            {  // Fails because bob's lsfDepositAuth flag is NOT set.
+                env(claim(
+                        alice,
+                        chan,
+                        XRP(500).value(),
+                        XRP(500).value(),
+                        std::nullopt,
+                        std::nullopt,
+                        {credBadIdx}),
+                    ter(tecNO_PERMISSION));
+            }
+
+            {
+                // Setup deposit authorization
+                env(fset(bob, asfDepositAuth));
+                env.close();
+                env(deposit::auth(
+                    bob,
+                    std::vector<deposit::AuthorizeCredentials>{
+                        {carol, credType}}));
+                env.close();
+            }
+
+            // Fails because bob's lsfDepositAuth flag is set.
+            env(claim(alice, chan, XRP(500).value(), XRP(500).value()),
+                ter(tecNO_PERMISSION));
+
+            // Fails because bad credentials.
+            env(claim(
+                    alice,
+                    chan,
+                    XRP(500).value(),
+                    XRP(500).value(),
+                    std::nullopt,
+                    std::nullopt,
+                    {credBadIdx}),
+                ter(temBAD_CREDENTIALS));
+
+            {
+                // Create credentials
+                auto jv = credentials::create(alice, carol, credType);
+                uint32_t const t = env.now().time_since_epoch().count() + 100;
+                jv[sfExpiration.jsonName] = t;
+                env(jv);
+                env.close();
+                env(credentials::accept(alice, carol, credType));
+                env.close();
+            }
+
+            auto const jCred =
+                credentials::ledgerEntryCredential(env, alice, carol, credType);
+            std::string const credIdx =
+                jCred[jss::result][jss::index].asString();
+
+            {
+                // claim fails cause of empty credentials
+                auto jv =
+                    claim(alice, chan, XRP(500).value(), XRP(500).value());
+                jv[sfCredentialIDs.jsonName] = Json::arrayValue;
+                env(jv, ter(temMALFORMED));
+                env.close();
+            }
+
+            {
+                // claim fails cause of expired credentials
+
+                // Every cycle +10sec.
+                for (int i = 0; i < 10; ++i)
+                    env.close();
+
+                auto jv = claim(
+                    alice,
+                    chan,
+                    XRP(500).value(),
+                    XRP(500).value(),
+                    std::nullopt,
+                    std::nullopt,
+                    {credIdx});
+                env(jv, ter(tecEXPIRED));
+                env.close();
+            }
+        }
+
+        {
+            // Credentials amendment not enabled
+            Env env(*this, supported_amendments() - featureCredentials);
+            env.fund(XRP(5000), "alice", "bob");
+            env.close();
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env.close();
+
+            env(fund(alice, chan, XRP(1000)));
+            env.close();
+            std::string const credIdx =
+                "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
+                "E4";
+            // Fails because rule not enabled.
+            env(claim(
+                    alice,
+                    chan,
+                    XRP(500).value(),
+                    XRP(500).value(),
+                    std::nullopt,
+                    std::nullopt,
+                    {credIdx}),
+                ter(temDISABLED));
+        }
+    }
+
+    void
     testMultiple(FeatureBitset features)
     {
         // auth amount defaults to balance if not present
@@ -1776,6 +1921,20 @@ struct PayChan_test : public beast::unit_test::suite
                 BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
                 BEAST_EXPECT(env.balance(bob) == preBob);
                 BEAST_EXPECT(env.balance(alice) == preAlice - feeDrops);
+
+                // also failed with credentials
+                std::string const credIdx =
+                    "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA"
+                    "288BE4";
+                env(claim(
+                        alice,
+                        chan,
+                        reqBal,
+                        authAmt,
+                        std::nullopt,
+                        std::nullopt,
+                        {credIdx}),
+                    ter(tecNO_DST));
             }
 
             // fund should fail if the dst was removed
@@ -2116,6 +2275,7 @@ public:
         FeatureBitset const all{supported_amendments()};
         testWithFeats(all - disallowIncoming);
         testWithFeats(all);
+        testDepositAuthCreds();
     }
 };
 
