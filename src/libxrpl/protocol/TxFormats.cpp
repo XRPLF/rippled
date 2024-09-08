@@ -513,6 +513,34 @@ TxFormats::TxFormats()
             {sfOwner, soeOPTIONAL},
         },
         commonFields);
+    
+    add(jss::SubscriptionSet,
+        ttSUBSCRIPTION_SET,
+        {
+            {sfDestination, soeOPTIONAL},
+            {sfDestinationTag, soeOPTIONAL},
+            {sfAmount, soeREQUIRED},
+            {sfFrequency, soeOPTIONAL},
+            {sfStartTime, soeOPTIONAL},
+            {sfExpiration, soeOPTIONAL},
+            {sfSubscriptionID, soeOPTIONAL},
+        },
+        commonFields);
+    
+    add(jss::SubscriptionCancel,
+        ttSUBSCRIPTION_CANCEL,
+        {
+            {sfSubscriptionID, soeREQUIRED},
+        },
+        commonFields);
+    
+    add(jss::SubscriptionClaim,
+        ttSUBSCRIPTION_CLAIM,
+        {
+            {sfSubscriptionID, soeREQUIRED},
+            {sfAmount, soeREQUIRED},
+        },
+        commonFields);
 }
 
 TxFormats const&

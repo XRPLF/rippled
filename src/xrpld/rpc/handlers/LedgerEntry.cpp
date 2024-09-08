@@ -644,6 +644,51 @@ doLedgerEntry(RPC::JsonContext& context)
                     uNodeIndex = keylet::oracle(*account, *documentID).key;
             }
         }
+        else if (context.params.isMember(jss::subscription))
+        {
+            expectedType = ltSUBSCRIPTION;
+            if (!context.params[jss::subscription].isObject())
+            {
+                if (!uNodeIndex.parseHex(
+                        context.params[jss::subscription].asString()))
+                {
+                    uNodeIndex = beast::zero;
+                    jvResult[jss::error] = "malformedRequest";
+                }
+            }
+            // else if (
+            //     !context.params[jss::oracle].isMember(
+            //         jss::oracle_document_id) ||
+            //     !context.params[jss::oracle].isMember(jss::account))
+            // {
+            //     jvResult[jss::error] = "malformedRequest";
+            // }
+            // else
+            // {
+            //     uNodeIndex = beast::zero;
+            //     auto const& oracle = context.params[jss::oracle];
+            //     auto const documentID = [&]() -> std::optional<std::uint32_t> {
+            //         auto const& id = oracle[jss::oracle_document_id];
+            //         if (id.isUInt() || (id.isInt() && id.asInt() >= 0))
+            //             return std::make_optional(id.asUInt());
+            //         else if (id.isString())
+            //         {
+            //             std::uint32_t v;
+            //             if (beast::lexicalCastChecked(v, id.asString()))
+            //                 return std::make_optional(v);
+            //         }
+            //         return std::nullopt;
+            //     }();
+            //     auto const account =
+            //         parseBase58<AccountID>(oracle[jss::account].asString());
+            //     if (!account || account->isZero())
+            //         jvResult[jss::error] = "malformedAddress";
+            //     else if (!documentID)
+            //         jvResult[jss::error] = "malformedDocumentID";
+            //     else
+            //         uNodeIndex = keylet::oracle(*account, *documentID).key;
+            // }
+        }
         else
         {
             if (context.params.isMember("params") &&

@@ -287,6 +287,15 @@ did(AccountID const& account) noexcept;
 Keylet
 oracle(AccountID const& account, std::uint32_t const& documentID) noexcept;
 
+Keylet
+subscription(AccountID const& account, AccountID const& dest, std::uint32_t const& seq) noexcept;
+
+inline Keylet
+subscription(uint256 const& key) noexcept
+{
+    return {ltSUBSCRIPTION, key};
+}
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

@@ -199,6 +199,15 @@ enum TxType : std::uint16_t
     /** This transaction type fixes a problem in the ledger state */
     ttLEDGER_STATE_FIX = 53,
 
+    /** This transaction type creates an Subscription instance */
+    ttSUBSCRIPTION_SET = 54,
+
+    /** This transaction type cancels an Subscription instance */
+    ttSUBSCRIPTION_CANCEL = 55,
+    
+    /** This transaction type claims an Subscription instance */
+    ttSUBSCRIPTION_CLAIM = 56,
+
 
     /** This system-generated transaction type is used to update the status of the various amendments.
 

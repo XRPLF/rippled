@@ -364,6 +364,23 @@ LedgerFormats::LedgerFormats()
             {sfPreviousTxnLgrSeq,   soeREQUIRED}
         },
         commonFields);
+    
+    add(jss::Subscription,
+        ltSUBSCRIPTION,
+        {
+            {sfAccount,             soeREQUIRED},
+            {sfDestination,         soeREQUIRED},
+            {sfDestinationTag,      soeOPTIONAL},
+            {sfAmount,              soeREQUIRED},
+            {sfFrequency,           soeREQUIRED},
+            {sfNextPaymentTime,     soeREQUIRED},
+            {sfExpiration,          soeOPTIONAL},
+            {sfOwnerNode,           soeREQUIRED},
+            {sfPreviousTxnID,       soeREQUIRED},
+            {sfPreviousTxnLgrSeq,   soeREQUIRED},
+            {sfDestinationNode,     soeREQUIRED},
+        },
+        commonFields);
 
     // clang-format on
 }

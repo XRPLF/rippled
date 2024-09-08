@@ -168,6 +168,9 @@ CONSTRUCT_TYPED_SFIELD(sfEmitGeneration,        "EmitGeneration",       UINT32, 
 CONSTRUCT_TYPED_SFIELD(sfVoteWeight,            "VoteWeight",           UINT32,    48);
 CONSTRUCT_TYPED_SFIELD(sfFirstNFTokenSequence,  "FirstNFTokenSequence", UINT32,    50);
 CONSTRUCT_TYPED_SFIELD(sfOracleDocumentID,      "OracleDocumentID",     UINT32,    51);
+CONSTRUCT_TYPED_SFIELD(sfFrequency,             "Frequency",            UINT32,    52);
+CONSTRUCT_TYPED_SFIELD(sfStartTime,             "StartTime",            UINT32,    53);
+CONSTRUCT_TYPED_SFIELD(sfNextPaymentTime,       "NextPaymentTime",      UINT32,    54);
 
 // 64-bit integers (common)
 CONSTRUCT_TYPED_SFIELD(sfIndexNext,             "IndexNext",            UINT64,     1);
@@ -238,6 +241,7 @@ CONSTRUCT_TYPED_SFIELD(sfHookStateKey,          "HookStateKey",         UINT256,
 CONSTRUCT_TYPED_SFIELD(sfHookHash,              "HookHash",             UINT256,   31);
 CONSTRUCT_TYPED_SFIELD(sfHookNamespace,         "HookNamespace",        UINT256,   32);
 CONSTRUCT_TYPED_SFIELD(sfHookSetTxnID,          "HookSetTxnID",         UINT256,   33);
+CONSTRUCT_TYPED_SFIELD(sfSubscriptionID,        "SubscriptionID",       UINT256,   34);
 
 // currency amount (common)
 CONSTRUCT_TYPED_SFIELD(sfAmount,                "Amount",               AMOUNT,     1);

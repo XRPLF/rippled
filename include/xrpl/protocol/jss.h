@@ -89,6 +89,7 @@ JSS(EscrowFinish);         // transaction type.
 JSS(Fee);                  // in/out: TransactionSign; field.
 JSS(FeeSettings);          // ledger type.
 JSS(Flags);                // in/out: TransactionSign; field.
+JSS(Frequency);            // field.
 JSS(Invalid);              //
 JSS(LastLedgerSequence);   // in: TransactionSign; field
 JSS(LastUpdateTime);       // field.
@@ -140,6 +141,11 @@ JSS(SetRegularKey);                      // transaction type.
 JSS(SignerList);                         // ledger type.
 JSS(SignerListSet);                      // transaction type.
 JSS(SigningPubKey);                      // field.
+JSS(Subscription);                       // ledger type.
+JSS(SubscriptionCancel);                 // transaction type.
+JSS(SubscriptionClaim);                  // transaction type.
+JSS(SubscriptionID);                     // field.
+JSS(SubscriptionSet);                    // transaction type.
 JSS(TakerGets);                          // field.
 JSS(TakerPays);                          // field.
 JSS(Ticket);                             // ledger type.
@@ -651,6 +657,7 @@ JSS(streams);               // in: Subscribe, Unsubscribe
 JSS(strict);                // in: AccountCurrencies, AccountInfo
 JSS(sub_index);             // in: LedgerEntry
 JSS(subcommand);            // in: PathFind
+JSS(subscription);          // in: LedgerEntry
 JSS(success);               // rpc
 JSS(supported);             // out: AmendmentTableImpl
 JSS(sync_mode);             // in: Submit
