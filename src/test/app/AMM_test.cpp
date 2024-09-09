@@ -431,6 +431,26 @@ private:
             // Can't be cleared
             AMM amm2(env, gw, XRP(100), USD(100), ter(tecNO_PERMISSION));
         }
+
+        // Invalid non-standard currency
+        auto const invalid =
+            gw["0011111111111111111111111111111111111111"](100);
+        auto const valid = gw["0111111111111111111111111111111111111111"](100);
+        FeatureBitset const all{jtx::supported_amendments()};
+        for (auto const& features : {all, all - fixNonStandardCurrency})
+        {
+            Env env(*this, features);
+            env.fund(XRP(1'000), gw);
+            for (auto const& amt : {valid, invalid})
+            {
+                auto const err =
+                    features[fixNonStandardCurrency] && amt == invalid
+                    ? ter(temBAD_CURRENCY)
+                    : ter(tesSUCCESS);
+                AMM amm(env, gw, USD(100), amt, err);
+                AMM amm1(env, gw, amt, EUR(100), err);
+            }
+        }
     }
 
     void

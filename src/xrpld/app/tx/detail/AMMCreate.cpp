@@ -75,6 +75,14 @@ AMMCreate::preflight(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
+    if (ctx.rules.enabled(fixNonStandardCurrency) &&
+        (!validCurrency(amount.getCurrency()) ||
+         !validCurrency(amount2.getCurrency())))
+    {
+        JLOG(ctx.j.debug()) << "AMM Instance: bad non-standard currency";
+        return temBAD_CURRENCY;
+    }
+
     return preflight2(ctx);
 }
 

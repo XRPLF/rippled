@@ -71,6 +71,9 @@ noCurrency();
 Currency const&
 badCurrency();
 
+bool
+validCurrency(Currency const&);
+
 inline bool
 isXRP(Currency const& c)
 {

@@ -5300,6 +5300,33 @@ public:
     }
 
     void
+    testInvalidNonStandardCurrency(FeatureBitset features)
+    {
+        testcase("Invalid Non-Standard Currency");
+        using namespace jtx;
+        auto const gw = Account("gw");
+        auto const invalid =
+            gw["0011111111111111111111111111111111111111"](100);
+        auto const valid = gw["0111111111111111111111111111111111111111"](100);
+        auto const USD = gw["USD"];
+        for (auto const& features_ :
+             {features, features - fixNonStandardCurrency})
+        {
+            for (auto const& amt : {valid, invalid})
+            {
+                Env env(*this, features_);
+                env.fund(XRP(1'000), gw);
+                auto const err =
+                    features_[fixNonStandardCurrency] && amt == invalid
+                    ? ter(temBAD_CURRENCY)
+                    : ter(tesSUCCESS);
+                env(offer(gw, amt, USD(100)), err);
+                env(offer(gw, USD(100), amt), err);
+            }
+        }
+    }
+
+    void
     testAll(FeatureBitset features)
     {
         testCanceledOffer(features);
@@ -5361,6 +5388,7 @@ public:
         testRmSmallIncreasedQOffersXRP(features);
         testRmSmallIncreasedQOffersIOU(features);
         testFillOrKill(features);
+        testInvalidNonStandardCurrency(features);
     }
 
     void

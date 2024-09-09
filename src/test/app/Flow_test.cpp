@@ -1405,6 +1405,35 @@ struct Flow_test : public beast::unit_test::suite
     }
 
     void
+    testInvalidNonStandardCurrency(FeatureBitset features)
+    {
+        testcase("Invalid Non-Standard Currency");
+        using namespace test::jtx;
+        auto const gw = Account("gw");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const invalid =
+            gw["0011111111111111111111111111111111111111"](100);
+        auto const valid = gw["0111111111111111111111111111111111111111"](100);
+        for (auto const& amt : {valid, invalid})
+        {
+            Env env(*this, features - fixNonStandardCurrency);
+            env.fund(XRP(1'000), gw, alice, bob);
+            env(offer(gw, XRP(100), amt));
+            env(trust(alice, amt));
+            env(trust(bob, amt));
+            env(pay(gw, alice, amt));
+            auto const err =
+                amt == invalid ? ter(temBAD_CURRENCY) : ter(tesSUCCESS);
+            env.enableFeature(fixNonStandardCurrency);
+            env(pay(alice, bob, amt),
+                sendmax(XRP(10)),
+                txflags(tfPartialPayment),
+                err);
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         using namespace jtx;
@@ -1427,6 +1456,7 @@ struct Flow_test : public beast::unit_test::suite
         testReexecuteDirectStep(features);
         testSelfPayLowQualityOffer(features);
         testTicketPay(features);
+        testInvalidNonStandardCurrency(features);
     }
 
     void

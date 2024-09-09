@@ -118,6 +118,15 @@ Payment::preflight(PreflightContext const& ctx)
                         << "Bad currency.";
         return temBAD_CURRENCY;
     }
+
+    if (ctx.rules.enabled(fixNonStandardCurrency) &&
+        (!validCurrency(uSrcCurrency) || !validCurrency(uDstCurrency)))
+    {
+        JLOG(j.trace()) << "Malformed transaction: "
+                        << "Bad non-standard currency.";
+        return temBAD_CURRENCY;
+    }
+
     if (account == uDstAccountID && uSrcCurrency == uDstCurrency && !bPaths)
     {
         // You're signing yourself a payment.

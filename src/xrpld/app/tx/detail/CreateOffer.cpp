@@ -115,6 +115,13 @@ CreateOffer::preflight(PreflightContext const& ctx)
         return temBAD_CURRENCY;
     }
 
+    if (ctx.rules.enabled(fixNonStandardCurrency) &&
+        (!validCurrency(uPaysCurrency) || !validCurrency(uGetsCurrency)))
+    {
+        JLOG(j.debug()) << "Malformed offer: bad non-standard currency";
+        return temBAD_CURRENCY;
+    }
+
     if (saTakerPays.native() != !uPaysIssuerID ||
         saTakerGets.native() != !uGetsIssuerID)
     {

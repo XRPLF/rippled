@@ -132,4 +132,21 @@ badCurrency()
     return currency;
 }
 
+bool
+validCurrency(Currency const& currency)
+{
+    static constexpr Currency sIsoBits(
+        "FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
+
+    // XRP or standard currency
+    if (currency == xrpCurrency() || ((currency & sIsoBits).isZero()))
+        return true;
+
+    // Non-standard currency must not start with 0x00
+    if (*currency.cbegin() != 0x00)
+        return true;
+
+    return false;
+}
+
 }  // namespace ripple

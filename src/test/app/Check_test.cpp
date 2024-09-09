@@ -2694,6 +2694,33 @@ class Check_test : public beast::unit_test::suite
     }
 
     void
+    testInvalidNonStandardCurrency(FeatureBitset features)
+    {
+        testcase("Invalid Non-Standard Currency");
+        using namespace test::jtx;
+        auto const gw = Account("gw");
+        auto const alice = Account("alice");
+        auto const invalid =
+            gw["0011111111111111111111111111111111111111"](100);
+        auto const valid = gw["0111111111111111111111111111111111111111"](100);
+        auto const USD = gw["USD"];
+        for (auto const& features_ :
+             {features, features - fixNonStandardCurrency})
+        {
+            for (auto const& amt : {valid, invalid})
+            {
+                Env env(*this, features_);
+                env.fund(XRP(1'000), gw, alice);
+                auto const err =
+                    features_[fixNonStandardCurrency] && amt == invalid
+                    ? ter(temBAD_CURRENCY)
+                    : ter(tesSUCCESS);
+                env(check::create(gw, alice, amt), err);
+            }
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnabled(features);
@@ -2709,6 +2736,7 @@ class Check_test : public beast::unit_test::suite
         testCancelInvalid(features);
         testFix1623Enable(features);
         testWithTickets(features);
+        testInvalidNonStandardCurrency(features);
     }
 
 public:
