@@ -31,8 +31,6 @@
 
 namespace ripple {
 
-class Ledger;
-
 namespace NodeStore {
 
 /** Persistency layer for NodeObject
@@ -153,7 +151,7 @@ public:
         @note This can be called concurrently.
         @param hash The key of the object to retrieve
         @param ledgerSeq The sequence of the ledger where the
-                object is stored, used by the shard store.
+                object is stored.
         @param callback Callback function when read completes
     */
     virtual void
@@ -161,14 +159,6 @@ public:
         uint256 const& hash,
         std::uint32_t ledgerSeq,
         std::function<void(std::shared_ptr<NodeObject> const&)>&& callback);
-
-    /** Store a ledger from a different database.
-
-        @param srcLedger The ledger to store.
-        @return true if the operation was successful
-    */
-    virtual bool
-    storeLedger(std::shared_ptr<Ledger const> const& srcLedger) = 0;
 
     /** Remove expired entries from the positive and negative caches. */
     virtual void
@@ -224,14 +214,6 @@ public:
     bool
     isStopping() const;
 
-    /** @return The maximum number of ledgers stored in a shard
-     */
-    [[nodiscard]] std::uint32_t
-    ledgersPerShard() const noexcept
-    {
-        return ledgersPerShard_;
-    }
-
     /** @return The earliest ledger sequence allowed
      */
     [[nodiscard]] std::uint32_t
@@ -239,63 +221,6 @@ public:
     {
         return earliestLedgerSeq_;
     }
-
-    /** @return The earliest shard index
-     */
-    [[nodiscard]] std::uint32_t
-    earliestShardIndex() const noexcept
-    {
-        return earliestShardIndex_;
-    }
-
-    /** Calculates the first ledger sequence for a given shard index
-
-        @param shardIndex The shard index considered
-        @return The first ledger sequence pertaining to the shard index
-    */
-    [[nodiscard]] std::uint32_t
-    firstLedgerSeq(std::uint32_t shardIndex) const noexcept
-    {
-        assert(shardIndex >= earliestShardIndex_);
-        if (shardIndex <= earliestShardIndex_)
-            return earliestLedgerSeq_;
-        return 1 + (shardIndex * ledgersPerShard_);
-    }
-
-    /** Calculates the last ledger sequence for a given shard index
-
-        @param shardIndex The shard index considered
-        @return The last ledger sequence pertaining to the shard index
-    */
-    [[nodiscard]] std::uint32_t
-    lastLedgerSeq(std::uint32_t shardIndex) const noexcept
-    {
-        assert(shardIndex >= earliestShardIndex_);
-        return (shardIndex + 1) * ledgersPerShard_;
-    }
-
-    /** Calculates the shard index for a given ledger sequence
-
-        @param ledgerSeq ledger sequence
-        @return The shard index of the ledger sequence
-    */
-    [[nodiscard]] std::uint32_t
-    seqToShardIndex(std::uint32_t ledgerSeq) const noexcept
-    {
-        assert(ledgerSeq >= earliestLedgerSeq_);
-        return (ledgerSeq - 1) / ledgersPerShard_;
-    }
-
-    /** Calculates the maximum ledgers for a given shard index
-
-        @param shardIndex The shard index considered
-        @return The maximum ledgers pertaining to the shard index
-
-        @note The earliest shard may store less if the earliest ledger
-        sequence truncates its beginning
-    */
-    [[nodiscard]] std::uint32_t
-    maxLedgers(std::uint32_t shardIndex) const noexcept;
 
 protected:
     beast::Journal const j_;
@@ -305,24 +230,13 @@ protected:
     std::atomic<std::uint32_t> fetchHitCount_{0};
     std::atomic<std::uint32_t> fetchSz_{0};
 
-    // The default is DEFAULT_LEDGERS_PER_SHARD (16384) to match the XRP ledger
-    // network. Can be set through the configuration file using the
-    // 'ledgers_per_shard' field under the 'node_db' and 'shard_db' stanzas.
-    // If specified, the value must be a multiple of 256 and equally assigned
-    // in both stanzas. Only unit tests or alternate networks should change
-    // this value.
-    std::uint32_t const ledgersPerShard_;
-
     // The default is XRP_LEDGER_EARLIEST_SEQ (32570) to match the XRP ledger
     // network's earliest allowed ledger sequence. Can be set through the
     // configuration file using the 'earliest_seq' field under the 'node_db'
-    // and 'shard_db' stanzas. If specified, the value must be greater than zero
-    // and equally assigned in both stanzas. Only unit tests or alternate
+    // stanza. If specified, the value must be greater than zero.
+    // Only unit tests or alternate
     // networks should change this value.
     std::uint32_t const earliestLedgerSeq_;
-
-    // The earliest shard index
-    std::uint32_t const earliestShardIndex_;
 
     // The maximum number of requests a thread extracts from the queue in an
     // attempt to minimize the overhead of mutex acquisition. This is an
@@ -340,10 +254,6 @@ protected:
     // Called by the public import function
     void
     importInternal(Backend& dstBackend, Database& srcDB);
-
-    // Called by the public storeLedger function
-    bool
-    storeLedger(Ledger const& srcLedger, std::shared_ptr<Backend> dstBackend);
 
     void
     updateFetchMetrics(uint64_t fetches, uint64_t hits, uint64_t duration)
@@ -391,17 +301,6 @@ private:
     */
     virtual void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) = 0;
-
-    /** Retrieve backend read and write stats.
-
-        @note The Counters struct is specific to and only used
-              by CassandraBackend.
-    */
-    virtual std::optional<Backend::Counters<std::uint64_t>>
-    getCounters() const
-    {
-        return std::nullopt;
-    }
 
     void
     threadEntry();

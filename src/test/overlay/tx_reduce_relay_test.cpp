@@ -189,7 +189,10 @@ private:
             consumer,
             std::move(stream_ptr),
             overlay);
+        BEAST_EXPECT(
+            overlay.findPeerByPublicKey(key) == std::shared_ptr<PeerImp>{});
         overlay.add_active(peer);
+        BEAST_EXPECT(overlay.findPeerByPublicKey(key) == peer);
         peers.emplace_back(peer);  // overlay stores week ptr to PeerImp
         lid_ += 2;
         rid_ += 2;

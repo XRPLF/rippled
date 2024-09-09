@@ -33,18 +33,28 @@ doAccountCurrencies(RPC::JsonContext& context)
 {
     auto& params = context.params;
 
+    if (!(params.isMember(jss::account) || params.isMember(jss::ident)))
+        return RPC::missing_field_error(jss::account);
+
+    std::string strIdent;
+    if (params.isMember(jss::account))
+    {
+        if (!params[jss::account].isString())
+            return RPC::invalid_field_error(jss::account);
+        strIdent = params[jss::account].asString();
+    }
+    else if (params.isMember(jss::ident))
+    {
+        if (!params[jss::ident].isString())
+            return RPC::invalid_field_error(jss::ident);
+        strIdent = params[jss::ident].asString();
+    }
+
     // Get the current ledger
     std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger(ledger, context);
     if (!ledger)
         return result;
-
-    if (!(params.isMember(jss::account) || params.isMember(jss::ident)))
-        return RPC::missing_field_error(jss::account);
-
-    std::string const strIdent(
-        params.isMember(jss::account) ? params[jss::account].asString()
-                                      : params[jss::ident].asString());
 
     // Get info on account.
     auto id = parseBase58<AccountID>(strIdent);

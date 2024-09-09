@@ -35,8 +35,14 @@ namespace ripple {
 Json::Value
 doFeature(RPC::JsonContext& context)
 {
-    if (context.app.config().reporting())
-        return rpcError(rpcREPORTING_UNSUPPORTED);
+    if (context.params.isMember(jss::feature))
+    {
+        // ensure that the `feature` param is a string
+        if (!context.params[jss::feature].isString())
+        {
+            return rpcError(rpcINVALID_PARAMS);
+        }
+    }
 
     bool const isAdmin = context.role == Role::ADMIN;
     // Get majority amendment status

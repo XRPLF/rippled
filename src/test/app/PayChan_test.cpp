@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
-#include <xrpld/ledger/Directory.h>
+#include <xrpld/ledger/Dir.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/Feature.h>
@@ -873,6 +873,25 @@ struct PayChan_test : public beast::unit_test::suite
         auto const chan1Str = to_string(channel(alice, bob, env.seq(alice)));
         env(create(alice, bob, channelFunds, settleDelay, pk));
         env.close();
+        {
+            // test account non-string
+            auto testInvalidAccountParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::account] = param;
+                auto jrr = env.rpc(
+                    "json", "account_channels", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(
+                    jrr[jss::error_message] == "Invalid field 'account'.");
+            };
+
+            testInvalidAccountParam(1);
+            testInvalidAccountParam(1.1);
+            testInvalidAccountParam(true);
+            testInvalidAccountParam(Json::Value(Json::nullValue));
+            testInvalidAccountParam(Json::Value(Json::objectValue));
+            testInvalidAccountParam(Json::Value(Json::arrayValue));
+        }
         {
             auto const r =
                 env.rpc("account_channels", alice.human(), bob.human());

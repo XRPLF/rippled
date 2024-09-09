@@ -53,31 +53,18 @@ public:
     virtual beast::Journal const&
     journal() = 0;
 
-    /** Return a pointer to the Family Full Below Cache
-
-        @param ledgerSeq ledger sequence determines a corresponding shard cache
-        @note ledgerSeq is used by ShardFamily and ignored by NodeFamily
-    */
+    /** Return a pointer to the Family Full Below Cache */
     virtual std::shared_ptr<FullBelowCache>
-    getFullBelowCache(std::uint32_t ledgerSeq) = 0;
+    getFullBelowCache() = 0;
 
-    /** Return a pointer to the Family Tree Node Cache
-
-        @param ledgerSeq ledger sequence determines a corresponding shard cache
-        @note ledgerSeq is used by ShardFamily and ignored by NodeFamily
-    */
+    /** Return a pointer to the Family Tree Node Cache */
     virtual std::shared_ptr<TreeNodeCache>
-    getTreeNodeCache(std::uint32_t ledgerSeq) = 0;
+    getTreeNodeCache() = 0;
 
     virtual void
     sweep() = 0;
 
-    virtual bool
-    isShardBacked() const = 0;
-
     /** Acquire ledger that has a missing node by ledger sequence
-     *
-     * Throw if in reporting mode.
      *
      * @param refNum Sequence of ledger to acquire.
      * @param nodeHash Hash of missing node to report in throw.

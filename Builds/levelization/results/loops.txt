@@ -16,11 +16,8 @@ Loop: xrpld.app xrpld.ledger
 Loop: xrpld.app xrpld.net
   xrpld.app > xrpld.net
 
-Loop: xrpld.app xrpld.nodestore
-  xrpld.app > xrpld.nodestore
-
 Loop: xrpld.app xrpld.overlay
-  xrpld.overlay ~= xrpld.app
+  xrpld.overlay == xrpld.app
 
 Loop: xrpld.app xrpld.peerfinder
   xrpld.app > xrpld.peerfinder
@@ -35,13 +32,10 @@ Loop: xrpld.core xrpld.net
   xrpld.net > xrpld.core
 
 Loop: xrpld.core xrpld.perflog
-  xrpld.perflog ~= xrpld.core
+  xrpld.perflog == xrpld.core
 
 Loop: xrpld.net xrpld.rpc
-  xrpld.rpc > xrpld.net
-
-Loop: xrpld.nodestore xrpld.overlay
-  xrpld.overlay ~= xrpld.nodestore
+  xrpld.rpc ~= xrpld.net
 
 Loop: xrpld.overlay xrpld.rpc
   xrpld.rpc ~= xrpld.overlay

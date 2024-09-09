@@ -35,7 +35,6 @@
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/consensus/LedgerTiming.h>
-#include <xrpld/nodestore/DatabaseShard.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
 #include <xrpl/basics/random.h>
@@ -135,8 +134,12 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
             acquiringLedger_ = hash;
 
             app_.getJobQueue().addJob(
-                jtADVANCE, "getConsensusLedger", [id = hash, &app = app_]() {
-                    app.getInboundLedgers().acquire(
+                jtADVANCE,
+                "getConsensusLedger1",
+                [id = hash, &app = app_, this]() {
+                    JLOG(j_.debug())
+                        << "JOB advanceLedger getConsensusLedger1 started";
+                    app.getInboundLedgers().acquireAsync(
                         id, 0, InboundLedger::Reason::CONSENSUS);
                 });
         }

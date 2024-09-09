@@ -22,7 +22,6 @@
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/NetworkOPs.h>
-#include <xrpld/app/reporting/P2pProxy.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/net/InfoSub.h>
@@ -206,11 +205,6 @@ callMethod(
         perfLog.rpcFinish(name, curId);
         return ret;
     }
-    catch (ReportingShouldProxy&)
-    {
-        result = forwardToP2p(context);
-        return rpcSUCCESS;
-    }
     catch (std::exception& e)
     {
         perfLog.rpcError(name, curId);
@@ -226,36 +220,9 @@ callMethod(
 
 }  // namespace
 
-void
-injectReportingWarning(RPC::JsonContext& context, Json::Value& result)
-{
-    if (context.app.config().reporting())
-    {
-        Json::Value warnings{Json::arrayValue};
-        Json::Value& w = warnings.append(Json::objectValue);
-        w[jss::id] = warnRPC_REPORTING;
-        w[jss::message] =
-            "This is a reporting server. "
-            " The default behavior of a reporting server is to only"
-            " return validated data. If you are looking for not yet"
-            " validated data, include \"ledger_index : current\""
-            " in your request, which will cause this server to forward"
-            " the request to a p2p node. If the forward is successful"
-            " the response will include \"forwarded\" : \"true\"";
-        result[jss::warnings] = std::move(warnings);
-    }
-}
-
 Status
 doCommand(RPC::JsonContext& context, Json::Value& result)
 {
-    if (shouldForwardToP2p(context))
-    {
-        result = forwardToP2p(context);
-        injectReportingWarning(context, result);
-        // this return value is ignored
-        return rpcSUCCESS;
-    }
     Handler const* handler = nullptr;
     if (auto error = fillHandler(context, handler))
     {
@@ -285,7 +252,6 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
         else
         {
             auto ret = callMethod(context, method, handler->name_, result);
-            injectReportingWarning(context, result);
             return ret;
         }
     }
