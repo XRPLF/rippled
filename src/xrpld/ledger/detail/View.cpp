@@ -1860,6 +1860,10 @@ rippleCredit(
 {
     auto const mptID = keylet::mptIssuance(saAmount.issue().getMptID());
     auto const issuer = saAmount.getIssuer();
+
+    if (!view.exists(mptID))
+        return tecMPT_ISSUANCE_NOT_FOUND;
+
     if (uSenderID == issuer)
     {
         if (auto sle = view.peek(mptID))

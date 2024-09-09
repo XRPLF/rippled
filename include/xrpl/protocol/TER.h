@@ -345,6 +345,7 @@ enum TECcodes : TERUnderlyingType {
     tecMPT_MAX_AMOUNT_EXCEEDED = 193,
     tecMPT_LOCKED = 194,
     tecMPT_NOT_SUPPORTED = 195,
+    tecMPT_ISSUANCE_NOT_FOUND = 196
 };
 
 //------------------------------------------------------------------------------

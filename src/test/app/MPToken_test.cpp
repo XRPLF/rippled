@@ -980,6 +980,41 @@ class MPToken_test : public beast::unit_test::suite
                 jrr[jss::result][jss::error_message] ==
                 "Field 'build_path' not allowed in this context.");
         }
+
+        // Issuer fails trying to send fund after issuance was destroyed
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
+
+            mptAlice.authorize({.account = &bob});
+
+            // alice destroys issuance
+            mptAlice.destroy({.ownerCount = 0});
+
+            // alice tries to send bob fund after issuance is destroy, should
+            // fail.
+            mptAlice.pay(alice, bob, 100, tecMPT_ISSUANCE_NOT_FOUND);
+        }
+
+        // Issuer fails trying to send to some who doesn't own MPT for a
+        // issuance that was destroyed
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
+
+            // alice destroys issuance
+            mptAlice.destroy({.ownerCount = 0});
+
+            // alice tries to send bob who doesn't own the MPT after issuance is
+            // destroyed, it should fail
+            mptAlice.pay(alice, bob, 100, tecMPT_ISSUANCE_NOT_FOUND);
+        }
     }
 
     void

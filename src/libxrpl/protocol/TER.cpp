@@ -119,6 +119,7 @@ transResults()
 		MAKE_ERROR(tecMPTOKEN_EXISTS,                "The account already owns the MPToken object."),
         MAKE_ERROR(tecMPT_MAX_AMOUNT_EXCEEDED,       "The MPT's maximum amount is exceeded."),
         MAKE_ERROR(tecMPT_LOCKED,                    "MPT is locked by the issuer."),
+        MAKE_ERROR(tecMPT_ISSUANCE_NOT_FOUND,        "The MPTokenIssuance object is not found"),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
