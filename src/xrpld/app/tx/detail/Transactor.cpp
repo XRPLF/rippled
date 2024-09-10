@@ -1052,7 +1052,7 @@ Transactor::operator()()
         // If the transaction is a batch transaction, the fee is already
         // deducted from the account balance before executing the inner txns.
         // So, we need to "re" apply the fee again.
-        ctx_.applyFee();
+        ctx_.applyBatch();
     }
 
     if (applied)

@@ -135,7 +135,6 @@ Batch::doApply()
     TER result = tesSUCCESS;
     ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
     OpenView subView(&sb);
-    std::map<AccountID, std::uint32_t> accountCount;
 
     auto const& txns = ctx_.tx.getFieldArray(sfRawTransactions);
     for (STObject txn : txns)
@@ -159,9 +158,6 @@ Batch::doApply()
         if (ter == tesSUCCESS || isTecClaim(ter))
             meta.setFieldH256(sfTransactionHash, stx.getTransactionID());
         avi.addBatchExecutionMetaData(std::move(meta));
-
-        // Update Account:Count Map
-        accountCount[stx.getAccountID(sfAccount)] += 1;
 
         if (ter != tesSUCCESS)
         {
@@ -199,51 +195,14 @@ Batch::doApply()
         }
     }
 
-    // Apply SubView
+    // Apply SubView & PreviousFields
     if (changed)
     {
+        ctx_.applyPrev(avi);
         ctx_.applyOpenView(subView);
     }
 
-    // Clean Up
-    // 1. Update the account_ sfSequence to include any tes/tec inner txns
-
-    // Reason: The sequence (1) is consumed before the inner batch txns
-    // however we dont know how many of the inner txns will succeed depending
-    // on the batch type. (This could be moved to `getSeqProxy()`)
-
-    // 2. Set the batch prevFields so they are included in metadata
-
-    // Reason: When the outer batch is applied (at the end), the Sequence and
-    // Balance have already been updated, therefore there are no PreviousFields
-    // when adding the metadata. This adds them.
-    {
-        auto const sleSrcAcc = sb.peek(keylet::account(account_));
-        if (!sleSrcAcc)
-            return tefINTERNAL;
-
-        STAmount const txFee = ctx_.tx.getFieldAmount(sfFee);
-        std::uint32_t const txSeq = ctx_.tx.getFieldU32(sfSequence);
-        STAmount const accBal = sleSrcAcc->getFieldAmount(sfBalance);
-        std::uint32_t const accSeq = sleSrcAcc->getFieldU32(sfSequence);
-
-        // only update if the account_ batch has tes/tec inner txns
-        uint32_t const count = accountCount[account_];
-        if (count != 0)
-        {
-            sleSrcAcc->setFieldU32(sfSequence, accSeq + count);
-            sb.update(sleSrcAcc);
-        }
-
-        // update the batch prev fields
-        STObject prevFields{sfPreviousFields};
-        prevFields.setFieldU32(sfSequence, txSeq);
-        prevFields.setFieldAmount(sfBalance, accBal + txFee);
-        avi.addBatchPrevMetaData(std::move(prevFields));
-    }
-
     sb.apply(ctx_.rawView());
-
     return result;
 }
 

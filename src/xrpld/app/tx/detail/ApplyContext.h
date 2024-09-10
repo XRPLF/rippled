@@ -89,7 +89,11 @@ public:
 
     /** Apply the fee to the account. */
     void
-    applyFee();
+    applyBatch();
+
+    /** Apply the fee to the account. */
+    void
+    applyPrev(ApplyViewImpl& avi);
 
     /** Get the number of unapplied changes. */
     std::size_t

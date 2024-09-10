@@ -73,20 +73,8 @@ ApplyContext::applyOpenView(OpenView& open)
         open.apply(base_);
 }
 
-/**
- * Applies the fee for the transaction.
- *
- * This function retrieves the account ID from the transaction and reads the
- * corresponding account state from the base ledger. It then updates the balance
- * field of the account state with the balance from the base ledger and updates
- * the account state in the current view.
- *
- * @note This function assumes that both the account state in the base ledger
- * and the current view exist. If either of them is missing, the function does
- * not perform any updates.
- */
 void
-ApplyContext::applyFee()
+ApplyContext::applyBatch()
 {
     AccountID const account = tx.getAccountID(sfAccount);
     auto const sleBase = base_.read(keylet::account(account));
@@ -94,8 +82,62 @@ ApplyContext::applyFee()
     assert(sle != nullptr || sleBase != nullptr || account == beast::zero);
     if (sle && sleBase)
     {
-        sle->setFieldAmount(sfBalance, (*sleBase)[sfBalance].xrp());
-        view_->update(sle);
+        std::cout << "Open: " << base_.open() << std::endl;
+        std::cout << "sleBase.Balance: " << (*sleBase)[sfBalance] << std::endl;
+        std::cout << "sleBase.OwnerCount: " << (*sleBase)[sfOwnerCount] << std::endl;
+        if (sleBase.isFieldPresent(sfTicketCount))
+            std::cout << "sleBase.TicketCount: " << (*sleBase)[sfTicketCount] << std::endl;
+        std::cout << "sleBase.Sequence: " << (*sleBase)[sfSequence] << std::endl;
+        std::cout << "sle.Balance: " << (*sle)[sfBalance] << std::endl;
+        std::cout << "sle.OwnerCount: " << (*sle)[sfOwnerCount] << std::endl;
+        if (sle.isFieldPresent(sfTicketCount))
+            std::cout << "sle.TicketCount: " << (*sle)[sfTicketCount] << std::endl;
+        std::cout << "sle.Sequence: " << (*sle)[sfSequence] << std::endl;
+        // if (*sleBase[sfBalance] != (*sle)[sfBalance])
+        //     sle->setFieldAmount(sfBalance, (*sleBase)[sfBalance].xrp());
+        // if (*sleBase[sfOwnerCount] != (*sle)[sfOwnerCount])
+        //     sle->setFieldU32(sfOwnerCount, (*sleBase)[sfOwnerCount]);
+        // if (*sleBase)[sfSequence] != (*sle)[sfSequence])
+        //     sle->setFieldU32(sfSequence, (*sleBase)[sfSequence]);
+        // if (sleBase->isFieldPresent(sfTicketCount) &&
+        //     (*sleBase)[sfTicketCount] != (*sle)[sfTicketCount])
+        //     sle->setFieldU32(sfTicketCount, (*sleBase)[sfTicketCount]);
+        // sle->setFieldAmount(sfBalance, (*sleBase)[sfBalance].xrp());
+        // sle->setFieldU32(sfOwnerCount, (*sleBase)[sfOwnerCount]);
+        // sle->setFieldU32(sfSequence, (*sleBase)[sfSequence]);
+        // if (sleBase->isFieldPresent(sfTicketCount))
+        //     sle->setFieldU32(sfTicketCount, (*sleBase)[sfTicketCount]);
+        // if (sleBase->isFieldPresent(sfDomain))
+        //     sle->setFieldVL(sfDomain, (*sleBase)[sfDomain]);
+        // view_->update(sle);
+    }
+}
+
+void
+ApplyContext::applyPrev(ApplyViewImpl& avi)
+{
+    AccountID const account = tx.getAccountID(sfAccount);
+    auto const sleBase = base_.read(keylet::account(account));
+    auto const sle = view_->peek(keylet::account(account));
+    {
+        std::cout << "applyPrev.sleBase.Balance: " << (*sleBase)[sfBalance] << std::endl;
+        std::cout << "applyPrev.sleBase.OwnerCount: " << (*sleBase)[sfOwnerCount] << std::endl;
+        if (sleBase->isFieldPresent(sfTicketCount))
+            std::cout << "applyPrev.sleBase.TicketCount: " << (*sleBase)[sfTicketCount] << std::endl;
+        std::cout << "applyPrev.sleBase.Sequence: " << (*sleBase)[sfSequence] << std::endl;
+        // STObject prevFields{sfPreviousFields};
+        // if (*sleBase[sfBalance] != (*sle)[sfBalance])
+        //     prevFields.setFieldAmount(sfBalance, (*sleBase)[sfBalance]);
+        // if (sleBase->getFieldU32(sfOwnerCount) != sle->getFieldU32(sfOwnerCount))
+        //     prevFields.setFieldU32(sfOwnerCount, (*sleBase)[sfOwnerCount]);
+        // if (sleBase->getFieldU32(sfSequence) != sle->getFieldU32(sfSequence))
+        //     prevFields.setFieldU32(sfSequence, (*sleBase)[sfSequence]);
+        // if (sleBase->isFieldPresent(sfTicketCount) &&
+        //     sleBase->getFieldU32(sfTicketCount) != sle->getFieldU32(sfTicketCount))
+        //     prevFields.setFieldU32(sfTicketCount, (*sleBase)[sfTicketCount]);
+
+        // prevFields.setFieldAmount(sfBalance, (*sleBase)[sfBalance]);
+        // avi.addBatchPrevMetaData(std::move(prevFields));
     }
 }
 
