@@ -74,70 +74,20 @@ ApplyContext::applyOpenView(OpenView& open)
 }
 
 void
-ApplyContext::applyBatch()
-{
-    AccountID const account = tx.getAccountID(sfAccount);
-    auto const sleBase = base_.read(keylet::account(account));
-    auto const sle = view_->peek(keylet::account(account));
-    assert(sle != nullptr || sleBase != nullptr || account == beast::zero);
-    if (sle && sleBase)
-    {
-        std::cout << "Open: " << base_.open() << std::endl;
-        std::cout << "sleBase.Balance: " << (*sleBase)[sfBalance] << std::endl;
-        std::cout << "sleBase.OwnerCount: " << (*sleBase)[sfOwnerCount] << std::endl;
-        if (sleBase.isFieldPresent(sfTicketCount))
-            std::cout << "sleBase.TicketCount: " << (*sleBase)[sfTicketCount] << std::endl;
-        std::cout << "sleBase.Sequence: " << (*sleBase)[sfSequence] << std::endl;
-        std::cout << "sle.Balance: " << (*sle)[sfBalance] << std::endl;
-        std::cout << "sle.OwnerCount: " << (*sle)[sfOwnerCount] << std::endl;
-        if (sle.isFieldPresent(sfTicketCount))
-            std::cout << "sle.TicketCount: " << (*sle)[sfTicketCount] << std::endl;
-        std::cout << "sle.Sequence: " << (*sle)[sfSequence] << std::endl;
-        // if (*sleBase[sfBalance] != (*sle)[sfBalance])
-        //     sle->setFieldAmount(sfBalance, (*sleBase)[sfBalance].xrp());
-        // if (*sleBase[sfOwnerCount] != (*sle)[sfOwnerCount])
-        //     sle->setFieldU32(sfOwnerCount, (*sleBase)[sfOwnerCount]);
-        // if (*sleBase)[sfSequence] != (*sle)[sfSequence])
-        //     sle->setFieldU32(sfSequence, (*sleBase)[sfSequence]);
-        // if (sleBase->isFieldPresent(sfTicketCount) &&
-        //     (*sleBase)[sfTicketCount] != (*sle)[sfTicketCount])
-        //     sle->setFieldU32(sfTicketCount, (*sleBase)[sfTicketCount]);
-        // sle->setFieldAmount(sfBalance, (*sleBase)[sfBalance].xrp());
-        // sle->setFieldU32(sfOwnerCount, (*sleBase)[sfOwnerCount]);
-        // sle->setFieldU32(sfSequence, (*sleBase)[sfSequence]);
-        // if (sleBase->isFieldPresent(sfTicketCount))
-        //     sle->setFieldU32(sfTicketCount, (*sleBase)[sfTicketCount]);
-        // if (sleBase->isFieldPresent(sfDomain))
-        //     sle->setFieldVL(sfDomain, (*sleBase)[sfDomain]);
-        // view_->update(sle);
-    }
-}
-
-void
 ApplyContext::applyPrev(ApplyViewImpl& avi)
 {
     AccountID const account = tx.getAccountID(sfAccount);
     auto const sleBase = base_.read(keylet::account(account));
     auto const sle = view_->peek(keylet::account(account));
     {
-        std::cout << "applyPrev.sleBase.Balance: " << (*sleBase)[sfBalance] << std::endl;
-        std::cout << "applyPrev.sleBase.OwnerCount: " << (*sleBase)[sfOwnerCount] << std::endl;
-        if (sleBase->isFieldPresent(sfTicketCount))
-            std::cout << "applyPrev.sleBase.TicketCount: " << (*sleBase)[sfTicketCount] << std::endl;
-        std::cout << "applyPrev.sleBase.Sequence: " << (*sleBase)[sfSequence] << std::endl;
-        // STObject prevFields{sfPreviousFields};
-        // if (*sleBase[sfBalance] != (*sle)[sfBalance])
-        //     prevFields.setFieldAmount(sfBalance, (*sleBase)[sfBalance]);
-        // if (sleBase->getFieldU32(sfOwnerCount) != sle->getFieldU32(sfOwnerCount))
-        //     prevFields.setFieldU32(sfOwnerCount, (*sleBase)[sfOwnerCount]);
-        // if (sleBase->getFieldU32(sfSequence) != sle->getFieldU32(sfSequence))
-        //     prevFields.setFieldU32(sfSequence, (*sleBase)[sfSequence]);
-        // if (sleBase->isFieldPresent(sfTicketCount) &&
-        //     sleBase->getFieldU32(sfTicketCount) != sle->getFieldU32(sfTicketCount))
-        //     prevFields.setFieldU32(sfTicketCount, (*sleBase)[sfTicketCount]);
-
-        // prevFields.setFieldAmount(sfBalance, (*sleBase)[sfBalance]);
-        // avi.addBatchPrevMetaData(std::move(prevFields));
+        STObject prevFields{sfPreviousFields};
+        for (auto const& obj : *sleBase)
+        {
+            if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) &&
+                !sle->hasMatchingEntry(obj))
+                prevFields.emplace_back(obj);
+        }
+        avi.addBatchPrevMetaData(std::move(prevFields));
     }
 }
 

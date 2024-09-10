@@ -164,7 +164,6 @@ Batch::doApply()
             // Atomic Revert on non tec failure
             if (!isTecClaim(ter))
             {
-                accountCount.clear();
                 result = tecBATCH_FAILURE;
                 changed = false;
                 break;
@@ -181,7 +180,6 @@ Batch::doApply()
             }
             if (flags & tfAllOrNothing)
             {
-                accountCount.clear();
                 result = tecBATCH_FAILURE;
                 changed = false;
                 break;

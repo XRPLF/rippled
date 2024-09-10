@@ -119,6 +119,7 @@ ApplyStateTable::apply(
     std::optional<STObject> const& batchPrev,
     beast::Journal j)
 {
+    bool const isBatch = tx.getTxnType() == ttBATCH;
     // Build metadata and insert
     auto const sTx = std::make_shared<Serializer>();
     tx.add(*sTx);
@@ -206,7 +207,7 @@ ApplyStateTable::apply(
                     threadItem(meta, curNode);
 
                 STObject prevs(sfPreviousFields);
-                for (auto const& obj : *origNode)
+                for (auto const& obj : isBatch ? *curNode : *origNode)
                 {
                     // search the original node for values saved on modify
                     if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) &&
@@ -226,7 +227,7 @@ ApplyStateTable::apply(
                         .emplace_back(std::move(prevs));
 
                 STObject finals(sfFinalFields);
-                for (auto const& obj : *curNode)
+                for (auto const& obj : isBatch ? *origNode : *curNode)
                 {
                     // search the final node for values saved always
                     if (obj.getFName().shouldMeta(
