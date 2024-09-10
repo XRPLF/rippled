@@ -395,7 +395,7 @@ STTx::checkBatchSingleSign(
     RequireFullyCanonicalSig requireCanonicalSig) const
 {
     // We don't allow both a non-empty sfSigningPubKey and an sfSigners.
-    // That would allow the transaction to be signed two ways.  So if both
+    // That would allow the transaction to be signed two ways. So if both
     // fields are present the signature is invalid.
     if (batchSigner.isFieldPresent(sfSigners))
         return Unexpected("Cannot both single- and multi-sign.");
@@ -414,11 +414,9 @@ STTx::checkBatchSingleSign(
             (requireCanonicalSig == RequireFullyCanonicalSig::yes);
 
         auto const spk = batchSigner.getFieldVL(sfSigningPubKey);
-
         if (publicKeyType(makeSlice(spk)))
         {
             Blob const signature = batchSigner.getFieldVL(sfTxnSignature);
-            Blob const data = getSigningData(*this);
 
             validSig = verify(
                 PublicKey(makeSlice(spk)),
