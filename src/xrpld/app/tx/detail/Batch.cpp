@@ -159,12 +159,10 @@ Batch::doApply()
 
     auto const& txns = ctx_.tx.getFieldArray(sfRawTransactions);
     bool const not3rdParty = std::any_of(
-        txns.begin(),
-        txns.end(),
-        [outerAccount](STObject const& txn) {
+        txns.begin(), txns.end(), [outerAccount](STObject const& txn) {
             return txn.getAccountID(sfAccount) == outerAccount;
         });
-    
+
     for (STObject txn : txns)
     {
         OpenView innerView(&subView);

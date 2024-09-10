@@ -1741,10 +1741,12 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "CheckCreate",
-             "74EE0A770F85E93055072F4BD8286D235AE6B333AF41C7AA44A45DD63643752E"},
+             "74EE0A770F85E93055072F4BD8286D235AE6B333AF41C7AA44A45DD63643752"
+             "E"},
             {"tesSUCCESS",
              "CheckCash",
-             "9CFCBABC4729B388C265A45F5B6C13ED2AF67942EC21FE6064FDBBF5F1316093"},
+             "9CFCBABC4729B388C265A45F5B6C13ED2AF67942EC21FE6064FDBBF5F131609"
+             "3"},
         }};
 
         Json::Value params;
