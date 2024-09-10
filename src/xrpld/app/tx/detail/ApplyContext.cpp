@@ -74,11 +74,21 @@ ApplyContext::applyOpenView(OpenView& open)
 }
 
 void
+ApplyContext::applyBatch()
+{
+    AccountID const account = tx.getAccountID(sfAccount);
+    auto const sleBase = base_.read(keylet::account(account));
+    if (sleBase)
+        view_->rawReplace(std::make_shared<SLE>(*sleBase));
+}
+
+void
 ApplyContext::applyPrev(ApplyViewImpl& avi)
 {
     AccountID const account = tx.getAccountID(sfAccount);
     auto const sleBase = base_.read(keylet::account(account));
     auto const sle = view_->peek(keylet::account(account));
+    if (sle && sleBase)
     {
         STObject prevFields{sfPreviousFields};
         for (auto const& obj : *sleBase)

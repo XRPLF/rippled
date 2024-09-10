@@ -1464,12 +1464,10 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "AccountSet",
-             "B9BF25231F9923E1F0AD95BFC8F66EED4E76E3B7C36D23326661CB57D7CF5E1"
-             "3"},
+             "6B6B225E26F2F4811A651D7FD1E4F675D3E9F677C0167F8AAE707E2CB9B508A6"},
             {"tesSUCCESS",
              "Payment",
-             "44B76513FE9A57E84B837139C1D83A81EB70C88842EC85A561A71F05DF51427"
-             "3"},
+             "002C79A3D4BB339E09C358450D96B885C21B7F5701B0E908DAC3DFE6C13607DA"},
         }};
 
         Json::Value params;
@@ -1480,6 +1478,10 @@ class Batch_test : public beast::unit_test::suite
         std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 2);
         validateBatchTxns(txn[jss::metaData], testCases);
+        validateBatchMeta(txn[jss::metaData], preAlice, seq);
+
+        std::cout << "seq: " << env.seq(alice) << std::endl;
+        std::cout << "amount: " << env.balance(alice) << std::endl;
 
         BEAST_EXPECT(env.seq(alice) == 7);
         BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1) - (feeDrops * 2));

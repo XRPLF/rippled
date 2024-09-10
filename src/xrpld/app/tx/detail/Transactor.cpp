@@ -1046,6 +1046,15 @@ Transactor::operator()()
         applied = isTecClaim(result);
     }
 
+    // Apply fee for batch transaction if it was successfully applied
+    if (applied && ctx_.tx.getTxnType() == ttBATCH && result == tesSUCCESS)
+    {
+        // If the transaction is a batch transaction, the fee is already
+        // deducted from the account balance before executing the inner txns.
+        // So, we need to "re" apply the fee again.
+        ctx_.applyBatch();
+    }
+
     if (applied)
     {
         // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can

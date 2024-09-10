@@ -159,7 +159,7 @@ ApplyStateTable::apply(
             }
             auto const origNode = to.read(keylet::unchecked(item.first));
             auto curNode = item.second.second;
-            if ((type == &sfModifiedNode) && (*curNode == *origNode))
+            if ((type == &sfModifiedNode) && (*curNode == *origNode) && !isBatch)
                 continue;
             std::uint16_t nodeType = curNode
                 ? curNode->getFieldU16(sfLedgerEntryType)
@@ -207,7 +207,7 @@ ApplyStateTable::apply(
                     threadItem(meta, curNode);
 
                 STObject prevs(sfPreviousFields);
-                for (auto const& obj : isBatch ? *curNode : *origNode)
+                for (auto const& obj : *origNode)
                 {
                     // search the original node for values saved on modify
                     if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) &&
@@ -215,7 +215,7 @@ ApplyStateTable::apply(
                         prevs.emplace_back(obj);
                 }
 
-                if (tx.getTxnType() == ttBATCH && nodeType == ltACCOUNT_ROOT && batchPrev)
+                if (isBatch && nodeType == ltACCOUNT_ROOT && batchPrev)
                 {
                     // TODO: This could fail if the fields already exist
                     for (auto const& obj : *batchPrev)
@@ -227,7 +227,7 @@ ApplyStateTable::apply(
                         .emplace_back(std::move(prevs));
 
                 STObject finals(sfFinalFields);
-                for (auto const& obj : isBatch ? *origNode : *curNode)
+                for (auto const& obj : *curNode)
                 {
                     // search the final node for values saved always
                     if (obj.getFName().shouldMeta(
