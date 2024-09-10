@@ -1353,6 +1353,20 @@ rippleSend(
 
     if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
+        // if sender is issuer, check that the new OutstandingAmount will not
+        // exceed MaximumAmount
+        if (uSenderID == issuer)
+        {
+            auto const mptID = keylet::mptIssuance(saAmount.issue().getMptID());
+            auto const sle = view.peek(mptID);
+            if (!sle)
+                return tecMPT_ISSUANCE_NOT_FOUND;
+
+            if (sle->getFieldU64(sfOutstandingAmount) + saAmount.value() >
+                (*sle)[~sfMaximumAmount].value_or(maxMPTokenAmount))
+                return tecMPT_MAX_AMOUNT_EXCEEDED;
+        }
+
         // Direct send: redeeming IOUs and/or sending own IOUs.
         auto const ter =
             rippleCredit(view, uSenderID, uReceiverID, saAmount, j);
@@ -1380,8 +1394,8 @@ rippleSend(
                 rippleCredit(view, issuer, uReceiverID, saAmount, j);
             terResult != tesSUCCESS)
             return terResult;
-        else
-            return rippleCredit(view, uSenderID, issuer, saActual, j);
+
+        return rippleCredit(view, uSenderID, issuer, saActual, j);
     }
 
     return tecINTERNAL;
@@ -1871,10 +1885,6 @@ rippleCredit(
             sle->setFieldU64(
                 sfOutstandingAmount,
                 sle->getFieldU64(sfOutstandingAmount) + saAmount.value());
-
-            if (sle->getFieldU64(sfOutstandingAmount) >
-                (*sle)[~sfMaximumAmount].value_or(maxMPTokenAmount))
-                return tecMPT_MAX_AMOUNT_EXCEEDED;
 
             view.update(sle);
         }

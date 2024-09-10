@@ -1015,6 +1015,28 @@ class MPToken_test : public beast::unit_test::suite
             // destroyed, it should fail
             mptAlice.pay(alice, bob, 100, tecMPT_ISSUANCE_NOT_FOUND);
         }
+
+        // Issuers issues maximum amount of MPT to a holder, the holder should
+        // be able to transfer the max amount to someone else
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const carol("bob");
+            Account const bob("carol");
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+
+            mptAlice.create(
+                {.maxAmt = 100, .ownerCount = 1, .flags = tfMPTCanTransfer});
+
+            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = &carol});
+
+            mptAlice.pay(alice, bob, 100);
+
+            // transfer max amount to another holder
+            mptAlice.pay(bob, carol, 100);
+        }
     }
 
     void
