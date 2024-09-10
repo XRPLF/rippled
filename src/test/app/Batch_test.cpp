@@ -428,7 +428,8 @@ class Batch_test : public beast::unit_test::suite
         //         btx[jss::Sequence] = seq;
 
         //         // Batch Transactions
-        //         btx[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
+        //         btx[sfRawTransactions.jsonName] =
+        //         Json::Value{Json::arrayValue};
 
         //         // bTx 1
         //         Json::Value const btx1 = pay(alice, bob, XRP(1));
@@ -806,10 +807,12 @@ class Batch_test : public beast::unit_test::suite
             std::vector<TestBatchData> testCases = {{
                 {"tesSUCCESS",
                  "Payment",
-                 "CF28B462454DC1651D1705E3C2BD49E0C4D91245C68D3A10D27CF56E5C9B5BE5"},
+                 "CF28B462454DC1651D1705E3C2BD49E0C4D91245C68D3A10D27CF56E5C9B5"
+                 "BE5"},
                 {"tesSUCCESS",
                  "Payment",
-                 "002C79A3D4BB339E09C358450D96B885C21B7F5701B0E908DAC3DFE6C13607DA"},
+                 "002C79A3D4BB339E09C358450D96B885C21B7F5701B0E908DAC3DFE6C1360"
+                 "7DA"},
             }};
 
             Json::Value params;
@@ -868,10 +871,12 @@ class Batch_test : public beast::unit_test::suite
             std::vector<TestBatchData> testCases = {{
                 {"tesSUCCESS",
                  "Payment",
-                 "CF28B462454DC1651D1705E3C2BD49E0C4D91245C68D3A10D27CF56E5C9B5BE5"},
+                 "CF28B462454DC1651D1705E3C2BD49E0C4D91245C68D3A10D27CF56E5C9B5"
+                 "BE5"},
                 {"tecUNFUNDED_PAYMENT",
                  "Payment",
-                 "68803BEF141614DBBB34FA34BE0E485D79A43328891A9A8BDC461B6F22836A5C"},
+                 "68803BEF141614DBBB34FA34BE0E485D79A43328891A9A8BDC461B6F22836"
+                 "A5C"},
             }};
 
             Json::Value params;
@@ -937,10 +942,12 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tecUNFUNDED_PAYMENT",
              "Payment",
-             "093B51856BA4C111D626D933AC8D8EF8CCEB16B754EFE8A03819043E4927F503"},
+             "093B51856BA4C111D626D933AC8D8EF8CCEB16B754EFE8A03819043E4927F50"
+             "3"},
             {"tesSUCCESS",
              "Payment",
-             "002C79A3D4BB339E09C358450D96B885C21B7F5701B0E908DAC3DFE6C13607DA"},
+             "002C79A3D4BB339E09C358450D96B885C21B7F5701B0E908DAC3DFE6C13607D"
+             "A"},
         }};
 
         Json::Value params;
@@ -1009,13 +1016,16 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "Payment",
-             "CF28B462454DC1651D1705E3C2BD49E0C4D91245C68D3A10D27CF56E5C9B5BE5"},
+             "CF28B462454DC1651D1705E3C2BD49E0C4D91245C68D3A10D27CF56E5C9B5BE"
+             "5"},
             {"tesSUCCESS",
              "Payment",
-             "002C79A3D4BB339E09C358450D96B885C21B7F5701B0E908DAC3DFE6C13607DA"},
+             "002C79A3D4BB339E09C358450D96B885C21B7F5701B0E908DAC3DFE6C13607D"
+             "A"},
             {"tecUNFUNDED_PAYMENT",
              "Payment",
-             "E6FC37AF2B22F398E7D32B89C73D2443DF8BE7A2F35CA8B0B6AF6E9A504A67F4"},
+             "E6FC37AF2B22F398E7D32B89C73D2443DF8BE7A2F35CA8B0B6AF6E9A504A67F"
+             "4"},
         }};
 
         Json::Value params;
@@ -1084,16 +1094,20 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "Payment",
-             "CF28B462454DC1651D1705E3C2BD49E0C4D91245C68D3A10D27CF56E5C9B5BE5"},
+             "CF28B462454DC1651D1705E3C2BD49E0C4D91245C68D3A10D27CF56E5C9B5BE"
+             "5"},
             {"tesSUCCESS",
              "Payment",
-             "002C79A3D4BB339E09C358450D96B885C21B7F5701B0E908DAC3DFE6C13607DA"},
+             "002C79A3D4BB339E09C358450D96B885C21B7F5701B0E908DAC3DFE6C13607D"
+             "A"},
             {"tecUNFUNDED_PAYMENT",
              "Payment",
-             "E6FC37AF2B22F398E7D32B89C73D2443DF8BE7A2F35CA8B0B6AF6E9A504A67F4"},
+             "E6FC37AF2B22F398E7D32B89C73D2443DF8BE7A2F35CA8B0B6AF6E9A504A67F"
+             "4"},
             {"tesSUCCESS",
              "Payment",
-             "19E953305CF8D48C481ED35A577196432463AE420D52D68463BD5724492C7E96"},
+             "19E953305CF8D48C481ED35A577196432463AE420D52D68463BD5724492C7E9"
+             "6"},
         }};
 
         Json::Value params;
@@ -1168,7 +1182,8 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "Payment",
-             "F74D7914EB0CB080E7004AA11AAFCA7687558F1B43C0B34A0438BBC9AE708571"},
+             "F74D7914EB0CB080E7004AA11AAFCA7687558F1B43C0B34A0438BBC9AE70857"
+             "1"},
             {"tesSUCCESS",
              "Payment",
              "9464BBDA1E5893486507DDA75D702739B9FE3DA94D9D002A2DBD3840688AF76"
@@ -1241,10 +1256,12 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "Payment",
-             "21131DBC8CD39D1A514939F988B56235F33A38BD58762CE0CAF8EFA9489DB327"},
+             "21131DBC8CD39D1A514939F988B56235F33A38BD58762CE0CAF8EFA9489DB32"
+             "7"},
             {"tesSUCCESS",
              "Payment",
-             "1C25CCB1FF8A57B53B39B9287BA48DCD62DF3F213D125FF22C8A891FAC955C32"},
+             "1C25CCB1FF8A57B53B39B9287BA48DCD62DF3F213D125FF22C8A891FAC955C3"
+             "2"},
         }};
 
         Json::Value params;
@@ -1323,10 +1340,12 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "Payment",
-             "F74D7914EB0CB080E7004AA11AAFCA7687558F1B43C0B34A0438BBC9AE708571"},
+             "F74D7914EB0CB080E7004AA11AAFCA7687558F1B43C0B34A0438BBC9AE70857"
+             "1"},
             {"tesSUCCESS",
              "Payment",
-             "9464BBDA1E5893486507DDA75D702739B9FE3DA94D9D002A2DBD3840688AF766"},
+             "9464BBDA1E5893486507DDA75D702739B9FE3DA94D9D002A2DBD3840688AF76"
+             "6"},
         }};
 
         Json::Value params;
@@ -1770,10 +1789,12 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "Payment",
-             "684C0FE631535577FE8BE663848AB3AFE71C6CD688101E4FEB43B9C13374DBB2"},
+             "684C0FE631535577FE8BE663848AB3AFE71C6CD688101E4FEB43B9C13374DBB"
+             "2"},
             {"tesSUCCESS",
              "Payment",
-             "CBF12A852B0418FAF406C480BE991CE1EA2D0F16323412BFFA9F89CA7449B21E"},
+             "CBF12A852B0418FAF406C480BE991CE1EA2D0F16323412BFFA9F89CA7449B21"
+             "E"},
         }};
 
         Json::Value params;

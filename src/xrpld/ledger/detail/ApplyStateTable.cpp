@@ -159,7 +159,8 @@ ApplyStateTable::apply(
             }
             auto const origNode = to.read(keylet::unchecked(item.first));
             auto curNode = item.second.second;
-            if ((type == &sfModifiedNode) && (*curNode == *origNode) && !isBatch)
+            if ((type == &sfModifiedNode) && (*curNode == *origNode) &&
+                !isBatch)
                 continue;
             std::uint16_t nodeType = curNode
                 ? curNode->getFieldU16(sfLedgerEntryType)

@@ -97,7 +97,7 @@ Batch::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         }
 
-        if (txn.getFieldU16(sfTransactionType) == ttACCOUNT_DELETE && 
+        if (txn.getFieldU16(sfTransactionType) == ttACCOUNT_DELETE &&
             innerAccount == outerAccount)
         {
             JLOG(ctx.j.warn())
