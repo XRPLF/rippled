@@ -850,6 +850,11 @@ tokenOfferCreatePreflight(
         if (dest == acctID)
             return temMALFORMED;
     }
+
+    if (rules.enabled(fixNonStandardCurrency) &&
+        !validCurrency(amount.getCurrency()))
+        return temBAD_CURRENCY;
+
     return tesSUCCESS;
 }
 

@@ -120,7 +120,8 @@ Payment::preflight(PreflightContext const& ctx)
     }
 
     if (ctx.rules.enabled(fixNonStandardCurrency) &&
-        (!validCurrency(uSrcCurrency) || !validCurrency(uDstCurrency)))
+        (!validCurrency(uSrcCurrency, PaymentTx::Yes) ||
+         !validCurrency(uDstCurrency, PaymentTx::Yes)))
     {
         JLOG(j.trace()) << "Malformed transaction: "
                         << "Bad non-standard currency.";

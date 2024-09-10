@@ -71,8 +71,12 @@ noCurrency();
 Currency const&
 badCurrency();
 
+enum class PaymentTx : bool { Yes = true, No = false };
+/** Valid currency as described in
+ * https://xrpl.org/docs/references/protocol/data-types
+ */
 bool
-validCurrency(Currency const&);
+validCurrency(Currency const&, PaymentTx paymentTx = PaymentTx::No);
 
 inline bool
 isXRP(Currency const& c)

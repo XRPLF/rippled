@@ -133,8 +133,31 @@ badCurrency()
 }
 
 bool
-validCurrency(Currency const& currency)
+validCurrency(Currency const& currency, PaymentTx paymentTx)
 {
+    // Allow payments for invalid non-standard currencies
+    // created pre fixNonStandardCurrency amendment
+    static std::set<Currency> whiteList = {
+        Currency{"0000000000000000000000000000000078415059"},
+        Currency{"00000000004150756E6B30310000000000000000"},
+        Currency{"0000000000D9A928EFBCBEE297A1EFBCBE29DBB6"},
+        Currency{"0000000000414C6F676F30330000000000000000"},
+        Currency{"0000000000000000000000005852500000000000"},
+        Currency{"000028E0B2A05FE0B2A029E2948CE288A9E29490"},
+        Currency{"00000028E2989EEFBE9FE28880EFBE9F29E2989E"},
+        Currency{"00000028E381A3E29795E280BFE2979529E381A3"},
+        Currency{"000000000000005C6D2F5F283E5F3C295F5C6D2F"},
+        Currency{"00000028E295AFC2B0E296A1C2B0EFBC89E295AF"},
+        Currency{"0000000000000000000000005852527570656500"},
+        Currency{"000000000000000000000000302E310000000000"},
+        Currency{"0000000000E1839A28E0B2A05FE0B2A0E1839A29"},
+        Currency{"0000000048617070794E6577596561725852504C"},
+        Currency{"0000E29D9AE29688E29590E29590E29688E29D9A"},
+        Currency{"000028E297A35FE297A229E2948CE288A9E29490"},
+        Currency{"00000000CA95E0B2A0E0B2BFE1B4A5E0B2A0CA94"},
+        Currency{"000000282D5F282D5F282D5F2D295F2D295F2D29"},
+        Currency{"0000000000000000000000000000000078415049"},
+        Currency{"00000000000028E295ADE0B2B05FE280A2CC8129"}};
     static constexpr Currency sIsoBits(
         "FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
 
@@ -146,7 +169,7 @@ validCurrency(Currency const& currency)
     if (*currency.cbegin() != 0x00)
         return true;
 
-    return false;
+    return paymentTx == PaymentTx::Yes && whiteList.contains(currency);
 }
 
 }  // namespace ripple

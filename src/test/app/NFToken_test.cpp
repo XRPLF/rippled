@@ -7745,6 +7745,61 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     }
 
     void
+    testInvalidNonStandardCurrency(FeatureBitset features)
+    {
+        testcase("Invalid Non-Standard Currency");
+        using namespace test::jtx;
+        Account const alice{"alice"};
+        Account const buyer{"buyer"};
+        Account const gw{"gw"};
+        auto const invalid =
+            gw["0011111111111111111111111111111111111111"](1000);
+        auto const valid = gw["0111111111111111111111111111111111111111"](1000);
+        auto const invalidWhiteListed =
+            gw["0000000000000000000000000000000078415059"](100);
+        auto const USD = gw["USD"];
+        for (auto const& amt : {valid, invalid, invalidWhiteListed})
+        {
+            auto features_ = features - fixNonStandardCurrency;
+            Env env{*this, features_};
+
+            env.fund(XRP(1'000), alice, buyer, gw);
+            env.close();
+
+            env(trust(buyer, amt));
+            env(pay(gw, buyer, amt));
+            env.close();
+            env(trust(alice, amt));
+            env(pay(gw, alice, amt));
+            env.close();
+
+            env.enableFeature(fixNonStandardCurrency);
+
+            auto const err = (amt == invalid || amt == invalidWhiteListed)
+                ? ter(temBAD_CURRENCY)
+                : ter(tesSUCCESS);
+
+            uint256 nftId = token::getNextID(env, alice, 0, tfTransferable, 10);
+            env(token::mint(alice, 0u),
+                txflags(tfTransferable),
+                token::xferFee(10));
+            env.close();
+
+            env(token::createOffer(buyer, nftId, amt),
+                token::owner(alice),
+                err);
+            env.close();
+
+            if (features_[featureNFTokenMintOffer])
+            {
+                nftId = token::getNextID(env, alice, 0u);
+                env(token::mint(alice, 0u), token::amount(amt), err);
+                env.close();
+            }
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnabled(features);
@@ -7781,6 +7836,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         testFixNFTokenBuyerReserve(features);
         testUnaskedForAutoTrustline(features);
         testNFTIssuerIsIOUIssuer(features);
+        testInvalidNonStandardCurrency(features);
     }
 
 public:
