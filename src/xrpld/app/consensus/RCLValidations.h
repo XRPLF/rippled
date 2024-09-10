@@ -25,11 +25,15 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/STValidation.h>
+#include <optional>
+#include <set>
 #include <vector>
 
 namespace ripple {
 
 class Application;
+
+enum class BypassAccept : bool { no = false, yes };
 
 /** Wrapper over STValidation for generic Validation code
 
@@ -248,7 +252,9 @@ void
 handleNewValidation(
     Application& app,
     std::shared_ptr<STValidation> const& val,
-    std::string const& source);
+    std::string const& source,
+    BypassAccept const bypassAccept = BypassAccept::no,
+    std::optional<beast::Journal> j = std::nullopt);
 
 }  // namespace ripple
 

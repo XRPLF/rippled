@@ -22,11 +22,13 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/JobQueue.h>
+#include <xrpld/perflog/PerfLog.h>
 #include <xrpl/basics/DecayingSample.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/container/aged_map.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/jss.h>
+#include <exception>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -68,54 +70,92 @@ public:
         std::uint32_t seq,
         InboundLedger::Reason reason) override
     {
-        assert(hash.isNonZero());
+        auto doAcquire = [&, seq, reason]() -> std::shared_ptr<Ledger const> {
+            assert(hash.isNonZero());
 
-        // probably not the right rule
-        if (app_.getOPs().isNeedNetworkLedger() &&
-            (reason != InboundLedger::Reason::GENERIC) &&
-            (reason != InboundLedger::Reason::CONSENSUS))
-            return {};
-
-        bool isNew = true;
-        std::shared_ptr<InboundLedger> inbound;
-        {
-            ScopedLockType sl(mLock);
-            if (stopping_)
-            {
+            // probably not the right rule
+            if (app_.getOPs().isNeedNetworkLedger() &&
+                (reason != InboundLedger::Reason::GENERIC) &&
+                (reason != InboundLedger::Reason::CONSENSUS))
                 return {};
+
+            bool isNew = true;
+            std::shared_ptr<InboundLedger> inbound;
+            {
+                ScopedLockType sl(mLock);
+                if (stopping_)
+                {
+                    return {};
+                }
+
+                auto it = mLedgers.find(hash);
+                if (it != mLedgers.end())
+                {
+                    isNew = false;
+                    inbound = it->second;
+                }
+                else
+                {
+                    inbound = std::make_shared<InboundLedger>(
+                        app_,
+                        hash,
+                        seq,
+                        reason,
+                        std::ref(m_clock),
+                        mPeerSetBuilder->build());
+                    mLedgers.emplace(hash, inbound);
+                    inbound->init(sl);
+                    ++mCounter;
+                }
             }
 
-            auto it = mLedgers.find(hash);
-            if (it != mLedgers.end())
-            {
-                isNew = false;
-                inbound = it->second;
-            }
-            else
-            {
-                inbound = std::make_shared<InboundLedger>(
-                    app_,
-                    hash,
-                    seq,
-                    reason,
-                    std::ref(m_clock),
-                    mPeerSetBuilder->build());
-                mLedgers.emplace(hash, inbound);
-                inbound->init(sl);
-                ++mCounter;
-            }
+            if (inbound->isFailed())
+                return {};
+
+            if (!isNew)
+                inbound->update(seq);
+
+            if (!inbound->isComplete())
+                return {};
+
+            return inbound->getLedger();
+        };
+        using namespace std::chrono_literals;
+        std::shared_ptr<Ledger const> ledger = perf::measureDurationAndLog(
+            doAcquire, "InboundLedgersImp::acquire", 500ms, j_);
+
+        return ledger;
+    }
+
+    void
+    acquireAsync(
+        uint256 const& hash,
+        std::uint32_t seq,
+        InboundLedger::Reason reason) override
+    {
+        std::unique_lock lock(acquiresMutex_);
+        try
+        {
+            if (pendingAcquires_.contains(hash))
+                return;
+            pendingAcquires_.insert(hash);
+            lock.unlock();
+            acquire(hash, seq, reason);
         }
-
-        if (inbound->isFailed())
-            return {};
-
-        if (!isNew)
-            inbound->update(seq);
-
-        if (!inbound->isComplete())
-            return {};
-
-        return inbound->getLedger();
+        catch (std::exception const& e)
+        {
+            JLOG(j_.warn())
+                << "Exception thrown for acquiring new inbound ledger " << hash
+                << ": " << e.what();
+        }
+        catch (...)
+        {
+            JLOG(j_.warn())
+                << "Unknown exception thrown for acquiring new inbound ledger "
+                << hash;
+        }
+        lock.lock();
+        pendingAcquires_.erase(hash);
     }
 
     std::shared_ptr<InboundLedger>
@@ -410,6 +450,9 @@ private:
     beast::insight::Counter mCounter;
 
     std::unique_ptr<PeerSetBuilder> mPeerSetBuilder;
+
+    std::set<uint256> pendingAcquires_;
+    std::mutex acquiresMutex_;
 };
 
 //------------------------------------------------------------------------------

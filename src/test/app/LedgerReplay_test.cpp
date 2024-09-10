@@ -106,6 +106,14 @@ public:
         return {};
     }
 
+    virtual void
+    acquireAsync(
+        uint256 const& hash,
+        std::uint32_t seq,
+        InboundLedger::Reason reason) override
+    {
+    }
+
     virtual std::shared_ptr<InboundLedger>
     find(LedgerHash const& hash) override
     {

@@ -47,6 +47,7 @@ struct DatabasePairValid
  * @param config Config object.
  * @param setup Path to database and opening parameters.
  * @param checkpointerSetup Database checkpointer setup.
+ * @param j Journal.
  * @return Struct DatabasePairValid which contain unique pointers to ledger
  *         and transaction databases and flag if opening was successfull.
  */
@@ -54,7 +55,8 @@ DatabasePairValid
 makeLedgerDBs(
     Config const& config,
     DatabaseCon::Setup const& setup,
-    DatabaseCon::CheckpointerSetup const& checkpointerSetup);
+    DatabaseCon::CheckpointerSetup const& checkpointerSetup,
+    beast::Journal j);
 
 /**
  * @brief getMinLedgerSeq Returns minimum ledger sequence in given table.

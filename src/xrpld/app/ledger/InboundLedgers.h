@@ -23,6 +23,7 @@
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <memory>
+#include <set>
 
 namespace ripple {
 
@@ -37,10 +38,19 @@ public:
 
     virtual ~InboundLedgers() = default;
 
-    // VFALCO TODO Should this be called findOrAdd ?
-    //
+    // Callers should use this if they possibly need an authoritative
+    // response immediately.
     virtual std::shared_ptr<Ledger const>
     acquire(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason) = 0;
+
+    // Callers should use this if they are known to be executing on the Job
+    // Queue. TODO review whether all callers of acquire() can use this
+    // instead. Inbound ledger acquisition is asynchronous anyway.
+    virtual void
+    acquireAsync(
+        uint256 const& hash,
+        std::uint32_t seq,
+        InboundLedger::Reason reason) = 0;
 
     virtual std::shared_ptr<InboundLedger>
     find(LedgerHash const& hash) = 0;

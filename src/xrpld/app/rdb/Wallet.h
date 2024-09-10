@@ -32,19 +32,24 @@ namespace ripple {
 /**
  * @brief makeWalletDB Opens the wallet database and returns it.
  * @param setup Path to the database and other opening parameters.
+ * @param j Journal.
  * @return Unique pointer to the database descriptor.
  */
 std::unique_ptr<DatabaseCon>
-makeWalletDB(DatabaseCon::Setup const& setup);
+makeWalletDB(DatabaseCon::Setup const& setup, beast::Journal j);
 
 /**
  * @brief makeTestWalletDB Opens a test wallet database with an arbitrary name.
  * @param setup Path to the database and other opening parameters.
  * @param dbname Name of the database.
+ * @param j Journal.
  * @return Unique pointer to the database descriptor.
  */
 std::unique_ptr<DatabaseCon>
-makeTestWalletDB(DatabaseCon::Setup const& setup, std::string const& dbname);
+makeTestWalletDB(
+    DatabaseCon::Setup const& setup,
+    std::string const& dbname,
+    beast::Journal j);
 
 /**
  * @brief getManifests Loads a manifest from the wallet database and stores it

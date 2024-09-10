@@ -32,11 +32,13 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/overlay/predicates.h>
+#include <xrpld/perflog/PerfLog.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
+// #include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/protocol/digest.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -894,8 +896,16 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
     while (read_buffer_.size() > 0)
     {
         std::size_t bytes_consumed;
-        std::tie(bytes_consumed, ec) =
-            invokeProtocolMessage(read_buffer_.data(), *this, hint);
+
+        using namespace std::chrono_literals;
+        std::tie(bytes_consumed, ec) = perf::measureDurationAndLog(
+            [&]() {
+                return invokeProtocolMessage(read_buffer_.data(), *this, hint);
+            },
+            "invokeProtocolMessage",
+            350ms,
+            journal_);
+
         if (ec)
             return fail("onReadMessage", ec);
         if (!socket_.is_open())
