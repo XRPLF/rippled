@@ -94,8 +94,12 @@ ApplyContext::applyPrev(ApplyViewImpl& avi)
         for (auto const& obj : *sleBase)
         {
             if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) &&
-                !sle->hasMatchingEntry(obj))
+                (!sle->hasMatchingEntry(obj) || obj.getFName() == sfSequence ||
+                 obj.getFName() == sfOwnerCount ||
+                 obj.getFName() == sfTicketCount))
+            {
                 prevFields.emplace_back(obj);
+            }
         }
         avi.addBatchPrevMetaData(std::move(prevFields));
     }

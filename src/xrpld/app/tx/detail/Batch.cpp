@@ -48,7 +48,7 @@ Batch::preflight(PreflightContext const& ctx)
 
     if (tx.getFlags() & tfBatchMask)
     {
-        JLOG(ctx.j.debug()) << "Batch: invalid flags.";
+        JLOG(ctx.j.warn()) << "Batch: invalid flags.";
         return temINVALID_FLAG;
     }
 
@@ -57,13 +57,13 @@ Batch::preflight(PreflightContext const& ctx)
     auto const& txns = tx.getFieldArray(sfRawTransactions);
     if (txns.empty())
     {
-        JLOG(ctx.j.debug()) << "Batch: txns array empty.";
+        JLOG(ctx.j.warn()) << "Batch: txns array empty.";
         return temMALFORMED;
     }
 
     if (txns.size() > 8)
     {
-        JLOG(ctx.j.debug()) << "Batch: txns array exceeds 12 entries.";
+        JLOG(ctx.j.warn()) << "Batch: txns array exceeds 12 entries.";
         return temMALFORMED;
     }
 
@@ -77,27 +77,36 @@ Batch::preflight(PreflightContext const& ctx)
             ctx.tx.checkBatchSign(requireCanonicalSig, ctx.rules);
         if (!sigResult)
         {
-            JLOG(ctx.j.debug()) << "Batch: invalid batch txn signature.";
+            JLOG(ctx.j.warn()) << "Batch: invalid batch txn signature.";
             return temBAD_SIGNATURE;
         }
     }
 
     for (STObject txn : txns)
     {
+        auto const innerAccount = txn.getAccountID(sfAccount);
         if (!txn.isFieldPresent(sfTransactionType))
         {
-            JLOG(ctx.j.debug())
+            JLOG(ctx.j.warn())
                 << "Batch: TransactionType missing in array entry.";
             return temMALFORMED;
         }
         if (txn.getFieldU16(sfTransactionType) == ttBATCH)
         {
-            JLOG(ctx.j.debug()) << "Batch: batch cannot have inner batch txn.";
+            JLOG(ctx.j.warn()) << "Batch: batch cannot have inner batch txn.";
             return temMALFORMED;
         }
 
-        if (auto const innerAccount = txn.getAccountID(sfAccount);
-            innerAccount != outerAccount)
+        if (txn.getFieldU16(sfTransactionType) == ttACCOUNT_DELETE && 
+            innerAccount == outerAccount)
+        {
+            JLOG(ctx.j.warn())
+                << "Batch: inner txn cannot be account delete when inner and "
+                   "outer accounts are the same.";
+            return temMALFORMED;
+        }
+
+        if (innerAccount != outerAccount)
         {
             if (tx.getFieldArray(sfBatchSigners).end() ==
                 std::find_if(
@@ -107,7 +116,7 @@ Batch::preflight(PreflightContext const& ctx)
                         return signer.getAccountID(sfAccount) == innerAccount;
                     }))
             {
-                JLOG(ctx.j.debug())
+                JLOG(ctx.j.warn())
                     << "Batch: inner txn not signed by the right user.";
                 return temBAD_SIGNER;
             }
@@ -122,6 +131,16 @@ Batch::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.rules().enabled(featureBatch))
         return temDISABLED;
 
+    for (STObject txn : ctx.tx.getFieldArray(sfRawTransactions))
+    {
+        auto const innerAccount = txn.getAccountID(sfAccount);
+        auto const sle = ctx.view.read(keylet::account(innerAccount));
+        if (!sle)
+        {
+            JLOG(ctx.j.warn()) << "Batch: delay: inner account does not exist.";
+            return terNO_ACCOUNT;
+        }
+    }
     return tesSUCCESS;
 }
 
@@ -164,6 +183,7 @@ Batch::doApply()
             // Atomic Revert on non tec failure
             if (!isTecClaim(ter))
             {
+                JLOG(ctx_.journal.warn()) << "Batch: Inner txn failed." << ter;
                 result = tecBATCH_FAILURE;
                 changed = false;
                 break;
