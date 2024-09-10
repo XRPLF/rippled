@@ -1046,13 +1046,22 @@ Transactor::operator()()
         applied = isTecClaim(result);
     }
 
-    // Apply fee for batch transaction if it was successfully applied
+    // Update the AccountRoot entry if the batch transaction was successfull
     if (applied && ctx_.tx.getTxnType() == ttBATCH && result == tesSUCCESS)
     {
-        // If the transaction is a batch transaction, the fee is already
-        // deducted from the account balance before executing the inner txns.
-        // So, we need to "re" apply the fee again.
-        ctx_.applyBatch();
+        auto const outerAccount = ctx_.tx.getAccountID(sfAccount);
+        auto const& txns = ctx_.tx.getFieldArray(sfRawTransactions);
+        bool const not3rdParty = std::any_of(
+            txns.begin(),
+            txns.end(),
+            [outerAccount](STObject const& txn) {
+                return txn.getAccountID(sfAccount) == outerAccount;
+            });
+
+        // Only update the account root entry if the batch transaction was
+        // not a 3rd party transaction
+        if (not3rdParty)
+            ctx_.updateAccountRootEntry();
     }
 
     if (applied)

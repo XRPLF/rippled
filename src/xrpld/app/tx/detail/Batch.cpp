@@ -151,11 +151,20 @@ Batch::doApply()
     bool changed = false;
     auto const flags = ctx_.tx.getFlags();
 
+    AccountID const outerAccount = ctx_.tx.getAccountID(sfAccount);
+
     TER result = tesSUCCESS;
     ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
     OpenView subView(&sb);
 
     auto const& txns = ctx_.tx.getFieldArray(sfRawTransactions);
+    bool const not3rdParty = std::any_of(
+        txns.begin(),
+        txns.end(),
+        [outerAccount](STObject const& txn) {
+            return txn.getAccountID(sfAccount) == outerAccount;
+        });
+    
     for (STObject txn : txns)
     {
         OpenView innerView(&subView);
@@ -172,7 +181,7 @@ Batch::doApply()
         // Add Inner Txn Metadata
         STObject meta{sfBatchExecution};
         std::string res = transToken(ter);
-        meta.setFieldVL(sfBatchResult, ripple::Slice{res.data(), res.size()});
+        meta.setFieldVL(sfInnerResult, ripple::Slice{res.data(), res.size()});
         meta.setFieldU16(sfTransactionType, stx.getTxnType());
         if (ter == tesSUCCESS || isTecClaim(ter))
             meta.setFieldH256(sfTransactionHash, stx.getTransactionID());
@@ -216,7 +225,10 @@ Batch::doApply()
     // Apply SubView & PreviousFields
     if (changed)
     {
-        ctx_.applyPrev(avi);
+        // Only required when not 3rd Party
+        if (not3rdParty)
+            ctx_.batchPrevious(avi);
+
         ctx_.applyOpenView(subView);
     }
 

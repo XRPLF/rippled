@@ -87,13 +87,13 @@ public:
     void
     applyOpenView(OpenView& open);
 
-    /** Apply the fee to the account. */
+    /** Updates the batch txn account root. */
     void
-    applyBatch();
+    updateAccountRootEntry();
 
-    /** Apply the fee to the account. */
+    /** Sets the batch prev fields in the metadata. */
     void
-    applyPrev(ApplyViewImpl& avi);
+    batchPrevious(ApplyViewImpl& avi);
 
     /** Get the number of unapplied changes. */
     std::size_t

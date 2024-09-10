@@ -308,7 +308,7 @@ CONSTRUCT_TYPED_SFIELD(sfDIDDocument,           "DIDDocument",          VL,     
 CONSTRUCT_TYPED_SFIELD(sfData,                  "Data",                 VL,        27);
 CONSTRUCT_TYPED_SFIELD(sfAssetClass,            "AssetClass",           VL,        28);
 CONSTRUCT_TYPED_SFIELD(sfProvider,              "Provider",             VL,        29);
-CONSTRUCT_TYPED_SFIELD(sfBatchResult,           "BatchResult",          VL,        30);
+CONSTRUCT_TYPED_SFIELD(sfInnerResult,           "InnerResult",          VL,        30);
 
 // account
 CONSTRUCT_TYPED_SFIELD(sfAccount,               "Account",              ACCOUNT,    1);

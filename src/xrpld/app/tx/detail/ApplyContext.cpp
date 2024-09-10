@@ -73,8 +73,20 @@ ApplyContext::applyOpenView(OpenView& open)
         open.apply(base_);
 }
 
+/**
+ * Update the AccountRoot ledger entry associated with the batch transaction
+ * to ensure that the final entry accurately reflects all modifications made
+ * by inner transactions that affect the same account.
+ *
+ * This function retrieves the current AccountRoot entry for the account
+ * associated with the batch transaction and replaces it in the view.
+ * This is necessary because inner transactions are processed first, and
+ * their changes may impact the overall entry of the account. By updating
+ * the AccountRoot entry, we ensure that any changes made by these inner
+ * transactions are accounted for in the final entry of the batch transaction.
+ */
 void
-ApplyContext::applyBatch()
+ApplyContext::updateAccountRootEntry()
 {
     AccountID const account = tx.getAccountID(sfAccount);
     auto const sleBase = base_.read(keylet::account(account));
@@ -82,8 +94,17 @@ ApplyContext::applyBatch()
         view_->rawReplace(std::make_shared<SLE>(*sleBase));
 }
 
+/**
+ * Capture the previous state of the AccountRoot ledger entry associated
+ * with the batch transaction before applying inner transactions. This
+ * function retrieves the current AccountRoot entry and prepares metadata
+ * that reflects any changes made by inner transactions that may affect
+ * the account's overall state.
+ *  @param avi The ApplyViewImpl instance to which the previous metadata
+ *  will be added.
+ */
 void
-ApplyContext::applyPrev(ApplyViewImpl& avi)
+ApplyContext::batchPrevious(ApplyViewImpl& avi)
 {
     AccountID const account = tx.getAccountID(sfAccount);
     auto const sleBase = base_.read(keylet::account(account));
