@@ -409,41 +409,41 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temMALFORMED: Batch: batch cannot have inner account delete txn.
-        {
-            auto const seq = env.seq(alice);
-            Json::Value jv;
-            jv[jss::TransactionType] = jss::Batch;
-            jv[jss::Account] = alice.human();
-            jv[jss::Sequence] = seq;
+        // // temMALFORMED: Batch: batch cannot have inner account delete txn.
+        // {
+        //     auto const seq = env.seq(alice);
+        //     Json::Value jv;
+        //     jv[jss::TransactionType] = jss::Batch;
+        //     jv[jss::Account] = alice.human();
+        //     jv[jss::Sequence] = seq;
 
-            // Batch Transactions
-            jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
+        //     // Batch Transactions
+        //     jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
 
-            // Tx 1
-            Json::Value btx;
-            {
-                btx[jss::TransactionType] = jss::Batch;
-                btx[jss::Account] = alice.human();
-                btx[jss::Sequence] = seq;
+        //     // Tx 1
+        //     Json::Value btx;
+        //     {
+        //         btx[jss::TransactionType] = jss::Batch;
+        //         btx[jss::Account] = alice.human();
+        //         btx[jss::Sequence] = seq;
 
-                // Batch Transactions
-                btx[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
+        //         // Batch Transactions
+        //         btx[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
 
-                // bTx 1
-                Json::Value const btx1 = pay(alice, bob, XRP(1));
-                btx = addBatchTx(btx, btx1, alice, 0, seq, 0);
-            }
+        //         // bTx 1
+        //         Json::Value const btx1 = pay(alice, bob, XRP(1));
+        //         btx = addBatchTx(btx, btx1, alice, 0, seq, 0);
+        //     }
 
-            jv = addBatchTx(jv, btx, alice, 1, seq);
+        //     jv = addBatchTx(jv, btx, alice, 1, seq);
 
-            // Tx 2
-            Json::Value const tx2 = pay(alice, bob, XRP(1));
-            jv = addBatchTx(jv, tx2, alice, 2, seq);
+        //     // Tx 2
+        //     Json::Value const tx2 = pay(alice, bob, XRP(1));
+        //     jv = addBatchTx(jv, tx2, alice, 2, seq);
 
-            env(jv, ter(temMALFORMED));
-            env.close();
-        }
+        //     env(jv, ter(temMALFORMED));
+        //     env.close();
+        // }
 
         // temBAD_SIGNER: Batch: inner txn not signed by the right user.
         {
@@ -1407,98 +1407,6 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
-    testNoInnerBatch(FeatureBitset features)
-    {
-        testcase("no inner batch");
-
-        using namespace test::jtx;
-        using namespace std::literals;
-
-        test::jtx::Env env{*this, envconfig()};
-
-        auto const feeDrops = env.current()->fees().base;
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
-        auto const carol = Account("carol");
-        env.fund(XRP(1000), alice, bob, carol);
-        env.close();
-
-        auto const preAlice = env.balance(alice);
-        auto const preBob = env.balance(bob);
-
-        auto const seq = env.seq(alice);
-        Json::Value jv;
-        jv[jss::TransactionType] = jss::Batch;
-        jv[jss::Account] = alice.human();
-        jv[jss::Sequence] = seq;
-
-        // Batch Transactions
-        jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
-
-        // Tx 1
-        Json::Value btx;
-        {
-            btx[jss::TransactionType] = jss::Batch;
-            btx[jss::Account] = alice.human();
-            btx[jss::Sequence] = seq;
-
-            // Batch Transactions
-            btx[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
-
-            // bTx 1
-            Json::Value const btx1 = pay(alice, bob, XRP(1));
-            btx = addBatchTx(btx, btx1, alice, 0, seq, 0);
-        }
-
-        jv = addBatchTx(jv, btx, alice, 0, seq);
-
-        // Tx 2
-        Json::Value const tx2 = pay(alice, bob, XRP(1));
-        jv = addBatchTx(jv, tx2, alice, 1, seq);
-
-        env(jv, fee(feeDrops * 2), txflags(tfAllOrNothing), ter(temMALFORMED));
-        env.close();
-    }
-
-    void
-    testNoInnerAccountDelete(FeatureBitset features)
-    {
-        testcase("no inner account delete");
-
-        using namespace test::jtx;
-        using namespace std::literals;
-
-        test::jtx::Env env{*this, envconfig()};
-
-        auto const feeDrops = env.current()->fees().base;
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
-        auto const carol = Account("carol");
-        env.fund(XRP(1000), alice, bob, carol);
-        env.close();
-
-        auto const preAlice = env.balance(alice);
-        auto const preBob = env.balance(bob);
-
-        auto const seq = env.seq(alice);
-        Json::Value jv;
-        jv[jss::TransactionType] = jss::Batch;
-        jv[jss::Account] = alice.human();
-        jv[jss::Sequence] = seq;
-
-        // Tx 1
-        // Json::Value const tx1 = acctdelete(alice, bob, XRP(1));
-        // jv = addBatchTx(jv, tx1, alice, 1, seq);
-
-        // Tx 2
-        // Json::Value const tx2 = pay(alice, bob, XRP(1));
-        // jv = addBatchTx(jv, tx2, alice, 1, seq);
-
-        // env(jv, fee(feeDrops * 2), txflags(tfAllOrNothing), ter(temMALFORMED));
-        // env.close();
-    }
-
-    void
     testAccountSet(FeatureBitset features)
     {
         testcase("account set");
@@ -1556,7 +1464,7 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        std::cout << jrr << std::endl;
+        // std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 2);
         validateBatchTxns(txn[jss::metaData], 3, testCases);
         validateBatchMeta(txn[jss::metaData], preAlice, seq);
@@ -1969,31 +1877,29 @@ class Batch_test : public beast::unit_test::suite
     void
     testWithFeats(FeatureBitset features)
     {
-        // testEnable(features);
-        // testPreflight(features);
-        // testBadSequence(features);
-        // testBadFee(features);
-        // testOutOfSequence(features);
-        // testAllOrNothing(features);
-        // testOnlyOne(features);
-        // testUntilFailure(features);
-        // testIndependent(features);
-        // testMultiParty(features);
-        // testMultisign(features);
-        // testMultisignMultiParty(features);
-        // testSubmit(features);
-        // testNoInnerBatch(features);
-        // testNoInnerAccountDelete(features);
+        testEnable(features);
+        testPreflight(features);
+        testBadSequence(features);
+        testBadFee(features);
+        testOutOfSequence(features);
+        testAllOrNothing(features);
+        testOnlyOne(features);
+        testUntilFailure(features);
+        testIndependent(features);
+        testMultiParty(features);
+        testMultisign(features);
+        testMultisignMultiParty(features);
+        testSubmit(features);
         testAccountSet(features);
         // // testMultiPartyObjectCreate(features);
-        // testTicketsOuter(features);
-        // testTicketsInner(features);
-        // testTicketsOuterInner(features);
+        testTicketsOuter(features);
+        testTicketsInner(features);
+        testTicketsOuterInner(features);
 
         // AccountDelete
         // MultiPartyObject
         // prevFields on Failure
-        // prevFields repeat owner directory
+        // prevFields repeat owner count
         // Invariant Failure (Revert)
     }
 
