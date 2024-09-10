@@ -1659,7 +1659,7 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        std::cout << jrr << std::endl;
+        // std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 2);
         validateBatchTxns(txn[jss::metaData], 3, testCases);
         validateBatchMeta(txn[jss::metaData], preAlice, seq);
