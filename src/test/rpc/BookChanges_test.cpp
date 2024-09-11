@@ -18,9 +18,6 @@
 //==============================================================================
 
 #include <test/jtx.h>
-#include <xrpl/json/json_reader.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
