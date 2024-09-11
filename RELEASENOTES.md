@@ -6,6 +6,115 @@ This document contains the release notes for `rippled`, the reference server imp
 
 Have new ideas? Need help with setting up your node? [Please open an issue here](https://github.com/xrplf/rippled/issues/new/choose).
 
+# Version 2.2.2
+
+Version 2.2.2 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release fixes an ongoing issue with Mainnet where validators can stall during consensus processing due to lock contention, preventing ledgers from being validated for up to two minutes. There are no new amendments in this release.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+## Action Required
+
+If you run an XRP Ledger validator, upgrade to version 2.2.2 as soon as possible to ensure stable and uninterrupted network behavior.
+
+Additionally, five amendments introduced in version 2.2.0 are open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators. If you operate an XRP Ledger server older than version 2.2.0, upgrade by September 17, 2024 to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network. Version 2.2.2 is recommended because of known bugs affecting stability of versions 2.2.0 and 2.2.1.
+
+If you operate a Clio server, Clio needs to be updated to 2.1.2 before updating to rippled 2.2.0. Clio will be blocked if it is not updated.
+
+## Changelog
+
+### Amendments and New Features
+
+- None
+
+### Bug Fixes and Performance Improvements
+
+- Allow only 1 job queue slot for acquiring inbound ledger [#5115](https://github.com/XRPLF/rippled/pull/5115) ([7741483](https://github.com/XRPLF/rippled/commit/774148389467781aca7c01bac90af2fba870570c))
+
+- Allow only 1 job queue slot for each validation ledger check [#5115](https://github.com/XRPLF/rippled/pull/5115) ([fbbea9e](https://github.com/XRPLF/rippled/commit/fbbea9e6e25795a8a6bd1bf64b780771933a9579))
+
+### Other improvements
+
+ -  Track latencies of certain code blocks, and log if they take too long [#5115](https://github.com/XRPLF/rippled/pull/5115) ([00ed7c9](https://github.com/XRPLF/rippled/commit/00ed7c942436f02644a13169002b5123f4e2a116))
+
+### Docs and Build System
+
+- None
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+
+## Credits
+
+The following people contributed directly to this release:
+
+Mark Travis <mtrippled@users.noreply.github.com>
+Valentin Balaschenko <13349202+vlntb@users.noreply.github.com>
+
+Bug Bounties and Responsible Disclosures:
+
+We welcome reviews of the `rippled` code and urge researchers to responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to: <bugs@xrpl.org>
+
+# Version 2.2.1
+
+Version 2.2.1 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release fixes a critical bug introduced in 2.2.0 handling some types of RPC requests.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+## Action Required
+
+If you run an XRP Ledger validator, upgrade to version 2.2.1 as soon as possible to ensure stable and uninterrupted network behavior.
+
+Additionally, five amendments introduced in version 2.2.0 are open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators. If you operate an XRP Ledger server older than version 2.2.0, upgrade by August 14, 2024 to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network. Version 2.2.1 is recommended because of known bugs affecting stability of versions 2.2.0.
+
+If you operate a Clio server, Clio needs to be updated to 2.2.2 before updating to rippled 2.2.1. Clio will be blocked if it is not updated.
+
+## Changelog
+
+### Amendments and New Features
+
+- None
+
+### Bug Fixes and Performance Improvements
+
+- Improve error handling in some RPC commands. [#5078](https://github.com/XRPLF/rippled/pull/5078)
+
+- Use error codes throughout fast Base58 implementation. [#5078](https://github.com/XRPLF/rippled/pull/5078)
+
+### Docs and Build System
+
+- None
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+
+## Credits
+
+The following people contributed directly to this release:
+
+John Freeman <jfreeman08@gmail.com>
+Mayukha Vadari <mvadari@gmail.com>
+
+Bug Bounties and Responsible Disclosures:
+
+We welcome reviews of the `rippled` code and urge researchers to responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to: <bugs@xrpl.org>
+
+
 # Version 2.2.0
 
 Version 2.2.0 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release adds performance optimizations, several bug fixes, and introduces the `featurePriceOracle`, `fixEmptyDID`, `fixXChainRewardRounding`, `fixPreviousTxnID`, and `fixAMMv1_1` amendments.
