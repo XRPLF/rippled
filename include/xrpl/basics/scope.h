@@ -212,7 +212,7 @@ scope_success(EF) -> scope_success<EF>;
         {
             ... do some stuff with it locked ..
 
-            ScopedUnlock unlocker{myScopedLock};
+            scope_unlock unlocker{myScopedLock};
 
             // mut is now unlocked for the remainder of this block,
             // and re-locked at the end.
