@@ -73,6 +73,27 @@ enum {
 // millisecond for each ledger timeout
 auto constexpr ledgerAcquireTimeout = 3000ms;
 
+std::string
+to_string(InboundLedger::Reason reason)
+{
+    using enum InboundLedger::Reason;
+    switch (reason)
+    {
+        case HISTORY:
+            return "HISTORY";
+        case GENERIC:
+            return "GENERIC";
+        case CONSENSUS:
+            return "CONSENSUS";
+        case PREFERRED:
+            return "PREFERRED";
+        default:
+            UNREACHABLE(
+                "ripple::to_string(InboundLedger::Reason) : unknown value");
+            return "unknown";
+    }
+}
+
 InboundLedger::InboundLedger(
     Application& app,
     uint256 const& hash,
@@ -142,7 +163,7 @@ InboundLedger::init(ScopedLockType& collectionLock, bool broadcast)
     app_.getLedgerMaster().storeLedger(mLedger);
 
     // Check if this could be a newer fully-validated ledger
-    if (mReason == Reason::CONSENSUS)
+    if (mReason >= Reason::CONSENSUS)
         app_.getLedgerMaster().checkAccept(mLedger);
 }
 
