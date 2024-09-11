@@ -64,7 +64,7 @@ enum class LedgerNameSpace : std::uint16_t {
     XRP_PAYMENT_CHANNEL = 'x',
     CHECK = 'C',
     DEPOSIT_PREAUTH = 'p',
-    DEPOSIT_PREAUTH_CREDS = 'P',
+    DEPOSIT_PREAUTH_CREDENTIALS = 'P',
     NEGATIVE_UNL = 'N',
     NFTOKEN_OFFER = 'q',
     NFTOKEN_BUY_OFFERS = 'h',
@@ -322,7 +322,7 @@ depositPreauth(AccountID const& owner, STArray const& authCreds) noexcept
 
     return {
         ltDEPOSIT_PREAUTH,
-        indexHash(LedgerNameSpace::DEPOSIT_PREAUTH_CREDS, owner, hashes)};
+        indexHash(LedgerNameSpace::DEPOSIT_PREAUTH_CREDENTIALS, owner, hashes)};
 }
 
 //------------------------------------------------------------------------------
