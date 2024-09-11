@@ -317,7 +317,8 @@ Env::submit(JTx const& jt)
     auto const jr = [&]() {
         if (jt.stx)
         {
-            // We shouldn't need to retry, but it fixes the test on macOS for the moment.
+            // We shouldn't need to retry, but it fixes the test on macOS for
+            // the moment.
             int retries = 3;
             do
             {
