@@ -21,11 +21,9 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/rdb/backend/PostgresDatabase.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/core/DatabaseCon.h>
-#include <xrpld/core/Pg.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_reader.h>
@@ -128,20 +126,6 @@ Transaction::load(
     using op = std::optional<ClosedInterval<uint32_t>>;
 
     return load(id, app, op{range}, ec);
-}
-
-Transaction::Locator
-Transaction::locate(uint256 const& id, Application& app)
-{
-    auto const db =
-        dynamic_cast<PostgresDatabase*>(&app.getRelationalDatabase());
-
-    if (!db)
-    {
-        Throw<std::runtime_error>("Failed to get relational database");
-    }
-
-    return db->locateTransaction(id);
 }
 
 std::variant<

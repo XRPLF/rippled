@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,31 +17,28 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_SIM_MESSAGE_H_INCLUDED
-#define RIPPLE_PEERFINDER_SIM_MESSAGE_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_LEDGER_STATE_FIX_H_INCLUDED
+#define RIPPLE_TEST_JTX_LEDGER_STATE_FIX_H_INCLUDED
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 
 namespace ripple {
-namespace PeerFinder {
-namespace Sim {
+namespace test {
+namespace jtx {
 
-class Message
-{
-public:
-    explicit Message(Endpoints const& endpoints) : m_payload(endpoints)
-    {
-    }
-    Endpoints const&
-    payload() const
-    {
-        return m_payload;
-    }
+/** LedgerStateFix operations. */
+namespace ledgerStateFix {
 
-private:
-    Endpoints m_payload;
-};
+/** Repair the links in an NFToken directory. */
+Json::Value
+nftPageLinks(jtx::Account const& acct, jtx::Account const& owner);
 
-}  // namespace Sim
-}  // namespace PeerFinder
+}  // namespace ledgerStateFix
+
+}  // namespace jtx
+
+}  // namespace test
 }  // namespace ripple
 
 #endif

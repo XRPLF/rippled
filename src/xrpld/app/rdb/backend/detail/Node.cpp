@@ -67,11 +67,12 @@ DatabasePairValid
 makeLedgerDBs(
     Config const& config,
     DatabaseCon::Setup const& setup,
-    DatabaseCon::CheckpointerSetup const& checkpointerSetup)
+    DatabaseCon::CheckpointerSetup const& checkpointerSetup,
+    beast::Journal j)
 {
     // ledger database
     auto lgr{std::make_unique<DatabaseCon>(
-        setup, LgrDBName, LgrDBPragma, LgrDBInit, checkpointerSetup)};
+        setup, LgrDBName, LgrDBPragma, LgrDBInit, checkpointerSetup, j)};
     lgr->getSession() << boost::str(
         boost::format("PRAGMA cache_size=-%d;") %
         kilobytes(config.getValueFor(SizedItem::lgrDBCache)));
@@ -80,7 +81,7 @@ makeLedgerDBs(
     {
         // transaction database
         auto tx{std::make_unique<DatabaseCon>(
-            setup, TxDBName, TxDBPragma, TxDBInit, checkpointerSetup)};
+            setup, TxDBName, TxDBPragma, TxDBInit, checkpointerSetup, j)};
         tx->getSession() << boost::str(
             boost::format("PRAGMA cache_size=-%d;") %
             kilobytes(config.getValueFor(SizedItem::txnDBCache)));
@@ -622,8 +623,7 @@ getTxHistory(
     soci::session& session,
     Application& app,
     LedgerIndex startIndex,
-    int quantity,
-    bool count)
+    int quantity)
 {
     std::string sql = boost::str(
         boost::format(
@@ -663,13 +663,6 @@ getTxHistory(
                 txs.push_back(trans);
             }
         }
-
-        if (!total && count)
-        {
-            session << "SELECT COUNT(*) FROM Transactions;", soci::into(total);
-
-            total = -total;
-        }
     }
 
     return {txs, total};
@@ -685,9 +678,6 @@ getTxHistory(
  *        the account, the ledger search range, the offset of the first entry to
  *        return, the number of transactions to return, and a flag if this
  *        number is unlimited.
- * @param limit_used Number of transactions already returned in calls
- *        to other shard databases, if shard databases are used.
- *        No value if the node database is used.
  * @param descending True for descending order, false for ascending.
  * @param binary True for binary form, false for decoded.
  * @param count True for counting the number of transactions, false for
@@ -700,7 +690,6 @@ transactionsSQL(
     Application& app,
     std::string selection,
     RelationalDatabase::AccountTxOptions const& options,
-    std::optional<int> const& limit_used,
     bool descending,
     bool binary,
     bool count,
@@ -727,14 +716,6 @@ transactionsSQL(
     else
     {
         numberOfResults = options.limit;
-    }
-
-    if (limit_used)
-    {
-        if (numberOfResults <= *limit_used)
-            return "";
-        else
-            numberOfResults -= *limit_used;
     }
 
     std::string maxClause = "";
@@ -790,9 +771,6 @@ transactionsSQL(
  *        the account, the ledger search range, the offset of the first entry to
  *        return, the number of transactions to return, and a flag if this
  *        number is unlimited.
- * @param limit_used Number of transactions already returned in calls
- *        to other shard databases, if shard databases are used.
- *        No value if the node database is used.
  * @param descending True for descending order, false for ascending.
  * @param j Journal.
  * @return Vector of pairs of found transactions and their metadata sorted by
@@ -809,7 +787,6 @@ getAccountTxs(
     Application& app,
     LedgerMaster& ledgerMaster,
     RelationalDatabase::AccountTxOptions const& options,
-    std::optional<int> const& limit_used,
     bool descending,
     beast::Journal j)
 {
@@ -819,7 +796,6 @@ getAccountTxs(
         app,
         "AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta",
         options,
-        limit_used,
         descending,
         false,
         false,
@@ -880,18 +856,6 @@ getAccountTxs(
                 total++;
             }
         }
-
-        if (!total && limit_used)
-        {
-            RelationalDatabase::AccountTxOptions opt = options;
-            opt.offset = 0;
-            std::string sql1 = transactionsSQL(
-                app, "COUNT(*)", opt, limit_used, descending, false, false, j);
-
-            session << sql1, soci::into(total);
-
-            total = -total;
-        }
     }
 
     return {ret, total};
@@ -903,11 +867,9 @@ getOldestAccountTxs(
     Application& app,
     LedgerMaster& ledgerMaster,
     RelationalDatabase::AccountTxOptions const& options,
-    std::optional<int> const& limit_used,
     beast::Journal j)
 {
-    return getAccountTxs(
-        session, app, ledgerMaster, options, limit_used, false, j);
+    return getAccountTxs(session, app, ledgerMaster, options, false, j);
 }
 
 std::pair<RelationalDatabase::AccountTxs, int>
@@ -916,11 +878,9 @@ getNewestAccountTxs(
     Application& app,
     LedgerMaster& ledgerMaster,
     RelationalDatabase::AccountTxOptions const& options,
-    std::optional<int> const& limit_used,
     beast::Journal j)
 {
-    return getAccountTxs(
-        session, app, ledgerMaster, options, limit_used, true, j);
+    return getAccountTxs(session, app, ledgerMaster, options, true, j);
 }
 
 /**
@@ -933,9 +893,6 @@ getNewestAccountTxs(
  *        the account, the ledger search range, the offset of the first entry to
  *        return, the number of transactions to return, and a flag if this
  *        number is unlimited.
- * @param limit_used Number of transactions already returned in calls to other
- *        shard databases, if shard databases are used. No value if the node
- *        database is used.
  * @param descending True for descending order, false for ascending.
  * @param j Journal.
  * @return Vector of tuples each containing (the found transactions, their
@@ -951,7 +908,6 @@ getAccountTxsB(
     soci::session& session,
     Application& app,
     RelationalDatabase::AccountTxOptions const& options,
-    std::optional<int> const& limit_used,
     bool descending,
     beast::Journal j)
 {
@@ -961,7 +917,6 @@ getAccountTxsB(
         app,
         "AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta",
         options,
-        limit_used,
         descending,
         true /*binary*/,
         false,
@@ -1001,18 +956,6 @@ getAccountTxsB(
             ret.emplace_back(std::move(rawTxn), std::move(txnMeta), seq);
             total++;
         }
-
-        if (!total && limit_used)
-        {
-            RelationalDatabase::AccountTxOptions opt = options;
-            opt.offset = 0;
-            std::string sql1 = transactionsSQL(
-                app, "COUNT(*)", opt, limit_used, descending, true, false, j);
-
-            session << sql1, soci::into(total);
-
-            total = -total;
-        }
     }
 
     return {ret, total};
@@ -1023,10 +966,9 @@ getOldestAccountTxsB(
     soci::session& session,
     Application& app,
     RelationalDatabase::AccountTxOptions const& options,
-    std::optional<int> const& limit_used,
     beast::Journal j)
 {
-    return getAccountTxsB(session, app, options, limit_used, false, j);
+    return getAccountTxsB(session, app, options, false, j);
 }
 
 std::pair<std::vector<RelationalDatabase::txnMetaLedgerType>, int>
@@ -1034,10 +976,9 @@ getNewestAccountTxsB(
     soci::session& session,
     Application& app,
     RelationalDatabase::AccountTxOptions const& options,
-    std::optional<int> const& limit_used,
     beast::Journal j)
 {
-    return getAccountTxsB(session, app, options, limit_used, true, j);
+    return getAccountTxsB(session, app, options, true, j);
 }
 
 /**
@@ -1052,8 +993,6 @@ getNewestAccountTxsB(
  *        match: the account, the ledger search range, the marker of the first
  *        returned entry, the number of transactions to return, and a flag if
  *        this number unlimited.
- * @param limit_used Number of transactions already returned in calls
- *        to other shard databases.
  * @param page_length Total number of transactions to return.
  * @param forward True for ascending order, false for descending.
  * @return Vector of tuples of found transactions, their metadata and account
@@ -1069,7 +1008,6 @@ accountTxPage(
         void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
         onTransaction,
     RelationalDatabase::AccountTxPageOptions const& options,
-    int limit_used,
     std::uint32_t page_length,
     bool forward)
 {
@@ -1084,10 +1022,6 @@ accountTxPage(
         numberOfResults = page_length;
     else
         numberOfResults = options.limit;
-
-    if (numberOfResults < limit_used)
-        return {options.marker, -1};
-    numberOfResults -= limit_used;
 
     // As an account can have many thousands of transactions, there is a limit
     // placed on the amount of transactions returned. If the limit is reached
@@ -1104,8 +1038,6 @@ accountTxPage(
     }
 
     std::optional<RelationalDatabase::AccountTxMarker> newmarker;
-    if (limit_used > 0)
-        newmarker = options.marker;
 
     static std::string const prefix(
         R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
@@ -1251,17 +1183,10 @@ oldestAccountTxPage(
         void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
         onTransaction,
     RelationalDatabase::AccountTxPageOptions const& options,
-    int limit_used,
     std::uint32_t page_length)
 {
     return accountTxPage(
-        session,
-        onUnsavedLedger,
-        onTransaction,
-        options,
-        limit_used,
-        page_length,
-        true);
+        session, onUnsavedLedger, onTransaction, options, page_length, true);
 }
 
 std::pair<std::optional<RelationalDatabase::AccountTxMarker>, int>
@@ -1272,17 +1197,10 @@ newestAccountTxPage(
         void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
         onTransaction,
     RelationalDatabase::AccountTxPageOptions const& options,
-    int limit_used,
     std::uint32_t page_length)
 {
     return accountTxPage(
-        session,
-        onUnsavedLedger,
-        onTransaction,
-        options,
-        limit_used,
-        page_length,
-        false);
+        session, onUnsavedLedger, onTransaction, options, page_length, false);
 }
 
 std::variant<RelationalDatabase::AccountTx, TxSearched>

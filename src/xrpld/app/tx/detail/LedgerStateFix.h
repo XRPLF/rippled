@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2019 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,60 +17,41 @@
 */
 //==============================================================================
 
-#include <xrpld/nodestore/detail/TaskQueue.h>
+#ifndef RIPPLE_TX_LEDGER_STATE_FIX_H_INCLUDED
+#define RIPPLE_TX_LEDGER_STATE_FIX_H_INCLUDED
 
-#include <cassert>
+#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Indexes.h>
 
 namespace ripple {
-namespace NodeStore {
 
-TaskQueue::TaskQueue() : workers_(*this, nullptr, "Shard store taskQueue", 1)
+class LedgerStateFix : public Transactor
 {
-}
+public:
+    enum FixType : std::uint16_t {
+        nfTokenPageLink = 1,
+    };
 
-void
-TaskQueue::stop()
-{
-    workers_.stop();
-}
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-void
-TaskQueue::addTask(std::function<void()> task)
-{
+    explicit LedgerStateFix(ApplyContext& ctx) : Transactor(ctx)
     {
-        std::lock_guard lock{mutex_};
-        tasks_.emplace(std::move(task));
-    }
-    workers_.addTask();
-}
-
-size_t
-TaskQueue::size() const
-{
-    std::lock_guard lock{mutex_};
-    return tasks_.size() + processing_;
-}
-
-void
-TaskQueue::processTask(int instance)
-{
-    std::function<void()> task;
-
-    {
-        std::lock_guard lock{mutex_};
-
-        assert(!tasks_.empty());
-        task = std::move(tasks_.front());
-        tasks_.pop();
-
-        ++processing_;
     }
 
-    task();
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-    std::lock_guard lock{mutex_};
-    --processing_;
-}
+    static XRPAmount
+    calculateBaseFee(ReadView const& view, STTx const& tx);
 
-}  // namespace NodeStore
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
+    TER
+    doApply() override;
+};
+
 }  // namespace ripple
+
+#endif

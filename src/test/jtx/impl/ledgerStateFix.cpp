@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,33 +17,33 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_REPORTING_H_INCLUDED
-#define RIPPLE_PEERFINDER_REPORTING_H_INCLUDED
+#include <test/jtx/ledgerStateFix.h>
+
+#include <xrpld/app/tx/detail/LedgerStateFix.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
-namespace PeerFinder {
+namespace test {
+namespace jtx {
 
-/** Severity levels for test reporting.
-    This allows more fine grained control over reporting for diagnostics.
-*/
-struct Reporting
+namespace ledgerStateFix {
+
+// Fix NFTokenPage links on owner's account.  acct pays fee.
+Json::Value
+nftPageLinks(jtx::Account const& acct, jtx::Account const& owner)
 {
-    explicit Reporting() = default;
+    Json::Value jv;
+    jv[sfAccount.jsonName] = acct.human();
+    jv[sfLedgerFixType.jsonName] = LedgerStateFix::nfTokenPageLink;
+    jv[sfOwner.jsonName] = owner.human();
+    jv[sfTransactionType.jsonName] = jss::LedgerStateFix;
+    jv[sfFlags.jsonName] = tfUniversal;
+    return jv;
+}
 
-    // Report simulation parameters
-    static bool const params = true;
+}  // namespace ledgerStateFix
 
-    // Report simulation crawl time-evolution
-    static bool const crawl = true;
-
-    // Report nodes aggregate statistics
-    static bool const nodes = true;
-
-    // Report nodes detailed information
-    static bool const dump_nodes = false;
-};
-
-}  // namespace PeerFinder
+}  // namespace jtx
+}  // namespace test
 }  // namespace ripple
-
-#endif
