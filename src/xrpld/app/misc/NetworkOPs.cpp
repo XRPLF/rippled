@@ -2933,24 +2933,6 @@ NetworkOPsImp::pubProposedTransaction(
     pubProposedAccountTransaction(ledger, transaction, result);
 }
 
-static void
-getAccounts(Json::Value const& jvObj, std::vector<AccountID>& accounts)
-{
-    for (auto& jv : jvObj)
-    {
-        if (jv.isObject())
-        {
-            getAccounts(jv, accounts);
-        }
-        else if (jv.isString())
-        {
-            auto account = RPC::accountFromStringStrict(jv.asString());
-            if (account)
-                accounts.push_back(*account);
-        }
-    }
-}
-
 void
 NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
 {
