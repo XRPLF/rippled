@@ -84,7 +84,7 @@ public:
                     return true;
                 if (reason == InboundLedger::Reason::GENERIC)
                     return true;
-                if (reason == InboundLedger::Reason::CONSENSUS)
+                if (reason >= InboundLedger::Reason::CONSENSUS)
                     return true;
                 return false;
             }();
@@ -119,6 +119,11 @@ public:
                 // ledger interval has passed, so the node is beginning to
                 // fall behind.
                 bool const fallingBehind = app_.getOPs().isFallingBehind();
+                // If the ledger is needed for preferred ledger analysis and we
+                // don't have it, chances are we're not going to build it,
+                // because someone else has built it, so download it.
+                bool const preferred =
+                    reason == InboundLedger::Reason::PREFERRED;
                 // If everything else is ok, don't try to acquire the ledger
                 // if the requested seq is in the near future relative to
                 // the validated ledger. Because validations lag behind
@@ -139,8 +144,9 @@ public:
                 ss << " Evaluating whether to broadcast requests to peers"
                    << ". full: " << (isFull ? "true" : "false")
                    << ". falling behind: " << (fallingBehind ? "true" : "false")
-                   << ". ledger sequence " << seq
-                   << ". Valid sequence: " << validSeq
+                   << ". needed for preferred ledger analysis: "
+                   << (preferred ? "true" : "false") << ". ledger sequence "
+                   << seq << ". Valid sequence: " << validSeq
                    << ". Lag leeway: " << lagLeeway
                    << ". request for near future ledger: "
                    << (nearFuture ? "true" : "false")
@@ -151,6 +157,9 @@ public:
                     return true;
                 // If the node is falling behind, send requests.
                 if (fallingBehind)
+                    return true;
+                // If needed for preferred analysis, send requests.
+                if (preferred)
                     return true;
                 // If the ledger is in the near future, do NOT send requests.
                 // This node is probably about to build it.
