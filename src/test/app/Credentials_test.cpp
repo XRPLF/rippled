@@ -429,7 +429,7 @@ struct Credentials_test : public beast::unit_test::suite
             }
 
             {
-                // masterIssuer doesn't exists
+                // masterIssuer doesn't exist
                 Account const masterIssuer{"masterIssuer"};
                 env.memoize(masterIssuer);
 
@@ -652,7 +652,7 @@ struct Credentials_test : public beast::unit_test::suite
 
                 // can't accept - no issuer account
                 jv = credentials::accept(subj, iss, credType);
-                env(jv, ter(tecNO_TARGET));
+                env(jv, ter(tecNO_ISSUER));
                 env.close();
             }
         }

@@ -109,14 +109,14 @@ DepositPreauth::preauthPreclaimCredentialsCheck(
         auto const sleCred = view.read(keylet::credential(h));
         if (!sleCred)
         {
-            JLOG(j.trace()) << "Credential doesn't exists. Cred: " << h;
+            JLOG(j.trace()) << "Credential doesn't exist. Cred: " << h;
             return tecBAD_CREDENTIALS;
         }
 
         if (sleCred->getAccountID(sfSubject) != src)
         {
             JLOG(j.trace())
-                << "Credential not for current account. Cred: " << h;
+                << "Credential doesn’t belong to current account. Cred: " << h;
             return tecBAD_CREDENTIALS;
         }
 
@@ -134,7 +134,7 @@ DepositPreauth::preauthPreclaimCredentialsCheck(
 
     if (!view.exists(keylet::depositPreauth(dst, authCreds)))
     {
-        JLOG(j.trace()) << "DepositPreauth doesn't exists";
+        JLOG(j.trace()) << "DepositPreauth doesn't exist";
         return tecNO_PERMISSION;
     }
 
@@ -239,10 +239,10 @@ DepositPreauth::preflight(PreflightContext const& ctx)
             }
 
             auto const ct = o[sfCredentialType];
-            if (ct.empty())
+            if (ct.empty() || (ct.size() > maxCredentialTypeLength))
             {
                 JLOG(j.trace())
-                    << "Malformed transaction: empty credential type.";
+                    << "Malformed transaction: invalid size of CredentialType.";
                 return temMALFORMED;
             }
         }

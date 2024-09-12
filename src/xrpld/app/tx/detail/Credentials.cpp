@@ -410,7 +410,7 @@ CredentialAccept::preclaim(PreclaimContext const& ctx)
     auto const credType(ctx.tx[sfCredentialType]);
 
     if (!ctx.view.exists(keylet::account(issuer)))
-        return tecNO_TARGET;
+        return tecNO_ISSUER;
 
     auto const sleCred =
         ctx.view.read(keylet::credential(subject, issuer, credType));
