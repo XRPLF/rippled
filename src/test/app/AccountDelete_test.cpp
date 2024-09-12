@@ -993,7 +993,7 @@ public:
                     {"48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6E"
                      "A288BE4"}),
                 fee(acctDelFee),
-                ter(temBAD_CREDENTIALS));
+                ter(tecBAD_CREDENTIALS));
             env.close();
 
             // becky use credentials and can delete account

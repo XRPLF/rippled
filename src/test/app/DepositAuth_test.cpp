@@ -854,7 +854,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             }
 
             // Alice can't pay - not accepeted credentials
-            env(pay(alice, bob, XRP(100), {credIdx}), ter(temBAD_CREDENTIALS));
+            env(pay(alice, bob, XRP(100), {credIdx}), ter(tecBAD_CREDENTIALS));
             env.close();
 
             // Alice accept the credentials
@@ -1129,13 +1129,13 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     "01E034";
                 // Alice can't pay with non-existing credentials
                 env(pay(alice, bob, XRP(100), {invalidIdx}),
-                    ter(temBAD_CREDENTIALS));
+                    ter(tecBAD_CREDENTIALS));
             }
 
             {  // maria can't pay using valid credentials but issued for
                // different account
                 env(pay(maria, bob, XRP(100), {credIdx}),
-                    ter(temBAD_CREDENTIALS));
+                    ter(tecBAD_CREDENTIALS));
             }
 
             {
@@ -1348,7 +1348,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E"
                     "01E034";
                 auto jv = finish(zelda, alice, seq1, {invalidIdx});
-                env(jv, fee(1500), ter(temBAD_CREDENTIALS));
+                env(jv, fee(1500), ter(tecBAD_CREDENTIALS));
                 env.close();
             }
 

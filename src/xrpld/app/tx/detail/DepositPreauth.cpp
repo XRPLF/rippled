@@ -110,20 +110,20 @@ DepositPreauth::preauthPreclaimCredentialsCheck(
         if (!sleCred)
         {
             JLOG(j.trace()) << "Credential doesn't exists. Cred: " << h;
-            return temBAD_CREDENTIALS;
+            return tecBAD_CREDENTIALS;
         }
 
         if (sleCred->getAccountID(sfSubject) != src)
         {
             JLOG(j.trace())
                 << "Credential not for current account. Cred: " << h;
-            return temBAD_CREDENTIALS;
+            return tecBAD_CREDENTIALS;
         }
 
         if (!(sleCred->getFlags() & lsfAccepted))
         {
             JLOG(j.trace()) << "Credential not accepted. Cred: " << h;
-            return temBAD_CREDENTIALS;
+            return tecBAD_CREDENTIALS;
         }
 
         auto o = STObject::makeInnerObject(sfCredential);

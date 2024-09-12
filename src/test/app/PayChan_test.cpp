@@ -900,7 +900,7 @@ struct PayChan_test : public beast::unit_test::suite
                     std::nullopt,
                     std::nullopt,
                     {credBadIdx}),
-                ter(temBAD_CREDENTIALS));
+                ter(tecBAD_CREDENTIALS));
 
             {
                 // Create credentials
