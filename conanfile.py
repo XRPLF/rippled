@@ -1,10 +1,10 @@
+import os
+import re
 from conan import ConanFile
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
-import re
 
 class Xrpl(ConanFile):
     name = 'xrpl'
-
     license = 'ISC'
     author = 'John Freeman <jfreeman@ripple.com>'
     url = 'https://github.com/xrplf/rippled'
@@ -22,22 +22,6 @@ class Xrpl(ConanFile):
         'unity': [True, False],
         'xrpld': [True, False],
     }
-
-    requires = [
-        'date/3.0.1',
-        'grpc/1.50.1',
-        'libarchive/3.6.2',
-        'nudb/2.0.8',
-        'openssl/1.1.1u',
-        'soci/4.0.3',
-        'xxhash/0.8.2',
-        'zlib/1.2.13',
-    ]
-
-    tool_requires = [
-        'protobuf/3.21.9',
-    ]
-
     default_options = {
         'assertions': False,
         'coverage': False,
@@ -49,7 +33,6 @@ class Xrpl(ConanFile):
         'tests': False,
         'unity': False,
         'xrpld': False,
-
         'date/*:header_only': True,
         'grpc/*:shared': False,
         'grpc/*:secure': True,
@@ -85,6 +68,28 @@ class Xrpl(ConanFile):
         'soci/*:with_boost': True,
         'xxhash/*:shared': False,
     }
+    requires = [
+        'date/3.0.1',
+        'grpc/1.50.1',
+        'libarchive/3.6.2',
+        'nudb/2.0.8',
+        'openssl/1.1.1u',
+        'soci/4.0.3',
+        'xxhash/0.8.2',
+        'zlib/1.2.13',
+    ]
+    tool_requires = [
+        'protobuf/3.21.9',
+    ]
+    exports_sources = (
+        'CMakeLists.txt',
+        'bin/getRippledInfo',
+        'cfg/*',
+        'cmake/*',
+        'external/*',
+        'include/*',
+        'src/*',
+    )
 
     def set_version(self):
         path = f'{self.recipe_folder}/src/libxrpl/protocol/BuildInfo.cpp'
@@ -108,23 +113,12 @@ class Xrpl(ConanFile):
         if self.options.rocksdb:
             self.requires('rocksdb/6.29.5')
 
-    exports_sources = (
-        'CMakeLists.txt',
-        'bin/getRippledInfo',
-        'cfg/*',
-        'cmake/*',
-        'external/*',
-        'include/*',
-        'src/*',
-    )
-
     def layout(self):
         cmake_layout(self)
-        # Fix this setting to follow the default introduced in Conan 1.48
-        # to align with our build instructions.
         self.folders.generators = 'build/generators'
 
     generators = 'CMakeDeps'
+
     def generate(self):
         tc = CMakeToolchain(self)
         tc.variables['tests'] = self.options.tests
@@ -157,8 +151,6 @@ class Xrpl(ConanFile):
             'ed25519',
             'secp256k1',
         ]
-        # TODO: Fix the protobufs to include each other relative to
-        # `include/`, not `include/ripple/proto/`.
         libxrpl.includedirs = ['include', 'include/ripple/proto']
         libxrpl.requires = [
             'boost::boost',
