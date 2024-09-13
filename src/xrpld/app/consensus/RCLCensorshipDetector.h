@@ -51,6 +51,14 @@ public:
         return lhs.seq < rhs.seq;
     }
 
+    void g(std::optional<int> &val, bool b) {
+        if (b) {
+          *val = 314; // Noncompliant; the behavior is undefined if the optional is empty.
+        } else {
+          val.value() = 42; // Noncompliant; it will throw if the optional is empty.
+        }
+    }
+
     friend bool
     operator<(TxIDSeq const& lhs, TxID const& rhs)
     {
