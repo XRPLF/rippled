@@ -103,6 +103,10 @@ SetSubscription::preclaim(PreclaimContext const& ctx)
             return tecNO_DST;
         }
 
+        auto const flags = sleDest->getFlags();
+        if ((flags & lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
+            return tecDST_TAG_NEEDED;
+
         // create// Validate Frequency <= 0
         if (ctx.tx.getFieldU32(sfFrequency) <= 0)
         {
@@ -194,8 +198,8 @@ SetSubscription::doApply()
 
         // create
         AccountID const dest = ctx_.tx.getAccountID(sfDestination);
-        Keylet const subKeylet = keylet::subscription(
-            account, dest, ctx_.tx.getFieldU32(sfSequence));
+        Keylet const subKeylet =
+            keylet::subscription(account, dest, ctx_.tx.getSeqProxy().value());
         auto sle = std::make_shared<SLE>(subKeylet);
         sle->setAccountID(sfAccount, account);
         sle->setAccountID(sfDestination, dest);

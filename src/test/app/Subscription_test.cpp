@@ -599,6 +599,68 @@ struct Subscription_test : public beast::unit_test::suite
     }
 
     void
+    testCancel(FeatureBitset features)
+    {
+        testcase("cancel");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        // Cancel Account
+        {
+            // setup env
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const subId = getSubscriptionIndex(alice, bob, env.seq(alice));
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+
+            env(subscription::create(alice, bob, XRP(10), 100s));
+            env.close();
+
+            env(subscription::cancel(alice, subId));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice) == preAlice - (baseFee * 2));
+            BEAST_EXPECT(env.balance(bob) == preBob);
+            BEAST_EXPECT(!subscriptionExists(*env.current(), subId));
+        }
+
+        // Cancel Destination
+        {
+            // setup env
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const subId = getSubscriptionIndex(alice, bob, env.seq(alice));
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+
+            env(subscription::create(alice, bob, XRP(10), 100s));
+            env.close();
+
+            env(subscription::cancel(bob, subId));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice) == preAlice - baseFee);
+            BEAST_EXPECT(env.balance(bob) == preBob - baseFee);
+            BEAST_EXPECT(!subscriptionExists(*env.current(), subId));
+        }
+    }
+
+    void
     testClaim(FeatureBitset features)
     {
         testcase("claim");
@@ -755,6 +817,178 @@ struct Subscription_test : public beast::unit_test::suite
     }
 
     void
+    testDstTag(FeatureBitset features)
+    {
+        testcase("dst tag");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        // setup env
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+
+        Env env{*this, features};
+        env.fund(XRP(1000), alice, bob);
+        env.close();
+        env(fset(bob, asfRequireDest));
+        env.close();
+
+        {
+            auto const subId = getSubscriptionIndex(alice, bob, env.seq(alice));
+            env(subscription::create(alice, bob, XRP(10), 100s),
+                ter(tecDST_TAG_NEEDED));
+            env.close();
+
+            BEAST_EXPECT(!subscriptionExists(*env.current(), subId));
+        }
+
+        {
+            auto const subId = getSubscriptionIndex(alice, bob, env.seq(alice));
+            env(subscription::create(alice, bob, XRP(10), 100s), dtag(1));
+            env.close();
+
+            BEAST_EXPECT(subscriptionExists(*env.current(), subId));
+        }
+    }
+
+    void
+    testAccountDelete(FeatureBitset features)
+    {
+        testcase("account delete");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        auto rmAccount = [this](
+                             Env& env,
+                             Account const& toRm,
+                             Account const& dst,
+                             TER expectedTer = tesSUCCESS) {
+            // only allow an account to be deleted if the account's sequence
+            // number is at least 256 less than the current ledger sequence
+            for (auto minRmSeq = env.seq(toRm) + 257;
+                 env.current()->seq() < minRmSeq;
+                 env.close())
+            {
+            }
+
+            env(acctdelete(toRm, dst),
+                fee(drops(env.current()->fees().increment)),
+                ter(expectedTer));
+            env.close();
+            this->BEAST_EXPECT(
+                isTesSuccess(expectedTer) ==
+                !env.closed()->exists(keylet::account(toRm.id())));
+        };
+
+        // setup env
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+
+        Env env{*this, features};
+        env.fund(XRP(1000), alice, bob, carol);
+        env.close();
+
+        auto const subId = getSubscriptionIndex(alice, bob, env.seq(alice));
+        env(subscription::create(alice, bob, XRP(10), 100s));
+        env.close();
+
+        rmAccount(env, alice, carol, tecHAS_OBLIGATIONS);
+        rmAccount(env, bob, carol, tecHAS_OBLIGATIONS);
+        BEAST_EXPECT(env.closed()->exists(keylet::account(alice.id())));
+        BEAST_EXPECT(env.closed()->exists(keylet::account(bob.id())));
+    }
+
+    void
+    testUsingTickets(FeatureBitset features)
+    {
+        testcase("using tickets");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        // Claim / Cancel (Account)
+        {
+            // setup env
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            Env env{*this, features};
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            env(ticket::create(alice, 10));
+            std::uint32_t const aliceSeq{env.seq(alice)};
+
+            std::uint32_t bobTicketSeq{env.seq(bob) + 1};
+            env(ticket::create(bob, 10));
+            std::uint32_t const bobSeq{env.seq(bob)};
+
+            auto const subId = getSubscriptionIndex(alice, bob, aliceTicketSeq);
+            env(subscription::create(alice, bob, XRP(10), 100s),
+                ticket::use(aliceTicketSeq++));
+            env.close();
+
+            env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+            BEAST_EXPECT(env.seq(alice) == aliceSeq);
+
+            env(subscription::claim(bob, subId, XRP(10)),
+                ticket::use(bobTicketSeq++));
+            env.close();
+
+            env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
+            BEAST_EXPECT(env.seq(bob) == bobSeq);
+
+            env(subscription::cancel(alice, subId),
+                ticket::use(aliceTicketSeq++));
+            env.close();
+
+            env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+            BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        }
+
+        // Claim / Cancel (Destination)
+        {
+            // setup env
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            Env env{*this, features};
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            env(ticket::create(alice, 10));
+            std::uint32_t const aliceSeq{env.seq(alice)};
+
+            std::uint32_t bobTicketSeq{env.seq(bob) + 1};
+            env(ticket::create(bob, 10));
+            std::uint32_t const bobSeq{env.seq(bob)};
+
+            auto const subId = getSubscriptionIndex(alice, bob, aliceTicketSeq);
+            env(subscription::create(alice, bob, XRP(10), 100s),
+                ticket::use(aliceTicketSeq++));
+            env.close();
+
+            env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+            BEAST_EXPECT(env.seq(alice) == aliceSeq);
+
+            env(subscription::claim(bob, subId, XRP(10)),
+                ticket::use(bobTicketSeq++));
+            env.close();
+
+            env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
+            BEAST_EXPECT(env.seq(bob) == bobSeq);
+
+            env(subscription::cancel(bob, subId), ticket::use(bobTicketSeq++));
+            env.close();
+
+            env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
+            BEAST_EXPECT(env.seq(bob) == bobSeq);
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnabled(features);
@@ -769,13 +1003,16 @@ struct Subscription_test : public beast::unit_test::suite
         testClaimDoApply(features);
         testSet(features);
         testUpdate(features);
+        testCancel(features);
         testClaim(features);
-        // testDstTag(features);
+        testDstTag(features);
         // testDepositAuth(features);
-        // testMetaAndOwnership(features);
+        // testRippleState(features);
         // testGateway(features);
-        // testAccountDelete(features);
-        // testUsingTickets(features);
+        // testRequireAuth(features);
+        // testFreeze(features);
+        testAccountDelete(features);
+        testUsingTickets(features);
     }
 
 public:
