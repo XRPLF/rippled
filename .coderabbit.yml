@@ -16,7 +16,10 @@ reviews:
   path_filters: 
     - "!**/*.txt" 
     - "!src/test/**"
-    - "!src/xrpld/**"
+    - "!src/xrpld/app/ledger/**"
+    - "!src/xrpld/app/misc/**"
+    - "!src/xrpld/ledger/**"
+    - "!src/xrpld/rpc/**"
   path_instructions: []
   abort_on_close: true
   auto_review:
