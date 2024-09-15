@@ -513,7 +513,7 @@ TxFormats::TxFormats()
             {sfOwner, soeOPTIONAL},
         },
         commonFields);
-    
+
     add(jss::SubscriptionSet,
         ttSUBSCRIPTION_SET,
         {
@@ -526,14 +526,14 @@ TxFormats::TxFormats()
             {sfSubscriptionID, soeOPTIONAL},
         },
         commonFields);
-    
+
     add(jss::SubscriptionCancel,
         ttSUBSCRIPTION_CANCEL,
         {
             {sfSubscriptionID, soeREQUIRED},
         },
         commonFields);
-    
+
     add(jss::SubscriptionClaim,
         ttSUBSCRIPTION_CLAIM,
         {

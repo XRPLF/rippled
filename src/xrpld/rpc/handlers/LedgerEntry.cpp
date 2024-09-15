@@ -667,7 +667,8 @@ doLedgerEntry(RPC::JsonContext& context)
             // {
             //     uNodeIndex = beast::zero;
             //     auto const& oracle = context.params[jss::oracle];
-            //     auto const documentID = [&]() -> std::optional<std::uint32_t> {
+            //     auto const documentID = [&]() -> std::optional<std::uint32_t>
+            //     {
             //         auto const& id = oracle[jss::oracle_document_id];
             //         if (id.isUInt() || (id.isInt() && id.asInt() >= 0))
             //             return std::make_optional(id.asUInt());

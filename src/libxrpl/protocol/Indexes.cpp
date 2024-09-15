@@ -453,9 +453,14 @@ oracle(AccountID const& account, std::uint32_t const& documentID) noexcept
 }
 
 Keylet
-subscription(AccountID const& account, AccountID const& dest, std::uint32_t const& seq) noexcept
+subscription(
+    AccountID const& account,
+    AccountID const& dest,
+    std::uint32_t const& seq) noexcept
 {
-    return {ltSUBSCRIPTION, indexHash(LedgerNameSpace::SUBSCRIPTION, account, dest, seq)};
+    return {
+        ltSUBSCRIPTION,
+        indexHash(LedgerNameSpace::SUBSCRIPTION, account, dest, seq)};
 }
 
 }  // namespace keylet
