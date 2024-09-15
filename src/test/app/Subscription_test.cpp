@@ -130,9 +130,9 @@ struct Subscription_test : public beast::unit_test::suite
     }
 
     void
-    testSetPreflight(FeatureBitset features)
+    testSetPreflightInvalid(FeatureBitset features)
     {
-        testcase("set preflight");
+        testcase("set preflight invalid");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
@@ -146,11 +146,30 @@ struct Subscription_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice, bob, gw);
         env.close();
 
-        // temINVALID_FLAG:
+        /*
+        CREATE
+        */
+
+        // temMALFORMED: SetSubscription: SubscriptionID is not present, and
+        // required fields are also present.
         {
-            env(subscription::create(alice, bob, XRP(10), 100s),
-                txflags(tfSetfAuth),
-                ter(temINVALID_FLAG));
+            Json::Value txn;
+            txn[jss::TransactionType] = jss::SubscriptionSet;
+            txn[jss::Account] = alice.human();
+
+            // no sfDestination
+            env(txn, ter(temMALFORMED));
+            env.close();
+
+            // no sfAmount
+            txn[sfDestination.jsonName] = bob.human();
+            env(txn, ter(temMALFORMED));
+            env.close();
+
+            // no sfFrequency
+            txn[sfDestination.jsonName] = bob.human();
+            txn[sfAmount.jsonName] = XRP(10).value().getJson(JsonOptions::none);
+            env(txn, ter(temMALFORMED));
             env.close();
         }
 
@@ -159,6 +178,50 @@ struct Subscription_test : public beast::unit_test::suite
         {
             env(subscription::create(alice, alice, XRP(10), 100s),
                 ter(temDST_IS_SRC));
+            env.close();
+        }
+
+        /*
+        UPDATE
+        */
+
+        // temMALFORMED: SetSubscription: SubscriptionID is present, but
+        // optional fields are also present.
+        {
+            auto const aliceSeq = env.seq(alice);
+            auto const subId = getSubscriptionIndex(alice, bob, aliceSeq);
+
+            Json::Value txn = subscription::update(alice, subId, XRP(10));
+
+            // sfDestination
+            txn[sfDestination.jsonName] = bob.human();
+            env(txn, ter(temMALFORMED));
+            env.close();
+
+            // sfFrequency
+            auto const frequency = 100s;
+            txn[sfDestination.jsonName] = bob.human();
+            txn[sfFrequency.jsonName] = to_string(frequency.count());
+            env(txn, ter(temMALFORMED));
+            env.close();
+
+            // sfStartTime
+            auto const startTime = env.now() + 0s;
+            txn[sfDestination.jsonName] = bob.human();
+            txn[sfFrequency.jsonName] = to_string(frequency.count());
+            env(txn, subscription::start_time(startTime), ter(temMALFORMED));
+            env.close();
+        }
+
+        /*
+        BOTH
+        */
+
+        // temINVALID_FLAG:
+        {
+            env(subscription::create(alice, bob, XRP(10), 100s),
+                txflags(tfSetfAuth),
+                ter(temINVALID_FLAG));
             env.close();
         }
 
@@ -180,9 +243,9 @@ struct Subscription_test : public beast::unit_test::suite
     }
 
     void
-    testSetPreclaim(FeatureBitset features)
+    testSetPreclaimInvalid(FeatureBitset features)
     {
-        testcase("set preclaim");
+        testcase("set preclaim invalid");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
@@ -256,6 +319,7 @@ struct Subscription_test : public beast::unit_test::suite
             env(subscription::update(alice, subId, XRP(100)), ter(tecNO_ENTRY));
             env.close();
         }
+
         // tecNO_PERMISSION: SetSubscription: Account is not the owner of the
         // subscription.
         {
@@ -267,12 +331,25 @@ struct Subscription_test : public beast::unit_test::suite
                 ter(tecNO_PERMISSION));
             env.close();
         }
+
+        // temBAD_EXPIRATION: SetSubscription: The expiration time is in the
+        // past.
+        {
+            auto const subId = getSubscriptionIndex(alice, bob, env.seq(alice));
+            env(subscription::create(alice, bob, XRP(100), 100s));
+            env.close();
+
+            auto const expire = env.now() - 10s;
+            env(subscription::update(alice, subId, XRP(100), expire),
+                ter(temBAD_EXPIRATION));
+            env.close();
+        }
     }
 
     void
-    testSetDoApply(FeatureBitset features)
+    testSetDoApplyInvalid(FeatureBitset features)
     {
-        testcase("set doApply");
+        testcase("set doApply invalid");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
@@ -297,9 +374,9 @@ struct Subscription_test : public beast::unit_test::suite
     }
 
     void
-    testCancelPreflight(FeatureBitset features)
+    testCancelPreflightInvalid(FeatureBitset features)
     {
-        testcase("cancel preflight");
+        testcase("cancel preflight invalid");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
@@ -325,9 +402,9 @@ struct Subscription_test : public beast::unit_test::suite
     }
 
     void
-    testCancelPreclaim(FeatureBitset features)
+    testCancelPreclaimInvalid(FeatureBitset features)
     {
-        testcase("cancel preclaim");
+        testcase("cancel preclaim invalid");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
@@ -351,9 +428,9 @@ struct Subscription_test : public beast::unit_test::suite
     }
 
     void
-    testCancelDoApply(FeatureBitset features)
+    testCancelDoApplyInvalid(FeatureBitset features)
     {
-        testcase("cancel doApply");
+        testcase("cancel doApply invalid");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
@@ -371,9 +448,9 @@ struct Subscription_test : public beast::unit_test::suite
     }
 
     void
-    testClaimPreflight(FeatureBitset features)
+    testClaimPreflightInvalid(FeatureBitset features)
     {
-        testcase("claim preflight");
+        testcase("claim preflight invalid");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
@@ -390,9 +467,9 @@ struct Subscription_test : public beast::unit_test::suite
     }
 
     void
-    testClaimPreclaim(FeatureBitset features)
+    testClaimPreclaimInvalid(FeatureBitset features)
     {
-        testcase("claim preclaim");
+        testcase("claim preclaim invalid");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
@@ -412,9 +489,9 @@ struct Subscription_test : public beast::unit_test::suite
     }
 
     void
-    testClaimDoApply(FeatureBitset features)
+    testClaimDoApplyInvalid(FeatureBitset features)
     {
-        testcase("claim doApply");
+        testcase("claim doApply invalid");
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
@@ -586,7 +663,7 @@ struct Subscription_test : public beast::unit_test::suite
             env(subscription::create(alice, bob, XRP(10), 100s));
             env.close();
 
-            auto const expire = env.now() - 10s;
+            auto const expire = env.now() + 10s;
             env(subscription::update(alice, subId, XRP(10), expire));
             env.close();
 
@@ -889,7 +966,6 @@ struct Subscription_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice, bob, carol);
         env.close();
 
-        auto const subId = getSubscriptionIndex(alice, bob, env.seq(alice));
         env(subscription::create(alice, bob, XRP(10), 100s));
         env.close();
 
@@ -992,15 +1068,15 @@ struct Subscription_test : public beast::unit_test::suite
     testWithFeats(FeatureBitset features)
     {
         testEnabled(features);
-        testSetPreflight(features);
-        testSetPreclaim(features);
-        testSetDoApply(features);
-        testCancelPreflight(features);
-        testCancelPreclaim(features);
-        testCancelDoApply(features);
-        testClaimPreflight(features);
-        testClaimPreclaim(features);
-        testClaimDoApply(features);
+        testSetPreflightInvalid(features);
+        testSetPreclaimInvalid(features);
+        testSetDoApplyInvalid(features);
+        testCancelPreflightInvalid(features);
+        testCancelPreclaimInvalid(features);
+        testCancelDoApplyInvalid(features);
+        testClaimPreflightInvalid(features);
+        testClaimPreclaimInvalid(features);
+        testClaimDoApplyInvalid(features);
         testSet(features);
         testUpdate(features);
         testCancel(features);
@@ -1013,6 +1089,12 @@ struct Subscription_test : public beast::unit_test::suite
         // testFreeze(features);
         testAccountDelete(features);
         testUsingTickets(features);
+
+        // TODO: Should the create subscription transaction take the first
+        // payment?
+        // TODO: Should the next payment be the sfNextPaymentTime + sfFrequency?
+        // Or should it be the current time + sfFrequency?
+        // TODO: Is there any limitations on the update to Expire Time?
     }
 
 public:

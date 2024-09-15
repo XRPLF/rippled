@@ -39,18 +39,45 @@ SetSubscription::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
+    if (ctx.tx.isFieldPresent(sfSubscriptionID))
+    {
+        // update
+        if (ctx.tx.isFieldPresent(sfDestination) ||
+            ctx.tx.isFieldPresent(sfFrequency) ||
+            ctx.tx.isFieldPresent(sfStartTime))
+        {
+            JLOG(ctx.j.warn())
+                << "SetSubscription: Malformed transaction: SubscriptionID "
+                   "is  present, but optional fields are also present.";
+            return temMALFORMED;
+        }
+    }
+    else
+    {
+        // create
+        if (!ctx.tx.isFieldPresent(sfDestination) ||
+            !ctx.tx.isFieldPresent(sfAmount) ||
+            !ctx.tx.isFieldPresent(sfFrequency))
+        {
+            JLOG(ctx.j.warn())
+                << "SetSubscription: Malformed transaction: SubscriptionID "
+                   "is not present, and required fields are not present.";
+            return temMALFORMED;
+        }
+
+        if (ctx.tx.getAccountID(sfDestination) ==
+            ctx.tx.getAccountID(sfAccount))
+        {
+            JLOG(ctx.j.warn())
+                << "SetSubscription: Malformed transaction: Account "
+                   "is the same as the destination.";
+            return temDST_IS_SRC;
+        }
+    }
+
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    // Validate txn.Account != txn.Destination
-    if (ctx.tx.getAccountID(sfDestination) == ctx.tx.getAccountID(sfAccount))
-    {
-        JLOG(ctx.j.warn()) << "SetSubscription: Malformed transaction: Account "
-                              "is the same as the destination.";
-        return temDST_IS_SRC;
-    }
-
-    // Validate txn.Amount
     STAmount const amount = ctx.tx.getFieldAmount(sfAmount);
     if (!isLegalNet(amount) || amount.signum() <= 0)
     {
@@ -91,9 +118,24 @@ SetSubscription::preclaim(PreclaimContext const& ctx)
                                   "owner of the subscription.";
             return tecNO_PERMISSION;
         }
+
+        if (ctx.tx.isFieldPresent(sfExpiration))
+        {
+            auto const currentTime =
+                ctx.view.info().parentCloseTime.time_since_epoch().count();
+            auto const expiration = ctx.tx.getFieldU32(sfExpiration);
+
+            if (expiration < currentTime)
+            {
+                JLOG(ctx.j.warn())
+                    << "SetSubscription: The expiration time is in the past.";
+                return temBAD_EXPIRATION;
+            }
+        }
     }
     else
     {
+        // create
         auto const sleDest =
             ctx.view.read(keylet::account(ctx.tx.getAccountID(sfDestination)));
         if (!sleDest)
@@ -107,7 +149,6 @@ SetSubscription::preclaim(PreclaimContext const& ctx)
         if ((flags & lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
-        // create// Validate Frequency <= 0
         if (ctx.tx.getFieldU32(sfFrequency) <= 0)
         {
             JLOG(ctx.j.warn())
@@ -117,7 +158,6 @@ SetSubscription::preclaim(PreclaimContext const& ctx)
 
         auto const currentTime =
             ctx.view.info().parentCloseTime.time_since_epoch().count();
-        // StartTime is less than the current time.
         auto startTime = currentTime;
         auto nextPaymentTime = currentTime;
         if (ctx.tx.isFieldPresent(sfStartTime))
@@ -136,14 +176,13 @@ SetSubscription::preclaim(PreclaimContext const& ctx)
         {
             auto const expiration = ctx.tx.getFieldU32(sfExpiration);
 
-            // Expiration is less than the current time.
             if (expiration < currentTime)
             {
                 JLOG(ctx.j.warn())
                     << "SetSubscription: The expiration time is in the past.";
                 return temBAD_EXPIRATION;
             }
-            // Expiration is less than the NextPaymentTime.
+
             if (expiration < nextPaymentTime)
             {
                 JLOG(ctx.j.warn()) << "SetSubscription: The expiration time is "
@@ -152,8 +191,6 @@ SetSubscription::preclaim(PreclaimContext const& ctx)
             }
         }
     }
-    // Validate Trustline Exists
-    // Validate Initial Payment Amount (Insufficient Funds)
     return tesSUCCESS;
 }
 
@@ -183,7 +220,7 @@ SetSubscription::doApply()
     }
     else
     {
-        // Check reserve and funds availability
+        // create
         {
             auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
             auto const reserve =
@@ -196,7 +233,6 @@ SetSubscription::doApply()
             //     return tecUNFUNDED;
         }
 
-        // create
         AccountID const dest = ctx_.tx.getAccountID(sfDestination);
         Keylet const subKeylet =
             keylet::subscription(account, dest, ctx_.tx.getSeqProxy().value());
@@ -213,7 +249,6 @@ SetSubscription::doApply()
         if (ctx_.tx.isFieldPresent(sfExpiration))
             sle->setFieldU32(sfExpiration, ctx_.tx.getFieldU32(sfExpiration));
 
-        // Add subscription to sender's owner directory
         {
             auto page = sb.dirInsert(
                 keylet::ownerDir(account),
@@ -224,7 +259,6 @@ SetSubscription::doApply()
             (*sle)[sfOwnerNode] = *page;
         }
 
-        // Add subscription to recipient's owner directory.
         {
             auto page = sb.dirInsert(
                 keylet::ownerDir(dest), subKeylet, describeOwnerDir(dest));
@@ -501,9 +535,9 @@ ClaimSubscription::doApply()
             srcAcct,
             destAcct,
             STPathSet{},
-            true,   // default path
-            false,  // partial payment
-            true,   // owner pays transfer fee
+            true,
+            false,
+            true,
             OfferCrossing::no,
             std::nullopt,
             sleSub->getFieldAmount(sfAmount),
