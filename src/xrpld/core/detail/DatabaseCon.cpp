@@ -247,9 +247,9 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
     setup.lgrPragma[0] = "PRAGMA journal_size_limit=1582080;";
 
     // TX Pragma
-    int64_t page_size = 1024;
+    int64_t page_size = 4096;
     int64_t journal_size_limit = 1582080;
-    int64_t max_page_count = 1073741823;
+    int64_t max_page_count = 4294967294;
 
     setPragma(setup.txPragma[0], "page_size", page_size);
     setPragma(setup.txPragma[1], "journal_size_limit", journal_size_limit);
