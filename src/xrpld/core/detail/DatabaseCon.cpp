@@ -102,6 +102,12 @@ DatabaseCon::~DatabaseCon()
     }
 }
 
+void
+setPragma(std::string& pragma, const std::string& key, int64_t value)
+{
+    pragma = "PRAGMA " + key + "=" + std::to_string(value) + ";";
+}
+
 DatabaseCon::Setup
 setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
 {
@@ -236,6 +242,42 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
         }();
     }
     setup.useGlobalPragma = true;
+
+    // Lgr Pragma
+    setup.lgrPragma[0] = "PRAGMA journal_size_limit=1582080;";
+
+    // TX Pragma
+    int64_t page_size = 1024;
+    int64_t journal_size_limit = 1582080;
+    int64_t max_page_count = 1073741823;
+
+    setPragma(setup.txPragma[0], "page_size", page_size);
+    setPragma(setup.txPragma[1], "journal_size_limit", journal_size_limit);
+    setPragma(setup.txPragma[2], "max_page_count", max_page_count);
+
+#if (ULONG_MAX > UINT_MAX) && !defined(NO_SQLITE_MMAP)
+    setup.txPragma[3] = "PRAGMA mmap_size=17179869184;";
+#else
+    // Provide an explicit `no-op` SQL statement
+    // in order to keep the size of the array
+    // constant regardless of the preprocessor
+    // condition evaluation
+    setup.txPragma[3] = "PRAGMA sqlite_noop_statement;";
+#endif
+
+    if (c.exists("sqlite"))
+    {
+        auto& s = c.section("sqlite");
+        if (set(page_size, "page_size", s))
+            setPragma(setup.txPragma[0], "page_size", page_size);
+
+        if (set(journal_size_limit, "journal_size_limit", s))
+            setPragma(
+                setup.txPragma[1], "journal_size_limit", journal_size_limit);
+
+        if (set(max_page_count, "max_page_count", s))
+            setPragma(setup.txPragma[2], "max_page_count", max_page_count);
+    }
 
     return setup;
 }
