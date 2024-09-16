@@ -28,6 +28,11 @@ The `network_id` field was added in the `server_info` response in version 1.5.0 
 
 ## XRP Ledger server version 2.0.0
 
+### Updates in 2.3.0
+
+(Breaking Changes)
+- Changes to the `book_changes` RPC: This RPC now returns a `validated` field in its response, which was missing in prior versions. Additionally, `book_changes` RPC exhibits similar behavior as the other non-Admin RPC commands, insofar as ledger-retrieval is concerned. Specifically, if the requested ledger version is old, then a `ledgerNotFound` error is returned. This is a breaking change, because prior versions would attempt to acquire such an old ledger.
+
 ### Additions in 2.2
 
 Additions are intended to be non-breaking (because they are purely additive).
