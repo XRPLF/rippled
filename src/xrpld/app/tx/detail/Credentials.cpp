@@ -100,7 +100,10 @@ NotTEC
 CredentialCreate::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureCredentials))
+    {
+        JLOG(ctx.j.trace()) << "featureCredentials is disabled.";
         return temDISABLED;
+    }
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
@@ -172,7 +175,10 @@ CredentialCreate::preflight(PreflightContext const& ctx)
         msg.addBitString(kCred.key);
 
         if (!verify(pk, msg.slice(), *signature, /*canonical*/ true))
+        {
+            JLOG(j.trace()) << "Malformed transaction: bad signature.";
             return temBAD_SIGNATURE;
+        }
     }
 
     return preflight2(ctx);
@@ -195,10 +201,16 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfSubject) &&
         !ctx.view.exists(keylet::account(subject)))
+    {
+        JLOG(ctx.j.trace()) << "Subject doesn't exist.";
         return tecNO_TARGET;
+    }
 
     if (ctx.view.exists(keylet::credential(subject, issuer, credType)))
+    {
+        JLOG(ctx.j.trace()) << "Credential doesn't exist.";
         return tecDUPLICATE;
+    }
 
     if (ctx.tx.isFieldPresent(sfIssuer))
     {
@@ -207,9 +219,17 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
 
         auto const sleIssuer = ctx.view.read(keylet::account(issuer));
         if (!sleIssuer)
+        {
+            JLOG(ctx.j.trace()) << "Issuer doesn't exist.";
             return tecNO_ISSUER;
+        }
+
         if (sleIssuer->getAccountID(sfRegularKey) != signer)
+        {
+            JLOG(ctx.j.trace())
+                << "Regular key doesn't belong to Issuer account.";
             return tecNO_REGULAR_KEY;
+        }
     }
 
     return tesSUCCESS;
@@ -287,15 +307,18 @@ NotTEC
 CredentialDelete::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureCredentials))
+    {
+        JLOG(ctx.j.trace()) << "featureCredentials is disabled.";
         return temDISABLED;
+    }
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    auto const optSubj = ctx.tx[~sfSubject];
-    auto const optIss = ctx.tx[~sfIssuer];
+    auto const subject = ctx.tx[~sfSubject];
+    auto const issuer = ctx.tx[~sfIssuer];
 
-    if (!optSubj && !optIss)
+    if (!subject && !issuer)
     {
         // Neither field is present, the transaction is malformed.
         JLOG(ctx.j.trace()) << "Malformed transaction: "
@@ -304,7 +327,7 @@ CredentialDelete::preflight(PreflightContext const& ctx)
     }
 
     // Make sure that the passed account is valid.
-    if ((optSubj && !AccountID(*optSubj)) || (optIss && !AccountID(*optIss)))
+    if ((subject && !AccountID(*subject)) || (issuer && !AccountID(*issuer)))
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: Subject or Issuer "
                                "field zeroed.";
@@ -342,7 +365,10 @@ CredentialDelete::deleteSLE(
 
     auto const sleOwner = view.peek(keylet::account(owner));
     if (!sleOwner)
+    {
+        JLOG(j.fatal()) << "Internal error: can't retrieve Owner account.";
         return tecINTERNAL;
+    }
 
     // Remove object from owner directory
     std::uint64_t const page = sle->getFieldU64(sfOwnerNode);
@@ -375,7 +401,10 @@ CredentialDelete::doApply()
     {
         if (credentialCheckNotExpired(
                 sleCred, ctx_.view().info().parentCloseTime))
+        {
+            JLOG(j_.trace()) << "Can't delete non-expired credential.";
             return tecNO_PERMISSION;
+        }
     }
 
     return deleteSLE(view(), sleCred, j_);
@@ -387,7 +416,10 @@ NotTEC
 CredentialAccept::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureCredentials))
+    {
+        JLOG(ctx.j.trace()) << "featureCredentials is disabled.";
         return temDISABLED;
+    }
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
@@ -410,15 +442,27 @@ CredentialAccept::preclaim(PreclaimContext const& ctx)
     auto const credType(ctx.tx[sfCredentialType]);
 
     if (!ctx.view.exists(keylet::account(issuer)))
+    {
+        JLOG(ctx.j.warn()) << "No issuer: " << to_string(issuer);
         return tecNO_ISSUER;
+    }
 
     auto const sleCred =
         ctx.view.read(keylet::credential(subject, issuer, credType));
     if (!sleCred)
+    {
+        JLOG(ctx.j.warn()) << "No credential: " << to_string(subject) << ", "
+                           << to_string(issuer) << ", " << credType;
         return tecNO_ENTRY;
+    }
 
     if (sleCred->getFieldU32(sfFlags) & lsfAccepted)
+    {
+        JLOG(ctx.j.warn()) << "Credential already accepted: "
+                           << to_string(subject) << ", " << to_string(issuer)
+                           << ", " << credType;
         return tecDUPLICATE;
+    }
 
     return tesSUCCESS;
 }
@@ -445,8 +489,7 @@ CredentialAccept::doApply()
 
     if (credentialCheckExpired(sleCred, ctx_.view().info().parentCloseTime))
     {
-        JLOG(j_.trace()) << "Credentials are expired. Cred: "
-                         << sleCred->getText();
+        JLOG(j_.trace()) << "Credential is expired: " << sleCred->getText();
         // delete expired credentials even if the transaction failed
         CredentialDelete::deleteSLE(ctx_.view(), sleCred, j_);
         return tecEXPIRED;
