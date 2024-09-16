@@ -15,12 +15,12 @@ class Xrpl(ConanFile):
         'coverage': [True, False],
         'fPIC': [True, False],
         'jemalloc': [True, False],
-        'reporting': [True, False],
         'rocksdb': [True, False],
         'shared': [True, False],
         'static': [True, False],
         'tests': [True, False],
         'unity': [True, False],
+        'xrpld': [True, False],
     }
 
     requires = [
@@ -43,15 +43,13 @@ class Xrpl(ConanFile):
         'coverage': False,
         'fPIC': True,
         'jemalloc': False,
-        'reporting': False,
         'rocksdb': True,
         'shared': False,
         'static': True,
-        'tests': True,
+        'tests': False,
         'unity': False,
+        'xrpld': False,
 
-        'cassandra-cpp-driver/*:shared': False,
-        'cassandra-cpp-driver/*:use_atomic': None,
         'date/*:header_only': True,
         'grpc/*:shared': False,
         'grpc/*:secure': True,
@@ -70,7 +68,6 @@ class Xrpl(ConanFile):
         'libarchive/*:with_pcreposix': False,
         'libarchive/*:with_xattr': False,
         'libarchive/*:with_zlib': False,
-        'libpq/*:shared': False,
         'lz4/*:shared': False,
         'openssl/*:shared': False,
         'protobuf/*:shared': False,
@@ -108,9 +105,6 @@ class Xrpl(ConanFile):
         self.requires('sqlite3/3.42.0', force=True)
         if self.options.jemalloc:
             self.requires('jemalloc/5.3.0')
-        if self.options.reporting:
-            self.requires('cassandra-cpp-driver/2.15.3')
-            self.requires('libpq/14.7')
         if self.options.rocksdb:
             self.requires('rocksdb/6.29.5')
 
@@ -137,11 +131,11 @@ class Xrpl(ConanFile):
         tc.variables['assert'] = self.options.assertions
         tc.variables['coverage'] = self.options.coverage
         tc.variables['jemalloc'] = self.options.jemalloc
-        tc.variables['reporting'] = self.options.reporting
         tc.variables['rocksdb'] = self.options.rocksdb
         tc.variables['BUILD_SHARED_LIBS'] = self.options.shared
         tc.variables['static'] = self.options.static
         tc.variables['unity'] = self.options.unity
+        tc.variables['xrpld'] = self.options.xrpld
         tc.generate()
 
     def build(self):

@@ -24,7 +24,6 @@
 #include <xrpld/app/rdb/State.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/ConfigSections.h>
-#include <xrpld/core/Pg.h>
 #include <xrpld/nodestore/Scheduler.h>
 #include <xrpld/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpld/shamap/SHAMapMissingNode.h>
@@ -120,13 +119,6 @@ SHAMapStoreImp::SHAMapStoreImp(
 
     if (deleteInterval_)
     {
-        if (app_.config().reporting())
-        {
-            Throw<std::runtime_error>(
-                "Reporting does not support online_delete. Remove "
-                "online_delete info from config");
-        }
-
         // Configuration that affects the behavior of online delete
         get_if_exists(section, "delete_batch", deleteBatch_);
         std::uint32_t temp;
@@ -188,12 +180,6 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
 
     if (deleteInterval_)
     {
-        if (app_.config().reporting())
-        {
-            Throw<std::runtime_error>(
-                "Reporting does not support online_delete. Remove "
-                "online_delete info from config");
-        }
         SavedState state = state_db_.getState();
         auto writableBackend = makeBackendRotating(state.writableDb);
         auto archiveBackend = makeBackendRotating(state.archiveDb);
@@ -279,19 +265,12 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 void
 SHAMapStoreImp::run()
 {
-    if (app_.config().reporting())
-    {
-        assert(false);
-        Throw<std::runtime_error>(
-            "Reporting does not support online_delete. Remove "
-            "online_delete info from config");
-    }
     beast::setCurrentThreadName("SHAMapStore");
     LedgerIndex lastRotated = state_db_.getState().lastRotated;
     netOPs_ = &app_.getOPs();
     ledgerMaster_ = &app_.getLedgerMaster();
-    fullBelowCache_ = &(*app_.getNodeFamily().getFullBelowCache(0));
-    treeNodeCache_ = &(*app_.getNodeFamily().getTreeNodeCache(0));
+    fullBelowCache_ = &(*app_.getNodeFamily().getFullBelowCache());
+    treeNodeCache_ = &(*app_.getNodeFamily().getTreeNodeCache());
 
     if (advisoryDelete_)
         canDelete_ = state_db_.getCanDelete();
@@ -329,27 +308,8 @@ SHAMapStoreImp::run()
             validatedSeq >= lastRotated + deleteInterval_ &&
             canDelete_ >= lastRotated - 1 && healthWait() == keepGoing;
 
-        // Make sure we don't delete ledgers currently being
-        // imported into the ShardStore
-        bool const waitForImport = readyToRotate && [this, lastRotated] {
-            if (auto shardStore = app_.getShardStore())
-            {
-                if (auto sequence = shardStore->getDatabaseImportSequence())
-                    return sequence <= lastRotated - 1;
-            }
-
-            return false;
-        }();
-
-        if (waitForImport)
-        {
-            JLOG(journal_.info())
-                << "NOT rotating validatedSeq " << validatedSeq
-                << " as rotation would interfere with ShardStore import";
-        }
-
         // will delete up to (not including) lastRotated
-        if (readyToRotate && !waitForImport)
+        if (readyToRotate)
         {
             JLOG(journal_.warn())
                 << "rotating  validatedSeq " << validatedSeq << " lastRotated "
@@ -616,13 +576,6 @@ SHAMapStoreImp::freshenCaches()
 void
 SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
 {
-    if (app_.config().reporting())
-    {
-        assert(false);
-        Throw<std::runtime_error>(
-            "Reporting does not support online_delete. Remove "
-            "online_delete info from config");
-    }
     // Do not allow ledgers to be acquired from the network
     // that are about to be deleted.
     minimumOnline_ = lastRotated + 1;

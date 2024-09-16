@@ -1,0 +1,24 @@
+diff --git a/include/nudb/detail/stream.hpp b/include/nudb/detail/stream.hpp
+index 6c07bf1..e0ce8ed 100644
+--- a/include/nudb/detail/stream.hpp
++++ b/include/nudb/detail/stream.hpp
+@@ -14,6 +14,7 @@
+ #include <cstdint>
+ #include <cstring>
+ #include <memory>
++#include <stdexcept>
+ 
+ namespace nudb {
+ namespace detail {
+diff --git a/include/nudb/impl/context.ipp b/include/nudb/impl/context.ipp
+index beb7058..ffde0b3 100644
+--- a/include/nudb/impl/context.ipp
++++ b/include/nudb/impl/context.ipp
+@@ -9,6 +9,7 @@
+ #define NUDB_IMPL_CONTEXT_IPP
+ 
+ #include <nudb/detail/store_base.hpp>
++#include <stdexcept>
+ 
+ namespace nudb {
+ 

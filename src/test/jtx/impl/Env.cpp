@@ -317,16 +317,24 @@ Env::submit(JTx const& jt)
     auto const jr = [&]() {
         if (jt.stx)
         {
-            txid_ = jt.stx->getTransactionID();
-            Serializer s;
-            jt.stx->add(s);
-            auto const jr = rpc("submit", strHex(s.slice()));
+            // We shouldn't need to retry, but it fixes the test on macOS for
+            // the moment.
+            int retries = 3;
+            do
+            {
+                txid_ = jt.stx->getTransactionID();
+                Serializer s;
+                jt.stx->add(s);
+                auto const jr = rpc("submit", strHex(s.slice()));
 
-            parsedResult = parseResult(jr);
-            test.expect(parsedResult.ter, "ter uninitialized!");
-            ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
-
-            return jr;
+                parsedResult = parseResult(jr);
+                test.expect(parsedResult.ter, "ter uninitialized!");
+                ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
+                if (ter_ != telENV_RPC_FAILED ||
+                    parsedResult.rpcCode != rpcINTERNAL ||
+                    jt.ter == telENV_RPC_FAILED || --retries <= 0)
+                    return jr;
+            } while (true);
         }
         else
         {

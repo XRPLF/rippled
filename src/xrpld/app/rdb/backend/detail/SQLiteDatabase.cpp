@@ -25,10 +25,8 @@
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/app/rdb/backend/detail/Node.h>
-#include <xrpld/app/rdb/backend/detail/Shard.h>
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/core/SociDB.h>
-#include <xrpld/nodestore/DatabaseShard.h>
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/json/to_string.h>
@@ -55,19 +53,6 @@ public:
         {
             std::string_view constexpr error =
                 "Failed to create ledger databases";
-
-            JLOG(j_.fatal()) << error;
-            Throw<std::runtime_error>(error.data());
-        }
-
-        if (app.getShardStore() &&
-            !makeMetaDBs(
-                config,
-                setup,
-                DatabaseCon::CheckpointerSetup{&jobQueue, &app_.logs()}))
-        {
-            std::string_view constexpr error =
-                "Failed to create metadata databases";
 
             JLOG(j_.fatal()) << error;
             Throw<std::runtime_error>(error.data());
@@ -195,7 +180,6 @@ private:
     bool const useTxTables_;
     beast::Journal j_;
     std::unique_ptr<DatabaseCon> lgrdb_, txdb_;
-    std::unique_ptr<DatabaseCon> lgrMetaDB_, txMetaDB_;
 
     /**
      * @brief makeLedgerDBs Opens ledger and transaction databases for the node
@@ -210,56 +194,6 @@ private:
         Config const& config,
         DatabaseCon::Setup const& setup,
         DatabaseCon::CheckpointerSetup const& checkpointerSetup);
-
-    /**
-     * @brief makeMetaDBs Opens shard index lookup databases, and stores
-     *        their descriptors in private member variables.
-     * @param config Config object.
-     * @param setup Path to the databases and other opening parameters.
-     * @param checkpointerSetup Checkpointer parameters.
-     * @return True if node databases opened successfully.
-     */
-    bool
-    makeMetaDBs(
-        Config const& config,
-        DatabaseCon::Setup const& setup,
-        DatabaseCon::CheckpointerSetup const& checkpointerSetup);
-
-    /**
-     * @brief seqToShardIndex Provides the index of the shard that stores the
-     *        ledger with the given sequence.
-     * @param ledgerSeq Ledger sequence.
-     * @return Shard index.
-     */
-    std::uint32_t
-    seqToShardIndex(LedgerIndex ledgerSeq)
-    {
-        return app_.getShardStore()->seqToShardIndex(ledgerSeq);
-    }
-
-    /**
-     * @brief firstLedgerSeq Returns the sequence of the first ledger stored in
-     *        the shard specified by the shard index parameter.
-     * @param shardIndex Shard Index.
-     * @return First ledger sequence.
-     */
-    LedgerIndex
-    firstLedgerSeq(std::uint32_t shardIndex)
-    {
-        return app_.getShardStore()->firstLedgerSeq(shardIndex);
-    }
-
-    /**
-     * @brief lastLedgerSeq Returns the sequence of the last ledger stored in
-     *        the shard specified by the shard index parameter.
-     * @param shardIndex Shard Index.
-     * @return Last ledger sequence.
-     */
-    LedgerIndex
-    lastLedgerSeq(std::uint32_t shardIndex)
-    {
-        return app_.getShardStore()->lastLedgerSeq(shardIndex);
-    }
 
     /**
      * @brief existsLedger Checks if the node store ledger database exists.
@@ -283,16 +217,6 @@ private:
     }
 
     /**
-     * shardStoreExists Checks whether the shard store exists
-     * @return True if the shard store exists
-     */
-    bool
-    shardStoreExists()
-    {
-        return app_.getShardStore() != nullptr;
-    }
-
-    /**
      * @brief checkoutTransaction Checks out and returns node store ledger
      *        database.
      * @return Session to the node store ledger database.
@@ -313,131 +237,6 @@ private:
     {
         return txdb_->checkoutDb();
     }
-
-    /**
-     * @brief doLedger Checks out the ledger database owned by the shard
-     *        containing the given ledger, and invokes the provided callback
-     *        with a session to that database.
-     * @param ledgerSeq Ledger sequence.
-     * @param callback Callback function to call.
-     * @return Value returned by callback function.
-     */
-    bool
-    doLedger(
-        LedgerIndex ledgerSeq,
-        std::function<bool(soci::session& session)> const& callback)
-    {
-        return app_.getShardStore()->callForLedgerSQLByLedgerSeq(
-            ledgerSeq, callback);
-    }
-
-    /**
-     * @brief doTransaction Checks out the transaction database owned by the
-     *        shard containing the given ledger, and invokes the provided
-     *        callback with a session to that database.
-     * @param ledgerSeq Ledger sequence.
-     * @param callback Callback function to call.
-     * @return Value returned by callback function.
-     */
-    bool
-    doTransaction(
-        LedgerIndex ledgerSeq,
-        std::function<bool(soci::session& session)> const& callback)
-    {
-        return app_.getShardStore()->callForTransactionSQLByLedgerSeq(
-            ledgerSeq, callback);
-    }
-
-    /**
-     * @brief iterateLedgerForward Checks out ledger databases for all shards in
-     *        ascending order starting from the given shard index, until all
-     *        shards in range have been visited or the callback returns false.
-     *        For each visited shard, we invoke the provided callback with a
-     *        session to the database and the current shard index.
-     * @param firstIndex First shard index to visit or no value if all shards
-     *        should be visited.
-     * @param callback Callback function to call.
-     * @return True if each callback function returned true, false otherwise.
-     */
-    bool
-    iterateLedgerForward(
-        std::optional<std::uint32_t> firstIndex,
-        std::function<
-            bool(soci::session& session, std::uint32_t shardIndex)> const&
-            callback)
-    {
-        return app_.getShardStore()->iterateLedgerSQLsForward(
-            firstIndex, callback);
-    }
-
-    /**
-     * @brief iterateTransactionForward Checks out transaction databases for all
-     *        shards in ascending order starting from the given shard index,
-     *        until all shards in range have been visited or the callback
-     *        returns false. For each visited shard, we invoke the provided
-     *        callback with a session to the database and the current shard
-     *        index.
-     * @param firstIndex First shard index to visit or no value if all shards
-     *        should be visited.
-     * @param callback Callback function to call.
-     * @return True if each callback function returned true, false otherwise.
-     */
-    bool
-    iterateTransactionForward(
-        std::optional<std::uint32_t> firstIndex,
-        std::function<
-            bool(soci::session& session, std::uint32_t shardIndex)> const&
-            callback)
-    {
-        return app_.getShardStore()->iterateLedgerSQLsForward(
-            firstIndex, callback);
-    }
-
-    /**
-     * @brief iterateLedgerBack Checks out ledger databases for all
-     *        shards in descending order starting from the given shard index,
-     *        until all shards in range have been visited or the callback
-     *        returns false. For each visited shard, we invoke the provided
-     *        callback with a session to the database and the current shard
-     *        index.
-     * @param firstIndex First shard index to visit or no value if all shards
-     *        should be visited.
-     * @param callback Callback function to call.
-     * @return True if each callback function returned true, false otherwise.
-     */
-    bool
-    iterateLedgerBack(
-        std::optional<std::uint32_t> firstIndex,
-        std::function<
-            bool(soci::session& session, std::uint32_t shardIndex)> const&
-            callback)
-    {
-        return app_.getShardStore()->iterateLedgerSQLsBack(
-            firstIndex, callback);
-    }
-
-    /**
-     * @brief iterateTransactionBack Checks out transaction databases for all
-     *        shards in descending order starting from the given shard index,
-     *        until all shards in range have been visited or the callback
-     *        returns false. For each visited shard, we invoke the provided
-     *        callback with a session to the database and the current shard
-     *        index.
-     * @param firstIndex First shard index to visit or no value if all shards
-     *        should be visited.
-     * @param callback Callback function to call.
-     * @return True if each callback function returned true, false otherwise.
-     */
-    bool
-    iterateTransactionBack(
-        std::optional<std::uint32_t> firstIndex,
-        std::function<
-            bool(soci::session& session, std::uint32_t shardIndex)> const&
-            callback)
-    {
-        return app_.getShardStore()->iterateLedgerSQLsBack(
-            firstIndex, callback);
-    }
 };
 
 bool
@@ -447,25 +246,10 @@ SQLiteDatabaseImp::makeLedgerDBs(
     DatabaseCon::CheckpointerSetup const& checkpointerSetup)
 {
     auto [lgr, tx, res] =
-        detail::makeLedgerDBs(config, setup, checkpointerSetup);
+        detail::makeLedgerDBs(config, setup, checkpointerSetup, j_);
     txdb_ = std::move(tx);
     lgrdb_ = std::move(lgr);
     return res;
-}
-
-bool
-SQLiteDatabaseImp::makeMetaDBs(
-    Config const& config,
-    DatabaseCon::Setup const& setup,
-    DatabaseCon::CheckpointerSetup const& checkpointerSetup)
-{
-    auto [lgrMetaDB, txMetaDB] =
-        detail::makeMetaDBs(config, setup, checkpointerSetup);
-
-    txMetaDB_ = std::move(txMetaDB);
-    lgrMetaDB_ = std::move(lgrMetaDB);
-
-    return true;
 }
 
 std::optional<LedgerIndex>
@@ -476,19 +260,6 @@ SQLiteDatabaseImp::getMinLedgerSeq()
     {
         auto db = checkoutLedger();
         return detail::getMinLedgerSeq(*db, detail::TableType::Ledgers);
-    }
-
-    /* else use shard databases, if available */
-    if (shardStoreExists())
-    {
-        std::optional<LedgerIndex> res;
-        iterateLedgerForward(
-            {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                res = detail::getMinLedgerSeq(
-                    session, detail::TableType::Ledgers);
-                return !res;
-            });
-        return res;
     }
 
     /* else return empty value */
@@ -507,18 +278,6 @@ SQLiteDatabaseImp::getTransactionsMinLedgerSeq()
         return detail::getMinLedgerSeq(*db, detail::TableType::Transactions);
     }
 
-    if (shardStoreExists())
-    {
-        std::optional<LedgerIndex> res;
-        iterateTransactionForward(
-            {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                res = detail::getMinLedgerSeq(
-                    session, detail::TableType::Transactions);
-                return !res;
-            });
-        return res;
-    }
-
     return {};
 }
 
@@ -535,18 +294,6 @@ SQLiteDatabaseImp::getAccountTransactionsMinLedgerSeq()
             *db, detail::TableType::AccountTransactions);
     }
 
-    if (shardStoreExists())
-    {
-        std::optional<LedgerIndex> res;
-        iterateTransactionForward(
-            {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                res = detail::getMinLedgerSeq(
-                    session, detail::TableType::AccountTransactions);
-                return !res;
-            });
-        return res;
-    }
-
     return {};
 }
 
@@ -557,18 +304,6 @@ SQLiteDatabaseImp::getMaxLedgerSeq()
     {
         auto db = checkoutLedger();
         return detail::getMaxLedgerSeq(*db, detail::TableType::Ledgers);
-    }
-
-    if (shardStoreExists())
-    {
-        std::optional<LedgerIndex> res;
-        iterateLedgerBack(
-            {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                res = detail::getMaxLedgerSeq(
-                    session, detail::TableType::Ledgers);
-                return !res;
-            });
-        return res;
     }
 
     return {};
@@ -587,15 +322,6 @@ SQLiteDatabaseImp::deleteTransactionByLedgerSeq(LedgerIndex ledgerSeq)
             *db, detail::TableType::Transactions, ledgerSeq);
         return;
     }
-
-    if (shardStoreExists())
-    {
-        doTransaction(ledgerSeq, [&](soci::session& session) {
-            detail::deleteByLedgerSeq(
-                session, detail::TableType::Transactions, ledgerSeq);
-            return true;
-        });
-    }
 }
 
 void
@@ -607,17 +333,6 @@ SQLiteDatabaseImp::deleteBeforeLedgerSeq(LedgerIndex ledgerSeq)
         detail::deleteBeforeLedgerSeq(
             *db, detail::TableType::Ledgers, ledgerSeq);
         return;
-    }
-
-    if (shardStoreExists())
-    {
-        iterateLedgerBack(
-            seqToShardIndex(ledgerSeq),
-            [&](soci::session& session, std::uint32_t shardIndex) {
-                detail::deleteBeforeLedgerSeq(
-                    session, detail::TableType::Ledgers, ledgerSeq);
-                return true;
-            });
     }
 }
 
@@ -633,17 +348,6 @@ SQLiteDatabaseImp::deleteTransactionsBeforeLedgerSeq(LedgerIndex ledgerSeq)
         detail::deleteBeforeLedgerSeq(
             *db, detail::TableType::Transactions, ledgerSeq);
         return;
-    }
-
-    if (shardStoreExists())
-    {
-        iterateTransactionBack(
-            seqToShardIndex(ledgerSeq),
-            [&](soci::session& session, std::uint32_t shardIndex) {
-                detail::deleteBeforeLedgerSeq(
-                    session, detail::TableType::Transactions, ledgerSeq);
-                return true;
-            });
     }
 }
 
@@ -661,17 +365,6 @@ SQLiteDatabaseImp::deleteAccountTransactionsBeforeLedgerSeq(
             *db, detail::TableType::AccountTransactions, ledgerSeq);
         return;
     }
-
-    if (shardStoreExists())
-    {
-        iterateTransactionBack(
-            seqToShardIndex(ledgerSeq),
-            [&](soci::session& session, std::uint32_t shardIndex) {
-                detail::deleteBeforeLedgerSeq(
-                    session, detail::TableType::AccountTransactions, ledgerSeq);
-                return true;
-            });
-    }
 }
 
 std::size_t
@@ -684,18 +377,6 @@ SQLiteDatabaseImp::getTransactionCount()
     {
         auto db = checkoutTransaction();
         return detail::getRows(*db, detail::TableType::Transactions);
-    }
-
-    if (shardStoreExists())
-    {
-        std::size_t rows = 0;
-        iterateTransactionForward(
-            {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                rows +=
-                    detail::getRows(session, detail::TableType::Transactions);
-                return true;
-            });
-        return rows;
     }
 
     return 0;
@@ -713,18 +394,6 @@ SQLiteDatabaseImp::getAccountTransactionCount()
         return detail::getRows(*db, detail::TableType::AccountTransactions);
     }
 
-    if (shardStoreExists())
-    {
-        std::size_t rows = 0;
-        iterateTransactionForward(
-            {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                rows += detail::getRows(
-                    session, detail::TableType::AccountTransactions);
-                return true;
-            });
-        return rows;
-    }
-
     return 0;
 }
 
@@ -735,25 +404,6 @@ SQLiteDatabaseImp::getLedgerCountMinMax()
     {
         auto db = checkoutLedger();
         return detail::getRowsMinMax(*db, detail::TableType::Ledgers);
-    }
-
-    if (shardStoreExists())
-    {
-        CountMinMax res{0, 0, 0};
-        iterateLedgerForward(
-            {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                auto r =
-                    detail::getRowsMinMax(session, detail::TableType::Ledgers);
-                if (r.numberOfRows)
-                {
-                    res.numberOfRows += r.numberOfRows;
-                    if (res.minLedgerSequence == 0)
-                        res.minLedgerSequence = r.minLedgerSequence;
-                    res.maxLedgerSequence = r.maxLedgerSequence;
-                }
-                return true;
-            });
-        return res;
     }
 
     return {0, 0, 0};
@@ -771,27 +421,6 @@ SQLiteDatabaseImp::saveValidatedLedger(
             return false;
     }
 
-    if (auto shardStore = app_.getShardStore(); shardStore)
-    {
-        if (ledger->info().seq < shardStore->earliestLedgerSeq())
-            // For the moment return false only when the ShardStore
-            // should accept the ledger, but fails when attempting
-            // to do so, i.e. when saveLedgerMeta fails. Later when
-            // the ShardStore supercedes the NodeStore, change this
-            // line to return false if the ledger is too early.
-            return true;
-
-        auto lgrMetaSession = lgrMetaDB_->checkoutDb();
-        auto txMetaSession = txMetaDB_->checkoutDb();
-
-        return detail::saveLedgerMeta(
-            ledger,
-            app_,
-            *lgrMetaSession,
-            *txMetaSession,
-            shardStore->seqToShardIndex(ledger->info().seq));
-    }
-
     return true;
 }
 
@@ -807,16 +436,6 @@ SQLiteDatabaseImp::getLedgerInfoByIndex(LedgerIndex ledgerSeq)
             return res;
     }
 
-    if (shardStoreExists())
-    {
-        std::optional<LedgerInfo> res;
-        doLedger(ledgerSeq, [&](soci::session& session) {
-            res = detail::getLedgerInfoByIndex(session, ledgerSeq, j_);
-            return true;
-        });
-        return res;
-    }
-
     return {};
 }
 
@@ -830,22 +449,6 @@ SQLiteDatabaseImp::getNewestLedgerInfo()
 
         if (res.has_value())
             return res;
-    }
-
-    if (shardStoreExists())
-    {
-        std::optional<LedgerInfo> res;
-        iterateLedgerBack(
-            {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                if (auto info = detail::getNewestLedgerInfo(session, j_))
-                {
-                    res = info;
-                    return false;
-                }
-                return true;
-            });
-
-        return res;
     }
 
     return {};
@@ -864,24 +467,6 @@ SQLiteDatabaseImp::getLimitedOldestLedgerInfo(LedgerIndex ledgerFirstIndex)
             return res;
     }
 
-    if (shardStoreExists())
-    {
-        std::optional<LedgerInfo> res;
-        iterateLedgerForward(
-            seqToShardIndex(ledgerFirstIndex),
-            [&](soci::session& session, std::uint32_t shardIndex) {
-                if (auto info = detail::getLimitedOldestLedgerInfo(
-                        session, ledgerFirstIndex, j_))
-                {
-                    res = info;
-                    return false;
-                }
-                return true;
-            });
-
-        return res;
-    }
-
     return {};
 }
 
@@ -896,23 +481,6 @@ SQLiteDatabaseImp::getLimitedNewestLedgerInfo(LedgerIndex ledgerFirstIndex)
 
         if (res.has_value())
             return res;
-    }
-
-    if (shardStoreExists())
-    {
-        std::optional<LedgerInfo> res;
-        iterateLedgerBack(
-            {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                if (auto info = detail::getLimitedNewestLedgerInfo(
-                        session, ledgerFirstIndex, j_))
-                {
-                    res = info;
-                    return false;
-                }
-                return shardIndex >= seqToShardIndex(ledgerFirstIndex);
-            });
-
-        return res;
     }
 
     return {};
@@ -930,24 +498,6 @@ SQLiteDatabaseImp::getLedgerInfoByHash(uint256 const& ledgerHash)
             return res;
     }
 
-    if (auto shardStore = app_.getShardStore())
-    {
-        std::optional<LedgerInfo> res;
-        auto lgrMetaSession = lgrMetaDB_->checkoutDb();
-
-        if (auto const shardIndex =
-                detail::getShardIndexforLedger(*lgrMetaSession, ledgerHash))
-        {
-            shardStore->callForLedgerSQLByShardIndex(
-                *shardIndex, [&](soci::session& session) {
-                    res = detail::getLedgerInfoByHash(session, ledgerHash, j_);
-                    return false;  // unused
-                });
-        }
-
-        return res;
-    }
-
     return {};
 }
 
@@ -961,16 +511,6 @@ SQLiteDatabaseImp::getHashByIndex(LedgerIndex ledgerIndex)
 
         if (res.isNonZero())
             return res;
-    }
-
-    if (shardStoreExists())
-    {
-        uint256 hash;
-        doLedger(ledgerIndex, [&](soci::session& session) {
-            hash = detail::getHashByIndex(session, ledgerIndex);
-            return true;
-        });
-        return hash;
     }
 
     return uint256();
@@ -988,16 +528,6 @@ SQLiteDatabaseImp::getHashesByIndex(LedgerIndex ledgerIndex)
             return res;
     }
 
-    if (shardStoreExists())
-    {
-        std::optional<LedgerHashPair> res;
-        doLedger(ledgerIndex, [&](soci::session& session) {
-            res = detail::getHashesByIndex(session, ledgerIndex, j_);
-            return true;
-        });
-        return res;
-    }
-
     return {};
 }
 
@@ -1013,26 +543,6 @@ SQLiteDatabaseImp::getHashesByIndex(LedgerIndex minSeq, LedgerIndex maxSeq)
             return res;
     }
 
-    if (shardStoreExists())
-    {
-        std::map<LedgerIndex, LedgerHashPair> res;
-        while (minSeq <= maxSeq)
-        {
-            LedgerIndex shardMaxSeq = lastLedgerSeq(seqToShardIndex(minSeq));
-            if (shardMaxSeq > maxSeq)
-                shardMaxSeq = maxSeq;
-            doLedger(minSeq, [&](soci::session& session) {
-                auto r =
-                    detail::getHashesByIndex(session, minSeq, shardMaxSeq, j_);
-                res.insert(r.begin(), r.end());
-                return true;
-            });
-            minSeq = shardMaxSeq + 1;
-        }
-
-        return res;
-    }
-
     return {};
 }
 
@@ -1045,37 +555,10 @@ SQLiteDatabaseImp::getTxHistory(LedgerIndex startIndex)
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        auto const res =
-            detail::getTxHistory(*db, app_, startIndex, 20, false).first;
+        auto const res = detail::getTxHistory(*db, app_, startIndex, 20).first;
 
         if (!res.empty())
             return res;
-    }
-
-    if (shardStoreExists())
-    {
-        std::vector<std::shared_ptr<Transaction>> txs;
-        int quantity = 20;
-        iterateTransactionBack(
-            {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                auto [tx, total] = detail::getTxHistory(
-                    session, app_, startIndex, quantity, true);
-                txs.insert(txs.end(), tx.begin(), tx.end());
-                if (total > 0)
-                {
-                    quantity -= total;
-                    if (quantity <= 0)
-                        return false;
-                    startIndex = 0;
-                }
-                else
-                {
-                    startIndex += total;
-                }
-                return true;
-            });
-
-        return txs;
     }
 
     return {};
@@ -1092,50 +575,8 @@ SQLiteDatabaseImp::getOldestAccountTxs(AccountTxOptions const& options)
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return detail::getOldestAccountTxs(
-                   *db, app_, ledgerMaster, options, {}, j_)
+        return detail::getOldestAccountTxs(*db, app_, ledgerMaster, options, j_)
             .first;
-    }
-
-    if (shardStoreExists())
-    {
-        AccountTxs ret;
-        AccountTxOptions opt = options;
-        int limit_used = 0;
-        iterateTransactionForward(
-            opt.minLedger ? seqToShardIndex(opt.minLedger)
-                          : std::optional<std::uint32_t>(),
-            [&](soci::session& session, std::uint32_t shardIndex) {
-                if (opt.maxLedger &&
-                    shardIndex > seqToShardIndex(opt.maxLedger))
-                    return false;
-                auto [r, total] = detail::getOldestAccountTxs(
-                    session, app_, ledgerMaster, opt, limit_used, j_);
-                ret.insert(ret.end(), r.begin(), r.end());
-                if (!total)
-                    return false;
-                if (total > 0)
-                {
-                    limit_used += total;
-                    opt.offset = 0;
-                }
-                else
-                {
-                    /*
-                     * If total < 0, then -total means number of transactions
-                     * skipped, see definition of return value of function
-                     * ripple::getOldestAccountTxs().
-                     */
-                    total = -total;
-                    if (opt.offset <= total)
-                        opt.offset = 0;
-                    else
-                        opt.offset -= total;
-                }
-                return true;
-            });
-
-        return ret;
     }
 
     return {};
@@ -1152,50 +593,8 @@ SQLiteDatabaseImp::getNewestAccountTxs(AccountTxOptions const& options)
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return detail::getNewestAccountTxs(
-                   *db, app_, ledgerMaster, options, {}, j_)
+        return detail::getNewestAccountTxs(*db, app_, ledgerMaster, options, j_)
             .first;
-    }
-
-    if (shardStoreExists())
-    {
-        AccountTxs ret;
-        AccountTxOptions opt = options;
-        int limit_used = 0;
-        iterateTransactionBack(
-            opt.maxLedger ? seqToShardIndex(opt.maxLedger)
-                          : std::optional<std::uint32_t>(),
-            [&](soci::session& session, std::uint32_t shardIndex) {
-                if (opt.minLedger &&
-                    shardIndex < seqToShardIndex(opt.minLedger))
-                    return false;
-                auto [r, total] = detail::getNewestAccountTxs(
-                    session, app_, ledgerMaster, opt, limit_used, j_);
-                ret.insert(ret.end(), r.begin(), r.end());
-                if (!total)
-                    return false;
-                if (total > 0)
-                {
-                    limit_used += total;
-                    opt.offset = 0;
-                }
-                else
-                {
-                    /*
-                     * If total < 0, then -total means number of transactions
-                     * skipped, see definition of return value of function
-                     * ripple::getNewestAccountTxs().
-                     */
-                    total = -total;
-                    if (opt.offset <= total)
-                        opt.offset = 0;
-                    else
-                        opt.offset -= total;
-                }
-                return true;
-            });
-
-        return ret;
     }
 
     return {};
@@ -1210,48 +609,7 @@ SQLiteDatabaseImp::getOldestAccountTxsB(AccountTxOptions const& options)
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return detail::getOldestAccountTxsB(*db, app_, options, {}, j_).first;
-    }
-
-    if (shardStoreExists())
-    {
-        MetaTxsList ret;
-        AccountTxOptions opt = options;
-        int limit_used = 0;
-        iterateTransactionForward(
-            opt.minLedger ? seqToShardIndex(opt.minLedger)
-                          : std::optional<std::uint32_t>(),
-            [&](soci::session& session, std::uint32_t shardIndex) {
-                if (opt.maxLedger &&
-                    shardIndex > seqToShardIndex(opt.maxLedger))
-                    return false;
-                auto [r, total] = detail::getOldestAccountTxsB(
-                    session, app_, opt, limit_used, j_);
-                ret.insert(ret.end(), r.begin(), r.end());
-                if (!total)
-                    return false;
-                if (total > 0)
-                {
-                    limit_used += total;
-                    opt.offset = 0;
-                }
-                else
-                {
-                    /*
-                     * If total < 0, then -total means number of transactions
-                     * skipped, see definition of return value of function
-                     * ripple::getOldestAccountTxsB().
-                     */
-                    total = -total;
-                    if (opt.offset <= total)
-                        opt.offset = 0;
-                    else
-                        opt.offset -= total;
-                }
-                return true;
-            });
-
-        return ret;
+        return detail::getOldestAccountTxsB(*db, app_, options, j_).first;
     }
 
     return {};
@@ -1266,48 +624,7 @@ SQLiteDatabaseImp::getNewestAccountTxsB(AccountTxOptions const& options)
     if (existsTransaction())
     {
         auto db = checkoutTransaction();
-        return detail::getNewestAccountTxsB(*db, app_, options, {}, j_).first;
-    }
-
-    if (shardStoreExists())
-    {
-        MetaTxsList ret;
-        AccountTxOptions opt = options;
-        int limit_used = 0;
-        iterateTransactionBack(
-            opt.maxLedger ? seqToShardIndex(opt.maxLedger)
-                          : std::optional<std::uint32_t>(),
-            [&](soci::session& session, std::uint32_t shardIndex) {
-                if (opt.minLedger &&
-                    shardIndex < seqToShardIndex(opt.minLedger))
-                    return false;
-                auto [r, total] = detail::getNewestAccountTxsB(
-                    session, app_, opt, limit_used, j_);
-                ret.insert(ret.end(), r.begin(), r.end());
-                if (!total)
-                    return false;
-                if (total > 0)
-                {
-                    limit_used += total;
-                    opt.offset = 0;
-                }
-                else
-                {
-                    /*
-                     * If total < 0, then -total means number of transactions
-                     * skipped, see definition of return value of function
-                     * ripple::getNewestAccountTxsB().
-                     */
-                    total = -total;
-                    if (opt.offset <= total)
-                        opt.offset = 0;
-                    else
-                        opt.offset -= total;
-                }
-                return true;
-            });
-
-        return ret;
+        return detail::getNewestAccountTxsB(*db, app_, options, j_).first;
     }
 
     return {};
@@ -1339,37 +656,9 @@ SQLiteDatabaseImp::oldestAccountTxPage(AccountTxPageOptions const& options)
         auto db = checkoutTransaction();
         auto newmarker =
             detail::oldestAccountTxPage(
-                *db, onUnsavedLedger, onTransaction, options, 0, page_length)
+                *db, onUnsavedLedger, onTransaction, options, page_length)
                 .first;
         return {ret, newmarker};
-    }
-
-    if (shardStoreExists())
-    {
-        AccountTxPageOptions opt = options;
-        int limit_used = 0;
-        iterateTransactionForward(
-            opt.minLedger ? seqToShardIndex(opt.minLedger)
-                          : std::optional<std::uint32_t>(),
-            [&](soci::session& session, std::uint32_t shardIndex) {
-                if (opt.maxLedger != UINT32_MAX &&
-                    shardIndex > seqToShardIndex(opt.minLedger))
-                    return false;
-                auto [marker, total] = detail::oldestAccountTxPage(
-                    session,
-                    onUnsavedLedger,
-                    onTransaction,
-                    opt,
-                    limit_used,
-                    page_length);
-                opt.marker = marker;
-                if (total < 0)
-                    return false;
-                limit_used += total;
-                return true;
-            });
-
-        return {ret, opt.marker};
     }
 
     return {};
@@ -1401,37 +690,9 @@ SQLiteDatabaseImp::newestAccountTxPage(AccountTxPageOptions const& options)
         auto db = checkoutTransaction();
         auto newmarker =
             detail::newestAccountTxPage(
-                *db, onUnsavedLedger, onTransaction, options, 0, page_length)
+                *db, onUnsavedLedger, onTransaction, options, page_length)
                 .first;
         return {ret, newmarker};
-    }
-
-    if (shardStoreExists())
-    {
-        AccountTxPageOptions opt = options;
-        int limit_used = 0;
-        iterateTransactionBack(
-            opt.maxLedger != UINT32_MAX ? seqToShardIndex(opt.maxLedger)
-                                        : std::optional<std::uint32_t>(),
-            [&](soci::session& session, std::uint32_t shardIndex) {
-                if (opt.minLedger &&
-                    shardIndex < seqToShardIndex(opt.minLedger))
-                    return false;
-                auto [marker, total] = detail::newestAccountTxPage(
-                    session,
-                    onUnsavedLedger,
-                    onTransaction,
-                    opt,
-                    limit_used,
-                    page_length);
-                opt.marker = marker;
-                if (total < 0)
-                    return false;
-                limit_used += total;
-                return true;
-            });
-
-        return {ret, opt.marker};
     }
 
     return {};
@@ -1462,37 +723,9 @@ SQLiteDatabaseImp::oldestAccountTxPageB(AccountTxPageOptions const& options)
         auto db = checkoutTransaction();
         auto newmarker =
             detail::oldestAccountTxPage(
-                *db, onUnsavedLedger, onTransaction, options, 0, page_length)
+                *db, onUnsavedLedger, onTransaction, options, page_length)
                 .first;
         return {ret, newmarker};
-    }
-
-    if (shardStoreExists())
-    {
-        AccountTxPageOptions opt = options;
-        int limit_used = 0;
-        iterateTransactionForward(
-            opt.minLedger ? seqToShardIndex(opt.minLedger)
-                          : std::optional<std::uint32_t>(),
-            [&](soci::session& session, std::uint32_t shardIndex) {
-                if (opt.maxLedger != UINT32_MAX &&
-                    shardIndex > seqToShardIndex(opt.minLedger))
-                    return false;
-                auto [marker, total] = detail::oldestAccountTxPage(
-                    session,
-                    onUnsavedLedger,
-                    onTransaction,
-                    opt,
-                    limit_used,
-                    page_length);
-                opt.marker = marker;
-                if (total < 0)
-                    return false;
-                limit_used += total;
-                return true;
-            });
-
-        return {ret, opt.marker};
     }
 
     return {};
@@ -1523,37 +756,9 @@ SQLiteDatabaseImp::newestAccountTxPageB(AccountTxPageOptions const& options)
         auto db = checkoutTransaction();
         auto newmarker =
             detail::newestAccountTxPage(
-                *db, onUnsavedLedger, onTransaction, options, 0, page_length)
+                *db, onUnsavedLedger, onTransaction, options, page_length)
                 .first;
         return {ret, newmarker};
-    }
-
-    if (shardStoreExists())
-    {
-        AccountTxPageOptions opt = options;
-        int limit_used = 0;
-        iterateTransactionBack(
-            opt.maxLedger != UINT32_MAX ? seqToShardIndex(opt.maxLedger)
-                                        : std::optional<std::uint32_t>(),
-            [&](soci::session& session, std::uint32_t shardIndex) {
-                if (opt.minLedger &&
-                    shardIndex < seqToShardIndex(opt.minLedger))
-                    return false;
-                auto [marker, total] = detail::newestAccountTxPage(
-                    session,
-                    onUnsavedLedger,
-                    onTransaction,
-                    opt,
-                    limit_used,
-                    page_length);
-                opt.marker = marker;
-                if (total < 0)
-                    return false;
-                limit_used += total;
-                return true;
-            });
-
-        return {ret, opt.marker};
     }
 
     return {};
@@ -1574,37 +779,6 @@ SQLiteDatabaseImp::getTransaction(
         return detail::getTransaction(*db, app_, id, range, ec);
     }
 
-    if (auto shardStore = app_.getShardStore(); shardStore)
-    {
-        std::variant<AccountTx, TxSearched> res(TxSearched::unknown);
-        auto txMetaSession = txMetaDB_->checkoutDb();
-
-        if (auto const shardIndex =
-                detail::getShardIndexforTransaction(*txMetaSession, id))
-        {
-            shardStore->callForTransactionSQLByShardIndex(
-                *shardIndex, [&](soci::session& session) {
-                    std::optional<ClosedInterval<std::uint32_t>> range1;
-                    if (range)
-                    {
-                        std::uint32_t const low = std::max(
-                            range->lower(), firstLedgerSeq(*shardIndex));
-                        std::uint32_t const high = std::min(
-                            range->upper(), lastLedgerSeq(*shardIndex));
-                        if (low <= high)
-                            range1 = ClosedInterval<std::uint32_t>(low, high);
-                    }
-                    res = detail::getTransaction(session, app_, id, range1, ec);
-
-                    return res.index() == 1 &&
-                        std::get<TxSearched>(res) !=
-                        TxSearched::unknown;  // unused
-                });
-        }
-
-        return res;
-    }
-
     return TxSearched::unknown;
 }
 
@@ -1615,14 +789,6 @@ SQLiteDatabaseImp::ledgerDbHasSpace(Config const& config)
     {
         auto db = checkoutLedger();
         return detail::dbHasSpace(*db, config, j_);
-    }
-
-    if (shardStoreExists())
-    {
-        return iterateLedgerBack(
-            {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                return detail::dbHasSpace(session, config, j_);
-            });
     }
 
     return true;
@@ -1640,14 +806,6 @@ SQLiteDatabaseImp::transactionDbHasSpace(Config const& config)
         return detail::dbHasSpace(*db, config, j_);
     }
 
-    if (shardStoreExists())
-    {
-        return iterateTransactionBack(
-            {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                return detail::dbHasSpace(session, config, j_);
-            });
-    }
-
     return true;
 }
 
@@ -1659,17 +817,6 @@ SQLiteDatabaseImp::getKBUsedAll()
         return ripple::getKBUsedAll(lgrdb_->getSession());
     }
 
-    if (shardStoreExists())
-    {
-        std::uint32_t sum = 0;
-        iterateLedgerBack(
-            {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                sum += ripple::getKBUsedAll(session);
-                return true;
-            });
-        return sum;
-    }
-
     return 0;
 }
 
@@ -1679,17 +826,6 @@ SQLiteDatabaseImp::getKBUsedLedger()
     if (existsLedger())
     {
         return ripple::getKBUsedDB(lgrdb_->getSession());
-    }
-
-    if (shardStoreExists())
-    {
-        std::uint32_t sum = 0;
-        iterateLedgerBack(
-            {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                sum += ripple::getKBUsedDB(session);
-                return true;
-            });
-        return sum;
     }
 
     return 0;
@@ -1704,17 +840,6 @@ SQLiteDatabaseImp::getKBUsedTransaction()
     if (existsTransaction())
     {
         return ripple::getKBUsedDB(txdb_->getSession());
-    }
-
-    if (shardStoreExists())
-    {
-        std::uint32_t sum = 0;
-        iterateTransactionBack(
-            {}, [&](soci::session& session, std::uint32_t shardIndex) {
-                sum += ripple::getKBUsedDB(session);
-                return true;
-            });
-        return sum;
     }
 
     return 0;

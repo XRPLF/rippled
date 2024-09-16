@@ -21,6 +21,13 @@ install(
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
 
+if(NOT WIN32)
+  install(
+    CODE "file(CREATE_LINK xrpl \
+      \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/ripple SYMBOLIC)"
+  )
+endif()
+
 install (EXPORT RippleExports
   FILE RippleTargets.cmake
   NAMESPACE Ripple::
@@ -31,14 +38,9 @@ write_basic_package_version_file (
   VERSION ${rippled_version}
   COMPATIBILITY SameMajorVersion)
 
-if (is_root_project)
+if (is_root_project AND TARGET rippled)
   install (TARGETS rippled RUNTIME DESTINATION bin)
   set_target_properties(rippled PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
-  install (
-    FILES
-      ${CMAKE_CURRENT_SOURCE_DIR}/cmake/RippleConfig.cmake
-      ${CMAKE_CURRENT_BINARY_DIR}/RippleConfigVersion.cmake
-    DESTINATION lib/cmake/ripple)
   # sample configs should not overwrite existing files
   # install if-not-exists workaround as suggested by
   # https://cmake.org/Bug/view.php?id=12646
@@ -53,18 +55,16 @@ if (is_root_project)
     copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/rippled-example.cfg\" etc rippled.cfg)
     copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/validators-example.txt\" etc validators.txt)
   ")
+  if(NOT WIN32)
+    install(
+      CODE "file(CREATE_LINK rippled${suffix} \
+        \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/xrpld${suffix} SYMBOLIC)"
+    )
+  endif()
 endif ()
 
-if(NOT WIN32)
-  install(
-    CODE "file(CREATE_LINK xrpl \
-      \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/ripple SYMBOLIC)"
-  )
-endif()
-
-if(NOT WIN32)
-  install(
-    CODE "file(CREATE_LINK rippled${suffix} \
-      \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/xrpld${suffix} SYMBOLIC)"
-  )
-endif()
+install (
+  FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/RippleConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/RippleConfigVersion.cmake
+  DESTINATION lib/cmake/ripple)

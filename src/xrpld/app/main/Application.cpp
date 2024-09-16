@@ -45,22 +45,18 @@
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorSite.h>
 #include <xrpld/app/paths/PathRequests.h>
+#include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/app/rdb/Wallet.h>
-#include <xrpld/app/rdb/backend/PostgresDatabase.h>
-#include <xrpld/app/reporting/ReportingETL.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/core/DatabaseCon.h>
-#include <xrpld/nodestore/DatabaseShard.h>
 #include <xrpld/nodestore/DummyScheduler.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/PeerReservationTable.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/overlay/make_Overlay.h>
 #include <xrpld/perflog/PerfLog.h>
-#include <xrpld/rpc/ShardArchiveHandler.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/shamap/NodeFamily.h>
-#include <xrpld/shamap/ShardFamily.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/ResolverAsio.h>
 #include <xrpl/basics/random.h>
@@ -192,9 +188,6 @@ public:
 
     std::unique_ptr<NodeStore::Database> m_nodeStore;
     NodeFamily nodeFamily_;
-    std::unique_ptr<NodeStore::DatabaseShard> shardStore_;
-    std::unique_ptr<ShardFamily> shardFamily_;
-    std::unique_ptr<RPC::ShardArchiveHandler> shardArchiveHandler_;
     // VFALCO TODO Make OrderBookDB abstract
     OrderBookDB m_orderBookDB;
     std::unique_ptr<PathRequests> m_pathRequests;
@@ -242,7 +235,6 @@ public:
     io_latency_sampler m_io_latency_sampler;
 
     std::unique_ptr<GRPCServer> grpcServer_;
-    std::unique_ptr<ReportingETL> reportingETL_;
 
     //--------------------------------------------------------------------------
 
@@ -302,8 +294,7 @@ public:
 
         , m_jobQueue(std::make_unique<JobQueue>(
               [](std::unique_ptr<Config> const& config) {
-                  if (config->standalone() && !config->reporting() &&
-                      !config->FORCE_MULTI_THREAD)
+                  if (config->standalone() && !config->FORCE_MULTI_THREAD)
                       return 1;
 
                   if (config->WORKERS)
@@ -360,13 +351,6 @@ public:
               config_->PREFETCH_WORKERS > 0 ? config_->PREFETCH_WORKERS : 4))
 
         , nodeFamily_(*this, *m_collectorManager)
-
-        // The shard store is optional and make_ShardStore can return null.
-        , shardStore_(make_ShardStore(
-              *this,
-              m_nodeStoreScheduler,
-              4,
-              logs_->journal("ShardStore")))
 
         , m_orderBookDB(*this)
 
@@ -488,9 +472,6 @@ public:
               std::chrono::milliseconds(100),
               get_io_service())
         , grpcServer_(std::make_unique<GRPCServer>(*this))
-        , reportingETL_(
-              config_->reporting() ? std::make_unique<ReportingETL>(*this)
-                                   : nullptr)
     {
         initAccountIdCache(config_->getValueFor(SizedItem::accountIdCacheSize));
 
@@ -563,14 +544,6 @@ public:
     getNodeFamily() override
     {
         return nodeFamily_;
-    }
-
-    // The shard store is an optional feature. If the sever is configured for
-    // shards, this function will return a valid pointer, otherwise a nullptr.
-    Family*
-    getShardFamily() override
-    {
-        return shardFamily_.get();
     }
 
     TimeKeeper&
@@ -696,72 +669,6 @@ public:
         return *m_nodeStore;
     }
 
-    // The shard store is an optional feature. If the sever is configured for
-    // shards, this function will return a valid pointer, otherwise a nullptr.
-    NodeStore::DatabaseShard*
-    getShardStore() override
-    {
-        return shardStore_.get();
-    }
-
-    RPC::ShardArchiveHandler*
-    getShardArchiveHandler(bool tryRecovery) override
-    {
-        static std::mutex handlerMutex;
-        std::lock_guard lock(handlerMutex);
-
-        // After constructing the handler, try to
-        // initialize it. Log on error; set the
-        // member variable on success.
-        auto initAndSet =
-            [this](std::unique_ptr<RPC::ShardArchiveHandler>&& handler) {
-                if (!handler)
-                    return false;
-
-                if (!handler->init())
-                {
-                    JLOG(m_journal.error())
-                        << "Failed to initialize ShardArchiveHandler.";
-
-                    return false;
-                }
-
-                shardArchiveHandler_ = std::move(handler);
-                return true;
-            };
-
-        // Need to resume based on state from a previous
-        // run.
-        if (tryRecovery)
-        {
-            if (shardArchiveHandler_ != nullptr)
-            {
-                JLOG(m_journal.error())
-                    << "ShardArchiveHandler already created at startup.";
-
-                return nullptr;
-            }
-
-            auto handler =
-                RPC::ShardArchiveHandler::tryMakeRecoveryHandler(*this);
-
-            if (!initAndSet(std::move(handler)))
-                return nullptr;
-        }
-
-        // Construct the ShardArchiveHandler
-        if (shardArchiveHandler_ == nullptr)
-        {
-            auto handler =
-                RPC::ShardArchiveHandler::makeShardArchiveHandler(*this);
-
-            if (!initAndSet(std::move(handler)))
-                return nullptr;
-        }
-
-        return shardArchiveHandler_.get();
-    }
-
     Application::MutexType&
     getMasterMutex() override
     {
@@ -873,16 +780,12 @@ public:
     OpenLedger&
     openLedger() override
     {
-        if (config_->reporting())
-            Throw<ReportingShouldProxy>();
         return *openLedger_;
     }
 
     OpenLedger const&
     openLedger() const override
     {
-        if (config_->reporting())
-            Throw<ReportingShouldProxy>();
         return *openLedger_;
     }
 
@@ -914,13 +817,6 @@ public:
         return *mWalletDB;
     }
 
-    ReportingETL&
-    getReportingETL() override
-    {
-        assert(reportingETL_.get() != nullptr);
-        return *reportingETL_;
-    }
-
     bool
     serverOkay(std::string& reason) override;
 
@@ -943,7 +839,7 @@ public:
             auto setup = setup_DatabaseCon(*config_, m_journal);
             setup.useGlobalPragma = false;
 
-            mWalletDB = makeWalletDB(setup);
+            mWalletDB = makeWalletDB(setup, m_journal);
         }
         catch (std::exception const& e)
         {
@@ -1075,10 +971,10 @@ public:
 
         {
             std::shared_ptr<FullBelowCache const> const fullBelowCache =
-                nodeFamily_.getFullBelowCache(0);
+                nodeFamily_.getFullBelowCache();
 
             std::shared_ptr<TreeNodeCache const> const treeNodeCache =
-                nodeFamily_.getTreeNodeCache(0);
+                nodeFamily_.getTreeNodeCache();
 
             std::size_t const oldFullBelowSize = fullBelowCache->size();
             std::size_t const oldTreeNodeSize = treeNodeCache->size();
@@ -1093,25 +989,6 @@ public:
             JLOG(m_journal.debug())
                 << "NodeFamily::TreeNodeCache sweep.  Size before: "
                 << oldTreeNodeSize << "; size after: " << treeNodeCache->size();
-        }
-        if (shardFamily_)
-        {
-            std::size_t const oldFullBelowSize =
-                shardFamily_->getFullBelowCacheSize();
-            std::size_t const oldTreeNodeSize =
-                shardFamily_->getTreeNodeCacheSize().second;
-
-            shardFamily_->sweep();
-
-            JLOG(m_journal.debug())
-                << "ShardFamily::FullBelowCache sweep.  Size before: "
-                << oldFullBelowSize
-                << "; size after: " << shardFamily_->getFullBelowCacheSize();
-
-            JLOG(m_journal.debug())
-                << "ShardFamily::TreeNodeCache sweep.  Size before: "
-                << oldTreeNodeSize << "; size after: "
-                << shardFamily_->getTreeNodeCacheSize().second;
         }
         {
             TaggedCache<uint256, Transaction> const& masterTxCache =
@@ -1128,11 +1005,6 @@ public:
         {
             // Does not appear to have an associated cache.
             getNodeStore().sweep();
-        }
-        if (shardStore_)
-        {
-            // Does not appear to have an associated cache.
-            shardStore_->sweep();
         }
         {
             std::size_t const oldLedgerMasterCacheSize =
@@ -1240,11 +1112,6 @@ public:
                 << "; size after: " << cachedSLEs_.size();
         }
 
-#ifdef RIPPLED_REPORTING
-        if (auto pg = dynamic_cast<PostgresDatabase*>(&*mRelationalDatabase))
-            pg->sweep();
-#endif
-
         // Set timer to do another sweep later.
         setSweepTimer();
     }
@@ -1265,9 +1132,6 @@ private:
     // For a newly-started validator, this is the greatest persisted ledger
     // and new validations must be greater than this.
     std::atomic<LedgerIndex> maxDisallowedLedger_{0};
-
-    bool
-    nodeToShards();
 
     void
     startGenesisLedger();
@@ -1348,15 +1212,6 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     if (!initRelationalDatabase() || !initNodeStore())
         return false;
 
-    if (shardStore_)
-    {
-        shardFamily_ =
-            std::make_unique<ShardFamily>(*this, *m_collectorManager);
-
-        if (!shardStore_->init())
-            return false;
-    }
-
     if (!peerReservations_->load(getWalletDB()))
     {
         JLOG(m_journal.fatal()) << "Cannot find peer reservations!";
@@ -1398,53 +1253,50 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     auto const startUp = config_->START_UP;
     JLOG(m_journal.debug()) << "startUp: " << startUp;
-    if (!config_->reporting())
+    if (startUp == Config::FRESH)
     {
-        if (startUp == Config::FRESH)
-        {
-            JLOG(m_journal.info()) << "Starting new Ledger";
+        JLOG(m_journal.info()) << "Starting new Ledger";
 
-            startGenesisLedger();
-        }
-        else if (
-            startUp == Config::LOAD || startUp == Config::LOAD_FILE ||
-            startUp == Config::REPLAY)
-        {
-            JLOG(m_journal.info()) << "Loading specified Ledger";
+        startGenesisLedger();
+    }
+    else if (
+        startUp == Config::LOAD || startUp == Config::LOAD_FILE ||
+        startUp == Config::REPLAY)
+    {
+        JLOG(m_journal.info()) << "Loading specified Ledger";
 
-            if (!loadOldLedger(
-                    config_->START_LEDGER,
-                    startUp == Config::REPLAY,
-                    startUp == Config::LOAD_FILE,
-                    config_->TRAP_TX_HASH))
+        if (!loadOldLedger(
+                config_->START_LEDGER,
+                startUp == Config::REPLAY,
+                startUp == Config::LOAD_FILE,
+                config_->TRAP_TX_HASH))
+        {
+            JLOG(m_journal.error())
+                << "The specified ledger could not be loaded.";
+            if (config_->FAST_LOAD)
             {
-                JLOG(m_journal.error())
-                    << "The specified ledger could not be loaded.";
-                if (config_->FAST_LOAD)
-                {
-                    // Fall back to syncing from the network, such as
-                    // when there's no existing data.
-                    startGenesisLedger();
-                }
-                else
-                {
-                    return false;
-                }
+                // Fall back to syncing from the network, such as
+                // when there's no existing data.
+                startGenesisLedger();
+            }
+            else
+            {
+                return false;
             }
         }
-        else if (startUp == Config::NETWORK)
-        {
-            // This should probably become the default once we have a stable
-            // network.
-            if (!config_->standalone())
-                m_networkOPs->setNeedNetworkLedger();
+    }
+    else if (startUp == Config::NETWORK)
+    {
+        // This should probably become the default once we have a stable
+        // network.
+        if (!config_->standalone())
+            m_networkOPs->setNeedNetworkLedger();
 
-            startGenesisLedger();
-        }
-        else
-        {
-            startGenesisLedger();
-        }
+        startGenesisLedger();
+    }
+    else
+    {
+        startGenesisLedger();
     }
 
     if (auto const& forcedRange = config().FORCED_LEDGER_RANGE_PRESENT)
@@ -1453,8 +1305,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             forcedRange->first, forcedRange->second);
     }
 
-    if (!config().reporting())
-        m_orderBookDB.setup(getLedgerMaster().getCurrentLedger());
+    m_orderBookDB.setup(getLedgerMaster().getCurrentLedger());
 
     nodeIdentity_ = getNodeIdentity(*this, cmdline);
 
@@ -1464,60 +1315,55 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         return false;
     }
 
-    if (!config().reporting())
     {
+        if (validatorKeys_.configInvalid())
+            return false;
+
+        if (!validatorManifests_->load(
+                getWalletDB(),
+                "ValidatorManifests",
+                validatorKeys_.manifest,
+                config().section(SECTION_VALIDATOR_KEY_REVOCATION).values()))
         {
-            if (validatorKeys_.configInvalid())
-                return false;
-
-            if (!validatorManifests_->load(
-                    getWalletDB(),
-                    "ValidatorManifests",
-                    validatorKeys_.manifest,
-                    config()
-                        .section(SECTION_VALIDATOR_KEY_REVOCATION)
-                        .values()))
-            {
-                JLOG(m_journal.fatal())
-                    << "Invalid configured validator manifest.";
-                return false;
-            }
-
-            publisherManifests_->load(getWalletDB(), "PublisherManifests");
-
-            // It is possible to have a valid ValidatorKeys object without
-            // setting the signingKey or masterKey. This occurs if the
-            // configuration file does not have either
-            // SECTION_VALIDATOR_TOKEN or SECTION_VALIDATION_SEED section.
-
-            // masterKey for the configuration-file specified validator keys
-            std::optional<PublicKey> localSigningKey;
-            if (validatorKeys_.keys)
-                localSigningKey = validatorKeys_.keys->publicKey;
-
-            // Setup trusted validators
-            if (!validators_->load(
-                    localSigningKey,
-                    config().section(SECTION_VALIDATORS).values(),
-                    config().section(SECTION_VALIDATOR_LIST_KEYS).values()))
-            {
-                JLOG(m_journal.fatal())
-                    << "Invalid entry in validator configuration.";
-                return false;
-            }
-        }
-
-        if (!validatorSites_->load(
-                config().section(SECTION_VALIDATOR_LIST_SITES).values()))
-        {
-            JLOG(m_journal.fatal())
-                << "Invalid entry in [" << SECTION_VALIDATOR_LIST_SITES << "]";
+            JLOG(m_journal.fatal()) << "Invalid configured validator manifest.";
             return false;
         }
 
-        // Tell the AmendmentTable who the trusted validators are.
-        m_amendmentTable->trustChanged(validators_->getQuorumKeys().second);
+        publisherManifests_->load(getWalletDB(), "PublisherManifests");
+
+        // It is possible to have a valid ValidatorKeys object without
+        // setting the signingKey or masterKey. This occurs if the
+        // configuration file does not have either
+        // SECTION_VALIDATOR_TOKEN or SECTION_VALIDATION_SEED section.
+
+        // masterKey for the configuration-file specified validator keys
+        std::optional<PublicKey> localSigningKey;
+        if (validatorKeys_.keys)
+            localSigningKey = validatorKeys_.keys->publicKey;
+
+        // Setup trusted validators
+        if (!validators_->load(
+                localSigningKey,
+                config().section(SECTION_VALIDATORS).values(),
+                config().section(SECTION_VALIDATOR_LIST_KEYS).values()))
+        {
+            JLOG(m_journal.fatal())
+                << "Invalid entry in validator configuration.";
+            return false;
+        }
     }
+
+    if (!validatorSites_->load(
+            config().section(SECTION_VALIDATOR_LIST_SITES).values()))
+    {
+        JLOG(m_journal.fatal())
+            << "Invalid entry in [" << SECTION_VALIDATOR_LIST_SITES << "]";
+        return false;
+    }
+
+    // Tell the AmendmentTable who the trusted validators are.
+    m_amendmentTable->trustChanged(validators_->getQuorumKeys().second);
+
     //----------------------------------------------------------------------
     //
     // Server
@@ -1529,30 +1375,19 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //             move the instantiation inside a conditional:
     //
     //             if (!config_.standalone())
-    if (!config_->reporting())
-    {
-        overlay_ = make_Overlay(
-            *this,
-            setup_Overlay(*config_),
-            *serverHandler_,
-            *m_resourceManager,
-            *m_resolver,
-            get_io_service(),
-            *config_,
-            m_collectorManager->collector());
-        add(*overlay_);  // add to PropertyStream
-    }
-
-    if (!config_->standalone())
-    {
-        // NodeStore import into the ShardStore requires the SQLite database
-        if (config_->nodeToShard && !nodeToShards())
-            return false;
-    }
+    overlay_ = make_Overlay(
+        *this,
+        setup_Overlay(*config_),
+        *serverHandler_,
+        *m_resourceManager,
+        *m_resolver,
+        get_io_service(),
+        *config_,
+        m_collectorManager->collector());
+    add(*overlay_);  // add to PropertyStream
 
     // start first consensus round
-    if (!config_->reporting() &&
-        !m_networkOPs->beginConsensus(
+    if (!m_networkOPs->beginConsensus(
             m_ledgerMaster->getClosedLedger()->info().hash))
     {
         JLOG(m_journal.fatal()) << "Unable to start consensus";
@@ -1664,42 +1499,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         }
     }
 
-    RPC::ShardArchiveHandler* shardArchiveHandler = nullptr;
-    if (shardStore_)
-    {
-        try
-        {
-            // Create a ShardArchiveHandler if recovery
-            // is needed (there's a state database left
-            // over from a previous run).
-            auto handler = getShardArchiveHandler(true);
-
-            // Recovery is needed.
-            if (handler)
-                shardArchiveHandler = handler;
-        }
-        catch (std::exception const& e)
-        {
-            JLOG(m_journal.fatal())
-                << "Exception when starting ShardArchiveHandler from "
-                   "state database: "
-                << e.what();
-
-            return false;
-        }
-    }
-
-    if (shardArchiveHandler && !shardArchiveHandler->start())
-    {
-        JLOG(m_journal.fatal()) << "Failed to start ShardArchiveHandler.";
-
-        return false;
-    }
-
     validatorSites_->start();
-
-    if (reportingETL_)
-        reportingETL_->start();
 
     return true;
 }
@@ -1807,12 +1607,8 @@ ApplicationImp::run()
     m_loadManager->stop();
     m_shaMapStore->stop();
     m_jobQueue->stop();
-    if (shardArchiveHandler_)
-        shardArchiveHandler_->stop();
     if (overlay_)
         overlay_->stop();
-    if (shardStore_)
-        shardStore_->stop();
     grpcServer_->stop();
     m_networkOPs->stop();
     serverHandler_->stop();
@@ -1820,10 +1616,6 @@ ApplicationImp::run()
     m_inboundTransactions->stop();
     m_inboundLedgers->stop();
     ledgerCleaner_->stop();
-    if (reportingETL_)
-        reportingETL_->stop();
-    if (auto pg = dynamic_cast<PostgresDatabase*>(&*mRelationalDatabase))
-        pg->stop();
     m_nodeStore->stop();
     perfLog_->stop();
 
@@ -1875,9 +1667,6 @@ ApplicationImp::fdRequired() const
     // the number of fds needed by the backend (internally
     // doubled if online delete is enabled).
     needed += std::max(5, m_shaMapStore->fdRequired());
-
-    if (shardStore_)
-        needed += shardStore_->fdRequired();
 
     // One fd per incoming connection a port can accept, or
     // if no limit is set, assume it'll handle 256 clients.
@@ -2343,27 +2132,6 @@ beast::Journal
 ApplicationImp::journal(std::string const& name)
 {
     return logs_->journal(name);
-}
-
-bool
-ApplicationImp::nodeToShards()
-{
-    assert(overlay_);
-    assert(!config_->standalone());
-
-    if (config_->section(ConfigSection::shardDatabase()).empty())
-    {
-        JLOG(m_journal.fatal())
-            << "The [shard_db] configuration setting must be set";
-        return false;
-    }
-    if (!shardStore_)
-    {
-        JLOG(m_journal.fatal()) << "Invalid [shard_db] configuration";
-        return false;
-    }
-    shardStore_->importDatabase(getNodeStore());
-    return true;
 }
 
 void

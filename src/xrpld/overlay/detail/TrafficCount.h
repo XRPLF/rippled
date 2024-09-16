@@ -74,7 +74,6 @@ public:
         proposal,
         validation,
         validatorlist,
-        shards,  // shard-related traffic
 
         // TMHaveSet message:
         get_set,    // transaction sets we try to get
@@ -208,7 +207,6 @@ protected:
         {"proposals"},          // category::proposal
         {"validations"},        // category::validation
         {"validator_lists"},    // category::validatorlist
-        {"shards"},             // category::shards
         {"set_get"},            // category::get_set
         {"set_share"},          // category::share_set
         {"ledger_data_Transaction_Set_candidate_get"},  // category::ld_tsc_get
