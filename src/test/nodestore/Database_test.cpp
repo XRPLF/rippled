@@ -458,7 +458,6 @@ public:
                     auto& section = p->section("sqlite");
                     section.set("page_size", "512");
                     section.set("journal_size_limit", "2582080");
-                    section.set("max_page_count", "1073741823");
                 }
                 return Env(*this, std::move(p));
             }();
@@ -469,7 +468,7 @@ public:
                 BEAST_EXPECT(
                     s.txPragma.at(1) == "PRAGMA journal_size_limit=2582080;");
                 BEAST_EXPECT(
-                    s.txPragma.at(2) == "PRAGMA max_page_count=1073741823;");
+                    s.txPragma.at(2) == "PRAGMA max_page_count=4294967294;");
             }
         }
     }
