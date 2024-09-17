@@ -17,33 +17,20 @@
 */
 //==============================================================================
 
-#include <test/jtx/pay.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/jss.h>
+#pragma once
+
+#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Serializer.h>
 
 namespace ripple {
-namespace test {
-namespace jtx {
 
-Json::Value
-pay(AccountID const& account, AccountID const& to, AnyAmount amount)
+inline void
+serializeCredential(Serializer& msg, uint256 const& key)
 {
-    amount.to(to);
-    Json::Value jv;
-    jv[jss::Account] = to_string(account);
-    jv[jss::Amount] = amount.value.getJson(JsonOptions::none);
-    jv[jss::Destination] = to_string(to);
-    jv[jss::TransactionType] = jss::Payment;
-    jv[jss::Flags] = tfUniversal;
-    return jv;
+    msg.add32(HashPrefix::credential);
+    msg.addBitString(key);
 }
 
-Json::Value
-pay(Account const& account, Account const& to, AnyAmount amount)
-{
-    return pay(account.id(), to.id(), amount);
-}
-
-}  // namespace jtx
-}  // namespace test
 }  // namespace ripple

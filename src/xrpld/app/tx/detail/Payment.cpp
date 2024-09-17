@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/paths/RippleCalc.h>
+#include <xrpld/app/tx/detail/Credentials.h>
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/app/tx/detail/Payment.h>
 #include <xrpld/core/Config.h>
@@ -343,11 +344,11 @@ Payment::preclaim(PreclaimContext const& ctx)
                 return tecBAD_CREDENTIALS;
             }
 
-            auto o = STObject::makeInnerObject(sfCredential);
-            o.setAccountID(sfIssuer, sleCred->getAccountID(sfIssuer));
-            o.setFieldVL(
+            auto credential = STObject::makeInnerObject(sfCredential);
+            credential.setAccountID(sfIssuer, sleCred->getAccountID(sfIssuer));
+            credential.setFieldVL(
                 sfCredentialType, sleCred->getFieldVL(sfCredentialType));
-            authCreds.push_back(std::move(o));
+            authCreds.push_back(std::move(credential));
         }
 
         if (!ctx.view.exists(keylet::depositPreauth(uDstAccountID, authCreds)))
@@ -444,8 +445,7 @@ Payment::doApply()
 
             if (credentialsPresent)
             {
-                if (DepositPreauth::credentialIDsRemoveExpired(
-                        view(), ctx_.tx, j_))
+                if (Credentials::removeExpired(view(), ctx_.tx, j_))
                     return tecEXPIRED;
             }
             else if (uDstAccountID != account_)
@@ -565,7 +565,7 @@ Payment::doApply()
 
         if (credentialsPresent)
         {
-            if (DepositPreauth::credentialIDsRemoveExpired(view(), ctx_.tx, j_))
+            if (Credentials::removeExpired(view(), ctx_.tx, j_))
                 return tecEXPIRED;
         }
         else if (uDstAccountID != account_)

@@ -1530,7 +1530,8 @@ struct Escrow_test : public beast::unit_test::suite
             std::string const credIdx =
                 "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
                 "E4";
-            env(finish("bob", "alice", seq2, {credIdx}),
+            env(finish("bob", "alice", seq2),
+                credentials::IDs({credIdx}),
                 fee(1500),
                 ter(temDISABLED));
         }

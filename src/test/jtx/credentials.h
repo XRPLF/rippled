@@ -29,13 +29,56 @@ namespace jtx {
 
 namespace credentials {
 
+// Sets the optional URI.
+class uri
+{
+private:
+    std::string const uri_;
+
+public:
+    explicit uri(std::string_view u) : uri_(strHex(u))
+    {
+    }
+
+    void
+    operator()(jtx::Env&, jtx::JTx& jtx) const
+    {
+        jtx.jv[sfURI.jsonName] = uri_;
+    }
+};
+
+// Set credentialsIDs array
+class IDs
+{
+private:
+    std::vector<std::string> const credentials_;
+
+public:
+    explicit IDs(std::vector<std::string> const& creds) : credentials_(creds)
+    {
+    }
+
+    void
+    operator()(jtx::Env&, jtx::JTx& jtx) const
+    {
+        auto& arr(jtx.jv[sfCredentialIDs.jsonName] = Json::arrayValue);
+        for (auto const& hash : credentials_)
+            arr.append(hash);
+    }
+};
+
 Json::Value
-create(
+createSubject(
     jtx::Account const& subject,
     jtx::Account const& issuer,
     std::string_view credType,
-    bool iss_own = true,
     std::optional<jtx::Account> const& masterIssuer = {});
+
+Json::Value
+createIssuer(
+    jtx::Account const& subject,
+    jtx::Account const& issuer,
+    std::string_view credType);
 
 Json::Value
 accept(
@@ -55,6 +98,14 @@ ledgerEntryCredential(
     jtx::Account const& subject,
     jtx::Account const& issuer,
     std::string_view credType);
+
+Blob
+signCredential(
+    PublicKey const& signerPK,
+    SecretKey const& signerSK,
+    AccountID const& subject,
+    std::string_view credType,
+    std::optional<AccountID> const& masterIssuer = std::nullopt);
 
 }  // namespace credentials
 

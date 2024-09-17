@@ -139,16 +139,17 @@ doDepositAuthorized(RPC::JsonContext& context)
             Blob const credType = sleCred->getFieldVL(sfCredentialType);
 
             if ((subj != srcID) || !(sleCred->getFlags() & lsfAccepted) ||
-                credentialCheckExpired(sleCred, context.app.timeKeeper().now()))
+                Credentials::checkExpired(
+                    sleCred, context.app.timeKeeper().now()))
             {
                 invalidCredentials = true;
                 break;
             }
 
-            auto o = STObject::makeInnerObject(sfCredential);
-            o.setAccountID(sfIssuer, iss);
-            o.setFieldVL(sfCredentialType, credType);
-            authCreds.push_back(std::move(o));
+            auto credential = STObject::makeInnerObject(sfCredential);
+            credential.setAccountID(sfIssuer, iss);
+            credential.setFieldVL(sfCredentialType, credType);
+            authCreds.push_back(std::move(credential));
         }
     }
 

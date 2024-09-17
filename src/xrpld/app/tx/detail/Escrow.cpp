@@ -20,6 +20,7 @@
 #include <xrpld/app/tx/detail/Escrow.h>
 
 #include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/tx/detail/Credentials.h>
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/conditions/Condition.h>
 #include <xrpld/conditions/Fulfillment.h>
@@ -429,11 +430,11 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
                 return tecBAD_CREDENTIALS;
             }
 
-            auto o = STObject::makeInnerObject(sfCredential);
-            o.setAccountID(sfIssuer, sleCred->getAccountID(sfIssuer));
-            o.setFieldVL(
+            auto credential = STObject::makeInnerObject(sfCredential);
+            credential.setAccountID(sfIssuer, sleCred->getAccountID(sfIssuer));
+            credential.setFieldVL(
                 sfCredentialType, sleCred->getFieldVL(sfCredentialType));
-            authCreds.push_back(std::move(o));
+            authCreds.push_back(std::move(credential));
         }
 
         if (!ctx.view.exists(keylet::depositPreauth(dst, authCreds)))
@@ -539,7 +540,7 @@ EscrowFinish::doApply()
 
     if (ctx_.tx.isFieldPresent(sfCredentialIDs))
     {
-        if (DepositPreauth::credentialIDsRemoveExpired(view(), ctx_.tx, j_))
+        if (Credentials::removeExpired(view(), ctx_.tx, j_))
             return tecEXPIRED;
     }
     else if (ctx_.view().rules().enabled(featureDepositAuth))

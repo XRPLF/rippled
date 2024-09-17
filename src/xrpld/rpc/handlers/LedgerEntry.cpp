@@ -49,10 +49,10 @@ parseAuthorizeCredentials(Json::Value const& jv)
         if (!credentialType || credentialType->empty())
             return {};
 
-        auto o = STObject::makeInnerObject(sfCredential);
-        o.setAccountID(sfIssuer, *issuer);
-        o.setFieldVL(sfCredentialType, *credentialType);
-        arr.push_back(std::move(o));
+        auto credential = STObject::makeInnerObject(sfCredential);
+        credential.setAccountID(sfIssuer, *issuer);
+        credential.setFieldVL(sfCredentialType, *credentialType);
+        arr.push_back(std::move(credential));
     }
 
     return arr;

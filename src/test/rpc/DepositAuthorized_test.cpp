@@ -301,7 +301,7 @@ public:
         env.close();
 
         // carol recognize becky
-        env(credentials::create(alice, carol, credType));
+        env(credentials::createIssuer(alice, carol, credType));
         env.close();
         // retrieve the index of the credentials
         auto const jCred =
@@ -431,7 +431,7 @@ public:
             std::uint32_t const x = env.now().time_since_epoch().count() + 40;
 
             // create credentials with expire time 1s
-            auto jv = credentials::create(alice, carol, credType2);
+            auto jv = credentials::createIssuer(alice, carol, credType2);
             jv[sfExpiration.jsonName] = x;
             env(jv);
             env.close();

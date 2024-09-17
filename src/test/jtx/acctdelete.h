@@ -29,10 +29,7 @@ namespace jtx {
 
 /** Delete account.  If successful transfer remaining XRP to dest. */
 Json::Value
-acctdelete(
-    Account const& account,
-    Account const& dest,
-    std::vector<std::string> const& credentialIDs = {});
+acctdelete(Account const& account, Account const& dest);
 
 }  // namespace jtx
 

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/tx/detail/Credentials.h>
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/app/tx/detail/PayChan.h>
 #include <xrpld/ledger/ApplyView.h>
@@ -521,11 +522,11 @@ PayChanClaim::preclaim(PreclaimContext const& ctx)
                 return tecBAD_CREDENTIALS;
             }
 
-            auto o = STObject::makeInnerObject(sfCredential);
-            o.setAccountID(sfIssuer, sleCred->getAccountID(sfIssuer));
-            o.setFieldVL(
+            auto credential = STObject::makeInnerObject(sfCredential);
+            credential.setAccountID(sfIssuer, sleCred->getAccountID(sfIssuer));
+            credential.setFieldVL(
                 sfCredentialType, sleCred->getFieldVL(sfCredentialType));
-            authCreds.push_back(std::move(o));
+            authCreds.push_back(std::move(credential));
         }
 
         if (!ctx.view.exists(keylet::depositPreauth(dst, authCreds)))
@@ -601,7 +602,7 @@ PayChanClaim::doApply()
         // Check whether the destination account requires deposit authorization.
         if (ctx_.tx.isFieldPresent(sfCredentialIDs))
         {
-            if (DepositPreauth::credentialIDsRemoveExpired(view(), ctx_.tx, j_))
+            if (Credentials::removeExpired(view(), ctx_.tx, j_))
                 return tecEXPIRED;
         }
         else if (depositAuth && (sled->getFlags() & lsfDepositAuth))

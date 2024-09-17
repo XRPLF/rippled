@@ -877,7 +877,7 @@ class LedgerRPC_test : public beast::unit_test::suite
 
         {
             // Setup credentials with DepositAuth object for Alice and Bob
-            env(credentials::create(alice, iss, credType));
+            env(credentials::createIssuer(alice, iss, credType));
             env.close();
             auto const jCred =
                 credentials::ledgerEntryCredential(env, alice, iss, credType);

@@ -30,15 +30,9 @@ namespace jtx {
 
 /** Create a payment. */
 Json::Value
-pay(AccountID const& account,
-    AccountID const& to,
-    AnyAmount amount,
-    std::vector<std::string> const& credentialIDs = {});
+pay(AccountID const& account, AccountID const& to, AnyAmount amount);
 Json::Value
-pay(Account const& account,
-    Account const& to,
-    AnyAmount amount,
-    std::vector<std::string> const& credentialIDs = {});
+pay(Account const& account, Account const& to, AnyAmount amount);
 
 }  // namespace jtx
 }  // namespace test

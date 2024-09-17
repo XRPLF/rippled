@@ -865,14 +865,8 @@ struct PayChan_test : public beast::unit_test::suite
                 "E1";
 
             {  // Fails because bob's lsfDepositAuth flag is NOT set.
-                env(claim(
-                        alice,
-                        chan,
-                        XRP(500).value(),
-                        XRP(500).value(),
-                        std::nullopt,
-                        std::nullopt,
-                        {credBadIdx}),
+                env(claim(alice, chan, XRP(500).value(), XRP(500).value()),
+                    credentials::IDs({credBadIdx}),
                     ter(tecNO_PERMISSION));
             }
 
@@ -892,19 +886,13 @@ struct PayChan_test : public beast::unit_test::suite
                 ter(tecNO_PERMISSION));
 
             // Fails because bad credentials.
-            env(claim(
-                    alice,
-                    chan,
-                    XRP(500).value(),
-                    XRP(500).value(),
-                    std::nullopt,
-                    std::nullopt,
-                    {credBadIdx}),
+            env(claim(alice, chan, XRP(500).value(), XRP(500).value()),
+                credentials::IDs({credBadIdx}),
                 ter(tecBAD_CREDENTIALS));
 
             {
                 // Create credentials
-                auto jv = credentials::create(alice, carol, credType);
+                auto jv = credentials::createIssuer(alice, carol, credType);
                 uint32_t const t = env.now().time_since_epoch().count() + 100;
                 jv[sfExpiration.jsonName] = t;
                 env(jv);
@@ -934,15 +922,9 @@ struct PayChan_test : public beast::unit_test::suite
                 for (int i = 0; i < 10; ++i)
                     env.close();
 
-                auto jv = claim(
-                    alice,
-                    chan,
-                    XRP(500).value(),
-                    XRP(500).value(),
-                    std::nullopt,
-                    std::nullopt,
-                    {credIdx});
-                env(jv, ter(tecEXPIRED));
+                env(claim(alice, chan, XRP(500).value(), XRP(500).value()),
+                    credentials::IDs({credIdx}),
+                    ter(tecEXPIRED));
                 env.close();
             }
         }
@@ -965,14 +947,8 @@ struct PayChan_test : public beast::unit_test::suite
                 "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
                 "E4";
             // Fails because rule not enabled.
-            env(claim(
-                    alice,
-                    chan,
-                    XRP(500).value(),
-                    XRP(500).value(),
-                    std::nullopt,
-                    std::nullopt,
-                    {credIdx}),
+            env(claim(alice, chan, XRP(500).value(), XRP(500).value()),
+                credentials::IDs({credIdx}),
                 ter(temDISABLED));
         }
     }
@@ -1926,14 +1902,8 @@ struct PayChan_test : public beast::unit_test::suite
                 std::string const credIdx =
                     "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA"
                     "288BE4";
-                env(claim(
-                        alice,
-                        chan,
-                        reqBal,
-                        authAmt,
-                        std::nullopt,
-                        std::nullopt,
-                        {credIdx}),
+                env(claim(alice, chan, reqBal, authAmt),
+                    credentials::IDs({credIdx}),
                     ter(tecNO_DST));
             }
 

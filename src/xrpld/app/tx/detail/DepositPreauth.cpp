@@ -49,35 +49,6 @@ struct HashUint256
     }
 };
 
-bool
-DepositPreauth::credentialIDsRemoveExpired(
-    ApplyView& view,
-    STTx const& tx,
-    beast::Journal const j)
-{
-    auto const closeTime = view.info().parentCloseTime;
-    bool foundExpired = false;
-
-    STVector256 const& arr(tx.getFieldV256(sfCredentialIDs));
-    for (auto const& h : arr)
-    {
-        // Credentials already checked in preclaim. Look only for expired here.
-        auto const k = keylet::credential(h);
-        auto const sleCred = view.peek(k);
-
-        if (credentialCheckExpired(sleCred, closeTime))
-        {
-            JLOG(j.trace())
-                << "Credentials are expired. Cred: " << sleCred->getText();
-            // delete expired credentials even if the transaction failed
-            CredentialDelete::deleteSLE(view, sleCred, j);
-            foundExpired = true;
-        }
-    }
-
-    return foundExpired;
-}
-
 NotTEC
 DepositPreauth::preflight(PreflightContext const& ctx)
 {

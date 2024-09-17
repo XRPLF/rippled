@@ -48,13 +48,6 @@ public:
         ApplyView& view,
         uint256 const& delIndex,
         beast::Journal j);
-
-    // return true if at least 1 expired credentials was found(and deleted)
-    static bool
-    credentialIDsRemoveExpired(
-        ApplyView& view,
-        STTx const& tx,
-        beast::Journal const j);
 };
 
 }  // namespace ripple

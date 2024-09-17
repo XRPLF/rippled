@@ -231,20 +231,12 @@ escrow(Account const& account, Account const& to, STAmount const& amount)
 }
 
 Json::Value
-finish(
-    AccountID const& account,
-    AccountID const& from,
-    std::uint32_t seq,
-    std::vector<std::string> const& credentialIDs);
+finish(AccountID const& account, AccountID const& from, std::uint32_t seq);
 
 inline Json::Value
-finish(
-    Account const& account,
-    Account const& from,
-    std::uint32_t seq,
-    std::vector<std::string> const& credentialIDs = {})
+finish(Account const& account, Account const& from, std::uint32_t seq)
 {
-    return finish(account.id(), from.id(), seq, credentialIDs);
+    return finish(account.id(), from.id(), seq);
 }
 
 Json::Value
@@ -388,8 +380,7 @@ claim(
     std::optional<STAmount> const& balance = std::nullopt,
     std::optional<STAmount> const& amount = std::nullopt,
     std::optional<Slice> const& signature = std::nullopt,
-    std::optional<PublicKey> const& pk = std::nullopt,
-    std::vector<std::string> const& credentialIDs = {});
+    std::optional<PublicKey> const& pk = std::nullopt);
 
 uint256
 channel(

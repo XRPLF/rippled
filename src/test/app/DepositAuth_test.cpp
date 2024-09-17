@@ -672,7 +672,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 }
 
                 // gw accept credentials
-                auto jv = credentials::create(gw, carol, credType);
+                auto jv = credentials::createIssuer(gw, carol, credType);
                 env(jv);
                 env.close();
                 env(credentials::accept(gw, carol, credType));
@@ -685,7 +685,9 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
                 TER const expect{
                     supportsPreauth ? TER{tesSUCCESS} : TER{temDISABLED}};
-                env(pay(gw, becky, USD(100), {credIdx}), ter(expect));
+                env(pay(gw, becky, USD(100)),
+                    credentials::IDs({credIdx}),
+                    ter(expect));
                 env.close();
             }
 
@@ -815,7 +817,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env.close();
 
             // Issuer create credentials, but Alice didn't accept them yet
-            env(credentials::create(alice, iss, credType));
+            env(credentials::createIssuer(alice, iss, credType));
             env.close();
 
             // Get the index of the credentials
@@ -854,7 +856,9 @@ struct DepositPreauth_test : public beast::unit_test::suite
             }
 
             // Alice can't pay - not accepeted credentials
-            env(pay(alice, bob, XRP(100), {credIdx}), ter(tecBAD_CREDENTIALS));
+            env(pay(alice, bob, XRP(100)),
+                credentials::IDs({credIdx}),
+                ter(tecBAD_CREDENTIALS));
             env.close();
 
             // Alice accept the credentials
@@ -862,7 +866,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env.close();
 
             // Now Alice can pay
-            env(pay(alice, bob, XRP(100), {credIdx}));
+            env(pay(alice, bob, XRP(100)), credentials::IDs({credIdx}));
             env.close();
 
             {
@@ -879,13 +883,14 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
                 {
                     // Don't use credentials for yourself
-                    env(finish(bob, alice, seq1, {credIdx}),
+                    env(finish(bob, alice, seq1),
+                        credentials::IDs({credIdx}),
                         fee(1500),
                         ter(tecNO_PERMISSION));
                     env.close();
                 }
                 {
-                    env(credentials::create(john, iss, credType));
+                    env(credentials::createIssuer(john, iss, credType));
                     env.close();
                     env(credentials::accept(john, iss, credType));
                     env.close();
@@ -895,7 +900,9 @@ struct DepositPreauth_test : public beast::unit_test::suite
                         jCred[jss::result][jss::index].asString();
 
                     // john is pre-authorized and can finish escrow for bob
-                    env(finish(john, alice, seq1, {credIdx}), fee(1500));
+                    env(finish(john, alice, seq1),
+                        credentials::IDs({credIdx}),
+                        fee(1500));
                     env.close();
                 }
             }
@@ -1089,7 +1096,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env.close();
 
             // Issuer create credentials, but Alice didn't accept them yet
-            env(credentials::create(alice, iss, credType));
+            env(credentials::createIssuer(alice, iss, credType));
             env.close();
             // Alice accept the credentials
             env(credentials::accept(alice, iss, credType));
@@ -1102,7 +1109,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             {
                 // Fail as destination didn't enable preauthorization
-                env(pay(alice, bob, XRP(100), {credIdx}),
+                env(pay(alice, bob, XRP(100)),
+                    credentials::IDs({credIdx}),
                     ter(tecNO_PERMISSION));
             }
 
@@ -1112,7 +1120,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             {
                 // Fail as destination didn't setup DepositPreauth object
-                env(pay(alice, bob, XRP(100), {credIdx}),
+                env(pay(alice, bob, XRP(100)),
+                    credentials::IDs({credIdx}),
                     ter(tecNO_PERMISSION));
             }
 
@@ -1128,20 +1137,22 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E"
                     "01E034";
                 // Alice can't pay with non-existing credentials
-                env(pay(alice, bob, XRP(100), {invalidIdx}),
+                env(pay(alice, bob, XRP(100)),
+                    credentials::IDs({invalidIdx}),
                     ter(tecBAD_CREDENTIALS));
             }
 
             {  // maria can't pay using valid credentials but issued for
                // different account
-                env(pay(maria, bob, XRP(100), {credIdx}),
+                env(pay(maria, bob, XRP(100)),
+                    credentials::IDs({credIdx}),
                     ter(tecBAD_CREDENTIALS));
             }
 
             {
                 // create another valid credential
                 const char credType2[] = "fghij";
-                env(credentials::create(alice, iss, credType2));
+                env(credentials::createIssuer(alice, iss, credType2));
                 env.close();
                 env(credentials::accept(alice, iss, credType2));
                 env.close();
@@ -1151,14 +1162,16 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     jCred2[jss::result][jss::index].asString();
 
                 // Alice can't pay with invalid set of valid credentials
-                env(pay(alice, bob, XRP(100), {credIdx, credIdx2}),
+                env(pay(alice, bob, XRP(100)),
+                    credentials::IDs({credIdx, credIdx2}),
                     ter(tecNO_PERMISSION));
             }
 
             // Alice can pay, duplicate credentials will be eliminated
-            env(pay(alice, bob, XRP(100), {credIdx, credIdx}));
+            env(pay(alice, bob, XRP(100)),
+                credentials::IDs({credIdx, credIdx}));
             env.close();
-            env(pay(alice, bob, XRP(100), {credIdx}));
+            env(pay(alice, bob, XRP(100)), credentials::IDs({credIdx}));
             env.close();
         }
 
@@ -1190,7 +1203,9 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 std::string const invalidIdx =
                     "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E"
                     "01E034";
-                env(pay(iss, bob, XRP(10), {invalidIdx}), ter(temDISABLED));
+                env(pay(iss, bob, XRP(10)),
+                    credentials::IDs({invalidIdx}),
+                    ter(temDISABLED));
             }
         }
     }
@@ -1215,7 +1230,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env.close();
 
             // Create credentials
-            auto jv = credentials::create(alice, iss, credType);
+            auto jv = credentials::createIssuer(alice, iss, credType);
             // Current time in ripple epoch.
             // Every time ledger close, unittest timer increase by 10s
             uint32_t const t = env.now().time_since_epoch().count() + 40;
@@ -1244,11 +1259,13 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             {
                 // Alice can pay
-                env(pay(alice, bob, XRP(100), {credIdx}));
+                env(pay(alice, bob, XRP(100)), credentials::IDs({credIdx}));
                 env.close();
 
                 // Ledger closed, time increased, alice can't pay anymore
-                env(pay(alice, bob, XRP(100), {credIdx}), ter(tecEXPIRED));
+                env(pay(alice, bob, XRP(100)),
+                    credentials::IDs({credIdx}),
+                    ter(tecEXPIRED));
                 env.close();
 
                 // check that expired credentials were deleted
@@ -1260,7 +1277,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             }
 
             {
-                auto jv = credentials::create(gw, iss, credType);
+                auto jv = credentials::createIssuer(gw, iss, credType);
                 uint32_t const t = env.now().time_since_epoch().count() + 40;
                 jv[sfExpiration.jsonName] = t;
                 env(jv);
@@ -1278,7 +1295,9 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env.close();
 
                 // credentails are expired
-                env(pay(gw, bob, USD(150), {credIdx}), ter(tecEXPIRED));
+                env(pay(gw, bob, USD(150)),
+                    credentials::IDs({credIdx}),
+                    ter(tecEXPIRED));
                 env.close();
 
                 // check that expired credentials were deleted
@@ -1305,7 +1324,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env.close();
 
             // Create credentials
-            auto jv = credentials::create(zelda, iss, credType);
+            auto jv = credentials::createIssuer(zelda, iss, credType);
             uint32_t const t = env.now().time_since_epoch().count() + 50;
             jv[sfExpiration.jsonName] = t;
             env(jv);
@@ -1336,9 +1355,10 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             // zelda can't finish escrow with invalid credentials
             {
-                auto jv = finish(zelda, alice, seq1, {});
-                jv[sfCredentialIDs.jsonName] = Json::arrayValue;
-                env(jv, fee(1500), ter(temMALFORMED));
+                env(finish(zelda, alice, seq1),
+                    credentials::IDs({}),
+                    fee(1500),
+                    ter(temMALFORMED));
                 env.close();
             }
 
@@ -1347,13 +1367,17 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 std::string const invalidIdx =
                     "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E"
                     "01E034";
-                auto jv = finish(zelda, alice, seq1, {invalidIdx});
-                env(jv, fee(1500), ter(tecBAD_CREDENTIALS));
+
+                env(finish(zelda, alice, seq1),
+                    credentials::IDs({invalidIdx}),
+                    fee(1500),
+                    ter(tecBAD_CREDENTIALS));
                 env.close();
             }
 
             {  // Ledger closed, time increased, zelda can't finish escrow
-                env(finish(zelda, alice, seq1, {credIdx}),
+                env(finish(zelda, alice, seq1),
+                    credentials::IDs({credIdx}),
                     fee(1500),
                     ter(tecEXPIRED));
                 env.close();

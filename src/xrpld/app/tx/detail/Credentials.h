@@ -90,17 +90,16 @@ public:
     doApply() override;
 };
 
+namespace Credentials {
 bool
-credentialCheckExpired(
+checkExpired(
     std::shared_ptr<SLE const> const& sle,
     NetClock::time_point const& closed);
 
-Blob
-signCredential(
-    PublicKey const& issuerPK,
-    SecretKey const& issuerSK,
-    AccountID const& subject,
-    std::string_view credType,
-    std::optional<AccountID> const& optIssuer = {});
+// return true if at least 1 expired credentials was found(and deleted)
+bool
+removeExpired(ApplyView& view, STTx const& tx, beast::Journal const j);
+
+}  // namespace Credentials
 
 }  // namespace ripple

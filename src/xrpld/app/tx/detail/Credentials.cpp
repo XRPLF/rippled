@@ -47,8 +47,10 @@ namespace ripple {
 
 //------------------------------------------------------------------------------
 
+namespace Credentials {
+
 bool
-credentialCheckExpired(
+checkExpired(
     std::shared_ptr<SLE const> const& sle,
     NetClock::time_point const& closed)
 {
@@ -60,7 +62,7 @@ credentialCheckExpired(
 
 // special check for deletion
 static bool
-credentialCheckNotExpired(
+checkNotExpired(
     std::shared_ptr<SLE const> const& sle,
     NetClock::time_point const& closed)
 {
@@ -73,26 +75,35 @@ credentialCheckNotExpired(
     return now <= exp;
 }
 
-Blob
-signCredential(
-    PublicKey const& signerPK,
-    SecretKey const& signerSK,
-    AccountID const& subject,
-    std::string_view credType,
-    std::optional<AccountID> const& masterIssuer)
+bool
+removeExpired(ApplyView& view, STTx const& tx, beast::Journal const j)
 {
-    AccountID const issuer(
-        masterIssuer ? *masterIssuer : calcAccountID(signerPK));
-    Slice sct(credType.data(), credType.size());
-    auto const kCred = keylet::credential(subject, issuer, sct);
+    auto const closeTime = view.info().parentCloseTime;
+    bool foundExpired = false;
 
-    Serializer msg;
-    msg.add32(HashPrefix::credential);
-    msg.addBitString(kCred.key);
+    STVector256 const& arr(tx.getFieldV256(sfCredentialIDs));
+    for (auto const& h : arr)
+    {
+        // Credentials already checked in preclaim. Look only for expired here.
+        auto const k = keylet::credential(h);
+        auto const sleCred = view.peek(k);
 
-    auto const b = sign(signerPK, signerSK, msg.slice());
-    return Blob(b.cbegin(), b.cend());
+        if (checkExpired(sleCred, closeTime))
+        {
+            JLOG(j.trace())
+                << "Credentials are expired. Cred: " << sleCred->getText();
+            // delete expired credentials even if the transaction failed
+            CredentialDelete::deleteSLE(view, sleCred, j);
+            foundExpired = true;
+        }
+    }
+
+    return foundExpired;
 }
+
+}  // namespace Credentials
+
+using namespace Credentials;
 
 // ------- CREATE --------------------------
 
@@ -159,7 +170,7 @@ CredentialCreate::preflight(PreflightContext const& ctx)
     if (issuerPubKey && !publicKeyType(*issuerPubKey))
     {
         JLOG(j.trace()) << "Malformed transaction: invalid issuerPublicKey.";
-        return temINVALID_ACCOUNT_ID;
+        return telBAD_PUBLIC_KEY;
     }
 
     if (signature)
@@ -323,7 +334,7 @@ CredentialDelete::preflight(PreflightContext const& ctx)
     }
 
     // Make sure that the passed account is valid.
-    if ((subject && !AccountID(*subject)) || (issuer && !AccountID(*issuer)))
+    if ((subject && subject->isZero()) || (issuer && issuer->isZero()))
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: Subject or Issuer "
                                "field zeroed.";
@@ -395,8 +406,7 @@ CredentialDelete::doApply()
 
     if ((subject != account_) && (issuer != account_))
     {
-        if (credentialCheckNotExpired(
-                sleCred, ctx_.view().info().parentCloseTime))
+        if (checkNotExpired(sleCred, ctx_.view().info().parentCloseTime))
         {
             JLOG(j_.trace()) << "Can't delete non-expired credential.";
             return tecNO_PERMISSION;
@@ -483,7 +493,7 @@ CredentialAccept::doApply()
     Keylet const kCred = keylet::credential(subject, issuer, credType);
     auto const sleCred = ctx_.view().peek(kCred);  // Checked in preclaim()
 
-    if (credentialCheckExpired(sleCred, ctx_.view().info().parentCloseTime))
+    if (checkExpired(sleCred, ctx_.view().info().parentCloseTime))
     {
         JLOG(j_.trace()) << "Credential is expired: " << sleCred->getText();
         // delete expired credentials even if the transaction failed

@@ -931,7 +931,7 @@ public:
             env.close();
 
             // carol issue credentials for becky
-            env(credentials::create(becky, carol, credType));
+            env(credentials::createIssuer(becky, carol, credType));
             env.close();
             // becky accept the credentials
             env(credentials::accept(becky, carol, credType));
@@ -949,11 +949,10 @@ public:
 
             // becky use credentialsm but lsfDepositAuth not set and can't
             // delete account
-            env(acctdelete(
-                    becky,
-                    alice,
-                    {"48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6E"
-                     "A288BE4"}),
+            env(acctdelete(becky, alice),
+                credentials::IDs({"48004829F915654A81B11C4AB8218D96FED67F20"
+                                  "9B58328A72314FB6E"
+                                  "A288BE4"}),
                 fee(acctDelFee),
                 ter(tecNO_PERMISSION));
             env.close();
@@ -987,9 +986,8 @@ public:
             }
 
             // becky use bad credentials and can't delete account
-            env(acctdelete(
-                    becky,
-                    alice,
+            env(acctdelete(becky, alice),
+                credentials::IDs(
                     {"48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6E"
                      "A288BE4"}),
                 fee(acctDelFee),
@@ -997,7 +995,9 @@ public:
             env.close();
 
             // becky use credentials and can delete account
-            env(acctdelete(becky, alice, {credIdx}), fee(acctDelFee));
+            env(acctdelete(becky, alice),
+                credentials::IDs({credIdx}),
+                fee(acctDelFee));
             env.close();
 
             // check that credential object deleted too
@@ -1013,7 +1013,7 @@ public:
                 env.fund(XRP(100000), john);
                 env.close();
 
-                auto jv = credentials::create(john, carol, credType);
+                auto jv = credentials::createIssuer(john, carol, credType);
                 uint32_t const t = env.now().time_since_epoch().count() + 20;
                 jv[sfExpiration.jsonName] = t;
                 env(jv);
@@ -1029,7 +1029,8 @@ public:
 
                 // credentials are expired
                 // john use credentials but can't delete account
-                env(acctdelete(john, alice, {credIdx}),
+                env(acctdelete(john, alice),
+                    credentials::IDs({credIdx}),
                     fee(acctDelFee),
                     ter(tecEXPIRED));
                 env.close();
@@ -1067,9 +1068,8 @@ public:
             auto const acctDelFee{drops(env.current()->fees().increment)};
 
             // becky can't delete account as feature disabled
-            env(acctdelete(
-                    becky,
-                    alice,
+            env(acctdelete(becky, alice),
+                credentials::IDs(
                     {"098B7F1B146470A1C5084DC7832C04A72939E3EBC58E68AB8B579BA07"
                      "2B0CECB"}),
                 fee(acctDelFee),
