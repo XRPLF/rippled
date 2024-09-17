@@ -262,6 +262,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
     {
         auto& s = c.section("sqlite");
         set(journal_size_limit, "journal_size_limit", s);
+        set(page_size, "page_size", s);
         if (!isPageSizeValid(page_size))
             Throw<std::runtime_error>(
                 "Invalid page_size. Must be between 512 and 65536.");
@@ -269,8 +270,6 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
         if (!isPageSizePowerOfTwo(page_size))
             Throw<std::runtime_error>(
                 "Invalid page_size. Must be a power of 2.");
-
-        set(page_size, "page_size", s);
     }
 
     setPragma(setup.txPragma[0], "page_size", page_size);
