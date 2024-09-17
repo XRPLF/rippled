@@ -116,9 +116,9 @@ CredentialCreate::preflight(PreflightContext const& ctx)
     auto const issuerPubKey = tx[~sfIssuerPubKey];
     auto const signature = tx[~sfSignature];
 
-    if ((subject.has_value() == issuerPubKey.has_value()) ||
-        (issuerPubKey.has_value() != signature.has_value()) ||
-        (issuer && !signature))
+    if ((subject.has_value() == issuer.has_value()) ||
+        (issuer.has_value() != issuerPubKey.has_value()) ||
+        (issuer.has_value() != signature.has_value()))
     {
         // Either both fields are present or neither field is present.  In
         // either case the transaction is malformed.
@@ -166,9 +166,7 @@ CredentialCreate::preflight(PreflightContext const& ctx)
     {
         PublicKey const pk(*issuerPubKey);
         auto const kCred = keylet::credential(
-            tx[sfAccount],
-            issuer ? *issuer : calcAccountID(pk),
-            ctx.tx[sfCredentialType]);
+            tx[sfAccount], *issuer, ctx.tx[sfCredentialType]);
 
         Serializer msg;
         msg.add32(HashPrefix::credential);
@@ -195,9 +193,7 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
         ? std::optional<AccountID>(
               calcAccountID(PublicKey(ctx.tx[sfIssuerPubKey])))
         : std::nullopt;
-    auto const issuer = ctx.tx.isFieldPresent(sfIssuer)
-        ? ctx.tx[sfIssuer]
-        : (signer ? *signer : account);
+    auto const issuer = ctx.tx[~sfIssuer].value_or(account);
 
     if (ctx.tx.isFieldPresent(sfSubject) &&
         !ctx.view.exists(keylet::account(subject)))
@@ -212,10 +208,10 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
         return tecDUPLICATE;
     }
 
-    if (ctx.tx.isFieldPresent(sfIssuer))
+    if (signer && (signer != issuer))
     {
-        // If Issuer present then IssuerPubKey must be the public key of the
-        // regular key for Issuer account. Let's check that it is true.
+        // If Issuer is not an account derived from IssuerPubKey then it  must
+        // be the regular key for Issuer account.
 
         auto const sleIssuer = ctx.view.read(keylet::account(issuer));
         if (!sleIssuer)

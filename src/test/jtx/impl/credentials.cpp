@@ -47,8 +47,8 @@ create(
     {
         jv[jss::Account] = subject.human();
         jv[sfIssuerPubKey.jsonName] = strHex(issuer.pk());
-        if (masterIssuer)
-            jv[sfIssuer.jsonName] = masterIssuer->human();
+        jv[sfIssuer.jsonName] =
+            masterIssuer ? masterIssuer->human() : issuer.human();
 
         jv[jss::Signature] = strHex(signCredential(
             issuer.pk(), issuer.sk(), subject.id(), credType, masterIssuer));

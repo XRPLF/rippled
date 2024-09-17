@@ -307,6 +307,13 @@ struct Credentials_test : public beast::unit_test::suite
             }
 
             {
+                testcase("Credentials fail no Issuer param.");
+                auto jv = credentials::create(subj, iss, credType, false);
+                jv.removeMember(sfIssuer.jsonName);
+                env(jv, ter(temMALFORMED));
+            }
+
+            {
                 testcase("Credentials fail empty issuerPubKey param.");
                 auto jv = credentials::create(subj, iss, credType, false);
                 jv[sfIssuerPubKey.jsonName] = "";
