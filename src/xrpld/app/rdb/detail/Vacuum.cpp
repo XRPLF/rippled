@@ -23,7 +23,7 @@
 namespace ripple {
 
 bool
-doVacuumDB(DatabaseCon::Setup const& setup)
+doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
     boost::filesystem::path dbPath = setup.dataDir / TxDBName;
 
@@ -43,7 +43,7 @@ doVacuumDB(DatabaseCon::Setup const& setup)
     }
 
     auto txnDB =
-        std::make_unique<DatabaseCon>(setup, TxDBName, TxDBPragma, TxDBInit);
+        std::make_unique<DatabaseCon>(setup, TxDBName, TxDBPragma, TxDBInit, j);
     auto& session = txnDB->getSession();
     std::uint32_t pageSize;
 

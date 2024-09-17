@@ -29,7 +29,7 @@ namespace test {
 
 struct Directory_test : public beast::unit_test::suite
 {
-    // Map [0-15576] into a a unique 3 letter currency code
+    // Map [0-15576] into a unique 3 letter currency code
     std::string
     currcode(std::size_t i)
     {

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2019 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,48 +17,28 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_TASKQUEUE_H_INCLUDED
-#define RIPPLE_NODESTORE_TASKQUEUE_H_INCLUDED
+#ifndef RIPPLE_TEST_JTX_LEDGER_STATE_FIX_H_INCLUDED
+#define RIPPLE_TEST_JTX_LEDGER_STATE_FIX_H_INCLUDED
 
-#include <xrpld/core/detail/Workers.h>
-
-#include <functional>
-#include <queue>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 
 namespace ripple {
-namespace NodeStore {
+namespace test {
+namespace jtx {
 
-class TaskQueue : private Workers::Callback
-{
-public:
-    TaskQueue();
+/** LedgerStateFix operations. */
+namespace ledgerStateFix {
 
-    void
-    stop();
+/** Repair the links in an NFToken directory. */
+Json::Value
+nftPageLinks(jtx::Account const& acct, jtx::Account const& owner);
 
-    /** Adds a task to the queue
+}  // namespace ledgerStateFix
 
-        @param task std::function with signature void()
-    */
-    void
-    addTask(std::function<void()> task);
+}  // namespace jtx
 
-    /** Return the queue size
-     */
-    [[nodiscard]] size_t
-    size() const;
-
-private:
-    mutable std::mutex mutex_;
-    Workers workers_;
-    std::queue<std::function<void()>> tasks_;
-    std::uint64_t processing_{0};
-
-    void
-    processTask(int instance) override;
-};
-
-}  // namespace NodeStore
+}  // namespace test
 }  // namespace ripple
 
 #endif

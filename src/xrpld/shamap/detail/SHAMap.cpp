@@ -1216,9 +1216,9 @@ SHAMap::dump(bool hash) const
 std::shared_ptr<SHAMapTreeNode>
 SHAMap::cacheLookup(SHAMapHash const& hash) const
 {
-    auto ret = f_.getTreeNodeCache(ledgerSeq_)->fetch(hash.as_uint256());
+    auto ret = f_.getTreeNodeCache()->fetch(hash.as_uint256());
     XRPL_ASSERT(
-        "ripple::SHAMap::cacheLookup : not fetched or zero cowid",
+        "ripple::SHAMap::cacheLookup : not found or zero cowid",
         !ret || !ret->cowid());
     return ret;
 }
@@ -1235,8 +1235,7 @@ SHAMap::canonicalize(
         "ripple::SHAMap::canonicalize : node hash do match",
         node->getHash() == hash);
 
-    f_.getTreeNodeCache(ledgerSeq_)
-        ->canonicalize_replace_client(hash.as_uint256(), node);
+    f_.getTreeNodeCache()->canonicalize_replace_client(hash.as_uint256(), node);
 }
 
 void

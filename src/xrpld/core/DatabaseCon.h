@@ -23,6 +23,7 @@
 #include <xrpld/app/main/DBInit.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/SociDB.h>
+#include <xrpld/perflog/PerfLog.h>
 #include <boost/filesystem/path.hpp>
 #include <mutex>
 #include <optional>
@@ -87,7 +88,6 @@ public:
 
         Config::StartUpType startUp = Config::NORMAL;
         bool standAlone = false;
-        bool reporting = false;
         boost::filesystem::path dataDir;
         // Indicates whether or not to return the `globalPragma`
         // from commonPragma()
@@ -118,18 +118,19 @@ public:
         Setup const& setup,
         std::string const& dbName,
         std::array<char const*, N> const& pragma,
-        std::array<char const*, M> const& initSQL)
+        std::array<char const*, M> const& initSQL,
+        beast::Journal journal)
         // Use temporary files or regular DB files?
         : DatabaseCon(
-              setup.standAlone && !setup.reporting &&
-                      setup.startUp != Config::LOAD &&
+              setup.standAlone && setup.startUp != Config::LOAD &&
                       setup.startUp != Config::LOAD_FILE &&
                       setup.startUp != Config::REPLAY
                   ? ""
                   : (setup.dataDir / dbName),
               setup.commonPragma(),
               pragma,
-              initSQL)
+              initSQL,
+              journal)
     {
     }
 
@@ -140,8 +141,9 @@ public:
         std::string const& dbName,
         std::array<char const*, N> const& pragma,
         std::array<char const*, M> const& initSQL,
-        CheckpointerSetup const& checkpointerSetup)
-        : DatabaseCon(setup, dbName, pragma, initSQL)
+        CheckpointerSetup const& checkpointerSetup,
+        beast::Journal journal)
+        : DatabaseCon(setup, dbName, pragma, initSQL, journal)
     {
         setupCheckpointing(checkpointerSetup.jobQueue, *checkpointerSetup.logs);
     }
@@ -151,8 +153,9 @@ public:
         boost::filesystem::path const& dataDir,
         std::string const& dbName,
         std::array<char const*, N> const& pragma,
-        std::array<char const*, M> const& initSQL)
-        : DatabaseCon(dataDir / dbName, nullptr, pragma, initSQL)
+        std::array<char const*, M> const& initSQL,
+        beast::Journal journal)
+        : DatabaseCon(dataDir / dbName, nullptr, pragma, initSQL, journal)
     {
     }
 
@@ -163,8 +166,9 @@ public:
         std::string const& dbName,
         std::array<char const*, N> const& pragma,
         std::array<char const*, M> const& initSQL,
-        CheckpointerSetup const& checkpointerSetup)
-        : DatabaseCon(dataDir, dbName, pragma, initSQL)
+        CheckpointerSetup const& checkpointerSetup,
+        beast::Journal journal)
+        : DatabaseCon(dataDir, dbName, pragma, initSQL, journal)
     {
         setupCheckpointing(checkpointerSetup.jobQueue, *checkpointerSetup.logs);
     }
@@ -180,7 +184,14 @@ public:
     LockedSociSession
     checkoutDb()
     {
-        return LockedSociSession(session_, lock_);
+        using namespace std::chrono_literals;
+        LockedSociSession session = perf::measureDurationAndLog(
+            [&]() { return LockedSociSession(session_, lock_); },
+            "checkoutDb",
+            10ms,
+            j_);
+
+        return session;
     }
 
 private:
@@ -192,8 +203,9 @@ private:
         boost::filesystem::path const& pPath,
         std::vector<std::string> const* commonPragma,
         std::array<char const*, N> const& pragma,
-        std::array<char const*, M> const& initSQL)
-        : session_(std::make_shared<soci::session>())
+        std::array<char const*, M> const& initSQL,
+        beast::Journal journal)
+        : session_(std::make_shared<soci::session>()), j_(journal)
     {
         open(*session_, "sqlite", pPath.string());
 
@@ -227,6 +239,8 @@ private:
     // shared_ptr in this class. session_ will never be null.
     std::shared_ptr<soci::session> const session_;
     std::shared_ptr<Checkpointer> checkpointer_;
+
+    beast::Journal const j_;
 };
 
 // Return the checkpointer from its id. If the checkpointer no longer exists, an

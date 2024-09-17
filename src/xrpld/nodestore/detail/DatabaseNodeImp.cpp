@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/nodestore/detail/DatabaseNodeImp.h>
 #include <xrpl/protocol/HashPrefix.h>
 

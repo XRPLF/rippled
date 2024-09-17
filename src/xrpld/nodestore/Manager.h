@@ -21,7 +21,6 @@
 #define RIPPLE_NODESTORE_MANAGER_H_INCLUDED
 
 #include <xrpld/nodestore/DatabaseRotating.h>
-#include <xrpld/nodestore/DatabaseShard.h>
 #include <xrpld/nodestore/Factory.h>
 
 namespace ripple {

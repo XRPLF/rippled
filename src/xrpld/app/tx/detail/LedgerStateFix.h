@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,31 +17,41 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_SIM_MESSAGE_H_INCLUDED
-#define RIPPLE_PEERFINDER_SIM_MESSAGE_H_INCLUDED
+#ifndef RIPPLE_TX_LEDGER_STATE_FIX_H_INCLUDED
+#define RIPPLE_TX_LEDGER_STATE_FIX_H_INCLUDED
+
+#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Indexes.h>
 
 namespace ripple {
-namespace PeerFinder {
-namespace Sim {
 
-class Message
+class LedgerStateFix : public Transactor
 {
 public:
-    explicit Message(Endpoints const& endpoints) : m_payload(endpoints)
+    enum FixType : std::uint16_t {
+        nfTokenPageLink = 1,
+    };
+
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
+    explicit LedgerStateFix(ApplyContext& ctx) : Transactor(ctx)
     {
-    }
-    Endpoints const&
-    payload() const
-    {
-        return m_payload;
     }
 
-private:
-    Endpoints m_payload;
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static XRPAmount
+    calculateBaseFee(ReadView const& view, STTx const& tx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
+    TER
+    doApply() override;
 };
 
-}  // namespace Sim
-}  // namespace PeerFinder
 }  // namespace ripple
 
 #endif
