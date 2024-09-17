@@ -635,7 +635,7 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
             calcAccountID(PublicKey(makeSlice(spk)));
 
         // Verify that the signingAcctID and the signingAcctIDFromPubKey
-        // belong together.  Here is are the rules:
+        // belong together.  Here are the rules:
         //
         //   1. "Phantom account": an account that is not in the ledger
         //      A. If signingAcctID == signingAcctIDFromPubKey and the
