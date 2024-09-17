@@ -358,10 +358,15 @@ EscrowFinish::preflight(PreflightContext const& ctx)
             return temDISABLED;
         }
 
-        auto const err = DepositPreauth::preauthPreflightCredentialsCheck(
-            ctx.tx.getFieldV256(sfCredentialIDs), ctx.j);
-        if (!isTesSuccess(err))
-            return err;
+        auto const& credentials = ctx.tx.getFieldV256(sfCredentialIDs);
+        if (credentials.empty() ||
+            (credentials.size() > credentialsArrayMaxSize))
+        {
+            JLOG(ctx.j.trace())
+                << "Malformed transaction: Credentials array size is invalid: "
+                << credentials.size();
+            return temMALFORMED;
+        }
     }
 
     return tesSUCCESS;
@@ -400,10 +405,42 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
         if (!(sleDst->getFlags() & lsfDepositAuth) || (src == dst))
             return tecNO_PERMISSION;
 
-        auto const err = DepositPreauth::preauthPreclaimCredentialsCheck(
-            ctx.view, src, dst, ctx.tx.getFieldV256(sfCredentialIDs), ctx.j);
-        if (!isTesSuccess(err))
-            return err;
+        STArray authCreds;
+        for (auto const& h : ctx.tx.getFieldV256(sfCredentialIDs))
+        {
+            auto const sleCred = ctx.view.read(keylet::credential(h));
+            if (!sleCred)
+            {
+                JLOG(ctx.j.trace()) << "Credential doesn't exist. Cred: " << h;
+                return tecBAD_CREDENTIALS;
+            }
+
+            if (sleCred->getAccountID(sfSubject) != src)
+            {
+                JLOG(ctx.j.trace())
+                    << "Credential doesn’t belong to current account. Cred: "
+                    << h;
+                return tecBAD_CREDENTIALS;
+            }
+
+            if (!(sleCred->getFlags() & lsfAccepted))
+            {
+                JLOG(ctx.j.trace()) << "Credential not accepted. Cred: " << h;
+                return tecBAD_CREDENTIALS;
+            }
+
+            auto o = STObject::makeInnerObject(sfCredential);
+            o.setAccountID(sfIssuer, sleCred->getAccountID(sfIssuer));
+            o.setFieldVL(
+                sfCredentialType, sleCred->getFieldVL(sfCredentialType));
+            authCreds.push_back(std::move(o));
+        }
+
+        if (!ctx.view.exists(keylet::depositPreauth(dst, authCreds)))
+        {
+            JLOG(ctx.j.trace()) << "DepositPreauth doesn't exist";
+            return tecNO_PERMISSION;
+        }
     }
 
     return tesSUCCESS;

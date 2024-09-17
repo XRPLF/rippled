@@ -79,69 +79,6 @@ DepositPreauth::credentialIDsRemoveExpired(
 }
 
 NotTEC
-DepositPreauth::preauthPreflightCredentialsCheck(
-    STVector256 const& credentials,
-    beast::Journal const j)
-{
-    if (credentials.empty() || (credentials.size() > credentialsArrayMaxSize))
-    {
-        JLOG(j.trace())
-            << "Malformed transaction: Credentials array size is invalid: "
-            << credentials.size();
-        return temMALFORMED;
-    }
-
-    return tesSUCCESS;
-}
-
-TER
-DepositPreauth::preauthPreclaimCredentialsCheck(
-    ReadView const& view,
-    AccountID const& src,
-    AccountID const& dst,
-    STVector256 const& credentials,
-    beast::Journal const j)
-{
-    STArray authCreds;
-
-    for (auto const& h : credentials)
-    {
-        auto const sleCred = view.read(keylet::credential(h));
-        if (!sleCred)
-        {
-            JLOG(j.trace()) << "Credential doesn't exist. Cred: " << h;
-            return tecBAD_CREDENTIALS;
-        }
-
-        if (sleCred->getAccountID(sfSubject) != src)
-        {
-            JLOG(j.trace())
-                << "Credential doesn’t belong to current account. Cred: " << h;
-            return tecBAD_CREDENTIALS;
-        }
-
-        if (!(sleCred->getFlags() & lsfAccepted))
-        {
-            JLOG(j.trace()) << "Credential not accepted. Cred: " << h;
-            return tecBAD_CREDENTIALS;
-        }
-
-        auto o = STObject::makeInnerObject(sfCredential);
-        o.setAccountID(sfIssuer, sleCred->getAccountID(sfIssuer));
-        o.setFieldVL(sfCredentialType, sleCred->getFieldVL(sfCredentialType));
-        authCreds.push_back(std::move(o));
-    }
-
-    if (!view.exists(keylet::depositPreauth(dst, authCreds)))
-    {
-        JLOG(j.trace()) << "DepositPreauth doesn't exist";
-        return tecNO_PERMISSION;
-    }
-
-    return tesSUCCESS;
-}
-
-NotTEC
 DepositPreauth::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureDepositPreauth))
