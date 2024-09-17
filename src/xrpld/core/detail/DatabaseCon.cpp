@@ -175,7 +175,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
             }
 
             {
-                //#synchronous Valid values : off, normal, full, extra
+                // #synchronous Valid values : off, normal, full, extra
                 if (set(synchronous, "synchronous", sqlite) &&
                     !safety_level.empty())
                 {
@@ -237,9 +237,10 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
     }
     setup.useGlobalPragma = true;
 
-    auto setPragma = [](std::string& pragma, std::string const& key, int64_t value) {
-        pragma = "PRAGMA " + key + "=" + std::to_string(value) + ";";
-    };
+    auto setPragma =
+        [](std::string& pragma, std::string const& key, int64_t value) {
+            pragma = "PRAGMA " + key + "=" + std::to_string(value) + ";";
+        };
 
     // Lgr Pragma
     setPragma(setup.lgrPragma[0], "journal_size_limit", 1582080);
