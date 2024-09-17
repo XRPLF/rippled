@@ -206,6 +206,12 @@ private:
     {
         open(*session_, "sqlite", pPath.string());
 
+        for (auto const& p : pragma)
+        {
+            soci::statement st = session_->prepare << p;
+            st.execute(true);
+        }
+
         if (commonPragma)
         {
             for (auto const& p : *commonPragma)
@@ -214,11 +220,7 @@ private:
                 st.execute(true);
             }
         }
-        for (auto const& p : pragma)
-        {
-            soci::statement st = session_->prepare << p;
-            st.execute(true);
-        }
+
         for (auto const& sql : initSQL)
         {
             soci::statement st = session_->prepare << sql;
