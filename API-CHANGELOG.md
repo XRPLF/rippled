@@ -26,12 +26,15 @@ In `api_version: 2`, the `signer_lists` field [will be moved](#modifications-to-
 
 The `network_id` field was added in the `server_info` response in version 1.5.0 (2019), but it is not returned in [reporting mode](https://xrpl.org/rippled-server-modes.html#reporting-mode).
 
-## XRP Ledger server version 2.0.0
+### Breaking change in 2.3
 
-### Updates in 2.3.0
+- `book_changes`: If the requested ledger version is not available on this node, a `ledgerNotFound` error is returned and the node does not attempt to acquire the ledger from the p2p network (as with other non-admin RPCs).
 
-(Breaking Changes)
-- Changes to the `book_changes` RPC: This RPC now returns a `validated` field in its response, which was missing in prior versions. Additionally, `book_changes` RPC exhibits similar behavior as the other non-Admin RPC commands, insofar as ledger-retrieval is concerned. Specifically, if the requested ledger version is old, then a `ledgerNotFound` error is returned. This is a breaking change, because prior versions would attempt to acquire such an old ledger.
+Admins can still attempt to retrieve old ledgers with the `ledger_request` RPC.
+
+### Addition in 2.3
+
+- `book_changes`: Returns a `validated` field in its response, which was missing in prior versions.
 
 ### Additions in 2.2
 
