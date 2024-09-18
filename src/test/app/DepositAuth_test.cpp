@@ -664,10 +664,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
                 if (supportsPreauth)
                 {
-                    env(deposit::auth(
-                        becky,
-                        std::vector<deposit::AuthorizeCredentials>{
-                            {carol, credType}}));
+                    env(deposit::authCredentials(becky, {{carol, credType}}));
                     env.close();
                 }
 
@@ -832,9 +829,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             // Bob will accept payements from accounts with credentials signed
             // by 'iss'
-            env(deposit::auth(
-                bob,
-                std::vector<deposit::AuthorizeCredentials>{{iss, credType}}));
+            env(deposit::authCredentials(bob, {{iss, credType}}));
             env.close();
 
             auto const jDP =
@@ -921,45 +916,34 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             {
                 // both included [AuthorizeCredentials UnauthorizeCredentials]
-                auto jv = deposit::auth(
-                    bob,
-                    std::vector<deposit::AuthorizeCredentials>{
-                        {iss, credType}});
+                auto jv = deposit::authCredentials(bob, {{iss, credType}});
                 jv[sfUnauthorizeCredentials.jsonName] = Json::arrayValue;
                 env(jv, ter(temMALFORMED));
             }
 
             {
                 // both included [Unauthorize, AuthorizeCredentials]
-                auto jv = deposit::auth(
-                    bob,
-                    std::vector<deposit::AuthorizeCredentials>{
-                        {iss, credType}});
+                auto jv = deposit::authCredentials(bob, {{iss, credType}});
                 jv[sfUnauthorize.jsonName] = iss.human();
                 env(jv, ter(temMALFORMED));
             }
 
             {
                 // both included [Authorize, AuthorizeCredentials]
-                auto jv = deposit::auth(
-                    bob,
-                    std::vector<deposit::AuthorizeCredentials>{
-                        {iss, credType}});
+                auto jv = deposit::authCredentials(bob, {{iss, credType}});
                 jv[sfAuthorize.jsonName] = iss.human();
                 env(jv, ter(temMALFORMED));
             }
 
             {
                 // AuthorizeCredentials is empty
-                auto jv = deposit::auth(
-                    bob, std::vector<deposit::AuthorizeCredentials>{});
+                auto jv = deposit::authCredentials(bob, {});
                 env(jv, ter(temMALFORMED));
             }
 
             {
                 // invalid account
-                auto jv = deposit::auth(
-                    bob, std::vector<deposit::AuthorizeCredentials>{});
+                auto jv = deposit::authCredentials(bob, {});
                 auto& arr(jv[sfAuthorizeCredentials.jsonName]);
                 Json::Value jcred = Json::objectValue;
                 jcred[jss::Issuer] = to_string(xrpAccount());
@@ -974,17 +958,13 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             {
                 // try preauth itself
-                auto jv = deposit::auth(
-                    bob,
-                    std::vector<deposit::AuthorizeCredentials>{
-                        {bob, credType}});
+                auto jv = deposit::authCredentials(bob, {{bob, credType}});
                 env(jv, ter(temCANNOT_PREAUTH_SELF));
             }
 
             {
                 // empty credential type
-                auto jv = deposit::auth(
-                    bob, std::vector<deposit::AuthorizeCredentials>{{iss, {}}});
+                auto jv = deposit::authCredentials(bob, {{iss, {}}});
                 env(jv, ter(temMALFORMED));
             }
 
@@ -993,28 +973,24 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 Account const a("a"), b("b"), c("c"), d("d"), e("e"), f("f"),
                     g("g"), h("h"), i("i");
                 auto const& z = credType;
-                auto jv = deposit::auth(
+                auto jv = deposit::authCredentials(
                     bob,
-                    std::vector<deposit::AuthorizeCredentials>{
-                        {a, z},
-                        {b, z},
-                        {c, z},
-                        {d, z},
-                        {e, z},
-                        {f, z},
-                        {g, z},
-                        {h, z},
-                        {i, z}});
+                    {{a, z},
+                     {b, z},
+                     {c, z},
+                     {d, z},
+                     {e, z},
+                     {f, z},
+                     {g, z},
+                     {h, z},
+                     {i, z}});
                 env(jv, ter(temMALFORMED));
             }
 
             {
                 // Can create with non-existing issuer
                 Account const rick{"rick"};
-                auto jv = deposit::auth(
-                    bob,
-                    std::vector<deposit::AuthorizeCredentials>{
-                        {rick, credType}});
+                auto jv = deposit::authCredentials(bob, {{rick, credType}});
                 env(jv);
                 env.close();
             }
@@ -1023,28 +999,19 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 // not enough resevre
                 Account const john{"john"};
                 env.fund(env.current()->fees().accountReserve(0), john);
-                auto jv = deposit::auth(
-                    john,
-                    std::vector<deposit::AuthorizeCredentials>{
-                        {iss, credType}});
+                auto jv = deposit::authCredentials(john, {{iss, credType}});
                 env(jv, ter(tecINSUFFICIENT_RESERVE));
             }
 
             {
                 // NO deposit object exists
-                env(deposit::unauth(
-                        bob,
-                        std::vector<deposit::AuthorizeCredentials>{
-                            {iss, credType}}),
+                env(deposit::unauthCredentials(bob, {{iss, credType}}),
                     ter(tecNO_ENTRY));
             }
 
             // Create DepositPreauth object
             {
-                env(deposit::auth(
-                    bob,
-                    std::vector<deposit::AuthorizeCredentials>{
-                        {iss, credType}}));
+                env(deposit::authCredentials(bob, {{iss, credType}}));
                 env.close();
 
                 auto const jDP =
@@ -1058,19 +1025,13 @@ struct DepositPreauth_test : public beast::unit_test::suite
                         jss::DepositPreauth);
 
                 // can't create duplicate
-                env(deposit::auth(
-                        bob,
-                        std::vector<deposit::AuthorizeCredentials>{
-                            {iss, credType}}),
+                env(deposit::authCredentials(bob, {{iss, credType}}),
                     ter(tecDUPLICATE));
             }
 
             // Delete DepositPreauth object
             {
-                env(deposit::unauth(
-                    bob,
-                    std::vector<deposit::AuthorizeCredentials>{
-                        {iss, credType}}));
+                env(deposit::unauthCredentials(bob, {{iss, credType}}));
                 env.close();
                 auto const jDP =
                     ledgerEntryDepositPreauth(env, bob, {{iss, credType}});
@@ -1126,10 +1087,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
             }
 
             // Bob setup DepositPreauth object, duplicates will be eliminated
-            env(deposit::auth(
-                bob,
-                std::vector<deposit::AuthorizeCredentials>{
-                    {iss, credType}, {iss, credType}}));
+            env(deposit::authCredentials(
+                bob, {{iss, credType}, {iss, credType}}));
             env.close();
 
             {
@@ -1190,10 +1149,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env.close();
 
             // Setup DepositPreauth object failed - amendent is not supported
-            env(deposit::auth(
-                    bob,
-                    std::vector<deposit::AuthorizeCredentials>{
-                        {iss, credType}}),
+            env(deposit::authCredentials(bob, {{iss, credType}}),
                 ter(temDISABLED));
             env.close();
 
@@ -1252,9 +1208,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env(fset(bob, asfDepositAuth), fee(drops(10)));
             env.close();
             // Bob setup DepositPreauth object
-            env(deposit::auth(
-                bob,
-                std::vector<deposit::AuthorizeCredentials>{{iss, credType}}));
+            env(deposit::authCredentials(bob, {{iss, credType}}));
             env.close();
 
             {
@@ -1344,9 +1298,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env(fset(bob, asfDepositAuth), fee(drops(10)));
             env.close();
             // Bob setup DepositPreauth object
-            env(deposit::auth(
-                bob,
-                std::vector<deposit::AuthorizeCredentials>{{iss, credType}}));
+            env(deposit::authCredentials(bob, {{iss, credType}}));
             env.close();
 
             auto const seq1 = env.seq(alice);

@@ -1535,6 +1535,77 @@ struct Escrow_test : public beast::unit_test::suite
                 fee(1500),
                 ter(temDISABLED));
         }
+
+        {
+            Env env(*this);
+
+            const char credType[] = "abcde";
+
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            Account const dillon{"dillon "};
+            Account const zelda{"zelda"};
+
+            env.fund(XRP(5000), alice, bob, carol, dillon, zelda);
+            env.close();
+
+            env(credentials::createIssuer(carol, zelda, credType));
+            env.close();
+            auto const jCred =
+                credentials::ledgerEntryCredential(env, carol, zelda, credType);
+            std::string const credIdx =
+                jCred[jss::result][jss::index].asString();
+
+            auto const seq = env.seq(alice);
+            env(escrow(alice, bob, XRP(1000)),
+                finish_time(env.now() + 50s),
+                fee(1500));
+            env.close();
+
+            // Bob require preauthorization
+            env(fset(bob, asfDepositAuth), fee(drops(10)));
+            env.close();
+
+            // Fail, src == dst and use credentials
+            env(finish(bob, alice, seq),
+                credentials::IDs({credIdx}),
+                fee(1500),
+                ter(tecNO_PERMISSION));
+
+            // Fail, credentials doesn’t belong to
+            env(finish(dillon, alice, seq),
+                credentials::IDs({credIdx}),
+                fee(1500),
+                ter(tecBAD_CREDENTIALS));
+
+            // Fail, credentials not accepted
+            env(finish(carol, alice, seq),
+                credentials::IDs({credIdx}),
+                fee(1500),
+                ter(tecBAD_CREDENTIALS));
+
+            env.close();
+
+            env(credentials::accept(carol, zelda, credType));
+            env.close();
+
+            // Fail, credentials no depositPreauth
+            env(finish(carol, alice, seq),
+                credentials::IDs({credIdx}),
+                fee(1500),
+                ter(tecNO_PERMISSION));
+
+            env(deposit::authCredentials(bob, {{zelda, credType}}));
+            env.close();
+
+            // Success
+            env.close();
+            env(finish(carol, alice, seq),
+                credentials::IDs({credIdx}),
+                fee(1500));
+            env.close();
+        }
     }
 
     void

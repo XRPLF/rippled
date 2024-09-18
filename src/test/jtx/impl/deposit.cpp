@@ -50,7 +50,9 @@ unauth(jtx::Account const& account, jtx::Account const& unauth)
 
 // Add DepositPreauth.
 Json::Value
-auth(jtx::Account const& account, std::vector<AuthorizeCredentials> const& auth)
+authCredentials(
+    jtx::Account const& account,
+    std::vector<AuthorizeCredentials> const& auth)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
@@ -67,7 +69,7 @@ auth(jtx::Account const& account, std::vector<AuthorizeCredentials> const& auth)
 
 // Remove DepositPreauth.
 Json::Value
-unauth(
+unauthCredentials(
     jtx::Account const& account,
     std::vector<AuthorizeCredentials> const& auth)
 {

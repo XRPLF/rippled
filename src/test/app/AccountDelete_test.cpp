@@ -933,9 +933,7 @@ public:
             // carol issue credentials for becky
             env(credentials::createIssuer(becky, carol, credType));
             env.close();
-            // becky accept the credentials
-            env(credentials::accept(becky, carol, credType));
-            env.close();
+
             // get credentials index
             auto const jCred =
                 credentials::ledgerEntryCredential(env, becky, carol, credType);
@@ -947,12 +945,10 @@ public:
 
             auto const acctDelFee{drops(env.current()->fees().increment)};
 
-            // becky use credentialsm but lsfDepositAuth not set and can't
+            // becky use credentials but lsfDepositAuth not set and can't
             // delete account
             env(acctdelete(becky, alice),
-                credentials::IDs({"48004829F915654A81B11C4AB8218D96FED67F20"
-                                  "9B58328A72314FB6E"
-                                  "A288BE4"}),
+                credentials::IDs({credIdx}),
                 fee(acctDelFee),
                 ter(tecNO_PERMISSION));
             env.close();
@@ -963,27 +959,47 @@ public:
                 // alice as the destination.
                 env(fset(alice, asfDepositAuth), fee(drops(10)));
                 env.close();
-                // and create DepositPreauth Object
-                env(deposit::auth(
-                    alice,
-                    std::vector<deposit::AuthorizeCredentials>{
-                        {carol, credType}}));
-                env.close();
             }
+
+            // Fail, credentials doesn’t belong to carol
+            env(acctdelete(carol, alice),
+                credentials::IDs({credIdx}),
+                fee(acctDelFee),
+                ter(tecBAD_CREDENTIALS));
+
+            // Fail, credentials not accepted
+            env(acctdelete(becky, alice),
+                credentials::IDs({credIdx}),
+                fee(acctDelFee),
+                ter(tecBAD_CREDENTIALS));
+            env.close();
+
+            // becky accept the credentials
+            env(credentials::accept(becky, carol, credType));
+            env.close();
+
+            // Fail, no depositPreauth
+            env(acctdelete(becky, alice),
+                credentials::IDs({credIdx}),
+                fee(acctDelFee),
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            // alice create DepositPreauth Object
+            env(deposit::authCredentials(alice, {{carol, credType}}));
+            env.close();
 
             // becky attempts to delete her account, but alice won't take her
             // XRP, so the delete is blocked.
             env(acctdelete(becky, alice),
                 fee(acctDelFee),
                 ter(tecNO_PERMISSION));
-            env.close();
 
             // becky use empty credentials and can't delete account
-            {
-                auto jv = acctdelete(becky, alice);
-                jv[sfCredentialIDs.jsonName] = Json::arrayValue;
-                env(jv, fee(acctDelFee), ter(temMALFORMED));
-            }
+            env(acctdelete(becky, alice),
+                fee(acctDelFee),
+                credentials::IDs({}),
+                ter(temMALFORMED));
 
             // becky use bad credentials and can't delete account
             env(acctdelete(becky, alice),

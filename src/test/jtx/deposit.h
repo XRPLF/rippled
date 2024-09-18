@@ -64,12 +64,12 @@ struct AuthorizeCredentials
 };
 
 Json::Value
-auth(
+authCredentials(
     jtx::Account const& account,
     std::vector<AuthorizeCredentials> const& auth);
 
 Json::Value
-unauth(
+unauthCredentials(
     jtx::Account const& account,
     std::vector<AuthorizeCredentials> const& auth);
 

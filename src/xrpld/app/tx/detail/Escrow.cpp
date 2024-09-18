@@ -395,6 +395,7 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
     if (!sleEscrow)
         return tecNO_TARGET;
 
+    // NOTE: Escrow payments cannot be used to fund accounts.
     AccountID const dst = sleEscrow->getAccountID(sfDestination);
     auto const sleDst = ctx.view.read(keylet::account(dst));
     if (!sleDst)
@@ -452,8 +453,6 @@ EscrowFinish::doApply()
 {
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
     auto const slep = ctx_.view().peek(k);
-    if (!slep)
-        return tecNO_TARGET;
 
     // If a cancel time is present, a finish operation should only succeed prior
     // to that time. fix1571 corrects a logic error in the check that would make
@@ -532,11 +531,8 @@ EscrowFinish::doApply()
             return tecCRYPTOCONDITION_ERROR;
     }
 
-    // NOTE: Escrow payments cannot be used to fund accounts.
     AccountID const destID = (*slep)[sfDestination];
     auto const sled = ctx_.view().peek(keylet::account(destID));
-    if (!sled)
-        return tecNO_DST;
 
     if (ctx_.tx.isFieldPresent(sfCredentialIDs))
     {

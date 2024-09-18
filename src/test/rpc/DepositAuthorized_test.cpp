@@ -313,9 +313,7 @@ public:
         env.close();
 
         // becky authorize any account recognized by carol to make a payment
-        env(deposit::auth(
-            becky,
-            std::vector<deposit::AuthorizeCredentials>{{carol, credType}}));
+        env(deposit::authCredentials(becky, {{carol, credType}}));
         env.close();
 
         {
@@ -447,10 +445,7 @@ public:
             env.close();
 
             // becky authorize any account recognized by carol to make a payment
-            env(deposit::auth(
-                becky,
-                std::vector<deposit::AuthorizeCredentials>{
-                    {carol, credType2}}));
+            env(deposit::authCredentials(becky, {{carol, credType2}}));
             env.close();
 
             {

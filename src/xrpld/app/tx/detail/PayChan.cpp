@@ -544,8 +544,6 @@ PayChanClaim::doApply()
 {
     Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
     auto const slep = ctx_.view().peek(k);
-    if (!slep)
-        return tecNO_TARGET;
 
     AccountID const src = (*slep)[sfAccount];
     AccountID const dst = (*slep)[sfDestination];

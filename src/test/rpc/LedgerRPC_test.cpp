@@ -885,9 +885,7 @@ class LedgerRPC_test : public beast::unit_test::suite
                 jCred[jss::result][jss::index].asString();
             env(fset(bob, asfDepositAuth), fee(drops(10)));
             env.close();
-            env(deposit::auth(
-                bob,
-                std::vector<deposit::AuthorizeCredentials>{{iss, credType}}));
+            env(deposit::authCredentials(bob, {{iss, credType}}));
             env.close();
         }
 

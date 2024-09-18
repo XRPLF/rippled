@@ -255,11 +255,7 @@ CredentialCreate::doApply()
     }
 
     auto const subject = ctx_.tx[~sfSubject].value_or(account_);
-    auto const issuer = ctx_.tx.isFieldPresent(sfIssuer)
-        ? ctx_.tx[sfIssuer]
-        : (ctx_.tx.isFieldPresent(sfIssuerPubKey)
-               ? calcAccountID(PublicKey(ctx_.tx[sfIssuerPubKey]))
-               : account_);
+    auto const issuer = ctx_.tx[~sfIssuer].value_or(account_);
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const kCred = keylet::credential(subject, issuer, credType);
     auto const sleCred = std::make_shared<SLE>(kCred);
