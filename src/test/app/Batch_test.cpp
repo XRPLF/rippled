@@ -329,7 +329,8 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // TODO: #40 failed: unhandled exception: Field not found: TransactionType
+        // TODO: #40 failed: unhandled exception: Field not found:
+        // TransactionType
         // // temINVALID_BATCH: Batch: TransactionType missing in array entry.
         // {
         //     auto const seq = env.seq(alice);

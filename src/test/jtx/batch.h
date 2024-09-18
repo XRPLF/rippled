@@ -112,8 +112,9 @@ public:
     sig(std::vector<Reg> signers_);
 
     template <class AccountType, class... Accounts>
-        requires std::convertible_to<AccountType, Reg>
-    explicit sig(AccountType&& a0, Accounts&&... aN)
+    requires std::convertible_to<AccountType, Reg> explicit sig(
+        AccountType&& a0,
+        Accounts&&... aN)
         : sig{std::vector<Reg>{
               std::forward<AccountType>(a0),
               std::forward<Accounts>(aN)...}}
@@ -165,8 +166,7 @@ public:
     msig(Account const& masterAccount, std::vector<Reg> signers_);
 
     template <class AccountType, class... Accounts>
-        requires std::convertible_to<AccountType, Reg>
-    explicit msig(
+    requires std::convertible_to<AccountType, Reg> explicit msig(
         Account const& masterAccount,
         AccountType&& a0,
         Accounts&&... aN)

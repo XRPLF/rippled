@@ -29,8 +29,8 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STArray.h>
-#include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
