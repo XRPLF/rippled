@@ -77,7 +77,7 @@ inline constexpr auto TxDBName{"transaction.db"};
 inline constexpr std::array<char const*, 4> TxDBPragma
 {
     "PRAGMA page_size=4096;", "PRAGMA journal_size_limit=1582080;",
-        "PRAGMA max_page_count=2147483646;",
+        "PRAGMA max_page_count=4294967294;",
 
 #if (ULONG_MAX > UINT_MAX) && !defined(NO_SQLITE_MMAP)
         "PRAGMA mmap_size=17179869184;"
