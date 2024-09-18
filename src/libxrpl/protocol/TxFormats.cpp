@@ -519,6 +519,7 @@ TxFormats::TxFormats()
         ttBATCH,
         {
             {sfRawTransactions, soeREQUIRED},
+            {sfTxIDs, soeREQUIRED},
             {sfBatchSigners, soeOPTIONAL},
         },
         commonFields);

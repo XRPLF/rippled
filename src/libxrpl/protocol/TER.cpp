@@ -206,7 +206,7 @@ transResults()
         MAKE_ERROR(temXCHAIN_BRIDGE_BAD_REWARD_AMOUNT, "Malformed: Bad reward amount."),
         MAKE_ERROR(temARRAY_EMPTY,               "Malformed: Array is empty."),
         MAKE_ERROR(temARRAY_TOO_LARGE,           "Malformed: Array is too large."),
-        MAKE_ERROR(temINVALID_BATCH,             "The transaction cannot contain BatchTxn."),
+        MAKE_ERROR(temINVALID_BATCH,             "Invalid inner batch transaction type."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),

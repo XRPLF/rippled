@@ -55,55 +55,54 @@ Batch::preflight(PreflightContext const& ctx)
     AccountID const outerAccount = tx.getAccountID(sfAccount);
 
     auto const& txns = tx.getFieldArray(sfRawTransactions);
+    STVector256 const hashes = tx.getFieldV256(sfTxIDs);
+    if (hashes.size() != txns.size())
+    {
+        JLOG(ctx.j.warn()) << "Batch: Hashes array size does not match txns.";
+        return temINVALID;
+    }
+
     if (txns.empty())
     {
         JLOG(ctx.j.warn()) << "Batch: txns array empty.";
-        return temMALFORMED;
+        return temARRAY_EMPTY;
     }
 
     if (txns.size() > 8)
     {
         JLOG(ctx.j.warn()) << "Batch: txns array exceeds 12 entries.";
-        return temMALFORMED;
+        return temARRAY_TOO_LARGE;
     }
 
-    if (tx.isFieldPresent(sfBatchSigners))
+    for (int i = 0; i < txns.size(); ++i)
     {
-        auto const requireCanonicalSig =
-            ctx.rules.enabled(featureRequireFullyCanonicalSig)
-            ? STTx::RequireFullyCanonicalSig::yes
-            : STTx::RequireFullyCanonicalSig::no;
-        auto const sigResult =
-            ctx.tx.checkBatchSign(requireCanonicalSig, ctx.rules);
-        if (!sigResult)
+        STTx const stx = STTx{STObject(txns[i])};
+        if (stx.getTransactionID() != hashes[i])
         {
-            JLOG(ctx.j.warn()) << "Batch: invalid batch txn signature.";
-            return temBAD_SIGNATURE;
+            JLOG(ctx.j.warn()) << "Batch: Hashes array does not match txns.";
+            return temINVALID;
         }
-    }
 
-    for (STObject txn : txns)
-    {
-        auto const innerAccount = txn.getAccountID(sfAccount);
-        if (!txn.isFieldPresent(sfTransactionType))
+        auto const innerAccount = stx.getAccountID(sfAccount);
+        if (!stx.isFieldPresent(sfTransactionType))
         {
             JLOG(ctx.j.warn())
                 << "Batch: TransactionType missing in array entry.";
-            return temMALFORMED;
+            return temINVALID_BATCH;
         }
-        if (txn.getFieldU16(sfTransactionType) == ttBATCH)
+        if (stx.getFieldU16(sfTransactionType) == ttBATCH)
         {
             JLOG(ctx.j.warn()) << "Batch: batch cannot have inner batch txn.";
-            return temMALFORMED;
+            return temINVALID_BATCH;
         }
 
-        if (txn.getFieldU16(sfTransactionType) == ttACCOUNT_DELETE &&
+        if (stx.getFieldU16(sfTransactionType) == ttACCOUNT_DELETE &&
             innerAccount == outerAccount)
         {
             JLOG(ctx.j.warn())
                 << "Batch: inner txn cannot be account delete when inner and "
                    "outer accounts are the same.";
-            return temMALFORMED;
+            return temINVALID_BATCH;
         }
 
         if (innerAccount != outerAccount)
@@ -122,6 +121,22 @@ Batch::preflight(PreflightContext const& ctx)
             }
         }
     }
+
+    if (tx.isFieldPresent(sfBatchSigners))
+    {
+        auto const requireCanonicalSig =
+            ctx.rules.enabled(featureRequireFullyCanonicalSig)
+            ? STTx::RequireFullyCanonicalSig::yes
+            : STTx::RequireFullyCanonicalSig::no;
+        auto const sigResult =
+            ctx.tx.checkBatchSign(requireCanonicalSig, ctx.rules);
+        if (!sigResult)
+        {
+            JLOG(ctx.j.warn()) << "Batch: invalid batch txn signature.";
+            return temBAD_SIGNATURE;
+        }
+    }
+
     return preflight2(ctx);
 }
 

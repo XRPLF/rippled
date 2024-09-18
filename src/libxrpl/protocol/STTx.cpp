@@ -22,12 +22,14 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/Batch.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -400,16 +402,11 @@ STTx::checkBatchSingleSign(
     if (batchSigner.isFieldPresent(sfSigners))
         return Unexpected("Cannot both single- and multi-sign.");
 
-    Serializer const dataStart{startMultiSigningData(*this)};
-
-    auto const accountID = batchSigner.getAccountID(sfAccount);
-
     bool validSig = false;
     try
     {
-        Serializer s = dataStart;
-        finishMultiSigningData(accountID, s);
-
+        Serializer msg;
+        serializeBatch(msg, getFlags(), getFieldV256(sfTxIDs));
         bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
             (requireCanonicalSig == RequireFullyCanonicalSig::yes);
 
@@ -417,10 +414,9 @@ STTx::checkBatchSingleSign(
         if (publicKeyType(makeSlice(spk)))
         {
             Blob const signature = batchSigner.getFieldVL(sfTxnSignature);
-
             validSig = verify(
                 PublicKey(makeSlice(spk)),
-                s.slice(),
+                msg.slice(),
                 makeSlice(signature),
                 fullyCanonical);
         }
@@ -459,10 +455,8 @@ STTx::checkBatchMultiSign(
         signers.size() > maxMultiSigners(&rules))
         return Unexpected("Invalid Signers array size.");
 
-    // We can ease the computational load inside the loop a bit by
-    // pre-constructing part of the data that we hash.  Fill a Serializer
-    // with the stuff that stays constant from signature to signature.
-    Serializer const dataStart{startMultiSigningData(*this)};
+    Serializer msg;
+    serializeBatch(msg, getFlags(), getFieldV256(sfTxIDs));
 
     // We also use the sfAccount field inside the loop.  Get it once.
     auto const txnAccountID = batchSigner.getAccountID(sfAccount);
@@ -497,18 +491,14 @@ STTx::checkBatchMultiSign(
         bool validSig = false;
         try
         {
-            Serializer s = dataStart;
-            finishMultiSigningData(accountID, s);
-
             auto spk = signer.getFieldVL(sfSigningPubKey);
 
             if (publicKeyType(makeSlice(spk)))
             {
                 Blob const signature = signer.getFieldVL(sfTxnSignature);
-
                 validSig = verify(
                     PublicKey(makeSlice(spk)),
-                    s.slice(),
+                    msg.slice(),
                     makeSlice(signature),
                     fullyCanonical);
             }

@@ -113,59 +113,6 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-/** Set a multisignature on a JTx. */
-class bsig
-{
-public:
-    struct Reg
-    {
-        Account acct;
-        Account sig;
-
-        Reg(Account const& masterSig) : acct(masterSig), sig(masterSig)
-        {
-        }
-
-        Reg(Account const& acct_, Account const& regularSig)
-            : acct(acct_), sig(regularSig)
-        {
-        }
-
-        Reg(char const* masterSig) : acct(masterSig), sig(masterSig)
-        {
-        }
-
-        Reg(char const* acct_, char const* regularSig)
-            : acct(acct_), sig(regularSig)
-        {
-        }
-
-        bool
-        operator<(Reg const& rhs) const
-        {
-            return acct < rhs.acct;
-        }
-    };
-
-    std::vector<Reg> signers;
-
-public:
-    bsig(std::vector<Reg> signers_);
-
-    template <class AccountType, class... Accounts>
-    requires std::convertible_to<AccountType, Reg> explicit bsig(
-        AccountType&& a0,
-        Accounts&&... aN)
-        : bsig{std::vector<Reg>{
-              std::forward<AccountType>(a0),
-              std::forward<Accounts>(aN)...}}
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const;
-};
-
 //------------------------------------------------------------------------------
 
 /** The number of signer lists matches. */
