@@ -23,6 +23,7 @@
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Credentials.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -180,8 +181,7 @@ CredentialCreate::preflight(PreflightContext const& ctx)
             tx[sfAccount], *issuer, ctx.tx[sfCredentialType]);
 
         Serializer msg;
-        msg.add32(HashPrefix::credential);
-        msg.addBitString(kCred.key);
+        serializeCredential(msg, kCred.key);
 
         if (!verify(pk, msg.slice(), *signature, /*canonical*/ true))
         {
