@@ -242,14 +242,6 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
             pragma = "PRAGMA " + key + "=" + std::to_string(value) + ";";
         };
 
-    auto isPageSizeValid = [](int64_t page_size) {
-        return (page_size >= 512 && page_size <= 65536);
-    };
-
-    auto isPageSizePowerOfTwo = [](int64_t page_size) {
-        return (page_size > 0) && ((page_size & (page_size - 1)) == 0);
-    };
-
     // Lgr Pragma
     setPragma(setup.lgrPragma[0], "journal_size_limit", 1582080);
 
@@ -263,11 +255,11 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
         auto& s = c.section("sqlite");
         set(journal_size_limit, "journal_size_limit", s);
         set(page_size, "page_size", s);
-        if (!isPageSizeValid(page_size))
+        if (page_size < 512 || page_size > 65536)
             Throw<std::runtime_error>(
                 "Invalid page_size. Must be between 512 and 65536.");
 
-        if (!isPageSizePowerOfTwo(page_size))
+        if (page_size & (page_size - 1))
             Throw<std::runtime_error>(
                 "Invalid page_size. Must be a power of 2.");
     }
@@ -275,16 +267,6 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
     setPragma(setup.txPragma[0], "page_size", page_size);
     setPragma(setup.txPragma[1], "journal_size_limit", journal_size_limit);
     setPragma(setup.txPragma[2], "max_page_count", max_page_count);
-
-#if (ULONG_MAX > UINT_MAX) && !defined(NO_SQLITE_MMAP)
-    setup.txPragma[3] = "PRAGMA mmap_size=17179869184;";
-#else
-    // Provide an explicit `no-op` SQL statement
-    // in order to keep the size of the array
-    // constant regardless of the preprocessor
-    // condition evaluation
-    setup.txPragma[3] = "PRAGMA sqlite_noop_statement;";
-#endif
 
     return setup;
 }

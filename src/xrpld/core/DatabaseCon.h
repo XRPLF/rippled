@@ -102,7 +102,7 @@ public:
         }
 
         static std::unique_ptr<std::vector<std::string> const> globalPragma;
-        std::array<std::string, 4> txPragma;
+        std::array<std::string, 3> txPragma;
         std::array<std::string, 1> lgrPragma;
     };
 
