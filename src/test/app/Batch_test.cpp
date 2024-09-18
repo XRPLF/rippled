@@ -625,7 +625,6 @@ class Batch_test : public beast::unit_test::suite
             params[jss::transactions] = true;
             params[jss::expand] = true;
             auto const jrr = env.rpc("json", "ledger", to_string(params));
-            // std::cout << jrr << std::endl;
             auto const txn = getTxByIndex(jrr, 2);
             validateBatchTxns(txn[jss::metaData], 3, testCases);
             validateBatchMeta(txn[jss::metaData], preAlice, seq);
@@ -674,7 +673,6 @@ class Batch_test : public beast::unit_test::suite
             params[jss::transactions] = true;
             params[jss::expand] = true;
             auto const jrr = env.rpc("json", "ledger", to_string(params));
-            // std::cout << jrr << std::endl;
             auto const txn = getTxByIndex(jrr, 1);
             validateBatchTxns(txn[jss::metaData], 1, testCases);
             validateBatchMeta(txn[jss::metaData], preAlice, seq);
@@ -730,7 +728,6 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        // std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 2);
         validateBatchTxns(txn[jss::metaData], 3, testCases);
         validateBatchMeta(txn[jss::metaData], preAlice, seq);
@@ -790,7 +787,6 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        // std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 3);
         validateBatchTxns(txn[jss::metaData], 4, testCases);
         validateBatchMeta(txn[jss::metaData], preAlice, seq);
@@ -854,7 +850,6 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        // std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 4);
         validateBatchTxns(txn[jss::metaData], 5, testCases);
         validateBatchMeta(txn[jss::metaData], preAlice, seq);
@@ -911,7 +906,6 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        // std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 2);
         validateBatchTxns(txn[jss::metaData], 3, testCases);
         validateBatchMeta(txn[jss::metaData], preAlice, seq);
@@ -969,7 +963,6 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        // std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 2);
         validateBatchTxns(txn[jss::metaData], 3, testCases);
         validateBatchMeta(txn[jss::metaData], preAlice, seq);
@@ -1030,7 +1023,6 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        // std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 2);
         validateBatchTxns(txn[jss::metaData], 3, testCases);
         validateBatchMeta(txn[jss::metaData], STAmount(XRP(1000)), 4);
@@ -1077,7 +1069,6 @@ class Batch_test : public beast::unit_test::suite
             s.erase();
             jt.stx->add(s);
             auto const jrr = env.rpc("submit", strHex(s.slice()))[jss::result];
-            // std::cout << jrr << std::endl;
             BEAST_EXPECT(
                 jrr[jss::status] == "error" &&
                 jrr[jss::error] == "invalidTransaction");
@@ -1093,7 +1084,6 @@ class Batch_test : public beast::unit_test::suite
                 "4F832B3D8314F51DFC2A09D62CBBA1DFBDD4691DAC96AD98B90FE023240000"
                 "0000801814AE123A8556F3CF91154711376AFB0F894F832B3D00101400E1";
             auto const jrr = env.rpc("submit", txBlob)[jss::result];
-            // std::cout << jrr << std::endl;
             BEAST_EXPECT(
                 jrr[jss::status] == "success" &&
                 jrr[jss::engine_result] == "temINVALID_BATCH");
@@ -1150,7 +1140,6 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        // std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 2);
         validateBatchTxns(txn[jss::metaData], 3, testCases);
         validateBatchMeta(txn[jss::metaData], preAlice, seq);
@@ -1226,7 +1215,6 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        // std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 2);
         validateBatchTxns(txn[jss::metaData], 3, testCases);
         validateBatchMeta(txn[jss::metaData], preAlice, seq);
@@ -1298,7 +1286,6 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        // std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 2);
         validateBatchTxns(txn[jss::metaData], 3, testCases);
         validateBatchMeta(txn[jss::metaData], preAlice, seq);
@@ -1369,7 +1356,6 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        // std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 2);
         validateBatchTxns(txn[jss::metaData], 3, testCases);
         validateBatchMeta(txn[jss::metaData], preCarol, seq);
@@ -1432,7 +1418,6 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        // std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 2);
         validateBatchTxns(txn[jss::metaData], 3, testCases);
         validateBatchMeta(txn[jss::metaData], preAlice, seq, 10, 10);
@@ -1494,7 +1479,6 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        // std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 2);
         validateBatchTxns(txn[jss::metaData], 3, testCases);
         validateBatchMeta(txn[jss::metaData], preAlice, seq, 10, 10);
@@ -1538,7 +1522,7 @@ class Batch_test : public beast::unit_test::suite
         env(batch::batch(alice, 0, batchFee, tfAllOrNothing),
             batch::add(pay(alice, bob, XRP(1)), alice, 1, 0, aliceTicketSeq),
             batch::add(pay(alice, bob, XRP(1)), alice, 0, seq),
-            ticket::use(aliceTicketSeq++));
+            ticket::use(aliceTicketSeq));
         env.close();
 
         std::vector<TestBatchData> testCases = {{
