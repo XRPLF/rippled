@@ -1535,7 +1535,7 @@ class Batch_test : public beast::unit_test::suite
 
         auto const seq = env.seq(alice);
         auto const batchFee = feeDrops * 2;
-        env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+        env(batch::batch(alice, 0, batchFee, tfAllOrNothing),
             batch::add(pay(alice, bob, XRP(1)), alice, 1, 0, aliceTicketSeq),
             batch::add(pay(alice, bob, XRP(1)), alice, 0, seq),
             ticket::use(aliceTicketSeq++));
@@ -1557,7 +1557,7 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        // std::cout << jrr << std::endl;
+        std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 2);
         validateBatchTxns(txn[jss::metaData], 3, testCases);
         validateBatchMeta(txn[jss::metaData], preAlice, seq, 10, 10);
