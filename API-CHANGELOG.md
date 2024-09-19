@@ -89,7 +89,15 @@ The following is a non-breaking addition to the API.
 
 - The `feature` method now has a non-admin mode for users. (It was previously only available to admin connections.) The method returns an updated list of amendments, including their names and other information. ([#4781](https://github.com/XRPLF/rippled/pull/4781))
 
-## XRP Ledger server version 2.0.0
+### Breaking change in 2.3
+
+- `book_changes`: If the requested ledger version is not available on this node, a `ledgerNotFound` error is returned and the node does not attempt to acquire the ledger from the p2p network (as with other non-admin RPCs).
+
+Admins can still attempt to retrieve old ledgers with the `ledger_request` RPC.
+
+### Addition in 2.3
+
+- `book_changes`: Returns a `validated` field in its response, which was missing in prior versions.
 
 The following additions are non-breaking (because they are purely additive).
 

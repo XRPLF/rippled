@@ -8,7 +8,7 @@ ProcessorCount(PROCESSOR_COUNT)
 
 option(assert "Enables asserts, even in release builds" OFF)
 
-option(reporting "Build rippled with reporting mode enabled" OFF)
+option(xrpld "Build xrpld" ON)
 
 option(tests "Build tests" ON)
 

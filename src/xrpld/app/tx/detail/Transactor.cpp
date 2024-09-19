@@ -635,7 +635,7 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
             calcAccountID(PublicKey(makeSlice(spk)));
 
         // Verify that the signingAcctID and the signingAcctIDFromPubKey
-        // belong together.  Here is are the rules:
+        // belong together.  Here are the rules:
         //
         //   1. "Phantom account": an account that is not in the ledger
         //      A. If signingAcctID == signingAcctIDFromPubKey and the
@@ -825,6 +825,14 @@ Transactor::reset(XRPAmount fee)
     return {ter, fee};
 }
 
+// The sole purpose of this function is to provide a convenient, named
+// location to set a breakpoint, to be used when replaying transactions.
+void
+Transactor::trapTransaction(uint256 txHash) const
+{
+    JLOG(j_.debug()) << "Transaction trapped: " << txHash;
+}
+
 //------------------------------------------------------------------------------
 std::pair<TER, bool>
 Transactor::operator()()
@@ -857,7 +865,7 @@ Transactor::operator()()
     if (auto const& trap = ctx_.app.trapTxID();
         trap && *trap == ctx_.tx.getTransactionID())
     {
-        JLOG(j_.debug()) << "Transaction trapped: " << *trap;
+        trapTransaction(*trap);
     }
 
     auto result = ctx_.preclaimResult;

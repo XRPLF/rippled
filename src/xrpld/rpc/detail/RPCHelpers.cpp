@@ -329,9 +329,9 @@ getAccountObjects(
 namespace {
 
 bool
-isValidatedOld(LedgerMaster& ledgerMaster, bool standaloneOrReporting)
+isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
 {
-    if (standaloneOrReporting)
+    if (standalone)
         return false;
 
     return ledgerMaster.getValidatedLedgerAge() > Tuning::maxValidatedLedgerAge;
@@ -371,12 +371,10 @@ ledgerFromRequest(T& ledger, JsonContext& context)
 
     auto const index = indexValue.asString();
 
-    if (index == "current" ||
-        (index.empty() && !context.app.config().reporting()))
+    if (index == "current" || index.empty())
         return getLedger(ledger, LedgerShortcut::CURRENT, context);
 
-    if (index == "validated" ||
-        (index.empty() && context.app.config().reporting()))
+    if (index == "validated")
         return getLedger(ledger, LedgerShortcut::VALIDATED, context);
 
     if (index == "closed")
@@ -442,13 +440,8 @@ ledgerFromSpecifier(
             [[fallthrough]];
         case LedgerCase::LEDGER_NOT_SET: {
             auto const shortcut = specifier.shortcut();
-            // note, unspecified defaults to validated in reporting mode
             if (shortcut ==
-                    org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_VALIDATED ||
-                (shortcut ==
-                     org::xrpl::rpc::v1::LedgerSpecifier::
-                         SHORTCUT_UNSPECIFIED &&
-                 context.app.config().reporting()))
+                org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_VALIDATED)
             {
                 return getLedger(ledger, LedgerShortcut::VALIDATED, context);
             }
@@ -492,8 +485,6 @@ getLedger(T& ledger, uint32_t ledgerIndex, Context& context)
     ledger = context.ledgerMaster.getLedgerBySeq(ledgerIndex);
     if (ledger == nullptr)
     {
-        if (context.app.config().reporting())
-            return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
         auto cur = context.ledgerMaster.getCurrentLedger();
         if (cur->info().seq == ledgerIndex)
         {
@@ -520,10 +511,7 @@ template <class T>
 Status
 getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
 {
-    if (isValidatedOld(
-            context.ledgerMaster,
-            context.app.config().standalone() ||
-                context.app.config().reporting()))
+    if (isValidatedOld(context.ledgerMaster, context.app.config().standalone()))
     {
         if (context.apiVersion == 1)
             return {rpcNO_NETWORK, "InsufficientNetworkMode"};
@@ -546,18 +534,11 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
     {
         if (shortcut == LedgerShortcut::CURRENT)
         {
-            if (context.app.config().reporting())
-                return {
-                    rpcLGR_NOT_FOUND,
-                    "Reporting does not track current ledger"};
             ledger = context.ledgerMaster.getCurrentLedger();
             assert(ledger->open());
         }
         else if (shortcut == LedgerShortcut::CLOSED)
         {
-            if (context.app.config().reporting())
-                return {
-                    rpcLGR_NOT_FOUND, "Reporting does not track closed ledger"};
             ledger = context.ledgerMaster.getClosedLedger();
             assert(!ledger->open());
         }
@@ -986,6 +967,22 @@ chooseLedgerEntryType(Json::Value const& params)
     return result;
 }
 
+bool
+isAccountObjectsValidType(LedgerEntryType const& type)
+{
+    switch (type)
+    {
+        case LedgerEntryType::ltAMENDMENTS:
+        case LedgerEntryType::ltDIR_NODE:
+        case LedgerEntryType::ltFEE_SETTINGS:
+        case LedgerEntryType::ltLEDGER_HASHES:
+        case LedgerEntryType::ltNEGATIVE_UNL:
+            return false;
+        default:
+            return true;
+    }
+}
+
 beast::SemanticVersion const firstVersion("1.0.0");
 beast::SemanticVersion const goodVersion("1.0.0");
 beast::SemanticVersion const lastVersion("1.0.0");
@@ -1014,9 +1011,6 @@ getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
 std::variant<std::shared_ptr<Ledger const>, Json::Value>
 getLedgerByContext(RPC::JsonContext& context)
 {
-    if (context.app.config().reporting())
-        return rpcError(rpcREPORTING_UNSUPPORTED);
-
     auto const hasHash = context.params.isMember(jss::ledger_hash);
     auto const hasIndex = context.params.isMember(jss::ledger_index);
     std::uint32_t ledgerIndex = 0;

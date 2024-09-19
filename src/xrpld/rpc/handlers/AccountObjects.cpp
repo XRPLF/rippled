@@ -54,17 +54,19 @@ doAccountNFTs(RPC::JsonContext& context)
     if (!params.isMember(jss::account))
         return RPC::missing_field_error(jss::account);
 
-    std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context);
-    if (ledger == nullptr)
-        return result;
+    if (!params[jss::account].isString())
+        return RPC::invalid_field_error(jss::account);
 
     auto id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
     {
-        RPC::inject_error(rpcACT_MALFORMED, result);
-        return result;
+        return rpcError(rpcACT_MALFORMED);
     }
+
+    std::shared_ptr<ReadView const> ledger;
+    auto result = RPC::lookupLedger(ledger, context);
+    if (ledger == nullptr)
+        return result;
     auto const accountID{id.value()};
 
     if (!ledger->exists(keylet::account(accountID)))
@@ -183,6 +185,9 @@ doAccountObjects(RPC::JsonContext& context)
     if (!params.isMember(jss::account))
         return RPC::missing_field_error(jss::account);
 
+    if (!params[jss::account].isString())
+        return RPC::invalid_field_error(jss::account);
+
     std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger(ledger, context);
     if (ledger == nullptr)
@@ -235,6 +240,9 @@ doAccountObjects(RPC::JsonContext& context)
     else
     {
         auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
+
+        if (!RPC::isAccountObjectsValidType(type))
+            return RPC::invalid_field_error(jss::type);
 
         if (rpcStatus)
         {

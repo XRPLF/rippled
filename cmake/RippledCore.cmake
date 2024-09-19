@@ -91,57 +91,50 @@ target_link_libraries(xrpl.libxrpl
     xxHash::xxhash
 )
 
-add_executable(rippled)
-if(unity)
-  set_target_properties(rippled PROPERTIES UNITY_BUILD ON)
-endif()
-if(tests)
-  target_compile_definitions(rippled PUBLIC ENABLE_TESTS)
-endif()
-target_include_directories(rippled
-  PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-)
+if(xrpld)
+  add_executable(rippled)
+  if(unity)
+    set_target_properties(rippled PROPERTIES UNITY_BUILD ON)
+  endif()
+  if(tests)
+    target_compile_definitions(rippled PUBLIC ENABLE_TESTS)
+  endif()
+  target_include_directories(rippled
+    PRIVATE
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+  )
 
-file(GLOB_RECURSE sources CONFIGURE_DEPENDS
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/xrpld/*.cpp"
-)
-target_sources(rippled PRIVATE ${sources})
-
-if(tests)
   file(GLOB_RECURSE sources CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/xrpld/*.cpp"
   )
   target_sources(rippled PRIVATE ${sources})
-endif()
 
-target_link_libraries(rippled
-  Ripple::boost
-  Ripple::opts
-  Ripple::libs
-  xrpl.libxrpl
-)
-exclude_if_included(rippled)
-# define a macro for tests that might need to
-# be exluded or run differently in CI environment
-if(is_ci)
-  target_compile_definitions(rippled PRIVATE RIPPLED_RUNNING_IN_CI)
-endif ()
+  if(tests)
+    file(GLOB_RECURSE sources CONFIGURE_DEPENDS
+      "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
+    )
+    target_sources(rippled PRIVATE ${sources})
+  endif()
 
-if(reporting)
-  set(suffix -reporting)
-  set_target_properties(rippled PROPERTIES OUTPUT_NAME rippled-reporting)
-  get_target_property(BIN_NAME rippled OUTPUT_NAME)
-  message(STATUS "Reporting mode build: rippled renamed ${BIN_NAME}")
-  target_compile_definitions(rippled PRIVATE RIPPLED_REPORTING)
-endif()
+  target_link_libraries(rippled
+    Ripple::boost
+    Ripple::opts
+    Ripple::libs
+    xrpl.libxrpl
+  )
+  exclude_if_included(rippled)
+  # define a macro for tests that might need to
+  # be exluded or run differently in CI environment
+  if(is_ci)
+    target_compile_definitions(rippled PRIVATE RIPPLED_RUNNING_IN_CI)
+  endif ()
 
-# any files that don't play well with unity should be added here
-if(tests)
-  set_source_files_properties(
-    # these two seem to produce conflicts in beast teardown template methods
-    src/test/rpc/ValidatorRPC_test.cpp
-    src/test/rpc/ShardArchiveHandler_test.cpp
-    src/test/ledger/Invariants_test.cpp
-    PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE)
+  # any files that don't play well with unity should be added here
+  if(tests)
+    set_source_files_properties(
+      # these two seem to produce conflicts in beast teardown template methods
+      src/test/rpc/ValidatorRPC_test.cpp
+      src/test/ledger/Invariants_test.cpp
+      PROPERTIES SKIP_UNITY_BUILD_INCLUSION TRUE)
+  endif()
 endif()

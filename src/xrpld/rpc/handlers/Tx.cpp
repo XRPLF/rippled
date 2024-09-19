@@ -71,128 +71,8 @@ struct TxArgs
 };
 
 std::pair<TxResult, RPC::Status>
-doTxPostgres(RPC::Context& context, TxArgs const& args)
-{
-    if (!context.app.config().reporting())
-    {
-        assert(false);
-        Throw<std::runtime_error>(
-            "Called doTxPostgres yet not in reporting mode");
-    }
-
-    TxResult res;
-    res.searchedAll = TxSearched::unknown;
-
-    if (!args.hash)
-        return {
-            res,
-            {rpcNOT_IMPL,
-             "Use of CTIDs on reporting mode is not currently supported."}};
-
-    JLOG(context.j.debug()) << "Fetching from postgres";
-    Transaction::Locator locator =
-        Transaction::locate(*(args.hash), context.app);
-
-    std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>
-        pair;
-    // database returned the nodestore hash. Fetch the txn directly from the
-    // nodestore. Don't traverse the transaction SHAMap
-    if (locator.isFound())
-    {
-        auto start = std::chrono::system_clock::now();
-        // The second argument of fetch is ignored when not using shards
-        if (auto obj = context.app.getNodeFamily().db().fetchNodeObject(
-                locator.getNodestoreHash(), locator.getLedgerSequence()))
-        {
-            auto node = SHAMapTreeNode::makeFromPrefix(
-                makeSlice(obj->getData()),
-                SHAMapHash{locator.getNodestoreHash()});
-            if (!node)
-            {
-                assert(false);
-                return {res, {rpcINTERNAL, "Error making SHAMap node"}};
-            }
-            auto item = (static_cast<SHAMapLeafNode*>(node.get()))->peekItem();
-            if (!item)
-            {
-                assert(false);
-                return {res, {rpcINTERNAL, "Error reading SHAMap node"}};
-            }
-
-            auto [sttx, meta] = deserializeTxPlusMeta(*item);
-            JLOG(context.j.debug()) << "Successfully fetched from db";
-
-            if (!sttx || !meta)
-            {
-                assert(false);
-                return {res, {rpcINTERNAL, "Error deserializing SHAMap node"}};
-            }
-            std::string reason;
-            res.txn = std::make_shared<Transaction>(sttx, reason, context.app);
-            res.txn->setLedger(locator.getLedgerSequence());
-            res.txn->setStatus(COMMITTED);
-            if (args.binary)
-            {
-                SerialIter it(item->slice());
-                it.skip(it.getVLDataLength());  // skip transaction
-                Blob blob = it.getVL();
-                res.meta = std::move(blob);
-            }
-            else
-            {
-                res.meta = std::make_shared<TxMeta>(
-                    *(args.hash), res.txn->getLedger(), *meta);
-            }
-            res.validated = true;
-
-            auto const ledgerInfo =
-                context.app.getRelationalDatabase().getLedgerInfoByIndex(
-                    locator.getLedgerSequence());
-            res.closeTime = ledgerInfo->closeTime;
-            res.ledgerHash = ledgerInfo->hash;
-
-            return {res, rpcSUCCESS};
-        }
-        else
-        {
-            JLOG(context.j.error()) << "Failed to fetch from db";
-            assert(false);
-            return {res, {rpcINTERNAL, "Containing SHAMap node not found"}};
-        }
-        auto end = std::chrono::system_clock::now();
-        JLOG(context.j.debug()) << "tx flat fetch time : "
-                                << ((end - start).count() / 1000000000.0);
-    }
-    // database did not find the transaction, and returned the ledger range
-    // that was searched
-    else
-    {
-        if (args.ledgerRange)
-        {
-            auto range = locator.getLedgerRangeSearched();
-            auto min = args.ledgerRange->first;
-            auto max = args.ledgerRange->second;
-            if (min >= range.lower() && max <= range.upper())
-            {
-                res.searchedAll = TxSearched::all;
-            }
-            else
-            {
-                res.searchedAll = TxSearched::some;
-            }
-        }
-        return {res, rpcTXN_NOT_FOUND};
-    }
-    // database didn't return anything. This shouldn't happen
-    assert(false);
-    return {res, {rpcINTERNAL, "unexpected Postgres response"}};
-}
-
-std::pair<TxResult, RPC::Status>
 doTxHelp(RPC::Context& context, TxArgs args)
 {
-    if (context.app.config().reporting())
-        return doTxPostgres(context, args);
     TxResult result;
 
     ClosedInterval<uint32_t> range;
@@ -345,7 +225,7 @@ populateJsonResponse(
             }
 
             // Note, result.ledgerHash is only set in a closed or validated
-            // ledger - as seen in `doTxHelp` and `doTxPostgres`
+            // ledger - as seen in `doTxHelp`
             if (result.ledgerHash)
                 response[jss::ledger_hash] = to_string(*result.ledgerHash);
 
