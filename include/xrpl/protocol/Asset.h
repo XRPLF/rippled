@@ -26,9 +26,15 @@
 
 namespace ripple {
 
+class Asset;
+
 template <typename TIss>
 concept ValidIssueType =
     std::is_same_v<TIss, Issue> || std::is_same_v<TIss, MPTIssue>;
+
+template <typename A>
+concept AssetType = std::is_same_v<A, Asset> ||
+    std::is_convertible_v<A, Issue> || std::is_convertible_v<A, MPTIssue>;
 
 class Asset
 {
@@ -78,6 +84,9 @@ public:
 
     friend constexpr bool
     operator!=(Asset const& lhs, Asset const& rhs);
+
+    friend constexpr bool
+    operator<(Asset const& lhs, Asset const& rhs);
 };
 
 template <ValidIssueType TIss>
@@ -130,6 +139,21 @@ constexpr bool
 operator!=(Asset const& lhs, Asset const& rhs)
 {
     return !(lhs == rhs);
+}
+
+constexpr bool
+operator<(Asset const& lhs, Asset const& rhs)
+{
+    return std::visit(
+        [&]<typename TLhs, typename TRhs>(
+            TLhs const& issLhs, TRhs const& issRhs) {
+            if constexpr (std::is_same_v<TLhs, TRhs>)
+                return issLhs < issRhs;
+            else
+                return false;
+        },
+        lhs.issue_,
+        rhs.issue_);
 }
 
 inline bool

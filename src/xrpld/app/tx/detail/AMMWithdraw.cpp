@@ -101,8 +101,8 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    auto const asset = ctx.tx[sfAsset];
-    auto const asset2 = ctx.tx[sfAsset2];
+    auto const asset = ctx.tx[sfAsset].get<Issue>();
+    auto const asset2 = ctx.tx[sfAsset2].get<Issue>();
     if (auto const res = invalidAMMAssetPair(asset, asset2))
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid asset pair.";
@@ -409,8 +409,11 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     bool updateBalance = true;
     if (newLPTokenBalance == beast::zero)
     {
-        if (auto const ter =
-                deleteAMMAccount(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);
+        if (auto const ter = deleteAMMAccount(
+                sb,
+                ctx_.tx[sfAsset].get<Issue>(),
+                ctx_.tx[sfAsset2].get<Issue>(),
+                j_);
             ter != tesSUCCESS && ter != tecINCOMPLETE)
             return {ter, false};
         else

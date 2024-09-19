@@ -100,8 +100,8 @@ AMMDeposit::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    auto const asset = ctx.tx[sfAsset];
-    auto const asset2 = ctx.tx[sfAsset2];
+    auto const asset = ctx.tx[sfAsset].get<Issue>();
+    auto const asset2 = ctx.tx[sfAsset2].get<Issue>();
     if (auto const res = invalidAMMAssetPair(asset, asset2))
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid asset pair.";

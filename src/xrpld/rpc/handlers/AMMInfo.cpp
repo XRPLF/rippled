@@ -160,8 +160,8 @@ doAMMInfo(RPC::JsonContext& context)
             return Unexpected(rpcACT_NOT_FOUND);
         if (!issue1 && !issue2)
         {
-            issue1 = (*amm)[sfAsset];
-            issue2 = (*amm)[sfAsset2];
+            issue1 = (*amm)[sfAsset].get<Issue>();
+            issue2 = (*amm)[sfAsset2].get<Issue>();
         }
 
         return ValuesFromContextParams{

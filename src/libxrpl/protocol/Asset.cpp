@@ -69,7 +69,8 @@ Asset::setJson(Json::Value& jv) const
     else
     {
         jv[jss::currency] = to_string(get<Issue>().currency);
-        jv[jss::issuer] = to_string(get<Issue>().account);
+        if (!isXRP(get<Issue>().currency))
+            jv[jss::issuer] = toBase58(get<Issue>().account);
     }
 }
 

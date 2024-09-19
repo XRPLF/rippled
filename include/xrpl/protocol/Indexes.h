@@ -267,7 +267,7 @@ nft_sells(uint256 const& id) noexcept;
 
 /** AMM entry */
 Keylet
-amm(Issue const& issue1, Issue const& issue2) noexcept;
+amm(Asset const& issue1, Asset const& issue2) noexcept;
 
 Keylet
 amm(uint256 const& amm) noexcept;
