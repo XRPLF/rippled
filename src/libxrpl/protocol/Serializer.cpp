@@ -76,12 +76,10 @@ int
 Serializer::addi32(std::int32_t i)
 {
     int ret = mData.size();
-    static constexpr std::size_t SIZE =
-        sizeof(std::int32_t) / sizeof(unsigned char);
-    static_assert(SIZE == 4);
-    mData.resize(ret + SIZE);
-    unsigned char* p = &mData.back() + 1 - SIZE;
-    boost::endian::store_big_s32(p, i);
+    mData.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
+    mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
+    mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
+    mData.push_back(static_cast<unsigned char>(i & 0xff));
     return ret;
 }
 
@@ -89,12 +87,14 @@ int
 Serializer::addi64(std::int64_t i)
 {
     int ret = mData.size();
-    static constexpr std::size_t SIZE =
-        sizeof(std::int64_t) / sizeof(unsigned char);
-    static_assert(SIZE == 8);
-    mData.resize(ret + SIZE);
-    unsigned char* p = &mData.back() + 1 - SIZE;
-    boost::endian::store_big_s64(p, i);
+    mData.push_back(static_cast<unsigned char>((i >> 56) & 0xff));
+    mData.push_back(static_cast<unsigned char>((i >> 48) & 0xff));
+    mData.push_back(static_cast<unsigned char>((i >> 40) & 0xff));
+    mData.push_back(static_cast<unsigned char>((i >> 32) & 0xff));
+    mData.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
+    mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
+    mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
+    mData.push_back(static_cast<unsigned char>(i & 0xff));
     return ret;
 }
 
