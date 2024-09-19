@@ -26,7 +26,9 @@
 
 namespace ripple {
 
-class STNumber final : public STBase, public CountedObject<STNumber>, public Number
+class STNumber final : public STBase,
+                       public CountedObject<STNumber>,
+                       public Number
 {
 public:
     STNumber(SField const& n, Number const& v = Number());
