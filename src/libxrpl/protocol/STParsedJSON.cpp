@@ -398,8 +398,16 @@ parseLeaf(
 
                     std::uint64_t val;
 
+                    bool const useBase10 = field == sfMaximumAmount ||
+                        field == sfOutstandingAmount ||
+                        field == sfLockedAmount || field == sfMPTAmount;
+                        
+                    // if the field is amount, serialize as base 10
                     auto [p, ec] = std::from_chars(
-                        str.data(), str.data() + str.size(), val, 16);
+                        str.data(),
+                        str.data() + str.size(),
+                        val,
+                        useBase10 ? 10 : 16);
 
                     if (ec != std::errc() || (p != str.data() + str.size()))
                         Throw<std::invalid_argument>("invalid data");

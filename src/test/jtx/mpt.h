@@ -97,7 +97,7 @@ struct MPTConstr
 
 struct MPTCreate
 {
-    std::optional<std::int64_t> maxAmt = std::nullopt;
+    std::optional<std::string> maxAmt = std::nullopt;
     std::optional<std::uint8_t> assetScale = std::nullopt;
     std::optional<std::uint16_t> transferFee = std::nullopt;
     std::optional<std::string> metadata = std::nullopt;

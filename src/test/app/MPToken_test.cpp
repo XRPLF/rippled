@@ -53,7 +53,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // tries to set a txfee while not enabling in the flag
             mptAlice.create(
-                {.maxAmt = 100,
+                {.maxAmt = "100",
                  .assetScale = 0,
                  .transferFee = 1,
                  .metadata = "test",
@@ -61,7 +61,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // tries to set a txfee greater than max
             mptAlice.create(
-                {.maxAmt = 100,
+                {.maxAmt = "100",
                  .assetScale = 0,
                  .transferFee = maxTransferFee + 1,
                  .metadata = "test",
@@ -70,7 +70,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // tries to set a txfee while not enabling transfer
             mptAlice.create(
-                {.maxAmt = 100,
+                {.maxAmt = "100",
                  .assetScale = 0,
                  .transferFee = maxTransferFee,
                  .metadata = "test",
@@ -78,7 +78,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // empty metadata returns error
             mptAlice.create(
-                {.maxAmt = 100,
+                {.maxAmt = "100",
                  .assetScale = 0,
                  .transferFee = 0,
                  .metadata = "",
@@ -86,7 +86,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // MaximumAmout of 0 returns error
             mptAlice.create(
-                {.maxAmt = 0,
+                {.maxAmt = "0",
                  .assetScale = 1,
                  .transferFee = 1,
                  .metadata = "test",
@@ -94,7 +94,13 @@ class MPToken_test : public beast::unit_test::suite
 
             // MaximumAmount larger than 63 bit returns error
             mptAlice.create(
-                {.maxAmt = 0xFFFFFFFFFFFFFFF0ull,
+                {.maxAmt = "18446744073709551600",  // FFFFFFFFFFFFFFF0
+                 .assetScale = 0,
+                 .transferFee = 0,
+                 .metadata = "test",
+                 .err = temMALFORMED});
+            mptAlice.create(
+                {.maxAmt = "9223372036854775808",  // 8000000000000000
                  .assetScale = 0,
                  .transferFee = 0,
                  .metadata = "test",
@@ -116,13 +122,21 @@ class MPToken_test : public beast::unit_test::suite
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
             mptAlice.create(
-                {.maxAmt = 0x7FFFFFFFFFFFFFFF,
+                {.maxAmt = "9223372036854775807",  // 7FFFFFFFFFFFFFFF
                  .assetScale = 1,
                  .transferFee = 10,
                  .metadata = "123",
                  .ownerCount = 1,
                  .flags = tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow |
                      tfMPTCanTrade | tfMPTCanTransfer | tfMPTCanClawback});
+
+            // Get the hash for the most recent transaction.
+            std::string const txHash{
+                env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+
+            Json::Value const result = env.rpc("tx", txHash)[jss::result];
+            BEAST_EXPECT(
+                result[sfMaximumAmount.getJsonName()] == "9223372036854775807");
         }
     }
 
@@ -781,7 +795,7 @@ class MPToken_test : public beast::unit_test::suite
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
             mptAlice.create(
-                {.maxAmt = 100,
+                {.maxAmt = "100",
                  .ownerCount = 1,
                  .holderCount = 0,
                  .flags = tfMPTCanTransfer});

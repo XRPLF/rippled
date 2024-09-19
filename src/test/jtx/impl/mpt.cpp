@@ -25,15 +25,6 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-static std::array<std::uint8_t, 8>
-uint64ToByteArray(std::uint64_t value)
-{
-    value = boost::endian::native_to_big(value);
-    std::array<std::uint8_t, 8> result;
-    std::memcpy(result.data(), &value, sizeof(value));
-    return result;
-}
-
 void
 mptflags::operator()(Env& env) const
 {
@@ -105,10 +96,8 @@ MPTTester::create(const MPTCreate& arg)
         jv[sfTransferFee.jsonName] = *arg.transferFee;
     if (arg.metadata)
         jv[sfMPTokenMetadata.jsonName] = strHex(*arg.metadata);
-
-    // convert maxAmt to hex string, since json doesn't accept 64-bit int
     if (arg.maxAmt)
-        jv[sfMaximumAmount.jsonName] = strHex(uint64ToByteArray(*arg.maxAmt));
+        jv[sfMaximumAmount.jsonName] = *arg.maxAmt;
     if (submit(arg, jv) != tesSUCCESS)
     {
         // Verify issuance doesn't exist
