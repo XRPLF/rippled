@@ -495,7 +495,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         return;
     }
 
-    if (auto stream = journal_.trace())
+    if (auto stream = journal_.debug())
     {
         stream << "Trigger acquiring ledger " << hash_;
         if (peer)
