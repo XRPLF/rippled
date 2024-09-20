@@ -248,8 +248,6 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
     // TX Pragma
     int64_t page_size = 4096;
     int64_t journal_size_limit = 1582080;
-    int64_t max_page_count = 4294967294;
-
     if (c.exists("sqlite"))
     {
         auto& s = c.section("sqlite");
@@ -266,7 +264,8 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
 
     setPragma(setup.txPragma[0], "page_size", page_size);
     setPragma(setup.txPragma[1], "journal_size_limit", journal_size_limit);
-    setPragma(setup.txPragma[2], "max_page_count", max_page_count);
+    setPragma(setup.txPragma[2], "max_page_count", 4294967294);
+    setPragma(setup.txPragma[3], "mmap_size", 17179869184);
 
     return setup;
 }
