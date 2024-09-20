@@ -37,7 +37,7 @@
 # isolate_headers(target A B scope)
 function(isolate_headers target A B scope)
   file(RELATIVE_PATH C "${A}" "${B}")
-  set(X "${CMAKE_CURRENT_BINARY_DIR}/include/${target}")
+  set(X "${CMAKE_CURRENT_BINARY_DIR}/modules/${target}")
   set(Y "${X}/${C}")
   cmake_path(GET Y PARENT_PATH parent)
   file(MAKE_DIRECTORY "${parent}")
