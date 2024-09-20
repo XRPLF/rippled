@@ -714,6 +714,8 @@ public:
         Env env(*this);
         Env_ss envs(env);
 
+        auto const baseFee = env.current()->fees().base;
+
         auto const alice = Account("alice");
         env.fund(XRP(10000), alice);
 
@@ -747,12 +749,14 @@ public:
             // Force the factor low enough to fail
             params[jss::fee_mult_max] = 1;
             params[jss::fee_div_max] = 2;
+
+            auto const expectedErrorString = "Fee of " + std::to_string(baseFee.drops()) + " exceeds the requested tx limit of " + std::to_string(baseFee.drops() / 2);
             envs(
                 noop(alice),
                 fee(none),
                 seq(none),
                 rpc(rpcHIGH_FEE,
-                    "Fee of 10 exceeds the requested tx limit of 5"))(params);
+                    expectedErrorString))(params);
 
             auto tx = env.tx();
             BEAST_EXPECT(!tx);

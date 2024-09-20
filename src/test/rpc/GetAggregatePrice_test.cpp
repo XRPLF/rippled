@@ -41,6 +41,7 @@ public:
 
         {
             Env env(*this);
+            auto const baseFee = env.current()->fees().base;
             // missing base_asset
             auto ret =
                 Oracle::aggregatePrice(env, std::nullopt, "USD", oracles);
@@ -124,7 +125,7 @@ public:
             // oracles have wrong asset pair
             env.fund(XRP(1'000), owner);
             Oracle oracle(
-                env, {.owner = owner, .series = {{"XRP", "EUR", 740, 1}}});
+                env, {.owner = owner, .series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee.drops()});
             ret = Oracle::aggregatePrice(
                 env, "XRP", "USD", {{{owner, oracle.documentID()}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
