@@ -28,50 +28,6 @@ namespace jtx {
 
 namespace credentials {
 
-Blob
-signCredential(
-    PublicKey const& signerPK,
-    SecretKey const& signerSK,
-    AccountID const& subject,
-    std::string_view credType,
-    std::optional<AccountID> const& masterIssuer)
-{
-    AccountID const issuer(
-        masterIssuer ? *masterIssuer : calcAccountID(signerPK));
-    Slice sct(credType.data(), credType.size());
-    auto const kCred = keylet::credential(subject, issuer, sct);
-
-    Serializer msg;
-    serializeCredential(msg, kCred.key);
-
-    auto const b = sign(signerPK, signerSK, msg.slice());
-    return Blob(b.cbegin(), b.cend());
-}
-
-Json::Value
-createSubject(
-    jtx::Account const& subject,
-    jtx::Account const& issuer,
-    std::string_view credType,
-    std::optional<jtx::Account> const& masterIssuer)
-{
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::CredentialCreate;
-
-    jv[jss::Account] = subject.human();
-    jv[sfIssuerPubKey.jsonName] = strHex(issuer.pk());
-    jv[sfIssuer.jsonName] =
-        masterIssuer ? masterIssuer->human() : issuer.human();
-
-    jv[jss::Signature] = strHex(signCredential(
-        issuer.pk(), issuer.sk(), subject.id(), credType, masterIssuer));
-
-    jv[jss::Flags] = tfUniversal;
-    jv[sfCredentialType.jsonName] = strHex(credType);
-
-    return jv;
-}
-
 Json::Value
 createIssuer(
     jtx::Account const& subject,

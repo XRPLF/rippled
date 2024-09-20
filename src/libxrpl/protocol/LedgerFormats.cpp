@@ -374,6 +374,7 @@ LedgerFormats::LedgerFormats()
             {sfExpiration,           soeOPTIONAL},
             {sfURI,                  soeOPTIONAL},
             {sfOwnerNode,            soeREQUIRED},
+            {sfIssuerNode,           soeREQUIRED},
             {sfPreviousTxnID,        soeREQUIRED},
             {sfPreviousTxnLgrSeq,    soeREQUIRED},
         },

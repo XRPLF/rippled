@@ -101,6 +101,11 @@ struct Credentials_test : public beast::unit_test::suite
                 BEAST_EXPECT(sleCred->getAccountID(sfSubject) == subj.id());
                 BEAST_EXPECT(sleCred->getAccountID(sfIssuer) == iss.id());
                 BEAST_EXPECT(!(sleCred->getFieldU32(sfFlags) & lsfAccepted));
+                BEAST_EXPECT(
+                    sleCred->getFieldU64(sfIssuerNode) ==
+                    sleCred->getFieldU64(sfOwnerNode));
+                BEAST_EXPECT(ownerCnt(env, iss) == 1);
+                BEAST_EXPECT(!ownerCnt(env, subj));
                 BEAST_EXPECT(checkVL(sleCred, sfCredentialType, credType));
                 BEAST_EXPECT(checkVL(sleCred, sfURI, uri));
                 auto const jle = credentials::ledgerEntryCredential(
@@ -127,6 +132,8 @@ struct Credentials_test : public beast::unit_test::suite
 
                 BEAST_EXPECT(sleCred->getAccountID(sfSubject) == subj.id());
                 BEAST_EXPECT(sleCred->getAccountID(sfIssuer) == iss.id());
+                BEAST_EXPECT(ownerCnt(env, iss) == 1);
+                BEAST_EXPECT(ownerCnt(env, subj) == 1);
                 BEAST_EXPECT(checkVL(sleCred, sfCredentialType, credType));
                 BEAST_EXPECT(checkVL(sleCred, sfURI, uri));
                 BEAST_EXPECT(sleCred->getFieldU32(sfFlags) == lsfAccepted);
@@ -145,97 +152,6 @@ struct Credentials_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     jle.isObject() && jle.isMember(jss::result) &&
                     jle[jss::result].isMember(jss::error));
-            }
-        }
-
-        {
-            testcase("Credentials from subject side.");
-
-            using namespace jtx;
-            Env env{*this, features};
-
-            Account const iss{"issuer"};
-            Account const subj{"subject"};
-            Account const masterIssuer{"masterIssuer"};
-
-            auto const kCred = credKL(subj, iss, credType);
-
-            env.fund(XRP(5000), subj, iss, masterIssuer);
-            env.close();
-
-            {
-                // Test Create credentials
-                env(credentials::createSubject(subj, iss, credType),
-                    credentials::uri(uri));
-                env.close();
-
-                BEAST_EXPECT(ownerCnt(env, subj) == 1);
-                auto const sleCred = env.le(kCred);
-                BEAST_EXPECT(static_cast<bool>(sleCred));
-                if (!sleCred)
-                    return;
-
-                BEAST_EXPECT(sleCred->getAccountID(sfSubject) == subj.id());
-                BEAST_EXPECT(sleCred->getAccountID(sfIssuer) == iss.id());
-                BEAST_EXPECT(sleCred->getFieldU32(sfFlags) == lsfAccepted);
-                BEAST_EXPECT(checkVL(sleCred, sfCredentialType, credType));
-                BEAST_EXPECT(checkVL(sleCred, sfURI, uri));
-                auto const jle = credentials::ledgerEntryCredential(
-                    env, subj, iss, credType);
-                BEAST_EXPECT(
-                    jle.isObject() && jle.isMember(jss::result) &&
-                    !jle[jss::result].isMember(jss::error) &&
-                    jle[jss::result].isMember(jss::node) &&
-                    jle[jss::result][jss::node].isMember("LedgerEntryType") &&
-                    jle[jss::result][jss::node]["LedgerEntryType"] ==
-                        jss::Credential);
-            }
-
-            {
-                // Tests delete credentials
-                env(credentials::del(iss, subj, iss, credType));
-                env.close();
-
-                BEAST_EXPECT(!env.le(kCred));
-                BEAST_EXPECT(!ownerCnt(env, iss));
-                BEAST_EXPECT(!ownerCnt(env, subj));
-            }
-
-            {
-                // Test Create credentials with masterIssuer
-
-                auto const kCred = credKL(subj, masterIssuer, credType);
-
-                env(regkey(masterIssuer, iss));
-                env.close();
-
-                env(credentials::createSubject(
-                        subj, iss, credType, masterIssuer),
-                    credentials::uri(uri));
-                env.close();
-
-                BEAST_EXPECT(ownerCnt(env, subj) == 1);
-                auto const sleCred = env.le(kCred);
-                BEAST_EXPECT(static_cast<bool>(sleCred));
-                if (!sleCred)
-                    return;
-
-                BEAST_EXPECT(sleCred->getAccountID(sfSubject) == subj.id());
-                BEAST_EXPECT(
-                    sleCred->getAccountID(sfIssuer) == masterIssuer.id());
-                BEAST_EXPECT(sleCred->getFieldU32(sfFlags) == lsfAccepted);
-                BEAST_EXPECT(checkVL(sleCred, sfCredentialType, credType));
-                BEAST_EXPECT(checkVL(sleCred, sfURI, uri));
-
-                auto const jle = credentials::ledgerEntryCredential(
-                    env, subj, masterIssuer, credType);
-                BEAST_EXPECT(
-                    jle.isObject() && jle.isMember(jss::result) &&
-                    !jle[jss::result].isMember(jss::error) &&
-                    jle[jss::result].isMember(jss::node) &&
-                    jle[jss::result][jss::node].isMember("LedgerEntryType") &&
-                    jle[jss::result][jss::node]["LedgerEntryType"] ==
-                        jss::Credential);
             }
         }
 
@@ -299,58 +215,6 @@ struct Credentials_test : public beast::unit_test::suite
             {
                 auto jv = credentials::createIssuer(subj, iss, credType);
                 jv[jss::Subject] = to_string(xrpAccount());
-                env(jv, ter(temINVALID_ACCOUNT_ID));
-            }
-
-            {
-                testcase("Credentials fail no issuerPubKey param.");
-                auto jv = credentials::createSubject(subj, iss, credType);
-                jv.removeMember(sfIssuerPubKey.jsonName);
-                env(jv, ter(temMALFORMED));
-            }
-
-            {
-                testcase("Credentials fail no Issuer param.");
-                auto jv = credentials::createSubject(subj, iss, credType);
-                jv.removeMember(sfIssuer.jsonName);
-                env(jv, ter(temMALFORMED));
-            }
-
-            {
-                testcase("Credentials fail empty issuerPubKey param.");
-                auto jv = credentials::createSubject(subj, iss, credType);
-                jv[sfIssuerPubKey.jsonName] = "";
-                env(jv, ter(telBAD_PUBLIC_KEY));
-            }
-
-            {
-                testcase("Credentials fail invalid issuerPubKey param.");
-                auto jv = credentials::createSubject(subj, iss, credType);
-                jv[sfIssuerPubKey.jsonName] =
-                    "5588935426E0D08083314842EDFBB2D517BD47699F9A4527318A8E1046"
-                    "8C97C052";
-                env(jv, ter(telBAD_PUBLIC_KEY));
-            }
-
-            {
-                testcase("Credentials fail incorrect  issuerPubKey param.");
-                auto jv = credentials::createSubject(subj, iss, credType);
-                jv[sfIssuerPubKey.jsonName] =
-                    "0388935426E0D08083314842EDFBB2D517BD47699F9A4527318A8E1046"
-                    "8C97C052";
-                env(jv, ter(temBAD_SIGNATURE));
-            }
-
-            {
-                auto jv = credentials::createSubject(subj, iss, credType);
-                jv[jss::Issuer] = to_string(xrpAccount());
-                env(jv, ter(temINVALID_ACCOUNT_ID));
-            }
-
-            {
-                testcase("Credentials fail, no signature param.");
-                auto jv = credentials::createSubject(subj, iss, credType);
-                jv.removeMember(jss::Signature);
                 env(jv, ter(temMALFORMED));
             }
 
@@ -430,36 +294,6 @@ struct Credentials_test : public beast::unit_test::suite
                 env(jv, ter(tecDUPLICATE));
                 env.close();
             }
-
-            {
-                testcase("Credentials fail, duplicate from issuer side.");
-                auto const jv = credentials::createSubject(subj, iss, credType);
-                env(jv, ter(tecDUPLICATE));
-                env.close();
-            }
-
-            {
-                // masterIssuer doesn't exist
-                Account const masterIssuer{"masterIssuer"};
-                env.memoize(masterIssuer);
-
-                auto const jv = credentials::createSubject(
-                    subj, iss, credType, masterIssuer);
-                env(jv, ter(tecNO_ISSUER));
-                env.close();
-            }
-
-            {
-                // issuer is not regular key of masterIssuer
-                Account const masterIssuer{"masterIssuer"};
-
-                env.fund(XRP(5000), masterIssuer);
-
-                auto const jv = credentials::createSubject(
-                    subj, iss, credType, masterIssuer);
-                env(jv, ter(tecNO_REGULAR_KEY));
-                env.close();
-            }
         }
 
         {
@@ -476,43 +310,6 @@ struct Credentials_test : public beast::unit_test::suite
                 auto const jv = credentials::createIssuer(subj, iss, credType);
                 env(jv, ter(tecNO_TARGET));
             }
-
-            {
-                env.fund(XRP(5000), subj);
-                env.close();
-
-                Account const notIss{"not_issuer"};
-
-                auto jv = credentials::createSubject(subj, iss, credType);
-                jv[sfIssuerPubKey.jsonName] = strHex(notIss.pk());
-                env(jv, ter(temBAD_SIGNATURE));
-            }
-
-            {
-                Account const notIss{"not_issuer"};
-
-                auto jv = credentials::createSubject(subj, iss, credType);
-                jv[jss::Signature] = strHex(credentials::signCredential(
-                    notIss.pk(), notIss.sk(), subj.id(), credType));
-                env(jv, ter(temBAD_SIGNATURE));
-            }
-
-            env.close();
-        }
-
-        {
-            using namespace jtx;
-            Env env{*this, features};
-            Account const iss{"issuer"};
-            Account const subj{"subject"};
-
-            env.fund(XRP(5000), subj);
-            env.close();
-
-            testcase("Credentials created, issuer doesn't exist.");
-            auto const jv = credentials::createSubject(subj, iss, credType);
-            env(jv);
-            env.close();
         }
 
         {
@@ -528,11 +325,6 @@ struct Credentials_test : public beast::unit_test::suite
             testcase("Credentials fail, not enough reserve.");
             {
                 auto const jv = credentials::createIssuer(subj, iss, credType);
-                env(jv, ter(tecINSUFFICIENT_RESERVE));
-                env.close();
-            }
-            {
-                auto const jv = credentials::createSubject(subj, iss, credType);
                 env(jv, ter(tecINSUFFICIENT_RESERVE));
                 env.close();
             }

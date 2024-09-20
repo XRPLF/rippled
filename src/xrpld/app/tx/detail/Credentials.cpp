@@ -123,38 +123,14 @@ CredentialCreate::preflight(PreflightContext const& ctx)
     auto const& tx = ctx.tx;
     auto& j = ctx.j;
 
-    auto const subject = tx[~sfSubject];
-    auto const issuer = tx[~sfIssuer];
-    auto const issuerPubKey = tx[~sfIssuerPubKey];
-    auto const signature = tx[~sfSignature];
-
-    if ((subject.has_value() == issuer.has_value()) ||
-        (issuer.has_value() != issuerPubKey.has_value()) ||
-        (issuer.has_value() != signature.has_value()))
+    if (!tx[sfSubject])
     {
-        // Either both fields are present or neither field is present.  In
-        // either case the transaction is malformed.
-        JLOG(j.trace())
-            << "Malformed transaction: "
-               "Invalid Subject, Issuer and Signature fields combination.";
+        JLOG(j.trace()) << "Malformed transaction: Invalid Subject";
         return temMALFORMED;
     }
 
-    if (subject && subject->isZero())
-    {
-        JLOG(j.trace()) << "Malformed transaction: Subject field zeroed.";
-        return temINVALID_ACCOUNT_ID;
-    }
-
-    if (issuer && issuer->isZero())
-    {
-        JLOG(j.trace()) << "Malformed transaction: Issuer field zeroed.";
-        return temINVALID_ACCOUNT_ID;
-    }
-
-    auto const optUri = tx[~sfURI];
-    if (optUri &&
-        (optUri->empty() || (optUri->size() > maxCredentialURILength)))
+    auto const Uri = tx[~sfURI];
+    if (Uri && (Uri->empty() || (Uri->size() > maxCredentialURILength)))
     {
         JLOG(j.trace()) << "Malformed transaction: invalid size of URI.";
         return temMALFORMED;
@@ -168,28 +144,6 @@ CredentialCreate::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    if (issuerPubKey && !publicKeyType(*issuerPubKey))
-    {
-        JLOG(j.trace()) << "Malformed transaction: invalid issuerPublicKey.";
-        return telBAD_PUBLIC_KEY;
-    }
-
-    if (signature)
-    {
-        PublicKey const pk(*issuerPubKey);
-        auto const kCred = keylet::credential(
-            tx[sfAccount], *issuer, ctx.tx[sfCredentialType]);
-
-        Serializer msg;
-        serializeCredential(msg, kCred.key);
-
-        if (!verify(pk, msg.slice(), *signature, /*canonical*/ true))
-        {
-            JLOG(j.trace()) << "Malformed transaction: bad signature.";
-            return temBAD_SIGNATURE;
-        }
-    }
-
     return preflight2(ctx);
 }
 
@@ -197,17 +151,10 @@ TER
 CredentialCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const credType(ctx.tx[sfCredentialType]);
-    AccountID const account(ctx.tx[sfAccount]);
-    auto const subject = ctx.tx[~sfSubject].value_or(account);
+    AccountID const issuer(ctx.tx[sfAccount]);
+    auto const subject = ctx.tx[sfSubject];
 
-    std::optional<AccountID> signer = ctx.tx.isFieldPresent(sfIssuerPubKey)
-        ? std::optional<AccountID>(
-              calcAccountID(PublicKey(ctx.tx[sfIssuerPubKey])))
-        : std::nullopt;
-    auto const issuer = ctx.tx[~sfIssuer].value_or(account);
-
-    if (ctx.tx.isFieldPresent(sfSubject) &&
-        !ctx.view.exists(keylet::account(subject)))
+    if (!ctx.view.exists(keylet::account(subject)))
     {
         JLOG(ctx.j.trace()) << "Subject doesn't exist.";
         return tecNO_TARGET;
@@ -215,28 +162,8 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
 
     if (ctx.view.exists(keylet::credential(subject, issuer, credType)))
     {
-        JLOG(ctx.j.trace()) << "Credential doesn't exist.";
+        JLOG(ctx.j.trace()) << "Credential already exists.";
         return tecDUPLICATE;
-    }
-
-    if (signer && (signer != issuer))
-    {
-        // If Issuer is not an account derived from IssuerPubKey then it  must
-        // be the regular key for Issuer account.
-
-        auto const sleIssuer = ctx.view.read(keylet::account(issuer));
-        if (!sleIssuer)
-        {
-            JLOG(ctx.j.trace()) << "Issuer doesn't exist.";
-            return tecNO_ISSUER;
-        }
-
-        if (sleIssuer->getAccountID(sfRegularKey) != signer)
-        {
-            JLOG(ctx.j.trace())
-                << "Regular key doesn't belong to Issuer account.";
-            return tecNO_REGULAR_KEY;
-        }
     }
 
     return tesSUCCESS;
@@ -254,8 +181,8 @@ CredentialCreate::doApply()
             return tecINSUFFICIENT_RESERVE;
     }
 
-    auto const subject = ctx_.tx[~sfSubject].value_or(account_);
-    auto const issuer = ctx_.tx[~sfIssuer].value_or(account_);
+    auto const subject = ctx_.tx[sfSubject];
+    auto const issuer = account_;
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const kCred = keylet::credential(subject, issuer, credType);
     auto const sleCred = std::make_shared<SLE>(kCred);
@@ -283,9 +210,6 @@ CredentialCreate::doApply()
     if (ctx_.tx.isFieldPresent(sfURI))
         sleCred->setFieldVL(sfURI, ctx_.tx.getFieldVL(sfURI));
 
-    if (!ctx_.tx.isFieldPresent(sfSubject))
-        sleCred->setFieldU32(sfFlags, lsfAccepted);
-
     view().insert(sleCred);
     auto const page = view().dirInsert(
         keylet::ownerDir(account_), kCred, describeOwnerDir(account_));
@@ -298,6 +222,7 @@ CredentialCreate::doApply()
         return tecDIR_FULL;
 
     sleCred->setFieldU64(sfOwnerNode, *page);
+    sleCred->setFieldU64(sfIssuerNode, *page);
 
     adjustOwnerCount(view(), sleOwner, 1, j_);
     view().update(sleOwner);
@@ -363,26 +288,39 @@ CredentialDelete::deleteSLE(
     if (!sle)
         return tecNO_ENTRY;
 
-    AccountID const owner = sle->getAccountID(
-        (sle->getFlags() & lsfAccepted) ? sfSubject : sfIssuer);
+    auto delSLE = [&view, &sle, j](
+                      AccountID const& owner, SField const& node) -> TER {
+        auto const sleOwner = view.peek(keylet::account(owner));
+        if (!sleOwner)
+        {
+            JLOG(j.fatal()) << "Internal error: can't retrieve Owner account.";
+            return tecINTERNAL;
+        }
 
-    auto const sleOwner = view.peek(keylet::account(owner));
-    if (!sleOwner)
+        // Remove object from owner directory
+        std::uint64_t const page = sle->getFieldU64(node);
+        if (!view.dirRemove(keylet::ownerDir(owner), page, sle->key(), false))
+        {
+            JLOG(j.fatal()) << "Unable to delete Credential from owner.";
+            return tefBAD_LEDGER;
+        }
+
+        adjustOwnerCount(view, sleOwner, -1, j);
+        view.update(sleOwner);
+
+        return tesSUCCESS;
+    };
+
+    auto err = delSLE(sle->getAccountID(sfIssuer), sfIssuerNode);
+    if (!isTesSuccess(err))
+        return err;
+
+    if (sle->getFlags() & lsfAccepted)
     {
-        JLOG(j.fatal()) << "Internal error: can't retrieve Owner account.";
-        return tecINTERNAL;
+        err = delSLE(sle->getAccountID(sfSubject), sfOwnerNode);
+        if (!isTesSuccess(err))
+            return err;
     }
-
-    // Remove object from owner directory
-    std::uint64_t const page = sle->getFieldU64(sfOwnerNode);
-    if (!view.dirRemove(keylet::ownerDir(owner), page, sle->key(), false))
-    {
-        JLOG(j.fatal()) << "Unable to delete Credential from owner.";
-        return tefBAD_LEDGER;
-    }
-
-    adjustOwnerCount(view, sleOwner, -1, j);
-    view.update(sleOwner);
 
     // Remove object from ledger
     view.erase(sle);
@@ -426,8 +364,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    AccountID const issuer = ctx.tx[sfIssuer];
-    if (!issuer)
+    if (!ctx.tx[sfIssuer])
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: Issuer field zeroed.";
         return temINVALID_ACCOUNT_ID;
@@ -497,32 +434,22 @@ CredentialAccept::doApply()
         return tecEXPIRED;
     }
 
-    // Change ownership from issuer to subject
-    std::uint64_t const page = sleCred->getFieldU64(sfOwnerNode);
-    if (!view().dirRemove(keylet::ownerDir(issuer), page, kCred, false))
     {
-        JLOG(j_.fatal())
-            << "CredentialAccept: Unable to delete Credential from owner.";
-        return tefBAD_LEDGER;
+        // Share ownership between issuer and subject
+        auto const page = view().dirInsert(
+            keylet::ownerDir(subject), kCred, describeOwnerDir(subject));
+        JLOG(j_.trace()) << "Moving Credential to subject directory "
+                         << to_string(kCred.key) << ": "
+                         << (page ? "success" : "failure");
+        if (!page)
+            return tecDIR_FULL;
+        sleCred->setFieldU64(sfOwnerNode, *page);
     }
-    adjustOwnerCount(view(), sleIss, -1, j_);
-    view().update(sleIss);
-
-    auto const pageIns = view().dirInsert(
-        keylet::ownerDir(subject), kCred, describeOwnerDir(subject));
-
-    JLOG(j_.trace()) << "Moving Credential to owner directory "
-                     << to_string(kCred.key) << ": "
-                     << (pageIns ? "success" : "failure");
-
-    if (!pageIns)
-        return tecDIR_FULL;
 
     sleCred->setFieldU32(sfFlags, lsfAccepted);
-    sleCred->setFieldU64(sfOwnerNode, *pageIns);
+    view().update(sleCred);
 
     adjustOwnerCount(view(), sleSubj, 1, j_);
-    view().update(sleCred);
     view().update(sleSubj);
 
     return tesSUCCESS;

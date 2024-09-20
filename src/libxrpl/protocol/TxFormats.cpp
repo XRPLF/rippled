@@ -523,11 +523,8 @@ TxFormats::TxFormats()
     add(jss::CredentialCreate,
         ttCREDENTIAL_CREATE,
         {
-            {sfSubject, soeOPTIONAL},
-            {sfIssuer, soeOPTIONAL},
+            {sfSubject, soeREQUIRED},
             {sfCredentialType, soeREQUIRED},
-            {sfIssuerPubKey, soeOPTIONAL},
-            {sfSignature, soeOPTIONAL},
             {sfExpiration, soeOPTIONAL},
             {sfURI, soeOPTIONAL},
         },

@@ -467,6 +467,7 @@ extern SF_UINT64 const sfXChainClaimID;
 extern SF_UINT64 const sfXChainAccountCreateCount;
 extern SF_UINT64 const sfXChainAccountClaimCount;
 extern SF_UINT64 const sfAssetPrice;
+extern SF_UINT64 const sfIssuerNode;
 
 // 128-bit
 extern SF_UINT128 const sfEmailHash;
@@ -577,7 +578,6 @@ extern SF_VL const sfHookReturnString;
 extern SF_VL const sfHookParameterName;
 extern SF_VL const sfHookParameterValue;
 extern SF_VL const sfCredentialType;
-extern SF_VL const sfIssuerPubKey;
 
 // account
 extern SF_ACCOUNT const sfAccount;

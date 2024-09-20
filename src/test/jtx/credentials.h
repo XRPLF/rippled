@@ -68,13 +68,6 @@ public:
 };
 
 Json::Value
-createSubject(
-    jtx::Account const& subject,
-    jtx::Account const& issuer,
-    std::string_view credType,
-    std::optional<jtx::Account> const& masterIssuer = {});
-
-Json::Value
 createIssuer(
     jtx::Account const& subject,
     jtx::Account const& issuer,
@@ -98,14 +91,6 @@ ledgerEntryCredential(
     jtx::Account const& subject,
     jtx::Account const& issuer,
     std::string_view credType);
-
-Blob
-signCredential(
-    PublicKey const& signerPK,
-    SecretKey const& signerSK,
-    AccountID const& subject,
-    std::string_view credType,
-    std::optional<AccountID> const& masterIssuer = std::nullopt);
 
 }  // namespace credentials
 

@@ -193,6 +193,7 @@ CONSTRUCT_TYPED_SFIELD(sfXChainClaimID,            "XChainClaimID",            U
 CONSTRUCT_TYPED_SFIELD(sfXChainAccountCreateCount, "XChainAccountCreateCount", UINT64, 21);
 CONSTRUCT_TYPED_SFIELD(sfXChainAccountClaimCount,  "XChainAccountClaimCount",  UINT64, 22);
 CONSTRUCT_TYPED_SFIELD(sfAssetPrice,               "AssetPrice",               UINT64, 23);
+CONSTRUCT_TYPED_SFIELD(sfIssuerNode,               "IssuerNode",               UINT64, 24);
 
 // 128-bit
 CONSTRUCT_TYPED_SFIELD(sfEmailHash,             "EmailHash",            UINT128,    1);
@@ -308,7 +309,6 @@ CONSTRUCT_TYPED_SFIELD(sfData,                  "Data",                 VL,     
 CONSTRUCT_TYPED_SFIELD(sfAssetClass,            "AssetClass",           VL,        28);
 CONSTRUCT_TYPED_SFIELD(sfProvider,              "Provider",             VL,        29);
 CONSTRUCT_TYPED_SFIELD(sfCredentialType,        "CredentialType",       VL,        30);
-CONSTRUCT_TYPED_SFIELD(sfIssuerPubKey,          "IssuerPubKey",         VL,        31);
 
 // account
 CONSTRUCT_TYPED_SFIELD(sfAccount,               "Account",              ACCOUNT,    1);

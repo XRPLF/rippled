@@ -944,7 +944,9 @@ struct PayChan_test : public beast::unit_test::suite
             }
 
             {  // create credentials once more
-                env(credentials::createSubject(alice, carol, credType));
+                env(credentials::createIssuer(alice, carol, credType));
+                env.close();
+                env(credentials::accept(alice, carol, credType));
                 env.close();
 
                 auto const jCred = credentials::ledgerEntryCredential(

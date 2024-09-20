@@ -1061,6 +1061,92 @@ public:
         }
 
         {
+            testcase("Deleting Issuer delete credentials");
+
+            using namespace test::jtx;
+
+            Account const alice{"alice"};
+            Account const becky{"becky"};
+            Account const carol{"carol"};
+
+            const char credType[] = "abcd";
+
+            Env env{*this};
+            env.fund(XRP(100000), alice, becky, carol);
+            env.close();
+
+            // carol issue credentials for becky
+            env(credentials::createIssuer(becky, carol, credType));
+            env.close();
+            env(credentials::accept(becky, carol, credType));
+            env.close();
+
+            // get credentials index
+            auto const jCred =
+                credentials::ledgerEntryCredential(env, becky, carol, credType);
+            std::string const credIdx =
+                jCred[jss::result][jss::index].asString();
+
+            // Close enough ledgers to be able to delete carol's account.
+            incLgrSeqForAccDel(env, carol);
+
+            auto const acctDelFee{drops(env.current()->fees().increment)};
+            env(acctdelete(carol, alice), fee(acctDelFee));
+            env.close();
+
+            // check that credential object deleted too
+            BEAST_EXPECT(!env.le(credIdx));
+            auto const jNoCred =
+                credentials::ledgerEntryCredential(env, becky, carol, credType);
+            BEAST_EXPECT(
+                jNoCred.isObject() && jNoCred.isMember(jss::result) &&
+                jNoCred[jss::result].isMember(jss::error));
+        }
+
+        {
+            testcase("Deleting Subject delete credentials");
+
+            using namespace test::jtx;
+
+            Account const alice{"alice"};
+            Account const becky{"becky"};
+            Account const carol{"carol"};
+
+            const char credType[] = "abcd";
+
+            Env env{*this};
+            env.fund(XRP(100000), alice, becky, carol);
+            env.close();
+
+            // carol issue credentials for becky
+            env(credentials::createIssuer(becky, carol, credType));
+            env.close();
+            env(credentials::accept(becky, carol, credType));
+            env.close();
+
+            // get credentials index
+            auto const jCred =
+                credentials::ledgerEntryCredential(env, becky, carol, credType);
+            std::string const credIdx =
+                jCred[jss::result][jss::index].asString();
+
+            // Close enough ledgers to be able to delete carol's account.
+            incLgrSeqForAccDel(env, becky);
+
+            auto const acctDelFee{drops(env.current()->fees().increment)};
+            env(acctdelete(becky, alice), fee(acctDelFee));
+            env.close();
+
+            // check that credential object deleted too
+            BEAST_EXPECT(!env.le(credIdx));
+            auto const jNoCred =
+                credentials::ledgerEntryCredential(env, becky, carol, credType);
+            BEAST_EXPECT(
+                jNoCred.isObject() && jNoCred.isMember(jss::result) &&
+                jNoCred[jss::result].isMember(jss::error));
+        }
+
+        {
             testcase("Credentials feature disabled");
             using namespace test::jtx;
 
