@@ -1093,6 +1093,64 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
+    testNoAccount(FeatureBitset features)
+    {
+        testcase("no account");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        test::jtx::Env env{*this, envconfig()};
+
+        auto const feeDrops = env.current()->fees().base;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(10000), alice);
+        env.close();
+        env.memoize(bob);
+
+        auto const preAlice = env.balance(alice);
+
+        // Tx 1
+        Json::Value tx1 = noop(bob);
+        tx1[sfSetFlag.fieldName] = asfAllowTrustLineClawback;
+
+        auto const ledSeq = env.current()->seq();
+        auto const seq = env.seq(alice);
+        auto const batchFee = ((1 + 2) * feeDrops) + feeDrops * 2;
+        env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+            batch::add(pay(alice, bob, XRP(1000)), alice, 1, seq),
+            batch::add(tx1, alice, 0, ledSeq),
+            batch::sig(bob));
+        env.close();
+
+        std::vector<TestBatchData> testCases = {{
+            {"tesSUCCESS",
+             "Payment",
+             "A2639F4AC0E57B007A8EEFAEDD00DBD608588A34ECB29A2A55139F0147AA7C9"
+             "9"},
+            {"tesSUCCESS",
+             "AccountSet",
+             "16515DD535232F8D9B5993539CBFB6DC49C0274B8DD18E0C7199BFE30511F0C"
+             "1"},
+        }};
+
+        Json::Value params;
+        params[jss::ledger_index] = env.current()->seq() - 1;
+        params[jss::transactions] = true;
+        params[jss::expand] = true;
+        auto const jrr = env.rpc("json", "ledger", to_string(params));
+        auto const txn = getTxByIndex(jrr, 3);
+        validateBatchTxns(txn[jss::metaData], 3, testCases);
+        validateBatchMeta(txn[jss::metaData], preAlice, seq);
+
+        BEAST_EXPECT(env.seq(alice) == 6);
+        BEAST_EXPECT(env.seq(bob) == 5);
+        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1000) - batchFee);
+        BEAST_EXPECT(env.balance(bob) == XRP(1000));
+    }
+
+    void
     testAccountSet(FeatureBitset features)
     {
         testcase("account set");
@@ -1541,7 +1599,6 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        std::cout << jrr << std::endl;
         auto const txn = getTxByIndex(jrr, 2);
         validateBatchTxns(txn[jss::metaData], 3, testCases);
         validateBatchMeta(txn[jss::metaData], preAlice, seq, 10, 10);
@@ -1572,6 +1629,7 @@ class Batch_test : public beast::unit_test::suite
         testMultisign(features);
         testMultisignMultiParty(features);
         testSubmit(features);
+        testNoAccount(features);
         testAccountSet(features);
         testObjectCreateSequence(features);
         testObjectCreateTicket(features);

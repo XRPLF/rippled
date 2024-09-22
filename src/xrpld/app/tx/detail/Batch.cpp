@@ -83,7 +83,6 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID;
         }
 
-        auto const innerAccount = stx.getAccountID(sfAccount);
         if (!stx.isFieldPresent(sfTransactionType))
         {
             JLOG(ctx.j.warn())
@@ -96,6 +95,7 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID_BATCH;
         }
 
+        auto const innerAccount = stx.getAccountID(sfAccount);
         if (stx.getFieldU16(sfTransactionType) == ttACCOUNT_DELETE &&
             innerAccount == outerAccount)
         {
@@ -107,6 +107,12 @@ Batch::preflight(PreflightContext const& ctx)
 
         if (innerAccount != outerAccount)
         {
+            if (!tx.isFieldPresent(sfBatchSigners))
+            {
+                JLOG(ctx.j.warn()) << "Batch: missing batch signers.";
+                return temBAD_SIGNER;
+            }
+
             if (tx.getFieldArray(sfBatchSigners).end() ==
                 std::find_if(
                     tx.getFieldArray(sfBatchSigners).begin(),
@@ -146,16 +152,6 @@ Batch::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.rules().enabled(featureBatch))
         return temDISABLED;
 
-    for (STObject txn : ctx.tx.getFieldArray(sfRawTransactions))
-    {
-        auto const innerAccount = txn.getAccountID(sfAccount);
-        auto const sle = ctx.view.read(keylet::account(innerAccount));
-        if (!sle)
-        {
-            JLOG(ctx.j.warn()) << "Batch: delay: inner account does not exist.";
-            return terNO_ACCOUNT;
-        }
-    }
     return tesSUCCESS;
 }
 
