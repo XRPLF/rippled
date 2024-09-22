@@ -556,7 +556,7 @@ Transactor::checkBatchSign(PreclaimContext const& ctx)
             auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
             auto const sleAccount = ctx.view.read(keylet::account(idAccount));
 
-            // We dont need to check the regular key or multisign here 
+            // We dont need to check the regular key or multisign here
             // because the account does not exist.
             if (!sleAccount)
                 return tesSUCCESS;
