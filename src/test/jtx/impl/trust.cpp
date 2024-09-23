@@ -74,6 +74,28 @@ claw(Account const& account, STAmount const& amount)
     return jv;
 }
 
+Json::Value
+ammClawback(
+    Account const& issuer,
+    Account const& holder,
+    Issue const& asset,
+    std::optional<STAmount> const& amount,
+    AccountID const& ammAccount,
+    std::optional<std::uint32_t> flags)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::AMMClawback;
+    jv[jss::Account] = issuer.human();
+    jv[jss::Holder] = holder.human();
+    jv[jss::AMMAccount] = to_string(ammAccount);
+    jv[jss::Asset] = to_json(asset);
+    if (amount)
+        jv[jss::Amount] = amount->getJson(JsonOptions::none);
+
+    if (flags)
+        jv[jss::Flags] = *flags;
+    return jv;
+}
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

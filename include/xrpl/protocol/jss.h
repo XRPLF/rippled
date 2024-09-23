@@ -48,7 +48,9 @@ JSS(AccountDelete);        // transaction type.
 JSS(AccountRoot);          // ledger type.
 JSS(AccountSet);           // transaction type.
 JSS(AMM);                  // ledger type
+JSS(AMMAccount);           // field
 JSS(AMMBid);               // transaction type
+JSS(AMMClawback);          // transaction type.
 JSS(AMMID);                // field
 JSS(AMMCreate);            // transaction type
 JSS(AMMDeposit);           // transaction type
@@ -89,6 +91,7 @@ JSS(EscrowFinish);         // transaction type.
 JSS(Fee);                  // in/out: TransactionSign; field.
 JSS(FeeSettings);          // ledger type.
 JSS(Flags);                // in/out: TransactionSign; field.
+JSS(Holder);               // field.
 JSS(Invalid);              //
 JSS(LastLedgerSequence);   // in: TransactionSign; field
 JSS(LastUpdateTime);       // field.

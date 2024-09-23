@@ -587,6 +587,8 @@ extern SF_ACCOUNT const sfUnauthorize;
 extern SF_ACCOUNT const sfRegularKey;
 extern SF_ACCOUNT const sfNFTokenMinter;
 extern SF_ACCOUNT const sfEmitCallback;
+extern SF_ACCOUNT const sfHolder;
+extern SF_ACCOUNT const sfAMMAccount;
 
 // account (uncommon)
 extern SF_ACCOUNT const sfHookAccount;

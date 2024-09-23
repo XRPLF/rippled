@@ -244,6 +244,36 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             : tecUNFUNDED_AMM;
     };
 
+    if (ctx.view.rules().enabled(featureAMMClawback))
+    {
+        // Check if either of the assets is frozen, AMMDeposit is not allowed
+        // if either asset is frozen
+        auto checkAsset = [&](std::optional<Issue> const& asset) -> TER {
+            if (!asset.has_value())
+                return temMALFORMED;  // LCOV_EXCL_LINE
+
+            if (isFrozen(ctx.view, accountID, asset.value()))
+            {
+                JLOG(ctx.j.debug()) << "AMM Deposit: account is frozen, "
+                                    << to_string(accountID) << " "
+                                    << to_string(asset->currency);
+
+                return tecFROZEN;
+            }
+
+            return tesSUCCESS;
+        };
+
+        auto const asset = ctx.tx[~sfAsset];
+        auto const asset2 = ctx.tx[~sfAsset2];
+
+        if (auto const ter = checkAsset(asset))
+            return ter;
+
+        if (auto const ter = checkAsset(asset2))
+            return ter;
+    }
+
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];
     auto const ammAccountID = ammSle->getAccountID(sfAccount);

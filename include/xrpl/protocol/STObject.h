@@ -243,6 +243,8 @@ public:
     getFieldArray(SField const& field) const;
     const STCurrency&
     getFieldCurrency(SField const& field) const;
+    const STIssue&
+    getFieldIssue(SField const& field) const;
 
     /** Get the value of a field.
         @param A TypedField built from an SField value representing the desired

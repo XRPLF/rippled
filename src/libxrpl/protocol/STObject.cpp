@@ -659,6 +659,13 @@ STObject::getFieldCurrency(SField const& field) const
     return getFieldByConstRef<STCurrency>(field, empty);
 }
 
+STIssue const&
+STObject::getFieldIssue(SField const& field) const
+{
+    static STIssue const empty{};
+    return getFieldByConstRef<STIssue>(field, empty);
+}
+
 void
 STObject::set(std::unique_ptr<STBase> v)
 {

@@ -142,6 +142,9 @@ enum TxType : std::uint16_t
     /** This transaction claws back issued tokens. */
     ttCLAWBACK = 30,
 
+    /** This transaction claws back tokens from an AMM pool. */
+    ttAMM_CLAWBACK = 31,
+
     /** This transaction type creates an AMM instance */
     ttAMM_CREATE = 35,
 

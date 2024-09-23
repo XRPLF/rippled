@@ -80,33 +80,6 @@ public:
     TER
     doApply() override;
 
-private:
-    std::pair<TER, bool>
-    applyGuts(Sandbox& view);
-
-    /** Withdraw requested assets and token from AMM into LP account.
-     * Return new total LPToken balance.
-     * @param view
-     * @param ammAccount
-     * @param amountBalance
-     * @param amountWithdraw
-     * @param amount2Withdraw
-     * @param lpTokensAMMBalance current AMM LPT balance
-     * @param lpTokensWithdraw
-     * @param tfee
-     * @return
-     */
-    std::pair<TER, STAmount>
-    withdraw(
-        Sandbox& view,
-        AccountID const& ammAccount,
-        STAmount const& amountWithdraw,
-        STAmount const& amountBalance,
-        std::optional<STAmount> const& amount2Withdraw,
-        STAmount const& lpTokensAMMBalance,
-        STAmount const& lpTokensWithdraw,
-        std::uint16_t tfee);
-
     /** Equal-asset withdrawal (LPTokens) of some AMM instance pools
      * shares represented by the number of LPTokens .
      * The trading fee is not charged.
@@ -120,16 +93,25 @@ private:
      * @param tfee trading fee in basis points
      * @return
      */
-    std::pair<TER, STAmount>
+    static std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
     equalWithdrawTokens(
         Sandbox& view,
+        SLE const& ammSle,
+        AccountID const account,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
         STAmount const& amount2Balance,
         STAmount const& lptAMMBalance,
         STAmount const& lpTokens,
         STAmount const& lpTokensWithdraw,
-        std::uint16_t tfee);
+        std::uint16_t tfee,
+        beast::Journal const& journal,
+        STTx const& tx,
+        bool withdrawAll);
+
+private:
+    std::pair<TER, bool>
+    applyGuts(Sandbox& view);
 
     /** Withdraw both assets (Asset1Out, Asset2Out) with the constraints
      * on the maximum amount of each asset that the trader is willing
@@ -147,6 +129,7 @@ private:
     std::pair<TER, STAmount>
     equalWithdrawLimit(
         Sandbox& view,
+        SLE const& ammSle,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
         STAmount const& amount2Balance,
@@ -168,6 +151,7 @@ private:
     std::pair<TER, STAmount>
     singleWithdraw(
         Sandbox& view,
+        SLE const& ammSle,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
         STAmount const& lptAMMBalance,
@@ -188,6 +172,7 @@ private:
     std::pair<TER, STAmount>
     singleWithdrawTokens(
         Sandbox& view,
+        SLE const& ammSle,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
         STAmount const& lptAMMBalance,
@@ -209,6 +194,7 @@ private:
     std::pair<TER, STAmount>
     singleWithdrawEPrice(
         Sandbox& view,
+        SLE const& ammSle,
         AccountID const& ammAccount,
         STAmount const& amountBalance,
         STAmount const& lptAMMBalance,
