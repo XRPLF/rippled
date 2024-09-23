@@ -167,7 +167,10 @@ public:
     testEvolution()
     {
         using namespace test::jtx;
-        Env env{*this, FeatureBitset{}};  // the hashes being checked below
+
+        auto cfg = envconfig();
+        cfg->FEES.reference_fee = 10;
+        Env env{*this, std::move(cfg), FeatureBitset{}};  // the hashes being checked below
                                           // assume no amendments
         Account const gw{"gateway"};
         auto const USD = gw["USD"];
@@ -311,6 +314,7 @@ public:
         using namespace test::jtx;
         using namespace std::chrono_literals;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.reference_fee = 10;
                     cfg->NODE_SIZE = 0;
                     return cfg;
                 })};

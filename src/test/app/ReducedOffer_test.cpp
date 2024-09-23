@@ -115,7 +115,7 @@ public:
                 STAmount const initialRate = Quality(newOffer).rate();
                 std::uint32_t const bobOfferSeq = env.seq(bob);
                 STAmount const bobInitialBalance = env.balance(bob);
-                STAmount const bobsFee = drops(10);
+                STAmount const bobsFee = env.current()->fees().base;
                 env(offer(bob, newOffer.in, newOffer.out, tfSell),
                     fee(bobsFee));
                 env.close();

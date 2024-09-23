@@ -609,7 +609,10 @@ class LedgerRPC_test : public beast::unit_test::suite
     {
         testcase("ledger_entry Request AccountRoot");
         using namespace test::jtx;
-        Env env{*this};
+
+        auto cfg = envconfig();
+        cfg->FEES.reference_fee = 10;
+        Env env{*this, std::move(cfg)};
         Account const alice{"alice"};
         env.fund(XRP(10000), alice);
         env.close();
@@ -2451,7 +2454,10 @@ class LedgerRPC_test : public beast::unit_test::suite
     {
         testcase("Lookup ledger");
         using namespace test::jtx;
-        Env env{*this, FeatureBitset{}};  // hashes requested below assume
+
+        auto cfg = envconfig();
+        cfg->FEES.reference_fee = 10;
+        Env env{*this, std::move(cfg), FeatureBitset{}};  // hashes requested below assume
                                           // no amendments
         env.fund(XRP(10000), "alice");
         env.close();
