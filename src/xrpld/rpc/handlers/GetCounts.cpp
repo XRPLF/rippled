@@ -25,9 +25,7 @@
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/ledger/CachedSLEs.h>
 #include <xrpld/nodestore/Database.h>
-#include <xrpld/nodestore/DatabaseShard.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/shamap/ShardFamily.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -73,7 +71,7 @@ getCountsJson(Application& app, int minObjectCount)
         ret[k] = v;
     }
 
-    if (!app.config().reporting() && app.config().useTxTables())
+    if (app.config().useTxTables())
     {
         auto const db =
             dynamic_cast<SQLiteDatabase*>(&app.getRelationalDatabase());
@@ -113,11 +111,11 @@ getCountsJson(Application& app, int minObjectCount)
     ret[jss::AL_hit_rate] = app.getAcceptedLedgerCache().getHitRate();
 
     ret[jss::fullbelow_size] =
-        static_cast<int>(app.getNodeFamily().getFullBelowCache(0)->size());
+        static_cast<int>(app.getNodeFamily().getFullBelowCache()->size());
     ret[jss::treenode_cache_size] =
-        app.getNodeFamily().getTreeNodeCache(0)->getCacheSize();
+        app.getNodeFamily().getTreeNodeCache()->getCacheSize();
     ret[jss::treenode_track_size] =
-        app.getNodeFamily().getTreeNodeCache(0)->getTrackSize();
+        app.getNodeFamily().getTreeNodeCache()->getTrackSize();
 
     std::string uptime;
     auto s = UptimeClock::now();
@@ -129,27 +127,7 @@ getCountsJson(Application& app, int minObjectCount)
     textTime(uptime, s, "second", 1s);
     ret[jss::uptime] = uptime;
 
-    if (auto shardStore = app.getShardStore())
-    {
-        auto shardFamily{dynamic_cast<ShardFamily*>(app.getShardFamily())};
-        auto const [cacheSz, trackSz] = shardFamily->getTreeNodeCacheSize();
-        Json::Value& jv = (ret[jss::shards] = Json::objectValue);
-
-        jv[jss::fullbelow_size] = shardFamily->getFullBelowCacheSize();
-        jv[jss::treenode_cache_size] = cacheSz;
-        jv[jss::treenode_track_size] = trackSz;
-        ret[jss::write_load] = shardStore->getWriteLoad();
-        jv[jss::node_writes] = std::to_string(shardStore->getStoreCount());
-        jv[jss::node_reads_total] = shardStore->getFetchTotalCount();
-        jv[jss::node_reads_hit] = shardStore->getFetchHitCount();
-        jv[jss::node_written_bytes] =
-            std::to_string(shardStore->getStoreSize());
-        jv[jss::node_read_bytes] = shardStore->getFetchSize();
-    }
-    else
-    {
-        app.getNodeStore().getCountsJson(ret);
-    }
+    app.getNodeStore().getCountsJson(ret);
 
     return ret;
 }

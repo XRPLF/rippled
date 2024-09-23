@@ -196,8 +196,12 @@ enum TxType : std::uint16_t
     /** This transaction type deletes an Oracle instance */
     ttORACLE_DELETE = 52,
 
+    /** This transaction type fixes a problem in the ledger state */
+    ttLEDGER_STATE_FIX = 53,
+
     /** This transaction type modify a NFToken */
-    ttNFTOKEN_MODIFY = 53,
+    ttNFTOKEN_MODIFY = 54,
+
 
     /** This system-generated transaction type is used to update the status of the various amendments.
 

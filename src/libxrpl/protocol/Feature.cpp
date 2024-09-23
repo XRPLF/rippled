@@ -100,7 +100,7 @@ class FeatureCollections
     };
 
     // Intermediate types to help with readability
-    template <class tag, typename Type, Type Feature::*PtrToMember>
+    template <class tag, typename Type, Type Feature::* PtrToMember>
     using feature_hashed_unique = boost::multi_index::hashed_unique<
         boost::multi_index::tag<tag>,
         boost::multi_index::member<Feature, Type, PtrToMember>>;
@@ -497,10 +497,11 @@ REGISTER_FEATURE(NFTokenMintOffer,              Supported::yes, VoteBehavior::De
 REGISTER_FIX    (fixReducedOffersV2,            Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixEnforceNFTokenTrustline,    Supported::yes, VoteBehavior::DefaultNo);
 REGISTER_FIX    (fixInnerObjTemplate2,          Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FIX    (fixNFTokenPageLinks,           Supported::yes, VoteBehavior::DefaultNo);
+REGISTER_FEATURE(DynamicNFT,                    Supported::yes, VoteBehavior::DefaultNo);
 // InvariantsV1_1 will be changes to Supported::yes when all the
 // invariants expected to be included under it are complete.
 REGISTER_FEATURE(InvariantsV1_1,                Supported::no, VoteBehavior::DefaultNo);
-REGISTER_FEATURE(DynamicNFT,                    Supported::yes, VoteBehavior::DefaultNo);
 
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.

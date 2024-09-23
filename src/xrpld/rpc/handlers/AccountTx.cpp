@@ -22,9 +22,7 @@
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/rdb/backend/PostgresDatabase.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/core/Pg.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
@@ -218,16 +216,6 @@ std::pair<AccountTxResult, RPC::Status>
 doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
-    if (context.app.config().reporting())
-    {
-        auto const db = dynamic_cast<PostgresDatabase*>(
-            &context.app.getRelationalDatabase());
-
-        if (!db)
-            Throw<std::runtime_error>("Failed to get relational database");
-
-        return db->getAccountTx(args);
-    }
 
     AccountTxResult result;
 
@@ -391,8 +379,6 @@ populateJsonResponse(
             response[jss::marker][jss::ledger] = result.marker->ledgerSeq;
             response[jss::marker][jss::seq] = result.marker->txnSeq;
         }
-        if (context.app.config().reporting())
-            response["used_postgres"] = true;
     }
 
     JLOG(context.j.debug()) << __func__ << " : finished";
@@ -426,12 +412,12 @@ doAccountTxJson(RPC::JsonContext& context)
     if (context.apiVersion > 1u && params.isMember(jss::binary) &&
         !params[jss::binary].isBool())
     {
-        return rpcError(rpcINVALID_PARAMS);
+        return RPC::invalid_field_error(jss::binary);
     }
     if (context.apiVersion > 1u && params.isMember(jss::forward) &&
         !params[jss::forward].isBool())
     {
-        return rpcError(rpcINVALID_PARAMS);
+        return RPC::invalid_field_error(jss::forward);
     }
 
     args.limit = params.isMember(jss::limit) ? params[jss::limit].asUInt() : 0;
@@ -440,7 +426,10 @@ doAccountTxJson(RPC::JsonContext& context)
         params.isMember(jss::forward) && params[jss::forward].asBool();
 
     if (!params.isMember(jss::account))
-        return rpcError(rpcINVALID_PARAMS);
+        return RPC::missing_field_error(jss::account);
+
+    if (!params[jss::account].isString())
+        return RPC::invalid_field_error(jss::account);
 
     auto const account =
         parseBase58<AccountID>(params[jss::account].asString());

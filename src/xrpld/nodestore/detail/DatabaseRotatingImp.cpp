@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/HashPrefix.h>
 
@@ -77,17 +76,6 @@ DatabaseRotatingImp::importDatabase(Database& source)
     }();
 
     importInternal(*backend, source);
-}
-
-bool
-DatabaseRotatingImp::storeLedger(std::shared_ptr<Ledger const> const& srcLedger)
-{
-    auto const backend = [&] {
-        std::lock_guard lock(mutex_);
-        return writableBackend_;
-    }();
-
-    return Database::storeLedger(*srcLedger, backend);
 }
 
 void
