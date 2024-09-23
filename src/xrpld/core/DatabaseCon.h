@@ -23,6 +23,7 @@
 #include <xrpld/app/main/DBInit.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/SociDB.h>
+#include <xrpld/perflog/PerfLog.h>
 #include <boost/filesystem/path.hpp>
 #include <mutex>
 #include <optional>
@@ -101,6 +102,8 @@ public:
         }
 
         static std::unique_ptr<std::vector<std::string> const> globalPragma;
+        std::array<std::string, 4> txPragma;
+        std::array<std::string, 1> lgrPragma;
     };
 
     struct CheckpointerSetup
@@ -113,8 +116,9 @@ public:
     DatabaseCon(
         Setup const& setup,
         std::string const& dbName,
-        std::array<char const*, N> const& pragma,
-        std::array<char const*, M> const& initSQL)
+        std::array<std::string, N> const& pragma,
+        std::array<char const*, M> const& initSQL,
+        beast::Journal journal)
         // Use temporary files or regular DB files?
         : DatabaseCon(
               setup.standAlone && setup.startUp != Config::LOAD &&
@@ -124,7 +128,8 @@ public:
                   : (setup.dataDir / dbName),
               setup.commonPragma(),
               pragma,
-              initSQL)
+              initSQL,
+              journal)
     {
     }
 
@@ -133,10 +138,11 @@ public:
     DatabaseCon(
         Setup const& setup,
         std::string const& dbName,
-        std::array<char const*, N> const& pragma,
+        std::array<std::string, N> const& pragma,
         std::array<char const*, M> const& initSQL,
-        CheckpointerSetup const& checkpointerSetup)
-        : DatabaseCon(setup, dbName, pragma, initSQL)
+        CheckpointerSetup const& checkpointerSetup,
+        beast::Journal journal)
+        : DatabaseCon(setup, dbName, pragma, initSQL, journal)
     {
         setupCheckpointing(checkpointerSetup.jobQueue, *checkpointerSetup.logs);
     }
@@ -145,9 +151,10 @@ public:
     DatabaseCon(
         boost::filesystem::path const& dataDir,
         std::string const& dbName,
-        std::array<char const*, N> const& pragma,
-        std::array<char const*, M> const& initSQL)
-        : DatabaseCon(dataDir / dbName, nullptr, pragma, initSQL)
+        std::array<std::string, N> const& pragma,
+        std::array<char const*, M> const& initSQL,
+        beast::Journal journal)
+        : DatabaseCon(dataDir / dbName, nullptr, pragma, initSQL, journal)
     {
     }
 
@@ -156,10 +163,11 @@ public:
     DatabaseCon(
         boost::filesystem::path const& dataDir,
         std::string const& dbName,
-        std::array<char const*, N> const& pragma,
+        std::array<std::string, N> const& pragma,
         std::array<char const*, M> const& initSQL,
-        CheckpointerSetup const& checkpointerSetup)
-        : DatabaseCon(dataDir, dbName, pragma, initSQL)
+        CheckpointerSetup const& checkpointerSetup,
+        beast::Journal journal)
+        : DatabaseCon(dataDir, dbName, pragma, initSQL, journal)
     {
         setupCheckpointing(checkpointerSetup.jobQueue, *checkpointerSetup.logs);
     }
@@ -175,7 +183,14 @@ public:
     LockedSociSession
     checkoutDb()
     {
-        return LockedSociSession(session_, lock_);
+        using namespace std::chrono_literals;
+        LockedSociSession session = perf::measureDurationAndLog(
+            [&]() { return LockedSociSession(session_, lock_); },
+            "checkoutDb",
+            10ms,
+            j_);
+
+        return session;
     }
 
 private:
@@ -186,11 +201,18 @@ private:
     DatabaseCon(
         boost::filesystem::path const& pPath,
         std::vector<std::string> const* commonPragma,
-        std::array<char const*, N> const& pragma,
-        std::array<char const*, M> const& initSQL)
-        : session_(std::make_shared<soci::session>())
+        std::array<std::string, N> const& pragma,
+        std::array<char const*, M> const& initSQL,
+        beast::Journal journal)
+        : session_(std::make_shared<soci::session>()), j_(journal)
     {
         open(*session_, "sqlite", pPath.string());
+
+        for (auto const& p : pragma)
+        {
+            soci::statement st = session_->prepare << p;
+            st.execute(true);
+        }
 
         if (commonPragma)
         {
@@ -200,11 +222,7 @@ private:
                 st.execute(true);
             }
         }
-        for (auto const& p : pragma)
-        {
-            soci::statement st = session_->prepare << p;
-            st.execute(true);
-        }
+
         for (auto const& sql : initSQL)
         {
             soci::statement st = session_->prepare << sql;
@@ -222,6 +240,8 @@ private:
     // shared_ptr in this class. session_ will never be null.
     std::shared_ptr<soci::session> const session_;
     std::shared_ptr<Checkpointer> checkpointer_;
+
+    beast::Journal const j_;
 };
 
 // Return the checkpointer from its id. If the checkpointer no longer exists, an
