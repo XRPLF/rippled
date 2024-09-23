@@ -37,12 +37,6 @@ MPTIssue::getIssuer() const
     return *account;
 }
 
-MPTID const&
-MPTIssue::getMptID() const
-{
-    return mptID_;
-}
-
 Json::Value
 to_json(MPTIssue const& issue)
 {

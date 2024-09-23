@@ -38,26 +38,29 @@ public:
     AccountID const&
     getIssuer() const;
 
-    MPTID const&
-    getMptID() const;
-
-    friend constexpr bool
-    operator==(MPTIssue const& lhs, MPTIssue const& rhs);
-
-    friend constexpr bool
-    operator!=(MPTIssue const& lhs, MPTIssue const& rhs);
+    constexpr MPTID const&
+    getMptID() const
+    {
+        return mptID_;
+    }
 };
+
+constexpr bool
+operator<(MPTIssue const& lhs, MPTIssue const& rhs)
+{
+    return lhs.getMptID() < rhs.getMptID();
+}
 
 constexpr bool
 operator==(MPTIssue const& lhs, MPTIssue const& rhs)
 {
-    return lhs.mptID_ == rhs.mptID_;
+    return lhs.getMptID() == rhs.getMptID();
 }
 
 constexpr bool
 operator!=(MPTIssue const& lhs, MPTIssue const& rhs)
 {
-    return !(lhs.mptID_ == rhs.mptID_);
+    return !(lhs.getMptID() == rhs.getMptID());
 }
 
 inline bool
