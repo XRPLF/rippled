@@ -352,16 +352,15 @@ by finding external conditions which cause contracts violations inside `rippled`
 The contracts are expressed as `XRPL_ASSERT` or `XRPL_UNREACHABLE` (defined in 
 `include/xrpl/beast/utility/instrumentation.h`), which are effectively (outside
 of Antithesis) wrappers for `assert(...)` with added name. The purpose of name
-is provide contracts with stable identity which does not rely on line numbers.
+is to provide contracts with stable identity which does not rely on line numbers.
 
-When `rippled` is built with the
-Antithesis instrumentation enabled (using `voidstar` CMake option),
-the `XRPL_...` contracts enable the `rippled` process to signal any violations
-to the Antithesis platform during fuzzing.
+When `rippled` is built with the Antithesis instrumentation enabled
+(using `voidstar` CMake option), the `XRPL_...` contracts will report any
+violations on the Antithesis platform during fuzzing.
 
 We continue to use the old style `assert` or `assert(false)` in certain
-locations, where the reporting of contract violations in Antithesis platform is
-either not possible or is not useful.
+locations, where the reporting of contract violations on the Antithesis
+platform is either not possible or not useful.
 
 For this reason:
 * The locations where `assert` or `assert(false)` contracts can be used:
@@ -380,11 +379,11 @@ For this reason:
   function, use common sense to balance both brevity and unambiguity of the
   function name. NOTE: the purpose of name is to provide stable means of
   unique identification of every contract; for this reason try to avoid elements
-  which can change in the most obvious refactors.
+  which can change in some obvious refactors.
 * Do not use `std::unreachable`
-* Do not put contracts where they can be easily violated by an external
-  condition (e.g. timing, data payload before mandatory validation etc.) as
-  this creates bogus bug reports.
+* Do not put contracts where they can be violated by an external condition
+  (e.g. timing, data payload before mandatory validation etc.) as this creates
+  bogus bug reports (and causes crashes of Debug builds)
 
 ## Unit Tests
 To execute all unit tests:
