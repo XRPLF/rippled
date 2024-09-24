@@ -385,8 +385,8 @@ TxFormats::TxFormats()
         ttAMM_CLAWBACK,
         {
             {sfHolder, soeREQUIRED},
-            {sfAMMAccount, soeREQUIRED},
             {sfAsset, soeREQUIRED},
+            {sfAsset2, soeREQUIRED},
             {sfAmount, soeOPTIONAL},
         },
         commonFields);

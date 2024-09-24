@@ -84,18 +84,17 @@ AMMClawback::preflight(PreflightContext const& ctx)
 TER
 AMMClawback::preclaim(PreclaimContext const& ctx)
 {
-    AccountID const issuer = ctx.tx[sfAccount];
-    AccountID const holder = ctx.tx[sfHolder];
-    AccountID const ammAccount = ctx.tx[sfAMMAccount];
-
+    auto const issuer = ctx.tx[sfAccount];
+    auto const holder = ctx.tx[sfHolder];
+    auto const asset = ctx.tx[sfAsset];
+    auto const asset2 = ctx.tx[sfAsset2];
     auto const sleIssuer = ctx.view.read(keylet::account(issuer));
     auto const sleHolder = ctx.view.read(keylet::account(holder));
-    auto const sleAMMAccount = ctx.view.read(keylet::account(ammAccount));
 
-    if (!sleAMMAccount)
+    auto const ammSle = ctx.view.read(keylet::amm(asset, asset2));
+    if (!ammSle)
     {
-        JLOG(ctx.j.debug())
-            << "AMMClawback: AMMAccount provided does not exist.";
+        JLOG(ctx.j.debug()) << "AMM Clawback: Invalid asset pair.";
         return terNO_AMM;
     }
 
@@ -107,32 +106,10 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
         (issuerFlagsIn & lsfNoFreeze))
         return tecNO_PERMISSION;
 
-    auto const ammID = sleAMMAccount->getFieldH256(sfAMMID);
-    if (!ammID)
-    {
-        JLOG(ctx.j.trace())
-            << "AMMClawback: AMMAccount field is not an AMM account.";
-        return terNO_AMM;
-    }
-
-    auto const sleAMM = ctx.view.read(keylet::amm(ammID));
-    if (!sleAMM)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    STIssue const& asset = sleAMM->getFieldIssue(sfAsset);
-    STIssue const& asset2 = sleAMM->getFieldIssue(sfAsset2);
-
-    if (ctx.tx[sfAsset] != asset && ctx.tx[sfAsset] != asset2)
-    {
-        JLOG(ctx.j.trace()) << "AMMClawback: Asset being clawed back does not "
-                               "match either asset in the AMM pool.";
-        return tecNO_PERMISSION;
-    }
-
     auto const flags = ctx.tx.getFlags();
     if (flags & tfClawTwoAssets)
     {
-        if (asset.issue().account != asset2.issue().account)
+        if (asset.account != asset2.account)
         {
             JLOG(ctx.j.trace())
                 << "AMMClawback: tfClawTwoAssets can only be enabled when two "
@@ -160,38 +137,25 @@ TER
 AMMClawback::applyGuts(Sandbox& sb)
 {
     std::optional<STAmount> const clawAmount = ctx_.tx[~sfAmount];
-    AccountID const ammAccount = ctx_.tx[sfAMMAccount];
     AccountID const issuer = ctx_.tx[sfAccount];
     AccountID const holder = ctx_.tx[sfHolder];
     Issue const asset = ctx_.tx[sfAsset];
+    Issue const asset2 = ctx_.tx[sfAsset2];
 
-    auto const sleAMMAccount = ctx_.view().read(keylet::account(ammAccount));
-
-    // should not happen. checked in preclaim.
-    if (!sleAMMAccount)
-        return terNO_AMM;  // LCOV_EXCL_LINE
-
-    auto const ammID = sleAMMAccount->getFieldH256(sfAMMID);
-    if (!ammID)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    auto ammSle = sb.peek(keylet::amm(ammID));
+    auto ammSle = sb.peek(keylet::amm(asset, asset2));
     if (!ammSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const tfee = getTradingFee(ctx_.view(), *ammSle, ammAccount);
-    Issue const& issue1 = ammSle->getFieldIssue(sfAsset).issue();
-    Issue const& issue2 = ammSle->getFieldIssue(sfAsset2).issue();
-
-    Issue otherIssue = issue1;
-    if (asset == issue1)
-        otherIssue = issue2;
+    auto const ammAccount = (*ammSle)[sfAccount];
+    auto const accountSle = sb.read(keylet::account(ammAccount));
+    if (!accountSle)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const expected = ammHolds(
         sb,
         *ammSle,
         asset,
-        otherIssue,
+        asset2,
         FreezeHandling::fhZERO_IF_FROZEN,
         ctx_.journal);
 
@@ -208,6 +172,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (holdLPtokens == beast::zero)
         return tecINTERNAL;
 
+    auto const tfee = getTradingFee(ctx_.view(), *ammSle, holder);
     if (!clawAmount)
     {
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
@@ -243,7 +208,7 @@ AMMClawback::applyGuts(Sandbox& sb)
         return result;  // LCOV_EXCL_LINE
 
     auto const res = deleteAMMAccountIfEmpty(
-        sb, ammSle, newLPTokenBalance, issue1, issue2, j_);
+        sb, ammSle, newLPTokenBalance, asset, asset2, j_);
     if (!res.second)
         return res.first;  // LCOV_EXCL_LINE
 

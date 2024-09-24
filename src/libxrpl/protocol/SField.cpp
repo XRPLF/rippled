@@ -320,7 +320,6 @@ CONSTRUCT_TYPED_SFIELD(sfRegularKey,            "RegularKey",           ACCOUNT,
 CONSTRUCT_TYPED_SFIELD(sfNFTokenMinter,         "NFTokenMinter",        ACCOUNT,    9);
 CONSTRUCT_TYPED_SFIELD(sfEmitCallback,          "EmitCallback",         ACCOUNT,   10);
 CONSTRUCT_TYPED_SFIELD(sfHolder,                "Holder",               ACCOUNT,   11);
-CONSTRUCT_TYPED_SFIELD(sfAMMAccount,            "AMMAccount",           ACCOUNT,   12);
 
 // account (uncommon)
 CONSTRUCT_TYPED_SFIELD(sfHookAccount,           "HookAccount",          ACCOUNT,   16);
