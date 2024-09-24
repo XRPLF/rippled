@@ -20,19 +20,21 @@
 #ifndef XRPL_PROTOCOL_STNUMBER_H_INCLUDED
 #define XRPL_PROTOCOL_STNUMBER_H_INCLUDED
 
+#include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/STBase.h>
 
 namespace ripple {
 
-class STNumber final : public STBase
+class STNumber final : public STBase,
+                       public CountedObject<STNumber>,
+                       public Number
 {
-private:
-    Number value_;
-
 public:
     STNumber(SField const& n, Number const& v = Number());
     STNumber(SerialIter& sit, SField const& name);
+
+    using Number::operator=;
 
     SerializedTypeID
     getSType() const override;
@@ -42,7 +44,7 @@ public:
     void
     add(Serializer& s) const override;
 
-    Number
+    Number const&
     value() const;
     void
     setValue(Number const& v);
@@ -53,7 +55,7 @@ public:
     move(std::size_t n, void* buf) override;
 
     bool
-    isEquivalent(const STBase& t) const override;
+    isEquivalent(STBase const& t) const override;
     bool
     isDefault() const override;
 };
