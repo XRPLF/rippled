@@ -31,7 +31,8 @@ class STNumber final : public STBase,
                        public Number
 {
 public:
-    STNumber(SField const& n, Number const& v = Number());
+    STNumber() = default;
+    explicit STNumber(SField const& n, Number const& v = Number());
     STNumber(SerialIter& sit, SField const& name);
 
     using Number::operator=;

@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 
 #include <limits>
@@ -52,6 +54,15 @@ struct STNumber_test : public beast::unit_test::suite
             SerialIter sit(s.slice());
             STNumber const after{sit, sfQuantity};
             BEAST_EXPECT(after.isEquivalent(before));
+        }
+
+        {
+            STAmount const strikePrice{noIssue(), 100};
+            STNumber const factor{sfQuantity, 100};
+            auto const iouValue = strikePrice.iou();
+            IOUAmount totalValue{iouValue * factor};
+            STAmount const totalAmount{totalValue, strikePrice.issue()};
+            BEAST_EXPECT(totalAmount == Number{10'000});
         }
     }
 };

@@ -243,6 +243,8 @@ public:
     getFieldArray(SField const& field) const;
     const STCurrency&
     getFieldCurrency(SField const& field) const;
+    STNumber const&
+    getFieldNumber(SField const& field) const;
 
     /** Get the value of a field.
         @param A TypedField built from an SField value representing the desired
@@ -373,6 +375,8 @@ public:
     setFieldIssue(SField const& field, STIssue const&);
     void
     setFieldCurrency(SField const& field, STCurrency const&);
+    void
+    setFieldNumber(SField const& field, STNumber const&);
     void
     setFieldPathSet(SField const& field, STPathSet const&);
     void
