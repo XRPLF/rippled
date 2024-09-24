@@ -122,8 +122,9 @@ target_link_modules(xrpl PUBLIC
 )
 
 target_include_directories(xrpl.libxrpl
-  PRIVATE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+  # No private headers for now.
+  # PRIVATE
+  #   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
