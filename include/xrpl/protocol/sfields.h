@@ -303,7 +303,6 @@ TYPED_SFIELD(LockingChainIssue,        ISSUE,      1)
 TYPED_SFIELD(IssuingChainIssue,        ISSUE,      2)
 TYPED_SFIELD(Asset,                    ISSUE,      3)
 TYPED_SFIELD(Asset2,                   ISSUE,      4)
-TYPED_SFIELD(Share,                    ISSUE,      4)
 
 // bridge
 TYPED_SFIELD(XChainBridge,             XCHAIN_BRIDGE, 1)
