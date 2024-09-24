@@ -172,9 +172,10 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (holdLPtokens == beast::zero)
         return tecINTERNAL;
 
-    auto const tfee = getTradingFee(ctx_.view(), *ammSle, holder);
     if (!clawAmount)
     {
+        // Because we are doing a two-asset withdrawal,
+        // tfee is actually not used, so pass tfee as 0.
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
             AMMWithdraw::equalWithdrawTokens(
                 sb,
@@ -186,7 +187,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 lptAMMBalance,
                 holdLPtokens,
                 holdLPtokens,
-                tfee,
+                0,
                 ctx_.journal,
                 ctx_.tx,
                 true);
@@ -201,8 +202,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 amountBalance,
                 amount2Balance,
                 lptAMMBalance,
-                *clawAmount,
-                tfee);
+                *clawAmount);
 
     if (result != tesSUCCESS)
         return result;  // LCOV_EXCL_LINE
@@ -242,8 +242,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     STAmount const& amountBalance,
     STAmount const& amount2Balance,
     STAmount const& lptAMMBalance,
-    STAmount const& amount,
-    std::uint16_t tfee)
+    STAmount const& amount)
 {
     auto frac = Number{amount} / amountBalance;
     auto const amount2Withdraw = amount2Balance * frac;
@@ -253,7 +252,8 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     auto const holdLPtokens = ammLPHolds(sb, ammSle, holder, j_);
     if (lpTokensWithdraw > holdLPtokens)
         // if lptoken balance less than what the issuer intended to clawback,
-        // clawback all the tokens
+        // clawback all the tokens. Because we are doing a two-asset withdrawal,
+        // tfee is actually not used, so pass tfee as 0.
         return AMMWithdraw::equalWithdrawTokens(
             sb,
             ammSle,
@@ -264,11 +264,13 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             lptAMMBalance,
             holdLPtokens,
             holdLPtokens,
-            tfee,
+            0,
             ctx_.journal,
             ctx_.tx,
             true);
 
+    // Because we are doing a two-asset withdrawal,
+    // tfee is actually not used, so pass tfee as 0.
     return withdraw(
         sb,
         ammAccount,
@@ -279,7 +281,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         toSTAmount(amount2Balance.issue(), amount2Withdraw),
         lptAMMBalance,
         toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac),
-        tfee,
+        0,
         ctx_.journal,
         ctx_.tx,
         false);

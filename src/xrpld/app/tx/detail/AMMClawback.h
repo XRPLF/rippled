@@ -48,13 +48,13 @@ private:
 
     /** Withdraw both assets by providing maximum amount of asset1,
      * asset2's amount will be calculated according to the current proportion.
+     * Since it is two-asset withdrawal, tfee is omitted.
      * @param view
      * @param ammAccount current AMM account
      * @param amountBalance current AMM asset1 balance
      * @param amount2Balance current AMM asset2 balance
      * @param lptAMMBalance current AMM LPT balance
      * @param amount asset1 withdraw amount
-     * @param tfee trading fee in basis points
      * @return
      */
     std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
@@ -66,8 +66,7 @@ private:
         STAmount const& amountBalance,
         STAmount const& amount2Balance,
         STAmount const& lptAMMBalance,
-        STAmount const& amount,
-        std::uint16_t tfee);
+        STAmount const& amount);
 };
 
 }  // namespace ripple
