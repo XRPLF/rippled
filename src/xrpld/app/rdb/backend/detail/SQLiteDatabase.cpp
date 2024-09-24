@@ -246,7 +246,7 @@ SQLiteDatabaseImp::makeLedgerDBs(
     DatabaseCon::CheckpointerSetup const& checkpointerSetup)
 {
     auto [lgr, tx, res] =
-        detail::makeLedgerDBs(config, setup, checkpointerSetup);
+        detail::makeLedgerDBs(config, setup, checkpointerSetup, j_);
     txdb_ = std::move(tx);
     lgrdb_ = std::move(lgr);
     return res;
