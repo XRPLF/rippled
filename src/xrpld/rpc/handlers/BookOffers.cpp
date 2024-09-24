@@ -204,13 +204,13 @@ doBookOffers(RPC::JsonContext& context)
 Json::Value
 doBookChanges(RPC::JsonContext& context)
 {
-    auto res = RPC::getLedgerByContext(context);
+    std::shared_ptr<ReadView const> ledger;
 
-    if (std::holds_alternative<Json::Value>(res))
-        return std::get<Json::Value>(res);
+    Json::Value result = RPC::lookupLedger(ledger, context);
+    if (ledger == nullptr)
+        return result;
 
-    return RPC::computeBookChanges(
-        std::get<std::shared_ptr<Ledger const>>(res));
+    return RPC::computeBookChanges(ledger);
 }
 
 }  // namespace ripple

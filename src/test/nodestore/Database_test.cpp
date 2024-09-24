@@ -439,6 +439,115 @@ public:
                 BEAST_EXPECT(found);
             }
         }
+        {
+            // N/A: Default values
+            Env env(*this);
+            auto const s = setup_DatabaseCon(env.app().config());
+            if (BEAST_EXPECT(s.txPragma.size() == 4))
+            {
+                BEAST_EXPECT(s.txPragma.at(0) == "PRAGMA page_size=4096;");
+                BEAST_EXPECT(
+                    s.txPragma.at(1) == "PRAGMA journal_size_limit=1582080;");
+                BEAST_EXPECT(
+                    s.txPragma.at(2) == "PRAGMA max_page_count=4294967294;");
+                BEAST_EXPECT(
+                    s.txPragma.at(3) == "PRAGMA mmap_size=17179869184;");
+            }
+        }
+        {
+            // Success: Valid values
+            Env env = [&]() {
+                auto p = test::jtx::envconfig();
+                {
+                    auto& section = p->section("sqlite");
+                    section.set("page_size", "512");
+                    section.set("journal_size_limit", "2582080");
+                }
+                return Env(*this, std::move(p));
+            }();
+            auto const s = setup_DatabaseCon(env.app().config());
+            if (BEAST_EXPECT(s.txPragma.size() == 4))
+            {
+                BEAST_EXPECT(s.txPragma.at(0) == "PRAGMA page_size=512;");
+                BEAST_EXPECT(
+                    s.txPragma.at(1) == "PRAGMA journal_size_limit=2582080;");
+                BEAST_EXPECT(
+                    s.txPragma.at(2) == "PRAGMA max_page_count=4294967294;");
+                BEAST_EXPECT(
+                    s.txPragma.at(3) == "PRAGMA mmap_size=17179869184;");
+            }
+        }
+        {
+            // Error: Invalid values
+            auto const expected =
+                "Invalid page_size. Must be between 512 and 65536.";
+            bool found = false;
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("page_size", "256");
+            }
+            try
+            {
+                Env env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
+                    beast::severities::kWarning);
+                fail();
+            }
+            catch (...)
+            {
+                BEAST_EXPECT(found);
+            }
+        }
+        {
+            // Error: Invalid values
+            auto const expected =
+                "Invalid page_size. Must be between 512 and 65536.";
+            bool found = false;
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("page_size", "131072");
+            }
+            try
+            {
+                Env env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
+                    beast::severities::kWarning);
+                fail();
+            }
+            catch (...)
+            {
+                BEAST_EXPECT(found);
+            }
+        }
+        {
+            // Error: Invalid values
+            auto const expected = "Invalid page_size. Must be a power of 2.";
+            bool found = false;
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("page_size", "513");
+            }
+            try
+            {
+                Env env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
+                    beast::severities::kWarning);
+                fail();
+            }
+            catch (...)
+            {
+                BEAST_EXPECT(found);
+            }
+        }
     }
 
     //--------------------------------------------------------------------------

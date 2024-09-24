@@ -175,7 +175,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
             }
 
             {
-                //#synchronous Valid values : off, normal, full, extra
+                // #synchronous Valid values : off, normal, full, extra
                 if (set(synchronous, "synchronous", sqlite) &&
                     !safety_level.empty())
                 {
@@ -236,6 +236,36 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
         }();
     }
     setup.useGlobalPragma = true;
+
+    auto setPragma =
+        [](std::string& pragma, std::string const& key, int64_t value) {
+            pragma = "PRAGMA " + key + "=" + std::to_string(value) + ";";
+        };
+
+    // Lgr Pragma
+    setPragma(setup.lgrPragma[0], "journal_size_limit", 1582080);
+
+    // TX Pragma
+    int64_t page_size = 4096;
+    int64_t journal_size_limit = 1582080;
+    if (c.exists("sqlite"))
+    {
+        auto& s = c.section("sqlite");
+        set(journal_size_limit, "journal_size_limit", s);
+        set(page_size, "page_size", s);
+        if (page_size < 512 || page_size > 65536)
+            Throw<std::runtime_error>(
+                "Invalid page_size. Must be between 512 and 65536.");
+
+        if (page_size & (page_size - 1))
+            Throw<std::runtime_error>(
+                "Invalid page_size. Must be a power of 2.");
+    }
+
+    setPragma(setup.txPragma[0], "page_size", page_size);
+    setPragma(setup.txPragma[1], "journal_size_limit", journal_size_limit);
+    setPragma(setup.txPragma[2], "max_page_count", 4294967294);
+    setPragma(setup.txPragma[3], "mmap_size", 17179869184);
 
     return setup;
 }

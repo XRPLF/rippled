@@ -27,7 +27,7 @@ makeWalletDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
     // wallet database
     return std::make_unique<DatabaseCon>(
-        setup, WalletDBName, std::array<char const*, 0>(), WalletDBInit, j);
+        setup, WalletDBName, std::array<std::string, 0>(), WalletDBInit, j);
 }
 
 std::unique_ptr<DatabaseCon>
@@ -38,7 +38,7 @@ makeTestWalletDB(
 {
     // wallet database
     return std::make_unique<DatabaseCon>(
-        setup, dbname.data(), std::array<char const*, 0>(), WalletDBInit, j);
+        setup, dbname.data(), std::array<std::string, 0>(), WalletDBInit, j);
 }
 
 void
