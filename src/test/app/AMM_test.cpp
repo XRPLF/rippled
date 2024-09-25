@@ -1312,6 +1312,7 @@ private:
 
         // Equal deposit: 1000000 tokens, 10% of the current pool
         testAMM([&](AMM& ammAlice, Env& env) {
+            auto const baseFee = env.current()->fees().base;
             ammAlice.deposit(carol, 1'000'000);
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11'000), USD(11'000), IOUAmount{11'000'000, 0}));
@@ -1319,7 +1320,7 @@ private:
             BEAST_EXPECT(expectLine(env, carol, USD(29'000)));
             // 30,000 less deposited 1,000 and 10 drops tx fee
             BEAST_EXPECT(
-                expectLedgerEntryRoot(env, carol, XRPAmount{28'999'999'990}));
+                expectLedgerEntryRoot(env, carol, XRPAmount{29'000'000'000 - baseFee}));
         });
 
         // equal asset deposit: unit test to exercise the rounding-down of
@@ -3295,12 +3296,14 @@ private:
         // preflight tests
         {
             Env env(*this, features);
+            auto const baseFee = env.current()->fees().base;
+
             fund(env, gw, {alice, bob}, XRP(2'000), {USD(2'000)});
             AMM amm(env, gw, XRP(1'000), USD(1'010), false, 1'000);
             Json::Value tx = amm.bid({.account = alice, .bidMin = 500});
 
             {
-                auto jtx = env.jt(tx, seq(1), fee(10));
+                auto jtx = env.jt(tx, seq(1), fee(baseFee));
                 env.app().config().features.erase(featureAMM);
                 PreflightContext pfctx(
                     env.app(),
@@ -3314,7 +3317,7 @@ private:
             }
 
             {
-                auto jtx = env.jt(tx, seq(1), fee(10));
+                auto jtx = env.jt(tx, seq(1), fee(baseFee));
                 jtx.jv["TxnSignature"] = "deadbeef";
                 jtx.stx = env.ust(jtx);
                 PreflightContext pfctx(
@@ -3328,7 +3331,7 @@ private:
             }
 
             {
-                auto jtx = env.jt(tx, seq(1), fee(10));
+                auto jtx = env.jt(tx, seq(1), fee(baseFee));
                 jtx.jv["Asset2"]["currency"] = "XRP";
                 jtx.jv["Asset2"].removeMember("issuer");
                 jtx.stx = env.ust(jtx);
@@ -3387,11 +3390,12 @@ private:
 
         // Can't pay into AMM with escrow.
         testAMM([&](AMM& ammAlice, Env& env) {
+            auto const baseFee = env.current()->fees().base;
             env(escrow(carol, ammAlice.ammAccount(), XRP(1)),
                 condition(cb1),
                 finish_time(env.now() + 1s),
                 cancel_time(env.now() + 2s),
-                fee(1'500),
+                fee(baseFee * 150),
                 ter(tecNO_PERMISSION));
         });
 

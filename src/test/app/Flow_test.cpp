@@ -1397,7 +1397,7 @@ struct Flow_test : public beast::unit_test::suite
         env(pay(alice, bob, XRP(1000)), ticket::use(ticketSeq));
         env.close();
         env.require(balance(bob, XRP(1000)));
-        env.require(balance(alice, XRP(9000) - drops(20)));
+        env.require(balance(alice, XRP(9000) - (env.current()->fees().base * 2)));
     }
 
     void
