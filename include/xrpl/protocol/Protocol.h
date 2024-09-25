@@ -102,7 +102,7 @@ std::size_t constexpr maxDomainLength = 256;
 std::size_t constexpr maxCredentialURILength = 256;
 
 /** The maximum length of a CredentialType inside a Credential */
-std::size_t constexpr maxCredentialTypeLength = 32;
+std::size_t constexpr maxCredentialTypeLength = 64;
 
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;
