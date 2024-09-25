@@ -401,12 +401,9 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
     if (!sleDst)
         return tecNO_DST;
 
+    AccountID const src = ctx.tx[sfAccount];
     if (ctx.tx.isFieldPresent(sfCredentialIDs))
     {
-        AccountID const src = ctx.tx[sfAccount];
-        if (!(sleDst->getFlags() & lsfDepositAuth) || (src == dst))
-            return tecNO_PERMISSION;
-
         STArray authCreds;
         for (auto const& h : ctx.tx.getFieldV256(sfCredentialIDs))
         {
@@ -431,14 +428,19 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
                 return tecBAD_CREDENTIALS;
             }
 
-            auto credential = STObject::makeInnerObject(sfCredential);
-            credential.setAccountID(sfIssuer, sleCred->getAccountID(sfIssuer));
-            credential.setFieldVL(
-                sfCredentialType, sleCred->getFieldVL(sfCredentialType));
-            authCreds.push_back(std::move(credential));
+            if ((sleDst->getFlags() & lsfDepositAuth) && (src != dst))
+            {
+                auto credential = STObject::makeInnerObject(sfCredential);
+                credential.setAccountID(
+                    sfIssuer, sleCred->getAccountID(sfIssuer));
+                credential.setFieldVL(
+                    sfCredentialType, sleCred->getFieldVL(sfCredentialType));
+                authCreds.push_back(std::move(credential));
+            }
         }
 
-        if (!ctx.view.exists(keylet::depositPreauth(dst, authCreds)))
+        if (((sleDst->getFlags() & lsfDepositAuth) && (src != dst)) &&
+            !ctx.view.exists(keylet::depositPreauth(dst, authCreds)))
         {
             JLOG(ctx.j.trace()) << "DepositPreauth doesn't exist";
             return tecNO_PERMISSION;

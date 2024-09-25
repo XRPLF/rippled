@@ -93,9 +93,8 @@ doDepositAuthorized(RPC::JsonContext& context)
     bool const reqAuth = sleDest->getFlags() & lsfDepositAuth;
     bool const credentialsPresent = params.isMember(jss::credentials);
 
-    bool invalidCredentials = false;
     STArray authCreds;
-    if (credentialsPresent && reqAuth)
+    if (credentialsPresent)
     {
         auto const& creds(params[jss::credentials]);
         if (!creds.isArray() || !creds)
@@ -128,28 +127,30 @@ doDepositAuthorized(RPC::JsonContext& context)
 
             std::shared_ptr<SLE const> sleCred =
                 ledger->read(keylet::credential(credH));
-            if (!sleCred || (sleCred->getType() != ltCREDENTIAL))
+            if (!sleCred || (sleCred->getType() != ltCREDENTIAL) ||
+                !(sleCred->getFlags() & lsfAccepted))
             {
-                invalidCredentials = true;
-                break;
+                RPC::inject_error(rpcBAD_CREDENTIALS, result);
+                return result;
             }
 
-            AccountID const subj = sleCred->getAccountID(sfSubject);
             AccountID const iss = sleCred->getAccountID(sfIssuer);
             Blob const credType = sleCred->getFieldVL(sfCredentialType);
 
-            if ((subj != srcID) || !(sleCred->getFlags() & lsfAccepted) ||
-                Credentials::checkExpired(
+            if (Credentials::checkExpired(
                     sleCred, context.app.timeKeeper().now()))
             {
-                invalidCredentials = true;
-                break;
+                RPC::inject_error(rpcBAD_CREDENTIALS, result);
+                return result;
             }
 
-            auto credential = STObject::makeInnerObject(sfCredential);
-            credential.setAccountID(sfIssuer, iss);
-            credential.setFieldVL(sfCredentialType, credType);
-            authCreds.push_back(std::move(credential));
+            if (reqAuth && (srcAcct != dstAcct))
+            {
+                auto credential = STObject::makeInnerObject(sfCredential);
+                credential.setAccountID(sfIssuer, iss);
+                credential.setFieldVL(sfCredentialType, credType);
+                authCreds.push_back(std::move(credential));
+            }
         }
     }
 
@@ -157,21 +158,16 @@ doDepositAuthorized(RPC::JsonContext& context)
     // not set, then the deposit should be fine.
     bool depositAuthorized = true;
 
-    if (credentialsPresent && !reqAuth)
-        depositAuthorized = false;
-    else if ((srcAcct != dstAcct) && reqAuth)
-    {
-        if (credentialsPresent)
-            depositAuthorized = !invalidCredentials &&
-                ledger->exists(keylet::depositPreauth(dstAcct, authCreds));
-        else
-            depositAuthorized =
-                ledger->exists(keylet::depositPreauth(dstAcct, srcAcct));
-    }
+    if (reqAuth && (srcAcct != dstAcct))
+        depositAuthorized = credentialsPresent
+            ? ledger->exists(keylet::depositPreauth(dstAcct, authCreds))
+            : ledger->exists(keylet::depositPreauth(dstAcct, srcAcct));
 
     result[jss::source_account] = params[jss::source_account].asString();
     result[jss::destination_account] =
         params[jss::destination_account].asString();
+    if (credentialsPresent)
+        result[jss::credentials] = params[jss::credentials];
 
     result[jss::deposit_authorized] = depositAuthorized;
     return result;

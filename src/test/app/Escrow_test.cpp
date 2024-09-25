@@ -1567,12 +1567,6 @@ struct Escrow_test : public beast::unit_test::suite
             env(fset(bob, asfDepositAuth), fee(drops(10)));
             env.close();
 
-            // Fail, src == dst and use credentials
-            env(finish(bob, alice, seq),
-                credentials::IDs({credIdx}),
-                fee(1500),
-                ter(tecNO_PERMISSION));
-
             // Fail, credentials doesn’t belong to
             env(finish(dillon, alice, seq),
                 credentials::IDs({credIdx}),

@@ -194,6 +194,7 @@ CONSTRUCT_TYPED_SFIELD(sfXChainAccountCreateCount, "XChainAccountCreateCount", U
 CONSTRUCT_TYPED_SFIELD(sfXChainAccountClaimCount,  "XChainAccountClaimCount",  UINT64, 22);
 CONSTRUCT_TYPED_SFIELD(sfAssetPrice,               "AssetPrice",               UINT64, 23);
 CONSTRUCT_TYPED_SFIELD(sfIssuerNode,               "IssuerNode",               UINT64, 24);
+CONSTRUCT_TYPED_SFIELD(sfSubjectNode,              "SubjectNode",              UINT64, 25);
 
 // 128-bit
 CONSTRUCT_TYPED_SFIELD(sfEmailHash,             "EmailHash",            UINT128,    1);

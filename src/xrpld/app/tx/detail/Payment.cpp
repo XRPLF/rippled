@@ -313,12 +313,9 @@ Payment::preclaim(PreclaimContext const& ctx)
     {
         // Don't check for minimal balance with credentials provided.
         // The amendement rules have already been checked in
-        // preflight()
+        // preflight().
 
         auto const src = ctx.tx[sfAccount];
-        if (!(sleDst && sleDst->getFlags() & lsfDepositAuth) ||
-            (src == uDstAccountID))
-            return tecNO_PERMISSION;
 
         STArray authCreds;
         for (auto const& h : ctx.tx.getFieldV256(sfCredentialIDs))
@@ -344,14 +341,21 @@ Payment::preclaim(PreclaimContext const& ctx)
                 return tecBAD_CREDENTIALS;
             }
 
-            auto credential = STObject::makeInnerObject(sfCredential);
-            credential.setAccountID(sfIssuer, sleCred->getAccountID(sfIssuer));
-            credential.setFieldVL(
-                sfCredentialType, sleCred->getFieldVL(sfCredentialType));
-            authCreds.push_back(std::move(credential));
+            if ((sleDst && (sleDst->getFlags() & lsfDepositAuth)) &&
+                (src != uDstAccountID))
+            {
+                auto credential = STObject::makeInnerObject(sfCredential);
+                credential.setAccountID(
+                    sfIssuer, sleCred->getAccountID(sfIssuer));
+                credential.setFieldVL(
+                    sfCredentialType, sleCred->getFieldVL(sfCredentialType));
+                authCreds.push_back(std::move(credential));
+            }
         }
 
-        if (!ctx.view.exists(keylet::depositPreauth(uDstAccountID, authCreds)))
+        if (((sleDst && (sleDst->getFlags() & lsfDepositAuth)) &&
+             (src != uDstAccountID)) &&
+            !ctx.view.exists(keylet::depositPreauth(uDstAccountID, authCreds)))
         {
             JLOG(ctx.j.trace()) << "DepositPreauth doesn't exist";
             return tecNO_PERMISSION;

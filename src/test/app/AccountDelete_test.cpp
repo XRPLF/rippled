@@ -945,12 +945,11 @@ public:
 
             auto const acctDelFee{drops(env.current()->fees().increment)};
 
-            // becky use credentials but lsfDepositAuth not set and can't
-            // delete account
+            // becky use credentials but they aren't accepted
             env(acctdelete(becky, alice),
                 credentials::IDs({credIdx}),
                 fee(acctDelFee),
-                ter(tecNO_PERMISSION));
+                ter(tecBAD_CREDENTIALS));
             env.close();
 
             {

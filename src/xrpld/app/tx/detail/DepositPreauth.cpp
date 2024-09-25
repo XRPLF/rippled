@@ -138,14 +138,6 @@ DepositPreauth::preflight(PreflightContext const& ctx)
                 return temINVALID_ACCOUNT_ID;
             }
 
-            // An account may not preauthorize itself.
-            if (target == account)
-            {
-                JLOG(j.trace()) << "Malformed transaction: Attempting to "
-                                   "DepositPreauth self.";
-                return temCANNOT_PREAUTH_SELF;
-            }
-
             auto const ct = o[sfCredentialType];
             if (ct.empty() || (ct.size() > maxCredentialTypeLength))
             {
@@ -287,7 +279,7 @@ DepositPreauth::doApply()
         STArray& arr = *static_cast<STArray*>(pArr);
         arr.reserve(authCred.size());
 
-        // eleminate duplicates
+        // eliminate duplicates
         std::unordered_set<uint256, HashUint256> hashes;
         for (auto const& o : authCred)
         {

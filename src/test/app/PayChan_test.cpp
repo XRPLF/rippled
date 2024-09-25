@@ -867,11 +867,6 @@ struct PayChan_test : public beast::unit_test::suite
 
             auto const delta = XRP(500).value();
 
-            // Fail, bob's lsfDepositAuth flag is NOT set.
-            env(claim(alice, chan, delta, delta),
-                credentials::IDs({credBadIdx}),
-                ter(tecNO_PERMISSION));
-
             {  // create credentials
                 auto jv = credentials::createIssuer(alice, carol, credType);
                 uint32_t const t = env.now().time_since_epoch().count() + 100;
@@ -889,11 +884,6 @@ struct PayChan_test : public beast::unit_test::suite
             env(fset(bob, asfDepositAuth));
             env.close();
 
-            // Fail, src == dst doesn't need credentials
-            env(claim(bob, chan, delta, delta),
-                credentials::IDs({credIdx}),
-                ter(tecNO_PERMISSION));
-
             // Fail, credentials doesn’t belong to
             env(claim(dillon, chan, delta, delta),
                 credentials::IDs({credIdx}),
@@ -908,6 +898,7 @@ struct PayChan_test : public beast::unit_test::suite
             env(credentials::accept(alice, carol, credType));
             env.close();
 
+            // Fail, no depositPreauth object
             env(claim(alice, chan, delta, delta),
                 credentials::IDs({credIdx}),
                 ter(tecNO_PERMISSION));

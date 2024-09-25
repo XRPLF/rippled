@@ -241,9 +241,6 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     // Check whether the destination account requires deposit authorization.
     if (ctx.tx.isFieldPresent(sfCredentialIDs))
     {
-        if (!(sleDst->getFlags() & lsfDepositAuth))
-            return tecNO_PERMISSION;
-
         STArray authCreds;
         for (auto const& h : ctx.tx.getFieldV256(sfCredentialIDs))
         {
@@ -268,14 +265,19 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
                 return tecBAD_CREDENTIALS;
             }
 
-            auto credential = STObject::makeInnerObject(sfCredential);
-            credential.setAccountID(sfIssuer, sleCred->getAccountID(sfIssuer));
-            credential.setFieldVL(
-                sfCredentialType, sleCred->getFieldVL(sfCredentialType));
-            authCreds.push_back(std::move(credential));
+            if (sleDst->getFlags() & lsfDepositAuth)
+            {
+                auto credential = STObject::makeInnerObject(sfCredential);
+                credential.setAccountID(
+                    sfIssuer, sleCred->getAccountID(sfIssuer));
+                credential.setFieldVL(
+                    sfCredentialType, sleCred->getFieldVL(sfCredentialType));
+                authCreds.push_back(std::move(credential));
+            }
         }
 
-        if (!ctx.view.exists(keylet::depositPreauth(dst, authCreds)))
+        if ((sleDst->getFlags() & lsfDepositAuth) &&
+            !ctx.view.exists(keylet::depositPreauth(dst, authCreds)))
         {
             JLOG(ctx.j.trace()) << "DepositPreauth doesn't exist";
             return tecNO_PERMISSION;

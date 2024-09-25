@@ -495,8 +495,6 @@ PayChanClaim::preclaim(PreclaimContext const& ctx)
             return tecNO_DST;
 
         AccountID const src = ctx.tx[sfAccount];
-        if (!(sleDst->getFlags() & lsfDepositAuth) || (src == dst))
-            return tecNO_PERMISSION;
 
         STArray authCreds;
         for (auto const& h : ctx.tx.getFieldV256(sfCredentialIDs))
@@ -529,7 +527,8 @@ PayChanClaim::preclaim(PreclaimContext const& ctx)
             authCreds.push_back(std::move(credential));
         }
 
-        if (!ctx.view.exists(keylet::depositPreauth(dst, authCreds)))
+        if (((sleDst->getFlags() & lsfDepositAuth) && (src != dst)) &&
+            !ctx.view.exists(keylet::depositPreauth(dst, authCreds)))
         {
             JLOG(ctx.j.trace()) << "DepositPreauth doesn't exist";
             return tecNO_PERMISSION;

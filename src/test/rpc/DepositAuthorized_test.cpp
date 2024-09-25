@@ -374,9 +374,10 @@ public:
 
             auto jv =
                 env.rpc("json", "deposit_authorized", args.toStyledString());
+
             auto const& result{jv[jss::result]};
-            BEAST_EXPECT(result[jss::status] == jss::success);
-            BEAST_EXPECT(result[jss::deposit_authorized] == false);
+            BEAST_EXPECT(result[jss::status] == jss::error);
+            BEAST_EXPECT(result[jss::error_code] == rpcBAD_CREDENTIALS);
         }
 
         {
@@ -389,8 +390,8 @@ public:
                 depositAuthArgs(alice, becky, "validated", {credIdx})
                     .toStyledString());
             auto const& result{jv[jss::result]};
-            BEAST_EXPECT(result[jss::status] == jss::success);
-            BEAST_EXPECT(result[jss::deposit_authorized] == false);
+            BEAST_EXPECT(result[jss::status] == jss::error);
+            BEAST_EXPECT(result[jss::error_code] == rpcBAD_CREDENTIALS);
         }
 
         // alice accept credentials
@@ -418,7 +419,7 @@ public:
                     .toStyledString());
             auto const& result{jv[jss::result]};
             BEAST_EXPECT(result[jss::status] == jss::success);
-            BEAST_EXPECT(result[jss::deposit_authorized] == false);
+            BEAST_EXPECT(result[jss::deposit_authorized] == true);
         }
 
         {
@@ -470,8 +471,8 @@ public:
                         .toStyledString());
 
                 auto const& result{jv[jss::result]};
-                BEAST_EXPECT(result[jss::status] == jss::success);
-                BEAST_EXPECT(result[jss::deposit_authorized] == false);
+                BEAST_EXPECT(result[jss::status] == jss::error);
+                BEAST_EXPECT(result[jss::error_code] == rpcBAD_CREDENTIALS);
             }
         }
     }

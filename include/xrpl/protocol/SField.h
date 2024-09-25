@@ -468,6 +468,7 @@ extern SF_UINT64 const sfXChainAccountCreateCount;
 extern SF_UINT64 const sfXChainAccountClaimCount;
 extern SF_UINT64 const sfAssetPrice;
 extern SF_UINT64 const sfIssuerNode;
+extern SF_UINT64 const sfSubjectNode;
 
 // 128-bit
 extern SF_UINT128 const sfEmailHash;

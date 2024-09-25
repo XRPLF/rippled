@@ -172,11 +172,11 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
 TER
 CredentialCreate::doApply()
 {
-    auto const sleOwner = view().peek(keylet::account(account_));
+    auto const sleIssuer = view().peek(keylet::account(account_));
 
     {
         STAmount const reserve{view().fees().accountReserve(
-            sleOwner->getFieldU32(sfOwnerCount) + 1)};
+            sleIssuer->getFieldU32(sfOwnerCount) + 1)};
         if (mPriorBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
@@ -210,22 +210,37 @@ CredentialCreate::doApply()
     if (ctx_.tx.isFieldPresent(sfURI))
         sleCred->setFieldVL(sfURI, ctx_.tx.getFieldVL(sfURI));
 
+    if (subject == issuer)
+        sleCred->setFieldU32(sfFlags, lsfAccepted);
+
+    {
+        auto const page = view().dirInsert(
+            keylet::ownerDir(issuer), kCred, describeOwnerDir(issuer));
+        JLOG(j_.trace()) << "Adding Credential to owner directory "
+                         << to_string(kCred.key) << ": "
+                         << (page ? "success" : "failure");
+        if (!page)
+            return tecDIR_FULL;
+        sleCred->setFieldU64(sfIssuerNode, *page);
+
+        adjustOwnerCount(view(), sleIssuer, 1, j_);
+        view().update(sleIssuer);
+    }
+
+    if (subject != issuer)
+    {
+        auto const page = view().dirInsert(
+            keylet::ownerDir(subject), kCred, describeOwnerDir(subject));
+        JLOG(j_.trace()) << "Adding Credential to owner directory "
+                         << to_string(kCred.key) << ": "
+                         << (page ? "success" : "failure");
+        if (!page)
+            return tecDIR_FULL;
+        sleCred->setFieldU64(sfSubjectNode, *page);
+        view().update(view().peek(keylet::account(subject)));
+    }
+
     view().insert(sleCred);
-    auto const page = view().dirInsert(
-        keylet::ownerDir(account_), kCred, describeOwnerDir(account_));
-
-    JLOG(j_.trace()) << "Adding Credential to owner directory "
-                     << to_string(kCred.key) << ": "
-                     << (page ? "success" : "failure");
-
-    if (!page)
-        return tecDIR_FULL;
-
-    sleCred->setFieldU64(sfOwnerNode, *page);
-    sleCred->setFieldU64(sfIssuerNode, *page);
-
-    adjustOwnerCount(view(), sleOwner, 1, j_);
-    view().update(sleOwner);
 
     return tesSUCCESS;
 }
@@ -288,10 +303,11 @@ CredentialDelete::deleteSLE(
     if (!sle)
         return tecNO_ENTRY;
 
-    auto delSLE = [&view, &sle, j](
-                      AccountID const& owner, SField const& node) -> TER {
-        auto const sleOwner = view.peek(keylet::account(owner));
-        if (!sleOwner)
+    auto delSLE =
+        [&view, &sle, j](
+            AccountID const& account, SField const& node, bool isOwner) -> TER {
+        auto const sleAccount = view.peek(keylet::account(account));
+        if (!sleAccount)
         {
             JLOG(j.fatal()) << "Internal error: can't retrieve Owner account.";
             return tecINTERNAL;
@@ -299,25 +315,32 @@ CredentialDelete::deleteSLE(
 
         // Remove object from owner directory
         std::uint64_t const page = sle->getFieldU64(node);
-        if (!view.dirRemove(keylet::ownerDir(owner), page, sle->key(), false))
+        if (!view.dirRemove(keylet::ownerDir(account), page, sle->key(), false))
         {
             JLOG(j.fatal()) << "Unable to delete Credential from owner.";
             return tefBAD_LEDGER;
         }
 
-        adjustOwnerCount(view, sleOwner, -1, j);
-        view.update(sleOwner);
+        if (isOwner)
+        {
+            adjustOwnerCount(view, sleAccount, -1, j);
+            view.update(sleAccount);
+        }
 
         return tesSUCCESS;
     };
 
-    auto err = delSLE(sle->getAccountID(sfIssuer), sfIssuerNode);
+    auto const issuer = sle->getAccountID(sfIssuer);
+    auto const subject = sle->getAccountID(sfSubject);
+    bool const accepted = sle->getFlags() & lsfAccepted;
+
+    auto err = delSLE(issuer, sfIssuerNode, !accepted || (subject == issuer));
     if (!isTesSuccess(err))
         return err;
 
-    if (sle->getFlags() & lsfAccepted)
+    if (subject != issuer)
     {
-        err = delSLE(sle->getAccountID(sfSubject), sfOwnerNode);
+        err = delSLE(subject, sfSubjectNode, accepted);
         if (!isTesSuccess(err))
             return err;
     }
@@ -434,20 +457,11 @@ CredentialAccept::doApply()
         return tecEXPIRED;
     }
 
-    {
-        // Share ownership between issuer and subject
-        auto const page = view().dirInsert(
-            keylet::ownerDir(subject), kCred, describeOwnerDir(subject));
-        JLOG(j_.trace()) << "Moving Credential to subject directory "
-                         << to_string(kCred.key) << ": "
-                         << (page ? "success" : "failure");
-        if (!page)
-            return tecDIR_FULL;
-        sleCred->setFieldU64(sfOwnerNode, *page);
-    }
-
     sleCred->setFieldU32(sfFlags, lsfAccepted);
     view().update(sleCred);
+
+    adjustOwnerCount(view(), sleIss, -1, j_);
+    view().update(sleIss);
 
     adjustOwnerCount(view(), sleSubj, 1, j_);
     view().update(sleSubj);

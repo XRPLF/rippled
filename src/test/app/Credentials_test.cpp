@@ -81,10 +81,11 @@ struct Credentials_test : public beast::unit_test::suite
 
             Account const iss{"issuer"};
             Account const subj{"subject"};
+            Account const other{"other"};
 
             auto const kCred = credKL(subj, iss, credType);
 
-            env.fund(XRP(5000), subj, iss);
+            env.fund(XRP(5000), subj, iss, other);
             env.close();
 
             // Test Create credentials
@@ -92,7 +93,6 @@ struct Credentials_test : public beast::unit_test::suite
                 credentials::uri(uri));
             env.close();
             {
-                BEAST_EXPECT(ownerCnt(env, iss) == 1);
                 auto const sleCred = env.le(kCred);
                 BEAST_EXPECT(static_cast<bool>(sleCred));
                 if (!sleCred)
@@ -101,9 +101,6 @@ struct Credentials_test : public beast::unit_test::suite
                 BEAST_EXPECT(sleCred->getAccountID(sfSubject) == subj.id());
                 BEAST_EXPECT(sleCred->getAccountID(sfIssuer) == iss.id());
                 BEAST_EXPECT(!(sleCred->getFieldU32(sfFlags) & lsfAccepted));
-                BEAST_EXPECT(
-                    sleCred->getFieldU64(sfIssuerNode) ==
-                    sleCred->getFieldU64(sfOwnerNode));
                 BEAST_EXPECT(ownerCnt(env, iss) == 1);
                 BEAST_EXPECT(!ownerCnt(env, subj));
                 BEAST_EXPECT(checkVL(sleCred, sfCredentialType, credType));
@@ -124,7 +121,6 @@ struct Credentials_test : public beast::unit_test::suite
             {
                 // check switching owner of the credentials from isser to
                 // subject
-                BEAST_EXPECT(ownerCnt(env, subj) == 1);
                 auto const sleCred = env.le(kCred);
                 BEAST_EXPECT(static_cast<bool>(sleCred));
                 if (!sleCred)
@@ -132,7 +128,7 @@ struct Credentials_test : public beast::unit_test::suite
 
                 BEAST_EXPECT(sleCred->getAccountID(sfSubject) == subj.id());
                 BEAST_EXPECT(sleCred->getAccountID(sfIssuer) == iss.id());
-                BEAST_EXPECT(ownerCnt(env, iss) == 1);
+                BEAST_EXPECT(!ownerCnt(env, iss));
                 BEAST_EXPECT(ownerCnt(env, subj) == 1);
                 BEAST_EXPECT(checkVL(sleCred, sfCredentialType, credType));
                 BEAST_EXPECT(checkVL(sleCred, sfURI, uri));
@@ -152,6 +148,121 @@ struct Credentials_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     jle.isObject() && jle.isMember(jss::result) &&
                     jle[jss::result].isMember(jss::error));
+            }
+
+            {
+                testcase("Credentials for themself.");
+
+                auto const kCred = credKL(iss, iss, credType);
+
+                env(credentials::createIssuer(iss, iss, credType),
+                    credentials::uri(uri));
+                env.close();
+                {
+                    auto const sleCred = env.le(kCred);
+                    BEAST_EXPECT(static_cast<bool>(sleCred));
+                    if (!sleCred)
+                        return;
+
+                    BEAST_EXPECT(sleCred->getAccountID(sfSubject) == iss.id());
+                    BEAST_EXPECT(sleCred->getAccountID(sfIssuer) == iss.id());
+                    BEAST_EXPECT((sleCred->getFieldU32(sfFlags) & lsfAccepted));
+                    BEAST_EXPECT(
+                        sleCred->getFieldU64(sfIssuerNode) ==
+                        sleCred->getFieldU64(sfSubjectNode));
+                    BEAST_EXPECT(ownerCnt(env, iss) == 1);
+                    BEAST_EXPECT(checkVL(sleCred, sfCredentialType, credType));
+                    BEAST_EXPECT(checkVL(sleCred, sfURI, uri));
+                    auto const jle = credentials::ledgerEntryCredential(
+                        env, iss, iss, credType);
+                    BEAST_EXPECT(
+                        jle.isObject() && jle.isMember(jss::result) &&
+                        !jle[jss::result].isMember(jss::error) &&
+                        jle[jss::result].isMember(jss::node) &&
+                        jle[jss::result][jss::node].isMember(
+                            "LedgerEntryType") &&
+                        jle[jss::result][jss::node]["LedgerEntryType"] ==
+                            jss::Credential);
+                }
+
+                env(credentials::del(iss, iss, iss, credType));
+                env.close();
+                {
+                    BEAST_EXPECT(!env.le(kCred));
+                    BEAST_EXPECT(!ownerCnt(env, iss));
+
+                    // check no credential exists anymore
+                    auto const jle = credentials::ledgerEntryCredential(
+                        env, iss, iss, credType);
+                    BEAST_EXPECT(
+                        jle.isObject() && jle.isMember(jss::result) &&
+                        jle[jss::result].isMember(jss::error));
+                }
+            }
+
+            {
+                testcase("Delete issuer");
+
+                env(credentials::createIssuer(subj, iss, credType));
+                env.close();
+
+                // delete issuer
+                {
+                    int const delta = env.seq(iss) + 255;
+                    for (int i = 0; i < delta; ++i)
+                        env.close();
+                    auto const acctDelFee{
+                        drops(env.current()->fees().increment)};
+                    env(acctdelete(iss, other), fee(acctDelFee));
+                    env.close();
+                }
+
+                // check credentials deleted too
+                {
+                    BEAST_EXPECT(!env.le(kCred));
+                    BEAST_EXPECT(!ownerCnt(env, subj));
+
+                    // check no credential exists anymore
+                    auto const jle = credentials::ledgerEntryCredential(
+                        env, subj, iss, credType);
+                    BEAST_EXPECT(
+                        jle.isObject() && jle.isMember(jss::result) &&
+                        jle[jss::result].isMember(jss::error));
+                }
+
+                // restore issuer
+                env.fund(XRP(5000), iss);
+                env.close();
+
+                testcase("Delete subject");
+                env(credentials::createIssuer(subj, iss, credType));
+                env.close();
+                env(credentials::accept(subj, iss, credType));
+                env.close();
+
+                // delete subject
+                {
+                    int const delta = env.seq(subj) + 255;
+                    for (int i = 0; i < delta; ++i)
+                        env.close();
+                    auto const acctDelFee{
+                        drops(env.current()->fees().increment)};
+                    env(acctdelete(subj, other), fee(acctDelFee));
+                    env.close();
+                }
+
+                // check credentials deleted too
+                {
+                    BEAST_EXPECT(!env.le(kCred));
+                    BEAST_EXPECT(!ownerCnt(env, iss));
+
+                    // check no credential exists anymore
+                    auto const jle = credentials::ledgerEntryCredential(
+                        env, subj, iss, credType);
+                    BEAST_EXPECT(
+                        jle.isObject() && jle.isMember(jss::result) &&
+                        jle[jss::result].isMember(jss::error));
+                }
             }
         }
 

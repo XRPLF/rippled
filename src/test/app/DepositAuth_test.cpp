@@ -877,11 +877,11 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env.close();
 
                 {
-                    // Don't use credentials for yourself
+                    // Don't use invalids credentials
                     env(finish(bob, alice, seq1),
                         credentials::IDs({credIdx}),
                         fee(1500),
-                        ter(tecNO_PERMISSION));
+                        ter(tecBAD_CREDENTIALS));
                     env.close();
                 }
                 {
@@ -897,6 +897,77 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     // john is pre-authorized and can finish escrow for bob
                     env(finish(john, alice, seq1),
                         credentials::IDs({credIdx}),
+                        fee(1500));
+                    env.close();
+                }
+            }
+        }
+
+        {
+            Env env(*this);
+            Account const iss{"issuer"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const john("john");
+
+            env.fund(XRP(5000), iss, alice, bob, john);
+            env.close();
+
+            {
+                testcase("Escrow with credentials without depositPreauth");
+                using namespace std::chrono;
+
+                const char credType2[] = "fghijk";
+
+                env(credentials::createIssuer(bob, iss, credType2));
+                env.close();
+                env(credentials::accept(bob, iss, credType2));
+                env.close();
+
+                env(credentials::createIssuer(john, iss, credType));
+                env.close();
+                env(credentials::accept(john, iss, credType));
+                env.close();
+
+                // Get the index of the credentials
+                auto const credIdxBob =
+                    credentials::ledgerEntryCredential(
+                        env, bob, iss, credType2)[jss::result][jss::index]
+                        .asString();
+                auto const credIdxJohn =
+                    credentials::ledgerEntryCredential(
+                        env, john, iss, credType)[jss::result][jss::index]
+                        .asString();
+
+                {
+                    auto const seq1 = env.seq(alice);
+                    env(escrow(alice, bob, XRP(1000)),
+                        finish_time(env.now() + 1s));
+                    env.close();
+
+                    // Use any valid credentials without depositPreauth
+                    // requirements
+                    env(finish(john, alice, seq1),
+                        credentials::IDs({credIdxJohn}),
+                        fee(1500));
+                    env.close();
+                }
+
+                {
+                    auto const seq1 = env.seq(alice);
+                    env(escrow(alice, bob, XRP(1000)),
+                        finish_time(env.now() + 1s));
+                    env.close();
+
+                    // Bob require preauthorization
+                    env(fset(bob, asfDepositAuth), fee(drops(10)));
+                    env.close();
+                    env(deposit::authCredentials(bob, {{iss, credType}}));
+                    env.close();
+
+                    // Use any valid credentials without if src == dst
+                    env(finish(bob, alice, seq1),
+                        credentials::IDs({credIdxBob}),
                         fee(1500));
                     env.close();
                 }
@@ -954,12 +1025,6 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 arr.append(std::move(j2));
 
                 env(jv, ter(temINVALID_ACCOUNT_ID));
-            }
-
-            {
-                // try preauth itself
-                auto jv = deposit::authCredentials(bob, {{bob, credType}});
-                env(jv, ter(temCANNOT_PREAUTH_SELF));
             }
 
             {
@@ -1069,10 +1134,9 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 jCred[jss::result][jss::index].asString();
 
             {
-                // Fail as destination didn't enable preauthorization
-                env(pay(alice, bob, XRP(100)),
-                    credentials::IDs({credIdx}),
-                    ter(tecNO_PERMISSION));
+                // Success as destination didn't enable preauthorization so
+                // valid credentials will not fail
+                env(pay(alice, bob, XRP(100)), credentials::IDs({credIdx}));
             }
 
             // Bob require preauthorization
