@@ -118,20 +118,6 @@ SetSubscription::preclaim(PreclaimContext const& ctx)
                                   "owner of the subscription.";
             return tecNO_PERMISSION;
         }
-
-        if (ctx.tx.isFieldPresent(sfExpiration))
-        {
-            auto const currentTime =
-                ctx.view.info().parentCloseTime.time_since_epoch().count();
-            auto const expiration = ctx.tx.getFieldU32(sfExpiration);
-
-            if (expiration < currentTime)
-            {
-                JLOG(ctx.j.warn())
-                    << "SetSubscription: The expiration time is in the past.";
-                return temBAD_EXPIRATION;
-            }
-        }
     }
     else
     {
@@ -154,41 +140,6 @@ SetSubscription::preclaim(PreclaimContext const& ctx)
             JLOG(ctx.j.warn())
                 << "SetSubscription: The frequency is less than or equal to 0.";
             return temMALFORMED;
-        }
-
-        auto const currentTime =
-            ctx.view.info().parentCloseTime.time_since_epoch().count();
-        auto startTime = currentTime;
-        auto nextPaymentTime = currentTime;
-        if (ctx.tx.isFieldPresent(sfStartTime))
-        {
-            startTime = ctx.tx.getFieldU32(sfStartTime);
-            nextPaymentTime = startTime;
-            if (startTime < currentTime)
-            {
-                JLOG(ctx.j.warn())
-                    << "SetSubscription: The start time is in the past.";
-                return temMALFORMED;
-            }
-        }
-
-        if (ctx.tx.isFieldPresent(sfExpiration))
-        {
-            auto const expiration = ctx.tx.getFieldU32(sfExpiration);
-
-            if (expiration < currentTime)
-            {
-                JLOG(ctx.j.warn())
-                    << "SetSubscription: The expiration time is in the past.";
-                return temBAD_EXPIRATION;
-            }
-
-            if (expiration < nextPaymentTime)
-            {
-                JLOG(ctx.j.warn()) << "SetSubscription: The expiration time is "
-                                      "less than the next payment time.";
-                return temBAD_EXPIRATION;
-            }
         }
     }
     return tesSUCCESS;
@@ -214,12 +165,30 @@ SetSubscription::doApply()
             keylet::subscription(ctx_.tx.getFieldH256(sfSubscriptionID)));
         sle->setFieldAmount(sfAmount, ctx_.tx.getFieldAmount(sfAmount));
         if (ctx_.tx.isFieldPresent(sfExpiration))
+        {
+            auto const currentTime =
+                sb.info().parentCloseTime.time_since_epoch().count();
+            auto const expiration = ctx_.tx.getFieldU32(sfExpiration);
+
+            if (expiration < currentTime)
+            {
+                JLOG(ctx_.journal.warn())
+                    << "SetSubscription: The expiration time is in the past.";
+                return temBAD_EXPIRATION;
+            }
+
             sle->setFieldU32(sfExpiration, ctx_.tx.getFieldU32(sfExpiration));
+        }
 
         sb.update(sle);
     }
     else
     {
+        auto const currentTime =
+            sb.info().parentCloseTime.time_since_epoch().count();
+        auto startTime = currentTime;
+        auto nextPaymentTime = currentTime;
+
         // create
         {
             auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
@@ -241,13 +210,38 @@ SetSubscription::doApply()
         sle->setAccountID(sfDestination, dest);
         sle->setFieldAmount(sfAmount, ctx_.tx.getFieldAmount(sfAmount));
         sle->setFieldU32(sfFrequency, ctx_.tx.getFieldU32(sfFrequency));
-        auto nextPaymentTime =
-            sb.info().parentCloseTime.time_since_epoch().count();
         if (ctx_.tx.isFieldPresent(sfStartTime))
-            nextPaymentTime = ctx_.tx.getFieldU32(sfStartTime);
+        {
+            startTime = ctx_.tx.getFieldU32(sfStartTime);
+            nextPaymentTime = startTime;
+            if (startTime < currentTime)
+            {
+                JLOG(ctx_.journal.warn())
+                    << "SetSubscription: The start time is in the past.";
+                return temMALFORMED;
+            }
+        }
+        
         sle->setFieldU32(sfNextPaymentTime, nextPaymentTime);
         if (ctx_.tx.isFieldPresent(sfExpiration))
-            sle->setFieldU32(sfExpiration, ctx_.tx.getFieldU32(sfExpiration));
+        {
+            auto const expiration = ctx_.tx.getFieldU32(sfExpiration);
+
+            if (expiration < currentTime)
+            {
+                JLOG(ctx_.journal.warn())
+                    << "SetSubscription: The expiration time is in the past.";
+                return temBAD_EXPIRATION;
+            }
+
+            if (expiration < nextPaymentTime)
+            {
+                JLOG(ctx_.journal.warn()) << "SetSubscription: The expiration time is "
+                                      "less than the next payment time.";
+                return temBAD_EXPIRATION;
+            }
+            sle->setFieldU32(sfExpiration, expiration);
+        }
 
         {
             auto page = sb.dirInsert(
@@ -326,14 +320,14 @@ CancelSubscription::doApply()
     if (!sb.dirRemove(
             keylet::ownerDir(srcAcct), ownerPage, sleSub->key(), true))
     {
-        JLOG(j_.fatal()) << "Unable to delete check from source.";
+        JLOG(j_.fatal()) << "Unable to delete subscription from source.";
         return tefBAD_LEDGER;
     }
 
     std::uint64_t const destPage{(*sleSub)[sfDestinationNode]};
     if (!sb.dirRemove(keylet::ownerDir(dstAcct), destPage, sleSub->key(), true))
     {
-        JLOG(j_.fatal()) << "Unable to delete check from destination.";
+        JLOG(j_.fatal()) << "Unable to delete subscription from destination.";
         return tefBAD_LEDGER;
     }
 
@@ -364,37 +358,147 @@ ClaimSubscription::preflight(PreflightContext const& ctx)
 TER
 ClaimSubscription::preclaim(PreclaimContext const& ctx)
 {
-    auto sleSub = ctx.view.read(
+    auto const sleSub = ctx.view.read(
         keylet::subscription(ctx.tx.getFieldH256(sfSubscriptionID)));
     if (!sleSub)
     {
         JLOG(ctx.j.warn()) << "ClaimSubscription: Subscription does not exist.";
-        return tecNO_TARGET;
+        return tecNO_ENTRY;
     }
 
-    AccountID const srcAcct{sleSub->getAccountID(sfAccount)};
-    if (!ctx.view.exists(keylet::account(srcAcct)))
+    // Only claim a subscription with this account as the destination.
+    AccountID const dstId = sleSub->getAccountID(sfDestination);
+    if (ctx.tx[sfAccount] != dstId)
     {
-        JLOG(ctx.j.warn()) << "ClaimSubscription: Account does not exist.";
-        return terNO_ACCOUNT;
+        JLOG(ctx.j.warn()) << "ClaimSubscription: Cashing a subscription with "
+                              "wrong Destination.";
+        return tecNO_PERMISSION;
     }
-
-    AccountID const destAcct{sleSub->getAccountID(sfDestination)};
-    if (!ctx.view.exists(keylet::account(destAcct)))
+    AccountID const srcId = sleSub->getAccountID(sfAccount);
+    if (srcId == dstId)
     {
-        JLOG(ctx.j.warn()) << "ClaimSubscription: Account does not exist.";
-        return terNO_ACCOUNT;
+        JLOG(ctx.j.error()) << "ClaimSubscription: Malformed transaction: "
+                               "Cashing subscription to self.";
+        return tecINTERNAL;
     }
-
-    if (ctx.tx.getFieldAmount(sfAmount) > sleSub->getFieldAmount(sfAmount))
     {
-        JLOG(ctx.j.warn()) << "ClaimSubscription: The transaction amount is "
-                              "greater than the subscription amount.";
-        return temBAD_AMOUNT;
+        auto const sleSrc = ctx.view.read(keylet::account(srcId));
+        auto const sleDst = ctx.view.read(keylet::account(dstId));
+        if (!sleSrc || !sleDst)
+        {
+            JLOG(ctx.j.warn())
+                << "ClaimSubscription: source or destination not in ledger";
+            return tecNO_ENTRY;
+        }
+
+        if ((sleDst->getFlags() & lsfRequireDestTag) &&
+            !sleSub->isFieldPresent(sfDestinationTag))
+        {
+            // The tag is basically account-specific information we don't
+            // understand, but we can require someone to fill it in.
+            JLOG(ctx.j.warn()) << "ClaimSubscription: DestinationTag required "
+                                  "in subscription.";
+            return tecDST_TAG_NEEDED;
+        }
     }
 
-    if (ctx.view.info().parentCloseTime.time_since_epoch().count() <
-        sleSub->getFieldU32(sfNextPaymentTime))
+    {
+        STAmount const value = ctx.tx.getFieldAmount(sfAmount);
+        STAmount const sendMax = sleSub->getFieldAmount(sfAmount);
+        Currency const currency{value.getCurrency()};
+        if (currency != sendMax.getCurrency())
+        {
+            JLOG(ctx.j.warn()) << "ClaimSubscription: Subscription claim does "
+                                  "not match subscription currency.";
+            return temMALFORMED;
+        }
+        AccountID const issuerId{value.getIssuer()};
+        if (issuerId != sendMax.getIssuer())
+        {
+            JLOG(ctx.j.warn()) << "ClaimSubscription: Subscription claim does "
+                                  "not match subscription issuer.";
+            return temMALFORMED;
+        }
+        if (value > sendMax)
+        {
+            JLOG(ctx.j.warn()) << "ClaimSubscription: Subscription claim for "
+                                  "more than subscription sendMax.";
+            return tecPATH_PARTIAL;
+        }
+
+        {
+            STAmount availableFunds{accountFunds(
+                ctx.view,
+                sleSub->at(sfAccount),
+                value,
+                fhZERO_IF_FROZEN,
+                ctx.j)};
+
+            if (value > availableFunds)
+            {
+                JLOG(ctx.j.warn()) << "ClaimSubscription: Subscription claimed "
+                                      "for more than owner's balance.";
+                return tecPATH_PARTIAL;
+            }
+        }
+
+        // An issuer can always accept their own currency.
+        if (!value.native() && (value.getIssuer() != dstId))
+        {
+            auto const sleTrustLine =
+                ctx.view.read(keylet::line(dstId, issuerId, currency));
+
+            auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
+            if (!sleIssuer)
+            {
+                JLOG(ctx.j.warn()) << "ClaimSubscription: Can't receive IOUs "
+                                      "from non-existent issuer: "
+                                   << to_string(issuerId);
+                return tecNO_ISSUER;
+            }
+
+            if (sleIssuer->at(sfFlags) & lsfRequireAuth)
+            {
+                if (!sleTrustLine)
+                {
+                    // We can only create a trust line if the issuer does not
+                    // have requireAuth set.
+                    return tecNO_AUTH;
+                }
+
+                // Entries have a canonical representation, determined by a
+                // lexicographical "greater than" comparison employing strict
+                // weak ordering. Determine which entry we need to access.
+                bool const canonical_gt(dstId > issuerId);
+
+                bool const isAuthorized(
+                    sleTrustLine->at(sfFlags) &
+                    (canonical_gt ? lsfLowAuth : lsfHighAuth));
+
+                if (!isAuthorized)
+                {
+                    JLOG(ctx.j.warn()) << "ClaimSubscription: Can't receive "
+                                          "IOUs from issuer without auth.";
+                    return tecNO_AUTH;
+                }
+            }
+
+            // The trustline from source to issuer does not need to
+            // be claimed for freezing, since we already verified that the
+            // source has sufficient non-frozen funds available.
+
+            // However, the trustline from destination to issuer may not
+            // be frozen.
+            if (isFrozen(ctx.view, dstId, currency, issuerId))
+            {
+                JLOG(ctx.j.warn()) << "ClaimSubscription: Claiming a "
+                                      "subscription to a frozen trustline.";
+                return tecFROZEN;
+            }
+        }
+    }
+
+    if (!hasExpired(ctx.view, sleSub->getFieldU32(sfNextPaymentTime)))
     {
         JLOG(ctx.j.warn()) << "ClaimSubscription: The subscription has not "
                               "reached the next payment time.";

@@ -525,7 +525,7 @@ struct Subscription_test : public beast::unit_test::suite
             env.close();
         }
 
-        // tecUNFUNDED_PAYMENT
+        // tecPATH_PARTIAL
         {
             auto const aliceSeq = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, aliceSeq);
@@ -534,7 +534,7 @@ struct Subscription_test : public beast::unit_test::suite
             env.close();
 
             env(subscription::claim(bob, subId, XRP(10000)),
-                ter(tecUNFUNDED_PAYMENT));
+                ter(tecPATH_PARTIAL));
             env.close();
         }
 
@@ -888,7 +888,7 @@ struct Subscription_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(alice) == preAlice - baseFee - XRP(10));
             BEAST_EXPECT(env.balance(bob) == preBob - baseFee + XRP(10));
 
-            env(subscription::claim(bob, subId, XRP(10)), ter(tecNO_TARGET));
+            env(subscription::claim(bob, subId, XRP(10)), ter(tecNO_ENTRY));
             env.close();
         }
     }
