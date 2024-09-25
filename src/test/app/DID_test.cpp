@@ -90,7 +90,9 @@ struct DID_test : public beast::unit_test::suite
 
         // Pay alice almost enough to make the reserve for a DID.
         env(pay(env.master, alice, drops(incReserve + 2 * baseFee - 1)));
-        BEAST_EXPECT(env.balance(alice) == acctReserve + incReserve + drops(baseFee - 1));
+        BEAST_EXPECT(
+            env.balance(alice) ==
+            acctReserve + incReserve + drops(baseFee - 1));
         env.close();
 
         // alice still does not have enough XRP for the reserve of a DID.

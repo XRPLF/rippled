@@ -190,7 +190,9 @@ struct Escrow_test : public beast::unit_test::suite
             }
 
             // Verify that a cancel still won't work
-            env(cancel("bob", "alice", seq), fee(baseFee * 150), ter(tecNO_PERMISSION));
+            env(cancel("bob", "alice", seq),
+                fee(baseFee * 150),
+                ter(tecNO_PERMISSION));
 
             // And verify that a finish will
             env(finish("bob", "alice", seq), fee(baseFee * 150));
@@ -233,7 +235,9 @@ struct Escrow_test : public beast::unit_test::suite
 
             // Verify that finish will no longer work, since we are past the
             // cancel activation time.
-            env(finish("bob", "alice", seq), fee(baseFee * 150), ter(tecNO_PERMISSION));
+            env(finish("bob", "alice", seq),
+                fee(baseFee * 150),
+                ter(tecNO_PERMISSION));
 
             // And verify that a cancel will succeed.
             env(cancel("bob", "alice", seq), fee(baseFee * 150));
@@ -1361,7 +1365,8 @@ struct Escrow_test : public beast::unit_test::suite
         }
 
         {
-            auto const jtx = env.jt(cancel("bob", "alice", 3), seq(1), fee(baseFee));
+            auto const jtx =
+                env.jt(cancel("bob", "alice", 3), seq(1), fee(baseFee));
             auto const pf = preflight(
                 env.app(),
                 env.current()->rules(),
@@ -1375,7 +1380,8 @@ struct Escrow_test : public beast::unit_test::suite
         }
 
         {
-            auto const jtx = env.jt(finish("bob", "alice", 3), seq(1), fee(baseFee));
+            auto const jtx =
+                env.jt(finish("bob", "alice", 3), seq(1), fee(baseFee));
             auto const pf = preflight(
                 env.app(),
                 env.current()->rules(),

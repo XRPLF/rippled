@@ -2064,7 +2064,8 @@ public:
     {
         testcase("autofill fees");
         test::jtx::Env env(*this);
-        auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
+        auto const baseFee =
+            static_cast<int>(env.current()->fees().base.drops());
         auto ledger = env.current();
         auto const& feeTrack = env.app().getFeeTrack();
 
@@ -2598,9 +2599,9 @@ public:
         // "c" (phantom signer) is rPcNzota6B8YBokhYtcTNqQVCngtbnWfux.
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
-                    return cfg;
-                }));
+            cfg->FEES.reference_fee = 10;
+            return cfg;
+        }));
         env.fund(XRP(100000), a, ed, g);
         env.close();
 

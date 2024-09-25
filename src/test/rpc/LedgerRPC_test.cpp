@@ -2457,8 +2457,9 @@ class LedgerRPC_test : public beast::unit_test::suite
 
         auto cfg = envconfig();
         cfg->FEES.reference_fee = 10;
-        Env env{*this, std::move(cfg), FeatureBitset{}};  // hashes requested below assume
-                                          // no amendments
+        Env env{
+            *this, std::move(cfg), FeatureBitset{}};  // hashes requested below
+                                                      // assume no amendments
         env.fund(XRP(10000), "alice");
         env.close();
         env.fund(XRP(10000), "bob");

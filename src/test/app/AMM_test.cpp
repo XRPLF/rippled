@@ -1319,8 +1319,8 @@ private:
             // 30,000 less deposited 1,000
             BEAST_EXPECT(expectLine(env, carol, USD(29'000)));
             // 30,000 less deposited 1,000 and 10 drops tx fee
-            BEAST_EXPECT(
-                expectLedgerEntryRoot(env, carol, XRPAmount{29'000'000'000 - baseFee}));
+            BEAST_EXPECT(expectLedgerEntryRoot(
+                env, carol, XRPAmount{29'000'000'000 - baseFee}));
         });
 
         // equal asset deposit: unit test to exercise the rounding-down of

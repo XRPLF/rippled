@@ -458,7 +458,8 @@ public:
             Json::Value jv;
             jv[jss::secret] = toBase58(generateSeed("alice"));
             jv[jss::tx_json] = fset("alice", 0);
-            jv[jss::tx_json][jss::Fee] = static_cast<int>(env.current()->fees().base.drops());
+            jv[jss::tx_json][jss::Fee] =
+                static_cast<int>(env.current()->fees().base.drops());
             jv = wsc->invoke("submit", jv);
             if (wsc->version() == 2)
             {

@@ -170,8 +170,11 @@ public:
 
         auto cfg = envconfig();
         cfg->FEES.reference_fee = 10;
-        Env env{*this, std::move(cfg), FeatureBitset{}};  // the hashes being checked below
-                                          // assume no amendments
+        Env env{
+            *this,
+            std::move(cfg),
+            FeatureBitset{}};  // the hashes being checked below
+                               // assume no amendments
         Account const gw{"gateway"};
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);

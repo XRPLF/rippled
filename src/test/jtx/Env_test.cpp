@@ -750,13 +750,15 @@ public:
             params[jss::fee_mult_max] = 1;
             params[jss::fee_div_max] = 2;
 
-            auto const expectedErrorString = "Fee of " + std::to_string(baseFee.drops()) + " exceeds the requested tx limit of " + std::to_string(baseFee.drops() / 2);
+            auto const expectedErrorString = "Fee of " +
+                std::to_string(baseFee.drops()) +
+                " exceeds the requested tx limit of " +
+                std::to_string(baseFee.drops() / 2);
             envs(
                 noop(alice),
                 fee(none),
                 seq(none),
-                rpc(rpcHIGH_FEE,
-                    expectedErrorString))(params);
+                rpc(rpcHIGH_FEE, expectedErrorString))(params);
 
             auto tx = env.tx();
             BEAST_EXPECT(!tx);

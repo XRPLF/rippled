@@ -67,7 +67,8 @@ public:
                 txflags(tfPartialPayment),
                 sendmax(XRP(5)),
                 ter(tecPATH_PARTIAL));
-            env.require(balance("alice", XRP(10000) - drops(env.current()->fees().base)));
+            env.require(balance(
+                "alice", XRP(10000) - drops(env.current()->fees().base)));
             env.require(balance("bob", XRP(10000)));
         }
 
