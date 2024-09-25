@@ -221,7 +221,7 @@ SetSubscription::doApply()
                 return temMALFORMED;
             }
         }
-        
+
         sle->setFieldU32(sfNextPaymentTime, nextPaymentTime);
         if (ctx_.tx.isFieldPresent(sfExpiration))
         {
@@ -236,8 +236,9 @@ SetSubscription::doApply()
 
             if (expiration < nextPaymentTime)
             {
-                JLOG(ctx_.journal.warn()) << "SetSubscription: The expiration time is "
-                                      "less than the next payment time.";
+                JLOG(ctx_.journal.warn())
+                    << "SetSubscription: The expiration time is "
+                       "less than the next payment time.";
                 return temBAD_EXPIRATION;
             }
             sle->setFieldU32(sfExpiration, expiration);
