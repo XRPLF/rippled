@@ -93,10 +93,8 @@ private:
     insert()
     {
         std::unique_lock<Mutex> lock_(mtx_);
-        bool exists = collection_.contains(item_);
-        if (!exists)
-            collection_.insert(item_);
-        return !exists;
+        auto const [_, inserted] = collection_.insert(item_);
+        return inserted;
     }
 
     Mutex& mtx_;
