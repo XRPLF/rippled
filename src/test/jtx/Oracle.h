@@ -70,7 +70,7 @@ struct CreateArg
     std::uint32_t flags = 0;
     std::optional<jtx::msig> msig = std::nullopt;
     std::optional<jtx::seq> seq = std::nullopt;
-    long long fee = 0;
+    int fee = 10;
     std::optional<ter> err = std::nullopt;
     bool close = false;
 };
@@ -88,7 +88,7 @@ struct UpdateArg
     std::uint32_t flags = 0;
     std::optional<jtx::msig> msig = std::nullopt;
     std::optional<jtx::seq> seq = std::nullopt;
-    long long fee = 0;
+    int fee = 10;
     std::optional<ter> err = std::nullopt;
 };
 
@@ -99,7 +99,7 @@ struct RemoveArg
     std::uint32_t flags = 0;
     std::optional<jtx::msig> const& msig = std::nullopt;
     std::optional<jtx::seq> seq = std::nullopt;
-    long long fee = 0;
+    int fee = 10;
     std::optional<ter> const& err = std::nullopt;
 };
 

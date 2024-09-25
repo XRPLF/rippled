@@ -128,7 +128,7 @@ public:
                 env,
                 {.owner = owner,
                  .series = {{"XRP", "EUR", 740, 1}},
-                 .fee = baseFee.drops()});
+                 .fee = static_cast<int>(baseFee.drops())});
             ret = Oracle::aggregatePrice(
                 env, "XRP", "USD", {{{owner, oracle.documentID()}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
