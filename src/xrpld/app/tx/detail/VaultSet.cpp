@@ -43,17 +43,17 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-#define ASSERT(condition) condition
-#undef ASSERT
-#define ASSERT(condition)
-#define MATCH(...)
-#define OVERWRITE(lhs, rhs) \
+#define TX_ASSERT(condition) condition
+#undef TX_ASSERT
+#define TX_ASSERT(condition)
+#define TX_MATCH(...)
+#define TX_OVERWRITE(lhs, rhs) \
     if (rhs)                \
     {                       \
         lhs = rhs;          \
     }
-#undef OVERWRITE
-#define OVERWRITE(lhs, rhs)
+#undef TX_OVERWRITE
+#define TX_OVERWRITE(lhs, rhs)
 
 TER
 VaultSet::doApply()
@@ -68,10 +68,10 @@ VaultSet::doApply()
 
     if (vault)
     {
-        ASSERT(vault->getType() == ltVAULT);
-        ASSERT(vault->key() == klVault.key);
-        ASSERT((*vault)[sfOwner] == tx[sfAccount]);
-        MATCH((*vault)[sfAsset], tx[~sfAsset]);
+        TX_ASSERT(vault->getType() == ltVAULT);
+        TX_ASSERT(vault->key() == klVault.key);
+        TX_ASSERT((*vault)[sfOwner] == tx[sfAccount]);
+        TX_MATCH((*vault)[sfAsset], tx[~sfAsset]);
         view().update(vault);
     }
     else if (tx.isFieldPresent(sfVaultID))
@@ -83,7 +83,7 @@ VaultSet::doApply()
         // create new vault
     }
 
-    OVERWRITE((*vault)[sfAssetMaximum], tx[~sfAssetMaximum]);
+    TX_OVERWRITE((*vault)[sfAssetMaximum], tx[~sfAssetMaximum]);
 
     return tesSUCCESS;
 }
