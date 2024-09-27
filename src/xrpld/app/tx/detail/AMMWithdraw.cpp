@@ -399,8 +399,6 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         {
             TER result;
             STAmount newLPTokenBalance;
-            bool withdrawAll =
-                ctx_.tx[sfFlags] & (tfWithdrawAll | tfOneAssetWithdrawAll);
             std::tie(result, newLPTokenBalance, std::ignore, std::ignore) =
                 equalWithdrawTokens(
                     sb,
@@ -413,9 +411,8 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                     lpTokens,
                     *lpTokensWithdraw,
                     tfee,
-                    ctx_.journal,
-                    ctx_.tx,
-                    withdrawAll);
+                    isWithdrawAll(ctx_.tx),
+                    ctx_.journal);
             return {result, newLPTokenBalance};
         }
         // should not happen.
@@ -456,6 +453,237 @@ AMMWithdraw::doApply()
     return result.first;
 }
 
+std::pair<TER, STAmount>
+AMMWithdraw::withdraw(
+    Sandbox& view,
+    AccountID const& ammAccount,
+    AccountID const& account,
+    SLE const& ammSle,
+    STAmount const& amountBalance,
+    STAmount const& amountWithdraw,
+    std::optional<STAmount> const& amount2Withdraw,
+    STAmount const& lpTokensAMMBalance,
+    STAmount const& lpTokensWithdraw,
+    std::uint16_t tfee)
+{
+    TER ter;
+    STAmount newLPTokenBalance;
+    std::tie(ter, newLPTokenBalance, std::ignore, std::ignore) = withdraw(
+        view,
+        ammAccount,
+        account,
+        ammSle,
+        amountBalance,
+        amountWithdraw,
+        amount2Withdraw,
+        lpTokensAMMBalance,
+        lpTokensWithdraw,
+        tfee,
+        isWithdrawAll(ctx_.tx),
+        j_);
+    return {ter, newLPTokenBalance};
+}
+
+std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
+AMMWithdraw::withdraw(
+    Sandbox& view,
+    AccountID const& ammAccount,
+    AccountID const& account,
+    SLE const& ammSle,
+    STAmount const& amountBalance,
+    STAmount const& amountWithdraw,
+    std::optional<STAmount> const& amount2Withdraw,
+    STAmount const& lpTokensAMMBalance,
+    STAmount const& lpTokensWithdraw,
+    std::uint16_t tfee,
+    WithdrawAll withdrawAll,
+    beast::Journal const& journal)
+{
+    auto const lpTokens = ammLPHolds(view, ammSle, account, journal);
+    auto const expected = ammHolds(
+        view,
+        ammSle,
+        amountWithdraw.issue(),
+        std::nullopt,
+        FreezeHandling::fhZERO_IF_FROZEN,
+        journal);
+    // LCOV_EXCL_START
+    if (!expected)
+        return {expected.error(), STAmount{}, STAmount{}, STAmount{}};
+    // LCOV_EXCL_STOP
+    auto const [curBalance, curBalance2, _] = *expected;
+    (void)_;
+
+    auto const
+        [amountWithdrawActual, amount2WithdrawActual, lpTokensWithdrawActual] =
+            [&]() -> std::tuple<STAmount, std::optional<STAmount>, STAmount> {
+        if (withdrawAll == WithdrawAll::No)
+            return adjustAmountsByLPTokens(
+                amountBalance,
+                amountWithdraw,
+                amount2Withdraw,
+                lpTokensAMMBalance,
+                lpTokensWithdraw,
+                tfee,
+                false);
+        return std::make_tuple(
+            amountWithdraw, amount2Withdraw, lpTokensWithdraw);
+    }();
+
+    if (lpTokensWithdrawActual <= beast::zero ||
+        lpTokensWithdrawActual > lpTokens)
+    {
+        JLOG(journal.debug())
+            << "AMM Withdraw: failed to withdraw, invalid LP tokens: "
+            << lpTokensWithdrawActual << " " << lpTokens << " "
+            << lpTokensAMMBalance;
+        return {tecAMM_INVALID_TOKENS, STAmount{}, STAmount{}, STAmount{}};
+    }
+
+    // Should not happen since the only LP on last withdraw
+    // has the balance set to the lp token trustline balance.
+    if (view.rules().enabled(fixAMMv1_1) &&
+        lpTokensWithdrawActual > lpTokensAMMBalance)
+    {
+        // LCOV_EXCL_START
+        JLOG(journal.debug())
+            << "AMM Withdraw: failed to withdraw, unexpected LP tokens: "
+            << lpTokensWithdrawActual << " " << lpTokens << " "
+            << lpTokensAMMBalance;
+        return {tecINTERNAL, STAmount{}, STAmount{}, STAmount{}};
+        // LCOV_EXCL_STOP
+    }
+
+    // Withdrawing one side of the pool
+    if ((amountWithdrawActual == curBalance &&
+         amount2WithdrawActual != curBalance2) ||
+        (amount2WithdrawActual == curBalance2 &&
+         amountWithdrawActual != curBalance))
+    {
+        JLOG(journal.debug())
+            << "AMM Withdraw: failed to withdraw one side of the pool "
+            << " curBalance: " << curBalance << " " << amountWithdrawActual
+            << " lpTokensBalance: " << lpTokensWithdraw << " lptBalance "
+            << lpTokensAMMBalance;
+        return {tecAMM_BALANCE, STAmount{}, STAmount{}, STAmount{}};
+    }
+
+    // May happen if withdrawing an amount close to one side of the pool
+    if (lpTokensWithdrawActual == lpTokensAMMBalance &&
+        (amountWithdrawActual != curBalance ||
+         amount2WithdrawActual != curBalance2))
+    {
+        JLOG(journal.debug())
+            << "AMM Withdraw: failed to withdraw all tokens "
+            << " curBalance: " << curBalance << " " << amountWithdrawActual
+            << " curBalance2: " << amount2WithdrawActual.value_or(STAmount{0})
+            << " lpTokensBalance: " << lpTokensWithdraw << " lptBalance "
+            << lpTokensAMMBalance;
+        return {tecAMM_BALANCE, STAmount{}, STAmount{}, STAmount{}};
+    }
+
+    // Withdrawing more than the pool's balance
+    if (amountWithdrawActual > curBalance ||
+        amount2WithdrawActual > curBalance2)
+    {
+        JLOG(journal.debug())
+            << "AMM Withdraw: withdrawing more than the pool's balance "
+            << " curBalance: " << curBalance << " " << amountWithdrawActual
+            << " curBalance2: " << curBalance2 << " "
+            << (amount2WithdrawActual ? *amount2WithdrawActual : STAmount{})
+            << " lpTokensBalance: " << lpTokensWithdraw << " lptBalance "
+            << lpTokensAMMBalance;
+        return {tecAMM_BALANCE, STAmount{}, STAmount{}, STAmount{}};
+    }
+
+    // Withdraw amountWithdraw
+    auto res = accountSend(
+        view,
+        ammAccount,
+        account,
+        amountWithdrawActual,
+        journal,
+        WaiveTransferFee::Yes);
+    if (res != tesSUCCESS)
+    {
+        // LCOV_EXCL_START
+        JLOG(journal.debug())
+            << "AMM Withdraw: failed to withdraw " << amountWithdrawActual;
+        return {res, STAmount{}, STAmount{}, STAmount{}};
+        // LCOV_EXCL_STOP
+    }
+
+    // Withdraw amount2Withdraw
+    if (amount2WithdrawActual)
+    {
+        res = accountSend(
+            view,
+            ammAccount,
+            account,
+            *amount2WithdrawActual,
+            journal,
+            WaiveTransferFee::Yes);
+        if (res != tesSUCCESS)
+        {
+            // LCOV_EXCL_START
+            JLOG(journal.debug()) << "AMM Withdraw: failed to withdraw "
+                                  << *amount2WithdrawActual;
+            return {res, STAmount{}, STAmount{}, STAmount{}};
+            // LCOV_EXCL_STOP
+        }
+    }
+
+    // Withdraw LP tokens
+    res = redeemIOU(
+        view,
+        account,
+        lpTokensWithdrawActual,
+        lpTokensWithdrawActual.issue(),
+        journal);
+    if (res != tesSUCCESS)
+    {
+        // LCOV_EXCL_START
+        JLOG(journal.debug()) << "AMM Withdraw: failed to withdraw LPTokens";
+        return {res, STAmount{}, STAmount{}, STAmount{}};
+        // LCOV_EXCL_STOP
+    }
+
+    return std::make_tuple(
+        tesSUCCESS,
+        lpTokensAMMBalance - lpTokensWithdrawActual,
+        amountWithdrawActual,
+        amount2WithdrawActual);
+}
+
+std::pair<TER, bool>
+AMMWithdraw::deleteAMMAccountIfEmpty(
+    Sandbox& sb,
+    std::shared_ptr<SLE> const ammSle,
+    STAmount const& lpTokenBalance,
+    Issue const& issue1,
+    Issue const& issue2,
+    beast::Journal const& journal)
+{
+    TER ter;
+    bool updateBalance = true;
+    if (lpTokenBalance == beast::zero)
+    {
+        ter = deleteAMMAccount(sb, issue1, issue2, journal);
+        if (ter != tesSUCCESS && ter != tecINCOMPLETE)
+            return {ter, false};  // LCOV_EXCL_LINE
+        else
+            updateBalance = (ter == tecINCOMPLETE);
+    }
+
+    if (updateBalance)
+    {
+        ammSle->setFieldAmount(sfLPTokenBalance, lpTokenBalance);
+        sb.update(ammSle);
+    }
+
+    return {ter, true};
+}
+
 /** Proportional withdrawal of pool assets for the amount of LPTokens.
  */
 std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
@@ -470,9 +698,8 @@ AMMWithdraw::equalWithdrawTokens(
     STAmount const& lpTokens,
     STAmount const& lpTokensWithdraw,
     std::uint16_t tfee,
-    beast::Journal const& journal,
-    STTx const& tx,
-    bool withdrawAll)
+    WithdrawAll withdrawAll,
+    beast::Journal const& journal)
 {
     try
     {
@@ -490,9 +717,8 @@ AMMWithdraw::equalWithdrawTokens(
                 lptAMMBalance,
                 lpTokensWithdraw,
                 tfee,
-                journal,
-                tx,
-                true);
+                WithdrawAll::Yes,
+                journal);
         }
 
         auto const frac = divide(lpTokensWithdraw, lptAMMBalance, noIssue());
@@ -518,9 +744,8 @@ AMMWithdraw::equalWithdrawTokens(
             lptAMMBalance,
             lpTokensWithdraw,
             tfee,
-            journal,
-            tx,
-            withdrawAll);
+            withdrawAll,
+            journal);
     }
     // LCOV_EXCL_START
     catch (std::exception const& e)
@@ -569,36 +794,27 @@ AMMWithdraw::equalWithdrawLimit(
     STAmount const& amount2,
     std::uint16_t tfee)
 {
-    TER result;
-    STAmount newLPTokenBalance;
     auto frac = Number{amount} / amountBalance;
     auto const amount2Withdraw = amount2Balance * frac;
-    bool withdrawAll =
-        ctx_.tx[sfFlags] & (tfWithdrawAll | tfOneAssetWithdrawAll);
     if (amount2Withdraw <= amount2)
     {
-        std::tie(result, newLPTokenBalance, std::ignore, std::ignore) =
-            withdraw(
-                view,
-                ammAccount,
-                account_,
-                ammSle,
-                amountBalance,
-                amount,
-                toSTAmount(amount2.issue(), amount2Withdraw),
-                lptAMMBalance,
-                toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac),
-                tfee,
-                ctx_.journal,
-                ctx_.tx,
-                withdrawAll);
-        return {result, newLPTokenBalance};
+        return withdraw(
+            view,
+            ammAccount,
+            account_,
+            ammSle,
+            amountBalance,
+            amount,
+            toSTAmount(amount2.issue(), amount2Withdraw),
+            lptAMMBalance,
+            toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac),
+            tfee);
     }
 
     frac = Number{amount2} / amount2Balance;
     auto const amountWithdraw = amountBalance * frac;
     assert(amountWithdraw <= amount);
-    std::tie(result, newLPTokenBalance, std::ignore, std::ignore) = withdraw(
+    return withdraw(
         view,
         ammAccount,
         account_,
@@ -608,11 +824,7 @@ AMMWithdraw::equalWithdrawLimit(
         amount2,
         lptAMMBalance,
         toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac),
-        tfee,
-        ctx_.journal,
-        ctx_.tx,
-        withdrawAll);
-    return {result, newLPTokenBalance};
+        tfee);
 }
 
 /** Withdraw single asset equivalent to the amount specified in Asset1Out.
@@ -634,11 +846,7 @@ AMMWithdraw::singleWithdraw(
     if (tokens == beast::zero)
         return {tecAMM_FAILED, STAmount{}};
 
-    TER result;
-    STAmount newLPTokenBalance;
-    bool withdrawAll =
-        ctx_.tx[sfFlags] & (tfWithdrawAll | tfOneAssetWithdrawAll);
-    std::tie(result, newLPTokenBalance, std::ignore, std::ignore) = withdraw(
+    return withdraw(
         view,
         ammAccount,
         account_,
@@ -648,12 +856,7 @@ AMMWithdraw::singleWithdraw(
         std::nullopt,
         lptAMMBalance,
         tokens,
-        tfee,
-        ctx_.journal,
-        ctx_.tx,
-        withdrawAll);
-
-    return {result, newLPTokenBalance};
+        tfee);
 }
 
 /** withdrawal of single asset specified in Asset1Out proportional
@@ -681,27 +884,17 @@ AMMWithdraw::singleWithdrawTokens(
         withdrawByTokens(amountBalance, lptAMMBalance, lpTokensWithdraw, tfee);
     if (amount == beast::zero || amountWithdraw >= amount)
     {
-        TER result;
-        STAmount newLPTokenBalance;
-        bool withdrawAll =
-            ctx_.tx[sfFlags] & (tfWithdrawAll | tfOneAssetWithdrawAll);
-        std::tie(result, newLPTokenBalance, std::ignore, std::ignore) =
-            withdraw(
-                view,
-                ammAccount,
-                account_,
-                ammSle,
-                amountBalance,
-                amountWithdraw,
-                std::nullopt,
-                lptAMMBalance,
-                lpTokensWithdraw,
-                tfee,
-                ctx_.journal,
-                ctx_.tx,
-                withdrawAll);
-
-        return {result, newLPTokenBalance};
+        return withdraw(
+            view,
+            ammAccount,
+            account_,
+            ammSle,
+            amountBalance,
+            amountWithdraw,
+            std::nullopt,
+            lptAMMBalance,
+            lpTokensWithdraw,
+            tfee);
     }
 
     return {tecAMM_FAILED, STAmount{}};
@@ -756,30 +949,27 @@ AMMWithdraw::singleWithdrawEPrice(
     auto const amountWithdraw = toSTAmount(amount.issue(), tokens / ePrice);
     if (amount == beast::zero || amountWithdraw >= amount)
     {
-        TER result;
-        STAmount newLPTokenBalance;
-        bool withdrawAll =
-            ctx_.tx[sfFlags] & (tfWithdrawAll | tfOneAssetWithdrawAll);
-        std::tie(result, newLPTokenBalance, std::ignore, std::ignore) =
-            withdraw(
-                view,
-                ammAccount,
-                account_,
-                ammSle,
-                amountBalance,
-                amountWithdraw,
-                std::nullopt,
-                lptAMMBalance,
-                toSTAmount(lptAMMBalance.issue(), tokens),
-                tfee,
-                ctx_.journal,
-                ctx_.tx,
-                withdrawAll);
-
-        return {result, newLPTokenBalance};
+        return withdraw(
+            view,
+            ammAccount,
+            account_,
+            ammSle,
+            amountBalance,
+            amountWithdraw,
+            std::nullopt,
+            lptAMMBalance,
+            toSTAmount(lptAMMBalance.issue(), tokens),
+            tfee);
     }
 
     return {tecAMM_FAILED, STAmount{}};
 }
 
+WithdrawAll
+AMMWithdraw::isWithdrawAll(STTx const& tx)
+{
+    if (tx[sfFlags] & (tfWithdrawAll | tfOneAssetWithdrawAll))
+        return WithdrawAll::Yes;
+    return WithdrawAll::No;
+}
 }  // namespace ripple

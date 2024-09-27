@@ -93,6 +93,11 @@ class AMMClawback_test : public jtx::AMMTest
             // Issuer can not clawback from himself.
             env(amm::ammClawback(gw, gw, USD, XRP, std::nullopt, std::nullopt),
                 ter(temMALFORMED));
+
+            // Holder can not clawback from himself.
+            env(amm::ammClawback(
+                    alice, alice, USD, XRP, std::nullopt, std::nullopt),
+                ter(temMALFORMED));
         }
 
         // Test if the Asset field matches the Account field.
@@ -640,11 +645,11 @@ class AMMClawback_test : public jtx::AMMTest
             BEAST_EXPECT(!amm.ammExists());
         }
 
-        // Test AMMClawback for USD/XRP pool. The assets are issued by different
-        // issuer. Claw back USD for multiple times, and XRP goes back to the
-        // holder. The last AMMClawback transaction exceeds the holder's USD
-        // balance in AMM pool. In this case, gw creates the AMM pool USD/XRP,
-        // both alice and bob deposit into it. gw2 creates the AMM pool EUR/XRP.
+        // Test AMMClawback for USD/XRP pool. Claw back USD for multiple times,
+        // and XRP goes back to the holder. The last AMMClawback transaction
+        // exceeds the holder's USD balance in AMM pool. In this case, gw
+        // creates the AMM pool USD/XRP, both alice and bob deposit into it. gw2
+        // creates the AMM pool EUR/XRP.
         {
             Env env(*this, features);
             Account gw{"gateway"};
@@ -1000,8 +1005,8 @@ class AMMClawback_test : public jtx::AMMTest
             BEAST_EXPECT(!amm.ammExists());
         }
 
-        // Test AMMClawback for USD/XRP pool. The assets are issued by different
-        // issuer. Claw back all the USD for different users.
+        // Test AMMClawback for USD/XRP pool. Claw back all the USD for
+        // different users.
         {
             Env env(*this, features);
             Account gw{"gateway"};

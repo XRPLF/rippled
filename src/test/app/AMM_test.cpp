@@ -6951,44 +6951,45 @@ private:
         using namespace jtx;
 
         // This lambda function is used to create trustlines
-        // between gw and alice, and create and return an AMM account.
-        auto setupAMM = [&](Env& env) -> AMM* {
+        // between gw and alice, and create an AMM account.
+        // And also test the callback function.
+        auto testAMMDeposit = [&](Env& env, std::function<void(AMM & amm)> cb) {
             env.fund(XRP(1'000), gw);
             fund(env, gw, {alice}, XRP(1'000), {USD(1'000)}, Fund::Acct);
             env.close();
             AMM* amm = new AMM(env, alice, XRP(100), USD(100), ter(tesSUCCESS));
             env(trust(gw, alice["USD"](0), tfSetFreeze));
-            return amm;
+            cb(*amm);
         };
 
+        // Deposit two assets, one of which is frozen,
+        // then we should get tecFROZEN error.
         {
-            // Deposit two assets, one of which is frozen,
-            // then we should get tecFROZEN error.
             Env env(*this, features);
-            auto amm = setupAMM(env);
-            amm->deposit(
-                alice,
-                USD(100),
-                XRP(100),
-                std::nullopt,
-                tfTwoAsset,
-                ter(tecFROZEN));
-            delete amm;
+            testAMMDeposit(env, [&](AMM& amm) {
+                amm.deposit(
+                    alice,
+                    USD(100),
+                    XRP(100),
+                    std::nullopt,
+                    tfTwoAsset,
+                    ter(tecFROZEN));
+            });
         }
 
+        // Deposit one asset, which is the frozen token,
+        // then we should get tecFROZEN error.
         {
-            // Deposit one asset, which is the frozen token,
-            // then we should get tecFROZEN error.
             Env env(*this, features);
-            auto amm = setupAMM(env);
-            amm->deposit(
-                alice,
-                USD(100),
-                std::nullopt,
-                std::nullopt,
-                tfSingleAsset,
-                ter(tecFROZEN));
-            delete amm;
+            testAMMDeposit(env, [&](AMM& amm) {
+                amm.deposit(
+                    alice,
+                    USD(100),
+                    std::nullopt,
+                    std::nullopt,
+                    tfSingleAsset,
+                    ter(tecFROZEN));
+            });
         }
 
         if (features[featureAMMClawback])
@@ -6997,14 +6998,15 @@ private:
             // but the other asset is frozen. We should get tecFROZEN error
             // when feature AMMClawback is enabled.
             Env env(*this, features);
-            auto amm = setupAMM(env);
-            amm->deposit(
-                alice,
-                XRP(100),
-                std::nullopt,
-                std::nullopt,
-                tfSingleAsset,
-                ter(tecFROZEN));
+            testAMMDeposit(env, [&](AMM& amm) {
+                amm.deposit(
+                    alice,
+                    XRP(100),
+                    std::nullopt,
+                    std::nullopt,
+                    tfSingleAsset,
+                    ter(tecFROZEN));
+            });
         }
         else
         {
@@ -7012,14 +7014,15 @@ private:
             // but the other asset is frozen. We will get tecSUCCESS
             // when feature AMMClawback is not enabled.
             Env env(*this, features);
-            auto amm = setupAMM(env);
-            amm->deposit(
-                alice,
-                XRP(100),
-                std::nullopt,
-                std::nullopt,
-                tfSingleAsset,
-                ter(tesSUCCESS));
+            testAMMDeposit(env, [&](AMM& amm) {
+                amm.deposit(
+                    alice,
+                    XRP(100),
+                    std::nullopt,
+                    std::nullopt,
+                    tfSingleAsset,
+                    ter(tesSUCCESS));
+            });
         }
     }
 

@@ -123,31 +123,6 @@ isOnlyLiquidityProvider(
     Issue const& ammIssue,
     AccountID const& lpAccount);
 
-std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
-withdraw(
-    Sandbox& view,
-    AccountID const& ammAccount,
-    AccountID const& account,
-    SLE const& ammSle,
-    STAmount const& amountBalance,
-    STAmount const& amountWithdraw,
-    std::optional<STAmount> const& amount2Withdraw,
-    STAmount const& lpTokensAMMBalance,
-    STAmount const& lpTokensWithdraw,
-    std::uint16_t tfee,
-    beast::Journal const& journal,
-    STTx const& tx,
-    bool withdrawAll);
-
-std::pair<TER, bool>
-deleteAMMAccountIfEmpty(
-    Sandbox& sb,
-    std::shared_ptr<SLE> const ammSle,
-    STAmount const& lpTokenBalance,
-    Issue const& issue1,
-    Issue const& issue2,
-    beast::Journal const& journal);
-
 }  // namespace ripple
 
 #endif  // RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED

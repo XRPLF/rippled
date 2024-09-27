@@ -62,6 +62,9 @@ class Sandbox;
  * @see [XLS30d:AMMWithdraw
  * transaction](https://github.com/XRPLF/XRPL-Standards/discussions/78)
  */
+
+enum class WithdrawAll : bool { No = false, Yes };
+
 class AMMWithdraw : public Transactor
 {
 public:
@@ -91,6 +94,7 @@ public:
      * @param lpTokens current LPT balance
      * @param lpTokensWithdraw amount of tokens to withdraw
      * @param tfee trading fee in basis points
+     * @param withdrawAll if withdrawing all lptokens
      * @return
      */
     static std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
@@ -105,13 +109,74 @@ public:
         STAmount const& lpTokens,
         STAmount const& lpTokensWithdraw,
         std::uint16_t tfee,
-        beast::Journal const& journal,
-        STTx const& tx,
-        bool withdrawAll);
+        WithdrawAll withdrawAll,
+        beast::Journal const& journal);
+
+    /** Withdraw requested assets and token from AMM into LP account.
+     * Return new total LPToken balance and the withdrawn amounts for both
+     * assets.
+     * @param view
+     * @param ammAccount
+     * @param amountBalance current LP asset1 balance
+     * @param amountWithdraw asset1 withdraw amount
+     * @param amount2Withdraw asset2 withdraw amount
+     * @param lpTokensAMMBalance current AMM LPT balance
+     * @param lpTokensWithdraw amount of lptokens to withdraw
+     * @param tfee trading fee in basis points
+     * @param withdrawAll if withdraw all lptokens
+     * @return
+     */
+    static std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
+    withdraw(
+        Sandbox& view,
+        AccountID const& ammAccount,
+        AccountID const& account,
+        SLE const& ammSle,
+        STAmount const& amountBalance,
+        STAmount const& amountWithdraw,
+        std::optional<STAmount> const& amount2Withdraw,
+        STAmount const& lpTokensAMMBalance,
+        STAmount const& lpTokensWithdraw,
+        std::uint16_t tfee,
+        WithdrawAll withdrawAll,
+        beast::Journal const& journal);
+
+    static std::pair<TER, bool>
+    deleteAMMAccountIfEmpty(
+        Sandbox& sb,
+        std::shared_ptr<SLE> const ammSle,
+        STAmount const& lpTokenBalance,
+        Issue const& issue1,
+        Issue const& issue2,
+        beast::Journal const& journal);
 
 private:
     std::pair<TER, bool>
     applyGuts(Sandbox& view);
+
+    /** Withdraw requested assets and token from AMM into LP account.
+     * Return new total LPToken balance.
+     * @param view
+     * @param ammAccount
+     * @param amountBalance current LP asset1 balance
+     * @param amountWithdraw asset1 withdraw amount
+     * @param amount2Withdraw asset2 withdraw amount
+     * @param lpTokensAMMBalance current AMM LPT balance
+     * @param lpTokensWithdraw amount of lptokens to withdraw
+     * @return
+     */
+    std::pair<TER, STAmount>
+    withdraw(
+        Sandbox& view,
+        AccountID const& ammAccount,
+        AccountID const& account,
+        SLE const& ammSle,
+        STAmount const& amountBalance,
+        STAmount const& amountWithdraw,
+        std::optional<STAmount> const& amount2Withdraw,
+        STAmount const& lpTokensAMMBalance,
+        STAmount const& lpTokensWithdraw,
+        std::uint16_t tfee);
 
     /** Withdraw both assets (Asset1Out, Asset2Out) with the constraints
      * on the maximum amount of each asset that the trader is willing
@@ -201,6 +266,10 @@ private:
         STAmount const& amount,
         STAmount const& ePrice,
         std::uint16_t tfee);
+
+    /** Check from the flags if it's withdraw all */
+    WithdrawAll
+    isWithdrawAll(STTx const& tx);
 };
 
 }  // namespace ripple

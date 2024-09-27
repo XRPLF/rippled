@@ -84,12 +84,11 @@ AMMClawback::preflight(PreflightContext const& ctx)
 TER
 AMMClawback::preclaim(PreclaimContext const& ctx)
 {
-    auto const issuer = ctx.tx[sfAccount];
-    auto const holder = ctx.tx[sfHolder];
     auto const asset = ctx.tx[sfAsset];
     auto const asset2 = ctx.tx[sfAsset2];
-    auto const sleIssuer = ctx.view.read(keylet::account(issuer));
-    auto const sleHolder = ctx.view.read(keylet::account(holder));
+    auto const sleIssuer = ctx.view.read(keylet::account(ctx.tx[sfAccount]));
+    if (!sleIssuer)
+        return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
     auto const ammSle = ctx.view.read(keylet::amm(asset, asset2));
     if (!ammSle)
@@ -107,15 +106,12 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     auto const flags = ctx.tx.getFlags();
-    if (flags & tfClawTwoAssets)
+    if (flags & tfClawTwoAssets && asset.account != asset2.account)
     {
-        if (asset.account != asset2.account)
-        {
-            JLOG(ctx.j.trace())
-                << "AMMClawback: tfClawTwoAssets can only be enabled when two "
-                   "assets in the AMM pool are both issued by the issuer";
-            return tecNO_PERMISSION;
-        }
+        JLOG(ctx.j.trace())
+            << "AMMClawback: tfClawTwoAssets can only be enabled when two "
+               "assets in the AMM pool are both issued by the issuer";
+        return tecNO_PERMISSION;
     }
 
     return tesSUCCESS;
@@ -188,9 +184,8 @@ AMMClawback::applyGuts(Sandbox& sb)
                 holdLPtokens,
                 holdLPtokens,
                 0,
-                ctx_.journal,
-                ctx_.tx,
-                true);
+                WithdrawAll::Yes,
+                ctx_.journal);
     }
     else
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
@@ -207,7 +202,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (result != tesSUCCESS)
         return result;  // LCOV_EXCL_LINE
 
-    auto const res = deleteAMMAccountIfEmpty(
+    auto const res = AMMWithdraw::deleteAMMAccountIfEmpty(
         sb, ammSle, newLPTokenBalance, asset, asset2, j_);
     if (!res.second)
         return res.first;  // LCOV_EXCL_LINE
@@ -265,13 +260,12 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             holdLPtokens,
             holdLPtokens,
             0,
-            ctx_.journal,
-            ctx_.tx,
-            true);
+            WithdrawAll::Yes,
+            ctx_.journal);
 
     // Because we are doing a two-asset withdrawal,
     // tfee is actually not used, so pass tfee as 0.
-    return withdraw(
+    return AMMWithdraw::withdraw(
         sb,
         ammAccount,
         holder,
@@ -282,9 +276,8 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         lptAMMBalance,
         toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac),
         0,
-        ctx_.journal,
-        ctx_.tx,
-        false);
+        WithdrawAll::No,
+        ctx_.journal);
 }
 
 }  // namespace ripple
