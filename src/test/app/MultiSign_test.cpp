@@ -15,10 +15,10 @@
 */
 //==============================================================================
 
-#include <ripple/core/ConfigSections.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -201,9 +201,8 @@ public:
                                           {acc25, 1}, {acc26, 1}, {acc27, 1},
                                           {acc28, 1}, {acc29, 1}, {acc30, 1},
                                           {acc31, 1}, {acc32, 1}, {acc33, 1}}
-                    : std::vector<signer>{{bogie, 1}, {demon, 1}, {ghost, 1},
-                                          {haunt, 1}, {jinni, 1}, {phase, 1},
-                                          {shade, 1}, {spook, 1}, {spare, 1}}),
+                    : std::vector<
+                          signer>{{bogie, 1}, {demon, 1}, {ghost, 1}, {haunt, 1}, {jinni, 1}, {phase, 1}, {shade, 1}, {spook, 1}, {spare, 1}}),
             ter(temMALFORMED));
         // clang-format on
         env.close();
@@ -246,7 +245,11 @@ public:
 
         // Duplicate signers should fail.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(demon, demon), fee(3 * baseFee), ter(temINVALID));
+        env(noop(alice),
+            msig(demon, demon),
+            fee(3 * baseFee),
+            rpc("invalidTransaction",
+                "fails local checks: Duplicate Signers not allowed."));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
@@ -357,7 +360,10 @@ public:
         msig phantoms{bogie, demon};
         std::reverse(phantoms.signers.begin(), phantoms.signers.end());
         std::uint32_t const aliceSeq = env.seq(alice);
-        env(noop(alice), phantoms, ter(temINVALID));
+        env(noop(alice),
+            phantoms,
+            rpc("invalidTransaction",
+                "fails local checks: Unsorted Signers array."));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
     }
@@ -1633,7 +1639,11 @@ public:
 
         // Duplicate signers should fail.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(demon, demon), fee(3 * baseFee), ter(temINVALID));
+        env(noop(alice),
+            msig(demon, demon),
+            fee(3 * baseFee),
+            rpc("invalidTransaction",
+                "fails local checks: Duplicate Signers not allowed."));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 

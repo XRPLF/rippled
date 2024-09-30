@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -148,13 +148,14 @@ public:
         env.close();
 
         // Give carol a deposit preauthorization, an offer, a ticket,
-        // and a signer list.  Even with all that she's still deletable.
+        // a signer list, and a DID.  Even with all that she's still deletable.
         env(deposit::auth(carol, becky));
         std::uint32_t const carolOfferSeq{env.seq(carol)};
         env(offer(carol, gw["USD"](51), XRP(51)));
         std::uint32_t const carolTicketSeq{env.seq(carol) + 1};
         env(ticket::create(carol, 1));
         env(signers(carol, 1, {{alice, 1}, {becky, 1}}));
+        env(did::setValid(carol));
 
         // Deleting should fail with TOO_SOON, which is a relatively
         // cheap check compared to validating the contents of her directory.
@@ -515,16 +516,19 @@ public:
 
         // All it takes is a large enough XRP payment to resurrect
         // becky's account.  Try too small a payment.
-        env(pay(alice, becky, XRP(19)), ter(tecNO_DST_INSUF_XRP));
+        env(pay(alice,
+                becky,
+                drops(env.current()->fees().accountReserve(0)) - XRP(1)),
+            ter(tecNO_DST_INSUF_XRP));
         env.close();
 
         // Actually resurrect becky's account.
-        env(pay(alice, becky, XRP(20)));
+        env(pay(alice, becky, XRP(10)));
         env.close();
 
         // becky's account root should be back.
         BEAST_EXPECT(env.closed()->exists(beckyAcctKey));
-        BEAST_EXPECT(env.balance(becky) == XRP(20));
+        BEAST_EXPECT(env.balance(becky) == XRP(10));
 
         // becky's resurrected account can be the destination of alice's
         // PayChannel.
@@ -541,7 +545,7 @@ public:
         env(payChanClaim());
         env.close();
 
-        BEAST_EXPECT(env.balance(becky) == XRP(20) + payChanXRP);
+        BEAST_EXPECT(env.balance(becky) == XRP(10) + payChanXRP);
     }
 
     void

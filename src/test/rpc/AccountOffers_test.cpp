@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -26,13 +26,6 @@ namespace test {
 class AccountOffers_test : public beast::unit_test::suite
 {
 public:
-    // test helper
-    static bool
-    checkArraySize(Json::Value const& val, unsigned int size)
-    {
-        return val.isArray() && val.size() == size;
-    }
-
     // test helper
     static bool
     checkMarker(Json::Value const& val)
@@ -44,6 +37,8 @@ public:
     void
     testNonAdminMinLimit()
     {
+        testcase("Non-Admin Min Limit");
+
         using namespace jtx;
         Env env{*this, envconfig(no_admin)};
         Account const gw("G1");
@@ -88,6 +83,9 @@ public:
     void
     testSequential(bool asAdmin)
     {
+        testcase(
+            std::string("Sequential - ") + (asAdmin ? "admin" : "non-admin"));
+
         using namespace jtx;
         Env env{*this, asAdmin ? envconfig() : envconfig(no_admin)};
         Account const gw("G1");
@@ -222,6 +220,8 @@ public:
     void
     testBadInput()
     {
+        testcase("Bad input");
+
         using namespace jtx;
         Env env(*this);
         Account const gw("G1");
@@ -241,6 +241,26 @@ public:
         }
 
         {
+            // test account non-string
+            auto testInvalidAccountParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::account] = param;
+                auto jrr = env.rpc(
+                    "json", "account_offers", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(
+                    jrr[jss::error_message] == "Invalid field 'account'.");
+            };
+
+            testInvalidAccountParam(1);
+            testInvalidAccountParam(1.1);
+            testInvalidAccountParam(true);
+            testInvalidAccountParam(Json::Value(Json::nullValue));
+            testInvalidAccountParam(Json::Value(Json::objectValue));
+            testInvalidAccountParam(Json::Value(Json::arrayValue));
+        }
+
+        {
             // empty string account
             Json::Value jvParams;
             jvParams[jss::account] = "";
@@ -248,15 +268,15 @@ public:
                 "json",
                 "account_offers",
                 jvParams.toStyledString())[jss::result];
-            BEAST_EXPECT(jrr[jss::error] == "badSeed");
+            BEAST_EXPECT(jrr[jss::error] == "actMalformed");
             BEAST_EXPECT(jrr[jss::status] == "error");
-            BEAST_EXPECT(jrr[jss::error_message] == "Disallowed seed.");
+            BEAST_EXPECT(jrr[jss::error_message] == "Account malformed.");
         }
 
         {
             // bogus account value
-            auto const jrr =
-                env.rpc("account_offers", "rNOT_AN_ACCOUNT")[jss::result];
+            auto const jrr = env.rpc(
+                "account_offers", Account("bogus").human())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "actNotFound");
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Account not found.");
@@ -289,7 +309,9 @@ public:
                 jvParams.toStyledString())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::status] == "error");
-            BEAST_EXPECT(jrr[jss::error_message] == "Invalid parameters.");
+            BEAST_EXPECTS(
+                jrr[jss::error_message] == "Invalid field 'marker'.",
+                jrr.toStyledString());
         }
 
         {
@@ -333,7 +355,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountOffers, app, ripple);
+BEAST_DEFINE_TESTSUITE(AccountOffers, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

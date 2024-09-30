@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/XRPAmount.h>
-#include <ripple/beast/unit_test.h>
+#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 

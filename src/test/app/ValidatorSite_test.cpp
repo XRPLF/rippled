@@ -17,25 +17,25 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/ValidatorSite.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/base64.h>
-#include <ripple/basics/strHex.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/Sign.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/jss.h>
+#include <test/jtx.h>
+#include <test/jtx/TrustedPublisherServer.h>
+#include <test/unit_test/FileDirGuard.h>
+#include <xrpld/app/misc/ValidatorSite.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base64.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/jss.h>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <chrono>
 #include <date/date.h>
-#include <test/jtx.h>
-#include <test/jtx/TrustedPublisherServer.h>
-#include <test/unit_test/FileDirGuard.h>
 
 namespace ripple {
 namespace test {
@@ -69,7 +69,7 @@ private:
 
         using namespace jtx;
 
-        Env env(*this);
+        Env env(*this, envconfig(), nullptr, beast::severities::kDisabled);
         auto trustedSites =
             std::make_unique<ValidatorSite>(env.app(), env.journal);
 
@@ -172,7 +172,6 @@ private:
         test::StreamSink sink;
         beast::Journal journal{sink};
 
-        PublicKey emptyLocalKey;
         std::vector<std::string> emptyCfgKeys;
         struct publisher
         {
@@ -229,8 +228,7 @@ private:
             item.uri = uri.str();
         }
 
-        BEAST_EXPECT(
-            trustedKeys.load(emptyLocalKey, emptyCfgKeys, cfgPublishers));
+        BEAST_EXPECT(trustedKeys.load({}, emptyCfgKeys, cfgPublishers));
 
         // Normally, tests will only need a fraction of this time,
         // but sometimes DNS resolution takes an inordinate amount
@@ -239,7 +237,10 @@ private:
 
         std::vector<std::string> uris;
         for (auto const& u : servers)
+        {
+            log << "Testing " << u.uri << std::endl;
             uris.push_back(u.uri);
+        }
         sites->load(uris);
         sites->start();
         sites->join();
@@ -282,9 +283,6 @@ private:
             if (u.cfg.failFetch)
             {
                 using namespace std::chrono;
-                log << " -- Msg: "
-                    << myStatus[jss::last_refresh_message].asString()
-                    << std::endl;
                 std::stringstream nextRefreshStr{
                     myStatus[jss::next_refresh_time].asString()};
                 system_clock::time_point nextRefresh;
@@ -357,9 +355,6 @@ private:
                     sink.messages().str().find(u.expectMsg) !=
                         std::string::npos,
                     sink.messages().str());
-                log << " -- Msg: "
-                    << myStatus[jss::last_refresh_message].asString()
-                    << std::endl;
             }
         }
     }

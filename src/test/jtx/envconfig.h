@@ -20,10 +20,15 @@
 #ifndef RIPPLE_TEST_JTX_ENVCONFIG_H_INCLUDED
 #define RIPPLE_TEST_JTX_ENVCONFIG_H_INCLUDED
 
-#include <ripple/core/Config.h>
+#include <xrpld/core/Config.h>
 
 namespace ripple {
 namespace test {
+
+// frequently used macros defined here for convinience.
+#define PORT_WS "port_ws"
+#define PORT_RPC "port_rpc"
+#define PORT_PEER "port_peer"
 
 extern std::atomic<bool> envUseIPv4;
 

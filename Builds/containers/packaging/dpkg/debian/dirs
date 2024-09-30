@@ -1,3 +1,0 @@
-/var/log/rippled/
-/var/lib/rippled/
-/etc/systemd/system/rippled.service.d/

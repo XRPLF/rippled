@@ -20,11 +20,10 @@
 #ifndef RIPPLE_SHAMAP_TESTS_COMMON_H_INCLUDED
 #define RIPPLE_SHAMAP_TESTS_COMMON_H_INCLUDED
 
-#include <ripple/basics/chrono.h>
-#include <ripple/nodestore/DatabaseShard.h>
-#include <ripple/nodestore/DummyScheduler.h>
-#include <ripple/nodestore/Manager.h>
-#include <ripple/shamap/Family.h>
+#include <xrpld/nodestore/DummyScheduler.h>
+#include <xrpld/nodestore/Manager.h>
+#include <xrpld/shamap/Family.h>
+#include <xrpl/basics/chrono.h>
 
 namespace ripple {
 namespace tests {
@@ -81,12 +80,14 @@ public:
         return j_;
     }
 
-    std::shared_ptr<FullBelowCache> getFullBelowCache(std::uint32_t) override
+    std::shared_ptr<FullBelowCache>
+    getFullBelowCache() override
     {
         return fbCache_;
     }
 
-    std::shared_ptr<TreeNodeCache> getTreeNodeCache(std::uint32_t) override
+    std::shared_ptr<TreeNodeCache>
+    getTreeNodeCache() override
     {
         return tnCache_;
     }
@@ -98,20 +99,16 @@ public:
         tnCache_->sweep();
     }
 
-    bool
-    isShardBacked() const override
-    {
-        return true;
-    }
-
     void
-    missingNode(std::uint32_t refNum) override
+    missingNodeAcquireBySeq(std::uint32_t refNum, uint256 const& nodeHash)
+        override
     {
         Throw<std::runtime_error>("missing node");
     }
 
     void
-    missingNode(uint256 const& refHash, std::uint32_t refNum) override
+    missingNodeAcquireByHash(uint256 const& refHash, std::uint32_t refNum)
+        override
     {
         Throw<std::runtime_error>("missing node");
     }

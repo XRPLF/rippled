@@ -20,7 +20,7 @@
 #ifndef RIPPLE_BASICS_TESTSUITE_H_INCLUDED
 #define RIPPLE_BASICS_TESTSUITE_H_INCLUDED
 
-#include <ripple/beast/unit_test.h>
+#include <xrpl/beast/unit_test.h>
 #include <string>
 
 namespace ripple {
