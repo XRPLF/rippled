@@ -110,6 +110,7 @@ AMMTestBase::testAMM(
     for (auto const& features : vfeatures)
     {
         Env env{*this, features};
+        auto const baseFee = static_cast<uint32_t>(env.current()->fees().base.drops());
 
         auto const [asset1, asset2] =
             pool ? *pool : std::make_pair(XRP(10000), USD(10000));
@@ -142,7 +143,7 @@ AMMTestBase::testAMM(
             alice,
             asset1,
             asset2,
-            CreateArg{.log = false, .tfee = tfee, .err = ter});
+            CreateArg{.log = false, .tfee = tfee, .err = ter, .fee = baseFee});
         if (BEAST_EXPECT(
                 ammAlice.expectBalances(asset1, asset2, ammAlice.tokens())))
             cb(ammAlice, env);
