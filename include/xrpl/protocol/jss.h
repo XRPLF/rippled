@@ -137,8 +137,10 @@ JSS(SendMax);                            // in: TransactionSign
 JSS(Sequence);                           // in/out: TransactionSign; field.
 JSS(SetFlag);                            // field.
 JSS(SetRegularKey);                      // transaction type.
+JSS(Signer);                             // field.
 JSS(SignerList);                         // ledger type.
 JSS(SignerListSet);                      // transaction type.
+JSS(Signers);                            // field.
 JSS(SigningPubKey);                      // field.
 JSS(TakerGets);                          // field.
 JSS(TakerPays);                          // field.

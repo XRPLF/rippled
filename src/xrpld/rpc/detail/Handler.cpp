@@ -164,6 +164,7 @@ Handler const handlerArray[]{
     {"server_state", byRef(&doServerState), Role::USER, NO_CONDITION},
     {"sign", byRef(&doSign), Role::USER, NO_CONDITION},
     {"sign_for", byRef(&doSignFor), Role::USER, NO_CONDITION},
+    {"simulate", byRef(&doSimulate), Role::USER, NEEDS_CURRENT_LEDGER},
     {"stop", byRef(&doStop), Role::ADMIN, NO_CONDITION},
     {"submit", byRef(&doSubmit), Role::USER, NEEDS_CURRENT_LEDGER},
     {"submit_multisigned",
