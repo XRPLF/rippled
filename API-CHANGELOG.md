@@ -28,10 +28,15 @@ The `network_id` field was added in the `server_info` response in version 1.5.0 
 
 ## XRP Ledger server version 2.3.0
 
+### BREAKING CHANGES
+
+- `book_changes`: If the requested ledger version is not available on this node, a `ledgerNotFound` error is returned and the node does not attempt to acquire the ledger from the p2p network (as with other non-admin RPCs). Admins can still attempt to retrieve old ledgers with the `ledger_request` RPC.
+
 ### Additions
 
 Additions are intended to be non-breaking (because they are purely additive).
 
+- `book_changes`: Returns a `validated` field in its response, which was missing in prior versions.
 - `simulate`: A new RPC that executes a dry run of a transaction submission without actually submitting it to the network for inclusion.
 
 ## XRP Ledger server version 2.2.0

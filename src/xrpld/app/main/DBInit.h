@@ -42,9 +42,6 @@ inline constexpr std::uint32_t SQLITE_TUNING_CUTOFF = 10'000'000;
 // Ledger database holds ledgers and ledger confirmations
 inline constexpr auto LgrDBName{"ledger.db"};
 
-inline constexpr std::array<char const*, 1> LgrDBPragma{
-    {"PRAGMA journal_size_limit=1582080;"}};
-
 inline constexpr std::array<char const*, 5> LgrDBInit{
     {"BEGIN TRANSACTION;",
 
@@ -71,25 +68,6 @@ inline constexpr std::array<char const*, 5> LgrDBInit{
 
 // Transaction database holds transactions and public keys
 inline constexpr auto TxDBName{"transaction.db"};
-
-// In C++17 omitting the explicit template parameters caused
-// a crash
-inline constexpr std::array<char const*, 4> TxDBPragma
-{
-    "PRAGMA page_size=4096;", "PRAGMA journal_size_limit=1582080;",
-        "PRAGMA max_page_count=2147483646;",
-
-#if (ULONG_MAX > UINT_MAX) && !defined(NO_SQLITE_MMAP)
-        "PRAGMA mmap_size=17179869184;"
-#else
-
-        // Provide an explicit `no-op` SQL statement
-        // in order to keep the size of the array
-        // constant regardless of the preprocessor
-        // condition evaluation
-        "PRAGMA sqlite_noop_statement;"
-#endif
-};
 
 inline constexpr std::array<char const*, 8> TxDBInit{
     {"BEGIN TRANSACTION;",
