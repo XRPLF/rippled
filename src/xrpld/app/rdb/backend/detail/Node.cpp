@@ -67,11 +67,12 @@ DatabasePairValid
 makeLedgerDBs(
     Config const& config,
     DatabaseCon::Setup const& setup,
-    DatabaseCon::CheckpointerSetup const& checkpointerSetup)
+    DatabaseCon::CheckpointerSetup const& checkpointerSetup,
+    beast::Journal j)
 {
     // ledger database
     auto lgr{std::make_unique<DatabaseCon>(
-        setup, LgrDBName, LgrDBPragma, LgrDBInit, checkpointerSetup)};
+        setup, LgrDBName, setup.lgrPragma, LgrDBInit, checkpointerSetup, j)};
     lgr->getSession() << boost::str(
         boost::format("PRAGMA cache_size=-%d;") %
         kilobytes(config.getValueFor(SizedItem::lgrDBCache)));
@@ -80,7 +81,7 @@ makeLedgerDBs(
     {
         // transaction database
         auto tx{std::make_unique<DatabaseCon>(
-            setup, TxDBName, TxDBPragma, TxDBInit, checkpointerSetup)};
+            setup, TxDBName, setup.txPragma, TxDBInit, checkpointerSetup, j)};
         tx->getSession() << boost::str(
             boost::format("PRAGMA cache_size=-%d;") %
             kilobytes(config.getValueFor(SizedItem::txnDBCache)));
