@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_INTEGRALAMOUNT_H_INCLUDED
-#define RIPPLE_BASICS_INTEGRALAMOUNT_H_INCLUDED
+#ifndef RIPPLE_BASICS_MPTAMOUNT_H_INCLUDED
+#define RIPPLE_BASICS_MPTAMOUNT_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>

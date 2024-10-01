@@ -663,7 +663,7 @@ STAmount::isDefault() const
 void
 STAmount::canonicalize()
 {
-    if (isXRP(*this) || mAsset.holds<MPTIssue>())
+    if (native() || mAsset.holds<MPTIssue>())
     {
         // log(2^64,10) ~ 19.2
         if (mValue == 0 || mOffset <= -20)
@@ -686,18 +686,14 @@ STAmount::canonicalize()
         {
             Number num(
                 mIsNegative ? -mValue : mValue, mOffset, Number::unchecked{});
+            auto set = [&](auto const& val) {
+                mIsNegative = val.value() < 0;
+                mValue = mIsNegative ? -val.value() : val.value();
+            };
             if (native())
-            {
-                XRPAmount xrp{num};
-                mIsNegative = xrp.drops() < 0;
-                mValue = mIsNegative ? -xrp.drops() : xrp.drops();
-            }
+                set(XRPAmount{num});
             else
-            {
-                MPTAmount c{num};
-                mIsNegative = c.value() < 0;
-                mValue = mIsNegative ? -c.value() : c.value();
-            }
+                set(MPTAmount{num});
             mOffset = 0;
         }
         else

@@ -50,7 +50,7 @@ class SOElement
     // Use std::reference_wrapper so SOElement can be stored in a std::vector.
     std::reference_wrapper<SField const> sField_;
     SOEStyle style_;
-    SOETxMPTAmount supportMpt_;
+    SOETxMPTAmount supportMpt_ = soeMPTNone;
 
 private:
     void
@@ -68,7 +68,7 @@ private:
 
 public:
     SOElement(SField const& fieldName, SOEStyle style)
-        : sField_(fieldName), style_(style), supportMpt_(soeMPTNone)
+        : sField_(fieldName), style_(style)
     {
         init(fieldName);
     }

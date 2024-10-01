@@ -49,7 +49,7 @@ MPTTester::makeHolders(std::vector<AccountP> const& holders)
     std::unordered_map<std::string, AccountP> accounts;
     for (auto const& h : holders)
     {
-        assert(h && holders_.find(h->human()) == accounts.cend());
+        assert(h && accounts.find(h->human()) == accounts.cend());
         accounts.emplace(h->human(), h);
     }
     return accounts;

@@ -57,7 +57,7 @@ operator==(MPTIssue const& lhs, MPTIssue const& rhs)
 constexpr bool
 operator!=(MPTIssue const& lhs, MPTIssue const& rhs)
 {
-    return !(lhs.mptID_ == rhs.mptID_);
+    return !(lhs == rhs);
 }
 
 inline bool
