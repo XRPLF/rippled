@@ -86,7 +86,7 @@ enum AuthHandling { ahIGNORE_AUTH, ahZERO_IF_UNAUTHORIZED };
 isGlobalFrozen(ReadView const& view, AccountID const& issuer);
 
 [[nodiscard]] bool
-isGlobalFrozen(ReadView const& view, MPTIssue const& mpt);
+isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 
 [[nodiscard]] bool
 isIndividualFrozen(
@@ -108,7 +108,7 @@ isIndividualFrozen(
 isIndividualFrozen(
     ReadView const& view,
     AccountID const& account,
-    MPTIssue const& mpt);
+    MPTIssue const& mptIssue);
 
 [[nodiscard]] bool
 isFrozen(
@@ -124,7 +124,10 @@ isFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
 }
 
 [[nodiscard]] bool
-isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mpt);
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue);
 
 // Returns the amount an account can spend without going into debt.
 //
@@ -150,7 +153,7 @@ accountHolds(
 accountHolds(
     ReadView const& view,
     AccountID const& account,
-    MPTIssue const& issue,
+    MPTIssue const& mptIssue,
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
     beast::Journal j);
@@ -235,7 +238,7 @@ forEachItemAfter(
 transferRate(ReadView const& view, AccountID const& issuer);
 
 [[nodiscard]] Rate
-transferRate(ReadView const& view, MPTID const& id);
+transferRate(ReadView const& view, MPTID const& issuanceID);
 
 /** Returns `true` if the directory is empty
     @param key The key of the directory
@@ -506,7 +509,7 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
 [[nodiscard]] TER
 requireAuth(
     ReadView const& view,
-    MPTIssue const& mpt,
+    MPTIssue const& mptIssue,
     AccountID const& account);
 
 /** Check if the destination account is allowed
@@ -516,7 +519,7 @@ requireAuth(
 [[nodiscard]] TER
 canTransfer(
     ReadView const& view,
-    MPTIssue const& mpt,
+    MPTIssue const& mptIssue,
     AccountID const& from,
     AccountID const& to);
 

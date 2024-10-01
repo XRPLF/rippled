@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -81,9 +81,6 @@ public:
     constexpr int
     signum() const noexcept;
 
-    Json::Value
-    jsonClipped() const;
-
     /** Returns the underlying value. Code SHOULD NOT call this
         function unless the type has been abstracted away,
         e.g. in a templated function.
@@ -131,21 +128,6 @@ MPTAmount::value() const
     return value_;
 }
 
-inline std::istream&
-operator>>(std::istream& s, MPTAmount& val)
-{
-    s >> val.value_;
-    return s;
-}
-
-// Output MPTAmount as just the value.
-template <class Char, class Traits>
-std::basic_ostream<Char, Traits>&
-operator<<(std::basic_ostream<Char, Traits>& os, const MPTAmount& q)
-{
-    return os << q.value();
-}
-
 inline std::string
 to_string(MPTAmount const& amount)
 {
@@ -182,4 +164,4 @@ mulRatio(
 
 }  // namespace ripple
 
-#endif  // RIPPLE_BASICS_INTEGRALAMOUNT_H_INCLUDED
+#endif  // RIPPLE_BASICS_MPTAMOUNT_H_INCLUDED

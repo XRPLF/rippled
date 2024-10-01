@@ -35,8 +35,9 @@
 namespace ripple {
 
 template <typename A>
-concept AssetType = std::is_same_v<A, Asset> ||
-    std::is_convertible_v<A, Issue> || std::is_convertible_v<A, MPTIssue>;
+concept AssetType =
+    std::is_same_v<A, Asset> || std::is_convertible_v<A, Issue> ||
+    std::is_convertible_v<A, MPTIssue> || std::is_convertible_v<A, MPTID>;
 
 // Internal form:
 // 1: If amount is zero, then value is zero and offset is -100
@@ -158,7 +159,7 @@ public:
     // Legacy support for new-style amounts
     STAmount(IOUAmount const& amount, Issue const& issue);
     STAmount(XRPAmount const& amount);
-    STAmount(MPTAmount const& amount, MPTIssue const& issue);
+    STAmount(MPTAmount const& amount, MPTIssue const& mptIssue);
     operator Number() const;
 
     //--------------------------------------------------------------------------
@@ -392,8 +393,8 @@ inline STAmount::STAmount(IOUAmount const& amount, Issue const& issue)
     canonicalize();
 }
 
-inline STAmount::STAmount(MPTAmount const& amount, MPTIssue const& issue)
-    : mAsset(issue), mOffset(0), mIsNegative(amount < beast::zero)
+inline STAmount::STAmount(MPTAmount const& amount, MPTIssue const& mptIssue)
+    : mAsset(mptIssue), mOffset(0), mIsNegative(amount < beast::zero)
 {
     if (mIsNegative)
         mValue = unsafe_cast<std::uint64_t>(-amount.value());

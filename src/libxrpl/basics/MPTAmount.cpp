@@ -59,23 +59,6 @@ MPTAmount::operator<(MPTAmount const& other) const
     return value_ < other.value_;
 }
 
-Json::Value
-MPTAmount::jsonClipped() const
-{
-    static_assert(
-        std::is_signed_v<value_type> && std::is_integral_v<value_type>,
-        "Expected MPTAmount to be a signed integral type");
-
-    constexpr auto min = std::numeric_limits<Json::Int>::min();
-    constexpr auto max = std::numeric_limits<Json::Int>::max();
-
-    if (value_ < min)
-        return min;
-    if (value_ > max)
-        return max;
-    return static_cast<Json::Int>(value_);
-}
-
 MPTAmount
 MPTAmount::minPositiveAmount()
 {

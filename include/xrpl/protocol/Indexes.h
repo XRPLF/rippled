@@ -291,21 +291,21 @@ Keylet
 mptIssuance(AccountID const& issuer, std::uint32_t seq) noexcept;
 
 Keylet
-mptIssuance(MPTID const& mpt) noexcept;
+mptIssuance(MPTID const& issuanceID) noexcept;
 
 inline Keylet
-mptIssuance(uint256 const& issuance)
+mptIssuance(uint256 const& issuanceKey)
 {
-    return {ltMPTOKEN_ISSUANCE, issuance};
+    return {ltMPTOKEN_ISSUANCE, issuanceKey};
 }
 
 Keylet
 mptoken(MPTID const& issuanceID, AccountID const& holder) noexcept;
 
 inline Keylet
-mptoken(uint256 const& mptokenKey)
+mptoken(uint256 const& issuanceKey)
 {
-    return {ltMPTOKEN, mptokenKey};
+    return {ltMPTOKEN, issuanceKey};
 }
 
 Keylet
@@ -352,7 +352,7 @@ std::array<keyletDesc<AccountID const&>, 6> const directAccountKeylets{
      {&keylet::did, jss::DID, true}}};
 
 MPTID
-getMptID(AccountID const& account, std::uint32_t sequence);
+makeMptID(AccountID const& account, std::uint32_t sequence);
 
 }  // namespace ripple
 

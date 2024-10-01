@@ -40,10 +40,15 @@ public:
 
     Issue() = default;
 
-    Issue(Currency const& c, AccountID const& a);
+    Issue(Currency const& c, AccountID const& a) : currency(c), account(a)
+    {
+    }
 
     AccountID const&
-    getIssuer() const;
+    getIssuer() const
+    {
+        return account;
+    }
 
     std::string
     getText() const;

@@ -116,7 +116,7 @@ transResults()
         MAKE_ERROR(tecTOKEN_PAIR_NOT_FOUND,          "Token pair is not found in Oracle object."),
         MAKE_ERROR(tecARRAY_EMPTY,                   "Array is empty."),
         MAKE_ERROR(tecARRAY_TOO_LARGE,               "Array is too large."),
-		MAKE_ERROR(tecMPTOKEN_EXISTS,                "The account already owns the MPToken object."),
+        MAKE_ERROR(tecMPTOKEN_EXISTS,                "The account already owns the MPToken object."),
         MAKE_ERROR(tecMPT_MAX_AMOUNT_EXCEEDED,       "The MPT's maximum amount is exceeded."),
         MAKE_ERROR(tecMPT_LOCKED,                    "MPT is locked by the issuer."),
         MAKE_ERROR(tecMPT_ISSUANCE_NOT_FOUND,        "The MPTokenIssuance object is not found"),

@@ -58,7 +58,7 @@ getIDFromCreatedIssuance(TxMeta const& transactionMeta)
 
         auto const& mptNode =
             node.peekAtField(sfNewFields).downcast<STObject>();
-        return getMptID(
+        return makeMptID(
             mptNode.getAccountID(sfIssuer), mptNode.getFieldU32(sfSequence));
     }
 

@@ -126,7 +126,7 @@ doLedgerData(RPC::JsonContext& context)
                 entry[jss::index] = to_string(sle->key());
 
                 if (sle->getType() == ltMPTOKEN_ISSUANCE)
-                    entry[jss::mpt_issuance_id] = to_string(getMptID(
+                    entry[jss::mpt_issuance_id] = to_string(makeMptID(
                         sle->getAccountID(sfIssuer), (*sle)[sfSequence]));
             }
         }

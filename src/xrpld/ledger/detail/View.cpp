@@ -178,9 +178,9 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer)
 }
 
 bool
-isGlobalFrozen(ReadView const& view, MPTIssue const& mpt)
+isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue)
 {
-    if (auto const sle = view.read(keylet::mptIssuance(mpt.getMptID())))
+    if (auto const sle = view.read(keylet::mptIssuance(mptIssue.getMptID())))
         return sle->getFlags() & lsfMPTLocked;
     return false;
 }
@@ -209,9 +209,10 @@ bool
 isIndividualFrozen(
     ReadView const& view,
     AccountID const& account,
-    MPTIssue const& mpt)
+    MPTIssue const& mptIssue)
 {
-    if (auto const sle = view.read(keylet::mptoken(mpt.getMptID(), account)))
+    if (auto const sle =
+            view.read(keylet::mptoken(mptIssue.getMptID(), account)))
         return sle->getFlags() & lsfMPTLocked;
     return false;
 }
@@ -242,11 +243,14 @@ isFrozen(
 }
 
 bool
-isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mpt)
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue)
 {
-    if (isGlobalFrozen(view, mpt))
+    if (isGlobalFrozen(view, mptIssue))
         return true;
-    return isIndividualFrozen(view, account, mpt);
+    return isIndividualFrozen(view, account, mptIssue);
 }
 
 STAmount
@@ -309,37 +313,39 @@ STAmount
 accountHolds(
     ReadView const& view,
     AccountID const& account,
-    MPTIssue const& issue,
+    MPTIssue const& mptIssue,
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
     beast::Journal j)
 {
     STAmount amount;
 
-    auto const sleMpt = view.read(keylet::mptoken(issue.getMptID(), account));
+    auto const sleMpt =
+        view.read(keylet::mptoken(mptIssue.getMptID(), account));
     if (!sleMpt)
-        amount.clear(issue);
-    else if (zeroIfFrozen == fhZERO_IF_FROZEN && isFrozen(view, account, issue))
-        amount.clear(issue);
+        amount.clear(mptIssue);
+    else if (
+        zeroIfFrozen == fhZERO_IF_FROZEN && isFrozen(view, account, mptIssue))
+        amount.clear(mptIssue);
     else
     {
         auto const amt = sleMpt->getFieldU64(sfMPTAmount);
         auto const locked = sleMpt->getFieldU64(sfLockedAmount);
         if (amt > locked)
-            amount = STAmount{issue, amt - locked};
+            amount = STAmount{mptIssue, amt - locked};
 
         // only if auth check is needed, as it needs to do an additional read
         // operation
         if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
         {
             auto const sleIssuance =
-                view.read(keylet::mptIssuance(issue.getMptID()));
+                view.read(keylet::mptIssuance(mptIssue.getMptID()));
 
             // if auth is enabled on the issuance and mpt is not authorized,
             // clear amount
             if (sleIssuance && sleIssuance->isFlag(lsfMPTRequireAuth) &&
                 !sleMpt->isFlag(lsfMPTAuthorized))
-                amount.clear(issue);
+                amount.clear(mptIssue);
         }
     }
 
@@ -564,9 +570,9 @@ transferRate(ReadView const& view, AccountID const& issuer)
 }
 
 Rate
-transferRate(ReadView const& view, MPTID const& id)
+transferRate(ReadView const& view, MPTID const& issuanceID)
 {
-    auto const sle = view.read(keylet::mptIssuance(id));
+    auto const sle = view.read(keylet::mptIssuance(issuanceID));
 
     // fee is 0-50,000 (0-50%), rate is 1,000,000,000-2,000,000,000
     if (sle && sle->isFieldPresent(sfTransferFee))
@@ -1707,9 +1713,12 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
 }
 
 TER
-requireAuth(ReadView const& view, MPTIssue const& mpt, AccountID const& account)
+requireAuth(
+    ReadView const& view,
+    MPTIssue const& mptIssue,
+    AccountID const& account)
 {
-    auto const mptID = keylet::mptIssuance(mpt.getMptID());
+    auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     if (auto const sle = view.read(mptID);
         sle && sle->getFieldU32(sfFlags) & lsfMPTRequireAuth)
     {
@@ -1725,11 +1734,11 @@ requireAuth(ReadView const& view, MPTIssue const& mpt, AccountID const& account)
 TER
 canTransfer(
     ReadView const& view,
-    MPTIssue const& mpt,
+    MPTIssue const& mptIssue,
     AccountID const& from,
     AccountID const& to)
 {
-    auto const mptID = keylet::mptIssuance(mpt.getMptID());
+    auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     if (auto const sle = view.read(mptID);
         sle && !(sle->getFieldU32(sfFlags) & lsfMPTCanTransfer))
     {

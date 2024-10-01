@@ -27,11 +27,11 @@ Asset::Asset(Issue const& issue) : issue_(issue)
 {
 }
 
-Asset::Asset(MPTIssue const& mpt) : issue_(mpt)
+Asset::Asset(MPTIssue const& mptIssue) : issue_(mptIssue)
 {
 }
 
-Asset::Asset(MPTID const& mpt) : issue_(MPTIssue{mpt})
+Asset::Asset(MPTID const& issuanceID) : issue_(MPTIssue{issuanceID})
 {
 }
 

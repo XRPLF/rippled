@@ -366,17 +366,17 @@ class MPT
 {
 public:
     std::string name;
-    ripple::MPTID mptID;
+    ripple::MPTID issuanceID;
 
-    MPT(std::string const& n, ripple::MPTID const& mptID_)
-        : name(n), mptID(mptID_)
+    MPT(std::string const& n, ripple::MPTID const& issuanceID_)
+        : name(n), issuanceID(issuanceID_)
     {
     }
 
     ripple::MPTID const&
     mpt() const
     {
-        return mptID;
+        return issuanceID;
     }
 
     /** Implicit conversion to MPTIssue.
@@ -386,7 +386,7 @@ public:
     */
     operator ripple::MPTIssue() const
     {
-        return mpt();
+        return MPTIssue{issuanceID};
     }
 
     template <class T>

@@ -665,6 +665,7 @@ STAmount::canonicalize()
 {
     if (native() || mAsset.holds<MPTIssue>())
     {
+        // native and MPT currency amounts should always have an offset of zero
         // log(2^64,10) ~ 19.2
         if (mValue == 0 || mOffset <= -20)
         {
@@ -677,9 +678,12 @@ STAmount::canonicalize()
         if (getSTAmountCanonicalizeSwitchover())
         {
             // log(cMaxNativeN, 10) == 17
-            if (mOffset > 17)
+            if (native() && mOffset > 17)
                 Throw<std::runtime_error>(
                     "Native currency amount out of range");
+            // log(maxMPTokenAmount, 10) ~ 18.96
+            if (mAsset.holds<MPTIssue>() && mOffset > 18)
+                Throw<std::runtime_error>("MPT amount out of range");
         }
 
         if (getSTNumberSwitchover() && getSTAmountCanonicalizeSwitchover())
@@ -710,7 +714,7 @@ STAmount::canonicalize()
                 {
                     // N.B. do not move the overflow check to after the
                     // multiplication
-                    if (isXRP(*this))
+                    if (native())
                     {
                         if (mValue > cMaxNativeN)
                             Throw<std::runtime_error>(
@@ -724,7 +728,7 @@ STAmount::canonicalize()
             }
         }
 
-        if (isXRP(*this))
+        if (native())
         {
             if (mValue > cMaxNativeN)
                 Throw<std::runtime_error>(

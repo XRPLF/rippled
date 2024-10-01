@@ -30,6 +30,12 @@ template <typename TIss>
 concept ValidIssueType =
     std::is_same_v<TIss, Issue> || std::is_same_v<TIss, MPTIssue>;
 
+/* Asset is a variant of Issue (XRP and IOU) and MPTIssue (MPT).
+ * It enables handling of different issues when either one is expected.
+ * For instance, it extends STAmount class to support either issue
+ * in a general way. It handles specifics such arithmetics and serialization
+ * depending on specific issue type held by Asset.
+ */
 class Asset
 {
 private:
@@ -41,9 +47,9 @@ public:
 
     Asset(Issue const& issue);
 
-    Asset(MPTIssue const& mpt);
+    Asset(MPTIssue const& mptIssue);
 
-    Asset(MPTID const& mpt);
+    Asset(MPTID const& issuanceID);
 
     explicit operator Issue() const;
 

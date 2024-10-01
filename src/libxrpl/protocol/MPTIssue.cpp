@@ -23,7 +23,7 @@
 
 namespace ripple {
 
-MPTIssue::MPTIssue(MPTID const& id) : mptID_(id)
+MPTIssue::MPTIssue(MPTID const& issuanceID) : mptID_(issuanceID)
 {
 }
 
@@ -44,10 +44,10 @@ MPTIssue::getMptID() const
 }
 
 Json::Value
-to_json(MPTIssue const& issue)
+to_json(MPTIssue const& mptIssue)
 {
     Json::Value jv;
-    jv[jss::mpt_issuance_id] = to_string(issue.getMptID());
+    jv[jss::mpt_issuance_id] = to_string(mptIssue.getMptID());
     return jv;
 }
 

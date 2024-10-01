@@ -25,6 +25,12 @@
 
 namespace ripple {
 
+/* MPTIssue represents a Multi Purpose Token (MPT) and enables handling of
+ * either Issue or MPTIssue tokens by Asset and STAmount. MPT is identified
+ * by MPTID, which is a 192-bit concatenation of a 32-bit account sequence
+ * number at the time of MPT creation and a 160-bit account id.
+ * The sequence number is stored in big endian order.
+ */
 class MPTIssue
 {
 private:
@@ -33,7 +39,7 @@ private:
 public:
     MPTIssue() = default;
 
-    MPTIssue(MPTID const& id);
+    explicit MPTIssue(MPTID const& issuanceID);
 
     AccountID const&
     getIssuer() const;
@@ -67,10 +73,10 @@ isXRP(MPTID const&)
 }
 
 Json::Value
-to_json(MPTIssue const& issue);
+to_json(MPTIssue const& mptIssue);
 
 std::string
-to_string(MPTIssue const& mpt);
+to_string(MPTIssue const& mptIssue);
 
 }  // namespace ripple
 

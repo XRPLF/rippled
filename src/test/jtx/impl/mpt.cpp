@@ -85,7 +85,7 @@ MPTTester::create(const MPTCreate& arg)
 {
     if (issuanceKey_)
         Throw<std::runtime_error>("MPT can't be reused");
-    id_ = getMptID(issuer_.id(), env_.seq(issuer_));
+    id_ = makeMptID(issuer_.id(), env_.seq(issuer_));
     issuanceKey_ = keylet::mptIssuance(*id_).key;
     Json::Value jv;
     jv[sfAccount.jsonName] = issuer_.human();
