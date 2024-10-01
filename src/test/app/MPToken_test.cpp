@@ -742,10 +742,10 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(alice, bob, 100);
 
             // Pay to another holder
-            mptAlice.pay(bob, carol, 101, tecINSUFFICIENT_FUNDS);
+            mptAlice.pay(bob, carol, 101, tecPATH_PARTIAL);
 
             // Pay to the issuer
-            mptAlice.pay(bob, alice, 101, tecINSUFFICIENT_FUNDS);
+            mptAlice.pay(bob, alice, 101, tecPATH_PARTIAL);
         }
 
         // MPT is locked
@@ -805,7 +805,7 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(alice, bob, 100);
 
             // issuer tries to exceed max amount
-            mptAlice.pay(alice, bob, 1, tecMPT_MAX_AMOUNT_EXCEEDED);
+            mptAlice.pay(alice, bob, 1, tecPATH_PARTIAL);
         }
 
         // Issuer fails trying to send more than the default maximum
@@ -823,7 +823,7 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(alice, bob, maxMPTokenAmount);
 
             // issuer tries to exceed max amount
-            mptAlice.pay(alice, bob, 1, tecMPT_MAX_AMOUNT_EXCEEDED);
+            mptAlice.pay(alice, bob, 1, tecPATH_PARTIAL);
         }
 
         // Can't pay negative amount
@@ -876,14 +876,25 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(alice, bob, 2'000);
 
             // Payment between the holder and the issuer, no transfer fee.
-            mptAlice.pay(alice, bob, 1'000);
+            mptAlice.pay(bob, alice, 1'000);
 
             // Payment between the holders. The sender doesn't have
             // enough funds to cover the transfer fee.
-            mptAlice.pay(bob, carol, 1'000);
+            mptAlice.pay(bob, carol, 1'000, tecPATH_PARTIAL);
 
-            // Payment between the holders. The sender pays 10% transfer fee.
-            mptAlice.pay(bob, carol, 100);
+            // Payment between the holders. The sender has enough funds
+            // but SendMax is not included.
+            mptAlice.pay(bob, carol, 100, tecPATH_PARTIAL);
+
+            auto const MPT = mptAlice["MPT"];
+            // SendMax doesn't cover the fee
+            env(pay(bob, carol, MPT(100)),
+                sendmax(MPT(109)),
+                ter(tecPATH_PARTIAL));
+
+            // Payment succeeds if SendMax is included.
+            env(pay(bob, carol, MPT(100)), sendmax(MPT(110)));
+            env(pay(bob, carol, MPT(100)), sendmax(MPT(115)));
         }
 
         // Test that non-issuer cannot send to each other if MPTCanTransfer
@@ -962,11 +973,20 @@ class MPToken_test : public beast::unit_test::suite
 
             // sendMax and DeliverMin are valid XRP amount,
             // but is invalid combination with MPT amount
-            env(pay(alice, carol, mptAlice.mpt(100)),
+            auto const MPT = mptAlice["MPT"];
+            env(pay(alice, carol, MPT(100)),
                 sendmax(XRP(100)),
                 ter(temMALFORMED));
-            env(pay(alice, carol, mptAlice.mpt(100)),
+            env(pay(alice, carol, MPT(100)),
                 delivermin(XRP(100)),
+                ter(temMALFORMED));
+            // sendMax MPT is invalid with IOU or XRP
+            auto const USD = alice["USD"];
+            env(pay(alice, carol, USD(100)),
+                sendmax(MPT(100)),
+                ter(temMALFORMED));
+            env(pay(alice, carol, XRP(100)),
+                sendmax(MPT(100)),
                 ter(temMALFORMED));
         }
 
@@ -979,12 +999,13 @@ class MPToken_test : public beast::unit_test::suite
             MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
 
             mptAlice.create({.ownerCount = 1, .holderCount = 0});
+            auto const MPT = mptAlice["MPT"];
 
             mptAlice.authorize({.account = &carol});
 
             Json::Value payment;
             payment[jss::secret] = alice.name();
-            payment[jss::tx_json] = pay(alice, carol, mptAlice.mpt(100));
+            payment[jss::tx_json] = pay(alice, carol, MPT(100));
 
             payment[jss::build_path] = true;
             auto jrr = env.rpc("json", "submit", to_string(payment));
@@ -1237,20 +1258,15 @@ class MPToken_test : public beast::unit_test::suite
                 test(jv);
             }
             // Payment
-            auto payment = [&](SField const& field) {
+            {
                 Json::Value jv;
                 jv[jss::TransactionType] = jss::Payment;
                 jv[jss::Account] = alice.human();
                 jv[jss::Destination] = carol.human();
                 jv[jss::Amount] = mpt.getJson(JsonOptions::none);
-                if (field == sfSendMax)
-                    jv[jss::SendMax] = mpt.getJson(JsonOptions::none);
-                else
-                    jv[jss::DeliverMin] = mpt.getJson(JsonOptions::none);
+                jv[jss::DeliverMin] = mpt.getJson(JsonOptions::none);
                 test(jv);
-            };
-            payment(sfSendMax);
-            payment(sfDeliverMin);
+            }
             // NFTokenCreateOffer
             {
                 Json::Value jv;

@@ -393,6 +393,12 @@ MPTTester::getFlags(ripple::test::jtx::AccountP holder) const
     return flags;
 }
 
+MPT
+MPTTester::operator[](const std::string& name)
+{
+    return MPT(name, issuanceID());
+}
+
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

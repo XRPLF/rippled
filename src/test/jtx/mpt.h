@@ -215,6 +215,9 @@ public:
     std::int64_t
     getAmount(Account const& account) const;
 
+    MPT
+    operator[](std::string const& name);
+
 private:
     using SLEP = std::shared_ptr<SLE const>;
     bool

@@ -19,7 +19,6 @@
 
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/tx/detail/Payment.h>
-#include <xrpld/core/Config.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
@@ -88,6 +87,9 @@ preflightHelper<Issue>(PreflightContext const& ctx)
             saDstAmount.mantissa(),
             saDstAmount.exponent(),
             saDstAmount < beast::zero);
+
+    if (!maxSourceAmount.holds<Issue>())
+        return temMALFORMED;
 
     auto const& uSrcCurrency = maxSourceAmount.getCurrency();
     auto const& uDstCurrency = saDstAmount.getCurrency();
@@ -219,8 +221,11 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
-    if (ctx.tx.isFieldPresent(sfDeliverMin) ||
-        ctx.tx.isFieldPresent(sfSendMax) || ctx.tx.isFieldPresent(sfPaths))
+    if (ctx.tx.isFieldPresent(sfDeliverMin) || ctx.tx.isFieldPresent(sfPaths))
+        return temMALFORMED;
+
+    if (auto const sendMax = ctx.tx[~sfSendMax];
+        sendMax && !sendMax->holds<MPTIssue>())
         return temMALFORMED;
 
     auto& tx = ctx.tx;
@@ -667,19 +672,35 @@ applyHelper<MPTIssue>(ApplyContext& ctx, XRPAmount const&, XRPAmount const&)
 
     auto const& mpt = saDstAmount.get<MPTIssue>();
     auto const& issuer = mpt.getIssuer();
-    // If globally/individually locked then
-    //   - can't send between holders
-    //   - holder can send back to issuer
-    //   - issuer can send to holder
-    if (account != issuer && uDstAccountID != issuer &&
-        (isFrozen(ctx.view(), account, mpt) ||
-         isFrozen(ctx.view(), uDstAccountID, mpt)))
-        return tecMPT_LOCKED;
+
+    if (account != issuer && uDstAccountID != issuer)
+    {
+        // If globally/individually locked then
+        //   - can't send between holders
+        //   - holder can send back to issuer
+        //   - issuer can send to holder
+        if (isFrozen(ctx.view(), account, mpt) ||
+            isFrozen(ctx.view(), uDstAccountID, mpt))
+            return tecMPT_LOCKED;
+
+        auto const sendMax(ctx.tx[~sfSendMax]);
+        // If the transfer fee is included then SendMax has to be included
+        // and be large enough to cover the fee. The payment can still fail if
+        // the sender has insufficient funds.
+        if (auto const rate = transferRate(ctx.view(), mpt.getMptID());
+            rate != parityRate &&
+            (!sendMax || multiply(saDstAmount, rate) > *sendMax))
+            return tecPATH_PARTIAL;
+    }
 
     PaymentSandbox pv(&ctx.view());
-    auto const res =
+    auto res =
         accountSendMPT(pv, account, uDstAccountID, saDstAmount, ctx.journal);
-    pv.apply(ctx.rawView());
+    if (res == tesSUCCESS)
+        pv.apply(ctx.rawView());
+    else if (res == tecINSUFFICIENT_FUNDS || res == tecMPT_MAX_AMOUNT_EXCEEDED)
+        res = tecPATH_PARTIAL;
+
     return res;
 }
 

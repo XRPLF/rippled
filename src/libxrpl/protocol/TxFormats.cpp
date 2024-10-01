@@ -163,7 +163,7 @@ TxFormats::TxFormats()
         {
             {sfDestination, soeREQUIRED},
             {sfAmount, soeREQUIRED, soeMPTSupported},
-            {sfSendMax, soeOPTIONAL},
+            {sfSendMax, soeOPTIONAL, soeMPTSupported},
             {sfPaths, soeDEFAULT},
             {sfInvoiceID, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
