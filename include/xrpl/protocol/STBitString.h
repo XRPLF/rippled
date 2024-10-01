@@ -162,11 +162,10 @@ template <int Bits>
 void
 STBitString<Bits>::add(Serializer& s) const
 {
-    XRPL_ASSERT(
-        "ripple::STBitString::add : field is binary", getFName().isBinary());
-    XRPL_ASSERT(
-        "ripple::STBitString::add : field type match",
-        getFName().fieldType == getSType());
+    ASSERT(getFName().isBinary(), "ripple::STBitString::add : field is binary");
+    ASSERT(
+        getFName().fieldType == getSType(),
+        "ripple::STBitString::add : field type match");
     s.addBitString<Bits>(value_);
 }
 

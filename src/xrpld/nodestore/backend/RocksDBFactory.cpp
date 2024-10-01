@@ -228,7 +228,7 @@ public:
     {
         if (m_db)
         {
-            XRPL_UNREACHABLE(
+            UNREACHABLE(
                 "ripple::NodeStore::RocksDBBackend::open : database is already "
                 "open");
             JLOG(m_journal.error()) << "database is already open";
@@ -275,9 +275,9 @@ public:
     Status
     fetch(void const* key, std::shared_ptr<NodeObject>* pObject) override
     {
-        XRPL_ASSERT(
-            "ripple::NodeStore::RocksDBBackend::fetch : non-null database",
-            m_db);
+        ASSERT(
+            m_db != nullptr,
+            "ripple::NodeStore::RocksDBBackend::fetch : non-null database");
         pObject->reset();
 
         Status status(ok);
@@ -353,9 +353,10 @@ public:
     void
     storeBatch(Batch const& batch) override
     {
-        XRPL_ASSERT(
-            "ripple::NodeStore::RocksDBBackend::storeBatch : non-null database",
-            m_db);
+        ASSERT(
+            m_db != nullptr,
+            "ripple::NodeStore::RocksDBBackend::storeBatch : non-null "
+            "database");
         rocksdb::WriteBatch wb;
 
         for (auto const& e : batch)
@@ -387,9 +388,9 @@ public:
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        XRPL_ASSERT(
-            "ripple::NodeStore::RocksDBBackend::for_each : non-null database",
-            m_db);
+        ASSERT(
+            m_db != nullptr,
+            "ripple::NodeStore::RocksDBBackend::for_each : non-null database");
         rocksdb::ReadOptions const options;
 
         std::unique_ptr<rocksdb::Iterator> it(m_db->NewIterator(options));

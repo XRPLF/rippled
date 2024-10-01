@@ -38,7 +38,7 @@ byRef(Function const& f)
         result = f(context);
         if (result.type() != Json::objectValue)
         {
-            XRPL_UNREACHABLE("ripple::RPC::byRef : result is object");
+            UNREACHABLE("ripple::RPC::byRef : result is object");
             result = RPC::makeObjectValue(result);
         }
 
@@ -50,10 +50,10 @@ template <class Object, class HandlerImpl>
 Status
 handle(JsonContext& context, Object& object)
 {
-    XRPL_ASSERT(
-        "ripple::RPC::handle : valid API version",
+    ASSERT(
         context.apiVersion >= HandlerImpl::minApiVer &&
-            context.apiVersion <= HandlerImpl::maxApiVer);
+            context.apiVersion <= HandlerImpl::maxApiVer,
+        "ripple::RPC::handle : valid API version");
     HandlerImpl handler(context);
 
     auto status = handler.check();
@@ -205,12 +205,12 @@ private:
         unsigned minVer,
         unsigned maxVer)
     {
-        XRPL_ASSERT(
-            "ripple::RPC::HandlerTable : valid API version range",
-            minVer <= maxVer);
-        XRPL_ASSERT(
-            "ripple::RPC::HandlerTable : valid max API version",
-            maxVer <= RPC::apiMaximumValidVersion);
+        ASSERT(
+            minVer <= maxVer,
+            "ripple::RPC::HandlerTable : valid API version range");
+        ASSERT(
+            maxVer <= RPC::apiMaximumValidVersion,
+            "ripple::RPC::HandlerTable : valid max API version");
 
         return std::any_of(
             range.first,

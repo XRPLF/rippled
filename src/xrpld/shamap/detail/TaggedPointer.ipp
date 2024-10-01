@@ -79,18 +79,18 @@ constexpr auto chunksPerBlock =
 [[nodiscard]] inline std::uint8_t
 numAllocatedChildren(std::uint8_t n)
 {
-    XRPL_ASSERT(
-        "ripple::numAllocatedChildren : valid input",
-        n <= SHAMapInnerNode::branchFactor);
+    ASSERT(
+        n <= SHAMapInnerNode::branchFactor,
+        "ripple::numAllocatedChildren : valid input");
     return *std::lower_bound(boundaries.begin(), boundaries.end(), n);
 }
 
 [[nodiscard]] inline std::size_t
 boundariesIndex(std::uint8_t numChildren)
 {
-    XRPL_ASSERT(
-        "ripple::boundariesIndex : valid input",
-        numChildren <= SHAMapInnerNode::branchFactor);
+    ASSERT(
+        numChildren <= SHAMapInnerNode::branchFactor,
+        "ripple::boundariesIndex : valid input");
     return std::distance(
         boundaries.begin(),
         std::lower_bound(boundaries.begin(), boundaries.end(), numChildren));
@@ -160,9 +160,9 @@ allocateArrays(std::uint8_t numChildren)
 inline void
 deallocateArrays(std::uint8_t boundaryIndex, void* p)
 {
-    XRPL_ASSERT(
-        "ripple::deallocateArrays : valid inputs",
-        isFromArrayFuns[boundaryIndex](p));
+    ASSERT(
+        isFromArrayFuns[boundaryIndex](p),
+        "ripple::deallocateArrays : valid inputs");
     freeArrayFuns[boundaryIndex](p);
 }
 
@@ -276,15 +276,15 @@ TaggedPointer::getChildIndex(std::uint16_t isBranch, int i) const
 inline TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t numChildren)
 {
     auto [tag, p] = allocateArrays(numChildren);
-    XRPL_ASSERT(
+    ASSERT(
+        tag < boundaries.size(),
         "ripple::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
-        "maximum tag",
-        tag < boundaries.size());
-    XRPL_ASSERT(
-        "ripple::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
-        "valid pointer",
+        "maximum tag");
+    ASSERT(
         (reinterpret_cast<std::uintptr_t>(p) & ptrMask) ==
-            reinterpret_cast<std::uintptr_t>(p));
+            reinterpret_cast<std::uintptr_t>(p),
+        "ripple::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
+        "valid pointer");
     tp_ = reinterpret_cast<std::uintptr_t>(p) + tag;
 }
 
@@ -294,10 +294,10 @@ inline TaggedPointer::TaggedPointer(
     std::uint16_t dstBranches,
     std::uint8_t toAllocate)
 {
-    XRPL_ASSERT(
+    ASSERT(
+        toAllocate >= popcnt16(dstBranches),
         "ripple::TaggedPointer::TaggedPointer(TaggedPointer&& ...) : minimum "
-        "toAllocate input",
-        toAllocate >= popcnt16(dstBranches));
+        "toAllocate input");
 
     if (other.capacity() == numAllocatedChildren(toAllocate))
     {
@@ -442,10 +442,10 @@ inline TaggedPointer::TaggedPointer(
             }
         }
         // If sparse, may need to run additional constructors
-        XRPL_ASSERT(
+        ASSERT(
+            !dstIsDense || dstIndex == dstNumAllocated,
             "ripple::TaggedPointer::TaggedPointer(TaggedPointer&& ...) : "
-            "non-sparse or valid sparse",
-            !dstIsDense || dstIndex == dstNumAllocated);
+            "non-sparse or valid sparse");
         for (int i = dstIndex; i < dstNumAllocated; ++i)
         {
             new (&dstHashes[i]) SHAMapHash{};

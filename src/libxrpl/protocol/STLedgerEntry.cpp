@@ -157,9 +157,9 @@ STLedgerEntry::thread(
     if (oldPrevTxID == txID)
     {
         // this transaction is already threaded
-        XRPL_ASSERT(
-            "ripple::STLedgerEntry::thread : ledger sequence match",
-            getFieldU32(sfPreviousTxnLgrSeq) == ledgerSeq);
+        ASSERT(
+            getFieldU32(sfPreviousTxnLgrSeq) == ledgerSeq,
+            "ripple::STLedgerEntry::thread : ledger sequence match");
         return false;
     }
 

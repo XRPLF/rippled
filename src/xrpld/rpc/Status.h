@@ -95,8 +95,7 @@ public:
     TER
     toTER() const
     {
-        XRPL_ASSERT(
-            "ripple::RPC::Status::toTER : type is TER", type_ == Type::TER);
+        ASSERT(type_ == Type::TER, "ripple::RPC::Status::toTER : type is TER");
         return TER::fromInt(code_);
     }
 
@@ -105,9 +104,9 @@ public:
     error_code_i
     toErrorCode() const
     {
-        XRPL_ASSERT(
-            "ripple::RPC::Status::toTER : type is error code",
-            type_ == Type::error_code_i);
+        ASSERT(
+            type_ == Type::error_code_i,
+            "ripple::RPC::Status::toTER : type is error code");
         return error_code_i(code_);
     }
 

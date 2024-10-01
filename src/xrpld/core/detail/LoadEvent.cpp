@@ -83,7 +83,7 @@ LoadEvent::start()
 void
 LoadEvent::stop()
 {
-    XRPL_ASSERT("ripple::LoadEvent::stop : is running", running_);
+    ASSERT(running_, "ripple::LoadEvent::stop : is running");
 
     auto const now = std::chrono::steady_clock::now();
 

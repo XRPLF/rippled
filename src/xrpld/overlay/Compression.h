@@ -64,7 +64,7 @@ decompress(
             JLOG(debugLog().warn())
                 << "decompress: invalid compression algorithm "
                 << static_cast<int>(algorithm);
-            XRPL_UNREACHABLE(
+            UNREACHABLE(
                 "ripple::compression::decompress : invalid compression "
                 "algorithm");
         }
@@ -101,7 +101,7 @@ compress(
         {
             JLOG(debugLog().warn()) << "compress: invalid compression algorithm"
                                     << static_cast<int>(algorithm);
-            XRPL_UNREACHABLE(
+            UNREACHABLE(
                 "ripple::compression::compress : invalid compression "
                 "algorithm");
         }

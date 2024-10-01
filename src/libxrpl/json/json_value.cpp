@@ -207,7 +207,7 @@ Value::Value(ValueType type) : type_(type), allocated_(0)
             break;
 
         default:
-            XRPL_UNREACHABLE("Json::Value::Value(ValueType) : invalid type");
+            UNREACHABLE("Json::Value::Value(ValueType) : invalid type");
     }
 }
 
@@ -277,7 +277,7 @@ Value::Value(const Value& other) : type_(other.type_)
             break;
 
         default:
-            XRPL_UNREACHABLE("Json::Value::Value(Value const&) : invalid type");
+            UNREACHABLE("Json::Value::Value(Value const&) : invalid type");
     }
 }
 
@@ -305,7 +305,7 @@ Value::~Value()
             break;
 
         default:
-            XRPL_UNREACHABLE("Json::Value::~Value : invalid type");
+            UNREACHABLE("Json::Value::~Value : invalid type");
     }
 }
 
@@ -406,7 +406,7 @@ operator<(const Value& x, const Value& y)
         }
 
         default:
-            XRPL_UNREACHABLE("Json::operator<(Value, Value) : invalid type");
+            UNREACHABLE("Json::operator<(Value, Value) : invalid type");
     }
 
     return 0;  // unreachable
@@ -452,7 +452,7 @@ operator==(const Value& x, const Value& y)
                 *x.value_.map_ == *y.value_.map_;
 
         default:
-            XRPL_UNREACHABLE("Json::operator==(Value, Value) : invalid type");
+            UNREACHABLE("Json::operator==(Value, Value) : invalid type");
     }
 
     return 0;  // unreachable
@@ -461,7 +461,7 @@ operator==(const Value& x, const Value& y)
 const char*
 Value::asCString() const
 {
-    XRPL_ASSERT("Json::Value::asCString : valid type", type_ == stringValue);
+    ASSERT(type_ == stringValue, "Json::Value::asCString : valid type");
     return value_.string_;
 }
 
@@ -493,7 +493,7 @@ Value::asString() const
             JSON_ASSERT_MESSAGE(false, "Type is not convertible to string");
 
         default:
-            XRPL_UNREACHABLE("Json::Value::asString : invalid type");
+            UNREACHABLE("Json::Value::asString : invalid type");
     }
 
     return "";  // unreachable
@@ -535,7 +535,7 @@ Value::asInt() const
             JSON_ASSERT_MESSAGE(false, "Type is not convertible to int");
 
         default:
-            XRPL_UNREACHABLE("Json::Value::asInt : invalid type");
+            UNREACHABLE("Json::Value::asInt : invalid type");
     }
 
     return 0;  // unreachable;
@@ -577,7 +577,7 @@ Value::asUInt() const
             JSON_ASSERT_MESSAGE(false, "Type is not convertible to uint");
 
         default:
-            XRPL_UNREACHABLE("Json::Value::asUInt : invalid type");
+            UNREACHABLE("Json::Value::asUInt : invalid type");
     }
 
     return 0;  // unreachable;
@@ -609,7 +609,7 @@ Value::asDouble() const
             JSON_ASSERT_MESSAGE(false, "Type is not convertible to double");
 
         default:
-            XRPL_UNREACHABLE("Json::Value::asDouble : invalid type");
+            UNREACHABLE("Json::Value::asDouble : invalid type");
     }
 
     return 0;  // unreachable;
@@ -641,7 +641,7 @@ Value::asBool() const
             return value_.map_->size() != 0;
 
         default:
-            XRPL_UNREACHABLE("Json::Value::asBool : invalid type");
+            UNREACHABLE("Json::Value::asBool : invalid type");
     }
 
     return false;  // unreachable;
@@ -695,7 +695,7 @@ Value::isConvertibleTo(ValueType other) const
                 (other == nullValue && value_.map_->size() == 0);
 
         default:
-            XRPL_UNREACHABLE("Json::Value::isConvertible : invalid type");
+            UNREACHABLE("Json::Value::isConvertible : invalid type");
     }
 
     return false;  // unreachable;
@@ -729,7 +729,7 @@ Value::size() const
             return Int(value_.map_->size());
 
         default:
-            XRPL_UNREACHABLE("Json::Value::size : invalid type");
+            UNREACHABLE("Json::Value::size : invalid type");
     }
 
     return 0;  // unreachable;
@@ -752,9 +752,9 @@ Value::operator bool() const
 void
 Value::clear()
 {
-    XRPL_ASSERT(
-        "Json::Value::clear : valid type",
-        type_ == nullValue || type_ == arrayValue || type_ == objectValue);
+    ASSERT(
+        type_ == nullValue || type_ == arrayValue || type_ == objectValue,
+        "Json::Value::clear : valid type");
 
     switch (type_)
     {
@@ -771,9 +771,9 @@ Value::clear()
 Value&
 Value::operator[](UInt index)
 {
-    XRPL_ASSERT(
-        "Json::Value::operator[](UInt) : valid type",
-        type_ == nullValue || type_ == arrayValue);
+    ASSERT(
+        type_ == nullValue || type_ == arrayValue,
+        "Json::Value::operator[](UInt) : valid type");
 
     if (type_ == nullValue)
         *this = Value(arrayValue);
@@ -792,9 +792,9 @@ Value::operator[](UInt index)
 const Value&
 Value::operator[](UInt index) const
 {
-    XRPL_ASSERT(
-        "Json::Value::operator[](UInt) const : valid type",
-        type_ == nullValue || type_ == arrayValue);
+    ASSERT(
+        type_ == nullValue || type_ == arrayValue,
+        "Json::Value::operator[](UInt) const : valid type");
 
     if (type_ == nullValue)
         return null;
@@ -817,9 +817,9 @@ Value::operator[](const char* key)
 Value&
 Value::resolveReference(const char* key, bool isStatic)
 {
-    XRPL_ASSERT(
-        "Json::Value::resolveReference : valid type",
-        type_ == nullValue || type_ == objectValue);
+    ASSERT(
+        type_ == nullValue || type_ == objectValue,
+        "Json::Value::resolveReference : valid type");
 
     if (type_ == nullValue)
         *this = Value(objectValue);
@@ -853,9 +853,9 @@ Value::isValidIndex(UInt index) const
 const Value&
 Value::operator[](const char* key) const
 {
-    XRPL_ASSERT(
-        "Json::Value::operator[](const char*) const : valid type",
-        type_ == nullValue || type_ == objectValue);
+    ASSERT(
+        type_ == nullValue || type_ == objectValue,
+        "Json::Value::operator[](const char*) const : valid type");
 
     if (type_ == nullValue)
         return null;
@@ -915,9 +915,9 @@ Value::get(std::string const& key, const Value& defaultValue) const
 Value
 Value::removeMember(const char* key)
 {
-    XRPL_ASSERT(
-        "Json::Value::removeMember : valid type",
-        type_ == nullValue || type_ == objectValue);
+    ASSERT(
+        type_ == nullValue || type_ == objectValue,
+        "Json::Value::removeMember : valid type");
 
     if (type_ == nullValue)
         return null;
@@ -958,9 +958,9 @@ Value::isMember(std::string const& key) const
 Value::Members
 Value::getMemberNames() const
 {
-    XRPL_ASSERT(
-        "Json::Value::getMemberNames : valid type",
-        type_ == nullValue || type_ == objectValue);
+    ASSERT(
+        type_ == nullValue || type_ == objectValue,
+        "Json::Value::getMemberNames : valid type");
 
     if (type_ == nullValue)
         return Value::Members();

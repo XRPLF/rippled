@@ -119,9 +119,9 @@ Workers::stop()
     m_cv.wait(lk, [this] { return m_allPaused; });
     lk.unlock();
 
-    XRPL_ASSERT(
-        "ripple::Workers::stop : zero running tasks",
-        numberOfCurrentlyRunningTasks() == 0);
+    ASSERT(
+        numberOfCurrentlyRunningTasks() == 0,
+        "ripple::Workers::stop : zero running tasks");
 }
 
 void

@@ -223,7 +223,7 @@ claimHelper(
         auto i = signersList.find(a.keyAccount);
         if (i == signersList.end())
         {
-            XRPL_UNREACHABLE(
+            UNREACHABLE(
                 "ripple::claimHelper : invalid inputs");  // should have already
                                                           // been checked
             continue;
@@ -440,7 +440,9 @@ transferHelper(
     if (amt.native())
     {
         auto const sleSrc = psb.peek(keylet::account(src));
-        XRPL_ASSERT("ripple::transferHelper : non-null source account", sleSrc);
+        ASSERT(
+            sleSrc != nullptr,
+            "ripple::transferHelper : non-null source account");
         if (!sleSrc)
             return tecINTERNAL;
 

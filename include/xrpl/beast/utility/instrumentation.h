@@ -28,19 +28,31 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #endif
 #include <antithesis_sdk.h>
 #else
-#define ALWAYS(cond, message, ...)
-#define ALWAYS_OR_UNREACHABLE(cond, message, ...) assert(message && (cond))
-#define SOMETIMES(cond, message, ...)
-#define REACHABLE(message, ...)
-#define UNREACHABLE(message, ...) assert(message && false)
+#define ALWAYS(cond, name, ...) assert((name) && (cond))
+#define ALWAYS_OR_UNREACHABLE(cond, name, ...) assert((name) && (cond))
+#define SOMETIMES(cond, name, ...)
+#define REACHABLE(name, ...)
+#define UNREACHABLE(name, ...) assert((name) && false)
 #endif
 
-#ifndef NDEBUG
-#define XRPL_ASSERT(M, ...) ALWAYS_OR_UNREACHABLE(((bool)(__VA_ARGS__)), M, {})
-#define XRPL_UNREACHABLE(M) UNREACHABLE(M, {})
-#else
-#define XRPL_ASSERT(...)
-#define XRPL_UNREACHABLE(M)
-#endif
+#define ASSERT ALWAYS_OR_UNREACHABLE
+
+// How to use the above macros:
+//
+// ALWAYS if it must be reached during fuzzing
+// ASSERT if you expect that it might, or might not, be reached during fuzzing
+// REACHABLE if it must be reached during fuzzing
+// SOMETIMES a hint for the fuzzer to try to make the condition true
+// UNREACHABLE if it must not be reached (in fuzzing or in normal use)
+//
+// NOTE: ASSERT has similar semantics as assert macro, with minor differences:
+// * ASSERT must have an unique name (naming convention in CONTRIBUTING.md)
+// * the condition (which comes first) must be *implicitly* convertible to bool
+// * during fuzzing, the program will continue execution past a failed ASSERT
+// We continue to use assert inside unit tests and in constexpr functions.
+//
+// NOTE: UNREACHABLE does *not* have the same semantics as std::unreachable.
+// The program will continue execution past an UNREACHABLE in a Release build
+// and during fuzzing (similar to ASSERT).
 
 #endif

@@ -169,7 +169,7 @@ doAccountChannels(RPC::JsonContext& context)
                 std::shared_ptr<SLE const> const& sleCur) {
                 if (!sleCur)
                 {
-                    XRPL_UNREACHABLE("ripple::doAccountChannels : null SLE");
+                    UNREACHABLE("ripple::doAccountChannels : null SLE");
                     return false;
                 }
 

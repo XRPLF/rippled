@@ -47,10 +47,10 @@ LedgerReplayer::replay(
     uint256 const& finishLedgerHash,
     std::uint32_t totalNumLedgers)
 {
-    XRPL_ASSERT(
-        "ripple::LedgerReplayer::replay : valid inputs",
+    ASSERT(
         finishLedgerHash.isNonZero() && totalNumLedgers > 0 &&
-            totalNumLedgers <= LedgerReplayParameters::MAX_TASK_SIZE);
+            totalNumLedgers <= LedgerReplayParameters::MAX_TASK_SIZE,
+        "ripple::LedgerReplayer::replay : valid inputs");
 
     LedgerReplayTask::TaskParameter parameter(
         r, finishLedgerHash, totalNumLedgers);

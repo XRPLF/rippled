@@ -107,9 +107,9 @@ STValidation::isValid() const noexcept
 {
     if (!valid_)
     {
-        XRPL_ASSERT(
-            "ripple::STValidation::isValid : valid key type",
-            publicKeyType(getSignerPublic()) == KeyType::secp256k1);
+        ASSERT(
+            publicKeyType(getSignerPublic()) == KeyType::secp256k1,
+            "ripple::STValidation::isValid : valid key type");
 
         valid_ = verifyDigest(
             getSignerPublic(),

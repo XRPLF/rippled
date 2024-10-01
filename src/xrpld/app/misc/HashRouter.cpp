@@ -101,7 +101,7 @@ HashRouter::getFlags(uint256 const& key)
 bool
 HashRouter::setFlags(uint256 const& key, int flags)
 {
-    XRPL_ASSERT("ripple::HashRouter::setFlags : valid input", flags != 0);
+    ASSERT(flags != 0, "ripple::HashRouter::setFlags : valid input");
 
     std::lock_guard lock(mutex_);
 

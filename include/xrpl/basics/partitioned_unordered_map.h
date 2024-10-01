@@ -246,10 +246,10 @@ public:
             ? *partitions
             : std::thread::hardware_concurrency();
         map_.resize(partitions_);
-        XRPL_ASSERT(
+        ASSERT(
+            partitions_ != 0,
             "ripple::partitioned_unordered_map::partitioned_unordered_map : "
-            "nonzero partitions",
-            partitions_);
+            "nonzero partitions");
     }
 
     std::size_t

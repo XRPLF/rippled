@@ -58,9 +58,9 @@ doChannelAuthorize(RPC::JsonContext& context)
     std::optional<std::pair<PublicKey, SecretKey>> const keyPair =
         RPC::keypairForSignature(params, result, context.apiVersion);
 
-    XRPL_ASSERT(
-        "ripple::doChannelAuthorize : valid keyPair or an error",
-        keyPair || RPC::contains_error(result));
+    ASSERT(
+        keyPair || RPC::contains_error(result),
+        "ripple::doChannelAuthorize : valid keyPair or an error");
     if (!keyPair || RPC::contains_error(result))
         return result;
 

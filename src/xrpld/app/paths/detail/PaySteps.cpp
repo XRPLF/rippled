@@ -101,15 +101,14 @@ toStep(
         // should already be taken care of
         JLOG(j.error())
             << "Found offer/account payment step. Aborting payment strand.";
-        XRPL_UNREACHABLE(
-            "ripple::toStep : offer/account payment payment strand");
+        UNREACHABLE("ripple::toStep : offer/account payment payment strand");
         return {temBAD_PATH, std::unique_ptr<Step>{}};
     }
 
-    XRPL_ASSERT(
-        "ripple::toStep : currency or issuer",
+    ASSERT(
         (e2->getNodeType() & STPathElement::typeCurrency) ||
-            (e2->getNodeType() & STPathElement::typeIssuer));
+            (e2->getNodeType() & STPathElement::typeIssuer),
+        "ripple::toStep : currency or issuer");
     auto const outCurrency = e2->getNodeType() & STPathElement::typeCurrency
         ? e2->getCurrency()
         : curIssue.currency;
@@ -123,7 +122,7 @@ toStep(
         return {temBAD_PATH, std::unique_ptr<Step>{}};
     }
 
-    XRPL_ASSERT("ripple::toStep : is offer", e2->isOffer());
+    ASSERT(e2->isOffer(), "ripple::toStep : is offer");
 
     if (isXRP(outCurrency))
         return make_BookStepIX(ctx, curIssue);
@@ -394,7 +393,7 @@ toStrand(
             next->getCurrency() != curIssue.currency)
         {
             // Should never happen
-            XRPL_UNREACHABLE("ripple::toStrand : offer currency mismatch");
+            UNREACHABLE("ripple::toStrand : offer currency mismatch");
             return {temBAD_PATH, Strand{}};
         }
 
@@ -460,7 +459,7 @@ toStrand(
     if (!checkStrand())
     {
         JLOG(j.warn()) << "Flow check strand failed";
-        XRPL_UNREACHABLE("ripple::toStrand : invalid strand");
+        UNREACHABLE("ripple::toStrand : invalid strand");
         return {temBAD_PATH, Strand{}};
     }
 

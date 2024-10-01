@@ -42,12 +42,12 @@ creditLimit(
         result.setIssuer(account);
     }
 
-    XRPL_ASSERT(
-        "ripple::creditLimit : result issuer match",
-        result.getIssuer() == account);
-    XRPL_ASSERT(
-        "ripple::creditLimit : result currency match",
-        result.getCurrency() == currency);
+    ASSERT(
+        result.getIssuer() == account,
+        "ripple::creditLimit : result issuer match");
+    ASSERT(
+        result.getCurrency() == currency,
+        "ripple::creditLimit : result currency match");
     return result;
 }
 
@@ -80,12 +80,12 @@ creditBalance(
         result.setIssuer(account);
     }
 
-    XRPL_ASSERT(
-        "ripple::creditBalance : result issuer match",
-        result.getIssuer() == account);
-    XRPL_ASSERT(
-        "ripple::creditBalance : result currency match",
-        result.getCurrency() == currency);
+    ASSERT(
+        result.getIssuer() == account,
+        "ripple::creditBalance : result issuer match");
+    ASSERT(
+        result.getCurrency() == currency,
+        "ripple::creditBalance : result currency match");
     return result;
 }
 

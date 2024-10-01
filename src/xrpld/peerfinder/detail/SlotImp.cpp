@@ -64,32 +64,32 @@ void
 SlotImp::state(State state_)
 {
     // Must go through activate() to set active state
-    XRPL_ASSERT(
-        "ripple::PeerFinder::SlotImp::state : input state is not active",
-        state_ != active);
+    ASSERT(
+        state_ != active,
+        "ripple::PeerFinder::SlotImp::state : input state is not active");
 
     // The state must be different
-    XRPL_ASSERT(
+    ASSERT(
+        state_ != m_state,
         "ripple::PeerFinder::SlotImp::state : input state is different from "
-        "current",
-        state_ != m_state);
+        "current");
 
     // You can't transition into the initial states
-    XRPL_ASSERT(
-        "ripple::PeerFinder::SlotImp::state : input state is not an initial",
-        state_ != accept && state_ != connect);
+    ASSERT(
+        state_ != accept && state_ != connect,
+        "ripple::PeerFinder::SlotImp::state : input state is not an initial");
 
     // Can only become connected from outbound connect state
-    XRPL_ASSERT(
+    ASSERT(
+        state_ != connected || (!m_inbound && m_state == connect),
         "ripple::PeerFinder::SlotImp::state : input state is not connected an "
-        "invalid state",
-        state_ != connected || (!m_inbound && m_state == connect));
+        "invalid state");
 
     // Can't gracefully close on an outbound connection attempt
-    XRPL_ASSERT(
+    ASSERT(
+        state_ != closing || m_state != connect,
         "ripple::PeerFinder::SlotImp::state : input state is not closing an "
-        "invalid state",
-        state_ != closing || m_state != connect);
+        "invalid state");
 
     m_state = state_;
 }
@@ -98,9 +98,9 @@ void
 SlotImp::activate(clock_type::time_point const& now)
 {
     // Can only become active from the accept or connected state
-    XRPL_ASSERT(
-        "ripple::PeerFinder::SlotImp::activate : valid state",
-        m_state == accept || m_state == connected);
+    ASSERT(
+        m_state == accept || m_state == connected,
+        "ripple::PeerFinder::SlotImp::activate : valid state");
 
     m_state = active;
     whenAcceptEndpoints = now;

@@ -57,12 +57,12 @@ depthMask(unsigned int depth)
 SHAMapNodeID::SHAMapNodeID(unsigned int depth, uint256 const& hash)
     : id_(hash), depth_(depth)
 {
-    XRPL_ASSERT(
-        "ripple::SHAMapNodeID::SHAMapNodeID : maximum depth input",
-        depth <= SHAMap::leafDepth);
-    XRPL_ASSERT(
-        "ripple::SHAMapNodeID::SHAMapNodeID : hash and depth inputs do match",
-        id_ == (id_ & depthMask(depth)));
+    ASSERT(
+        depth <= SHAMap::leafDepth,
+        "ripple::SHAMapNodeID::SHAMapNodeID : maximum depth input");
+    ASSERT(
+        id_ == (id_ & depthMask(depth)),
+        "ripple::SHAMapNodeID::SHAMapNodeID : hash and depth inputs do match");
 }
 
 std::string
@@ -77,9 +77,9 @@ SHAMapNodeID::getRawString() const
 SHAMapNodeID
 SHAMapNodeID::getChildNodeID(unsigned int m) const
 {
-    XRPL_ASSERT(
-        "ripple::SHAMapNodeID::getChildNodeID : valid branch input",
-        m < SHAMap::branchFactor);
+    ASSERT(
+        m < SHAMap::branchFactor,
+        "ripple::SHAMapNodeID::getChildNodeID : valid branch input");
 
     // A SHAMap has exactly 65 levels, so nodes must not exceed that
     // depth; if they do, this breaks the invariant of never allowing
@@ -89,9 +89,9 @@ SHAMapNodeID::getChildNodeID(unsigned int m) const
     // We throw (but never assert) if the node is at level 64, since
     // entries at that depth are leaf nodes and have no children and even
     // constructing a child node from them would break the above invariant.
-    XRPL_ASSERT(
-        "ripple::SHAMapNodeID::getChildNodeID : maximum leaf depth",
-        depth_ <= SHAMap::leafDepth);
+    ASSERT(
+        depth_ <= SHAMap::leafDepth,
+        "ripple::SHAMapNodeID::getChildNodeID : maximum leaf depth");
 
     if (depth_ >= SHAMap::leafDepth)
         Throw<std::logic_error>(
@@ -136,17 +136,17 @@ selectBranch(SHAMapNodeID const& id, uint256 const& hash)
     else
         branch >>= 4;
 
-    XRPL_ASSERT(
-        "ripple::selectBranch : maximum result", branch < SHAMap::branchFactor);
+    ASSERT(
+        branch < SHAMap::branchFactor, "ripple::selectBranch : maximum result");
     return branch;
 }
 
 SHAMapNodeID
 SHAMapNodeID::createID(int depth, uint256 const& key)
 {
-    XRPL_ASSERT(
-        "ripple::SHAMapNodeID::createID : valid branch input",
-        (depth >= 0) && (depth < 65));
+    ASSERT(
+        (depth >= 0) && (depth < 65),
+        "ripple::SHAMapNodeID::createID : valid branch input");
     return SHAMapNodeID(depth, key & depthMask(depth));
 }
 

@@ -411,9 +411,9 @@ ValidatorSite::parseJsonResponse(
     }
 
     auto const manifest = body[jss::manifest].asString();
-    XRPL_ASSERT(
-        "ripple::ValidatorSite::parseJsonResponse : version match",
-        version == body[jss::version].asUInt());
+    ASSERT(
+        version == body[jss::version].asUInt(),
+        "ripple::ValidatorSite::parseJsonResponse : version match");
     auto const& uri = sites_[siteIdx].activeResource->uri;
     auto const hash = sha512Half(manifest, blobs, version);
     auto const applyResult = app_.validators().applyListsAndBroadcast(
@@ -588,10 +588,10 @@ ValidatorSite::onSiteFetch(
                     case status::temporary_redirect: {
                         auto newLocation =
                             processRedirect(res, siteIdx, lock_sites);
-                        XRPL_ASSERT(
+                        ASSERT(
+                            newLocation != nullptr,
                             "ripple::ValidatorSite::onSiteFetch : non-null "
-                            "validator",
-                            newLocation);
+                            "validator");
                         // for perm redirects, also update our starting URI
                         if (res.result() == status::moved_permanently ||
                             res.result() == status::permanent_redirect)

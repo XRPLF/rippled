@@ -116,9 +116,9 @@ public:
     STAmount
     getDeliveredAmount() const
     {
-        XRPL_ASSERT(
-            "ripple::TxMeta::getDeliveredAmount : non-null delivered amount",
-            hasDeliveredAmount());
+        ASSERT(
+            hasDeliveredAmount(),
+            "ripple::TxMeta::getDeliveredAmount : non-null delivered amount");
         return *mDelivered;
     }
 

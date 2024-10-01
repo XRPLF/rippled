@@ -89,10 +89,10 @@ struct FlowDebugInfo
         void
         pushLiquiditySrc(EitherAmount const& eIn, EitherAmount const& eOut)
         {
-            XRPL_ASSERT(
+            ASSERT(
+                !liquiditySrcIn.empty(),
                 "ripple::path::detail::FlowDebugInfo::pushLiquiditySrc : "
-                "non-empty liquidity source",
-                !liquiditySrcIn.empty());
+                "non-empty liquidity source");
             liquiditySrcIn.back().push_back(eIn);
             liquiditySrcOut.back().push_back(eOut);
         }
@@ -125,7 +125,7 @@ struct FlowDebugInfo
         auto i = timePoints.find(tag);
         if (i == timePoints.end())
         {
-            XRPL_UNREACHABLE(
+            UNREACHABLE(
                 "ripple::path::detail::FlowDebugInfo::duration : timepoint not "
                 "found");
             return std::chrono::duration<double>(0);

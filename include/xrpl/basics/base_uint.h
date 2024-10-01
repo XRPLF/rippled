@@ -290,9 +290,9 @@ public:
             std::is_trivially_copyable<typename Container::value_type>::value>>
     explicit base_uint(Container const& c)
     {
-        XRPL_ASSERT(
-            "ripple::base_uint::base_uint(Container auto) : input size match",
-            c.size() * sizeof(typename Container::value_type) == size());
+        ASSERT(
+            c.size() * sizeof(typename Container::value_type) == size(),
+            "ripple::base_uint::base_uint(Container auto) : input size match");
         std::memcpy(data_.data(), c.data(), size());
     }
 
@@ -303,9 +303,9 @@ public:
         base_uint&>
     operator=(Container const& c)
     {
-        XRPL_ASSERT(
-            "ripple::base_uint::operator=(Container auto) : input size match",
-            c.size() * sizeof(typename Container::value_type) == size());
+        ASSERT(
+            c.size() * sizeof(typename Container::value_type) == size(),
+            "ripple::base_uint::operator=(Container auto) : input size match");
         std::memcpy(data_.data(), c.data(), size());
         return *this;
     }

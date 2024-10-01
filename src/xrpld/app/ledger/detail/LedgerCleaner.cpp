@@ -231,9 +231,9 @@ private:
                 });
                 if (shouldExit_)
                     break;
-                XRPL_ASSERT(
-                    "ripple::LedgerCleanerImp::run : is cleaning",
-                    state_ == State::cleaning);
+                ASSERT(
+                    state_ == State::cleaning,
+                    "ripple::LedgerCleanerImp::run : is cleaning");
             }
             doLedgerCleaner();
         }
@@ -355,9 +355,9 @@ private:
                 LedgerHash refHash = getLedgerHash(referenceLedger, refIndex);
 
                 bool const nonzero(refHash.isNonZero());
-                XRPL_ASSERT(
-                    "ripple::LedgerCleanerImp::getHash : nonzero hash",
-                    nonzero);
+                ASSERT(
+                    nonzero,
+                    "ripple::LedgerCleanerImp::getHash : nonzero hash");
                 if (nonzero)
                 {
                     // We found the hash and sequence of a better reference

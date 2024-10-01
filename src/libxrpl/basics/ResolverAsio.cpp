@@ -48,9 +48,9 @@ public:
     ~AsyncObject()
     {
         // Destroying the object with I/O pending? Not a clean exit!
-        XRPL_ASSERT(
-            "ripple::AsyncObject::~AsyncObject : nothing pending",
-            m_pending.load() == 0);
+        ASSERT(
+            m_pending.load() == 0,
+            "ripple::AsyncObject::~AsyncObject : nothing pending");
     }
 
     /** RAII container that maintains the count of pending I/O.
@@ -155,11 +155,11 @@ public:
 
     ~ResolverAsioImpl() override
     {
-        XRPL_ASSERT(
-            "ripple::ResolverAsioImpl::~ResolverAsioImpl : no pending work",
-            m_work.empty());
-        XRPL_ASSERT(
-            "ripple::ResolverAsioImpl::~ResolverAsioImpl : stopped", m_stopped);
+        ASSERT(
+            m_work.empty(),
+            "ripple::ResolverAsioImpl::~ResolverAsioImpl : no pending work");
+        ASSERT(
+            m_stopped, "ripple::ResolverAsioImpl::~ResolverAsioImpl : stopped");
     }
 
     //-------------------------------------------------------------------------
@@ -181,11 +181,10 @@ public:
     void
     start() override
     {
-        XRPL_ASSERT(
-            "ripple::ResolverAsioImpl::start : stopped", m_stopped == true);
-        XRPL_ASSERT(
-            "ripple::ResolverAsioImpl::start : not stopping",
-            m_stop_called == false);
+        ASSERT(m_stopped == true, "ripple::ResolverAsioImpl::start : stopped");
+        ASSERT(
+            m_stop_called == false,
+            "ripple::ResolverAsioImpl::start : not stopping");
 
         if (m_stopped.exchange(false) == true)
         {
@@ -225,12 +224,12 @@ public:
     resolve(std::vector<std::string> const& names, HandlerType const& handler)
         override
     {
-        XRPL_ASSERT(
-            "ripple::ResolverAsioImpl::resolve : not stopping",
-            m_stop_called == false);
-        XRPL_ASSERT(
-            "ripple::ResolverAsioImpl::resolve : names non-empty",
-            !names.empty());
+        ASSERT(
+            m_stop_called == false,
+            "ripple::ResolverAsioImpl::resolve : not stopping");
+        ASSERT(
+            !names.empty(),
+            "ripple::ResolverAsioImpl::resolve : names non-empty");
 
         // TODO NIKB use rvalue references to construct and move
         //           reducing cost.
@@ -246,9 +245,9 @@ public:
     // Resolver
     void do_stop(CompletionCounter)
     {
-        XRPL_ASSERT(
-            "ripple::ResolverAsioImpl::do_stop : stopping",
-            m_stop_called == true);
+        ASSERT(
+            m_stop_called == true,
+            "ripple::ResolverAsioImpl::do_stop : stopping");
 
         if (m_stopped.exchange(true) == false)
         {
@@ -393,9 +392,9 @@ public:
         HandlerType const& handler,
         CompletionCounter)
     {
-        XRPL_ASSERT(
-            "ripple::ResolverAsioImpl::do_resolve : names non-empty",
-            !names.empty());
+        ASSERT(
+            !names.empty(),
+            "ripple::ResolverAsioImpl::do_resolve : names non-empty");
 
         if (m_stop_called == false)
         {

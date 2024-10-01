@@ -29,7 +29,7 @@ STBase::STBase() : fName(&sfGeneric)
 
 STBase::STBase(SField const& n) : fName(&n)
 {
-    XRPL_ASSERT("ripple::STBase::STBase : field is set", fName);
+    ASSERT(fName != nullptr, "ripple::STBase::STBase : field is set");
 }
 
 STBase&
@@ -104,15 +104,15 @@ void
 STBase::add(Serializer& s) const
 {
     // Should never be called
-    XRPL_UNREACHABLE("ripple::STBase::add : not implemented");
+    UNREACHABLE("ripple::STBase::add : not implemented");
 }
 
 bool
 STBase::isEquivalent(const STBase& t) const
 {
-    XRPL_ASSERT(
-        "ripple::STBase::isEquivalent : type not present",
-        getSType() == STI_NOTPRESENT);
+    ASSERT(
+        getSType() == STI_NOTPRESENT,
+        "ripple::STBase::isEquivalent : type not present");
     return t.getSType() == STI_NOTPRESENT;
 }
 
@@ -126,7 +126,7 @@ void
 STBase::setFName(SField const& n)
 {
     fName = &n;
-    XRPL_ASSERT("ripple::STBase::setFName : field is set", fName);
+    ASSERT(fName != nullptr, "ripple::STBase::setFName : field is set");
 }
 
 SField const&
@@ -138,8 +138,7 @@ STBase::getFName() const
 void
 STBase::addFieldID(Serializer& s) const
 {
-    XRPL_ASSERT(
-        "ripple::STBase::addFieldID : field is binary", fName->isBinary());
+    ASSERT(fName->isBinary(), "ripple::STBase::addFieldID : field is binary");
     s.addFieldID(fName->fieldType, fName->fieldValue);
 }
 

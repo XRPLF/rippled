@@ -206,8 +206,8 @@ template <class Streambuf>
 void
 ZeroCopyOutputStream<Streambuf>::BackUp(int count)
 {
-    XRPL_ASSERT(
-        "ripple::ZeroCopyOutputStream::BackUp : valid input", count <= commit_);
+    ASSERT(
+        count <= commit_, "ripple::ZeroCopyOutputStream::BackUp : valid input");
     auto const n = commit_ - count;
     streambuf_.commit(n);
     count_ += n;

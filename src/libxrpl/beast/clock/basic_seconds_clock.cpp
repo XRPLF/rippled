@@ -57,9 +57,9 @@ static_assert(std::atomic<std::chrono::steady_clock::rep>::is_always_lock_free);
 
 seconds_clock_thread::~seconds_clock_thread()
 {
-    XRPL_ASSERT(
-        "beast::seconds_clock_thread::~seconds_clock_thread : thread joinable",
-        thread_.joinable());
+    ASSERT(
+        thread_.joinable(),
+        "beast::seconds_clock_thread::~seconds_clock_thread : thread joinable");
     {
         std::lock_guard lock(mut_);
         stop_ = true;

@@ -1329,10 +1329,10 @@ public:
     size_type
     bucket(Key const& k) const
     {
-        XRPL_ASSERT(
+        ASSERT(
+            bucket_count() != 0,
             "beast::detail::aged_unordered_container::bucket : nonzero bucket "
-            "count",
-            bucket_count() != 0);
+            "count");
         return m_cont.bucket(k, std::cref(m_config.hash_function()));
     }
 
@@ -1473,10 +1473,10 @@ private:
     {
         if (would_exceed(additional))
             m_buck.resize(size() + additional, m_cont);
-        XRPL_ASSERT(
+        ASSERT(
+            load_factor() <= max_load_factor(),
             "beast::detail::aged_unordered_container::maybe_rehash : maximum "
-            "load factor",
-            load_factor() <= max_load_factor());
+            "load factor");
     }
 
     // map, set

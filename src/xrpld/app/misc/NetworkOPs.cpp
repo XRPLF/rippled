@@ -103,10 +103,10 @@ class NetworkOPsImp final : public NetworkOPs
             FailHard f)
             : transaction(t), admin(a), local(l), failType(f)
         {
-            XRPL_ASSERT(
+            ASSERT(
+                local || failType == FailHard::no,
                 "ripple::NetworkOPsImp::TransactionStatus::TransactionStatus : "
-                "valid inputs",
-                local || failType == FailHard::no);
+                "valid inputs");
         }
     };
 
@@ -1211,9 +1211,9 @@ NetworkOPsImp::processTransaction(
         *transaction->getSTransaction(),
         view->rules(),
         app_.config());
-    XRPL_ASSERT(
-        "ripple::NetworkOPsImp::processTransaction : valid validity",
-        validity == Validity::Valid);
+    ASSERT(
+        validity == Validity::Valid,
+        "ripple::NetworkOPsImp::processTransaction : valid validity");
 
     // Not concerned with local checks at this point.
     if (validity == Validity::SigBad)
@@ -1319,12 +1319,12 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
     std::vector<TransactionStatus> submit_held;
     std::vector<TransactionStatus> transactions;
     mTransactions.swap(transactions);
-    XRPL_ASSERT(
-        "ripple::NetworkOPsImp::apply : non-empty transactions",
-        !transactions.empty());
-    XRPL_ASSERT(
-        "ripple::NetworkOPsImp::apply : is not running",
-        mDispatchState != DispatchState::running);
+    ASSERT(
+        !transactions.empty(),
+        "ripple::NetworkOPsImp::apply : non-empty transactions");
+    ASSERT(
+        mDispatchState != DispatchState::running,
+        "ripple::NetworkOPsImp::apply : is not running");
 
     mDispatchState = DispatchState::running;
 
@@ -1541,9 +1541,9 @@ NetworkOPsImp::getOwnerInfo(
             for (auto const& uDirEntry : sleNode->getFieldV256(sfIndexes))
             {
                 auto sleCur = lpLedger->read(keylet::child(uDirEntry));
-                XRPL_ASSERT(
-                    "ripple::NetworkOPsImp::getOwnerInfo : non-null child SLE",
-                    sleCur);
+                ASSERT(
+                    sleCur != nullptr,
+                    "ripple::NetworkOPsImp::getOwnerInfo : non-null child SLE");
 
                 switch (sleCur->getType())
                 {
@@ -1570,7 +1570,7 @@ NetworkOPsImp::getOwnerInfo(
                     case ltACCOUNT_ROOT:
                     case ltDIR_NODE:
                     default:
-                        XRPL_UNREACHABLE(
+                        UNREACHABLE(
                             "ripple::NetworkOPsImp::getOwnerInfo : invalid "
                             "type");
                         break;
@@ -1582,9 +1582,9 @@ NetworkOPsImp::getOwnerInfo(
             if (uNodeDir)
             {
                 sleNode = lpLedger->read(keylet::page(root, uNodeDir));
-                XRPL_ASSERT(
-                    "ripple::NetworkOPsImp::getOwnerInfo : read next page",
-                    sleNode);
+                ASSERT(
+                    sleNode != nullptr,
+                    "ripple::NetworkOPsImp::getOwnerInfo : read next page");
             }
         } while (uNodeDir);
     }
@@ -1815,9 +1815,9 @@ NetworkOPsImp::switchLastClosedLedger(
 bool
 NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
 {
-    XRPL_ASSERT(
-        "ripple::NetworkOPsImp::beginConsensus : nonzero input",
-        networkClosed.isNonZero());
+    ASSERT(
+        networkClosed.isNonZero(),
+        "ripple::NetworkOPsImp::beginConsensus : nonzero input");
 
     auto closingInfo = m_ledgerMaster.getCurrentLedger()->info();
 
@@ -1838,15 +1838,14 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
         return false;
     }
 
-    XRPL_ASSERT(
+    ASSERT(
+        prevLedger->info().hash == closingInfo.parentHash,
         "ripple::NetworkOPsImp::beginConsensus : prevLedger hash matches "
-        "parent",
-        prevLedger->info().hash == closingInfo.parentHash);
-    XRPL_ASSERT(
+        "parent");
+    ASSERT(
+        closingInfo.parentHash == m_ledgerMaster.getClosedLedger()->info().hash,
         "ripple::NetworkOPsImp::beginConsensus : closedLedger parent matches "
-        "hash",
-        closingInfo.parentHash ==
-            m_ledgerMaster.getClosedLedger()->info().hash);
+        "hash");
 
     if (prevLedger->rules().enabled(featureNegativeUNL))
         app_.validators().setNegativeUNL(prevLedger->negativeUNL());
@@ -2820,9 +2819,9 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             lpAccepted->info().hash, alpAccepted);
     }
 
-    XRPL_ASSERT(
-        "ripple::NetworkOPsImp::pubLedger : accepted input",
-        alpAccepted->getLedger().get() == lpAccepted.get());
+    ASSERT(
+        alpAccepted->getLedger().get() == lpAccepted.get(),
+        "ripple::NetworkOPsImp::pubLedger : accepted input");
 
     {
         JLOG(m_journal.debug())
@@ -3223,11 +3222,11 @@ NetworkOPsImp::pubAccountTransaction(
         if (last)
             jvObj.set(jss::account_history_boundary, true);
 
-        XRPL_ASSERT(
-            "ripple::NetworkOPsImp::pubAccountTransaction : "
-            "account_history_tx_stream not set",
+        ASSERT(
             jvObj.isMember(jss::account_history_tx_stream) ==
-                MultiApiJson::none);
+                MultiApiJson::none,
+            "ripple::NetworkOPsImp::pubAccountTransaction : "
+            "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)
         {
             auto& index = info.index_;
@@ -3300,11 +3299,11 @@ NetworkOPsImp::pubProposedAccountTransaction(
                 isrListener->getApiVersion(),  //
                 [&](Json::Value const& jv) { isrListener->send(jv, true); });
 
-        XRPL_ASSERT(
-            "ripple::NetworkOPs::pubProposedAccountTransaction : "
-            "account_history_tx_stream not set",
+        ASSERT(
             jvObj.isMember(jss::account_history_tx_stream) ==
-                MultiApiJson::none);
+                MultiApiJson::none,
+            "ripple::NetworkOPs::pubProposedAccountTransaction : "
+            "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)
         {
             auto& index = info.index_;
@@ -3525,7 +3524,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         return db->newestAccountTxPage(options);
                     }
                     default: {
-                        XRPL_UNREACHABLE(
+                        UNREACHABLE(
                             "ripple::NetworkOPsImp::addAccountHistoryJob::"
                             "getMoreTxns : invalid database type");
                         return {};
@@ -3723,7 +3722,7 @@ NetworkOPsImp::subAccountHistoryStart(
         }
         else
         {
-            XRPL_UNREACHABLE(
+            UNREACHABLE(
                 "ripple::NetworkOPsImp::subAccountHistoryStart : failed to "
                 "access genesis account");
             return;
@@ -3833,8 +3832,7 @@ NetworkOPsImp::subBook(InfoSub::ref isrListener, Book const& book)
     if (auto listeners = app_.getOrderBookDB().makeBookListeners(book))
         listeners->addSubscriber(isrListener);
     else
-        XRPL_UNREACHABLE(
-            "ripple::NetworkOPsImp::subBook : null book listeners");
+        UNREACHABLE("ripple::NetworkOPsImp::subBook : null book listeners");
     return true;
 }
 
@@ -3853,8 +3851,7 @@ NetworkOPsImp::acceptLedger(
 {
     // This code-path is exclusively used when the server is in standalone
     // mode via `ledger_accept`
-    XRPL_ASSERT(
-        "ripple::NetworkOPsImp::acceptLedger : is standalone", m_standalone);
+    ASSERT(m_standalone, "ripple::NetworkOPsImp::acceptLedger : is standalone");
 
     if (!m_standalone)
         Throw<std::runtime_error>(

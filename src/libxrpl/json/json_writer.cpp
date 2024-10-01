@@ -70,7 +70,7 @@ valueToString(Int value)
     if (isNegative)
         *--current = '-';
 
-    XRPL_ASSERT("Json::valueToString(Int) : buffer check", current >= buffer);
+    ASSERT(current >= buffer, "Json::valueToString(Int) : buffer check");
     return current;
 }
 
@@ -80,7 +80,7 @@ valueToString(UInt value)
     char buffer[32];
     char* current = buffer + sizeof(buffer);
     uintToString(value, current);
-    XRPL_ASSERT("Json::valueToString(UInt) : buffer check", current >= buffer);
+    ASSERT(current >= buffer, "Json::valueToString(UInt) : buffer check");
     return current;
 }
 
@@ -391,9 +391,9 @@ StyledWriter::writeArrayValue(const Value& value)
         }
         else  // output on a single line
         {
-            XRPL_ASSERT(
-                "Json::StyledWriter::writeArrayValue : child size match",
-                childValues_.size() == size);
+            ASSERT(
+                childValues_.size() == size,
+                "Json::StyledWriter::writeArrayValue : child size match");
             document_ += "[ ";
 
             for (unsigned index = 0; index < size; ++index)
@@ -485,9 +485,9 @@ StyledWriter::indent()
 void
 StyledWriter::unindent()
 {
-    XRPL_ASSERT(
-        "Json::StyledWriter::unindent : maximum indent size",
-        int(indentString_.size()) >= indentSize_);
+    ASSERT(
+        int(indentString_.size()) >= indentSize_,
+        "Json::StyledWriter::unindent : maximum indent size");
     indentString_.resize(indentString_.size() - indentSize_);
 }
 
@@ -617,9 +617,9 @@ StyledStreamWriter::writeArrayValue(const Value& value)
         }
         else  // output on a single line
         {
-            XRPL_ASSERT(
-                "Json::StyledStreamWriter::writeArrayValue : child size match",
-                childValues_.size() == size);
+            ASSERT(
+                childValues_.size() == size,
+                "Json::StyledStreamWriter::writeArrayValue : child size match");
             *document_ << "[ ";
 
             for (unsigned index = 0; index < size; ++index)
@@ -712,9 +712,9 @@ StyledStreamWriter::indent()
 void
 StyledStreamWriter::unindent()
 {
-    XRPL_ASSERT(
-        "Json::StyledStreamWriter::unindent : maximum indent size",
-        indentString_.size() >= indentation_.size());
+    ASSERT(
+        indentString_.size() >= indentation_.size(),
+        "Json::StyledStreamWriter::unindent : maximum indent size");
     indentString_.resize(indentString_.size() - indentation_.size());
 }
 

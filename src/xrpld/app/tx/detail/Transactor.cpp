@@ -367,8 +367,9 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 TER
 Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
-    XRPL_ASSERT(
-        "ripple::Transactor::consumeSeqProxy : non-null account", sleAccount);
+    ASSERT(
+        sleAccount != nullptr,
+        "ripple::Transactor::consumeSeqProxy : non-null account");
     SeqProxy const seqProx = ctx_.tx.getSeqProxy();
     if (seqProx.isSeq())
     {
@@ -440,9 +441,9 @@ Transactor::ticketDelete(
 void
 Transactor::preCompute()
 {
-    XRPL_ASSERT(
-        "ripple::Transactor::preCompute : nonzero account",
-        account_ != beast::zero);
+    ASSERT(
+        account_ != beast::zero,
+        "ripple::Transactor::preCompute : nonzero account");
 }
 
 TER
@@ -456,9 +457,9 @@ Transactor::apply()
 
     // sle must exist except for transactions
     // that allow zero account.
-    XRPL_ASSERT(
-        "ripple::Transactor::apply : non-null SLE or zero account",
-        sle != nullptr || account_ == beast::zero);
+    ASSERT(
+        sle != nullptr || account_ == beast::zero,
+        "ripple::Transactor::apply : non-null SLE or zero account");
 
     if (sle)
     {
@@ -583,12 +584,12 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
 
     // We have plans to support multiple SignerLists in the future.  The
     // presence and defaulted value of the SignerListID field will enable that.
-    XRPL_ASSERT(
-        "ripple::Transactor::checkMultiSign : has signer list ID",
-        sleAccountSigners->isFieldPresent(sfSignerListID));
-    XRPL_ASSERT(
-        "ripple::Transactor::checkMultiSign : signer list ID is 0",
-        sleAccountSigners->getFieldU32(sfSignerListID) == 0);
+    ASSERT(
+        sleAccountSigners->isFieldPresent(sfSignerListID),
+        "ripple::Transactor::checkMultiSign : has signer list ID");
+    ASSERT(
+        sleAccountSigners->getFieldU32(sfSignerListID) == 0,
+        "ripple::Transactor::checkMultiSign : signer list ID is 0");
 
     auto accountSigners =
         SignerEntries::deserialize(*sleAccountSigners, ctx.j, "ledger");
@@ -811,9 +812,9 @@ Transactor::reset(XRPAmount fee)
     auto const balance = txnAcct->getFieldAmount(sfBalance).xrp();
 
     // balance should have already been checked in checkFee / preFlight.
-    XRPL_ASSERT(
-        "ripple::Transactor::reset : valid balance",
-        balance != beast::zero && (!view().open() || balance >= fee));
+    ASSERT(
+        balance != beast::zero && (!view().open() || balance >= fee),
+        "ripple::Transactor::reset : valid balance");
 
     // We retry/reject the transaction if the account balance is zero or we're
     // applying against an open ledger and the balance is less than the fee
@@ -828,8 +829,8 @@ Transactor::reset(XRPAmount fee)
     // reject the transaction.
     txnAcct->setFieldAmount(sfBalance, balance - fee);
     TER const ter{consumeSeqProxy(txnAcct)};
-    XRPL_ASSERT(
-        "ripple::Transactor::reset : result is tesSUCCESS", isTesSuccess(ter));
+    ASSERT(
+        isTesSuccess(ter), "ripple::Transactor::reset : result is tesSUCCESS");
 
     if (isTesSuccess(ter))
         view().update(txnAcct);
@@ -869,7 +870,7 @@ Transactor::operator()()
             JLOG(j_.fatal()) << "Transaction serdes mismatch";
             JLOG(j_.info()) << to_string(ctx_.tx.getJson(JsonOptions::none));
             JLOG(j_.fatal()) << s2.getJson(JsonOptions::none);
-            XRPL_UNREACHABLE(
+            UNREACHABLE(
                 "ripple::Transactor::operator() : transaction serdes mismatch");
         }
     }
@@ -887,9 +888,9 @@ Transactor::operator()()
 
     // No transaction can return temUNKNOWN from apply,
     // and it can't be passed in from a preclaim.
-    XRPL_ASSERT(
-        "ripple::Transactor::operator() : result is not temUNKNOWN",
-        result != temUNKNOWN);
+    ASSERT(
+        result != temUNKNOWN,
+        "ripple::Transactor::operator() : result is not temUNKNOWN");
 
     if (auto stream = j_.trace())
         stream << "preclaim result: " << transToken(result);
@@ -941,10 +942,10 @@ Transactor::operator()()
                            std::shared_ptr<SLE const> const& after) {
                 if (isDelete)
                 {
-                    XRPL_ASSERT(
+                    ASSERT(
+                        before && after,
                         "ripple::Transactor::operator()::visit : non-null SLE "
-                        "inputs",
-                        before && after);
+                        "inputs");
                     if (doOffers && before && after &&
                         (before->getType() == ltOFFER) &&
                         (before->getFieldAmount(sfTakerPays) ==

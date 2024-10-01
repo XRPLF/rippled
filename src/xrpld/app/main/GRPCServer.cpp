@@ -606,7 +606,7 @@ GRPCServer::stop()
 
 GRPCServer::~GRPCServer()
 {
-    XRPL_ASSERT("ripple::GRPCServer::~GRPCServer : is not running", !running_);
+    ASSERT(!running_, "ripple::GRPCServer::~GRPCServer : is not running");
 }
 
 }  // namespace ripple

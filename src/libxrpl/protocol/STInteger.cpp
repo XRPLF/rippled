@@ -196,9 +196,9 @@ Json::Value STUInt64::getJson(JsonOptions) const
 {
     std::string str(16, 0);
     auto ret = std::to_chars(str.data(), str.data() + str.size(), value_, 16);
-    XRPL_ASSERT(
-        "ripple::STUInt64::getJson : to_chars succeeded",
-        ret.ec == std::errc());
+    ASSERT(
+        ret.ec == std::errc(),
+        "ripple::STUInt64::getJson : to_chars succeeded");
     str.resize(std::distance(str.data(), ret.ptr));
     return str;
 }

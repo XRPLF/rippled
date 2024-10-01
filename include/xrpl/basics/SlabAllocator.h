@@ -143,9 +143,9 @@ class SlabAllocator
         void
         deallocate(std::uint8_t* ptr) noexcept
         {
-            XRPL_ASSERT(
-                "ripple::SlabAllocator::SlabBlock::deallocate : own input",
-                own(ptr));
+            ASSERT(
+                own(ptr),
+                "ripple::SlabAllocator::SlabBlock::deallocate : own input");
 
             std::lock_guard l(m_);
 
@@ -188,9 +188,9 @@ public:
               boost::alignment::align_up(sizeof(Type) + extra, itemAlignment_))
         , slabSize_(alloc)
     {
-        XRPL_ASSERT(
-            "ripple::SlabAllocator::SlabAllocator : valid alignment",
-            (itemAlignment_ & (itemAlignment_ - 1)) == 0);
+        ASSERT(
+            (itemAlignment_ & (itemAlignment_ - 1)) == 0,
+            "ripple::SlabAllocator::SlabAllocator : valid alignment");
     }
 
     SlabAllocator(SlabAllocator const& other) = delete;
@@ -300,9 +300,10 @@ public:
     bool
     deallocate(std::uint8_t* ptr) noexcept
     {
-        XRPL_ASSERT(
-            "ripple::SlabAllocator::SlabAllocator::deallocate : non-null input",
-            ptr);
+        ASSERT(
+            ptr != nullptr,
+            "ripple::SlabAllocator::SlabAllocator::deallocate : non-null "
+            "input");
 
         for (auto slab = slabs_.load(); slab != nullptr; slab = slab->next_)
         {

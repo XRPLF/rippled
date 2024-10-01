@@ -57,8 +57,7 @@ buildLedgerImpl(
 
     {
         OpenView accum(&*built);
-        XRPL_ASSERT(
-            "ripple::buildLedgerImpl : valid ledger state", !accum.open());
+        ASSERT(!accum.open(), "ripple::buildLedgerImpl : valid ledger state");
         applyTxs(accum, built);
         accum.apply(*built);
     }
@@ -76,10 +75,10 @@ buildLedgerImpl(
     built->unshare();
 
     // Accept ledger
-    XRPL_ASSERT(
-        "ripple::buildLedgerImpl : valid ledger fees",
+    ASSERT(
         built->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-            built->read(keylet::fees()));
+            built->read(keylet::fees()),
+        "ripple::buildLedgerImpl : valid ledger fees");
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 
     return built;
@@ -171,9 +170,9 @@ applyTransactions(
 
     // If there are any transactions left, we must have
     // tried them in at least one final pass
-    XRPL_ASSERT(
-        "ripple::applyTransactions : retry transactions",
-        txns.empty() || !certainRetry);
+    ASSERT(
+        txns.empty() || !certainRetry,
+        "ripple::applyTransactions : retry transactions");
     return count;
 }
 

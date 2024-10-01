@@ -600,9 +600,9 @@ private:
     {
         auto counts = m_traffic.getCounts();
         std::lock_guard lock(m_statsMutex);
-        XRPL_ASSERT(
-            "ripple::OverlayImpl::collect_metrics : counts size do match",
-            counts.size() == m_stats.trafficGauges.size());
+        ASSERT(
+            counts.size() == m_stats.trafficGauges.size(),
+            "ripple::OverlayImpl::collect_metrics : counts size do match");
 
         for (std::size_t i = 0; i < counts.size(); ++i)
         {

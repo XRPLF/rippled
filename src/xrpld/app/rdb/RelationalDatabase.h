@@ -236,7 +236,7 @@ rangeCheckedCast(C c)
          c < std::numeric_limits<T>::lowest()))
     {
         /* This should never happen */
-        XRPL_UNREACHABLE("ripple::rangeCheckedCast : domain error");
+        UNREACHABLE("ripple::rangeCheckedCast : domain error");
         JLOG(debugLog().error())
             << "rangeCheckedCast domain error:"
             << " value = " << c << " min = " << std::numeric_limits<T>::lowest()

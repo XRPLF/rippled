@@ -63,9 +63,10 @@ public:
     {
         if (auto const p = dynamic_cast<sles_iter_impl const*>(&impl))
         {
-            XRPL_ASSERT(
-                "ripple::detail::RawStateTable::equal : matching end iterators",
-                end1_ == p->end1_ && end0_ == p->end0_);
+            ASSERT(
+                end1_ == p->end1_ && end0_ == p->end0_,
+                "ripple::detail::RawStateTable::equal : matching end "
+                "iterators");
             return iter1_ == p->iter1_ && iter0_ == p->iter0_;
         }
 
@@ -75,9 +76,10 @@ public:
     void
     increment() override
     {
-        XRPL_ASSERT(
-            "ripple::detail::RawStateTable::increment : either SLE is non-null",
-            sle1_ || sle0_);
+        ASSERT(
+            sle1_ || sle0_,
+            "ripple::detail::RawStateTable::increment : either SLE is "
+            "non-null");
 
         if (sle1_ && !sle0_)
         {
@@ -183,9 +185,9 @@ RawStateTable::apply(RawView& to) const
 bool
 RawStateTable::exists(ReadView const& base, Keylet const& k) const
 {
-    XRPL_ASSERT(
-        "ripple::detail::RawStateTable::exists : nonzero key",
-        k.key.isNonZero());
+    ASSERT(
+        k.key.isNonZero(),
+        "ripple::detail::RawStateTable::exists : nonzero key");
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
         return base.exists(k);

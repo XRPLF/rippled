@@ -42,8 +42,8 @@ rngfill(void* buffer, std::size_t bytes, Generator& g)
         bytes -= sizeof(v);
     }
 
-    XRPL_ASSERT(
-        "beast::rngfill(void*) : maximum bytes", bytes < sizeof(result_type));
+    ASSERT(
+        bytes < sizeof(result_type), "beast::rngfill(void*) : maximum bytes");
 
 #ifdef __GNUC__
     // gcc 11.1 (falsely) warns about an array-bounds overflow in release mode.

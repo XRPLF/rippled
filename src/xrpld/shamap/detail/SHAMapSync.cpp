@@ -314,10 +314,10 @@ SHAMap::gmn_ProcessDeferredReads(MissingNodes& mn)
 std::vector<std::pair<SHAMapNodeID, uint256>>
 SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
 {
-    XRPL_ASSERT(
-        "ripple::SHAMap::getMissingNodes : nonzero root hash",
-        root_->getHash().isNonZero());
-    XRPL_ASSERT("ripple::SHAMap::getMissingNodes : valid max input", max > 0);
+    ASSERT(
+        root_->getHash().isNonZero(),
+        "ripple::SHAMap::getMissingNodes : nonzero root hash");
+    ASSERT(max > 0, "ripple::SHAMap::getMissingNodes : valid max input");
 
     MissingNodes mn(
         max,
@@ -376,9 +376,9 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
                     // This is a node we are continuing to process
                     fullBelow = fullBelow && was;  // was and still is
                 }
-                XRPL_ASSERT(
-                    "ripple::SHAMap::getMissingNodes : first non-null node",
-                    node);
+                ASSERT(
+                    node != nullptr,
+                    "ripple::SHAMap::getMissingNodes : first non-null node");
             }
         }
 
@@ -409,9 +409,9 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
                 // Resume at the top of the stack
                 pos = mn.stack_.top();
                 mn.stack_.pop();
-                XRPL_ASSERT(
-                    "ripple::SHAMap::getMissingNodes : second non-null node",
-                    node != nullptr);
+                ASSERT(
+                    node != nullptr,
+                    "ripple::SHAMap::getMissingNodes : second non-null node");
             }
         }
 
@@ -538,13 +538,13 @@ SHAMap::addRootNode(
     if (root_->getHash().isNonZero())
     {
         JLOG(journal_.trace()) << "got root node, already have one";
-        XRPL_ASSERT(
-            "ripple::SHAMap::addRootNode : valid hash input",
-            root_->getHash() == hash);
+        ASSERT(
+            root_->getHash() == hash,
+            "ripple::SHAMap::addRootNode : valid hash input");
         return SHAMapAddNode::duplicate();
     }
 
-    XRPL_ASSERT("ripple::SHAMap::addRootNode : valid cowid", cowid_ >= 1);
+    ASSERT(cowid_ >= 1, "ripple::SHAMap::addRootNode : valid cowid");
     auto node = SHAMapTreeNode::makeFromWire(rootNode);
     if (!node || node->getHash() != hash)
         return SHAMapAddNode::invalid();
@@ -578,8 +578,7 @@ SHAMap::addKnownNode(
     Slice const& rawNode,
     SHAMapSyncFilter* filter)
 {
-    XRPL_ASSERT(
-        "ripple::SHAMap::addKnownNode : valid node input", !node.isRoot());
+    ASSERT(!node.isRoot(), "ripple::SHAMap::addKnownNode : valid node input");
 
     if (!isSynching())
     {
@@ -596,7 +595,7 @@ SHAMap::addKnownNode(
            (iNodeID.getDepth() < node.getDepth()))
     {
         int branch = selectBranch(iNodeID, node.getNodeID());
-        XRPL_ASSERT("ripple::SHAMap::addKnownNode : valid branch", branch >= 0);
+        ASSERT(branch >= 0, "ripple::SHAMap::addKnownNode : valid branch");
         auto inner = static_cast<SHAMapInnerNode*>(iNode);
         if (inner->isEmptyBranch(branch))
         {

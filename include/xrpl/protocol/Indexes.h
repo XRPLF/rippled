@@ -214,8 +214,7 @@ page(uint256 const& root, std::uint64_t index = 0) noexcept;
 inline Keylet
 page(Keylet const& root, std::uint64_t index = 0) noexcept
 {
-    XRPL_ASSERT(
-        "ripple::keylet::page : valid root type", root.type == ltDIR_NODE);
+    ASSERT(root.type == ltDIR_NODE, "ripple::keylet::page : valid root type");
     return page(root.key, index);
 }
 /** @} */

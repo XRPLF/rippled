@@ -181,9 +181,9 @@ applyBid(
     }
     else
     {
-        XRPL_ASSERT(
-            "ripple::applyBid : has auction slot",
-            ammSle->isFieldPresent(sfAuctionSlot));
+        ASSERT(
+            ammSle->isFieldPresent(sfAuctionSlot),
+            "ripple::applyBid : has auction slot");
         if (!ammSle->isFieldPresent(sfAuctionSlot))
             return {tecINTERNAL, false};
     }
@@ -306,7 +306,7 @@ applyBid(
     {
         // Price the slot was purchased at.
         STAmount const pricePurchased = auctionSlot[sfPrice];
-        XRPL_ASSERT("ripple::applyBid : timeSlot is set", timeSlot);
+        ASSERT(timeSlot.has_value(), "ripple::applyBid : timeSlot is set");
         auto const fractionUsed =
             (Number(*timeSlot) + 1) / AUCTION_SLOT_TIME_INTERVALS;
         auto const fractionRemaining = Number(1) - fractionUsed;

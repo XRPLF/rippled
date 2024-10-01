@@ -79,9 +79,9 @@ RippleLineCache::getRippleLines(
                 // to be replaced by the full set. The full set will be built
                 // below, and will be returned, if needed, on subsequent calls
                 // for either value of outgoing.
-                XRPL_ASSERT(
-                    "ripple::RippleLineCache::getRippleLines : maximum lines",
-                    size <= totalLineCount_);
+                ASSERT(
+                    size <= totalLineCount_,
+                    "ripple::RippleLineCache::getRippleLines : maximum lines");
                 totalLineCount_ -= size;
                 lines_.erase(otheriter);
             }
@@ -101,9 +101,9 @@ RippleLineCache::getRippleLines(
 
     if (inserted)
     {
-        XRPL_ASSERT(
-            "ripple::RippleLineCache::getRippleLines : null lines",
-            it->second == nullptr);
+        ASSERT(
+            it->second == nullptr,
+            "ripple::RippleLineCache::getRippleLines : null lines");
         auto lines =
             PathFindTrustLine::getItems(accountID, *ledger_, direction);
         if (lines.size())
@@ -114,9 +114,9 @@ RippleLineCache::getRippleLines(
         }
     }
 
-    XRPL_ASSERT(
-        "ripple::RippleLineCache::getRippleLines : null or nonempty lines",
-        !it->second || (it->second->size() > 0));
+    ASSERT(
+        !it->second || (it->second->size() > 0),
+        "ripple::RippleLineCache::getRippleLines : null or nonempty lines");
     auto const size = it->second ? it->second->size() : 0;
     JLOG(journal_.trace()) << "getRippleLines for ledger "
                            << ledger_->info().seq << " found " << size

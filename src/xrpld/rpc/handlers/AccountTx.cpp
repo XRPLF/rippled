@@ -306,9 +306,9 @@ populateJsonResponse(
 
         if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
         {
-            XRPL_ASSERT(
-                "ripple::populateJsonResponse : binary is not set",
-                !args.binary);
+            ASSERT(
+                !args.binary,
+                "ripple::populateJsonResponse : binary is not set");
 
             for (auto const& [txn, txnMeta] : *txnsData)
             {
@@ -353,7 +353,7 @@ populateJsonResponse(
                         insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
                     }
                     else
-                        XRPL_UNREACHABLE(
+                        UNREACHABLE(
                             "ripple::populateJsonResponse : missing "
                             "transaction medatata");
                 }
@@ -361,8 +361,7 @@ populateJsonResponse(
         }
         else
         {
-            XRPL_ASSERT(
-                "ripple::populateJsonResponse : binary is set", args.binary);
+            ASSERT(args.binary, "ripple::populateJsonResponse : binary is set");
 
             for (auto const& binaryData :
                  std::get<TxnsDataBinary>(result.transactions))

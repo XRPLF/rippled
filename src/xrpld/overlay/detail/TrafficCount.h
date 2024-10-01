@@ -172,9 +172,9 @@ public:
     void
     addCount(category cat, bool inbound, int bytes)
     {
-        XRPL_ASSERT(
-            "ripple::TrafficCount::addCount : valid category input",
-            cat <= category::unknown);
+        ASSERT(
+            cat <= category::unknown,
+            "ripple::TrafficCount::addCount : valid category input");
 
         if (inbound)
         {

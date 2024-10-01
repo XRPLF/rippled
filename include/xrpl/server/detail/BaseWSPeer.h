@@ -512,9 +512,9 @@ template <class String>
 void
 BaseWSPeer<Handler, Impl>::fail(error_code ec, String const& what)
 {
-    XRPL_ASSERT(
-        "ripple::BaseWSPeer::fail : strand in this thread",
-        strand_.running_in_this_thread());
+    ASSERT(
+        strand_.running_in_this_thread(),
+        "ripple::BaseWSPeer::fail : strand in this thread");
 
     cancel_timer();
     if (!ec_ && ec != boost::asio::error::operation_aborted)

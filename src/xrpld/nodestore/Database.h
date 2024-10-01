@@ -246,9 +246,9 @@ protected:
     void
     storeStats(std::uint64_t count, std::uint64_t sz)
     {
-        XRPL_ASSERT(
-            "ripple::NodeStore::Database::storeStats : valid inputs",
-            count <= sz);
+        ASSERT(
+            count <= sz,
+            "ripple::NodeStore::Database::storeStats : valid inputs");
         storeCount_ += count;
         storeSz_ += sz;
     }

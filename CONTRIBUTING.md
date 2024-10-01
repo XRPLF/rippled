@@ -349,14 +349,19 @@ We are using [Antithesis](https://antithesis.com/) for continuous fuzzing,
 and keep a copy of [Antithesis C++ SDK](https://github.com/antithesishq/antithesis-sdk-cpp/)
 in `external/antithesis-sdk`. One of the aims of fuzzing is to identify bugs
 by finding external conditions which cause contracts violations inside `rippled`.
-The contracts are expressed as `XRPL_ASSERT` or `XRPL_UNREACHABLE` (defined in 
+The contracts are expressed as `ASSERT` or `UNREACHABLE` (defined in
 `include/xrpl/beast/utility/instrumentation.h`), which are effectively (outside
 of Antithesis) wrappers for `assert(...)` with added name. The purpose of name
 is to provide contracts with stable identity which does not rely on line numbers.
 
 When `rippled` is built with the Antithesis instrumentation enabled
-(using `voidstar` CMake option), the `XRPL_...` contracts will report any
-violations on the Antithesis platform during fuzzing.
+(using `voidstar` CMake option) and ran on the Antithesis platform, the
+contracts become
+[test properties](https://antithesis.com/docs/using_antithesis/properties.html);
+otherwise they are just like a regular `assert`.
+To learn more about Antithesis, see
+[How Antithesis Works](https://antithesis.com/docs/introduction/how_antithesis_works.html)
+and [C++ SDK](https://antithesis.com/docs/using_antithesis/sdk/cpp/overview.html#)
 
 We continue to use the old style `assert` or `assert(false)` in certain
 locations, where the reporting of contract violations on the Antithesis
@@ -367,19 +372,28 @@ For this reason:
   * `constexpr` functions
   * unit tests i.e. files under `src/test`
   * unit tests-related modules (files under `beast/test` and `beast/unit_test`)
-* Outside of the listed locations, do not use `assert`; use `XRPL_ASSERT` instead,
+* Outside of the listed locations, do not use `assert`; use `ASSERT` instead,
   giving it unique name, with the short description of the contract.
 * Outside of the listed locations, do not user `assert(false)`; use
-  `XRPL_UNREACHABLE` instead, giving it unique name, with the description of the
+  `UNREACHABLE` instead, giving it unique name, with the description of the
   condition being violated
 * The contract name should start with a full name (including scope) of the
   function, optionally a named lambda, followed by a colon ` : ` and a brief
-  (typically at most five words) description. `XRPL_UNREACHABLE` contracts
+  (typically at most five words) description. `UNREACHABLE` contracts
   can use slightly longer descriptions. If there are multiple overloads of the
   function, use common sense to balance both brevity and unambiguity of the
   function name. NOTE: the purpose of name is to provide stable means of
   unique identification of every contract; for this reason try to avoid elements
-  which can change in some obvious refactors.
+  which can change in some obvious refactors or when reinforcing the condition.
+* Example good name for an
+  `UNREACHABLE` macro `"Json::operator==(Value, Value) : invalid type"`; example
+  good name for an `ASSERT` macro `"Json::Value::asCString : valid type"`.
+* Example **bad** name
+  `"RFC1751::insert(char* s, int x, int start, int length) : length is greater than or equal zero"`
+  (missing namespace, unnecessary full function signature, description too verbose).
+  Good name: `"ripple::RFC1751::insert : minimum length"`.
+* Do **not** rename a contract without a good reason (e.g. the name no longer
+  reflects the location or the condition being checked)
 * Do not use `std::unreachable`
 * Do not put contracts where they can be violated by an external condition
   (e.g. timing, data payload before mandatory validation etc.) as this creates

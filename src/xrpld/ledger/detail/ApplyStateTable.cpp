@@ -155,10 +155,10 @@ ApplyStateTable::apply(
             meta.setAffectedNode(item.first, *type, nodeType);
             if (type == &sfDeletedNode)
             {
-                XRPL_ASSERT(
+                ASSERT(
+                    origNode && curNode,
                     "ripple::detail::ApplyStateTable::apply : valid nodes for "
-                    "deletion",
-                    origNode && curNode);
+                    "deletion");
                 threadOwners(to, meta, origNode, newMod, j);
 
                 STObject prevs(sfPreviousFields);
@@ -190,10 +190,10 @@ ApplyStateTable::apply(
             }
             else if (type == &sfModifiedNode)
             {
-                XRPL_ASSERT(
+                ASSERT(
+                    curNode && origNode,
                     "ripple::detail::ApplyStateTable::apply : valid nodes for "
-                    "modification",
-                    curNode && origNode);
+                    "modification");
 
                 if (curNode->isThreadedType(
                         to.rules()))  // thread transaction to node
@@ -228,10 +228,10 @@ ApplyStateTable::apply(
             }
             else if (type == &sfCreatedNode)  // if created, thread to owner(s)
             {
-                XRPL_ASSERT(
+                ASSERT(
+                    curNode && !origNode,
                     "ripple::detail::ApplyStateTable::apply : valid nodes for "
-                    "creation",
-                    curNode && !origNode);
+                    "creation");
                 threadOwners(to, meta, curNode, newMod, j);
 
                 if (curNode->isThreadedType(
@@ -254,7 +254,7 @@ ApplyStateTable::apply(
             }
             else
             {
-                XRPL_UNREACHABLE(
+                UNREACHABLE(
                     "ripple::detail::ApplyStateTable::apply : unsupported "
                     "operation type");
             }
@@ -547,21 +547,21 @@ ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 
         if (node.getFieldIndex(sfPreviousTxnID) == -1)
         {
-            XRPL_ASSERT(
+            ASSERT(
+                node.getFieldIndex(sfPreviousTxnLgrSeq) == -1,
                 "ripple::ApplyStateTable::threadItem : previous ledger is not "
-                "set",
-                node.getFieldIndex(sfPreviousTxnLgrSeq) == -1);
+                "set");
             node.setFieldH256(sfPreviousTxnID, prevTxID);
             node.setFieldU32(sfPreviousTxnLgrSeq, prevLgrID);
         }
 
-        XRPL_ASSERT(
+        ASSERT(
+            node.getFieldH256(sfPreviousTxnID) == prevTxID,
             "ripple::ApplyStateTable::threadItem : previous transaction is a "
-            "match",
-            node.getFieldH256(sfPreviousTxnID) == prevTxID);
-        XRPL_ASSERT(
-            "ripple::ApplyStateTable::threadItem : previous ledger is a match",
-            node.getFieldU32(sfPreviousTxnLgrSeq) == prevLgrID);
+            "match");
+        ASSERT(
+            node.getFieldU32(sfPreviousTxnLgrSeq) == prevLgrID,
+            "ripple::ApplyStateTable::threadItem : previous ledger is a match");
     }
 }
 
@@ -576,9 +576,9 @@ ApplyStateTable::getForMod(
         auto miter = mods.find(key);
         if (miter != mods.end())
         {
-            XRPL_ASSERT(
-                "ripple::ApplyStateTable::getForMod : non-null result",
-                miter->second);
+            ASSERT(
+                miter->second != nullptr,
+                "ripple::ApplyStateTable::getForMod : non-null result");
             return miter->second;
         }
     }
@@ -634,9 +634,9 @@ ApplyStateTable::threadTx(
         return;
     }
     // threadItem only applied to AccountRoot
-    XRPL_ASSERT(
-        "ripple::ApplyStateTable::threadTx : SLE is threaded",
-        sle->isThreadedType(base.rules()));
+    ASSERT(
+        sle->isThreadedType(base.rules()),
+        "ripple::ApplyStateTable::threadTx : SLE is threaded");
     threadItem(meta, sle);
 }
 

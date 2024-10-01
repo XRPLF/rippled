@@ -40,9 +40,9 @@ Database::Database(
     , requestBundle_(get<int>(config, "rq_bundle", 4))
     , readThreads_(std::max(1, readThreads))
 {
-    XRPL_ASSERT(
-        "ripple::NodeStore::Database::Database : nonzero threads input",
-        readThreads != 0);
+    ASSERT(
+        readThreads != 0,
+        "ripple::NodeStore::Database::Database : nonzero threads input");
 
     if (earliestLedgerSeq_ < 1)
         Throw<std::runtime_error>("Invalid earliest_seq");
@@ -89,10 +89,10 @@ Database::Database(
 
                     for (auto it = read.begin(); it != read.end(); ++it)
                     {
-                        XRPL_ASSERT(
+                        ASSERT(
+                            !it->second.empty(),
                             "ripple::NodeStore::Database::Database : non-empty "
-                            "data",
-                            !it->second.empty());
+                            "data");
 
                         auto const& hash = it->first;
                         auto const& data = it->second;
@@ -166,9 +166,9 @@ Database::stop()
 
     while (readThreads_.load() != 0)
     {
-        XRPL_ASSERT(
-            "ripple::NodeStore::Database::stop : maximum stop duration",
-            steady_clock::now() - start < 30s);
+        ASSERT(
+            steady_clock::now() - start < 30s,
+            "ripple::NodeStore::Database::stop : maximum stop duration");
         std::this_thread::yield();
     }
 
@@ -219,9 +219,9 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
     };
 
     srcDB.for_each([&](std::shared_ptr<NodeObject> nodeObject) {
-        XRPL_ASSERT(
-            "ripple::NodeStore::Database::importInternal : non-null node",
-            nodeObject);
+        ASSERT(
+            nodeObject != nullptr,
+            "ripple::NodeStore::Database::importInternal : non-null node");
         if (!nodeObject)  // This should never happen
             return;
 
@@ -265,9 +265,9 @@ Database::fetchNodeObject(
 void
 Database::getCountsJson(Json::Value& obj)
 {
-    XRPL_ASSERT(
-        "ripple::NodeStore::Database::getCountsJson : valid input type",
-        obj.isObject());
+    ASSERT(
+        obj.isObject(),
+        "ripple::NodeStore::Database::getCountsJson : valid input type");
 
     {
         std::unique_lock<std::mutex> lock(readLock_);

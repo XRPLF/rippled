@@ -103,9 +103,9 @@ public:
     std::uint8_t
     operator[](std::size_t i) const noexcept
     {
-        XRPL_ASSERT(
-            "ripple::Slice::operator[](std::size_t) const : input within range",
-            i < size_);
+        ASSERT(
+            i < size_,
+            "ripple::Slice::operator[](std::size_t) const : valid input");
         return data_[i];
     }
 

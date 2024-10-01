@@ -117,7 +117,7 @@ public:
         using namespace boost::filesystem;
         if (db_.is_open())
         {
-            XRPL_UNREACHABLE(
+            UNREACHABLE(
                 "ripple::NodeStore::NuDBBackend::open : database is already "
                 "open");
             JLOG(j_.error()) << "database is already open";

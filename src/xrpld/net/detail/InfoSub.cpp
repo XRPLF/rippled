@@ -145,8 +145,8 @@ InfoSub::setApiVersion(unsigned int apiVersion)
 unsigned int
 InfoSub::getApiVersion() const noexcept
 {
-    XRPL_ASSERT(
-        "ripple::InfoSub::getApiVersion : valid API version", apiVersion_ > 0);
+    ASSERT(
+        apiVersion_ > 0, "ripple::InfoSub::getApiVersion : valid API version");
     return apiVersion_;
 }
 

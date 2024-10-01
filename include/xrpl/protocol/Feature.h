@@ -151,19 +151,19 @@ public:
 
     explicit FeatureBitset(base const& b) : base(b)
     {
-        XRPL_ASSERT(
-            "ripple::FeatureBitset::FeatureBitset(base) : count match",
-            b.count() == count());
+        ASSERT(
+            b.count() == count(),
+            "ripple::FeatureBitset::FeatureBitset(base) : count match");
     }
 
     template <class... Fs>
     explicit FeatureBitset(uint256 const& f, Fs&&... fs)
     {
         initFromFeatures(f, std::forward<Fs>(fs)...);
-        XRPL_ASSERT(
+        ASSERT(
+            count() == (sizeof...(fs) + 1),
             "ripple::FeatureBitset::FeatureBitset(uint256) : count and "
-            "sizeof... do match",
-            count() == (sizeof...(fs) + 1));
+            "sizeof... do match");
     }
 
     template <class Col>
@@ -171,10 +171,10 @@ public:
     {
         for (auto const& f : fs)
             set(featureToBitsetIndex(f));
-        XRPL_ASSERT(
+        ASSERT(
+            fs.size() == count(),
             "ripple::FeatureBitset::FeatureBitset(Container auto) : count and "
-            "size do match",
-            fs.size() == count());
+            "size do match");
     }
 
     auto

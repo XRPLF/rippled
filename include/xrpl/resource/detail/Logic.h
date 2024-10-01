@@ -401,9 +401,9 @@ public:
     {
         std::lock_guard _(lock_);
         Entry& entry(iter->second);
-        XRPL_ASSERT(
-            "ripple::Resource::Logic::erase : entry not used",
-            entry.refcount == 0);
+        ASSERT(
+            entry.refcount == 0,
+            "ripple::Resource::Logic::erase : entry not used");
         inactive_.erase(inactive_.iterator_to(entry));
         table_.erase(iter);
     }
@@ -435,7 +435,7 @@ public:
                     admin_.erase(admin_.iterator_to(entry));
                     break;
                 default:
-                    XRPL_UNREACHABLE(
+                    UNREACHABLE(
                         "ripple::Resource::Logic::release : invalid entry "
                         "kind");
                     break;

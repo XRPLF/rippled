@@ -128,7 +128,7 @@ SetSignerList::doApply()
         default:
             break;
     }
-    XRPL_UNREACHABLE(
+    UNREACHABLE(
         "ripple::SetSignerList::doApply : invalid operation");  // Should not be
                                                                 // possible to
                                                                 // get here.
@@ -140,12 +140,12 @@ SetSignerList::preCompute()
 {
     // Get the quorum and operation info.
     auto result = determineOperation(ctx_.tx, view().flags(), j_);
-    XRPL_ASSERT(
-        "ripple::SetSignerList::preCompute : result is tesSUCCESS",
-        std::get<0>(result) == tesSUCCESS);
-    XRPL_ASSERT(
-        "ripple::SetSignerList::preCompute : result is known operation",
-        std::get<3>(result) != unknown);
+    ASSERT(
+        std::get<0>(result) == tesSUCCESS,
+        "ripple::SetSignerList::preCompute : result is tesSUCCESS");
+    ASSERT(
+        std::get<3>(result) != unknown,
+        "ripple::SetSignerList::preCompute : result is known operation");
 
     quorum_ = std::get<1>(result);
     signers_ = std::get<2>(result);
@@ -178,12 +178,12 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
     // The static_cast should always be safe since entryCount should always
     // be in the range from 1 to 8 (or 32 if ExpandedSignerList is enabled).
     // We've got a lot of room to grow.
-    XRPL_ASSERT(
-        "ripple::signerCountBasedOwnerCountDelta : minimum signers",
-        entryCount >= STTx::minMultiSigners);
-    XRPL_ASSERT(
-        "ripple::signerCountBasedOwnerCountDelta : maximum signers",
-        entryCount <= STTx::maxMultiSigners(&rules));
+    ASSERT(
+        entryCount >= STTx::minMultiSigners,
+        "ripple::signerCountBasedOwnerCountDelta : minimum signers");
+    ASSERT(
+        entryCount <= STTx::maxMultiSigners(&rules),
+        "ripple::signerCountBasedOwnerCountDelta : maximum signers");
     return 2 + static_cast<int>(entryCount);
 }
 
@@ -271,10 +271,10 @@ SetSignerList::validateQuorumAndSignerEntries(
     }
 
     // Make sure there are no duplicate signers.
-    XRPL_ASSERT(
+    ASSERT(
+        std::is_sorted(signers.begin(), signers.end()),
         "ripple::SetSignerList::validateQuorumAndSignerEntries : sorted "
-        "signers",
-        std::is_sorted(signers.begin(), signers.end()));
+        "signers");
     if (std::adjacent_find(signers.begin(), signers.end()) != signers.end())
     {
         JLOG(j.trace()) << "Duplicate signers in signer list";

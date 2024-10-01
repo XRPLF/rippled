@@ -77,9 +77,9 @@ public:
         auto ret =
             encodeBase58Token(TokenType::AccountID, id.data(), id.size());
 
-        XRPL_ASSERT(
-            "ripple::detail::AccountIdCache : maximum result size",
-            ret.size() <= 38);
+        ASSERT(
+            ret.size() <= 38,
+            "ripple::detail::AccountIdCache : maximum result size");
 
         {
             std::lock_guard lock(sl);

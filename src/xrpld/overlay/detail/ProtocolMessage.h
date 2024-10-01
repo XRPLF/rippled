@@ -175,9 +175,9 @@ parseMessageHeader(
 
     MessageHeader hdr;
     auto iter = buffersBegin(bufs);
-    XRPL_ASSERT(
-        "ripple::detail::parseMessageHeader : non-empty buffer",
-        iter != buffersEnd(bufs));
+    ASSERT(
+        iter != buffersEnd(bufs),
+        "ripple::detail::parseMessageHeader : non-empty buffer");
 
     // Check valid header compressed message:
     // - 4 bits are the compression algorithm, 1st bit is always set to 1

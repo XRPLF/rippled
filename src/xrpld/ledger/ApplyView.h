@@ -277,7 +277,7 @@ public:
     {
         if (key.type != ltOFFER)
         {
-            XRPL_UNREACHABLE(
+            UNREACHABLE(
                 "ripple::ApplyView::dirAppend : only Offers are appended to "
                 "book directories");
             // Only Offers are appended to book directories. Call dirInsert()

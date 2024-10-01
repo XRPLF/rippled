@@ -176,9 +176,9 @@ STValidation::STValidation(
         Throw<std::runtime_error>("Invalid signature in validation");
     }
 
-    XRPL_ASSERT(
-        "ripple::STValidation::STValidation(SerialIter) : nonzero node",
-        nodeID_.isNonZero());
+    ASSERT(
+        nodeID_.isNonZero(),
+        "ripple::STValidation::STValidation(SerialIter) : nonzero node");
 }
 
 /** Construct, sign and trust a new STValidation issued by this node.
@@ -201,10 +201,10 @@ STValidation::STValidation(
     , nodeID_(nodeID)
     , seenTime_(signTime)
 {
-    XRPL_ASSERT(
+    ASSERT(
+        nodeID_.isNonZero(),
         "ripple::STValidation::STValidation(PublicKey, SecretKey) : nonzero "
-        "node",
-        nodeID_.isNonZero());
+        "node");
 
     // First, set our own public key:
     if (publicKeyType(pk) != KeyType::secp256k1)

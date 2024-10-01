@@ -149,9 +149,9 @@ closeChannel(
     if (!sle)
         return tefINTERNAL;
 
-    XRPL_ASSERT(
-        "ripple::closeChannel : minimum channel amount",
-        (*slep)[sfAmount] >= (*slep)[sfBalance]);
+    ASSERT(
+        (*slep)[sfAmount] >= (*slep)[sfBalance],
+        "ripple::closeChannel : minimum channel amount");
     (*sle)[sfBalance] =
         (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
     adjustOwnerCount(view, sle, -1, j);
@@ -534,9 +534,9 @@ PayChanClaim::doApply()
 
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
         XRPAmount const reqDelta = reqBalance - chanBalance;
-        XRPL_ASSERT(
-            "ripple::PayChanClaim::doApply : minimum balance delta",
-            reqDelta >= beast::zero);
+        ASSERT(
+            reqDelta >= beast::zero,
+            "ripple::PayChanClaim::doApply : minimum balance delta");
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
         ctx_.view().update(sled);
         ctx_.view().update(slep);

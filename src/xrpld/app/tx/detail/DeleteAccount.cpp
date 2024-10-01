@@ -212,8 +212,9 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     }
 
     auto sleAccount = ctx.view.read(keylet::account(account));
-    XRPL_ASSERT(
-        "ripple::DeleteAccount::preclaim : non-null account", sleAccount);
+    ASSERT(
+        sleAccount != nullptr,
+        "ripple::DeleteAccount::preclaim : non-null account");
     if (!sleAccount)
         return terNO_ACCOUNT;
 
@@ -316,12 +317,14 @@ TER
 DeleteAccount::doApply()
 {
     auto src = view().peek(keylet::account(account_));
-    XRPL_ASSERT(
-        "ripple::DeleteAccount::doApply : non-null source account", src);
+    ASSERT(
+        src != nullptr,
+        "ripple::DeleteAccount::doApply : non-null source account");
 
     auto dst = view().peek(keylet::account(ctx_.tx[sfDestination]));
-    XRPL_ASSERT(
-        "ripple::DeleteAccount::doApply : non-null destination account", dst);
+    ASSERT(
+        dst != nullptr,
+        "ripple::DeleteAccount::doApply : non-null destination account");
 
     if (!src || !dst)
         return tefBAD_LEDGER;
@@ -341,7 +344,7 @@ DeleteAccount::doApply()
                 return {result, SkipEntry::No};
             }
 
-            XRPL_UNREACHABLE(
+            UNREACHABLE(
                 "ripple::DeleteAccount::doApply : undeletable item not found "
                 "in preclaim");
             JLOG(j_.error()) << "DeleteAccount undeletable item not "
@@ -357,9 +360,9 @@ DeleteAccount::doApply()
     (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
     ctx_.deliver(mSourceBalance);
 
-    XRPL_ASSERT(
-        "ripple::DeleteAccount::doApply : source balance is zero",
-        (*src)[sfBalance] == XRPAmount(0));
+    ASSERT(
+        (*src)[sfBalance] == XRPAmount(0),
+        "ripple::DeleteAccount::doApply : source balance is zero");
 
     // If there's still an owner directory associated with the source account
     // delete it.
