@@ -169,7 +169,6 @@ AMMClawback::applyGuts(Sandbox& sb)
         return tecINTERNAL;
 
     if (!clawAmount)
-    {
         // Because we are doing a two-asset withdrawal,
         // tfee is actually not used, so pass tfee as 0.
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
@@ -187,7 +186,6 @@ AMMClawback::applyGuts(Sandbox& sb)
                 FreezeHandling::fhIGNORE_FREEZE,
                 WithdrawAll::Yes,
                 ctx_.journal);
-    }
     else
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
             equalWithdrawMatchingOneAmount(
@@ -198,6 +196,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 amountBalance,
                 amount2Balance,
                 lptAMMBalance,
+                holdLPtokens,
                 *clawAmount);
 
     if (result != tesSUCCESS)
@@ -221,6 +220,9 @@ AMMClawback::applyGuts(Sandbox& sb)
     // will claw the paired asset as well. We already checked if
     // tfClawTwoAssets is enabled, the two assets have to be issued by the
     // same issuer.
+    if (!amount2Withdraw)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
     auto const flags = ctx_.tx.getFlags();
     if (flags & tfClawTwoAssets)
         return rippleCredit(sb, holder, issuer, *amount2Withdraw, true, j_);
@@ -237,6 +239,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     STAmount const& amountBalance,
     STAmount const& amount2Balance,
     STAmount const& lptAMMBalance,
+    STAmount const& holdLPtokens,
     STAmount const& amount)
 {
     auto frac = Number{amount} / amountBalance;
@@ -244,7 +247,6 @@ AMMClawback::equalWithdrawMatchingOneAmount(
 
     auto const lpTokensWithdraw =
         toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
-    auto const holdLPtokens = ammLPHolds(sb, ammSle, holder, j_);
     if (lpTokensWithdraw > holdLPtokens)
         // if lptoken balance less than what the issuer intended to clawback,
         // clawback all the tokens. Because we are doing a two-asset withdrawal,
@@ -268,9 +270,9 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     // tfee is actually not used, so pass tfee as 0.
     return AMMWithdraw::withdraw(
         sb,
+        ammSle,
         ammAccount,
         holder,
-        ammSle,
         amountBalance,
         amount,
         toSTAmount(amount2Balance.issue(), amount2Withdraw),

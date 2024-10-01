@@ -448,8 +448,8 @@ AMMWithdraw::doApply()
 std::pair<TER, STAmount>
 AMMWithdraw::withdraw(
     Sandbox& view,
-    AccountID const& ammAccount,
     SLE const& ammSle,
+    AccountID const& ammAccount,
     STAmount const& amountBalance,
     STAmount const& amountWithdraw,
     std::optional<STAmount> const& amount2Withdraw,
@@ -461,9 +461,9 @@ AMMWithdraw::withdraw(
     STAmount newLPTokenBalance;
     std::tie(ter, newLPTokenBalance, std::ignore, std::ignore) = withdraw(
         view,
+        ammSle,
         ammAccount,
         account_,
-        ammSle,
         amountBalance,
         amountWithdraw,
         amount2Withdraw,
@@ -479,9 +479,9 @@ AMMWithdraw::withdraw(
 std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
 AMMWithdraw::withdraw(
     Sandbox& view,
+    SLE const& ammSle,
     AccountID const& ammAccount,
     AccountID const& account,
-    SLE const& ammSle,
     STAmount const& amountBalance,
     STAmount const& amountWithdraw,
     std::optional<STAmount> const& amount2Withdraw,
@@ -734,9 +734,9 @@ AMMWithdraw::equalWithdrawTokens(
         {
             return withdraw(
                 view,
+                ammSle,
                 ammAccount,
                 account,
-                ammSle,
                 amountBalance,
                 amountBalance,
                 amount2Balance,
@@ -762,9 +762,9 @@ AMMWithdraw::equalWithdrawTokens(
 
         return withdraw(
             view,
+            ammSle,
             ammAccount,
             account,
-            ammSle,
             amountBalance,
             withdrawAmount,
             withdraw2Amount,
@@ -828,8 +828,8 @@ AMMWithdraw::equalWithdrawLimit(
     {
         return withdraw(
             view,
-            ammAccount,
             ammSle,
+            ammAccount,
             amountBalance,
             amount,
             toSTAmount(amount2.issue(), amount2Withdraw),
@@ -843,8 +843,8 @@ AMMWithdraw::equalWithdrawLimit(
     assert(amountWithdraw <= amount);
     return withdraw(
         view,
-        ammAccount,
         ammSle,
+        ammAccount,
         amountBalance,
         toSTAmount(amount.issue(), amountWithdraw),
         amount2,
@@ -874,8 +874,8 @@ AMMWithdraw::singleWithdraw(
 
     return withdraw(
         view,
-        ammAccount,
         ammSle,
+        ammAccount,
         amountBalance,
         amount,
         std::nullopt,
@@ -911,8 +911,8 @@ AMMWithdraw::singleWithdrawTokens(
     {
         return withdraw(
             view,
-            ammAccount,
             ammSle,
+            ammAccount,
             amountBalance,
             amountWithdraw,
             std::nullopt,
@@ -975,8 +975,8 @@ AMMWithdraw::singleWithdrawEPrice(
     {
         return withdraw(
             view,
-            ammAccount,
             ammSle,
+            ammAccount,
             amountBalance,
             amountWithdraw,
             std::nullopt,

@@ -118,7 +118,8 @@ public:
      * Return new total LPToken balance and the withdrawn amounts for both
      * assets.
      * @param view
-     * @param ammAccount
+     * @param ammSle AMM ledger entry
+     * @param ammAccount AMM account
      * @param amountBalance current LP asset1 balance
      * @param amountWithdraw asset1 withdraw amount
      * @param amount2Withdraw asset2 withdraw amount
@@ -131,9 +132,9 @@ public:
     static std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
     withdraw(
         Sandbox& view,
+        SLE const& ammSle,
         AccountID const& ammAccount,
         AccountID const& account,
-        SLE const& ammSle,
         STAmount const& amountBalance,
         STAmount const& amountWithdraw,
         std::optional<STAmount> const& amount2Withdraw,
@@ -160,7 +161,8 @@ private:
     /** Withdraw requested assets and token from AMM into LP account.
      * Return new total LPToken balance.
      * @param view
-     * @param ammAccount
+     * @param ammSle AMM ledger entry
+     * @param ammAccount AMM account
      * @param amountBalance current LP asset1 balance
      * @param amountWithdraw asset1 withdraw amount
      * @param amount2Withdraw asset2 withdraw amount
@@ -171,8 +173,8 @@ private:
     std::pair<TER, STAmount>
     withdraw(
         Sandbox& view,
-        AccountID const& ammAccount,
         SLE const& ammSle,
+        AccountID const& ammAccount,
         STAmount const& amountBalance,
         STAmount const& amountWithdraw,
         std::optional<STAmount> const& amount2Withdraw,

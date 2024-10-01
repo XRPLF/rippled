@@ -66,6 +66,7 @@ private:
         STAmount const& amountBalance,
         STAmount const& amount2Balance,
         STAmount const& lptAMMBalance,
+        STAmount const& holdLPtokens,
         STAmount const& amount);
 };
 
