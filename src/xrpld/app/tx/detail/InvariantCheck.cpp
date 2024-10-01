@@ -87,8 +87,6 @@ XRPNotCreated::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
-    std::stringstream ss;
-    ss << "XRPNotCreated::visitEntry start drops: " << drops_ << ". ";
     /* We go through all modified ledger entries, looking only at account roots,
      * escrow payments, and payment channels. We remove from the total any
      * previous XRP values and add to the total any new XRP values. The net
@@ -98,7 +96,6 @@ XRPNotCreated::visitEntry(
      */
     if (before)
     {
-        ss << "before type: " << before->getType() << ". ";
         switch (before->getType())
         {
             case ltACCOUNT_ROOT:
@@ -118,7 +115,6 @@ XRPNotCreated::visitEntry(
 
     if (after)
     {
-        ss << "after type: " << after->getType() << ". ";
         switch (after->getType())
         {
             case ltACCOUNT_ROOT:

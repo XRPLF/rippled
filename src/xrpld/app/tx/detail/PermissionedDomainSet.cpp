@@ -34,12 +34,7 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (!ctx.tx.isFieldPresent(sfAcceptedCredentials))
-        return temMALFORMED;
     auto const credentials = ctx.tx.getFieldArray(sfAcceptedCredentials);
-    // TODO check to see if we should disallow duplicate issuers.
-    // If so, it probably means sorting on the CredentialType field
-    // for identical issuers.
     if (credentials.empty() || credentials.size() > PD_ARRAY_MAX)
         return temMALFORMED;
 
@@ -70,6 +65,8 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
         {
             return temMALFORMED;
         }
+        if (credential.getFieldVL(sfCredentialType).empty())
+            return temMALFORMED;
         if (!ctx.view.read(keylet::account(credential.getAccountID(sfIssuer))))
             return temBAD_ISSUER;
     }
@@ -106,10 +103,23 @@ PermissionedDomainSet::doApply()
         // needs to be ironed out.
         credentials.sort(
             [](STObject const& left, STObject const& right) -> bool {
-                return dynamic_cast<STObject const*>(&left)->getAccountID(
-                           sfIssuer) <
-                    dynamic_cast<STObject const*>(&right)->getAccountID(
-                        sfIssuer);
+                if (left.getAccountID(sfIssuer) < right.getAccountID(sfIssuer))
+                    return true;
+                if (left.getAccountID(sfIssuer) == right.getAccountID(sfIssuer))
+                {
+                    if (left.getFieldVL(sfCredentialType) <
+                        right.getFieldVL(sfCredentialType))
+                    {
+                        return true;
+                    }
+                    if (left.getFieldVL(sfCredentialType) ==
+                        right.getFieldVL(sfCredentialType))
+                    {
+                        throw std::runtime_error("duplicate credentials");
+                    }
+                    return false;
+                }
+                return false;
             });
         sle->setFieldArray(sfAcceptedCredentials, credentials);
     };
@@ -119,7 +129,14 @@ PermissionedDomainSet::doApply()
         // Modify existing permissioned domain.
         auto sleUpdate = view().peek(
             {ltPERMISSIONED_DOMAIN, ctx_.tx.getFieldH256(sfDomainID)});
-        updateSle(sleUpdate);
+        try
+        {
+            updateSle(sleUpdate);
+        }
+        catch (...)
+        {
+            return temMALFORMED;
+        }
         view().update(sleUpdate);
     }
     else
@@ -130,7 +147,14 @@ PermissionedDomainSet::doApply()
         auto slePd = std::make_shared<SLE>(pdKeylet);
         slePd->setAccountID(sfOwner, account_);
         slePd->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence));
-        updateSle(slePd);
+        try
+        {
+            updateSle(slePd);
+        }
+        catch (...)
+        {
+            return temMALFORMED;
+        }
         view().insert(slePd);
         auto const page = view().dirInsert(
             keylet::ownerDir(account_), pdKeylet, describeOwnerDir(account_));
