@@ -2141,16 +2141,16 @@ private:
             // 30,000 less deposited 1,000
             BEAST_EXPECT(expectLine(env, carol, USD(29'000)));
             // 30,000 less deposited 1,000 and 10 drops tx fee
-            BEAST_EXPECT(
-                expectLedgerEntryRoot(env, carol, XRPAmount{29'000'000'000 - baseFee}));
+            BEAST_EXPECT(expectLedgerEntryRoot(
+                env, carol, XRPAmount{29'000'000'000 - baseFee}));
 
             // Carol withdraws all tokens
             ammAlice.withdraw(carol, 1'000'000);
             BEAST_EXPECT(
                 ammAlice.expectLPTokens(carol, IOUAmount(beast::Zero())));
             BEAST_EXPECT(expectLine(env, carol, USD(30'000)));
-            BEAST_EXPECT(
-                expectLedgerEntryRoot(env, carol, XRPAmount{30'000'000'000 - 2 * baseFee}));
+            BEAST_EXPECT(expectLedgerEntryRoot(
+                env, carol, XRPAmount{30'000'000'000 - 2 * baseFee}));
         });
 
         // Equal withdrawal by tokens 1000000, 10%
@@ -4511,7 +4511,9 @@ private:
             env(ammAlice.bid({.account = carol, .bidMin = 100}));
             BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{4'999'900}));
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{100}));
-            BEAST_EXPECT(accountBalance(env, carol) == std::to_string(22500000000 - 4 * baseFee));
+            BEAST_EXPECT(
+                accountBalance(env, carol) ==
+                std::to_string(22500000000 - 4 * baseFee));
             priceXRP = withdrawByTokens(
                 STAmount{XRPAmount{10'000'000'000}},
                 STAmount{token1, 9'999'900},
@@ -4519,7 +4521,9 @@ private:
                 0);
             // Carol withdraws
             ammAlice.withdrawAll(carol, XRP(0));
-            BEAST_EXPECT(accountBalance(env, carol) == std::to_string(29999949999 - 5 * baseFee));
+            BEAST_EXPECT(
+                accountBalance(env, carol) ==
+                std::to_string(29999949999 - 5 * baseFee));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount{10'000'000'000} - priceXRP,
                 USD(10'000),
@@ -5233,7 +5237,10 @@ private:
                     BEAST_EXPECT(expectLine(env, alice, USD(30'000)));
                 // alice XRP balance is 30,000initial - 50 ammcreate fee -
                 // 10drops fee
-                BEAST_EXPECT(accountBalance(env, alice) == std::to_string(29950000000 - env.current()->fees().base.drops()));
+                BEAST_EXPECT(
+                    accountBalance(env, alice) ==
+                    std::to_string(
+                        29950000000 - env.current()->fees().base.drops()));
             },
             std::nullopt,
             0,
@@ -5292,12 +5299,16 @@ private:
 
             auto const baseFee = env.current()->fees().base.drops();
             // 30,000 initial - (deposit+withdraw) * 10
-            BEAST_EXPECT(accountBalance(env, carol) == std::to_string(30000000000 - 20 * baseFee));
+            BEAST_EXPECT(
+                accountBalance(env, carol) ==
+                std::to_string(30000000000 - 20 * baseFee));
             BEAST_EXPECT(accountBalance(env, ed) == xrpBalance);
             BEAST_EXPECT(accountBalance(env, paul) == xrpBalance);
             BEAST_EXPECT(accountBalance(env, nataly) == xrpBalance);
             // 30,000 initial - 50 ammcreate fee - 10drops withdraw fee
-            BEAST_EXPECT(accountBalance(env, alice) == std::to_string(29950000000 - baseFee));
+            BEAST_EXPECT(
+                accountBalance(env, alice) ==
+                std::to_string(29950000000 - baseFee));
         });
     }
 

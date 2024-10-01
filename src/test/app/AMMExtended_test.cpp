@@ -3230,7 +3230,9 @@ private:
                 txflags(tfPartialPayment),
                 sendmax(XRP(5)),
                 ter(tecPATH_PARTIAL));
-            env.require(balance(alice, drops(10'000'000'000 - env.current()->fees().base.drops())));
+            env.require(balance(
+                alice,
+                drops(10'000'000'000 - env.current()->fees().base.drops())));
             env.require(balance(bob, XRP(10'000)));
         }
 
