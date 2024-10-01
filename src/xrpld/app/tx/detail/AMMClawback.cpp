@@ -152,7 +152,7 @@ AMMClawback::applyGuts(Sandbox& sb)
         *ammSle,
         asset,
         asset2,
-        FreezeHandling::fhZERO_IF_FROZEN,
+        FreezeHandling::fhIGNORE_FREEZE,
         ctx_.journal);
 
     if (!expected)
@@ -184,6 +184,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 holdLPtokens,
                 holdLPtokens,
                 0,
+                FreezeHandling::fhIGNORE_FREEZE,
                 WithdrawAll::Yes,
                 ctx_.journal);
     }
@@ -222,7 +223,6 @@ AMMClawback::applyGuts(Sandbox& sb)
     // same issuer.
     auto const flags = ctx_.tx.getFlags();
     if (flags & tfClawTwoAssets)
-
         return rippleCredit(sb, holder, issuer, *amount2Withdraw, true, j_);
 
     return tesSUCCESS;
@@ -260,6 +260,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             holdLPtokens,
             holdLPtokens,
             0,
+            FreezeHandling::fhIGNORE_FREEZE,
             WithdrawAll::Yes,
             ctx_.journal);
 
@@ -276,6 +277,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         lptAMMBalance,
         toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac),
         0,
+        FreezeHandling::fhIGNORE_FREEZE,
         WithdrawAll::No,
         ctx_.journal);
 }

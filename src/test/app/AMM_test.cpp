@@ -6957,9 +6957,9 @@ private:
             env.fund(XRP(1'000), gw);
             fund(env, gw, {alice}, XRP(1'000), {USD(1'000)}, Fund::Acct);
             env.close();
-            AMM* amm = new AMM(env, alice, XRP(100), USD(100), ter(tesSUCCESS));
+            AMM amm(env, alice, XRP(100), USD(100), ter(tesSUCCESS));
             env(trust(gw, alice["USD"](0), tfSetFreeze));
-            cb(*amm);
+            cb(amm);
         };
 
         // Deposit two assets, one of which is frozen,

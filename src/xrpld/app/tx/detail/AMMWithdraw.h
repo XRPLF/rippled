@@ -21,6 +21,7 @@
 #define RIPPLE_TX_AMMWITHDRAW_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpld/ledger/View.h>
 
 namespace ripple {
 
@@ -109,6 +110,7 @@ public:
         STAmount const& lpTokens,
         STAmount const& lpTokensWithdraw,
         std::uint16_t tfee,
+        FreezeHandling freezeHanding,
         WithdrawAll withdrawAll,
         beast::Journal const& journal);
 
@@ -138,6 +140,7 @@ public:
         STAmount const& lpTokensAMMBalance,
         STAmount const& lpTokensWithdraw,
         std::uint16_t tfee,
+        FreezeHandling freezeHandling,
         WithdrawAll withdrawAll,
         beast::Journal const& journal);
 
@@ -169,12 +172,36 @@ private:
     withdraw(
         Sandbox& view,
         AccountID const& ammAccount,
-        AccountID const& account,
         SLE const& ammSle,
         STAmount const& amountBalance,
         STAmount const& amountWithdraw,
         std::optional<STAmount> const& amount2Withdraw,
         STAmount const& lpTokensAMMBalance,
+        STAmount const& lpTokensWithdraw,
+        std::uint16_t tfee);
+
+    /** Equal-asset withdrawal (LPTokens) of some AMM instance pools
+     * shares represented by the number of LPTokens .
+     * The trading fee is not charged.
+     * @param view
+     * @param ammAccount
+     * @param amountBalance current LP asset1 balance
+     * @param amount2Balance current LP asset2 balance
+     * @param lptAMMBalance current AMM LPT balance
+     * @param lpTokens current LPT balance
+     * @param lpTokensWithdraw amount of tokens to withdraw
+     * @param tfee trading fee in basis points
+     * @return
+     */
+    std::pair<TER, STAmount>
+    equalWithdrawTokens(
+        Sandbox& view,
+        SLE const& ammSle,
+        AccountID const& ammAccount,
+        STAmount const& amountBalance,
+        STAmount const& amount2Balance,
+        STAmount const& lptAMMBalance,
+        STAmount const& lpTokens,
         STAmount const& lpTokensWithdraw,
         std::uint16_t tfee);
 

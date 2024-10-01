@@ -22,7 +22,6 @@
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/ledger/Sandbox.h>
-#include <xrpld/ledger/View.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/STAccount.h>
@@ -397,23 +396,16 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                 tfee);
         if (subTxType & tfLPToken || subTxType & tfWithdrawAll)
         {
-            TER result;
-            STAmount newLPTokenBalance;
-            std::tie(result, newLPTokenBalance, std::ignore, std::ignore) =
-                equalWithdrawTokens(
-                    sb,
-                    *ammSle,
-                    account_,
-                    ammAccountID,
-                    amountBalance,
-                    amount2Balance,
-                    lptAMMBalance,
-                    lpTokens,
-                    *lpTokensWithdraw,
-                    tfee,
-                    isWithdrawAll(ctx_.tx),
-                    ctx_.journal);
-            return {result, newLPTokenBalance};
+            return equalWithdrawTokens(
+                sb,
+                *ammSle,
+                ammAccountID,
+                amountBalance,
+                amount2Balance,
+                lptAMMBalance,
+                lpTokens,
+                *lpTokensWithdraw,
+                tfee);
         }
         // should not happen.
         // LCOV_EXCL_START
@@ -457,7 +449,6 @@ std::pair<TER, STAmount>
 AMMWithdraw::withdraw(
     Sandbox& view,
     AccountID const& ammAccount,
-    AccountID const& account,
     SLE const& ammSle,
     STAmount const& amountBalance,
     STAmount const& amountWithdraw,
@@ -471,7 +462,7 @@ AMMWithdraw::withdraw(
     std::tie(ter, newLPTokenBalance, std::ignore, std::ignore) = withdraw(
         view,
         ammAccount,
-        account,
+        account_,
         ammSle,
         amountBalance,
         amountWithdraw,
@@ -479,6 +470,7 @@ AMMWithdraw::withdraw(
         lpTokensAMMBalance,
         lpTokensWithdraw,
         tfee,
+        FreezeHandling::fhZERO_IF_FROZEN,
         isWithdrawAll(ctx_.tx),
         j_);
     return {ter, newLPTokenBalance};
@@ -496,6 +488,7 @@ AMMWithdraw::withdraw(
     STAmount const& lpTokensAMMBalance,
     STAmount const& lpTokensWithdraw,
     std::uint16_t tfee,
+    FreezeHandling freezeHandling,
     WithdrawAll withdrawAll,
     beast::Journal const& journal)
 {
@@ -505,7 +498,7 @@ AMMWithdraw::withdraw(
         ammSle,
         amountWithdraw.issue(),
         std::nullopt,
-        FreezeHandling::fhZERO_IF_FROZEN,
+        freezeHandling,
         journal);
     // LCOV_EXCL_START
     if (!expected)
@@ -655,6 +648,38 @@ AMMWithdraw::withdraw(
         amount2WithdrawActual);
 }
 
+std::pair<TER, STAmount>
+AMMWithdraw::equalWithdrawTokens(
+    Sandbox& view,
+    SLE const& ammSle,
+    AccountID const& ammAccount,
+    STAmount const& amountBalance,
+    STAmount const& amount2Balance,
+    STAmount const& lptAMMBalance,
+    STAmount const& lpTokens,
+    STAmount const& lpTokensWithdraw,
+    std::uint16_t tfee)
+{
+    TER ter;
+    STAmount newLPTokenBalance;
+    std::tie(ter, newLPTokenBalance, std::ignore, std::ignore) =
+        equalWithdrawTokens(
+            view,
+            ammSle,
+            account_,
+            ammAccount,
+            amountBalance,
+            amount2Balance,
+            lptAMMBalance,
+            lpTokens,
+            lpTokensWithdraw,
+            tfee,
+            FreezeHandling::fhZERO_IF_FROZEN,
+            isWithdrawAll(ctx_.tx),
+            ctx_.journal);
+    return {ter, newLPTokenBalance};
+}
+
 std::pair<TER, bool>
 AMMWithdraw::deleteAMMAccountIfEmpty(
     Sandbox& sb,
@@ -698,6 +723,7 @@ AMMWithdraw::equalWithdrawTokens(
     STAmount const& lpTokens,
     STAmount const& lpTokensWithdraw,
     std::uint16_t tfee,
+    FreezeHandling freezeHanding,
     WithdrawAll withdrawAll,
     beast::Journal const& journal)
 {
@@ -717,6 +743,7 @@ AMMWithdraw::equalWithdrawTokens(
                 lptAMMBalance,
                 lpTokensWithdraw,
                 tfee,
+                freezeHanding,
                 WithdrawAll::Yes,
                 journal);
         }
@@ -744,6 +771,7 @@ AMMWithdraw::equalWithdrawTokens(
             lptAMMBalance,
             lpTokensWithdraw,
             tfee,
+            freezeHanding,
             withdrawAll,
             journal);
     }
@@ -801,7 +829,6 @@ AMMWithdraw::equalWithdrawLimit(
         return withdraw(
             view,
             ammAccount,
-            account_,
             ammSle,
             amountBalance,
             amount,
@@ -817,7 +844,6 @@ AMMWithdraw::equalWithdrawLimit(
     return withdraw(
         view,
         ammAccount,
-        account_,
         ammSle,
         amountBalance,
         toSTAmount(amount.issue(), amountWithdraw),
@@ -849,7 +875,6 @@ AMMWithdraw::singleWithdraw(
     return withdraw(
         view,
         ammAccount,
-        account_,
         ammSle,
         amountBalance,
         amount,
@@ -887,7 +912,6 @@ AMMWithdraw::singleWithdrawTokens(
         return withdraw(
             view,
             ammAccount,
-            account_,
             ammSle,
             amountBalance,
             amountWithdraw,
@@ -952,7 +976,6 @@ AMMWithdraw::singleWithdrawEPrice(
         return withdraw(
             view,
             ammAccount,
-            account_,
             ammSle,
             amountBalance,
             amountWithdraw,
