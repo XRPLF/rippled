@@ -373,6 +373,7 @@ extern SF_UINT8 const sfScale;
 extern SF_UINT8 const sfTickSize;
 extern SF_UINT8 const sfUNLModifyDisabling;
 extern SF_UINT8 const sfHookResult;
+extern SF_UINT8 const sfBatchIndex;
 
 // 16-bit integers (common)
 extern SF_UINT16 const sfLedgerEntryType;
@@ -576,6 +577,7 @@ extern SF_VL const sfHookStateData;
 extern SF_VL const sfHookReturnString;
 extern SF_VL const sfHookParameterName;
 extern SF_VL const sfHookParameterValue;
+extern SF_VL const sfInnerResult;
 
 // account
 extern SF_ACCOUNT const sfAccount;
@@ -596,6 +598,7 @@ extern SF_ACCOUNT const sfAttestationSignerAccount;
 extern SF_ACCOUNT const sfAttestationRewardAccount;
 extern SF_ACCOUNT const sfLockingChainDoor;
 extern SF_ACCOUNT const sfIssuingChainDoor;
+extern SF_ACCOUNT const sfOuterAccount;
 
 // path set
 extern SField const sfPaths;
@@ -618,6 +621,7 @@ extern SF_VECTOR256 const sfIndexes;
 extern SF_VECTOR256 const sfHashes;
 extern SF_VECTOR256 const sfAmendments;
 extern SF_VECTOR256 const sfNFTokenOffers;
+extern SF_VECTOR256 const sfTxIDs;
 
 // inner object
 // OBJECT/1 is reserved for end of object
@@ -651,6 +655,10 @@ extern SField const sfXChainClaimProofSig;
 extern SField const sfXChainCreateAccountProofSig;
 extern SField const sfXChainClaimAttestationCollectionElement;
 extern SField const sfXChainCreateAccountAttestationCollectionElement;
+extern SField const sfRawTransaction;
+extern SField const sfBatchExecution;
+extern SField const sfBatchTxn;
+extern SField const sfBatchSigner;
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array
@@ -676,6 +684,9 @@ extern SField const sfHookParameters;
 extern SField const sfHookGrants;
 extern SField const sfXChainClaimAttestations;
 extern SField const sfXChainCreateAccountAttestations;
+extern SField const sfBatchExecutions;
+extern SField const sfRawTransactions;
+extern SField const sfBatchSigners;
 
 //------------------------------------------------------------------------------
 

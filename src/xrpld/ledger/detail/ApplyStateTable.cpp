@@ -115,8 +115,11 @@ ApplyStateTable::apply(
     STTx const& tx,
     TER ter,
     std::optional<STAmount> const& deliver,
+    std::vector<STObject> const& batchExecution,
+    std::optional<STObject> const& batchPrev,
     beast::Journal j)
 {
+    bool const isBatch = tx.getTxnType() == ttBATCH;
     // Build metadata and insert
     auto const sTx = std::make_shared<Serializer>();
     tx.add(*sTx);
@@ -126,6 +129,15 @@ ApplyStateTable::apply(
         TxMeta meta(tx.getTransactionID(), to.seq());
         if (deliver)
             meta.setDeliveredAmount(*deliver);
+
+        if (!batchExecution.empty())
+        {
+            auto array = STArray{sfBatchExecutions};
+            for (auto element : batchExecution)
+                array.push_back(element);
+            meta.setBatchExecutions(array);
+        }
+
         Mods newMod;
         for (auto& item : items_)
         {
@@ -147,7 +159,8 @@ ApplyStateTable::apply(
             }
             auto const origNode = to.read(keylet::unchecked(item.first));
             auto curNode = item.second.second;
-            if ((type == &sfModifiedNode) && (*curNode == *origNode))
+            if ((type == &sfModifiedNode) && (*curNode == *origNode) &&
+                !isBatch)
                 continue;
             std::uint16_t nodeType = curNode
                 ? curNode->getFieldU16(sfLedgerEntryType)
@@ -200,6 +213,13 @@ ApplyStateTable::apply(
                     // search the original node for values saved on modify
                     if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) &&
                         !curNode->hasMatchingEntry(obj))
+                        prevs.emplace_back(obj);
+                }
+
+                if (isBatch && nodeType == ltACCOUNT_ROOT && batchPrev)
+                {
+                    // TODO: This could fail if the fields already exist
+                    for (auto const& obj : *batchPrev)
                         prevs.emplace_back(obj);
                 }
 

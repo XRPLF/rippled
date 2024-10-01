@@ -120,9 +120,15 @@ public:
         @return `true` if valid signature. If invalid, the error message string.
     */
     enum class RequireFullyCanonicalSig : bool { no, yes };
+
     Expected<void, std::string>
     checkSign(RequireFullyCanonicalSig requireCanonicalSig, Rules const& rules)
         const;
+
+    Expected<void, std::string>
+    checkBatchSign(
+        RequireFullyCanonicalSig requireCanonicalSig,
+        Rules const& rules) const;
 
     // SQL Functions with metadata.
     static std::string const&
@@ -145,6 +151,17 @@ private:
 
     Expected<void, std::string>
     checkMultiSign(
+        RequireFullyCanonicalSig requireCanonicalSig,
+        Rules const& rules) const;
+
+    Expected<void, std::string>
+    checkBatchSingleSign(
+        STObject const& batchSigner,
+        RequireFullyCanonicalSig requireCanonicalSig) const;
+
+    Expected<void, std::string>
+    checkBatchMultiSign(
+        STObject const& batchSigner,
         RequireFullyCanonicalSig requireCanonicalSig,
         Rules const& rules) const;
 

@@ -137,6 +137,9 @@ public:
     static NotTEC
     checkSign(PreclaimContext const& ctx);
 
+    static NotTEC
+    checkBatchSign(PreclaimContext const& ctx);
+
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
@@ -195,9 +198,18 @@ private:
     TER
     payFee();
     static NotTEC
-    checkSingleSign(PreclaimContext const& ctx);
+    checkSingleSign(
+        AccountID const& idSigner,
+        AccountID const& idAccount,
+        std::shared_ptr<SLE const> sleAccount,
+        Rules const& rules,
+        beast::Journal j);
     static NotTEC
-    checkMultiSign(PreclaimContext const& ctx);
+    checkMultiSign(
+        ReadView const& view,
+        AccountID const& idAccount,
+        STArray const& txSigners,
+        beast::Journal j);
 
     void trapTransaction(uint256) const;
 };

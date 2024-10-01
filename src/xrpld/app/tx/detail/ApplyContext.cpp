@@ -59,6 +59,73 @@ ApplyContext::apply(TER ter)
     view_->apply(base_, tx, ter, journal);
 }
 
+/**
+ * Applies the changes in the given OpenView to the ApplyContext's base.
+ * If the base is not open, the changes in the OpenView are directly applied to
+ * the base.
+ *
+ * @param open The OpenView containing the changes to be applied.
+ */
+void
+ApplyContext::applyOpenView(OpenView& open)
+{
+    if (!base_.open())
+        open.apply(base_);
+}
+
+/**
+ * Update the AccountRoot ledger entry associated with the batch transaction
+ * to ensure that the final entry accurately reflects all modifications made
+ * by inner transactions that affect the same account.
+ *
+ * This function retrieves the current AccountRoot entry for the account
+ * associated with the batch transaction and replaces it in the view.
+ * This is necessary because inner transactions are processed first, and
+ * their changes may impact the overall entry of the account. By updating
+ * the AccountRoot entry, we ensure that any changes made by these inner
+ * transactions are accounted for in the final entry of the batch transaction.
+ */
+void
+ApplyContext::updateAccountRootEntry()
+{
+    AccountID const account = tx.getAccountID(sfAccount);
+    auto const sleBase = base_.read(keylet::account(account));
+    if (sleBase)
+        view_->rawReplace(std::make_shared<SLE>(*sleBase));
+}
+
+/**
+ * Capture the previous state of the AccountRoot ledger entry associated
+ * with the batch transaction before applying inner transactions. This
+ * function retrieves the current AccountRoot entry and prepares metadata
+ * that reflects any changes made by inner transactions that may affect
+ * the account's overall state.
+ *  @param avi The ApplyViewImpl instance to which the previous metadata
+ *  will be added.
+ */
+void
+ApplyContext::batchPrevious(ApplyViewImpl& avi)
+{
+    AccountID const account = tx.getAccountID(sfAccount);
+    auto const sleBase = base_.read(keylet::account(account));
+    auto const sle = view_->peek(keylet::account(account));
+    if (sle && sleBase)
+    {
+        STObject prevFields{sfPreviousFields};
+        for (auto const& obj : *sleBase)
+        {
+            if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) &&
+                (!sle->hasMatchingEntry(obj) || obj.getFName() == sfSequence ||
+                 obj.getFName() == sfOwnerCount ||
+                 obj.getFName() == sfTicketCount))
+            {
+                prevFields.emplace_back(obj);
+            }
+        }
+        avi.addBatchPrevMetaData(std::move(prevFields));
+    }
+}
+
 std::size_t
 ApplyContext::size()
 {

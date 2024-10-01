@@ -199,6 +199,8 @@ enum TxType : std::uint16_t
     /** This transaction type fixes a problem in the ledger state */
     ttLEDGER_STATE_FIX = 53,
 
+    /** This transaction type creates a Batch instance */
+    ttBATCH = 54,
 
     /** This system-generated transaction type is used to update the status of the various amendments.
 

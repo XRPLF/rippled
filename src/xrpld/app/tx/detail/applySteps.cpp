@@ -25,6 +25,7 @@
 #include <xrpld/app/tx/detail/AMMVote.h>
 #include <xrpld/app/tx/detail/AMMWithdraw.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
+#include <xrpld/app/tx/detail/Batch.h>
 #include <xrpld/app/tx/detail/CancelCheck.h>
 #include <xrpld/app/tx/detail/CancelOffer.h>
 #include <xrpld/app/tx/detail/CashCheck.h>
@@ -164,6 +165,8 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<DIDSet>();
         case ttDID_DELETE:
             return f.template operator()<DIDDelete>();
+        case ttBATCH:
+            return f.template operator()<Batch>();
         case ttORACLE_SET:
             return f.template operator()<SetOracle>();
         case ttORACLE_DELETE:
@@ -267,6 +270,9 @@ invoke_preclaim(PreclaimContext const& ctx)
                     return result;
 
                 result = T::checkSign(ctx);
+
+                if (ctx.tx.getTxnType() == ttBATCH)
+                    result = T::checkBatchSign(ctx);
 
                 if (result != tesSUCCESS)
                     return result;
