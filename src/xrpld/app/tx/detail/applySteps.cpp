@@ -44,6 +44,7 @@
 #include <xrpld/app/tx/detail/NFTokenCancelOffer.h>
 #include <xrpld/app/tx/detail/NFTokenCreateOffer.h>
 #include <xrpld/app/tx/detail/NFTokenMint.h>
+#include <xrpld/app/tx/detail/NFTokenModify.h>
 #include <xrpld/app/tx/detail/PayChan.h>
 #include <xrpld/app/tx/detail/Payment.h>
 #include <xrpld/app/tx/detail/SetAccount.h>
@@ -130,6 +131,8 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<NFTokenCancelOffer>();
         case ttNFTOKEN_ACCEPT_OFFER:
             return f.template operator()<NFTokenAcceptOffer>();
+        case ttNFTOKEN_MODIFY:
+            return f.template operator()<NFTokenModify>();
         case ttCLAWBACK:
             return f.template operator()<Clawback>();
         case ttAMM_CREATE:
