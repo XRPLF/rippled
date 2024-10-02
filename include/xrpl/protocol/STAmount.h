@@ -351,6 +351,7 @@ STAmount::STAmount(
     , mOffset(exponent)
     , mIsNegative(negative)
 {
+    // mValue is uint64, but needs to fit in the range of int64
     assert(mValue <= std::numeric_limits<std::int64_t>::max());
     canonicalize();
 }
@@ -386,9 +387,9 @@ inline STAmount::STAmount(IOUAmount const& amount, Issue const& issue)
     , mIsNegative(amount < beast::zero)
 {
     if (mIsNegative)
-        mValue = static_cast<std::uint64_t>(-amount.mantissa());
+        mValue = unsafe_cast<std::uint64_t>(-amount.mantissa());
     else
-        mValue = static_cast<std::uint64_t>(amount.mantissa());
+        mValue = unsafe_cast<std::uint64_t>(amount.mantissa());
 
     canonicalize();
 }
@@ -508,9 +509,7 @@ STAmount::signum() const noexcept
 inline STAmount
 STAmount::zeroed() const
 {
-    if (mAsset.holds<Issue>())
-        return STAmount(mAsset.get<Issue>());
-    return STAmount(mAsset.get<MPTIssue>());
+    return STAmount(mAsset);
 }
 
 inline STAmount::operator bool() const noexcept

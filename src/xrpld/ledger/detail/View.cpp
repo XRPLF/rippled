@@ -1368,8 +1368,12 @@ rippleSendMPT(
             if (!sle)
                 return tecMPT_ISSUANCE_NOT_FOUND;
 
-            if (sle->getFieldU64(sfOutstandingAmount) + saAmount.mpt().value() >
-                (*sle)[~sfMaximumAmount].value_or(maxMPTokenAmount))
+            auto const sendAmount = saAmount.mpt().value();
+            auto const maximumAmount =
+                sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
+            if (sendAmount > maximumAmount ||
+                sle->getFieldU64(sfOutstandingAmount) >
+                    maximumAmount - sendAmount)
                 return tecMPT_MAX_AMOUNT_EXCEEDED;
         }
 

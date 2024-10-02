@@ -58,7 +58,7 @@ using Currency = base_uint<160, detail::CurrencyTag>;
 /** NodeID is a 160-bit hash representing one node. */
 using NodeID = base_uint<160, detail::NodeIDTag>;
 
-/** MPTID is a 192-bit representing MPT Issuance ID,
+/** MPTID is a 192-bit value representing MPT Issuance ID,
  * which is a concatenation of a 32-bit sequence (big endian)
  * and a 160-bit account */
 using MPTID = base_uint<192>;
