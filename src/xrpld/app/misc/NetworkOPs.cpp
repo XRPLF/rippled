@@ -52,6 +52,7 @@
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/RFC1751.h>
@@ -2309,7 +2310,7 @@ NetworkOPsImp::recvValidation(
             bypassAccept = BypassAccept::yes;
         else
             pendingValidations_.insert(val->getLedgerHash());
-        lock.unlock();
+        scope_unlock unlock(lock);
         handleNewValidation(app_, val, source, bypassAccept, m_journal);
     }
     catch (std::exception const& e)
@@ -2326,10 +2327,9 @@ NetworkOPsImp::recvValidation(
     }
     if (bypassAccept == BypassAccept::no)
     {
-        lock.lock();
         pendingValidations_.erase(val->getLedgerHash());
-        lock.unlock();
     }
+    lock.unlock();
 
     pubValidation(val);
 
