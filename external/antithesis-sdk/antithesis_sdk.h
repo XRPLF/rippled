@@ -13,7 +13,7 @@
 #include <vector>
 
 namespace antithesis {
-    inline const char* SDK_VERSION = "0.3.1";
+    inline const char* SDK_VERSION = "0.3.2";
     inline const char* PROTOCOL_VERSION = "1.0.0";
 
     struct LocalRandom {
@@ -38,6 +38,7 @@ namespace antithesis {
     typedef std::variant<BasicValueType, JSON_ARRAY> ValueType;
 
     struct JSON : std::map<std::string, ValueType> {
+        JSON() :  std::map<std::string, ValueType>() {}
         JSON( std::initializer_list<std::pair<const std::string, ValueType>> args) : std::map<std::string, ValueType>(args) {}
     };
 
