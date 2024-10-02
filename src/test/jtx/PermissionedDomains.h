@@ -21,6 +21,7 @@
 #define RIPPLE_TEST_JTX_PERMISSIONEDDOMAINS_H_INCLUDED
 
 #include <test/jtx.h>
+#include <optional>
 
 namespace ripple {
 namespace test {
@@ -63,12 +64,16 @@ Credentials
 credentialsFromJson(Json::Value const& object);
 
 // Sort credentials the same way as PermissionedDomainSet
-Credentials
+std::optional<Credentials>
 sortCredentials(Credentials const& input);
 
 // Get account_info
 Json::Value
 ownerInfo(Account const& account, Env& env);
+
+// Get newly created domain from transaction metadata.
+uint256
+getNewDomain(std::shared_ptr<STObject const> const& meta);
 
 }  // namespace pd
 }  // namespace jtx
