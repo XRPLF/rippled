@@ -89,6 +89,11 @@ public:
     add32(HashPrefix p);
     int
     add64(std::uint64_t i);  // native currency amounts
+                             //
+    int
+    addi32(std::int32_t i);  // Number::exponent_
+    int
+    addi64(std::int64_t i);  // Number::mantissa_
 
     template <typename Integer>
     int addInteger(Integer);
@@ -356,6 +361,12 @@ public:
 
     std::uint64_t
     get64();
+
+    std::int32_t
+    geti32();
+
+    std::int64_t
+    geti64();
 
     template <std::size_t Bits, class Tag = void>
     base_uint<Bits, Tag>
