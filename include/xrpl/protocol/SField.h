@@ -442,6 +442,9 @@ extern SF_UINT32 const sfEmitGeneration;
 extern SF_UINT32 const sfVoteWeight;
 extern SF_UINT32 const sfFirstNFTokenSequence;
 extern SF_UINT32 const sfOracleDocumentID;
+extern SF_UINT32 const sfFrequency;
+extern SF_UINT32 const sfStartTime;
+extern SF_UINT32 const sfNextPaymentTime;
 
 // 64-bit integers (common)
 extern SF_UINT64 const sfIndexNext;
@@ -511,6 +514,7 @@ extern SF_UINT256 const sfHookStateKey;
 extern SF_UINT256 const sfHookHash;
 extern SF_UINT256 const sfHookNamespace;
 extern SF_UINT256 const sfHookSetTxnID;
+extern SF_UINT256 const sfSubscriptionID;
 
 // currency amount (common)
 extern SF_AMOUNT const sfAmount;

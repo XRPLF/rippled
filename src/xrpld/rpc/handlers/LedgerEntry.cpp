@@ -644,6 +644,47 @@ doLedgerEntry(RPC::JsonContext& context)
                     uNodeIndex = keylet::oracle(*account, *documentID).key;
             }
         }
+        else if (context.params.isMember(jss::subscription))
+        {
+            expectedType = ltSUBSCRIPTION;
+            if (!context.params[jss::subscription].isObject())
+            {
+                if (!uNodeIndex.parseHex(
+                        context.params[jss::subscription].asString()))
+                {
+                    uNodeIndex = beast::zero;
+                    jvResult[jss::error] = "malformedRequest";
+                }
+            }
+            else if (
+                !context.params[jss::subscription].isMember(jss::account) ||
+                !context.params[jss::subscription].isMember(jss::destination) ||
+                !context.params[jss::subscription].isMember(jss::seq) ||
+                !context.params[jss::subscription][jss::seq].isIntegral())
+            {
+                jvResult[jss::error] = "malformedRequest";
+            }
+            else
+            {
+                uNodeIndex = beast::zero;
+                auto const& subscription = context.params[jss::subscription];
+                auto const account = parseBase58<AccountID>(
+                    subscription[jss::account].asString());
+                auto const destination = parseBase58<AccountID>(
+                    subscription[jss::destination].asString());
+                if (!account || account->isZero())
+                    jvResult[jss::error] = "malformedAddress";
+                else if (!destination || destination->isZero())
+                    jvResult[jss::error] = "malformedAddress";
+                else
+                    uNodeIndex = keylet::subscription(
+                                     *account,
+                                     *destination,
+                                     context.params[jss::subscription][jss::seq]
+                                         .asUInt())
+                                     .key;
+            }
+        }
         else
         {
             if (context.params.isMember("params") &&

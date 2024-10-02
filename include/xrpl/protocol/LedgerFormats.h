@@ -197,6 +197,11 @@ enum LedgerEntryType : std::uint16_t
      */
     ltORACLE = 0x0080,
 
+    /** A ledger object which tracks Subscription
+        \sa keylet::subscription
+     */
+    ltSUBSCRIPTION = 0x0055,
+
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 

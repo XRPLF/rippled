@@ -1414,6 +1414,122 @@ class LedgerRPC_test : public beast::unit_test::suite
     }
 
     void
+    testLedgerEntrySubscription()
+    {
+        testcase("ledger_entry Request Subscription");
+        using namespace test::jtx;
+        Env env{*this};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        using namespace std::chrono_literals;
+        env(subscription::create(alice, bob, XRP(10), 100s));
+        env.close();
+
+        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        std::string subIndex;
+        {
+            // Request the subscription using account, destination and sequence.
+            Json::Value jvParams;
+            jvParams[jss::subscription] = Json::objectValue;
+            jvParams[jss::subscription][jss::account] = alice.human();
+            jvParams[jss::subscription][jss::destination] = bob.human();
+            jvParams[jss::subscription][jss::seq] = env.seq(alice) - 1;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][jss::Amount] == XRP(10).value().getText());
+            subIndex = jrr[jss::index].asString();
+        }
+        {
+            // Request the subscription by index.
+            Json::Value jvParams;
+            jvParams[jss::subscription] = subIndex;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][jss::Amount] == XRP(10).value().getText());
+        }
+        {
+            // Malformed account entry.
+            Json::Value jvParams;
+            jvParams[jss::subscription] = Json::objectValue;
+
+            std::string const badAddress = makeBadAddress(alice.human());
+            jvParams[jss::subscription][jss::account] = badAddress;
+            jvParams[jss::subscription][jss::destination] = bob.human();
+            jvParams[jss::subscription][jss::seq] = env.seq(alice) - 1;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedAddress", "");
+        }
+        {
+            // Missing account.
+            Json::Value jvParams;
+            jvParams[jss::subscription] = Json::objectValue;
+            jvParams[jss::subscription][jss::destination] = bob.human();
+            jvParams[jss::subscription][jss::seq] = env.seq(alice) - 1;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+        {
+            // Malformed destination entry.
+            Json::Value jvParams;
+            jvParams[jss::subscription] = Json::objectValue;
+
+            std::string const badAddress = makeBadAddress(alice.human());
+            jvParams[jss::subscription][jss::account] = alice.human();
+            jvParams[jss::subscription][jss::destination] = badAddress;
+            jvParams[jss::subscription][jss::seq] = env.seq(alice) - 1;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedAddress", "");
+        }
+        {
+            // Missing destination.
+            Json::Value jvParams;
+            jvParams[jss::subscription] = Json::objectValue;
+            jvParams[jss::subscription][jss::account] = alice.human();
+            jvParams[jss::subscription][jss::seq] = env.seq(alice) - 1;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+        {
+            // Missing sequence.
+            Json::Value jvParams;
+            jvParams[jss::subscription] = Json::objectValue;
+            jvParams[jss::subscription][jss::account] = alice.human();
+            jvParams[jss::subscription][jss::destination] = bob.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+        {
+            // Non-integer sequence.
+            Json::Value jvParams;
+            jvParams[jss::subscription] = Json::objectValue;
+            jvParams[jss::subscription][jss::account] = alice.human();
+            jvParams[jss::subscription][jss::destination] = bob.human();
+            jvParams[jss::subscription][jss::seq] =
+                std::to_string(env.seq(alice) - 1);
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+    }
+
+    void
     testLedgerEntryTicket()
     {
         testcase("ledger_entry Request Ticket");
@@ -2380,6 +2496,7 @@ public:
         testLedgerEntryOffer();
         testLedgerEntryPayChan();
         testLedgerEntryRippleState();
+        testLedgerEntrySubscription();
         testLedgerEntryTicket();
         testLookupLedger();
         testNoQueue();

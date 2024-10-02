@@ -51,6 +51,7 @@
 #include <xrpld/app/tx/detail/SetRegularKey.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
 #include <xrpld/app/tx/detail/SetTrust.h>
+#include <xrpld/app/tx/detail/Subscription.h>
 #include <xrpld/app/tx/detail/XChainBridge.h>
 #include <xrpl/protocol/TxFormats.h>
 
@@ -168,6 +169,12 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<SetOracle>();
         case ttORACLE_DELETE:
             return f.template operator()<DeleteOracle>();
+        case ttSUBSCRIPTION_SET:
+            return f.template operator()<SetSubscription>();
+        case ttSUBSCRIPTION_CANCEL:
+            return f.template operator()<CancelSubscription>();
+        case ttSUBSCRIPTION_CLAIM:
+            return f.template operator()<ClaimSubscription>();
         default:
             throw UnknownTxnType(txnType);
     }
