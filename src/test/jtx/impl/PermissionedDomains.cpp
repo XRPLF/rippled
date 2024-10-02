@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/PermissionedDomains.h>
+#include <exception>
 
 namespace ripple {
 namespace test {
@@ -120,18 +121,56 @@ credentialsFromJson(Json::Value const& object)
     return ret;
 }
 
-// Sort credentials the same way as PermissionedDomainSet
-Credentials
+// Sort credentials the same way as PermissionedDomainSet. None can
+// be identical.
+std::optional<Credentials>
 sortCredentials(Credentials const& input)
 {
-    Credentials ret = input;
-    std::sort(
-        ret.begin(),
-        ret.end(),
-        [](Credential const& left, Credential const& right) -> bool {
-            return left.first < right.first;
-        });
-    return ret;
+    try
+    {
+        Credentials ret = input;
+        std::sort(
+            ret.begin(),
+            ret.end(),
+            [](Credential const& left, Credential const& right) -> bool {
+                if (left.first < right.first)
+                    return true;
+                if (left.first == right.first)
+                {
+                    if (left.second < right.second)
+                        return true;
+                    if (left.second == right.second)
+                        throw std::runtime_error("duplicate");
+                }
+                return false;
+                /*
+                if (left.getAccountID(sfIssuer) < right.getAccountID(sfIssuer))
+                    return true;
+                if (left.getAccountID(sfIssuer) == right.getAccountID(sfIssuer))
+                {
+                    if (left.getFieldVL(sfCredentialType) <
+                        right.getFieldVL(sfCredentialType))
+                    {
+                        return true;
+                    }
+                    if (left.getFieldVL(sfCredentialType) ==
+                        right.getFieldVL(sfCredentialType))
+                    {
+                        throw std::runtime_error("duplicate credentials");
+                    }
+                    return false;
+                }
+                return false;
+                return left.first < right.first;
+                 */
+            });
+        return ret;
+    }
+    catch (...)
+    {
+        std::cerr << "wtf\n";
+        return std::nullopt;
+    }
 }
 
 // Get account_info
@@ -143,6 +182,28 @@ ownerInfo(Account const& account, Env& env)
     auto const& resp = env.rpc("json", "account_info", to_string(params));
     return env.rpc(
         "json", "account_info", to_string(params))["result"]["account_data"];
+}
+
+uint256
+getNewDomain(std::shared_ptr<STObject const> const& meta)
+{
+    uint256 ret;
+    auto metaJson = meta->getJson(JsonOptions::none);
+    Json::Value a(Json::arrayValue);
+    a = metaJson["AffectedNodes"];
+
+    for (auto const& node : a)
+    {
+        if (!node.isMember("CreatedNode") ||
+            node["CreatedNode"]["LedgerEntryType"] != "PermissionedDomain")
+        {
+            continue;
+        }
+        std::ignore =
+            ret.parseHex(node["CreatedNode"]["LedgerIndex"].asString());
+    }
+
+    return ret;
 }
 
 }  // namespace pd

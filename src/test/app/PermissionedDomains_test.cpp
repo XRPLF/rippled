@@ -175,6 +175,34 @@ class PermissionedDomains_test : public beast::unit_test::suite
         env(pd::setTx(account, credentialsDup, domain),
             fee(setFee),
             ter(temMALFORMED));
+
+        // Have equal issuers but different credentials and make sure they
+        // sort correctly.
+        {
+            pd::Credentials const credentialsSame{
+                {alice2, pd::toBlob("credential3")},
+                {alice3, pd::toBlob("credential2")},
+                {alice2, pd::toBlob("credential9")},
+                {alice5, pd::toBlob("credential4")},
+                {alice2, pd::toBlob("credential6")},
+            };
+            BEAST_EXPECT(
+                credentialsSame != *pd::sortCredentials(credentialsSame));
+            env(pd::setTx(account, credentialsSame, domain), fee(setFee));
+
+            uint256 d;
+            if (domain)
+                d = *domain;
+            else
+                d = pd::getNewDomain(env.meta());
+            env.close();
+            auto objects = pd::getObjects(account, env);
+            auto const fromObject = pd::credentialsFromJson(objects[d]);
+            auto const sortedCreds = *pd::sortCredentials(credentialsSame);
+            BEAST_EXPECT(
+                pd::credentialsFromJson(objects[d]) ==
+                *pd::sortCredentials(credentialsSame));
+        }
     }
 
     // Test PermissionedDomainSet
@@ -238,24 +266,10 @@ class PermissionedDomains_test : public beast::unit_test::suite
         {
             BEAST_EXPECT(
                 credentials10.size() == PermissionedDomainSet::PD_ARRAY_MAX);
-            BEAST_EXPECT(credentials10 != pd::sortCredentials(credentials10));
+            BEAST_EXPECT(credentials10 != *pd::sortCredentials(credentials10));
             env(pd::setTx(alice, credentials10), fee(setFee));
             auto tx = env.tx()->getJson(JsonOptions::none);
-            auto meta = env.meta()->getJson(JsonOptions::none);
-            Json::Value a(Json::arrayValue);
-            a = meta["AffectedNodes"];
-
-            for (auto const& node : a)
-            {
-                if (!node.isMember("CreatedNode") ||
-                    node["CreatedNode"]["LedgerEntryType"] !=
-                        "PermissionedDomain")
-                {
-                    continue;
-                }
-                std::ignore = domain2.parseHex(
-                    node["CreatedNode"]["LedgerIndex"].asString());
-            }
+            domain2 = pd::getNewDomain(env.meta());
             auto objects = pd::getObjects(alice, env);
             auto object = objects[domain2];
             BEAST_EXPECT(
@@ -284,6 +298,12 @@ class PermissionedDomains_test : public beast::unit_test::suite
         // Update from the wrong owner.
         env(pd::setTx(alice2, credentials1, domain2),
             ter(temINVALID_ACCOUNT_ID));
+
+        // Update a uint256(0) domain
+        env(pd::setTx(alice, credentials1, uint256(0)), ter(temMALFORMED));
+
+        // Update non-existent domain
+        env(pd::setTx(alice, credentials1, uint256(75)), ter(tecNO_ENTRY));
 
         // Test bad data when creating a domain.
         testBadData(alice, env);
