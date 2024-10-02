@@ -422,7 +422,7 @@ featureToName(uint256 const& f)
 #define XRPL_FIX(name, supported, vote) \
     uint256 const fix##name = registerFeature("fix" #name, supported, vote);
 
-#include <xrpl/protocol/features.h>
+#include <xrpl/protocol/detail/features.h>
 
 #undef XRPL_FIX
 #pragma pop_macro("XRPL_FIX")

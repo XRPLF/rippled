@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#if !defined(OBJECT)
+#error "undefined macro: OBJECT"
+#endif
+
 // clang-format off
 
 /** A ledger object which describes an account.

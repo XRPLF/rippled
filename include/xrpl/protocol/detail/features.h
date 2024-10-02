@@ -17,6 +17,13 @@
 */
 //==============================================================================
 
+#if !defined(XRPL_FEATURE)
+#error "undefined macro: XRPL_FEATURE"
+#endif
+#if !defined(XRPL_FIX)
+#error "undefined macro: XRPL_FIX"
+#endif
+
 // clang-format off
 
 // Add new amendments to the top of this list.

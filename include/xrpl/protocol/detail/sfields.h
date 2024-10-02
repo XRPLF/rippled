@@ -17,6 +17,13 @@
 */
 //==============================================================================
 
+#if !defined(UNTYPED_SFIELD)
+#error "undefined macro: UNTYPED_SFIELD"
+#endif
+#if !defined(TYPED_SFIELD)
+#error "undefined macro: TYPED_SFIELD"
+#endif
+
 // clang-format off
 
 // untyped

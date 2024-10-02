@@ -34,12 +34,15 @@ LedgerFormats::LedgerFormats()
 
 #pragma push_macro("UNWRAP")
 #undef UNWRAP
-#define UNWRAP(...) __VA_ARGS__
 #pragma push_macro("OBJECT")
 #undef OBJECT
+
+#define UNWRAP(...) __VA_ARGS__
 #define OBJECT(tag, value, name, fields) \
     add(jss::name, tag, UNWRAP fields, commonFields);
-#include <xrpl/protocol/objects.h>
+
+#include <xrpl/protocol/detail/objects.h>
+
 #undef OBJECT
 #pragma pop_macro("OBJECT")
 #undef UNWRAP

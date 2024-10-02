@@ -358,25 +358,22 @@ using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 // Use macros for most SField construction to enforce naming conventions.
 #pragma push_macro("UNTYPED_SFIELD")
 #undef UNTYPED_SFIELD
-
-#define UNTYPED_SFIELD(name, stiSuffix, fieldValue, ...) \
-    extern SField const sf##name;
-
 #pragma push_macro("TYPED_SFIELD")
 #undef TYPED_SFIELD
 
+#define UNTYPED_SFIELD(name, stiSuffix, fieldValue, ...) \
+    extern SField const sf##name;
 #define TYPED_SFIELD(name, stiSuffix, fieldValue, ...) \
     extern SF_##stiSuffix const sf##name;
 
 extern SField const sfInvalid;
 extern SField const sfGeneric;
 
-#include <xrpl/protocol/sfields.h>
+#include <xrpl/protocol/detail/sfields.h>
 
 #undef TYPED_SFIELD
-#undef UNTYPED_SFIELD
-
 #pragma pop_macro("TYPED_SFIELD")
+#undef UNTYPED_SFIELD
 #pragma pop_macro("UNTYPED_SFIELD")
 
 }  // namespace ripple
