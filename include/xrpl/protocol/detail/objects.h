@@ -23,6 +23,114 @@
 
 // clang-format off
 
+/**
+ * These objects are listed in order of increasing ledger type ID.
+ * There are many gaps between these IDs.
+ * You are welcome to fill them with new object types.
+ */
+
+/** A ledger object which identifies an offer to buy or sell an NFT.
+
+    \sa keylet::nftoffer
+ */
+OBJECT(ltNFTOKEN_OFFER, 0x0037, NFTokenOffer, ({
+    {sfOwner,                soeREQUIRED},
+    {sfNFTokenID,            soeREQUIRED},
+    {sfAmount,               soeREQUIRED},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfNFTokenOfferNode,     soeREQUIRED},
+    {sfDestination,          soeOPTIONAL},
+    {sfExpiration,           soeOPTIONAL},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+}))
+
+/** A ledger object which describes a check.
+
+    \sa keylet::check
+ */
+OBJECT(ltCHECK, 0x0043, Check, ({
+    {sfAccount,              soeREQUIRED},
+    {sfDestination,          soeREQUIRED},
+    {sfSendMax,              soeREQUIRED},
+    {sfSequence,             soeREQUIRED},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfDestinationNode,      soeREQUIRED},
+    {sfExpiration,           soeOPTIONAL},
+    {sfInvoiceID,            soeOPTIONAL},
+    {sfSourceTag,            soeOPTIONAL},
+    {sfDestinationTag,       soeOPTIONAL},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+}))
+
+/** The ledger object which tracks the DID.
+
+   \sa keylet::did
+*/
+OBJECT(ltDID, 0x0049, DID, ({
+    {sfAccount,              soeREQUIRED},
+    {sfDIDDocument,          soeOPTIONAL},
+    {sfURI,                  soeOPTIONAL},
+    {sfData,                 soeOPTIONAL},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+}))
+
+/** The ledger object which tracks the current negative UNL state.
+
+    \note This is a singleton: only one such object exists in the ledger.
+
+    \sa keylet::negativeUNL
+ */
+OBJECT(ltNEGATIVE_UNL, 0x004e, NegativeUNL, ({
+    {sfDisabledValidators,   soeOPTIONAL},
+    {sfValidatorToDisable,   soeOPTIONAL},
+    {sfValidatorToReEnable,  soeOPTIONAL},
+    {sfPreviousTxnID,        soeOPTIONAL},
+    {sfPreviousTxnLgrSeq,    soeOPTIONAL},
+}))
+
+/** A ledger object which contains a list of NFTs
+
+    \sa keylet::nftpage_min, keylet::nftpage_max, keylet::nftpage
+ */
+OBJECT(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, ({
+    {sfPreviousPageMin,      soeOPTIONAL},
+    {sfNextPageMin,          soeOPTIONAL},
+    {sfNFTokens,             soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+}))
+
+/** A ledger object which contains a signer list for an account.
+
+    \sa keylet::signers
+ */
+// All fields are soeREQUIRED because there is always a SignerEntries.
+// If there are no SignerEntries the node is deleted.
+OBJECT(ltSIGNER_LIST, 0x0053, SignerList, ({
+    {sfOwnerNode,            soeREQUIRED},
+    {sfSignerQuorum,         soeREQUIRED},
+    {sfSignerEntries,        soeREQUIRED},
+    {sfSignerListID,         soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+}))
+
+/** A ledger object which describes a ticket.
+
+    \sa keylet::ticket
+ */
+OBJECT(ltTICKET, 0x0054, Ticket, ({
+    {sfAccount,              soeREQUIRED},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfTicketSequence,       soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+}))
+
 /** A ledger object which describes an account.
 
     \sa keylet::account
@@ -72,6 +180,50 @@ OBJECT(ltDIR_NODE, 0x0064, DirectoryNode, ({
     {sfPreviousTxnLgrSeq,    soeOPTIONAL},
 }))
 
+/** The ledger object which lists details about amendments on the network.
+
+    \note This is a singleton: only one such object exists in the ledger.
+
+    \sa keylet::amendments
+ */
+OBJECT(ltAMENDMENTS, 0x0066, Amendments, ({
+    {sfAmendments,           soeOPTIONAL},  // Enabled
+    {sfMajorities,           soeOPTIONAL},
+    {sfPreviousTxnID,        soeOPTIONAL},
+    {sfPreviousTxnLgrSeq,    soeOPTIONAL},
+}))
+
+/** A ledger object that contains a list of ledger hashes.
+
+    This type is used to store the ledger hashes which the protocol uses
+    to implement skip lists that allow for efficient backwards (and, in
+    theory, forward) forward iteration across large ledger ranges.
+
+    \sa keylet::skip
+ */
+OBJECT(ltLEDGER_HASHES, 0x0068, LedgerHashes, ({
+    {sfFirstLedgerSequence,  soeOPTIONAL},
+    {sfLastLedgerSequence,   soeOPTIONAL},
+    {sfHashes,               soeREQUIRED},
+}))
+
+/** The ledger object which lists details about sidechains.
+
+    \sa keylet::bridge
+*/
+OBJECT(ltBRIDGE, 0x0069, Bridge, ({
+    {sfAccount,                  soeREQUIRED},
+    {sfSignatureReward,          soeREQUIRED},
+    {sfMinAccountCreateAmount,   soeOPTIONAL},
+    {sfXChainBridge,             soeREQUIRED},
+    {sfXChainClaimID,            soeREQUIRED},
+    {sfXChainAccountCreateCount, soeREQUIRED},
+    {sfXChainAccountClaimCount,  soeREQUIRED},
+    {sfOwnerNode,                soeREQUIRED},
+    {sfPreviousTxnID,            soeREQUIRED},
+    {sfPreviousTxnLgrSeq,        soeREQUIRED},
+}))
+
 /** A ledger object which describes an offer on the DEX.
 
     \sa keylet::offer
@@ -87,6 +239,34 @@ OBJECT(ltOFFER, 0x006f, Offer, ({
     {sfPreviousTxnID,        soeREQUIRED},
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
     {sfExpiration,           soeOPTIONAL},
+}))
+
+/** A ledger object which describes a deposit preauthorization.
+
+    \sa keylet::depositPreauth
+ */
+OBJECT(ltDEPOSIT_PREAUTH, 0x0070, DepositPreauth, ({
+    {sfAccount,              soeREQUIRED},
+    {sfAuthorize,            soeREQUIRED},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+}))
+
+/** A claim id for a cross chain transaction.
+
+    \sa keylet::xChainClaimID
+*/
+OBJECT(ltXCHAIN_OWNED_CLAIM_ID, 0x0071, XChainOwnedClaimID, ({
+    {sfAccount,                 soeREQUIRED},
+    {sfXChainBridge,            soeREQUIRED},
+    {sfXChainClaimID,           soeREQUIRED},
+    {sfOtherChainSource,        soeREQUIRED},
+    {sfXChainClaimAttestations, soeREQUIRED},
+    {sfSignatureReward,         soeREQUIRED},
+    {sfOwnerNode,               soeREQUIRED},
+    {sfPreviousTxnID,           soeREQUIRED},
+    {sfPreviousTxnLgrSeq,       soeREQUIRED},
 }))
 
 /** A ledger object which describes a bidirectional trust line.
@@ -109,52 +289,6 @@ OBJECT(ltRIPPLE_STATE, 0x0072, RippleState, ({
     {sfHighQualityOut,       soeOPTIONAL},
 }))
 
-/** A ledger object describing a single escrow.
-
-    \sa keylet::escrow
- */
-OBJECT(ltESCROW, 0x0075, Escrow, ({
-    {sfAccount,              soeREQUIRED},
-    {sfDestination,          soeREQUIRED},
-    {sfAmount,               soeREQUIRED},
-    {sfCondition,            soeOPTIONAL},
-    {sfCancelAfter,          soeOPTIONAL},
-    {sfFinishAfter,          soeOPTIONAL},
-    {sfSourceTag,            soeOPTIONAL},
-    {sfDestinationTag,       soeOPTIONAL},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-    {sfDestinationNode,      soeOPTIONAL},
-}))
-
-/** A ledger object that contains a list of ledger hashes.
-
-    This type is used to store the ledger hashes which the protocol uses
-    to implement skip lists that allow for efficient backwards (and, in
-    theory, forward) forward iteration across large ledger ranges.
-
-    \sa keylet::skip
- */
-OBJECT(ltLEDGER_HASHES, 0x0068, LedgerHashes, ({
-    {sfFirstLedgerSequence,  soeOPTIONAL},
-    {sfLastLedgerSequence,   soeOPTIONAL},
-    {sfHashes,               soeREQUIRED},
-}))
-
-/** The ledger object which lists details about amendments on the network.
-
-    \note This is a singleton: only one such object exists in the ledger.
-
-    \sa keylet::amendments
- */
-OBJECT(ltAMENDMENTS, 0x0066, Amendments, ({
-    {sfAmendments,           soeOPTIONAL},  // Enabled
-    {sfMajorities,           soeOPTIONAL},
-    {sfPreviousTxnID,        soeOPTIONAL},
-    {sfPreviousTxnLgrSeq,    soeOPTIONAL},
-}))
-
 /** The ledger object which lists the network's fee settings.
 
     \note This is a singleton: only one such object exists in the ledger.
@@ -175,31 +309,37 @@ OBJECT(ltFEE_SETTINGS, 0x0073, FeeSettings, ({
     {sfPreviousTxnLgrSeq,      soeOPTIONAL},
 }))
 
-/** A ledger object which describes a ticket.
+/** A claim id for a cross chain create account transaction.
 
-    \sa keylet::ticket
- */
-OBJECT(ltTICKET, 0x0054, Ticket, ({
-    {sfAccount,              soeREQUIRED},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfTicketSequence,       soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+    \sa keylet::xChainCreateAccountClaimID
+*/
+OBJECT(ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID, 0x0074, XChainOwnedCreateAccountClaimID, ({
+    {sfAccount,                         soeREQUIRED},
+    {sfXChainBridge,                    soeREQUIRED},
+    {sfXChainAccountCreateCount,        soeREQUIRED},
+    {sfXChainCreateAccountAttestations, soeREQUIRED},
+    {sfOwnerNode,                       soeREQUIRED},
+    {sfPreviousTxnID,                   soeREQUIRED},
+    {sfPreviousTxnLgrSeq,               soeREQUIRED},
 }))
 
-/** A ledger object which contains a signer list for an account.
+/** A ledger object describing a single escrow.
 
-    \sa keylet::signers
+    \sa keylet::escrow
  */
-// All fields are soeREQUIRED because there is always a SignerEntries.
-// If there are no SignerEntries the node is deleted.
-OBJECT(ltSIGNER_LIST, 0x0053, SignerList, ({
+OBJECT(ltESCROW, 0x0075, Escrow, ({
+    {sfAccount,              soeREQUIRED},
+    {sfDestination,          soeREQUIRED},
+    {sfAmount,               soeREQUIRED},
+    {sfCondition,            soeOPTIONAL},
+    {sfCancelAfter,          soeOPTIONAL},
+    {sfFinishAfter,          soeOPTIONAL},
+    {sfSourceTag,            soeOPTIONAL},
+    {sfDestinationTag,       soeOPTIONAL},
     {sfOwnerNode,            soeREQUIRED},
-    {sfSignerQuorum,         soeREQUIRED},
-    {sfSignerEntries,        soeREQUIRED},
-    {sfSignerListID,         soeREQUIRED},
     {sfPreviousTxnID,        soeREQUIRED},
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
+    {sfDestinationNode,      soeOPTIONAL},
 }))
 
 /** A ledger object describing a single unidirectional XRP payment channel.
@@ -223,79 +363,6 @@ OBJECT(ltPAYCHAN, 0x0078, PayChannel, ({
     {sfDestinationNode,      soeOPTIONAL},
 }))
 
-/** A ledger object which describes a check.
-
-    \sa keylet::check
- */
-OBJECT(ltCHECK, 0x0043, Check, ({
-    {sfAccount,              soeREQUIRED},
-    {sfDestination,          soeREQUIRED},
-    {sfSendMax,              soeREQUIRED},
-    {sfSequence,             soeREQUIRED},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfDestinationNode,      soeREQUIRED},
-    {sfExpiration,           soeOPTIONAL},
-    {sfInvoiceID,            soeOPTIONAL},
-    {sfSourceTag,            soeOPTIONAL},
-    {sfDestinationTag,       soeOPTIONAL},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-}))
-
-/** A ledger object which describes a deposit preauthorization.
-
-    \sa keylet::depositPreauth
- */
-OBJECT(ltDEPOSIT_PREAUTH, 0x0070, DepositPreauth, ({
-    {sfAccount,              soeREQUIRED},
-    {sfAuthorize,            soeREQUIRED},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-}))
-
-/** The ledger object which tracks the current negative UNL state.
-
-    \note This is a singleton: only one such object exists in the ledger.
-
-    \sa keylet::negativeUNL
- */
-OBJECT(ltNEGATIVE_UNL, 0x004e, NegativeUNL, ({
-    {sfDisabledValidators,   soeOPTIONAL},
-    {sfValidatorToDisable,   soeOPTIONAL},
-    {sfValidatorToReEnable,  soeOPTIONAL},
-    {sfPreviousTxnID,        soeOPTIONAL},
-    {sfPreviousTxnLgrSeq,    soeOPTIONAL},
-}))
-
-/** A ledger object which contains a list of NFTs
-
-    \sa keylet::nftpage_min, keylet::nftpage_max, keylet::nftpage
- */
-OBJECT(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, ({
-    {sfPreviousPageMin,      soeOPTIONAL},
-    {sfNextPageMin,          soeOPTIONAL},
-    {sfNFTokens,             soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED}
-}))
-
-/** A ledger object which identifies an offer to buy or sell an NFT.
-
-    \sa keylet::nftoffer
- */
-OBJECT(ltNFTOKEN_OFFER, 0x0037, NFTokenOffer, ({
-    {sfOwner,                soeREQUIRED},
-    {sfNFTokenID,            soeREQUIRED},
-    {sfAmount,               soeREQUIRED},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfNFTokenOfferNode,     soeREQUIRED},
-    {sfDestination,          soeOPTIONAL},
-    {sfExpiration,           soeOPTIONAL},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED}
-}))
-
 /** The ledger object which tracks the AMM.
 
    \sa keylet::amm
@@ -313,67 +380,6 @@ OBJECT(ltAMM, 0x0079, AMM, ({
     {sfPreviousTxnLgrSeq,    soeOPTIONAL},
 }))
 
-/** The ledger object which lists details about sidechains.
-
-    \sa keylet::bridge
-*/
-OBJECT(ltBRIDGE, 0x0069, Bridge, ({
-    {sfAccount,                  soeREQUIRED},
-    {sfSignatureReward,          soeREQUIRED},
-    {sfMinAccountCreateAmount,   soeOPTIONAL},
-    {sfXChainBridge,             soeREQUIRED},
-    {sfXChainClaimID,            soeREQUIRED},
-    {sfXChainAccountCreateCount, soeREQUIRED},
-    {sfXChainAccountClaimCount,  soeREQUIRED},
-    {sfOwnerNode,                soeREQUIRED},
-    {sfPreviousTxnID,            soeREQUIRED},
-    {sfPreviousTxnLgrSeq,        soeREQUIRED}
-}))
-
-/** A claim id for a cross chain transaction.
-
-    \sa keylet::xChainClaimID
-*/
-OBJECT(ltXCHAIN_OWNED_CLAIM_ID, 0x0071, XChainOwnedClaimID, ({
-    {sfAccount,                 soeREQUIRED},
-    {sfXChainBridge,            soeREQUIRED},
-    {sfXChainClaimID,           soeREQUIRED},
-    {sfOtherChainSource,        soeREQUIRED},
-    {sfXChainClaimAttestations, soeREQUIRED},
-    {sfSignatureReward,         soeREQUIRED},
-    {sfOwnerNode,               soeREQUIRED},
-    {sfPreviousTxnID,           soeREQUIRED},
-    {sfPreviousTxnLgrSeq,       soeREQUIRED}
-}))
-
-/** A claim id for a cross chain create account transaction.
-
-    \sa keylet::xChainCreateAccountClaimID
-*/
-OBJECT(ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID, 0x0074, XChainOwnedCreateAccountClaimID, ({
-    {sfAccount,                         soeREQUIRED},
-    {sfXChainBridge,                    soeREQUIRED},
-    {sfXChainAccountCreateCount,        soeREQUIRED},
-    {sfXChainCreateAccountAttestations, soeREQUIRED},
-    {sfOwnerNode,                       soeREQUIRED},
-    {sfPreviousTxnID,                   soeREQUIRED},
-    {sfPreviousTxnLgrSeq,               soeREQUIRED}
-}))
-
-/** The ledger object which tracks the DID.
-
-   \sa keylet::did
-*/
-OBJECT(ltDID, 0x0049, DID, ({
-    {sfAccount,              soeREQUIRED},
-    {sfDIDDocument,          soeOPTIONAL},
-    {sfURI,                  soeOPTIONAL},
-    {sfData,                 soeOPTIONAL},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED}
-}))
-
 /** A ledger object which tracks Oracle
     \sa keylet::oracle
  */
@@ -386,5 +392,5 @@ OBJECT(ltORACLE, 0x0080, Oracle, ({
     {sfURI,                  soeOPTIONAL},
     {sfOwnerNode,            soeREQUIRED},
     {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED}
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
 }))
