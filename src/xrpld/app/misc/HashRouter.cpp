@@ -90,6 +90,20 @@ HashRouter::shouldProcess(
     return s.shouldProcess(suppressionMap_.clock().now(), tx_interval);
 }
 
+bool
+HashRouter::shouldProcessForPeer(
+    uint256 const& key,
+    PeerShortID peer,
+    std::chrono::seconds interval)
+{
+    std::lock_guard lock(mutex_);
+
+    auto& entry = emplace(key).first;
+
+    return entry.shouldProcessForPeer(
+        peer, suppressionMap_.clock().now(), interval);
+}
+
 int
 HashRouter::getFlags(uint256 const& key)
 {
@@ -126,6 +140,22 @@ HashRouter::shouldRelay(uint256 const& key)
         return {};
 
     return s.releasePeerSet();
+}
+
+void
+HashRouter::forEachPeer(
+    uint256 const& key,
+    std::function<bool(PeerShortID)> callback)
+{
+    std::lock_guard lock(mutex_);
+
+    auto& s = emplace(key).first;
+
+    for (auto const peerID : s.peekPeerSet())
+    {
+        if (!callback(peerID))
+            return;
+    }
 }
 
 }  // namespace ripple
