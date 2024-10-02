@@ -63,6 +63,14 @@ SetTrust::preflight(PreflightContext const& ctx)
         return temBAD_CURRENCY;
     }
 
+    if (ctx.rules.enabled(fixNonStandardCurrency) &&
+        !validCurrency(saLimitAmount.getCurrency()))
+    {
+        JLOG(ctx.j.debug())
+            << "Malformed transaction: bad non-standard currency";
+        return temBAD_CURRENCY;
+    }
+
     if (saLimitAmount < beast::zero)
     {
         JLOG(j.trace()) << "Malformed transaction: Negative credit limit.";

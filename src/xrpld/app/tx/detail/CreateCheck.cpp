@@ -65,6 +65,14 @@ CreateCheck::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.warn()) << "Malformed transaction: Bad currency.";
             return temBAD_CURRENCY;
         }
+
+        if (ctx.rules.enabled(fixNonStandardCurrency) &&
+            !validCurrency(sendMax.getCurrency()))
+        {
+            JLOG(ctx.j.debug())
+                << "Malformed transaction: bad non-standard currency";
+            return temBAD_CURRENCY;
+        }
     }
 
     if (auto const optExpiry = ctx.tx[~sfExpiration])
