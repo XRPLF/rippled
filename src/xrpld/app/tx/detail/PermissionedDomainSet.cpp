@@ -117,7 +117,6 @@ PermissionedDomainSet::doApply()
                     {
                         throw std::runtime_error("duplicate credentials");
                     }
-                    return false;
                 }
                 return false;
             });
