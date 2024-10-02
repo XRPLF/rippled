@@ -65,14 +65,14 @@ AMMClawback::preflight(PreflightContext const& ctx)
     {
         JLOG(ctx.j.trace()) << "AMMClawback: Asset's account does not "
                                "match Account field.";
-        return temBAD_ASSET_ISSUER;
+        return temMALFORMED;
     }
 
     if (clawAmount && clawAmount->issue() != asset)
     {
         JLOG(ctx.j.trace()) << "AMMClawback: Amount's issuer/currency subfield "
                                "does not match Asset field";
-        return temBAD_ASSET_AMOUNT;
+        return temBAD_AMOUNT;
     }
 
     if (clawAmount && *clawAmount <= beast::zero)
@@ -166,7 +166,7 @@ AMMClawback::applyGuts(Sandbox& sb)
 
     auto const holdLPtokens = ammLPHolds(sb, *ammSle, holder, j_);
     if (holdLPtokens == beast::zero)
-        return tecINTERNAL;
+        return tecAMM_BALANCE;
 
     if (!clawAmount)
         // Because we are doing a two-asset withdrawal,

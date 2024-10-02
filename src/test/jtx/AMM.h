@@ -445,8 +445,7 @@ ammClawback(
     Account const& holder,
     Issue const& asset,
     Issue const& asset2,
-    std::optional<STAmount> const& amount,
-    std::optional<std::uint32_t> flags);
+    std::optional<STAmount> const& amount);
 }  // namespace amm
 
 }  // namespace jtx

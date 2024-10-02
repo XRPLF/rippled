@@ -830,8 +830,7 @@ ammClawback(
     Account const& holder,
     Issue const& asset,
     Issue const& asset2,
-    std::optional<STAmount> const& amount,
-    std::optional<std::uint32_t> flags)
+    std::optional<STAmount> const& amount)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::AMMClawback;
@@ -842,8 +841,6 @@ ammClawback(
     if (amount)
         jv[jss::Amount] = amount->getJson(JsonOptions::none);
 
-    if (flags)
-        jv[jss::Flags] = *flags;
     return jv;
 }
 }  // namespace amm
