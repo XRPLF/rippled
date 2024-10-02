@@ -49,6 +49,14 @@ Issue::getText() const
     return ret;
 }
 
+void
+Issue::setJson(Json::Value& jv) const
+{
+    jv[jss::currency] = to_string(currency);
+    if (!isXRP(currency))
+        jv[jss::issuer] = toBase58(account);
+}
+
 bool
 isConsistent(Issue const& ac)
 {
@@ -68,9 +76,7 @@ Json::Value
 to_json(Issue const& is)
 {
     Json::Value jv;
-    jv[jss::currency] = to_string(is.currency);
-    if (!isXRP(is.currency))
-        jv[jss::issuer] = toBase58(is.account);
+    is.setJson(jv);
     return jv;
 }
 

@@ -52,6 +52,9 @@ public:
 
     std::string
     getText() const;
+
+    void
+    setJson(Json::Value& jv) const;
 };
 
 bool

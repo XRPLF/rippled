@@ -58,20 +58,16 @@ Asset::getText() const
 {
     if (holds<Issue>())
         return get<Issue>().getText();
-    return to_string(get<MPTIssue>().getMptID());
+    return get<MPTIssue>().getText();
 }
 
 void
 Asset::setJson(Json::Value& jv) const
 {
-    if (holds<MPTIssue>())
-        jv[jss::mpt_issuance_id] = to_string(get<MPTIssue>().getMptID());
+    if (holds<Issue>())
+        get<Issue>().setJson(jv);
     else
-    {
-        jv[jss::currency] = to_string(get<Issue>().currency);
-        if (!isXRP(get<Issue>().currency))
-            jv[jss::issuer] = toBase58(get<Issue>().account);
-    }
+        get<MPTIssue>().setJson(jv);
 }
 
 std::string
@@ -79,7 +75,7 @@ to_string(Asset const& asset)
 {
     if (asset.holds<Issue>())
         return to_string(asset.get<Issue>());
-    return to_string(asset.get<MPTIssue>().getMptID());
+    return to_string(asset.get<MPTIssue>());
 }
 
 bool

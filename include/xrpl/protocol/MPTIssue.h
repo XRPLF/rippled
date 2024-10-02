@@ -47,6 +47,12 @@ public:
     MPTID const&
     getMptID() const;
 
+    std::string
+    getText() const;
+
+    void
+    setJson(Json::Value& jv) const;
+
     friend constexpr bool
     operator==(MPTIssue const& lhs, MPTIssue const& rhs);
 

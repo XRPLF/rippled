@@ -43,11 +43,23 @@ MPTIssue::getMptID() const
     return mptID_;
 }
 
+std::string
+MPTIssue::getText() const
+{
+    return to_string(mptID_);
+}
+
+void
+MPTIssue::setJson(Json::Value& jv) const
+{
+    jv[jss::mpt_issuance_id] = to_string(mptID_);
+}
+
 Json::Value
 to_json(MPTIssue const& mptIssue)
 {
     Json::Value jv;
-    jv[jss::mpt_issuance_id] = to_string(mptIssue.getMptID());
+    mptIssue.setJson(jv);
     return jv;
 }
 

@@ -21,7 +21,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/UintTypes.h>
