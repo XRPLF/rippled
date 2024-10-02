@@ -1636,7 +1636,7 @@ private:
             env.close();
             env(fset(gw, asfRequireAuth));
             env(trust(alice, gw["USD"](30'000), 0));
-            env(trust(gw, alice["USD"](0), tfSetfAuth));
+            env(trust(gw, alice["USD"](200), tfSetfAuth));
             // Bob trusts Gateway to owe him USD...
             env(trust(bob, gw["USD"](30'000), 0));
             // ...but Gateway does not authorize Bob to hold its USD.
