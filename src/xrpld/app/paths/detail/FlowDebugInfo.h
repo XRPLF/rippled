@@ -23,7 +23,7 @@
 #include <xrpld/app/paths/detail/AmountSpec.h>
 #include <xrpld/ledger/PaymentSandbox.h>
 #include <xrpl/basics/IOUAmount.h>
-#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <boost/container/flat_map.hpp>
 

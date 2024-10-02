@@ -20,7 +20,6 @@
 #ifndef RIPPLE_BASICS_NUMBER_H_INCLUDED
 #define RIPPLE_BASICS_NUMBER_H_INCLUDED
 
-#include <xrpl/basics/XRPAmount.h>
 #include <cstdint>
 #include <limits>
 #include <ostream>
@@ -50,8 +49,6 @@ public:
     Number(rep mantissa);
     explicit Number(rep mantissa, int exponent);
     explicit constexpr Number(rep mantissa, int exponent, unchecked) noexcept;
-
-    Number(XRPAmount const& x);
 
     constexpr rep
     mantissa() const noexcept;
@@ -88,8 +85,7 @@ public:
     static constexpr Number
     lowest() noexcept;
 
-    explicit operator XRPAmount() const;  // round to nearest, even on tie
-    explicit operator rep() const;        // round to nearest, even on tie
+    explicit operator rep() const;  // round to nearest, even on tie
 
     friend constexpr bool
     operator==(Number const& x, Number const& y) noexcept
@@ -203,10 +199,6 @@ inline Number::Number(rep mantissa, int exponent)
 }
 
 inline Number::Number(rep mantissa) : Number{mantissa, 0}
-{
-}
-
-inline Number::Number(XRPAmount const& x) : Number{x.drops()}
 {
 }
 

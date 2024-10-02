@@ -20,9 +20,12 @@
 #ifndef RIPPLE_BASICS_PARTITIONED_UNORDERED_MAP_H
 #define RIPPLE_BASICS_PARTITIONED_UNORDERED_MAP_H
 
+#include <xrpl/beast/hash/uhash.h>
+
 #include <cassert>
 #include <functional>
 #include <optional>
+#include <string>
 #include <thread>
 #include <unordered_map>
 #include <utility>
@@ -31,8 +34,18 @@
 namespace ripple {
 
 template <typename Key>
-std::size_t
-partitioner(Key const& key, std::size_t const numPartitions);
+static std::size_t
+extract(Key const& key)
+{
+    return key;
+}
+
+template <>
+inline std::size_t
+extract(std::string const& key)
+{
+    return ::beast::uhash<>{}(key);
+}
 
 template <
     typename Key,
@@ -211,7 +224,7 @@ private:
     std::size_t
     partitioner(Key const& key) const
     {
-        return ripple::partitioner(key, partitions_);
+        return extract(key) % partitions_;
     }
 
     template <class T>
