@@ -22,6 +22,7 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/server/Port.h>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
@@ -538,6 +539,7 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.legacy("validators_file").empty());
             BEAST_EXPECT(c.section(SECTION_VALIDATORS).values().size() == 5);
+            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == std::nullopt);
         }
         {
             // load validator list sites and keys from config
@@ -549,6 +551,9 @@ trustthesevalidators.gov
 
 [validator_list_keys]
 021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
+
+[validator_list_threshold]
+1
 )rippleConfig");
             c.loadFromString(toLoad);
             BEAST_EXPECT(
@@ -565,6 +570,102 @@ trustthesevalidators.gov
                 c.section(SECTION_VALIDATOR_LIST_KEYS).values()[0] ==
                 "021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801"
                 "E566");
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values().size() ==
+                1);
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values()[0] == "1");
+            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == std::size_t(1));
+        }
+        {
+            // load validator list sites and keys from config
+            Config c;
+            std::string toLoad(R"rippleConfig(
+[validator_list_sites]
+ripplevalidators.com
+trustthesevalidators.gov
+
+[validator_list_keys]
+021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
+
+[validator_list_threshold]
+0
+)rippleConfig");
+            c.loadFromString(toLoad);
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_SITES).values()[0] ==
+                "ripplevalidators.com");
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_SITES).values()[1] ==
+                "trustthesevalidators.gov");
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 1);
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_KEYS).values()[0] ==
+                "021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801"
+                "E566");
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values().size() ==
+                1);
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values()[0] == "0");
+            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == std::nullopt);
+        }
+        {
+            // load should throw if [validator_list_threshold] is greater than
+            // the number of [validator_list_keys]
+            Config c;
+            std::string toLoad(R"rippleConfig(
+[validator_list_sites]
+ripplevalidators.com
+trustthesevalidators.gov
+
+[validator_list_keys]
+021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
+
+[validator_list_threshold]
+2
+)rippleConfig");
+            std::string error;
+            auto const expectedError =
+                "The file specified in [validators_file] contains an invalid "
+                "value in [validator_list_threshold] config section";
+            try
+            {
+                c.loadFromString(toLoad);
+            }
+            catch (std::runtime_error& e)
+            {
+                error = e.what();
+            }
+            BEAST_EXPECT(error == expectedError);
+        }
+        {
+            // load should throw if [validator_list_threshold] is negative
+            Config c;
+            std::string toLoad(R"rippleConfig(
+[validator_list_sites]
+ripplevalidators.com
+trustthesevalidators.gov
+
+[validator_list_keys]
+021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
+
+[validator_list_threshold]
+-1
+)rippleConfig");
+            bool error = false;
+            try
+            {
+                c.loadFromString(toLoad);
+            }
+            catch (std::bad_cast& e)
+            {
+                error = true;
+            }
+            BEAST_EXPECT(error);
         }
         {
             // load should throw if [validator_list_sites] is configured but

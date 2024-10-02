@@ -305,6 +305,8 @@ public:
     std::optional<std::pair<std::uint32_t, std::uint32_t>>
         FORCED_LEDGER_RANGE_PRESENT;
 
+    std::optional<std::size_t> VALIDATOR_LIST_THRESHOLD;
+
 public:
     Config();
 
