@@ -40,8 +40,8 @@ doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
         return false;
     }
 
-    auto txnDB =
-        std::make_unique<DatabaseCon>(setup, TxDBName, TxDBPragma, TxDBInit, j);
+    auto txnDB = std::make_unique<DatabaseCon>(
+        setup, TxDBName, setup.txPragma, TxDBInit, j);
     auto& session = txnDB->getSession();
     std::uint32_t pageSize;
 
