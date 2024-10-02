@@ -27,52 +27,40 @@
 
 namespace ripple {
 
-bool
-Port::secure() const
-{
+bool Port::secure() const {
     return protocol.count("peer") > 0 || protocol.count("https") > 0 ||
-        protocol.count("wss") > 0 || protocol.count("wss2") > 0;
+           protocol.count("wss") > 0 || protocol.count("wss2") > 0;
 }
 
-std::string
-Port::protocols() const
-{
+std::string Port::protocols() const {
     std::string s;
     for (auto iter = protocol.cbegin(); iter != protocol.cend(); ++iter)
         s += (iter != protocol.cbegin() ? "," : "") + *iter;
     return s;
 }
 
-std::ostream&
-operator<<(std::ostream& os, Port const& p)
-{
+std::ostream& operator<<(std::ostream& os, Port const& p) {
     os << "'" << p.name << "' (ip=" << p.ip << ":" << p.port << ", ";
 
-    if (p.admin_nets_v4.size() || p.admin_nets_v6.size())
-    {
+    if (p.admin_nets_v4.size() || p.admin_nets_v6.size()) {
         os << "admin nets:";
-        for (auto const& net : p.admin_nets_v4)
-        {
+        for (auto const& net : p.admin_nets_v4) {
             os << net.to_string();
             os << ", ";
         }
-        for (auto const& net : p.admin_nets_v6)
-        {
+        for (auto const& net : p.admin_nets_v6) {
             os << net.to_string();
             os << ", ";
         }
     }
 
-    if (p.secure_gateway_nets_v4.size() || p.secure_gateway_nets_v6.size())
-    {
+    if (p.secure_gateway_nets_v4.size() || p.secure_gateway_nets_v6.size()) {
         os << "secure_gateway nets:";
-        for (auto const& net : p.secure_gateway_nets_v4)
-        {
+        for (auto const& net : p.secure_gateway_nets_v4) {
             os << net.to_string();
             os << ", ";
         }
-        for (auto const& net : p.secure_gateway_nets_v6)
-        {
+        for (auto const& net : p.secure_gateway_nets_v6) {
             os << net.to_string();
             os << ", ";
         }
@@ -84,14 +72,12 @@ operator<<(std::ostream& os, Port const& p)
 
 //------------------------------------------------------------------------------
 
-static void
-populate(
+static void populate(
     Section const& section,
     std::string const& field,
     std::ostream& log,
     std::vector<boost::asio::ip::network_v4>& nets4,
-    std::vector<boost::asio::ip::network_v6>& nets6)
-{
+    std::vector<boost::asio::ip::network_v6>& nets6) {
     auto const optResult = section.get(field);
     if (!optResult)
         return;
@@ -99,85 +85,51 @@ populate(
     std::stringstream ss(*optResult);
     std::string ip;
 
-    while (std::getline(ss, ip, ','))
-    {
+    while (std::getline(ss, ip, ',')) {
         boost::algorithm::trim(ip);
         bool v4;
         boost::asio::ip::network_v4 v4Net;
         boost::asio::ip::network_v6 v6Net;
 
-        try
-        {
-            // First, check to see if 0.0.0.0 or ipv6 equivalent was configured,
-            // which means all IP addresses.
+        try {
             auto const addr = beast::IP::Endpoint::from_string_checked(ip);
-            if (addr)
-            {
-                if (is_unspecified(*addr))
-                {
+            if (addr) {
+                if (is_unspecified(*addr)) {
                     nets4.push_back(
                         boost::asio::ip::make_network_v4("0.0.0.0/0"));
                     nets6.push_back(boost::asio::ip::make_network_v6("::/0"));
-                    // No reason to allow more IPs--it would be redundant.
                     break;
                 }
 
-                // The configured address is a single IP (or else addr would
-                // be unset). We need this to be a subnet, so append
-                // the number of network bits to make a subnet of 1,
-                // depending on type.
                 v4 = addr->is_v4();
                 std::string addressString = addr->to_string();
-                if (v4)
-                {
+                if (v4) {
                     addressString += "/32";
                     v4Net = boost::asio::ip::make_network_v4(addressString);
-                }
-                else
-                {
+                } else {
                     addressString += "/128";
                     v6Net = boost::asio::ip::make_network_v6(addressString);
                 }
-            }
-            else
-            {
-                // Since addr is empty, assume that the entry is
-                // for a subnet which includes trailing /0-32 or /0-128
-                // depending on ip type.
-                // First, see if it's an ipv4 subnet. If not, try ipv6.
-                // If that throws, then there's nothing we can do with
-                // the entry.
-                try
-                {
+            } else {
+                try {
                     v4Net = boost::asio::ip::make_network_v4(ip);
                     v4 = true;
-                }
-                catch (boost::system::system_error const&)
-                {
-                    v6Net = boost::asio::ip::make_network_v6(ip);
+                } catch (boost::system::system_error const&) {
+                    v6Net = boost::asio::ip::makenetwork_v6(ip);
                     v4 = false;
                 }
             }
 
-            // Confirm that the address entry is the same as the subnet's
-            // underlying network address.
-            // 10.1.2.3/24 makes no sense. The underlying network address
-            // is 10.1.2.0/24.
-            if (v4)
-            {
-                if (v4Net != v4Net.canonical())
-                {
+            if (v4) {
+                if (v4Net != v4Net.canonical()) {
                     log << "The configured subnet " << v4Net.to_string()
                         << " is not the same as the network address, which is "
                         << v4Net.canonical().to_string();
                     Throw<std::exception>();
                 }
                 nets4.push_back(v4Net);
-            }
-            else
-            {
-                if (v6Net != v6Net.canonical())
-                {
+            } else {
+                if (v6Net != v6Net.canonical()) {
                     log << "The configured subnet " << v6Net.to_string()
                         << " is not the same as the network address, which is "
                         << v6Net.canonical().to_string();
@@ -185,30 +137,22 @@ populate(
                 }
                 nets6.push_back(v6Net);
             }
-        }
-        catch (boost::system::system_error const& e)
-        {
-            log << "Invalid value '" << ip << "' for key '" << field << "' in ["
+        } catch (boost::system::system_error const& e) {
+            log << "Invalid subnet configuration for key '" << field << "' in ["
                 << section.name() << "]: " << e.what();
             Throw<std::exception>();
         }
     }
 }
 
-void
-parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
-{
+void parse_Port(ParsedPort& port, Section const& section, std::ostream& log) {
     {
         auto const optResult = section.get("ip");
-        if (optResult)
-        {
-            try
-            {
+        if (optResult) {
+            try {
                 port.ip = boost::asio::ip::address::from_string(*optResult);
-            }
-            catch (std::exception const&)
-            {
-                log << "Invalid value '" << *optResult << "' for key 'ip' in ["
+            } catch (std::exception const&) {
+                log << "Invalid IP address configuration for key 'ip' in ["
                     << section.name() << "]";
                 Rethrow();
             }
@@ -217,20 +161,15 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
 
     {
         auto const optResult = section.get("port");
-        if (optResult)
-        {
-            try
-            {
+        if (optResult) {
+            try {
                 port.port = beast::lexicalCastThrow<std::uint16_t>(*optResult);
 
-                // Port 0 is not supported
                 if (*port.port == 0)
                     Throw<std::exception>();
-            }
-            catch (std::exception const&)
-            {
-                log << "Invalid value '" << *optResult << "' for key "
-                    << "'port' in [" << section.name() << "]";
+            } catch (std::exception const&) {
+                log << "Invalid port configuration for key 'port' in ["
+                    << section.name() << "]";
                 Rethrow();
             }
         }
@@ -238,8 +177,7 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
 
     {
         auto const optResult = section.get("protocol");
-        if (optResult)
-        {
+        if (optResult) {
             for (auto const& s : beast::rfc2616::split_commas(
                      optResult->begin(), optResult->end()))
                 port.protocol.insert(s);
@@ -249,17 +187,13 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
     {
         auto const lim = get(section, "limit", "unlimited");
 
-        if (!boost::iequals(lim, "unlimited"))
-        {
-            try
-            {
+        if (!boost::iequals(lim, "unlimited")) {
+            try {
                 port.limit =
                     safe_cast<int>(beast::lexicalCastThrow<std::uint16_t>(lim));
-            }
-            catch (std::exception const&)
-            {
-                log << "Invalid value '" << lim << "' for key "
-                    << "'limit' in [" << section.name() << "]";
+            } catch (std::exception const&) {
+                log << "Invalid limit configuration for key 'limit' in ["
+                    << section.name() << "]";
                 Rethrow();
             }
         }
@@ -267,27 +201,19 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
 
     {
         auto const optResult = section.get("send_queue_limit");
-        if (optResult)
-        {
-            try
-            {
+        if (optResult) {
+            try {
                 port.ws_queue_limit =
                     beast::lexicalCastThrow<std::uint16_t>(*optResult);
 
-                // Queue must be greater than 0
                 if (port.ws_queue_limit == 0)
                     Throw<std::exception>();
-            }
-            catch (std::exception const&)
-            {
-                log << "Invalid value '" << *optResult << "' for key "
+            } catch (std::exception const&) {
+                log << "Invalid send queue limit configuration for key "
                     << "'send_queue_limit' in [" << section.name() << "]";
                 Rethrow();
             }
-        }
-        else
-        {
-            // Default Websocket send queue size limit
+        } else {
             port.ws_queue_limit = 100;
         }
     }
@@ -323,4 +249,4 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
     port.pmd_options.memLevel = section.value_or("memory_level", 4);
 }
 
-}  // namespace ripple
+} // namespace ripple
