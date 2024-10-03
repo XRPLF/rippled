@@ -24,8 +24,6 @@
 #error "undefined macro: TYPED_SFIELD"
 #endif
 
-// clang-format off
-
 // untyped
 UNTYPED_SFIELD(LedgerEntry,            LEDGERENTRY, 257)
 UNTYPED_SFIELD(Transaction,            TRANSACTION, 257)

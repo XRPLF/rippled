@@ -24,8 +24,6 @@
 #error "undefined macro: XRPL_FIX"
 #endif
 
-// clang-format off
-
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
 // If you add an amendment here, then do not forget to increment `numFeatures`

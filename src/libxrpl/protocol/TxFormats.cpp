@@ -56,7 +56,7 @@ TxFormats::TxFormats()
 #define TRANSACTION(tag, value, name, fields) \
     add(jss::name, tag, UNWRAP fields, commonFields);
 
-#include <xrpl/protocol/detail/transactions.h>
+#include <xrpl/protocol/detail/transactions.m>
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")

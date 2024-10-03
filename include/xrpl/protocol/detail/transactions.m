@@ -21,8 +21,6 @@
 #error "undefined macro: TRANSACTION"
 #endif
 
-// clang-format off
-
 /** This transaction type executes a payment. */
 TRANSACTION(ttPAYMENT, 0, Payment, ({
     {sfDestination, soeREQUIRED},
