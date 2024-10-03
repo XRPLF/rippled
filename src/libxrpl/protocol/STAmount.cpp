@@ -278,7 +278,7 @@ STAmount::xrp() const
 IOUAmount
 STAmount::iou() const
 {
-    if (native() || holds<MPTIssue>())
+    if (native() || !holds<Issue>())
         Throw<std::logic_error>("Cannot return native STAmount as IOUAmount");
 
     auto mantissa = static_cast<std::int64_t>(mValue);
@@ -714,13 +714,10 @@ STAmount::canonicalize()
                 {
                     // N.B. do not move the overflow check to after the
                     // multiplication
-                    if (native())
-                    {
-                        if (mValue > cMaxNativeN)
-                            Throw<std::runtime_error>(
-                                "Native currency amount out of range");
-                    }
-                    else if (mValue > maxMPTokenAmount)
+                    if (native() && mValue > cMaxNativeN)
+                        Throw<std::runtime_error>(
+                            "Native currency amount out of range");
+                    else if (!native() && mValue > maxMPTokenAmount)
                         Throw<std::runtime_error>("MPT amount out of range");
                 }
                 mValue *= 10;
@@ -728,13 +725,10 @@ STAmount::canonicalize()
             }
         }
 
-        if (native())
-        {
-            if (mValue > cMaxNativeN)
-                Throw<std::runtime_error>(
-                    "Native currency amount out of range");
-        }
-        else if (mValue > maxMPTokenAmount)
+        if (native() && mValue > cMaxNativeN)
+            Throw<std::runtime_error>(
+                "Native currency amount out of range");
+        else if (!native() && mValue > maxMPTokenAmount)
             Throw<std::runtime_error>("MPT amount out of range");
 
         return;
@@ -1403,7 +1397,6 @@ mulRoundImpl(
 
     bool const xrp = isXRP(asset);
 
-    // TODO MPT
     if (v1.native() && v2.native() && xrp)
     {
         std::uint64_t minV =
