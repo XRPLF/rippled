@@ -202,7 +202,6 @@ transResults()
         MAKE_ERROR(temINVALID_COUNT,             "Malformed: Count field outside valid range."),
         MAKE_ERROR(temSEQ_AND_TICKET,            "Transaction contains a TicketSequence and a non-zero Sequence."),
         MAKE_ERROR(temBAD_NFTOKEN_TRANSFER_FEE,  "Malformed: The NFToken transfer fee must be between 1 and 5000, inclusive."),
-        MAKE_ERROR(temBAD_MPTOKEN_TRANSFER_FEE,  "Malformed: The MPToken transfer fee must be between 1 and 5000, inclusive."),
         MAKE_ERROR(temXCHAIN_EQUAL_DOOR_ACCOUNTS,       "Malformed: Bridge must have unique door accounts."),
         MAKE_ERROR(temXCHAIN_BAD_PROOF,          "Malformed: Bad cross-chain claim proof."),
         MAKE_ERROR(temXCHAIN_BRIDGE_BAD_ISSUES,      "Malformed: Bad bridge issues."),
@@ -211,6 +210,7 @@ transResults()
         MAKE_ERROR(temXCHAIN_BRIDGE_BAD_REWARD_AMOUNT, "Malformed: Bad reward amount."),
         MAKE_ERROR(temARRAY_EMPTY,               "Malformed: Array is empty."),
         MAKE_ERROR(temARRAY_TOO_LARGE,           "Malformed: Array is too large."),
+        MAKE_ERROR(temBAD_TRANSFER_FEE,          "Malformed: Transfer fee is outside valid range."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),

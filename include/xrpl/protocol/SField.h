@@ -470,7 +470,6 @@ extern SF_UINT64 const sfXChainAccountClaimCount;
 extern SF_UINT64 const sfAssetPrice;
 extern SF_UINT64 const sfMaximumAmount;
 extern SF_UINT64 const sfOutstandingAmount;
-extern SF_UINT64 const sfLockedAmount;
 extern SF_UINT64 const sfMPTAmount;
 
 // 128-bit
@@ -661,7 +660,6 @@ extern SField const sfXChainClaimProofSig;
 extern SField const sfXChainCreateAccountProofSig;
 extern SField const sfXChainClaimAttestationCollectionElement;
 extern SField const sfXChainCreateAccountAttestationCollectionElement;
-extern SField const MPToken;
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array

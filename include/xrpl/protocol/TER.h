@@ -125,7 +125,6 @@ enum TEMcodes : TERUnderlyingType {
 
     temSEQ_AND_TICKET,
     temBAD_NFTOKEN_TRANSFER_FEE,
-    temBAD_MPTOKEN_TRANSFER_FEE,
 
     temBAD_AMM_TOKENS,
 
@@ -139,7 +138,9 @@ enum TEMcodes : TERUnderlyingType {
     temEMPTY_DID,
 
     temARRAY_EMPTY,
-    temARRAY_TOO_LARGE
+    temARRAY_TOO_LARGE,
+
+    temBAD_TRANSFER_FEE
 };
 
 //------------------------------------------------------------------------------

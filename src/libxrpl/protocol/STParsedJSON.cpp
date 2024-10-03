@@ -399,8 +399,7 @@ parseLeaf(
                     std::uint64_t val;
 
                     bool const useBase10 = field == sfMaximumAmount ||
-                        field == sfOutstandingAmount ||
-                        field == sfLockedAmount || field == sfMPTAmount;
+                        field == sfOutstandingAmount || field == sfMPTAmount;
 
                     // if the field is amount, serialize as base 10
                     auto [p, ec] = std::from_chars(

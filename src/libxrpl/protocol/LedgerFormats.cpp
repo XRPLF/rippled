@@ -375,7 +375,6 @@ LedgerFormats::LedgerFormats()
             {sfAssetScale,           soeDEFAULT},
             {sfMaximumAmount,        soeOPTIONAL},
             {sfOutstandingAmount,    soeREQUIRED},
-            {sfLockedAmount,         soeDEFAULT},
             {sfMPTokenMetadata,      soeOPTIONAL},
             {sfPreviousTxnID,        soeREQUIRED},
             {sfPreviousTxnLgrSeq,    soeREQUIRED}
@@ -388,7 +387,6 @@ LedgerFormats::LedgerFormats()
             {sfAccount,           soeREQUIRED},
             {sfMPTokenIssuanceID, soeREQUIRED},
             {sfMPTAmount, soeDEFAULT},
-            {sfLockedAmount, soeDEFAULT},
             {sfOwnerNode,            soeREQUIRED},
             {sfPreviousTxnID,        soeREQUIRED},
             {sfPreviousTxnLgrSeq,    soeREQUIRED}

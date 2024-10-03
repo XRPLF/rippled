@@ -66,7 +66,7 @@ class MPToken_test : public beast::unit_test::suite
                  .transferFee = maxTransferFee + 1,
                  .metadata = "test",
                  .flags = tfMPTCanTransfer,
-                 .err = temBAD_MPTOKEN_TRANSFER_FEE});
+                 .err = temBAD_TRANSFER_FEE});
 
             // tries to set a txfee while not enabling transfer
             mptAlice.create(

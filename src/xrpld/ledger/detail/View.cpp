@@ -329,10 +329,7 @@ accountHolds(
         amount.clear(mptIssue);
     else
     {
-        auto const amt = sleMpt->getFieldU64(sfMPTAmount);
-        auto const locked = sleMpt->getFieldU64(sfLockedAmount);
-        if (amt > locked)
-            amount = STAmount{mptIssue, amt - locked};
+        amount = STAmount{mptIssue, sleMpt->getFieldU64(sfMPTAmount)};
 
         // only if auth check is needed, as it needs to do an additional read
         // operation
