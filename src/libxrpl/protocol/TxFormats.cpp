@@ -381,6 +381,16 @@ TxFormats::TxFormats()
         },
         commonFields);
 
+    add(jss::AMMClawback,
+        ttAMM_CLAWBACK,
+        {
+            {sfHolder, soeREQUIRED},
+            {sfAsset, soeREQUIRED},
+            {sfAsset2, soeREQUIRED},
+            {sfAmount, soeOPTIONAL},
+        },
+        commonFields);
+
     add(jss::XChainCreateBridge,
         ttXCHAIN_CREATE_BRIDGE,
         {
