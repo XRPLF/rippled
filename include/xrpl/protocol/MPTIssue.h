@@ -25,11 +25,9 @@
 
 namespace ripple {
 
-/* MPTIssue represents a Multi Purpose Token (MPT) and enables handling of
- * either Issue or MPTIssue tokens by Asset and STAmount. MPT is identified
- * by MPTID, which is a 192-bit concatenation of a 32-bit account sequence
- * number at the time of MPT creation and a 160-bit account id.
- * The sequence number is stored in big endian order.
+/* Adapt MPTID to provide the same interface as Issue. Enables using static
+ * polymorphism by Asset and other classes. MPTID is a 192-bit concatenation
+ * of a 32-bit account sequence and a 160-bit account id.
  */
 class MPTIssue
 {
@@ -58,6 +56,12 @@ public:
 
     friend constexpr bool
     operator!=(MPTIssue const& lhs, MPTIssue const& rhs);
+
+    bool
+    native() const
+    {
+        return false;
+    }
 };
 
 constexpr bool

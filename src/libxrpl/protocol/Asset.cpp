@@ -23,59 +23,31 @@
 
 namespace ripple {
 
-Asset::Asset(Issue const& issue) : issue_(issue)
-{
-}
-
-Asset::Asset(MPTIssue const& mptIssue) : issue_(mptIssue)
-{
-}
-
-Asset::Asset(MPTID const& issuanceID) : issue_(MPTIssue{issuanceID})
-{
-}
-
-Asset::operator Issue() const
-{
-    return get<Issue>();
-}
-
-Asset::operator MPTIssue() const
-{
-    return get<MPTIssue>();
-}
-
 AccountID const&
 Asset::getIssuer() const
 {
-    if (holds<Issue>())
-        return get<Issue>().getIssuer();
-    return get<MPTIssue>().getIssuer();
+    return std::visit(
+        [&](auto&& issue) -> AccountID const& { return issue.getIssuer(); },
+        issue_);
 }
 
 std::string
 Asset::getText() const
 {
-    if (holds<Issue>())
-        return get<Issue>().getText();
-    return get<MPTIssue>().getText();
+    return std::visit([&](auto&& issue) { return issue.getText(); }, issue_);
 }
 
 void
 Asset::setJson(Json::Value& jv) const
 {
-    if (holds<Issue>())
-        get<Issue>().setJson(jv);
-    else
-        get<MPTIssue>().setJson(jv);
+    std::visit([&](auto&& issue) { issue.setJson(jv); }, issue_);
 }
 
 std::string
 to_string(Asset const& asset)
 {
-    if (asset.holds<Issue>())
-        return to_string(asset.get<Issue>());
-    return to_string(asset.get<MPTIssue>());
+    return std::visit(
+        [&](auto const& issue) { return to_string(issue); }, asset.value());
 }
 
 bool

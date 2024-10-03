@@ -30,11 +30,10 @@ template <typename TIss>
 concept ValidIssueType =
     std::is_same_v<TIss, Issue> || std::is_same_v<TIss, MPTIssue>;
 
-/* Asset is a variant of Issue (XRP and IOU) and MPTIssue (MPT).
- * It enables handling of different issues when either one is expected.
- * For instance, it extends STAmount class to support either issue
- * in a general way. It handles specifics such arithmetics and serialization
- * depending on specific issue type held by Asset.
+/* Asset is an abstraction of three different issue types: XRP, IOU, MPT.
+ * For historical reasons, two issue types XRP and IOU are wrapped in Issue
+ * type. Asset replaces Issue where any issue type is expected. For instance,
+ * STAmount replaces Issue with Asset to represent any issue amount.
  */
 class Asset
 {
@@ -45,15 +44,27 @@ private:
 public:
     Asset() = default;
 
-    Asset(Issue const& issue);
+    Asset(Issue const& issue) : issue_(issue)
+    {
+    }
 
-    Asset(MPTIssue const& mptIssue);
+    Asset(MPTIssue const& mptIssue) : issue_(mptIssue)
+    {
+    }
 
-    Asset(MPTID const& issuanceID);
+    Asset(MPTID const& issuanceID) : issue_(MPTIssue{issuanceID})
+    {
+    }
 
-    explicit operator Issue() const;
+    explicit operator Issue() const
+    {
+        return get<Issue>();
+    }
 
-    explicit operator MPTIssue() const;
+    explicit operator MPTIssue() const
+    {
+        return get<MPTIssue>();
+    }
 
     AccountID const&
     getIssuer() const;
@@ -78,6 +89,12 @@ public:
 
     void
     setJson(Json::Value& jv) const;
+
+    bool
+    native() const
+    {
+        return holds<Issue>() && get<Issue>().native();
+    }
 
     friend constexpr bool
     operator==(Asset const& lhs, Asset const& rhs);
@@ -141,7 +158,7 @@ operator!=(Asset const& lhs, Asset const& rhs)
 inline bool
 isXRP(Asset const& asset)
 {
-    return asset.holds<Issue>() && isXRP(asset.get<Issue>());
+    return asset.native();
 }
 
 std::string

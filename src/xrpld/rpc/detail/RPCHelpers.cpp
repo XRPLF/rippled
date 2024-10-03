@@ -288,8 +288,8 @@ getAccountObjects(
                 auto sleJson = sleNode->getJson(JsonOptions::none);
                 if (sleNode->getType() == ltMPTOKEN_ISSUANCE)
                     sleJson[jss::mpt_issuance_id] = to_string(makeMptID(
-                        sleNode->getAccountID(sfIssuer),
-                        (*sleNode)[sfSequence]));
+                        (*sleNode)[sfSequence],
+                        sleNode->getAccountID(sfIssuer)));
 
                 jvObjects.append(sleJson);
             }

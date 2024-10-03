@@ -59,7 +59,7 @@ getIDFromCreatedIssuance(TxMeta const& transactionMeta)
         auto const& mptNode =
             node.peekAtField(sfNewFields).downcast<STObject>();
         return makeMptID(
-            mptNode.getAccountID(sfIssuer), mptNode.getFieldU32(sfSequence));
+            mptNode.getFieldU32(sfSequence), mptNode.getAccountID(sfIssuer));
     }
 
     return std::nullopt;

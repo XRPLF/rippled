@@ -839,7 +839,7 @@ amountFromString(Asset const& asset, std::string const& amount)
     bool negative = (match[1].matched && (match[1] == "-"));
 
     // Can't specify XRP or MPT using fractional representation
-    if ((isXRP(asset) || asset.holds<MPTIssue>()) && match[3].matched)
+    if ((asset.native() || asset.holds<MPTIssue>()) && match[3].matched)
         Throw<std::runtime_error>(
             "XRP and MPT must be specified as integral amount.");
 
@@ -962,7 +962,7 @@ amountFromJson(SField const& name, Json::Value const& v)
             if (!issuer.isString() ||
                 !to_issuer(issue.account, issuer.asString()))
                 Throw<std::runtime_error>("invalid issuer");
-            if (isXRP(issue))
+            if (issue.native())
                 Throw<std::runtime_error>("invalid issuer");
             asset = issue;
         }
@@ -1182,7 +1182,7 @@ multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
     if (v1 == beast::zero || v2 == beast::zero)
         return STAmount(asset);
 
-    if (v1.native() && v2.native() && isXRP(asset))
+    if (v1.native() && v2.native() && asset.native())
     {
         std::uint64_t const minV = std::min(getSNValue(v1), getSNValue(v2));
         std::uint64_t const maxV = std::max(getSNValue(v1), getSNValue(v2));
@@ -1386,7 +1386,7 @@ mulRoundImpl(
     if (v1 == beast::zero || v2 == beast::zero)
         return {asset};
 
-    bool const xrp = isXRP(asset);
+    bool const xrp = asset.native();
 
     if (v1.native() && v2.native() && xrp)
     {
@@ -1557,7 +1557,7 @@ divRoundImpl(
 
     if (resultNegative != roundUp)
         canonicalizeRound(
-            isXRP(asset) || asset.holds<MPTIssue>(), amount, offset, roundUp);
+            asset.native() || asset.holds<MPTIssue>(), amount, offset, roundUp);
 
     STAmount result = [&]() {
         // If appropriate, tell Number the rounding mode we are using.
@@ -1571,7 +1571,7 @@ divRoundImpl(
 
     if (roundUp && !resultNegative && !result)
     {
-        if (isXRP(asset) || asset.holds<MPTIssue>())
+        if (asset.native() || asset.holds<MPTIssue>())
         {
             // return the smallest value above zero
             amount = 1;

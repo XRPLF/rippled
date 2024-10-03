@@ -447,7 +447,7 @@ STAmount::exponent() const noexcept
 inline bool
 STAmount::native() const noexcept
 {
-    return isXRP(mAsset);
+    return mAsset.native();
 }
 
 template <ValidIssueType TIss>
@@ -679,7 +679,7 @@ getRate(STAmount const& offerOut, STAmount const& offerIn);
 inline bool
 isXRP(STAmount const& amount)
 {
-    return isXRP(amount.asset());
+    return amount.native();
 }
 
 // Since `canonicalize` does not have access to a ledger, this is needed to put

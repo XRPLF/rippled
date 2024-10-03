@@ -55,6 +55,9 @@ public:
 
     void
     setJson(Json::Value& jv) const;
+
+    bool
+    native() const;
 };
 
 bool
@@ -126,7 +129,7 @@ noIssue()
 inline bool
 isXRP(Issue const& issue)
 {
-    return issue == xrpIssue();
+    return issue.native();
 }
 
 }  // namespace ripple

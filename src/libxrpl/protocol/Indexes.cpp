@@ -138,7 +138,7 @@ getTicketIndex(AccountID const& account, SeqProxy ticketSeq)
 }
 
 MPTID
-makeMptID(AccountID const& account, std::uint32_t sequence)
+makeMptID(std::uint32_t sequence, AccountID const& account)
 {
     MPTID u;
     sequence = boost::endian::native_to_big(sequence);
@@ -464,9 +464,9 @@ oracle(AccountID const& account, std::uint32_t const& documentID) noexcept
 }
 
 Keylet
-mptIssuance(AccountID const& issuer, std::uint32_t seq) noexcept
+mptIssuance(std::uint32_t seq, AccountID const& issuer) noexcept
 {
-    return mptIssuance(makeMptID(issuer, seq));
+    return mptIssuance(makeMptID(seq, issuer));
 }
 
 Keylet

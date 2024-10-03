@@ -88,9 +88,6 @@ public:
     constexpr value_type
     value() const;
 
-    friend std::istream&
-    operator>>(std::istream& s, MPTAmount& val);
-
     static MPTAmount
     minPositiveAmount();
 };

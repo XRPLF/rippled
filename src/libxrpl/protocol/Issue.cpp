@@ -58,6 +58,12 @@ Issue::setJson(Json::Value& jv) const
 }
 
 bool
+Issue::native() const
+{
+    return *this == xrpIssue();
+}
+
+bool
 isConsistent(Issue const& ac)
 {
     return isXRP(ac.currency) == isXRP(ac.account);

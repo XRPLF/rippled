@@ -82,7 +82,7 @@ MPTokenIssuanceCreate::create(
         return tecINSUFFICIENT_RESERVE;
 
     auto const mptIssuanceKeylet =
-        keylet::mptIssuance(args.account, args.sequence);
+        keylet::mptIssuance(args.sequence, args.account);
 
     // create the MPTokenIssuance
     {
