@@ -23,7 +23,7 @@
 #include <xrpld/nodestore/Backend.h>
 #include <xrpld/nodestore/NodeObject.h>
 #include <xrpld/nodestore/Scheduler.h>
-#include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/protocol/SystemParameters.h>
 
 #include <condition_variable>

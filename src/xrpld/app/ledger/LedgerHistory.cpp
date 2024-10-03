@@ -20,6 +20,7 @@
 #include <xrpld/app/ledger/LedgerHistory.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/to_string.h>
