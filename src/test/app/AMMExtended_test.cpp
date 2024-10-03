@@ -2041,7 +2041,7 @@ private:
 
             env(offer(bob, BTC(50), USD(50)));
             env(offer(bob, BTC(40), EUR(50)));
-            AMM ammBob(env, bob, EUR(100), USD(150), 0, env.current()->fees().base.drops());
+            AMM ammBob(env, bob, EUR(100), USD(150));
 
             // unfund offer
             env(pay(bob, gw, EUR(50)));
@@ -3230,7 +3230,9 @@ private:
                 txflags(tfPartialPayment),
                 sendmax(XRP(5)),
                 ter(tecPATH_PARTIAL));
-            env.require(balance(alice, drops(10'000'000'000 - env.current()->fees().base.drops())));
+            env.require(balance(
+                alice,
+                drops(10'000'000'000 - env.current()->fees().base.drops())));
             env.require(balance(bob, XRP(10'000)));
         }
 
@@ -3477,7 +3479,7 @@ private:
         env(pay(G1, alice, G1["USD"](205)));
         env.close();
 
-        AMM ammAlice(env, alice, XRP(500), G1["USD"](105), 0, env.current()->fees().base.drops());
+        AMM ammAlice(env, alice, XRP(500), G1["USD"](105));
 
         {
             auto lines = getAccountLines(env, bob);
@@ -4032,7 +4034,7 @@ private:
             env(pay(gw, bob, USD(100)));
             env(pay(gw, alice, USD(100)));
 
-            AMM ammBob(env, bob, XRP(100), USD(100), 0, env.current()->fees().base.drops());
+            AMM ammBob(env, bob, XRP(100), USD(100));
 
             // payment path: USD -> USD/XRP -> XRP/USD
             env(pay(alice, carol, USD(100)),
