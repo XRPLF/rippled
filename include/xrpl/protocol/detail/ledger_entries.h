@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#if !defined(OBJECT)
-#error "undefined macro: OBJECT"
+#if !defined(LEDGER_ENTRY)
+#error "undefined macro: LEDGER_ENTRY"
 #endif
 
 // clang-format off
@@ -33,7 +33,7 @@
 
     \sa keylet::nftoffer
  */
-OBJECT(ltNFTOKEN_OFFER, 0x0037, NFTokenOffer, ({
+LEDGER_ENTRY(ltNFTOKEN_OFFER, 0x0037, NFTokenOffer, ({
     {sfOwner,                soeREQUIRED},
     {sfNFTokenID,            soeREQUIRED},
     {sfAmount,               soeREQUIRED},
@@ -49,7 +49,7 @@ OBJECT(ltNFTOKEN_OFFER, 0x0037, NFTokenOffer, ({
 
     \sa keylet::check
  */
-OBJECT(ltCHECK, 0x0043, Check, ({
+LEDGER_ENTRY(ltCHECK, 0x0043, Check, ({
     {sfAccount,              soeREQUIRED},
     {sfDestination,          soeREQUIRED},
     {sfSendMax,              soeREQUIRED},
@@ -68,7 +68,7 @@ OBJECT(ltCHECK, 0x0043, Check, ({
 
    \sa keylet::did
 */
-OBJECT(ltDID, 0x0049, DID, ({
+LEDGER_ENTRY(ltDID, 0x0049, DID, ({
     {sfAccount,              soeREQUIRED},
     {sfDIDDocument,          soeOPTIONAL},
     {sfURI,                  soeOPTIONAL},
@@ -84,7 +84,7 @@ OBJECT(ltDID, 0x0049, DID, ({
 
     \sa keylet::negativeUNL
  */
-OBJECT(ltNEGATIVE_UNL, 0x004e, NegativeUNL, ({
+LEDGER_ENTRY(ltNEGATIVE_UNL, 0x004e, NegativeUNL, ({
     {sfDisabledValidators,   soeOPTIONAL},
     {sfValidatorToDisable,   soeOPTIONAL},
     {sfValidatorToReEnable,  soeOPTIONAL},
@@ -96,7 +96,7 @@ OBJECT(ltNEGATIVE_UNL, 0x004e, NegativeUNL, ({
 
     \sa keylet::nftpage_min, keylet::nftpage_max, keylet::nftpage
  */
-OBJECT(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, ({
+LEDGER_ENTRY(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, ({
     {sfPreviousPageMin,      soeOPTIONAL},
     {sfNextPageMin,          soeOPTIONAL},
     {sfNFTokens,             soeREQUIRED},
@@ -110,7 +110,7 @@ OBJECT(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, ({
  */
 // All fields are soeREQUIRED because there is always a SignerEntries.
 // If there are no SignerEntries the node is deleted.
-OBJECT(ltSIGNER_LIST, 0x0053, SignerList, ({
+LEDGER_ENTRY(ltSIGNER_LIST, 0x0053, SignerList, ({
     {sfOwnerNode,            soeREQUIRED},
     {sfSignerQuorum,         soeREQUIRED},
     {sfSignerEntries,        soeREQUIRED},
@@ -123,7 +123,7 @@ OBJECT(ltSIGNER_LIST, 0x0053, SignerList, ({
 
     \sa keylet::ticket
  */
-OBJECT(ltTICKET, 0x0054, Ticket, ({
+LEDGER_ENTRY(ltTICKET, 0x0054, Ticket, ({
     {sfAccount,              soeREQUIRED},
     {sfOwnerNode,            soeREQUIRED},
     {sfTicketSequence,       soeREQUIRED},
@@ -135,7 +135,7 @@ OBJECT(ltTICKET, 0x0054, Ticket, ({
 
     \sa keylet::account
  */
-OBJECT(ltACCOUNT_ROOT, 0x0061, AccountRoot, ({
+LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, ({
     {sfAccount,              soeREQUIRED},
     {sfSequence,             soeREQUIRED},
     {sfBalance,              soeREQUIRED},
@@ -164,7 +164,7 @@ OBJECT(ltACCOUNT_ROOT, 0x0061, AccountRoot, ({
     \sa keylet::page, keylet::quality, keylet::book, keylet::next and
         keylet::ownerDir
  */
-OBJECT(ltDIR_NODE, 0x0064, DirectoryNode, ({
+LEDGER_ENTRY(ltDIR_NODE, 0x0064, DirectoryNode, ({
     {sfOwner,                soeOPTIONAL},  // for owner directories
     {sfTakerPaysCurrency,    soeOPTIONAL},  // order book directories
     {sfTakerPaysIssuer,      soeOPTIONAL},  // order book directories
@@ -186,7 +186,7 @@ OBJECT(ltDIR_NODE, 0x0064, DirectoryNode, ({
 
     \sa keylet::amendments
  */
-OBJECT(ltAMENDMENTS, 0x0066, Amendments, ({
+LEDGER_ENTRY(ltAMENDMENTS, 0x0066, Amendments, ({
     {sfAmendments,           soeOPTIONAL},  // Enabled
     {sfMajorities,           soeOPTIONAL},
     {sfPreviousTxnID,        soeOPTIONAL},
@@ -201,7 +201,7 @@ OBJECT(ltAMENDMENTS, 0x0066, Amendments, ({
 
     \sa keylet::skip
  */
-OBJECT(ltLEDGER_HASHES, 0x0068, LedgerHashes, ({
+LEDGER_ENTRY(ltLEDGER_HASHES, 0x0068, LedgerHashes, ({
     {sfFirstLedgerSequence,  soeOPTIONAL},
     {sfLastLedgerSequence,   soeOPTIONAL},
     {sfHashes,               soeREQUIRED},
@@ -211,7 +211,7 @@ OBJECT(ltLEDGER_HASHES, 0x0068, LedgerHashes, ({
 
     \sa keylet::bridge
 */
-OBJECT(ltBRIDGE, 0x0069, Bridge, ({
+LEDGER_ENTRY(ltBRIDGE, 0x0069, Bridge, ({
     {sfAccount,                  soeREQUIRED},
     {sfSignatureReward,          soeREQUIRED},
     {sfMinAccountCreateAmount,   soeOPTIONAL},
@@ -228,7 +228,7 @@ OBJECT(ltBRIDGE, 0x0069, Bridge, ({
 
     \sa keylet::offer
  */
-OBJECT(ltOFFER, 0x006f, Offer, ({
+LEDGER_ENTRY(ltOFFER, 0x006f, Offer, ({
     {sfAccount,              soeREQUIRED},
     {sfSequence,             soeREQUIRED},
     {sfTakerPays,            soeREQUIRED},
@@ -245,7 +245,7 @@ OBJECT(ltOFFER, 0x006f, Offer, ({
 
     \sa keylet::depositPreauth
  */
-OBJECT(ltDEPOSIT_PREAUTH, 0x0070, DepositPreauth, ({
+LEDGER_ENTRY(ltDEPOSIT_PREAUTH, 0x0070, DepositPreauth, ({
     {sfAccount,              soeREQUIRED},
     {sfAuthorize,            soeREQUIRED},
     {sfOwnerNode,            soeREQUIRED},
@@ -257,7 +257,7 @@ OBJECT(ltDEPOSIT_PREAUTH, 0x0070, DepositPreauth, ({
 
     \sa keylet::xChainClaimID
 */
-OBJECT(ltXCHAIN_OWNED_CLAIM_ID, 0x0071, XChainOwnedClaimID, ({
+LEDGER_ENTRY(ltXCHAIN_OWNED_CLAIM_ID, 0x0071, XChainOwnedClaimID, ({
     {sfAccount,                 soeREQUIRED},
     {sfXChainBridge,            soeREQUIRED},
     {sfXChainClaimID,           soeREQUIRED},
@@ -275,7 +275,7 @@ OBJECT(ltXCHAIN_OWNED_CLAIM_ID, 0x0071, XChainOwnedClaimID, ({
 
     \sa keylet::line
  */
-OBJECT(ltRIPPLE_STATE, 0x0072, RippleState, ({
+LEDGER_ENTRY(ltRIPPLE_STATE, 0x0072, RippleState, ({
     {sfBalance,              soeREQUIRED},
     {sfLowLimit,             soeREQUIRED},
     {sfHighLimit,            soeREQUIRED},
@@ -295,7 +295,7 @@ OBJECT(ltRIPPLE_STATE, 0x0072, RippleState, ({
 
     \sa keylet::fees
  */
-OBJECT(ltFEE_SETTINGS, 0x0073, FeeSettings, ({
+LEDGER_ENTRY(ltFEE_SETTINGS, 0x0073, FeeSettings, ({
     // Old version uses raw numbers
     {sfBaseFee,                soeOPTIONAL},
     {sfReferenceFeeUnits,      soeOPTIONAL},
@@ -313,7 +313,7 @@ OBJECT(ltFEE_SETTINGS, 0x0073, FeeSettings, ({
 
     \sa keylet::xChainCreateAccountClaimID
 */
-OBJECT(ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID, 0x0074, XChainOwnedCreateAccountClaimID, ({
+LEDGER_ENTRY(ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID, 0x0074, XChainOwnedCreateAccountClaimID, ({
     {sfAccount,                         soeREQUIRED},
     {sfXChainBridge,                    soeREQUIRED},
     {sfXChainAccountCreateCount,        soeREQUIRED},
@@ -327,7 +327,7 @@ OBJECT(ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID, 0x0074, XChainOwnedCreateAccountC
 
     \sa keylet::escrow
  */
-OBJECT(ltESCROW, 0x0075, Escrow, ({
+LEDGER_ENTRY(ltESCROW, 0x0075, Escrow, ({
     {sfAccount,              soeREQUIRED},
     {sfDestination,          soeREQUIRED},
     {sfAmount,               soeREQUIRED},
@@ -346,7 +346,7 @@ OBJECT(ltESCROW, 0x0075, Escrow, ({
 
     \sa keylet::payChan
  */
-OBJECT(ltPAYCHAN, 0x0078, PayChannel, ({
+LEDGER_ENTRY(ltPAYCHAN, 0x0078, PayChannel, ({
     {sfAccount,              soeREQUIRED},
     {sfDestination,          soeREQUIRED},
     {sfAmount,               soeREQUIRED},
@@ -367,7 +367,7 @@ OBJECT(ltPAYCHAN, 0x0078, PayChannel, ({
 
    \sa keylet::amm
 */
-OBJECT(ltAMM, 0x0079, AMM, ({
+LEDGER_ENTRY(ltAMM, 0x0079, AMM, ({
     {sfAccount,              soeREQUIRED},
     {sfTradingFee,           soeDEFAULT},
     {sfVoteSlots,            soeOPTIONAL},
@@ -416,7 +416,7 @@ OBJECT(ltMPTOKEN, 0x007f, MPToken, ({
 /** A ledger object which tracks Oracle
     \sa keylet::oracle
  */
-OBJECT(ltORACLE, 0x0080, Oracle, ({
+LEDGER_ENTRY(ltORACLE, 0x0080, Oracle, ({
     {sfOwner,                soeREQUIRED},
     {sfProvider,             soeREQUIRED},
     {sfPriceDataSeries,      soeREQUIRED},
