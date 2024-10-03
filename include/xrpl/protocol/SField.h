@@ -369,7 +369,7 @@ using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 extern SField const sfInvalid;
 extern SField const sfGeneric;
 
-#include <xrpl/protocol/detail/sfields.h>
+#include <xrpl/protocol/detail/sfields.m>
 
 #undef TYPED_SFIELD
 #pragma pop_macro("TYPED_SFIELD")

@@ -316,7 +316,7 @@ foreachFeature(FeatureBitset bs, F&& f)
 #define XRPL_FEATURE(name, supported, vote) extern uint256 const feature##name;
 #define XRPL_FIX(name, supported, vote) extern uint256 const fix##name;
 
-#include <xrpl/protocol/detail/features.h>
+#include <xrpl/protocol/detail/features.m>
 
 #undef XRPL_FIX
 #pragma pop_macro("XRPL_FIX")
