@@ -21,8 +21,6 @@
 #error "undefined macro: LEDGER_ENTRY"
 #endif
 
-// clang-format off
-
 /**
  * These objects are listed in order of increasing ledger type ID.
  * There are many gaps between these IDs.

@@ -24,8 +24,6 @@
 #error "undefined macro: TYPED_SFIELD"
 #endif
 
-// clang-format off
-
 // untyped
 UNTYPED_SFIELD(LedgerEntry,            LEDGERENTRY, 257)
 UNTYPED_SFIELD(Transaction,            TRANSACTION, 257)
@@ -357,5 +355,3 @@ UNTYPED_SFIELD(XChainCreateAccountAttestations, ARRAY, 22)
 //                                                23 unused
 UNTYPED_SFIELD(PriceDataSeries,        ARRAY,     24)
 UNTYPED_SFIELD(AuthAccounts,           ARRAY,     25)
-
-// clang-format on
