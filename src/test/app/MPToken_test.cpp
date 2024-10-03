@@ -280,7 +280,7 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.authorize({.account = &bob, .holderCount = 1});
 
             // bob cannot create the mptoken the second time
-            mptAlice.authorize({.account = &bob, .err = tecMPTOKEN_EXISTS});
+            mptAlice.authorize({.account = &bob, .err = tecDUPLICATE});
 
             // Check that bob cannot delete MPToken when his balance is
             // non-zero
@@ -766,8 +766,8 @@ class MPToken_test : public beast::unit_test::suite
             // Global lock
             mptAlice.set({.account = &alice, .flags = tfMPTLock});
             // Can't send between holders
-            mptAlice.pay(bob, carol, 1, tecMPT_LOCKED);
-            mptAlice.pay(carol, bob, 2, tecMPT_LOCKED);
+            mptAlice.pay(bob, carol, 1, tecLOCKED);
+            mptAlice.pay(carol, bob, 2, tecLOCKED);
             // Issuer can send
             mptAlice.pay(alice, bob, 3);
             // Holder can send back to issuer
@@ -779,8 +779,8 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.set(
                 {.account = &alice, .holder = &bob, .flags = tfMPTLock});
             // Can't send between holders
-            mptAlice.pay(bob, carol, 5, tecMPT_LOCKED);
-            mptAlice.pay(carol, bob, 6, tecMPT_LOCKED);
+            mptAlice.pay(bob, carol, 5, tecLOCKED);
+            mptAlice.pay(carol, bob, 6, tecLOCKED);
             // Issuer can send
             mptAlice.pay(alice, bob, 7);
             // Holder can send back to issuer
@@ -1030,7 +1030,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // alice tries to send bob fund after issuance is destroy, should
             // fail.
-            mptAlice.pay(alice, bob, 100, tecMPT_ISSUANCE_NOT_FOUND);
+            mptAlice.pay(alice, bob, 100, tecOBJECT_NOT_FOUND);
         }
 
         // Issuer fails trying to send to some who doesn't own MPT for a
@@ -1047,7 +1047,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // alice tries to send bob who doesn't own the MPT after issuance is
             // destroyed, it should fail
-            mptAlice.pay(alice, bob, 100, tecMPT_ISSUANCE_NOT_FOUND);
+            mptAlice.pay(alice, bob, 100, tecOBJECT_NOT_FOUND);
         }
 
         // Issuers issues maximum amount of MPT to a holder, the holder should

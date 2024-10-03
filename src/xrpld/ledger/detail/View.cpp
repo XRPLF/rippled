@@ -1363,7 +1363,7 @@ rippleSendMPT(
                 keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID());
             auto const sle = view.peek(mptID);
             if (!sle)
-                return tecMPT_ISSUANCE_NOT_FOUND;
+                return tecOBJECT_NOT_FOUND;
 
             auto const sendAmount = saAmount.mpt().value();
             auto const maximumAmount =
@@ -1371,7 +1371,7 @@ rippleSendMPT(
             if (sendAmount > maximumAmount ||
                 sle->getFieldU64(sfOutstandingAmount) >
                     maximumAmount - sendAmount)
-                return tecMPT_MAX_AMOUNT_EXCEEDED;
+                return tecPATH_DRY;
         }
 
         // Direct send: redeeming IOUs and/or sending own IOUs.
@@ -1885,7 +1885,7 @@ rippleMPTCredit(
     auto const mptID = keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID());
     auto const issuer = saAmount.getIssuer();
     if (!view.exists(mptID))
-        return tecMPT_ISSUANCE_NOT_FOUND;
+        return tecOBJECT_NOT_FOUND;
     if (uSenderID == issuer)
     {
         if (auto sle = view.peek(mptID))

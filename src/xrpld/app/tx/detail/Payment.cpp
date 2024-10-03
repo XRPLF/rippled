@@ -681,7 +681,7 @@ applyHelper<MPTIssue>(ApplyContext& ctx, XRPAmount const&, XRPAmount const&)
         //   - issuer can send to holder
         if (isFrozen(ctx.view(), account, mpt) ||
             isFrozen(ctx.view(), uDstAccountID, mpt))
-            return tecMPT_LOCKED;
+            return tecLOCKED;
 
         auto const sendMax(ctx.tx[~sfSendMax]);
         // If the transfer fee is included then SendMax has to be included
@@ -698,7 +698,7 @@ applyHelper<MPTIssue>(ApplyContext& ctx, XRPAmount const&, XRPAmount const&)
         accountSendMPT(pv, account, uDstAccountID, saDstAmount, ctx.journal);
     if (res == tesSUCCESS)
         pv.apply(ctx.rawView());
-    else if (res == tecINSUFFICIENT_FUNDS || res == tecMPT_MAX_AMOUNT_EXCEEDED)
+    else if (res == tecINSUFFICIENT_FUNDS || res == tecPATH_DRY)
         res = tecPATH_PARTIAL;
 
     return res;

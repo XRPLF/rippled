@@ -186,7 +186,7 @@ MPTTester::authorize(MPTAuthorize const& arg)
         arg.account != nullptr && *arg.account != issuer_ &&
         arg.flags.value_or(0) == 0 && issuanceKey_)
     {
-        if (result == tecMPTOKEN_EXISTS)
+        if (result == tecDUPLICATE)
         {
             // Verify that MPToken already exists
             env_.require(requireAny([&]() -> bool {

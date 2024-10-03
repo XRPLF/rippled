@@ -342,11 +342,7 @@ enum TECcodes : TERUnderlyingType {
     tecTOKEN_PAIR_NOT_FOUND = 189,
     tecARRAY_EMPTY = 190,
     tecARRAY_TOO_LARGE = 191,
-    tecMPTOKEN_EXISTS = 192,
-    tecMPT_MAX_AMOUNT_EXCEEDED = 193,
-    tecMPT_LOCKED = 194,
-    tecMPT_NOT_SUPPORTED = 195,
-    tecMPT_ISSUANCE_NOT_FOUND = 196
+    tecLOCKED = 192,
 };
 
 //------------------------------------------------------------------------------

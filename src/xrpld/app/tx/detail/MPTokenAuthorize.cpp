@@ -91,7 +91,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
         // if holder wants to use and create a mpt
         if (sleMpt)
-            return tecMPTOKEN_EXISTS;
+            return tecDUPLICATE;
 
         return tesSUCCESS;
     }
