@@ -171,6 +171,7 @@ struct Regression_test : public beast::unit_test::suite
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
             cfg->section("transaction_queue")
                 .set("minimum_txn_in_ledger_standalone", "3");
+            cfg->FEES.reference_fee = 10;
             return cfg;
         }));
         Env_ss envs(env);
