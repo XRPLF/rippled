@@ -48,14 +48,6 @@ class STObject;
 class STAmount;
 class Rules;
 
-/** Calculate AMM account ID.
- */
-AccountID
-ammAccountID(
-    std::uint16_t prefix,
-    uint256 const& parentHash,
-    uint256 const& ammID);
-
 /** Calculate Liquidity Provider Token (LPT) Currency.
  */
 Currency

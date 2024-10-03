@@ -214,18 +214,7 @@ applyCreate(
     auto const ammKeylet = keylet::amm(amount.issue(), amount2.issue());
 
     // Mitigate same account exists possibility
-    auto const ammAccount = [&]() -> Expected<AccountID, TER> {
-        std::uint16_t constexpr maxAccountAttempts = 256;
-        for (auto p = 0; p < maxAccountAttempts; ++p)
-        {
-            auto const ammAccount =
-                ammAccountID(p, sb.info().parentHash, ammKeylet.key);
-            if (!sb.read(keylet::account(ammAccount)))
-                return ammAccount;
-        }
-        return Unexpected(tecDUPLICATE);
-    }();
-
+    auto const ammAccount = createPseudoAccount(sb, ammKeylet.key);
     // AMM account already exists (should not happen)
     if (!ammAccount)
     {
@@ -243,28 +232,14 @@ applyCreate(
     }
 
     // Create AMM Root Account.
-    auto sleAMMRoot = std::make_shared<SLE>(keylet::account(*ammAccount));
-    sleAMMRoot->setAccountID(sfAccount, *ammAccount);
-    sleAMMRoot->setFieldAmount(sfBalance, STAmount{});
-    std::uint32_t const seqno{
-        ctx_.view().rules().enabled(featureDeletableAccounts)
-            ? ctx_.view().seq()
-            : 1};
-    sleAMMRoot->setFieldU32(sfSequence, seqno);
-    // Ignore reserves requirement, disable the master key, allow default
-    // rippling (AMM LPToken can be used in payments and offer crossing but
-    // not as a token in another AMM), and enable deposit authorization to
-    // prevent payments into AMM.
+    auto sleAMMRoot = sb.peek(keylet::account(*ammAccount));
     // Note, that the trustlines created by AMM have 0 credit limit.
     // This prevents shifting the balance between accounts via AMM,
     // or sending unsolicited LPTokens. This is a desired behavior.
     // A user can only receive LPTokens through affirmative action -
     // either an AMMDeposit, TrustSet, crossing an offer, etc.
-    sleAMMRoot->setFieldU32(
-        sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
     // Link the root account and AMM object
     sleAMMRoot->setFieldH256(sfAMMID, ammKeylet.key);
-    sb.insert(sleAMMRoot);
 
     // Calculate initial LPT balance.
     auto const lpTokens = ammLPTokens(amount, amount2, lptIss);
@@ -281,14 +256,7 @@ applyCreate(
         ctx_.view(), ammSle, account_, lptIss, ctx_.tx[sfTradingFee]);
 
     // Add owner directory to link the root account and AMM object.
-    if (auto const page = sb.dirInsert(
-            keylet::ownerDir(*ammAccount),
-            ammSle->key(),
-            describeOwnerDir(*ammAccount)))
-    {
-        ammSle->setFieldU64(sfOwnerNode, *page);
-    }
-    else
+    if (auto ter = dirLink(sb, *ammAccount, ammSle); ter)
     {
         JLOG(j_.debug()) << "AMM Instance: failed to insert owner dir";
         return {tecDIR_FULL, false};

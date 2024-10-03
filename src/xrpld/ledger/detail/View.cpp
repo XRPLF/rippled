@@ -25,6 +25,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/st.h>
 #include <cassert>
 #include <optional>
@@ -830,6 +831,52 @@ describeOwnerDir(AccountID const& account)
     return [&account](std::shared_ptr<SLE> const& sle) {
         (*sle)[sfOwner] = account;
     };
+}
+
+TER
+dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object)
+{
+    auto const page = view.dirInsert(
+        keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
+    if (!page)
+        return tecDIR_FULL;
+    object->setFieldU64(sfOwnerNode, *page);
+    return tesSUCCESS;
+}
+
+Expected<AccountID, TER>
+createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey)
+{
+    AccountID accountId;
+    for (auto i = 0;; ++i)
+    {
+        if (i >= 256)
+            return Unexpected(tecDUPLICATE);
+        ripesha_hasher rsh;
+        auto const hash = sha512Half(i, view.info().parentHash, pseudoOwnerKey);
+        rsh(hash.data(), hash.size());
+        accountId = static_cast<ripesha_hasher::result_type>(rsh);
+        if (!view.read(keylet::account(accountId)))
+            break;
+    }
+
+    // Create pseudo-account.
+    auto account = std::make_shared<SLE>(keylet::account(accountId));
+    account->setAccountID(sfAccount, accountId);
+    account->setFieldAmount(sfBalance, STAmount{});
+    std::uint32_t const seqno{
+        view.rules().enabled(featureDeletableAccounts) ? view.seq() : 1};
+    account->setFieldU32(sfSequence, seqno);
+    // Ignore reserves requirement, disable the master key, allow default
+    // rippling, and enable deposit authorization to prevent payments into
+    // pseudo-account.
+    account->setFieldU32(
+        sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+    // Link the pseudo-account with its owner object.
+    // account->setFieldH256(sfPseudoOwner, pseudoOwnerKey);
+    view.insert(account);
+
+    return accountId;
 }
 
 TER

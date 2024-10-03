@@ -31,6 +31,8 @@ class STNumber final : public STBase,
                        public Number
 {
 public:
+    using value_type = Number;
+
     STNumber(SField const& n, Number const& v = Number());
     STNumber(SerialIter& sit, SField const& name);
 

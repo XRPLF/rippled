@@ -517,6 +517,20 @@ public:
 
     operator value_type() const;
 
+    template <typename U>
+    friend bool
+    operator==(U&& lhs, STObject::ValueProxy<T> const& rhs)
+    {
+        return rhs.value() == lhs;
+    }
+
+    template <typename U>
+    friend bool
+    operator!=(U&& lhs, STObject::ValueProxy<T> const& rhs)
+    {
+        return !(lhs == rhs);
+    }
+
 private:
     friend class STObject;
 

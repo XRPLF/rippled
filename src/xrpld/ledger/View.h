@@ -383,6 +383,12 @@ dirNext(
 [[nodiscard]] std::function<void(SLE::ref)>
 describeOwnerDir(AccountID const& account);
 
+[[nodiscard]] TER
+dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object);
+
+[[nodiscard]] Expected<AccountID, TER>
+createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey);
+
 // VFALCO NOTE Both STAmount parameters should just
 //             be "Amount", a unit-less number.
 //
