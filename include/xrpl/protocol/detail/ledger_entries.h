@@ -385,7 +385,7 @@ LEDGER_ENTRY(ltAMM, 0x0079, AMM, ({
 
     \sa keylet::mptIssuance
  */
-OBJECT(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, ({
+LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, ({
     {sfIssuer,               soeREQUIRED},
     {sfSequence,             soeREQUIRED},
     {sfTransferFee,          soeDEFAULT},
@@ -403,7 +403,7 @@ OBJECT(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, ({
 
     \sa keylet::mptoken
  */
-OBJECT(ltMPTOKEN, 0x007f, MPToken, ({
+LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, ({
     {sfAccount,              soeREQUIRED},
     {sfMPTokenIssuanceID,    soeREQUIRED},
     {sfMPTAmount,            soeDEFAULT},
@@ -432,7 +432,7 @@ LEDGER_ENTRY(ltORACLE, 0x0080, Oracle, ({
 
     \sa keylet::mptoken
  */
-OBJECT(ltVAULT, 0x0081, Vault, ({
+LEDGER_ENTRY(ltVAULT, 0x0081, Vault, ({
     {sfPreviousTxnID,        soeREQUIRED},
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
     {sfSequence,             soeREQUIRED},
