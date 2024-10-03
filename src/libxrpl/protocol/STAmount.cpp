@@ -64,10 +64,11 @@ static const std::uint64_t tenTo17 = tenTo14 * 1000;
 
 //------------------------------------------------------------------------------
 static std::int64_t
-getSNValue(STAmount const& amount)
+getInt64Value(STAmount const& amount, bool valid, const char* error)
 {
-    if (!amount.native())
-        Throw<std::runtime_error>("amount is not native!");
+    if (!valid)
+        Throw<std::runtime_error>(error);
+    assert(amount.exponent() == 0);
 
     auto ret = static_cast<std::int64_t>(amount.mantissa());
 
@@ -80,19 +81,16 @@ getSNValue(STAmount const& amount)
 }
 
 static std::int64_t
+getSNValue(STAmount const& amount)
+{
+    return getInt64Value(amount, amount.native(), "amount is not native!");
+}
+
+static std::int64_t
 getMPTValue(STAmount const& amount)
 {
-    if (!amount.holds<MPTIssue>())
-        Throw<std::runtime_error>("amount is not MPT!");
-
-    auto ret = static_cast<std::int64_t>(amount.mantissa());
-
-    assert(static_cast<std::uint64_t>(ret) == amount.mantissa());
-
-    if (amount.negative())
-        ret = -ret;
-
-    return ret;
+    return getInt64Value(
+        amount, amount.holds<MPTIssue>(), "amount is not MPT!");
 }
 
 static bool
@@ -1186,10 +1184,8 @@ multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
 
     if (v1.native() && v2.native() && isXRP(asset))
     {
-        std::uint64_t const minV =
-            getSNValue(v1) < getSNValue(v2) ? getSNValue(v1) : getSNValue(v2);
-        std::uint64_t const maxV =
-            getSNValue(v1) < getSNValue(v2) ? getSNValue(v2) : getSNValue(v1);
+        std::uint64_t const minV = std::min(getSNValue(v1), getSNValue(v2));
+        std::uint64_t const maxV = std::max(getSNValue(v1), getSNValue(v2));
 
         if (minV > 3000000000ull)  // sqrt(cMaxNative)
             Throw<std::runtime_error>("Native value overflow");
@@ -1204,11 +1200,11 @@ multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
         std::uint64_t const minV = std::min(getMPTValue(v1), getMPTValue(v2));
         std::uint64_t const maxV = std::max(getMPTValue(v1), getMPTValue(v2));
 
-        if (minV > 3000000000ull)  // sqrt(cMaxNative)
-            Throw<std::runtime_error>("Asset value overflow");
+        if (minV > 3037000499ull)  // maxMPTokenAmount ~ 3037000499.98
+            Throw<std::runtime_error>("MPT value overflow");
 
-        if (((maxV >> 32) * minV) > 2095475792ull)  // cMaxNative / 2^32
-            Throw<std::runtime_error>("Asset value overflow");
+        if (((maxV >> 32) * minV) > 2147483648ull)  // maxMPTokenAmount / 2^32
+            Throw<std::runtime_error>("MPT value overflow");
 
         return STAmount(asset, minV * maxV);
     }
@@ -1394,10 +1390,8 @@ mulRoundImpl(
 
     if (v1.native() && v2.native() && xrp)
     {
-        std::uint64_t minV =
-            (getSNValue(v1) < getSNValue(v2)) ? getSNValue(v1) : getSNValue(v2);
-        std::uint64_t maxV =
-            (getSNValue(v1) < getSNValue(v2)) ? getSNValue(v2) : getSNValue(v1);
+        std::uint64_t minV = std::min(getSNValue(v1), getSNValue(v2));
+        std::uint64_t maxV = std::max(getSNValue(v1), getSNValue(v2));
 
         if (minV > 3000000000ull)  // sqrt(cMaxNative)
             Throw<std::runtime_error>("Native value overflow");
@@ -1413,11 +1407,11 @@ mulRoundImpl(
         std::uint64_t const minV = std::min(getMPTValue(v1), getMPTValue(v2));
         std::uint64_t const maxV = std::max(getMPTValue(v1), getMPTValue(v2));
 
-        if (minV > 3000000000ull)  // sqrt(cMaxNative)
-            Throw<std::runtime_error>("Asset value overflow");
+        if (minV > 3037000499ull)  // maxMPTokenAmount ~ 3037000499.98
+            Throw<std::runtime_error>("MPT value overflow");
 
-        if (((maxV >> 32) * minV) > 2095475792ull)  // cMaxNative / 2^32
-            Throw<std::runtime_error>("Asset value overflow");
+        if (((maxV >> 32) * minV) > 2147483648ull)  // maxMPTokenAmount / 2^32
+            Throw<std::runtime_error>("MPT value overflow");
 
         return STAmount(asset, minV * maxV);
     }
