@@ -159,7 +159,7 @@ transResults()
 
         MAKE_ERROR(temMALFORMED,                 "Malformed transaction."),
         MAKE_ERROR(temBAD_AMM_TOKENS,            "Malformed: Invalid LPTokens."),
-        MAKE_ERROR(temBAD_AMOUNT,                "Can only send positive amounts."),
+        MAKE_ERROR(temBAD_AMOUNT,                "Malformed: Bad amount."),
         MAKE_ERROR(temBAD_CURRENCY,              "Malformed: Bad currency."),
         MAKE_ERROR(temBAD_EXPIRATION,            "Malformed: Bad expiration."),
         MAKE_ERROR(temBAD_FEE,                   "Invalid fee, negative or not XRP."),
