@@ -1201,12 +1201,8 @@ multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
     }
     if (v1.holds<MPTIssue>() && v2.holds<MPTIssue>() && asset.holds<MPTIssue>())
     {
-        std::uint64_t const minV = getMPTValue(v1) < getMPTValue(v2)
-            ? getMPTValue(v1)
-            : getMPTValue(v2);
-        std::uint64_t const maxV = getMPTValue(v1) < getMPTValue(v2)
-            ? getMPTValue(v2)
-            : getMPTValue(v1);
+        std::uint64_t const minV = std::min(getMPTValue(v1), getMPTValue(v2));
+        std::uint64_t const maxV = std::max(getMPTValue(v1), getMPTValue(v2));
 
         if (minV > 3000000000ull)  // sqrt(cMaxNative)
             Throw<std::runtime_error>("Asset value overflow");
@@ -1414,12 +1410,8 @@ mulRoundImpl(
 
     if (v1.holds<MPTIssue>() && v2.holds<MPTIssue>() && asset.holds<MPTIssue>())
     {
-        std::uint64_t minV = (getMPTValue(v1) < getMPTValue(v2))
-            ? getMPTValue(v1)
-            : getMPTValue(v2);
-        std::uint64_t maxV = (getMPTValue(v1) < getMPTValue(v2))
-            ? getMPTValue(v2)
-            : getMPTValue(v1);
+        std::uint64_t const minV = std::min(getMPTValue(v1), getMPTValue(v2));
+        std::uint64_t const maxV = std::max(getMPTValue(v1), getMPTValue(v2));
 
         if (minV > 3000000000ull)  // sqrt(cMaxNative)
             Throw<std::runtime_error>("Asset value overflow");
