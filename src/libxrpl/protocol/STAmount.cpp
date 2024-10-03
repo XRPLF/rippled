@@ -726,8 +726,7 @@ STAmount::canonicalize()
         }
 
         if (native() && mValue > cMaxNativeN)
-            Throw<std::runtime_error>(
-                "Native currency amount out of range");
+            Throw<std::runtime_error>("Native currency amount out of range");
         else if (!native() && mValue > maxMPTokenAmount)
             Throw<std::runtime_error>("MPT amount out of range");
 
