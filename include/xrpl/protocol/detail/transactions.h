@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#if !defined(TRANSACTION)
+#error "undefined macro: TRANSACTION"
+#endif
+
 // clang-format off
 
 /** This transaction type executes a payment. */

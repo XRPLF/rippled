@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#if !defined(OBJECT)
+#error "undefined macro: OBJECT"
+#endif
+
 // clang-format off
 
 /**
@@ -38,7 +42,7 @@ OBJECT(ltNFTOKEN_OFFER, 0x0037, NFTokenOffer, ({
     {sfDestination,          soeOPTIONAL},
     {sfExpiration,           soeOPTIONAL},
     {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED}
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
 }))
 
 /** A ledger object which describes a check.
@@ -71,7 +75,7 @@ OBJECT(ltDID, 0x0049, DID, ({
     {sfData,                 soeOPTIONAL},
     {sfOwnerNode,            soeREQUIRED},
     {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED}
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
 }))
 
 /** The ledger object which tracks the current negative UNL state.
@@ -97,7 +101,7 @@ OBJECT(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, ({
     {sfNextPageMin,          soeOPTIONAL},
     {sfNFTokens,             soeREQUIRED},
     {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED}
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
 }))
 
 /** A ledger object which contains a signer list for an account.
@@ -217,7 +221,7 @@ OBJECT(ltBRIDGE, 0x0069, Bridge, ({
     {sfXChainAccountClaimCount,  soeREQUIRED},
     {sfOwnerNode,                soeREQUIRED},
     {sfPreviousTxnID,            soeREQUIRED},
-    {sfPreviousTxnLgrSeq,        soeREQUIRED}
+    {sfPreviousTxnLgrSeq,        soeREQUIRED},
 }))
 
 /** A ledger object which describes an offer on the DEX.
@@ -262,7 +266,7 @@ OBJECT(ltXCHAIN_OWNED_CLAIM_ID, 0x0071, XChainOwnedClaimID, ({
     {sfSignatureReward,         soeREQUIRED},
     {sfOwnerNode,               soeREQUIRED},
     {sfPreviousTxnID,           soeREQUIRED},
-    {sfPreviousTxnLgrSeq,       soeREQUIRED}
+    {sfPreviousTxnLgrSeq,       soeREQUIRED},
 }))
 
 /** A ledger object which describes a bidirectional trust line.
@@ -316,7 +320,7 @@ OBJECT(ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID, 0x0074, XChainOwnedCreateAccountC
     {sfXChainCreateAccountAttestations, soeREQUIRED},
     {sfOwnerNode,                       soeREQUIRED},
     {sfPreviousTxnID,                   soeREQUIRED},
-    {sfPreviousTxnLgrSeq,               soeREQUIRED}
+    {sfPreviousTxnLgrSeq,               soeREQUIRED},
 }))
 
 /** A ledger object describing a single escrow.
@@ -421,7 +425,7 @@ OBJECT(ltORACLE, 0x0080, Oracle, ({
     {sfURI,                  soeOPTIONAL},
     {sfOwnerNode,            soeREQUIRED},
     {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED}
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
 }))
 
 /** A ledger object representing a single asset vault.

@@ -49,12 +49,15 @@ TxFormats::TxFormats()
 
 #pragma push_macro("UNWRAP")
 #undef UNWRAP
-#define UNWRAP(...) __VA_ARGS__
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
+
+#define UNWRAP(...) __VA_ARGS__
 #define TRANSACTION(tag, value, name, fields) \
     add(jss::name, tag, UNWRAP fields, commonFields);
-#include <xrpl/protocol/transactions.h>
+
+#include <xrpl/protocol/detail/transactions.h>
+
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
 #undef UNWRAP

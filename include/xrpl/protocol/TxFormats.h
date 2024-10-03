@@ -58,8 +58,11 @@ enum TxType : std::uint16_t
 
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
+
 #define TRANSACTION(tag, value, name, fields) tag = value,
-#include <xrpl/protocol/transactions.h>
+
+#include <xrpl/protocol/detail/transactions.h>
+
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
 

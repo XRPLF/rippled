@@ -51,14 +51,12 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 // Use macros for most SField construction to enforce naming conventions.
 #pragma push_macro("UNTYPED_SFIELD")
 #undef UNTYPED_SFIELD
+#pragma push_macro("TYPED_SFIELD")
+#undef TYPED_SFIELD
 
 #define UNTYPED_SFIELD(name, stiSuffix, fieldValue, ...) \
     SField const sf##name(                               \
         access, STI_##stiSuffix, fieldValue, #name, ##__VA_ARGS__);
-
-#pragma push_macro("TYPED_SFIELD")
-#undef TYPED_SFIELD
-
 #define TYPED_SFIELD(name, stiSuffix, fieldValue, ...) \
     SF_##stiSuffix const sf##name(                     \
         access, STI_##stiSuffix, fieldValue, #name, ##__VA_ARGS__);
@@ -68,12 +66,11 @@ SField const sfInvalid(access, -1);
 SField const sfGeneric(access, 0);
 SField const sfHash(access, STI_UINT256, 257, "hash");
 
-#include <xrpl/protocol/sfields.h>
+#include <xrpl/protocol/detail/sfields.h>
 
 #undef TYPED_SFIELD
-#undef UNTYPED_SFIELD
-
 #pragma pop_macro("TYPED_SFIELD")
+#undef UNTYPED_SFIELD
 #pragma pop_macro("UNTYPED_SFIELD")
 
 SField::SField(

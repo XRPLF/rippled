@@ -55,8 +55,11 @@ enum LedgerEntryType : std::uint16_t
 
 #pragma push_macro("OBJECT")
 #undef OBJECT
+
 #define OBJECT(tag, value, name, fields) tag = value,
-#include <xrpl/protocol/objects.h>
+
+#include <xrpl/protocol/detail/objects.h>
+
 #undef OBJECT
 #pragma pop_macro("OBJECT")
 
