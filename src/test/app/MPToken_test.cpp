@@ -988,6 +988,12 @@ class MPToken_test : public beast::unit_test::suite
             env(pay(alice, carol, XRP(100)),
                 sendmax(MPT(100)),
                 ter(temMALFORMED));
+            // sendmax and amount are different MPT issue
+            test::jtx::MPT const MPT1(
+                "MPT", makeMptID(env.seq(alice) + 10, alice));
+            env(pay(alice, carol, MPT1(100)),
+                sendmax(MPT(100)),
+                ter(temMALFORMED));
         }
 
         // build_path is invalid if MPT

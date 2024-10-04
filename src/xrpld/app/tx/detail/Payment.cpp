@@ -224,8 +224,9 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfDeliverMin) || ctx.tx.isFieldPresent(sfPaths))
         return temMALFORMED;
 
-    if (auto const sendMax = ctx.tx[~sfSendMax];
-        sendMax && !sendMax->holds<MPTIssue>())
+    if (auto const sendMax = ctx.tx[~sfSendMax]; sendMax &&
+        (!sendMax->holds<MPTIssue>() ||
+         sendMax->asset() != ctx.tx[sfAmount].asset()))
         return temMALFORMED;
 
     auto& tx = ctx.tx;
