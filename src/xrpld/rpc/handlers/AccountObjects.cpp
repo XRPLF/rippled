@@ -283,6 +283,10 @@ doAccountObjects(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::marker);
     }
 
+    // check if dirIndex is valid
+    if (!dirIndex.isZero() && !ledger->read({ltDIR_NODE, dirIndex}))
+        return RPC::invalid_field_error(jss::marker);
+
     if (!RPC::getAccountObjects(
             *ledger,
             accountID,
@@ -291,9 +295,7 @@ doAccountObjects(RPC::JsonContext& context)
             entryIndex,
             limit,
             result))
-    {
-        result[jss::account_objects] = Json::arrayValue;
-    }
+        return RPC::invalid_field_error(jss::marker);
 
     result[jss::account] = toBase58(accountID);
     context.loadType = Resource::feeMediumBurdenRPC;

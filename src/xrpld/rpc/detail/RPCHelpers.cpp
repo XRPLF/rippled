@@ -250,7 +250,10 @@ getAccountObjects(
     {
         // it's possible the user had nftoken pages but no
         // directory entries
-        return mlimit < limit;
+        if (mlimit >= limit)
+            jvResult[jss::account_objects] = Json::arrayValue;
+
+        return true;
     }
 
     std::uint32_t i = 0;
