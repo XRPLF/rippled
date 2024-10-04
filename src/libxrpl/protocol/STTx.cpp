@@ -560,7 +560,7 @@ invalidMPTAmountInTx(STObject const& tx)
                     field.getSType() == STI_AMOUNT &&
                     static_cast<STAmount const&>(field).holds<MPTIssue>())
                 {
-                    if (e.supportMPT() == soeMPTNotSupported)
+                    if (e.supportMPT() != soeMPTSupported)
                         return true;
                 }
             }

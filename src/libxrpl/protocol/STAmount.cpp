@@ -1200,7 +1200,7 @@ multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
         std::uint64_t const minV = std::min(getMPTValue(v1), getMPTValue(v2));
         std::uint64_t const maxV = std::max(getMPTValue(v1), getMPTValue(v2));
 
-        if (minV > 3037000499ull)  // maxMPTokenAmount ~ 3037000499.98
+        if (minV > 3037000499ull)  // sqrt(maxMPTokenAmount) ~ 3037000499.98
             Throw<std::runtime_error>("MPT value overflow");
 
         if (((maxV >> 32) * minV) > 2147483648ull)  // maxMPTokenAmount / 2^32
@@ -1407,7 +1407,7 @@ mulRoundImpl(
         std::uint64_t const minV = std::min(getMPTValue(v1), getMPTValue(v2));
         std::uint64_t const maxV = std::max(getMPTValue(v1), getMPTValue(v2));
 
-        if (minV > 3037000499ull)  // maxMPTokenAmount ~ 3037000499.98
+        if (minV > 3037000499ull)  // sqrt(maxMPTokenAmount) ~ 3037000499.98
             Throw<std::runtime_error>("MPT value overflow");
 
         if (((maxV >> 32) * minV) > 2147483648ull)  // maxMPTokenAmount / 2^32
