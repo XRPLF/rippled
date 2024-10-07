@@ -1013,7 +1013,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             }
 
             {
-                // invalid account
+                // invalid issuer
                 auto jv = deposit::authCredentials(bob, {});
                 auto& arr(jv[sfAuthorizeCredentials.jsonName]);
                 Json::Value jcred = Json::objectValue;
@@ -1053,10 +1053,10 @@ struct DepositPreauth_test : public beast::unit_test::suite
             }
 
             {
-                // Can create with non-existing issuer
+                // Can't create with non-existing issuer
                 Account const rick{"rick"};
                 auto jv = deposit::authCredentials(bob, {{rick, credType}});
-                env(jv);
+                env(jv, ter(tecNO_ISSUER));
                 env.close();
             }
 

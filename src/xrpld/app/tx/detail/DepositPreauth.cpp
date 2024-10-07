@@ -129,8 +129,8 @@ DepositPreauth::preflight(PreflightContext const& ctx)
 
         for (auto const& o : arr)
         {
-            AccountID const target(o[sfIssuer]);
-            if (!target)
+            AccountID const issuer(o[sfIssuer]);
+            if (!issuer)
             {
                 JLOG(j.trace())
                     << "Malformed transaction: "
@@ -179,6 +179,13 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
     else if (ctx.tx.isFieldPresent(sfAuthorizeCredentials))
     {
         STArray const& authCred(ctx.tx.getFieldArray(sfAuthorizeCredentials));
+        for (auto const& o : authCred)
+        {
+            AccountID const issuer(o[sfIssuer]);
+            if (!ctx.view.exists(keylet::account(issuer)))
+                return tecNO_ISSUER;
+        }
+
         // Verify that the Preauth entry they asked to add is not already
         // in the ledger.
         if (ctx.view.exists(keylet::depositPreauth(account, authCred)))

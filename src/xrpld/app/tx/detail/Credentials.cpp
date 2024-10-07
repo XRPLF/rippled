@@ -23,7 +23,6 @@
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/protocol/Credentials.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -55,8 +54,7 @@ checkExpired(
     std::shared_ptr<SLE const> const& sle,
     NetClock::time_point const& closed)
 {
-    std::uint32_t const exp =
-        sle->isFieldPresent(sfExpiration) ? sle->getFieldU32(sfExpiration) : 0;
+    std::uint32_t const exp = (*sle)[~sfExpiration].value_or(0);
     std::uint32_t const now = closed.time_since_epoch().count();
     return static_cast<bool>(exp) && (now > exp);
 }
@@ -129,8 +127,8 @@ CredentialCreate::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    auto const Uri = tx[~sfURI];
-    if (Uri && (Uri->empty() || (Uri->size() > maxCredentialURILength)))
+    auto const uri = tx[~sfURI];
+    if (uri && (uri->empty() || (uri->size() > maxCredentialURILength)))
     {
         JLOG(j.trace()) << "Malformed transaction: invalid size of URI.";
         return temMALFORMED;
@@ -174,13 +172,6 @@ CredentialCreate::doApply()
 {
     auto const sleIssuer = view().peek(keylet::account(account_));
 
-    {
-        STAmount const reserve{view().fees().accountReserve(
-            sleIssuer->getFieldU32(sfOwnerCount) + 1)};
-        if (mPriorBalance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
-
     auto const subject = ctx_.tx[sfSubject];
     auto const issuer = account_;
     auto const credType(ctx_.tx[sfCredentialType]);
@@ -201,6 +192,13 @@ CredentialCreate::doApply()
         }
 
         sleCred->setFieldU32(sfExpiration, ctx_.tx.getFieldU32(sfExpiration));
+    }
+
+    {
+        STAmount const reserve{view().fees().accountReserve(
+            sleIssuer->getFieldU32(sfOwnerCount) + 1)};
+        if (mPriorBalance < reserve)
+            return tecINSUFFICIENT_RESERVE;
     }
 
     sleCred->setAccountID(sfSubject, subject);
@@ -265,7 +263,7 @@ CredentialDelete::preflight(PreflightContext const& ctx)
     {
         // Neither field is present, the transaction is malformed.
         JLOG(ctx.j.trace()) << "Malformed transaction: "
-                               "Invalid Subject and Issuer fields combination.";
+                               "No Subject or Issuer fields.";
         return temMALFORMED;
     }
 
@@ -435,12 +433,12 @@ CredentialAccept::doApply()
     AccountID const subject{account_};
     AccountID const issuer{ctx_.tx[sfIssuer]};
 
-    auto const sleSubj = view().peek(keylet::account(subject));
-    auto const sleIss = view().peek(keylet::account(issuer));
+    auto const sleSubject = view().peek(keylet::account(subject));
+    auto const sleIssuer = view().peek(keylet::account(issuer));
 
     {
         STAmount const reserve{view().fees().accountReserve(
-            sleSubj->getFieldU32(sfOwnerCount) + 1)};
+            sleSubject->getFieldU32(sfOwnerCount) + 1)};
         if (mPriorBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
@@ -460,11 +458,11 @@ CredentialAccept::doApply()
     sleCred->setFieldU32(sfFlags, lsfAccepted);
     view().update(sleCred);
 
-    adjustOwnerCount(view(), sleIss, -1, j_);
-    view().update(sleIss);
+    adjustOwnerCount(view(), sleIssuer, -1, j_);
+    view().update(sleIssuer);
 
-    adjustOwnerCount(view(), sleSubj, 1, j_);
-    view().update(sleSubj);
+    adjustOwnerCount(view(), sleSubject, 1, j_);
+    view().update(sleSubject);
 
     return tesSUCCESS;
 }

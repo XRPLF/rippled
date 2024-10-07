@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <test/jtx/credentials.h>
-#include <xrpl/protocol/Credentials.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
