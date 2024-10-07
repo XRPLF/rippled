@@ -3535,7 +3535,7 @@ private:
             if (!BEAST_EXPECT(checkArraySize(affected, 4u)))
                 return;
             auto ff =
-                affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
+                affected[2u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
             BEAST_EXPECT(
                 ff[sfHighLimit.fieldName] ==
                 bob["USD"](100).value().getJson(JsonOptions::none));
@@ -3809,10 +3809,10 @@ private:
         auto ff =
             affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
         BEAST_EXPECT(
-            ff[sfHighLimit.fieldName] ==
+            ff[sfLowLimit.fieldName] ==
             G1["USD"](0).value().getJson(JsonOptions::none));
-        BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfLowFreeze));
-        BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfHighFreeze);
+        BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfLowFreeze);
+        BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighFreeze));
         env.close();
 
         //    test: Can make a payment via the new offer
