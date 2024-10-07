@@ -44,6 +44,9 @@ private:
 public:
     Asset() = default;
 
+    /** Conversions to Asset are implicit and conversions to specific issue
+     *  type are explicit. This design facilitates the use of Asset.
+     */
     Asset(Issue const& issue) : issue_(issue)
     {
     }
@@ -54,16 +57,6 @@ public:
 
     Asset(MPTID const& issuanceID) : issue_(MPTIssue{issuanceID})
     {
-    }
-
-    explicit operator Issue() const
-    {
-        return get<Issue>();
-    }
-
-    explicit operator MPTIssue() const
-    {
-        return get<MPTIssue>();
     }
 
     AccountID const&
