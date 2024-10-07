@@ -393,24 +393,11 @@ public:
     requires(sizeof(T) >= sizeof(int) && std::is_arithmetic_v<T>) PrettyAmount
     operator()(T v) const
     {
-        // VFALCO NOTE Should throw if the
-        //             representation of v is not exact.
         return {amountFromString(mpt(), std::to_string(v)), name};
     }
 
     PrettyAmount operator()(epsilon_t) const;
     PrettyAmount operator()(detail::epsilon_multiple) const;
-
-    // VFALCO TODO
-    // STAmount operator()(char const* s) const;
-
-    /** Returns None-of-Issue */
-#if 0
-    None operator()(none_t) const
-    {
-        return {Issue{}};
-    }
-#endif
 
     friend BookSpec
     operator~(MPT const& mpt)

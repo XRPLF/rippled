@@ -221,25 +221,27 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
-    if (ctx.tx.isFieldPresent(sfDeliverMin) || ctx.tx.isFieldPresent(sfPaths))
-        return temMALFORMED;
-
-    if (auto const sendMax = ctx.tx[~sfSendMax]; sendMax &&
-        (!sendMax->holds<MPTIssue>() ||
-         sendMax->asset() != ctx.tx[sfAmount].asset()))
-        return temMALFORMED;
-
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
     std::uint32_t const uTxFlags = tx.getFlags();
 
-    if (uTxFlags & tfPaymentMask)
+    if (uTxFlags & tfUniversalMask)
     {
         JLOG(j.trace()) << "Malformed transaction: "
                         << "Invalid flags set.";
         return temINVALID_FLAG;
     }
+
+    if (ctx.tx.isFieldPresent(sfDeliverMin) || ctx.tx.isFieldPresent(sfPaths))
+        return temMALFORMED;
+
+    auto const sendMax = ctx.tx[~sfSendMax];
+
+    if (sendMax &&
+        (!sendMax->holds<MPTIssue>() ||
+         sendMax->asset() != ctx.tx[sfAmount].asset()))
+        return temMALFORMED;
 
     STAmount const saDstAmount(tx.getFieldAmount(sfAmount));
 
@@ -261,6 +263,12 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
                         << "bad dst amount: " << saDstAmount.getFullText();
         return temBAD_AMOUNT;
     }
+    if (sendMax && *sendMax <= beast::zero)
+    {
+        JLOG(j.trace()) << "Malformed transaction: "
+                        << "bad max amount: " << sendMax->getFullText();
+        return temBAD_AMOUNT;
+    }
     if (account == uDstAccountID)
     {
         // You're signing yourself a payment.
@@ -268,12 +276,6 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
                         << "Redundant payment from " << to_string(account)
                         << " to self without path for " << to_string(uDstMptID);
         return temREDUNDANT;
-    }
-    if (uTxFlags & (tfPartialPayment | tfLimitQuality | tfNoRippleDirect))
-    {
-        JLOG(j.trace()) << "Malformed transaction: invalid MPT flags: "
-                        << uTxFlags;
-        return temMALFORMED;
     }
 
     return preflight2(ctx);

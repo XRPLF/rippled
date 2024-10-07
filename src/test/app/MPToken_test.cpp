@@ -637,51 +637,173 @@ class MPToken_test : public beast::unit_test::suite
         Account const alice("alice");  // issuer
         Account const bob("bob");      // holder
         Account const carol("carol");  // holder
+
+        // preflight validation
+
+        // MPT is disabled
+        {
+            Env env{*this, features - featureMPTokensV1};
+            Account const alice("alice");
+            Account const bob("bob");
+
+            env.fund(XRP(1'000), alice);
+            env.fund(XRP(1'000), bob);
+            STAmount mpt{MPTIssue{makeMptID(1, alice)}, UINT64_C(100)};
+
+            env(pay(alice, bob, mpt), ter(temDISABLED));
+        }
+
+        // MPT is disabled, unsigned request
+        {
+            Env env{*this, features - featureMPTokensV1};
+            Account const alice("alice");  // issuer
+            Account const carol("carol");
+            auto const USD = alice["USD"];
+
+            env.fund(XRP(1'000), alice);
+            env.fund(XRP(1'000), carol);
+            STAmount mpt{MPTIssue{makeMptID(1, alice)}, UINT64_C(100)};
+
+            Json::Value jv;
+            jv[jss::secret] = alice.name();
+            jv[jss::tx_json][jss::Fee] = to_string(env.current()->fees().base);
+            jv[jss::tx_json] = pay(alice, carol, mpt);
+            auto const jrr = env.rpc("json", "submit", to_string(jv));
+            BEAST_EXPECT(jrr[jss::result][jss::engine_result] == "temDISABLED");
+        }
+
+        // Invalid flag
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
-            mptAlice.create(
-                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
-
-            // env(mpt::authorize(alice, id.key, std::nullopt));
-            // env.close();
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
+            auto const MPT = mptAlice["MPT"];
 
             mptAlice.authorize({.account = &bob});
-            mptAlice.authorize({.account = &carol});
 
-            // issuer to holder
-            mptAlice.pay(alice, bob, 100);
-
-            // holder to issuer
-            mptAlice.pay(bob, alice, 100);
-
-            // holder to holder
-            mptAlice.pay(alice, bob, 100);
-            mptAlice.pay(bob, carol, 50);
+            for (auto flags :
+                 {tfNoRippleDirect, tfPartialPayment, tfLimitQuality})
+                env(pay(alice, bob, MPT(10)),
+                    txflags(flags),
+                    ter(temINVALID_FLAG));
         }
 
-        // Holder is not authorized
+        // Invalid combination of send, sendMax, deliverMin, paths
         {
             Env env{*this, features};
+            Account const alice("alice");
+            Account const carol("carol");
+
+            MPTTester mptAlice(env, alice, {.holders = {&carol}});
+
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
+
+            mptAlice.authorize({.account = &carol});
+
+            // sendMax and DeliverMin are valid XRP amount,
+            // but is invalid combination with MPT amount
+            auto const MPT = mptAlice["MPT"];
+            env(pay(alice, carol, MPT(100)),
+                sendmax(XRP(100)),
+                ter(temMALFORMED));
+            env(pay(alice, carol, MPT(100)),
+                delivermin(XRP(100)),
+                ter(temMALFORMED));
+            // sendMax MPT is invalid with IOU or XRP
+            auto const USD = alice["USD"];
+            env(pay(alice, carol, USD(100)),
+                sendmax(MPT(100)),
+                ter(temMALFORMED));
+            env(pay(alice, carol, XRP(100)),
+                sendmax(MPT(100)),
+                ter(temMALFORMED));
+            // sendmax and amount are different MPT issue
+            test::jtx::MPT const MPT1(
+                "MPT", makeMptID(env.seq(alice) + 10, alice));
+            env(pay(alice, carol, MPT1(100)),
+                sendmax(MPT(100)),
+                ter(temMALFORMED));
+            // paths is invalid
+            env(pay(alice, carol, MPT(100)), path(~USD), ter(temMALFORMED));
+        }
+
+        // build_path is invalid if MPT
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const carol("carol");
 
             MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
 
-            mptAlice.create(
-                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
+            auto const MPT = mptAlice["MPT"];
 
-            // issuer to holder
-            mptAlice.pay(alice, bob, 100, tecNO_AUTH);
+            mptAlice.authorize({.account = &carol});
 
-            // holder to issuer
-            mptAlice.pay(bob, alice, 100, tecNO_AUTH);
+            Json::Value payment;
+            payment[jss::secret] = alice.name();
+            payment[jss::tx_json] = pay(alice, carol, MPT(100));
 
-            // holder to holder
-            mptAlice.pay(bob, carol, 50, tecNO_AUTH);
+            payment[jss::build_path] = true;
+            auto jrr = env.rpc("json", "submit", to_string(payment));
+            BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                jrr[jss::result][jss::error_message] ==
+                "Field 'build_path' not allowed in this context.");
         }
 
-        // If allowlisting is enabled, Payment fails if the receiver is not
+        // Can't pay negative amount
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
+            auto const MPT = mptAlice["MPT"];
+
+            mptAlice.authorize({.account = &bob});
+
+            mptAlice.pay(alice, bob, -1, temBAD_AMOUNT);
+
+            env(pay(alice, bob, MPT(10)), sendmax(MPT(-1)), ter(temBAD_AMOUNT));
+        }
+
+        // Pay to self
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
+
+            mptAlice.authorize({.account = &bob});
+
+            mptAlice.pay(bob, bob, 10, temREDUNDANT);
+        }
+
+        // preclaim validation
+
+        // Destination doesn't exist
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
+
+            mptAlice.authorize({.account = &bob});
+
+            Account const bad{"bad"};
+            env.memoize(bad);
+
+            mptAlice.pay(bob, bad, 10, tecNO_DST);
+        }
+
+        // apply validation
+
+        // If RequireAuth is enabled, Payment fails if the receiver is not
         // authorized
         {
             Env env{*this, features};
@@ -698,7 +820,7 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(alice, bob, 100, tecNO_AUTH);
         }
 
-        // If allowlisting is enabled, Payment fails if the sender is not
+        // If RequireAuth is enabled, Payment fails if the sender is not
         // authorized
         {
             Env env{*this, features};
@@ -726,6 +848,54 @@ class MPToken_test : public beast::unit_test::suite
             // bob fails to send back to alice because he is no longer
             // authorize to move his funds!
             mptAlice.pay(bob, alice, 100, tecNO_AUTH);
+        }
+
+        // Non-issuer cannot send to each other if MPTCanTransfer isn't set
+        {
+            Env env(*this, features);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const cindy{"cindy"};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob, &cindy}});
+
+            // alice creates issuance without MPTCanTransfer
+            mptAlice.create({.ownerCount = 1, .holderCount = 0});
+
+            // bob creates a MPToken
+            mptAlice.authorize({.account = &bob});
+
+            // cindy creates a MPToken
+            mptAlice.authorize({.account = &cindy});
+
+            // alice pays bob 100 tokens
+            mptAlice.pay(alice, bob, 100);
+
+            // bob tries to send cindy 10 tokens, but fails because canTransfer
+            // is off
+            mptAlice.pay(bob, cindy, 10, tecNO_AUTH);
+
+            // bob can send back to alice(issuer) just fine
+            mptAlice.pay(bob, alice, 10);
+        }
+
+        // Holder is not authorized
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
+
+            // issuer to holder
+            mptAlice.pay(alice, bob, 100, tecNO_AUTH);
+
+            // holder to issuer
+            mptAlice.pay(bob, alice, 100, tecNO_AUTH);
+
+            // holder to holder
+            mptAlice.pay(bob, carol, 50, tecNO_AUTH);
         }
 
         // Payer doesn't have enough funds
@@ -787,6 +957,48 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(bob, alice, 8);
         }
 
+        // Transfer fee
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+
+            // Transfer fee is 10%
+            mptAlice.create(
+                {.transferFee = 10'000,
+                 .ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer});
+
+            // Holders create MPToken
+            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = &carol});
+
+            // Payment between the issuer and the holder, no transfer fee.
+            mptAlice.pay(alice, bob, 2'000);
+
+            // Payment between the holder and the issuer, no transfer fee.
+            mptAlice.pay(bob, alice, 1'000);
+
+            // Payment between the holders. The sender doesn't have
+            // enough funds to cover the transfer fee.
+            mptAlice.pay(bob, carol, 1'000, tecPATH_PARTIAL);
+
+            // Payment between the holders. The sender has enough funds
+            // but SendMax is not included.
+            mptAlice.pay(bob, carol, 100, tecPATH_PARTIAL);
+
+            auto const MPT = mptAlice["MPT"];
+            // SendMax doesn't cover the fee
+            env(pay(bob, carol, MPT(100)),
+                sendmax(MPT(109)),
+                ter(tecPATH_PARTIAL));
+
+            // Payment succeeds if sufficient SendMax is included.
+            env(pay(bob, carol, MPT(100)), sendmax(MPT(110)));
+            env(pay(bob, carol, MPT(100)), sendmax(MPT(115)));
+        }
+
         // Issuer fails trying to send more than the maximum amount allowed
         {
             Env env{*this, features};
@@ -826,21 +1038,7 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(alice, bob, 1, tecPATH_PARTIAL);
         }
 
-        // Can't pay negative amount
-        {
-            Env env{*this, features};
-
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
-
-            mptAlice.create({.ownerCount = 1, .holderCount = 0});
-
-            mptAlice.authorize({.account = &bob});
-
-            mptAlice.pay(alice, bob, -1, temBAD_AMOUNT);
-        }
-
-        // pay more than max amount
-        // fails in the json parser before
+        // pay more than max amount fails in the json parser before
         // transactor is called
         {
             Env env{*this, features};
@@ -853,172 +1051,6 @@ class MPToken_test : public beast::unit_test::suite
                 to_string(maxMPTokenAmount + 1);
             auto const jrr = env.rpc("json", "submit", to_string(jv));
             BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
-        }
-
-        // Transfer fee
-        {
-            Env env{*this, features};
-
-            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
-
-            // Transfer fee is 10%
-            mptAlice.create(
-                {.transferFee = 10'000,
-                 .ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanTransfer});
-
-            // Holders create MPToken
-            mptAlice.authorize({.account = &bob});
-            mptAlice.authorize({.account = &carol});
-
-            // Payment between the issuer and the holder, no transfer fee.
-            mptAlice.pay(alice, bob, 2'000);
-
-            // Payment between the holder and the issuer, no transfer fee.
-            mptAlice.pay(bob, alice, 1'000);
-
-            // Payment between the holders. The sender doesn't have
-            // enough funds to cover the transfer fee.
-            mptAlice.pay(bob, carol, 1'000, tecPATH_PARTIAL);
-
-            // Payment between the holders. The sender has enough funds
-            // but SendMax is not included.
-            mptAlice.pay(bob, carol, 100, tecPATH_PARTIAL);
-
-            auto const MPT = mptAlice["MPT"];
-            // SendMax doesn't cover the fee
-            env(pay(bob, carol, MPT(100)),
-                sendmax(MPT(109)),
-                ter(tecPATH_PARTIAL));
-
-            // Payment succeeds if SendMax is included.
-            env(pay(bob, carol, MPT(100)), sendmax(MPT(110)));
-            env(pay(bob, carol, MPT(100)), sendmax(MPT(115)));
-        }
-
-        // Test that non-issuer cannot send to each other if MPTCanTransfer
-        // isn't set
-        {
-            Env env(*this, features);
-            Account const alice{"alice"};
-            Account const bob{"bob"};
-            Account const cindy{"cindy"};
-
-            MPTTester mptAlice(env, alice, {.holders = {&bob, &cindy}});
-
-            // alice creates issuance without MPTCanTransfer
-            mptAlice.create({.ownerCount = 1, .holderCount = 0});
-
-            // bob creates a MPToken
-            mptAlice.authorize({.account = &bob});
-
-            // cindy creates a MPToken
-            mptAlice.authorize({.account = &cindy});
-
-            // alice pays bob 100 tokens
-            mptAlice.pay(alice, bob, 100);
-
-            // bob tries to send cindy 10 tokens, but fails because canTransfer
-            // is off
-            mptAlice.pay(bob, cindy, 10, tecNO_AUTH);
-
-            // bob can send back to alice(issuer) just fine
-            mptAlice.pay(bob, alice, 10);
-        }
-
-        // MPT is disabled
-        {
-            Env env{*this, features - featureMPTokensV1};
-            Account const alice("alice");
-            Account const bob("bob");
-
-            env.fund(XRP(1'000), alice);
-            env.fund(XRP(1'000), bob);
-            STAmount mpt{MPTIssue{makeMptID(1, alice)}, UINT64_C(100)};
-
-            env(pay(alice, bob, mpt), ter(temDISABLED));
-        }
-
-        // MPT is disabled, unsigned request
-        {
-            Env env{*this, features - featureMPTokensV1};
-            Account const alice("alice");  // issuer
-            Account const carol("carol");
-            auto const USD = alice["USD"];
-
-            env.fund(XRP(1'000), alice);
-            env.fund(XRP(1'000), carol);
-            STAmount mpt{MPTIssue{makeMptID(1, alice)}, UINT64_C(100)};
-
-            Json::Value jv;
-            jv[jss::secret] = alice.name();
-            jv[jss::tx_json][jss::Fee] = to_string(env.current()->fees().base);
-            jv[jss::tx_json] = pay(alice, carol, mpt);
-            auto const jrr = env.rpc("json", "submit", to_string(jv));
-            BEAST_EXPECT(jrr[jss::result][jss::engine_result] == "temDISABLED");
-        }
-
-        // Invalid combination of send, sendMax, deliverMin
-        {
-            Env env{*this, features};
-            Account const alice("alice");
-            Account const carol("carol");
-
-            MPTTester mptAlice(env, alice, {.holders = {&carol}});
-
-            mptAlice.create({.ownerCount = 1, .holderCount = 0});
-
-            mptAlice.authorize({.account = &carol});
-
-            // sendMax and DeliverMin are valid XRP amount,
-            // but is invalid combination with MPT amount
-            auto const MPT = mptAlice["MPT"];
-            env(pay(alice, carol, MPT(100)),
-                sendmax(XRP(100)),
-                ter(temMALFORMED));
-            env(pay(alice, carol, MPT(100)),
-                delivermin(XRP(100)),
-                ter(temMALFORMED));
-            // sendMax MPT is invalid with IOU or XRP
-            auto const USD = alice["USD"];
-            env(pay(alice, carol, USD(100)),
-                sendmax(MPT(100)),
-                ter(temMALFORMED));
-            env(pay(alice, carol, XRP(100)),
-                sendmax(MPT(100)),
-                ter(temMALFORMED));
-            // sendmax and amount are different MPT issue
-            test::jtx::MPT const MPT1(
-                "MPT", makeMptID(env.seq(alice) + 10, alice));
-            env(pay(alice, carol, MPT1(100)),
-                sendmax(MPT(100)),
-                ter(temMALFORMED));
-        }
-
-        // build_path is invalid if MPT
-        {
-            Env env{*this, features};
-            Account const alice("alice");
-            Account const carol("carol");
-
-            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
-
-            mptAlice.create({.ownerCount = 1, .holderCount = 0});
-            auto const MPT = mptAlice["MPT"];
-
-            mptAlice.authorize({.account = &carol});
-
-            Json::Value payment;
-            payment[jss::secret] = alice.name();
-            payment[jss::tx_json] = pay(alice, carol, MPT(100));
-
-            payment[jss::build_path] = true;
-            auto jrr = env.rpc("json", "submit", to_string(payment));
-            BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
-            BEAST_EXPECT(
-                jrr[jss::result][jss::error_message] ==
-                "Field 'build_path' not allowed in this context.");
         }
 
         // Issuer fails trying to send fund after issuance was destroyed
@@ -1034,13 +1066,13 @@ class MPToken_test : public beast::unit_test::suite
             // alice destroys issuance
             mptAlice.destroy({.ownerCount = 0});
 
-            // alice tries to send bob fund after issuance is destroy, should
+            // alice tries to send bob fund after issuance is destroyed, should
             // fail.
             mptAlice.pay(alice, bob, 100, tecOBJECT_NOT_FOUND);
         }
 
-        // Issuer fails trying to send to some who doesn't own MPT for a
-        // issuance that was destroyed
+        // Issuer fails trying to send to an account, which doesn't own MPT for
+        // an issuance that was destroyed
         {
             Env env{*this, features};
 
@@ -1076,6 +1108,29 @@ class MPToken_test : public beast::unit_test::suite
 
             // transfer max amount to another holder
             mptAlice.pay(bob, carol, 100);
+        }
+
+        // Simple payment
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
+
+            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = &carol});
+
+            // issuer to holder
+            mptAlice.pay(alice, bob, 100);
+
+            // holder to issuer
+            mptAlice.pay(bob, alice, 100);
+
+            // holder to holder
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(bob, carol, 50);
         }
     }
 
