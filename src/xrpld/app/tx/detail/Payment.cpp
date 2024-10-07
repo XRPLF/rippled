@@ -686,13 +686,14 @@ applyHelper<MPTIssue>(ApplyContext& ctx, XRPAmount const&, XRPAmount const&)
             isFrozen(ctx.view(), uDstAccountID, mpt))
             return tecLOCKED;
 
-        auto const sendMax(ctx.tx[~sfSendMax]);
-        // If the transfer fee is included then SendMax has to be included
-        // and be large enough to cover the fee. The payment can still fail if
-        // the sender has insufficient funds.
-        if (auto const rate = transferRate(ctx.view(), mpt.getMptID());
-            rate != parityRate &&
-            (!sendMax || multiply(saDstAmount, rate) > *sendMax))
+        auto const sendMax = ctx.tx[~sfSendMax].value_or(saDstAmount);
+        // If SendMax is included then it should be greater or equal to
+        // the send amount plus the transfer fees if applicable.
+        // The payment can still fail if the sender has insufficient funds.
+        auto const amount =
+            multiply(saDstAmount, transferRate(ctx.view(), mpt.getMptID()));
+        if (multiply(saDstAmount, transferRate(ctx.view(), mpt.getMptID())) >
+            sendMax)
             return tecPATH_PARTIAL;
     }
 

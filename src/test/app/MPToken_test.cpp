@@ -999,6 +999,30 @@ class MPToken_test : public beast::unit_test::suite
             env(pay(bob, carol, MPT(100)), sendmax(MPT(115)));
         }
 
+        // Insufficient SendMax with no transfer fee
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
+
+            // Holders create MPToken
+            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = &carol});
+            mptAlice.pay(alice, bob, 1'000);
+
+            auto const MPT = mptAlice["MPT"];
+            // SendMax is less than the amount
+            env(pay(bob, carol, MPT(100)),
+                sendmax(MPT(99)),
+                ter(tecPATH_PARTIAL));
+
+            // Payment succeeds if sufficient SendMax is included.
+            env(pay(bob, carol, MPT(100)), sendmax(MPT(100)));
+        }
+
         // Issuer fails trying to send more than the maximum amount allowed
         {
             Env env{*this, features};
