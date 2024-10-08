@@ -165,16 +165,32 @@ class PermissionedDomains_test : public beast::unit_test::suite
             .removeMember("Issuer");
         env(txJsonMutable, fee(setFee), ter(temMALFORMED));
 
-        // Make 2 identical credentials.
-        pd::Credentials const credentialsDup{
-            {alice2, pd::toBlob("credential1")},
-            {alice3, pd::toBlob("credential2")},
-            {alice2, pd::toBlob("credential1")},
-            {alice5, pd::toBlob("credential4")},
-        };
-        env(pd::setTx(account, credentialsDup, domain),
-            fee(setFee),
-            ter(temMALFORMED));
+        // Make 2 identical credentials. The duplicate should be silently
+        // removed.
+        {
+            pd::Credentials const credentialsDup{
+                {alice7, pd::toBlob("credential6")},
+                {alice2, pd::toBlob("credential1")},
+                {alice3, pd::toBlob("credential2")},
+                {alice2, pd::toBlob("credential1")},
+                {alice5, pd::toBlob("credential4")},
+            };
+            BEAST_EXPECT(pd::sortCredentials(credentialsDup).size() == 4);
+            env(pd::setTx(account, credentialsDup, domain), fee(setFee));
+
+            uint256 d;
+            if (domain)
+                d = *domain;
+            else
+                d = pd::getNewDomain(env.meta());
+            env.close();
+            auto objects = pd::getObjects(account, env);
+            auto const fromObject = pd::credentialsFromJson(objects[d]);
+            auto const sortedCreds = pd::sortCredentials(credentialsDup);
+            BEAST_EXPECT(
+                pd::credentialsFromJson(objects[d]) ==
+                pd::sortCredentials(credentialsDup));
+        }
 
         // Have equal issuers but different credentials and make sure they
         // sort correctly.
@@ -187,7 +203,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
                 {alice2, pd::toBlob("credential6")},
             };
             BEAST_EXPECT(
-                credentialsSame != *pd::sortCredentials(credentialsSame));
+                credentialsSame != pd::sortCredentials(credentialsSame));
             env(pd::setTx(account, credentialsSame, domain), fee(setFee));
 
             uint256 d;
@@ -198,10 +214,10 @@ class PermissionedDomains_test : public beast::unit_test::suite
             env.close();
             auto objects = pd::getObjects(account, env);
             auto const fromObject = pd::credentialsFromJson(objects[d]);
-            auto const sortedCreds = *pd::sortCredentials(credentialsSame);
+            auto const sortedCreds = pd::sortCredentials(credentialsSame);
             BEAST_EXPECT(
                 pd::credentialsFromJson(objects[d]) ==
-                *pd::sortCredentials(credentialsSame));
+                pd::sortCredentials(credentialsSame));
         }
     }
 
@@ -266,7 +282,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         {
             BEAST_EXPECT(
                 credentials10.size() == PermissionedDomainSet::PD_ARRAY_MAX);
-            BEAST_EXPECT(credentials10 != *pd::sortCredentials(credentials10));
+            BEAST_EXPECT(credentials10 != pd::sortCredentials(credentials10));
             env(pd::setTx(alice, credentials10), fee(setFee));
             auto tx = env.tx()->getJson(JsonOptions::none);
             domain2 = pd::getNewDomain(env.meta());
