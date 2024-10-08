@@ -444,7 +444,7 @@ LEDGER_ENTRY(ltVAULT, 0x0081, Vault, ({
     {sfAssetMaximum,         soeDEFAULT},
     {sfMPTokenIssuanceID,    soeREQUIRED}, // sfShare
     // no ShareTotal ever (use MPTIssuance.sfOutstandingAmount)
-    // no WithdrawalPolicy ever (YAGNI)
+    // no WithdrawalPolicy yet
     // no PermissionedDomainID yet
-    {sfLossUnrealized,       soeDEFAULT}, // not in spec
+    // no LossUnrealized yet
 }))

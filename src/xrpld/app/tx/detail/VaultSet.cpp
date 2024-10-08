@@ -39,6 +39,13 @@ VaultSet::preflight(PreflightContext const& ctx)
     return preflight2(ctx);
 }
 
+XRPAmount
+AMMCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    // TODO: What should the base fee be? One increment does not seem enough.
+    return view.fees().increment * 4;
+}
+
 TER
 VaultSet::preclaim(PreclaimContext const& ctx)
 {
@@ -95,7 +102,7 @@ VaultSet::doApply()
 
         auto keylet = keylet::vault(owner, sequence);
         auto vault = std::make_shared<SLE>(keylet);
-        if (auto ter = dirLink(view(), owner, vault); ter)
+        if (auto ter = dirLink(view(), owner, vault); !isTesSuccess(ter))
             return ter;
         auto maybe = createPseudoAccount(view(), vault->key());
         if (!maybe)
