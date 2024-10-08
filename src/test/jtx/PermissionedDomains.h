@@ -21,7 +21,6 @@
 #define RIPPLE_TEST_JTX_PERMISSIONEDDOMAINS_H_INCLUDED
 
 #include <test/jtx.h>
-#include <optional>
 
 namespace ripple {
 namespace test {
@@ -64,7 +63,7 @@ Credentials
 credentialsFromJson(Json::Value const& object);
 
 // Sort credentials the same way as PermissionedDomainSet
-std::optional<Credentials>
+Credentials
 sortCredentials(Credentials const& input);
 
 // Get account_info

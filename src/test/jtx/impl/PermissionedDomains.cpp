@@ -121,56 +121,37 @@ credentialsFromJson(Json::Value const& object)
     return ret;
 }
 
-// Sort credentials the same way as PermissionedDomainSet. None can
-// be identical.
-std::optional<Credentials>
+// Sort credentials the same way as PermissionedDomainSet. Silently
+// remove duplicates.
+Credentials
 sortCredentials(Credentials const& input)
 {
-    try
+    Credentials ret = input;
+
+    std::set<Credential> cSet;
+    for (auto const& c : ret)
+        cSet.insert(c);
+    if (ret.size() > cSet.size())
     {
-        Credentials ret = input;
-        std::sort(
-            ret.begin(),
-            ret.end(),
-            [](Credential const& left, Credential const& right) -> bool {
-                if (left.first < right.first)
-                    return true;
-                if (left.first == right.first)
-                {
-                    if (left.second < right.second)
-                        return true;
-                    if (left.second == right.second)
-                        throw std::runtime_error("duplicate");
-                }
-                return false;
-                /*
-                if (left.getAccountID(sfIssuer) < right.getAccountID(sfIssuer))
-                    return true;
-                if (left.getAccountID(sfIssuer) == right.getAccountID(sfIssuer))
-                {
-                    if (left.getFieldVL(sfCredentialType) <
-                        right.getFieldVL(sfCredentialType))
-                    {
-                        return true;
-                    }
-                    if (left.getFieldVL(sfCredentialType) ==
-                        right.getFieldVL(sfCredentialType))
-                    {
-                        throw std::runtime_error("duplicate credentials");
-                    }
-                    return false;
-                }
-                return false;
-                return left.first < right.first;
-                 */
-            });
-        return ret;
+        ret = Credentials();
+        for (auto const& c : cSet)
+            ret.push_back(c);
     }
-    catch (...)
-    {
-        std::cerr << "wtf\n";
-        return std::nullopt;
-    }
+
+    std::sort(
+        ret.begin(),
+        ret.end(),
+        [](Credential const& left, Credential const& right) -> bool {
+            if (left.first < right.first)
+                return true;
+            if (left.first == right.first)
+            {
+                if (left.second < right.second)
+                    return true;
+            }
+            return false;
+        });
+    return ret;
 }
 
 // Get account_info
