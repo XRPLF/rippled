@@ -56,27 +56,35 @@ VaultSet::doApply()
     auto const& owner = account_;
     auto sequence = tx.getSequence();
 
-    auto const& vaultId = tx[~sfVaultID];
-    auto keylet =
-        vaultId ? Keylet{ltVAULT, *vaultId} : keylet::vault(owner, sequence);
-
-    auto vault = view().peek(keylet);
-
-    if (vault)
+    if (auto const& vaultId = tx[~sfVaultID]; vaultId)
     {
         // Update existing object.
+        auto keylet = Keylet{ltVAULT, *vaultId};
+        auto vault = view().peek(keylet);
+        if (!vault)
+            return tecOBJECT_NOT_FOUND;
+
         // Assert that submitter is the Owner.
-        if (owner != (*vault)[sfOwner])
+        if (owner != vault->at(sfOwner))
             return tecNO_PERMISSION;
-        // Assert that Asset is the same if given.
-        if (tx.isFieldPresent(sfAsset) && tx[sfAsset] != (*vault)[sfAsset])
-            return tecNO_PERMISSION;
+
+        // Assert immutable flags not given.
+        auto txFlags = tx[sfFlags];
+        if ((txFlags & tfVaultPrivate) || (txFlags & tfVaultShareNonTransferable))
+            return tecIMMUTABLE;
+        // Assert identical immutable fields if given.
+        if (tx.isFieldPresent(sfAsset) && tx[sfAsset] != vault->at(sfAsset))
+            return tecIMMUTABLE;
+
+        // TODO: sfMPTokenMetadata?
+
+        // Update mutable flags and fields if given.
+        if (tx.isFieldPresent(sfData))
+            vault->at(~sfData) = tx[~sfData];
+        if (tx.isFieldPresent(sfAssetMaximum))
+            vault->at(~sfAssetMaximum) = tx[sfAssetMaximum];
+
         view().update(vault);
-    }
-    else if (tx.isFieldPresent(sfVaultID))
-    {
-        // Update missing object.
-        return tecOBJECT_NOT_FOUND;
     }
     else
     {
@@ -84,52 +92,45 @@ VaultSet::doApply()
         if (!tx.isFieldPresent(sfAsset))
             return tecINCOMPLETE;
 
-        vault = std::make_shared<SLE>(keylet);
+        auto keylet = keylet::vault(owner, sequence);
+        auto vault = std::make_shared<SLE>(keylet);
         if (auto ter = dirLink(view(), owner, vault); ter)
             return ter;
         auto maybe = createPseudoAccount(view(), vault->key());
         if (!maybe)
             return maybe.error();
         auto& pseudo = *maybe;
-        auto pseudoId = (*pseudo)[sfAccount];
+        auto pseudoId = pseudo->at(sfAccount);
+        auto txFlags = tx[sfFlags];
+        std::uint32_t mptFlags = 0;
+        if (!(txFlags & tfVaultShareNonTransferable))
+            mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);
+        if (txFlags & tfVaultPrivate)
+            mptFlags |= lsfMPTRequireAuth;
         auto maybe2 = MPTokenIssuanceCreate::create(
             view(),
             j_,
             {
                 .account = pseudoId,
                 .sequence = 1,
-                // !tfShareNonTransferable => lsfMPTCanEscrow, lsfMPTCanTrade,
-                // lsfMPTCanTransfer tfPrivate => lsfMPTRequireAuth
-                .flags = 0,
+                .flags = mptFlags,
                 .metadata = tx[~sfMPTokenMetadata],
             });
         if (!maybe2)
             return maybe2.error();
         auto& mptId = *maybe2;
-        (*vault)[sfSequence] = sequence;
-        (*vault)[sfOwner] = owner;
-        (*vault)[sfAccount] = pseudoId;
-        (*vault)[~sfData] = tx[~sfData];
-        (*vault)[sfAsset] = tx[sfAsset];
-        (*vault)[sfAssetTotal] = 0;
-        (*vault)[sfAssetAvailable] = 0;
-        (*vault)[~sfAssetMaximum] = tx[~sfAssetMaximum];
-        (*vault)[sfMPTokenIssuanceID] = mptId;
+        vault->at(sfFlags) = txFlags & tfVaultPrivate;
+        vault->at(sfSequence) = sequence;
+        vault->at(sfOwner) = owner;
+        vault->at(sfAccount) = pseudoId;
+        vault->at(~sfData) = tx[~sfData];
+        vault->at(sfAsset) = tx[sfAsset];
+        // vault->at(sfAssetTotal) = 0;
+        // vault->at(sfAssetAvailable) = 0;
+        vault->at(~sfAssetMaximum) = tx[~sfAssetMaximum];
+        vault->at(sfMPTokenIssuanceID) = mptId;
         // No `LossUnrealized`.
         view().insert(vault);
-    }
-
-    // Set or clear field AssetMaximum.
-    if (tx.isFieldPresent(sfAssetMaximum))
-    {
-        if (tx[sfAssetMaximum] == 0)
-        {
-            vault->delField(sfAssetMaximum);
-        }
-        else
-        {
-            (*vault)[sfAssetMaximum] = tx[sfAssetMaximum];
-        }
     }
 
     return tesSUCCESS;

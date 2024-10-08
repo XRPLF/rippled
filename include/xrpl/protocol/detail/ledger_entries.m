@@ -437,14 +437,14 @@ LEDGER_ENTRY(ltVAULT, 0x0081, Vault, ({
     {sfOwnerNode,            soeREQUIRED},
     {sfOwner,                soeREQUIRED},
     {sfAccount,              soeREQUIRED},
-    {sfData,                 soeOPTIONAL},
+    {sfData,                 soeDEFAULT},
     {sfAsset,                soeREQUIRED},
-    {sfAssetTotal,           soeREQUIRED},
-    {sfAssetAvailable,       soeREQUIRED},
-    {sfAssetMaximum,         soeOPTIONAL},
+    {sfAssetTotal,           soeDEFAULT},
+    {sfAssetAvailable,       soeDEFAULT},
+    {sfAssetMaximum,         soeDEFAULT},
     {sfMPTokenIssuanceID,    soeREQUIRED}, // sfShare
     // no ShareTotal ever (use MPTIssuance.sfOutstandingAmount)
     // no WithdrawalPolicy ever (YAGNI)
     // no PermissionedDomainID yet
-    {sfLossUnrealized,       soeOPTIONAL}, // not in spec
+    {sfLossUnrealized,       soeDEFAULT}, // not in spec
 }))
