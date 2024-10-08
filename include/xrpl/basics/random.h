@@ -20,8 +20,8 @@
 #ifndef RIPPLE_BASICS_RANDOM_H_INCLUDED
 #define RIPPLE_BASICS_RANDOM_H_INCLUDED
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/xor_shift_engine.h>
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -114,7 +114,7 @@ std::enable_if_t<
     Integral>
 rand_int(Engine& engine, Integral min, Integral max)
 {
-    assert(max > min);
+    ASSERT(max > min, "ripple::rand_int : max over min inputs");
 
     // This should have no state and constructing it should
     // be very cheap. If that turns out not to be the case

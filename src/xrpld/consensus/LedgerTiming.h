@@ -82,7 +82,9 @@ getNextLedgerTimeResolution(
     bool previousAgree,
     Seq ledgerSeq)
 {
-    assert(ledgerSeq != Seq{0});
+    ASSERT(
+        ledgerSeq != Seq{0},
+        "ripple:getNextLedgerTimeResolution : valid ledger sequence");
 
     using namespace std::chrono;
     // Find the current resolution:
@@ -90,7 +92,9 @@ getNextLedgerTimeResolution(
         std::begin(ledgerPossibleTimeResolutions),
         std::end(ledgerPossibleTimeResolutions),
         previousResolution);
-    assert(iter != std::end(ledgerPossibleTimeResolutions));
+    ASSERT(
+        iter != std::end(ledgerPossibleTimeResolutions),
+        "ripple:getNextLedgerTimeResolution : found time resolution");
 
     // This should never happen, but just as a precaution
     if (iter == std::end(ledgerPossibleTimeResolutions))

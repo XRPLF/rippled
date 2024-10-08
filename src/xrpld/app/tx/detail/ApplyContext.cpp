@@ -21,10 +21,10 @@
 #include <xrpld/app/tx/detail/InvariantCheck.h>
 #include <xrpld/app/tx/detail/Transactor.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <cassert>
 
 namespace ripple {
 
@@ -146,7 +146,9 @@ ApplyContext::checkInvariantsHelper(
 TER
 ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
 {
-    assert(isTesSuccess(result) || isTecClaim(result));
+    ASSERT(
+        isTesSuccess(result) || isTecClaim(result),
+        "ripple::ApplyContext::checkInvariants : is tesSUCCESS or tecCLAIM");
 
     return checkInvariantsHelper(
         result,

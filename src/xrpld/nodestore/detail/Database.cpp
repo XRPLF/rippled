@@ -40,7 +40,9 @@ Database::Database(
     , requestBundle_(get<int>(config, "rq_bundle", 4))
     , readThreads_(std::max(1, readThreads))
 {
-    assert(readThreads != 0);
+    ASSERT(
+        readThreads != 0,
+        "ripple::NodeStore::Database::Database : nonzero threads input");
 
     if (earliestLedgerSeq_ < 1)
         Throw<std::runtime_error>("Invalid earliest_seq");
@@ -87,7 +89,10 @@ Database::Database(
 
                     for (auto it = read.begin(); it != read.end(); ++it)
                     {
-                        assert(!it->second.empty());
+                        ASSERT(
+                            !it->second.empty(),
+                            "ripple::NodeStore::Database::Database : non-empty "
+                            "data");
 
                         auto const& hash = it->first;
                         auto const& data = it->second;
@@ -161,7 +166,9 @@ Database::stop()
 
     while (readThreads_.load() != 0)
     {
-        assert(steady_clock::now() - start < 30s);
+        ASSERT(
+            steady_clock::now() - start < 30s,
+            "ripple::NodeStore::Database::stop : maximum stop duration");
         std::this_thread::yield();
     }
 
@@ -212,7 +219,9 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
     };
 
     srcDB.for_each([&](std::shared_ptr<NodeObject> nodeObject) {
-        assert(nodeObject);
+        ASSERT(
+            nodeObject != nullptr,
+            "ripple::NodeStore::Database::importInternal : non-null node");
         if (!nodeObject)  // This should never happen
             return;
 
@@ -256,7 +265,9 @@ Database::fetchNodeObject(
 void
 Database::getCountsJson(Json::Value& obj)
 {
-    assert(obj.isObject());
+    ASSERT(
+        obj.isObject(),
+        "ripple::NodeStore::Database::getCountsJson : valid input type");
 
     {
         std::unique_lock<std::mutex> lock(readLock_);

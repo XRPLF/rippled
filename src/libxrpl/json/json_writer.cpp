@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_writer.h>
-#include <cassert>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -70,7 +70,7 @@ valueToString(Int value)
     if (isNegative)
         *--current = '-';
 
-    assert(current >= buffer);
+    ASSERT(current >= buffer, "Json::valueToString(Int) : buffer check");
     return current;
 }
 
@@ -80,7 +80,7 @@ valueToString(UInt value)
     char buffer[32];
     char* current = buffer + sizeof(buffer);
     uintToString(value, current);
-    assert(current >= buffer);
+    ASSERT(current >= buffer, "Json::valueToString(UInt) : buffer check");
     return current;
 }
 
@@ -391,7 +391,9 @@ StyledWriter::writeArrayValue(const Value& value)
         }
         else  // output on a single line
         {
-            assert(childValues_.size() == size);
+            ASSERT(
+                childValues_.size() == size,
+                "Json::StyledWriter::writeArrayValue : child size match");
             document_ += "[ ";
 
             for (unsigned index = 0; index < size; ++index)
@@ -483,7 +485,9 @@ StyledWriter::indent()
 void
 StyledWriter::unindent()
 {
-    assert(int(indentString_.size()) >= indentSize_);
+    ASSERT(
+        int(indentString_.size()) >= indentSize_,
+        "Json::StyledWriter::unindent : maximum indent size");
     indentString_.resize(indentString_.size() - indentSize_);
 }
 
@@ -613,7 +617,9 @@ StyledStreamWriter::writeArrayValue(const Value& value)
         }
         else  // output on a single line
         {
-            assert(childValues_.size() == size);
+            ASSERT(
+                childValues_.size() == size,
+                "Json::StyledStreamWriter::writeArrayValue : child size match");
             *document_ << "[ ";
 
             for (unsigned index = 0; index < size; ++index)
@@ -706,7 +712,9 @@ StyledStreamWriter::indent()
 void
 StyledStreamWriter::unindent()
 {
-    assert(indentString_.size() >= indentation_.size());
+    ASSERT(
+        indentString_.size() >= indentation_.size(),
+        "Json::StyledStreamWriter::unindent : maximum indent size");
     indentString_.resize(indentString_.size() - indentation_.size());
 }
 

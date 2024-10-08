@@ -199,8 +199,12 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
     if (failed_ || !complete_ || !replayTemp_)
         return {};
 
-    assert(parent->seq() + 1 == replayTemp_->seq());
-    assert(parent->info().hash == replayTemp_->info().parentHash);
+    ASSERT(
+        parent->seq() + 1 == replayTemp_->seq(),
+        "ripple::LedgerDeltaAcquire::tryBuild : parent sequence match");
+    ASSERT(
+        parent->info().hash == replayTemp_->info().parentHash,
+        "ripple::LedgerDeltaAcquire::tryBuild : parent hash match");
     // build ledger
     LedgerReplay replayData(parent, replayTemp_, std::move(orderedTxns_));
     fullLedger_ = buildLedger(replayData, tapNONE, app_, journal_);
@@ -262,7 +266,7 @@ LedgerDeltaAcquire::onLedgerBuilt(
 void
 LedgerDeltaAcquire::notify(ScopedLockType& sl)
 {
-    assert(isDone());
+    ASSERT(isDone(), "ripple::LedgerDeltaAcquire::notify : is done");
     std::vector<OnDeltaDataCB> toCall;
     std::swap(toCall, dataReadyCallbacks_);
     auto const good = !failed_;

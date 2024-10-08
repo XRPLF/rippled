@@ -200,7 +200,9 @@ FeeVoteImpl::doVoting(
     std::shared_ptr<SHAMap> const& initialPosition)
 {
     // LCL must be flag ledger
-    assert(lastClosedLedger && isFlagLedger(lastClosedLedger->seq()));
+    ASSERT(
+        lastClosedLedger && isFlagLedger(lastClosedLedger->seq()),
+        "ripple::FeeVoteImpl::doVoting : has a flag ledger");
 
     detail::VotableValue baseFeeVote(
         lastClosedLedger->fees().base, target_.reference_fee);

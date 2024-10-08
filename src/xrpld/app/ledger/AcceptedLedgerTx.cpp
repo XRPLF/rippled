@@ -33,7 +33,9 @@ AcceptedLedgerTx::AcceptedLedgerTx(
     , mMeta(txn->getTransactionID(), ledger->seq(), *met)
     , mAffected(mMeta.getAffectedAccounts())
 {
-    assert(!ledger->open());
+    ASSERT(
+        !ledger->open(),
+        "ripple::AcceptedLedgerTx::AcceptedLedgerTx : valid ledger state");
 
     Serializer s;
     met->add(s);
@@ -76,7 +78,9 @@ AcceptedLedgerTx::AcceptedLedgerTx(
 std::string
 AcceptedLedgerTx::getEscMeta() const
 {
-    assert(!mRawMeta.empty());
+    ASSERT(
+        !mRawMeta.empty(),
+        "ripple::AcceptedLedgerTx::getEscMeta : metadata is set");
     return sqlBlobLiteral(mRawMeta);
 }
 

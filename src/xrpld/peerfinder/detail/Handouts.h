@@ -23,7 +23,7 @@
 #include <xrpld/peerfinder/detail/SlotImp.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 #include <xrpl/beast/container/aged_set.h>
-#include <cassert>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <iterator>
 #include <type_traits>
 
@@ -43,7 +43,9 @@ template <class Target, class HopContainer>
 std::size_t
 handout_one(Target& t, HopContainer& h)
 {
-    assert(!t.full());
+    ASSERT(
+        !t.full(),
+        "ripple::PeerFinder::detail::handout_one : target is not full");
     for (auto it = h.begin(); it != h.end(); ++it)
     {
         auto const& e = *it;

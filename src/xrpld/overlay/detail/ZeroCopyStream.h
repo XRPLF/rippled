@@ -20,6 +20,8 @@
 #ifndef RIPPLE_OVERLAY_ZEROCOPYSTREAM_H_INCLUDED
 #define RIPPLE_OVERLAY_ZEROCOPYSTREAM_H_INCLUDED
 
+#include <xrpl/beast/utility/instrumentation.h>
+
 #include <boost/asio/buffer.hpp>
 #include <cstdint>
 #include <google/protobuf/io/zero_copy_stream.h>
@@ -204,7 +206,8 @@ template <class Streambuf>
 void
 ZeroCopyOutputStream<Streambuf>::BackUp(int count)
 {
-    assert(count <= commit_);
+    ASSERT(
+        count <= commit_, "ripple::ZeroCopyOutputStream::BackUp : valid input");
     auto const n = commit_ - count;
     streambuf_.commit(n);
     count_ += n;

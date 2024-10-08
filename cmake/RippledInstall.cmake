@@ -10,6 +10,7 @@ install (
     ripple_boost
     xrpl.libpb
     xrpl.libxrpl
+    antithesis-sdk-cpp
   EXPORT RippleExports
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib

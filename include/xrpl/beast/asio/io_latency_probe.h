@@ -20,8 +20,10 @@
 #ifndef BEAST_ASIO_IO_LATENCY_PROBE_H_INCLUDED
 #define BEAST_ASIO_IO_LATENCY_PROBE_H_INCLUDED
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/io_service.hpp>
+
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
@@ -172,7 +174,10 @@ private:
             , m_repeat(repeat)
             , m_probe(probe)
         {
-            assert(m_probe);
+            ASSERT(
+                m_probe != nullptr,
+                "beast::io_latency_probe::sample_op::sample_op : non-null "
+                "probe input");
             m_probe->addref();
         }
 
@@ -182,7 +187,10 @@ private:
             , m_repeat(from.m_repeat)
             , m_probe(from.m_probe)
         {
-            assert(m_probe);
+            ASSERT(
+                m_probe != nullptr,
+                "beast::io_latency_probe::sample_op::sample_op(sample_op&&) : "
+                "non-null probe input");
             from.m_probe = nullptr;
         }
 

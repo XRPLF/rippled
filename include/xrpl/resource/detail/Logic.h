@@ -26,12 +26,12 @@
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/insight/Insight.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/Gossip.h>
 #include <xrpl/resource/detail/Import.h>
-#include <cassert>
 #include <mutex>
 
 namespace ripple {
@@ -401,7 +401,9 @@ public:
     {
         std::lock_guard _(lock_);
         Entry& entry(iter->second);
-        assert(entry.refcount == 0);
+        ASSERT(
+            entry.refcount == 0,
+            "ripple::Resource::Logic::erase : entry not used");
         inactive_.erase(inactive_.iterator_to(entry));
         table_.erase(iter);
     }
@@ -433,7 +435,9 @@ public:
                     admin_.erase(admin_.iterator_to(entry));
                     break;
                 default:
-                    assert(false);
+                    UNREACHABLE(
+                        "ripple::Resource::Logic::release : invalid entry "
+                        "kind");
                     break;
             }
             inactive_.push_back(entry);

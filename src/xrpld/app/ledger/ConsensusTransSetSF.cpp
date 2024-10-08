@@ -60,7 +60,10 @@ ConsensusTransSetSF::gotNode(
             Serializer s(nodeData.data() + 4, nodeData.size() - 4);
             SerialIter sit(s.slice());
             auto stx = std::make_shared<STTx const>(std::ref(sit));
-            assert(stx->getTransactionID() == nodeHash.as_uint256());
+            ASSERT(
+                stx->getTransactionID() == nodeHash.as_uint256(),
+                "ripple::ConsensusTransSetSF::gotNode : transaction hash "
+                "match");
             auto const pap = &app_;
             app_.getJobQueue().addJob(jtTRANSACTION, "TXS->TXN", [pap, stx]() {
                 pap->getOPs().submitTransaction(stx);
@@ -92,7 +95,9 @@ ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
         Serializer s;
         s.add32(HashPrefix::transactionID);
         txn->getSTransaction()->add(s);
-        assert(sha512Half(s.slice()) == nodeHash.as_uint256());
+        ASSERT(
+            sha512Half(s.slice()) == nodeHash.as_uint256(),
+            "ripple::ConsensusTransSetSF::getNode : transaction hash match");
         nodeData = s.peekData();
         return nodeData;
     }

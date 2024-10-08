@@ -421,7 +421,7 @@ Payment::doApply()
         return terResult;
     }
 
-    assert(saDstAmount.native());
+    ASSERT(saDstAmount.native(), "ripple::Payment::doApply : amount is XRP");
 
     // Direct XRP payment.
 
