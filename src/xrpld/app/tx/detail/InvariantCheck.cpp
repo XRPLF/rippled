@@ -20,6 +20,7 @@
 #include <xrpld/app/tx/detail/InvariantCheck.h>
 
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/app/tx/detail/PermissionedDomainSet.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/FeeUnits.h>
@@ -478,6 +479,7 @@ LedgerEntryTypesMatch::visitEntry(
             case ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID:
             case ltDID:
             case ltORACLE:
+            case ltPERMISSIONED_DOMAIN:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -925,6 +927,48 @@ ValidClawback::finalize(
                                "despite failure of the transaction.";
             return false;
         }
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidPermissionedDomain::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (after->getType() != ltPERMISSIONED_DOMAIN)
+        return;
+    credentialsSize_ = after->getFieldArray(sfAcceptedCredentials).size();
+}
+
+bool
+ValidPermissionedDomain::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (tx.getTxnType() != ttPERMISSIONED_DOMAIN_SET || result != tesSUCCESS)
+        return true;
+
+    if (!credentialsSize_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: permissioned domain with "
+                           "no rules.";
+        return false;
+    }
+
+    if (credentialsSize_ > PermissionedDomainSet::PD_ARRAY_MAX)
+    {
+        JLOG(j.fatal()) << "Invariant failed: permissioned domain bad "
+                           "credentials size "
+                        << credentialsSize_;
+        return false;
     }
 
     return true;
