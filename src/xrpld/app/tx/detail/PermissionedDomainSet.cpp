@@ -21,7 +21,7 @@
 #include <xrpld/ledger/View.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFlags.h>
-
+#include <map>
 #include <optional>
 
 namespace ripple {
@@ -95,12 +95,19 @@ PermissionedDomainSet::doApply()
 
     // All checks have already been done. Just update credentials. Same logic
     // for either new domain or updating existing.
+    // Silently remove duplicates.
     auto updateSle = [this](std::shared_ptr<STLedgerEntry> const& sle) {
         auto credentials = ctx_.tx.getFieldArray(sfAcceptedCredentials);
-        // TODO when credentials are merged, it is possible that this will
-        // also need to sort on the CredentialType field in case there
-        // are multiple issuers in each set of credentials. The spec
-        // needs to be ironed out.
+        std::map<uint256, STObject> hashed;
+        for (auto const& c : credentials)
+            hashed.insert({c.getHash(HashPrefix::transactionID), c});
+        if (credentials.size() > hashed.size())
+        {
+            credentials = STArray();
+            for (auto const& e : hashed)
+                credentials.push_back(e.second);
+        }
+
         credentials.sort(
             [](STObject const& left, STObject const& right) -> bool {
                 if (left.getAccountID(sfIssuer) < right.getAccountID(sfIssuer))
@@ -111,11 +118,6 @@ PermissionedDomainSet::doApply()
                         right.getFieldVL(sfCredentialType))
                     {
                         return true;
-                    }
-                    if (left.getFieldVL(sfCredentialType) ==
-                        right.getFieldVL(sfCredentialType))
-                    {
-                        throw std::runtime_error("duplicate credentials");
                     }
                 }
                 return false;
@@ -128,14 +130,7 @@ PermissionedDomainSet::doApply()
         // Modify existing permissioned domain.
         auto sleUpdate = view().peek(
             {ltPERMISSIONED_DOMAIN, ctx_.tx.getFieldH256(sfDomainID)});
-        try
-        {
-            updateSle(sleUpdate);
-        }
-        catch (...)
-        {
-            return temMALFORMED;
-        }
+        updateSle(sleUpdate);
         view().update(sleUpdate);
     }
     else
@@ -146,14 +141,7 @@ PermissionedDomainSet::doApply()
         auto slePd = std::make_shared<SLE>(pdKeylet);
         slePd->setAccountID(sfOwner, account_);
         slePd->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence));
-        try
-        {
-            updateSle(slePd);
-        }
-        catch (...)
-        {
-            return temMALFORMED;
-        }
+        updateSle(slePd);
         view().insert(slePd);
         auto const page = view().dirInsert(
             keylet::ownerDir(account_), pdKeylet, describeOwnerDir(account_));
