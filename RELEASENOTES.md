@@ -557,7 +557,7 @@ If you operate an XRP Ledger server, upgrade to version 2.0.0 by January 22, 202
 
 - Switched to Unity builds to speed up Windows CI. [#4780](https://github.com/XRPLF/rippled/pull/4780)
 
-- Clarified what makes concensus healthy in `FeeEscalation.md`. [#4729](https://github.com/XRPLF/rippled/pull/4729)
+- Clarified what makes consensus healthy in `FeeEscalation.md`. [#4729](https://github.com/XRPLF/rippled/pull/4729)
 
 - Removed a dependency on the <ranges> header for unit tests. [#4788](https://github.com/XRPLF/rippled/pull/4788)
 
