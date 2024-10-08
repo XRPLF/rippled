@@ -844,7 +844,7 @@ dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object)
     return tesSUCCESS;
 }
 
-Expected<AccountID, TER>
+Expected<std::shared_ptr<SLE>, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey)
 {
     AccountID accountId;
@@ -876,7 +876,7 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey)
     // account->setFieldH256(sfPseudoOwner, pseudoOwnerKey);
     view.insert(account);
 
-    return accountId;
+    return std::move(account);
 }
 
 TER

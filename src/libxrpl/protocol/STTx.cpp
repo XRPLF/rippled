@@ -200,6 +200,12 @@ STTx::getSeqProxy() const
     return SeqProxy{SeqProxy::ticket, *ticketSeq};
 }
 
+std::uint32_t
+STTx::getSequence() const
+{
+    return getSeqProxy().value();
+}
+
 void
 STTx::sign(PublicKey const& publicKey, SecretKey const& secretKey)
 {

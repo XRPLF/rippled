@@ -23,6 +23,7 @@
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/st.h>
+#include "MPTokenIssuanceCreate.h"
 
 namespace ripple {
 
@@ -52,10 +53,12 @@ VaultSet::doApply()
     // we can consider downgrading them to `tef` or `tem`.
 
     auto const& tx = ctx_.tx;
+    auto const& owner = account_;
+    auto sequence = tx.getSequence();
 
     auto const& vaultId = tx[~sfVaultID];
-    auto keylet = vaultId ? Keylet{ltVAULT, *vaultId}
-                          : keylet::vault(tx[sfAccount], tx[sfSequence]);
+    auto keylet =
+        vaultId ? Keylet{ltVAULT, *vaultId} : keylet::vault(owner, sequence);
 
     auto vault = view().peek(keylet);
 
@@ -63,7 +66,7 @@ VaultSet::doApply()
     {
         // Update existing object.
         // Assert that submitter is the Owner.
-        if (tx[sfAccount] != (*vault)[sfOwner])
+        if (owner != (*vault)[sfOwner])
             return tecNO_PERMISSION;
         // Assert that Asset is the same if given.
         if (tx.isFieldPresent(sfAsset) && tx[sfAsset] != (*vault)[sfAsset])
@@ -82,20 +85,36 @@ VaultSet::doApply()
             return tecINCOMPLETE;
 
         vault = std::make_shared<SLE>(keylet);
-        if (auto ter = dirLink(view(), tx[sfAccount], vault); ter)
+        if (auto ter = dirLink(view(), owner, vault); ter)
             return ter;
-        auto pseudo = createPseudoAccount(view(), vault->key());
-        if (!pseudo)
-            return pseudo.error();
-        (*vault)[sfSequence] = tx[sfSequence];
-        (*vault)[sfOwner] = tx[sfAccount];
-        (*vault)[sfAccount] = pseudo.value();
+        auto maybe = createPseudoAccount(view(), vault->key());
+        if (!maybe)
+            return maybe.error();
+        auto& pseudo = *maybe;
+        auto pseudoId = (*pseudo)[sfAccount];
+        auto maybe2 = MPTokenIssuanceCreate::create(
+            view(),
+            j_,
+            {
+                .account = pseudoId,
+                .sequence = 1,
+                // !tfShareNonTransferable => lsfMPTCanEscrow, lsfMPTCanTrade,
+                // lsfMPTCanTransfer tfPrivate => lsfMPTRequireAuth
+                .flags = 0,
+                .metadata = tx[~sfMPTokenMetadata],
+            });
+        if (!maybe2)
+            return maybe2.error();
+        auto& mptId = *maybe2;
+        (*vault)[sfSequence] = sequence;
+        (*vault)[sfOwner] = owner;
+        (*vault)[sfAccount] = pseudoId;
         (*vault)[~sfData] = tx[~sfData];
         (*vault)[sfAsset] = tx[sfAsset];
         (*vault)[sfAssetTotal] = 0;
         (*vault)[sfAssetAvailable] = 0;
         (*vault)[~sfAssetMaximum] = tx[~sfAssetMaximum];
-        // TODO: create MPT for share
+        (*vault)[sfMPTokenIssuanceID] = mptId;
         // No `LossUnrealized`.
         view().insert(vault);
     }

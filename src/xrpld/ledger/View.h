@@ -386,7 +386,7 @@ describeOwnerDir(AccountID const& account);
 [[nodiscard]] TER
 dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object);
 
-[[nodiscard]] Expected<AccountID, TER>
+[[nodiscard]] Expected<std::shared_ptr<SLE>, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey);
 
 // VFALCO NOTE Both STAmount parameters should just
