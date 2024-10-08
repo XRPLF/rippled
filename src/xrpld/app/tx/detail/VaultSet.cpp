@@ -70,7 +70,8 @@ VaultSet::doApply()
 
         // Assert immutable flags not given.
         auto txFlags = tx[sfFlags];
-        if ((txFlags & tfVaultPrivate) || (txFlags & tfVaultShareNonTransferable))
+        if ((txFlags & tfVaultPrivate) ||
+            (txFlags & tfVaultShareNonTransferable))
             return tecIMMUTABLE;
         // Assert identical immutable fields if given.
         if (tx.isFieldPresent(sfAsset) && tx[sfAsset] != vault->at(sfAsset))
