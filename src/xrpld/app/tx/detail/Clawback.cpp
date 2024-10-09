@@ -252,7 +252,7 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
         ahIGNORE_AUTH,
         ctx.journal);
 
-    return rippleMPTCredit(
+    return rippleCreditMPT(
         ctx.view(),
         holder,
         issuer,

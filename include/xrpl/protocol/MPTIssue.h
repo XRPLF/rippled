@@ -76,6 +76,8 @@ operator!=(MPTIssue const& lhs, MPTIssue const& rhs)
     return !(lhs == rhs);
 }
 
+/** MPT is a non-native token.
+ */
 inline bool
 isXRP(MPTID const&)
 {

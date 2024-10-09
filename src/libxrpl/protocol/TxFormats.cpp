@@ -167,7 +167,7 @@ TxFormats::TxFormats()
             {sfPaths, soeDEFAULT},
             {sfInvoiceID, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
-            {sfDeliverMin, soeOPTIONAL},
+            {sfDeliverMin, soeOPTIONAL, soeMPTSupported},
         },
         commonFields);
 

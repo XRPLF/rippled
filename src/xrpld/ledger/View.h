@@ -451,7 +451,7 @@ rippleCredit(
     beast::Journal j);
 
 [[nodiscard]] TER
-rippleMPTCredit(
+rippleCreditMPT(
     ApplyView& view,
     AccountID const& uSenderID,
     AccountID const& uReceiverID,

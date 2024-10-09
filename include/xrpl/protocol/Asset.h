@@ -94,6 +94,9 @@ public:
 
     friend constexpr bool
     operator!=(Asset const& lhs, Asset const& rhs);
+
+    friend constexpr bool
+    operator==(Currency const& lhs, Asset const& rhs);
 };
 
 template <ValidIssueType TIss>
@@ -146,6 +149,12 @@ constexpr bool
 operator!=(Asset const& lhs, Asset const& rhs)
 {
     return !(lhs == rhs);
+}
+
+constexpr bool
+operator==(Currency const& lhs, Asset const& rhs)
+{
+    return rhs.holds<Issue>() && rhs.get<Issue>().currency == lhs;
 }
 
 inline bool

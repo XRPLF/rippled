@@ -1353,7 +1353,7 @@ rippleSendMPT(
     // Safe to get MPT since rippleSendMPT is only called by accountSendMPT
     auto const issuer = saAmount.getIssuer();
 
-    if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
+    if (uSenderID == issuer || uReceiverID == issuer)
     {
         // if sender is issuer, check that the new OutstandingAmount will not
         // exceed MaximumAmount
@@ -1376,7 +1376,7 @@ rippleSendMPT(
 
         // Direct send: redeeming IOUs and/or sending own IOUs.
         auto const ter =
-            rippleMPTCredit(view, uSenderID, uReceiverID, saAmount, j);
+            rippleCreditMPT(view, uSenderID, uReceiverID, saAmount, j);
         if (ter != tesSUCCESS)
             return ter;
         saActual = saAmount;
@@ -1385,7 +1385,8 @@ rippleSendMPT(
 
     // Sending 3rd party MPTs: transit.
     if (auto const sle =
-            view.read(keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID())))
+            view.read(keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID()));
+        sle != nullptr)
     {
         saActual = (waiveFee == WaiveTransferFee::Yes)
             ? saAmount
@@ -1399,14 +1400,14 @@ rippleSendMPT(
                         << " cost=" << saActual.getFullText();
 
         if (auto const terResult =
-                rippleMPTCredit(view, issuer, uReceiverID, saAmount, j);
+                rippleCreditMPT(view, issuer, uReceiverID, saAmount, j);
             terResult != tesSUCCESS)
             return terResult;
 
-        return rippleMPTCredit(view, uSenderID, issuer, saActual, j);
+        return rippleCreditMPT(view, uSenderID, issuer, saActual, j);
     }
 
-    return tecINTERNAL;
+    return tecOBJECT_NOT_FOUND;
 }
 
 TER
@@ -1875,7 +1876,7 @@ deleteAMMTrustLine(
 }
 
 TER
-rippleMPTCredit(
+rippleCreditMPT(
     ApplyView& view,
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
