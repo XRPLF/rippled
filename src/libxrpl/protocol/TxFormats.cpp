@@ -532,16 +532,16 @@ TxFormats::TxFormats()
         },
         commonFields);
 
-    add(jss::MPTokenAuthorize,
-        ttMPTOKEN_AUTHORIZE,
+    add(jss::MPTokenIssuanceSet,
+        ttMPTOKEN_ISSUANCE_SET,
         {
             {sfMPTokenIssuanceID, soeREQUIRED},
             {sfMPTokenHolder, soeOPTIONAL},
         },
         commonFields);
 
-    add(jss::MPTokenIssuanceSet,
-        ttMPTOKEN_ISSUANCE_SET,
+    add(jss::MPTokenAuthorize,
+        ttMPTOKEN_AUTHORIZE,
         {
             {sfMPTokenIssuanceID, soeREQUIRED},
             {sfMPTokenHolder, soeOPTIONAL},
