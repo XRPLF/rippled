@@ -249,10 +249,17 @@ getAccountObjects(
     if (!dir)
     {
         // it's possible the user had nftoken pages but no
-        // directory entries
+        // directory entries. If there's no nftoken page, we will
+        // give empty array for account_objects.
         if (mlimit >= limit)
             jvResult[jss::account_objects] = Json::arrayValue;
 
+        // non-zero dirIndex validity was checked in the caller function;
+        // by this point, it should be zero.
+        // This function returns true regardless of nftoken page presence;
+        // if absent, account_objects is already set as an empty array.
+        // Notice we will only return false in this function when entryIndex
+        // can not be found, indicating an invalid marker error.
         return true;
     }
 
