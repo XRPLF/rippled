@@ -33,6 +33,7 @@
 #include <xrpld/app/tx/detail/CreateCheck.h>
 #include <xrpld/app/tx/detail/CreateOffer.h>
 #include <xrpld/app/tx/detail/CreateTicket.h>
+#include <xrpld/app/tx/detail/Credentials.h>
 #include <xrpld/app/tx/detail/DID.h>
 #include <xrpld/app/tx/detail/DeleteAccount.h>
 #include <xrpld/app/tx/detail/DeleteOracle.h>
@@ -168,6 +169,12 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<SetOracle>();
         case ttORACLE_DELETE:
             return f.template operator()<DeleteOracle>();
+        case ttCREDENTIAL_CREATE:
+            return f.template operator()<CredentialCreate>();
+        case ttCREDENTIAL_DELETE:
+            return f.template operator()<CredentialDelete>();
+        case ttCREDENTIAL_ACCEPT:
+            return f.template operator()<CredentialAccept>();
         default:
             throw UnknownTxnType(txnType);
     }

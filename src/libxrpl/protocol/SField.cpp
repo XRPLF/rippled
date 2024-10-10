@@ -193,6 +193,8 @@ CONSTRUCT_TYPED_SFIELD(sfXChainClaimID,            "XChainClaimID",            U
 CONSTRUCT_TYPED_SFIELD(sfXChainAccountCreateCount, "XChainAccountCreateCount", UINT64, 21);
 CONSTRUCT_TYPED_SFIELD(sfXChainAccountClaimCount,  "XChainAccountClaimCount",  UINT64, 22);
 CONSTRUCT_TYPED_SFIELD(sfAssetPrice,               "AssetPrice",               UINT64, 23);
+CONSTRUCT_TYPED_SFIELD(sfIssuerNode,               "IssuerNode",               UINT64, 24);
+CONSTRUCT_TYPED_SFIELD(sfSubjectNode,              "SubjectNode",              UINT64, 25);
 
 // 128-bit
 CONSTRUCT_TYPED_SFIELD(sfEmailHash,             "EmailHash",            UINT128,    1);
@@ -307,6 +309,7 @@ CONSTRUCT_TYPED_SFIELD(sfDIDDocument,           "DIDDocument",          VL,     
 CONSTRUCT_TYPED_SFIELD(sfData,                  "Data",                 VL,        27);
 CONSTRUCT_TYPED_SFIELD(sfAssetClass,            "AssetClass",           VL,        28);
 CONSTRUCT_TYPED_SFIELD(sfProvider,              "Provider",             VL,        29);
+CONSTRUCT_TYPED_SFIELD(sfCredentialType,        "CredentialType",       VL,        30);
 
 // account
 CONSTRUCT_TYPED_SFIELD(sfAccount,               "Account",              ACCOUNT,    1);
@@ -328,12 +331,14 @@ CONSTRUCT_TYPED_SFIELD(sfAttestationSignerAccount, "AttestationSignerAccount", A
 CONSTRUCT_TYPED_SFIELD(sfAttestationRewardAccount, "AttestationRewardAccount", ACCOUNT, 21);
 CONSTRUCT_TYPED_SFIELD(sfLockingChainDoor,      "LockingChainDoor",     ACCOUNT,   22);
 CONSTRUCT_TYPED_SFIELD(sfIssuingChainDoor,      "IssuingChainDoor",     ACCOUNT,   23);
+CONSTRUCT_TYPED_SFIELD(sfSubject,               "Subject",              ACCOUNT,   24);
 
 // vector of 256-bit
 CONSTRUCT_TYPED_SFIELD(sfIndexes,               "Indexes",              VECTOR256,  1, SField::sMD_Never);
 CONSTRUCT_TYPED_SFIELD(sfHashes,                "Hashes",               VECTOR256,  2);
 CONSTRUCT_TYPED_SFIELD(sfAmendments,            "Amendments",           VECTOR256,  3);
 CONSTRUCT_TYPED_SFIELD(sfNFTokenOffers,         "NFTokenOffers",        VECTOR256,  4);
+CONSTRUCT_TYPED_SFIELD(sfCredentialIDs,         "CredentialIDs",        VECTOR256,  5);
 
 // path set
 CONSTRUCT_UNTYPED_SFIELD(sfPaths,               "Paths",                PATHSET,    1);
@@ -391,6 +396,8 @@ CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement,
                                                  "XChainCreateAccountAttestationCollectionElement",
                                                                         OBJECT,    31);
 CONSTRUCT_UNTYPED_SFIELD(sfPriceData,            "PriceData",           OBJECT,    32);
+CONSTRUCT_UNTYPED_SFIELD(sfCredential,           "Credential",          OBJECT,    33);
+
 
 // array of objects
 //                                                                            ARRAY/1 is reserved for end of array
@@ -421,6 +428,8 @@ CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountAttestations,
 // 23 is unused and available for use
 CONSTRUCT_UNTYPED_SFIELD(sfPriceDataSeries,     "PriceDataSeries",      ARRAY,     24);
 CONSTRUCT_UNTYPED_SFIELD(sfAuthAccounts,        "AuthAccounts",         ARRAY,     25);
+CONSTRUCT_UNTYPED_SFIELD(sfAuthorizeCredentials,   "AuthorizeCredentials",   ARRAY,    26);
+CONSTRUCT_UNTYPED_SFIELD(sfUnauthorizeCredentials, "UnauthorizeCredentials", ARRAY,    27);
 
 // clang-format on
 

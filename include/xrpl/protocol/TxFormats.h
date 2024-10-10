@@ -200,6 +200,15 @@ enum TxType : std::uint16_t
     ttLEDGER_STATE_FIX = 53,
 
 
+    /** This transaction type creates an Credential instance */
+    ttCREDENTIAL_CREATE = 54,
+
+    /** This transaction type accepts an Credential instance */
+    ttCREDENTIAL_ACCEPT = 55,
+
+    /** This transaction type deletes an Credential instance */
+    ttCREDENTIAL_DELETE = 56,
+
     /** This system-generated transaction type is used to update the status of the various amendments.
 
         For details, see: https://xrpl.org/amendments.html

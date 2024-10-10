@@ -37,6 +37,7 @@ pay(AccountID const& account, AccountID const& to, AnyAmount amount)
     jv[jss::Flags] = tfUniversal;
     return jv;
 }
+
 Json::Value
 pay(Account const& account, Account const& to, AnyAmount amount)
 {

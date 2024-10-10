@@ -1509,6 +1509,100 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
+    testCredentials()
+    {
+        testcase("Test with credentials");
+
+        using namespace jtx;
+        using namespace std::chrono;
+
+        {
+            // Credentials amendment not enabled
+            Env env(*this, supported_amendments() - featureCredentials);
+            env.fund(XRP(5000), "alice", "bob");
+            env.close();
+
+            auto const seq2 = env.seq("alice");
+            env(escrow("alice", "bob", XRP(1000)),
+                finish_time(env.now() + 1s),
+                fee(1500));
+            env.close();
+            std::string const credIdx =
+                "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
+                "E4";
+            env(finish("bob", "alice", seq2),
+                credentials::IDs({credIdx}),
+                fee(1500),
+                ter(temDISABLED));
+        }
+
+        {
+            Env env(*this);
+
+            const char credType[] = "abcde";
+
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            Account const dillon{"dillon "};
+            Account const zelda{"zelda"};
+
+            env.fund(XRP(5000), alice, bob, carol, dillon, zelda);
+            env.close();
+
+            env(credentials::createIssuer(carol, zelda, credType));
+            env.close();
+            auto const jCred =
+                credentials::ledgerEntryCredential(env, carol, zelda, credType);
+            std::string const credIdx =
+                jCred[jss::result][jss::index].asString();
+
+            auto const seq = env.seq(alice);
+            env(escrow(alice, bob, XRP(1000)),
+                finish_time(env.now() + 50s),
+                fee(1500));
+            env.close();
+
+            // Bob require preauthorization
+            env(fset(bob, asfDepositAuth), fee(drops(10)));
+            env.close();
+
+            // Fail, credentials doesn’t belong to
+            env(finish(dillon, alice, seq),
+                credentials::IDs({credIdx}),
+                fee(1500),
+                ter(tecBAD_CREDENTIALS));
+
+            // Fail, credentials not accepted
+            env(finish(carol, alice, seq),
+                credentials::IDs({credIdx}),
+                fee(1500),
+                ter(tecBAD_CREDENTIALS));
+
+            env.close();
+
+            env(credentials::accept(carol, zelda, credType));
+            env.close();
+
+            // Fail, credentials no depositPreauth
+            env(finish(carol, alice, seq),
+                credentials::IDs({credIdx}),
+                fee(1500),
+                ter(tecNO_PERMISSION));
+
+            env(deposit::authCredentials(bob, {{zelda, credType}}));
+            env.close();
+
+            // Success
+            env.close();
+            env(finish(carol, alice, seq),
+                credentials::IDs({credIdx}),
+                fee(1500));
+            env.close();
+        }
+    }
+
+    void
     run() override
     {
         testEnablement();
@@ -1522,6 +1616,7 @@ struct Escrow_test : public beast::unit_test::suite
         testMetaAndOwnership();
         testConsequences();
         testEscrowWithTickets();
+        testCredentials();
     }
 };
 

@@ -31,13 +31,22 @@ public:
     depositAuthArgs(
         jtx::Account const& source,
         jtx::Account const& dest,
-        std::string const& ledger = "")
+        std::string const& ledger = "",
+        std::vector<std::string> const& credentials = {})
     {
         Json::Value args{Json::objectValue};
         args[jss::source_account] = source.human();
         args[jss::destination_account] = dest.human();
         if (!ledger.empty())
             args[jss::ledger_index] = ledger;
+
+        if (!credentials.empty())
+        {
+            auto& arr(args[jss::credentials] = Json::arrayValue);
+            for (auto const& s : credentials)
+                arr.append(s);
+        }
+
         return args;
     }
 
@@ -277,10 +286,203 @@ public:
     }
 
     void
+    testCredentials()
+    {
+        using namespace jtx;
+
+        const char credType[] = "abcde";
+
+        Account const alice{"alice"};
+        Account const becky{"becky"};
+        Account const carol{"carol"};
+
+        Env env(*this);
+        env.fund(XRP(1000), alice, becky, carol);
+        env.close();
+
+        // carol recognize becky
+        env(credentials::createIssuer(alice, carol, credType));
+        env.close();
+        // retrieve the index of the credentials
+        auto const jCred =
+            credentials::ledgerEntryCredential(env, alice, carol, credType);
+        std::string const credIdx = jCred[jss::result][jss::index].asString();
+
+        // becky sets the DepositAuth flag in the current ledger.
+        env(fset(becky, asfDepositAuth));
+        env.close();
+
+        // becky authorize any account recognized by carol to make a payment
+        env(deposit::authCredentials(becky, {{carol, credType}}));
+        env.close();
+
+        {
+            testcase(
+                "deposit_authorized with credentials failed: empty array.");
+
+            auto args = depositAuthArgs(alice, becky, "validated");
+            args[jss::credentials] = Json::arrayValue;
+
+            auto jv =
+                env.rpc("json", "deposit_authorized", args.toStyledString());
+            auto const& result{jv[jss::result]};
+            BEAST_EXPECT(result.isMember(jss::error));
+        }
+
+        {
+            testcase(
+                "deposit_authorized with credentials failed: not a string "
+                "credentials");
+
+            auto args = depositAuthArgs(alice, becky, "validated");
+            args[jss::credentials] = Json::arrayValue;
+            args[jss::credentials].append(1);
+            args[jss::credentials].append(3);
+
+            auto jv =
+                env.rpc("json", "deposit_authorized", args.toStyledString());
+            auto const& result{jv[jss::result]};
+            BEAST_EXPECT(result.isMember(jss::error));
+        }
+
+        {
+            testcase(
+                "deposit_authorized with credentials failed: not a hex string "
+                "credentials");
+
+            auto args = depositAuthArgs(alice, becky, "validated");
+            args[jss::credentials] = Json::arrayValue;
+            args[jss::credentials].append("hello world");
+
+            auto jv =
+                env.rpc("json", "deposit_authorized", args.toStyledString());
+            auto const& result{jv[jss::result]};
+            BEAST_EXPECT(result.isMember(jss::error));
+        }
+
+        {
+            testcase(
+                "deposit_authorized with credentials failed: not a credential "
+                "index");
+
+            auto args = depositAuthArgs(
+                alice,
+                becky,
+                "validated",
+                {"0127AB8B4B29CCDBB61AA51C0799A8A6BB80B86A9899807C11ED576AF8516"
+                 "473"});
+
+            auto jv =
+                env.rpc("json", "deposit_authorized", args.toStyledString());
+
+            auto const& result{jv[jss::result]};
+            BEAST_EXPECT(result[jss::status] == jss::error);
+            BEAST_EXPECT(result[jss::error_code] == rpcBAD_CREDENTIALS);
+        }
+
+        {
+            testcase(
+                "deposit_authorized with credentials not authorized: "
+                "credential not accepted");
+            auto jv = env.rpc(
+                "json",
+                "deposit_authorized",
+                depositAuthArgs(alice, becky, "validated", {credIdx})
+                    .toStyledString());
+            auto const& result{jv[jss::result]};
+            BEAST_EXPECT(result[jss::status] == jss::error);
+            BEAST_EXPECT(result[jss::error_code] == rpcBAD_CREDENTIALS);
+        }
+
+        // alice accept credentials
+        env(credentials::accept(alice, carol, credType));
+        env.close();
+
+        {
+            testcase("deposit_authorized with credentials");
+            auto jv = env.rpc(
+                "json",
+                "deposit_authorized",
+                depositAuthArgs(alice, becky, "validated", {credIdx})
+                    .toStyledString());
+            auto const& result{jv[jss::result]};
+            BEAST_EXPECT(result[jss::status] == jss::success);
+            BEAST_EXPECT(result[jss::deposit_authorized] == true);
+        }
+
+        {
+            testcase("deposit_authorized  account without preauth");
+            auto jv = env.rpc(
+                "json",
+                "deposit_authorized",
+                depositAuthArgs(becky, alice, "validated", {credIdx})
+                    .toStyledString());
+            auto const& result{jv[jss::result]};
+            BEAST_EXPECT(result[jss::status] == jss::success);
+            BEAST_EXPECT(result[jss::deposit_authorized] == true);
+        }
+
+        {
+            testcase("deposit_authorized with expired credentials");
+
+            // check expired credentials
+            const char credType2[] = "fghijk";
+            std::uint32_t const x = env.now().time_since_epoch().count() + 40;
+
+            // create credentials with expire time 1s
+            auto jv = credentials::createIssuer(alice, carol, credType2);
+            jv[sfExpiration.jsonName] = x;
+            env(jv);
+            env.close();
+            env(credentials::accept(alice, carol, credType2));
+            env.close();
+            auto const jCred2 = credentials::ledgerEntryCredential(
+                env, alice, carol, credType2);
+            std::string const credIdx2 =
+                jCred2[jss::result][jss::index].asString();
+
+            // becky sets the DepositAuth flag in the current ledger.
+            env(fset(becky, asfDepositAuth));
+            env.close();
+
+            // becky authorize any account recognized by carol to make a payment
+            env(deposit::authCredentials(becky, {{carol, credType2}}));
+            env.close();
+
+            {
+                // this should be fine
+                jv = env.rpc(
+                    "json",
+                    "deposit_authorized",
+                    depositAuthArgs(alice, becky, "validated", {credIdx2})
+                        .toStyledString());
+                auto const& result{jv[jss::result]};
+                BEAST_EXPECT(result[jss::status] == jss::success);
+                BEAST_EXPECT(result[jss::deposit_authorized] == true);
+            }
+
+            env.close();  // increase timer by 10s
+            {
+                // now credentials expired
+                jv = env.rpc(
+                    "json",
+                    "deposit_authorized",
+                    depositAuthArgs(alice, becky, "validated", {credIdx2})
+                        .toStyledString());
+
+                auto const& result{jv[jss::result]};
+                BEAST_EXPECT(result[jss::status] == jss::error);
+                BEAST_EXPECT(result[jss::error_code] == rpcBAD_CREDENTIALS);
+            }
+        }
+    }
+
+    void
     run() override
     {
         testValid();
         testErrors();
+        testCredentials();
     }
 };
 

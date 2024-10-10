@@ -339,7 +339,8 @@ enum TECcodes : TERUnderlyingType {
     tecINVALID_UPDATE_TIME = 188,
     tecTOKEN_PAIR_NOT_FOUND = 189,
     tecARRAY_EMPTY = 190,
-    tecARRAY_TOO_LARGE = 191
+    tecARRAY_TOO_LARGE = 191,
+    tecBAD_CREDENTIALS = 192,
 };
 
 //------------------------------------------------------------------------------

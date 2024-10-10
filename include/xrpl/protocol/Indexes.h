@@ -30,6 +30,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+
 #include <cstdint>
 
 namespace ripple {
@@ -189,6 +190,9 @@ check(uint256 const& key) noexcept
 Keylet
 depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept;
 
+Keylet
+depositPreauth(AccountID const& owner, STArray const& authCreds) noexcept;
+
 inline Keylet
 depositPreauth(uint256 const& key) noexcept
 {
@@ -286,6 +290,18 @@ did(AccountID const& account) noexcept;
 
 Keylet
 oracle(AccountID const& account, std::uint32_t const& documentID) noexcept;
+
+Keylet
+credential(
+    AccountID const& subject,
+    AccountID const& issuer,
+    Slice const& credType) noexcept;
+
+inline Keylet
+credential(uint256 const& key) noexcept
+{
+    return {ltCREDENTIAL, key};
+}
 
 }  // namespace keylet
 

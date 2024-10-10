@@ -467,6 +467,8 @@ extern SF_UINT64 const sfXChainClaimID;
 extern SF_UINT64 const sfXChainAccountCreateCount;
 extern SF_UINT64 const sfXChainAccountClaimCount;
 extern SF_UINT64 const sfAssetPrice;
+extern SF_UINT64 const sfIssuerNode;
+extern SF_UINT64 const sfSubjectNode;
 
 // 128-bit
 extern SF_UINT128 const sfEmailHash;
@@ -576,6 +578,7 @@ extern SF_VL const sfHookStateData;
 extern SF_VL const sfHookReturnString;
 extern SF_VL const sfHookParameterName;
 extern SF_VL const sfHookParameterValue;
+extern SF_VL const sfCredentialType;
 
 // account
 extern SF_ACCOUNT const sfAccount;
@@ -596,6 +599,7 @@ extern SF_ACCOUNT const sfAttestationSignerAccount;
 extern SF_ACCOUNT const sfAttestationRewardAccount;
 extern SF_ACCOUNT const sfLockingChainDoor;
 extern SF_ACCOUNT const sfIssuingChainDoor;
+extern SF_ACCOUNT const sfSubject;
 
 // path set
 extern SField const sfPaths;
@@ -618,6 +622,7 @@ extern SF_VECTOR256 const sfIndexes;
 extern SF_VECTOR256 const sfHashes;
 extern SF_VECTOR256 const sfAmendments;
 extern SF_VECTOR256 const sfNFTokenOffers;
+extern SF_VECTOR256 const sfCredentialIDs;
 
 // inner object
 // OBJECT/1 is reserved for end of object
@@ -651,6 +656,7 @@ extern SField const sfXChainClaimProofSig;
 extern SField const sfXChainCreateAccountProofSig;
 extern SField const sfXChainClaimAttestationCollectionElement;
 extern SField const sfXChainCreateAccountAttestationCollectionElement;
+extern SField const sfCredential;
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array
@@ -676,6 +682,8 @@ extern SField const sfHookParameters;
 extern SField const sfHookGrants;
 extern SField const sfXChainClaimAttestations;
 extern SField const sfXChainCreateAccountAttestations;
+extern SField const sfAuthorizeCredentials;
+extern SField const sfUnauthorizeCredentials;
 
 //------------------------------------------------------------------------------
 
