@@ -1230,11 +1230,15 @@ public:
 
         Account const alice{"alice"};
         Account const bob{"bob"};
-        env.fund(XRP(10000), alice, bob);
+        Account const carol{"carol"};
+        env.fund(XRP(10000), alice, bob, carol);
 
         unsigned const accountObjectSize = 30;
         for (unsigned i = 0; i < accountObjectSize; i++)
             env(check::create(alice, bob, XRP(10)));
+
+        for (unsigned i = 0; i < 10; i++)
+            env(token::mint(carol, 0));
 
         env.close();
 
@@ -1253,6 +1257,19 @@ public:
             BEAST_EXPECT(accountObjects.size() == limit);
         }
 
+        // test invalid marker "\0"
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::marker] = "\0";
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field \'marker\'.");
+        }
+
         // test account_objects with valid marker and update marker
         {
             Json::Value params;
@@ -1265,20 +1282,6 @@ public:
             marker = resp[jss::result][jss::marker];
             BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
             BEAST_EXPECT(accountObjects.size() == limit);
-        }
-
-        // continue getting account_objects with valid marker
-        {
-            Json::Value params;
-            params[jss::account] = bob.human();
-            params[jss::limit] = limit;
-            params[jss::marker] = marker;
-            params[jss::ledger_index] = "validated";
-            auto resp = env.rpc("json", "account_objects", to_string(params));
-            auto& accountObjects = resp[jss::result][jss::account_objects];
-            BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
-            BEAST_EXPECT(
-                accountObjects.size() == accountObjectSize - limit * 2);
         }
 
         // test account_objects with an invalid marker containing invalid
@@ -1315,6 +1318,23 @@ public:
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Invalid field \'marker\'.");
+        }
+
+        // test account_objects when the account only have nft pages, but
+        // provided invalid entry index.
+        {
+            std::string s = marker.asString();
+            auto const pos = s.find(",");
+            s = "0" + s.substr(pos);
+
+            Json::Value params;
+            params[jss::account] = carol.human();
+            params[jss::limit] = 10;
+            params[jss::marker] = s;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            auto& accountObjects = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(accountObjects.size() == 0);
         }
     }
 

@@ -283,10 +283,6 @@ doAccountObjects(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::marker);
     }
 
-    // check if dirIndex is valid
-    if (!dirIndex.isZero() && !ledger->read({ltDIR_NODE, dirIndex}))
-        return RPC::invalid_field_error(jss::marker);
-
     if (!RPC::getAccountObjects(
             *ledger,
             accountID,
