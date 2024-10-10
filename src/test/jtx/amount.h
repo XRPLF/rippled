@@ -305,12 +305,16 @@ public:
         return {currency, account.id()};
     }
 
-    /** Implicit conversion to Issue.
+    /** Implicit conversion to Issue or Asset.
 
         This allows passing an IOU
-        value where an Issue is expected.
+        value where an Issue or Asset is expected.
     */
     operator Issue() const
+    {
+        return issue();
+    }
+    operator Asset() const
     {
         return issue();
     }
@@ -348,6 +352,77 @@ public:
 
 std::ostream&
 operator<<(std::ostream& os, IOU const& iou);
+
+//------------------------------------------------------------------------------
+
+/** Converts to MPT Issue or STAmount.
+
+    Examples:
+        MPT         Converts to the underlying Issue
+        MPT(10)     Returns STAmount of 10 of
+                        the underlying MPT
+*/
+class MPT
+{
+public:
+    std::string name;
+    ripple::MPTID mptID;
+
+    MPT(std::string const& n, ripple::MPTID const& mptID_)
+        : name(n), mptID(mptID_)
+    {
+    }
+
+    ripple::MPTID const&
+    mpt() const
+    {
+        return mptID;
+    }
+
+    /** Implicit conversion to MPTIssue.
+
+        This allows passing an MPT
+        value where an MPTIssue is expected.
+    */
+    operator ripple::MPTIssue() const
+    {
+        return mpt();
+    }
+
+    template <class T>
+    requires(sizeof(T) >= sizeof(int) && std::is_arithmetic_v<T>) PrettyAmount
+    operator()(T v) const
+    {
+        // VFALCO NOTE Should throw if the
+        //             representation of v is not exact.
+        return {amountFromString(mpt(), std::to_string(v)), name};
+    }
+
+    PrettyAmount operator()(epsilon_t) const;
+    PrettyAmount operator()(detail::epsilon_multiple) const;
+
+    // VFALCO TODO
+    // STAmount operator()(char const* s) const;
+
+    /** Returns None-of-Issue */
+#if 0
+    None operator()(none_t) const
+    {
+        return {Issue{}};
+    }
+#endif
+
+    friend BookSpec
+    operator~(MPT const& mpt)
+    {
+        assert(false);
+        Throw<std::logic_error>("MPT is not supported");
+        return BookSpec{beast::zero, noCurrency()};
+    }
+};
+
+std::ostream&
+operator<<(std::ostream& os, MPT const& mpt);
 
 //------------------------------------------------------------------------------
 

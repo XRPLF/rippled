@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -73,6 +74,9 @@ enum class LedgerNameSpace : std::uint16_t {
     XCHAIN_CREATE_ACCOUNT_CLAIM_ID = 'K',
     DID = 'I',
     ORACLE = 'R',
+    MPTOKEN_ISSUANCE = '~',
+    MPTOKEN = 't',
+    VAULT = 'V',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -133,6 +137,16 @@ getTicketIndex(AccountID const& account, SeqProxy ticketSeq)
 {
     assert(ticketSeq.isTicket());
     return getTicketIndex(account, ticketSeq.value());
+}
+
+MPTID
+getMptID(AccountID const& account, std::uint32_t sequence)
+{
+    MPTID u;
+    sequence = boost::endian::native_to_big(sequence);
+    memcpy(u.data(), &sequence, sizeof(sequence));
+    memcpy(u.data() + sizeof(sequence), account.data(), sizeof(account));
+    return u;
 }
 
 //------------------------------------------------------------------------------
@@ -381,9 +395,12 @@ nft_sells(uint256 const& id) noexcept
 }
 
 Keylet
-amm(Issue const& issue1, Issue const& issue2) noexcept
+amm(Asset const& issue1, Asset const& issue2) noexcept
 {
-    auto const& [minI, maxI] = std::minmax(issue1, issue2);
+    if (!issue1.holds<Issue>() || !issue2.holds<Issue>())
+        Throw<std::runtime_error>("Asset doesn't hold issue");
+    auto const& [minI, maxI] =
+        std::minmax(issue1.get<Issue>(), issue2.get<Issue>());
     return amm(indexHash(
         LedgerNameSpace::AMM,
         minI.account,
@@ -449,6 +466,38 @@ Keylet
 oracle(AccountID const& account, std::uint32_t const& documentID) noexcept
 {
     return {ltORACLE, indexHash(LedgerNameSpace::ORACLE, account, documentID)};
+}
+
+Keylet
+mptIssuance(AccountID const& issuer, std::uint32_t seq) noexcept
+{
+    return mptIssuance(getMptID(issuer, seq));
+}
+
+Keylet
+mptIssuance(MPTID const& id) noexcept
+{
+    return {
+        ltMPTOKEN_ISSUANCE, indexHash(LedgerNameSpace::MPTOKEN_ISSUANCE, id)};
+}
+
+Keylet
+mptoken(MPTID const& issuanceID, AccountID const& holder) noexcept
+{
+    return mptoken(mptIssuance(issuanceID).key, holder);
+}
+
+Keylet
+mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept
+{
+    return {
+        ltMPTOKEN, indexHash(LedgerNameSpace::MPTOKEN, issuanceKey, holder)};
+}
+
+Keylet
+vault(AccountID const& creator, std::uint32_t seq) noexcept
+{
+    return {ltVAULT, indexHash(LedgerNameSpace::VAULT, creator, seq)};
 }
 
 }  // namespace keylet

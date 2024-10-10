@@ -39,6 +39,10 @@
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/app/tx/detail/Escrow.h>
 #include <xrpld/app/tx/detail/LedgerStateFix.h>
+#include <xrpld/app/tx/detail/MPTokenAuthorize.h>
+#include <xrpld/app/tx/detail/MPTokenIssuanceCreate.h>
+#include <xrpld/app/tx/detail/MPTokenIssuanceDestroy.h>
+#include <xrpld/app/tx/detail/MPTokenIssuanceSet.h>
 #include <xrpld/app/tx/detail/NFTokenAcceptOffer.h>
 #include <xrpld/app/tx/detail/NFTokenBurn.h>
 #include <xrpld/app/tx/detail/NFTokenCancelOffer.h>
@@ -168,6 +172,14 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<SetOracle>();
         case ttORACLE_DELETE:
             return f.template operator()<DeleteOracle>();
+        case ttMPTOKEN_ISSUANCE_CREATE:
+            return f.template operator()<MPTokenIssuanceCreate>();
+        case ttMPTOKEN_ISSUANCE_DESTROY:
+            return f.template operator()<MPTokenIssuanceDestroy>();
+        case ttMPTOKEN_AUTHORIZE:
+            return f.template operator()<MPTokenAuthorize>();
+        case ttMPTOKEN_ISSUANCE_SET:
+            return f.template operator()<MPTokenIssuanceSet>();
         default:
             throw UnknownTxnType(txnType);
     }

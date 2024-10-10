@@ -27,6 +27,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/GRPCHandlers.h>
+#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpl/basics/ToString.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -265,6 +266,7 @@ populateJsonResponse(
                 insertDeliveredAmount(
                     response[jss::meta], context, result.txn, *meta);
                 insertNFTSyntheticInJson(response, sttx, *meta);
+                RPC::insertMPTokenIssuanceID(response[jss::meta], sttx, *meta);
             }
         }
         response[jss::validated] = result.validated;

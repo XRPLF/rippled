@@ -176,9 +176,10 @@ Pathfinder::Pathfinder(
     , mSrcCurrency(uSrcCurrency)
     , mSrcIssuer(uSrcIssuer)
     , mSrcAmount(srcAmount.value_or(STAmount(
-          {uSrcCurrency,
-           uSrcIssuer.value_or(
-               isXRP(uSrcCurrency) ? xrpAccount() : uSrcAccount)},
+          Issue{
+              uSrcCurrency,
+              uSrcIssuer.value_or(
+                  isXRP(uSrcCurrency) ? xrpAccount() : uSrcAccount)},
           1u,
           0,
           true)))

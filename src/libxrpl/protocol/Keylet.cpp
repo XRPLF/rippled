@@ -33,7 +33,7 @@ Keylet::check(STLedgerEntry const& sle) const
     if (type == ltCHILD)
         return sle.getType() != ltDIR_NODE;
 
-    return sle.getType() == type;
+    return sle.getType() == type && sle.key() == key;
 }
 
 }  // namespace ripple

@@ -58,6 +58,9 @@ using Currency = base_uint<160, detail::CurrencyTag>;
 /** NodeID is a 160-bit hash representing one node. */
 using NodeID = base_uint<160, detail::NodeIDTag>;
 
+/** MPT is a 192-bit hash representing MPTID. */
+using MPTID = base_uint<192>;
+
 /** XRP currency. */
 Currency const&
 xrpCurrency();
