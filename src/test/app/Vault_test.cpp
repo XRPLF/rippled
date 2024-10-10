@@ -18,24 +18,24 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <test/jtx/subcases.h>
 #include <xrpl/protocol/Feature.h>
 
 namespace ripple {
 
-struct SetArg {
-
+struct SetArg
+{
 };
 
 class Vault_test : public beast::unit_test::suite
 {
-    void
-    testCreateUpdateDelete()
+    TEST_CASE(CreateUpdateDelete)
     {
         using namespace test::jtx;
         testcase("Create / Update / Delete");
         Env env{*this};
 
-        // IOU vault
+        SUBCASE("IOU vault")
         {
             // issuer = Account()
             // submit(fund(issuer))
@@ -43,14 +43,13 @@ class Vault_test : public beast::unit_test::suite
             // owner = Account()
             // tx = vault::create(owner=owner, asset=asset)
             // submit(fset(issuer, asfGlobalFreeze))
-            // TODO: VaultSet (create) fail: Asset is IOU and issuer.GlobalFreeze
-            // submit(tx) => fail
-            // tx[sfData] = blob(300)
+            // TODO: VaultSet (create) fail: Asset is IOU and
+            // issuer.GlobalFreeze submit(tx) => fail tx[sfData] = blob(300)
             // submit(tx) => fail
             // TODO: VaultSet (create) fail: Data too large (>256 bytes)
         }
 
-        // MPT vault
+        SUBCASE("MPT vault")
         {
             // represent an issuer account
             // fund the issuer account
@@ -78,13 +77,14 @@ class Vault_test : public beast::unit_test::suite
         // TODO: VaultSet (create) fail: Asset is MPT but !CanTransfer
         // TODO: VaultSet (create) fail: Asset is MPT but Locked
 
+        BEAST_EXPECT(true);
     }
 
 public:
     void
     run() override
     {
-        testCreateUpdateDelete();
+        EXECUTE(CreateUpdateDelete);
     }
 };
 

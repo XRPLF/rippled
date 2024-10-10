@@ -17,33 +17,50 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_VAULT_H_INCLUDED
-#define RIPPLE_TEST_JTX_VAULT_H_INCLUDED
+#include <test/jtx/subcases.h>
 
-#include <test/jtx/Env.h>
-#include <xrpl/json/json_value.h>
+#include <stdexcept>
 
-#include <optional>
+namespace subcases {
 
-namespace ripple {
-namespace test {
-namespace jtx {
-namespace vault {
-
-struct CreateArgs
+Subcase::Subcase(Context& context, char const* name) : _(context), name_(name)
 {
-    Account owner;
-    // Asset asset;
-    std::optional<std::uint32_t> flags{};
-};
+}
 
-/** Return a VaultSet transaction to create a Vault. */
-Json::Value
-create(CreateArgs const& args);
+Subcase::operator bool() const
+{
+    ++_.level;
+    if (_.level >= MAXIMUM_SUBCASE_DEPTH)
+        throw std::logic_error("maximum subcase depth exceeded");
+    if (_.entered < _.level && _.skip[_.level] == _.skipped)
+    {
+        _.entered = _.level;
+        _.skipped = 0;
+        return true;
+    }
+    ++_.skipped;
+    return false;
+}
 
-}  // namespace vault
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+Subcase::~Subcase()
+{
+    if (_.skipped == 0)
+    {
+        ++_.skip[_.level];
+        _.skip[_.level + 1] = 0;
+    }
+    --_.level;
+}
 
-#endif
+void
+execute(Supercase supercase)
+{
+    Context context;
+    do
+    {
+        context.lap();
+        supercase(context);
+    } while (context.skipped != 0);
+}
+
+}  // namespace subcases

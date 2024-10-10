@@ -41,7 +41,7 @@ create(CreateArgs const& args)
     return jv;
 }
 
-}
+}  // namespace vault
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

@@ -83,7 +83,8 @@ VaultSet::doApply()
         // Assert identical immutable fields if given.
         if (tx.isFieldPresent(sfAsset) && tx[sfAsset] != vault->at(sfAsset))
             return tecIMMUTABLE;
-        if (tx.isFieldPresent(sfMPTokenMetadata) && tx[sfMPTokenMetadata] != vault->at(sfMPTokenMetadata))
+        if (tx.isFieldPresent(sfMPTokenMetadata) &&
+            tx[sfMPTokenMetadata] != vault->at(sfMPTokenMetadata))
             return tecIMMUTABLE;
 
         // Update mutable flags and fields if given.
