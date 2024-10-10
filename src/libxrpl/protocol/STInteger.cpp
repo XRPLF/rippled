@@ -205,8 +205,7 @@ Json::Value STUInt64::getJson(JsonOptions) const
         return str;
     };
 
-    if (auto const& fName = getFName(); fName == sfMaximumAmount ||
-        fName == sfOutstandingAmount || fName == sfMPTAmount)
+    if (auto const& fName = getFName(); fName.shouldMeta(SField::sMD_BaseTen))
     {
         return convertToString(value_, 10);  // Convert to base 10
     }

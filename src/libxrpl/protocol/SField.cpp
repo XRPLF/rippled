@@ -194,9 +194,9 @@ CONSTRUCT_TYPED_SFIELD(sfXChainClaimID,            "XChainClaimID",            U
 CONSTRUCT_TYPED_SFIELD(sfXChainAccountCreateCount, "XChainAccountCreateCount", UINT64, 21);
 CONSTRUCT_TYPED_SFIELD(sfXChainAccountClaimCount,  "XChainAccountClaimCount",  UINT64, 22);
 CONSTRUCT_TYPED_SFIELD(sfAssetPrice,               "AssetPrice",               UINT64, 23);
-CONSTRUCT_TYPED_SFIELD(sfMaximumAmount,             "MaximumAmount",           UINT64, 24);
-CONSTRUCT_TYPED_SFIELD(sfOutstandingAmount,         "OutstandingAmount",       UINT64, 25);
-CONSTRUCT_TYPED_SFIELD(sfMPTAmount,                 "MPTAmount",               UINT64, 26);
+CONSTRUCT_TYPED_SFIELD(sfMaximumAmount,             "MaximumAmount",           UINT64, 24, SField::sMD_BaseTen);
+CONSTRUCT_TYPED_SFIELD(sfOutstandingAmount,         "OutstandingAmount",       UINT64, 25, SField::sMD_BaseTen);
+CONSTRUCT_TYPED_SFIELD(sfMPTAmount,                 "MPTAmount",               UINT64, 26, SField::sMD_BaseTen);
 
 // 128-bit
 CONSTRUCT_TYPED_SFIELD(sfEmailHash,             "EmailHash",            UINT128,    1);
