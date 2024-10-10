@@ -1221,6 +1221,124 @@ public:
     }
 
     void
+    testAccountObjectMarker()
+    {
+        testcase("AccountObjectMarker");
+
+        using namespace jtx;
+        Env env(*this);
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        env.fund(XRP(10000), alice, bob, carol);
+
+        unsigned const accountObjectSize = 30;
+        for (unsigned i = 0; i < accountObjectSize; i++)
+            env(check::create(alice, bob, XRP(10)));
+
+        for (unsigned i = 0; i < 10; i++)
+            env(token::mint(carol, 0));
+
+        env.close();
+
+        unsigned const limit = 11;
+        Json::Value marker;
+        // test account_objects with a limit and update marker
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            auto& accountObjects = resp[jss::result][jss::account_objects];
+            marker = resp[jss::result][jss::marker];
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
+            BEAST_EXPECT(accountObjects.size() == limit);
+        }
+
+        // test invalid marker "\0"
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::marker] = "\0";
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field \'marker\'.");
+        }
+
+        // test account_objects with valid marker and update marker
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::marker] = marker;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            auto& accountObjects = resp[jss::result][jss::account_objects];
+            marker = resp[jss::result][jss::marker];
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
+            BEAST_EXPECT(accountObjects.size() == limit);
+        }
+
+        // test account_objects with an invalid marker containing invalid
+        // dirIndex
+        {
+            std::string s = marker.asString();
+            s.replace(0, 7, "FFFFFFF");
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::marker] = s;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field \'marker\'.");
+        }
+
+        // test account_objects with an invalid marker containing invalid
+        // entryIndex
+        {
+            // construct an invalid entry
+            std::stringstream ss(marker.asString());
+            std::string s;
+            std::getline(ss, s, ',');
+            s = s + ",0";
+
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::marker] = s;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field \'marker\'.");
+        }
+
+        // test account_objects when the account only have nft pages, but
+        // provided invalid entry index.
+        {
+            std::string s = marker.asString();
+            auto const pos = s.find(",");
+            s = "0" + s.substr(pos);
+
+            Json::Value params;
+            params[jss::account] = carol.human();
+            params[jss::limit] = 10;
+            params[jss::marker] = s;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            auto& accountObjects = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(accountObjects.size() == 0);
+        }
+    }
+
+    void
     run() override
     {
         testErrors();
@@ -1229,6 +1347,7 @@ public:
         testObjectTypes();
         testNFTsMarker();
         testAccountNFTs();
+        testAccountObjectMarker();
     }
 };
 

@@ -291,9 +291,7 @@ doAccountObjects(RPC::JsonContext& context)
             entryIndex,
             limit,
             result))
-    {
-        result[jss::account_objects] = Json::arrayValue;
-    }
+        return RPC::invalid_field_error(jss::marker);
 
     result[jss::account] = toBase58(accountID);
     context.loadType = Resource::feeMediumBurdenRPC;
