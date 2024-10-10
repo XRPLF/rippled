@@ -97,7 +97,7 @@ MPTTester::create(const MPTCreate& arg)
     if (arg.metadata)
         jv[sfMPTokenMetadata.jsonName] = strHex(*arg.metadata);
     if (arg.maxAmt)
-        jv[sfMaximumAmount.jsonName] = *arg.maxAmt;
+        jv[sfMaximumAmount.jsonName] = std::to_string(*arg.maxAmt);
     if (submit(arg, jv) != tesSUCCESS)
     {
         // Verify issuance doesn't exist

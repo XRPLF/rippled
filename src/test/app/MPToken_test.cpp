@@ -53,7 +53,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // tries to set a txfee while not enabling in the flag
             mptAlice.create(
-                {.maxAmt = "100",
+                {.maxAmt = 100,
                  .assetScale = 0,
                  .transferFee = 1,
                  .metadata = "test",
@@ -61,7 +61,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // tries to set a txfee greater than max
             mptAlice.create(
-                {.maxAmt = "100",
+                {.maxAmt = 100,
                  .assetScale = 0,
                  .transferFee = maxTransferFee + 1,
                  .metadata = "test",
@@ -70,7 +70,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // tries to set a txfee while not enabling transfer
             mptAlice.create(
-                {.maxAmt = "100",
+                {.maxAmt = 100,
                  .assetScale = 0,
                  .transferFee = maxTransferFee,
                  .metadata = "test",
@@ -78,7 +78,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // empty metadata returns error
             mptAlice.create(
-                {.maxAmt = "100",
+                {.maxAmt = 100,
                  .assetScale = 0,
                  .transferFee = 0,
                  .metadata = "",
@@ -86,7 +86,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // MaximumAmout of 0 returns error
             mptAlice.create(
-                {.maxAmt = "0",
+                {.maxAmt = 0,
                  .assetScale = 1,
                  .transferFee = 1,
                  .metadata = "test",
@@ -94,13 +94,13 @@ class MPToken_test : public beast::unit_test::suite
 
             // MaximumAmount larger than 63 bit returns error
             mptAlice.create(
-                {.maxAmt = "18446744073709551600",  // FFFFFFFFFFFFFFF0
+                {.maxAmt = 0xFFFF'FFFF'FFFF'FFF0,  // 18'446'744'073'709'551'600
                  .assetScale = 0,
                  .transferFee = 0,
                  .metadata = "test",
                  .err = temMALFORMED});
             mptAlice.create(
-                {.maxAmt = "9223372036854775808",  // 8000000000000000
+                {.maxAmt = 0x8000'0000'0000'0000,  // 9'223'372'036'854'775'808
                  .assetScale = 0,
                  .transferFee = 0,
                  .metadata = "test",
@@ -122,7 +122,7 @@ class MPToken_test : public beast::unit_test::suite
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
             mptAlice.create(
-                {.maxAmt = "9223372036854775807",  // 7FFFFFFFFFFFFFFF
+                {.maxAmt = 0x7FFF'FFFF'FFFF'FFFF,  // 9'223'372'036'854'775'807
                  .assetScale = 1,
                  .transferFee = 10,
                  .metadata = "123",
@@ -1087,7 +1087,7 @@ class MPToken_test : public beast::unit_test::suite
             MPTTester mptAlice(env, alice, {.holders = {&bob}});
 
             mptAlice.create(
-                {.maxAmt = "100",
+                {.maxAmt = 100,
                  .ownerCount = 1,
                  .holderCount = 0,
                  .flags = tfMPTCanTransfer});
@@ -1132,6 +1132,39 @@ class MPToken_test : public beast::unit_test::suite
                 to_string(maxMPTokenAmount + 1);
             auto const jrr = env.rpc("json", "submit", to_string(jv));
             BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
+        }
+
+        // Pay maximum amount with the transfer fee, SendMax, and
+        // partial payment
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+
+            mptAlice.create(
+                {.maxAmt = 10'000,
+                 .transferFee = 100,
+                 .ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer});
+            auto const MPT = mptAlice["MPT"];
+
+            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = &carol});
+
+            // issuer sends holder the max amount allowed
+            mptAlice.pay(alice, bob, 10'000);
+
+            // payment between the holders
+            env(pay(bob, carol, MPT(10'000)),
+                sendmax(MPT(10'000)),
+                txflags(tfPartialPayment));
+
+            // payment between the holders fails without
+            // partial payment
+            env(pay(bob, carol, MPT(10'000)),
+                sendmax(MPT(10'000)),
+                ter(tecPATH_PARTIAL));
         }
 
         // Issuer fails trying to send fund after issuance was destroyed
@@ -1190,7 +1223,7 @@ class MPToken_test : public beast::unit_test::suite
             MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
 
             mptAlice.create(
-                {.maxAmt = "100", .ownerCount = 1, .flags = tfMPTCanTransfer});
+                {.maxAmt = 100, .ownerCount = 1, .flags = tfMPTCanTransfer});
 
             mptAlice.authorize({.account = &bob});
             mptAlice.authorize({.account = &carol});
