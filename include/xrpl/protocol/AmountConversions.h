@@ -33,13 +33,7 @@ toSTAmount(IOUAmount const& iou, Issue const& iss)
 {
     bool const isNeg = iou.signum() < 0;
     std::uint64_t const umant = isNeg ? -iou.mantissa() : iou.mantissa();
-    return STAmount(
-        iss,
-        umant,
-        iou.exponent(),
-        /*native*/ false,
-        isNeg,
-        STAmount::unchecked());
+    return STAmount(iss, umant, iou.exponent(), isNeg, STAmount::unchecked());
 }
 
 inline STAmount

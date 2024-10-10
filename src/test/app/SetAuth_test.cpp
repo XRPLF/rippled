@@ -38,8 +38,8 @@ struct SetAuth_test : public beast::unit_test::suite
         using namespace jtx;
         Json::Value jv;
         jv[jss::Account] = account.human();
-        jv[jss::LimitAmount] =
-            STAmount({to_currency(currency), dest}).getJson(JsonOptions::none);
+        jv[jss::LimitAmount] = STAmount(Issue{to_currency(currency), dest})
+                                   .getJson(JsonOptions::none);
         jv[jss::TransactionType] = jss::TrustSet;
         jv[jss::Flags] = tfSetfAuth;
         return jv;

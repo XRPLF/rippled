@@ -644,6 +644,73 @@ doLedgerEntry(RPC::JsonContext& context)
                     uNodeIndex = keylet::oracle(*account, *documentID).key;
             }
         }
+        else if (context.params.isMember(jss::mpt_issuance))
+        {
+            expectedType = ltMPTOKEN_ISSUANCE;
+            auto const unparsedMPTIssuanceID =
+                context.params[jss::mpt_issuance];
+            if (unparsedMPTIssuanceID.isString())
+            {
+                uint192 mptIssuanceID;
+                if (!mptIssuanceID.parseHex(unparsedMPTIssuanceID.asString()))
+                {
+                    uNodeIndex = beast::zero;
+                    jvResult[jss::error] = "malformedRequest";
+                }
+                else
+                    uNodeIndex = keylet::mptIssuance(mptIssuanceID).key;
+            }
+            else
+            {
+                jvResult[jss::error] = "malformedRequest";
+            }
+        }
+        else if (context.params.isMember(jss::mptoken))
+        {
+            expectedType = ltMPTOKEN;
+            if (!context.params[jss::mptoken].isObject())
+            {
+                if (!uNodeIndex.parseHex(
+                        context.params[jss::mptoken].asString()))
+                {
+                    uNodeIndex = beast::zero;
+                    jvResult[jss::error] = "malformedRequest";
+                }
+            }
+            else if (
+                !context.params[jss::mptoken].isMember(jss::mpt_issuance_id) ||
+                !context.params[jss::mptoken].isMember(jss::account))
+            {
+                jvResult[jss::error] = "malformedRequest";
+            }
+            else
+            {
+                try
+                {
+                    auto const mptIssuanceIdStr =
+                        context.params[jss::mptoken][jss::mpt_issuance_id]
+                            .asString();
+
+                    uint192 mptIssuanceID;
+                    if (!mptIssuanceID.parseHex(mptIssuanceIdStr))
+                        Throw<std::runtime_error>(
+                            "Cannot parse mpt_issuance_id");
+
+                    auto const account = parseBase58<AccountID>(
+                        context.params[jss::mptoken][jss::account].asString());
+
+                    if (!account || account->isZero())
+                        jvResult[jss::error] = "malformedAddress";
+                    else
+                        uNodeIndex =
+                            keylet::mptoken(mptIssuanceID, *account).key;
+                }
+                catch (std::runtime_error const&)
+                {
+                    jvResult[jss::error] = "malformedRequest";
+                }
+            }
+        }
         else
         {
             if (context.params.isMember("params") &&

@@ -62,7 +62,6 @@ public:
                 amount.issue(),
                 mantissa,
                 amount.exponent(),
-                amount.native(),
                 amount.negative(),
                 STAmount::unchecked{}};
         }
@@ -82,7 +81,6 @@ public:
                 amount.issue(),
                 mantissa,
                 amount.exponent(),
-                amount.native(),
                 amount.negative(),
                 STAmount::unchecked{}};
         }

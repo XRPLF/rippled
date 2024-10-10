@@ -162,12 +162,12 @@ TxFormats::TxFormats()
         ttPAYMENT,
         {
             {sfDestination, soeREQUIRED},
-            {sfAmount, soeREQUIRED},
-            {sfSendMax, soeOPTIONAL},
+            {sfAmount, soeREQUIRED, soeMPTSupported},
+            {sfSendMax, soeOPTIONAL, soeMPTSupported},
             {sfPaths, soeDEFAULT},
             {sfInvoiceID, soeOPTIONAL},
             {sfDestinationTag, soeOPTIONAL},
-            {sfDeliverMin, soeOPTIONAL},
+            {sfDeliverMin, soeOPTIONAL, soeMPTSupported},
         },
         commonFields);
 
@@ -377,7 +377,8 @@ TxFormats::TxFormats()
     add(jss::Clawback,
         ttCLAWBACK,
         {
-            {sfAmount, soeREQUIRED},
+            {sfAmount, soeREQUIRED, soeMPTSupported},
+            {sfMPTokenHolder, soeOPTIONAL},
         },
         commonFields);
 
@@ -511,6 +512,39 @@ TxFormats::TxFormats()
         {
             {sfLedgerFixType, soeREQUIRED},
             {sfOwner, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::MPTokenIssuanceCreate,
+        ttMPTOKEN_ISSUANCE_CREATE,
+        {
+            {sfAssetScale, soeOPTIONAL},
+            {sfTransferFee, soeOPTIONAL},
+            {sfMaximumAmount, soeOPTIONAL},
+            {sfMPTokenMetadata, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::MPTokenIssuanceDestroy,
+        ttMPTOKEN_ISSUANCE_DESTROY,
+        {
+            {sfMPTokenIssuanceID, soeREQUIRED},
+        },
+        commonFields);
+
+    add(jss::MPTokenIssuanceSet,
+        ttMPTOKEN_ISSUANCE_SET,
+        {
+            {sfMPTokenIssuanceID, soeREQUIRED},
+            {sfMPTokenHolder, soeOPTIONAL},
+        },
+        commonFields);
+
+    add(jss::MPTokenAuthorize,
+        ttMPTOKEN_AUTHORIZE,
+        {
+            {sfMPTokenIssuanceID, soeREQUIRED},
+            {sfMPTokenHolder, soeOPTIONAL},
         },
         commonFields);
 }
