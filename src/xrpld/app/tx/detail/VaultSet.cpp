@@ -40,10 +40,10 @@ VaultSet::preflight(PreflightContext const& ctx)
 }
 
 XRPAmount
-AMMCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
+VaultSet::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    // TODO: What should the base fee be? One increment does not seem enough.
-    return view.fees().increment * 4;
+    // One reserve increment is typically much greater than one base fee.
+    return view.fees().increment;
 }
 
 TER
@@ -83,8 +83,8 @@ VaultSet::doApply()
         // Assert identical immutable fields if given.
         if (tx.isFieldPresent(sfAsset) && tx[sfAsset] != vault->at(sfAsset))
             return tecIMMUTABLE;
-
-        // TODO: sfMPTokenMetadata?
+        if (tx.isFieldPresent(sfMPTokenMetadata) && tx[sfMPTokenMetadata] != vault->at(sfMPTokenMetadata))
+            return tecIMMUTABLE;
 
         // Update mutable flags and fields if given.
         if (tx.isFieldPresent(sfData))
@@ -108,6 +108,7 @@ VaultSet::doApply()
         if (!maybe)
             return maybe.error();
         auto& pseudo = *maybe;
+        // TODO: create empty MPToken or RippleState for Asset.
         auto pseudoId = pseudo->at(sfAccount);
         auto txFlags = tx[sfFlags];
         std::uint32_t mptFlags = 0;
