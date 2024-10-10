@@ -1385,8 +1385,7 @@ rippleSendMPT(
 
     // Sending 3rd party MPTs: transit.
     if (auto const sle =
-            view.read(keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID()));
-        sle != nullptr)
+            view.read(keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID())))
     {
         saActual = (waiveFee == WaiveTransferFee::Yes)
             ? saAmount
