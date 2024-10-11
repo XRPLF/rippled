@@ -21,6 +21,12 @@
 #error "undefined macro: TRANSACTION"
 #endif
 
+/**
+ * TRANSACTION(tag, value, name, fields)
+ *
+ * You must define a transactor class in the `ripple` namespace named `name`.
+ */
+
 /** This transaction type executes a payment. */
 TRANSACTION(ttPAYMENT, 0, Payment, ({
     {sfDestination, soeREQUIRED},

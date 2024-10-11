@@ -67,6 +67,9 @@ public:
     TER
     doApply() override;
 };
+
+using XChainModifyBridge = BridgeModify;
+
 //------------------------------------------------------------------------------
 
 // Claim funds from a `XChainCommit` transaction. This is normally not needed,
@@ -247,6 +250,8 @@ public:
     TER
     doApply() override;
 };
+
+using XChainAccountCreateCommit = XChainCreateAccountCommit;
 
 //------------------------------------------------------------------------------
 
