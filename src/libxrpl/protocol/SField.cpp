@@ -54,12 +54,20 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 #pragma push_macro("TYPED_SFIELD")
 #undef TYPED_SFIELD
 
-#define UNTYPED_SFIELD(name, stiSuffix, fieldValue, ...) \
-    SField const sf##name(                               \
-        access, STI_##stiSuffix, fieldValue, #name, ##__VA_ARGS__);
-#define TYPED_SFIELD(name, stiSuffix, fieldValue, ...) \
-    SF_##stiSuffix const sf##name(                     \
-        access, STI_##stiSuffix, fieldValue, #name, ##__VA_ARGS__);
+#define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
+    SField const sfName(                                   \
+        access,                                            \
+        STI_##stiSuffix,                                   \
+        fieldValue,                                        \
+        std::string_view(#sfName).substr(2).data(),        \
+        ##__VA_ARGS__);
+#define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
+    SF_##stiSuffix const sfName(                         \
+        access,                                          \
+        STI_##stiSuffix,                                 \
+        fieldValue,                                      \
+        std::string_view(#sfName).substr(2).data(),      \
+        ##__VA_ARGS__);
 
 // SFields which, for historical reasons, do not follow naming conventions.
 SField const sfInvalid(access, -1);
