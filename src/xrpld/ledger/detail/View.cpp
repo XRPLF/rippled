@@ -248,9 +248,8 @@ isFrozen(
     AccountID const& account,
     MPTIssue const& mptIssue)
 {
-    if (isGlobalFrozen(view, mptIssue))
-        return true;
-    return isIndividualFrozen(view, account, mptIssue);
+    return isGlobalFrozen(view, mptIssue) ||
+        isIndividualFrozen(view, account, mptIssue);
 }
 
 STAmount
@@ -569,10 +568,9 @@ transferRate(ReadView const& view, AccountID const& issuer)
 Rate
 transferRate(ReadView const& view, MPTID const& issuanceID)
 {
-    auto const sle = view.read(keylet::mptIssuance(issuanceID));
-
     // fee is 0-50,000 (0-50%), rate is 1,000,000,000-2,000,000,000
-    if (sle && sle->isFieldPresent(sfTransferFee))
+    if (auto const sle = view.read(keylet::mptIssuance(issuanceID));
+        sle && sle->isFieldPresent(sfTransferFee))
         return Rate{1'000'000'000u + 10'000 * sle->getFieldU16(sfTransferFee)};
 
     return parityRate;
@@ -1231,7 +1229,7 @@ accountSend(
 {
     if (view.rules().enabled(fixAMMv1_1))
     {
-        if (saAmount < beast::zero)
+        if (saAmount < beast::zero || saAmount.holds<MPTIssue>())
         {
             return tecINTERNAL;
         }
@@ -1353,18 +1351,17 @@ rippleSendMPT(
     // Safe to get MPT since rippleSendMPT is only called by accountSendMPT
     auto const issuer = saAmount.getIssuer();
 
+    auto const sle =
+        view.read(keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID()));
+    if (!sle)
+        return tecOBJECT_NOT_FOUND;
+
     if (uSenderID == issuer || uReceiverID == issuer)
     {
         // if sender is issuer, check that the new OutstandingAmount will not
         // exceed MaximumAmount
         if (uSenderID == issuer)
         {
-            auto const mptID =
-                keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID());
-            auto const sle = view.peek(mptID);
-            if (!sle)
-                return tecOBJECT_NOT_FOUND;
-
             auto const sendAmount = saAmount.mpt().value();
             auto const maximumAmount =
                 sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
@@ -1374,7 +1371,7 @@ rippleSendMPT(
                 return tecPATH_DRY;
         }
 
-        // Direct send: redeeming IOUs and/or sending own IOUs.
+        // Direct send: redeeming MPTs and/or sending own MPTs.
         auto const ter =
             rippleCreditMPT(view, uSenderID, uReceiverID, saAmount, j);
         if (ter != tesSUCCESS)
@@ -1384,29 +1381,23 @@ rippleSendMPT(
     }
 
     // Sending 3rd party MPTs: transit.
-    if (auto const sle =
-            view.read(keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID())))
-    {
-        saActual = (waiveFee == WaiveTransferFee::Yes)
-            ? saAmount
-            : multiply(
-                  saAmount,
-                  transferRate(view, saAmount.get<MPTIssue>().getMptID()));
+    saActual = (waiveFee == WaiveTransferFee::Yes)
+        ? saAmount
+        : multiply(
+              saAmount,
+              transferRate(view, saAmount.get<MPTIssue>().getMptID()));
 
-        JLOG(j.debug()) << "rippleSend> " << to_string(uSenderID) << " - > "
-                        << to_string(uReceiverID)
-                        << " : deliver=" << saAmount.getFullText()
-                        << " cost=" << saActual.getFullText();
+    JLOG(j.debug()) << "rippleSend> " << to_string(uSenderID) << " - > "
+                    << to_string(uReceiverID)
+                    << " : deliver=" << saAmount.getFullText()
+                    << " cost=" << saActual.getFullText();
 
-        if (auto const terResult =
-                rippleCreditMPT(view, issuer, uReceiverID, saAmount, j);
-            terResult != tesSUCCESS)
-            return terResult;
+    if (auto const terResult =
+            rippleCreditMPT(view, issuer, uReceiverID, saAmount, j);
+        terResult != tesSUCCESS)
+        return terResult;
 
-        return rippleCreditMPT(view, uSenderID, issuer, saActual, j);
-    }
-
-    return tecOBJECT_NOT_FOUND;
+    return rippleCreditMPT(view, uSenderID, issuer, saActual, j);
 }
 
 TER
