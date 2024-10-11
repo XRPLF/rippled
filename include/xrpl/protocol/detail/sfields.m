@@ -56,7 +56,7 @@ TYPED_SFIELD(HookStateChangeCount,     UINT16,    17) // sfHookStateChangeCount
 TYPED_SFIELD(HookEmitCount,            UINT16,    18) // sfHookEmitCount
 TYPED_SFIELD(HookExecutionIndex,       UINT16,    19) // sfHookExecutionIndex
 TYPED_SFIELD(HookApiVersion,           UINT16,    20) // sfHookApiVersion
-TYPED_SFIELD(LedgerFixType,            UINT16,    21); // sfLedgerFixType
+TYPED_SFIELD(LedgerFixType,            UINT16,    21) // sfLedgerFixType
 
 // 32-bit integers (common)
 TYPED_SFIELD(NetworkID,                UINT32,     1) // sfNetworkID
