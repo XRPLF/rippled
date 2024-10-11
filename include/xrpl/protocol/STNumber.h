@@ -26,14 +26,16 @@
 
 namespace ripple {
 
-class STNumber final : public STBase,
+class STNumber : public STBase,
                        public CountedObject<STNumber>,
                        public Number
 {
 public:
+    using value_type = Number;
+
     STNumber() = default;
-    explicit STNumber(SField const& n, Number const& v = Number());
-    STNumber(SerialIter& sit, SField const& name);
+    explicit STNumber(SField const& field, Number const& value = Number());
+    STNumber(SerialIter& sit, SField const& field);
 
     using Number::operator=;
 
@@ -50,15 +52,17 @@ public:
     void
     setValue(Number const& v);
 
+    bool
+    isEquivalent(STBase const& t) const override;
+    bool
+    isDefault() const override;
+
+private:
     STBase*
     copy(std::size_t n, void* buf) const override;
     STBase*
     move(std::size_t n, void* buf) override;
 
-    bool
-    isEquivalent(STBase const& t) const override;
-    bool
-    isDefault() const override;
 };
 
 }  // namespace ripple

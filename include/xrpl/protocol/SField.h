@@ -601,7 +601,7 @@ extern SF_ACCOUNT const sfLockingChainDoor;
 extern SF_ACCOUNT const sfIssuingChainDoor;
 
 // number (common)
-extern SF_NUMBER const sfQuantity;
+extern SF_NUMBER const sfNumber;
 
 // path set
 extern SField const sfPaths;

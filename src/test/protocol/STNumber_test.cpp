@@ -32,7 +32,7 @@ struct STNumber_test : public beast::unit_test::suite
     run() override
     {
         {
-            STNumber const stnum{sfQuantity};
+            STNumber const stnum{sfNumber};
             BEAST_EXPECT(stnum.getSType() == STI_NUMBER);
             BEAST_EXPECT(stnum.getText() == "0");
             BEAST_EXPECT(stnum.isDefault() == true);
@@ -47,18 +47,18 @@ struct STNumber_test : public beast::unit_test::suite
             std::numeric_limits<std::int64_t>::max()};
         for (std::int64_t value : values)
         {
-            STNumber const before{sfQuantity, value};
+            STNumber const before{sfNumber, value};
             Serializer s;
             before.add(s);
             BEAST_EXPECT(s.size() == 12);
             SerialIter sit(s.slice());
-            STNumber const after{sit, sfQuantity};
+            STNumber const after{sit, sfNumber};
             BEAST_EXPECT(after.isEquivalent(before));
         }
 
         {
             STAmount const strikePrice{noIssue(), 100};
-            STNumber const factor{sfQuantity, 100};
+            STNumber const factor{sfNumber, 100};
             auto const iouValue = strikePrice.iou();
             IOUAmount totalValue{iouValue * factor};
             STAmount const totalAmount{totalValue, strikePrice.issue()};

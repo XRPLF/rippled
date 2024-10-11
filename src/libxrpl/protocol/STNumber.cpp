@@ -23,11 +23,11 @@
 
 namespace ripple {
 
-STNumber::STNumber(SField const& n, Number const& v) : STBase(n), Number(v)
+STNumber::STNumber(SField const& field, Number const& value) : STBase(field), Number(value)
 {
 }
 
-STNumber::STNumber(SerialIter& sit, SField const& name) : STBase(name)
+STNumber::STNumber(SerialIter& sit, SField const& field) : STBase(field)
 {
     // We must call these methods in separate statements
     // to guarantee their order of execution.
@@ -50,7 +50,6 @@ STNumber::getText() const
 
 Json::Value STNumber::getJson(JsonOptions) const
 {
-    // TODO: come up with a string representation.
     return to_string(*this);
 }
 
