@@ -86,7 +86,8 @@ with_txn_type(TxType txnType, F&& f)
 #undef TRANSACTION
 
 #define TRANSACTION(tag, value, name, fields) \
-        case tag: return f.template operator()<name>();
+    case tag:                                 \
+        return f.template operator()<name>();
 
 #include <xrpl/protocol/detail/transactions.m>
 
