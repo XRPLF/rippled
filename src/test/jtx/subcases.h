@@ -103,7 +103,7 @@ execute(Supercase supercase);
 }  // namespace subcases
 
 #define TEST_CASE(name) void name(subcases::Context& _09876)
-#define SUBCASE(name) if (subcases::Subcase _54321{_09876, name}; _54321)
+#define SUBCASE(name) if (subcases::Subcase _54321{_09876, name})
 #define EXECUTE(name) subcases::execute([&](auto& ctx) { name(ctx); })
 
 #endif

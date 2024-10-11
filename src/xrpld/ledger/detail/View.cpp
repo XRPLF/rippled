@@ -876,7 +876,7 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey)
     // account->setFieldH256(sfPseudoOwner, pseudoOwnerKey);
     view.insert(account);
 
-    return std::move(account);
+    return account;
 }
 
 TER

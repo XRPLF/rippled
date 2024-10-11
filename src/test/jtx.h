@@ -59,6 +59,7 @@
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
+#include <test/jtx/subcases.h>
 #include <test/jtx/tag.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>

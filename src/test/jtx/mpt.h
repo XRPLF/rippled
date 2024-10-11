@@ -150,6 +150,7 @@ class MPTTester
     bool close_;
 
 public:
+    // Pass `.fund = false` if `issuer` is already funded.
     MPTTester(Env& env, Account const& issuer, MPTConstr const& constr = {});
 
     void

@@ -89,6 +89,14 @@ public:
     operator<(Asset const& lhs, Asset const& rhs);
 };
 
+inline Json::Value
+to_json(Asset const& asset)
+{
+    Json::Value jv;
+    asset.setJson(jv);
+    return jv;
+}
+
 template <ValidIssueType TIss>
 constexpr bool
 Asset::holds() const

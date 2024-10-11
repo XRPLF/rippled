@@ -17,15 +17,14 @@
 */
 //==============================================================================
 
-#include <test/jtx.h>
-#include <test/jtx/subcases.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/vault.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 
 namespace ripple {
-
-struct SetArg
-{
-};
 
 class Vault_test : public beast::unit_test::suite
 {
@@ -35,32 +34,55 @@ class Vault_test : public beast::unit_test::suite
         testcase("Create / Update / Delete");
         Env env{*this};
 
+        Account issuer{"issuer"};
+        Account owner{"owner"};
+        env.fund(XRP(1000), issuer, owner);
+        env.close();
+        auto fee = test::jtx::fee(env.current()->fees().increment);
+
         SUBCASE("IOU vault")
         {
-            // issuer = Account()
-            // submit(fund(issuer))
-            // asset = issuer[IOU]
-            // owner = Account()
-            // tx = vault::create(owner=owner, asset=asset)
-            // submit(fset(issuer, asfGlobalFreeze))
-            // TODO: VaultSet (create) fail: Asset is IOU and
-            // issuer.GlobalFreeze submit(tx) => fail tx[sfData] = blob(300)
-            // submit(tx) => fail
-            // TODO: VaultSet (create) fail: Data too large (>256 bytes)
+            Asset asset = issuer["IOU"];
+            auto tx = vault::create({ .owner=owner, .asset=asset });
+
+            SUBCASE("global freeze")
+            {
+                env(fset(issuer, asfGlobalFreeze));
+                env.close();
+                // env(tx, fee, ter(tecFROZEN));
+                env.close();
+            }
+
+            SUBCASE("data too large")
+            {
+                // tx[sfData] = blob(260)
+                // env(tx, ter(tecFROZEN));
+                env.close();
+            }
         }
 
         SUBCASE("MPT vault")
         {
-            // represent an issuer account
-            // fund the issuer account
-            // create issuer.MPT
-            // represent an asset for issuer.MPT
-            // create a vault with issuer.MPT asset
+            MPTTester mptt{env, issuer, {.fund=false}};
+            mptt.create();
+            Asset asset = mptt.issuanceID();
+            auto tx = vault::create({ .owner=owner, .asset=asset });
+
+            SUBCASE("metadata too large")
+            {
+                // tx[sfMPTokenMetadata] = blob(1100);
+                // env(tx, ter(???));
+                // env.close();
+            }
+
+            SUBCASE("create") {
+                // env(tx);
+                // env.close();
+            }
         }
 
         // (create) => no sfVaultID
         // (update) => sfVaultID
-        // TODO: VaultSet (create) fail: Metadata too large (>1024 bytes)
         // TODO: VaultSet (create) succeed
         // TODO: VaultSet (update) succeed
         // TODO: VaultSet (update) fail: wrong owner
