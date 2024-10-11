@@ -1720,15 +1720,29 @@ requireAuth(
     AccountID const& account)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
-    if (auto const sle = view.read(mptID);
-        sle && sle->getFieldU32(sfFlags) & lsfMPTRequireAuth)
-    {
-        auto const mptokenID = keylet::mptoken(mptID.key, account);
-        if (auto const tokSle = view.read(mptokenID); tokSle &&
-            //(sle->getFlags() & lsfMPTRequireAuth) &&
-            !(tokSle->getFlags() & lsfMPTAuthorized))
-            return TER{tecNO_AUTH};
-    }
+    auto const sleIssuance = view.read(mptID);
+
+    if (!sleIssuance)
+        return tecOBJECT_NOT_FOUND;
+
+    auto const mptIssuer = sleIssuance->getAccountID(sfIssuer);
+
+    // issuer is always "authorized"
+    if (mptIssuer == account)
+        return tesSUCCESS;
+
+    auto const mptokenID = keylet::mptoken(mptID.key, account);
+    auto const sleToken = view.read(mptokenID);
+
+    // if account has no MPToken, fail
+    if (!sleToken)
+        return tecNO_AUTH;
+
+    // mptoken must be authorized if issuance enabled requireAuth
+    if (sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth &&
+        !(sleToken->getFlags() & lsfMPTAuthorized))
+        return tecNO_AUTH;
+
     return tesSUCCESS;
 }
 
@@ -1740,10 +1754,13 @@ canTransfer(
     AccountID const& to)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
-    if (auto const sle = view.read(mptID);
-        sle && !(sle->getFieldU32(sfFlags) & lsfMPTCanTransfer))
+    auto const sleIssuance = view.read(mptID);
+    if (!sleIssuance)
+        return tecOBJECT_NOT_FOUND;
+
+    if (!(sleIssuance->getFieldU32(sfFlags) & lsfMPTCanTransfer))
     {
-        if (from != (*sle)[sfIssuer] && to != (*sle)[sfIssuer])
+        if (from != (*sleIssuance)[sfIssuer] && to != (*sleIssuance)[sfIssuer])
             return TER{tecNO_AUTH};
     }
     return tesSUCCESS;
