@@ -3079,8 +3079,7 @@ void
 PeerImp::sendLedgerBase(
     std::shared_ptr<Ledger const> const& ledger,
     protocol::TMLedgerData& ledgerData,
-    std::map<std::shared_ptr<Peer>, std::set<std::optional<uint64_t>>> const&
-        destinations)
+    PeerCookieMap const& destinations)
 {
     JLOG(p_journal_.trace()) << "sendLedgerBase: Base data";
 
@@ -3118,8 +3117,7 @@ PeerImp::sendLedgerBase(
 void
 PeerImp::sendToMultiple(
     protocol::TMLedgerData& ledgerData,
-    std::map<std::shared_ptr<Peer>, std::set<std::optional<uint64_t>>> const&
-        destinations)
+    PeerCookieMap const& destinations)
 {
     bool foundSelf = false;
     for (auto const& [peer, cookies] : destinations)
@@ -3238,46 +3236,14 @@ PeerImp::getLedger(
                     peer->send(
                         std::make_shared<Message>(*m, protocol::mtGET_LEDGER));
                     JLOG(p_journal_.debug())
-                        << "getLedger: Request relayed to peer";
+                        << "getLedger: Request relayed to peer [" << peer->id()
+                        << "]: " << mHash;
                     return ledger;
                 }
 
                 JLOG(p_journal_.trace())
                     << "getLedger: Don't have ledger with hash " << ledgerHash
                     << ": " << mHash;
-
-                if (m->has_querytype() && !m->has_requestcookie())
-                {
-                    // Attempt to relay the request to a peer
-                    // Note repeated messages will not relay to the same peer
-                    // before `getLedgerInterval` seconds. This prevents one
-                    // peer from getting flooded, and distributes the request
-                    // load. If a request has been relayed to all eligible
-                    // peers, then this message will not be relayed.
-                    if (auto const peer = getPeerWithLedger(
-                            overlay_,
-                            ledgerHash,
-                            m->has_ledgerseq() ? m->ledgerseq() : 0,
-                            this,
-                            [&](Peer::id_t id) {
-                                return app_.getHashRouter()
-                                    .shouldProcessForPeer(
-                                        mHash, id, getledgerInterval);
-                            }))
-                    {
-                        m->set_requestcookie(id());
-                        peer->send(std::make_shared<Message>(
-                            *m, protocol::mtGET_LEDGER));
-                        JLOG(p_journal_.debug())
-                            << "getLedger: Request relayed to peer ["
-                            << peer->id() << "]: " << mHash;
-                        return ledger;
-                    }
-
-                    JLOG(p_journal_.trace())
-                        << "getLedger: Failed to find peer to relay request: "
-                        << mHash;
-                }
             }
         }
     }
@@ -3408,8 +3374,7 @@ PeerImp::processLedgerRequest(
         // If a ledger data message is generated, it's going to be sent to every
         // peer that is waiting for it.
 
-        std::map<std::shared_ptr<Peer>, std::set<std::optional<uint64_t>>>
-            result;
+        PeerCookieMap result;
 
         std::size_t numCookies = 0;
         {
@@ -3466,8 +3431,7 @@ PeerImp::processLedgerRequest(
         return result;
     };
     // Will only populate this if we're going to do work.
-    std::map<std::shared_ptr<Peer>, std::set<std::optional<uint64_t>>>
-        destinations;
+    PeerCookieMap destinations;
 
     if (itype == protocol::liTS_CANDIDATE)
     {

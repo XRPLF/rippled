@@ -178,8 +178,12 @@ private:
 
     // Track message requests and responses
     // TODO: Use an expiring cache or something
+    using MessageCookieMap =
+        std::map<uint256, std::set<std::optional<uint64_t>>>;
+    using PeerCookieMap =
+        std::map<std::shared_ptr<Peer>, std::set<std::optional<uint64_t>>>;
     std::mutex mutable cookieLock_;
-    std::map<uint256, std::set<std::optional<uint64_t>>> messageRequestCookies_;
+    MessageCookieMap messageRequestCookies_;
 
     friend class OverlayImpl;
 
@@ -628,16 +632,12 @@ private:
     sendLedgerBase(
         std::shared_ptr<Ledger const> const& ledger,
         protocol::TMLedgerData& ledgerData,
-        std::map<
-            std::shared_ptr<Peer>,
-            std::set<std::optional<uint64_t>>> const& destinations);
+        PeerCookieMap const& destinations);
 
     void
     sendToMultiple(
         protocol::TMLedgerData& ledgerData,
-        std::map<
-            std::shared_ptr<Peer>,
-            std::set<std::optional<uint64_t>>> const& destinations);
+        PeerCookieMap const& destinations);
 
     std::shared_ptr<Ledger const>
     getLedger(
