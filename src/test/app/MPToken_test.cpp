@@ -1159,6 +1159,24 @@ class MPToken_test : public beast::unit_test::suite
             env(pay(bob, carol, MPT(10'000)),
                 sendmax(MPT(10'000)),
                 txflags(tfPartialPayment));
+            // Verify the metadata
+            auto const meta = env.meta()->getJson(
+                JsonOptions::none)[sfAffectedNodes.fieldName];
+            // Issuer got 10 in the transfer fees
+            BEAST_EXPECT(
+                meta[0u][sfModifiedNode.fieldName][sfFinalFields.fieldName]
+                    [sfOutstandingAmount.fieldName] == "9990");
+            // Destination account got 9'990
+            BEAST_EXPECT(
+                meta[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName]
+                    [sfMPTAmount.fieldName] == "9990");
+            // Source account spent 10'000
+            BEAST_EXPECT(
+                meta[2u][sfModifiedNode.fieldName][sfPreviousFields.fieldName]
+                    [sfMPTAmount.fieldName] == "10000");
+            BEAST_EXPECT(
+                !meta[2u][sfModifiedNode.fieldName][sfFinalFields.fieldName]
+                     .isMember(sfMPTAmount.fieldName));
 
             // payment between the holders fails without
             // partial payment
