@@ -1,17 +1,19 @@
+#include <test/unit_test/SuiteJournal.h>
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/IntrusiveRefCounts.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <test/unit_test/SuiteJournal.h>
 
 #include <array>
 #include <atomic>
 #include <barrier>
 #include <chrono>
 #include <latch>
+#include <optional>
 #include <random>
 #include <string>
 #include <thread>
+#include <variant>
 
 namespace ripple {
 namespace tests {
