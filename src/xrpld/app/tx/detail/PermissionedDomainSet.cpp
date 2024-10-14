@@ -37,27 +37,6 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
     auto const credentials = ctx.tx.getFieldArray(sfAcceptedCredentials);
     if (credentials.empty() || credentials.size() > PD_ARRAY_MAX)
         return temMALFORMED;
-
-    return preflight2(ctx);
-}
-
-XRPAmount
-PermissionedDomainSet::calculateBaseFee(ReadView const& view, STTx const& tx)
-{
-    if (tx.isFieldPresent(sfDomainID))
-        return Transactor::calculateBaseFee(view, tx);
-    // The fee required for a new PermissionedDomain is one owner reserve.
-    return view.fees().increment;
-}
-
-TER
-PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
-{
-    if (!ctx.view.read(keylet::account(ctx.tx.getAccountID(sfAccount))))
-        return tefINTERNAL;
-
-    assert(ctx.tx.isFieldPresent(sfAcceptedCredentials));
-    auto const credentials = ctx.tx.getFieldArray(sfAcceptedCredentials);
     for (auto const& credential : credentials)
     {
         if (!credential.isFieldPresent(sfIssuer) ||
@@ -67,6 +46,24 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
         }
         if (credential.getFieldVL(sfCredentialType).empty())
             return temMALFORMED;
+    }
+
+    auto const domain = ctx.tx.at(~sfDomainID);
+    if (domain && *domain == beast::zero)
+        return temMALFORMED;
+
+    return preflight2(ctx);
+}
+
+TER
+PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
+{
+    if (!ctx.view.read(keylet::account(ctx.tx.getAccountID(sfAccount))))
+        return tefINTERNAL;
+
+    auto const credentials = ctx.tx.getFieldArray(sfAcceptedCredentials);
+    for (auto const& credential : credentials)
+    {
         if (!ctx.view.read(keylet::account(credential.getAccountID(sfIssuer))))
             return temBAD_ISSUER;
     }
@@ -74,9 +71,7 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
     if (!ctx.tx.isFieldPresent(sfDomainID))
         return tesSUCCESS;
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
-    if (domain == beast::zero)
-        return temMALFORMED;
-    auto const sleDomain = ctx.view.read({ltPERMISSIONED_DOMAIN, domain});
+    auto const sleDomain = ctx.view.read(keylet::permissionedDomain(domain));
     if (!sleDomain)
         return tecNO_ENTRY;
     auto const owner = sleDomain->getAccountID(sfOwner);
@@ -93,6 +88,18 @@ PermissionedDomainSet::doApply()
 {
     auto const ownerSle = view().peek(keylet::account(account_));
 
+    // Check reserve availability for new object creation
+    {
+        auto const balance = STAmount((*ownerSle)[sfBalance]).xrp();
+        auto const reserve =
+            ctx_.view().fees().accountReserve((*ownerSle)[sfOwnerCount] + 1);
+
+        if (balance < reserve)
+            return tecINSUFFICIENT_RESERVE;
+    }
+
+    // The purpose of this lambda is to modify the SLE for either creating a
+    // new or updating an existing object, to reduce code repetition.
     // All checks have already been done. Just update credentials. Same logic
     // for either new domain or updating existing.
     // Silently remove duplicates.
@@ -129,7 +136,9 @@ PermissionedDomainSet::doApply()
     {
         // Modify existing permissioned domain.
         auto sleUpdate = view().peek(
-            {ltPERMISSIONED_DOMAIN, ctx_.tx.getFieldH256(sfDomainID)});
+            keylet::permissionedDomain(ctx_.tx.getFieldH256(sfDomainID)));
+        // It should already be checked in preclaim().
+        assert(sleUpdate);
         updateSle(sleUpdate);
         view().update(sleUpdate);
     }
@@ -142,7 +151,6 @@ PermissionedDomainSet::doApply()
         slePd->setAccountID(sfOwner, account_);
         slePd->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence));
         updateSle(slePd);
-        view().insert(slePd);
         auto const page = view().dirInsert(
             keylet::ownerDir(account_), pdKeylet, describeOwnerDir(account_));
         if (!page)
@@ -150,6 +158,7 @@ PermissionedDomainSet::doApply()
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.
         adjustOwnerCount(view(), ownerSle, 1, ctx_.journal);
+        view().insert(slePd);
     }
 
     return tesSUCCESS;

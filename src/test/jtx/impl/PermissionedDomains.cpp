@@ -64,13 +64,15 @@ deleteTx(AccountID const& account, uint256 const& domain)
     return jv;
 }
 
-// Get PermissionedDomain objects from account_objects rpc call
+// Get PermissionedDomain objects by type from account_objects rpc call
 std::map<uint256, Json::Value>
-getObjects(Account const& account, Env& env)
+getObjects(Account const& account, Env& env, bool withType)
 {
     std::map<uint256, Json::Value> ret;
     Json::Value params;
     params[jss::account] = account.human();
+    if (withType)
+        params[jss::type] = jss::permissioned_domain;
     auto const& resp = env.rpc("json", "account_objects", to_string(params));
     Json::Value a(Json::arrayValue);
     a = resp[jss::result][jss::account_objects];
