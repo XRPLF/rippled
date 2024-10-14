@@ -52,12 +52,13 @@ class PermissionedDomains_test : public beast::unit_test::suite
         Account const alice("alice");
         Env env(*this, withFeature_);
         env.fund(XRP(1000), alice);
-        auto const setFee(drops(env.current()->fees().increment));
         pd::Credentials credentials{{alice, pd::toBlob("first credential")}};
-        env(pd::setTx(alice, credentials), fee(setFee));
+        env(pd::setTx(alice, credentials));
         BEAST_EXPECT(pd::ownerInfo(alice, env)["OwnerCount"].asUInt() == 1);
         auto objects = pd::getObjects(alice, env);
         BEAST_EXPECT(objects.size() == 1);
+        // Test that account_objects is correct without passing it the type
+        BEAST_EXPECT(objects == pd::getObjects(alice, env, false));
         auto const domain = objects.begin()->first;
         env(pd::deleteTx(alice, domain));
     }
@@ -70,9 +71,8 @@ class PermissionedDomains_test : public beast::unit_test::suite
         Account const alice("alice");
         Env env(*this, withoutFeature_);
         env.fund(XRP(1000), alice);
-        auto const setFee(drops(env.current()->fees().increment));
         pd::Credentials credentials{{alice, pd::toBlob("first credential")}};
-        env(pd::setTx(alice, credentials), fee(setFee), ter(temDISABLED));
+        env(pd::setTx(alice, credentials), ter(temDISABLED));
         env(pd::deleteTx(alice, uint256(75)), ter(temDISABLED));
     }
 
@@ -98,9 +98,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         auto const setFee(drops(env.current()->fees().increment));
 
         // Test empty credentials.
-        env(pd::setTx(account, pd::Credentials(), domain),
-            fee(setFee),
-            ter(temMALFORMED));
+        env(pd::setTx(account, pd::Credentials(), domain), ter(temMALFORMED));
 
         // Test 11 credentials.
         pd::Credentials const credentials11{
@@ -117,9 +115,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
             {alice12, pd::toBlob("credential11")}};
         BEAST_EXPECT(
             credentials11.size() == PermissionedDomainSet::PD_ARRAY_MAX + 1);
-        env(pd::setTx(account, credentials11, domain),
-            fee(setFee),
-            ter(temMALFORMED));
+        env(pd::setTx(account, credentials11, domain), ter(temMALFORMED));
 
         // Test credentials including non-existent issuer.
         Account const nobody("nobody");
@@ -131,9 +127,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
             {alice5, pd::toBlob("credential5")},
             {alice6, pd::toBlob("credential6")},
             {alice7, pd::toBlob("credential7")}};
-        env(pd::setTx(account, credentialsNon, domain),
-            fee(setFee),
-            ter(temBAD_ISSUER));
+        env(pd::setTx(account, credentialsNon, domain), ter(temBAD_ISSUER));
 
         pd::Credentials const credentials4{
             {alice2, pd::toBlob("credential1")},
@@ -147,23 +141,23 @@ class PermissionedDomains_test : public beast::unit_test::suite
         // Remove Issuer from a credential and apply.
         txJsonMutable["AcceptedCredentials"][2u]["AcceptedCredential"]
             .removeMember("Issuer");
-        env(txJsonMutable, fee(setFee), ter(temMALFORMED));
+        env(txJsonMutable, ter(temMALFORMED));
 
         txJsonMutable["AcceptedCredentials"][2u] = credentialOrig;
         // Make an empty CredentialType.
         txJsonMutable["AcceptedCredentials"][2u]["AcceptedCredential"]
                      ["CredentialType"] = "";
-        env(txJsonMutable, fee(setFee), ter(temMALFORMED));
+        env(txJsonMutable, ter(temMALFORMED));
 
         // Remove Credentialtype from a credential and apply.
         txJsonMutable["AcceptedCredentials"][2u]["AcceptedCredential"]
             .removeMember("CredentialType");
-        env(txJsonMutable, fee(setFee), ter(temMALFORMED));
+        env(txJsonMutable, ter(temMALFORMED));
 
         // Remove both
         txJsonMutable["AcceptedCredentials"][2u]["AcceptedCredential"]
             .removeMember("Issuer");
-        env(txJsonMutable, fee(setFee), ter(temMALFORMED));
+        env(txJsonMutable, ter(temMALFORMED));
 
         // Make 2 identical credentials. The duplicate should be silently
         // removed.
@@ -176,7 +170,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
                 {alice5, pd::toBlob("credential4")},
             };
             BEAST_EXPECT(pd::sortCredentials(credentialsDup).size() == 4);
-            env(pd::setTx(account, credentialsDup, domain), fee(setFee));
+            env(pd::setTx(account, credentialsDup, domain));
 
             uint256 d;
             if (domain)
@@ -204,7 +198,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
             };
             BEAST_EXPECT(
                 credentialsSame != pd::sortCredentials(credentialsSame));
-            env(pd::setTx(account, credentialsSame, domain), fee(setFee));
+            env(pd::setTx(account, credentialsSame, domain));
 
             uint256 d;
             if (domain)
@@ -245,13 +239,11 @@ class PermissionedDomains_test : public beast::unit_test::suite
             alice10,
             alice11,
             alice12);
-        auto const dropsFee = env.current()->fees().increment;
-        auto const setFee(drops(dropsFee));
 
         // Create new from existing account with a single credential.
         pd::Credentials const credentials1{{alice2, pd::toBlob("credential1")}};
         {
-            env(pd::setTx(alice, credentials1), fee(setFee));
+            env(pd::setTx(alice, credentials1));
             BEAST_EXPECT(pd::ownerInfo(alice, env)["OwnerCount"].asUInt() == 1);
             auto tx = env.tx()->getJson(JsonOptions::none);
             BEAST_EXPECT(tx[jss::TransactionType] == "PermissionedDomainSet");
@@ -283,7 +275,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 credentials10.size() == PermissionedDomainSet::PD_ARRAY_MAX);
             BEAST_EXPECT(credentials10 != pd::sortCredentials(credentials10));
-            env(pd::setTx(alice, credentials10), fee(setFee));
+            env(pd::setTx(alice, credentials10));
             auto tx = env.tx()->getJson(JsonOptions::none);
             domain2 = pd::getNewDomain(env.meta());
             auto objects = pd::getObjects(alice, env);
@@ -292,11 +284,6 @@ class PermissionedDomains_test : public beast::unit_test::suite
                 pd::credentialsFromJson(object) ==
                 pd::sortCredentials(credentials10));
         }
-
-        // Make a new domain with insufficient fee.
-        env(pd::setTx(alice, credentials10),
-            fee(drops(dropsFee - 1)),
-            ter(telINSUF_FEE_P));
 
         // Update with 1 credential.
         env(pd::setTx(alice, credentials1, domain2));
@@ -364,7 +351,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice);
         auto const setFee(drops(env.current()->fees().increment));
         pd::Credentials credentials{{alice, pd::toBlob("first credential")}};
-        env(pd::setTx(alice, credentials), fee(setFee));
+        env(pd::setTx(alice, credentials));
         env.close();
         auto objects = pd::getObjects(alice, env);
         BEAST_EXPECT(objects.size() == 1);
@@ -396,6 +383,83 @@ class PermissionedDomains_test : public beast::unit_test::suite
         BEAST_EXPECT(!pd::objectExists(objID, env));
     }
 
+    void
+    testAccountReserve()
+    {
+        // Verify that the reserve behaves as expected for minting.
+        testcase("Account Reserve");
+
+        using namespace test::jtx;
+
+        Env env(*this, withFeature_);
+        Account const alice("alice");
+
+        // Fund alice enough to exist, but not enough to meet
+        // the reserve.
+        auto const acctReserve = env.current()->fees().accountReserve(0);
+        auto const incReserve = env.current()->fees().increment;
+        env.fund(acctReserve, alice);
+        env.close();
+        BEAST_EXPECT(env.balance(alice) == acctReserve);
+        BEAST_EXPECT(pd::ownerInfo(alice, env)["OwnerCount"].asUInt() == 0);
+
+        // alice does not have enough XRP to cover the reserve.
+        pd::Credentials credentials{{alice, pd::toBlob("first credential")}};
+        env(pd::setTx(alice, credentials), ter(tecINSUFFICIENT_RESERVE));
+        BEAST_EXPECT(pd::ownerInfo(alice, env)["OwnerCount"].asUInt() == 0);
+        BEAST_EXPECT(pd::getObjects(alice, env).size() == 0);
+        env.close();
+
+        // Pay alice almost enough to make the reserve.
+        env(pay(env.master, alice, incReserve + drops(19)));
+        BEAST_EXPECT(env.balance(alice) == acctReserve + incReserve + drops(9));
+        env.close();
+
+        // alice still does not have enough XRP for the reserve.
+        env(pd::setTx(alice, credentials), ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        BEAST_EXPECT(pd::ownerInfo(alice, env)["OwnerCount"].asUInt() == 0);
+
+        // Pay alice enough to make the reserve.
+        env(pay(env.master, alice, drops(11)));
+        env.close();
+
+        // Now alice can create a PermissionedDomain.
+        env(pd::setTx(alice, credentials));
+        env.close();
+        BEAST_EXPECT(pd::ownerInfo(alice, env)["OwnerCount"].asUInt() == 1);
+
+        /*
+                env(did::setValid(alice), ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // Pay alice almost enough to make the reserve for a DID.
+                env(pay(env.master, alice, incReserve + drops(19)));
+                BEAST_EXPECT(env.balance(alice) == acctReserve + incReserve +
+           drops(9)); env.close();
+
+                // alice still does not have enough XRP for the reserve of a
+           DID. env(did::setValid(alice), ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+                // Pay alice enough to make the reserve for a DID.
+                env(pay(env.master, alice, drops(11)));
+                env.close();
+
+                // Now alice can create a DID.
+                env(did::setValid(alice));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+                // alice deletes her DID.
+                env(did::del(alice));
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+                env.close();
+                */
+    }
+
 public:
     void
     run() override
@@ -404,6 +468,7 @@ public:
         testDisabled();
         testSet();
         testDelete();
+        testAccountReserve();
     }
 };
 
