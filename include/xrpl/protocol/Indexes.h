@@ -290,6 +290,8 @@ oracle(AccountID const& account, std::uint32_t const& documentID) noexcept;
 Keylet
 permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept;
 
+Keylet
+permissionedDomain(uint256 const& domainID) noexcept;
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

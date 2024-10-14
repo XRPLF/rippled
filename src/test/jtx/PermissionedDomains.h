@@ -45,7 +45,7 @@ deleteTx(AccountID const& account, uint256 const& domain);
 
 // Get PermissionedDomain objects from account_objects rpc call
 std::map<uint256, Json::Value>
-getObjects(Account const& account, Env& env);
+getObjects(Account const& account, Env& env, bool withType = true);
 
 // Check if ledger object is there
 bool

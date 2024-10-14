@@ -460,6 +460,12 @@ permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept
         indexHash(LedgerNameSpace::PERMISSIONED_DOMAIN, account, seq)};
 }
 
+Keylet
+permissionedDomain(uint256 const& domainID) noexcept
+{
+    return {ltPERMISSIONED_DOMAIN, domainID};
+}
+
 }  // namespace keylet
 
 }  // namespace ripple

@@ -627,6 +627,7 @@ public:
         BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::ticket), 0));
         BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::amm), 0));
         BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::did), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::permissioned_domain), 0));
 
         // we expect invalid field type reported for the following types
         BEAST_EXPECT(acctObjsTypeIsInvalid(acctObjs(gw, jss::amendments)));
