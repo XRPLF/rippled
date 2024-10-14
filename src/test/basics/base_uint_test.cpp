@@ -194,7 +194,7 @@ struct base_uint_test : beast::unit_test::suite
         test96 z{beast::zero};
         uset.insert(z);
         BEAST_EXPECT(to_string(z) == "000000000000000000000000");
-        BEAST_EXPECT(to_string(z) == "00000000...");
+        BEAST_EXPECT(to_short_string(z) == "00000000...");
         BEAST_EXPECT(*z.data() == 0);
         BEAST_EXPECT(*z.begin() == 0);
         BEAST_EXPECT(*std::prev(z.end(), 1) == 0);
