@@ -1892,20 +1892,17 @@ rippleCreditMPT(
 {
     auto const mptID = keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID());
     auto const issuer = saAmount.getIssuer();
-    if (!view.exists(mptID))
+    auto sleIssuance = view.peek(mptID);
+    if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
     if (uSenderID == issuer)
     {
-        if (auto sle = view.peek(mptID))
-        {
-            sle->setFieldU64(
-                sfOutstandingAmount,
-                sle->getFieldU64(sfOutstandingAmount) + saAmount.mpt().value());
+        sleIssuance->setFieldU64(
+            sfOutstandingAmount,
+            sleIssuance->getFieldU64(sfOutstandingAmount) +
+                saAmount.mpt().value());
 
-            view.update(sle);
-        }
-        else
-            return tecINTERNAL;
+        view.update(sleIssuance);
     }
     else
     {
@@ -1914,16 +1911,10 @@ rippleCreditMPT(
         {
             auto const amt = sle->getFieldU64(sfMPTAmount);
             auto const pay = saAmount.mpt().value();
-            if (amt >= pay)
-            {
-                if (amt == pay)
-                    sle->makeFieldAbsent(sfMPTAmount);
-                else
-                    sle->setFieldU64(sfMPTAmount, amt - pay);
-                view.update(sle);
-            }
-            else
+            if (amt < pay)
                 return tecINSUFFICIENT_FUNDS;
+            (*sle)[sfMPTAmount] = amt - pay;
+            view.update(sle);
         }
         else
             return tecNO_AUTH;
@@ -1931,17 +1922,12 @@ rippleCreditMPT(
 
     if (uReceiverID == issuer)
     {
-        if (auto sle = view.peek(mptID))
+        auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
+        auto const redeem = saAmount.mpt().value();
+        if (outstanding >= redeem)
         {
-            auto const outstanding = sle->getFieldU64(sfOutstandingAmount);
-            auto const redeem = saAmount.mpt().value();
-            if (outstanding >= redeem)
-            {
-                sle->setFieldU64(sfOutstandingAmount, outstanding - redeem);
-                view.update(sle);
-            }
-            else
-                return tecINSUFFICIENT_FUNDS;
+            sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - redeem);
+            view.update(sleIssuance);
         }
         else
             return tecINTERNAL;

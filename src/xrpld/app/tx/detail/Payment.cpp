@@ -235,7 +235,7 @@ Payment::preflight(PreflightContext const& ctx)
 TER
 Payment::preclaim(PreclaimContext const& ctx)
 {
-    // Ripple if source or destination is non-native or if there are hasPaths.
+    // Ripple if source or destination is non-native or if there are paths.
     std::uint32_t const txFlags = ctx.tx.getFlags();
     bool const partialPaymentAllowed = txFlags & tfPartialPayment;
     auto const hasPaths = ctx.tx.isFieldPresent(sfPaths);
@@ -321,7 +321,7 @@ Payment::doApply()
 {
     auto const deliverMin = ctx_.tx[~sfDeliverMin];
 
-    // Ripple if source or destination is non-native or if there are hasPaths.
+    // Ripple if source or destination is non-native or if there are paths.
     std::uint32_t const txFlags = ctx_.tx.getFlags();
     bool const partialPaymentAllowed = txFlags & tfPartialPayment;
     bool const limitQuality = txFlags & tfLimitQuality;
