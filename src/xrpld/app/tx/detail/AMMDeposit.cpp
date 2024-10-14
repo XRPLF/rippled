@@ -248,21 +248,31 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     {
         // Check if either of the assets is frozen, AMMDeposit is not allowed
         // if either asset is frozen
-        auto checkAsset = [&](Issue const& asset) -> bool {
+        auto checkAsset = [&](Issue const& asset) -> TER {
+            if (auto const ter = requireAuth(ctx.view, asset, accountID))
+            {
+                JLOG(ctx.j.debug())
+                    << "AMM Deposit: account is not authorized, " << asset;
+                return ter;
+            }
+
             if (isFrozen(ctx.view, accountID, asset))
             {
                 JLOG(ctx.j.debug())
                     << "AMM Deposit: account or currency is frozen, "
                     << to_string(accountID) << " " << to_string(asset.currency);
 
-                return false;
+                return tecFROZEN;
             }
 
-            return true;
+            return tesSUCCESS;
         };
 
-        if (!checkAsset(ctx.tx[sfAsset]) || !checkAsset(ctx.tx[sfAsset2]))
-            return tecFROZEN;
+        if (auto const ter = checkAsset(ctx.tx[sfAsset]))
+            return ter;
+
+        if (auto const ter = checkAsset(ctx.tx[sfAsset2]))
+            return ter;
     }
 
     auto const amount = ctx.tx[~sfAmount];

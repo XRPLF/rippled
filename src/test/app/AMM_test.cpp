@@ -1005,6 +1005,44 @@ private:
             },
             {{USD(20'000), BTC(0.5)}});
 
+        // Deposit unauthorized token.
+        {
+            Env env(*this, features);
+            env.fund(XRP(1000), gw, alice, bob);
+            env(fset(gw, asfRequireAuth));
+            env.close();
+            env(trust(gw, alice["USD"](100)), txflags(tfSetfAuth));
+            env(trust(alice, gw["USD"](20)));
+            env.close();
+            env(pay(gw, alice, gw["USD"](10)));
+            env.close();
+            env(trust(gw, bob["USD"](100)));
+            env.close();
+
+            AMM amm(env, alice, XRP(10), gw["USD"](10), ter(tesSUCCESS));
+            env.close();
+
+            if (features[featureAMMClawback])
+                // if featureAMMClawback is enabled, bob can not deposit XRP
+                // because he's not authorized to hold the paired token
+                // gw["USD"].
+                amm.deposit(
+                    bob,
+                    XRP(10),
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    ter(tecNO_AUTH));
+            else
+                amm.deposit(
+                    bob,
+                    XRP(10),
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    ter(tesSUCCESS));
+        }
+
         // Insufficient XRP balance
         testAMM([&](AMM& ammAlice, Env& env) {
             env.fund(XRP(1'000), bob);
