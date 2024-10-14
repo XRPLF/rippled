@@ -1244,6 +1244,7 @@ public:
 
         unsigned const limit = 11;
         Json::Value marker;
+
         // test account_objects with a limit and update marker
         {
             Json::Value params;
@@ -1257,12 +1258,14 @@ public:
             BEAST_EXPECT(accountObjects.size() == limit);
         }
 
-        // test invalid marker "\0"
+        // test invalid marker by adding invalid string after the maker.
         {
+            std::string s = marker.asString();
+            s.append(",1234");
             Json::Value params;
             params[jss::account] = bob.human();
             params[jss::limit] = limit;
-            params[jss::marker] = "\0";
+            params[jss::marker] = s;
             params[jss::ledger_index] = "validated";
             auto resp = env.rpc("json", "account_objects", to_string(params));
             BEAST_EXPECT(
@@ -1289,6 +1292,21 @@ public:
         {
             std::string s = marker.asString();
             s.replace(0, 7, "FFFFFFF");
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::marker] = s;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field \'marker\'.");
+        }
+
+        // test account_objects with an invalid marker that contains no ','
+        {
+            std::string s = marker.asString();
+            s.erase(std::remove(s.begin(), s.end(), ','), s.end());
             Json::Value params;
             params[jss::account] = bob.human();
             params[jss::limit] = limit;

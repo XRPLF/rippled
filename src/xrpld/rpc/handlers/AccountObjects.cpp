@@ -268,18 +268,15 @@ doAccountObjects(RPC::JsonContext& context)
         if (!marker.isString())
             return RPC::expected_field_error(jss::marker, "string");
 
-        std::stringstream ss(marker.asString());
-        std::string s;
-        if (!std::getline(ss, s, ','))
+        auto const& markerStr = marker.asString();
+        auto const& idx = markerStr.find(',');
+        if (idx == std::string::npos)
             return RPC::invalid_field_error(jss::marker);
 
-        if (!dirIndex.parseHex(s))
+        if (!dirIndex.parseHex(markerStr.substr(0, idx)))
             return RPC::invalid_field_error(jss::marker);
 
-        if (!std::getline(ss, s, ','))
-            return RPC::invalid_field_error(jss::marker);
-
-        if (!entryIndex.parseHex(s))
+        if (!entryIndex.parseHex(markerStr.substr(idx + 1)))
             return RPC::invalid_field_error(jss::marker);
     }
 
