@@ -22,6 +22,7 @@
 
 #include <xrpl/basics/KeyCache.h>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/utility/Journal.h>
