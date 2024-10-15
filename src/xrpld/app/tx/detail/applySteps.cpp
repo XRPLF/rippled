@@ -46,6 +46,8 @@
 #include <xrpld/app/tx/detail/NFTokenMint.h>
 #include <xrpld/app/tx/detail/PayChan.h>
 #include <xrpld/app/tx/detail/Payment.h>
+#include <xrpld/app/tx/detail/PermissionedDomainDelete.h>
+#include <xrpld/app/tx/detail/PermissionedDomainSet.h>
 #include <xrpld/app/tx/detail/SetAccount.h>
 #include <xrpld/app/tx/detail/SetOracle.h>
 #include <xrpld/app/tx/detail/SetRegularKey.h>
@@ -168,6 +170,10 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<SetOracle>();
         case ttORACLE_DELETE:
             return f.template operator()<DeleteOracle>();
+        case ttPERMISSIONED_DOMAIN_SET:
+            return f.template operator()<PermissionedDomainSet>();
+        case ttPERMISSIONED_DOMAIN_DELETE:
+            return f.template operator()<PermissionedDomainDelete>();
         default:
             throw UnknownTxnType(txnType);
     }

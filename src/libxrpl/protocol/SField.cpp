@@ -238,6 +238,7 @@ CONSTRUCT_TYPED_SFIELD(sfHookStateKey,          "HookStateKey",         UINT256,
 CONSTRUCT_TYPED_SFIELD(sfHookHash,              "HookHash",             UINT256,   31);
 CONSTRUCT_TYPED_SFIELD(sfHookNamespace,         "HookNamespace",        UINT256,   32);
 CONSTRUCT_TYPED_SFIELD(sfHookSetTxnID,          "HookSetTxnID",         UINT256,   33);
+CONSTRUCT_TYPED_SFIELD(sfDomainID,              "DomainID",             UINT256,   34);
 
 // currency amount (common)
 CONSTRUCT_TYPED_SFIELD(sfAmount,                "Amount",               AMOUNT,     1);
@@ -307,6 +308,7 @@ CONSTRUCT_TYPED_SFIELD(sfDIDDocument,           "DIDDocument",          VL,     
 CONSTRUCT_TYPED_SFIELD(sfData,                  "Data",                 VL,        27);
 CONSTRUCT_TYPED_SFIELD(sfAssetClass,            "AssetClass",           VL,        28);
 CONSTRUCT_TYPED_SFIELD(sfProvider,              "Provider",             VL,        29);
+CONSTRUCT_TYPED_SFIELD(sfCredentialType,        "CredentialType",       VL,        30);
 
 // account
 CONSTRUCT_TYPED_SFIELD(sfAccount,               "Account",              ACCOUNT,    1);
@@ -391,6 +393,8 @@ CONSTRUCT_UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement,
                                                  "XChainCreateAccountAttestationCollectionElement",
                                                                         OBJECT,    31);
 CONSTRUCT_UNTYPED_SFIELD(sfPriceData,            "PriceData",           OBJECT,    32);
+// TODO perhaps this should be a typed field once actual credentials are merged.
+CONSTRUCT_UNTYPED_SFIELD(sfAcceptedCredential,   "AcceptedCredential",  OBJECT,    33);
 
 // array of objects
 //                                                                            ARRAY/1 is reserved for end of array
@@ -405,6 +409,7 @@ CONSTRUCT_UNTYPED_SFIELD(sfMemos,               "Memos",                ARRAY,  
 CONSTRUCT_UNTYPED_SFIELD(sfNFTokens,            "NFTokens",             ARRAY,     10);
 CONSTRUCT_UNTYPED_SFIELD(sfHooks,               "Hooks",                ARRAY,     11);
 CONSTRUCT_UNTYPED_SFIELD(sfVoteSlots,           "VoteSlots",            ARRAY,     12);
+CONSTRUCT_UNTYPED_SFIELD(sfAcceptedCredentials, "AcceptedCredentials",  ARRAY,     13);
 
 // array of objects (uncommon)
 CONSTRUCT_UNTYPED_SFIELD(sfMajorities,          "Majorities",           ARRAY,     16);

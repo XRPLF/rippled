@@ -199,6 +199,12 @@ enum TxType : std::uint16_t
     /** This transaction type fixes a problem in the ledger state */
     ttLEDGER_STATE_FIX = 53,
 
+    /** This transaction type creates or modifies a Permissioned Domain */
+    ttPERMISSIONED_DOMAIN_SET = 54,
+
+    /** This transaction type deletes a Permissioned Domain */
+    ttPERMISSIONED_DOMAIN_DELETE = 55,
+
 
     /** This system-generated transaction type is used to update the status of the various amendments.
 

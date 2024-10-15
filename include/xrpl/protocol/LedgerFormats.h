@@ -197,6 +197,11 @@ enum LedgerEntryType : std::uint16_t
      */
     ltORACLE = 0x0080,
 
+    /** A ledger object which tracks Permissioned Domain
+        \sa keylet::permissionedDomain
+     */
+    ltPERMISSIONED_DOMAIN = 0x0077,
+
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 
