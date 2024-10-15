@@ -569,6 +569,8 @@ Rate
 transferRate(ReadView const& view, MPTID const& issuanceID)
 {
     // fee is 0-50,000 (0-50%), rate is 1,000,000,000-2,000,000,000
+    // For example, if transfer fee is 50% then 10,000 * 50,000 = 500,000
+    // which represents 50% of 1,000,000,000
     if (auto const sle = view.read(keylet::mptIssuance(issuanceID));
         sle && sle->isFieldPresent(sfTransferFee))
         return Rate{1'000'000'000u + 10'000 * sle->getFieldU16(sfTransferFee)};
@@ -1897,11 +1899,7 @@ rippleCreditMPT(
         return tecOBJECT_NOT_FOUND;
     if (uSenderID == issuer)
     {
-        sleIssuance->setFieldU64(
-            sfOutstandingAmount,
-            sleIssuance->getFieldU64(sfOutstandingAmount) +
-                saAmount.mpt().value());
-
+        (*sleIssuance)[sfOutstandingAmount] += saAmount.mpt().value();
         view.update(sleIssuance);
     }
     else
@@ -1937,9 +1935,7 @@ rippleCreditMPT(
         auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
         if (auto sle = view.peek(mptokenID))
         {
-            sle->setFieldU64(
-                sfMPTAmount,
-                sle->getFieldU64(sfMPTAmount) + saAmount.mpt().value());
+            (*sle)[sfMPTAmount] += saAmount.mpt().value();
             view.update(sle);
         }
         else
