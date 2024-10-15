@@ -23,7 +23,8 @@
 
 namespace ripple {
 
-STNumber::STNumber(SField const& field, Number const& value) : STBase(field), Number(value)
+STNumber::STNumber(SField const& field, Number const& value)
+    : STBase(field), Number(value)
 {
 }
 
@@ -58,8 +59,8 @@ STNumber::add(Serializer& s) const
 {
     assert(getFName().isBinary());
     assert(getFName().fieldType == getSType());
-    s.addi64(this->mantissa());
-    s.addi32(this->exponent());
+    s.add64(this->mantissa());
+    s.add32(this->exponent());
 }
 
 Number const&
@@ -98,6 +99,11 @@ bool
 STNumber::isDefault() const
 {
     return *this == Number();
+}
+
+std::ostream& operator<< (std::ostream& out, STNumber const& rhs)
+{
+    return out << rhs.getText();
 }
 
 }  // namespace ripple
