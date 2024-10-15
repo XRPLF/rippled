@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/LoadFeeTrack.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/core/Config.h>
-#include <ripple/ledger/ReadView.h>
+#include <xrpld/app/misc/LoadFeeTrack.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/ledger/ReadView.h>
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 
@@ -35,56 +35,53 @@ public:
         {
             Fees const fees = [&]() {
                 Fees f;
-                f.base = d.FEE_DEFAULT;
-                f.units = d.TRANSACTION_FEE_BASE;
+                f.base = d.FEES.reference_fee;
                 f.reserve = 200 * DROPS_PER_XRP;
                 f.increment = 50 * DROPS_PER_XRP;
                 return f;
             }();
 
             BEAST_EXPECT(
-                scaleFeeLoad(FeeUnit64{0}, l, fees, false) == XRPAmount{0});
+                scaleFeeLoad(XRPAmount{0}, l, fees, false) == XRPAmount{0});
             BEAST_EXPECT(
-                scaleFeeLoad(FeeUnit64{10000}, l, fees, false) ==
+                scaleFeeLoad(XRPAmount{10000}, l, fees, false) ==
                 XRPAmount{10000});
             BEAST_EXPECT(
-                scaleFeeLoad(FeeUnit64{1}, l, fees, false) == XRPAmount{1});
+                scaleFeeLoad(XRPAmount{1}, l, fees, false) == XRPAmount{1});
         }
         {
             Fees const fees = [&]() {
                 Fees f;
-                f.base = d.FEE_DEFAULT * 10;
-                f.units = d.TRANSACTION_FEE_BASE;
+                f.base = d.FEES.reference_fee * 10;
                 f.reserve = 200 * DROPS_PER_XRP;
                 f.increment = 50 * DROPS_PER_XRP;
                 return f;
             }();
 
             BEAST_EXPECT(
-                scaleFeeLoad(FeeUnit64{0}, l, fees, false) == XRPAmount{0});
+                scaleFeeLoad(XRPAmount{0}, l, fees, false) == XRPAmount{0});
             BEAST_EXPECT(
-                scaleFeeLoad(FeeUnit64{10000}, l, fees, false) ==
-                XRPAmount{100000});
+                scaleFeeLoad(XRPAmount{10000}, l, fees, false) ==
+                XRPAmount{10000});
             BEAST_EXPECT(
-                scaleFeeLoad(FeeUnit64{1}, l, fees, false) == XRPAmount{10});
+                scaleFeeLoad(XRPAmount{1}, l, fees, false) == XRPAmount{1});
         }
         {
             Fees const fees = [&]() {
                 Fees f;
-                f.base = d.FEE_DEFAULT;
-                f.units = d.TRANSACTION_FEE_BASE * 10;
+                f.base = d.FEES.reference_fee;
                 f.reserve = 200 * DROPS_PER_XRP;
                 f.increment = 50 * DROPS_PER_XRP;
                 return f;
             }();
 
             BEAST_EXPECT(
-                scaleFeeLoad(FeeUnit64{0}, l, fees, false) == XRPAmount{0});
+                scaleFeeLoad(XRPAmount{0}, l, fees, false) == XRPAmount{0});
             BEAST_EXPECT(
-                scaleFeeLoad(FeeUnit64{10000}, l, fees, false) ==
-                XRPAmount{1000});
+                scaleFeeLoad(XRPAmount{10000}, l, fees, false) ==
+                XRPAmount{10000});
             BEAST_EXPECT(
-                scaleFeeLoad(FeeUnit64{1}, l, fees, false) == XRPAmount{0});
+                scaleFeeLoad(XRPAmount{1}, l, fees, false) == XRPAmount{1});
         }
     }
 };

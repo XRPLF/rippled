@@ -19,7 +19,7 @@
 
 #include <test/unit_test/multi_runner.h>
 
-#include <ripple/beast/unit_test/amount.hpp>
+#include <xrpl/beast/unit_test/amount.h>
 
 #include <boost/lexical_cast.hpp>
 
@@ -388,11 +388,6 @@ multi_runner_base<IsParent>::add_failures(std::size_t failures)
     add(results);
     any_failed(failures != 0);
 }
-
-template <bool IsParent>
-constexpr const char* multi_runner_base<IsParent>::shared_mem_name_;
-template <bool IsParent>
-constexpr const char* multi_runner_base<IsParent>::message_queue_name_;
 
 }  // namespace detail
 

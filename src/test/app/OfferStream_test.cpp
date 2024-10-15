@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/impl/OfferStream.h>
-#include <ripple/beast/unit_test.h>
+#include <xrpld/app/tx/detail/OfferStream.h>
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 

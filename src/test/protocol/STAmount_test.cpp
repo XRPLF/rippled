@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
-#include <ripple/basics/random.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/STAmount.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/STAmount.h>
 
 namespace ripple {
 

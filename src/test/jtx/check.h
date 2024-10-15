@@ -31,13 +31,6 @@ namespace jtx {
 /** Check operations. */
 namespace check {
 
-/** Create a check. */
-Json::Value
-create(
-    jtx::Account const& account,
-    jtx::Account const& dest,
-    STAmount const& sendMax);
-
 /** Cash a check requiring that a specific amount be delivered. */
 Json::Value
 cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount);

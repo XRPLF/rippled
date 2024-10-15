@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_PATHS_H_INCLUDED
 #define RIPPLE_TEST_JTX_PATHS_H_INCLUDED
 
-#include <ripple/protocol/Issue.h>
 #include <test/jtx/Env.h>
+#include <xrpl/protocol/Issue.h>
 #include <type_traits>
 
 namespace ripple {
@@ -72,6 +72,9 @@ private:
 
     void
     append_one(Account const& account);
+
+    void
+    append_one(AccountID const& account);
 
     template <class T>
     std::enable_if_t<std::is_constructible<Account, T>::value>

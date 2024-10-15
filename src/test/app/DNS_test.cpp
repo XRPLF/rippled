@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/detail/WorkSSL.h>
-#include <ripple/basics/StringUtilities.h>
 #include <test/jtx.h>
+#include <xrpld/app/misc/detail/WorkSSL.h>
+#include <xrpl/basics/StringUtilities.h>
 
 #include <condition_variable>
 #include <memory>
