@@ -233,8 +233,7 @@ Pathfinder::findPaths(
     mSource = STPathElement(account, mSrcCurrency, issuer);
     auto issuerString =
         mSrcIssuer ? to_string(*mSrcIssuer) : std::string("none");
-    JLOG(j_.trace()) << "findPaths>"
-                     << " mSrcAccount=" << mSrcAccount
+    JLOG(j_.trace()) << "findPaths>" << " mSrcAccount=" << mSrcAccount
                      << " mDstAccount=" << mDstAccount
                      << " mDstAmount=" << mDstAmount.getFullText()
                      << " mSrcCurrency=" << mSrcCurrency

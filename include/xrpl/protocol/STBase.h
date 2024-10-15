@@ -52,11 +52,13 @@ struct JsonOptions
     {
     }
 
-    [[nodiscard]] constexpr explicit operator underlying_t() const noexcept
+    [[nodiscard]] constexpr explicit
+    operator underlying_t() const noexcept
     {
         return value;
     }
-    [[nodiscard]] constexpr explicit operator bool() const noexcept
+    [[nodiscard]] constexpr explicit
+    operator bool() const noexcept
     {
         return value != 0u;
     }

@@ -689,8 +689,7 @@ ValidatorList::sendValidatorList(
     beast::Journal j)
 {
     std::size_t const messageVersion =
-        peer.supportsFeature(ProtocolFeature::ValidatorList2Propagation)
-        ? 2
+        peer.supportsFeature(ProtocolFeature::ValidatorList2Propagation)  ? 2
         : peer.supportsFeature(ProtocolFeature::ValidatorListPropagation) ? 1
                                                                           : 0;
     if (!messageVersion)
