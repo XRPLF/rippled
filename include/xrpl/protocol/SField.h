@@ -218,6 +218,10 @@ public:
         return jsonName;
     }
 
+    operator Json::StaticString const& () const {
+        return jsonName;
+    }
+
     bool
     isInvalid() const
     {

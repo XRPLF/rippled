@@ -140,7 +140,7 @@ AMM::create(
     if (flags)
         jv[jss::Flags] = *flags;
     if (fee_ != 0)
-        jv[jss::Fee] = std::to_string(fee_);
+        jv[sfFee] = std::to_string(fee_);
     else
         jv[jss::Fee] = std::to_string(env_.current()->fees().increment.drops());
     submit(jv, seq, ter);
