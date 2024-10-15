@@ -74,7 +74,7 @@ SField const sfInvalid(access, -1);
 SField const sfGeneric(access, 0);
 SField const sfHash(access, STI_UINT256, 257, "hash");
 
-#include <xrpl/protocol/detail/sfields.m>
+#include <xrpl/protocol/detail/sfields.macro>
 
 #undef TYPED_SFIELD
 #pragma pop_macro("TYPED_SFIELD")
