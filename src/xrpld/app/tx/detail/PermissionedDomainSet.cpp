@@ -88,16 +88,6 @@ PermissionedDomainSet::doApply()
 {
     auto const ownerSle = view().peek(keylet::account(account_));
 
-    // Check reserve availability for new object creation
-    {
-        auto const balance = STAmount((*ownerSle)[sfBalance]).xrp();
-        auto const reserve =
-            ctx_.view().fees().accountReserve((*ownerSle)[sfOwnerCount] + 1);
-
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
-
     // The purpose of this lambda is to modify the SLE for either creating a
     // new or updating an existing object, to reduce code repetition.
     // All checks have already been done. Just update credentials. Same logic
@@ -145,6 +135,13 @@ PermissionedDomainSet::doApply()
     else
     {
         // Create new permissioned domain.
+        // Check reserve availability for new object creation
+        auto const balance = STAmount((*ownerSle)[sfBalance]).xrp();
+        auto const reserve =
+            ctx_.view().fees().accountReserve((*ownerSle)[sfOwnerCount] + 1);
+        if (balance < reserve)
+            return tecINSUFFICIENT_RESERVE;
+
         Keylet const pdKeylet = keylet::permissionedDomain(
             account_, ctx_.tx.getFieldU32(sfSequence));
         auto slePd = std::make_shared<SLE>(pdKeylet);
