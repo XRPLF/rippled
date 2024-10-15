@@ -668,18 +668,18 @@ doLedgerEntry(RPC::JsonContext& context)
         else if (context.params.isMember(jss::mptoken))
         {
             expectedType = ltMPTOKEN;
-            if (!context.params[jss::mptoken].isObject())
+            auto const& mptJson = context.params[jss::mptoken];
+            if (!mptJson.isObject())
             {
-                if (!uNodeIndex.parseHex(
-                        context.params[jss::mptoken].asString()))
+                if (!uNodeIndex.parseHex(mptJson.asString()))
                 {
                     uNodeIndex = beast::zero;
                     jvResult[jss::error] = "malformedRequest";
                 }
             }
             else if (
-                !context.params[jss::mptoken].isMember(jss::mpt_issuance_id) ||
-                !context.params[jss::mptoken].isMember(jss::account))
+                !mptJson.isMember(jss::mpt_issuance_id) ||
+                !mptJson.isMember(jss::account))
             {
                 jvResult[jss::error] = "malformedRequest";
             }
@@ -688,8 +688,7 @@ doLedgerEntry(RPC::JsonContext& context)
                 try
                 {
                     auto const mptIssuanceIdStr =
-                        context.params[jss::mptoken][jss::mpt_issuance_id]
-                            .asString();
+                        mptJson[jss::mpt_issuance_id].asString();
 
                     uint192 mptIssuanceID;
                     if (!mptIssuanceID.parseHex(mptIssuanceIdStr))
@@ -697,7 +696,7 @@ doLedgerEntry(RPC::JsonContext& context)
                             "Cannot parse mpt_issuance_id");
 
                     auto const account = parseBase58<AccountID>(
-                        context.params[jss::mptoken][jss::account].asString());
+                        mptJson[jss::account].asString());
 
                     if (!account || account->isZero())
                         jvResult[jss::error] = "malformedAddress";
