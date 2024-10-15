@@ -64,11 +64,7 @@ struct STNumber_test : public beast::unit_test::suite
             testCombo(Number{mantissa});
 
         std::initializer_list<std::int32_t> const exponents = {
-            Number::minExponent,
-            -1,
-            0,
-            1,
-            Number::maxExponent - 1};
+            Number::minExponent, -1, 0, 1, Number::maxExponent - 1};
         for (std::int32_t exponent : exponents)
             testCombo(Number{123, exponent});
 
@@ -85,7 +81,9 @@ struct STNumber_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(STNumber, protocol, ripple);
 
-void testCompile(std::ostream& out) {
+void
+testCompile(std::ostream& out)
+{
     STNumber number{sfNumber, 42};
     out << number;
 }

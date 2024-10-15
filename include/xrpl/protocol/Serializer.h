@@ -85,9 +85,7 @@ public:
     add16(std::uint16_t i);
 
     template <typename T>
-    requires (sizeof(T) == sizeof(std::uint32_t))
-    int
-    add32(T i)
+    requires(sizeof(T) == sizeof(std::uint32_t)) int add32(T i)
     {
         int ret = mData.size();
         mData.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
@@ -101,9 +99,7 @@ public:
     add32(HashPrefix p);
 
     template <typename T>
-    requires (sizeof(T) == sizeof(std::uint64_t))
-    int
-    add64(T i)
+    requires(sizeof(T) == sizeof(std::uint64_t)) int add64(T i)
     {
         int ret = mData.size();
         mData.push_back(static_cast<unsigned char>((i >> 56) & 0xff));

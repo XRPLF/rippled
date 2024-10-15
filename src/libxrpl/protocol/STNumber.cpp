@@ -101,7 +101,8 @@ STNumber::isDefault() const
     return *this == Number();
 }
 
-std::ostream& operator<< (std::ostream& out, STNumber const& rhs)
+std::ostream&
+operator<<(std::ostream& out, STNumber const& rhs)
 {
     return out << rhs.getText();
 }

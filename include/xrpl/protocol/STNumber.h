@@ -54,8 +54,7 @@ public:
     getSType() const override;
     std::string
     getText() const override;
-    Json::Value
-    getJson(JsonOptions) const override;
+    Json::Value getJson(JsonOptions) const override;
     void
     add(Serializer& s) const override;
 
@@ -76,7 +75,8 @@ private:
     move(std::size_t n, void* buf) override;
 };
 
-std::ostream& operator<< (std::ostream& out, STNumber const& rhs);
+std::ostream&
+operator<<(std::ostream& out, STNumber const& rhs);
 
 }  // namespace ripple
 
