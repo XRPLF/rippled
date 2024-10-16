@@ -502,14 +502,8 @@ protected:
 
 // Constraint += and -= ValueProxy operators
 // to value types that support arithmetic operations
-template <typename TArg, typename TCls>
-concept CanAddSubstr =
-    (std::is_arithmetic_v<TArg> &&
-     (std::is_same_v<
-          std::make_unsigned_t<TArg>,
-          std::make_unsigned_t<typename TCls::value_type>> ||
-      (std::is_same_v<TArg, STAmount> &&
-       std::is_same_v<typename TCls::value_type, STAmount>)));
+template <typename U>
+concept IsArithmetic = std::is_arithmetic_v<U> || std::is_same_v<U, STAmount>;
 
 template <class T>
 class STObject::ValueProxy : private Proxy<T>
@@ -528,13 +522,13 @@ public:
 
     // Convenience operators for value types supporting
     // arithmetic operations
-    template <class U>
-    requires CanAddSubstr<U, T> ValueProxy&
-    operator+=(U const& t);
+    template <IsArithmetic U>
+    ValueProxy&
+    operator+=(U const& u);
 
-    template <class U>
-    requires CanAddSubstr<U, T> ValueProxy&
-    operator-=(U const& t);
+    template <IsArithmetic U>
+    ValueProxy&
+    operator-=(U const& u);
 
     operator value_type() const;
 
@@ -754,20 +748,20 @@ STObject::ValueProxy<T>::operator=(U&& u)
 }
 
 template <typename T>
-template <class U>
-requires CanAddSubstr<U, T> STObject::ValueProxy<T>&
-STObject::ValueProxy<T>::operator+=(U const& t)
+template <IsArithmetic U>
+STObject::ValueProxy<T>&
+STObject::ValueProxy<T>::operator+=(U const& u)
 {
-    this->assign(this->value() + t);
+    this->assign(this->value() + u);
     return *this;
 }
 
 template <class T>
-template <class U>
-requires CanAddSubstr<U, T> STObject::ValueProxy<T>&
-STObject::ValueProxy<T>::operator-=(U const& t)
+template <IsArithmetic U>
+STObject::ValueProxy<T>&
+STObject::ValueProxy<T>::operator-=(U const& u)
 {
-    this->assign(this->value() - t);
+    this->assign(this->value() - u);
     return *this;
 }
 

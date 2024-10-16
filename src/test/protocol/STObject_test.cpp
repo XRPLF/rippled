@@ -396,6 +396,7 @@ public:
         auto const& sf1Outer = sfSequence;
         auto const& sf2Outer = sfExpiration;
         auto const& sf3Outer = sfQualityIn;
+        auto const& sf4Outer = sfAmount;
         auto const& sf4 = sfSignature;
         auto const& sf5 = sfPublicKey;
 
@@ -427,6 +428,7 @@ public:
             {sf1Outer, soeREQUIRED},
             {sf2Outer, soeOPTIONAL},
             {sf3Outer, soeDEFAULT},
+            {sf4Outer, soeOPTIONAL},
             {sf4, soeOPTIONAL},
             {sf5, soeDEFAULT},
         };
@@ -494,6 +496,16 @@ public:
             BEAST_EXPECT(st[sf1Outer] == 4);
             BEAST_EXPECT(st[sf2Outer] == 4);
             BEAST_EXPECT(st[sf2Outer] == st[sf1Outer]);
+            st[sf1Outer] += 1;
+            BEAST_EXPECT(st[sf1Outer] == 5);
+            st[sf4Outer] = STAmount{1};
+            BEAST_EXPECT(st[sf4Outer] == STAmount{1});
+            st[sf4Outer] += STAmount{1};
+            BEAST_EXPECT(st[sf4Outer] == STAmount{2});
+            st[sf1Outer] -= 1;
+            BEAST_EXPECT(st[sf1Outer] == 4);
+            st[sf4Outer] -= STAmount{1};
+            BEAST_EXPECT(st[sf4Outer] == STAmount{1});
         }
 
         // Write templated object
@@ -542,6 +554,16 @@ public:
             BEAST_EXPECT(st[sf3Outer] == 0);
             BEAST_EXPECT(*st[~sf3Outer] == 0);
             BEAST_EXPECT(!!st[~sf3Outer]);
+            st[sf1Outer] += 1;
+            BEAST_EXPECT(st[sf1Outer] == 1);
+            st[sf4Outer] = STAmount{1};
+            BEAST_EXPECT(st[sf4Outer] == STAmount{1});
+            st[sf4Outer] += STAmount{1};
+            BEAST_EXPECT(st[sf4Outer] == STAmount{2});
+            st[sf1Outer] -= 1;
+            BEAST_EXPECT(st[sf1Outer] == 0);
+            st[sf4Outer] -= STAmount{1};
+            BEAST_EXPECT(st[sf4Outer] == STAmount{1});
         }
 
         // coercion operator to std::optional
@@ -716,4 +738,4 @@ run() override
 
 BEAST_DEFINE_TESTSUITE(STObject, protocol, ripple);
 
-}  // ripple
+}  // namespace ripple
