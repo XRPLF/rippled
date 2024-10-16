@@ -32,9 +32,9 @@ mptflags::operator()(Env& env) const
 }
 
 void
-mptpay::operator()(Env& env) const
+mptbalance::operator()(Env& env) const
 {
-    env.test.expect(amount_ == tester_.getAmount(account_));
+    env.test.expect(amount_ == tester_.getBalance(account_));
 }
 
 void
@@ -43,19 +43,19 @@ requireAny::operator()(Env& env) const
     env.test.expect(cb_());
 }
 
-std::unordered_map<std::string, AccountP>
-MPTTester::makeHolders(std::vector<AccountP> const& holders)
+std::unordered_map<std::string, Account>
+MPTTester::makeHolders(std::vector<Account> const& holders)
 {
-    std::unordered_map<std::string, AccountP> accounts;
+    std::unordered_map<std::string, Account> accounts;
     for (auto const& h : holders)
     {
-        assert(h && accounts.find(h->human()) == accounts.cend());
-        accounts.emplace(h->human(), h);
+        assert(accounts.find(h.human()) == accounts.cend());
+        accounts.emplace(h.human(), h);
     }
     return accounts;
 }
 
-MPTTester::MPTTester(Env& env, Account const& issuer, MPTConstr const& arg)
+MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
     : env_(env)
     , issuer_(issuer)
     , holders_(makeHolders(arg.holders))
@@ -65,7 +65,7 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTConstr const& arg)
     {
         env_.fund(arg.xrp, issuer_);
         for (auto it : holders_)
-            env_.fund(arg.xrpHolders, *it.second);
+            env_.fund(arg.xrpHolders, it.second);
     }
     if (close_)
         env.close();
@@ -74,8 +74,8 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTConstr const& arg)
         env_.require(owners(issuer_, 0));
         for (auto it : holders_)
         {
-            assert(issuer_.id() != it.second->id());
-            env_.require(owners(*it.second, 0));
+            assert(issuer_.id() != it.second.id());
+            env_.require(owners(it.second, 0));
         }
     }
 }
@@ -83,10 +83,9 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTConstr const& arg)
 void
 MPTTester::create(const MPTCreate& arg)
 {
-    if (issuanceKey_)
+    if (id_)
         Throw<std::runtime_error>("MPT can't be reused");
     id_ = makeMptID(env_.seq(issuer_), issuer_);
-    issuanceKey_ = keylet::mptIssuance(*id_).key;
     Json::Value jv;
     jv[sfAccount.jsonName] = issuer_.human();
     jv[sfTransactionType.jsonName] = jss::MPTokenIssuanceCreate;
@@ -106,7 +105,6 @@ MPTTester::create(const MPTCreate& arg)
         }));
 
         id_.reset();
-        issuanceKey_.reset();
     }
     else if (arg.flags)
         env_.require(mptflags(*this, *arg.flags));
@@ -138,7 +136,7 @@ MPTTester::holder(std::string const& holder_) const
     assert(it != holders_.cend());
     if (it == holders_.cend())
         Throw<std::runtime_error>("Holder is not found");
-    return *it->second;
+    return it->second;
 }
 
 void
@@ -162,7 +160,7 @@ MPTTester::authorize(MPTAuthorize const& arg)
     if (auto const result = submit(arg, jv); result == tesSUCCESS)
     {
         // Issuer authorizes
-        if (arg.account == nullptr || *arg.account == issuer_)
+        if (!arg.account || *arg.account == issuer_)
         {
             auto const flags = getFlags(arg.holder);
             // issuer un-authorizes the holder
@@ -179,19 +177,19 @@ MPTTester::authorize(MPTAuthorize const& arg)
             auto const flags = getFlags(arg.account);
             // holder creates a token
             env_.require(mptflags(*this, flags, arg.account));
-            env_.require(mptpay(*this, *arg.account, 0));
+            env_.require(mptbalance(*this, *arg.account, 0));
         }
     }
     else if (
-        arg.account != nullptr && *arg.account != issuer_ &&
-        arg.flags.value_or(0) == 0 && issuanceKey_)
+        arg.account && *arg.account != issuer_ && arg.flags.value_or(0) == 0 &&
+        id_)
     {
         if (result == tecDUPLICATE)
         {
             // Verify that MPToken already exists
             env_.require(requireAny([&]() -> bool {
-                return env_.le(keylet::mptoken(
-                           *issuanceKey_, arg.account->id())) != nullptr;
+                return env_.le(keylet::mptoken(*id_, arg.account->id())) !=
+                    nullptr;
             }));
         }
         else
@@ -199,8 +197,8 @@ MPTTester::authorize(MPTAuthorize const& arg)
             // Verify MPToken doesn't exist if holder failed authorizing(unless
             // it already exists)
             env_.require(requireAny([&]() -> bool {
-                return env_.le(keylet::mptoken(
-                           *issuanceKey_, arg.account->id())) == nullptr;
+                return env_.le(keylet::mptoken(*id_, arg.account->id())) ==
+                    nullptr;
             }));
         }
     }
@@ -226,7 +224,8 @@ MPTTester::set(MPTSet const& arg)
         jv[sfMPTokenHolder.jsonName] = arg.holder->human();
     if (submit(arg, jv) == tesSUCCESS && arg.flags.value_or(0))
     {
-        auto require = [&](AccountP holder, bool unchanged) {
+        auto require = [&](std::optional<Account> const& holder,
+                           bool unchanged) {
             auto flags = getFlags(holder);
             if (!unchanged)
             {
@@ -240,22 +239,22 @@ MPTTester::set(MPTSet const& arg)
             env_.require(mptflags(*this, flags, holder));
         };
         if (arg.account)
-            require(nullptr, arg.holder != nullptr);
+            require(std::nullopt, arg.holder.has_value());
         if (arg.holder)
-            require(arg.holder, false);
+            require(*arg.holder, false);
     }
 }
 
 bool
 MPTTester::forObject(
     std::function<bool(SLEP const& sle)> const& cb,
-    AccountP holder_) const
+    std::optional<Account> const& holder_) const
 {
-    assert(issuanceKey_);
+    assert(id_);
     auto const key = [&]() {
         if (holder_)
-            return keylet::mptoken(*issuanceKey_, holder_->id());
-        return keylet::mptIssuance(*issuanceKey_);
+            return keylet::mptoken(*id_, holder_->id());
+        return keylet::mptIssuance(*id_);
     }();
     if (auto const sle = env_.le(key))
         return cb(sle);
@@ -269,7 +268,7 @@ MPTTester::checkMPTokenAmount(
 {
     return forObject(
         [&](SLEP const& sle) { return expectedAmount == (*sle)[sfMPTAmount]; },
-        &holder_);
+        holder_);
 }
 
 [[nodiscard]] bool
@@ -281,7 +280,9 @@ MPTTester::checkMPTokenOutstandingAmount(std::int64_t expectedAmount) const
 }
 
 [[nodiscard]] bool
-MPTTester::checkFlags(uint32_t const expectedFlags, AccountP holder) const
+MPTTester::checkFlags(
+    uint32_t const expectedFlags,
+    std::optional<Account> const& holder) const
 {
     return expectedFlags == getFlags(holder);
 }
@@ -294,9 +295,9 @@ MPTTester::pay(
     std::optional<TER> err)
 {
     assert(id_);
-    auto const srcAmt = getAmount(src);
-    auto const destAmt = getAmount(dest);
-    auto const outstnAmt = getAmount(issuer_);
+    auto const srcAmt = getBalance(src);
+    auto const destAmt = getBalance(dest);
+    auto const outstnAmt = getBalance(issuer_);
     if (err)
         env_(jtx::pay(src, dest, mpt(amount)), ter(*err));
     else
@@ -307,13 +308,13 @@ MPTTester::pay(
         env_.close();
     if (src == issuer_)
     {
-        env_.require(mptpay(*this, src, srcAmt + amount));
-        env_.require(mptpay(*this, dest, destAmt + amount));
+        env_.require(mptbalance(*this, src, srcAmt + amount));
+        env_.require(mptbalance(*this, dest, destAmt + amount));
     }
     else if (dest == issuer_)
     {
-        env_.require(mptpay(*this, src, srcAmt - amount));
-        env_.require(mptpay(*this, dest, destAmt - amount));
+        env_.require(mptbalance(*this, src, srcAmt - amount));
+        env_.require(mptbalance(*this, dest, destAmt - amount));
     }
     else
     {
@@ -321,10 +322,10 @@ MPTTester::pay(
         STAmount const saActual =
             multiply(saAmount, transferRate(*env_.current(), *id_));
         // Sender pays the transfer fee if any
-        env_.require(mptpay(*this, src, srcAmt - saActual.mpt().value()));
-        env_.require(mptpay(*this, dest, destAmt + amount));
+        env_.require(mptbalance(*this, src, srcAmt - saActual.mpt().value()));
+        env_.require(mptbalance(*this, dest, destAmt + amount));
         // Outstanding amount is reduced by the transfer fee if any
-        env_.require(mptpay(
+        env_.require(mptbalance(
             *this, issuer_, outstnAmt - (saActual - saAmount).mpt().value()));
     }
 }
@@ -337,8 +338,8 @@ MPTTester::claw(
     std::optional<TER> err)
 {
     assert(id_);
-    auto const issuerAmt = getAmount(issuer);
-    auto const holderAmt = getAmount(holder);
+    auto const issuerAmt = getBalance(issuer);
+    auto const holderAmt = getBalance(holder);
     if (err)
         env_(jtx::claw(issuer, mpt(amount), holder), ter(*err));
     else
@@ -349,9 +350,9 @@ MPTTester::claw(
         env_.close();
 
     env_.require(
-        mptpay(*this, issuer, issuerAmt - std::min(holderAmt, amount)));
+        mptbalance(*this, issuer, issuerAmt - std::min(holderAmt, amount)));
     env_.require(
-        mptpay(*this, holder, holderAmt - std::min(holderAmt, amount)));
+        mptbalance(*this, holder, holderAmt - std::min(holderAmt, amount)));
 }
 
 PrettyAmount
@@ -362,25 +363,24 @@ MPTTester::mpt(std::int64_t amount) const
 }
 
 std::int64_t
-MPTTester::getAmount(Account const& account) const
+MPTTester::getBalance(Account const& account) const
 {
-    assert(issuanceKey_);
+    assert(id_);
     if (account == issuer_)
     {
-        if (auto const sle = env_.le(keylet::mptIssuance(*issuanceKey_)))
+        if (auto const sle = env_.le(keylet::mptIssuance(*id_)))
             return sle->getFieldU64(sfOutstandingAmount);
     }
     else
     {
-        if (auto const sle =
-                env_.le(keylet::mptoken(*issuanceKey_, account.id())))
+        if (auto const sle = env_.le(keylet::mptoken(*id_, account.id())))
             return sle->getFieldU64(sfMPTAmount);
     }
     return 0;
 }
 
 std::uint32_t
-MPTTester::getFlags(ripple::test::jtx::AccountP holder) const
+MPTTester::getFlags(std::optional<Account> const& holder) const
 {
     std::uint32_t flags = 0;
     if (!forObject(

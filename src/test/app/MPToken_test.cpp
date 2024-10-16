@@ -164,7 +164,7 @@ class MPToken_test : public beast::unit_test::suite
         // MPTokenIssuanceDestroy (preclaim)
         {
             Env env{*this, features};
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.destroy(
                 {.id = makeMptID(env.seq(alice), alice),
@@ -174,13 +174,13 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.create({.ownerCount = 1});
 
             // a non-issuer tries to destroy a mptissuance they didn't issue
-            mptAlice.destroy({.issuer = &bob, .err = tecNO_PERMISSION});
+            mptAlice.destroy({.issuer = bob, .err = tecNO_PERMISSION});
 
             // Make sure that issuer can't delete issuance when it still has
             // outstanding balance
             {
                 // bob now holds a mptoken object
-                mptAlice.authorize({.account = &bob, .holderCount = 1});
+                mptAlice.authorize({.account = bob, .holderCount = 1});
 
                 // alice pays bob 100 tokens
                 mptAlice.pay(alice, bob, 100);
@@ -220,10 +220,10 @@ class MPToken_test : public beast::unit_test::suite
         // Validate amendment enable in MPTokenAuthorize (preflight)
         {
             Env env{*this, features - featureMPTokensV1};
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.authorize(
-                {.account = &bob,
+                {.account = bob,
                  .id = makeMptID(env.seq(alice), alice),
                  .err = temDISABLED});
         }
@@ -231,56 +231,56 @@ class MPToken_test : public beast::unit_test::suite
         // Validate fields in MPTokenAuthorize (preflight)
         {
             Env env{*this, features};
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({.ownerCount = 1});
 
             mptAlice.authorize(
-                {.account = &bob, .flags = 0x00000002, .err = temINVALID_FLAG});
+                {.account = bob, .flags = 0x00000002, .err = temINVALID_FLAG});
 
             mptAlice.authorize(
-                {.account = &bob, .holder = &bob, .err = temMALFORMED});
+                {.account = bob, .holder = bob, .err = temMALFORMED});
 
-            mptAlice.authorize({.holder = &alice, .err = temMALFORMED});
+            mptAlice.authorize({.holder = alice, .err = temMALFORMED});
         }
 
         // Try authorizing when MPTokenIssuance doesn't exist in
         // MPTokenAuthorize (preclaim)
         {
             Env env{*this, features};
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
             auto const id = makeMptID(env.seq(alice), alice);
 
             mptAlice.authorize(
-                {.holder = &bob, .id = id, .err = tecOBJECT_NOT_FOUND});
+                {.holder = bob, .id = id, .err = tecOBJECT_NOT_FOUND});
 
             mptAlice.authorize(
-                {.account = &bob, .id = id, .err = tecOBJECT_NOT_FOUND});
+                {.account = bob, .id = id, .err = tecOBJECT_NOT_FOUND});
         }
 
         // Test bad scenarios without allowlisting in MPTokenAuthorize
         // (preclaim)
         {
             Env env{*this, features};
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({.ownerCount = 1});
 
             // bob submits a tx with a holder field
             mptAlice.authorize(
-                {.account = &bob, .holder = &alice, .err = tecNO_PERMISSION});
+                {.account = bob, .holder = alice, .err = tecNO_PERMISSION});
 
             // alice tries to hold onto her own token
-            mptAlice.authorize({.account = &alice, .err = tecNO_PERMISSION});
+            mptAlice.authorize({.account = alice, .err = tecNO_PERMISSION});
 
             // the mpt does not enable allowlisting
-            mptAlice.authorize({.holder = &bob, .err = tecNO_AUTH});
+            mptAlice.authorize({.holder = bob, .err = tecNO_AUTH});
 
             // bob now holds a mptoken object
-            mptAlice.authorize({.account = &bob, .holderCount = 1});
+            mptAlice.authorize({.account = bob, .holderCount = 1});
 
             // bob cannot create the mptoken the second time
-            mptAlice.authorize({.account = &bob, .err = tecDUPLICATE});
+            mptAlice.authorize({.account = bob, .err = tecDUPLICATE});
 
             // Check that bob cannot delete MPToken when his balance is
             // non-zero
@@ -291,7 +291,7 @@ class MPToken_test : public beast::unit_test::suite
                 // bob tries to delete his MPToken, but fails since he still
                 // holds tokens
                 mptAlice.authorize(
-                    {.account = &bob,
+                    {.account = bob,
                      .flags = tfMPTUnauthorize,
                      .err = tecHAS_OBLIGATIONS});
 
@@ -300,12 +300,12 @@ class MPToken_test : public beast::unit_test::suite
             }
 
             // bob deletes/unauthorizes his MPToken
-            mptAlice.authorize({.account = &bob, .flags = tfMPTUnauthorize});
+            mptAlice.authorize({.account = bob, .flags = tfMPTUnauthorize});
 
             // bob receives error when he tries to delete his MPToken that has
             // already been deleted
             mptAlice.authorize(
-                {.account = &bob,
+                {.account = bob,
                  .holderCount = 0,
                  .flags = tfMPTUnauthorize,
                  .err = tecOBJECT_NOT_FOUND});
@@ -314,7 +314,7 @@ class MPToken_test : public beast::unit_test::suite
         // Test bad scenarios with allow-listing in MPTokenAuthorize (preclaim)
         {
             Env env{*this, features};
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({.ownerCount = 1, .flags = tfMPTRequireAuth});
 
@@ -323,31 +323,31 @@ class MPToken_test : public beast::unit_test::suite
 
             // alice submits a tx to authorize a holder that hasn't created
             // a mptoken yet
-            mptAlice.authorize({.holder = &bob, .err = tecOBJECT_NOT_FOUND});
+            mptAlice.authorize({.holder = bob, .err = tecOBJECT_NOT_FOUND});
 
             // alice specifys a holder acct that doesn't exist
-            mptAlice.authorize({.holder = &cindy, .err = tecNO_DST});
+            mptAlice.authorize({.holder = cindy, .err = tecNO_DST});
 
             // bob now holds a mptoken object
-            mptAlice.authorize({.account = &bob, .holderCount = 1});
+            mptAlice.authorize({.account = bob, .holderCount = 1});
 
             // alice tries to unauthorize bob.
             // although tx is successful,
             // but nothing happens because bob hasn't been authorized yet
-            mptAlice.authorize({.holder = &bob, .flags = tfMPTUnauthorize});
+            mptAlice.authorize({.holder = bob, .flags = tfMPTUnauthorize});
 
             // alice authorizes bob
             // make sure bob's mptoken has set lsfMPTAuthorized
-            mptAlice.authorize({.holder = &bob});
+            mptAlice.authorize({.holder = bob});
 
             // alice tries authorizes bob again.
             // tx is successful, but bob is already authorized,
             // so no changes
-            mptAlice.authorize({.holder = &bob});
+            mptAlice.authorize({.holder = bob});
 
             // bob deletes his mptoken
             mptAlice.authorize(
-                {.account = &bob, .holderCount = 0, .flags = tfMPTUnauthorize});
+                {.account = bob, .holderCount = 0, .flags = tfMPTUnauthorize});
         }
 
         // Test mptoken reserve requirement - first two mpts free (doApply)
@@ -359,7 +359,7 @@ class MPToken_test : public beast::unit_test::suite
             MPTTester mptAlice1(
                 env,
                 alice,
-                {.holders = {&bob},
+                {.holders = {bob},
                  .xrpHolders = acctReserve + XRP(1).value().xrp()});
             mptAlice1.create();
 
@@ -370,19 +370,19 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice3.create({.ownerCount = 3});
 
             // first mpt for free
-            mptAlice1.authorize({.account = &bob, .holderCount = 1});
+            mptAlice1.authorize({.account = bob, .holderCount = 1});
 
             // second mpt free
-            mptAlice2.authorize({.account = &bob, .holderCount = 2});
+            mptAlice2.authorize({.account = bob, .holderCount = 2});
 
             mptAlice3.authorize(
-                {.account = &bob, .err = tecINSUFFICIENT_RESERVE});
+                {.account = bob, .err = tecINSUFFICIENT_RESERVE});
 
             env(pay(
                 env.master, bob, drops(incReserve + incReserve + incReserve)));
             env.close();
 
-            mptAlice3.authorize({.account = &bob, .holderCount = 3});
+            mptAlice3.authorize({.account = bob, .holderCount = 3});
         }
     }
 
@@ -399,16 +399,16 @@ class MPToken_test : public beast::unit_test::suite
             Env env{*this, features};
 
             // alice create mptissuance without allowisting
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({.ownerCount = 1});
 
             // bob creates a mptoken
-            mptAlice.authorize({.account = &bob, .holderCount = 1});
+            mptAlice.authorize({.account = bob, .holderCount = 1});
 
             // bob deletes his mptoken
             mptAlice.authorize(
-                {.account = &bob, .holderCount = 0, .flags = tfMPTUnauthorize});
+                {.account = bob, .holderCount = 0, .flags = tfMPTUnauthorize});
         }
 
         // With allowlisting
@@ -416,37 +416,37 @@ class MPToken_test : public beast::unit_test::suite
             Env env{*this, features};
 
             // alice creates a mptokenissuance that requires authorization
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({.ownerCount = 1, .flags = tfMPTRequireAuth});
 
             // bob creates a mptoken
-            mptAlice.authorize({.account = &bob, .holderCount = 1});
+            mptAlice.authorize({.account = bob, .holderCount = 1});
 
             // alice authorizes bob
-            mptAlice.authorize({.account = &alice, .holder = &bob});
+            mptAlice.authorize({.account = alice, .holder = bob});
 
             // Unauthorize bob's mptoken
             mptAlice.authorize(
-                {.account = &alice,
-                 .holder = &bob,
+                {.account = alice,
+                 .holder = bob,
                  .holderCount = 1,
                  .flags = tfMPTUnauthorize});
 
             mptAlice.authorize(
-                {.account = &bob, .holderCount = 0, .flags = tfMPTUnauthorize});
+                {.account = bob, .holderCount = 0, .flags = tfMPTUnauthorize});
         }
 
         // Holder can have dangling MPToken even if issuance has been destroyed.
         // Make sure they can still delete/unauthorize the MPToken
         {
             Env env{*this, features};
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({.ownerCount = 1});
 
             // bob creates a mptoken
-            mptAlice.authorize({.account = &bob, .holderCount = 1});
+            mptAlice.authorize({.account = bob, .holderCount = 1});
 
             // alice deletes her issuance
             mptAlice.destroy({.ownerCount = 0});
@@ -454,7 +454,7 @@ class MPToken_test : public beast::unit_test::suite
             // bob can delete his mptoken even though issuance is no longer
             // existent
             mptAlice.authorize(
-                {.account = &bob, .holderCount = 0, .flags = tfMPTUnauthorize});
+                {.account = bob, .holderCount = 0, .flags = tfMPTUnauthorize});
         }
     }
 
@@ -470,10 +470,10 @@ class MPToken_test : public beast::unit_test::suite
         // Validate fields in MPTokenIssuanceSet (preflight)
         {
             Env env{*this, features - featureMPTokensV1};
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.set(
-                {.account = &bob,
+                {.account = bob,
                  .id = makeMptID(env.seq(alice), alice),
                  .err = temDISABLED});
 
@@ -481,25 +481,25 @@ class MPToken_test : public beast::unit_test::suite
 
             mptAlice.create({.ownerCount = 1, .holderCount = 0});
 
-            mptAlice.authorize({.account = &bob, .holderCount = 1});
+            mptAlice.authorize({.account = bob, .holderCount = 1});
 
             // test invalid flag
             mptAlice.set(
-                {.account = &alice,
+                {.account = alice,
                  .flags = 0x00000008,
                  .err = temINVALID_FLAG});
 
             // set both lock and unlock flags at the same time will fail
             mptAlice.set(
-                {.account = &alice,
+                {.account = alice,
                  .flags = tfMPTLock | tfMPTUnlock,
                  .err = temINVALID_FLAG});
 
             // if the holder is the same as the acct that submitted the tx,
             // tx fails
             mptAlice.set(
-                {.account = &alice,
-                 .holder = &alice,
+                {.account = alice,
+                 .holder = alice,
                  .flags = tfMPTLock,
                  .err = temMALFORMED});
         }
@@ -509,35 +509,35 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({.ownerCount = 1});
 
             // alice tries to lock a mptissuance that has disabled locking
             mptAlice.set(
-                {.account = &alice,
+                {.account = alice,
                  .flags = tfMPTLock,
                  .err = tecNO_PERMISSION});
 
             // alice tries to unlock mptissuance that has disabled locking
             mptAlice.set(
-                {.account = &alice,
+                {.account = alice,
                  .flags = tfMPTUnlock,
                  .err = tecNO_PERMISSION});
 
             // issuer tries to lock a bob's mptoken that has disabled
             // locking
             mptAlice.set(
-                {.account = &alice,
-                 .holder = &bob,
+                {.account = alice,
+                 .holder = bob,
                  .flags = tfMPTLock,
                  .err = tecNO_PERMISSION});
 
             // issuer tries to unlock a bob's mptoken that has disabled
             // locking
             mptAlice.set(
-                {.account = &alice,
-                 .holder = &bob,
+                {.account = alice,
+                 .holder = bob,
                  .flags = tfMPTUnlock,
                  .err = tecNO_PERMISSION});
         }
@@ -547,7 +547,7 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             // alice trying to set when the mptissuance doesn't exist yet
             mptAlice.set(
@@ -560,17 +560,17 @@ class MPToken_test : public beast::unit_test::suite
 
             // a non-issuer acct tries to set the mptissuance
             mptAlice.set(
-                {.account = &bob, .flags = tfMPTLock, .err = tecNO_PERMISSION});
+                {.account = bob, .flags = tfMPTLock, .err = tecNO_PERMISSION});
 
             // trying to set a holder who doesn't have a mptoken
             mptAlice.set(
-                {.holder = &bob,
+                {.holder = bob,
                  .flags = tfMPTLock,
                  .err = tecOBJECT_NOT_FOUND});
 
             // trying to set a holder who doesn't exist
             mptAlice.set(
-                {.holder = &cindy, .flags = tfMPTLock, .err = tecNO_DST});
+                {.holder = cindy, .flags = tfMPTLock, .err = tecNO_DST});
         }
     }
 
@@ -586,46 +586,46 @@ class MPToken_test : public beast::unit_test::suite
         Account const alice("alice");  // issuer
         Account const bob("bob");      // holder
 
-        MPTTester mptAlice(env, alice, {.holders = {&bob}});
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
 
         // create a mptokenissuance with locking
         mptAlice.create(
             {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanLock});
 
-        mptAlice.authorize({.account = &bob, .holderCount = 1});
+        mptAlice.authorize({.account = bob, .holderCount = 1});
 
         // locks bob's mptoken
-        mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTLock});
+        mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
 
         // trying to lock bob's mptoken again will still succeed
         // but no changes to the objects
-        mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTLock});
+        mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
 
         // alice locks the mptissuance
-        mptAlice.set({.account = &alice, .flags = tfMPTLock});
+        mptAlice.set({.account = alice, .flags = tfMPTLock});
 
         // alice tries to lock up both mptissuance and mptoken again
         // it will not change the flags and both will remain locked.
-        mptAlice.set({.account = &alice, .flags = tfMPTLock});
-        mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTLock});
+        mptAlice.set({.account = alice, .flags = tfMPTLock});
+        mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
 
         // alice unlocks bob's mptoken
-        mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTUnlock});
+        mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTUnlock});
 
         // locks up bob's mptoken again
-        mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTLock});
+        mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
 
         // alice unlocks mptissuance
-        mptAlice.set({.account = &alice, .flags = tfMPTUnlock});
+        mptAlice.set({.account = alice, .flags = tfMPTUnlock});
 
         // alice unlocks bob's mptoken
-        mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTUnlock});
+        mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTUnlock});
 
         // alice unlocks mptissuance and bob's mptoken again despite that
         // they are already unlocked. Make sure this will not change the
         // flags
-        mptAlice.set({.account = &alice, .holder = &bob, .flags = tfMPTUnlock});
-        mptAlice.set({.account = &alice, .flags = tfMPTUnlock});
+        mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTUnlock});
+        mptAlice.set({.account = alice, .flags = tfMPTUnlock});
     }
 
     void
@@ -676,12 +676,12 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({.ownerCount = 1, .holderCount = 0});
             auto const MPT = mptAlice["MPT"];
 
-            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = bob});
 
             for (auto flags : {tfNoRippleDirect, tfLimitQuality})
                 env(pay(alice, bob, MPT(10)),
@@ -695,11 +695,11 @@ class MPToken_test : public beast::unit_test::suite
             Account const alice("alice");
             Account const carol("carol");
 
-            MPTTester mptAlice(env, alice, {.holders = {&carol}});
+            MPTTester mptAlice(env, alice, {.holders = {carol}});
 
             mptAlice.create({.ownerCount = 1, .holderCount = 0});
 
-            mptAlice.authorize({.account = &carol});
+            mptAlice.authorize({.account = carol});
 
             // sendMax and DeliverMin are valid XRP amount,
             // but is invalid combination with MPT amount
@@ -740,12 +740,12 @@ class MPToken_test : public beast::unit_test::suite
             Account const alice("alice");
             Account const carol("carol");
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create({.ownerCount = 1, .holderCount = 0});
             auto const MPT = mptAlice["MPT"];
 
-            mptAlice.authorize({.account = &carol});
+            mptAlice.authorize({.account = carol});
 
             Json::Value payment;
             payment[jss::secret] = alice.name();
@@ -763,12 +763,12 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({.ownerCount = 1, .holderCount = 0});
             auto const MPT = mptAlice["MPT"];
 
-            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = bob});
 
             mptAlice.pay(alice, bob, -1, temBAD_AMOUNT);
 
@@ -779,11 +779,11 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({.ownerCount = 1, .holderCount = 0});
 
-            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = bob});
 
             mptAlice.pay(bob, bob, 10, temREDUNDANT);
         }
@@ -794,11 +794,11 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({.ownerCount = 1, .holderCount = 0});
 
-            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = bob});
 
             Account const bad{"bad"};
             env.memoize(bad);
@@ -813,14 +813,14 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create(
                 {.ownerCount = 1,
                  .holderCount = 0,
                  .flags = tfMPTRequireAuth | tfMPTCanTransfer});
 
-            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = bob});
 
             mptAlice.pay(alice, bob, 100, tecNO_AUTH);
         }
@@ -830,7 +830,7 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create(
                 {.ownerCount = 1,
@@ -838,17 +838,17 @@ class MPToken_test : public beast::unit_test::suite
                  .flags = tfMPTRequireAuth | tfMPTCanTransfer});
 
             // bob creates an empty MPToken
-            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = bob});
 
             // alice authorizes bob to hold funds
-            mptAlice.authorize({.account = &alice, .holder = &bob});
+            mptAlice.authorize({.account = alice, .holder = bob});
 
             // alice sends 100 MPT to bob
             mptAlice.pay(alice, bob, 100);
 
             // alice UNAUTHORIZES bob
             mptAlice.authorize(
-                {.account = &alice, .holder = &bob, .flags = tfMPTUnauthorize});
+                {.account = alice, .holder = bob, .flags = tfMPTUnauthorize});
 
             // bob fails to send back to alice because he is no longer
             // authorize to move his funds!
@@ -862,16 +862,16 @@ class MPToken_test : public beast::unit_test::suite
             Account const bob{"bob"};
             Account const cindy{"cindy"};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob, &cindy}});
+            MPTTester mptAlice(env, alice, {.holders = {bob, cindy}});
 
             // alice creates issuance without MPTCanTransfer
             mptAlice.create({.ownerCount = 1, .holderCount = 0});
 
             // bob creates a MPToken
-            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = bob});
 
             // cindy creates a MPToken
-            mptAlice.authorize({.account = &cindy});
+            mptAlice.authorize({.account = cindy});
 
             // alice pays bob 100 tokens
             mptAlice.pay(alice, bob, 100);
@@ -888,7 +888,7 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
@@ -907,12 +907,12 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
 
-            mptAlice.authorize({.account = &bob});
-            mptAlice.authorize({.account = &carol});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
 
             mptAlice.pay(alice, bob, 100);
 
@@ -927,19 +927,19 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create(
                 {.ownerCount = 1, .flags = tfMPTCanLock | tfMPTCanTransfer});
 
-            mptAlice.authorize({.account = &bob});
-            mptAlice.authorize({.account = &carol});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
 
             mptAlice.pay(alice, bob, 100);
             mptAlice.pay(alice, carol, 100);
 
             // Global lock
-            mptAlice.set({.account = &alice, .flags = tfMPTLock});
+            mptAlice.set({.account = alice, .flags = tfMPTLock});
             // Can't send between holders
             mptAlice.pay(bob, carol, 1, tecLOCKED);
             mptAlice.pay(carol, bob, 2, tecLOCKED);
@@ -949,10 +949,9 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(bob, alice, 4);
 
             // Global unlock
-            mptAlice.set({.account = &alice, .flags = tfMPTUnlock});
+            mptAlice.set({.account = alice, .flags = tfMPTUnlock});
             // Individual lock
-            mptAlice.set(
-                {.account = &alice, .holder = &bob, .flags = tfMPTLock});
+            mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
             // Can't send between holders
             mptAlice.pay(bob, carol, 5, tecLOCKED);
             mptAlice.pay(carol, bob, 6, tecLOCKED);
@@ -966,7 +965,7 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             // Transfer fee is 10%
             mptAlice.create(
@@ -976,8 +975,8 @@ class MPToken_test : public beast::unit_test::suite
                  .flags = tfMPTCanTransfer});
 
             // Holders create MPToken
-            mptAlice.authorize({.account = &bob});
-            mptAlice.authorize({.account = &carol});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
 
             // Payment between the issuer and the holder, no transfer fee.
             mptAlice.pay(alice, bob, 2'000);
@@ -1022,14 +1021,14 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
 
             // Holders create MPToken
-            mptAlice.authorize({.account = &bob});
-            mptAlice.authorize({.account = &carol});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
             mptAlice.pay(alice, bob, 1'000);
 
             auto const MPT = mptAlice["MPT"];
@@ -1055,14 +1054,14 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
 
             // Holders create MPToken
-            mptAlice.authorize({.account = &bob});
-            mptAlice.authorize({.account = &carol});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
             mptAlice.pay(alice, bob, 1'000);
 
             auto const MPT = mptAlice["MPT"];
@@ -1084,7 +1083,7 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create(
                 {.maxAmt = 100,
@@ -1092,7 +1091,7 @@ class MPToken_test : public beast::unit_test::suite
                  .holderCount = 0,
                  .flags = tfMPTCanTransfer});
 
-            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = bob});
 
             // issuer sends holder the max amount allowed
             mptAlice.pay(alice, bob, 100);
@@ -1106,11 +1105,11 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({.ownerCount = 1, .holderCount = 0});
 
-            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = bob});
 
             // issuer sends holder the default max amount allowed
             mptAlice.pay(alice, bob, maxMPTokenAmount);
@@ -1139,7 +1138,7 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create(
                 {.maxAmt = 10'000,
@@ -1149,8 +1148,8 @@ class MPToken_test : public beast::unit_test::suite
                  .flags = tfMPTCanTransfer});
             auto const MPT = mptAlice["MPT"];
 
-            mptAlice.authorize({.account = &bob});
-            mptAlice.authorize({.account = &carol});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
 
             // issuer sends holder the max amount allowed
             mptAlice.pay(alice, bob, 10'000);
@@ -1189,11 +1188,11 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({.ownerCount = 1, .holderCount = 0});
 
-            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = bob});
 
             // alice destroys issuance
             mptAlice.destroy({.ownerCount = 0});
@@ -1218,7 +1217,7 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({.ownerCount = 1, .holderCount = 0});
 
@@ -1238,13 +1237,13 @@ class MPToken_test : public beast::unit_test::suite
             Account const carol("bob");
             Account const bob("carol");
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create(
                 {.maxAmt = 100, .ownerCount = 1, .flags = tfMPTCanTransfer});
 
-            mptAlice.authorize({.account = &bob});
-            mptAlice.authorize({.account = &carol});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
 
             mptAlice.pay(alice, bob, 100);
 
@@ -1256,13 +1255,13 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob, &carol}});
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
 
-            mptAlice.authorize({.account = &bob});
-            mptAlice.authorize({.account = &carol});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
 
             // issuer to holder
             mptAlice.pay(alice, bob, 100);
@@ -1701,7 +1700,7 @@ class MPToken_test : public beast::unit_test::suite
             Account const alice{"alice"};
             Account const bob{"bob"};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             // enable asfAllowTrustLineClawback for alice
             env(fset(alice, asfAllowTrustLineClawback));
@@ -1711,7 +1710,7 @@ class MPToken_test : public beast::unit_test::suite
             // Create issuance without enabling clawback
             mptAlice.create({.ownerCount = 1, .holderCount = 0});
 
-            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = bob});
 
             mptAlice.pay(alice, bob, 100);
 
@@ -1728,7 +1727,7 @@ class MPToken_test : public beast::unit_test::suite
             Account const carol{"carol"};
             env.fund(XRP(1000), carol);
             env.close();
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             auto const fakeMpt = ripple::test::jtx::MPT(
                 alice.name(), makeMptID(env.seq(alice), alice));
@@ -1745,7 +1744,7 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.claw(alice, bob, 1, tecOBJECT_NOT_FOUND);
 
             // bob creates a MPToken
-            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = bob});
 
             // clawback fails because bob currently has a balance of zero
             mptAlice.claw(alice, bob, 1, tecINSUFFICIENT_FUNDS);
@@ -1793,14 +1792,14 @@ class MPToken_test : public beast::unit_test::suite
             Account const alice{"alice"};
             Account const bob{"bob"};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             // alice creates issuance
             mptAlice.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanClawback});
 
             // bob creates a MPToken
-            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = bob});
 
             // alice pays bob 100 tokens
             mptAlice.pay(alice, bob, 100);
@@ -1819,7 +1818,7 @@ class MPToken_test : public beast::unit_test::suite
             Account const alice{"alice"};
             Account const bob{"bob"};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             // alice creates issuance
             mptAlice.create(
@@ -1828,12 +1827,12 @@ class MPToken_test : public beast::unit_test::suite
                  .flags = tfMPTCanLock | tfMPTCanClawback});
 
             // bob creates a MPToken
-            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = bob});
 
             // alice pays bob 100 tokens
             mptAlice.pay(alice, bob, 100);
 
-            mptAlice.set({.account = &alice, .flags = tfMPTLock});
+            mptAlice.set({.account = alice, .flags = tfMPTLock});
 
             mptAlice.claw(alice, bob, 100);
         }
@@ -1844,7 +1843,7 @@ class MPToken_test : public beast::unit_test::suite
             Account const alice{"alice"};
             Account const bob{"bob"};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             // alice creates issuance
             mptAlice.create(
@@ -1853,13 +1852,12 @@ class MPToken_test : public beast::unit_test::suite
                  .flags = tfMPTCanLock | tfMPTCanClawback});
 
             // bob creates a MPToken
-            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = bob});
 
             // alice pays bob 100 tokens
             mptAlice.pay(alice, bob, 100);
 
-            mptAlice.set(
-                {.account = &alice, .holder = &bob, .flags = tfMPTLock});
+            mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
 
             mptAlice.claw(alice, bob, 100);
         }
@@ -1870,7 +1868,7 @@ class MPToken_test : public beast::unit_test::suite
             Account const alice{"alice"};
             Account const bob{"bob"};
 
-            MPTTester mptAlice(env, alice, {.holders = {&bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             // alice creates issuance
             mptAlice.create(
@@ -1879,17 +1877,17 @@ class MPToken_test : public beast::unit_test::suite
                  .flags = tfMPTCanClawback | tfMPTRequireAuth});
 
             // bob creates a MPToken
-            mptAlice.authorize({.account = &bob});
+            mptAlice.authorize({.account = bob});
 
             // alice authorizes bob
-            mptAlice.authorize({.account = &alice, .holder = &bob});
+            mptAlice.authorize({.account = alice, .holder = bob});
 
             // alice pays bob 100 tokens
             mptAlice.pay(alice, bob, 100);
 
             // alice unauthorizes bob
             mptAlice.authorize(
-                {.account = &alice, .holder = &bob, .flags = tfMPTUnauthorize});
+                {.account = alice, .holder = bob, .flags = tfMPTUnauthorize});
 
             mptAlice.claw(alice, bob, 100);
         }

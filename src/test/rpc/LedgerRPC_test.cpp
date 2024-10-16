@@ -2371,14 +2371,14 @@ class LedgerRPC_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const bob("bob");
 
-        MPTTester mptAlice(env, alice, {.holders = {&bob}});
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
         mptAlice.create(
             {.transferFee = 10,
              .metadata = "123",
              .ownerCount = 1,
              .flags = tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow |
                  tfMPTCanTrade | tfMPTCanTransfer | tfMPTCanClawback});
-        mptAlice.authorize({.account = &bob, .holderCount = 1});
+        mptAlice.authorize({.account = bob, .holderCount = 1});
 
         std::string const ledgerHash{to_string(env.closed()->info().hash)};
 
