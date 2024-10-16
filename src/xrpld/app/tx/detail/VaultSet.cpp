@@ -76,7 +76,7 @@ VaultSet::doApply()
             return tecNO_PERMISSION;
 
         // Assert immutable flags not given.
-        auto txFlags = tx[sfFlags];
+        auto txFlags = tx.getFlags();
         if ((txFlags & tfVaultPrivate) ||
             (txFlags & tfVaultShareNonTransferable))
             return tecIMMUTABLE;
@@ -111,7 +111,7 @@ VaultSet::doApply()
         auto& pseudo = *maybe;
         // TODO: create empty MPToken or RippleState for Asset.
         auto pseudoId = pseudo->at(sfAccount);
-        auto txFlags = tx[sfFlags];
+        auto txFlags = tx.getFlags();
         std::uint32_t mptFlags = 0;
         if (!(txFlags & tfVaultShareNonTransferable))
             mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);

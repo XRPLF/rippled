@@ -59,6 +59,12 @@ class Vault_test : public beast::unit_test::suite
                 // env(tx, ter(tecFROZEN));
                 env.close();
             }
+
+            SUBCASE("success")
+            {
+                env(tx, fee);
+                env.close();
+            }
         }
 
         SUBCASE("MPT vault")

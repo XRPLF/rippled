@@ -847,7 +847,7 @@ template <class T>
 void
 STObject::OptionalProxy<T>::disengage()
 {
-    if (this->style_ == soeREQUIRED || this->style_ == soeDEFAULT)
+    if (this->style_ == soeREQUIRED)
         Throw<STObject::FieldErr>(
             "Template field error '" + this->f_->getName() + "'");
     if (this->style_ == soeINVALID)
