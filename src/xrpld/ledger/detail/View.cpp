@@ -1032,6 +1032,15 @@ trustDelete(
     return tesSUCCESS;
 }
 
+[[nodiscard]] TER
+enableHolding(
+    ApplyView& view,
+    AccountID const& account,
+    Asset const& asset)
+{
+    return tesSUCCESS;
+}
+
 TER
 offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
 {

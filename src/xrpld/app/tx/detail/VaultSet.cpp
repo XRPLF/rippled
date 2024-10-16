@@ -52,12 +52,9 @@ VaultSet::doApply()
 
     auto const& tx = ctx_.tx;
     auto const& owner = account_;
-    auto sequence = tx.getSequence();
 
-    auto const& vaultId = tx[sfVaultID];
     // Update existing object.
-    auto keylet = Keylet{ltVAULT, vaultId};
-    auto vault = view().peek(keylet);
+    auto vault = view().peek({ltVAULT, tx[sfVaultID]});
     if (!vault)
         return tecOBJECT_NOT_FOUND;
 

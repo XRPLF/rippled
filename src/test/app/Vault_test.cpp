@@ -49,7 +49,7 @@ class Vault_test : public beast::unit_test::suite
             {
                 env(fset(issuer, asfGlobalFreeze));
                 env.close();
-                // env(tx, fee, ter(tecFROZEN));
+                env(tx, fee, ter(tecFROZEN));
                 env.close();
             }
 

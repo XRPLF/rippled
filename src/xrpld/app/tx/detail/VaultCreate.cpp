@@ -62,12 +62,7 @@ VaultCreate::doApply()
     auto const& owner = account_;
     auto sequence = tx.getSequence();
 
-    // Create new object.
-    if (!tx.isFieldPresent(sfAsset))
-        return tecINCOMPLETE;
-
-    auto keylet = keylet::vault(owner, sequence);
-    auto vault = std::make_shared<SLE>(keylet);
+    auto vault = std::make_shared<SLE>(keylet::vault(owner, sequence));
     if (auto ter = dirLink(view(), owner, vault); !isTesSuccess(ter))
         return ter;
     auto maybePseudo = createPseudoAccount(view(), vault->key());
@@ -99,8 +94,7 @@ VaultCreate::doApply()
     vault->at(sfOwner) = owner;
     vault->at(sfAccount) = pseudoId;
     vault->at(sfAsset) = tx[sfAsset];
-    // vault->at(sfAssetTotal) = 0;
-    // vault->at(sfAssetAvailable) = 0;
+    // Leave default values for AssetTotal and AssetAvailable, both zero.
     if (auto value = tx[~sfAssetMaximum])
         vault->at(sfAssetMaximum) = *value;
     vault->at(sfMPTokenIssuanceID) = share;
