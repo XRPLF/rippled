@@ -136,7 +136,8 @@ STVar::destroy()
 }
 
 template <typename... Args>
-requires ValidConstructSTArgs<Args...> void
+    requires ValidConstructSTArgs<Args...>
+void
 STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
 {
     auto constructWithDepth = [&]<typename T>() {

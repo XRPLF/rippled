@@ -151,7 +151,8 @@ private:
      * depth is ignored in former case.
      */
     template <typename... Args>
-    requires ValidConstructSTArgs<Args...> void
+        requires ValidConstructSTArgs<Args...>
+    void
     constructST(SerializedTypeID id, int depth, Args&&... arg);
 
     bool

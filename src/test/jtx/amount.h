@@ -394,14 +394,17 @@ public:
     }
 
     template <class T>
-    requires(sizeof(T) >= sizeof(int) && std::is_arithmetic_v<T>) PrettyAmount
+        requires(sizeof(T) >= sizeof(int) && std::is_arithmetic_v<T>)
+    PrettyAmount
     operator()(T v) const
     {
         return {amountFromString(mpt(), std::to_string(v)), name};
     }
 
-    PrettyAmount operator()(epsilon_t) const;
-    PrettyAmount operator()(detail::epsilon_multiple) const;
+    PrettyAmount
+    operator()(epsilon_t) const;
+    PrettyAmount
+    operator()(detail::epsilon_multiple) const;
 
     friend BookSpec
     operator~(MPT const& mpt)

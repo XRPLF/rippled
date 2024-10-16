@@ -95,9 +95,12 @@ public:
      *  as the preferred type for floating point arithmetic as it makes
      *  "mixed mode" more convenient, e.g. MPTAmount + Number.
      */
-    explicit operator XRPAmount() const;  // round to nearest, even on tie
-    explicit operator MPTAmount() const;  // round to nearest, even on tie
-    explicit operator rep() const;        // round to nearest, even on tie
+    explicit
+    operator XRPAmount() const;  // round to nearest, even on tie
+    explicit
+    operator MPTAmount() const;  // round to nearest, even on tie
+    explicit
+    operator rep() const;  // round to nearest, even on tie
 
     friend constexpr bool
     operator==(Number const& x, Number const& y) noexcept

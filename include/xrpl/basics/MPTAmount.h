@@ -75,7 +75,8 @@ public:
     operator<(MPTAmount const& other) const;
 
     /** Returns true if the amount is not zero */
-    explicit constexpr operator bool() const noexcept;
+    explicit constexpr
+    operator bool() const noexcept;
 
     /** Return the sign of the amount */
     constexpr int
@@ -96,7 +97,8 @@ constexpr MPTAmount::MPTAmount(value_type value) : value_(value)
 {
 }
 
-constexpr MPTAmount& MPTAmount::operator=(beast::Zero)
+constexpr MPTAmount&
+MPTAmount::operator=(beast::Zero)
 {
     value_ = 0;
     return *this;
