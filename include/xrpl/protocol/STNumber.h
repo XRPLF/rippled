@@ -24,17 +24,29 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/STBase.h>
 
+#include <ostream>
+
 namespace ripple {
 
-class STNumber final : public STBase,
-                       public CountedObject<STNumber>,
-                       public Number
+/**
+ * A serializable number.
+ *
+ * This type is-a `Number`, and can be used everywhere that is accepted.
+ * This type simply integrates `Number` with the serialization framework,
+ * letting it be used for fields in ledger entries and transactions.
+ * It is effectively an `STAmount` sans `Asset`:
+ * it can represent a value of any token type (XRP, IOU, or MPT)
+ * without paying the storage cost of duplicating asset information
+ * that may be deduced from the context.
+ */
+class STNumber : public STBase, public CountedObject<STNumber>, public Number
 {
 public:
     using value_type = Number;
 
-    STNumber(SField const& n, Number const& v = Number());
-    STNumber(SerialIter& sit, SField const& name);
+    STNumber() = default;
+    explicit STNumber(SField const& field, Number const& value = Number());
+    STNumber(SerialIter& sit, SField const& field);
 
     using Number::operator=;
 
@@ -51,16 +63,20 @@ public:
     void
     setValue(Number const& v);
 
-    STBase*
-    copy(std::size_t n, void* buf) const override;
-    STBase*
-    move(std::size_t n, void* buf) override;
-
     bool
     isEquivalent(STBase const& t) const override;
     bool
     isDefault() const override;
+
+private:
+    STBase*
+    copy(std::size_t n, void* buf) const override;
+    STBase*
+    move(std::size_t n, void* buf) override;
 };
+
+std::ostream&
+operator<<(std::ostream& out, STNumber const& rhs);
 
 }  // namespace ripple
 

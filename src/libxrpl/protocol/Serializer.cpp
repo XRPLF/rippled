@@ -21,7 +21,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
-#include <boost/endian/conversion.hpp>
+#include <cstdint>
 #include <type_traits>
 
 namespace ripple {
@@ -36,17 +36,6 @@ Serializer::add16(std::uint16_t i)
 }
 
 int
-Serializer::add32(std::uint32_t i)
-{
-    int ret = mData.size();
-    mData.push_back(static_cast<unsigned char>(i >> 24));
-    mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
-    mData.push_back(static_cast<unsigned char>(i & 0xff));
-    return ret;
-}
-
-int
 Serializer::add32(HashPrefix p)
 {
     // This should never trigger; the size & type of a hash prefix are
@@ -55,47 +44,6 @@ Serializer::add32(HashPrefix p)
         std::is_same_v<std::uint32_t, std::underlying_type_t<decltype(p)>>);
 
     return add32(safe_cast<std::uint32_t>(p));
-}
-
-int
-Serializer::add64(std::uint64_t i)
-{
-    int ret = mData.size();
-    mData.push_back(static_cast<unsigned char>(i >> 56));
-    mData.push_back(static_cast<unsigned char>((i >> 48) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 40) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 32) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
-    mData.push_back(static_cast<unsigned char>(i & 0xff));
-    return ret;
-}
-
-int
-Serializer::addi32(std::int32_t i)
-{
-    int ret = mData.size();
-    mData.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
-    mData.push_back(static_cast<unsigned char>(i & 0xff));
-    return ret;
-}
-
-int
-Serializer::addi64(std::int64_t i)
-{
-    int ret = mData.size();
-    mData.push_back(static_cast<unsigned char>((i >> 56) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 48) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 40) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 32) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
-    mData.push_back(static_cast<unsigned char>(i & 0xff));
-    return ret;
 }
 
 template <>

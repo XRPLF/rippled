@@ -23,11 +23,12 @@
 
 namespace ripple {
 
-STNumber::STNumber(SField const& n, Number const& v) : STBase(n), Number(v)
+STNumber::STNumber(SField const& field, Number const& value)
+    : STBase(field), Number(value)
 {
 }
 
-STNumber::STNumber(SerialIter& sit, SField const& name) : STBase(name)
+STNumber::STNumber(SerialIter& sit, SField const& field) : STBase(field)
 {
     // We must call these methods in separate statements
     // to guarantee their order of execution.
@@ -50,7 +51,6 @@ STNumber::getText() const
 
 Json::Value STNumber::getJson(JsonOptions) const
 {
-    // TODO: come up with a string representation.
     return to_string(*this);
 }
 
@@ -59,8 +59,8 @@ STNumber::add(Serializer& s) const
 {
     assert(getFName().isBinary());
     assert(getFName().fieldType == getSType());
-    s.addi64(this->mantissa());
-    s.addi32(this->exponent());
+    s.add64(this->mantissa());
+    s.add32(this->exponent());
 }
 
 Number const&
@@ -99,6 +99,12 @@ bool
 STNumber::isDefault() const
 {
     return *this == Number();
+}
+
+std::ostream&
+operator<<(std::ostream& out, STNumber const& rhs)
+{
+    return out << rhs.getText();
 }
 
 }  // namespace ripple
