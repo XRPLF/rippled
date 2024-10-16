@@ -41,7 +41,7 @@ LedgerFormats::LedgerFormats()
 #define LEDGER_ENTRY(tag, value, name, fields) \
     add(jss::name, tag, UNWRAP fields, commonFields);
 
-#include <xrpl/protocol/detail/ledger_entries.m>
+#include <xrpl/protocol/detail/ledger_entries.macro>
 
 #undef LEDGER_ENTRY
 #pragma pop_macro("LEDGER_ENTRY")

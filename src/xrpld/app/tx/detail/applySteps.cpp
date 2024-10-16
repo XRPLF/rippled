@@ -89,7 +89,7 @@ with_txn_type(TxType txnType, F&& f)
     case tag:                                 \
         return f.template operator()<name>();
 
-#include <xrpl/protocol/detail/transactions.m>
+#include <xrpl/protocol/detail/transactions.macro>
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")

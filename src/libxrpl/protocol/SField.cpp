@@ -54,19 +54,27 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 #pragma push_macro("TYPED_SFIELD")
 #undef TYPED_SFIELD
 
-#define UNTYPED_SFIELD(name, stiSuffix, fieldValue, ...) \
-    SField const sf##name(                               \
-        access, STI_##stiSuffix, fieldValue, #name, ##__VA_ARGS__);
-#define TYPED_SFIELD(name, stiSuffix, fieldValue, ...) \
-    SF_##stiSuffix const sf##name(                     \
-        access, STI_##stiSuffix, fieldValue, #name, ##__VA_ARGS__);
+#define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
+    SField const sfName(                                   \
+        access,                                            \
+        STI_##stiSuffix,                                   \
+        fieldValue,                                        \
+        std::string_view(#sfName).substr(2).data(),        \
+        ##__VA_ARGS__);
+#define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
+    SF_##stiSuffix const sfName(                         \
+        access,                                          \
+        STI_##stiSuffix,                                 \
+        fieldValue,                                      \
+        std::string_view(#sfName).substr(2).data(),      \
+        ##__VA_ARGS__);
 
 // SFields which, for historical reasons, do not follow naming conventions.
 SField const sfInvalid(access, -1);
 SField const sfGeneric(access, 0);
 SField const sfHash(access, STI_UINT256, 257, "hash");
 
-#include <xrpl/protocol/detail/sfields.m>
+#include <xrpl/protocol/detail/sfields.macro>
 
 #undef TYPED_SFIELD
 #pragma pop_macro("TYPED_SFIELD")

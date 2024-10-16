@@ -220,6 +220,11 @@ public:
         return jsonName;
     }
 
+    operator Json::StaticString const &() const
+    {
+        return jsonName;
+    }
+
     bool
     isInvalid() const
     {
@@ -364,15 +369,15 @@ using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 #pragma push_macro("TYPED_SFIELD")
 #undef TYPED_SFIELD
 
-#define UNTYPED_SFIELD(name, stiSuffix, fieldValue, ...) \
-    extern SField const sf##name;
-#define TYPED_SFIELD(name, stiSuffix, fieldValue, ...) \
-    extern SF_##stiSuffix const sf##name;
+#define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
+    extern SField const sfName;
+#define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
+    extern SF_##stiSuffix const sfName;
 
 extern SField const sfInvalid;
 extern SField const sfGeneric;
 
-#include <xrpl/protocol/detail/sfields.m>
+#include <xrpl/protocol/detail/sfields.macro>
 
 #undef TYPED_SFIELD
 #pragma pop_macro("TYPED_SFIELD")
