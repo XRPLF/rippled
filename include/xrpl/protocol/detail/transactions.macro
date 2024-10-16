@@ -24,7 +24,8 @@
 /**
  * TRANSACTION(tag, value, name, fields)
  *
- * You must define a transactor class in the `ripple` namespace named `name`.
+ * You must define a transactor class in the `ripple` namespace named `name`,
+ * and include its header in `src/xrpld/app/tx/detail/applySteps.cpp`.
  */
 
 /** This transaction type executes a payment. */
