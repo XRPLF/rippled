@@ -19,6 +19,7 @@
 
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/app/tx/detail/AMMBid.h>
+#include <xrpld/app/tx/detail/AMMClawback.h>
 #include <xrpld/app/tx/detail/AMMCreate.h>
 #include <xrpld/app/tx/detail/AMMDelete.h>
 #include <xrpld/app/tx/detail/AMMDeposit.h>
@@ -132,6 +133,8 @@ with_txn_type(TxType txnType, F&& f)
             return f.template operator()<NFTokenAcceptOffer>();
         case ttCLAWBACK:
             return f.template operator()<Clawback>();
+        case ttAMM_CLAWBACK:
+            return f.template operator()<AMMClawback>();
         case ttAMM_CREATE:
             return f.template operator()<AMMCreate>();
         case ttAMM_DEPOSIT:
