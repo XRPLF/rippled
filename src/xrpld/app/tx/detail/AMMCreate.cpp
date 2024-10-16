@@ -214,20 +214,20 @@ applyCreate(
     auto const ammKeylet = keylet::amm(amount.issue(), amount2.issue());
 
     // Mitigate same account exists possibility
-    auto const maybe = createPseudoAccount(sb, ammKeylet.key);
+    auto const maybeAccount = createPseudoAccount(sb, ammKeylet.key);
     // AMM account already exists (should not happen)
-    if (!maybe)
+    if (!maybeAccount)
     {
         JLOG(j_.error()) << "AMM Instance: AMM already exists.";
-        return {maybe.error(), false};
+        return {maybeAccount.error(), false};
     }
-    auto& sleAMMRoot = *maybe;
-    auto const ammAccount = (*sleAMMRoot)[sfAccount];
+    auto& account = *maybeAccount;
+    auto const accountId = (*account)[sfAccount];
 
     // LP Token already exists. (should not happen)
     auto const lptIss = ammLPTIssue(
-        amount.issue().currency, amount2.issue().currency, ammAccount);
-    if (sb.read(keylet::line(ammAccount, lptIss)))
+        amount.issue().currency, amount2.issue().currency, accountId);
+    if (sb.read(keylet::line(accountId, lptIss)))
     {
         JLOG(j_.error()) << "AMM Instance: LP Token already exists.";
         return {tecDUPLICATE, false};
@@ -239,14 +239,14 @@ applyCreate(
     // A user can only receive LPTokens through affirmative action -
     // either an AMMDeposit, TrustSet, crossing an offer, etc.
     // Link the root account and AMM object
-    sleAMMRoot->setFieldH256(sfAMMID, ammKeylet.key);
+    account->setFieldH256(sfAMMID, ammKeylet.key);
 
     // Calculate initial LPT balance.
     auto const lpTokens = ammLPTokens(amount, amount2, lptIss);
 
     // Create ltAMM
     auto ammSle = std::make_shared<SLE>(ammKeylet);
-    ammSle->setAccountID(sfAccount, ammAccount);
+    ammSle->setAccountID(sfAccount, accountId);
     ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
     auto const& [issue1, issue2] = std::minmax(amount.issue(), amount2.issue());
     ammSle->setFieldIssue(sfAsset, STIssue{sfAsset, issue1});
@@ -256,7 +256,7 @@ applyCreate(
         ctx_.view(), ammSle, account_, lptIss, ctx_.tx[sfTradingFee]);
 
     // Add owner directory to link the root account and AMM object.
-    if (auto ter = dirLink(sb, ammAccount, ammSle); ter)
+    if (auto ter = dirLink(sb, accountId, ammSle); ter)
     {
         JLOG(j_.debug()) << "AMM Instance: failed to insert owner dir";
         return {tecDIR_FULL, false};
@@ -264,7 +264,7 @@ applyCreate(
     sb.insert(ammSle);
 
     // Send LPT to LP.
-    auto res = accountSend(sb, ammAccount, account_, lpTokens, ctx_.journal);
+    auto res = accountSend(sb, accountId, account_, lpTokens, ctx_.journal);
     if (res != tesSUCCESS)
     {
         JLOG(j_.debug()) << "AMM Instance: failed to send LPT " << lpTokens;
@@ -275,7 +275,7 @@ applyCreate(
         if (auto const res = accountSend(
                 sb,
                 account_,
-                ammAccount,
+                accountId,
                 amount,
                 ctx_.journal,
                 WaiveTransferFee::Yes))
@@ -284,7 +284,7 @@ applyCreate(
         if (!isXRP(amount))
         {
             if (SLE::pointer sleRippleState =
-                    sb.peek(keylet::line(ammAccount, amount.issue()));
+                    sb.peek(keylet::line(accountId, amount.issue()));
                 !sleRippleState)
                 return tecINTERNAL;
             else
@@ -313,7 +313,7 @@ applyCreate(
         return {res, false};
     }
 
-    JLOG(j_.debug()) << "AMM Instance: success " << ammAccount << " "
+    JLOG(j_.debug()) << "AMM Instance: success " << accountId << " "
                      << ammKeylet.key << " " << lpTokens << " " << amount << " "
                      << amount2;
     auto addOrderBook =

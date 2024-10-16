@@ -70,10 +70,10 @@ VaultCreate::doApply()
     auto vault = std::make_shared<SLE>(keylet);
     if (auto ter = dirLink(view(), owner, vault); !isTesSuccess(ter))
         return ter;
-    auto maybe = createPseudoAccount(view(), vault->key());
-    if (!maybe)
-        return maybe.error();
-    auto& pseudo = *maybe;
+    auto maybePseudo = createPseudoAccount(view(), vault->key());
+    if (!maybePseudo)
+        return maybePseudo.error();
+    auto& pseudo = *maybePseudo;
     // TODO: create empty MPToken or RippleState for Asset.
     auto pseudoId = pseudo->at(sfAccount);
     auto txFlags = tx.getFlags();
@@ -82,7 +82,7 @@ VaultCreate::doApply()
         mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);
     if (txFlags & tfVaultPrivate)
         mptFlags |= lsfMPTRequireAuth;
-    auto maybe2 = MPTokenIssuanceCreate::create(
+    auto maybeShare = MPTokenIssuanceCreate::create(
         view(),
         j_,
         {
@@ -91,23 +91,21 @@ VaultCreate::doApply()
             .flags = mptFlags,
             .metadata = tx[~sfMPTokenMetadata],
         });
-    if (!maybe2)
-        return maybe2.error();
-    auto& mptId = *maybe2;
+    if (!maybeShare)
+        return maybeShare.error();
+    auto& share = *maybeShare;
     vault->at(sfFlags) = txFlags & tfVaultPrivate;
     vault->at(sfSequence) = sequence;
     vault->at(sfOwner) = owner;
     vault->at(sfAccount) = pseudoId;
-    // If Data is missing in transaction,
-    // RHS will be default value,
-    // and assignment will make Data absent in object.
-    // Same if Data is present but default value in transaction.
-    vault->at(sfData) = tx[sfData];
     vault->at(sfAsset) = tx[sfAsset];
     // vault->at(sfAssetTotal) = 0;
     // vault->at(sfAssetAvailable) = 0;
-    vault->at(~sfAssetMaximum) = tx[~sfAssetMaximum];
-    vault->at(sfMPTokenIssuanceID) = mptId;
+    if (auto value = tx[~sfAssetMaximum])
+        vault->at(sfAssetMaximum) = *value;
+    vault->at(sfMPTokenIssuanceID) = share;
+    if (auto value = tx[~sfData])
+        vault->at(sfData) = *value;
     // No `LossUnrealized`.
     view().insert(vault);
 
