@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_VAULT_H_INCLUDED
 #define RIPPLE_TEST_JTX_VAULT_H_INCLUDED
 
-#include <test/jtx/Env.h>
 #include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Asset.h>
 

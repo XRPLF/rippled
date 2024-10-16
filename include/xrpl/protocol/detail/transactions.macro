@@ -412,14 +412,22 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 57, MPTokenIssuanceSet, ({
 }))
 
 /** This transaction creates or updates a single asset vault. */
-TRANSACTION(ttVAULT_SET, 58, VaultSet, ({
-    {sfVaultID, soeOPTIONAL},
-    // no Data ever
+TRANSACTION(ttVAULT_CREATE, 58, VaultCreate, ({
     {sfAsset, soeREQUIRED},
     {sfAssetMaximum, soeOPTIONAL},
-    // no MPTokenMetadata ever
-    // no WithdrawalPolicy ever
+    {sfMPTokenMetadata, soeOPTIONAL},
     // no PermissionedDomainID yet
+    // no WithdrawalPolicy yet
+    {sfData, soeOPTIONAL},
+}))
+
+/** This transaction creates or updates a single asset vault. */
+TRANSACTION(ttVAULT_SET, 59, VaultSet, ({
+    {sfVaultID, soeREQUIRED},
+    {sfAssetMaximum, soeOPTIONAL},
+    // no PermissionedDomainID yet
+    // no WithdrawalPolicy yet
+    {sfData, soeOPTIONAL},
 }))
 
 /** This system-generated transaction type is used to update the status of the various amendments.

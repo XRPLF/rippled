@@ -43,7 +43,7 @@ class Vault_test : public beast::unit_test::suite
         SUBCASE("IOU vault")
         {
             Asset asset = issuer["IOU"];
-            auto tx = vault::create({ .owner=owner, .asset=asset });
+            auto tx = vault::create({.owner = owner, .asset = asset});
 
             SUBCASE("global freeze")
             {
@@ -69,10 +69,10 @@ class Vault_test : public beast::unit_test::suite
 
         SUBCASE("MPT vault")
         {
-            MPTTester mptt{env, issuer, {.fund=false}};
+            MPTTester mptt{env, issuer, {.fund = false}};
             mptt.create();
             Asset asset = mptt.issuanceID();
-            auto tx = vault::create({ .owner=owner, .asset=asset });
+            auto tx = vault::create({.owner = owner, .asset = asset});
 
             SUBCASE("metadata too large")
             {
@@ -81,7 +81,8 @@ class Vault_test : public beast::unit_test::suite
                 // env.close();
             }
 
-            SUBCASE("create") {
+            SUBCASE("create")
+            {
                 // env(tx);
                 // env.close();
             }

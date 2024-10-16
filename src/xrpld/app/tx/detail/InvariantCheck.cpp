@@ -987,7 +987,8 @@ ValidMPTIssuance::finalize(
 {
     if (result == tesSUCCESS)
     {
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_CREATE || tx.getTxnType() == ttVAULT_SET)
+        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_CREATE ||
+            tx.getTxnType() == ttVAULT_SET)
         {
             if (mptIssuancesCreated_ == 0)
             {

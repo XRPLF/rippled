@@ -22,8 +22,6 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/st.h>
-#include "MPTokenIssuanceCreate.h"
 
 namespace ripple {
 
@@ -37,13 +35,6 @@ VaultSet::preflight(PreflightContext const& ctx)
         return ret;
 
     return preflight2(ctx);
-}
-
-XRPAmount
-VaultSet::calculateBaseFee(ReadView const& view, STTx const& tx)
-{
-    // One reserve increment is typically much greater than one base fee.
-    return view.fees().increment;
 }
 
 TER
@@ -63,85 +54,29 @@ VaultSet::doApply()
     auto const& owner = account_;
     auto sequence = tx.getSequence();
 
-    if (auto const& vaultId = tx[~sfVaultID]; vaultId)
-    {
-        // Update existing object.
-        auto keylet = Keylet{ltVAULT, *vaultId};
-        auto vault = view().peek(keylet);
-        if (!vault)
-            return tecOBJECT_NOT_FOUND;
+    auto const& vaultId = tx[sfVaultID];
+    // Update existing object.
+    auto keylet = Keylet{ltVAULT, vaultId};
+    auto vault = view().peek(keylet);
+    if (!vault)
+        return tecOBJECT_NOT_FOUND;
 
-        // Assert that submitter is the Owner.
-        if (owner != vault->at(sfOwner))
-            return tecNO_PERMISSION;
+    // Assert that submitter is the Owner.
+    if (owner != vault->at(sfOwner))
+        return tecNO_PERMISSION;
 
-        // Assert immutable flags not given.
-        auto txFlags = tx.getFlags();
-        if ((txFlags & tfVaultPrivate) ||
-            (txFlags & tfVaultShareNonTransferable))
-            return tecIMMUTABLE;
-        // Assert identical immutable fields if given.
-        if (tx.isFieldPresent(sfAsset) && tx[sfAsset] != vault->at(sfAsset))
-            return tecIMMUTABLE;
-        if (tx.isFieldPresent(sfMPTokenMetadata) &&
-            tx[sfMPTokenMetadata] != vault->at(sfMPTokenMetadata))
-            return tecIMMUTABLE;
+    // Assert immutable flags not given.
+    auto txFlags = tx.getFlags();
+    if ((txFlags & tfVaultPrivate) || (txFlags & tfVaultShareNonTransferable))
+        return tecIMMUTABLE;
 
-        // Update mutable flags and fields if given.
-        if (tx.isFieldPresent(sfData))
-            vault->at(~sfData) = tx[~sfData];
-        if (tx.isFieldPresent(sfAssetMaximum))
-            vault->at(~sfAssetMaximum) = tx[sfAssetMaximum];
+    // Update mutable flags and fields if given.
+    if (tx.isFieldPresent(sfData))
+        vault->at(sfData) = tx[sfData];
+    if (tx.isFieldPresent(sfAssetMaximum))
+        vault->at(~sfAssetMaximum) = tx[sfAssetMaximum];
 
-        view().update(vault);
-    }
-    else
-    {
-        // Create new object.
-        if (!tx.isFieldPresent(sfAsset))
-            return tecINCOMPLETE;
-
-        auto keylet = keylet::vault(owner, sequence);
-        auto vault = std::make_shared<SLE>(keylet);
-        if (auto ter = dirLink(view(), owner, vault); !isTesSuccess(ter))
-            return ter;
-        auto maybe = createPseudoAccount(view(), vault->key());
-        if (!maybe)
-            return maybe.error();
-        auto& pseudo = *maybe;
-        // TODO: create empty MPToken or RippleState for Asset.
-        auto pseudoId = pseudo->at(sfAccount);
-        auto txFlags = tx.getFlags();
-        std::uint32_t mptFlags = 0;
-        if (!(txFlags & tfVaultShareNonTransferable))
-            mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);
-        if (txFlags & tfVaultPrivate)
-            mptFlags |= lsfMPTRequireAuth;
-        auto maybe2 = MPTokenIssuanceCreate::create(
-            view(),
-            j_,
-            {
-                .account = pseudoId,
-                .sequence = 1,
-                .flags = mptFlags,
-                .metadata = tx[~sfMPTokenMetadata],
-            });
-        if (!maybe2)
-            return maybe2.error();
-        auto& mptId = *maybe2;
-        vault->at(sfFlags) = txFlags & tfVaultPrivate;
-        vault->at(sfSequence) = sequence;
-        vault->at(sfOwner) = owner;
-        vault->at(sfAccount) = pseudoId;
-        vault->at(~sfData) = tx[~sfData];
-        vault->at(sfAsset) = tx[sfAsset];
-        // vault->at(sfAssetTotal) = 0;
-        // vault->at(sfAssetAvailable) = 0;
-        vault->at(~sfAssetMaximum) = tx[~sfAssetMaximum];
-        vault->at(sfMPTokenIssuanceID) = mptId;
-        // No `LossUnrealized`.
-        view().insert(vault);
-    }
+    view().update(vault);
 
     return tesSUCCESS;
 }

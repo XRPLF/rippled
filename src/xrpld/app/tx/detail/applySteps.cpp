@@ -55,6 +55,7 @@
 #include <xrpld/app/tx/detail/SetRegularKey.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
 #include <xrpld/app/tx/detail/SetTrust.h>
+#include <xrpld/app/tx/detail/VaultCreate.h>
 #include <xrpld/app/tx/detail/VaultSet.h>
 #include <xrpld/app/tx/detail/XChainBridge.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -81,7 +82,6 @@ with_txn_type(TxType txnType, F&& f)
 {
     switch (txnType)
     {
-
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 

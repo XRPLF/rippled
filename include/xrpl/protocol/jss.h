@@ -161,6 +161,7 @@ JSS(TrustSet);                // transaction type.
 JSS(URI);                     // field.
 JSS(Vault);                   // ledger type.
 JSS(VaultID);                 // field.
+JSS(VaultCreate);             // transaction type.
 JSS(VaultSet);                // transaction type.
 JSS(VoteSlots);               // out: AMM Vote
 JSS(XChainAddAccountCreateAttestation);  // transaction type.

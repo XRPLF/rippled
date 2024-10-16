@@ -17,24 +17,27 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_VAULTSET_H_INCLUDED
-#define RIPPLE_TX_VAULTSET_H_INCLUDED
+#ifndef RIPPLE_TX_VAULTCREATE_H_INCLUDED
+#define RIPPLE_TX_VAULTCREATE_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
 
-class VaultSet : public Transactor
+class VaultCreate : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit VaultSet(ApplyContext& ctx) : Transactor(ctx)
+    explicit VaultCreate(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
     static NotTEC
     preflight(PreflightContext const& ctx);
+
+    static XRPAmount
+    calculateBaseFee(ReadView const& view, STTx const& tx);
 
     static TER
     preclaim(PreclaimContext const& ctx);
