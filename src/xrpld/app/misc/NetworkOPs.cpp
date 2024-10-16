@@ -3180,8 +3180,8 @@ NetworkOPsImp::pubAccountTransaction(
     }
 
     JLOG(m_journal.trace())
-        << "pubAccountTransaction: "
-        << "proposed=" << iProposed << ", accepted=" << iAccepted;
+        << "pubAccountTransaction: " << "proposed=" << iProposed
+        << ", accepted=" << iAccepted;
 
     if (!notify.empty() || !accountHistoryNotify.empty())
     {

@@ -556,7 +556,8 @@ public:
         Fields with soeDEFAULT and set to the
         default value will return `true`
     */
-    explicit operator bool() const noexcept;
+    explicit
+    operator bool() const noexcept;
 
     /** Return the contained value
 

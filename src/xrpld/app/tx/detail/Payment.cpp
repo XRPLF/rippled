@@ -83,8 +83,7 @@ Payment::preflight(PreflightContext const& ctx)
 
     if (txFlags & paymentMask)
     {
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "Invalid flags set.";
+        JLOG(j.trace()) << "Malformed transaction: " << "Invalid flags set.";
         return temINVALID_FLAG;
     }
 
@@ -131,8 +130,8 @@ Payment::preflight(PreflightContext const& ctx)
     }
     if (hasMax && maxSourceAmount <= beast::zero)
     {
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "bad max amount: " << maxSourceAmount.getFullText();
+        JLOG(j.trace()) << "Malformed transaction: " << "bad max amount: "
+                        << maxSourceAmount.getFullText();
         return temBAD_AMOUNT;
     }
     if (dstAmount <= beast::zero)
@@ -143,8 +142,7 @@ Payment::preflight(PreflightContext const& ctx)
     }
     if (badCurrency() == srcAsset || badCurrency() == dstAsset)
     {
-        JLOG(j.trace()) << "Malformed transaction: "
-                        << "Bad currency.";
+        JLOG(j.trace()) << "Malformed transaction: " << "Bad currency.";
         return temBAD_CURRENCY;
     }
     if (account == dstAccountID && srcAsset == dstAsset && !hasPaths)
