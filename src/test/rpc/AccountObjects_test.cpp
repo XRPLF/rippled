@@ -1273,14 +1273,14 @@ public:
         }
 
         // this lambda function is used to check invalid marker response.
-        auto testInvalidMarker = [&env, &bob](std::string& marker) {
+        auto testInvalidMarker = [&](std::string& marker) {
             Json::Value params;
             params[jss::account] = bob.human();
-            params[jss::limit] = 11;
+            params[jss::limit] = limit;
             params[jss::ledger_index] = jss::validated;
             params[jss::marker] = marker;
             Json::Value const resp =
-                env.rpc("json", "account_nfts", to_string(params));
+                env.rpc("json", "account_objects", to_string(params));
             return resp[jss::result][jss::error_message] ==
                 "Invalid field \'marker\'.";
         };
@@ -1304,6 +1304,23 @@ public:
         }
 
         // test account_objects with an invalid marker containing invalid
+        // dirIndex by replacing some characters from the dirIndex.
+        {
+            std::string s = markerStr;
+            s.replace(0, 7, "FFFFFFF");
+            BEAST_EXPECT(testInvalidMarker(s));
+        }
+
+        // test account_objects with an invalid marker containing invalid
+        // entryIndex by replacing some characters from the entryIndex.
+        {
+            std::string s = entryIndex;
+            s.replace(0, 7, "FFFFFFF");
+            s = dirIndex + ',' + s;
+            BEAST_EXPECT(testInvalidMarker(s));
+        }
+
+        // test account_objects with an invalid marker containing invalid
         // dirIndex with marker: ",entryIndex"
         {
             std::string s = ',' + entryIndex;
@@ -1318,14 +1335,6 @@ public:
         }
 
         // test account_objects with an invalid marker containing invalid
-        // dirIndex by replacing some characters from the dirIndex.
-        {
-            std::string s = markerStr;
-            s.replace(0, 7, "FFFFFFF");
-            BEAST_EXPECT(testInvalidMarker(s));
-        }
-
-        // test account_objects with an invalid marker containing invalid
         // entryIndex with marker: "dirIndex,"
         {
             std::string s = dirIndex + ',';
@@ -1335,16 +1344,7 @@ public:
         // test account_objects with an invalid marker containing invalid
         // entryIndex with marker: "dirIndex,0"
         {
-            std::string s = dirIndex + ',';
-            BEAST_EXPECT(testInvalidMarker(s));
-        }
-
-        // test account_objects with an invalid marker containing invalid
-        // entryIndex by replacing some characters from the entryIndex.
-        {
-            std::string s = entryIndex;
-            s.replace(0, 7, "FFFFFFF");
-            s = dirIndex + ',' + s;
+            std::string s = dirIndex + ",0";
             BEAST_EXPECT(testInvalidMarker(s));
         }
 
