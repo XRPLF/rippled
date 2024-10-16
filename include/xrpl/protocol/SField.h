@@ -218,7 +218,7 @@ public:
         return jsonName;
     }
 
-    operator Json::StaticString const &() const
+    operator Json::StaticString const&() const
     {
         return jsonName;
     }
