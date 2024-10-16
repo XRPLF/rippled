@@ -21,6 +21,7 @@
 #define RIPPLE_BASICS_SHAMAP_HASH_H_INCLUDED
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/partitioned_unordered_map.h>
 
 #include <ostream>
 
@@ -106,6 +107,13 @@ inline bool
 operator!=(SHAMapHash const& x, SHAMapHash const& y)
 {
     return !(x == y);
+}
+
+template <>
+inline std::size_t
+extract(SHAMapHash const& key)
+{
+    return *reinterpret_cast<std::size_t const*>(key.as_uint256().data());
 }
 
 }  // namespace ripple

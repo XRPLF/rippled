@@ -19,22 +19,30 @@
 #ifndef BASICS_FEES_H_INCLUDED
 #define BASICS_FEES_H_INCLUDED
 
-#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/json/json_value.h>
+
 #include <boost/multiprecision/cpp_int.hpp>
-#include <limits>
-#include <utility>
+#include <boost/operators.hpp>
 
 #include <cassert>
 #include <cmath>
 #include <ios>
 #include <iosfwd>
+#include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 
 namespace ripple {
 
 namespace feeunit {
 
+/** "drops" are the smallest divisible amount of XRP. This is what most
+    of the code uses. */
+struct dropTag;
 /** "fee units" calculations are a not-really-unitless value that is used
     to express the cost of a given transaction vs. a reference transaction.
     They are primarily used by the Transactor classes. */
