@@ -85,7 +85,8 @@ public:
     static constexpr Number
     lowest() noexcept;
 
-    explicit operator rep() const;  // round to nearest, even on tie
+    explicit
+    operator rep() const;  // round to nearest, even on tie
 
     friend constexpr bool
     operator==(Number const& x, Number const& y) noexcept

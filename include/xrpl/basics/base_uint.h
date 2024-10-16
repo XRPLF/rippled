@@ -522,7 +522,8 @@ public:
         return bytes;
     }
 
-    base_uint<Bits, Tag>& operator=(beast::Zero)
+    base_uint<Bits, Tag>&
+    operator=(beast::Zero)
     {
         data_.fill(0);
         return *this;

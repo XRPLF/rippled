@@ -644,7 +644,8 @@ struct Peer
     }
 
     // Not interested in tracking consensus mode changes for now
-    void onModeChange(ConsensusMode, ConsensusMode)
+    void
+    onModeChange(ConsensusMode, ConsensusMode)
     {
     }
 

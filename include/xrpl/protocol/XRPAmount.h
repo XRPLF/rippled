@@ -63,7 +63,8 @@ public:
     {
     }
 
-    constexpr XRPAmount& operator=(beast::Zero)
+    constexpr XRPAmount&
+    operator=(beast::Zero)
     {
         drops_ = 0;
         return *this;
@@ -153,7 +154,8 @@ public:
     }
 
     /** Returns true if the amount is not zero */
-    explicit constexpr operator bool() const noexcept
+    explicit constexpr
+    operator bool() const noexcept
     {
         return drops_ != 0;
     }
