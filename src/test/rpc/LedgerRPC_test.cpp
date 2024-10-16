@@ -2394,6 +2394,9 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 jrr[jss::node][sfMPTokenMetadata.jsonName] ==
                 strHex(std::string{"123"}));
+            BEAST_EXPECT(
+                jrr[jss::node][jss::mpt_issuance_id] ==
+                strHex(mptAlice.issuanceID()));
         }
         {
             // Request an index that is not a MPTIssuance.

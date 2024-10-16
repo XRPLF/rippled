@@ -285,13 +285,7 @@ getAccountObjects(
             if (!typeFilter.has_value() ||
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
-                auto sleJson = sleNode->getJson(JsonOptions::none);
-                if (sleNode->getType() == ltMPTOKEN_ISSUANCE)
-                    sleJson[jss::mpt_issuance_id] = to_string(makeMptID(
-                        (*sleNode)[sfSequence],
-                        sleNode->getAccountID(sfIssuer)));
-
-                jvObjects.append(sleJson);
+                jvObjects.append(sleNode->getJson(JsonOptions::none));
             }
 
             if (++i == mlimit)
