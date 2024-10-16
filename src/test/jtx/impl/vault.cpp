@@ -33,7 +33,7 @@ Json::Value
 create(CreateArgs const& args)
 {
     Json::Value jv;
-    jv[jss::TransactionType] = jss::VaultSet;
+    jv[jss::TransactionType] = jss::VaultCreate;
     jv[jss::Account] = args.owner.human();
     jv[jss::Asset] = to_json(args.asset);
     if (args.flags)
