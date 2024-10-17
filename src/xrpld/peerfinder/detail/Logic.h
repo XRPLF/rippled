@@ -1109,9 +1109,9 @@ public:
         }
         else
         {
-            JLOG(m_journal.error()) << beast::leftw(18) << "Logic failed "
-                                    << "'" << source->name() << "' fetch, "
-                                    << results.error.message();
+            JLOG(m_journal.error())
+                << beast::leftw(18) << "Logic failed " << "'" << source->name()
+                << "' fetch, " << results.error.message();
         }
     }
 

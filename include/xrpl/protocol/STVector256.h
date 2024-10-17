@@ -65,7 +65,8 @@ public:
     setValue(const STVector256& v);
 
     /** Retrieve a copy of the vector we contain */
-    explicit operator std::vector<uint256>() const;
+    explicit
+    operator std::vector<uint256>() const;
 
     std::size_t
     size() const;
