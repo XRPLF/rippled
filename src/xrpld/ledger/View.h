@@ -89,6 +89,9 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer);
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 
 [[nodiscard]] bool
+isGlobalFrozen(ReadView const& view, Asset const& asset);
+
+[[nodiscard]] bool
 isIndividualFrozen(
     ReadView const& view,
     AccountID const& account,
@@ -104,11 +107,24 @@ isIndividualFrozen(
     return isIndividualFrozen(view, account, issue.currency, issue.account);
 }
 
-[[nodiscard]] inline bool
+[[nodiscard]] bool
 isIndividualFrozen(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptIssue);
+
+[[nodiscard]] inline bool
+isIndividualFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset)
+{
+    return std::visit(
+        [&](auto const& issue) {
+            return isIndividualFrozen(view, account, issue);
+        },
+        asset.value());
+}
 
 [[nodiscard]] bool
 isFrozen(
@@ -128,6 +144,14 @@ isFrozen(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptIssue);
+
+[[nodiscard]] bool
+isFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
+{
+    return std::visit(
+        [&](auto const& issue) { return isFrozen(view, account, issue); },
+        asset.value());
+}
 
 // Returns the amount an account can spend without going into debt.
 //
@@ -234,9 +258,19 @@ forEachItemAfter(
     return forEachItemAfter(view, keylet::ownerDir(id), after, hint, limit, f);
 }
 
+/** Returns IOU issuer transfer fee as Rate. Rate specifies
+ * the fee as fractions of 1 billion. For example, 1% transfer rate
+ * is represented as 1,010,000,000.
+ * @param issuer The IOU issuer
+ */
 [[nodiscard]] Rate
 transferRate(ReadView const& view, AccountID const& issuer);
 
+/** Returns MPT transfer fee as Rate. Rate specifies
+ * the fee as fractions of 1 billion. For example, 1% transfer rate
+ * is represented as 1,010,000,000.
+ * @param issuanceID MPTokenIssuanceID of MPTTokenIssuance object
+ */
 [[nodiscard]] Rate
 transferRate(ReadView const& view, MPTID const& issuanceID);
 

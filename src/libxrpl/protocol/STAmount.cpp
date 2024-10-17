@@ -277,7 +277,7 @@ IOUAmount
 STAmount::iou() const
 {
     if (native() || !holds<Issue>())
-        Throw<std::logic_error>("Cannot return native STAmount as IOUAmount");
+        Throw<std::logic_error>("Cannot return non-IOU STAmount as IOUAmount");
 
     auto mantissa = static_cast<std::int64_t>(mValue);
     auto exponent = mOffset;

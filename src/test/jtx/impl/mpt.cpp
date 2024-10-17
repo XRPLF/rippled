@@ -87,16 +87,16 @@ MPTTester::create(const MPTCreate& arg)
         Throw<std::runtime_error>("MPT can't be reused");
     id_ = makeMptID(env_.seq(issuer_), issuer_);
     Json::Value jv;
-    jv[sfAccount.jsonName] = issuer_.human();
-    jv[sfTransactionType.jsonName] = jss::MPTokenIssuanceCreate;
+    jv[sfAccount] = issuer_.human();
+    jv[sfTransactionType] = jss::MPTokenIssuanceCreate;
     if (arg.assetScale)
-        jv[sfAssetScale.jsonName] = *arg.assetScale;
+        jv[sfAssetScale] = *arg.assetScale;
     if (arg.transferFee)
-        jv[sfTransferFee.jsonName] = *arg.transferFee;
+        jv[sfTransferFee] = *arg.transferFee;
     if (arg.metadata)
-        jv[sfMPTokenMetadata.jsonName] = strHex(*arg.metadata);
+        jv[sfMPTokenMetadata] = strHex(*arg.metadata);
     if (arg.maxAmt)
-        jv[sfMaximumAmount.jsonName] = std::to_string(*arg.maxAmt);
+        jv[sfMaximumAmount] = std::to_string(*arg.maxAmt);
     if (submit(arg, jv) != tesSUCCESS)
     {
         // Verify issuance doesn't exist
@@ -115,17 +115,17 @@ MPTTester::destroy(MPTDestroy const& arg)
 {
     Json::Value jv;
     if (arg.issuer)
-        jv[sfAccount.jsonName] = arg.issuer->human();
+        jv[sfAccount] = arg.issuer->human();
     else
-        jv[sfAccount.jsonName] = issuer_.human();
+        jv[sfAccount] = issuer_.human();
     if (arg.id)
-        jv[sfMPTokenIssuanceID.jsonName] = to_string(*arg.id);
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
     else
     {
         assert(id_);
-        jv[sfMPTokenIssuanceID.jsonName] = to_string(*id_);
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
     }
-    jv[sfTransactionType.jsonName] = jss::MPTokenIssuanceDestroy;
+    jv[sfTransactionType] = jss::MPTokenIssuanceDestroy;
     submit(arg, jv);
 }
 
@@ -144,19 +144,19 @@ MPTTester::authorize(MPTAuthorize const& arg)
 {
     Json::Value jv;
     if (arg.account)
-        jv[sfAccount.jsonName] = arg.account->human();
+        jv[sfAccount] = arg.account->human();
     else
-        jv[sfAccount.jsonName] = issuer_.human();
-    jv[sfTransactionType.jsonName] = jss::MPTokenAuthorize;
+        jv[sfAccount] = issuer_.human();
+    jv[sfTransactionType] = jss::MPTokenAuthorize;
     if (arg.id)
-        jv[sfMPTokenIssuanceID.jsonName] = to_string(*arg.id);
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
     else
     {
         assert(id_);
-        jv[sfMPTokenIssuanceID.jsonName] = to_string(*id_);
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
     }
     if (arg.holder)
-        jv[sfMPTokenHolder.jsonName] = arg.holder->human();
+        jv[sfMPTokenHolder] = arg.holder->human();
     if (auto const result = submit(arg, jv); result == tesSUCCESS)
     {
         // Issuer authorizes
@@ -209,19 +209,19 @@ MPTTester::set(MPTSet const& arg)
 {
     Json::Value jv;
     if (arg.account)
-        jv[sfAccount.jsonName] = arg.account->human();
+        jv[sfAccount] = arg.account->human();
     else
-        jv[sfAccount.jsonName] = issuer_.human();
-    jv[sfTransactionType.jsonName] = jss::MPTokenIssuanceSet;
+        jv[sfAccount] = issuer_.human();
+    jv[sfTransactionType] = jss::MPTokenIssuanceSet;
     if (arg.id)
-        jv[sfMPTokenIssuanceID.jsonName] = to_string(*arg.id);
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
     else
     {
         assert(id_);
-        jv[sfMPTokenIssuanceID.jsonName] = to_string(*id_);
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
     }
     if (arg.holder)
-        jv[sfMPTokenHolder.jsonName] = arg.holder->human();
+        jv[sfMPTokenHolder] = arg.holder->human();
     if (submit(arg, jv) == tesSUCCESS && arg.flags.value_or(0))
     {
         auto require = [&](std::optional<Account> const& holder,

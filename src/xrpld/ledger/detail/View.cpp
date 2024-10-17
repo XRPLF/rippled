@@ -186,6 +186,19 @@ isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue)
 }
 
 bool
+isGlobalFrozen(ReadView const& view, Asset const& asset)
+{
+    return std::visit(
+        [&]<typename TIss>(TIss const& issue) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return isGlobalFrozen(view, issue.getIssuer());
+            else
+                return isGlobalFrozen(view, issue);
+        },
+        asset.value());
+}
+
+bool
 isIndividualFrozen(
     ReadView const& view,
     AccountID const& account,
