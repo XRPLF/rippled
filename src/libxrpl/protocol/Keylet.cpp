@@ -25,7 +25,9 @@ namespace ripple {
 bool
 Keylet::check(STLedgerEntry const& sle) const
 {
-    assert(sle.getType() != ltANY || sle.getType() != ltCHILD);
+    ASSERT(
+        sle.getType() != ltANY || sle.getType() != ltCHILD,
+        "ripple::Keylet::check : valid input type");
 
     if (type == ltANY)
         return true;

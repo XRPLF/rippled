@@ -31,6 +31,7 @@
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <boost/endian/conversion.hpp>
 #include <boost/functional/hash.hpp>
 #include <algorithm>
@@ -289,7 +290,9 @@ public:
             std::is_trivially_copyable<typename Container::value_type>::value>>
     explicit base_uint(Container const& c)
     {
-        assert(c.size() * sizeof(typename Container::value_type) == size());
+        ASSERT(
+            c.size() * sizeof(typename Container::value_type) == size(),
+            "ripple::base_uint::base_uint(Container auto) : input size match");
         std::memcpy(data_.data(), c.data(), size());
     }
 
@@ -300,7 +303,9 @@ public:
         base_uint&>
     operator=(Container const& c)
     {
-        assert(c.size() * sizeof(typename Container::value_type) == size());
+        ASSERT(
+            c.size() * sizeof(typename Container::value_type) == size(),
+            "ripple::base_uint::operator=(Container auto) : input size match");
         std::memcpy(data_.data(), c.data(), size());
         return *this;
     }

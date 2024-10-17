@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/main/NodeStoreScheduler.h>
-#include <cassert>
+#include <xrpl/beast/utility/instrumentation.h>
 
 namespace ripple {
 

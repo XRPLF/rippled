@@ -304,7 +304,10 @@ public:
         // Add slot to table
         auto const result(slots_.emplace(slot->remote_endpoint(), slot));
         // Remote address must not already exist
-        assert(result.second);
+        ASSERT(
+            result.second,
+            "ripple::PeerFinder::Logic::new_inbound_slot : remote endpoint "
+            "inserted");
         // Add to the connected address list
         connectedAddresses_.emplace(remote_endpoint.address());
 
@@ -339,7 +342,10 @@ public:
         // Add slot to table
         auto const result = slots_.emplace(slot->remote_endpoint(), slot);
         // Remote address must not already exist
-        assert(result.second);
+        ASSERT(
+            result.second,
+            "ripple::PeerFinder::Logic::new_outbound_slot : remote endpoint "
+            "inserted");
 
         // Add to the connected address list
         connectedAddresses_.emplace(remote_endpoint.address());
@@ -362,7 +368,9 @@ public:
         std::lock_guard _(lock_);
 
         // The object must exist in our table
-        assert(slots_.find(slot->remote_endpoint()) != slots_.end());
+        ASSERT(
+            slots_.find(slot->remote_endpoint()) != slots_.end(),
+            "ripple::PeerFinder::Logic::onConnected : valid slot input");
         // Assign the local endpoint now that it's known
         slot->local_endpoint(local_endpoint);
 
@@ -371,8 +379,10 @@ public:
             auto const iter(slots_.find(local_endpoint));
             if (iter != slots_.end())
             {
-                assert(
-                    iter->second->local_endpoint() == slot->remote_endpoint());
+                ASSERT(
+                    iter->second->local_endpoint() == slot->remote_endpoint(),
+                    "ripple::PeerFinder::Logic::onConnected : local and remote "
+                    "endpoints do match");
                 JLOG(m_journal.warn())
                     << beast::leftw(18) << "Logic dropping "
                     << slot->remote_endpoint() << " as self connect";
@@ -397,10 +407,13 @@ public:
         std::lock_guard _(lock_);
 
         // The object must exist in our table
-        assert(slots_.find(slot->remote_endpoint()) != slots_.end());
+        ASSERT(
+            slots_.find(slot->remote_endpoint()) != slots_.end(),
+            "ripple::PeerFinder::Logic::activate : valid slot input");
         // Must be accepted or connected
-        assert(
-            slot->state() == Slot::accept || slot->state() == Slot::connected);
+        ASSERT(
+            slot->state() == Slot::accept || slot->state() == Slot::connected,
+            "ripple::PeerFinder::Logic::activate : valid slot state");
 
         // Check for duplicate connection by key
         if (keys_.find(key) != keys_.end())
@@ -426,7 +439,9 @@ public:
         {
             [[maybe_unused]] bool const inserted = keys_.insert(key).second;
             // Public key must not already exist
-            assert(inserted);
+            ASSERT(
+                inserted,
+                "ripple::PeerFinder::Logic::activate : public key inserted");
         }
 
         // Change state and update counts
@@ -788,10 +803,14 @@ public:
         std::lock_guard _(lock_);
 
         // The object must exist in our table
-        assert(slots_.find(slot->remote_endpoint()) != slots_.end());
+        ASSERT(
+            slots_.find(slot->remote_endpoint()) != slots_.end(),
+            "ripple::PeerFinder::Logic::on_endpoints : valid slot input");
 
         // Must be handshaked!
-        assert(slot->state() == Slot::active);
+        ASSERT(
+            slot->state() == Slot::active,
+            "ripple::PeerFinder::Logic::on_endpoints : valid slot state");
 
         clock_type::time_point const now(m_clock.now());
 
@@ -803,7 +822,9 @@ public:
 
         for (auto const& ep : list)
         {
-            assert(ep.hops != 0);
+            ASSERT(
+                ep.hops != 0,
+                "ripple::PeerFinder::Logic::on_endpoints : nonzero hops");
 
             slot->recent.insert(ep.address, ep.hops);
 
@@ -956,7 +977,9 @@ public:
                 break;
 
             default:
-                assert(false);
+                UNREACHABLE(
+                    "ripple::PeerFinder::Logic::on_closed : invalid slot "
+                    "state");
                 break;
         }
     }

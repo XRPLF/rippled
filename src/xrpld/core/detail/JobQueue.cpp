@@ -55,7 +55,9 @@ JobQueue::JobQueue(
                 std::piecewise_construct,
                 std::forward_as_tuple(jt.type()),
                 std::forward_as_tuple(jt, m_collector, logs)));
-            assert(result.second == true);
+            ASSERT(
+                result.second == true,
+                "ripple::JobQueue::JobQueue : jobs added");
             (void)result.second;
         }
     }
@@ -80,10 +82,14 @@ JobQueue::addRefCountedJob(
     std::string const& name,
     JobFunction const& func)
 {
-    assert(type != jtINVALID);
+    ASSERT(
+        type != jtINVALID,
+        "ripple::JobQueue::addRefCountedJob : valid input job type");
 
     auto iter(m_jobData.find(type));
-    assert(iter != m_jobData.end());
+    ASSERT(
+        iter != m_jobData.end(),
+        "ripple::JobQueue::addRefCountedJob : job type found in jobs");
     if (iter == m_jobData.end())
         return false;
 
@@ -93,9 +99,11 @@ JobQueue::addRefCountedJob(
 
     // FIXME: Workaround incorrect client shutdown ordering
     // do not add jobs to a queue with no threads
-    assert(
+    ASSERT(
         (type >= jtCLIENT && type <= jtCLIENT_WEBSOCKET) ||
-        m_workers.getNumberOfThreads() > 0);
+            m_workers.getNumberOfThreads() > 0,
+        "ripple::JobQueue::addRefCountedJob : threads available or job "
+        "requires no threads");
 
     {
         std::lock_guard lock(m_mutex);
@@ -104,8 +112,12 @@ JobQueue::addRefCountedJob(
         auto const& job = *result.first;
 
         JobType const type(job.getType());
-        assert(type != jtINVALID);
-        assert(m_jobSet.find(job) != m_jobSet.end());
+        ASSERT(
+            type != jtINVALID,
+            "ripple::JobQueue::addRefCountedJob : has valid job type");
+        ASSERT(
+            m_jobSet.find(job) != m_jobSet.end(),
+            "ripple::JobQueue::addRefCountedJob : job found");
         perfLog_.jobQueue(type);
 
         JobTypeData& data(getJobTypeData(type));
@@ -165,7 +177,9 @@ std::unique_ptr<LoadEvent>
 JobQueue::makeLoadEvent(JobType t, std::string const& name)
 {
     JobDataMap::iterator iter(m_jobData.find(t));
-    assert(iter != m_jobData.end());
+    ASSERT(
+        iter != m_jobData.end(),
+        "ripple::JobQueue::makeLoadEvent : valid job type input");
 
     if (iter == m_jobData.end())
         return {};
@@ -180,7 +194,9 @@ JobQueue::addLoadEvents(JobType t, int count, std::chrono::milliseconds elapsed)
         LogicError("JobQueue::addLoadEvents() called after JobQueue stopped");
 
     JobDataMap::iterator iter(m_jobData.find(t));
-    assert(iter != m_jobData.end());
+    ASSERT(
+        iter != m_jobData.end(),
+        "ripple::JobQueue::addLoadEvents : valid job type input");
     iter->second.load().addSamples(count, elapsed);
 }
 
@@ -206,7 +222,8 @@ JobQueue::getJson(int c)
 
     for (auto& x : m_jobData)
     {
-        assert(x.first != jtINVALID);
+        ASSERT(
+            x.first != jtINVALID, "ripple::JobQueue::getJson : valid job type");
 
         if (x.first == jtGENERIC)
             continue;
@@ -261,7 +278,9 @@ JobTypeData&
 JobQueue::getJobTypeData(JobType type)
 {
     JobDataMap::iterator c(m_jobData.find(type));
-    assert(c != m_jobData.end());
+    ASSERT(
+        c != m_jobData.end(),
+        "ripple::JobQueue::getJobTypeData : valid job type input");
 
     // NIKB: This is ugly and I hate it. We must remove jtINVALID completely
     //       and use something sane.
@@ -286,9 +305,11 @@ JobQueue::stop()
         std::unique_lock<std::mutex> lock(m_mutex);
         cv_.wait(
             lock, [this] { return m_processCount == 0 && m_jobSet.empty(); });
-        assert(m_processCount == 0);
-        assert(m_jobSet.empty());
-        assert(nSuspend_ == 0);
+        ASSERT(
+            m_processCount == 0,
+            "ripple::JobQueue::stop : all processes completed");
+        ASSERT(m_jobSet.empty(), "ripple::JobQueue::stop : all jobs completed");
+        ASSERT(nSuspend_ == 0, "ripple::JobQueue::stop : no coros suspended");
         stopped_ = true;
     }
 }
@@ -302,28 +323,35 @@ JobQueue::isStopped() const
 void
 JobQueue::getNextJob(Job& job)
 {
-    assert(!m_jobSet.empty());
+    ASSERT(!m_jobSet.empty(), "ripple::JobQueue::getNextJob : non-empty jobs");
 
     std::set<Job>::const_iterator iter;
     for (iter = m_jobSet.begin(); iter != m_jobSet.end(); ++iter)
     {
         JobType const type = iter->getType();
-        assert(type != jtINVALID);
+        ASSERT(
+            type != jtINVALID, "ripple::JobQueue::getNextJob : valid job type");
 
         JobTypeData& data(getJobTypeData(type));
-        assert(data.running <= getJobLimit(type));
+        ASSERT(
+            data.running <= getJobLimit(type),
+            "ripple::JobQueue::getNextJob : maximum jobs running");
 
         // Run this job if we're running below the limit.
         if (data.running < getJobLimit(data.type()))
         {
-            assert(data.waiting > 0);
+            ASSERT(
+                data.waiting > 0,
+                "ripple::JobQueue::getNextJob : positive data waiting");
             --data.waiting;
             ++data.running;
             break;
         }
     }
 
-    assert(iter != m_jobSet.end());
+    ASSERT(
+        iter != m_jobSet.end(),
+        "ripple::JobQueue::getNextJob : found next job");
     job = *iter;
     m_jobSet.erase(iter);
 }
@@ -331,14 +359,18 @@ JobQueue::getNextJob(Job& job)
 void
 JobQueue::finishJob(JobType type)
 {
-    assert(type != jtINVALID);
+    ASSERT(
+        type != jtINVALID,
+        "ripple::JobQueue::finishJob : valid input job type");
 
     JobTypeData& data = getJobTypeData(type);
 
     // Queue a deferred task if possible
     if (data.deferred > 0)
     {
-        assert(data.running + data.waiting >= getJobLimit(type));
+        ASSERT(
+            data.running + data.waiting >= getJobLimit(type),
+            "ripple::JobQueue::finishJob : job limit");
 
         --data.deferred;
         m_workers.addTask();
@@ -404,7 +436,9 @@ int
 JobQueue::getJobLimit(JobType type)
 {
     JobTypeInfo const& j(JobTypes::instance().get(type));
-    assert(j.type() != jtINVALID);
+    ASSERT(
+        j.type() != jtINVALID,
+        "ripple::JobQueue::getJobLimit : valid job type");
 
     return j.limit();
 }

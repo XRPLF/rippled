@@ -21,7 +21,9 @@
 #define RIPPLE_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
 
 #include <xrpl/basics/ToString.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
+
 #include <algorithm>
 #include <iomanip>
 #include <memory>
@@ -62,7 +64,7 @@ public:
     ID
     ancestor(Seq const& s) const
     {
-        assert(s <= seq);
+        ASSERT(s <= seq, "ripple::SpanTip::ancestor : valid input");
         return ledger[s];
     }
 
@@ -88,7 +90,8 @@ public:
     Span() : ledger_{typename Ledger::MakeGenesis{}}
     {
         // Require default ledger to be genesis seq
-        assert(ledger_.seq() == start_);
+        ASSERT(
+            ledger_.seq() == start_, "ripple::Span::Span : ledger is genesis");
     }
 
     Span(Ledger ledger)
@@ -157,7 +160,7 @@ private:
         : start_{start}, end_{end}, ledger_{l}
     {
         // Spans cannot be empty
-        assert(start < end);
+        ASSERT(start < end, "ripple::Span::Span : non-empty span input");
     }
 
     Seq
@@ -230,7 +233,7 @@ struct Node
             [child](std::unique_ptr<Node> const& curr) {
                 return curr.get() == child;
             });
-        assert(it != children.end());
+        ASSERT(it != children.end(), "ripple::Node::erase : valid input");
         std::swap(*it, children.back());
         children.pop_back();
     }
@@ -371,7 +374,7 @@ class LedgerTrie
         Node* curr = root.get();
 
         // Root is always defined and is in common with all ledgers
-        assert(curr);
+        ASSERT(curr != nullptr, "ripple::LedgerTrie::find : non-null root");
         Seq pos = curr->span.diff(ledger);
 
         bool done = false;
@@ -452,7 +455,8 @@ public:
         auto const [loc, diffSeq] = find(ledger);
 
         // There is always a place to insert
-        assert(loc);
+        ASSERT(
+            loc != nullptr, "ripple::LedgerTrie::insert : valid input ledger");
 
         // Node from which to start incrementing branchSupport
         Node* incNode = loc;
@@ -487,12 +491,16 @@ public:
             newNode->tipSupport = loc->tipSupport;
             newNode->branchSupport = loc->branchSupport;
             newNode->children = std::move(loc->children);
-            assert(loc->children.empty());
+            ASSERT(
+                loc->children.empty(),
+                "ripple::LedgerTrie::insert : moved-from children");
             for (std::unique_ptr<Node>& child : newNode->children)
                 child->parent = newNode.get();
 
             // Loc truncates to prefix and newNode is its child
-            assert(prefix);
+            ASSERT(
+                prefix.has_value(),
+                "ripple::LedgerTrie::insert : prefix is set");
             loc->span = *prefix;
             newNode->parent = loc;
             loc->children.emplace_back(std::move(newNode));
@@ -545,7 +553,9 @@ public:
         loc->tipSupport -= count;
 
         auto const it = seqSupport.find(ledger.seq());
-        assert(it != seqSupport.end() && it->second >= count);
+        ASSERT(
+            it != seqSupport.end() && it->second >= count,
+            "ripple::LedgerTrie::remove : valid input ledger");
         it->second -= count;
         if (it->second == 0)
             seqSupport.erase(it->first);

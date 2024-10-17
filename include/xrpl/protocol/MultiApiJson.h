@@ -23,8 +23,8 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <array>
-#include <cassert>
 #include <concepts>
 #include <cstdlib>
 #include <functional>
@@ -159,8 +159,10 @@ struct MultiApiJson
             -> std::
                 invoke_result_t<Fn, decltype(json.val[0]), Version, Args&&...>
         {
-            assert(
-                valid(version) && index(version) >= 0 && index(version) < size);
+            ASSERT(
+                valid(version) && index(version) >= 0 && index(version) < size,
+                "ripple::detail::MultiApiJson::operator<Args...>() : valid "
+                "version");
             return std::invoke(
                 fn,
                 json.val[index(version)],
@@ -177,8 +179,9 @@ struct MultiApiJson
         operator()(Json& json, Version version, Fn fn) const
             -> std::invoke_result_t<Fn, decltype(json.val[0])>
         {
-            assert(
-                valid(version) && index(version) >= 0 && index(version) < size);
+            ASSERT(
+                valid(version) && index(version) >= 0 && index(version) < size,
+                "ripple::detail::MultiApiJson::operator() : valid version");
             return std::invoke(fn, json.val[index(version)]);
         }
     } visitor = {};

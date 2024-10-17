@@ -160,7 +160,9 @@ NFTokenMint::createNFTokenID(
 
     std::memcpy(ptr, &tokenSeq, sizeof(tokenSeq));
     ptr += sizeof(tokenSeq);
-    assert(std::distance(buf.data(), ptr) == buf.size());
+    ASSERT(
+        std::distance(buf.data(), ptr) == buf.size(),
+        "ripple::NFTokenMint::createNFTokenID : data size matches the buffer");
 
     return uint256::fromVoid(buf.data());
 }

@@ -151,7 +151,7 @@ invoke_preflight(PreflightContext const& ctx)
         // Should never happen
         JLOG(ctx.j.fatal())
             << "Unknown transaction type in preflight: " << e.txnType;
-        assert(false);
+        UNREACHABLE("ripple::invoke_preflight : unknown transaction type");
         return {temUNKNOWN, TxConsequences{temUNKNOWN}};
     }
 }
@@ -200,7 +200,7 @@ invoke_preclaim(PreclaimContext const& ctx)
         // Should never happen
         JLOG(ctx.j.fatal())
             << "Unknown transaction type in preclaim: " << e.txnType;
-        assert(false);
+        UNREACHABLE("ripple::invoke_preclaim : unknown transaction type");
         return temUNKNOWN;
     }
 }
@@ -216,7 +216,8 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
     }
     catch (UnknownTxnType const& e)
     {
-        assert(false);
+        UNREACHABLE(
+            "ripple::invoke_calculateBaseFee : unknown transaction type");
         return XRPAmount{0};
     }
 }
@@ -228,7 +229,9 @@ TxConsequences::TxConsequences(NotTEC pfresult)
     , seqProx_(SeqProxy::sequence(0))
     , sequencesConsumed_(0)
 {
-    assert(!isTesSuccess(pfresult));
+    ASSERT(
+        !isTesSuccess(pfresult),
+        "ripple::TxConsequences::TxConsequences : is not tesSUCCESS");
 }
 
 TxConsequences::TxConsequences(STTx const& tx)
@@ -275,7 +278,7 @@ invoke_apply(ApplyContext& ctx)
         // Should never happen
         JLOG(ctx.journal.fatal())
             << "Unknown transaction type in apply: " << e.txnType;
-        assert(false);
+        UNREACHABLE("ripple::invoke_apply : unknown transaction type");
         return {temUNKNOWN, false};
     }
 }

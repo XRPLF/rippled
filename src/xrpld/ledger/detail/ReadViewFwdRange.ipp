@@ -80,7 +80,10 @@ template <class ValueType>
 bool
 ReadViewFwdRange<ValueType>::iterator::operator==(iterator const& other) const
 {
-    assert(view_ == other.view_);
+    ASSERT(
+        view_ == other.view_,
+        "ripple::detail::ReadViewFwdRange::iterator::operator==(iterator) "
+        "const : input view match");
 
     if (impl_ != nullptr && other.impl_ != nullptr)
         return impl_->equal(*other.impl_);

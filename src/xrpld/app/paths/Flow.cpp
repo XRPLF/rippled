@@ -193,7 +193,7 @@ flow(
                 flowDebugInfo));
     }
 
-    assert(!srcIsXRP && !dstIsXRP);
+    ASSERT(!srcIsXRP && !dstIsXRP, "ripple::flow : neither is XRP");
     return finishFlow(
         sb,
         srcIssue,

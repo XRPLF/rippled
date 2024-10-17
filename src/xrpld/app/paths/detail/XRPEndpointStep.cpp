@@ -281,7 +281,8 @@ XRPEndpointStep<TDerived>::fwdImp(
     boost::container::flat_set<uint256>& ofrsToRm,
     XRPAmount const& in)
 {
-    assert(cache_);
+    ASSERT(
+        cache_.has_value(), "ripple::XRPEndpointStep::fwdImp : cache is set");
     auto const balance = static_cast<TDerived const*>(this)->xrpLiquid(sb);
 
     auto const result = isLast_ ? in : std::min(balance, in);
@@ -309,7 +310,7 @@ XRPEndpointStep<TDerived>::validFwd(
         return {false, EitherAmount(XRPAmount(beast::zero))};
     }
 
-    assert(in.native);
+    ASSERT(in.native, "ripple::XRPEndpointStep::validFwd : input is XRP");
 
     auto const& xrpIn = in.xrp;
     auto const balance = static_cast<TDerived const*>(this)->xrpLiquid(sb);

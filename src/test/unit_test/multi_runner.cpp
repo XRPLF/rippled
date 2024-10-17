@@ -20,6 +20,7 @@
 #include <test/unit_test/multi_runner.h>
 
 #include <xrpl/beast/unit_test/amount.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/lexical_cast.hpp>
 

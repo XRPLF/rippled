@@ -20,11 +20,10 @@
 #include <xrpld/app/paths/detail/AmountSpec.h>
 #include <xrpld/ledger/PaymentSandbox.h>
 #include <xrpld/ledger/View.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
-
-#include <cassert>
 
 namespace ripple {
 
@@ -49,8 +48,12 @@ DeferredCredits::credit(
     STAmount const& amount,
     STAmount const& preCreditSenderBalance)
 {
-    assert(sender != receiver);
-    assert(!amount.negative());
+    ASSERT(
+        sender != receiver,
+        "ripple::detail::DeferredCredits::credit : sender is not receiver");
+    ASSERT(
+        !amount.negative(),
+        "ripple::detail::DeferredCredits::credit : positive amount");
 
     auto const k = makeKey(sender, receiver, amount.getCurrency());
     auto i = credits_.find(k);
@@ -253,14 +256,14 @@ PaymentSandbox::adjustOwnerCountHook(
 void
 PaymentSandbox::apply(RawView& to)
 {
-    assert(!ps_);
+    ASSERT(!ps_, "ripple::PaymentSandbox::apply : non-null sandbox");
     items_.apply(to);
 }
 
 void
 PaymentSandbox::apply(PaymentSandbox& to)
 {
-    assert(ps_ == &to);
+    ASSERT(ps_ == &to, "ripple::PaymentSandbox::apply : matching sandbox");
     items_.apply(to);
     tab_.apply(to.tab_);
 }
@@ -344,7 +347,10 @@ PaymentSandbox::balanceChanges(ReadView const& view) const
         {
             // modify
             auto const at = after->getType();
-            assert(at == before->getType());
+            ASSERT(
+                at == before->getType(),
+                "ripple::PaymentSandbox::balanceChanges : after and before "
+                "types matching");
             switch (at)
             {
                 case ltACCOUNT_ROOT:
