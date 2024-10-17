@@ -1064,8 +1064,7 @@ Consensus<Adaptor>::checkLedger()
     {
         JLOG(j_.warn()) << "View of consensus changed during "
                         << to_string(phase_) << " status=" << to_string(phase_)
-                        << ", "
-                        << " mode=" << to_string(mode_.get());
+                        << ", " << " mode=" << to_string(mode_.get());
         JLOG(j_.warn()) << prevLedgerID_ << " to " << netLgr;
         JLOG(j_.warn()) << Json::Compact{previousLedger_.getJson()};
         JLOG(j_.debug()) << "State on consensus change "
@@ -1168,8 +1167,7 @@ Consensus<Adaptor>::shouldPause() const
          << "roundTime: " << result_->roundTime.read().count() << ", "
          << "max consensus time: " << parms.ledgerMAX_CONSENSUS.count() << ", "
          << "validators: " << totalValidators << ", "
-         << "laggards: " << laggards << ", "
-         << "offline: " << offline << ", "
+         << "laggards: " << laggards << ", " << "offline: " << offline << ", "
          << "quorum: " << quorum << ")";
 
     if (!ahead || !laggards || !totalValidators || !adaptor_.validator() ||
@@ -1499,8 +1497,8 @@ Consensus<Adaptor>::updateOurPositions()
         if (!haveCloseTimeConsensus_)
         {
             JLOG(j_.debug())
-                << "No CT consensus:"
-                << " Proposers:" << currPeerPositions_.size()
+                << "No CT consensus:" << " Proposers:"
+                << currPeerPositions_.size()
                 << " Mode:" << to_string(mode_.get())
                 << " Thresh:" << threshConsensus
                 << " Pos:" << consensusCloseTime.time_since_epoch().count();
