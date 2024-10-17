@@ -1239,14 +1239,15 @@ private:
 
         // Equal deposit: 1000000 tokens, 10% of the current pool
         testAMM([&](AMM& ammAlice, Env& env) {
+            auto const baseFee = env.current()->fees().base;
             ammAlice.deposit(carol, 1'000'000);
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(11'000), USD(11'000), IOUAmount{11'000'000, 0}));
             // 30,000 less deposited 1,000
             BEAST_EXPECT(expectLine(env, carol, USD(29'000)));
             // 30,000 less deposited 1,000 and 10 drops tx fee
-            BEAST_EXPECT(
-                expectLedgerEntryRoot(env, carol, XRPAmount{28'999'999'990}));
+            BEAST_EXPECT(expectLedgerEntryRoot(
+                env, carol, XRPAmount{29'000'000'000 - baseFee}));
         });
 
         // equal asset deposit: unit test to exercise the rounding-down of
@@ -2056,6 +2057,7 @@ private:
         // Equal withdrawal by Carol: 1000000 of tokens, 10% of the current
         // pool
         testAMM([&](AMM& ammAlice, Env& env) {
+            auto const baseFee = env.current()->fees().base.drops();
             // Single deposit of 100000 worth of tokens,
             // which is 10% of the pool. Carol is LP now.
             ammAlice.deposit(carol, 1'000'000);
@@ -2066,16 +2068,16 @@ private:
             // 30,000 less deposited 1,000
             BEAST_EXPECT(expectLine(env, carol, USD(29'000)));
             // 30,000 less deposited 1,000 and 10 drops tx fee
-            BEAST_EXPECT(
-                expectLedgerEntryRoot(env, carol, XRPAmount{28'999'999'990}));
+            BEAST_EXPECT(expectLedgerEntryRoot(
+                env, carol, XRPAmount{29'000'000'000 - baseFee}));
 
             // Carol withdraws all tokens
             ammAlice.withdraw(carol, 1'000'000);
             BEAST_EXPECT(
                 ammAlice.expectLPTokens(carol, IOUAmount(beast::Zero())));
             BEAST_EXPECT(expectLine(env, carol, USD(30'000)));
-            BEAST_EXPECT(
-                expectLedgerEntryRoot(env, carol, XRPAmount{29'999'999'980}));
+            BEAST_EXPECT(expectLedgerEntryRoot(
+                env, carol, XRPAmount{30'000'000'000 - 2 * baseFee}));
         });
 
         // Equal withdrawal by tokens 1000000, 10%
@@ -3222,12 +3224,14 @@ private:
         // preflight tests
         {
             Env env(*this, features);
+            auto const baseFee = env.current()->fees().base;
+
             fund(env, gw, {alice, bob}, XRP(2'000), {USD(2'000)});
             AMM amm(env, gw, XRP(1'000), USD(1'010), false, 1'000);
             Json::Value tx = amm.bid({.account = alice, .bidMin = 500});
 
             {
-                auto jtx = env.jt(tx, seq(1), fee(10));
+                auto jtx = env.jt(tx, seq(1), fee(baseFee));
                 env.app().config().features.erase(featureAMM);
                 PreflightContext pfctx(
                     env.app(),
@@ -3241,7 +3245,7 @@ private:
             }
 
             {
-                auto jtx = env.jt(tx, seq(1), fee(10));
+                auto jtx = env.jt(tx, seq(1), fee(baseFee));
                 jtx.jv["TxnSignature"] = "deadbeef";
                 jtx.stx = env.ust(jtx);
                 PreflightContext pfctx(
@@ -3255,7 +3259,7 @@ private:
             }
 
             {
-                auto jtx = env.jt(tx, seq(1), fee(10));
+                auto jtx = env.jt(tx, seq(1), fee(baseFee));
                 jtx.jv["Asset2"]["currency"] = "XRP";
                 jtx.jv["Asset2"].removeMember("issuer");
                 jtx.stx = env.ust(jtx);
@@ -3314,11 +3318,12 @@ private:
 
         // Can't pay into AMM with escrow.
         testAMM([&](AMM& ammAlice, Env& env) {
+            auto const baseFee = env.current()->fees().base;
             env(escrow(carol, ammAlice.ammAccount(), XRP(1)),
                 condition(cb1),
                 finish_time(env.now() + 1s),
                 cancel_time(env.now() + 2s),
-                fee(1'500),
+                fee(baseFee * 150),
                 ter(tecNO_PERMISSION));
         });
 
@@ -4407,6 +4412,7 @@ private:
 
         // Offer crossing with AMM LPTokens and XRP.
         testAMM([&](AMM& ammAlice, Env& env) {
+            auto const baseFee = env.current()->fees().base.drops();
             auto const token1 = ammAlice.lptIssue();
             auto priceXRP = withdrawByTokens(
                 STAmount{XRPAmount{10'000'000'000}},
@@ -4432,7 +4438,9 @@ private:
             env(ammAlice.bid({.account = carol, .bidMin = 100}));
             BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{4'999'900}));
             BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{100}));
-            BEAST_EXPECT(accountBalance(env, carol) == "22499999960");
+            BEAST_EXPECT(
+                accountBalance(env, carol) ==
+                std::to_string(22500000000 - 4 * baseFee));
             priceXRP = withdrawByTokens(
                 STAmount{XRPAmount{10'000'000'000}},
                 STAmount{token1, 9'999'900},
@@ -4440,7 +4448,9 @@ private:
                 0);
             // Carol withdraws
             ammAlice.withdrawAll(carol, XRP(0));
-            BEAST_EXPECT(accountBalance(env, carol) == "29999949949");
+            BEAST_EXPECT(
+                accountBalance(env, carol) ==
+                std::to_string(29999949999 - 5 * baseFee));
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRPAmount{10'000'000'000} - priceXRP,
                 USD(10'000),
@@ -5154,7 +5164,10 @@ private:
                     BEAST_EXPECT(expectLine(env, alice, USD(30'000)));
                 // alice XRP balance is 30,000initial - 50 ammcreate fee -
                 // 10drops fee
-                BEAST_EXPECT(accountBalance(env, alice) == "29949999990");
+                BEAST_EXPECT(
+                    accountBalance(env, alice) ==
+                    std::to_string(
+                        29950000000 - env.current()->fees().base.drops()));
             },
             std::nullopt,
             0,
@@ -5210,13 +5223,19 @@ private:
             BEAST_EXPECT(accountBalance(env, simon) == xrpBalance);
             BEAST_EXPECT(accountBalance(env, chris) == xrpBalance);
             BEAST_EXPECT(accountBalance(env, dan) == xrpBalance);
+
+            auto const baseFee = env.current()->fees().base.drops();
             // 30,000 initial - (deposit+withdraw) * 10
-            BEAST_EXPECT(accountBalance(env, carol) == "29999999800");
+            BEAST_EXPECT(
+                accountBalance(env, carol) ==
+                std::to_string(30000000000 - 20 * baseFee));
             BEAST_EXPECT(accountBalance(env, ed) == xrpBalance);
             BEAST_EXPECT(accountBalance(env, paul) == xrpBalance);
             BEAST_EXPECT(accountBalance(env, nataly) == xrpBalance);
             // 30,000 initial - 50 ammcreate fee - 10drops withdraw fee
-            BEAST_EXPECT(accountBalance(env, alice) == "29949999990");
+            BEAST_EXPECT(
+                accountBalance(env, alice) ==
+                std::to_string(29950000000 - baseFee));
         });
     }
 

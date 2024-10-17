@@ -30,7 +30,11 @@ public:
     testMonitorRoot()
     {
         using namespace test::jtx;
-        Env env{*this, FeatureBitset{}};
+
+        // This test relies on ledger hash so must lock it to fee 10.
+        auto p = envconfig();
+        p->FEES.reference_fee = 10;
+        Env env{*this, std::move(p), FeatureBitset{}};
         Account const alice{"alice"};
         env.fund(XRP(10000), alice);
 
