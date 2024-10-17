@@ -243,9 +243,8 @@ public:
         unexpected(sfGeneric.isUseful(), "sfGeneric must not be useful");
         {
             // Try to put sfGeneric in an SOTemplate.
-            except<std::runtime_error>([&]() {
-                SOTemplate elements{{sfGeneric, soeREQUIRED}};
-            });
+            except<std::runtime_error>(
+                [&]() { SOTemplate elements{{sfGeneric, soeREQUIRED}}; });
         }
 
         unexpected(sfInvalid.isUseful(), "sfInvalid must not be useful");
@@ -263,9 +262,8 @@ public:
         }
         {
             // Try to put sfInvalid in an SOTemplate.
-            except<std::runtime_error>([&]() {
-                SOTemplate elements{{sfInvalid, soeREQUIRED}};
-            });
+            except<std::runtime_error>(
+                [&]() { SOTemplate elements{{sfInvalid, soeREQUIRED}}; });
         }
         {
             // Try to put the same SField into an SOTemplate twice.
@@ -570,150 +568,152 @@ public:
 
         // STBlob and slice
 
-        {{STObject st(sfGeneric);
-        Buffer b(1);
-        BEAST_EXPECT(!b.empty());
-        st[sf4] = std::move(b);
-        BEAST_EXPECT(b.empty());
-        BEAST_EXPECT(Slice(st[sf4]).size() == 1);
-        st[~sf4] = std::nullopt;
-        BEAST_EXPECT(!~st[~sf4]);
-        b = Buffer{2};
-        st[sf4] = Slice(b);
-        BEAST_EXPECT(b.size() == 2);
-        BEAST_EXPECT(Slice(st[sf4]).size() == 2);
-        st[sf5] = st[sf4];
-        BEAST_EXPECT(Slice(st[sf4]).size() == 2);
-        BEAST_EXPECT(Slice(st[sf5]).size() == 2);
-    }
+        {
+            {
+                STObject st(sfGeneric);
+                Buffer b(1);
+                BEAST_EXPECT(!b.empty());
+                st[sf4] = std::move(b);
+                BEAST_EXPECT(b.empty());
+                BEAST_EXPECT(Slice(st[sf4]).size() == 1);
+                st[~sf4] = std::nullopt;
+                BEAST_EXPECT(!~st[~sf4]);
+                b = Buffer{2};
+                st[sf4] = Slice(b);
+                BEAST_EXPECT(b.size() == 2);
+                BEAST_EXPECT(Slice(st[sf4]).size() == 2);
+                st[sf5] = st[sf4];
+                BEAST_EXPECT(Slice(st[sf4]).size() == 2);
+                BEAST_EXPECT(Slice(st[sf5]).size() == 2);
+            }
+            {
+                STObject st(sotOuter, sfGeneric);
+                BEAST_EXPECT(st[sf5] == Slice{});
+                BEAST_EXPECT(!!st[~sf5]);
+                BEAST_EXPECT(!!~st[~sf5]);
+                Buffer b(1);
+                st[sf5] = std::move(b);
+                BEAST_EXPECT(b.empty());
+                BEAST_EXPECT(Slice(st[sf5]).size() == 1);
+                st[~sf4] = std::nullopt;
+                BEAST_EXPECT(!~st[~sf4]);
+            }
+        }
+
+        // UDT blobs
+
+        {
+            STObject st(sfGeneric);
+            BEAST_EXPECT(!st[~sf5]);
+            auto const kp = generateKeyPair(
+                KeyType::secp256k1, generateSeed("masterpassphrase"));
+            st[sf5] = kp.first;
+            st[~sf5] = std::nullopt;
+        }
+
+        // By reference fields
+
+        {
+            auto const& sf = sfIndexes;
+            STObject st(sfGeneric);
+            std::vector<uint256> v;
+            v.emplace_back(1);
+            v.emplace_back(2);
+            st[sf] = v;
+            st[sf] = std::move(v);
+            auto const& cst = st;
+            BEAST_EXPECT(cst[sf].size() == 2);
+            BEAST_EXPECT(cst[~sf]->size() == 2);
+            BEAST_EXPECT(cst[sf][0] == 1);
+            BEAST_EXPECT(cst[sf][1] == 2);
+            static_assert(
+                std::is_same<
+                    decltype(cst[sfIndexes]),
+                    std::vector<uint256> const&>::value,
+                "");
+        }
+
+        // Default by reference field
+
+        {
+            auto const& sf1 = sfIndexes;
+            auto const& sf2 = sfHashes;
+            auto const& sf3 = sfAmendments;
+            SOTemplate const sot{
+                {sf1, soeREQUIRED},
+                {sf2, soeOPTIONAL},
+                {sf3, soeDEFAULT},
+            };
+
+            STObject st(sot, sfGeneric);
+            auto const& cst(st);
+            BEAST_EXPECT(cst[sf1].size() == 0);
+            BEAST_EXPECT(!cst[~sf2]);
+            BEAST_EXPECT(cst[sf3].size() == 0);
+            std::vector<uint256> v;
+            v.emplace_back(1);
+            st[sf1] = v;
+            BEAST_EXPECT(cst[sf1].size() == 1);
+            BEAST_EXPECT(cst[sf1][0] == uint256{1});
+            st[sf2] = v;
+            BEAST_EXPECT(cst[sf2].size() == 1);
+            BEAST_EXPECT(cst[sf2][0] == uint256{1});
+            st[~sf2] = std::nullopt;
+            BEAST_EXPECT(!st[~sf2]);
+            st[sf3] = v;
+            BEAST_EXPECT(cst[sf3].size() == 1);
+            BEAST_EXPECT(cst[sf3][0] == uint256{1});
+            st[sf3] = std::vector<uint256>{};
+            BEAST_EXPECT(cst[sf3].size() == 0);
+        }
+    }  // namespace ripple
+
+    void
+    testMalformed()
     {
-        STObject st(sotOuter, sfGeneric);
-        BEAST_EXPECT(st[sf5] == Slice{});
-        BEAST_EXPECT(!!st[~sf5]);
-        BEAST_EXPECT(!!~st[~sf5]);
-        Buffer b(1);
-        st[sf5] = std::move(b);
-        BEAST_EXPECT(b.empty());
-        BEAST_EXPECT(Slice(st[sf5]).size() == 1);
-        st[~sf4] = std::nullopt;
-        BEAST_EXPECT(!~st[~sf4]);
+        testcase("Malformed serialized forms");
+
+        try
+        {
+            std::array<std::uint8_t, 7> const payload{
+                {0xe9, 0x12, 0xab, 0xcd, 0x12, 0xfe, 0xdc}};
+            SerialIter sit{makeSlice(payload)};
+            auto obj = std::make_shared<STArray>(sit, sfMetadata);
+            BEAST_EXPECT(!obj);
+        }
+        catch (std::exception const& e)
+        {
+            BEAST_EXPECT(strcmp(e.what(), "Duplicate field detected") == 0);
+        }
+
+        try
+        {
+            std::array<std::uint8_t, 3> const payload{{0xe2, 0xe1, 0xe2}};
+            SerialIter sit{makeSlice(payload)};
+            auto obj = std::make_shared<STObject>(sit, sfMetadata);
+            BEAST_EXPECT(!obj);
+        }
+        catch (std::exception const& e)
+        {
+            BEAST_EXPECT(strcmp(e.what(), "Duplicate field detected") == 0);
+        }
     }
-}
 
-// UDT blobs
-
-{
-    STObject st(sfGeneric);
-    BEAST_EXPECT(!st[~sf5]);
-    auto const kp =
-        generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase"));
-    st[sf5] = kp.first;
-    st[~sf5] = std::nullopt;
-}
-
-// By reference fields
-
-{
-    auto const& sf = sfIndexes;
-    STObject st(sfGeneric);
-    std::vector<uint256> v;
-    v.emplace_back(1);
-    v.emplace_back(2);
-    st[sf] = v;
-    st[sf] = std::move(v);
-    auto const& cst = st;
-    BEAST_EXPECT(cst[sf].size() == 2);
-    BEAST_EXPECT(cst[~sf]->size() == 2);
-    BEAST_EXPECT(cst[sf][0] == 1);
-    BEAST_EXPECT(cst[sf][1] == 2);
-    static_assert(
-        std::is_same<decltype(cst[sfIndexes]), std::vector<uint256> const&>::
-            value,
-        "");
-}
-
-// Default by reference field
-
-{
-    auto const& sf1 = sfIndexes;
-    auto const& sf2 = sfHashes;
-    auto const& sf3 = sfAmendments;
-    SOTemplate const sot{
-        {sf1, soeREQUIRED},
-        {sf2, soeOPTIONAL},
-        {sf3, soeDEFAULT},
-    };
-
-    STObject st(sot, sfGeneric);
-    auto const& cst(st);
-    BEAST_EXPECT(cst[sf1].size() == 0);
-    BEAST_EXPECT(!cst[~sf2]);
-    BEAST_EXPECT(cst[sf3].size() == 0);
-    std::vector<uint256> v;
-    v.emplace_back(1);
-    st[sf1] = v;
-    BEAST_EXPECT(cst[sf1].size() == 1);
-    BEAST_EXPECT(cst[sf1][0] == uint256{1});
-    st[sf2] = v;
-    BEAST_EXPECT(cst[sf2].size() == 1);
-    BEAST_EXPECT(cst[sf2][0] == uint256{1});
-    st[~sf2] = std::nullopt;
-    BEAST_EXPECT(!st[~sf2]);
-    st[sf3] = v;
-    BEAST_EXPECT(cst[sf3].size() == 1);
-    BEAST_EXPECT(cst[sf3][0] == uint256{1});
-    st[sf3] = std::vector<uint256>{};
-    BEAST_EXPECT(cst[sf3].size() == 0);
-}
-}  // namespace ripple
-
-void
-testMalformed()
-{
-    testcase("Malformed serialized forms");
-
-    try
+    void
+    run() override
     {
-        std::array<std::uint8_t, 7> const payload{
-            {0xe9, 0x12, 0xab, 0xcd, 0x12, 0xfe, 0xdc}};
-        SerialIter sit{makeSlice(payload)};
-        auto obj = std::make_shared<STArray>(sit, sfMetadata);
-        BEAST_EXPECT(!obj);
-    }
-    catch (std::exception const& e)
-    {
-        BEAST_EXPECT(strcmp(e.what(), "Duplicate field detected") == 0);
-    }
+        // Instantiate a jtx::Env so debugLog writes are exercised.
+        test::jtx::Env env(*this);
 
-    try
-    {
-        std::array<std::uint8_t, 3> const payload{{0xe2, 0xe1, 0xe2}};
-        SerialIter sit{makeSlice(payload)};
-        auto obj = std::make_shared<STObject>(sit, sfMetadata);
-        BEAST_EXPECT(!obj);
+        testFields();
+        testSerialization();
+        testParseJSONArray();
+        testParseJSONArrayWithInvalidChildrenObjects();
+        testParseJSONEdgeCases();
+        testMalformed();
     }
-    catch (std::exception const& e)
-    {
-        BEAST_EXPECT(strcmp(e.what(), "Duplicate field detected") == 0);
-    }
-}
-
-void
-run() override
-{
-    // Instantiate a jtx::Env so debugLog writes are exercised.
-    test::jtx::Env env(*this);
-
-    testFields();
-    testSerialization();
-    testParseJSONArray();
-    testParseJSONArrayWithInvalidChildrenObjects();
-    testParseJSONEdgeCases();
-    testMalformed();
-}
-}
-;
+};
 
 BEAST_DEFINE_TESTSUITE(STObject, protocol, ripple);
 
-}  // ripple
+}  // namespace ripple

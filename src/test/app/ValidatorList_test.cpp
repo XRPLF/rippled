@@ -1741,7 +1741,9 @@ private:
                 using namespace std::chrono_literals;
                 // Want to drop 1 sooner
                 NetClock::time_point const validUntil = env.timeKeeper().now() +
-                    (i == 2 ? 120s : i == 1 ? 60s : 3600s);
+                    (i == 2       ? 120s
+                         : i == 1 ? 60s
+                                  : 3600s);
                 if (i == 1)
                     validUntil1 = validUntil;
                 else if (i == 2)

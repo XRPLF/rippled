@@ -238,7 +238,8 @@ public:
             return m_sink.active(m_level);
         }
 
-        explicit operator bool() const
+        explicit
+        operator bool() const
         {
             return active();
         }
