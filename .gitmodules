@@ -1,0 +1,4 @@
+[submodule "external/dilithium"]
+	path = external/dilithium
+	url = https://github.com/pq-crystals/dilithium.git
+	branch = round3
