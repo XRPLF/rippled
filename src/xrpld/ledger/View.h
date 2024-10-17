@@ -145,7 +145,7 @@ isFrozen(
     AccountID const& account,
     MPTIssue const& mptIssue);
 
-[[nodiscard]] bool
+[[nodiscard]] inline bool
 isFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
 {
     return std::visit(
