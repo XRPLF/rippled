@@ -1327,11 +1327,20 @@ public:
             BEAST_EXPECT(testInvalidMarker(s));
         }
 
-        // test account_objects with an invalid marker containing invalid
-        // dirIndex with marker: "0,entryIndex"
+        // test account_objects with marker: "0,entryIndex", this is still
+        // valid, because when dirIndex = 0, we will use root key to find
+        // dir.
         {
             std::string s = "0," + entryIndex;
-            BEAST_EXPECT(testInvalidMarker(s));
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::marker] = s;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            auto& accountObjects = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
+            BEAST_EXPECT(accountObjects.size() == limit);
         }
 
         // test account_objects with an invalid marker containing invalid
