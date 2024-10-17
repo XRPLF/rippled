@@ -327,7 +327,8 @@ AccountRootsNotDeleted::finalize(
     // A successful AccountDelete or AMMDelete MUST delete exactly
     // one account root.
     if ((tx.getTxnType() == ttACCOUNT_DELETE ||
-         tx.getTxnType() == ttAMM_DELETE) &&
+         tx.getTxnType() == ttAMM_DELETE ||
+         tx.getTxnType() == ttVAULT_DELETE) &&
         result == tesSUCCESS)
     {
         if (accountsDeleted_ == 1)
@@ -485,6 +486,7 @@ LedgerEntryTypesMatch::visitEntry(
             case ltMPTOKEN_ISSUANCE:
             case ltMPTOKEN:
             case ltCREDENTIAL:
+            case ltVAULT:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -586,6 +588,7 @@ ValidNewAccountRoot::finalize(
 
     // From this point on we know exactly one account was created.
     if ((tx.getTxnType() == ttPAYMENT || tx.getTxnType() == ttAMM_CREATE ||
+         tx.getTxnType() == ttVAULT_CREATE ||
          tx.getTxnType() == ttXCHAIN_ADD_CLAIM_ATTESTATION ||
          tx.getTxnType() == ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION) &&
         result == tesSUCCESS)
@@ -602,9 +605,7 @@ ValidNewAccountRoot::finalize(
         return true;
     }
 
-    JLOG(j.fatal()) << "Invariant failed: account root created "
-                       "by a non-Payment, by an unsuccessful transaction, "
-                       "or by AMM";
+    JLOG(j.fatal()) << "Invariant failed: account root created illegally";
     return false;
 }
 
@@ -992,28 +993,30 @@ ValidMPTIssuance::finalize(
 {
     if (result == tesSUCCESS)
     {
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_CREATE)
+        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_CREATE ||
+            tx.getTxnType() == ttVAULT_CREATE)
         {
             if (mptIssuancesCreated_ == 0)
             {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance creation "
+                JLOG(j.fatal()) << "Invariant failed: transaction "
                                    "succeeded without creating a MPT issuance";
             }
             else if (mptIssuancesDeleted_ != 0)
             {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance creation "
+                JLOG(j.fatal()) << "Invariant failed: transaction "
                                    "succeeded while removing MPT issuances";
             }
             else if (mptIssuancesCreated_ > 1)
             {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance creation "
+                JLOG(j.fatal()) << "Invariant failed: transaction "
                                    "succeeded but created multiple issuances";
             }
 
             return mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0;
         }
 
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_DESTROY)
+        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_DESTROY ||
+            tx.getTxnType() == ttVAULT_DELETE)
         {
             if (mptIssuancesDeleted_ == 0)
             {

@@ -39,8 +39,6 @@
 #include <memory>
 #include <utility>
 
-#include <vector>
-
 namespace ripple {
 
 enum class WaiveTransferFee : bool { No = false, Yes };
@@ -178,6 +176,15 @@ accountHolds(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptIssue,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
+    beast::Journal j);
+
+[[nodiscard]] STAmount
+accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
     beast::Journal j);
@@ -420,6 +427,12 @@ dirNext(
 [[nodiscard]] std::function<void(SLE::ref)>
 describeOwnerDir(AccountID const& account);
 
+[[nodiscard]] TER
+dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object);
+
+[[nodiscard]] Expected<std::shared_ptr<SLE>, TER>
+createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey);
+
 // VFALCO NOTE Both STAmount parameters should just
 //             be "Amount", a unit-less number.
 //
@@ -453,6 +466,30 @@ trustDelete(
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
     beast::Journal j);
+
+/** Create the structures necessary for an account to hold an asset.
+ *
+ * If the asset is:
+ * - XRP: Do nothing.
+ * - IOU: Check that the asset is not globally frozen,
+ *   and create a trust line (with limit 0).
+ * - MPT: Check that the asset is not globally locked,
+ *   and create an MPToken.
+ */
+[[nodiscard]] TER
+addEmptyHolding(
+    ApplyView& view,
+    AccountID const& account,
+    XRPAmount priorBalance,
+    Asset const& asset,
+    beast::Journal journal);
+
+[[nodiscard]] TER
+removeEmptyHolding(
+    ApplyView& view,
+    AccountID const& account,
+    Asset const& asset,
+    beast::Journal journal);
 
 /** Delete an offer.
 
@@ -580,6 +617,33 @@ deleteAMMTrustLine(
     std::shared_ptr<SLE> sleState,
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j);
+
+// From the perspective of a vault,
+// return the number of shares to give the depositor
+// when they deposit a fixed amount of assets.
+[[nodiscard]] Expected<Number, TER>
+assetsToSharesDeposit(
+    ReadView const& view,
+    std::shared_ptr<SLE> const& vault,
+    STAmount const& assets);
+
+// From the perspective of a vault,
+// return the number of shares to demand from the depositor
+// when they ask to withdraw a fixed amount of assets.
+[[nodiscard]] Expected<Number, TER>
+assetsToSharesWithdraw(
+    ReadView const& view,
+    std::shared_ptr<SLE> const& vault,
+    STAmount const& assets);
+
+// From the perspective of a vault,
+// return the number of assets to give the depositor
+// when they redeem a fixed amount of shares.
+[[nodiscard]] Expected<Number, TER>
+sharesToAssetsWithdraw(
+    ReadView const& view,
+    std::shared_ptr<SLE> const& vault,
+    STAmount const& shares);
 
 }  // namespace ripple
 

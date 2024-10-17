@@ -114,6 +114,14 @@ public:
     equalTokens(Asset const& lhs, Asset const& rhs);
 };
 
+inline Json::Value
+to_json(Asset const& asset)
+{
+    Json::Value jv;
+    asset.setJson(jv);
+    return jv;
+}
+
 template <ValidIssueType TIss>
 constexpr bool
 Asset::holds() const
@@ -218,9 +226,6 @@ validJSONAsset(Json::Value const& jv);
 
 Asset
 assetFromJson(Json::Value const& jv);
-
-Json::Value
-to_json(Asset const& asset);
 
 }  // namespace ripple
 

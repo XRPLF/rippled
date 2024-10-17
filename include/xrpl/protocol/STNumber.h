@@ -63,6 +63,13 @@ public:
     void
     setValue(Number const& v);
 
+    STNumber&
+    operator=(Number const& rhs)
+    {
+        setValue(rhs);
+        return *this;
+    }
+
     bool
     isEquivalent(STBase const& t) const override;
     bool

@@ -141,7 +141,7 @@ MPTokenAuthorize::authorize(
     beast::Journal journal,
     MPTAuthorizeArgs const& args)
 {
-    auto const sleAcct = view.peek(keylet::account(args.account));
+    auto const sleAcct = view.peek(keylet::account(args.accountID));
     if (!sleAcct)
         return tecINTERNAL;
 
@@ -150,19 +150,22 @@ MPTokenAuthorize::authorize(
     //       `holderID` is NOT used
     if (!args.holderID)
     {
+        auto const mptokenKey =
+            keylet::mptoken(args.mptIssuanceID, args.accountID);
+        auto sleMpt = view.peek(mptokenKey);
+
         // When a holder wants to unauthorize/delete a MPT, the ledger must
         //      - delete mptokenKey from owner directory
         //      - delete the MPToken
         if (args.flags & tfMPTUnauthorize)
         {
-            auto const mptokenKey =
-                keylet::mptoken(args.mptIssuanceID, args.account);
-            auto const sleMpt = view.peek(mptokenKey);
-            if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0)
-                return tecINTERNAL;
+            if (!sleMpt)
+                return tecOBJECT_NOT_FOUND;
+            if ((*sleMpt)[sfMPTAmount] != 0)
+                return tecHAS_OBLIGATIONS;
 
             if (!view.dirRemove(
-                    keylet::ownerDir(args.account),
+                    keylet::ownerDir(args.accountID),
                     (*sleMpt)[sfOwnerNode],
                     sleMpt->key(),
                     false))
@@ -191,26 +194,18 @@ MPTokenAuthorize::authorize(
         if (args.priorBalance < reserveCreate)
             return tecINSUFFICIENT_RESERVE;
 
-        auto const mptokenKey =
-            keylet::mptoken(args.mptIssuanceID, args.account);
+        if (sleMpt)
+            return tecDUPLICATE;
+        sleMpt = std::make_shared<SLE>(mptokenKey);
 
-        auto const ownerNode = view.dirInsert(
-            keylet::ownerDir(args.account),
-            mptokenKey,
-            describeOwnerDir(args.account));
-
-        if (!ownerNode)
-            return tecDIR_FULL;
-
-        auto mptoken = std::make_shared<SLE>(mptokenKey);
-        (*mptoken)[sfAccount] = args.account;
-        (*mptoken)[sfMPTokenIssuanceID] = args.mptIssuanceID;
-        (*mptoken)[sfFlags] = 0;
-        (*mptoken)[sfOwnerNode] = *ownerNode;
-        view.insert(mptoken);
-
-        // Update owner count.
+        if (auto ter = dirLink(view, args.accountID, sleMpt))
+            return ter;
         adjustOwnerCount(view, sleAcct, 1, journal);
+
+        (*sleMpt)[sfAccount] = args.accountID;
+        (*sleMpt)[sfMPTokenIssuanceID] = args.mptIssuanceID;
+        (*sleMpt)[sfFlags] = 0;
+        view.insert(sleMpt);
 
         return tesSUCCESS;
     }
@@ -223,7 +218,7 @@ MPTokenAuthorize::authorize(
     // If the account that submitted this tx is the issuer of the MPT
     // Note: `account_` is issuer's account
     //       `holderID` is holder's account
-    if (args.account != (*sleMptIssuance)[sfIssuer])
+    if (args.accountID != (*sleMptIssuance)[sfIssuer])
         return tecINTERNAL;
 
     auto const sleMpt =
@@ -259,7 +254,7 @@ MPTokenAuthorize::doApply()
         ctx_.journal,
         {.priorBalance = mPriorBalance,
          .mptIssuanceID = tx[sfMPTokenIssuanceID],
-         .account = account_,
+         .accountID = account_,
          .flags = tx.getFlags(),
          .holderID = tx[~sfHolder]});
 }

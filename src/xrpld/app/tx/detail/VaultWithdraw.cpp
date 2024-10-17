@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2022 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,25 +17,46 @@
 */
 //==============================================================================
 
-#include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpld/app/tx/detail/VaultWithdraw.h>
+
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 
-bool
-Keylet::check(STLedgerEntry const& sle) const
+NotTEC
+VaultWithdraw::preflight(PreflightContext const& ctx)
 {
-    XRPL_ASSERT(
-        sle.getType() != ltANY || sle.getType() != ltCHILD,
-        "ripple::Keylet::check : valid input type");
+    if (!ctx.rules.enabled(featureSingleAssetVault))
+        return temDISABLED;
 
-    if (type == ltANY)
-        return true;
+    if (auto const ter = preflight1(ctx))
+        return ter;
 
-    if (type == ltCHILD)
-        return sle.getType() != ltDIR_NODE;
+    if (ctx.tx.getFlags() & tfUniversalMask)
+        return temINVALID_FLAG;
 
-    return sle.getType() == type && sle.key() == key;
+    return preflight2(ctx);
+}
+
+TER
+VaultWithdraw::preclaim(PreclaimContext const& ctx)
+{
+    auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
+    if (!vault)
+        return tecOBJECT_NOT_FOUND;
+    return tesSUCCESS;
+}
+
+TER
+VaultWithdraw::doApply()
+{
+    auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    if (!vault)
+        return tecOBJECT_NOT_FOUND;
+
+    return tesSUCCESS;
 }
 
 }  // namespace ripple

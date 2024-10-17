@@ -115,12 +115,14 @@ class Invariants_test : public beast::unit_test::suite
                 sink.messages().str().starts_with("Invariant failed:") ||
                 sink.messages().str().starts_with(
                     "Transaction caused an exception"));
-            // uncomment if you want to log the invariant failure message
-            // log << "   --> " << sink.messages().str() << std::endl;
             for (auto const& m : expect_logs)
             {
-                BEAST_EXPECT(
-                    sink.messages().str().find(m) != std::string::npos);
+                if (sink.messages().str().find(m) == std::string::npos)
+                {
+                    // uncomment if you want to log the invariant failure
+                    // message log << "   --> " << m << std::endl;
+                    fail();
+                }
             }
         }
     }
@@ -606,7 +608,7 @@ class Invariants_test : public beast::unit_test::suite
         testcase << "valid new account root";
 
         doInvariantCheck(
-            {{"account root created by a non-Payment"}},
+            {{"account root created illegally"}},
             [](Account const&, Account const&, ApplyContext& ac) {
                 // Insert a new account root created by a non-payment into
                 // the view.

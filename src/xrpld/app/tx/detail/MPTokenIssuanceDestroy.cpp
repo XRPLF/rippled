@@ -63,22 +63,39 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-MPTokenIssuanceDestroy::doApply()
+MPTokenIssuanceDestroy::destroy(
+    ApplyView& view,
+    beast::Journal journal,
+    MPTDestroyArgs const& args)
 {
-    auto const mpt =
-        view().peek(keylet::mptIssuance(ctx_.tx[sfMPTokenIssuanceID]));
-    if (account_ != mpt->getAccountID(sfIssuer))
-        return tecINTERNAL;
+    auto const mpt = view.peek(keylet::mptIssuance(args.issuanceID));
+    if (!mpt)
+        return tecOBJECT_NOT_FOUND;
 
-    if (!view().dirRemove(
-            keylet::ownerDir(account_), (*mpt)[sfOwnerNode], mpt->key(), false))
+    if ((*mpt)[sfIssuer] != args.account)
+        return tecNO_PERMISSION;
+    auto const& issuer = args.account;
+
+    if ((*mpt)[~sfOutstandingAmount] != 0)
+        return tecHAS_OBLIGATIONS;
+
+    if (!view.dirRemove(
+            keylet::ownerDir(issuer), (*mpt)[sfOwnerNode], mpt->key(), false))
         return tefBAD_LEDGER;
 
-    view().erase(mpt);
-
-    adjustOwnerCount(view(), view().peek(keylet::account(account_)), -1, j_);
-
+    view.erase(mpt);
+    adjustOwnerCount(view, view.peek(keylet::account(issuer)), -1, journal);
     return tesSUCCESS;
+}
+
+TER
+MPTokenIssuanceDestroy::doApply()
+{
+    return destroy(
+        view(),
+        j_,
+        {.account = ctx_.tx[sfAccount],
+         .issuanceID = ctx_.tx[sfMPTokenIssuanceID]});
 }
 
 }  // namespace ripple

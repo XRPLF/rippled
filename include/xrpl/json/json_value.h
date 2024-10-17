@@ -364,6 +364,8 @@ public:
      */
     Value&
     operator[](const StaticString& key);
+    Value const&
+    operator[](const StaticString& key) const;
 
     /// Return the member named key if it exist, defaultValue otherwise.
     Value

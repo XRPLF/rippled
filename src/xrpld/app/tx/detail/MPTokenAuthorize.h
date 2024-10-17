@@ -26,11 +26,11 @@ namespace ripple {
 
 struct MPTAuthorizeArgs
 {
-    XRPAmount const& priorBalance;
+    XRPAmount const& priorBalance{};
     uint192 const& mptIssuanceID;
-    AccountID const& account;
-    std::uint32_t flags;
-    std::optional<AccountID> holderID;
+    AccountID const& accountID;
+    std::uint32_t flags{};
+    std::optional<AccountID> holderID{};
 };
 
 class MPTokenAuthorize : public Transactor

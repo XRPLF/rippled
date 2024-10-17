@@ -26,18 +26,6 @@
 
 namespace ripple {
 
-AccountID
-ammAccountID(
-    std::uint16_t prefix,
-    uint256 const& parentHash,
-    uint256 const& ammID)
-{
-    ripesha_hasher rsh;
-    auto const hash = sha512Half(prefix, parentHash, ammID);
-    rsh(hash.data(), hash.size());
-    return AccountID{static_cast<ripesha_hasher::result_type>(rsh)};
-}
-
 Currency
 ammLPTCurrency(Currency const& cur1, Currency const& cur2)
 {

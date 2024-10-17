@@ -887,6 +887,12 @@ Value::operator[](const StaticString& key)
     return resolveReference(key, true);
 }
 
+Value const&
+Value::operator[](const StaticString& key) const
+{
+    return (*this)[key.c_str()];
+}
+
 Value&
 Value::append(const Value& value)
 {

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,25 +17,61 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_TEST_JTX_VAULT_H_INCLUDED
+#define RIPPLE_TEST_JTX_VAULT_H_INCLUDED
+
+#include <test/jtx/Account.h>
+#include <xrpl/json/json_value.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/STLedgerEntry.h>
+
+#include <optional>
+#include <tuple>
 
 namespace ripple {
+namespace test {
+namespace jtx {
 
-bool
-Keylet::check(STLedgerEntry const& sle) const
+class Env;
+
+struct Vault
 {
-    XRPL_ASSERT(
-        sle.getType() != ltANY || sle.getType() != ltCHILD,
-        "ripple::Keylet::check : valid input type");
+    Env& env;
 
-    if (type == ltANY)
-        return true;
+    struct CreateArgs
+    {
+        Account owner;
+        Asset asset;
+        std::optional<std::uint32_t> flags{};
+    };
 
-    if (type == ltCHILD)
-        return sle.getType() != ltDIR_NODE;
+    /** Return a VaultCreate transaction and the Vault's expected keylet. */
+    std::tuple<Json::Value, Keylet>
+    create(CreateArgs const& args);
 
-    return sle.getType() == type && sle.key() == key;
-}
+    struct SetArgs
+    {
+        Account owner;
+        uint256 id;
+    };
 
+    Json::Value
+    set(SetArgs const& args);
+
+    struct DeleteArgs
+    {
+        Account owner;
+        uint256 id;
+    };
+
+    Json::Value
+    del(DeleteArgs const& args);
+};
+
+}  // namespace jtx
+}  // namespace test
 }  // namespace ripple
+
+#endif

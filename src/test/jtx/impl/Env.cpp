@@ -586,7 +586,10 @@ Env::disableFeature(uint256 const feature)
     app().config().features.erase(feature);
 }
 
-}  // namespace jtx
+// The strings are hexadecimal. 1 byte = 2 hexadecimal characters.
+std::string blob257(514, 'A');
+std::string blob1025(2050, 'B');
 
+}  // namespace jtx
 }  // namespace test
 }  // namespace ripple
