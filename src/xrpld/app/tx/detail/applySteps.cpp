@@ -80,106 +80,18 @@ with_txn_type(TxType txnType, F&& f)
 {
     switch (txnType)
     {
-        case ttACCOUNT_DELETE:
-            return f.template operator()<DeleteAccount>();
-        case ttACCOUNT_SET:
-            return f.template operator()<SetAccount>();
-        case ttCHECK_CANCEL:
-            return f.template operator()<CancelCheck>();
-        case ttCHECK_CASH:
-            return f.template operator()<CashCheck>();
-        case ttCHECK_CREATE:
-            return f.template operator()<CreateCheck>();
-        case ttDEPOSIT_PREAUTH:
-            return f.template operator()<DepositPreauth>();
-        case ttOFFER_CANCEL:
-            return f.template operator()<CancelOffer>();
-        case ttOFFER_CREATE:
-            return f.template operator()<CreateOffer>();
-        case ttESCROW_CREATE:
-            return f.template operator()<EscrowCreate>();
-        case ttESCROW_FINISH:
-            return f.template operator()<EscrowFinish>();
-        case ttESCROW_CANCEL:
-            return f.template operator()<EscrowCancel>();
-        case ttLEDGER_STATE_FIX:
-            return f.template operator()<LedgerStateFix>();
-        case ttPAYCHAN_CLAIM:
-            return f.template operator()<PayChanClaim>();
-        case ttPAYCHAN_CREATE:
-            return f.template operator()<PayChanCreate>();
-        case ttPAYCHAN_FUND:
-            return f.template operator()<PayChanFund>();
-        case ttPAYMENT:
-            return f.template operator()<Payment>();
-        case ttREGULAR_KEY_SET:
-            return f.template operator()<SetRegularKey>();
-        case ttSIGNER_LIST_SET:
-            return f.template operator()<SetSignerList>();
-        case ttTICKET_CREATE:
-            return f.template operator()<CreateTicket>();
-        case ttTRUST_SET:
-            return f.template operator()<SetTrust>();
-        case ttAMENDMENT:
-        case ttFEE:
-        case ttUNL_MODIFY:
-            return f.template operator()<Change>();
-        case ttNFTOKEN_MINT:
-            return f.template operator()<NFTokenMint>();
-        case ttNFTOKEN_BURN:
-            return f.template operator()<NFTokenBurn>();
-        case ttNFTOKEN_CREATE_OFFER:
-            return f.template operator()<NFTokenCreateOffer>();
-        case ttNFTOKEN_CANCEL_OFFER:
-            return f.template operator()<NFTokenCancelOffer>();
-        case ttNFTOKEN_ACCEPT_OFFER:
-            return f.template operator()<NFTokenAcceptOffer>();
-        case ttCLAWBACK:
-            return f.template operator()<Clawback>();
-        case ttAMM_CREATE:
-            return f.template operator()<AMMCreate>();
-        case ttAMM_DEPOSIT:
-            return f.template operator()<AMMDeposit>();
-        case ttAMM_WITHDRAW:
-            return f.template operator()<AMMWithdraw>();
-        case ttAMM_VOTE:
-            return f.template operator()<AMMVote>();
-        case ttAMM_BID:
-            return f.template operator()<AMMBid>();
-        case ttAMM_DELETE:
-            return f.template operator()<AMMDelete>();
-        case ttXCHAIN_CREATE_BRIDGE:
-            return f.template operator()<XChainCreateBridge>();
-        case ttXCHAIN_MODIFY_BRIDGE:
-            return f.template operator()<BridgeModify>();
-        case ttXCHAIN_CREATE_CLAIM_ID:
-            return f.template operator()<XChainCreateClaimID>();
-        case ttXCHAIN_COMMIT:
-            return f.template operator()<XChainCommit>();
-        case ttXCHAIN_CLAIM:
-            return f.template operator()<XChainClaim>();
-        case ttXCHAIN_ADD_CLAIM_ATTESTATION:
-            return f.template operator()<XChainAddClaimAttestation>();
-        case ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION:
-            return f.template operator()<XChainAddAccountCreateAttestation>();
-        case ttXCHAIN_ACCOUNT_CREATE_COMMIT:
-            return f.template operator()<XChainCreateAccountCommit>();
-        case ttDID_SET:
-            return f.template operator()<DIDSet>();
-        case ttDID_DELETE:
-            return f.template operator()<DIDDelete>();
-        case ttORACLE_SET:
-            return f.template operator()<SetOracle>();
-        case ttORACLE_DELETE:
-            return f.template operator()<DeleteOracle>();
-        case ttMPTOKEN_ISSUANCE_CREATE:
-            return f.template operator()<MPTokenIssuanceCreate>();
-        case ttMPTOKEN_ISSUANCE_DESTROY:
-            return f.template operator()<MPTokenIssuanceDestroy>();
-        case ttMPTOKEN_AUTHORIZE:
-            return f.template operator()<MPTokenAuthorize>();
-        case ttMPTOKEN_ISSUANCE_SET:
-            return f.template operator()<MPTokenIssuanceSet>();
+#pragma push_macro("TRANSACTION")
+#undef TRANSACTION
+
+#define TRANSACTION(tag, value, name, fields) \
+    case tag:                                 \
+        return f.template operator()<name>();
+
+#include <xrpl/protocol/detail/transactions.macro>
+
+#undef TRANSACTION
+#pragma pop_macro("TRANSACTION")
+
         default:
             throw UnknownTxnType(txnType);
     }

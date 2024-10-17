@@ -409,115 +409,27 @@ featureToName(uint256 const& f)
     return featureCollections.featureToName(f);
 }
 
-#pragma push_macro("REGISTER_FEATURE")
-#undef REGISTER_FEATURE
-
-/**
-Takes the name of a feature, whether it's supported, and the default vote. Will
-register the feature, and create a variable whose name is "feature" plus the
-feature name.
-*/
-#define REGISTER_FEATURE(fName, supported, votebehavior) \
-    uint256 const feature##fName =                       \
-        registerFeature(#fName, supported, votebehavior)
-
-#pragma push_macro("REGISTER_FIX")
-#undef REGISTER_FIX
-
-/**
-Takes the name of a feature, whether it's supported, and the default vote. Will
-register the feature, and create a variable whose name is the unmodified feature
-name.
-*/
-#define REGISTER_FIX(fName, supported, votebehavior) \
-    uint256 const fName = registerFeature(#fName, supported, votebehavior)
-
-// clang-format off
-
 // All known amendments must be registered either here or below with the
 // "retired" amendments
-REGISTER_FEATURE(OwnerPaysFee,                  Supported::no,  VoteBehavior::DefaultNo);
-REGISTER_FEATURE(Flow,                          Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(FlowCross,                     Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FIX    (fix1513,                       Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(DepositAuth,                   Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(Checks,                        Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FIX    (fix1571,                       Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FIX    (fix1543,                       Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FIX    (fix1623,                       Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(DepositPreauth,                Supported::yes, VoteBehavior::DefaultYes);
-// Use liquidity from strands that consume max offers, but mark as dry
-REGISTER_FIX    (fix1515,                       Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FIX    (fix1578,                       Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(MultiSignReserve,              Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FIX    (fixTakerDryOfferRemoval,       Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FIX    (fixMasterKeyAsRegularKey,      Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FIX    (fixCheckThreading,             Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FIX    (fixPayChanRecipientOwnerDir,   Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(DeletableAccounts,             Supported::yes, VoteBehavior::DefaultYes);
-// fixQualityUpperBound should be activated before FlowCross
-REGISTER_FIX    (fixQualityUpperBound,          Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(RequireFullyCanonicalSig,      Supported::yes, VoteBehavior::DefaultYes);
-// fix1781: XRPEndpointSteps should be included in the circular payment check
-REGISTER_FIX    (fix1781,                       Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(HardenedValidations,           Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FIX    (fixAmendmentMajorityCalc,      Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(NegativeUNL,                   Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(TicketBatch,                   Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(FlowSortStrands,               Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FIX    (fixSTAmountCanonicalize,       Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FIX    (fixRmSmallIncreasedQOffers,    Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(CheckCashMakesTrustLine,       Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FEATURE(ExpandedSignerList,            Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FEATURE(NonFungibleTokensV1_1,         Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixTrustLinesToSelf,           Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixRemoveNFTokenAutoTrustLine, Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(ImmediateOfferKilled,          Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FEATURE(DisallowIncoming,              Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FEATURE(XRPFees,                       Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixUniversalNumber,            Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixNonFungibleTokensV1_2,      Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixNFTokenRemint,              Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixReducedOffersV1,            Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FEATURE(Clawback,                      Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FEATURE(AMM,                           Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FEATURE(XChainBridge,                  Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixDisallowIncomingV1,         Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FEATURE(DID,                           Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixFillOrKill,                 Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixNFTokenReserve,             Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixInnerObjTemplate,           Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixAMMOverflowOffer,           Supported::yes, VoteBehavior::DefaultYes);
-REGISTER_FEATURE(PriceOracle,                   Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixEmptyDID,                   Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixXChainRewardRounding,       Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixPreviousTxnID,              Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixAMMv1_1,                    Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FEATURE(NFTokenMintOffer,              Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixReducedOffersV2,            Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixEnforceNFTokenTrustline,    Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixInnerObjTemplate2,          Supported::yes, VoteBehavior::DefaultNo);
-REGISTER_FIX    (fixNFTokenPageLinks,           Supported::yes, VoteBehavior::DefaultNo);
-// InvariantsV1_1 will be changes to Supported::yes when all the
-// invariants expected to be included under it are complete.
-REGISTER_FEATURE(InvariantsV1_1,                Supported::no, VoteBehavior::DefaultNo);
-REGISTER_FEATURE(MPTokensV1,                    Supported::yes, VoteBehavior::DefaultNo);
 
-// The following amendments are obsolete, but must remain supported
-// because they could potentially get enabled.
-//
-// Obsolete features are (usually) not in the ledger, and may have code
-// controlled by the feature. They need to be supported because at some
-// time in the past, the feature was supported and votable, but never
-// passed. So the feature needs to be supported in case it is ever
-// enabled (added to the ledger).
-//
-// If a feature remains obsolete for long enough that no clients are able
-// to vote for it, the feature can be removed (entirely?) from the code.
-REGISTER_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete);
-REGISTER_FEATURE(NonFungibleTokensV1,   Supported::yes, VoteBehavior::Obsolete);
-REGISTER_FIX    (fixNFTokenDirV1,       Supported::yes, VoteBehavior::Obsolete);
-REGISTER_FIX    (fixNFTokenNegOffer,    Supported::yes, VoteBehavior::Obsolete);
+#pragma push_macro("XRPL_FEATURE")
+#undef XRPL_FEATURE
+#pragma push_macro("XRPL_FIX")
+#undef XRPL_FIX
+
+#define XRPL_FEATURE(name, supported, vote) \
+    uint256 const feature##name = registerFeature(#name, supported, vote);
+#define XRPL_FIX(name, supported, vote) \
+    uint256 const fix##name = registerFeature("fix" #name, supported, vote);
+
+#include <xrpl/protocol/detail/features.macro>
+
+#undef XRPL_FIX
+#pragma pop_macro("XRPL_FIX")
+#undef XRPL_FEATURE
+#pragma pop_macro("XRPL_FEATURE")
+
+// clang-format off
 
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.
@@ -542,12 +454,6 @@ uint256 const
     retiredFix1528           = retireFeature("fix1528");
 
 // clang-format on
-
-#undef REGISTER_FIX
-#pragma pop_macro("REGISTER_FIX")
-
-#undef REGISTER_FEATURE
-#pragma pop_macro("REGISTER_FEATURE")
 
 // All of the features should now be registered, since variables in a cpp file
 // are initialized from top to bottom.

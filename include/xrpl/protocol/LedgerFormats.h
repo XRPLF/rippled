@@ -52,163 +52,16 @@ namespace ripple {
 // clang-format off
 enum LedgerEntryType : std::uint16_t
 {
-    /** A ledger object which describes an account.
 
-        \sa keylet::account
-     */
-    ltACCOUNT_ROOT = 0x0061,
+#pragma push_macro("LEDGER_ENTRY")
+#undef LEDGER_ENTRY
 
-    /** A ledger object which contains a list of object identifiers.
+#define LEDGER_ENTRY(tag, value, name, fields) tag = value,
 
-        \sa keylet::page, keylet::quality, keylet::book, keylet::next and
-            keylet::ownerDir
-     */
-    ltDIR_NODE = 0x0064,
+#include <xrpl/protocol/detail/ledger_entries.macro>
 
-    /** A ledger object which describes a bidirectional trust line.
-
-        @note Per Vinnie Falco this should be renamed to ltTRUST_LINE
-
-        \sa keylet::line
-     */
-    ltRIPPLE_STATE = 0x0072,
-
-    /** A ledger object which describes a ticket.
-
-        \sa keylet::ticket
-     */
-    ltTICKET = 0x0054,
-
-    /** A ledger object which contains a signer list for an account.
-
-        \sa keylet::signers
-     */
-    ltSIGNER_LIST = 0x0053,
-
-    /** A ledger object which describes an offer on the DEX.
-
-        \sa keylet::offer
-     */
-    ltOFFER = 0x006f,
-
-
-    /** The ledger object which lists details about sidechains.
-
-        \sa keylet::bridge
-    */
-    ltBRIDGE = 0x0069,
-
-    /** A ledger object that contains a list of ledger hashes.
-
-        This type is used to store the ledger hashes which the protocol uses
-        to implement skip lists that allow for efficient backwards (and, in
-        theory, forward) forward iteration across large ledger ranges.
-
-        \sa keylet::skip
-     */
-    ltLEDGER_HASHES = 0x0068,
-
-    /** The ledger object which lists details about amendments on the network.
-
-        \note This is a singleton: only one such object exists in the ledger.
-
-        \sa keylet::amendments
-     */
-    ltAMENDMENTS = 0x0066,
-
-    /** A claim id for a cross chain transaction.
-
-        \sa keylet::xChainClaimID
-    */
-    ltXCHAIN_OWNED_CLAIM_ID = 0x0071,
-
-    /** A claim id for a cross chain create account transaction.
-
-        \sa keylet::xChainCreateAccountClaimID
-    */
-    ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID = 0x0074,
-
-    /** The ledger object which lists the network's fee settings.
-
-        \note This is a singleton: only one such object exists in the ledger.
-
-        \sa keylet::fees
-     */
-    ltFEE_SETTINGS = 0x0073,
-
-    /** A ledger object describing a single escrow.
-
-        \sa keylet::escrow
-     */
-    ltESCROW = 0x0075,
-
-    /** A ledger object describing a single unidirectional XRP payment channel.
-
-        \sa keylet::payChan
-     */
-    ltPAYCHAN = 0x0078,
-
-    /** A ledger object which describes a check.
-
-        \sa keylet::check
-     */
-    ltCHECK = 0x0043,
-
-    /** A ledger object which describes a deposit preauthorization.
-
-        \sa keylet::depositPreauth
-     */
-    ltDEPOSIT_PREAUTH = 0x0070,
-
-    /** The ledger object which tracks the current negative UNL state.
-
-        \note This is a singleton: only one such object exists in the ledger.
-
-        \sa keylet::negativeUNL
-     */
-    ltNEGATIVE_UNL = 0x004e,
-
-    /** A ledger object which contains a list of NFTs
-
-        \sa keylet::nftpage_min, keylet::nftpage_max, keylet::nftpage
-     */
-    ltNFTOKEN_PAGE = 0x0050,
-
-    /** A ledger object which identifies an offer to buy or sell an NFT.
-
-        \sa keylet::nftoffer
-     */
-    ltNFTOKEN_OFFER = 0x0037,
-
-    /** The ledger object which tracks the AMM.
-
-       \sa keylet::amm
-    */
-    ltAMM = 0x0079,
-
-    /** The ledger object which tracks the DID.
-
-       \sa keylet::did
-    */
-    ltDID = 0x0049,
-
-    /** A ledger object which tracks Oracle
-        \sa keylet::oracle
-     */
-    ltORACLE = 0x0080,
-	
-	/** A ledger object representing an individual MPToken asset type, but not
-     * any balances of that asset itself.
-
-        \sa keylet::mptIssuance
-     */
-    ltMPTOKEN_ISSUANCE = 0x007e,
-
-    /** A ledger object representing an individual MPToken balance.
-
-        \sa keylet::mptoken
-     */
-    ltMPTOKEN = 0x007f,
+#undef LEDGER_ENTRY
+#pragma pop_macro("LEDGER_ENTRY")
 
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.

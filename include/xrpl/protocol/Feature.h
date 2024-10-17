@@ -308,71 +308,20 @@ foreachFeature(FeatureBitset bs, F&& f)
             f(bitsetIndexToFeature(i));
 }
 
-extern uint256 const featureOwnerPaysFee;
-extern uint256 const featureFlow;
-extern uint256 const featureFlowCross;
-extern uint256 const featureCryptoConditionsSuite;
-extern uint256 const fix1513;
-extern uint256 const featureDepositAuth;
-extern uint256 const featureChecks;
-extern uint256 const fix1571;
-extern uint256 const fix1543;
-extern uint256 const fix1623;
-extern uint256 const featureDepositPreauth;
-extern uint256 const fix1515;
-extern uint256 const fix1578;
-extern uint256 const featureMultiSignReserve;
-extern uint256 const fixTakerDryOfferRemoval;
-extern uint256 const fixMasterKeyAsRegularKey;
-extern uint256 const fixCheckThreading;
-extern uint256 const fixPayChanRecipientOwnerDir;
-extern uint256 const featureDeletableAccounts;
-extern uint256 const fixQualityUpperBound;
-extern uint256 const featureRequireFullyCanonicalSig;
-extern uint256 const fix1781;
-extern uint256 const featureHardenedValidations;
-extern uint256 const fixAmendmentMajorityCalc;
-extern uint256 const featureNegativeUNL;
-extern uint256 const featureTicketBatch;
-extern uint256 const featureFlowSortStrands;
-extern uint256 const fixSTAmountCanonicalize;
-extern uint256 const fixRmSmallIncreasedQOffers;
-extern uint256 const featureCheckCashMakesTrustLine;
-extern uint256 const featureNonFungibleTokensV1;
-extern uint256 const featureExpandedSignerList;
-extern uint256 const fixNFTokenDirV1;
-extern uint256 const fixNFTokenNegOffer;
-extern uint256 const featureNonFungibleTokensV1_1;
-extern uint256 const fixTrustLinesToSelf;
-extern uint256 const fixRemoveNFTokenAutoTrustLine;
-extern uint256 const featureImmediateOfferKilled;
-extern uint256 const featureDisallowIncoming;
-extern uint256 const featureXRPFees;
-extern uint256 const featureAMM;
-extern uint256 const fixUniversalNumber;
-extern uint256 const fixNonFungibleTokensV1_2;
-extern uint256 const fixNFTokenRemint;
-extern uint256 const fixReducedOffersV1;
-extern uint256 const featureClawback;
-extern uint256 const featureXChainBridge;
-extern uint256 const fixDisallowIncomingV1;
-extern uint256 const featureDID;
-extern uint256 const fixFillOrKill;
-extern uint256 const fixNFTokenReserve;
-extern uint256 const fixInnerObjTemplate;
-extern uint256 const fixAMMOverflowOffer;
-extern uint256 const featurePriceOracle;
-extern uint256 const fixEmptyDID;
-extern uint256 const fixXChainRewardRounding;
-extern uint256 const fixPreviousTxnID;
-extern uint256 const fixAMMv1_1;
-extern uint256 const featureNFTokenMintOffer;
-extern uint256 const fixReducedOffersV2;
-extern uint256 const fixEnforceNFTokenTrustline;
-extern uint256 const fixInnerObjTemplate2;
-extern uint256 const featureInvariantsV1_1;
-extern uint256 const fixNFTokenPageLinks;
-extern uint256 const featureMPTokensV1;
+#pragma push_macro("XRPL_FEATURE")
+#undef XRPL_FEATURE
+#pragma push_macro("XRPL_FIX")
+#undef XRPL_FIX
+
+#define XRPL_FEATURE(name, supported, vote) extern uint256 const feature##name;
+#define XRPL_FIX(name, supported, vote) extern uint256 const fix##name;
+
+#include <xrpl/protocol/detail/features.macro>
+
+#undef XRPL_FIX
+#pragma pop_macro("XRPL_FIX")
+#undef XRPL_FEATURE
+#pragma pop_macro("XRPL_FEATURE")
 
 }  // namespace ripple
 

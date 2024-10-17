@@ -1,0 +1,113 @@
+//------------------------------------------------------------------------------
+/*
+    This file is part of rippled: https://github.com/ripple/rippled
+    Copyright (c) 2024 Ripple Labs Inc.
+
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose  with  or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
+
+    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+//==============================================================================
+
+#if !defined(XRPL_FEATURE)
+#error "undefined macro: XRPL_FEATURE"
+#endif
+#if !defined(XRPL_FIX)
+#error "undefined macro: XRPL_FIX"
+#endif
+
+// Add new amendments to the top of this list.
+// Keep it sorted in reverse chronological order.
+// If you add an amendment here, then do not forget to increment `numFeatures`
+// in include/xrpl/protocol/Feature.h.
+
+// InvariantsV1_1 will be changes to Supported::yes when all the
+// invariants expected to be included under it are complete.
+XRPL_FEATURE(InvariantsV1_1,             Supported::no, VoteBehavior::DefaultNo)
+XRPL_FIX    (NFTokenPageLinks,           Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (InnerObjTemplate2,          Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (EnforceNFTokenTrustline,    Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (ReducedOffersV2,            Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(NFTokenMintOffer,           Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (AMMv1_1,                    Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (PreviousTxnID,              Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (XChainRewardRounding,       Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (EmptyDID,                   Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(PriceOracle,                Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (AMMOverflowOffer,           Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FIX    (InnerObjTemplate,           Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (NFTokenReserve,             Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (FillOrKill,                 Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(DID,                        Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (DisallowIncomingV1,         Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(XChainBridge,               Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(AMM,                        Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(Clawback,                   Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (ReducedOffersV1,            Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (NFTokenRemint,              Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (NonFungibleTokensV1_2,      Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (UniversalNumber,            Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(XRPFees,                    Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(DisallowIncoming,           Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(ImmediateOfferKilled,       Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (RemoveNFTokenAutoTrustLine, Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FIX    (TrustLinesToSelf,           Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(NonFungibleTokensV1_1,      Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(ExpandedSignerList,         Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(CheckCashMakesTrustLine,    Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (RmSmallIncreasedQOffers,    Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FIX    (STAmountCanonicalize,       Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FEATURE(FlowSortStrands,            Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FEATURE(TicketBatch,                Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FEATURE(NegativeUNL,                Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FIX    (AmendmentMajorityCalc,      Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FEATURE(HardenedValidations,        Supported::yes, VoteBehavior::DefaultYes)
+// fix1781: XRPEndpointSteps should be included in the circular payment check
+XRPL_FIX    (1781,                       Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FEATURE(RequireFullyCanonicalSig,   Supported::yes, VoteBehavior::DefaultYes)
+// fixQualityUpperBound should be activated before FlowCross
+XRPL_FIX    (QualityUpperBound,          Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FEATURE(DeletableAccounts,          Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FIX    (PayChanRecipientOwnerDir,   Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FIX    (CheckThreading,             Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FIX    (MasterKeyAsRegularKey,      Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FIX    (TakerDryOfferRemoval,       Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FEATURE(MultiSignReserve,           Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FIX    (1578,                       Supported::yes, VoteBehavior::DefaultYes)
+// fix1515: Use liquidity from strands that consume max offers, but mark as dry
+XRPL_FIX    (1515,                       Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FEATURE(DepositPreauth,             Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FIX    (1623,                       Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FIX    (1543,                       Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FIX    (1571,                       Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FEATURE(Checks,                     Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FEATURE(DepositAuth,                Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FIX    (1513,                       Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FEATURE(FlowCross,                  Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FEATURE(OwnerPaysFee,               Supported::no,  VoteBehavior::DefaultNo)
+XRPL_FEATURE(MPTokensV1,                 Supported::yes, VoteBehavior::DefaultNo)
+
+// The following amendments are obsolete, but must remain supported
+// because they could potentially get enabled.
+//
+// Obsolete features are (usually) not in the ledger, and may have code
+// controlled by the feature. They need to be supported because at some
+// time in the past, the feature was supported and votable, but never
+// passed. So the feature needs to be supported in case it is ever
+// enabled (added to the ledger).
+//
+// If a feature remains obsolete for long enough that no clients are able
+// to vote for it, the feature can be removed (entirely?) from the code.
+XRPL_FIX    (NFTokenNegOffer,       Supported::yes, VoteBehavior::Obsolete)
+XRPL_FIX    (NFTokenDirV1,          Supported::yes, VoteBehavior::Obsolete)
+XRPL_FEATURE(NonFungibleTokensV1,   Supported::yes, VoteBehavior::Obsolete)
+XRPL_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete)
