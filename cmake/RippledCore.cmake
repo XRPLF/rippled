@@ -98,6 +98,7 @@ if(xrpld)
   endif()
   if(tests)
     target_compile_definitions(rippled PUBLIC ENABLE_TESTS)
+    target_compile_definitions(rippled PUBLIC UNIT_TEST_REFERENCE_FEE)
   endif()
   target_include_directories(rippled
     PRIVATE

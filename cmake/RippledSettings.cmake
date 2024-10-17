@@ -11,6 +11,12 @@ option(assert "Enables asserts, even in release builds" OFF)
 option(xrpld "Build xrpld" ON)
 
 option(tests "Build tests" ON)
+if(tests)
+  # This setting allows making a separate workflow to test fees other than default 10
+  if(NOT UNIT_TEST_REFERENCE_FEE)
+    set(UNIT_TEST_REFERENCE_FEE "10" CACHE STRING "")
+  endif()
+endif()
 
 option(unity "Creates a build using UNITY support in cmake. This is the default" ON)
 if(unity)
