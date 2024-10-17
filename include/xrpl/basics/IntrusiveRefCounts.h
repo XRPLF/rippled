@@ -23,6 +23,7 @@
 #include <atomic>
 #include <cassert>
 #include <cstdint>
+#include <iostream>
 
 namespace ripple {
 
@@ -148,6 +149,12 @@ private:
 
     mutable std::atomic<FieldType> refCounts{strongDelta};
 
+    // TODO: temporary change. Remove after test is done
+    static std::atomic<FieldType> maxStrongRefCount;
+
+    // TODO: temporary change. Remove after test is done
+    static std::atomic<FieldType> maxWeakRefCount;
+
     /**  Amount to change the strong count when adding or releasing a reference
 
          Note: The strong count is stored in the low `StrongCountNumBits` bits
@@ -236,16 +243,46 @@ private:
     };
 };
 
+// TODO: temporary change. Remove after test is done
+inline std::atomic<std::uint32_t> IntrusiveRefCounts::maxStrongRefCount = 0;
+
+// TODO: temporary change. Remove after test is done
+inline std::atomic<std::uint32_t> IntrusiveRefCounts::maxWeakRefCount = 0;
+
 inline void
 IntrusiveRefCounts::addStrongRef() const noexcept
 {
     refCounts.fetch_add(strongDelta, std::memory_order_acq_rel);
+    RefCountPair const val = refCounts.load(std::memory_order_acquire);
+    FieldType newStrongRefCount = val.strong;
+
+    // TODO: remove after test
+    FieldType currentMax = IntrusiveRefCounts::maxStrongRefCount.load();
+    while (currentMax < newStrongRefCount &&
+           IntrusiveRefCounts::maxStrongRefCount.compare_exchange_weak(
+               currentMax, newStrongRefCount))
+    {
+        std::cout << "Maximum strong ref count updated: " << newStrongRefCount
+                  << std::endl;
+    }
 }
 
 inline void
 IntrusiveRefCounts::addWeakRef() const noexcept
 {
     refCounts.fetch_add(weakDelta, std::memory_order_acq_rel);
+    RefCountPair const val = refCounts.load(std::memory_order_acquire);
+    FieldType newWeakRefCount = val.weak;
+
+    // TODO: remove after test
+    FieldType currentMax = IntrusiveRefCounts::maxWeakRefCount.load();
+    while (currentMax < newWeakRefCount &&
+           IntrusiveRefCounts::maxWeakRefCount.compare_exchange_weak(
+               currentMax, newWeakRefCount))
+    {
+        std::cout << "Maximum weak ref count updated: " << newWeakRefCount
+                  << std::endl;
+    }
 }
 
 inline ReleaseRefAction
