@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/tx/detail/Credentials.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
@@ -32,6 +33,7 @@ namespace ripple {
 //   destination_account : <ident>
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
+//   credentials : [<credentialID>,...]
 // }
 
 Json::Value
@@ -88,23 +90,82 @@ doDepositAuthorized(RPC::JsonContext& context)
         return result;
     }
 
-    // If the two accounts are the same, then the deposit should be fine.
-    bool depositAuthorized{true};
-    if (srcAcct != dstAcct)
+    bool const reqAuth = sleDest->getFlags() & lsfDepositAuth;
+    bool const credentialsPresent = params.isMember(jss::credentials);
+
+    STArray authCreds;
+    if (credentialsPresent)
     {
-        // Check destination for the DepositAuth flag.  If that flag is
-        // not set then a deposit should be just fine.
-        if (sleDest->getFlags() & lsfDepositAuth)
+        auto const& creds(params[jss::credentials]);
+        if (!creds.isArray() || !creds)
         {
-            // See if a preauthorization entry is in the ledger.
-            auto const sleDepositAuth =
-                ledger->read(keylet::depositPreauth(dstAcct, srcAcct));
-            depositAuthorized = static_cast<bool>(sleDepositAuth);
+            return RPC::make_error(
+                rpcINVALID_PARAMS,
+                RPC::expected_field_message(
+                    jss::credentials, "an array of CredentialID(hash256)"));
+        }
+
+        for (auto const& jo : creds)
+        {
+            if (!jo.isString())
+            {
+                return RPC::make_error(
+                    rpcINVALID_PARAMS,
+                    RPC::expected_field_message(
+                        jss::credentials, "an array of CredentialID(hash256)"));
+            }
+
+            uint256 credH;
+            auto const credS = jo.asString();
+            if (!credH.parseHex(credS))
+            {
+                return RPC::make_error(
+                    rpcINVALID_PARAMS,
+                    RPC::expected_field_message(
+                        jss::credentials, "an array of CredentialID(hash256)"));
+            }
+
+            std::shared_ptr<SLE const> sleCred =
+                ledger->read(keylet::credential(credH));
+            if (!sleCred || (sleCred->getType() != ltCREDENTIAL) ||
+                !(sleCred->getFlags() & lsfAccepted))
+            {
+                RPC::inject_error(rpcBAD_CREDENTIALS, result);
+                return result;
+            }
+
+            if (Credentials::checkExpired(
+                    sleCred, context.app.timeKeeper().now()))
+            {
+                RPC::inject_error(rpcBAD_CREDENTIALS, result);
+                return result;
+            }
+
+            if (reqAuth && (srcAcct != dstAcct))
+            {
+                auto credential = STObject::makeInnerObject(sfCredential);
+                credential.setAccountID(sfIssuer, (*sleCred)[sfIssuer]);
+                credential.setFieldVL(
+                    sfCredentialType, (*sleCred)[sfCredentialType]);
+                authCreds.push_back(std::move(credential));
+            }
         }
     }
+
+    // If the two accounts are the same OR if that flag is
+    // not set, then the deposit should be fine.
+    bool depositAuthorized = true;
+
+    if (reqAuth && (srcAcct != dstAcct))
+        depositAuthorized = credentialsPresent
+            ? ledger->exists(keylet::depositPreauth(dstAcct, authCreds))
+            : ledger->exists(keylet::depositPreauth(dstAcct, srcAcct));
+
     result[jss::source_account] = params[jss::source_account].asString();
     result[jss::destination_account] =
         params[jss::destination_account].asString();
+    if (credentialsPresent)
+        result[jss::credentials] = params[jss::credentials];
 
     result[jss::deposit_authorized] = depositAuthorized;
     return result;

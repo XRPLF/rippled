@@ -174,6 +174,9 @@ enum LedgerSpecificFlags {
 
     // ltNFTOKEN_OFFER
     lsfSellNFToken = 0x00000001,
+
+    // ltCREDENTIAL
+    lsfAccepted = 0x00010000,
 };
 
 //------------------------------------------------------------------------------

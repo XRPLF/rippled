@@ -136,6 +136,8 @@ TYPED_SFIELD(sfXChainClaimID,            UINT64,    20)
 TYPED_SFIELD(sfXChainAccountCreateCount, UINT64,    21)
 TYPED_SFIELD(sfXChainAccountClaimCount,  UINT64,    22)
 TYPED_SFIELD(sfAssetPrice,               UINT64,    23)
+TYPED_SFIELD(sfIssuerNode,               UINT64,    24)
+TYPED_SFIELD(sfSubjectNode,              UINT64,    25)
 
 // 128-bit
 TYPED_SFIELD(sfEmailHash,                UINT128,    1)
@@ -250,6 +252,7 @@ TYPED_SFIELD(sfDIDDocument,              VL,        26)
 TYPED_SFIELD(sfData,                     VL,        27)
 TYPED_SFIELD(sfAssetClass,               VL,        28)
 TYPED_SFIELD(sfProvider,                 VL,        29)
+TYPED_SFIELD(sfCredentialType,           VL,        30)
 
 // account (common)
 TYPED_SFIELD(sfAccount,                  ACCOUNT,    1)
@@ -271,12 +274,14 @@ TYPED_SFIELD(sfAttestationSignerAccount, ACCOUNT,   20)
 TYPED_SFIELD(sfAttestationRewardAccount, ACCOUNT,   21)
 TYPED_SFIELD(sfLockingChainDoor,         ACCOUNT,   22)
 TYPED_SFIELD(sfIssuingChainDoor,         ACCOUNT,   23)
+TYPED_SFIELD(sfSubject,                  ACCOUNT,   24)
 
 // vector of 256-bit
 TYPED_SFIELD(sfIndexes,                  VECTOR256,  1, SField::sMD_Never)
 TYPED_SFIELD(sfHashes,                   VECTOR256,  2)
 TYPED_SFIELD(sfAmendments,               VECTOR256,  3)
 TYPED_SFIELD(sfNFTokenOffers,            VECTOR256,  4)
+TYPED_SFIELD(sfCredentialIDs,            VECTOR256,  5)
 
 // path set
 UNTYPED_SFIELD(sfPaths,                  PATHSET,    1)
@@ -328,6 +333,7 @@ UNTYPED_SFIELD(sfXChainCreateAccountProofSig, OBJECT, 29)
 UNTYPED_SFIELD(sfXChainClaimAttestationCollectionElement, OBJECT, 30)
 UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement, OBJECT, 31)
 UNTYPED_SFIELD(sfPriceData,              OBJECT,    32)
+UNTYPED_SFIELD(sfCredential,             OBJECT,    33)
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array
@@ -355,3 +361,5 @@ UNTYPED_SFIELD(sfXChainCreateAccountAttestations, ARRAY, 22)
 //                                                  23 unused
 UNTYPED_SFIELD(sfPriceDataSeries,        ARRAY,     24)
 UNTYPED_SFIELD(sfAuthAccounts,           ARRAY,     25)
+UNTYPED_SFIELD(sfAuthorizeCredentials,   ARRAY,     26)
+UNTYPED_SFIELD(sfUnauthorizeCredentials, ARRAY,     27)

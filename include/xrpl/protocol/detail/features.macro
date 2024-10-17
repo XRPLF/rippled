@@ -94,6 +94,7 @@ XRPL_FIX    (1513,                       Supported::yes, VoteBehavior::DefaultYe
 XRPL_FEATURE(FlowCross,                  Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(OwnerPaysFee,               Supported::no,  VoteBehavior::DefaultNo)
+XRPL_FEATURE(Credentials,                Supported::yes, VoteBehavior::DefaultNo)
 
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.

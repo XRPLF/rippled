@@ -737,6 +737,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         Env env{*this};
         Account const alice{"alice"};
         Account const becky{"becky"};
+        Account const issuer{"issuer"};
 
         env.fund(XRP(10000), alice, becky);
         env.close();
@@ -855,6 +856,120 @@ class LedgerRPC_test : public beast::unit_test::suite
             Json::Value const jrr = env.rpc(
                 "json", "ledger_entry", to_string(jvParams))[jss::result];
             checkErrorValue(jrr, "malformedAuthorized", "");
+        }
+    }
+
+    void
+    testLedgerEntryDepositPreauthCred()
+    {
+        testcase("ledger_entry Deposit Preauth with credentials");
+
+        using namespace test::jtx;
+
+        Env env(*this);
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        const char credType[] = "abcde";
+
+        env.fund(XRP(5000), issuer, alice, bob);
+        env.close();
+
+        {
+            // Setup credentials with DepositAuth object for Alice and Bob
+            env(credentials::create(alice, issuer, credType));
+            env.close();
+            auto const jv = credentials::ledgerEntryCredential(
+                env, alice, issuer, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+            env(fset(bob, asfDepositAuth), fee(drops(10)));
+            env.close();
+            env(deposit::authCredentials(bob, {{issuer, credType}}));
+            env.close();
+        }
+
+        {
+            // Failed with invalid subject
+            Json::Value jv;
+            jv[jss::ledger_index] = jss::validated;
+            jv[jss::credential][jss::subject] = 42;
+            jv[jss::credential][jss::issuer] = issuer.human();
+            jv[jss::credential][jss::credential_type] =
+                strHex(std::string_view(credType));
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(jv));
+            checkErrorValue(jrr[jss::result], "malformedRequest", "");
+        }
+
+        {
+            // Failed with no subject
+            Json::Value jv;
+            jv[jss::ledger_index] = jss::validated;
+            jv[jss::credential][jss::subject] = "";
+            jv[jss::credential][jss::issuer] = issuer.human();
+            jv[jss::credential][jss::credential_type] =
+                strHex(std::string_view(credType));
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(jv));
+            checkErrorValue(jrr[jss::result], "malformedRequest", "");
+        }
+
+        {
+            // Failed with no issuer
+            Json::Value jv;
+            jv[jss::ledger_index] = jss::validated;
+            jv[jss::credential][jss::subject] = alice.human();
+            jv[jss::credential][jss::issuer] = "";
+            jv[jss::credential][jss::credential_type] =
+                strHex(std::string_view(credType));
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(jv));
+            checkErrorValue(jrr[jss::result], "malformedRequest", "");
+        }
+
+        {
+            // Failed with no credentials
+            Json::Value jv;
+            jv[jss::ledger_index] = jss::validated;
+            jv[jss::credential][jss::subject] = alice.human();
+            jv[jss::credential][jss::issuer] = issuer.human();
+            jv[jss::credential][jss::credential_type] = "";
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(jv));
+            checkErrorValue(jrr[jss::result], "malformedRequest", "");
+        }
+
+        {
+            // Failed with invalid account
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::deposit_preauth][jss::owner] = bob.human();
+            auto& arr(
+                jvParams[jss::deposit_preauth][jss::authorize_credentials] =
+                    Json::arrayValue);
+            Json::Value jo;
+            jo[jss::issuer] = to_string(xrpAccount());
+            jo[jss::credential_type] = strHex(std::string_view(credType));
+            arr.append(std::move(jo));
+            auto const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams));
+            checkErrorValue(
+                jrr[jss::result], "malformedAuthorizeCredentials", "");
+        }
+
+        {
+            // Failed with invalid credential_type
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::deposit_preauth][jss::owner] = bob.human();
+            auto& arr(
+                jvParams[jss::deposit_preauth][jss::authorize_credentials] =
+                    Json::arrayValue);
+            Json::Value jo;
+            jo[jss::issuer] = issuer.human();
+            jo[jss::credential_type] = "";
+            arr.append(std::move(jo));
+
+            auto const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams));
+            checkErrorValue(
+                jrr[jss::result], "malformedAuthorizeCredentials", "");
         }
     }
 
@@ -2375,6 +2490,7 @@ public:
         testLedgerEntryAccountRoot();
         testLedgerEntryCheck();
         testLedgerEntryDepositPreauth();
+        testLedgerEntryDepositPreauthCred();
         testLedgerEntryDirectory();
         testLedgerEntryEscrow();
         testLedgerEntryOffer();

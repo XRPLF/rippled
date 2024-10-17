@@ -245,10 +245,11 @@ LEDGER_ENTRY(ltOFFER, 0x006f, Offer, ({
  */
 LEDGER_ENTRY(ltDEPOSIT_PREAUTH, 0x0070, DepositPreauth, ({
     {sfAccount,              soeREQUIRED},
-    {sfAuthorize,            soeREQUIRED},
+    {sfAuthorize,            soeOPTIONAL},
     {sfOwnerNode,            soeREQUIRED},
     {sfPreviousTxnID,        soeREQUIRED},
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
+    {sfAuthorizeCredentials, soeOPTIONAL},
 }))
 
 /** A claim id for a cross chain transaction.
@@ -389,6 +390,21 @@ LEDGER_ENTRY(ltORACLE, 0x0080, Oracle, ({
     {sfLastUpdateTime,       soeREQUIRED},
     {sfURI,                  soeOPTIONAL},
     {sfOwnerNode,            soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+}))
+
+/** A ledger object which tracks Credential
+    \sa keylet::credential
+ */
+LEDGER_ENTRY(ltCREDENTIAL, 0x0081, Credential, ({
+    {sfSubject,              soeREQUIRED},
+    {sfIssuer,               soeREQUIRED},
+    {sfCredentialType,       soeREQUIRED},
+    {sfExpiration,           soeOPTIONAL},
+    {sfURI,                  soeOPTIONAL},
+    {sfIssuerNode,           soeREQUIRED},
+    {sfSubjectNode,          soeREQUIRED},
     {sfPreviousTxnID,        soeREQUIRED},
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
 }))
