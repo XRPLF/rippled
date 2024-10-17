@@ -498,7 +498,7 @@ Payment::doApply()
             return tecPATH_PARTIAL;
 
         PaymentSandbox pv(&view());
-        auto res = accountSendMPT(
+        auto res = accountSend(
             pv, account_, dstAccountID, amountDeliver, ctx_.journal);
         if (res == tesSUCCESS)
             pv.apply(ctx_.rawView());

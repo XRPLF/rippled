@@ -475,6 +475,10 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j);
 // - Create trust line of needed.
 // --> bCheckIssuer : normally require issuer to be involved.
 // [[nodiscard]] // nodiscard commented out so DirectStep.cpp compiles.
+
+/** Calls static rippleCreditIOU if saAmount represents Issue.
+ * Calls static rippleCreditMPT if saAmount represents MPTIssue.
+ */
 TER
 rippleCredit(
     ApplyView& view,
@@ -484,25 +488,11 @@ rippleCredit(
     bool bCheckIssuer,
     beast::Journal j);
 
-[[nodiscard]] TER
-rippleCreditMPT(
-    ApplyView& view,
-    AccountID const& uSenderID,
-    AccountID const& uReceiverID,
-    STAmount const& saAmount,
-    beast::Journal j);
-
+/** Calls static accountSendIOU if saAmount represents Issue.
+ * Calls static accountSendMPT if saAmount represents MPTIssue.
+ */
 [[nodiscard]] TER
 accountSend(
-    ApplyView& view,
-    AccountID const& from,
-    AccountID const& to,
-    STAmount const& saAmount,
-    beast::Journal j,
-    WaiveTransferFee waiveFee = WaiveTransferFee::No);
-
-[[nodiscard]] TER
-accountSendMPT(
     ApplyView& view,
     AccountID const& from,
     AccountID const& to,

@@ -271,11 +271,12 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
         ahIGNORE_AUTH,
         ctx.journal);
 
-    return rippleCreditMPT(
+    return rippleCredit(
         ctx.view(),
         holder,
         issuer,
         std::min(spendableAmount, clawAmount),
+        /*checkIssuer*/ false,
         ctx.journal);
 }
 
