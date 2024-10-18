@@ -207,6 +207,10 @@ public:
         return dropsAs<Dest>().value_or(defaultValue.drops());
     }
 
+    /* Clips a 64-bit value to a 32-bit JSON number. It is only used
+     * in contexts that don't expect the value to ever approach
+     * the 32-bit limits (i.e. fees and reserves).
+     */
     Json::Value
     jsonClipped() const
     {

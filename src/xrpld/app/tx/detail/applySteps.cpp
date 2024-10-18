@@ -39,6 +39,10 @@
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/app/tx/detail/Escrow.h>
 #include <xrpld/app/tx/detail/LedgerStateFix.h>
+#include <xrpld/app/tx/detail/MPTokenAuthorize.h>
+#include <xrpld/app/tx/detail/MPTokenIssuanceCreate.h>
+#include <xrpld/app/tx/detail/MPTokenIssuanceDestroy.h>
+#include <xrpld/app/tx/detail/MPTokenIssuanceSet.h>
 #include <xrpld/app/tx/detail/NFTokenAcceptOffer.h>
 #include <xrpld/app/tx/detail/NFTokenBurn.h>
 #include <xrpld/app/tx/detail/NFTokenCancelOffer.h>

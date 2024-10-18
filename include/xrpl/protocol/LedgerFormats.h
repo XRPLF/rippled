@@ -174,6 +174,18 @@ enum LedgerSpecificFlags {
 
     // ltNFTOKEN_OFFER
     lsfSellNFToken = 0x00000001,
+
+    // ltMPTOKEN_ISSUANCE
+    lsfMPTLocked = 0x00000001, // Also used in ltMPTOKEN
+    lsfMPTCanLock = 0x00000002,
+    lsfMPTRequireAuth = 0x00000004,
+    lsfMPTCanEscrow = 0x00000008,
+    lsfMPTCanTrade = 0x00000010,
+    lsfMPTCanTransfer = 0x00000020,
+    lsfMPTCanClawback = 0x00000040,
+
+    // ltMPTOKEN
+    lsfMPTAuthorized = 0x00000002,
 };
 
 //------------------------------------------------------------------------------
