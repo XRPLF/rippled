@@ -47,6 +47,8 @@ public:
     doApply() override;
 };
 
+using TrustSet = SetTrust;
+
 }  // namespace ripple
 
 #endif
