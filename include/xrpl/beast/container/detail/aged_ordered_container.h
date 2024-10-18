@@ -846,8 +846,9 @@ public:
     // set
     template <bool maybe_multi = IsMulti, bool maybe_map = IsMap>
     auto
-    insert(value_type&& value) -> typename std::
-        enable_if<!maybe_multi && !maybe_map, std::pair<iterator, bool>>::type;
+    insert(value_type&& value) -> typename std::enable_if<
+                                   !maybe_multi && !maybe_map,
+                                   std::pair<iterator, bool>>::type;
 
     // multiset
     template <bool maybe_multi = IsMulti, bool maybe_map = IsMap>
@@ -1795,7 +1796,8 @@ template <
 template <bool maybe_multi, bool maybe_map>
 auto
 aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::
-    insert(value_type&& value) -> typename std::
+    insert(value_type&& value) ->
+    typename std::
         enable_if<!maybe_multi && !maybe_map, std::pair<iterator, bool>>::type
 {
     typename cont_type::insert_commit_data d;
