@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
   This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2023 Ripple Labs Inc.
+  Copyright (c) 2024 Ripple Labs Inc.
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose  with  or without fee is hereby granted, provided that the above
@@ -55,7 +55,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    // Check if maximumAmount is within 63 bit range
+    // Check if maximumAmount is within unsigned 63 bit range
     if (auto const maxAmt = ctx.tx[~sfMaximumAmount])
     {
         if (maxAmt == 0)

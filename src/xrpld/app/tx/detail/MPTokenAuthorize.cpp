@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
   This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2023 Ripple Labs Inc.
+  Copyright (c) 2024 Ripple Labs Inc.
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose  with  or without fee is hereby granted, provided that the above
@@ -63,9 +63,11 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         std::shared_ptr<SLE const> sleMpt = ctx.view.read(
             keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], accountID));
 
-        // There is an edge case where holder deletes MPT after issuance has
-        // already been destroyed. So we must check for unauthorize before
-        // fetching the MPTIssuance object(since it doesn't exist)
+        // There is an edge case where all holders have zero balance, issuance
+        // is legally destroyed, then outstanding MPT(s) are deleted afterwards.
+        // Thus, there is no need to check for the existence of the issuance if
+        // the MPT is being deleted with a zero balance. Check for unauthorize
+        // before fetching the MPTIssuance object.
 
         // if holder wants to delete/unauthorize a mpt
         if (ctx.tx.getFlags() & tfMPTUnauthorize)
@@ -74,7 +76,15 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
                 return tecOBJECT_NOT_FOUND;
 
             if ((*sleMpt)[sfMPTAmount] != 0)
+            {
+                auto const sleMptIssuance = ctx.view.read(
+                    keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+                assert(sleMptIssuance);
+                if (!sleMptIssuance)
+                    return tefINTERNAL;
+
                 return tecHAS_OBLIGATIONS;
+            }
 
             return tesSUCCESS;
         }
@@ -118,6 +128,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (!(mptIssuanceFlags & lsfMPTRequireAuth))
         return tecNO_AUTH;
 
+    // The holder must create the MPT before the issuer can authorize it.
     if (!ctx.view.exists(
             keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], *holderID)))
         return tecOBJECT_NOT_FOUND;
@@ -148,7 +159,7 @@ MPTokenAuthorize::authorize(
             auto const mptokenKey =
                 keylet::mptoken(args.mptIssuanceID, args.account);
             auto const sleMpt = view.peek(mptokenKey);
-            if (!sleMpt)
+            if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0)
                 return tecINTERNAL;
 
             if (!view.dirRemove(

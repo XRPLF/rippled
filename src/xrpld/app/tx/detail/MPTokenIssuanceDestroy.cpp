@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
   This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2023 Ripple Labs Inc.
+  Copyright (c) 2024 Ripple Labs Inc.
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose  with  or without fee is hereby granted, provided that the above
@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/MPTokenIssuanceDestroy.h>
+
 #include <xrpld/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -66,15 +67,16 @@ MPTokenIssuanceDestroy::doApply()
 {
     auto const mpt =
         view().peek(keylet::mptIssuance(ctx_.tx[sfMPTokenIssuanceID]));
-    auto const issuer = (*mpt)[sfIssuer];
+    if (account_ != mpt->getAccountID(sfIssuer))
+        return tecINTERNAL;
 
     if (!view().dirRemove(
-            keylet::ownerDir(issuer), (*mpt)[sfOwnerNode], mpt->key(), false))
+            keylet::ownerDir(account_), (*mpt)[sfOwnerNode], mpt->key(), false))
         return tefBAD_LEDGER;
 
     view().erase(mpt);
 
-    adjustOwnerCount(view(), view().peek(keylet::account(issuer)), -1, j_);
+    adjustOwnerCount(view(), view().peek(keylet::account(account_)), -1, j_);
 
     return tesSUCCESS;
 }
