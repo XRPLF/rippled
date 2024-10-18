@@ -58,4 +58,16 @@ validJSONAsset(Json::Value const& jv)
     return jv.isMember(jss::currency);
 }
 
+Asset
+assetFromJson(Json::Value const& v)
+{
+    if (!v.isMember(jss::currency) && !v.isMember(jss::mpt_issuance_id))
+        Throw<std::runtime_error>(
+            "assetFromJson must contain currency or mpt_issuance_id");
+
+    if (v.isMember(jss::currency))
+        return issueFromJson(v);
+    return mptIssueFromJson(v);
+}
+
 }  // namespace ripple

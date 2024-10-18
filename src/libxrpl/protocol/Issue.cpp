@@ -95,6 +95,12 @@ issueFromJson(Json::Value const& v)
             "issueFromJson can only be specified with an 'object' Json value");
     }
 
+    if (v.isMember(jss::mpt_issuance_id))
+    {
+        Throw<std::runtime_error>(
+            "issueFromJson, Issue should not have mpt_issuance_id");
+    }
+
     Json::Value const curStr = v[jss::currency];
     Json::Value const issStr = v[jss::issuer];
 

@@ -90,6 +90,9 @@ to_json(MPTIssue const& mptIssue);
 std::string
 to_string(MPTIssue const& mptIssue);
 
+MPTIssue
+mptIssueFromJson(Json::Value const& jv);
+
 }  // namespace ripple
 
 #endif  // RIPPLE_PROTOCOL_MPTISSUE_H_INCLUDED

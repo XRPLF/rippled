@@ -400,7 +400,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_DESTROY, 55, MPTokenIssuanceDestroy, ({
     {sfMPTokenIssuanceID, soeREQUIRED},
 }))
 
-/** This transaction type sets a MPTokensIssuance instance */
+/** This transaction type sets flags on a MPTokensIssuance instance */
 TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet, ({
     {sfMPTokenIssuanceID, soeREQUIRED},
     {sfMPTokenHolder, soeOPTIONAL},

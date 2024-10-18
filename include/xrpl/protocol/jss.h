@@ -58,6 +58,8 @@ JSS(AssetPrice);           // in: Oracle
 JSS(AuthAccount);          // in: AMM Auction Slot
 JSS(AuthAccounts);         // in: AMM Auction Slot
 JSS(BaseAsset);            // in: Oracle
+JSS(BidMax);               // in: AMM Bid
+JSS(BidMin);               // in: AMM Bid
 JSS(Bridge);               // ledger type.
 JSS(Check);                // ledger type.
 JSS(ClearFlag);            // field.
@@ -76,8 +78,6 @@ JSS(LastLedgerSequence);   // in: TransactionSign; field
 JSS(LastUpdateTime);       // field.
 JSS(LedgerHashes);         // ledger type.
 JSS(LimitAmount);          // field.
-JSS(BidMax);               // in: AMM Bid
-JSS(BidMin);               // in: AMM Bid
 JSS(MPToken);              // ledger type.
 JSS(MPTokenIssuance);      // ledger type.
 JSS(NetworkID);            // field.
