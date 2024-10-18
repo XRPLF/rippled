@@ -51,8 +51,6 @@ doBlackList(RPC::JsonContext&);
 Json::Value
 doCanDelete(RPC::JsonContext&);
 Json::Value
-doMPTHolders(RPC::JsonContext&);
-Json::Value
 doChannelAuthorize(RPC::JsonContext&);
 Json::Value
 doChannelVerify(RPC::JsonContext&);
