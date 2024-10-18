@@ -321,8 +321,18 @@ message TMLedgerData
     required uint32 ledgerSeq       = 2;
     required TMLedgerInfoType type  = 3;
     repeated TMLedgerNode nodes     = 4;
+    // If the peer supports "responseCookies", this field will
+    // never be populated.
     optional uint32 requestCookie   = 5;
     optional TMReplyError error     = 6;
+    // The old field is called "requestCookie", but this is
+    // a response, so this name makes more sense
+    repeated uint32 responseCookies = 7;
+    // If a TMGetLedger request was received without a "requestCookie",
+    // and the peer supports it, this flag will be set to true to
+    // indicate that the receiver should process the result in addition
+    // to forwarding it to its "responseCookies" peers.
+    optional bool directResponse    = 8;
 }
 
 message TMPing
