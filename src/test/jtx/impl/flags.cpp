@@ -41,7 +41,9 @@ void
 flags::operator()(Env& env) const
 {
     auto const sle = env.le(account_);
-    if (sle->isFieldPresent(sfFlags))
+    if (!sle)
+        env.test.fail();
+    else if (sle->isFieldPresent(sfFlags))
         env.test.expect((sle->getFieldU32(sfFlags) & mask_) == mask_);
     else
         env.test.expect(mask_ == 0);
@@ -51,7 +53,9 @@ void
 nflags::operator()(Env& env) const
 {
     auto const sle = env.le(account_);
-    if (sle->isFieldPresent(sfFlags))
+    if (!sle)
+        env.test.fail();
+    else if (sle->isFieldPresent(sfFlags))
         env.test.expect((sle->getFieldU32(sfFlags) & mask_) == 0);
     else
         env.test.pass();
