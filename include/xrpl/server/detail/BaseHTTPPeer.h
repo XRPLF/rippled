@@ -244,7 +244,7 @@ BaseHTTPPeer<Handler, Impl>::close()
         return post(
             strand_,
             std::bind(
-                (void (BaseHTTPPeer::*)(void)) & BaseHTTPPeer::close,
+                (void(BaseHTTPPeer::*)(void)) & BaseHTTPPeer::close,
                 impl().shared_from_this()));
     boost::beast::get_lowest_layer(impl().stream_).close();
 }
@@ -507,7 +507,7 @@ BaseHTTPPeer<Handler, Impl>::close(bool graceful)
         return post(
             strand_,
             std::bind(
-                (void (BaseHTTPPeer::*)(bool)) &
+                (void(BaseHTTPPeer::*)(bool)) &
                     BaseHTTPPeer<Handler, Impl>::close,
                 impl().shared_from_this(),
                 graceful));
