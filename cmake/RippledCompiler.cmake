@@ -131,6 +131,7 @@ else ()
       >)
 endif ()
 
+# Antithesis instrumentation will only be built and deployed using machines running Linux.
 if (voidstar)
   if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(FATAL_ERROR "Antithesis instrumentation requires Debug build type, aborting...")
