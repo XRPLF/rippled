@@ -768,14 +768,19 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create({.ownerCount = 1, .holderCount = 0});
             auto const MPT = mptAlice["MPT"];
 
             mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
 
             mptAlice.pay(alice, bob, -1, temBAD_AMOUNT);
+
+            mptAlice.pay(bob, carol, -1, temBAD_AMOUNT);
+
+            mptAlice.pay(bob, alice, -1, temBAD_AMOUNT);
 
             env(pay(alice, bob, MPT(10)), sendmax(MPT(-1)), ter(temBAD_AMOUNT));
         }
@@ -1187,6 +1192,36 @@ class MPToken_test : public beast::unit_test::suite
             env(pay(bob, carol, MPT(10'000)),
                 sendmax(MPT(10'000)),
                 ter(tecPATH_PARTIAL));
+        }
+
+        // Pay maximum allowed amount
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+            mptAlice.create(
+                {.maxAmt = maxMPTokenAmount,
+                 .ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer});
+            auto const MPT = mptAlice["MPT"];
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+
+            // issuer sends holder the max amount allowed
+            mptAlice.pay(alice, bob, maxMPTokenAmount);
+            BEAST_EXPECT(
+                mptAlice.checkMPTokenOutstandingAmount(maxMPTokenAmount));
+
+            // payment between the holders
+            mptAlice.pay(bob, carol, maxMPTokenAmount);
+            BEAST_EXPECT(
+                mptAlice.checkMPTokenOutstandingAmount(maxMPTokenAmount));
+            // holder pays back to the issuer
+            mptAlice.pay(carol, alice, maxMPTokenAmount);
+            BEAST_EXPECT(mptAlice.checkMPTokenOutstandingAmount(0));
         }
 
         // Issuer fails trying to send fund after issuance was destroyed
