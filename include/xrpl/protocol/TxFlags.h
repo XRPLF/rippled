@@ -141,13 +141,20 @@ constexpr std::uint32_t const tfMPTCanEscrow               = lsfMPTCanEscrow;
 constexpr std::uint32_t const tfMPTCanTrade                = lsfMPTCanTrade;
 constexpr std::uint32_t const tfMPTCanTransfer             = lsfMPTCanTransfer;
 constexpr std::uint32_t const tfMPTCanClawback             = lsfMPTCanClawback;
+constexpr std::uint32_t const tfMPTokenIssuanceCreateMask  =
+  ~(tfUniversal | tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow | tfMPTCanTrade | tfMPTCanTransfer | tfMPTCanClawback);
 
 // MPTokenAuthorize flags:
 constexpr std::uint32_t const tfMPTUnauthorize             = 0x00000001;
+constexpr std::uint32_t const tfMPTokenAuthorizeMask  = ~(tfUniversal | tfMPTUnauthorize);
 
 // MPTokenIssuanceSet flags:
 constexpr std::uint32_t const tfMPTLock                   = 0x00000001;
 constexpr std::uint32_t const tfMPTUnlock                 = 0x00000002;
+constexpr std::uint32_t const tfMPTokenIssuanceSetMask  = ~(tfUniversal | tfMPTLock | tfMPTUnlock);
+
+// MPTokenIssuanceDestroy flags:
+constexpr std::uint32_t const tfMPTokenIssuanceDestroyMask  = ~tfUniversal;
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
 // accounts allowed a TrustLine to be added to the issuer of that token
@@ -203,19 +210,6 @@ constexpr std::uint32_t tfDepositMask = ~(tfUniversal | tfDepositSubTx);
 // BridgeModify flags:
 constexpr std::uint32_t tfClearAccountCreateAmount     = 0x00010000;
 constexpr std::uint32_t tfBridgeModifyMask = ~(tfUniversal | tfClearAccountCreateAmount);
-
-// MPTokenIssuanceCreate flags:
-constexpr std::uint32_t const tfMPTokenIssuanceCreateMask  =
-  ~(tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow | tfMPTCanTrade | tfMPTCanTransfer | tfMPTCanClawback | tfUniversal);
-
-// MPTokenIssuanceDestroy flags:
-constexpr std::uint32_t const tfMPTokenIssuanceDestroyMask  = ~tfUniversal;
-
-// MPTokenAuthorize flags:
-constexpr std::uint32_t const tfMPTokenAuthorizeMask  = ~(tfMPTUnauthorize | tfUniversal);
-
-// MPTokenIssuanceSet flags:
-constexpr std::uint32_t const tfMPTokenIssuanceSetMask  = ~(tfMPTLock | tfMPTUnlock | tfUniversal);
 // clang-format on
 
 }  // namespace ripple
