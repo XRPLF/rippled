@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -240,7 +240,7 @@ private:
         return err;
     }
 
-    std::unordered_map<std::string, Account>
+    static std::unordered_map<std::string, Account>
     makeHolders(std::vector<Account> const& holders);
 
     std::uint32_t

@@ -87,7 +87,7 @@ mptIssueFromJson(Json::Value const& v)
             "mptIssueFromJson, MPTIssue should not have currency or issuer");
     }
 
-    Json::Value const idStr = v[jss::mpt_issuance_id];
+    Json::Value const& idStr = v[jss::mpt_issuance_id];
 
     if (!idStr.isString())
     {
