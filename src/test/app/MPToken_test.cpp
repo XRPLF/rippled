@@ -100,7 +100,7 @@ class MPToken_test : public beast::unit_test::suite
                  .metadata = "test",
                  .err = temMALFORMED});
             mptAlice.create(
-                {.maxAmt = 0x8000'0000'0000'0000,  // 9'223'372'036'854'775'808
+                {.maxAmt = maxMPTokenAmount + 1,  // 9'223'372'036'854'775'808
                  .assetScale = 0,
                  .transferFee = 0,
                  .metadata = "test",
@@ -122,7 +122,7 @@ class MPToken_test : public beast::unit_test::suite
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
             mptAlice.create(
-                {.maxAmt = 0x7FFF'FFFF'FFFF'FFFF,  // 9'223'372'036'854'775'807
+                {.maxAmt = maxMPTokenAmount,  // 9'223'372'036'854'775'807
                  .assetScale = 1,
                  .transferFee = 10,
                  .metadata = "123",
@@ -235,6 +235,7 @@ class MPToken_test : public beast::unit_test::suite
 
             mptAlice.create({.ownerCount = 1});
 
+            // The only valid MPTokenAuthorize flag is tfMPTUnauthorize, which has a value of 1
             mptAlice.authorize(
                 {.account = bob, .flags = 0x00000002, .err = temINVALID_FLAG});
 
@@ -356,11 +357,13 @@ class MPToken_test : public beast::unit_test::suite
             auto const acctReserve = env.current()->fees().accountReserve(0);
             auto const incReserve = env.current()->fees().increment;
 
+            // 1 drop
+            BEAST_EXPECT(incReserve > XRPAmount(1));
             MPTTester mptAlice1(
                 env,
                 alice,
                 {.holders = {bob},
-                 .xrpHolders = acctReserve + XRP(1).value().xrp()});
+                 .xrpHolders = acctReserve + (incReserve - 1)});
             mptAlice1.create();
 
             MPTTester mptAlice2(env, alice, {.fund = false});
@@ -483,7 +486,7 @@ class MPToken_test : public beast::unit_test::suite
 
             mptAlice.authorize({.account = bob, .holderCount = 1});
 
-            // test invalid flag
+            // test invalid flag - only valid flags are tfMPTLock (1) and Unlock (2)
             mptAlice.set(
                 {.account = alice,
                  .flags = 0x00000008,
