@@ -235,7 +235,8 @@ class MPToken_test : public beast::unit_test::suite
 
             mptAlice.create({.ownerCount = 1});
 
-            // The only valid MPTokenAuthorize flag is tfMPTUnauthorize, which has a value of 1
+            // The only valid MPTokenAuthorize flag is tfMPTUnauthorize, which
+            // has a value of 1
             mptAlice.authorize(
                 {.account = bob, .flags = 0x00000002, .err = temINVALID_FLAG});
 
@@ -486,7 +487,8 @@ class MPToken_test : public beast::unit_test::suite
 
             mptAlice.authorize({.account = bob, .holderCount = 1});
 
-            // test invalid flag - only valid flags are tfMPTLock (1) and Unlock (2)
+            // test invalid flag - only valid flags are tfMPTLock (1) and Unlock
+            // (2)
             mptAlice.set(
                 {.account = alice,
                  .flags = 0x00000008,
