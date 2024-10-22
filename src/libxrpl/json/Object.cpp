@@ -168,7 +168,7 @@ Array::append(Json::Value const& v)
             return;
         }
     }
-    UNREACHABLE("Json::Array::append : invalid type");  // Can't get here.
+    UNREACHABLE("Json::Array::append : invalid type"); 
 }
 
 void
