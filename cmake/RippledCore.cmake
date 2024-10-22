@@ -136,8 +136,8 @@ if(xrpld)
       PRIVATE
         -fsanitize-coverage=trace-pc-guard
     )
-    # rippled requries access to antithesis-sdk-cpp implementation file
-    # antithesis_instrumentation.h , which is not exported as INTERFACE
+    # rippled requires access to antithesis-sdk-cpp implementation file
+    # antithesis_instrumentation.h, which is not exported as INTERFACE
     target_include_directories(rippled
       PRIVATE
         ${CMAKE_SOURCE_DIR}/external/antithesis-sdk
