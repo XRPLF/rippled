@@ -524,7 +524,7 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j);
 
-/** Check if the account requires authorization.
+/** Check if the account lacks required authorization.
  *   Return tecNO_AUTH or tecNO_LINE if it does
  *   and tesSUCCESS otherwise.
  */

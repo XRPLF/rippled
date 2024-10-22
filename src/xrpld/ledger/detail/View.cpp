@@ -1989,11 +1989,16 @@ rippleCredit(
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
+            {
                 return rippleCreditIOU(
                     view, uSenderID, uReceiverID, saAmount, bCheckIssuer, j);
+            }
             else
+            {
+                assert(!bCheckIssuer);
                 return rippleCreditMPT(
                     view, uSenderID, uReceiverID, saAmount, j);
+            }
         },
         saAmount.asset().value());
 }
