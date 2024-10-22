@@ -129,9 +129,7 @@ SetSignerList::doApply()
             break;
     }
     UNREACHABLE(
-        "ripple::SetSignerList::doApply : invalid operation");  // Should not be
-                                                                // possible to
-                                                                // get here.
+        "ripple::SetSignerList::doApply : invalid operation");
     return temMALFORMED;
 }
 
