@@ -374,7 +374,7 @@ For this reason:
   * unit tests-related modules (files under `beast/test` and `beast/unit_test`)
 * Outside of the listed locations, do not use `assert`; use `ASSERT` instead,
   giving it unique name, with the short description of the contract.
-* Outside of the listed locations, do not user `assert(false)`; use
+* Outside of the listed locations, do not use `assert(false)`; use
   `UNREACHABLE` instead, giving it unique name, with the description of the
   condition being violated
 * The contract name should start with a full name (including scope) of the
