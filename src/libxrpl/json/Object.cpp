@@ -203,7 +203,7 @@ Object::set(std::string const& k, Json::Value const& v)
             return;
         }
     }
-    UNREACHABLE("Json::Object::set : invalid type");  // Can't get here.
+    UNREACHABLE("Json::Object::set : invalid type");
 }
 
 //------------------------------------------------------------------------------
