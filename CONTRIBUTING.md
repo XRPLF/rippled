@@ -368,7 +368,7 @@ locations, where the reporting of contract violations on the Antithesis
 platform is either not possible or not useful.
 
 For this reason:
-* The locations where `assert` or `assert(false)` contracts can be used:
+* The locations where `assert` or `assert(false)` contracts should continue to be used:
   * `constexpr` functions
   * unit tests i.e. files under `src/test`
   * unit tests-related modules (files under `beast/test` and `beast/unit_test`)
