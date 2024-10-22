@@ -342,7 +342,7 @@ TOfferStreamBase<TIn, TOut>::step()
             }
             UNREACHABLE(
                 "rippls::TOfferStreamBase::step::rmSmallIncreasedQOffer : XRP "
-                "vs XRP offer");  // xrp/xrp offer!?! should never happen
+                "vs XRP offer");
             return false;
         }();
 

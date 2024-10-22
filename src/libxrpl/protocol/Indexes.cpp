@@ -208,7 +208,7 @@ line(
     // There is code in SetTrust that calls us with id0 == id1, to allow users
     // to locate and delete such "weird" trustlines. If we remove that code, we
     // could enable this assert:
-    // ASSERT(id0 != id1);
+    // ASSERT(id0 != id1, "ripple::keylet::line : accounts must be different");
 
     // A trust line is shared between two accounts; while we typically think
     // of this as an "issuer" and a "holder" the relationship is actually fully

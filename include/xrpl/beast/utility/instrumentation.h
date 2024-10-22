@@ -37,22 +37,27 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #define ASSERT ALWAYS_OR_UNREACHABLE
 
-// How to use the above macros:
+// How to use the instrumentation macros:
 //
-// ALWAYS if it must be reached during fuzzing
-// ASSERT if you expect that it might, or might not, be reached during fuzzing
-// REACHABLE if it must be reached during fuzzing
-// SOMETIMES a hint for the fuzzer to try to make the condition true
-// UNREACHABLE if it must not be reached (in fuzzing or in normal use)
+// ALWAYS if cond must be true and the line must be reached during fuzzing
+// ASSERT if cond must be true but the line might not be reached during fuzzing
+// REACHABLE if the line must be reached during fuzzing
+// SOMETIMES a hint for the fuzzer to try to make the cond true
+// UNREACHABLE if the line must not be reached (in fuzzing or in normal use)
 //
-// NOTE: ASSERT has similar semantics as assert macro, with minor differences:
+// NOTE: ASSERT has similar semantics as C assert macro, with minor differences:
 // * ASSERT must have an unique name (naming convention in CONTRIBUTING.md)
 // * the condition (which comes first) must be *implicitly* convertible to bool
 // * during fuzzing, the program will continue execution past a failed ASSERT
-// We continue to use assert inside unit tests and in constexpr functions.
+//
+// We continue to use regular C assert inside unit tests and inside constexpr
+// functions.
 //
 // NOTE: UNREACHABLE does *not* have the same semantics as std::unreachable.
 // The program will continue execution past an UNREACHABLE in a Release build
-// and during fuzzing (similar to ASSERT).
+// and during fuzzing (similar to ASSERT). Also the naming convention is subtly
+// different from all other macros - name in UNREACHABLE describes the condition
+// which was meant to never happen, while name in other macros describe the
+// condition that is meant to happen (e.g. as in "assert that this happens").
 
 #endif

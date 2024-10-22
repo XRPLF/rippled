@@ -49,6 +49,9 @@ LogicError(std::string const& s) noexcept
 {
     JLOG(debugLog().fatal()) << s;
     std::cerr << "Logic error: " << s << std::endl;
+    // Use a non-standard contract naming here (without namespace), because
+    // it's the only location where various unrelated execution paths may
+    // register an error; this is also why "message" parameter is passed here.
     UNREACHABLE("LogicError", {{"message", s}});
     detail::accessViolation();
 }
