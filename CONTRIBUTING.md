@@ -385,6 +385,10 @@ For this reason:
   function name. NOTE: the purpose of name is to provide stable means of
   unique identification of every contract; for this reason try to avoid elements
   which can change in some obvious refactors or when reinforcing the condition.
+* Contract description typically (except for `UNREACHABLE`) should describe the
+  _expected_ condition, as in "I assert that _expected_ is true".
+* Contract description for `UNREACHABLE` should describe the _unexpected_
+  situation which caused the line to have been reached.
 * Example good name for an
   `UNREACHABLE` macro `"Json::operator==(Value, Value) : invalid type"`; example
   good name for an `ASSERT` macro `"Json::Value::asCString : valid type"`.
@@ -392,6 +396,8 @@ For this reason:
   `"RFC1751::insert(char* s, int x, int start, int length) : length is greater than or equal zero"`
   (missing namespace, unnecessary full function signature, description too verbose).
   Good name: `"ripple::RFC1751::insert : minimum length"`.
+* In **few** well-justified cases a non-standard name can be used, in which case a
+  comment should be placed to explain the rationale (example in `contract.cpp`)
 * Do **not** rename a contract without a good reason (e.g. the name no longer
   reflects the location or the condition being checked)
 * Do not use `std::unreachable`

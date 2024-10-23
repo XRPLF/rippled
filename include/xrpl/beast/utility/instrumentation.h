@@ -55,9 +55,10 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 // NOTE: UNREACHABLE does *not* have the same semantics as std::unreachable.
 // The program will continue execution past an UNREACHABLE in a Release build
-// and during fuzzing (similar to ASSERT). Also the naming convention is subtly
-// different from all other macros - name in UNREACHABLE describes the condition
-// which was meant to never happen, while name in other macros describe the
-// condition that is meant to happen (e.g. as in "assert that this happens").
+// and during fuzzing (similar to ASSERT).
+// Also, the naming convention in UNREACHABLE is subtly different from other
+// instrumentation macros - its name describes the condition which was *not*
+// meant to happen, while name in other macros describe the condition that is
+// meant to happen (e.g. as in "assert that this happens").
 
 #endif
