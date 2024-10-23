@@ -49,9 +49,6 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     auto const accountID = ctx.tx[sfAccount];
     auto const holderID = ctx.tx[~sfMPTokenHolder];
 
-    if (holderID && !(ctx.view.exists(keylet::account(*holderID))))
-        return tecNO_DST;
-
     // if non-issuer account submits this tx, then they are trying either:
     // 1. Unauthorize/delete MPToken
     // 2. Use/create MPToken
@@ -105,6 +102,9 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
         return tesSUCCESS;
     }
+
+    if (!ctx.view.exists(keylet::account(*holderID)))
+        return tecNO_DST;
 
     auto const sleMptIssuance =
         ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
@@ -178,6 +178,12 @@ MPTokenAuthorize::authorize(
         // A potential holder wants to authorize/hold a mpt, the ledger must:
         //      - add the new mptokenKey to the owner directory
         //      - create the MPToken object for the holder
+
+        // The reserve that is required to create the MPToken. Note
+        // that although the reserve increases with every item
+        // an account owns, in the case of MPTokens we only
+        // *enforce* a reserve if the user owns more than two
+        // items. This is similar to the reserve requirements of trust lines.
         std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
         XRPAmount const reserveCreate(
             (uOwnerCount < 2) ? XRPAmount(beast::zero)
