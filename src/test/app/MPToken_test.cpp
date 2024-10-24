@@ -671,8 +671,8 @@ class MPToken_test : public beast::unit_test::suite
 
             Json::Value jv;
             jv[jss::secret] = alice.name();
-            jv[jss::tx_json][jss::Fee] = to_string(env.current()->fees().base);
             jv[jss::tx_json] = pay(alice, carol, mpt);
+            jv[jss::tx_json][jss::Fee] = to_string(env.current()->fees().base);
             auto const jrr = env.rpc("json", "submit", to_string(jv));
             BEAST_EXPECT(jrr[jss::result][jss::engine_result] == "temDISABLED");
         }
@@ -1375,6 +1375,9 @@ class MPToken_test : public beast::unit_test::suite
                 jv1[jss::secret] = alice.name();
                 jv1[jss::tx_json] = jv;
                 jrr = env.rpc("json", "submit", to_string(jv1));
+                BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
+
+                jrr = env.rpc("json", "sign", to_string(jv1));
                 BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
             };
             // All transactions with sfAmount, which don't support MPT
