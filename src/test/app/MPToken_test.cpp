@@ -1331,10 +1331,8 @@ class MPToken_test : public beast::unit_test::suite
             for (auto const& e : format.getSOTemplate())
             {
                 // Transaction has amount fields.
-                // Exclude Clawback, which only supports sfAmount and is checked
-                // in the transactor for amendment enable/disable. Exclude
-                // pseudo-transaction SetFee. Don't consider the Fee field since
-                // it's included in every transaction.
+                // Exclude pseudo-transaction SetFee. Don't consider
+                // the Fee field since it's included in every transaction.
                 if (e.supportMPT() == soeMPTNotSupported &&
                     e.sField().getName() != jss::Fee &&
                     format.getName() != jss::SetFee)
@@ -1410,9 +1408,9 @@ class MPToken_test : public beast::unit_test::suite
                 jv[jss::Flags] = tfSingleAsset;
                 test(jv, field.fieldName);
             };
-            ammDeposit(sfAmount);
             for (SField const& field :
-                 {std::ref(sfAmount2),
+                 {std::ref(sfAmount),
+                  std::ref(sfAmount2),
                   std::ref(sfEPrice),
                   std::ref(sfLPTokenOut)})
                 ammDeposit(field);
