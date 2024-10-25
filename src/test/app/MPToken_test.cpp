@@ -1649,7 +1649,6 @@ class MPToken_test : public beast::unit_test::suite
     testTxJsonMetaFields(FeatureBitset features)
     {
         // checks synthetically parsed mptissuanceid from  `tx` response
-        // it checks the parsing logic
         testcase("Test synthetic fields from tx response");
 
         using namespace test::jtx;
@@ -1663,13 +1662,18 @@ class MPToken_test : public beast::unit_test::suite
 
         std::string const txHash{
             env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
-
+        BEAST_EXPECTS(
+            txHash ==
+                "E11F0E0CA14219922B7881F060B9CEE67CFBC87E4049A441ED2AE348FF8FAC"
+                "0E",
+            txHash);
         Json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
-
+        auto const id = meta[jss::mpt_issuance_id].asString();
         // Expect mpt_issuance_id field
         BEAST_EXPECT(meta.isMember(jss::mpt_issuance_id));
-        BEAST_EXPECT(
-            meta[jss::mpt_issuance_id] == to_string(mptAlice.issuanceID()));
+        BEAST_EXPECT(id == to_string(mptAlice.issuanceID()));
+        BEAST_EXPECTS(
+            id == "00000004AE123A8556F3CF91154711376AFB0F894F832B3D", id);
     }
 
     void
