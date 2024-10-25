@@ -552,6 +552,29 @@ AMMWithdraw::withdraw(
         return {tecAMM_BALANCE, STAmount{}};
     }
 
+    // Check the reserve in case a trustline has to be created
+    bool const enabledFixAMMv1_2 = view.rules().enabled(fixAMMv1_2);
+    auto sufficientReserve = [&](Issue const& issue) -> TER {
+        if (!enabledFixAMMv1_2 || isXRP(issue))
+            return tesSUCCESS;
+        if (!view.exists(keylet::line(account_, issue)))
+        {
+            auto const sleAccount = view.read(keylet::account(account_));
+            if (!sleAccount)
+                return tecINTERNAL;
+            auto const balance = (*sleAccount)[sfBalance].xrp();
+            auto const reserve =
+                view.fees().accountReserve((*sleAccount)[sfOwnerCount] + 1);
+
+            if (balance < reserve)
+                return tecINSUFFICIENT_RESERVE;
+        }
+        return tesSUCCESS;
+    };
+
+    if (auto const err = sufficientReserve(amountWithdrawActual.issue()))
+        return {err, STAmount{}};
+
     // Withdraw amountWithdraw
     auto res = accountSend(
         view,
@@ -570,6 +593,10 @@ AMMWithdraw::withdraw(
     // Withdraw amount2Withdraw
     if (amount2WithdrawActual)
     {
+        if (auto const err = sufficientReserve(amount2WithdrawActual->issue());
+            err != tesSUCCESS)
+            return {err, STAmount{}};
+
         res = accountSend(
             view,
             ammAccount,
