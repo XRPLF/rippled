@@ -806,6 +806,39 @@ parseMPToken(Json::Value const& mptJson, Json::Value& jvResult)
     }
 }
 
+std::optional<uint256>
+parsePermissionedDomains(Json::Value const& pd, Json::Value& jvResult)
+{
+    if (pd.isString())
+    {
+        uint256 uNodeIndex;
+        if (uNodeIndex.parseHex(pd.asString()))
+            return uNodeIndex;
+
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+    
+    if (
+        !pd.isObject() || !pd.isMember(jss::account) ||
+        !pd[jss::account].isString() || !pd.isMember(jss::seq) ||
+        (!pd[jss::seq].isInt() && !pd[jss::seq].isUInt()))
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    auto const account =
+        parseBase58<AccountID>(pd[jss::account].asString());
+    unsigned const seq = pd[jss::seq].asUInt();
+
+    if (account)
+        return keylet::permissionedDomain(*account, seq).key;
+    
+    jvResult[jss::error] = "malformedRequest";
+    return std::nullopt;
+}
+
 using FunctionType =
     std::optional<uint256> (*)(Json::Value const&, Json::Value&);
 
@@ -851,6 +884,9 @@ doLedgerEntry(RPC::JsonContext& context)
         {jss::offer, parseOffer, ltOFFER},
         {jss::oracle, parseOracle, ltORACLE},
         {jss::payment_channel, parsePaymentChannel, ltPAYCHAN},
+        {jss::permissioned_domain,
+         parsePermissionedDomains,
+         ltPERMISSIONED_DOMAIN},
         {jss::ripple_state, parseRippleState, ltRIPPLE_STATE},
         // This is an alias, since the `ledger_data` filter uses jss::state
         {jss::state, parseRippleState, ltRIPPLE_STATE},

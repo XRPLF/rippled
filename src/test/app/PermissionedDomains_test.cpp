@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <test/jtx.h>
-#include <test/jtx/PermissionedDomains.h>
 #include <xrpld/app/tx/detail/PermissionedDomainSet.h>
 #include <xrpld/ledger/ApplyViewImpl.h>
 #include <xrpl/basics/Blob.h>
@@ -410,9 +409,13 @@ class PermissionedDomains_test : public beast::unit_test::suite
         BEAST_EXPECT(pd::getObjects(alice, env).size() == 0);
         env.close();
 
+        auto const baseFee = env.current()->fees().base.drops();
+
         // Pay alice almost enough to make the reserve.
-        env(pay(env.master, alice, incReserve + drops(19)));
-        BEAST_EXPECT(env.balance(alice) == acctReserve + incReserve + drops(9));
+        env(pay(env.master, alice, incReserve + drops(2 * baseFee) - drops(1)));
+        BEAST_EXPECT(
+            env.balance(alice) ==
+            acctReserve + incReserve + drops(baseFee) - drops(1));
         env.close();
 
         // alice still does not have enough XRP for the reserve.
@@ -421,43 +424,13 @@ class PermissionedDomains_test : public beast::unit_test::suite
         BEAST_EXPECT(pd::ownerInfo(alice, env)["OwnerCount"].asUInt() == 0);
 
         // Pay alice enough to make the reserve.
-        env(pay(env.master, alice, drops(11)));
+        env(pay(env.master, alice, drops(baseFee) + drops(1)));
         env.close();
 
         // Now alice can create a PermissionedDomain.
         env(pd::setTx(alice, credentials));
         env.close();
         BEAST_EXPECT(pd::ownerInfo(alice, env)["OwnerCount"].asUInt() == 1);
-
-        /*
-                env(did::setValid(alice), ter(tecINSUFFICIENT_RESERVE));
-                env.close();
-                BEAST_EXPECT(ownerCount(env, alice) == 0);
-
-                // Pay alice almost enough to make the reserve for a DID.
-                env(pay(env.master, alice, incReserve + drops(19)));
-                BEAST_EXPECT(env.balance(alice) == acctReserve + incReserve +
-           drops(9)); env.close();
-
-                // alice still does not have enough XRP for the reserve of a
-           DID. env(did::setValid(alice), ter(tecINSUFFICIENT_RESERVE));
-                env.close();
-                BEAST_EXPECT(ownerCount(env, alice) == 0);
-
-                // Pay alice enough to make the reserve for a DID.
-                env(pay(env.master, alice, drops(11)));
-                env.close();
-
-                // Now alice can create a DID.
-                env(did::setValid(alice));
-                env.close();
-                BEAST_EXPECT(ownerCount(env, alice) == 1);
-
-                // alice deletes her DID.
-                env(did::del(alice));
-                BEAST_EXPECT(ownerCount(env, alice) == 0);
-                env.close();
-                */
     }
 
 public:
