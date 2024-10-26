@@ -128,32 +128,10 @@ credentialsFromJson(Json::Value const& object)
 Credentials
 sortCredentials(Credentials const& input)
 {
-    Credentials ret = input;
-
-    std::set<Credential> cSet;
-    for (auto const& c : ret)
-        cSet.insert(c);
-    if (ret.size() > cSet.size())
-    {
-        ret = Credentials();
-        for (auto const& c : cSet)
-            ret.push_back(c);
-    }
-
-    std::sort(
-        ret.begin(),
-        ret.end(),
-        [](Credential const& left, Credential const& right) -> bool {
-            if (left.first < right.first)
-                return true;
-            if (left.first == right.first)
-            {
-                if (left.second < right.second)
-                    return true;
-            }
-            return false;
-        });
-    return ret;
+    std::set<Credential> credentialsSet;
+    for (auto const& c : input)
+        credentialsSet.insert(c);
+    return {credentialsSet.begin(), credentialsSet.end()};
 }
 
 // Get account_info

@@ -44,7 +44,8 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
         {
             return temMALFORMED;
         }
-        if (credential.getFieldVL(sfCredentialType).empty())
+        auto sz = credential.getFieldVL(sfCredentialType).size();
+        if (!sz || sz > 64)
             return temMALFORMED;
     }
 
@@ -94,43 +95,34 @@ PermissionedDomainSet::doApply()
     // for either new domain or updating existing.
     // Silently remove duplicates.
     auto updateSle = [this](std::shared_ptr<STLedgerEntry> const& sle) {
-        auto credentials = ctx_.tx.getFieldArray(sfAcceptedCredentials);
-        std::map<uint256, STObject> hashed;
-        for (auto const& c : credentials)
-            hashed.insert({c.getHash(HashPrefix::transactionID), c});
-        if (credentials.size() > hashed.size())
-        {
-            credentials = STArray();
-            for (auto const& e : hashed)
-                credentials.push_back(e.second);
-        }
+        auto const& credentials = ctx_.tx.getFieldArray(sfAcceptedCredentials);
 
-        credentials.sort(
-            [](STObject const& left, STObject const& right) -> bool {
-                if (left.getAccountID(sfIssuer) < right.getAccountID(sfIssuer))
-                    return true;
-                if (left.getAccountID(sfIssuer) == right.getAccountID(sfIssuer))
-                {
-                    if (left.getFieldVL(sfCredentialType) <
-                        right.getFieldVL(sfCredentialType))
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            });
-        sle->setFieldArray(sfAcceptedCredentials, credentials);
+        std::map<
+            std::pair<AccountID, Blob>,
+            std::reference_wrapper<STObject const>>
+            credMap;
+        for (auto const& c : credentials)
+            credMap.insert(
+                {{c.getAccountID(sfIssuer), c.getFieldVL(sfCredentialType)},
+                 c});
+
+        STArray credSorted;
+        credSorted.reserve(credMap.size());
+        for (auto const& [k, v] : credMap)
+            credSorted.push_back(v);
+        sle->setFieldArray(sfAcceptedCredentials, credSorted);
     };
 
     if (ctx_.tx.isFieldPresent(sfDomainID))
     {
         // Modify existing permissioned domain.
-        auto sleUpdate = view().peek(
+        auto slePd = view().peek(
             keylet::permissionedDomain(ctx_.tx.getFieldH256(sfDomainID)));
-        // It should already be checked in preclaim().
-        assert(sleUpdate);
-        updateSle(sleUpdate);
-        view().update(sleUpdate);
+        if (!slePd)
+            return tefINTERNAL;
+
+        updateSle(slePd);
+        view().update(slePd);
     }
     else
     {
@@ -145,6 +137,9 @@ PermissionedDomainSet::doApply()
         Keylet const pdKeylet = keylet::permissionedDomain(
             account_, ctx_.tx.getFieldU32(sfSequence));
         auto slePd = std::make_shared<SLE>(pdKeylet);
+        if (!slePd)
+            return tefINTERNAL;
+
         slePd->setAccountID(sfOwner, account_);
         slePd->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence));
         updateSle(slePd);
