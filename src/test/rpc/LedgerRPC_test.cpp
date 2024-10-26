@@ -3086,6 +3086,96 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testLedgerEntryPermissionedDomain()
+    {
+        testcase("ledger_entry PermissionedDomain");
+
+        using namespace test::jtx;
+
+        Env env(*this, supported_amendments() | featurePermissionedDomains);
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        env.fund(XRP(5000), issuer, alice, bob);
+        env.close();
+
+        auto const seq = env.seq(alice);
+        env(pd::setTx(alice, {{alice, pd::toBlob("first credential")}}));
+        env.close();
+        auto const objects = pd::getObjects(alice, env);
+        BEAST_EXPECT(objects.size() == 1);
+        if (objects.empty())
+            return;
+        // env(pd::deleteTx(alice, domain));
+
+        {
+            // Succeed
+            Json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::permissioned_domain][jss::account] = alice.human();
+            params[jss::permissioned_domain][jss::seq] = seq;
+            auto jv = env.rpc("json", "ledger_entry", to_string(params));
+            BEAST_EXPECT(
+                jv.isObject() && jv.isMember(jss::result) &&
+                !jv[jss::result].isMember(jss::error) &&
+                jv[jss::result].isMember(jss::node) &&
+                jv[jss::result][jss::node].isMember(
+                    sfLedgerEntryType.jsonName) &&
+                jv[jss::result][jss::node][sfLedgerEntryType.jsonName] ==
+                    jss::PermissionedDomain);
+
+            std::string const pdIdx = jv[jss::result][jss::index].asString();
+            BEAST_EXPECT(
+                strHex(keylet::permissionedDomain(alice, seq).key) == pdIdx);
+
+            params.clear();
+            params[jss::ledger_index] = jss::validated;
+            params[jss::permissioned_domain] = pdIdx;
+            jv = env.rpc("json", "ledger_entry", to_string(params));
+            BEAST_EXPECT(
+                jv.isObject() && jv.isMember(jss::result) &&
+                !jv[jss::result].isMember(jss::error) &&
+                jv[jss::result].isMember(jss::node) &&
+                jv[jss::result][jss::node].isMember(
+                    sfLedgerEntryType.jsonName) &&
+                jv[jss::result][jss::node][sfLedgerEntryType.jsonName] ==
+                    jss::PermissionedDomain);
+        }
+
+        {
+            // Fail, invalid account
+            Json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::permissioned_domain][jss::account] = 1;
+            params[jss::permissioned_domain][jss::seq] = seq;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
+            checkErrorValue(jrr[jss::result], "malformedRequest", "");
+        }
+
+        {
+            // Fail, no account
+            Json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::permissioned_domain][jss::account] = "";
+            params[jss::permissioned_domain][jss::seq] = seq;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
+            checkErrorValue(jrr[jss::result], "malformedRequest", "");
+        }
+
+        {
+            // Fail, invalid sequence
+            Json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::permissioned_domain][jss::account] = alice.human();
+            params[jss::permissioned_domain][jss::seq] = "12g";
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
+            checkErrorValue(jrr[jss::result], "malformedRequest", "");
+        }
+    }
+
+
 public:
     void
     run() override
@@ -3117,6 +3207,7 @@ public:
         testOracleLedgerEntry();
         testLedgerEntryMPT();
         testLedgerEntryCLI();
+        testLedgerEntryPermissionedDomain();
 
         forAllApiVersions(std::bind_front(
             &LedgerRPC_test::testLedgerEntryInvalidParams, this));
