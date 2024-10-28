@@ -1485,11 +1485,11 @@ TxQ::accept(Application& app, OpenView& view)
             }
             else
             {
-                JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID
-                                 << " failed with " << transToken(txnResult)
-                                 << ". Leave in queue."
-                                 << " Applied: " << didApply
-                                 << ". Flags: " << candidateIter->flags;
+                JLOG(j_.debug())
+                    << "Queued transaction " << candidateIter->txID
+                    << " failed with " << transToken(txnResult)
+                    << ". Leave in queue." << " Applied: " << didApply
+                    << ". Flags: " << candidateIter->flags;
                 if (account.retryPenalty && candidateIter->retriesRemaining > 2)
                     candidateIter->retriesRemaining = 1;
                 else
