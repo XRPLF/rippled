@@ -1648,7 +1648,7 @@ class MPToken_test : public beast::unit_test::suite
     void
     testTxJsonMetaFields(FeatureBitset features)
     {
-        // checks synthetically parsed mptissuanceid from  `tx` response
+        // checks synthetically injected mptissuanceid from  `tx` response
         testcase("Test synthetic fields from tx response");
 
         using namespace test::jtx;

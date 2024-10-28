@@ -36,7 +36,7 @@ template <>
 NotTEC
 preflightHelper<Issue>(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfMPTokenHolder))
+    if (ctx.tx.isFieldPresent(sfHolder))
         return temMALFORMED;
 
     AccountID const issuer = ctx.tx[sfAccount];
@@ -58,7 +58,7 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
-    auto const mptHolder = ctx.tx[~sfMPTokenHolder];
+    auto const mptHolder = ctx.tx[~sfHolder];
     auto const clawAmount = ctx.tx[sfAmount];
 
     if (!mptHolder)
@@ -199,9 +199,8 @@ Clawback::preclaim(PreclaimContext const& ctx)
 {
     AccountID const issuer = ctx.tx[sfAccount];
     auto const clawAmount = ctx.tx[sfAmount];
-    AccountID const holder = clawAmount.holds<Issue>()
-        ? clawAmount.getIssuer()
-        : ctx.tx[sfMPTokenHolder];
+    AccountID const holder =
+        clawAmount.holds<Issue>() ? clawAmount.getIssuer() : ctx.tx[sfHolder];
 
     auto const sleIssuer = ctx.view.read(keylet::account(issuer));
     auto const sleHolder = ctx.view.read(keylet::account(holder));
@@ -260,7 +259,7 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
 {
     AccountID const issuer = ctx.tx[sfAccount];
     auto clawAmount = ctx.tx[sfAmount];
-    AccountID const holder = ctx.tx[sfMPTokenHolder];
+    AccountID const holder = ctx.tx[sfHolder];
 
     // Get the spendable balance. Must use `accountHolds`.
     STAmount const spendableAmount = accountHolds(

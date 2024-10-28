@@ -75,7 +75,7 @@ claw(
     jv[jss::TransactionType] = jss::Clawback;
 
     if (mptHolder)
-        jv[sfMPTokenHolder.jsonName] = mptHolder->human();
+        jv[sfHolder.jsonName] = mptHolder->human();
 
     return jv;
 }

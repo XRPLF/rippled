@@ -157,7 +157,7 @@ MPTTester::authorize(MPTAuthorize const& arg)
         jv[sfMPTokenIssuanceID] = to_string(*id_);
     }
     if (arg.holder)
-        jv[sfMPTokenHolder] = arg.holder->human();
+        jv[sfHolder] = arg.holder->human();
     if (auto const result = submit(arg, jv); result == tesSUCCESS)
     {
         // Issuer authorizes
@@ -230,7 +230,7 @@ MPTTester::set(MPTSet const& arg)
         jv[sfMPTokenIssuanceID] = to_string(*id_);
     }
     if (arg.holder)
-        jv[sfMPTokenHolder] = arg.holder->human();
+        jv[sfHolder] = arg.holder->human();
     if (submit(arg, jv) == tesSUCCESS && arg.flags.value_or(0))
     {
         auto require = [&](std::optional<Account> const& holder,

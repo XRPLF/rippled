@@ -37,7 +37,7 @@ MPTokenAuthorize::preflight(PreflightContext const& ctx)
     if (ctx.tx.getFlags() & tfMPTokenAuthorizeMask)
         return temINVALID_FLAG;
 
-    if (ctx.tx[sfAccount] == ctx.tx[~sfMPTokenHolder])
+    if (ctx.tx[sfAccount] == ctx.tx[~sfHolder])
         return temMALFORMED;
 
     return preflight2(ctx);
@@ -47,7 +47,7 @@ TER
 MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
-    auto const holderID = ctx.tx[~sfMPTokenHolder];
+    auto const holderID = ctx.tx[~sfHolder];
 
     // if non-issuer account submits this tx, then they are trying either:
     // 1. Unauthorize/delete MPToken
@@ -262,7 +262,7 @@ MPTokenAuthorize::doApply()
          .mptIssuanceID = tx[sfMPTokenIssuanceID],
          .account = account_,
          .flags = tx.getFlags(),
-         .holderID = tx[~sfMPTokenHolder]});
+         .holderID = tx[~sfHolder]});
 }
 
 }  // namespace ripple

@@ -44,7 +44,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
 
     auto const accountID = ctx.tx[sfAccount];
-    auto const holderID = ctx.tx[~sfMPTokenHolder];
+    auto const holderID = ctx.tx[~sfHolder];
     if (holderID && accountID == holderID)
         return temMALFORMED;
 
@@ -68,7 +68,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     if ((*sleMptIssuance)[sfIssuer] != ctx.tx[sfAccount])
         return tecNO_PERMISSION;
 
-    if (auto const holderID = ctx.tx[~sfMPTokenHolder])
+    if (auto const holderID = ctx.tx[~sfHolder])
     {
         // make sure holder account exists
         if (!ctx.view.exists(keylet::account(*holderID)))
@@ -88,7 +88,7 @@ MPTokenIssuanceSet::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const txFlags = ctx_.tx.getFlags();
-    auto const holderID = ctx_.tx[~sfMPTokenHolder];
+    auto const holderID = ctx_.tx[~sfHolder];
     std::shared_ptr<SLE> sle;
 
     if (holderID)

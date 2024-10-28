@@ -224,7 +224,7 @@ TRANSACTION(ttNFTOKEN_ACCEPT_OFFER, 29, NFTokenAcceptOffer, ({
 /** This transaction claws back issued tokens. */
 TRANSACTION(ttCLAWBACK, 30, Clawback, ({
     {sfAmount, soeREQUIRED, soeMPTSupported},
-    {sfMPTokenHolder, soeOPTIONAL},
+    {sfHolder, soeOPTIONAL},
 }))
 
 /** This transaction type creates an AMM instance */
@@ -403,13 +403,13 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_DESTROY, 55, MPTokenIssuanceDestroy, ({
 /** This transaction type sets flags on a MPTokensIssuance or MPToken instance */
 TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet, ({
     {sfMPTokenIssuanceID, soeREQUIRED},
-    {sfMPTokenHolder, soeOPTIONAL},
+    {sfHolder, soeOPTIONAL},
 }))
 
 /** This transaction type authorizes a MPToken instance */
 TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize, ({
     {sfMPTokenIssuanceID, soeREQUIRED},
-    {sfMPTokenHolder, soeOPTIONAL},
+    {sfHolder, soeOPTIONAL},
 }))
 
 /** This system-generated transaction type is used to update the status of the various amendments.

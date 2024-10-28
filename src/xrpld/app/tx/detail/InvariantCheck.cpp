@@ -1031,7 +1031,7 @@ ValidMPTIssuance::finalize(
 
         if (tx.getTxnType() == ttMPTOKEN_AUTHORIZE)
         {
-            bool const submittedByIssuer = tx.isFieldPresent(sfMPTokenHolder);
+            bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
             if (mptIssuancesCreated_ > 0)
             {
