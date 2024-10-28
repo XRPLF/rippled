@@ -34,6 +34,30 @@ class AMMClawback_test : public jtx::AMMTest
         testcase("test invalid request");
         using namespace jtx;
 
+        // Test if holder does not exist.
+        {
+            Env env(*this, features);
+            Account gw{"gateway"};
+            Account alice{"alice"};
+            env.fund(XRP(100000), gw, alice);
+            env.close();
+
+            // gw sets asfAllowTrustLineClawback.
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+            env.require(flags(gw, asfAllowTrustLineClawback));
+
+            env.trust(USD(10000), alice);
+            env(pay(gw, alice, gw["USD"](100)));
+
+            AMM amm(env, alice, XRP(100), USD(100));
+            env.close();
+
+            env(amm::ammClawback(
+                    gw, Account("unknown"), USD, XRP, std::nullopt),
+                ter(terNO_ACCOUNT));
+        }
+
         // Test if asset pair provided does not exist. This should
         // return terNO_AMM error.
         {
@@ -1697,6 +1721,58 @@ class AMMClawback_test : public jtx::AMMTest
     }
 
     void
+    testSingleDepositAndClawback(FeatureBitset features)
+    {
+        testcase("test single depoit and clawback");
+        using namespace jtx;
+
+        // Test AMMClawback for USD/XRP pool. Claw back USD, and XRP goes back
+        // to the holder.
+        Env env(*this, features);
+        Account gw{"gateway"};
+        Account alice{"alice"};
+        env.fund(XRP(1000000000), gw, alice);
+        env.close();
+
+        // gw sets asfAllowTrustLineClawback.
+        env(fset(gw, asfAllowTrustLineClawback));
+        env.close();
+        env.require(flags(gw, asfAllowTrustLineClawback));
+
+        // gw issues 1000 USD to Alice.
+        auto const USD = gw["USD"];
+        env.trust(USD(100000), alice);
+        env(pay(gw, alice, USD(1000)));
+        env.close();
+        env.require(balance(alice, gw["USD"](1000)));
+
+        // gw creates AMM pool of XRP/USD.
+        AMM amm(env, gw, XRP(100), USD(400), ter(tesSUCCESS));
+        env.close();
+
+        BEAST_EXPECT(amm.expectBalances(USD(400), XRP(100), IOUAmount(200000)));
+
+        amm.deposit(alice, USD(400));
+        env.close();
+
+        BEAST_EXPECT(amm.expectBalances(
+            USD(800), XRP(100), IOUAmount{2828427124746190, -10}));
+
+        auto aliceXrpBalance = env.balance(alice, XRP);
+
+        env(amm::ammClawback(gw, alice, USD, XRP, USD(400)), ter(tesSUCCESS));
+        env.close();
+
+        BEAST_EXPECT(amm.expectBalances(
+            STAmount(USD, UINT64_C(5656854249492380), -13),
+            XRP(70.710678),
+            IOUAmount(200000)));
+        BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount(0)));
+        BEAST_EXPECT(expectLedgerEntryRoot(
+            env, alice, aliceXrpBalance + XRP(29.289322)));
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{jtx::supported_amendments()};
@@ -1710,6 +1786,7 @@ class AMMClawback_test : public jtx::AMMTest
         testAMMClawbackIssuesEachOther(all);
         testNotHoldingLptoken(all);
         testAssetFrozen(all);
+        testSingleDepositAndClawback(all);
     }
 };
 BEAST_DEFINE_TESTSUITE(AMMClawback, app, ripple);

@@ -90,6 +90,9 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
     if (!sleIssuer)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
+    if (!ctx.view.read(keylet::account(ctx.tx[sfHolder])))
+        return terNO_ACCOUNT;
+
     auto const ammSle = ctx.view.read(keylet::amm(asset, asset2));
     if (!ammSle)
     {
