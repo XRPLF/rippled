@@ -25,7 +25,10 @@
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+
+#include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 #include <boost/regex.hpp>
 #include <algorithm>
 #include <mutex>
@@ -147,6 +150,7 @@ public:
         Rules const& rules,
         std::vector<std::shared_ptr<STValidation>> const& valSet,
         NetClock::time_point const closeTime,
+        beast::Journal j,
         std::lock_guard<std::mutex> const& lock)
     {
         // When we get an STValidation we save the upVotes it contains, but
@@ -163,25 +167,50 @@ public:
         using namespace std::chrono_literals;
         static constexpr NetClock::duration expiresAfter = 24h;
 
+        auto const newTimeout = closeTime + expiresAfter;
+
         // Walk all validations and replace previous votes from trusted
         // validators with these newest votes.
         for (auto const& val : valSet)
         {
+            auto const pkHuman =
+                toBase58(TokenType::NodePublic, val->getSignerPublic());
             // If this validation comes from one of our trusted validators...
             if (auto const iter = recordedVotes_.find(val->getSignerPublic());
                 iter != recordedVotes_.end())
             {
-                iter->second.timeout = closeTime + expiresAfter;
+                iter->second.timeout = newTimeout;
                 if (val->isFieldPresent(sfAmendments))
                 {
                     auto const& choices = val->getFieldV256(sfAmendments);
                     iter->second.upVotes.assign(choices.begin(), choices.end());
+                    JLOG(j.debug())
+                        << "recordVotes: Validation from trusted " << pkHuman
+                        << " has " << choices.size() << " amendment votes: "
+                        << boost::algorithm::join(
+                               iter->second.upVotes |
+                                   boost::adaptors::transformed(
+                                       to_string<256, void>),
+                               ", ");
+                    // TODO: Maybe transform using to_short_string once #5126 is
+                    // merged
+                    //
+                    // iter->second.upVotes |
+                    // boost::adaptors::transformed(to_short_string<256, void>)
                 }
                 else
                 {
                     // This validator does not upVote any amendments right now.
                     iter->second.upVotes.clear();
+                    JLOG(j.debug()) << "recordVotes: Validation from trusted "
+                                    << pkHuman << " has no amendment votes.";
                 }
+            }
+            else
+            {
+                JLOG(j.debug())
+                    << "recordVotes: Ignoring validation from untrusted "
+                    << pkHuman;
             }
         }
 
@@ -189,11 +218,34 @@ public:
         std::for_each(
             recordedVotes_.begin(),
             recordedVotes_.end(),
-            [&closeTime](decltype(recordedVotes_)::value_type& votes) {
+            [&closeTime, newTimeout, &j](
+                decltype(recordedVotes_)::value_type& votes) {
+                auto const pkHuman =
+                    toBase58(TokenType::NodePublic, votes.first);
                 if (closeTime > votes.second.timeout)
                 {
+                    JLOG(j.debug())
+                        << "recordVotes: Timeout: Clearing votes from "
+                        << pkHuman;
                     votes.second.timeout = maxTimeout;
                     votes.second.upVotes.clear();
+                }
+                else if (votes.second.timeout == maxTimeout)
+                {
+                    assert(votes.second.upVotes.empty());
+                    JLOG(j.debug())
+                        << "recordVotes: Have not received any "
+                           "amendment votes from "
+                        << pkHuman << " since last timeout or startup";
+                }
+                else if (votes.second.timeout != newTimeout)
+                {
+                    assert(votes.second.timeout < newTimeout);
+                    using namespace std::chrono;
+                    auto const age = duration_cast<minutes>(
+                        newTimeout - votes.second.timeout);
+                    JLOG(j.debug()) << "recordVotes: Using " << age.count()
+                                    << "min old cached votes from " << pkHuman;
                 }
             });
     }
@@ -787,13 +839,13 @@ AmendmentTableImpl::doVoting(
     std::lock_guard lock(mutex_);
 
     // Keep a record of the votes we received.
-    previousTrustedVotes_.recordVotes(rules, valSet, closeTime, lock);
+    previousTrustedVotes_.recordVotes(rules, valSet, closeTime, j_, lock);
 
     // Tally the most recent votes.
     auto vote =
         std::make_unique<AmendmentSet>(rules, previousTrustedVotes_, lock);
-    JLOG(j_.debug()) << "Received " << vote->trustedValidations()
-                     << " trusted validations, threshold is: "
+    JLOG(j_.debug()) << "Counted votes from " << vote->trustedValidations()
+                     << " valid trusted validations, threshold is: "
                      << vote->threshold();
 
     // Map of amendments to the action to be taken for each one. The action is
@@ -813,22 +865,27 @@ AmendmentTableImpl::doVoting(
                 majorityTime = it->second;
         }
 
+        std::stringstream ss;
+        ss << entry.first << " (" << entry.second.name << ") has "
+           << vote->votes(entry.first) << " votes";
+
         if (enabledAmendments.count(entry.first) != 0)
         {
-            JLOG(j_.debug()) << entry.first << ": amendment already enabled";
+            JLOG(j_.trace()) << entry.first << ": amendment already enabled";
         }
         else if (
             hasValMajority && (majorityTime == NetClock::time_point{}) &&
             entry.second.vote == AmendmentVote::up)
         {
-            // Ledger says no majority, validators say yes
-            JLOG(j_.debug()) << entry.first << ": amendment got majority";
+            // Ledger says no majority, validators say yes, and voting yes
+            // locally
+            JLOG(j_.debug()) << ss.str() << ": amendment got majority";
             actions[entry.first] = tfGotMajority;
         }
         else if (!hasValMajority && (majorityTime != NetClock::time_point{}))
         {
             // Ledger says majority, validators say no
-            JLOG(j_.debug()) << entry.first << ": amendment lost majority";
+            JLOG(j_.debug()) << ss.str() << ": amendment lost majority";
             actions[entry.first] = tfLostMajority;
         }
         else if (
@@ -837,8 +894,20 @@ AmendmentTableImpl::doVoting(
             entry.second.vote == AmendmentVote::up)
         {
             // Ledger says majority held
-            JLOG(j_.debug()) << entry.first << ": amendment majority held";
+            JLOG(j_.debug()) << ss.str() << ": amendment majority held";
             actions[entry.first] = 0;
+        }
+        // Logging only below this point
+        else if (hasValMajority && (majorityTime != NetClock::time_point{}))
+        {
+            JLOG(j_.debug())
+                << ss.str()
+                << ": amendment holding majority, waiting to be enabled";
+        }
+        else if (!hasValMajority)
+        {
+            JLOG(j_.debug())
+                << ss.str() << ": amendment does not have majority";
         }
     }
 

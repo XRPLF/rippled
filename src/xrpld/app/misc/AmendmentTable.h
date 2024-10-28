@@ -147,7 +147,8 @@ public:
     doVoting(
         std::shared_ptr<ReadView const> const& lastClosedLedger,
         std::vector<std::shared_ptr<STValidation>> const& parentValidations,
-        std::shared_ptr<SHAMap> const& initialPosition)
+        std::shared_ptr<SHAMap> const& initialPosition,
+        beast::Journal j)
     {
         // Ask implementation what to do
         auto actions = doVoting(
@@ -173,6 +174,10 @@ public:
 
             Serializer s;
             amendTx.add(s);
+
+            JLOG(j.debug()) << "Amendments: Adding pseudo-transaction: "
+                            << amendTx.getTransactionID() << ": "
+                            << strHex(s.slice()) << ": " << amendTx;
 
             initialPosition->addGiveItem(
                 SHAMapNodeType::tnTRANSACTION_NM,
