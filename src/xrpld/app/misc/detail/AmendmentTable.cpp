@@ -91,15 +91,17 @@ parseSection(Section const& section)
 class TrustedVotes
 {
 private:
-    static constexpr NetClock::time_point maxTimeout =
-        NetClock::time_point::max();
-
     // Associates each trusted validator with the last votes we saw from them
     // and an expiration for that record.
     struct UpvotesAndTimeout
     {
         std::vector<uint256> upVotes;
-        NetClock::time_point timeout = maxTimeout;
+        /** An unseated timeout indicates that either
+            1. No validations have ever been received
+            2. The validator has not been heard from in long enough that the
+               timeout passed, and votes expired.
+         */
+        std::optional<NetClock::time_point> timeout;
     };
     hash_map<PublicKey, UpvotesAndTimeout> recordedVotes_;
 
@@ -133,7 +135,7 @@ public:
             else
             {
                 // New validators have a starting position of no on everything.
-                // Add the entry with an empty vector and maxTimeout.
+                // Add the entry with an empty vector and unseated timeout.
                 newRecordedVotes[trusted];
             }
         }
@@ -222,15 +224,7 @@ public:
                 decltype(recordedVotes_)::value_type& votes) {
                 auto const pkHuman =
                     toBase58(TokenType::NodePublic, votes.first);
-                if (closeTime > votes.second.timeout)
-                {
-                    JLOG(j.debug())
-                        << "recordVotes: Timeout: Clearing votes from "
-                        << pkHuman;
-                    votes.second.timeout = maxTimeout;
-                    votes.second.upVotes.clear();
-                }
-                else if (votes.second.timeout == maxTimeout)
+                if (!votes.second.timeout)
                 {
                     assert(votes.second.upVotes.empty());
                     JLOG(j.debug())
@@ -238,12 +232,20 @@ public:
                            "amendment votes from "
                         << pkHuman << " since last timeout or startup";
                 }
+                else if (closeTime > votes.second.timeout)
+                {
+                    JLOG(j.debug())
+                        << "recordVotes: Timeout: Clearing votes from "
+                        << pkHuman;
+                    votes.second.timeout.reset();
+                    votes.second.upVotes.clear();
+                }
                 else if (votes.second.timeout != newTimeout)
                 {
                     assert(votes.second.timeout < newTimeout);
                     using namespace std::chrono;
                     auto const age = duration_cast<minutes>(
-                        newTimeout - votes.second.timeout);
+                        newTimeout - *votes.second.timeout);
                     JLOG(j.debug()) << "recordVotes: Using " << age.count()
                                     << "min old cached votes from " << pkHuman;
                 }
@@ -257,14 +259,20 @@ public:
     getVotes(Rules const& rules, std::lock_guard<std::mutex> const& lock) const
     {
         hash_map<uint256, int> ret;
+        int available = 0;
         for (auto& validatorVotes : recordedVotes_)
         {
+            assert(
+                validatorVotes.second.timeout ||
+                validatorVotes.second.upVotes.empty());
+            if (validatorVotes.second.timeout)
+                ++available;
             for (uint256 const& amendment : validatorVotes.second.upVotes)
             {
                 ret[amendment] += 1;
             }
         }
-        return {recordedVotes_.size(), ret};
+        return {available, ret};
     }
 };
 
@@ -855,26 +863,29 @@ AmendmentTableImpl::doVoting(
     // process all amendments we know of
     for (auto const& entry : amendmentMap_)
     {
-        NetClock::time_point majorityTime = {};
+        if (enabledAmendments.count(entry.first) != 0)
+        {
+            JLOG(j_.trace()) << entry.first << ": amendment already enabled";
+
+            continue;
+        }
 
         bool const hasValMajority = vote->passes(entry.first);
 
-        {
+        auto const majorityTime = [&]() -> std::optional<NetClock::time_point> {
             auto const it = majorityAmendments.find(entry.first);
             if (it != majorityAmendments.end())
-                majorityTime = it->second;
-        }
+                return it->second;
+            return std::nullopt;
+        }();
+
+        bool const hasLedgerMajority = majorityTime.has_value();
 
         std::stringstream ss;
         ss << entry.first << " (" << entry.second.name << ") has "
            << vote->votes(entry.first) << " votes";
 
-        if (enabledAmendments.count(entry.first) != 0)
-        {
-            JLOG(j_.trace()) << entry.first << ": amendment already enabled";
-        }
-        else if (
-            hasValMajority && (majorityTime == NetClock::time_point{}) &&
+        if (hasValMajority && !hasLedgerMajority &&
             entry.second.vote == AmendmentVote::up)
         {
             // Ledger says no majority, validators say yes, and voting yes
@@ -882,15 +893,15 @@ AmendmentTableImpl::doVoting(
             JLOG(j_.debug()) << ss.str() << ": amendment got majority";
             actions[entry.first] = tfGotMajority;
         }
-        else if (!hasValMajority && (majorityTime != NetClock::time_point{}))
+        else if (!hasValMajority && hasLedgerMajority)
         {
             // Ledger says majority, validators say no
             JLOG(j_.debug()) << ss.str() << ": amendment lost majority";
             actions[entry.first] = tfLostMajority;
         }
         else if (
-            (majorityTime != NetClock::time_point{}) &&
-            ((majorityTime + majorityTime_) <= closeTime) &&
+            hasLedgerMajority &&
+            ((*majorityTime + majorityTime_) <= closeTime) &&
             entry.second.vote == AmendmentVote::up)
         {
             // Ledger says majority held
@@ -898,7 +909,7 @@ AmendmentTableImpl::doVoting(
             actions[entry.first] = 0;
         }
         // Logging only below this point
-        else if (hasValMajority && (majorityTime != NetClock::time_point{}))
+        else if (hasValMajority && hasLedgerMajority)
         {
             JLOG(j_.debug())
                 << ss.str()
