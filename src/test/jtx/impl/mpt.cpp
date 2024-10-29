@@ -49,7 +49,8 @@ MPTTester::makeHolders(std::vector<Account> const& holders)
     std::unordered_map<std::string, Account> accounts;
     for (auto const& h : holders)
     {
-        assert(accounts.find(h.human()) == accounts.cend());
+        if (accounts.find(h.human()) != accounts.cend())
+            Throw<std::runtime_error>("Duplicate holder");
         accounts.emplace(h.human(), h);
     }
     return accounts;
@@ -74,7 +75,8 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
         env_.require(owners(issuer_, 0));
         for (auto it : holders_)
         {
-            assert(issuer_.id() != it.second.id());
+            if (issuer_.id() == it.second.id())
+                Throw<std::runtime_error>("Issuer can't be holder");
             env_.require(owners(it.second, 0));
         }
     }
@@ -243,7 +245,7 @@ MPTTester::set(MPTSet const& arg)
                 else if (*arg.flags & tfMPTUnlock)
                     flags &= ~lsfMPTLocked;
                 else
-                    assert(0);
+                    Throw<std::runtime_error>("Invalid flags");
             }
             env_.require(mptflags(*this, flags, holder));
         };
