@@ -43,6 +43,8 @@ public:
     doApply() override;
 };
 
+using CheckCancel = CancelCheck;
+
 }  // namespace ripple
 
 #endif

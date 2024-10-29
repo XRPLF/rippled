@@ -55,168 +55,28 @@ namespace ripple {
 // clang-format off
 enum TxType : std::uint16_t
 {
-    /** This transaction type executes a payment. */
-    ttPAYMENT = 0,
 
-    /** This transaction type creates an escrow object. */
-    ttESCROW_CREATE = 1,
+#pragma push_macro("TRANSACTION")
+#undef TRANSACTION
 
-    /** This transaction type completes an existing escrow. */
-    ttESCROW_FINISH = 2,
+#define TRANSACTION(tag, value, name, fields) tag = value,
 
-    /** This transaction type adjusts various account settings. */
-    ttACCOUNT_SET = 3,
+#include <xrpl/protocol/detail/transactions.macro>
 
-    /** This transaction type cancels an existing escrow. */
-    ttESCROW_CANCEL = 4,
-
-    /** This transaction type sets or clears an account's "regular key". */
-    ttREGULAR_KEY_SET = 5,
+#undef TRANSACTION
+#pragma pop_macro("TRANSACTION")
 
     /** This transaction type is deprecated; it is retained for historical purposes. */
     ttNICKNAME_SET [[deprecated("This transaction type is not supported and should not be used.")]] = 6,
 
-    /** This transaction type creates an offer to trade one asset for another. */
-    ttOFFER_CREATE = 7,
-
-    /** This transaction type cancels existing offers to trade one asset for another. */
-    ttOFFER_CANCEL = 8,
-
     /** This transaction type is deprecated; it is retained for historical purposes. */
     ttCONTRACT [[deprecated("This transaction type is not supported and should not be used.")]] = 9,
-
-    /** This transaction type creates a new set of tickets. */
-    ttTICKET_CREATE = 10,
 
     /** This identifier was never used, but the slot is reserved for historical purposes. */
     ttSPINAL_TAP [[deprecated("This transaction type is not supported and should not be used.")]] = 11,
 
-    /** This transaction type modifies the signer list associated with an account. */
-    ttSIGNER_LIST_SET = 12,
-
-    /** This transaction type creates a new unidirectional XRP payment channel. */
-    ttPAYCHAN_CREATE = 13,
-
-    /** This transaction type funds an existing unidirectional XRP payment channel. */
-    ttPAYCHAN_FUND = 14,
-
-    /** This transaction type submits a claim against an existing unidirectional payment channel. */
-    ttPAYCHAN_CLAIM = 15,
-
-    /** This transaction type creates a new check. */
-    ttCHECK_CREATE = 16,
-
-    /** This transaction type cashes an existing check. */
-    ttCHECK_CASH = 17,
-
-    /** This transaction type cancels an existing check. */
-    ttCHECK_CANCEL = 18,
-
-    /** This transaction type grants or revokes authorization to transfer funds. */
-    ttDEPOSIT_PREAUTH = 19,
-
-    /** This transaction type modifies a trustline between two accounts. */
-    ttTRUST_SET = 20,
-
-    /** This transaction type deletes an existing account. */
-    ttACCOUNT_DELETE = 21,
-
     /** This transaction type installs a hook. */
     ttHOOK_SET [[maybe_unused]] = 22,
-
-    /** This transaction mints a new NFT. */
-    ttNFTOKEN_MINT = 25,
-
-    /** This transaction burns (i.e. destroys) an existing NFT. */
-    ttNFTOKEN_BURN = 26,
-
-    /** This transaction creates a new offer to buy or sell an NFT. */
-    ttNFTOKEN_CREATE_OFFER = 27,
-
-    /** This transaction cancels an existing offer to buy or sell an existing NFT. */
-    ttNFTOKEN_CANCEL_OFFER = 28,
-
-    /** This transaction accepts an existing offer to buy or sell an existing  NFT. */
-    ttNFTOKEN_ACCEPT_OFFER = 29,
-
-    /** This transaction claws back issued tokens. */
-    ttCLAWBACK = 30,
-
-    /** This transaction type creates an AMM instance */
-    ttAMM_CREATE = 35,
-
-    /** This transaction type deposits into an AMM instance */
-    ttAMM_DEPOSIT = 36,
-
-    /** This transaction type withdraws from an AMM instance */
-    ttAMM_WITHDRAW = 37,
-
-    /** This transaction type votes for the trading fee */
-    ttAMM_VOTE = 38,
-
-    /** This transaction type bids for the auction slot */
-    ttAMM_BID = 39,
-
-    /** This transaction type deletes AMM in the empty state */
-    ttAMM_DELETE = 40,
-
-    /** This transactions creates a crosschain sequence number */
-    ttXCHAIN_CREATE_CLAIM_ID = 41,
-
-    /** This transactions initiates a crosschain transaction */
-    ttXCHAIN_COMMIT = 42,
-
-    /** This transaction completes a crosschain transaction */
-    ttXCHAIN_CLAIM = 43,
-
-    /** This transaction initiates a crosschain account create transaction */
-    ttXCHAIN_ACCOUNT_CREATE_COMMIT = 44,
-
-    /** This transaction adds an attestation to a claimid*/
-    ttXCHAIN_ADD_CLAIM_ATTESTATION = 45,
-
-    /** This transaction adds an attestation to a claimid*/
-    ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION = 46,
-
-    /** This transaction modifies a sidechain */
-    ttXCHAIN_MODIFY_BRIDGE = 47,
-
-    /** This transactions creates a sidechain */
-    ttXCHAIN_CREATE_BRIDGE = 48,
-
-    /** This transaction type creates or updates a DID */
-    ttDID_SET = 49,
-
-    /** This transaction type deletes a DID */
-    ttDID_DELETE = 50,
-
-    /** This transaction type creates an Oracle instance */
-    ttORACLE_SET = 51,
-
-    /** This transaction type deletes an Oracle instance */
-    ttORACLE_DELETE = 52,
-
-    /** This transaction type fixes a problem in the ledger state */
-    ttLEDGER_STATE_FIX = 53,
-
-
-    /** This system-generated transaction type is used to update the status of the various amendments.
-
-        For details, see: https://xrpl.org/amendments.html
-     */
-    ttAMENDMENT = 100,
-
-    /** This system-generated transaction type is used to update the network's fee settings.
-
-        For details, see: https://xrpl.org/fee-voting.html
-     */
-    ttFEE = 101,
-
-    /** This system-generated transaction type is used to update the network's negative UNL
-
-        For details, see: https://xrpl.org/negative-unl.html
-     */
-    ttUNL_MODIFY = 102,
 };
 // clang-format on
 
