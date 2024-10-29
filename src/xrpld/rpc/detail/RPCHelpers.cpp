@@ -158,6 +158,10 @@ getAccountObjects(
     std::uint32_t const limit,
     Json::Value& jvResult)
 {
+    // check if dirIndex is valid
+    if (!dirIndex.isZero() && !ledger.read({ltDIR_NODE, dirIndex}))
+        return false;
+
     auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
                                 LedgerEntryType ledgerType) {
         auto it = std::find(typeFilter.begin(), typeFilter.end(), ledgerType);
@@ -249,8 +253,18 @@ getAccountObjects(
     if (!dir)
     {
         // it's possible the user had nftoken pages but no
-        // directory entries
-        return mlimit < limit;
+        // directory entries. If there's no nftoken page, we will
+        // give empty array for account_objects.
+        if (mlimit >= limit)
+            jvResult[jss::account_objects] = Json::arrayValue;
+
+        // non-zero dirIndex validity was checked in the beginning of this
+        // function; by this point, it should be zero. This function returns
+        // true regardless of nftoken page presence; if absent, account_objects
+        // is already set as an empty array. Notice we will only return false in
+        // this function when entryIndex can not be found, indicating an invalid
+        // marker error.
+        return true;
     }
 
     std::uint32_t i = 0;
