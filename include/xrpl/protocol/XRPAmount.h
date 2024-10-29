@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_XRPAMOUNT_H_INCLUDED
-#define RIPPLE_BASICS_XRPAMOUNT_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_XRPAMOUNT_H_INCLUDED
+#define RIPPLE_PROTOCOL_XRPAMOUNT_H_INCLUDED
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
@@ -54,8 +54,8 @@ public:
     constexpr XRPAmount&
     operator=(XRPAmount const& other) = default;
 
-    explicit XRPAmount(Number const& x)
-        : XRPAmount(static_cast<decltype(drops_)>(x))
+    // Round to nearest, even on tie.
+    explicit XRPAmount(Number const& x) : XRPAmount(static_cast<value_type>(x))
     {
     }
 
@@ -210,6 +210,10 @@ public:
         return dropsAs<Dest>().value_or(defaultValue.drops());
     }
 
+    /* Clips a 64-bit value to a 32-bit JSON number. It is only used
+     * in contexts that don't expect the value to ever approach
+     * the 32-bit limits (i.e. fees and reserves).
+     */
     Json::Value
     jsonClipped() const
     {
