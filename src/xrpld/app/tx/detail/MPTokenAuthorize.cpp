@@ -76,7 +76,6 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
             {
                 auto const sleMptIssuance = ctx.view.read(
                     keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
-                assert(sleMptIssuance);
                 if (!sleMptIssuance)
                     return tefINTERNAL;
 
