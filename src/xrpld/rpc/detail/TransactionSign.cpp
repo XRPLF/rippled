@@ -212,7 +212,8 @@ checkPayment(
     if (!dstAccountID)
         return RPC::invalid_field_error("tx_json.Destination");
 
-    if ((doPath == false) && params.isMember(jss::build_path))
+    if (params.isMember(jss::build_path) &&
+        ((doPath == false) || amount.holds<MPTIssue>()))
         return RPC::make_error(
             rpcINVALID_PARAMS,
             "Field 'build_path' not allowed in this context.");
