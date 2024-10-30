@@ -186,10 +186,10 @@ constexpr std::uint32_t tfClearAccountCreateAmount     = 0x00010000;
 constexpr std::uint32_t tfBridgeModifyMask = ~(tfUniversal | tfClearAccountCreateAmount);
 
 // Batch Flags
-constexpr std::uint32_t tfAllOrNothing                 = 0x00000001;
-constexpr std::uint32_t tfOnlyOne                      = 0x00000002;
-constexpr std::uint32_t tfUntilFailure                 = 0x00000004;
-constexpr std::uint32_t tfIndependent                 = 0x00000008;
+constexpr std::uint32_t tfAllOrNothing                 = 0x00010000;
+constexpr std::uint32_t tfOnlyOne                      = 0x00020000;
+constexpr std::uint32_t tfUntilFailure                 = 0x00040000;
+constexpr std::uint32_t tfIndependent                  = 0x00080000;
 constexpr std::uint32_t const tfBatchMask =
     ~(tfUniversal | tfAllOrNothing | tfOnlyOne | tfUntilFailure | tfIndependent);
 
