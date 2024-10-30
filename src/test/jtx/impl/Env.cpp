@@ -273,7 +273,7 @@ Env::trust(STAmount const& amount, Account const& account)
 }
 
 Env::ParsedResult
-Env::parseResult(Json::Value const& jr)
+Env::parseResult(Json::Value const& jr, bool checkTER)
 {
     auto error = [](ParsedResult& parsed, Json::Value const& object) {
         // Use an error code that is not used anywhere in the transaction
@@ -296,14 +296,19 @@ Env::parseResult(Json::Value const& jr)
     if (jr.isObject() && jr.isMember(jss::result))
     {
         auto const& result = jr[jss::result];
-        if (result.isMember(jss::engine_result_code))
+        if (checkTER && result.isMember(jss::engine_result_code))
         {
             parsed.ter = TER::fromInt(result[jss::engine_result_code].asInt());
             parsed.rpcCode.emplace(rpcSUCCESS);
         }
+        else if (!checkTER && !result.isMember(jss::error))
+            parsed.rpcCode.emplace(rpcSUCCESS);
         else
             error(parsed, result);
     }
+    else if (
+        jr.isObject() && jr.isMember(jss::error) && jr[jss::error].isObject())
+        error(parsed, jr[jss::error]);
     else
         error(parsed, jr);
 
@@ -317,24 +322,20 @@ Env::submit(JTx const& jt)
     auto const jr = [&]() {
         if (jt.stx)
         {
-            // We shouldn't need to retry, but it fixes the test on macOS for
-            // the moment.
-            int retries = 3;
-            do
-            {
-                txid_ = jt.stx->getTransactionID();
-                Serializer s;
-                jt.stx->add(s);
-                auto const jr = rpc("submit", strHex(s.slice()));
-
-                parsedResult = parseResult(jr);
+            txid_ = jt.stx->getTransactionID();
+            Serializer s;
+            jt.stx->add(s);
+            auto const cb = [&](Json::Value const& jr) {
+                parsedResult = parseResult(jr, true);
                 test.expect(parsedResult.ter, "ter uninitialized!");
                 ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
-                if (ter_ != telENV_RPC_FAILED ||
+                return (
+                    ter_ != telENV_RPC_FAILED ||
                     parsedResult.rpcCode != rpcINTERNAL ||
-                    jt.ter == telENV_RPC_FAILED || --retries <= 0)
-                    return jr;
-            } while (true);
+                    jt.ter == telENV_RPC_FAILED);
+            };
+            // rpc() will call cb(), which does all the parsing
+            return rpc(cb, "submit", strHex(s.slice()));
         }
         else
         {
@@ -379,7 +380,7 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
     if (!txid_.parseHex(jr[jss::result][jss::tx_json][jss::hash].asString()))
         txid_.zero();
 
-    ParsedResult const parsedResult = parseResult(jr);
+    ParsedResult const parsedResult = parseResult(jr, true);
     test.expect(parsedResult.ter, "ter uninitialized!");
     ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
 
@@ -562,12 +563,37 @@ Env::ust(JTx const& jt)
 
 Json::Value
 Env::do_rpc(
+    rpcCallback cb,
     unsigned apiVersion,
     std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)
 {
-    return rpcClient(args, app().config(), app().logs(), apiVersion, headers)
-        .second;
+    // We shouldn't need to retry, but it fixes the test on macOS for
+    // the moment.
+    if (!cb)
+    {
+        static auto const defaultCallback = [](Json::Value const& jr) {
+            auto const parsedResult = parseResult(jr, false);
+            return parsedResult.rpcCode != rpcINTERNAL;
+        };
+        cb = defaultCallback;
+    }
+    int retries = 3;
+    do
+    {
+        auto const ret =
+            rpcClient(args, app().config(), app().logs(), apiVersion, headers)
+                .second;
+        if (cb(ret) || --retries <= 0)
+            return ret;
+        std::stringstream ss;
+        for (auto const& arg : args)
+        {
+            ss << arg << ", ";
+        }
+        test.log << "RPC failed: " << ss.str() << " -> " << to_string(ret)
+                 << std::endl;
+    } while (true);
 }
 
 void

@@ -292,6 +292,17 @@ public:
         The command is examined and used to build
         the correct JSON as per the arguments.
     */
+    using rpcCallback = std::function<bool(Json::Value const&)>;
+    const rpcCallback useDefaultCallback{};
+    const rpcCallback expectInternalRPCError = [](Json::Value const&) {
+        return true;
+    };
+    rpcCallback
+    getInternalFailureCallback(bool shouldFail)
+    {
+        return shouldFail ? expectInternalRPCError : useDefaultCallback;
+    }
+
     template <class... Args>
     Json::Value
     rpc(unsigned apiVersion,
@@ -305,9 +316,20 @@ public:
 
     template <class... Args>
     Json::Value
+    rpc(rpcCallback cb,
+        std::unordered_map<std::string, std::string> const& headers,
+        std::string const& cmd,
+        Args&&... args);
+
+    template <class... Args>
+    Json::Value
     rpc(std::unordered_map<std::string, std::string> const& headers,
         std::string const& cmd,
         Args&&... args);
+
+    template <class... Args>
+    Json::Value
+    rpc(rpcCallback cb, std::string const& cmd, Args&&... args);
 
     template <class... Args>
     Json::Value
@@ -514,7 +536,7 @@ public:
     /** Gets the TER result and `didApply` flag from a RPC Json result object.
      */
     static ParsedResult
-    parseResult(Json::Value const& jr);
+    parseResult(Json::Value const& jr, bool checkTER);
 
     /** Submit an existing JTx.
         This calls postconditions.
@@ -696,6 +718,7 @@ protected:
 
     Json::Value
     do_rpc(
+        rpcCallback cb,
         unsigned apiVersion,
         std::vector<std::string> const& args,
         std::unordered_map<std::string, std::string> const& headers = {});
@@ -746,6 +769,7 @@ Env::rpc(
     Args&&... args)
 {
     return do_rpc(
+        useDefaultCallback,
         apiVersion,
         std::vector<std::string>{cmd, std::forward<Args>(args)...},
         headers);
@@ -765,14 +789,37 @@ Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
 template <class... Args>
 Json::Value
 Env::rpc(
+    rpcCallback cb,
     std::unordered_map<std::string, std::string> const& headers,
     std::string const& cmd,
     Args&&... args)
 {
     return do_rpc(
+        cb,
         RPC::apiCommandLineVersion,
         std::vector<std::string>{cmd, std::forward<Args>(args)...},
         headers);
+}
+
+template <class... Args>
+Json::Value
+Env::rpc(
+    std::unordered_map<std::string, std::string> const& headers,
+    std::string const& cmd,
+    Args&&... args)
+{
+    return rpc(useDefaultCallback, headers, cmd, std::forward<Args>(args)...);
+}
+
+template <class... Args>
+Json::Value
+Env::rpc(rpcCallback cb, std::string const& cmd, Args&&... args)
+{
+    return rpc(
+        cb,
+        std::unordered_map<std::string, std::string>(),
+        cmd,
+        std::forward<Args>(args)...);
 }
 
 template <class... Args>

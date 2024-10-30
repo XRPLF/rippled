@@ -49,7 +49,8 @@ public:
             for (std::string cmd : {"validators", "validator_list_sites"})
             {
                 Env env{*this, isAdmin ? envconfig() : envconfig(no_admin)};
-                auto const jrr = env.rpc(cmd)[jss::result];
+                auto const jrr = env.rpc(
+                    env.getInternalFailureCallback(!isAdmin), cmd)[jss::result];
                 if (isAdmin)
                 {
                     BEAST_EXPECT(!jrr.isMember(jss::error));

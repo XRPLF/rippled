@@ -1638,7 +1638,10 @@ class LedgerRPC_test : public beast::unit_test::suite
                 });
 
             Json::Value const jrr = env.rpc(
-                "json", "ledger_entry", to_string(jvParams))[jss::result];
+                env.getInternalFailureCallback(apiVersion < 2u),
+                "json",
+                "ledger_entry",
+                to_string(jvParams))[jss::result];
 
             if (apiVersion < 2u)
                 checkErrorValue(jrr, "internal", "Internal error.");
@@ -1675,7 +1678,10 @@ class LedgerRPC_test : public beast::unit_test::suite
                     });
 
                 Json::Value const jrr = env.rpc(
-                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                    env.getInternalFailureCallback(apiVersion < 2u),
+                    "json",
+                    "ledger_entry",
+                    to_string(jvParams))[jss::result];
 
                 if (apiVersion < 2u)
                     checkErrorValue(jrr, "internal", "Internal error.");
@@ -1691,7 +1697,10 @@ class LedgerRPC_test : public beast::unit_test::suite
                     });
 
                 Json::Value const jrr = env.rpc(
-                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                    env.getInternalFailureCallback(apiVersion < 2u),
+                    "json",
+                    "ledger_entry",
+                    to_string(jvParams))[jss::result];
 
                 if (apiVersion < 2u)
                     checkErrorValue(jrr, "internal", "Internal error.");
@@ -1707,7 +1716,10 @@ class LedgerRPC_test : public beast::unit_test::suite
                     });
 
                 Json::Value const jrr = env.rpc(
-                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                    env.getInternalFailureCallback(apiVersion < 2u),
+                    "json",
+                    "ledger_entry",
+                    to_string(jvParams))[jss::result];
 
                 if (apiVersion < 2u)
                     checkErrorValue(jrr, "internal", "Internal error.");
@@ -1723,7 +1735,10 @@ class LedgerRPC_test : public beast::unit_test::suite
                     });
 
                 Json::Value const jrr = env.rpc(
-                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                    env.getInternalFailureCallback(apiVersion < 2u),
+                    "json",
+                    "ledger_entry",
+                    to_string(jvParams))[jss::result];
 
                 if (apiVersion < 2u)
                     checkErrorValue(jrr, "internal", "Internal error.");
@@ -1746,7 +1761,10 @@ class LedgerRPC_test : public beast::unit_test::suite
                     });
 
                 Json::Value const jrr = env.rpc(
-                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                    env.getInternalFailureCallback(apiVersion < 2u),
+                    "json",
+                    "ledger_entry",
+                    to_string(jvParams))[jss::result];
 
                 if (apiVersion < 2u)
                     checkErrorValue(jrr, "internal", "Internal error.");
@@ -1762,7 +1780,10 @@ class LedgerRPC_test : public beast::unit_test::suite
                     });
 
                 Json::Value const jrr = env.rpc(
-                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                    env.getInternalFailureCallback(apiVersion < 2u),
+                    "json",
+                    "ledger_entry",
+                    to_string(jvParams))[jss::result];
 
                 if (apiVersion < 2u)
                     checkErrorValue(jrr, "internal", "Internal error.");
