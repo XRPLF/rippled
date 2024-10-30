@@ -30,7 +30,7 @@ namespace ripple {
 class Batch : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit Batch(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -38,9 +38,6 @@ public:
 
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
-
-    static TxConsequences
-    makeTxConsequences(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);
