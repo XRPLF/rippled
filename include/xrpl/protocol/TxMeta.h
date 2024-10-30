@@ -137,6 +137,7 @@ public:
     {
         mBatchExecutions = batchExecutions;
     }
+
     bool
     hasBatchExecutions() const
     {
