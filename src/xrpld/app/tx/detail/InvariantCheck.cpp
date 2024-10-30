@@ -143,7 +143,6 @@ XRPNotCreated::finalize(
     ReadView const&,
     beast::Journal const& j)
 {
-    // DA TODO: FIX THIS
     if (tx.getTxnType() == ttBATCH && res == tesSUCCESS)
     {
         drops_ = -fee.drops();
