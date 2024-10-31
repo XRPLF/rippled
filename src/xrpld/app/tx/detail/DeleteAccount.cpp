@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/DID.h>
 #include <xrpld/app/tx/detail/DeleteAccount.h>
 #include <xrpld/app/tx/detail/DeleteOracle.h>
@@ -41,6 +42,10 @@ DeleteAccount::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureDeletableAccounts))
         return temDISABLED;
 
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
+        !ctx.rules.enabled(featureCredentials))
+        return temDISABLED;
+
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
@@ -50,6 +55,9 @@ DeleteAccount::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
         // An account cannot be deleted and give itself the resulting XRP.
         return temDST_IS_SRC;
+
+    if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
+        return err;
 
     return preflight2(ctx);
 }
@@ -110,14 +118,14 @@ removeTicketFromLedger(
 
 TER
 removeDepositPreauthFromLedger(
-    Application& app,
+    Application&,
     ApplyView& view,
-    AccountID const& account,
+    AccountID const&,
     uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
+    std::shared_ptr<SLE> const&,
     beast::Journal j)
 {
-    return DepositPreauth::removeFromLedger(app, view, delIndex, j);
+    return DepositPreauth::removeFromLedger(view, delIndex, j);
 }
 
 TER
@@ -159,6 +167,18 @@ removeOracleFromLedger(
     return DeleteOracle::deleteOracle(view, sleDel, account, j);
 }
 
+TER
+removeCredentialFromLedger(
+    Application&,
+    ApplyView& view,
+    AccountID const&,
+    uint256 const&,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal j)
+{
+    return credentials::deleteSLE(view, sleDel, j);
+}
+
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -181,6 +201,8 @@ nonObligationDeleter(LedgerEntryType t)
             return removeDIDFromLedger;
         case ltORACLE:
             return removeOracleFromLedger;
+        case ltCREDENTIAL:
+            return removeCredentialFromLedger;
         default:
             return nullptr;
     }
@@ -203,7 +225,11 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
         return tecDST_TAG_NEEDED;
 
     // Check whether the destination account requires deposit authorization.
-    if (ctx.view.rules().enabled(featureDepositAuth) &&
+    if (auto const err = credentials::valid(ctx, account, dst, sleDst);
+        !isTesSuccess(err))
+        return err;
+    if (!ctx.tx.isFieldPresent(sfCredentialIDs) &&
+        ctx.view.rules().enabled(featureDepositAuth) &&
         (sleDst->getFlags() & lsfDepositAuth))
     {
         if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
@@ -321,6 +347,12 @@ DeleteAccount::doApply()
 
     if (!src || !dst)
         return tefBAD_LEDGER;
+
+    if (ctx_.tx.isFieldPresent(sfCredentialIDs))
+    {
+        if (credentials::removeExpired(view(), ctx_.tx, j_))
+            return tecEXPIRED;
+    }
 
     Keylet const ownerDirKeylet{keylet::ownerDir(account_)};
     auto const ter = cleanupOnAccountDelete(

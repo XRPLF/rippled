@@ -19,6 +19,7 @@
 
 #include <xrpld/app/tx/detail/Escrow.h>
 
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/conditions/Condition.h>
 #include <xrpld/conditions/Fulfillment.h>
@@ -309,6 +310,10 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
+        !ctx.rules.enabled(featureCredentials))
+        return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -347,6 +352,9 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         }
     }
 
+    if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
+        return err;
+
     return tesSUCCESS;
 }
 
@@ -361,6 +369,29 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     }
 
     return Transactor::calculateBaseFee(view, tx) + extraFee;
+}
+
+TER
+EscrowFinish::preclaim(PreclaimContext const& ctx)
+{
+    auto const escrowKey =
+        keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
+    auto const sleEscrow = ctx.view.read(escrowKey);
+    if (!sleEscrow)
+        return tecNO_TARGET;
+
+    // NOTE: Escrow payments cannot be used to fund accounts.
+    AccountID const dst = sleEscrow->getAccountID(sfDestination);
+    auto const sleDst = ctx.view.read(keylet::account(dst));
+    if (!sleDst)
+        return tecNO_DST;
+
+    if (auto const err =
+            credentials::valid(ctx, ctx.tx[sfAccount], dst, sleDst);
+        !isTesSuccess(err))
+        return err;
+
+    return tesSUCCESS;
 }
 
 TER
@@ -448,13 +479,17 @@ EscrowFinish::doApply()
             return tecCRYPTOCONDITION_ERROR;
     }
 
-    // NOTE: Escrow payments cannot be used to fund accounts.
     AccountID const destID = (*slep)[sfDestination];
     auto const sled = ctx_.view().peek(keylet::account(destID));
     if (!sled)
         return tecNO_DST;
 
-    if (ctx_.view().rules().enabled(featureDepositAuth))
+    if (ctx_.tx.isFieldPresent(sfCredentialIDs))
+    {
+        if (credentials::removeExpired(view(), ctx_.tx, j_))
+            return tecEXPIRED;
+    }
+    else if (ctx_.view().rules().enabled(featureDepositAuth))
     {
         // Is EscrowFinished authorized?
         if (sled->getFlags() & lsfDepositAuth)

@@ -20,6 +20,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/digest.h>
@@ -63,6 +64,7 @@ enum class LedgerNameSpace : std::uint16_t {
     XRP_PAYMENT_CHANNEL = 'x',
     CHECK = 'C',
     DEPOSIT_PREAUTH = 'p',
+    DEPOSIT_PREAUTH_CREDENTIALS = 'P',
     NEGATIVE_UNL = 'N',
     NFTOKEN_OFFER = 'q',
     NFTOKEN_BUY_OFFERS = 'h',
@@ -75,6 +77,7 @@ enum class LedgerNameSpace : std::uint16_t {
     ORACLE = 'R',
     MPTOKEN_ISSUANCE = '~',
     MPTOKEN = 't',
+    CREDENTIAL = 'D',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -313,6 +316,26 @@ depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept
         indexHash(LedgerNameSpace::DEPOSIT_PREAUTH, owner, preauthorized)};
 }
 
+Keylet
+depositPreauth(AccountID const& owner, STArray const& authCreds) noexcept
+{
+    std::vector<uint256> hashes;
+    hashes.reserve(authCreds.size());
+    for (auto const& o : authCreds)
+    {
+        hashes.push_back(sha512Half(
+            o.getAccountID(sfIssuer), o.getFieldVL(sfCredentialType)));
+    }
+
+    // eleminate duplicates
+    std::sort(hashes.begin(), hashes.end());
+    hashes.erase(std::unique(hashes.begin(), hashes.end()), hashes.end());
+
+    return {
+        ltDEPOSIT_PREAUTH,
+        indexHash(LedgerNameSpace::DEPOSIT_PREAUTH_CREDENTIALS, owner, hashes)};
+}
+
 //------------------------------------------------------------------------------
 
 Keylet
@@ -489,6 +512,18 @@ mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept
     return {
         ltMPTOKEN, indexHash(LedgerNameSpace::MPTOKEN, issuanceKey, holder)};
 }
+
+Keylet
+credential(
+    AccountID const& subject,
+    AccountID const& issuer,
+    Slice const& credType) noexcept
+{
+    return {
+        ltCREDENTIAL,
+        indexHash(LedgerNameSpace::CREDENTIAL, subject, issuer, credType)};
+}
+
 }  // namespace keylet
 
 }  // namespace ripple

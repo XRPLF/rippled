@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/PayChan.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
@@ -403,6 +404,10 @@ PayChanFund::doApply()
 NotTEC
 PayChanClaim::preflight(PreflightContext const& ctx)
 {
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
+        !ctx.rules.enabled(featureCredentials))
+        return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -453,7 +458,26 @@ PayChanClaim::preflight(PreflightContext const& ctx)
             return temBAD_SIGNATURE;
     }
 
+    if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
+        return err;
+
     return preflight2(ctx);
+}
+
+TER
+PayChanClaim::preclaim(PreclaimContext const& ctx)
+{
+    Keylet const k(ltPAYCHAN, ctx.tx[sfChannel]);
+    auto const slep = ctx.view.read(k);
+    if (!slep)
+        return tecNO_TARGET;
+
+    if (auto const err = credentials::valid(
+            ctx, ctx.tx[sfAccount], slep->getAccountID(sfDestination));
+        !isTesSuccess(err))
+        return err;
+
+    return tesSUCCESS;
 }
 
 TER
@@ -517,7 +541,12 @@ PayChanClaim::doApply()
             return tecNO_TARGET;
 
         // Check whether the destination account requires deposit authorization.
-        if (depositAuth && (sled->getFlags() & lsfDepositAuth))
+        if (ctx_.tx.isFieldPresent(sfCredentialIDs))
+        {
+            if (credentials::removeExpired(view(), ctx_.tx, j_))
+                return tecEXPIRED;
+        }
+        else if (depositAuth && (sled->getFlags() & lsfDepositAuth))
         {
             // A destination account that requires authorization has two
             // ways to get a Payment Channel Claim into the account:

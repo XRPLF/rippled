@@ -381,6 +381,25 @@ struct DepositAuth_test : public beast::unit_test::suite
     }
 };
 
+static Json::Value
+ledgerEntryDepositPreauth(
+    jtx::Env& env,
+    jtx::Account const& acc,
+    std::vector<jtx::deposit::AuthorizeCredentials> const& auth)
+{
+    Json::Value jvParams;
+    jvParams[jss::ledger_index] = jss::validated;
+    jvParams[jss::deposit_preauth][jss::owner] = acc.human();
+    jvParams[jss::deposit_preauth][jss::authorize_credentials] =
+        Json::arrayValue;
+    auto& arr(jvParams[jss::deposit_preauth][jss::authorize_credentials]);
+    for (auto const& o : auth)
+    {
+        arr.append(o.toLEJson());
+    }
+    return env.rpc("json", "ledger_entry", to_string(jvParams));
+}
+
 struct DepositPreauth_test : public beast::unit_test::suite
 {
     void
@@ -634,6 +653,60 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 sendmax(XRP(10)),
                 ter(expect));
             env.close();
+
+            {
+                // becky setup depositpreauth with credentials
+                const char credType[] = "abcde";
+                Account const carol{"carol"};
+                env.fund(XRP(5000), carol);
+
+                TER const expect{
+                    supportsPreauth ? TER{tesSUCCESS} : TER{temDISABLED}};
+
+                env(deposit::authCredentials(becky, {{carol, credType}}),
+                    ter(expect));
+                env.close();
+
+                TER const credentialsExpect(
+                    features[featureCredentials] ? TER(tesSUCCESS)
+                                                 : TER(temDISABLED));
+                // gw accept credentials
+                env(credentials::create(gw, carol, credType),
+                    ter(credentialsExpect));
+                env.close();
+                env(credentials::accept(gw, carol, credType),
+                    ter(credentialsExpect));
+                env.close();
+
+                auto jv = credentials::ledgerEntry(env, gw, carol, credType);
+                std::string const credIdx = supportsPreauth
+                    ? jv[jss::result][jss::index].asString()
+                    : "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6"
+                      "EA288BE4";
+
+                env(pay(gw, becky, USD(100)),
+                    credentials::ids({credIdx}),
+                    ter(expect));
+                env.close();
+            }
+
+            {
+                using namespace std::chrono;
+
+                if (!supportsPreauth)
+                {
+                    auto const seq1 = env.seq(alice);
+                    env(escrow(alice, becky, XRP(100)),
+                        finish_time(env.now() + 1s));
+                    env.close();
+
+                    // Failed as rule is disabled
+                    env(finish(gw, alice, seq1),
+                        fee(1500),
+                        ter(tecNO_PERMISSION));
+                    env.close();
+                }
+            }
         }
 
         if (supportsPreauth)
@@ -725,13 +798,517 @@ struct DepositPreauth_test : public beast::unit_test::suite
     }
 
     void
+    testCredentialsPayment()
+    {
+        using namespace jtx;
+
+        const char credType[] = "abcde";
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const maria{"maria"};
+
+        {
+            testcase("Payment failed with disabled credentials rule.");
+
+            Env env(*this, supported_amendments() - featureCredentials);
+
+            env.fund(XRP(5000), issuer, bob);
+            env.close();
+
+            // Bob require preauthorization
+            env(fset(bob, asfDepositAuth));
+            env.close();
+
+            // Setup DepositPreauth object failed - amendent is not supported
+            env(deposit::authCredentials(bob, {{issuer, credType}}),
+                ter(temDISABLED));
+            env.close();
+
+            {
+                // Payment with CredentialsIDs failed - amendent is not
+                // supported
+                std::string const invalidIdx =
+                    "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E"
+                    "01E034";
+                env(pay(issuer, bob, XRP(10)),
+                    credentials::ids({invalidIdx}),
+                    ter(temDISABLED));
+            }
+        }
+
+        {
+            testcase("Payment with credentials.");
+
+            Env env(*this);
+
+            env.fund(XRP(5000), issuer, alice, bob);
+            env.close();
+
+            // Issuer create credentials, but Alice didn't accept them yet
+            env(credentials::create(alice, issuer, credType));
+            env.close();
+
+            // Get the index of the credentials
+            auto const jv =
+                credentials::ledgerEntry(env, alice, issuer, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            // Bob require preauthorization
+            env(fset(bob, asfDepositAuth));
+            env.close();
+
+            // Bob will accept payements from accounts with credentials signed
+            // by 'issuer'
+            env(deposit::authCredentials(bob, {{issuer, credType}}));
+            env.close();
+
+            auto const jDP =
+                ledgerEntryDepositPreauth(env, bob, {{issuer, credType}});
+            BEAST_EXPECT(
+                jDP.isObject() && jDP.isMember(jss::result) &&
+                !jDP[jss::result].isMember(jss::error) &&
+                jDP[jss::result].isMember(jss::node) &&
+                jDP[jss::result][jss::node].isMember("LedgerEntryType") &&
+                jDP[jss::result][jss::node]["LedgerEntryType"] ==
+                    jss::DepositPreauth);
+
+            // Alice can't pay - empty credentials array
+            {
+                auto jv = pay(alice, bob, XRP(100));
+                jv[sfCredentialIDs.jsonName] = Json::arrayValue;
+                env(jv, ter(temMALFORMED));
+                env.close();
+            }
+
+            // Alice can't pay - not accepted credentials
+            env(pay(alice, bob, XRP(100)),
+                credentials::ids({credIdx}),
+                ter(tecBAD_CREDENTIALS));
+            env.close();
+
+            // Alice accept the credentials
+            env(credentials::accept(alice, issuer, credType));
+            env.close();
+
+            // Now Alice can pay
+            env(pay(alice, bob, XRP(100)), credentials::ids({credIdx}));
+            env.close();
+
+            // Alice can pay Maria without depositPreauth enabled
+            env(pay(alice, maria, XRP(250)), credentials::ids({credIdx}));
+            env.close();
+        }
+
+        {
+            testcase("Payment failed with invalid credentials.");
+
+            Env env(*this);
+
+            env.fund(XRP(10000), issuer, alice, bob, maria);
+            env.close();
+
+            // Issuer create credentials, but Alice didn't accept them yet
+            env(credentials::create(alice, issuer, credType));
+            env.close();
+            // Alice accept the credentials
+            env(credentials::accept(alice, issuer, credType));
+            env.close();
+            // Get the index of the credentials
+            auto const jv =
+                credentials::ledgerEntry(env, alice, issuer, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            {
+                // Success as destination didn't enable preauthorization so
+                // valid credentials will not fail
+                env(pay(alice, bob, XRP(100)), credentials::ids({credIdx}));
+            }
+
+            // Bob require preauthorization
+            env(fset(bob, asfDepositAuth));
+            env.close();
+
+            {
+                // Fail as destination didn't setup DepositPreauth object
+                env(pay(alice, bob, XRP(100)),
+                    credentials::ids({credIdx}),
+                    ter(tecNO_PERMISSION));
+            }
+
+            // Bob setup DepositPreauth object, duplicates will be eliminated
+            env(deposit::authCredentials(
+                bob, {{issuer, credType}, {issuer, credType}}));
+            env.close();
+
+            {
+                std::string const invalidIdx =
+                    "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E"
+                    "01E034";
+                // Alice can't pay with non-existing credentials
+                env(pay(alice, bob, XRP(100)),
+                    credentials::ids({invalidIdx}),
+                    ter(tecBAD_CREDENTIALS));
+            }
+
+            {  // maria can't pay using valid credentials but issued for
+               // different account
+                env(pay(maria, bob, XRP(100)),
+                    credentials::ids({credIdx}),
+                    ter(tecBAD_CREDENTIALS));
+            }
+
+            {
+                // create another valid credential
+                const char credType2[] = "fghij";
+                env(credentials::create(alice, issuer, credType2));
+                env.close();
+                env(credentials::accept(alice, issuer, credType2));
+                env.close();
+                auto const jv =
+                    credentials::ledgerEntry(env, alice, issuer, credType2);
+                std::string const credIdx2 =
+                    jv[jss::result][jss::index].asString();
+
+                // Alice can't pay with invalid set of valid credentials
+                env(pay(alice, bob, XRP(100)),
+                    credentials::ids({credIdx, credIdx2}),
+                    ter(tecNO_PERMISSION));
+            }
+
+            // Alice can pay, duplicate credentials will be eliminated
+            env(pay(alice, bob, XRP(100)),
+                credentials::ids({credIdx, credIdx}));
+            env.close();
+            env(pay(alice, bob, XRP(100)), credentials::ids({credIdx}));
+            env.close();
+        }
+    }
+
+    void
+    testCredentialsCreation()
+    {
+        using namespace jtx;
+
+        const char credType[] = "abcde";
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const maria{"maria"};
+
+        {
+            testcase("Creating / deleting with credentials.");
+
+            Env env(*this);
+
+            env.fund(XRP(5000), issuer, alice, bob);
+            env.close();
+
+            {
+                // both included [AuthorizeCredentials UnauthorizeCredentials]
+                auto jv = deposit::authCredentials(bob, {{issuer, credType}});
+                jv[sfUnauthorizeCredentials.jsonName] = Json::arrayValue;
+                env(jv, ter(temMALFORMED));
+            }
+
+            {
+                // both included [Unauthorize, AuthorizeCredentials]
+                auto jv = deposit::authCredentials(bob, {{issuer, credType}});
+                jv[sfUnauthorize.jsonName] = issuer.human();
+                env(jv, ter(temMALFORMED));
+            }
+
+            {
+                // both included [Authorize, AuthorizeCredentials]
+                auto jv = deposit::authCredentials(bob, {{issuer, credType}});
+                jv[sfAuthorize.jsonName] = issuer.human();
+                env(jv, ter(temMALFORMED));
+            }
+
+            {
+                // AuthorizeCredentials is empty
+                auto jv = deposit::authCredentials(bob, {});
+                env(jv, ter(temMALFORMED));
+            }
+
+            {
+                // invalid issuer
+                auto jv = deposit::authCredentials(bob, {});
+                auto& arr(jv[sfAuthorizeCredentials.jsonName]);
+                Json::Value cred = Json::objectValue;
+                cred[jss::Issuer] = to_string(xrpAccount());
+                cred[sfCredentialType.jsonName] =
+                    strHex(std::string_view(credType));
+                Json::Value credParent;
+                credParent[jss::Credential] = cred;
+                arr.append(std::move(credParent));
+
+                env(jv, ter(temINVALID_ACCOUNT_ID));
+            }
+
+            {
+                // empty credential type
+                auto jv = deposit::authCredentials(bob, {{issuer, {}}});
+                env(jv, ter(temMALFORMED));
+            }
+
+            {
+                // AuthorizeCredentials is larger than 8 elements
+                Account const a("a"), b("b"), c("c"), d("d"), e("e"), f("f"),
+                    g("g"), h("h"), i("i");
+                auto const& z = credType;
+                auto jv = deposit::authCredentials(
+                    bob,
+                    {{a, z},
+                     {b, z},
+                     {c, z},
+                     {d, z},
+                     {e, z},
+                     {f, z},
+                     {g, z},
+                     {h, z},
+                     {i, z}});
+                env(jv, ter(temMALFORMED));
+            }
+
+            {
+                // Can't create with non-existing issuer
+                Account const rick{"rick"};
+                auto jv = deposit::authCredentials(bob, {{rick, credType}});
+                env(jv, ter(tecNO_ISSUER));
+                env.close();
+            }
+
+            {
+                // not enough resevre
+                Account const john{"john"};
+                env.fund(env.current()->fees().accountReserve(0), john);
+                auto jv = deposit::authCredentials(john, {{issuer, credType}});
+                env(jv, ter(tecINSUFFICIENT_RESERVE));
+            }
+
+            {
+                // NO deposit object exists
+                env(deposit::unauthCredentials(bob, {{issuer, credType}}),
+                    ter(tecNO_ENTRY));
+            }
+
+            // Create DepositPreauth object
+            {
+                env(deposit::authCredentials(bob, {{issuer, credType}}));
+                env.close();
+
+                auto const jDP =
+                    ledgerEntryDepositPreauth(env, bob, {{issuer, credType}});
+                BEAST_EXPECT(
+                    jDP.isObject() && jDP.isMember(jss::result) &&
+                    !jDP[jss::result].isMember(jss::error) &&
+                    jDP[jss::result].isMember(jss::node) &&
+                    jDP[jss::result][jss::node].isMember("LedgerEntryType") &&
+                    jDP[jss::result][jss::node]["LedgerEntryType"] ==
+                        jss::DepositPreauth);
+
+                // can't create duplicate
+                env(deposit::authCredentials(bob, {{issuer, credType}}),
+                    ter(tecDUPLICATE));
+            }
+
+            // Delete DepositPreauth object
+            {
+                env(deposit::unauthCredentials(bob, {{issuer, credType}}));
+                env.close();
+                auto const jDP =
+                    ledgerEntryDepositPreauth(env, bob, {{issuer, credType}});
+                BEAST_EXPECT(
+                    jDP.isObject() && jDP.isMember(jss::result) &&
+                    jDP[jss::result].isMember(jss::error) &&
+                    jDP[jss::result][jss::error] == "entryNotFound");
+            }
+        }
+    }
+
+    void
+    testExpCreds()
+    {
+        using namespace jtx;
+        const char credType[] = "abcde";
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const gw{"gw"};
+        IOU const USD = gw["USD"];
+        Account const zelda{"zelda"};
+
+        {
+            testcase("Payment failed with expired credentials.");
+
+            Env env(*this);
+
+            env.fund(XRP(10000), issuer, alice, bob, gw);
+            env.close();
+
+            // Create credentials
+            auto jv = credentials::create(alice, issuer, credType);
+            // Current time in ripple epoch.
+            // Every time ledger close, unittest timer increase by 10s
+            uint32_t const t = env.now().time_since_epoch().count() + 40;
+            jv[sfExpiration.jsonName] = t;
+            env(jv);
+            env.close();
+
+            // Alice accept the credentials
+            env(credentials::accept(alice, issuer, credType));
+            env.close();
+
+            // Get the index of the credentials
+            jv = credentials::ledgerEntry(env, alice, issuer, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            // Bob require preauthorization
+            env(fset(bob, asfDepositAuth));
+            env.close();
+            // Bob setup DepositPreauth object
+            env(deposit::authCredentials(bob, {{issuer, credType}}));
+            env.close();
+
+            {
+                // Alice can pay
+                env(pay(alice, bob, XRP(100)), credentials::ids({credIdx}));
+                env.close();
+
+                // Ledger closed, time increased, alice can't pay anymore
+                env(pay(alice, bob, XRP(100)),
+                    credentials::ids({credIdx}),
+                    ter(tecEXPIRED));
+                env.close();
+
+                // check that expired credentials were deleted
+                auto const jDelCred =
+                    credentials::ledgerEntry(env, alice, issuer, credType);
+                BEAST_EXPECT(
+                    jDelCred.isObject() && jDelCred.isMember(jss::result) &&
+                    jDelCred[jss::result].isMember(jss::error) &&
+                    jDelCred[jss::result][jss::error] == "entryNotFound");
+            }
+
+            {
+                auto jv = credentials::create(gw, issuer, credType);
+                uint32_t const t = env.now().time_since_epoch().count() + 40;
+                jv[sfExpiration.jsonName] = t;
+                env(jv);
+                env.close();
+                env(credentials::accept(gw, issuer, credType));
+                env.close();
+
+                jv = credentials::ledgerEntry(env, gw, issuer, credType);
+                std::string const credIdx =
+                    jv[jss::result][jss::index].asString();
+
+                env.close();
+                env.close();
+                env.close();
+
+                // credentails are expired
+                env(pay(gw, bob, USD(150)),
+                    credentials::ids({credIdx}),
+                    ter(tecEXPIRED));
+                env.close();
+
+                // check that expired credentials were deleted
+                auto const jDelCred =
+                    credentials::ledgerEntry(env, gw, issuer, credType);
+                BEAST_EXPECT(
+                    jDelCred.isObject() && jDelCred.isMember(jss::result) &&
+                    jDelCred[jss::result].isMember(jss::error) &&
+                    jDelCred[jss::result][jss::error] == "entryNotFound");
+            }
+        }
+
+        {
+            using namespace std::chrono;
+
+            testcase("Escrow failed with expired credentials.");
+
+            Env env(*this);
+
+            env.fund(XRP(5000), issuer, alice, bob, zelda);
+            env.close();
+
+            // Create credentials
+            auto jv = credentials::create(zelda, issuer, credType);
+            uint32_t const t = env.now().time_since_epoch().count() + 50;
+            jv[sfExpiration.jsonName] = t;
+            env(jv);
+            env.close();
+
+            // Zelda accept the credentials
+            env(credentials::accept(zelda, issuer, credType));
+            env.close();
+
+            // Get the index of the credentials
+            jv = credentials::ledgerEntry(env, zelda, issuer, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            // Bob require preauthorization
+            env(fset(bob, asfDepositAuth));
+            env.close();
+            // Bob setup DepositPreauth object
+            env(deposit::authCredentials(bob, {{issuer, credType}}));
+            env.close();
+
+            auto const seq = env.seq(alice);
+            env(escrow(alice, bob, XRP(1000)), finish_time(env.now() + 1s));
+            env.close();
+
+            // zelda can't finish escrow with invalid credentials
+            {
+                env(finish(zelda, alice, seq),
+                    credentials::ids({}),
+                    ter(temMALFORMED));
+                env.close();
+            }
+
+            {
+                // zelda can't finish escrow with invalid credentials
+                std::string const invalidIdx =
+                    "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E"
+                    "01E034";
+
+                env(finish(zelda, alice, seq),
+                    credentials::ids({invalidIdx}),
+                    ter(tecBAD_CREDENTIALS));
+                env.close();
+            }
+
+            {  // Ledger closed, time increased, zelda can't finish escrow
+                env(finish(zelda, alice, seq),
+                    credentials::ids({credIdx}),
+                    fee(1500),
+                    ter(tecEXPIRED));
+                env.close();
+            }
+
+            // check that expired credentials were deleted
+            auto const jDelCred =
+                credentials::ledgerEntry(env, zelda, issuer, credType);
+            BEAST_EXPECT(
+                jDelCred.isObject() && jDelCred.isMember(jss::result) &&
+                jDelCred[jss::result].isMember(jss::error) &&
+                jDelCred[jss::result][jss::error] == "entryNotFound");
+        }
+    }
+
+    void
     run() override
     {
         testEnable();
         testInvalid();
         auto const supported{jtx::supported_amendments()};
-        testPayment(supported - featureDepositPreauth);
+        testPayment(supported - featureDepositPreauth - featureCredentials);
         testPayment(supported);
+        testCredentialsPayment();
+        testCredentialsCreation();
+        testExpCreds();
     }
 };
 
