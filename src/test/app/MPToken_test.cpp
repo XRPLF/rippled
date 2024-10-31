@@ -1981,6 +1981,81 @@ class MPToken_test : public beast::unit_test::suite
         BEAST_EXPECT(!equalTokens(assetMpt2Gw2, assetCur2Gw2));
     }
 
+    void
+    testHelperFunctions()
+    {
+        using namespace test::jtx;
+        Account const gw{"gw"};
+        Asset const asset1{makeMptID(1, gw)};
+        Asset const asset2{makeMptID(2, gw)};
+        Asset const asset3{makeMptID(3, gw)};
+        STAmount const amt1{asset1, 100};
+        STAmount const amt2{asset2, 100};
+        STAmount const amt3{asset3, 10'000};
+
+        {
+            testcase("Test STAmount MPT arithmetics");
+            STAmount res = multiply(amt1, amt2, asset3);
+            BEAST_EXPECT(res == amt3);
+
+            res = mulRound(amt1, amt2, asset3, true);
+            BEAST_EXPECT(res == amt3);
+
+            res = mulRoundStrict(amt1, amt2, asset3, true);
+            BEAST_EXPECT(res == amt3);
+
+            // overflow, any value > 3037000499ull
+            STAmount mptOverflow{asset2, 3037000500ull};
+            try
+            {
+                res = multiply(mptOverflow, mptOverflow, asset3);
+                fail("should throw runtime exception 1");
+            }
+            catch (std::runtime_error const&)
+            {
+                pass();
+            }
+            // overflow, (v1 >> 32) * v2 > 2147483648ull
+            mptOverflow = STAmount{asset2, 2147483648ull};
+            try
+            {
+                res = multiply(
+                    STAmount{asset1, (2ull << 32) + 2}, mptOverflow, asset3);
+                fail("should throw runtime exception 2");
+            }
+            catch (std::runtime_error const&)
+            {
+                pass();
+            }
+        }
+
+        {
+            testcase("Test MPTAmount arithmetics");
+            MPTAmount mptAmt1{100};
+            MPTAmount const mptAmt2{100};
+            BEAST_EXPECT((mptAmt1 += mptAmt2) == MPTAmount{200});
+            BEAST_EXPECT((mptAmt1 -= mptAmt2) == mptAmt1);
+            BEAST_EXPECT(mptAmt1 == mptAmt2);
+            BEAST_EXPECT(mptAmt1 == 100);
+            BEAST_EXPECT(MPTAmount::minPositiveAmount() == MPTAmount{1});
+        }
+
+        {
+            testcase("Test MPTIssue from/to Json");
+            MPTIssue const issue1{asset1.get<MPTIssue>()};
+            Json::Value const jv = to_json(issue1);
+            MPTIssue const issue2 = mptIssueFromJson(jv);
+            BEAST_EXPECT(issue1 == issue2);
+        }
+
+        {
+            testcase("Test Asset from/to Json");
+            Json::Value jv;
+            asset1.setJson(jv);
+            BEAST_EXPECT(asset1 == assetFromJson(jv));
+        }
+    }
+
 public:
     void
     run() override
@@ -2019,6 +2094,9 @@ public:
 
         // Test tokens equality
         testTokensEquality();
+
+        // Test helpers
+        testHelperFunctions();
     }
 };
 
