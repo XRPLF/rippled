@@ -1221,6 +1221,173 @@ public:
     }
 
     void
+    testAccountObjectMarker()
+    {
+        testcase("AccountObjectMarker");
+
+        using namespace jtx;
+        Env env(*this);
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        env.fund(XRP(10000), alice, bob, carol);
+
+        unsigned const accountObjectSize = 30;
+        for (unsigned i = 0; i < accountObjectSize; i++)
+            env(check::create(alice, bob, XRP(10)));
+
+        for (unsigned i = 0; i < 10; i++)
+            env(token::mint(carol, 0));
+
+        env.close();
+
+        unsigned const limit = 11;
+        Json::Value marker;
+
+        // test account_objects with a limit and update marker
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            auto& accountObjects = resp[jss::result][jss::account_objects];
+            marker = resp[jss::result][jss::marker];
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
+            BEAST_EXPECT(accountObjects.size() == limit);
+        }
+
+        // test account_objects with valid marker and update marker
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::marker] = marker;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            auto& accountObjects = resp[jss::result][jss::account_objects];
+            marker = resp[jss::result][jss::marker];
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
+            BEAST_EXPECT(accountObjects.size() == limit);
+        }
+
+        // this lambda function is used to check invalid marker response.
+        auto testInvalidMarker = [&](std::string& marker) {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::marker] = marker;
+            Json::Value const resp =
+                env.rpc("json", "account_objects", to_string(params));
+            return resp[jss::result][jss::error_message] ==
+                "Invalid field \'marker\'.";
+        };
+
+        auto const markerStr = marker.asString();
+        auto const& idx = markerStr.find(',');
+        auto const dirIndex = markerStr.substr(0, idx);
+        auto const entryIndex = markerStr.substr(idx + 1);
+
+        // test account_objects with an invalid marker that contains no ','
+        {
+            std::string s = dirIndex + entryIndex;
+            BEAST_EXPECT(testInvalidMarker(s));
+        }
+
+        // test invalid marker by adding invalid string after the maker:
+        // "dirIndex,entryIndex,1234"
+        {
+            std::string s = markerStr + ",1234";
+            BEAST_EXPECT(testInvalidMarker(s));
+        }
+
+        // test account_objects with an invalid marker containing invalid
+        // dirIndex by replacing some characters from the dirIndex.
+        {
+            std::string s = markerStr;
+            s.replace(0, 7, "FFFFFFF");
+            BEAST_EXPECT(testInvalidMarker(s));
+        }
+
+        // test account_objects with an invalid marker containing invalid
+        // entryIndex by replacing some characters from the entryIndex.
+        {
+            std::string s = entryIndex;
+            s.replace(0, 7, "FFFFFFF");
+            s = dirIndex + ',' + s;
+            BEAST_EXPECT(testInvalidMarker(s));
+        }
+
+        // test account_objects with an invalid marker containing invalid
+        // dirIndex with marker: ",entryIndex"
+        {
+            std::string s = ',' + entryIndex;
+            BEAST_EXPECT(testInvalidMarker(s));
+        }
+
+        // test account_objects with marker: "0,entryIndex", this is still
+        // valid, because when dirIndex = 0, we will use root key to find
+        // dir.
+        {
+            std::string s = "0," + entryIndex;
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::marker] = s;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            auto& accountObjects = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
+            BEAST_EXPECT(accountObjects.size() == limit);
+        }
+
+        // test account_objects with an invalid marker containing invalid
+        // entryIndex with marker: "dirIndex,"
+        {
+            std::string s = dirIndex + ',';
+            BEAST_EXPECT(testInvalidMarker(s));
+        }
+
+        // test account_objects with an invalid marker containing invalid
+        // entryIndex with marker: "dirIndex,0"
+        {
+            std::string s = dirIndex + ",0";
+            BEAST_EXPECT(testInvalidMarker(s));
+        }
+
+        // continue getting account_objects with valid marker. This will be the
+        // last page, so response will not contain any marker.
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::marker] = marker;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            auto& accountObjects = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
+            BEAST_EXPECT(
+                accountObjects.size() == accountObjectSize - limit * 2);
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::marker));
+        }
+
+        // test account_objects when the account only have nft pages, but
+        // provided invalid entry index.
+        {
+            Json::Value params;
+            params[jss::account] = carol.human();
+            params[jss::limit] = 10;
+            params[jss::marker] = "0," + entryIndex;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            auto& accountObjects = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(accountObjects.size() == 0);
+        }
+    }
+
+    void
     run() override
     {
         testErrors();
@@ -1229,6 +1396,7 @@ public:
         testObjectTypes();
         testNFTsMarker();
         testAccountNFTs();
+        testAccountObjectMarker();
     }
 };
 

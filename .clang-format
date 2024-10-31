@@ -58,6 +58,7 @@ IncludeCategories:
 IncludeIsMainRegex: '$'
 IndentCaseLabels: true
 IndentFunctionDeclarationAfterType: false
+IndentRequiresClause: true
 IndentWidth:     4
 IndentWrappedFunctionNames: false
 KeepEmptyLinesAtTheStartOfBlocks: false
@@ -73,6 +74,7 @@ PenaltyExcessCharacter: 1000000
 PenaltyReturnTypeOnItsOwnLine: 200
 PointerAlignment: Left
 ReflowComments:  true
+RequiresClausePosition: OwnLine
 SortIncludes:    true
 SpaceAfterCStyleCast: false
 SpaceBeforeAssignmentOperators: true

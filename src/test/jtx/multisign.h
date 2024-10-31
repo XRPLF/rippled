@@ -100,9 +100,8 @@ public:
     msig(std::vector<Reg> signers_);
 
     template <class AccountType, class... Accounts>
-    requires std::convertible_to<AccountType, Reg> explicit msig(
-        AccountType&& a0,
-        Accounts&&... aN)
+        requires std::convertible_to<AccountType, Reg>
+    explicit msig(AccountType&& a0, Accounts&&... aN)
         : msig{std::vector<Reg>{
               std::forward<AccountType>(a0),
               std::forward<Accounts>(aN)...}}

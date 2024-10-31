@@ -95,6 +95,12 @@ std::size_t constexpr maxDIDAttestationLength = 256;
 /** The maximum length of a domain */
 std::size_t constexpr maxDomainLength = 256;
 
+/** The maximum length of MPTokenMetadata */
+std::size_t constexpr maxMPTokenMetadataLength = 1024;
+
+/** The maximum amount of MPTokenIssuance */
+std::uint64_t constexpr maxMPTokenAmount = 0x7FFF'FFFF'FFFF'FFFFull;
+
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;
 

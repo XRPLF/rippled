@@ -447,8 +447,8 @@ GRPCServerImpl::handleRpcs()
 
         if (!ok)
         {
-            JLOG(journal_.debug()) << "Request listener cancelled. "
-                                   << "Destroying object";
+            JLOG(journal_.debug())
+                << "Request listener cancelled. " << "Destroying object";
             erase(ptr);
         }
         else

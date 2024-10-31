@@ -226,6 +226,8 @@ public:
 
     uint160
     getFieldH160(SField const& field) const;
+    uint192
+    getFieldH192(SField const& field) const;
     uint256
     getFieldH256(SField const& field) const;
     AccountID
@@ -498,6 +500,11 @@ protected:
     assign(U&& u);
 };
 
+// Constraint += and -= ValueProxy operators
+// to value types that support arithmetic operations
+template <typename U>
+concept IsArithmetic = std::is_arithmetic_v<U> || std::is_same_v<U, STAmount>;
+
 template <class T>
 class STObject::ValueProxy : private Proxy<T>
 {
@@ -512,6 +519,16 @@ public:
     template <class U>
     std::enable_if_t<std::is_assignable_v<T, U>, ValueProxy&>
     operator=(U&& u);
+
+    // Convenience operators for value types supporting
+    // arithmetic operations
+    template <IsArithmetic U>
+    ValueProxy&
+    operator+=(U const& u);
+
+    template <IsArithmetic U>
+    ValueProxy&
+    operator-=(U const& u);
 
     operator value_type() const;
 
@@ -539,7 +556,8 @@ public:
         Fields with soeDEFAULT and set to the
         default value will return `true`
     */
-    explicit operator bool() const noexcept;
+    explicit
+    operator bool() const noexcept;
 
     /** Return the contained value
 
@@ -727,6 +745,24 @@ std::enable_if_t<std::is_assignable_v<T, U>, STObject::ValueProxy<T>&>
 STObject::ValueProxy<T>::operator=(U&& u)
 {
     this->assign(std::forward<U>(u));
+    return *this;
+}
+
+template <typename T>
+template <IsArithmetic U>
+STObject::ValueProxy<T>&
+STObject::ValueProxy<T>::operator+=(U const& u)
+{
+    this->assign(this->value() + u);
+    return *this;
+}
+
+template <class T>
+template <IsArithmetic U>
+STObject::ValueProxy<T>&
+STObject::ValueProxy<T>::operator-=(U const& u)
+{
+    this->assign(this->value() - u);
     return *this;
 }
 

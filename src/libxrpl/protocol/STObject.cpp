@@ -604,6 +604,12 @@ STObject::getFieldH160(SField const& field) const
     return getFieldByValue<STUInt160>(field);
 }
 
+uint192
+STObject::getFieldH192(SField const& field) const
+{
+    return getFieldByValue<STUInt192>(field);
+}
+
 uint256
 STObject::getFieldH256(SField const& field) const
 {

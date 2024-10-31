@@ -888,9 +888,8 @@ protected:
     printPeers(const std::string& msg, std::uint16_t validator = 0)
     {
         auto peers = network_.overlay().getPeers(network_.validator(validator));
-        std::cout << msg << " "
-                  << "num peers " << (int)network_.overlay().getNumPeers()
-                  << std::endl;
+        std::cout << msg << " " << "num peers "
+                  << (int)network_.overlay().getNumPeers() << std::endl;
         for (auto& [k, v] : peers)
             std::cout << k << ":" << (int)std::get<reduce_relay::PeerState>(v)
                       << " ";

@@ -433,6 +433,31 @@ public:
 class ValidClawback
 {
     std::uint32_t trustlinesChanged = 0;
+    std::uint32_t mptokensChanged = 0;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
+class ValidMPTIssuance
+{
+    std::uint32_t mptIssuancesCreated_ = 0;
+    std::uint32_t mptIssuancesDeleted_ = 0;
+
+    std::uint32_t mptokensCreated_ = 0;
+    std::uint32_t mptokensDeleted_ = 0;
 
 public:
     void
@@ -465,7 +490,8 @@ using InvariantChecks = std::tuple<
     ValidNewAccountRoot,
     ValidNFTokenPage,
     NFTokenCountTracking,
-    ValidClawback>;
+    ValidClawback,
+    ValidMPTIssuance>;
 
 /**
  * @brief get a tuple of all invariant checks

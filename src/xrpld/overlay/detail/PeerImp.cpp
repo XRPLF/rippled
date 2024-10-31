@@ -591,7 +591,7 @@ PeerImp::fail(std::string const& reason)
         return post(
             strand_,
             std::bind(
-                (void (Peer::*)(std::string const&)) & PeerImp::fail,
+                (void(Peer::*)(std::string const&)) & PeerImp::fail,
                 shared_from_this(),
                 reason));
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())
@@ -1226,8 +1226,8 @@ PeerImp::handleTransaction(
     {
         // If we've never been in synch, there's nothing we can do
         // with a transaction
-        JLOG(p_journal_.debug()) << "Ignoring incoming transaction: "
-                                 << "Need network ledger";
+        JLOG(p_journal_.debug())
+            << "Ignoring incoming transaction: " << "Need network ledger";
         return;
     }
 

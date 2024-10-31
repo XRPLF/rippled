@@ -219,55 +219,56 @@ public:
                 tinyNeg == mulRatio(tinyNeg, maxUInt - 1, maxUInt, false));
         }
 
-        {// rounding
-         {IOUAmount one(1, 0);
-        auto const rup = mulRatio(one, maxUInt - 1, maxUInt, true);
-        auto const rdown = mulRatio(one, maxUInt - 1, maxUInt, false);
-        BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
-    }
+        {  // rounding
+            {
+                IOUAmount one(1, 0);
+                auto const rup = mulRatio(one, maxUInt - 1, maxUInt, true);
+                auto const rdown = mulRatio(one, maxUInt - 1, maxUInt, false);
+                BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
+            }
+            {
+                IOUAmount big(maxMantissa, maxExponent);
+                auto const rup = mulRatio(big, maxUInt - 1, maxUInt, true);
+                auto const rdown = mulRatio(big, maxUInt - 1, maxUInt, false);
+                BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
+            }
+
+            {
+                IOUAmount negOne(-1, 0);
+                auto const rup = mulRatio(negOne, maxUInt - 1, maxUInt, true);
+                auto const rdown =
+                    mulRatio(negOne, maxUInt - 1, maxUInt, false);
+                BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
+            }
+        }
+
+        {
+            // division by zero
+            IOUAmount one(1, 0);
+            except([&] { mulRatio(one, 1, 0, true); });
+        }
+
+        {
+            // overflow
+            IOUAmount big(maxMantissa, maxExponent);
+            except([&] { mulRatio(big, 2, 0, true); });
+        }
+    }  // namespace ripple
+
+    //--------------------------------------------------------------------------
+
+    void
+    run() override
     {
-        IOUAmount big(maxMantissa, maxExponent);
-        auto const rup = mulRatio(big, maxUInt - 1, maxUInt, true);
-        auto const rdown = mulRatio(big, maxUInt - 1, maxUInt, false);
-        BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
+        testZero();
+        testSigNum();
+        testBeastZero();
+        testComparisons();
+        testToString();
+        testMulRatio();
     }
-
-    {
-        IOUAmount negOne(-1, 0);
-        auto const rup = mulRatio(negOne, maxUInt - 1, maxUInt, true);
-        auto const rdown = mulRatio(negOne, maxUInt - 1, maxUInt, false);
-        BEAST_EXPECT(rup.mantissa() - rdown.mantissa() == 1);
-    }
-}
-
-{
-    // division by zero
-    IOUAmount one(1, 0);
-    except([&] { mulRatio(one, 1, 0, true); });
-}
-
-{
-    // overflow
-    IOUAmount big(maxMantissa, maxExponent);
-    except([&] { mulRatio(big, 2, 0, true); });
-}
-}  // namespace ripple
-
-//--------------------------------------------------------------------------
-
-void
-run() override
-{
-    testZero();
-    testSigNum();
-    testBeastZero();
-    testComparisons();
-    testToString();
-    testMulRatio();
-}
-}
-;
+};
 
 BEAST_DEFINE_TESTSUITE(IOUAmount, protocol, ripple);
 
-}  // ripple
+}  // namespace ripple

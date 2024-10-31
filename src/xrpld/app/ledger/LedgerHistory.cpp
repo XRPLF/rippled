@@ -204,30 +204,30 @@ log_metadata_difference(
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx
                                 << ": Different result and index!";
-                JLOG(j.debug()) << " Built:"
-                                << " Result: " << builtMetaData->getResult()
-                                << " Index: " << builtMetaData->getIndex();
-                JLOG(j.debug()) << " Valid:"
-                                << " Result: " << validMetaData->getResult()
-                                << " Index: " << validMetaData->getIndex();
+                JLOG(j.debug())
+                    << " Built:" << " Result: " << builtMetaData->getResult()
+                    << " Index: " << builtMetaData->getIndex();
+                JLOG(j.debug())
+                    << " Valid:" << " Result: " << validMetaData->getResult()
+                    << " Index: " << validMetaData->getIndex();
             }
             else if (result_diff)
             {
                 JLOG(j.debug())
                     << "MISMATCH on TX " << tx << ": Different result!";
-                JLOG(j.debug()) << " Built:"
-                                << " Result: " << builtMetaData->getResult();
-                JLOG(j.debug()) << " Valid:"
-                                << " Result: " << validMetaData->getResult();
+                JLOG(j.debug())
+                    << " Built:" << " Result: " << builtMetaData->getResult();
+                JLOG(j.debug())
+                    << " Valid:" << " Result: " << validMetaData->getResult();
             }
             else if (index_diff)
             {
                 JLOG(j.debug())
                     << "MISMATCH on TX " << tx << ": Different index!";
-                JLOG(j.debug()) << " Built:"
-                                << " Index: " << builtMetaData->getIndex();
-                JLOG(j.debug()) << " Valid:"
-                                << " Index: " << validMetaData->getIndex();
+                JLOG(j.debug())
+                    << " Built:" << " Index: " << builtMetaData->getIndex();
+                JLOG(j.debug())
+                    << " Valid:" << " Index: " << validMetaData->getIndex();
             }
         }
         else
@@ -246,12 +246,12 @@ log_metadata_difference(
                 JLOG(j.debug()) << "MISMATCH on TX " << tx
                                 << ": Different result and nodes!";
                 JLOG(j.debug())
-                    << " Built:"
-                    << " Result: " << builtMetaData->getResult() << " Nodes:\n"
+                    << " Built:" << " Result: " << builtMetaData->getResult()
+                    << " Nodes:\n"
                     << builtNodes.getJson(JsonOptions::none);
                 JLOG(j.debug())
-                    << " Valid:"
-                    << " Result: " << validMetaData->getResult() << " Nodes:\n"
+                    << " Valid:" << " Result: " << validMetaData->getResult()
+                    << " Nodes:\n"
                     << validNodes.getJson(JsonOptions::none);
             }
             else if (index_diff)
@@ -259,23 +259,21 @@ log_metadata_difference(
                 JLOG(j.debug()) << "MISMATCH on TX " << tx
                                 << ": Different index and nodes!";
                 JLOG(j.debug())
-                    << " Built:"
-                    << " Index: " << builtMetaData->getIndex() << " Nodes:\n"
+                    << " Built:" << " Index: " << builtMetaData->getIndex()
+                    << " Nodes:\n"
                     << builtNodes.getJson(JsonOptions::none);
                 JLOG(j.debug())
-                    << " Valid:"
-                    << " Index: " << validMetaData->getIndex() << " Nodes:\n"
+                    << " Valid:" << " Index: " << validMetaData->getIndex()
+                    << " Nodes:\n"
                     << validNodes.getJson(JsonOptions::none);
             }
             else  // nodes_diff
             {
                 JLOG(j.debug())
                     << "MISMATCH on TX " << tx << ": Different nodes!";
-                JLOG(j.debug()) << " Built:"
-                                << " Nodes:\n"
+                JLOG(j.debug()) << " Built:" << " Nodes:\n"
                                 << builtNodes.getJson(JsonOptions::none);
-                JLOG(j.debug()) << " Valid:"
-                                << " Nodes:\n"
+                JLOG(j.debug()) << " Valid:" << " Nodes:\n"
                                 << validNodes.getJson(JsonOptions::none);
             }
         }
@@ -330,10 +328,10 @@ LedgerHistory::handleMismatch(
 
     if (!builtLedger || !validLedger)
     {
-        JLOG(j_.error()) << "MISMATCH cannot be analyzed:"
-                         << " builtLedger: " << to_string(built) << " -> "
-                         << builtLedger << " validLedger: " << to_string(valid)
-                         << " -> " << validLedger;
+        JLOG(j_.error()) << "MISMATCH cannot be analyzed:" << " builtLedger: "
+                         << to_string(built) << " -> " << builtLedger
+                         << " validLedger: " << to_string(valid) << " -> "
+                         << validLedger;
         return;
     }
 

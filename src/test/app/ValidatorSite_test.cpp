@@ -78,20 +78,21 @@ private:
         BEAST_EXPECT(trustedSites->load(emptyCfgSites));
 
         // load should accept valid validator site uris
-        std::vector<std::string> cfgSites({
-            "http://ripple.com/", "http://ripple.com/validators",
-                "http://ripple.com:8080/validators",
-                "http://207.261.33.37/validators",
-                "http://207.261.33.37:8080/validators",
-                "https://ripple.com/validators",
-                "https://ripple.com:443/validators",
-                "file:///etc/opt/ripple/validators.txt",
-                "file:///C:/Lib/validators.txt"
+        std::vector<std::string> cfgSites(
+            {"http://ripple.com/",
+             "http://ripple.com/validators",
+             "http://ripple.com:8080/validators",
+             "http://207.261.33.37/validators",
+             "http://207.261.33.37:8080/validators",
+             "https://ripple.com/validators",
+             "https://ripple.com:443/validators",
+             "file:///etc/opt/ripple/validators.txt",
+             "file:///C:/Lib/validators.txt"
 #if !_MSC_VER
-                ,
-                "file:///"
+             ,
+             "file:///"
 #endif
-        });
+            });
         BEAST_EXPECT(trustedSites->load(cfgSites));
 
         // load should reject validator site uris with invalid schemes

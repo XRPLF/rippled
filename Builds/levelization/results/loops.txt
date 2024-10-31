@@ -5,7 +5,7 @@ Loop: test.jtx test.unit_test
   test.unit_test == test.jtx
 
 Loop: xrpl.basics xrpl.json
-  xrpl.json ~= xrpl.basics
+  xrpl.json == xrpl.basics
 
 Loop: xrpld.app xrpld.core
   xrpld.app > xrpld.core

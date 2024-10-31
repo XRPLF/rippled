@@ -323,7 +323,8 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
             // Otherwise either alice or minter can burn.
             AcctStat& burner = owner.acct == becky.acct
                 ? *(stats[acctDist(engine)])
-                : mintDist(engine) ? alice : minter;
+                : mintDist(engine) ? alice
+                                   : minter;
 
             if (owner.acct == burner.acct)
                 env(token::burn(burner, nft));

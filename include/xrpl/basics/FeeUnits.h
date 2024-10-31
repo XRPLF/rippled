@@ -84,13 +84,13 @@ private:
 protected:
     template <class Other>
     static constexpr bool is_compatible_v =
-        std::is_arithmetic_v<Other>&& std::is_arithmetic_v<value_type>&&
-            std::is_convertible_v<Other, value_type>;
+        std::is_arithmetic_v<Other> && std::is_arithmetic_v<value_type> &&
+        std::is_convertible_v<Other, value_type>;
 
     template <class OtherFee, class = enable_if_unit_t<OtherFee>>
     static constexpr bool is_compatiblefee_v =
-        is_compatible_v<typename OtherFee::value_type>&&
-            std::is_same_v<UnitTag, typename OtherFee::unit_type>;
+        is_compatible_v<typename OtherFee::value_type> &&
+        std::is_same_v<UnitTag, typename OtherFee::unit_type>;
 
     template <class Other>
     using enable_if_compatible_t =
@@ -110,7 +110,8 @@ public:
     {
     }
 
-    constexpr TaggedFee& operator=(beast::Zero)
+    constexpr TaggedFee&
+    operator=(beast::Zero)
     {
         fee_ = 0;
         return *this;
@@ -250,7 +251,8 @@ public:
     }
 
     /** Returns true if the amount is not zero */
-    explicit constexpr operator bool() const noexcept
+    explicit constexpr
+    operator bool() const noexcept
     {
         return fee_ != 0;
     }
@@ -344,8 +346,8 @@ constexpr bool can_muldiv_source_v =
 
 template <class Dest, class = enable_if_unit_t<Dest>>
 constexpr bool can_muldiv_dest_v =
-    can_muldiv_source_v<Dest>&&  // Dest is also a source
-        std::is_convertible_v<std::uint64_t, typename Dest::value_type> &&
+    can_muldiv_source_v<Dest> &&  // Dest is also a source
+    std::is_convertible_v<std::uint64_t, typename Dest::value_type> &&
     sizeof(typename Dest::value_type) >= sizeof(std::uint64_t);
 
 template <
@@ -354,8 +356,8 @@ template <
     class = enable_if_unit_t<Source1>,
     class = enable_if_unit_t<Source2>>
 constexpr bool can_muldiv_sources_v =
-    can_muldiv_source_v<Source1>&& can_muldiv_source_v<Source2>&& std::
-        is_same_v<typename Source1::unit_type, typename Source2::unit_type>;
+    can_muldiv_source_v<Source1> && can_muldiv_source_v<Source2> &&
+    std::is_same_v<typename Source1::unit_type, typename Source2::unit_type>;
 
 template <
     class Source1,
@@ -365,7 +367,7 @@ template <
     class = enable_if_unit_t<Source2>,
     class = enable_if_unit_t<Dest>>
 constexpr bool can_muldiv_v =
-    can_muldiv_sources_v<Source1, Source2>&& can_muldiv_dest_v<Dest>;
+    can_muldiv_sources_v<Source1, Source2> && can_muldiv_dest_v<Dest>;
 // Source and Dest can be the same by default
 
 template <

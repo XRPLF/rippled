@@ -176,9 +176,10 @@ Pathfinder::Pathfinder(
     , mSrcCurrency(uSrcCurrency)
     , mSrcIssuer(uSrcIssuer)
     , mSrcAmount(srcAmount.value_or(STAmount(
-          {uSrcCurrency,
-           uSrcIssuer.value_or(
-               isXRP(uSrcCurrency) ? xrpAccount() : uSrcAccount)},
+          Issue{
+              uSrcCurrency,
+              uSrcIssuer.value_or(
+                  isXRP(uSrcCurrency) ? xrpAccount() : uSrcAccount)},
           1u,
           0,
           true)))
@@ -233,8 +234,7 @@ Pathfinder::findPaths(
     mSource = STPathElement(account, mSrcCurrency, issuer);
     auto issuerString =
         mSrcIssuer ? to_string(*mSrcIssuer) : std::string("none");
-    JLOG(j_.trace()) << "findPaths>"
-                     << " mSrcAccount=" << mSrcAccount
+    JLOG(j_.trace()) << "findPaths>" << " mSrcAccount=" << mSrcAccount
                      << " mDstAccount=" << mDstAccount
                      << " mDstAmount=" << mDstAmount.getFullText()
                      << " mSrcCurrency=" << mSrcCurrency

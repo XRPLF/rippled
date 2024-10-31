@@ -39,11 +39,11 @@ namespace jtx {
 // when we have moved to better compilers.
 template <typename Input>
 auto
-make_vector(Input const& input) requires requires(Input& v)
-{
-    std::begin(v);
-    std::end(v);
-}
+make_vector(Input const& input)
+    requires requires(Input& v) {
+        std::begin(v);
+        std::end(v);
+    }
 {
     return std::vector(std::begin(input), std::end(input));
 }

@@ -59,6 +59,8 @@ public:
         beast::Journal j);
 };
 
+using OracleDelete = DeleteOracle;
+
 }  // namespace ripple
 
 #endif  // RIPPLE_TX_DELETEORACLE_H_INCLUDED

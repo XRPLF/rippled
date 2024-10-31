@@ -373,6 +373,12 @@ public:
         return getBitString<160>();
     }
 
+    uint192
+    get192()
+    {
+        return getBitString<192>();
+    }
+
     uint256
     get256()
     {

@@ -43,6 +43,8 @@ public:
     doApply() override;
 };
 
+using CheckCash = CashCheck;
+
 }  // namespace ripple
 
 #endif

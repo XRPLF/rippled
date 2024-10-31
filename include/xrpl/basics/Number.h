@@ -20,6 +20,7 @@
 #ifndef RIPPLE_BASICS_NUMBER_H_INCLUDED
 #define RIPPLE_BASICS_NUMBER_H_INCLUDED
 
+#include <xrpl/basics/MPTAmount.h>
 #include <xrpl/basics/XRPAmount.h>
 #include <cstdint>
 #include <limits>
@@ -52,6 +53,7 @@ public:
     explicit constexpr Number(rep mantissa, int exponent, unchecked) noexcept;
 
     Number(XRPAmount const& x);
+    Number(MPTAmount const& x);
 
     constexpr rep
     mantissa() const noexcept;
@@ -88,8 +90,17 @@ public:
     static constexpr Number
     lowest() noexcept;
 
-    explicit operator XRPAmount() const;  // round to nearest, even on tie
-    explicit operator rep() const;        // round to nearest, even on tie
+    /** Conversions to Number are implicit and conversions away from Number
+     *  are explicit. This design encourages and facilitates the use of Number
+     *  as the preferred type for floating point arithmetic as it makes
+     *  "mixed mode" more convenient, e.g. MPTAmount + Number.
+     */
+    explicit
+    operator XRPAmount() const;  // round to nearest, even on tie
+    explicit
+    operator MPTAmount() const;  // round to nearest, even on tie
+    explicit
+    operator rep() const;  // round to nearest, even on tie
 
     friend constexpr bool
     operator==(Number const& x, Number const& y) noexcept
@@ -207,6 +218,10 @@ inline Number::Number(rep mantissa) : Number{mantissa, 0}
 }
 
 inline Number::Number(XRPAmount const& x) : Number{x.drops()}
+{
+}
+
+inline Number::Number(MPTAmount const& x) : Number{x.value()}
 {
 }
 

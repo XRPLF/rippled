@@ -29,7 +29,7 @@ public:
     // Create a raw, non-integral amount from mantissa and exponent
     STAmount static raw(std::uint64_t mantissa, int exponent)
     {
-        return STAmount({Currency(3), AccountID(3)}, mantissa, exponent);
+        return STAmount(Issue{Currency(3), AccountID(3)}, mantissa, exponent);
     }
 
     template <class Integer>

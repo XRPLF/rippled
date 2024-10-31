@@ -4,9 +4,9 @@ on: [push, pull_request]
 
 jobs:
   check:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     env:
-      CLANG_VERSION: 10
+      CLANG_VERSION: 18
     steps:
     - uses: actions/checkout@v4
     - name: Install clang-format
@@ -19,8 +19,8 @@ jobs:
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add
         sudo apt-get update
         sudo apt-get install clang-format-${CLANG_VERSION}
-    - name: Format sources
-      run: find include src -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.ipp' \) -exec clang-format-${CLANG_VERSION} -i {} +
+    - name: Format first-party sources
+      run: find include src -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.ipp' \) -exec clang-format-${CLANG_VERSION} -i {} +
     - name: Check for differences
       id: assert
       run: |
@@ -50,7 +50,7 @@ jobs:
           To fix it, you can do one of two things:
           1. Download and apply the patch generated as an artifact of this
              job to your repo, commit, and push.
-          2. Run 'git-clang-format --extensions c,cpp,h,cxx,ipp develop'
+          2. Run 'git-clang-format --extensions cpp,h,hpp,ipp develop'
              in your repo, commit, and push.
       run: |
         echo "${PREAMBLE}"

@@ -2361,6 +2361,79 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testLedgerEntryMPT()
+    {
+        testcase("ledger_entry Request MPT");
+        using namespace test::jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this};
+        Account const alice{"alice"};
+        Account const bob("bob");
+
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+        mptAlice.create(
+            {.transferFee = 10,
+             .metadata = "123",
+             .ownerCount = 1,
+             .flags = tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow |
+                 tfMPTCanTrade | tfMPTCanTransfer | tfMPTCanClawback});
+        mptAlice.authorize({.account = bob, .holderCount = 1});
+
+        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+
+        std::string const badMptID =
+            "00000193B9DDCAF401B5B3B26875986043F82CD0D13B4315";
+        {
+            // Request the MPTIssuance using its MPTIssuanceID.
+            Json::Value jvParams;
+            jvParams[jss::mpt_issuance] = strHex(mptAlice.issuanceID());
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfMPTokenMetadata.jsonName] ==
+                strHex(std::string{"123"}));
+            BEAST_EXPECT(
+                jrr[jss::node][jss::mpt_issuance_id] ==
+                strHex(mptAlice.issuanceID()));
+        }
+        {
+            // Request an index that is not a MPTIssuance.
+            Json::Value jvParams;
+            jvParams[jss::mpt_issuance] = badMptID;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "");
+        }
+        {
+            // Request the MPToken using its owner + mptIssuanceID.
+            Json::Value jvParams;
+            jvParams[jss::mptoken] = Json::objectValue;
+            jvParams[jss::mptoken][jss::account] = bob.human();
+            jvParams[jss::mptoken][jss::mpt_issuance_id] =
+                strHex(mptAlice.issuanceID());
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfMPTokenIssuanceID.jsonName] ==
+                strHex(mptAlice.issuanceID()));
+        }
+        {
+            // Request the MPToken using a bad mptIssuanceID.
+            Json::Value jvParams;
+            jvParams[jss::mptoken] = Json::objectValue;
+            jvParams[jss::mptoken][jss::account] = bob.human();
+            jvParams[jss::mptoken][jss::mpt_issuance_id] = badMptID;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "");
+        }
+    }
+
 public:
     void
     run() override
@@ -2388,6 +2461,7 @@ public:
         testLedgerEntryDID();
         testInvalidOracleLedgerEntry();
         testOracleLedgerEntry();
+        testLedgerEntryMPT();
 
         forAllApiVersions(std::bind_front(
             &LedgerRPC_test::testLedgerEntryInvalidParams, this));

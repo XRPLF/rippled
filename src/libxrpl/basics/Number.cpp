@@ -504,6 +504,11 @@ Number::operator XRPAmount() const
     return XRPAmount{static_cast<rep>(*this)};
 }
 
+Number::operator MPTAmount() const
+{
+    return MPTAmount{static_cast<rep>(*this)};
+}
+
 std::string
 to_string(Number const& amount)
 {
