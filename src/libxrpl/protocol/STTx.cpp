@@ -200,7 +200,7 @@ STTx::getSeqProxy() const
         {
             std::uint32_t const ticketSeq{
                 batchTxn.getFieldU32(sfTicketSequence)};
-            return SeqProxy{SeqProxy::ticket, ticketSeq + batchIndex};
+            return SeqProxy{SeqProxy::ticket, ticketSeq};
         }
         std::uint32_t const startSequence{batchTxn.getFieldU32(sfSequence)};
         return SeqProxy::sequence(startSequence + batchIndex);

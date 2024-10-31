@@ -1602,7 +1602,8 @@ class Batch_test : public beast::unit_test::suite
         auto const batchFee = feeDrops * 2;
         env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
             batch::add(pay(alice, bob, XRP(1)), alice, 0, 0, aliceTicketSeq),
-            batch::add(pay(alice, bob, XRP(1)), alice, 1, 0, aliceTicketSeq));
+            batch::add(
+                pay(alice, bob, XRP(1)), alice, 1, 0, aliceTicketSeq + 1));
         env.close();
 
         std::vector<TestBatchData> testCases = {{
@@ -1612,8 +1613,8 @@ class Batch_test : public beast::unit_test::suite
              "2"},
             {"tesSUCCESS",
              "Payment",
-             "CBF12A852B0418FAF406C480BE991CE1EA2D0F16323412BFFA9F89CA7449B21"
-             "E"},
+             "AF3029D2951DEFB2A6A644A15DB3689FFA5FEA31C6923067DC43E9C31DFA915"
+             "B"},
         }};
 
         Json::Value params;
@@ -1662,7 +1663,8 @@ class Batch_test : public beast::unit_test::suite
         auto const seq = env.seq(alice);
         auto const batchFee = feeDrops * 2;
         env(batch::batch(alice, 0, batchFee, tfAllOrNothing),
-            batch::add(pay(alice, bob, XRP(1)), alice, 1, 0, aliceTicketSeq),
+            batch::add(
+                pay(alice, bob, XRP(1)), alice, 1, 0, aliceTicketSeq + 1),
             batch::add(pay(alice, bob, XRP(1)), alice, 0, seq),
             ticket::use(aliceTicketSeq));
         env.close();
@@ -1670,8 +1672,8 @@ class Batch_test : public beast::unit_test::suite
         std::vector<TestBatchData> testCases = {{
             {"tesSUCCESS",
              "Payment",
-             "CBF12A852B0418FAF406C480BE991CE1EA2D0F16323412BFFA9F89CA7449B21"
-             "E"},
+             "AF3029D2951DEFB2A6A644A15DB3689FFA5FEA31C6923067DC43E9C31DFA915"
+             "B"},
             {"tesSUCCESS",
              "Payment",
              "18629D496965A11CAB4454B86DB794BA07DABA3EE154DEFE9259977221E937E"
