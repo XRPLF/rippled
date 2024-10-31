@@ -679,7 +679,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env.close();
 
                 auto jv = credentials::ledgerEntry(env, gw, carol, credType);
-                std::string const credIdx = supportsPreauth
+                std::string const credIdx = features[featureCredentials]
                     ? jv[jss::result][jss::index].asString()
                     : "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6"
                       "EA288BE4";
@@ -936,9 +936,13 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     ter(tecNO_PERMISSION));
             }
 
-            // Bob setup DepositPreauth object, duplicates will be eliminated
+            // Bob setup DepositPreauth object, duplicates is not allowed
             env(deposit::authCredentials(
-                bob, {{issuer, credType}, {issuer, credType}}));
+                    bob, {{issuer, credType}, {issuer, credType}}),
+                ter(temMALFORMED));
+
+            // Bob setup DepositPreauth object
+            env(deposit::authCredentials(bob, {{issuer, credType}}));
             env.close();
 
             {
@@ -976,10 +980,12 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     ter(tecNO_PERMISSION));
             }
 
-            // Alice can pay, duplicate credentials will be eliminated
+            // Error, duplicate credentials
             env(pay(alice, bob, XRP(100)),
-                credentials::ids({credIdx, credIdx}));
-            env.close();
+                credentials::ids({credIdx, credIdx}),
+                ter(temMALFORMED));
+
+            // Alice can pay
             env(pay(alice, bob, XRP(100)), credentials::ids({credIdx}));
             env.close();
         }
@@ -1107,6 +1113,21 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     jDP[jss::result][jss::node].isMember("LedgerEntryType") &&
                     jDP[jss::result][jss::node]["LedgerEntryType"] ==
                         jss::DepositPreauth);
+
+                // CHeck object fields
+                BEAST_EXPECT(
+                    jDP[jss::result][jss::node][jss::Account] == bob.human());
+                auto const& credentials(
+                    jDP[jss::result][jss::node]["AuthorizeCredentials"]);
+                BEAST_EXPECT(credentials.isArray() && credentials.size() == 1);
+                for (auto const& o : credentials)
+                {
+                    auto const& c(o[jss::Credential]);
+                    BEAST_EXPECT(c[jss::Issuer].asString() == issuer.human());
+                    BEAST_EXPECT(
+                        c["CredentialType"].asString() ==
+                        strHex(std::string_view(credType)));
+                }
 
                 // can't create duplicate
                 env(deposit::authCredentials(bob, {{issuer, credType}}),

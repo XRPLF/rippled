@@ -20,7 +20,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/digest.h>
@@ -317,19 +316,14 @@ depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept
 }
 
 Keylet
-depositPreauth(AccountID const& owner, STArray const& authCreds) noexcept
+depositPreauth(
+    AccountID const& owner,
+    std::set<std::pair<AccountID, Slice>> const& authCreds) noexcept
 {
     std::vector<uint256> hashes;
     hashes.reserve(authCreds.size());
     for (auto const& o : authCreds)
-    {
-        hashes.push_back(sha512Half(
-            o.getAccountID(sfIssuer), o.getFieldVL(sfCredentialType)));
-    }
-
-    // eleminate duplicates
-    std::sort(hashes.begin(), hashes.end());
-    hashes.erase(std::unique(hashes.begin(), hashes.end()), hashes.end());
+        hashes.emplace_back(sha512Half(o.first, o.second));
 
     return {
         ltDEPOSIT_PREAUTH,

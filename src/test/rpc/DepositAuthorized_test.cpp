@@ -398,6 +398,51 @@ public:
         env.close();
 
         {
+            testcase("deposit_authorized with duplicates in credentials");
+            auto const jv = env.rpc(
+                "json",
+                "deposit_authorized",
+                depositAuthArgs(alice, becky, "validated", {credIdx, credIdx})
+                    .toStyledString());
+            auto const& result{jv[jss::result]};
+            BEAST_EXPECT(result[jss::status] == jss::error);
+            BEAST_EXPECT(result[jss::error_code] == rpcBAD_CREDENTIALS);
+        }
+
+        {
+            static const std::vector<std::string> credIds = {
+                "18004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
+                "E4",
+                "28004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
+                "E4",
+                "38004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
+                "E4",
+                "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
+                "E4",
+                "58004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
+                "E4",
+                "68004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
+                "E4",
+                "78004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
+                "E4",
+                "88004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
+                "E4",
+                "98004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
+                "E4"};
+            assert(credIds.size() > maxCredentialsArraySize);
+
+            testcase("deposit_authorized too long credentials");
+            auto const jv = env.rpc(
+                "json",
+                "deposit_authorized",
+                depositAuthArgs(alice, becky, "validated", credIds)
+                    .toStyledString());
+            auto const& result{jv[jss::result]};
+            BEAST_EXPECT(result[jss::status] == jss::error);
+            BEAST_EXPECT(result[jss::error_code] == rpcINVALID_PARAMS);
+        }
+
+        {
             testcase("deposit_authorized with credentials");
             auto const jv = env.rpc(
                 "json",

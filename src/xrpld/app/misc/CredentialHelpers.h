@@ -58,5 +58,9 @@ valid(
     std::optional<std::reference_wrapper<std::shared_ptr<SLE const> const>>
         sleDstOpt = {});
 
+// return empty set if there are duplicates
+std::set<std::pair<AccountID, Slice>>
+makeSorted(STArray const& in);
+
 }  // namespace credentials
 }  // namespace ripple

@@ -20,6 +20,8 @@
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/View.h>
 
+#include <unordered_set>
+
 namespace ripple {
 namespace credentials {
 
@@ -122,12 +124,24 @@ checkFields(PreflightContext const& ctx)
         return tesSUCCESS;
 
     auto const& credentials = ctx.tx.getFieldV256(sfCredentialIDs);
-    if (credentials.empty() || (credentials.size() > credentialsArrayMaxSize))
+    if (credentials.empty() || (credentials.size() > maxCredentialsArraySize))
     {
         JLOG(ctx.j.trace())
             << "Malformed transaction: Credentials array size is invalid: "
             << credentials.size();
         return temMALFORMED;
+    }
+
+    std::unordered_set<uint256> duplicates;
+    for (auto const& cred : credentials)
+    {
+        auto [it, ins] = duplicates.insert(cred);
+        if (!ins)
+        {
+            JLOG(ctx.j.trace())
+                << "Malformed transaction: duplicates in credentials.";
+            return temMALFORMED;
+        }
     }
 
     return tesSUCCESS;
@@ -151,8 +165,9 @@ valid(
         sleDst && (sleDst->getFlags() & lsfDepositAuth) && (src != dst);
 
     // credentials must be checked even if reqAuth is false
-    STArray authCreds;
-    for (auto const& h : ctx.tx.getFieldV256(sfCredentialIDs))
+    auto const& credIDs(ctx.tx.getFieldV256(sfCredentialIDs));
+    STArray authCreds(sfAuthorizeCredentials, credIDs.size());
+    for (auto const& h : credIDs)
     {
         auto const sleCred = ctx.view.read(keylet::credential(h));
         if (!sleCred)
@@ -185,13 +200,27 @@ valid(
         }
     }
 
-    if (reqAuth && !ctx.view.exists(keylet::depositPreauth(dst, authCreds)))
+    if (reqAuth &&
+        !ctx.view.exists(keylet::depositPreauth(dst, makeSorted(authCreds))))
     {
         JLOG(ctx.j.trace()) << "DepositPreauth doesn't exist";
         return tecNO_PERMISSION;
     }
 
     return tesSUCCESS;
+}
+
+std::set<std::pair<AccountID, Slice>>
+makeSorted(STArray const& in)
+{
+    std::set<std::pair<AccountID, Slice>> out;
+    for (auto const& cred : in)
+    {
+        auto [it, ins] = out.insert({cred[sfIssuer], cred[sfCredentialType]});
+        if (!ins)
+            return {};
+    }
+    return out;
 }
 
 }  // namespace credentials

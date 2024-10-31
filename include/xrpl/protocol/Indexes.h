@@ -191,7 +191,9 @@ Keylet
 depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept;
 
 Keylet
-depositPreauth(AccountID const& owner, STArray const& authCreds) noexcept;
+depositPreauth(
+    AccountID const& owner,
+    std::set<std::pair<AccountID, Slice>> const& authCreds) noexcept;
 
 inline Keylet
 depositPreauth(uint256 const& key) noexcept

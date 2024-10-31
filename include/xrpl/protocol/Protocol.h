@@ -48,9 +48,6 @@ std::size_t constexpr unfundedOfferRemoveLimit = 1000;
 /** The maximum number of expired offers to delete at once */
 std::size_t constexpr expiredOfferRemoveLimit = 256;
 
-/** The maximum number of credentials can be passed in array */
-std::size_t constexpr credentialsArrayMaxSize = 8;
-
 /** The maximum number of metadata entries allowed in one transaction */
 std::size_t constexpr oversizeMetaDataCap = 5200;
 
@@ -103,6 +100,9 @@ std::size_t constexpr maxCredentialURILength = 256;
 
 /** The maximum length of a CredentialType inside a Credential */
 std::size_t constexpr maxCredentialTypeLength = 64;
+
+/** The maximum number of credentials can be passed in array */
+std::size_t constexpr maxCredentialsArraySize = 8;
 
 /** The maximum length of MPTokenMetadata */
 std::size_t constexpr maxMPTokenMetadataLength = 1024;

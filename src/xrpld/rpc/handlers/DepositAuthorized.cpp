@@ -94,11 +94,12 @@ doDepositAuthorized(RPC::JsonContext& context)
         (sleDest->getFlags() & lsfDepositAuth) && (srcAcct != dstAcct);
     bool const credentialsPresent = params.isMember(jss::credentials);
 
-    STArray authCreds;
+    STArray authCreds(sfAuthorizeCredentials);
     if (credentialsPresent)
     {
         auto const& creds(params[jss::credentials]);
-        if (!creds.isArray() || !creds)
+        if (!creds.isArray() || !creds ||
+            (creds.size() > maxCredentialsArraySize))
         {
             return RPC::make_error(
                 rpcINVALID_PARAMS,
@@ -158,9 +159,23 @@ doDepositAuthorized(RPC::JsonContext& context)
     bool depositAuthorized = true;
 
     if (reqAuth)
-        depositAuthorized = credentialsPresent
-            ? ledger->exists(keylet::depositPreauth(dstAcct, authCreds))
-            : ledger->exists(keylet::depositPreauth(dstAcct, srcAcct));
+    {
+        if (credentialsPresent)
+        {
+            auto const sorted = credentials::makeSorted(authCreds);
+            if (sorted.empty())
+            {
+                RPC::inject_error(rpcBAD_CREDENTIALS, result);
+                return result;
+            }
+
+            depositAuthorized =
+                ledger->exists(keylet::depositPreauth(dstAcct, sorted));
+        }
+        else
+            depositAuthorized =
+                ledger->exists(keylet::depositPreauth(dstAcct, srcAcct));
+    }
 
     result[jss::source_account] = params[jss::source_account].asString();
     result[jss::destination_account] =

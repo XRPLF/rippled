@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
@@ -37,7 +38,7 @@ namespace ripple {
 static STArray
 parseAuthorizeCredentials(Json::Value const& jv)
 {
-    STArray arr;
+    STArray arr(sfAuthorizeCredentials, jv.size());
     for (auto const& jo : jv)
     {
         auto const issuer = parseBase58<AccountID>(jo[jss::issuer].asString());
@@ -46,7 +47,8 @@ parseAuthorizeCredentials(Json::Value const& jv)
 
         auto const credentialType =
             strUnHex(jo[jss::credential_type].asString());
-        if (!credentialType || credentialType->empty())
+        if (!credentialType || credentialType->empty() ||
+            credentialType->size() > maxCredentialTypeLength)
             return {};
 
         auto credential = STObject::makeInnerObject(sfCredential);
@@ -152,10 +154,18 @@ doLedgerEntry(RPC::JsonContext& context)
                     auto const& ac(dp[jss::authorize_credentials]);
                     STArray const arr = parseAuthorizeCredentials(ac);
 
-                    if (arr.empty() || (arr.size() > credentialsArrayMaxSize))
+                    if (arr.empty() || (arr.size() > maxCredentialsArraySize))
                         jvResult[jss::error] = "malformedAuthorizeCredentials";
                     else
-                        uNodeIndex = keylet::depositPreauth(*owner, arr).key;
+                    {
+                        auto sorted = credentials::makeSorted(arr);
+                        if (sorted.empty())
+                            jvResult[jss::error] =
+                                "malformedAuthorizeCredentials";
+                        else
+                            uNodeIndex =
+                                keylet::depositPreauth(*owner, sorted).key;
+                    }
                 }
             }
         }

@@ -837,6 +837,98 @@ struct Credentials_test : public beast::unit_test::suite
     }
 
     void
+    testRPC()
+    {
+        using namespace test::jtx;
+
+        const char credType[] = "abcde";
+        Account const issuer{"issuer"};
+        Account const subject{"subject"};
+
+        {
+            using namespace jtx;
+            Env env{*this};
+
+            env.fund(XRP(5000), subject, issuer);
+            env.close();
+
+            env(credentials::create(subject, issuer, credType));
+            env.close();
+
+            env(credentials::accept(subject, issuer, credType));
+            env.close();
+
+            testcase("account_tx");
+
+            std::string txHash0, txHash1;
+            {
+                Json::Value params;
+                params[jss::account] = subject.human();
+                auto const jv = env.rpc(
+                    "json", "account_tx", to_string(params))[jss::result];
+
+                BEAST_EXPECT(jv[jss::transactions].size() == 4);
+                auto const& tx0(jv[jss::transactions][0u][jss::tx]);
+                BEAST_EXPECT(
+                    tx0[jss::TransactionType] == jss::CredentialAccept);
+                auto const& tx1(jv[jss::transactions][1u][jss::tx]);
+                BEAST_EXPECT(
+                    tx1[jss::TransactionType] == jss::CredentialCreate);
+                txHash0 = tx0[jss::hash].asString();
+                txHash1 = tx1[jss::hash].asString();
+            }
+
+            {
+                Json::Value params;
+                params[jss::account] = issuer.human();
+                auto const jv = env.rpc(
+                    "json", "account_tx", to_string(params))[jss::result];
+
+                BEAST_EXPECT(jv[jss::transactions].size() == 4);
+                auto const& tx0(jv[jss::transactions][0u][jss::tx]);
+                BEAST_EXPECT(
+                    tx0[jss::TransactionType] == jss::CredentialAccept);
+                auto const& tx1(jv[jss::transactions][1u][jss::tx]);
+                BEAST_EXPECT(
+                    tx1[jss::TransactionType] == jss::CredentialCreate);
+
+                BEAST_EXPECT(txHash0 == tx0[jss::hash].asString());
+                BEAST_EXPECT(txHash1 == tx1[jss::hash].asString());
+            }
+
+            testcase("account_objects");
+            std::string objectIdx;
+            {
+                Json::Value params;
+                params[jss::account] = subject.human();
+                auto jv = env.rpc(
+                    "json", "account_objects", to_string(params))[jss::result];
+
+                BEAST_EXPECT(jv[jss::account_objects].size() == 1);
+                auto const& object(jv[jss::account_objects][0u]);
+
+                BEAST_EXPECT(
+                    object["LedgerEntryType"].asString() == jss::Credential);
+                objectIdx = object[jss::index].asString();
+            }
+
+            {
+                Json::Value params;
+                params[jss::account] = issuer.human();
+                auto jv = env.rpc(
+                    "json", "account_objects", to_string(params))[jss::result];
+
+                BEAST_EXPECT(jv[jss::account_objects].size() == 1);
+                auto const& object(jv[jss::account_objects][0u]);
+
+                BEAST_EXPECT(
+                    object["LedgerEntryType"].asString() == jss::Credential);
+                BEAST_EXPECT(objectIdx == object[jss::index].asString());
+            }
+        }
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -847,6 +939,7 @@ struct Credentials_test : public beast::unit_test::suite
         testAcceptFailed(all);
         testDeleteFailed(all);
         testFeatureFailed(all - featureCredentials);
+        testRPC();
     }
 };
 

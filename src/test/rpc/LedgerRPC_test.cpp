@@ -1053,6 +1053,28 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
 
         {
+            // Failed, duplicates in credentials
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::deposit_preauth][jss::owner] = bob.human();
+
+            jvParams[jss::deposit_preauth][jss::authorize_credentials] =
+                Json::arrayValue;
+            auto& arr(
+                jvParams[jss::deposit_preauth][jss::authorize_credentials]);
+
+            Json::Value jo;
+            jo[jss::issuer] = issuer.human();
+            jo[jss::credential_type] = strHex(std::string_view(credType));
+            arr.append(jo);
+            arr.append(std::move(jo));
+            auto const jrr =
+                env.rpc("json", "ledger_entry", to_string(jvParams));
+            checkErrorValue(
+                jrr[jss::result], "malformedAuthorizeCredentials", "");
+        }
+
+        {
             // Failed, invalid credential_type
             Json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
@@ -1124,6 +1146,21 @@ class LedgerRPC_test : public beast::unit_test::suite
 
         {
             // Failed, authorize_credentials is too long
+
+            static const std::string_view credTypes[] = {
+                "cred1",
+                "cred2",
+                "cred3",
+                "cred4",
+                "cred5",
+                "cred6",
+                "cred7",
+                "cred8",
+                "cred9"};
+            static_assert(
+                sizeof(credTypes) / sizeof(credTypes[0]) >
+                maxCredentialsArraySize);
+
             Json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::deposit_preauth][jss::owner] = bob.human();
@@ -1133,12 +1170,15 @@ class LedgerRPC_test : public beast::unit_test::suite
             auto& arr(
                 jvParams[jss::deposit_preauth][jss::authorize_credentials]);
 
-            Json::Value jo;
-            jo[jss::issuer] = issuer.human();
-            jo[jss::credential_type] = strHex(std::string_view(credType));
-
-            for (unsigned i = 0; i < credentialsArrayMaxSize + 1; ++i)
-                arr.append(jo);
+            for (unsigned i = 0; i < sizeof(credTypes) / sizeof(credTypes[0]);
+                 ++i)
+            {
+                Json::Value jo;
+                jo[jss::issuer] = issuer.human();
+                jo[jss::credential_type] =
+                    strHex(std::string_view(credTypes[i]));
+                arr.append(std::move(jo));
+            }
 
             auto const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams));

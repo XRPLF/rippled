@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/Credentials.h>
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
@@ -99,7 +99,7 @@ DepositPreauth::preflight(PreflightContext const& ctx)
         STArray const& arr(ctx.tx.getFieldArray(
             authArrPresent ? sfAuthorizeCredentials
                            : sfUnauthorizeCredentials));
-        if (arr.empty() || (arr.size() > credentialsArrayMaxSize))
+        if (arr.empty() || (arr.size() > maxCredentialsArraySize))
         {
             JLOG(ctx.j.trace()) << "Malformed transaction: "
                                    "Invalid AuthorizeCredentials size: "
@@ -107,9 +107,11 @@ DepositPreauth::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         }
 
+        std::unordered_set<uint256> duplicates;
         for (auto const& o : arr)
         {
-            if (!o[sfIssuer])
+            auto const& issuer(o[sfIssuer]);
+            if (!issuer)
             {
                 JLOG(ctx.j.trace())
                     << "Malformed transaction: "
@@ -122,6 +124,14 @@ DepositPreauth::preflight(PreflightContext const& ctx)
             {
                 JLOG(ctx.j.trace())
                     << "Malformed transaction: invalid size of CredentialType.";
+                return temMALFORMED;
+            }
+
+            auto [it, ins] = duplicates.insert(sha512Half(issuer, ct));
+            if (!ins)
+            {
+                JLOG(ctx.j.trace())
+                    << "Malformed transaction: duplicates in credentials.";
                 return temMALFORMED;
             }
         }
@@ -166,14 +176,17 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
 
         // Verify that the Preauth entry they asked to add is not already
         // in the ledger.
-        if (ctx.view.exists(keylet::depositPreauth(account, authCred)))
+        if (ctx.view.exists(keylet::depositPreauth(
+                account, credentials::makeSorted(authCred))))
             return tecDUPLICATE;
     }
     else if (ctx.tx.isFieldPresent(sfUnauthorizeCredentials))
     {
         // Verify that the Preauth entry is in the ledger.
         if (!ctx.view.exists(keylet::depositPreauth(
-                account, ctx.tx.getFieldArray(sfUnauthorizeCredentials))))
+                account,
+                credentials::makeSorted(
+                    ctx.tx.getFieldArray(sfUnauthorizeCredentials)))))
             return tecNO_ENTRY;
     }
     return tesSUCCESS;
@@ -253,33 +266,25 @@ DepositPreauth::doApply()
         // Preclaim already verified that the Preauth entry does not yet exist.
         // Create and populate the Preauth entry.
 
-        STArray const& authCred(ctx_.tx.getFieldArray(sfAuthorizeCredentials));
-        Keylet const preauthKey = keylet::depositPreauth(account_, authCred);
+        auto const sortedTX = credentials::makeSorted(
+            ctx_.tx.getFieldArray(sfAuthorizeCredentials));
+        STArray sortedLE(sfAuthorizeCredentials, sortedTX.size());
+        for (auto const& p : sortedTX)
+        {
+            auto cred = STObject::makeInnerObject(sfCredential);
+            cred.setAccountID(sfIssuer, p.first);
+            cred.setFieldVL(sfCredentialType, p.second);
+            sortedLE.push_back(std::move(cred));
+        }
+
+        Keylet const preauthKey = keylet::depositPreauth(account_, sortedTX);
         auto slePreauth = std::make_shared<SLE>(preauthKey);
         if (!slePreauth)
             return tefINTERNAL;
 
         slePreauth->setAccountID(sfAccount, account_);
-        STArray& credentialsArray =
-            slePreauth->peekFieldArray(sfAuthorizeCredentials);
-        credentialsArray.reserve(authCred.size());
-
-        // eliminate duplicates
-        std::unordered_set<uint256> hashes;
-        for (auto const& o : authCred)
-        {
-            auto [it, ins] = hashes.insert(sha512Half(
-                o.getAccountID(sfIssuer), o.getFieldVL(sfCredentialType)));
-            if (ins)
-            {
-                credentialsArray.push_back(o);
-            }
-            else
-            {
-                JLOG(j_.trace())
-                    << "DepositPreauth duplicate removed: " << o.getText();
-            }
-        }
+        slePreauth->peekFieldArray(sfAuthorizeCredentials) =
+            std::move(sortedLE);
 
         view().insert(slePreauth);
 
@@ -301,7 +306,9 @@ DepositPreauth::doApply()
     else if (ctx_.tx.isFieldPresent(sfUnauthorizeCredentials))
     {
         auto const preauthKey = keylet::depositPreauth(
-            account_, ctx_.tx.getFieldArray(sfUnauthorizeCredentials));
+            account_,
+            credentials::makeSorted(
+                ctx_.tx.getFieldArray(sfUnauthorizeCredentials)));
         return DepositPreauth::removeFromLedger(view(), preauthKey.key, j_);
     }
 
@@ -316,6 +323,11 @@ DepositPreauth::removeFromLedger(
 {
     // Existence already checked in preclaim and DeleteAccount
     auto const slePreauth{view.peek(keylet::depositPreauth(preauthIndex))};
+    if (!slePreauth)
+    {
+        JLOG(j.warn()) << "Selected DepositPreauth does not exist.";
+        return tecNO_ENTRY;
+    }
 
     AccountID const account{(*slePreauth)[sfAccount]};
     std::uint64_t const page{(*slePreauth)[sfOwnerNode]};
