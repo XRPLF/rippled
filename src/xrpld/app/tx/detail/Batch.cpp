@@ -33,7 +33,7 @@ XRPAmount
 Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // Calculate the Inner Txn Fees
-    XRPAmount extraFee{0};
+    XRPAmount txnFees{0};
     if (tx.isFieldPresent(sfRawTransactions))
     {
         XRPAmount txFees{0};
@@ -43,17 +43,15 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
             STTx const stx = STTx{std::move(txn)};
             txFees += Transactor::calculateBaseFee(view, tx);
         }
-        extraFee += txFees;
+        txnFees += txFees;
     }
 
     // Calculate the BatchSigners Fees
-    if (tx.isFieldPresent(sfBatchSigners))
-    {
-        auto const signers = tx.getFieldArray(sfBatchSigners);
-        extraFee += (signers.size() + 2) * view.fees().base;
-    }
+    std::int32_t signerCount = tx.isFieldPresent(sfBatchSigners)
+        ? tx.getFieldArray(sfBatchSigners).size()
+        : 0;
 
-    return extraFee;
+    return ((signerCount + 2) * view.fees().base) + txnFees;
 }
 
 NotTEC

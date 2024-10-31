@@ -193,7 +193,7 @@ class Batch_test : public beast::unit_test::suite
             auto const preBob = env.balance(bob);
 
             auto const seq = env.seq(alice);
-            auto const batchFee = feeDrops * 2;
+            auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 1;
 
             auto const txResult =
                 withBatch ? ter(tesSUCCESS) : ter(temDISABLED);
@@ -534,9 +534,9 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
-    testBadFee(FeatureBitset features)
+    testBadFeeNoSigner(FeatureBitset features)
     {
-        testcase("bad fee");
+        testcase("bad fee no signer");
 
         using namespace test::jtx;
         using namespace std::literals;
@@ -584,6 +584,56 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
+    testBadFeeSigner(FeatureBitset features)
+    {
+        testcase("bad fee signer");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        test::jtx::Env env{*this, envconfig()};
+
+        auto const feeDrops = env.current()->fees().base;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const USD = gw["USD"];
+
+        env.fund(XRP(1000), alice, bob, gw);
+        env.close();
+        env.trust(USD(1000), alice, bob);
+        env(pay(gw, alice, USD(100)));
+        env(pay(gw, bob, USD(100)));
+        env.close();
+
+        env(noop(bob), ter(tesSUCCESS));
+        env.close();
+
+        auto const preAliceSeq = env.seq(alice);
+        auto const preAlice = env.balance(alice);
+        auto const preAliceUSD = env.balance(alice, USD.issue());
+        auto const preBobSeq = env.seq(bob);
+        auto const preBob = env.balance(bob);
+        auto const preBobUSD = env.balance(bob, USD.issue());
+
+        auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 2;
+        env(batch::batch(alice, preAliceSeq, batchFee, tfAllOrNothing),
+            batch::add(pay(alice, bob, XRP(10)), alice, 1, preAliceSeq),
+            batch::add(pay(bob, alice, XRP(5)), alice, 0, preBobSeq),
+            batch::sig(bob),
+            ter(telINSUF_FEE_P));
+        env.close();
+
+        // Alice & Bob should not be affected.
+        BEAST_EXPECT(env.seq(alice) == preAliceSeq);
+        BEAST_EXPECT(env.balance(alice) == preAlice);
+        BEAST_EXPECT(env.balance(alice, USD.issue()) == preAliceUSD);
+        BEAST_EXPECT(env.seq(bob) == preBobSeq);
+        BEAST_EXPECT(env.balance(bob) == preBob);
+        BEAST_EXPECT(env.balance(bob, USD.issue()) == preBobUSD);
+    }
+
+    void
     testOutOfSequence(FeatureBitset features)
     {
         testcase("out of sequence");
@@ -602,7 +652,7 @@ class Batch_test : public beast::unit_test::suite
 
         // tfAllOrNothing
         {
-            auto const batchFee = feeDrops * 3;
+            auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 3;
             auto const seq = env.seq(alice);
             env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
                 batch::add(pay(alice, bob, XRP(1)), alice, 1, seq),
@@ -618,7 +668,7 @@ class Batch_test : public beast::unit_test::suite
 
         // tfUntilFailure
         {
-            auto const batchFee = feeDrops * 3;
+            auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 3;
             auto const seq = env.seq(alice);
             env(batch::batch(alice, seq, batchFee, tfUntilFailure),
                 batch::add(pay(alice, bob, XRP(1)), alice, 1, seq),
@@ -634,7 +684,7 @@ class Batch_test : public beast::unit_test::suite
 
         // tfOnlyOne
         {
-            auto const batchFee = feeDrops * 2;
+            auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 3;
             auto const seq = env.seq(alice);
             env(batch::batch(alice, seq, batchFee, tfOnlyOne),
                 batch::add(
@@ -649,7 +699,7 @@ class Batch_test : public beast::unit_test::suite
 
         // tfIndependent
         {
-            auto const batchFee = feeDrops * 2;
+            auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 3;
             auto const seq = env.seq(alice);
             env(batch::batch(alice, seq, batchFee, tfIndependent),
                 batch::add(
@@ -685,7 +735,7 @@ class Batch_test : public beast::unit_test::suite
             auto const preAlice = env.balance(alice);
             auto const preBob = env.balance(bob);
 
-            auto const batchFee = feeDrops * 2;
+            auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 2;
             auto const seq = env.seq(alice);
             env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
                 batch::add(pay(alice, bob, XRP(1)), alice, 1, seq),
@@ -714,8 +764,7 @@ class Batch_test : public beast::unit_test::suite
             validateBatchMeta(txn[jss::metaData], preAlice, seq);
 
             BEAST_EXPECT(env.seq(alice) == 7);
-            BEAST_EXPECT(
-                env.balance(alice) == preAlice - XRP(2) - (feeDrops * 2));
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(2) - batchFee);
             BEAST_EXPECT(env.balance(bob) == preBob + XRP(2));
         }
 
@@ -733,7 +782,7 @@ class Batch_test : public beast::unit_test::suite
             auto const preAlice = env.balance(alice);
             auto const preBob = env.balance(bob);
 
-            auto const batchFee = feeDrops * 2;
+            auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 2;
             auto const seq = env.seq(alice);
             env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
                 batch::add(pay(alice, bob, XRP(1)), alice, 1, seq),
@@ -762,7 +811,7 @@ class Batch_test : public beast::unit_test::suite
             validateBatchMeta(txn[jss::metaData], preAlice, seq);
 
             BEAST_EXPECT(env.seq(alice) == 5);
-            BEAST_EXPECT(env.balance(alice) == preAlice - (feeDrops * 2));
+            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
             BEAST_EXPECT(env.balance(bob) == preBob);
         }
     }
@@ -787,7 +836,7 @@ class Batch_test : public beast::unit_test::suite
         auto const preAlice = env.balance(alice);
         auto const preBob = env.balance(bob);
 
-        auto const batchFee = feeDrops * 3;
+        auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 3;
         auto const seq = env.seq(alice);
         env(batch::batch(alice, seq, batchFee, tfOnlyOne),
             batch::add(pay(alice, bob, XRP(999)), alice, 1, seq),
@@ -817,7 +866,7 @@ class Batch_test : public beast::unit_test::suite
         validateBatchMeta(txn[jss::metaData], preAlice, seq);
 
         BEAST_EXPECT(env.seq(alice) == 7);
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1) - (feeDrops * 3));
+        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1) - batchFee);
         BEAST_EXPECT(env.balance(bob) == preBob + XRP(1));
     }
 
@@ -841,7 +890,7 @@ class Batch_test : public beast::unit_test::suite
         auto const preAlice = env.balance(alice);
         auto const preBob = env.balance(bob);
 
-        auto const batchFee = feeDrops * 4;
+        auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 4;
         auto const seq = env.seq(alice);
         env(batch::batch(alice, seq, batchFee, tfUntilFailure),
             batch::add(pay(alice, bob, XRP(1)), alice, 1, seq),
@@ -876,7 +925,7 @@ class Batch_test : public beast::unit_test::suite
         validateBatchMeta(txn[jss::metaData], preAlice, seq);
 
         BEAST_EXPECT(env.seq(alice) == 8);
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(2) - (feeDrops * 4));
+        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(2) - batchFee);
         BEAST_EXPECT(env.balance(bob) == preBob + XRP(2));
     }
 
@@ -900,7 +949,7 @@ class Batch_test : public beast::unit_test::suite
         auto const preAlice = env.balance(alice);
         auto const preBob = env.balance(bob);
 
-        auto const batchFee = feeDrops * 4;
+        auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 4;
         auto const seq = env.seq(alice);
         env(batch::batch(alice, seq, batchFee, tfIndependent),
             batch::add(pay(alice, bob, XRP(1)), alice, 1, seq),
@@ -939,7 +988,7 @@ class Batch_test : public beast::unit_test::suite
         validateBatchMeta(txn[jss::metaData], preAlice, seq);
 
         BEAST_EXPECT(env.seq(alice) == 9);
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - (feeDrops * 4));
+        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
         BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
     }
 
@@ -996,7 +1045,7 @@ class Batch_test : public beast::unit_test::suite
 
         BEAST_EXPECT(env.seq(alice) == 6);
         BEAST_EXPECT(env.seq(bob) == 6);
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(5) - (batchFee));
+        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(5) - batchFee);
         BEAST_EXPECT(env.balance(bob) == preBob + XRP(5));
     }
 
@@ -1024,7 +1073,7 @@ class Batch_test : public beast::unit_test::suite
         auto const preBob = env.balance(bob);
 
         auto const seq = env.seq(alice);
-        auto const batchFee = feeDrops * 2 + (feeDrops * 4);
+        auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 6;
         env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
             batch::add(pay(alice, bob, XRP(1)), alice, 1, seq),
             batch::add(pay(alice, bob, XRP(1)), alice, 2, seq),
@@ -1052,9 +1101,7 @@ class Batch_test : public beast::unit_test::suite
         validateBatchMeta(txn[jss::metaData], preAlice, seq);
 
         BEAST_EXPECT(env.seq(alice) == 8);
-        BEAST_EXPECT(
-            env.balance(alice) ==
-            preAlice - XRP(2) - (feeDrops * 2 + (feeDrops * 4)));
+        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(2) - batchFee);
         BEAST_EXPECT(env.balance(bob) == preBob + XRP(2));
     }
 
@@ -1113,7 +1160,7 @@ class Batch_test : public beast::unit_test::suite
 
         BEAST_EXPECT(env.seq(alice) == 6);
         BEAST_EXPECT(env.seq(bob) == 6);
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(5) - (batchFee));
+        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(5) - batchFee);
         BEAST_EXPECT(env.balance(bob) == preBob + XRP(5));
     }
 
@@ -1260,7 +1307,7 @@ class Batch_test : public beast::unit_test::suite
         tx1[sfDomain.fieldName] = strHex(domain);
 
         auto const seq = env.seq(alice);
-        auto const batchFee = feeDrops * 2;
+        auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 2;
         env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
             batch::add(tx1, alice, 1, seq),
             batch::add(pay(alice, bob, XRP(1)), alice, 2, seq));
@@ -1292,7 +1339,7 @@ class Batch_test : public beast::unit_test::suite
             sle->getFieldVL(sfDomain) == Blob(domain.begin(), domain.end()));
 
         BEAST_EXPECT(env.seq(alice) == 7);
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1) - (feeDrops * 2));
+        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1) - batchFee);
         BEAST_EXPECT(env.balance(bob) == preBob + XRP(1));
     }
 
@@ -1363,7 +1410,7 @@ class Batch_test : public beast::unit_test::suite
 
         BEAST_EXPECT(env.seq(alice) == 7);
         BEAST_EXPECT(env.seq(bob) == 6);
-        BEAST_EXPECT(env.balance(alice) == preAlice - (batchFee));
+        BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
         BEAST_EXPECT(env.balance(bob) == preBob);
         BEAST_EXPECT(env.balance(alice, USD.issue()) == preAliceUSD + USD(10));
         BEAST_EXPECT(env.balance(bob, USD.issue()) == preBobUSD - USD(10));
@@ -1434,7 +1481,7 @@ class Batch_test : public beast::unit_test::suite
 
         BEAST_EXPECT(env.seq(alice) == 7);
         BEAST_EXPECT(env.seq(bob) == 16);
-        BEAST_EXPECT(env.balance(alice) == preAlice - (batchFee));
+        BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
         BEAST_EXPECT(env.balance(bob) == preBob);
         BEAST_EXPECT(env.balance(alice, USD.issue()) == preAliceUSD + USD(10));
         BEAST_EXPECT(env.balance(bob, USD.issue()) == preBobUSD - USD(10));
@@ -1507,7 +1554,7 @@ class Batch_test : public beast::unit_test::suite
         BEAST_EXPECT(env.seq(carol) == 5);
         BEAST_EXPECT(env.balance(alice) == preAlice);
         BEAST_EXPECT(env.balance(bob) == preBob);
-        BEAST_EXPECT(env.balance(carol) == preCarol - (batchFee));
+        BEAST_EXPECT(env.balance(carol) == preCarol - batchFee);
         BEAST_EXPECT(env.balance(alice, USD.issue()) == preAliceUSD + USD(10));
         BEAST_EXPECT(env.balance(bob, USD.issue()) == preBobUSD - USD(10));
     }
@@ -1537,7 +1584,7 @@ class Batch_test : public beast::unit_test::suite
         auto const preBob = env.balance(bob);
 
         auto const seq = env.seq(alice);
-        auto const batchFee = feeDrops * 2;
+        auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 2;
         env(batch::batch(alice, 0, batchFee, tfAllOrNothing),
             batch::add(pay(alice, bob, XRP(1)), alice, 0, seq),
             batch::add(pay(alice, bob, XRP(1)), alice, 1, seq),
@@ -1570,7 +1617,7 @@ class Batch_test : public beast::unit_test::suite
         BEAST_EXPECT(sle->getFieldU32(sfTicketCount) == 9);
 
         BEAST_EXPECT(env.seq(alice) == 17);
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(2) - (feeDrops * 2));
+        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(2) - batchFee);
         BEAST_EXPECT(env.balance(bob) == preBob + XRP(2));
     }
 
@@ -1599,7 +1646,7 @@ class Batch_test : public beast::unit_test::suite
         auto const preBob = env.balance(bob);
 
         auto const seq = env.seq(alice);
-        auto const batchFee = feeDrops * 2;
+        auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 2;
         env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
             batch::add(pay(alice, bob, XRP(1)), alice, 0, 0, aliceTicketSeq),
             batch::add(
@@ -1632,7 +1679,7 @@ class Batch_test : public beast::unit_test::suite
         BEAST_EXPECT(sle->getFieldU32(sfTicketCount) == 8);
 
         BEAST_EXPECT(env.seq(alice) == 16);
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(2) - (feeDrops * 2));
+        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(2) - batchFee);
         BEAST_EXPECT(env.balance(bob) == preBob + XRP(2));
     }
 
@@ -1661,7 +1708,7 @@ class Batch_test : public beast::unit_test::suite
         auto const preBob = env.balance(bob);
 
         auto const seq = env.seq(alice);
-        auto const batchFee = feeDrops * 2;
+        auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 2;
         env(batch::batch(alice, 0, batchFee, tfAllOrNothing),
             batch::add(
                 pay(alice, bob, XRP(1)), alice, 1, 0, aliceTicketSeq + 1),
@@ -1695,7 +1742,7 @@ class Batch_test : public beast::unit_test::suite
         BEAST_EXPECT(sle->getFieldU32(sfTicketCount) == 8);
 
         BEAST_EXPECT(env.seq(alice) == 16);
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(2) - (feeDrops * 2));
+        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(2) - batchFee);
         BEAST_EXPECT(env.balance(bob) == preBob + XRP(2));
     }
 
@@ -1705,7 +1752,8 @@ class Batch_test : public beast::unit_test::suite
         testEnable(features);
         testPreflight(features);
         testBadSequence(features);
-        testBadFee(features);
+        testBadFeeNoSigner(features);
+        testBadFeeSigner(features);
         testOutOfSequence(features);
         testAllOrNothing(features);
         testOnlyOne(features);
