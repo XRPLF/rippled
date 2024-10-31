@@ -97,6 +97,13 @@ public:
 
     friend constexpr bool
     operator==(Currency const& lhs, Asset const& rhs);
+
+    /** Return true if both asset's issue (Issue or MPTIssue)
+     * are the same and hold the same token (currency or MPTID).
+     * Otherwise return false.
+     */
+    friend constexpr bool
+    equalTokens(Asset const& lhs, Asset const& rhs);
 };
 
 template <ValidIssueType TIss>
@@ -155,6 +162,26 @@ constexpr bool
 operator==(Currency const& lhs, Asset const& rhs)
 {
     return rhs.holds<Issue>() && rhs.get<Issue>().currency == lhs;
+}
+
+constexpr bool
+equalTokens(Asset const& lhs, Asset const& rhs)
+{
+    return std::visit(
+        [&]<typename TLhs, typename TRhs>(
+            TLhs const& issLhs, TRhs const& issRhs) {
+            if constexpr (
+                std::is_same_v<TLhs, Issue> && std::is_same_v<TRhs, Issue>)
+                return issLhs.currency == issRhs.currency;
+            else if constexpr (
+                std::is_same_v<TLhs, MPTIssue> &&
+                std::is_same_v<TRhs, MPTIssue>)
+                return issLhs.getMptID() == issRhs.getMptID();
+            else
+                return false;
+        },
+        lhs.issue_,
+        rhs.issue_);
 }
 
 inline bool
