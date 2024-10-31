@@ -192,8 +192,8 @@ STTx::getSeqProxy() const
     if (isFieldPresent(sfBatchTxn))
     {
         STObject const& batchTxn = const_cast<ripple::STTx&>(*this)
-                                      .getField(sfBatchTxn)
-                                      .downcast<STObject>();
+                                       .getField(sfBatchTxn)
+                                       .downcast<STObject>();
 
         std::uint32_t const batchIndex{batchTxn.getFieldU8(sfBatchIndex)};
         if (batchTxn.isFieldPresent(sfTicketSequence))
@@ -385,7 +385,7 @@ singleSignHelper(
 
     if (!validSig)
         return Unexpected("Invalid signature.");
-    
+
     return {};
 }
 
@@ -393,7 +393,8 @@ Expected<void, std::string>
 STTx::checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const
 {
     auto const data = getSigningData(*this);
-    return singleSignHelper(*this, makeSlice(data), requireCanonicalSig, getFlags());
+    return singleSignHelper(
+        *this, makeSlice(data), requireCanonicalSig, getFlags());
 }
 
 Expected<void, std::string>
@@ -403,7 +404,8 @@ STTx::checkBatchSingleSign(
 {
     Serializer msg;
     serializeBatch(msg, getFlags(), getFieldV256(sfTxIDs));
-    return singleSignHelper(batchSigner, msg.slice(), requireCanonicalSig, getFlags());
+    return singleSignHelper(
+        batchSigner, msg.slice(), requireCanonicalSig, getFlags());
 }
 
 Expected<void, std::string>
@@ -467,7 +469,6 @@ multiSignHelper(
     return {};
 }
 
-
 Expected<void, std::string>
 STTx::checkBatchMultiSign(
     STObject const& batchSigner,
@@ -505,7 +506,9 @@ STTx::checkBatchMultiSign(
         signers,
         txnAccountID,
         fullyCanonical,
-        [&msg](AccountID const&) -> std::vector<uint8_t> { return msg.getData(); });
+        [&msg](AccountID const&) -> std::vector<uint8_t> {
+            return msg.getData();
+        });
 }
 
 Expected<void, std::string>
@@ -547,7 +550,6 @@ STTx::checkMultiSign(
             return dataStart.getData();
         });
 }
-
 
 //------------------------------------------------------------------------------
 
