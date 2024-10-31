@@ -1938,6 +1938,49 @@ class MPToken_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testTokensEquality()
+    {
+        using namespace test::jtx;
+        testcase("Tokens Equality");
+        Currency const cur1{to_currency("CU1")};
+        Currency const cur2{to_currency("CU2")};
+        Account const gw1{"gw1"};
+        Account const gw2{"gw2"};
+        MPTID const mpt1 = makeMptID(1, gw1);
+        MPTID const mpt1a = makeMptID(1, gw1);
+        MPTID const mpt2 = makeMptID(1, gw2);
+        MPTID const mpt3 = makeMptID(2, gw2);
+        Asset const assetCur1Gw1{Issue{cur1, gw1}};
+        Asset const assetCur1Gw1a{Issue{cur1, gw1}};
+        Asset const assetCur2Gw1{Issue{cur2, gw1}};
+        Asset const assetCur2Gw2{Issue{cur2, gw2}};
+        Asset const assetMpt1Gw1{mpt1};
+        Asset const assetMpt1Gw1a{mpt1a};
+        Asset const assetMpt1Gw2{mpt2};
+        Asset const assetMpt2Gw2{mpt3};
+
+        // Assets holding Issue
+        // Currencies are equal regardless of the issuer
+        BEAST_EXPECT(equalTokens(assetCur1Gw1, assetCur1Gw1a));
+        BEAST_EXPECT(equalTokens(assetCur2Gw1, assetCur2Gw2));
+        // Currencies are different regardless of whether the issuers
+        // are the same or not
+        BEAST_EXPECT(!equalTokens(assetCur1Gw1, assetCur2Gw1));
+        BEAST_EXPECT(!equalTokens(assetCur1Gw1, assetCur2Gw2));
+
+        // Assets holding MPTIssue
+        // MPTIDs are the same if the sequence and the issuer are the same
+        BEAST_EXPECT(equalTokens(assetMpt1Gw1, assetMpt1Gw1a));
+        // MPTIDs are different if sequence and the issuer don't match
+        BEAST_EXPECT(!equalTokens(assetMpt1Gw1, assetMpt1Gw2));
+        BEAST_EXPECT(!equalTokens(assetMpt1Gw2, assetMpt2Gw2));
+
+        // Assets holding Issue and MPTIssue
+        BEAST_EXPECT(!equalTokens(assetCur1Gw1, assetMpt1Gw1));
+        BEAST_EXPECT(!equalTokens(assetMpt2Gw2, assetCur2Gw2));
+    }
+
 public:
     void
     run() override
@@ -1973,6 +2016,9 @@ public:
 
         // Test parsed MPTokenIssuanceID in API response metadata
         testTxJsonMetaFields(all);
+
+        // Test tokens equality
+        testTokensEquality();
     }
 };
 
