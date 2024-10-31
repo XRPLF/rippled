@@ -486,13 +486,7 @@ struct Credentials_test : public beast::unit_test::suite
                     "maxCredentialTypeLength.");
                 constexpr std::string_view longCredType =
                     "abcdefghijklmnopqrstuvwxyz01234567890qwertyuiop[]"
-                    "asdfghjkl;'zxcvbnm8237tr28weufwldebvfv8734t07p   "
-                    "9hfup;wDJFBVSD8f72  "
-                    "pfhiusdovnbs;"
-                    "djvbldafghwpEFHdjfaidfgio84763tfysgdvhjasbd "
-                    "vujhgWQIE7F6WEUYFGWUKEYFVQW87FGWOEFWEFUYWVEF8723GFWEFB"
-                    "WULE"
-                    "fv28o37gfwEFB3872TFO8GSDSDVD";
+                    "asdfghjkl;'zxcvbnm8237tr28weufwldebvfv8734t07p";
                 static_assert(longCredType.size() > maxCredentialTypeLength);
                 auto jv = credentials::create(subject, issuer, longCredType);
                 env(jv, ter(temMALFORMED));

@@ -1016,31 +1016,42 @@ public:
                 fee(acctDelFee));
             env.close();
 
-            // carol issue credentials for daria
-            env(credentials::create(daria, carol, credType));
-            env.close();
-            env(credentials::accept(daria, carol, credType));
-            env.close();
-            std::string const credDaria =
-                credentials::ledgerEntry(
-                    env, daria, carol, credType)[jss::result][jss::index]
-                    .asString();
+            {
+                // check that credential object deleted too
+                auto const jNoCred =
+                    credentials::ledgerEntry(env, becky, carol, credType);
+                BEAST_EXPECT(
+                    jNoCred.isObject() && jNoCred.isMember(jss::result) &&
+                    jNoCred[jss::result].isMember(jss::error) &&
+                    jNoCred[jss::result][jss::error] == "entryNotFound");
+            }
 
-            // daria use valide credentials, which aren't required and can
-            // delete account
-            env(acctdelete(daria, carol),
-                credentials::ids({credDaria}),
-                fee(acctDelFee));
-            env.close();
+            {  // carol issue credentials for daria
+                env(credentials::create(daria, carol, credType));
+                env.close();
+                env(credentials::accept(daria, carol, credType));
+                env.close();
+                std::string const credDaria =
+                    credentials::ledgerEntry(
+                        env, daria, carol, credType)[jss::result][jss::index]
+                        .asString();
 
-            // check that credential object deleted too
-            auto const jNoCred =
-                credentials::ledgerEntry(env, becky, carol, credType);
+                // daria use valid credentials, which aren't required and can
+                // delete her account
+                env(acctdelete(daria, carol),
+                    credentials::ids({credDaria}),
+                    fee(acctDelFee));
+                env.close();
 
-            BEAST_EXPECT(
-                jNoCred.isObject() && jNoCred.isMember(jss::result) &&
-                jNoCred[jss::result].isMember(jss::error) &&
-                jNoCred[jss::result][jss::error] == "entryNotFound");
+                // check that credential object deleted too
+                auto const jNoCred =
+                    credentials::ledgerEntry(env, daria, carol, credType);
+
+                BEAST_EXPECT(
+                    jNoCred.isObject() && jNoCred.isMember(jss::result) &&
+                    jNoCred[jss::result].isMember(jss::error) &&
+                    jNoCred[jss::result][jss::error] == "entryNotFound");
+            }
 
             {
                 Account const john{"john"};
@@ -1070,7 +1081,7 @@ public:
                 env.close();
 
                 {
-                    // check that credential object deleted
+                    // check that expired credential object deleted
                     auto jv =
                         credentials::ledgerEntry(env, john, carol, credType);
                     BEAST_EXPECT(
