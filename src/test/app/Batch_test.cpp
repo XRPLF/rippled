@@ -230,8 +230,47 @@ class Batch_test : public beast::unit_test::suite
             auto const seq = env.seq(alice);
             auto const batchFee = feeDrops * 2;
             env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
-                txflags(tfRequireAuth),
+                txflags(tfDisallowXRP),
                 ter(temINVALID_FLAG));
+            env.close();
+        }
+
+        // temMALFORMED: Batch: too many flags.
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = feeDrops * 2;
+            env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+                txflags(tfAllOrNothing | tfOnlyOne),
+                ter(temMALFORMED));
+            env.close();
+        }
+
+        // temMALFORMED: Batch: hashes array size does not match txns.
+        {
+            auto const batchFee = ((1 + 2) * feeDrops) + feeDrops * 2;
+            Json::Value jv =
+                batch::batch(alice, env.seq(alice), batchFee, tfAllOrNothing);
+
+            // Tx 1
+            Json::Value tx1 = pay(alice, bob, XRP(10));
+            jv = addBatchTx(jv, tx1, alice, 1, env.seq(alice));
+            auto txn1 = jv[jss::RawTransactions][0u][jss::RawTransaction];
+            STParsedJSONObject parsed1(std::string(jss::tx_json), txn1);
+            STTx const stx1 = STTx{std::move(parsed1.object.value())};
+            jv[sfTxIDs.jsonName].append(to_string(stx1.getTransactionID()));
+
+            // Tx 2
+            Json::Value const tx2 = pay(bob, alice, XRP(5));
+            jv = addBatchTx(jv, tx2, alice, 0, env.seq(bob));
+            auto txn2 = jv[jss::RawTransactions][1u][jss::RawTransaction];
+            STParsedJSONObject parsed2(std::string(jss::tx_json), txn2);
+            STTx const stx2 = STTx{std::move(parsed2.object.value())};
+            jv[sfTxIDs.jsonName].append(to_string(stx2.getTransactionID()));
+
+            // Add another txn hash to the TxIDs array
+            jv[sfTxIDs.jsonName].append(to_string(stx2.getTransactionID()));
+
+            env(jv, batch::sig(bob), ter(temMALFORMED));
             env.close();
         }
 
@@ -244,7 +283,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temARRAY_TOO_LARGE: Batch: txns array exceeds 12 entries.
+        // temARRAY_TOO_LARGE: Batch: txns array exceeds 8 entries.
         {
             auto const seq = env.seq(alice);
             auto const batchFee = feeDrops * 2;
@@ -258,10 +297,28 @@ class Batch_test : public beast::unit_test::suite
                 batch::add(pay(alice, bob, XRP(1)), alice, 7, seq),
                 batch::add(pay(alice, bob, XRP(1)), alice, 8, seq),
                 batch::add(pay(alice, bob, XRP(1)), alice, 9, seq),
-                batch::add(pay(alice, bob, XRP(1)), alice, 10, seq),
-                batch::add(pay(alice, bob, XRP(1)), alice, 11, seq),
-                batch::add(pay(alice, bob, XRP(1)), alice, 12, seq),
-                batch::add(pay(alice, bob, XRP(1)), alice, 13, seq),
+                ter(temARRAY_TOO_LARGE));
+            env.close();
+        }
+
+        // temARRAY_TOO_LARGE: Batch: signers array exceeds 8 entries.
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = ((9 + 2) * feeDrops) + feeDrops * 2;
+            env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+                batch::add(pay(alice, bob, XRP(1)), alice, 1, seq),
+                batch::add(pay(alice, bob, XRP(1)), alice, 2, seq),
+                batch::sig(
+                    bob,
+                    carol,
+                    alice,
+                    bob,
+                    carol,
+                    alice,
+                    bob,
+                    carol,
+                    alice,
+                    alice),
                 ter(temARRAY_TOO_LARGE));
             env.close();
         }
@@ -272,19 +329,10 @@ class Batch_test : public beast::unit_test::suite
                 {0, bob},
             }};
 
-            Json::Value jv;
-            jv[jss::TransactionType] = jss::Batch;
-            jv[jss::Account] = alice.human();
-            jv[jss::Sequence] = env.seq(alice);
             auto const batchFee =
                 ((signers.size() + 2) * feeDrops) + feeDrops * 2;
-            jv[jss::Fee] = to_string(batchFee);
-            jv[jss::Flags] = tfAllOrNothing;
-            jv[jss::SigningPubKey] = strHex(alice.pk());
-
-            // Batch Transactions
-            jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
-            jv[sfTxIDs.jsonName] = Json::Value{Json::arrayValue};
+            Json::Value jv =
+                batch::batch(alice, env.seq(alice), batchFee, tfAllOrNothing);
 
             // Tx 1
             Json::Value tx1 = pay(alice, bob, XRP(10));
@@ -329,37 +377,61 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // TODO: #40 failed: unhandled exception: Field not found:
-        // TransactionType
-        // // temINVALID_BATCH: Batch: TransactionType missing in array entry.
-        // {
-        //     auto const seq = env.seq(alice);
-        //     auto const batchFee = feeDrops * 2;
-        //     Json::Value jv;
-        //     jv[jss::TransactionType] = jss::Batch;
-        //     jv[jss::Account] = alice.human();
-        //     jv[jss::Sequence] = seq;
+        // temMALFORMED: Batch: duplicate TxID found.
+        {
+            auto const batchFee = ((1 + 2) * feeDrops) + feeDrops * 2;
+            Json::Value jv =
+                batch::batch(alice, env.seq(alice), batchFee, tfAllOrNothing);
 
-        //     jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
-        //     jv[sfTxIDs.jsonName] = Json::Value{Json::arrayValue};
+            // Tx 1
+            Json::Value tx1 = pay(alice, bob, XRP(10));
+            jv = addBatchTx(jv, tx1, alice, 1, env.seq(alice));
+            auto txn1 = jv[jss::RawTransactions][0u][jss::RawTransaction];
+            STParsedJSONObject parsed1(std::string(jss::tx_json), txn1);
+            STTx const stx1 = STTx{std::move(parsed1.object.value())};
 
-        //     // Tx 1
-        //     Json::Value tx;
-        //     tx[jss::Account] = alice.human();
-        //     tx[jss::Destination] = bob.human();
-        //     tx[jss::Amount] = "10000000";
-        //     jv = addBatchTx(jv, tx, alice, 1, seq);
+            // Tx 2
+            Json::Value const tx2 = pay(bob, alice, XRP(5));
+            jv = addBatchTx(jv, tx2, alice, 0, env.seq(bob));
 
-        //     STParsedJSONObject parsed(std::string(jss::tx_json), tx);
-        //     STTx const stx = STTx{std::move(parsed.object.value())};
-        //     jv[sfTxIDs.jsonName].append(to_string(stx.getTransactionID()));
+            // Add a duplicate hash
+            jv[sfTxIDs.jsonName].append(to_string(stx1.getTransactionID()));
+            jv[sfTxIDs.jsonName].append(to_string(stx1.getTransactionID()));
 
-        //     env(jv,
-        //         fee(batchFee),
-        //         txflags(tfAllOrNothing),
-        //         ter(temINVALID_BATCH));
-        //     env.close();
-        // }
+            env(jv, batch::sig(bob), ter(temMALFORMED));
+            env.close();
+        }
+
+        // temMALFORMED: Batch: txn hash does not match TxIDs hash.
+        {
+            auto const batchFee = ((1 + 2) * feeDrops) + feeDrops * 2;
+            Json::Value jv =
+                batch::batch(alice, env.seq(alice), batchFee, tfAllOrNothing);
+
+            // Tx 1
+            Json::Value tx1 = pay(alice, bob, XRP(10));
+            jv = addBatchTx(jv, tx1, alice, 1, env.seq(alice));
+            auto txn1 = jv[jss::RawTransactions][0u][jss::RawTransaction];
+            STParsedJSONObject parsed1(std::string(jss::tx_json), txn1);
+            STTx const stx1 = STTx{std::move(parsed1.object.value())};
+
+            // Tx 2
+            Json::Value const tx2 = pay(bob, alice, XRP(5));
+            jv = addBatchTx(jv, tx2, alice, 0, env.seq(bob));
+            auto txn2 = jv[jss::RawTransactions][1u][jss::RawTransaction];
+            STParsedJSONObject parsed2(std::string(jss::tx_json), txn2);
+            STTx const stx2 = STTx{std::move(parsed2.object.value())};
+
+            // Add the hashes out of order
+            jv[sfTxIDs.jsonName].append(to_string(stx2.getTransactionID()));
+            jv[sfTxIDs.jsonName].append(to_string(stx1.getTransactionID()));
+
+            env(jv, batch::sig(bob), ter(temMALFORMED));
+            env.close();
+        }
+
+        // temINVALID_BATCH: Batch: TransactionType missing in array entry.
+        // DA: Impossible Test
 
         // temINVALID_BATCH: Batch: batch cannot have inner batch txn.
         {
@@ -387,7 +459,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temBAD_SIGNER: Batch: inner txn not signed by the right user.
+        // temBAD_SIGNER: Batch: no account signature for inner txn.
         {
             auto const seq = env.seq(alice);
             auto const batchFee = ((1 + 2) * feeDrops) + feeDrops * 2;
@@ -395,6 +467,18 @@ class Batch_test : public beast::unit_test::suite
                 batch::add(pay(alice, bob, XRP(10)), alice, 0, seq),
                 batch::add(pay(bob, alice, XRP(5)), alice, 0, env.seq(bob)),
                 batch::sig(carol),
+                ter(temBAD_SIGNER));
+            env.close();
+        }
+
+        // temBAD_SIGNER: Batch: unique signers does not match batch signers.
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = ((1 + 2) * feeDrops) + feeDrops * 2;
+            env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+                batch::add(pay(alice, bob, XRP(10)), alice, 0, seq),
+                batch::add(pay(bob, alice, XRP(5)), alice, 0, env.seq(bob)),
+                batch::sig(bob, carol),
                 ter(temBAD_SIGNER));
             env.close();
         }

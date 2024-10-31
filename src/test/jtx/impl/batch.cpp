@@ -49,6 +49,8 @@ batch(
     jv[jss::Flags] = flags;
     jv[jss::Fee] = to_string(fee);
     jv[jss::SigningPubKey] = strHex(account.pk());
+    jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
+    jv[sfTxIDs.jsonName] = Json::Value{Json::arrayValue};
     return jv;
 }
 

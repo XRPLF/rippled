@@ -29,10 +29,31 @@
 
 namespace ripple {
 
-TxConsequences
-Batch::makeTxConsequences(PreflightContext const& ctx)
+XRPAmount
+Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    return TxConsequences{ctx.tx, TxConsequences::normal};
+    // Calculate the Inner Txn Fees
+    XRPAmount extraFee{0};
+    if (tx.isFieldPresent(sfRawTransactions))
+    {
+        XRPAmount txFees{0};
+        auto const& txns = tx.getFieldArray(sfRawTransactions);
+        for (STObject txn : txns)
+        {
+            STTx const stx = STTx{std::move(txn)};
+            txFees += Transactor::calculateBaseFee(view, tx);
+        }
+        extraFee += txFees;
+    }
+
+    // Calculate the BatchSigners Fees
+    if (tx.isFieldPresent(sfBatchSigners))
+    {
+        auto const signers = tx.getFieldArray(sfBatchSigners);
+        extraFee += (signers.size() + 2) * view.fees().base;
+    }
+
+    return extraFee;
 }
 
 NotTEC
@@ -44,54 +65,115 @@ Batch::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    auto& tx = ctx.tx;
-
-    if (tx.getFlags() & tfBatchMask)
+    auto const flags = ctx.tx.getFlags();
+    if (flags & tfBatchMask)
     {
-        JLOG(ctx.j.warn()) << "Batch: invalid flags.";
+        JLOG(ctx.j.trace()) << "Batch: invalid flags.";
         return temINVALID_FLAG;
     }
 
-    AccountID const outerAccount = tx.getAccountID(sfAccount);
+    if (std::popcount(flags & tfBatchSubTx) != 1)
+    {
+        JLOG(ctx.j.trace()) << "Batch: too many flags.";
+        return temMALFORMED;
+    }
 
-    auto const& txns = tx.getFieldArray(sfRawTransactions);
-    STVector256 const hashes = tx.getFieldV256(sfTxIDs);
+    AccountID const outerAccount = ctx.tx.getAccountID(sfAccount);
+
+    auto const& txns = ctx.tx.getFieldArray(sfRawTransactions);
+    STVector256 const& hashes = ctx.tx.getFieldV256(sfTxIDs);
     if (hashes.size() != txns.size())
     {
-        JLOG(ctx.j.warn()) << "Batch: Hashes array size does not match txns.";
-        return temINVALID;
+        JLOG(ctx.j.trace()) << "Batch: hashes array size does not match txns.";
+        return temMALFORMED;
     }
 
     if (txns.empty())
     {
-        JLOG(ctx.j.warn()) << "Batch: txns array empty.";
+        JLOG(ctx.j.trace()) << "Batch: txns array empty.";
         return temARRAY_EMPTY;
     }
 
     if (txns.size() > 8)
     {
-        JLOG(ctx.j.warn()) << "Batch: txns array exceeds 12 entries.";
+        JLOG(ctx.j.trace()) << "Batch: txns array exceeds 8 entries.";
         return temARRAY_TOO_LARGE;
     }
 
+    auto const ret = preflight2(ctx);
+    if (!isTesSuccess(ret))
+        return ret;
+
+    std::set<AccountID> batchSignersSet;
+    if (ctx.tx.isFieldPresent(sfBatchSigners))
+    {
+        STArray const signers = ctx.tx.getFieldArray(sfBatchSigners);
+
+        // Check that the batch signers array is not too large.
+        if (signers.size() > 8)
+        {
+            JLOG(ctx.j.trace()) << "Batch: signers array exceeds 8 entries.";
+            return temARRAY_TOO_LARGE;
+        }
+
+        // Add the batch signers to the set.
+        for (auto const& signer : signers)
+        {
+            AccountID const innerAccount = signer.getAccountID(sfAccount);
+            if (!batchSignersSet.insert(innerAccount).second)
+            {
+                JLOG(ctx.j.trace())
+                    << "Batch: Duplicate signer found: " << innerAccount;
+                return temINVALID_BATCH;
+            }
+        }
+
+        // Check the batch signers signatures.
+        auto const requireCanonicalSig =
+            ctx.rules.enabled(featureRequireFullyCanonicalSig)
+            ? STTx::RequireFullyCanonicalSig::yes
+            : STTx::RequireFullyCanonicalSig::no;
+        auto const sigResult =
+            ctx.tx.checkBatchSign(requireCanonicalSig, ctx.rules);
+
+        if (!sigResult)
+        {
+            JLOG(ctx.j.trace()) << "Batch: invalid batch txn signature.";
+            return temBAD_SIGNATURE;
+        }
+    }
+
+    std::set<AccountID> uniqueSigners;
+    std::set<uint256> uniqueHashes;
     for (int i = 0; i < txns.size(); ++i)
     {
+        if (!uniqueHashes.insert(hashes[i]).second)
+        {
+            JLOG(ctx.j.trace()) << "Batch: duplicate TxID found.";
+            return temMALFORMED;
+        }
+
         STTx const stx = STTx{STObject(txns[i])};
         if (stx.getTransactionID() != hashes[i])
         {
-            JLOG(ctx.j.warn()) << "Batch: Hashes array does not match txns.";
-            return temINVALID;
+            JLOG(ctx.j.trace()) << "Batch: txn hash does not match TxIDs hash."
+                                << "index: " << i;
+            return temMALFORMED;
         }
 
         if (!stx.isFieldPresent(sfTransactionType))
         {
-            JLOG(ctx.j.warn())
-                << "Batch: TransactionType missing in array entry.";
+            JLOG(ctx.j.trace())
+                << "Batch: TransactionType missing in inner txn."
+                << "index: " << i;
             return temINVALID_BATCH;
         }
+
         if (stx.getFieldU16(sfTransactionType) == ttBATCH)
         {
-            JLOG(ctx.j.warn()) << "Batch: batch cannot have inner batch txn.";
+            JLOG(ctx.j.trace())
+                << "Batch: batch cannot have an inner batch txn."
+                << "index: " << i;
             return temINVALID_BATCH;
         }
 
@@ -99,59 +181,47 @@ Batch::preflight(PreflightContext const& ctx)
         if (stx.getFieldU16(sfTransactionType) == ttACCOUNT_DELETE &&
             innerAccount == outerAccount)
         {
-            JLOG(ctx.j.warn())
+            JLOG(ctx.j.trace())
                 << "Batch: inner txn cannot be account delete when inner and "
-                   "outer accounts are the same.";
+                   "outer accounts are the same."
+                << "index: " << i;
             return temINVALID_BATCH;
         }
 
-        if (innerAccount != outerAccount)
-        {
-            if (!tx.isFieldPresent(sfBatchSigners))
-            {
-                JLOG(ctx.j.warn()) << "Batch: missing batch signers.";
-                return temBAD_SIGNER;
-            }
+        // If the inner account is the same as the outer account, continue.
+        // 1. We do not add it to the unique signers set.
+        // 2. We do not check a signature for the inner account exist.
+        if (innerAccount == outerAccount)
+            continue;
 
-            if (tx.getFieldArray(sfBatchSigners).end() ==
-                std::find_if(
-                    tx.getFieldArray(sfBatchSigners).begin(),
-                    tx.getFieldArray(sfBatchSigners).end(),
-                    [innerAccount](STObject const& signer) {
-                        return signer.getAccountID(sfAccount) == innerAccount;
-                    }))
-            {
-                JLOG(ctx.j.warn())
-                    << "Batch: inner txn not signed by the right user.";
-                return temBAD_SIGNER;
-            }
+        // Add the inner account to the unique signers set.
+        uniqueSigners.insert(innerAccount);
+
+        // Validate that the account for this (inner) txn has a signature in the
+        // batch signers array.
+        if (ctx.tx.isFieldPresent(sfBatchSigners) &&
+            batchSignersSet.find(innerAccount) == batchSignersSet.end())
+        {
+            JLOG(ctx.j.trace()) << "Batch: no account signature for inner txn."
+                                << "index: " << i;
+            return temBAD_SIGNER;
         }
     }
 
-    if (tx.isFieldPresent(sfBatchSigners))
+    if (ctx.tx.isFieldPresent(sfBatchSigners) &&
+        uniqueSigners.size() != ctx.tx.getFieldArray(sfBatchSigners).size())
     {
-        auto const requireCanonicalSig =
-            ctx.rules.enabled(featureRequireFullyCanonicalSig)
-            ? STTx::RequireFullyCanonicalSig::yes
-            : STTx::RequireFullyCanonicalSig::no;
-        auto const sigResult =
-            ctx.tx.checkBatchSign(requireCanonicalSig, ctx.rules);
-        if (!sigResult)
-        {
-            JLOG(ctx.j.warn()) << "Batch: invalid batch txn signature.";
-            return temBAD_SIGNATURE;
-        }
+        JLOG(ctx.j.trace())
+            << "Batch: unique signers does not match batch signers.";
+        return temBAD_SIGNER;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
 Batch::preclaim(PreclaimContext const& ctx)
 {
-    if (!ctx.view.rules().enabled(featureBatch))
-        return temDISABLED;
-
     return tesSUCCESS;
 }
 
@@ -201,7 +271,7 @@ Batch::doApply()
             // Atomic Revert on non tec failure
             if (!isTecClaim(ter))
             {
-                JLOG(ctx_.journal.warn()) << "Batch: Inner txn failed." << ter;
+                JLOG(ctx_.journal.trace()) << "Batch: Inner txn failed." << ter;
                 result = tecBATCH_FAILURE;
                 changed = false;
                 break;
@@ -243,33 +313,6 @@ Batch::doApply()
 
     sb.apply(ctx_.rawView());
     return result;
-}
-
-XRPAmount
-Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
-{
-    // Calculate the Inner Txn Fees
-    XRPAmount extraFee{0};
-    if (tx.isFieldPresent(sfRawTransactions))
-    {
-        XRPAmount txFees{0};
-        auto const& txns = tx.getFieldArray(sfRawTransactions);
-        for (STObject txn : txns)
-        {
-            STTx const stx = STTx{std::move(txn)};
-            txFees += Transactor::calculateBaseFee(view, tx);
-        }
-        extraFee += txFees;
-    }
-
-    // Calculate the BatchSigners Fees
-    if (tx.isFieldPresent(sfBatchSigners))
-    {
-        auto const signers = tx.getFieldArray(sfBatchSigners);
-        extraFee += (signers.size() + 2) * view.fees().base;
-    }
-
-    return extraFee;
 }
 
 }  // namespace ripple
