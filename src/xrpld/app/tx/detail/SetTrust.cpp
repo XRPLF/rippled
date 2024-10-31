@@ -429,11 +429,17 @@ SetTrust::doApply()
         if (bSetDeepFreeze && !bClearDeepFreeze &&
             (willSetFreeze || alreadyFrozen))
         {
-            uFlagsOut |= (bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
+            if (ctx_.view().rules().enabled(featureDeepFreeze))
+                uFlagsOut |= (bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
+            else
+                return temMALFORMED;
         }
         else if (bClearDeepFreeze && !bSetDeepFreeze)
         {
-            uFlagsOut &= ~(bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
+            if (ctx_.view().rules().enabled(featureDeepFreeze))
+                uFlagsOut &= ~(bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
+            else
+                return temMALFORMED;
         }
 
         if (QUALITY_ONE == uLowQualityOut)
