@@ -965,6 +965,7 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
 
+        testWithFeats(all - featureMPTokensV1);
         testWithFeats(all);
     }
 };
