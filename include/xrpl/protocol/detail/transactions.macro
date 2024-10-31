@@ -412,6 +412,13 @@ TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize, ({
     {sfHolder, soeOPTIONAL},
 }))
 
+/** This transaction type wraps inner transactions for batch. */
+TRANSACTION(ttBATCH, 58, Batch, ({
+    {sfRawTransactions, soeREQUIRED},
+    {sfTxIDs, soeREQUIRED},
+    {sfBatchSigners, soeOPTIONAL},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html
