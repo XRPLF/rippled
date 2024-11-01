@@ -869,7 +869,11 @@ struct PayChan_test : public beast::unit_test::suite
 
             {  // create credentials
                 auto jv = credentials::create(alice, carol, credType);
-                uint32_t const t = env.now().time_since_epoch().count() + 100;
+                uint32_t const t = env.current()
+                                       ->info()
+                                       .parentCloseTime.time_since_epoch()
+                                       .count() +
+                    100;
                 jv[sfExpiration.jsonName] = t;
                 env(jv);
                 env.close();
@@ -882,11 +886,6 @@ struct PayChan_test : public beast::unit_test::suite
             // Bob require preauthorization
             env(fset(bob, asfDepositAuth));
             env.close();
-
-            // Fail, credentials doesn’t belong to root account
-            env(claim(dillon, chan, delta, delta),
-                credentials::ids({credIdx}),
-                ter(tecBAD_CREDENTIALS));
 
             // Fail, credentials not accepted
             env(claim(alice, chan, delta, delta),
@@ -906,6 +905,11 @@ struct PayChan_test : public beast::unit_test::suite
             // Setup deposit authorization
             env(deposit::authCredentials(bob, {{carol, credType}}));
             env.close();
+
+            // Fail, credentials doesn’t belong to root account
+            env(claim(dillon, chan, delta, delta),
+                credentials::ids({credIdx}),
+                ter(tecBAD_CREDENTIALS));
 
             // Fails because bob's lsfDepositAuth flag is set.
             env(claim(alice, chan, delta, delta), ter(tecNO_PERMISSION));

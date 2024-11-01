@@ -1060,7 +1060,11 @@ public:
                 env.close();
 
                 auto jv = credentials::create(john, carol, credType);
-                uint32_t const t = env.now().time_since_epoch().count() + 20;
+                uint32_t const t = env.current()
+                                       ->info()
+                                       .parentCloseTime.time_since_epoch()
+                                       .count() +
+                    20;
                 jv[sfExpiration.jsonName] = t;
                 env(jv);
                 env.close();

@@ -1191,7 +1191,6 @@ class LedgerRPC_test : public beast::unit_test::suite
             Json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::deposit_preauth][jss::owner] = bob.human();
-            jvParams[jss::deposit_preauth][jss::authorized] = alice.human();
 
             jvParams[jss::deposit_preauth][jss::authorize_credentials] =
                 Json::arrayValue;
@@ -1205,7 +1204,8 @@ class LedgerRPC_test : public beast::unit_test::suite
 
             auto const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams));
-            checkErrorValue(jrr[jss::result], "malformedRequest", "");
+            checkErrorValue(
+                jrr[jss::result], "malformedAuthorizeCredentials", "");
         }
 
         {
@@ -1213,7 +1213,6 @@ class LedgerRPC_test : public beast::unit_test::suite
             Json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::deposit_preauth][jss::owner] = bob.human();
-            jvParams[jss::deposit_preauth][jss::authorized] = alice.human();
 
             jvParams[jss::deposit_preauth][jss::authorize_credentials] =
                 Json::arrayValue;
@@ -1227,7 +1226,8 @@ class LedgerRPC_test : public beast::unit_test::suite
 
             auto const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams));
-            checkErrorValue(jrr[jss::result], "malformedRequest", "");
+            checkErrorValue(
+                jrr[jss::result], "malformedAuthorizeCredentials", "");
         }
 
         {

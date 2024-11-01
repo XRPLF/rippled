@@ -361,7 +361,10 @@ struct Credentials_test : public beast::unit_test::suite
 
             auto const credKey = credentialKeylet(subject, issuer, credType);
             auto jv = credentials::create(subject, issuer, credType);
-            uint32_t const t = env.now().time_since_epoch().count();
+            uint32_t const t = env.current()
+                                   ->info()
+                                   .parentCloseTime.time_since_epoch()
+                                   .count();
             jv[sfExpiration.jsonName] = t + 20;
             env(jv);
 
@@ -520,7 +523,11 @@ struct Credentials_test : public beast::unit_test::suite
                 testcase("Credentials fail, expiration in the past.");
                 auto jv = credentials::create(subject, issuer, credType);
                 // current time in ripple epoch - 1s
-                uint32_t const t = env.now().time_since_epoch().count() - 1;
+                uint32_t const t = env.current()
+                                       ->info()
+                                       .parentCloseTime.time_since_epoch()
+                                       .count() -
+                    1;
                 jv[sfExpiration.jsonName] = t;
                 env(jv, ter(tecEXPIRED));
             }
@@ -652,7 +659,10 @@ struct Credentials_test : public beast::unit_test::suite
 
                 testcase("CredentialsAccept fail, expired credentials.");
                 auto jv = credentials::create(subject, issuer, credType2);
-                uint32_t const t = env.now().time_since_epoch().count();
+                uint32_t const t = env.current()
+                                       ->info()
+                                       .parentCloseTime.time_since_epoch()
+                                       .count();
                 jv[sfExpiration.jsonName] = t;
                 env(jv);
                 env.close();
@@ -759,7 +769,11 @@ struct Credentials_test : public beast::unit_test::suite
 
                 auto jv = credentials::create(subject, issuer, credType);
                 // current time in ripple epoch + 1000s
-                uint32_t const t = env.now().time_since_epoch().count() + 1000;
+                uint32_t const t = env.current()
+                                       ->info()
+                                       .parentCloseTime.time_since_epoch()
+                                       .count() +
+                    1000;
                 jv[sfExpiration.jsonName] = t;
                 env(jv);
                 env.close();

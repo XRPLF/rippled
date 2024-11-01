@@ -20,6 +20,8 @@
 #include <test/jtx.h>
 #include <xrpl/protocol/Feature.h>
 
+#include <algorithm>
+
 namespace ripple {
 namespace test {
 
@@ -660,33 +662,42 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 Account const carol{"carol"};
                 env.fund(XRP(5000), carol);
 
-                TER const expect{
-                    supportsPreauth ? TER{tesSUCCESS} : TER{temDISABLED}};
+                bool const supportsCredentials = features[featureCredentials];
+
+                TER const expectCredentials(
+                    supportsCredentials ? TER(tesSUCCESS) : TER(temDISABLED));
+                TER const expectPayment(
+                    !supportsCredentials
+                        ? TER(temDISABLED)
+                        : (!supportsPreauth ? TER(tecNO_PERMISSION)
+                                            : TER(tesSUCCESS)));
+                TER const expectDP(
+                    !supportsPreauth
+                        ? TER(temDISABLED)
+                        : (!supportsCredentials ? TER(temDISABLED)
+                                                : TER(tesSUCCESS)));
 
                 env(deposit::authCredentials(becky, {{carol, credType}}),
-                    ter(expect));
+                    ter(expectDP));
                 env.close();
 
-                TER const credentialsExpect(
-                    features[featureCredentials] ? TER(tesSUCCESS)
-                                                 : TER(temDISABLED));
                 // gw accept credentials
                 env(credentials::create(gw, carol, credType),
-                    ter(credentialsExpect));
+                    ter(expectCredentials));
                 env.close();
                 env(credentials::accept(gw, carol, credType),
-                    ter(credentialsExpect));
+                    ter(expectCredentials));
                 env.close();
 
                 auto jv = credentials::ledgerEntry(env, gw, carol, credType);
-                std::string const credIdx = features[featureCredentials]
+                std::string const credIdx = supportsCredentials
                     ? jv[jss::result][jss::index].asString()
                     : "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6"
                       "EA288BE4";
 
                 env(pay(gw, becky, USD(100)),
                     credentials::ids({credIdx}),
-                    ter(expect));
+                    ter(expectPayment));
                 env.close();
             }
 
@@ -1186,7 +1197,11 @@ struct DepositPreauth_test : public beast::unit_test::suite
             auto jv = credentials::create(alice, issuer, credType);
             // Current time in ripple epoch.
             // Every time ledger close, unittest timer increase by 10s
-            uint32_t const t = env.now().time_since_epoch().count() + 40;
+            uint32_t const t = env.current()
+                                   ->info()
+                                   .parentCloseTime.time_since_epoch()
+                                   .count() +
+                40;
             jv[sfExpiration.jsonName] = t;
             env(jv);
             env.close();
@@ -1228,7 +1243,11 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             {
                 auto jv = credentials::create(gw, issuer, credType);
-                uint32_t const t = env.now().time_since_epoch().count() + 40;
+                uint32_t const t = env.current()
+                                       ->info()
+                                       .parentCloseTime.time_since_epoch()
+                                       .count() +
+                    40;
                 jv[sfExpiration.jsonName] = t;
                 env(jv);
                 env.close();
@@ -1271,7 +1290,11 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             // Create credentials
             auto jv = credentials::create(zelda, issuer, credType);
-            uint32_t const t = env.now().time_since_epoch().count() + 50;
+            uint32_t const t = env.current()
+                                   ->info()
+                                   .parentCloseTime.time_since_epoch()
+                                   .count() +
+                50;
             jv[sfExpiration.jsonName] = t;
             env(jv);
             env.close();
@@ -1334,16 +1357,146 @@ struct DepositPreauth_test : public beast::unit_test::suite
     }
 
     void
+    testSortingCredentials()
+    {
+        using namespace jtx;
+
+        Account const stock{"stock"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        Env env(*this);
+
+        testcase("Sorting credentials.");
+
+        env.fund(XRP(5000), stock, alice, bob);
+
+        std::vector<deposit::AuthorizeCredentials> credentials = {
+            {"a", "a"},
+            {"b", "b"},
+            {"c", "c"},
+            {"d", "d"},
+            {"e", "e"},
+            {"f", "f"},
+            {"g", "g"},
+            {"h", "h"}};
+
+        for (auto const& c : credentials)
+            env.fund(XRP(5000), c.issuer);
+        env.close();
+
+        std::random_device rd;
+        std::mt19937 gen(rd());
+
+        {
+            std::unordered_map<std::string, Account> pubKey2Acc;
+            for (auto const& c : credentials)
+                pubKey2Acc.emplace(c.issuer.human(), c.issuer);
+
+            // check sorting in object
+            for (int i = 0; i < 10; ++i)
+            {
+                std::ranges::shuffle(credentials, gen);
+                env(deposit::authCredentials(stock, credentials));
+                env.close();
+
+                auto const dp =
+                    ledgerEntryDepositPreauth(env, stock, credentials);
+                auto const& authCred(
+                    dp[jss::result][jss::node]["AuthorizeCredentials"]);
+                BEAST_EXPECT(
+                    authCred.isArray() &&
+                    authCred.size() == credentials.size());
+                std::vector<std::pair<Account, std::string>> readedCreds;
+                for (auto const& o : authCred)
+                {
+                    auto const& c(o[jss::Credential]);
+                    auto issuer = c[jss::Issuer].asString();
+
+                    if (BEAST_EXPECT(pubKey2Acc.contains(issuer)))
+                        readedCreds.emplace_back(
+                            pubKey2Acc.at(issuer),
+                            c["CredentialType"].asString());
+                }
+
+                BEAST_EXPECT(std::ranges::is_sorted(readedCreds));
+
+                env(deposit::unauthCredentials(stock, credentials));
+                env.close();
+            }
+        }
+
+        {
+            std::ranges::shuffle(credentials, gen);
+            env(deposit::authCredentials(stock, credentials));
+            env.close();
+
+            // check sorting in params
+            for (int i = 0; i < 10; ++i)
+            {
+                std::ranges::shuffle(credentials, gen);
+                env(deposit::authCredentials(stock, credentials),
+                    ter(tecDUPLICATE));
+            }
+        }
+
+        testcase("Check duplicate credentials.");
+        {
+            // check duplicates in depositPreauth params
+            std::ranges::shuffle(credentials, gen);
+            for (auto const& c : credentials)
+            {
+                auto credentials2 = credentials;
+                credentials2.push_back(c);
+
+                env(deposit::authCredentials(stock, credentials2),
+                    ter(temMALFORMED));
+            }
+
+            // create batch of credentials and save their hashes
+            std::vector<std::string> credentialIDs;
+            for (auto const& c : credentials)
+            {
+                env(credentials::create(alice, c.issuer, c.credType));
+                env.close();
+                env(credentials::accept(alice, c.issuer, c.credType));
+                env.close();
+
+                credentialIDs.push_back(credentials::ledgerEntry(
+                                            env,
+                                            alice,
+                                            c.issuer,
+                                            c.credType)[jss::result][jss::index]
+                                            .asString());
+            }
+
+            // check duplicates in payment params
+            for (auto const& h : credentialIDs)
+            {
+                auto credentialIDs2 = credentialIDs;
+                credentialIDs2.push_back(h);
+
+                env(pay(alice, bob, XRP(100)),
+                    credentials::ids(credentialIDs2),
+                    ter(temMALFORMED));
+            }
+        }
+    }
+
+    void
     run() override
     {
         testEnable();
         testInvalid();
         auto const supported{jtx::supported_amendments()};
         testPayment(supported - featureDepositPreauth - featureCredentials);
+        testPayment(supported - featureDepositPreauth);
+        testPayment(supported - featureCredentials);
         testPayment(supported);
         testCredentialsPayment();
         testCredentialsCreation();
         testExpiredCreds();
+        testSortingCredentials();
     }
 };
 

@@ -98,13 +98,20 @@ doDepositAuthorized(RPC::JsonContext& context)
     if (credentialsPresent)
     {
         auto const& creds(params[jss::credentials]);
-        if (!creds.isArray() || !creds ||
-            (creds.size() > maxCredentialsArraySize))
+        if (!creds.isArray() || !creds)
         {
             return RPC::make_error(
                 rpcINVALID_PARAMS,
                 RPC::expected_field_message(
-                    jss::credentials, "an array of CredentialID(hash256)"));
+                    jss::credentials,
+                    "is non-empty array of CredentialID(hash256)"));
+        }
+        else if (creds.size() > maxCredentialsArraySize)
+        {
+            return RPC::make_error(
+                rpcINVALID_PARAMS,
+                RPC::expected_field_message(
+                    jss::credentials, "array too long"));
         }
 
         for (auto const& jo : creds)
@@ -132,14 +139,16 @@ doDepositAuthorized(RPC::JsonContext& context)
             if (!sleCred || (sleCred->getType() != ltCREDENTIAL) ||
                 !(sleCred->getFlags() & lsfAccepted))
             {
-                RPC::inject_error(rpcBAD_CREDENTIALS, result);
+                RPC::inject_error(
+                    rpcBAD_CREDENTIALS, "credentials aren't accepted", result);
                 return result;
             }
 
             if (credentials::checkExpired(
-                    sleCred, context.app.timeKeeper().now()))
+                    sleCred, ledger->info().parentCloseTime))
             {
-                RPC::inject_error(rpcBAD_CREDENTIALS, result);
+                RPC::inject_error(
+                    rpcBAD_CREDENTIALS, "credentials are expired", result);
                 return result;
             }
 
@@ -165,7 +174,8 @@ doDepositAuthorized(RPC::JsonContext& context)
             auto const sorted = credentials::makeSorted(authCreds);
             if (sorted.empty())
             {
-                RPC::inject_error(rpcBAD_CREDENTIALS, result);
+                RPC::inject_error(
+                    rpcBAD_CREDENTIALS, "duplicates in crednetials", result);
                 return result;
             }
 

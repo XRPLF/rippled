@@ -286,6 +286,50 @@ public:
     }
 
     void
+    checkCredentialsResponse(
+        Json::Value const& result,
+        jtx::Account const& src,
+        jtx::Account const& dst,
+        bool authorized,
+        std::vector<std::string> credentialIDs = {},
+        std::string_view error = "")
+    {
+        BEAST_EXPECT(
+            result[jss::status] == authorized ? jss::success : jss::error);
+        if (result.isMember(jss::deposit_authorized))
+            BEAST_EXPECT(result[jss::deposit_authorized] == authorized);
+        if (authorized)
+            BEAST_EXPECT(
+                result.isMember(jss::deposit_authorized) &&
+                (result[jss::deposit_authorized] == true));
+
+        BEAST_EXPECT(result.isMember(jss::error) == !error.empty());
+        if (!error.empty())
+            BEAST_EXPECT(result[jss::error].asString() == error);
+
+        if (authorized)
+        {
+            BEAST_EXPECT(result[jss::source_account] == src.human());
+            BEAST_EXPECT(result[jss::destination_account] == dst.human());
+
+            for (unsigned i = 0; i < credentialIDs.size(); ++i)
+                BEAST_EXPECT(result[jss::credentials][i] == credentialIDs[i]);
+        }
+        else
+        {
+            BEAST_EXPECT(result[jss::request].isObject());
+
+            auto const& request = result[jss::request];
+            BEAST_EXPECT(request[jss::command] == jss::deposit_authorized);
+            BEAST_EXPECT(request[jss::source_account] == src.human());
+            BEAST_EXPECT(request[jss::destination_account] == dst.human());
+
+            for (unsigned i = 0; i < credentialIDs.size(); ++i)
+                BEAST_EXPECT(request[jss::credentials][i] == credentialIDs[i]);
+        }
+    }
+
+    void
     testCredentials()
     {
         using namespace jtx;
@@ -300,7 +344,7 @@ public:
         env.fund(XRP(1000), alice, becky, carol);
         env.close();
 
-        // carol recognize becky
+        // carol recognize alice
         env(credentials::create(alice, carol, credType));
         env.close();
         // retrieve the index of the credentials
@@ -324,8 +368,8 @@ public:
 
             auto const jv =
                 env.rpc("json", "deposit_authorized", args.toStyledString());
-            auto const& result{jv[jss::result]};
-            BEAST_EXPECT(result.isMember(jss::error));
+            checkCredentialsResponse(
+                jv[jss::result], alice, becky, false, {}, "invalidParams");
         }
 
         {
@@ -340,8 +384,8 @@ public:
 
             auto const jv =
                 env.rpc("json", "deposit_authorized", args.toStyledString());
-            auto const& result{jv[jss::result]};
-            BEAST_EXPECT(result.isMember(jss::error));
+            checkCredentialsResponse(
+                jv[jss::result], alice, becky, false, {}, "invalidParams");
         }
 
         {
@@ -355,8 +399,13 @@ public:
 
             auto const jv =
                 env.rpc("json", "deposit_authorized", args.toStyledString());
-            auto const& result{jv[jss::result]};
-            BEAST_EXPECT(result.isMember(jss::error));
+            checkCredentialsResponse(
+                jv[jss::result],
+                alice,
+                becky,
+                false,
+                {"hello world"},
+                "invalidParams");
         }
 
         {
@@ -373,10 +422,14 @@ public:
 
             auto const jv =
                 env.rpc("json", "deposit_authorized", args.toStyledString());
-
-            auto const& result{jv[jss::result]};
-            BEAST_EXPECT(result[jss::status] == jss::error);
-            BEAST_EXPECT(result[jss::error_code] == rpcBAD_CREDENTIALS);
+            checkCredentialsResponse(
+                jv[jss::result],
+                alice,
+                becky,
+                false,
+                {"0127AB8B4B29CCDBB61AA51C0799A8A6BB80B86A9899807C11ED576AF8516"
+                 "473"},
+                "badCredentials");
         }
 
         {
@@ -388,9 +441,13 @@ public:
                 "deposit_authorized",
                 depositAuthArgs(alice, becky, "validated", {credIdx})
                     .toStyledString());
-            auto const& result{jv[jss::result]};
-            BEAST_EXPECT(result[jss::status] == jss::error);
-            BEAST_EXPECT(result[jss::error_code] == rpcBAD_CREDENTIALS);
+            checkCredentialsResponse(
+                jv[jss::result],
+                alice,
+                becky,
+                false,
+                {credIdx},
+                "badCredentials");
         }
 
         // alice accept credentials
@@ -404,9 +461,13 @@ public:
                 "deposit_authorized",
                 depositAuthArgs(alice, becky, "validated", {credIdx, credIdx})
                     .toStyledString());
-            auto const& result{jv[jss::result]};
-            BEAST_EXPECT(result[jss::status] == jss::error);
-            BEAST_EXPECT(result[jss::error_code] == rpcBAD_CREDENTIALS);
+            checkCredentialsResponse(
+                jv[jss::result],
+                alice,
+                becky,
+                false,
+                {credIdx, credIdx},
+                "badCredentials");
         }
 
         {
@@ -437,9 +498,8 @@ public:
                 "deposit_authorized",
                 depositAuthArgs(alice, becky, "validated", credIds)
                     .toStyledString());
-            auto const& result{jv[jss::result]};
-            BEAST_EXPECT(result[jss::status] == jss::error);
-            BEAST_EXPECT(result[jss::error_code] == rpcINVALID_PARAMS);
+            checkCredentialsResponse(
+                jv[jss::result], alice, becky, false, credIds, "invalidParams");
         }
 
         {
@@ -449,21 +509,19 @@ public:
                 "deposit_authorized",
                 depositAuthArgs(alice, becky, "validated", {credIdx})
                     .toStyledString());
-            auto const& result{jv[jss::result]};
-            BEAST_EXPECT(result[jss::status] == jss::success);
-            BEAST_EXPECT(result[jss::deposit_authorized] == true);
+            checkCredentialsResponse(
+                jv[jss::result], alice, becky, true, {credIdx});
         }
 
         {
-            testcase("deposit_authorized  account without preauth");
+            testcase("deposit_authorized account without preauth");
             auto const jv = env.rpc(
                 "json",
                 "deposit_authorized",
                 depositAuthArgs(becky, alice, "validated", {credIdx})
                     .toStyledString());
-            auto const& result{jv[jss::result]};
-            BEAST_EXPECT(result[jss::status] == jss::success);
-            BEAST_EXPECT(result[jss::deposit_authorized] == true);
+            checkCredentialsResponse(
+                jv[jss::result], becky, alice, true, {credIdx});
         }
 
         {
@@ -471,9 +529,13 @@ public:
 
             // check expired credentials
             const char credType2[] = "fghijk";
-            std::uint32_t const x = env.now().time_since_epoch().count() + 40;
+            std::uint32_t const x = env.current()
+                                        ->info()
+                                        .parentCloseTime.time_since_epoch()
+                                        .count() +
+                40;
 
-            // create credentials with expire time 1s
+            // create credentials with expire time 40s
             auto jv = credentials::create(alice, carol, credType2);
             jv[sfExpiration.jsonName] = x;
             env(jv);
@@ -498,12 +560,13 @@ public:
                     "deposit_authorized",
                     depositAuthArgs(alice, becky, "validated", {credIdx2})
                         .toStyledString());
-                auto const& result{jv[jss::result]};
-                BEAST_EXPECT(result[jss::status] == jss::success);
-                BEAST_EXPECT(result[jss::deposit_authorized] == true);
+                checkCredentialsResponse(
+                    jv[jss::result], alice, becky, true, {credIdx2});
             }
 
-            env.close();  // increase timer by 10s
+            // increase timer by 20s
+            env.close();
+            env.close();
             {
                 // now credentials expired
                 jv = env.rpc(
@@ -512,9 +575,13 @@ public:
                     depositAuthArgs(alice, becky, "validated", {credIdx2})
                         .toStyledString());
 
-                auto const& result{jv[jss::result]};
-                BEAST_EXPECT(result[jss::status] == jss::error);
-                BEAST_EXPECT(result[jss::error_code] == rpcBAD_CREDENTIALS);
+                checkCredentialsResponse(
+                    jv[jss::result],
+                    alice,
+                    becky,
+                    false,
+                    {credIdx2},
+                    "badCredentials");
             }
         }
     }
