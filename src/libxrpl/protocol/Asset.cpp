@@ -74,10 +74,7 @@ Json::Value
 to_json(Asset const& asset)
 {
     return std::visit(
-        [&](auto const& issue) {
-            return to_json(issue);
-        },
-        asset.value());
+        [&](auto const& issue) { return to_json(issue); }, asset.value());
 }
 
 }  // namespace ripple
