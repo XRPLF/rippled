@@ -199,6 +199,9 @@ validJSONAsset(Json::Value const& jv);
 Asset
 assetFromJson(Json::Value const& jv);
 
+Json::Value
+to_json(Asset const& asset);
+
 }  // namespace ripple
 
 #endif  // RIPPLE_PROTOCOL_ASSET_H_INCLUDED

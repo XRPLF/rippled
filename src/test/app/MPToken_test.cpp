@@ -2044,14 +2044,16 @@ class MPToken_test : public beast::unit_test::suite
             testcase("Test MPTIssue from/to Json");
             MPTIssue const issue1{asset1.get<MPTIssue>()};
             Json::Value const jv = to_json(issue1);
-            MPTIssue const issue2 = mptIssueFromJson(jv);
-            BEAST_EXPECT(issue1 == issue2);
+            BEAST_EXPECT(
+                jv[jss::mpt_issuance_id] == to_string(asset1.get<MPTIssue>()));
+            BEAST_EXPECT(issue1 == mptIssueFromJson(jv));
         }
 
         {
             testcase("Test Asset from/to Json");
-            Json::Value jv;
-            asset1.setJson(jv);
+            Json::Value const jv = to_json(asset1);
+            BEAST_EXPECT(
+                jv[jss::mpt_issuance_id] == to_string(asset1.get<MPTIssue>()));
             BEAST_EXPECT(asset1 == assetFromJson(jv));
         }
     }
