@@ -31,12 +31,12 @@
 /** This transaction type executes a payment. */
 TRANSACTION(ttPAYMENT, 0, Payment, ({
     {sfDestination, soeREQUIRED},
-    {sfAmount, soeREQUIRED},
-    {sfSendMax, soeOPTIONAL},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
+    {sfSendMax, soeOPTIONAL, soeMPTSupported},
     {sfPaths, soeDEFAULT},
     {sfInvoiceID, soeOPTIONAL},
     {sfDestinationTag, soeOPTIONAL},
-    {sfDeliverMin, soeOPTIONAL},
+    {sfDeliverMin, soeOPTIONAL, soeMPTSupported},
 }))
 
 /** This transaction type creates an escrow object. */
@@ -223,7 +223,8 @@ TRANSACTION(ttNFTOKEN_ACCEPT_OFFER, 29, NFTokenAcceptOffer, ({
 
 /** This transaction claws back issued tokens. */
 TRANSACTION(ttCLAWBACK, 30, Clawback, ({
-    {sfAmount, soeREQUIRED},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
+    {sfHolder, soeOPTIONAL},
 }))
 
 /** This transaction claws back tokens from an AMM pool. */
@@ -392,6 +393,31 @@ TRANSACTION(ttORACLE_DELETE, 52, OracleDelete, ({
 TRANSACTION(ttLEDGER_STATE_FIX, 53, LedgerStateFix, ({
     {sfLedgerFixType, soeREQUIRED},
     {sfOwner, soeOPTIONAL},
+}))
+
+/** This transaction type creates a MPTokensIssuance instance */
+TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate, ({
+    {sfAssetScale, soeOPTIONAL},
+    {sfTransferFee, soeOPTIONAL},
+    {sfMaximumAmount, soeOPTIONAL},
+    {sfMPTokenMetadata, soeOPTIONAL},
+}))
+
+/** This transaction type destroys a MPTokensIssuance instance */
+TRANSACTION(ttMPTOKEN_ISSUANCE_DESTROY, 55, MPTokenIssuanceDestroy, ({
+    {sfMPTokenIssuanceID, soeREQUIRED},
+}))
+
+/** This transaction type sets flags on a MPTokensIssuance or MPToken instance */
+TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet, ({
+    {sfMPTokenIssuanceID, soeREQUIRED},
+    {sfHolder, soeOPTIONAL},
+}))
+
+/** This transaction type authorizes a MPToken instance */
+TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize, ({
+    {sfMPTokenIssuanceID, soeREQUIRED},
+    {sfHolder, soeOPTIONAL},
 }))
 
 /** This system-generated transaction type is used to update the status of the various amendments.

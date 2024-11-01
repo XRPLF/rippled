@@ -31,7 +31,8 @@
 
 // InvariantsV1_1 will be changes to Supported::yes when all the
 // invariants expected to be included under it are complete.
-XRPL_FEATURE(InvariantsV1_1,             Supported::no, VoteBehavior::DefaultNo)
+XRPL_FEATURE(MPTokensV1,                 Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(InvariantsV1_1,             Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (NFTokenPageLinks,           Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (InnerObjTemplate2,          Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (EnforceNFTokenTrustline,    Supported::yes, VoteBehavior::DefaultNo)
