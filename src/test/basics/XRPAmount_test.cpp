@@ -283,63 +283,67 @@ public:
                 tinyNeg == mulRatio(tinyNeg, maxUInt32 - 1, maxUInt32, false));
         }
 
-        {// rounding
-         {XRPAmount one(1);
-        auto const rup = mulRatio(one, maxUInt32 - 1, maxUInt32, true);
-        auto const rdown = mulRatio(one, maxUInt32 - 1, maxUInt32, false);
-        BEAST_EXPECT(rup.drops() - rdown.drops() == 1);
-    }
+        {  // rounding
+            {
+                XRPAmount one(1);
+                auto const rup = mulRatio(one, maxUInt32 - 1, maxUInt32, true);
+                auto const rdown =
+                    mulRatio(one, maxUInt32 - 1, maxUInt32, false);
+                BEAST_EXPECT(rup.drops() - rdown.drops() == 1);
+            }
 
+            {
+                XRPAmount big(maxXRP);
+                auto const rup = mulRatio(big, maxUInt32 - 1, maxUInt32, true);
+                auto const rdown =
+                    mulRatio(big, maxUInt32 - 1, maxUInt32, false);
+                BEAST_EXPECT(rup.drops() - rdown.drops() == 1);
+            }
+
+            {
+                XRPAmount negOne(-1);
+                auto const rup =
+                    mulRatio(negOne, maxUInt32 - 1, maxUInt32, true);
+                auto const rdown =
+                    mulRatio(negOne, maxUInt32 - 1, maxUInt32, false);
+                BEAST_EXPECT(rup.drops() - rdown.drops() == 1);
+            }
+        }
+
+        {
+            // division by zero
+            XRPAmount one(1);
+            except([&] { mulRatio(one, 1, 0, true); });
+        }
+
+        {
+            // overflow
+            XRPAmount big(maxXRP);
+            except([&] { mulRatio(big, 2, 1, true); });
+        }
+
+        {
+            // underflow
+            XRPAmount bigNegative(minXRP + 10);
+            BEAST_EXPECT(mulRatio(bigNegative, 2, 1, true) == minXRP);
+        }
+    }  // namespace ripple
+
+    //--------------------------------------------------------------------------
+
+    void
+    run() override
     {
-        XRPAmount big(maxXRP);
-        auto const rup = mulRatio(big, maxUInt32 - 1, maxUInt32, true);
-        auto const rdown = mulRatio(big, maxUInt32 - 1, maxUInt32, false);
-        BEAST_EXPECT(rup.drops() - rdown.drops() == 1);
+        testSigNum();
+        testBeastZero();
+        testComparisons();
+        testAddSub();
+        testDecimal();
+        testFunctions();
+        testMulRatio();
     }
-
-    {
-        XRPAmount negOne(-1);
-        auto const rup = mulRatio(negOne, maxUInt32 - 1, maxUInt32, true);
-        auto const rdown = mulRatio(negOne, maxUInt32 - 1, maxUInt32, false);
-        BEAST_EXPECT(rup.drops() - rdown.drops() == 1);
-    }
-}
-
-{
-    // division by zero
-    XRPAmount one(1);
-    except([&] { mulRatio(one, 1, 0, true); });
-}
-
-{
-    // overflow
-    XRPAmount big(maxXRP);
-    except([&] { mulRatio(big, 2, 1, true); });
-}
-
-{
-    // underflow
-    XRPAmount bigNegative(minXRP + 10);
-    BEAST_EXPECT(mulRatio(bigNegative, 2, 1, true) == minXRP);
-}
-}  // namespace ripple
-
-//--------------------------------------------------------------------------
-
-void
-run() override
-{
-    testSigNum();
-    testBeastZero();
-    testComparisons();
-    testAddSub();
-    testDecimal();
-    testFunctions();
-    testMulRatio();
-}
-}
-;
+};
 
 BEAST_DEFINE_TESTSUITE(XRPAmount, protocol, ripple);
 
-}  // ripple
+}  // namespace ripple

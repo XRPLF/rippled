@@ -126,7 +126,7 @@ public:
         return amount_;
     }
 
-    operator STAmount const &() const
+    operator STAmount const&() const
     {
         return amount_;
     }
@@ -211,7 +211,8 @@ struct XRP_t
     /** @} */
 
     /** Returns None-of-XRP */
-    None operator()(none_t) const
+    None
+    operator()(none_t) const
     {
         return {xrpIssue()};
     }
@@ -305,12 +306,16 @@ public:
         return {currency, account.id()};
     }
 
-    /** Implicit conversion to Issue.
+    /** Implicit conversion to Issue or Asset.
 
         This allows passing an IOU
-        value where an Issue is expected.
+        value where an Issue or Asset is expected.
     */
     operator Issue() const
+    {
+        return issue();
+    }
+    operator Asset() const
     {
         return issue();
     }
@@ -327,14 +332,17 @@ public:
         return {amountFromString(issue(), std::to_string(v)), account.name()};
     }
 
-    PrettyAmount operator()(epsilon_t) const;
-    PrettyAmount operator()(detail::epsilon_multiple) const;
+    PrettyAmount
+    operator()(epsilon_t) const;
+    PrettyAmount
+    operator()(detail::epsilon_multiple) const;
 
     // VFALCO TODO
     // STAmount operator()(char const* s) const;
 
     /** Returns None-of-Issue */
-    None operator()(none_t) const
+    None
+    operator()(none_t) const
     {
         return {issue()};
     }
@@ -348,6 +356,67 @@ public:
 
 std::ostream&
 operator<<(std::ostream& os, IOU const& iou);
+
+//------------------------------------------------------------------------------
+
+/** Converts to MPT Issue or STAmount.
+
+    Examples:
+        MPT         Converts to the underlying Issue
+        MPT(10)     Returns STAmount of 10 of
+                        the underlying MPT
+*/
+class MPT
+{
+public:
+    std::string name;
+    ripple::MPTID issuanceID;
+
+    MPT(std::string const& n, ripple::MPTID const& issuanceID_)
+        : name(n), issuanceID(issuanceID_)
+    {
+    }
+
+    ripple::MPTID const&
+    mpt() const
+    {
+        return issuanceID;
+    }
+
+    /** Implicit conversion to MPTIssue.
+
+        This allows passing an MPT
+        value where an MPTIssue is expected.
+    */
+    operator ripple::MPTIssue() const
+    {
+        return MPTIssue{issuanceID};
+    }
+
+    template <class T>
+        requires(sizeof(T) >= sizeof(int) && std::is_arithmetic_v<T>)
+    PrettyAmount
+    operator()(T v) const
+    {
+        return {amountFromString(mpt(), std::to_string(v)), name};
+    }
+
+    PrettyAmount
+    operator()(epsilon_t) const;
+    PrettyAmount
+    operator()(detail::epsilon_multiple) const;
+
+    friend BookSpec
+    operator~(MPT const& mpt)
+    {
+        assert(false);
+        Throw<std::logic_error>("MPT is not supported");
+        return BookSpec{beast::zero, noCurrency()};
+    }
+};
+
+std::ostream&
+operator<<(std::ostream& os, MPT const& mpt);
 
 //------------------------------------------------------------------------------
 
