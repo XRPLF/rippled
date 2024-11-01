@@ -1032,6 +1032,20 @@ struct DepositPreauth_test : public beast::unit_test::suite
             }
 
             {
+                // both included [Unauthorize, UnauthorizeCredentials]
+                auto jv = deposit::unauthCredentials(bob, {{issuer, credType}});
+                jv[sfUnauthorize.jsonName] = issuer.human();
+                env(jv, ter(temMALFORMED));
+            }
+
+            {
+                // both included [Authorize, UnauthorizeCredentials]
+                auto jv = deposit::unauthCredentials(bob, {{issuer, credType}});
+                jv[sfAuthorize.jsonName] = issuer.human();
+                env(jv, ter(temMALFORMED));
+            }
+
+            {
                 // AuthorizeCredentials is empty
                 auto jv = deposit::authCredentials(bob, {});
                 env(jv, ter(temMALFORMED));
@@ -1086,7 +1100,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             }
 
             {
-                // not enough resevre
+                // not enough reserve
                 Account const john{"john"};
                 env.fund(env.current()->fees().accountReserve(0), john);
                 auto jv = deposit::authCredentials(john, {{issuer, credType}});
@@ -1114,7 +1128,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     jDP[jss::result][jss::node]["LedgerEntryType"] ==
                         jss::DepositPreauth);
 
-                // CHeck object fields
+                // Check object fields
                 BEAST_EXPECT(
                     jDP[jss::result][jss::node][jss::Account] == bob.human());
                 auto const& credentials(
@@ -1149,7 +1163,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
     }
 
     void
-    testExpCreds()
+    testExpiredCreds()
     {
         using namespace jtx;
         const char credType[] = "abcde";
@@ -1229,7 +1243,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env.close();
                 env.close();
 
-                // credentails are expired
+                // credentials are expired
                 env(pay(gw, bob, USD(150)),
                     credentials::ids({credIdx}),
                     ter(tecEXPIRED));
@@ -1329,7 +1343,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         testPayment(supported);
         testCredentialsPayment();
         testCredentialsCreation();
-        testExpCreds();
+        testExpiredCreds();
     }
 };
 
