@@ -561,7 +561,7 @@ AMMWithdraw::withdraw(
         {
             auto const sleAccount = view.read(keylet::account(account_));
             if (!sleAccount)
-                return tecINTERNAL;
+                return tecINTERNAL;  // LCOV_EXCL_LINE
             auto const balance = (*sleAccount)[sfBalance].xrp();
             auto const reserve =
                 view.fees().accountReserve((*sleAccount)[sfOwnerCount] + 1);

@@ -6889,10 +6889,25 @@ private:
         // Equal withdraw
         test([&](AMM& amm) { amm.withdrawAll(alice, std::nullopt, err); });
 
+        // Equal withdraw with a limit
+        test([&](AMM& amm) {
+            amm.withdraw(WithdrawArg{
+                .account = alice,
+                .asset1Out = EUR(0.1),
+                .asset2Out = USD(0.1),
+                .err = err});
+            amm.withdraw(WithdrawArg{
+                .account = alice,
+                .asset1Out = USD(0.1),
+                .asset2Out = EUR(0.1),
+                .err = err});
+        });
+
         // Single withdraw
         test([&](AMM& amm) {
             amm.withdraw(WithdrawArg{
                 .account = alice, .asset1Out = EUR(0.1), .err = err});
+            amm.withdraw(WithdrawArg{.account = alice, .asset1Out = USD(0.1)});
         });
     }
 
