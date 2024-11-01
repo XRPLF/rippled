@@ -1443,6 +1443,17 @@ class MPToken_test : public beast::unit_test::suite
             };
             ammBid(sfBidMin);
             ammBid(sfBidMax);
+            // AMMClawback
+            {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::AMMClawback;
+                jv[jss::Account] = alice.human();
+                jv[jss::Holder] = carol.human();
+                jv[jss::Asset] = to_json(xrpIssue());
+                jv[jss::Asset2] = to_json(USD.issue());
+                jv[jss::Amount] = mpt.getJson(JsonOptions::none);
+                test(jv, jss::Amount.c_str());
+            }
             // CheckCash
             auto checkCash = [&](SField const& field) {
                 Json::Value jv;
