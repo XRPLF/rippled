@@ -1,3 +1,5 @@
+include(create_symbolic_link)
+
 # Consider include directory B nested under prefix A:
 #
 #     /path/to/A/then/to/B/...
@@ -41,19 +43,6 @@ function(isolate_headers target A B scope)
   set(Y "${X}/${C}")
   cmake_path(GET Y PARENT_PATH parent)
   file(MAKE_DIRECTORY "${parent}")
-
-  if(WIN32)
-         if(NOT IS_SYMLINK "${Y}")
-                 file(TO_NATIVE_PATH "${B}" B)
-                 file(TO_NATIVE_PATH "${Y}" Y)
-                 execute_process(COMMAND cmd.exe /c mklink /J "${Y}" "${B}")
-         endif()
-  else()
-         file(CREATE_LINK "${B}" "${Y}" SYMBOLIC)
-  endif()
-  if(NOT IS_SYMLINK "${Y}")
-         message(ERROR "failed to create symlink: <${Y}>")
-  endif()
-
+  create_symbolic_link("${B}" "${Y}")
   target_include_directories(${target} ${scope} "$<BUILD_INTERFACE:${X}>")
 endfunction()
