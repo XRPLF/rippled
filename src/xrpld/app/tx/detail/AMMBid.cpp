@@ -78,6 +78,18 @@ AMMBid::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid number of AuthAccounts.";
             return temMALFORMED;
         }
+        else if (ctx.rules.enabled(fixAMMv1_3))
+        {
+            AccountID account = ctx.tx[sfAccount];
+            std::set<AccountID> unique;
+            for (auto const& obj : authAccounts)
+            {
+                auto authAccount = obj[sfAccount];
+                if (authAccount == account || unique.contains(authAccount))
+                    return temMALFORMED;
+                unique.insert(authAccount);
+            }
+        }
     }
 
     return preflight2(ctx);
@@ -230,7 +242,9 @@ applyBid(
             auctionSlot.makeFieldAbsent(sfAuthAccounts);
         // Burn the remaining bid amount
         auto const saBurn = adjustLPTokens(
-            lptAMMBalance, toSTAmount(lptAMMBalance.issue(), burn), false);
+            lptAMMBalance,
+            toSTAmount(lptAMMBalance.issue(), burn),
+            IsDeposit::No);
         if (saBurn >= lptAMMBalance)
         {
             // This error case should never occur.

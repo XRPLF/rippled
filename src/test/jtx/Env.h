@@ -593,6 +593,14 @@ public:
     void
     disableFeature(uint256 const feature);
 
+    /** Check if feature is enabled
+     */
+    bool
+    enabled(uint256 feature) const
+    {
+        return current()->rules().enabled(feature);
+    }
+
 private:
     void
     fund(bool setDefaultRipple, STAmount const& amount, Account const& account);

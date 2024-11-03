@@ -475,6 +475,32 @@ public:
         beast::Journal const&);
 };
 
+class ValidAMM
+{
+    std::optional<AccountID> ammAccount_;
+    std::optional<STAmount> lptAMMBalanceAfter_;
+    std::optional<STAmount> lptAMMBalanceBefore_;
+    bool ammPoolChanged_;
+
+public:
+    ValidAMM() : ammPoolChanged_{false}
+    {
+    }
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -491,7 +517,8 @@ using InvariantChecks = std::tuple<
     ValidNFTokenPage,
     NFTokenCountTracking,
     ValidClawback,
-    ValidMPTIssuance>;
+    ValidMPTIssuance,
+    ValidAMM>;
 
 /**
  * @brief get a tuple of all invariant checks
