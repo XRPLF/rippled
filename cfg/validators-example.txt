@@ -70,3 +70,21 @@ ED45D1840EE724BE327ABE9146503D5848EFD5F38B6D5FEDE71E80ACCE5E6E738B
 #
 # [validator_list_keys]
 # ED264807102805220DA0F312E71FC2C69E1552C9C5790F6C25E3729DEB573D5860
+
+
+# [validator_list_threshold]
+#
+#   Minimum number of validator lists on which a validator must be listed in
+#   order to be used.
+#
+#   This can be set explicitly to any positive integer number not greater than
+#   the size of [validator_list_keys]. If it is not set, or set to 0, the
+#   value will be calculated at startup from the size of [validator_list_keys],
+#   where the calculation is:
+#
+#     threshold = size(validator_list_keys) < 3
+#       ? 1
+#       : floor(size(validator_list_keys) / 2) + 1
+
+[validator_list_threshold]
+0
