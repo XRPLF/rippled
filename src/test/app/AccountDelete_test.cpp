@@ -1119,13 +1119,25 @@ public:
 
             auto const acctDelFee{drops(env.current()->fees().increment)};
 
-            // becky can't delete account as feature disabled
+            // becky can't delete account as DepositPreauth object doesn't
+            // exists
             env(acctdelete(becky, alice),
                 credentials::ids(
                     {"098B7F1B146470A1C5084DC7832C04A72939E3EBC58E68AB8B579BA07"
                      "2B0CECB"}),
                 fee(acctDelFee),
-                ter(temDISABLED));
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            // but can delete with old DepositPreauth
+            env(deposit::auth(alice, becky));
+            env.close();
+
+            env(acctdelete(becky, alice),
+                credentials::ids(
+                    {"098B7F1B146470A1C5084DC7832C04A72939E3EBC58E68AB8B579BA07"
+                     "2B0CECB"}),
+                fee(acctDelFee));
             env.close();
         }
     }

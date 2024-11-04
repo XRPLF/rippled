@@ -310,10 +310,6 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
-        !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
-
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -377,20 +373,7 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.rules().enabled(featureCredentials))
         return Transactor::preclaim(ctx);
 
-    auto const escrowKey =
-        keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
-    auto const sleEscrow = ctx.view.read(escrowKey);
-    if (!sleEscrow)
-        return tecNO_TARGET;
-
-    // NOTE: Escrow payments cannot be used to fund accounts.
-    AccountID const dst = sleEscrow->getAccountID(sfDestination);
-    auto const sleDst = ctx.view.read(keylet::account(dst));
-    if (!sleDst)
-        return tecNO_DST;
-
-    if (auto const err =
-            credentials::valid(ctx, ctx.tx[sfAccount], dst, sleDst);
+    if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
         !isTesSuccess(err))
         return err;
 
@@ -487,12 +470,7 @@ EscrowFinish::doApply()
     if (!sled)
         return tecNO_DST;
 
-    if (ctx_.tx.isFieldPresent(sfCredentialIDs))
-    {
-        if (credentials::removeExpired(view(), ctx_.tx, j_))
-            return tecEXPIRED;
-    }
-    else if (ctx_.view().rules().enabled(featureDepositAuth))
+    if (ctx_.view().rules().enabled(featureDepositAuth))
     {
         // Is EscrowFinished authorized?
         if (sled->getFlags() & lsfDepositAuth)
@@ -504,7 +482,17 @@ EscrowFinish::doApply()
             if (account_ != destID)
             {
                 if (!view().exists(keylet::depositPreauth(destID, account_)))
-                    return tecNO_PERMISSION;
+                {
+                    if (!ctx_.view().rules().enabled(featureCredentials) ||
+                        !ctx_.tx.isFieldPresent(sfCredentialIDs))
+                        return tecNO_PERMISSION;
+
+                    if (credentials::removeExpired(view(), ctx_.tx, j_))
+                        return tecEXPIRED;
+                    if (auto err = credentials::authorized(ctx_, destID);
+                        !isTesSuccess(err))
+                        return err;
+                }
             }
         }
     }

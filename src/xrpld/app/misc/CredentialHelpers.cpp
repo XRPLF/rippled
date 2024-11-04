@@ -49,7 +49,7 @@ removeExpired(ApplyView& view, STTx const& tx, beast::Journal const j)
         auto const k = keylet::credential(h);
         auto const sleCred = view.peek(k);
 
-        if (checkExpired(sleCred, closeTime))
+        if (sleCred && checkExpired(sleCred, closeTime))
         {
             JLOG(j.trace())
                 << "Credentials are expired. Cred: " << sleCred->getText();
@@ -120,7 +120,8 @@ deleteSLE(
 NotTEC
 checkFields(PreflightContext const& ctx)
 {
-    if (!ctx.tx.isFieldPresent(sfCredentialIDs))
+    if ((!ctx.rules.enabled(featureCredentials)) ||
+        !ctx.tx.isFieldPresent(sfCredentialIDs))
         return tesSUCCESS;
 
     auto const& credentials = ctx.tx.getFieldV256(sfCredentialIDs);
@@ -148,25 +149,13 @@ checkFields(PreflightContext const& ctx)
 }
 
 TER
-valid(
-    PreclaimContext const& ctx,
-    AccountID const& src,
-    AccountID const& dst,
-    std::optional<std::reference_wrapper<std::shared_ptr<SLE const> const>>
-        sleDstOpt)
+valid(PreclaimContext const& ctx, AccountID const& src)
 {
-    if (!ctx.tx.isFieldPresent(sfCredentialIDs))
+    if ((!ctx.view.rules().enabled(featureCredentials)) ||
+        !ctx.tx.isFieldPresent(sfCredentialIDs))
         return tesSUCCESS;
 
-    std::shared_ptr<SLE const> const& sleDst =
-        sleDstOpt ? *sleDstOpt : ctx.view.read(keylet::account(dst));
-
-    bool const reqAuth =
-        sleDst && (sleDst->getFlags() & lsfDepositAuth) && (src != dst);
-
-    // credentials must be checked even if reqAuth is false
     auto const& credIDs(ctx.tx.getFieldV256(sfCredentialIDs));
-    STArray authCreds(sfAuthorizeCredentials, credIDs.size());
     for (auto const& h : credIDs)
     {
         auto const sleCred = ctx.view.read(keylet::credential(h));
@@ -190,20 +179,33 @@ valid(
             return tecBAD_CREDENTIALS;
         }
 
-        if (reqAuth)
-        {
-            auto credential = STObject::makeInnerObject(sfCredential);
-            credential.setAccountID(sfIssuer, sleCred->getAccountID(sfIssuer));
-            credential.setFieldVL(
-                sfCredentialType, sleCred->getFieldVL(sfCredentialType));
-            authCreds.push_back(std::move(credential));
-        }
+        // Expiration checks are in doApply
     }
 
-    if (reqAuth &&
-        !ctx.view.exists(keylet::depositPreauth(dst, makeSorted(authCreds))))
+    return tesSUCCESS;
+}
+
+TER
+authorized(ApplyContext const& ctx, AccountID const& dst)
+{
+    auto const& credIDs(ctx.tx.getFieldV256(sfCredentialIDs));
+    STArray authCreds(sfAuthorizeCredentials, credIDs.size());
+    for (auto const& h : credIDs)
     {
-        JLOG(ctx.j.trace()) << "DepositPreauth doesn't exist";
+        auto const sleCred = ctx.view().read(keylet::credential(h));
+        if (!sleCred)  // already checked in preclaim
+            return tefINTERNAL;
+
+        auto credential = STObject::makeInnerObject(sfCredential);
+        credential.setAccountID(sfIssuer, sleCred->getAccountID(sfIssuer));
+        credential.setFieldVL(
+            sfCredentialType, sleCred->getFieldVL(sfCredentialType));
+        authCreds.push_back(std::move(credential));
+    }
+
+    if (!ctx.view().exists(keylet::depositPreauth(dst, makeSorted(authCreds))))
+    {
+        JLOG(ctx.journal.trace()) << "DepositPreauth doesn't exist";
         return tecNO_PERMISSION;
     }
 

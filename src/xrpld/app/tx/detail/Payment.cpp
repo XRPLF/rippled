@@ -66,10 +66,6 @@ getMaxSourceAmount(
 NotTEC
 Payment::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
-        !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
-
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -319,8 +315,7 @@ Payment::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (auto const err =
-            credentials::valid(ctx, ctx.tx[sfAccount], dstAccountID, sleDst);
+    if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
         !isTesSuccess(err))
         return err;
 
@@ -388,6 +383,7 @@ Payment::doApply()
     if (!depositPreauth && ripple && reqDepositAuth)
         return tecNO_PERMISSION;
 
+    bool const credentialsEnabled = view().rules().enabled(featureCredentials);
     bool const credentialsPresent = ctx_.tx.isFieldPresent(sfCredentialIDs);
 
     if (ripple)
@@ -401,17 +397,20 @@ Payment::doApply()
             // authorization has two ways to get an IOU Payment in:
             //  1. If Account == Destination, or
             //  2. If Account is deposit preauthorized by destination.
-
-            if (credentialsPresent)
-            {
-                if (credentials::removeExpired(view(), ctx_.tx, j_))
-                    return tecEXPIRED;
-            }
-            else if (dstAccountID != account_)
+            if (dstAccountID != account_)
             {
                 if (!view().exists(
                         keylet::depositPreauth(dstAccountID, account_)))
-                    return tecNO_PERMISSION;
+                {
+                    if (!credentialsEnabled || !credentialsPresent)
+                        return tecNO_PERMISSION;
+
+                    if (credentials::removeExpired(view(), ctx_.tx, j_))
+                        return tecEXPIRED;
+                    if (auto err = credentials::authorized(ctx_, dstAccountID);
+                        !isTesSuccess(err))
+                        return err;
+                }
             }
         }
 
@@ -588,13 +587,7 @@ Payment::doApply()
         // We choose the base reserve as our bound because it is
         // a small number that seldom changes but is always sufficient
         // to get the account un-wedged.
-
-        if (credentialsPresent)
-        {
-            if (credentials::removeExpired(view(), ctx_.tx, j_))
-                return tecEXPIRED;
-        }
-        else if (dstAccountID != account_)
+        if (dstAccountID != account_)
         {
             if (!view().exists(keylet::depositPreauth(dstAccountID, account_)))
             {
@@ -603,7 +596,16 @@ Payment::doApply()
 
                 if (dstAmount > dstReserve ||
                     sleDst->getFieldAmount(sfBalance) > dstReserve)
-                    return tecNO_PERMISSION;
+                {
+                    if (!credentialsEnabled || !credentialsPresent)
+                        return tecNO_PERMISSION;
+
+                    if (credentials::removeExpired(view(), ctx_.tx, j_))
+                        return tecEXPIRED;
+                    if (auto err = credentials::authorized(ctx_, dstAccountID);
+                        !isTesSuccess(err))
+                        return err;
+                }
             }
         }
     }

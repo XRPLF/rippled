@@ -51,12 +51,12 @@ checkFields(PreflightContext const& ctx);
 
 // Accessing the ledger to check if provided credentials are valid
 TER
-valid(
-    PreclaimContext const& ctx,
-    AccountID const& src,
-    AccountID const& dst,
-    std::optional<std::reference_wrapper<std::shared_ptr<SLE const> const>>
-        sleDstOpt = {});
+valid(PreclaimContext const& ctx, AccountID const& src);
+
+// This function is only called when we about to return tecNO_PERMISSION because
+// all the checks for the DepositPreauth authorization failed.
+TER
+authorized(ApplyContext const& ctx, AccountID const& dst);
 
 // return empty set if there are duplicates
 std::set<std::pair<AccountID, Slice>>

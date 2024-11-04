@@ -404,10 +404,6 @@ PayChanFund::doApply()
 NotTEC
 PayChanClaim::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
-        !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
-
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -470,13 +466,7 @@ PayChanClaim::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.rules().enabled(featureCredentials))
         return Transactor::preclaim(ctx);
 
-    Keylet const k(ltPAYCHAN, ctx.tx[sfChannel]);
-    auto const slep = ctx.view.read(k);
-    if (!slep)
-        return tecNO_TARGET;
-
-    if (auto const err = credentials::valid(
-            ctx, ctx.tx[sfAccount], slep->getAccountID(sfDestination));
+    if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
         !isTesSuccess(err))
         return err;
 
@@ -544,12 +534,7 @@ PayChanClaim::doApply()
             return tecNO_TARGET;
 
         // Check whether the destination account requires deposit authorization.
-        if (ctx_.tx.isFieldPresent(sfCredentialIDs))
-        {
-            if (credentials::removeExpired(view(), ctx_.tx, j_))
-                return tecEXPIRED;
-        }
-        else if (depositAuth && (sled->getFlags() & lsfDepositAuth))
+        if (depositAuth && (sled->getFlags() & lsfDepositAuth))
         {
             // A destination account that requires authorization has two
             // ways to get a Payment Channel Claim into the account:
@@ -558,7 +543,17 @@ PayChanClaim::doApply()
             if (txAccount != dst)
             {
                 if (!view().exists(keylet::depositPreauth(dst, txAccount)))
-                    return tecNO_PERMISSION;
+                {
+                    if (!ctx_.view().rules().enabled(featureCredentials) ||
+                        !ctx_.tx.isFieldPresent(sfCredentialIDs))
+                        return tecNO_PERMISSION;
+
+                    if (credentials::removeExpired(view(), ctx_.tx, j_))
+                        return tecEXPIRED;
+                    if (auto err = credentials::authorized(ctx_, dst);
+                        !isTesSuccess(err))
+                        return err;
+                }
             }
         }
 

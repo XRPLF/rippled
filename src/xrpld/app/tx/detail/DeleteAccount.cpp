@@ -42,10 +42,6 @@ DeleteAccount::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureDeletableAccounts))
         return temDISABLED;
 
-    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
-        !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
-
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
@@ -224,16 +220,21 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if ((*sleDst)[sfFlags] & lsfRequireDestTag && !ctx.tx[~sfDestinationTag])
         return tecDST_TAG_NEEDED;
 
-    // Check whether the destination account requires deposit authorization.
-    if (auto const err = credentials::valid(ctx, account, dst, sleDst);
-        !isTesSuccess(err))
+    // If credentials are provided - check them anyway
+    if (auto const err = credentials::valid(ctx, account); !isTesSuccess(err))
         return err;
-    if (!ctx.tx.isFieldPresent(sfCredentialIDs) &&
-        ctx.view.rules().enabled(featureDepositAuth) &&
-        (sleDst->getFlags() & lsfDepositAuth))
+
+    // if credentials then postpone auth check to doApply
+    if (!ctx.view.rules().enabled(featureCredentials) ||
+        !ctx.tx.isFieldPresent(sfCredentialIDs))
     {
-        if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
-            return tecNO_PERMISSION;
+        // Check whether the destination account requires deposit authorization.
+        if (ctx.view.rules().enabled(featureDepositAuth) &&
+            (sleDst->getFlags() & lsfDepositAuth))
+        {
+            if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
+                return tecNO_PERMISSION;
+        }
     }
 
     auto sleAccount = ctx.view.read(keylet::account(account));
@@ -342,16 +343,28 @@ DeleteAccount::doApply()
     auto src = view().peek(keylet::account(account_));
     assert(src);
 
-    auto dst = view().peek(keylet::account(ctx_.tx[sfDestination]));
+    auto const dstID = ctx_.tx[sfDestination];
+    auto dst = view().peek(keylet::account(dstID));
     assert(dst);
 
     if (!src || !dst)
         return tefBAD_LEDGER;
 
-    if (ctx_.tx.isFieldPresent(sfCredentialIDs))
+    if (ctx_.view().rules().enabled(featureCredentials) &&
+        ctx_.tx.isFieldPresent(sfCredentialIDs))
     {
         if (credentials::removeExpired(view(), ctx_.tx, j_))
             return tecEXPIRED;
+
+        // Check whether the destination account requires deposit authorization.
+        if (ctx_.view().rules().enabled(featureDepositAuth) &&
+            (dst->getFlags() & lsfDepositAuth) &&
+            !ctx_.view().exists(keylet::depositPreauth(dstID, account_)))
+        {
+            if (auto err = credentials::authorized(ctx_, dstID);
+                !isTesSuccess(err))
+                return err;
+        }
     }
 
     Keylet const ownerDirKeylet{keylet::ownerDir(account_)};

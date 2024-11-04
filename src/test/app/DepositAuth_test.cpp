@@ -667,10 +667,9 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 TER const expectCredentials(
                     supportsCredentials ? TER(tesSUCCESS) : TER(temDISABLED));
                 TER const expectPayment(
-                    !supportsCredentials
-                        ? TER(temDISABLED)
-                        : (!supportsPreauth ? TER(tecNO_PERMISSION)
-                                            : TER(tesSUCCESS)));
+                    !supportsCredentials || !supportsPreauth
+                        ? TER(tecNO_PERMISSION)
+                        : TER(tesSUCCESS));
                 TER const expectDP(
                     !supportsPreauth
                         ? TER(temDISABLED)
@@ -818,13 +817,14 @@ struct DepositPreauth_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const bob{"bob"};
         Account const maria{"maria"};
+        Account const john{"john"};
 
         {
             testcase("Payment failed with disabled credentials rule.");
 
             Env env(*this, supported_amendments() - featureCredentials);
 
-            env.fund(XRP(5000), issuer, bob);
+            env.fund(XRP(5000), issuer, bob, alice);
             env.close();
 
             // Bob require preauthorization
@@ -836,16 +836,20 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 ter(temDISABLED));
             env.close();
 
-            {
-                // Payment with CredentialsIDs failed - amendent is not
-                // supported
-                std::string const invalidIdx =
-                    "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E"
-                    "01E034";
-                env(pay(issuer, bob, XRP(10)),
-                    credentials::ids({invalidIdx}),
-                    ter(temDISABLED));
-            }
+            // But can create old DepositPreauth
+            env(deposit::auth(bob, alice));
+            env.close();
+            // And alice can pay without credentials
+            env(pay(alice, bob, XRP(10)));
+            env.close();
+
+            // And alice can pay with any credentials, as they aren't checked if
+            // amendement is not enabled
+            std::string const invalidIdx =
+                "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E"
+                "01E034";
+            env(pay(alice, bob, XRP(10)), credentials::ids({invalidIdx}));
+            env.close();
         }
 
         {
@@ -853,7 +857,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             Env env(*this);
 
-            env.fund(XRP(5000), issuer, alice, bob);
+            env.fund(XRP(5000), issuer, alice, bob, john);
             env.close();
 
             // Issuer create credentials, but Alice didn't accept them yet
@@ -908,6 +912,13 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             // Alice can pay Maria without depositPreauth enabled
             env(pay(alice, maria, XRP(250)), credentials::ids({credIdx}));
+            env.close();
+
+            // john can accept payment with old depositPreauth and valid
+            // credentials
+            env(fset(john, asfDepositAuth));
+            env(deposit::auth(john, alice));
+            env(pay(alice, john, XRP(100)), credentials::ids({credIdx}));
             env.close();
         }
 
