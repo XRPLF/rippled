@@ -51,7 +51,7 @@ multiply(STAmount const& amount, Rate const& rate)
     if (rate == parityRate)
         return amount;
 
-    return multiply(amount, detail::as_amount(rate), amount.issue());
+    return multiply(amount, detail::as_amount(rate), amount.asset());
 }
 
 STAmount
@@ -62,14 +62,14 @@ multiplyRound(STAmount const& amount, Rate const& rate, bool roundUp)
     if (rate == parityRate)
         return amount;
 
-    return mulRound(amount, detail::as_amount(rate), amount.issue(), roundUp);
+    return mulRound(amount, detail::as_amount(rate), amount.asset(), roundUp);
 }
 
 STAmount
 multiplyRound(
     STAmount const& amount,
     Rate const& rate,
-    Issue const& issue,
+    Asset const& asset,
     bool roundUp)
 {
     ASSERT(
@@ -81,7 +81,7 @@ multiplyRound(
         return amount;
     }
 
-    return mulRound(amount, detail::as_amount(rate), issue, roundUp);
+    return mulRound(amount, detail::as_amount(rate), asset, roundUp);
 }
 
 STAmount
@@ -92,7 +92,7 @@ divide(STAmount const& amount, Rate const& rate)
     if (rate == parityRate)
         return amount;
 
-    return divide(amount, detail::as_amount(rate), amount.issue());
+    return divide(amount, detail::as_amount(rate), amount.asset());
 }
 
 STAmount
@@ -103,14 +103,14 @@ divideRound(STAmount const& amount, Rate const& rate, bool roundUp)
     if (rate == parityRate)
         return amount;
 
-    return divRound(amount, detail::as_amount(rate), amount.issue(), roundUp);
+    return divRound(amount, detail::as_amount(rate), amount.asset(), roundUp);
 }
 
 STAmount
 divideRound(
     STAmount const& amount,
     Rate const& rate,
-    Issue const& issue,
+    Asset const& asset,
     bool roundUp)
 {
     ASSERT(
@@ -120,7 +120,7 @@ divideRound(
     if (rate == parityRate)
         return amount;
 
-    return divRound(amount, detail::as_amount(rate), issue, roundUp);
+    return divRound(amount, detail::as_amount(rate), asset, roundUp);
 }
 
 }  // namespace ripple

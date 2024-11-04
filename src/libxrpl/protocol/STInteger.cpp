@@ -198,13 +198,27 @@ template <>
 Json::Value
 STUInt64::getJson(JsonOptions) const
 {
-    std::string str(16, 0);
-    auto ret = std::to_chars(str.data(), str.data() + str.size(), value_, 16);
-    ASSERT(
-        ret.ec == std::errc(),
-        "ripple::STUInt64::getJson : to_chars succeeded");
-    str.resize(std::distance(str.data(), ret.ptr));
-    return str;
+    auto convertToString = [](uint64_t const value, int const base) {
+        ASSERT(
+            base == 10 || base == 16,
+            "ripple::STUInt64::getJson : base 10 or 16");
+        std::string str(
+            base == 10 ? 20 : 16, 0);  // Allocate space depending on base
+        auto ret =
+            std::to_chars(str.data(), str.data() + str.size(), value, base);
+        ASSERT(
+            ret.ec == std::errc(),
+            "ripple::STUInt64::getJson : to_chars succeeded");
+        str.resize(std::distance(str.data(), ret.ptr));
+        return str;
+    };
+
+    if (auto const& fName = getFName(); fName.shouldMeta(SField::sMD_BaseTen))
+    {
+        return convertToString(value_, 10);  // Convert to base 10
+    }
+
+    return convertToString(value_, 16);  // Convert to base 16
 }
 
 }  // namespace ripple

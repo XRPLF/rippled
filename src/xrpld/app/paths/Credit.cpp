@@ -31,7 +31,7 @@ creditLimit(
     AccountID const& issuer,
     Currency const& currency)
 {
-    STAmount result({currency, account});
+    STAmount result(Issue{currency, account});
 
     auto sleRippleState = view.read(keylet::line(account, issuer, currency));
 
@@ -68,7 +68,7 @@ creditBalance(
     AccountID const& issuer,
     Currency const& currency)
 {
-    STAmount result({currency, account});
+    STAmount result(Issue{currency, account});
 
     auto sleRippleState = view.read(keylet::line(account, issuer, currency));
 

@@ -67,7 +67,7 @@ Quality::operator--(int)
 }
 
 template <STAmount (
-    *DivRoundFunc)(STAmount const&, STAmount const&, Issue const&, bool)>
+    *DivRoundFunc)(STAmount const&, STAmount const&, Asset const&, bool)>
 static Amounts
 ceil_in_impl(
     Amounts const& amount,
@@ -79,7 +79,7 @@ ceil_in_impl(
     {
         Amounts result(
             limit,
-            DivRoundFunc(limit, quality.rate(), amount.out.issue(), roundUp));
+            DivRoundFunc(limit, quality.rate(), amount.out.asset(), roundUp));
         // Clamp out
         if (result.out > amount.out)
             result.out = amount.out;
@@ -107,7 +107,7 @@ Quality::ceil_in_strict(
 }
 
 template <STAmount (
-    *MulRoundFunc)(STAmount const&, STAmount const&, Issue const&, bool)>
+    *MulRoundFunc)(STAmount const&, STAmount const&, Asset const&, bool)>
 static Amounts
 ceil_out_impl(
     Amounts const& amount,
@@ -118,7 +118,7 @@ ceil_out_impl(
     if (amount.out > limit)
     {
         Amounts result(
-            MulRoundFunc(limit, quality.rate(), amount.in.issue(), roundUp),
+            MulRoundFunc(limit, quality.rate(), amount.in.asset(), roundUp),
             limit);
         // Clamp in
         if (result.in > amount.in)
@@ -160,7 +160,7 @@ composed_quality(Quality const& lhs, Quality const& rhs)
         rhs_rate != beast::zero,
         "ripple::composed_quality : nonzero right input");
 
-    STAmount const rate(mulRound(lhs_rate, rhs_rate, lhs_rate.issue(), true));
+    STAmount const rate(mulRound(lhs_rate, rhs_rate, lhs_rate.asset(), true));
 
     std::uint64_t const stored_exponent(rate.exponent() + 100);
     std::uint64_t const stored_mantissa(rate.mantissa());

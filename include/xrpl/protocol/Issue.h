@@ -38,16 +38,26 @@ public:
     Currency currency{};
     AccountID account{};
 
-    Issue()
-    {
-    }
+    Issue() = default;
 
     Issue(Currency const& c, AccountID const& a) : currency(c), account(a)
     {
     }
 
+    AccountID const&
+    getIssuer() const
+    {
+        return account;
+    }
+
     std::string
     getText() const;
+
+    void
+    setJson(Json::Value& jv) const;
+
+    bool
+    native() const;
 };
 
 bool
@@ -114,6 +124,12 @@ noIssue()
 {
     static Issue issue{noCurrency(), noAccount()};
     return issue;
+}
+
+inline bool
+isXRP(Issue const& issue)
+{
+    return issue.native();
 }
 
 }  // namespace ripple
