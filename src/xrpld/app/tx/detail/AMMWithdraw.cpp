@@ -567,9 +567,8 @@ AMMWithdraw::withdraw(
 
             // See also SetTrust::doApply()
             XRPAmount const reserve(
-                (ownerCount < 2)
-                    ? XRPAmount(beast::zero)
-                    : view.fees().accountReserve(ownerCount + 1));
+                (ownerCount < 2) ? XRPAmount(beast::zero)
+                                 : view.fees().accountReserve(ownerCount + 1));
 
             if (std::max(mPriorBalance, balance) < reserve)
                 return tecINSUFFICIENT_RESERVE;
