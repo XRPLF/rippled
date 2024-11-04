@@ -184,7 +184,13 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return tecAMM_INVALID_TOKENS;
     }
 
-    // Disallow AMM if the issuer has clawback enabled
+    // If featureAMMClawback is enabled, allow AMMCreate without checking
+    // if the issuer has clawback enabled
+    if (ctx.view.rules().enabled(featureAMMClawback))
+        return tesSUCCESS;
+
+    // Disallow AMM if the issuer has clawback enabled when featureAMMClawback
+    // is not enabled
     auto clawbackDisabled = [&](Issue const& issue) -> TER {
         if (isXRP(issue))
             return tesSUCCESS;
