@@ -98,9 +98,8 @@ public:
     friend constexpr bool
     operator==(Currency const& lhs, Asset const& rhs);
 
-    /** Return true if both asset's issue (Issue or MPTIssue)
-     * are the same and hold the same token (currency or MPTID).
-     * Otherwise return false.
+    /** Return true if both assets refer to the same currency (regardless of
+     * issuer) or MPT issuance. Otherwise return false.
      */
     friend constexpr bool
     equalTokens(Asset const& lhs, Asset const& rhs);
