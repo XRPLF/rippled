@@ -823,6 +823,26 @@ pay(Account const& account, AccountID const& to, STAmount const& amount)
     jv[jss::Flags] = tfUniversal;
     return jv;
 }
+
+Json::Value
+ammClawback(
+    Account const& issuer,
+    Account const& holder,
+    Issue const& asset,
+    Issue const& asset2,
+    std::optional<STAmount> const& amount)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::AMMClawback;
+    jv[jss::Account] = issuer.human();
+    jv[jss::Holder] = holder.human();
+    jv[jss::Asset] = to_json(asset);
+    jv[jss::Asset2] = to_json(asset2);
+    if (amount)
+        jv[jss::Amount] = amount->getJson(JsonOptions::none);
+
+    return jv;
+}
 }  // namespace amm
 }  // namespace jtx
 }  // namespace test
