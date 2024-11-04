@@ -73,6 +73,7 @@ JSS(Escrow);               // ledger type.
 JSS(Fee);                  // in/out: TransactionSign; field.
 JSS(FeeSettings);          // ledger type.
 JSS(Flags);                // in/out: TransactionSign; field.
+JSS(Holder);               // field.
 JSS(Invalid);              //
 JSS(LastLedgerSequence);   // in: TransactionSign; field
 JSS(LastUpdateTime);       // field.
