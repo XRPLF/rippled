@@ -315,6 +315,7 @@ depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept
         indexHash(LedgerNameSpace::DEPOSIT_PREAUTH, owner, preauthorized)};
 }
 
+// Credentials should be sorted here, use credentials::makeSorted
 Keylet
 depositPreauth(
     AccountID const& owner,

@@ -467,6 +467,9 @@ PayChanClaim::preflight(PreflightContext const& ctx)
 TER
 PayChanClaim::preclaim(PreclaimContext const& ctx)
 {
+    if (!ctx.view.rules().enabled(featureCredentials))
+        return Transactor::preclaim(ctx);
+
     Keylet const k(ltPAYCHAN, ctx.tx[sfChannel]);
     auto const slep = ctx.view.read(k);
     if (!slep)

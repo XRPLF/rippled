@@ -87,7 +87,7 @@ DepositPreauth::preflight(PreflightContext const& ctx)
         }
 
         // An account may not preauthorize itself.
-        if (target == ctx.tx[sfAccount])
+        if (optAuth && (target == ctx.tx[sfAccount]))
         {
             JLOG(ctx.j.trace())
                 << "Malformed transaction: Attempting to DepositPreauth self.";

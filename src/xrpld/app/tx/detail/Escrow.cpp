@@ -374,6 +374,9 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
 TER
 EscrowFinish::preclaim(PreclaimContext const& ctx)
 {
+    if (!ctx.view.rules().enabled(featureCredentials))
+        return Transactor::preclaim(ctx);
+
     auto const escrowKey =
         keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
     auto const sleEscrow = ctx.view.read(escrowKey);
