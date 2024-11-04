@@ -169,7 +169,7 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
 [[nodiscard]] inline std::array<std::uint8_t, 10>
 b58_10_to_b58_be(std::uint64_t input)
 {
-    static constexpr [[maybe_unused]] std::uint64_t B_58_10 =
+    [[maybe_unused]] static constexpr std::uint64_t B_58_10 =
         430804206899405824;  // 58^10;
     assert(input < B_58_10);
     constexpr std::size_t resultSize = 10;
