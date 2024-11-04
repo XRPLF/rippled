@@ -563,14 +563,15 @@ AMMWithdraw::withdraw(
             if (!sleAccount)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             auto const balance = (*sleAccount)[sfBalance].xrp();
-            std::uint32_t const ownerCount = sle->at(sfOwnerCount);
+            std::uint32_t const ownerCount = sleAccount->at(sfOwnerCount);
 
             // See also SetTrust::doApply()
             XRPAmount const reserve(
-                (ownerCount < 2) ? XRPAmount(beast::zero)
-                          : view().fees().accountReserve(ownerCount + 1));
+                (ownerCount < 2)
+                    ? XRPAmount(beast::zero)
+                    : view.fees().accountReserve(ownerCount + 1));
 
-            if (max(mPriorBalance, balance) < reserve)
+            if (std::max(mPriorBalance, balance) < reserve)
                 return tecINSUFFICIENT_RESERVE;
         }
         return tesSUCCESS;
