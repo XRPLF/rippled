@@ -227,6 +227,14 @@ TRANSACTION(ttCLAWBACK, 30, Clawback, ({
     {sfHolder, soeOPTIONAL},
 }))
 
+/** This transaction claws back tokens from an AMM pool. */
+TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback, ({
+    {sfHolder, soeREQUIRED},
+    {sfAsset, soeREQUIRED},
+    {sfAsset2, soeREQUIRED},
+    {sfAmount, soeOPTIONAL},
+}))
+
 /** This transaction type creates an AMM instance */
 TRANSACTION(ttAMM_CREATE, 35, AMMCreate, ({
     {sfAmount, soeREQUIRED},
