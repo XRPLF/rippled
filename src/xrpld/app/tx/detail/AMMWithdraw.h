@@ -96,6 +96,7 @@ public:
      * @param lpTokensWithdraw amount of tokens to withdraw
      * @param tfee trading fee in basis points
      * @param withdrawAll if withdrawing all lptokens
+     * @param priorBalance balance before fees
      * @return
      */
     static std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
@@ -112,6 +113,7 @@ public:
         std::uint16_t tfee,
         FreezeHandling freezeHanding,
         WithdrawAll withdrawAll,
+        XRPAmount const& priorBalance,
         beast::Journal const& journal);
 
     /** Withdraw requested assets and token from AMM into LP account.
@@ -127,6 +129,7 @@ public:
      * @param lpTokensWithdraw amount of lptokens to withdraw
      * @param tfee trading fee in basis points
      * @param withdrawAll if withdraw all lptokens
+     * @param priorBalance balance before fees
      * @return
      */
     static std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
@@ -143,6 +146,7 @@ public:
         std::uint16_t tfee,
         FreezeHandling freezeHandling,
         WithdrawAll withdrawAll,
+        XRPAmount const& priorBalance,
         beast::Journal const& journal);
 
     static std::pair<TER, bool>

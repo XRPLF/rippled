@@ -472,6 +472,7 @@ AMMWithdraw::withdraw(
         tfee,
         FreezeHandling::fhZERO_IF_FROZEN,
         isWithdrawAll(ctx_.tx),
+        mPriorBalance,
         j_);
     return {ter, newLPTokenBalance};
 }
@@ -490,6 +491,7 @@ AMMWithdraw::withdraw(
     std::uint16_t tfee,
     FreezeHandling freezeHandling,
     WithdrawAll withdrawAll,
+    XRPAmount const& priorBalance,
     beast::Journal const& journal)
 {
     auto const lpTokens = ammLPHolds(view, ammSle, account, journal);
@@ -589,6 +591,33 @@ AMMWithdraw::withdraw(
         return {tecAMM_BALANCE, STAmount{}, STAmount{}, STAmount{}};
     }
 
+    // Check the reserve in case a trustline has to be created
+    bool const enabledFixAMMv1_2 = view.rules().enabled(fixAMMv1_2);
+    auto sufficientReserve = [&](Issue const& issue) -> TER {
+        if (!enabledFixAMMv1_2 || isXRP(issue))
+            return tesSUCCESS;
+        if (!view.exists(keylet::line(account, issue)))
+        {
+            auto const sleAccount = view.read(keylet::account(account));
+            if (!sleAccount)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            auto const balance = (*sleAccount)[sfBalance].xrp();
+            std::uint32_t const ownerCount = sleAccount->at(sfOwnerCount);
+
+            // See also SetTrust::doApply()
+            XRPAmount const reserve(
+                (ownerCount < 2) ? XRPAmount(beast::zero)
+                                 : view.fees().accountReserve(ownerCount + 1));
+
+            if (std::max(priorBalance, balance) < reserve)
+                return tecINSUFFICIENT_RESERVE;
+        }
+        return tesSUCCESS;
+    };
+
+    if (auto const err = sufficientReserve(amountWithdrawActual.issue()))
+        return {err, STAmount{}, STAmount{}, STAmount{}};
+
     // Withdraw amountWithdraw
     auto res = accountSend(
         view,
@@ -609,6 +638,10 @@ AMMWithdraw::withdraw(
     // Withdraw amount2Withdraw
     if (amount2WithdrawActual)
     {
+        if (auto const err = sufficientReserve(amount2WithdrawActual->issue());
+            err != tesSUCCESS)
+            return {err, STAmount{}, STAmount{}, STAmount{}};
+
         res = accountSend(
             view,
             ammAccount,
@@ -676,6 +709,7 @@ AMMWithdraw::equalWithdrawTokens(
             tfee,
             FreezeHandling::fhZERO_IF_FROZEN,
             isWithdrawAll(ctx_.tx),
+            mPriorBalance,
             ctx_.journal);
     return {ter, newLPTokenBalance};
 }
@@ -725,6 +759,7 @@ AMMWithdraw::equalWithdrawTokens(
     std::uint16_t tfee,
     FreezeHandling freezeHanding,
     WithdrawAll withdrawAll,
+    XRPAmount const& priorBalance,
     beast::Journal const& journal)
 {
     try
@@ -745,6 +780,7 @@ AMMWithdraw::equalWithdrawTokens(
                 tfee,
                 freezeHanding,
                 WithdrawAll::Yes,
+                priorBalance,
                 journal);
         }
 
@@ -773,6 +809,7 @@ AMMWithdraw::equalWithdrawTokens(
             tfee,
             freezeHanding,
             withdrawAll,
+            priorBalance,
             journal);
     }
     // LCOV_EXCL_START
