@@ -2006,7 +2006,7 @@ class MPToken_test : public beast::unit_test::suite
             BEAST_EXPECT(res == amt3);
 
             // overflow, any value > 3037000499ull
-            STAmount mptOverflow{asset2, 3037000500ull};
+            STAmount mptOverflow{asset2, UINT64_C(3037000500)};
             try
             {
                 res = multiply(mptOverflow, mptOverflow, asset3);
@@ -2017,11 +2017,11 @@ class MPToken_test : public beast::unit_test::suite
                 BEAST_EXPECTS(e.what() == "MPT value overflow"s, e.what());
             }
             // overflow, (v1 >> 32) * v2 > 2147483648ull
-            mptOverflow = STAmount{asset2, 2147483648ull};
+            mptOverflow = STAmount{asset2, UINT64_C(2147483648)};
+            uint64_t const mantissa = (2ull << 32) + 2;
             try
             {
-                res = multiply(
-                    STAmount{asset1, (2ull << 32) + 2}, mptOverflow, asset3);
+                res = multiply(STAmount{asset1, mantissa}, mptOverflow, asset3);
                 fail("should throw runtime exception 2");
             }
             catch (std::runtime_error const& e)
