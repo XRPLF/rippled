@@ -73,7 +73,8 @@ public:
     {
         return session_.get();
     }
-    explicit operator bool() const
+    explicit
+    operator bool() const
     {
         return bool(session_);
     }
@@ -102,6 +103,8 @@ public:
         }
 
         static std::unique_ptr<std::vector<std::string> const> globalPragma;
+        std::array<std::string, 4> txPragma;
+        std::array<std::string, 1> lgrPragma;
     };
 
     struct CheckpointerSetup
@@ -114,7 +117,7 @@ public:
     DatabaseCon(
         Setup const& setup,
         std::string const& dbName,
-        std::array<char const*, N> const& pragma,
+        std::array<std::string, N> const& pragma,
         std::array<char const*, M> const& initSQL,
         beast::Journal journal)
         // Use temporary files or regular DB files?
@@ -136,7 +139,7 @@ public:
     DatabaseCon(
         Setup const& setup,
         std::string const& dbName,
-        std::array<char const*, N> const& pragma,
+        std::array<std::string, N> const& pragma,
         std::array<char const*, M> const& initSQL,
         CheckpointerSetup const& checkpointerSetup,
         beast::Journal journal)
@@ -149,7 +152,7 @@ public:
     DatabaseCon(
         boost::filesystem::path const& dataDir,
         std::string const& dbName,
-        std::array<char const*, N> const& pragma,
+        std::array<std::string, N> const& pragma,
         std::array<char const*, M> const& initSQL,
         beast::Journal journal)
         : DatabaseCon(dataDir / dbName, nullptr, pragma, initSQL, journal)
@@ -161,7 +164,7 @@ public:
     DatabaseCon(
         boost::filesystem::path const& dataDir,
         std::string const& dbName,
-        std::array<char const*, N> const& pragma,
+        std::array<std::string, N> const& pragma,
         std::array<char const*, M> const& initSQL,
         CheckpointerSetup const& checkpointerSetup,
         beast::Journal journal)
@@ -199,12 +202,18 @@ private:
     DatabaseCon(
         boost::filesystem::path const& pPath,
         std::vector<std::string> const* commonPragma,
-        std::array<char const*, N> const& pragma,
+        std::array<std::string, N> const& pragma,
         std::array<char const*, M> const& initSQL,
         beast::Journal journal)
         : session_(std::make_shared<soci::session>()), j_(journal)
     {
         open(*session_, "sqlite", pPath.string());
+
+        for (auto const& p : pragma)
+        {
+            soci::statement st = session_->prepare << p;
+            st.execute(true);
+        }
 
         if (commonPragma)
         {
@@ -214,11 +223,7 @@ private:
                 st.execute(true);
             }
         }
-        for (auto const& p : pragma)
-        {
-            soci::statement st = session_->prepare << p;
-            st.execute(true);
-        }
+
         for (auto const& sql : initSQL)
         {
             soci::statement st = session_->prepare << sql;

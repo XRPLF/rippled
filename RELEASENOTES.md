@@ -6,6 +6,64 @@ This document contains the release notes for `rippled`, the reference server imp
 
 Have new ideas? Need help with setting up your node? [Please open an issue here](https://github.com/xrplf/rippled/issues/new/choose).
 
+# Version 2.2.3
+
+Version 2.2.3 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release fixes a problem that can cause full-history servers to run out of space in their SQLite databases, depending on configuration. There are no new amendments in this release.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+## Background
+
+The `rippled` server uses a SQLite database for tracking transactions, in addition to the main data store (usually NuDB) for ledger data. In servers keeping a large amount of history, this database can run out of space based on the configured number and size of database pages, even if the machine has disk space available. Based on the size of full history on Mainnet, servers with the default SQLite page size of 4096 may now run out of space if they store full history. In this case, your server may shut down with an error such as the following:
+
+```text
+Free SQLite space for transaction db is less than 512MB. To fix this, rippled
+  must be executed with the vacuum <sqlitetmpdir> parameter before restarting.
+  Note that this activity can take multiple days, depending on database size.
+```
+
+The exact timing of when a server runs out of space can vary based on a few factors. Server operators who encountered a similar problem in 2018 and followed steps to [increase the SQLite transaction database page size issue](../../../docs/infrastructure/troubleshooting/fix-sqlite-tx-db-page-size-issue) may not encounter this problem at all. The `--vacuum` commandline option to `rippled` from that time may work to free up space in the database, but requires extended downtime.
+
+Version 2.2.3 of `rippled` reconfigures the maximum number of SQLite pages so that the issue does not occur.
+
+Clio servers providing full history are not affected by this issue.
+
+
+## Action Required
+
+If you run an [XRP Ledger full history server](https://xrpl.org/docs/infrastructure/configuration/data-retention/configure-full-history), upgrading to version 2.2.3 may prevent the server from crashing when `transaction.db` exceeds approximately 8.7 terabytes.
+
+Additionally, five amendments introduced in version 2.2.0 are open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators. If you operate an XRP Ledger server older than version 2.2.0, upgrade by Sep 23, 2024 to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+
+## Changelog
+
+### Bug Fixes
+
+- Update SQLite3 max_page_count to match current defaults ([#5114](https://github.com/XRPLF/rippled/pull/5114))
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+
+## Credits
+
+The following people contributed directly to this release:
+
+J. Scott Branson <the@rabbitkick.club>
+
+
+Bug Bounties and Responsible Disclosures:
+
+We welcome reviews of the `rippled` code and urge researchers to responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to: <bugs@xrpl.org>
+
+
 # Version 2.2.2
 
 Version 2.2.2 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release fixes an ongoing issue with Mainnet where validators can stall during consensus processing due to lock contention, preventing ledgers from being validated for up to two minutes. There are no new amendments in this release.
@@ -499,7 +557,7 @@ If you operate an XRP Ledger server, upgrade to version 2.0.0 by January 22, 202
 
 - Switched to Unity builds to speed up Windows CI. [#4780](https://github.com/XRPLF/rippled/pull/4780)
 
-- Clarified what makes concensus healthy in `FeeEscalation.md`. [#4729](https://github.com/XRPLF/rippled/pull/4729)
+- Clarified what makes consensus healthy in `FeeEscalation.md`. [#4729](https://github.com/XRPLF/rippled/pull/4729)
 
 - Removed a dependency on the <ranges> header for unit tests. [#4788](https://github.com/XRPLF/rippled/pull/4788)
 
