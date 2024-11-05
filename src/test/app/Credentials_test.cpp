@@ -101,7 +101,13 @@ struct Credentials_test : public beast::unit_test::suite
                     jle[jss::result].isMember(jss::node) &&
                     jle[jss::result][jss::node].isMember("LedgerEntryType") &&
                     jle[jss::result][jss::node]["LedgerEntryType"] ==
-                        jss::Credential);
+                        jss::Credential &&
+                    jle[jss::result][jss::node][jss::Issuer] ==
+                        issuer.human() &&
+                    jle[jss::result][jss::node][jss::Subject] ==
+                        subject.human() &&
+                    jle[jss::result][jss::node]["CredentialType"] ==
+                        strHex(std::string_view(credType)));
             }
 
             env(credentials::accept(subject, issuer, credType));
@@ -171,7 +177,13 @@ struct Credentials_test : public beast::unit_test::suite
                     jle[jss::result].isMember(jss::node) &&
                     jle[jss::result][jss::node].isMember("LedgerEntryType") &&
                     jle[jss::result][jss::node]["LedgerEntryType"] ==
-                        jss::Credential);
+                        jss::Credential &&
+                    jle[jss::result][jss::node][jss::Issuer] ==
+                        issuer.human() &&
+                    jle[jss::result][jss::node][jss::Subject] ==
+                        issuer.human() &&
+                    jle[jss::result][jss::node]["CredentialType"] ==
+                        strHex(std::string_view(credType)));
             }
 
             env(credentials::deleteCred(issuer, issuer, issuer, credType));
@@ -283,7 +295,7 @@ struct Credentials_test : public beast::unit_test::suite
         }
 
         {
-            testcase("Delete subject before accept ");
+            testcase("Delete subject before accept");
 
             auto const credKey = credentialKeylet(subject, issuer, credType);
             env(credentials::create(subject, issuer, credType));
@@ -319,7 +331,7 @@ struct Credentials_test : public beast::unit_test::suite
         }
 
         {
-            testcase("Delete subject after accept ");
+            testcase("Delete subject after accept");
 
             auto const credKey = credentialKeylet(subject, issuer, credType);
             env(credentials::create(subject, issuer, credType));
@@ -547,6 +559,23 @@ struct Credentials_test : public beast::unit_test::suite
                 env.close();
                 env(jv, ter(tecDUPLICATE));
                 env.close();
+
+                // check credential still present
+                auto const jle =
+                    credentials::ledgerEntry(env, subject, issuer, credType);
+                BEAST_EXPECT(
+                    jle.isObject() && jle.isMember(jss::result) &&
+                    !jle[jss::result].isMember(jss::error) &&
+                    jle[jss::result].isMember(jss::node) &&
+                    jle[jss::result][jss::node].isMember("LedgerEntryType") &&
+                    jle[jss::result][jss::node]["LedgerEntryType"] ==
+                        jss::Credential &&
+                    jle[jss::result][jss::node][jss::Issuer] ==
+                        issuer.human() &&
+                    jle[jss::result][jss::node][jss::Subject] ==
+                        subject.human() &&
+                    jle[jss::result][jss::node]["CredentialType"] ==
+                        strHex(std::string_view(credType)));
             }
         }
 
@@ -610,6 +639,13 @@ struct Credentials_test : public beast::unit_test::suite
                 env(jv, ter(temINVALID_ACCOUNT_ID));
                 env.close();
             }
+
+            {
+                testcase(
+                    "CredentialsAccept fail, invalid credentialType param.");
+                auto jv = credentials::accept(subject, issuer, "");
+                env(jv, ter(temMALFORMED));
+            }
         }
 
         {
@@ -627,6 +663,23 @@ struct Credentials_test : public beast::unit_test::suite
                 env(credentials::accept(subject, issuer, credType),
                     ter(tecINSUFFICIENT_RESERVE));
                 env.close();
+
+                // check credential still present
+                auto const jle =
+                    credentials::ledgerEntry(env, subject, issuer, credType);
+                BEAST_EXPECT(
+                    jle.isObject() && jle.isMember(jss::result) &&
+                    !jle[jss::result].isMember(jss::error) &&
+                    jle[jss::result].isMember(jss::node) &&
+                    jle[jss::result][jss::node].isMember("LedgerEntryType") &&
+                    jle[jss::result][jss::node]["LedgerEntryType"] ==
+                        jss::Credential &&
+                    jle[jss::result][jss::node][jss::Issuer] ==
+                        issuer.human() &&
+                    jle[jss::result][jss::node][jss::Subject] ==
+                        subject.human() &&
+                    jle[jss::result][jss::node]["CredentialType"] ==
+                        strHex(std::string_view(credType)));
             }
         }
 
@@ -652,6 +705,23 @@ struct Credentials_test : public beast::unit_test::suite
                 env(credentials::accept(subject, issuer, credType),
                     ter(tecDUPLICATE));
                 env.close();
+
+                // check credential still present
+                auto const jle =
+                    credentials::ledgerEntry(env, subject, issuer, credType);
+                BEAST_EXPECT(
+                    jle.isObject() && jle.isMember(jss::result) &&
+                    !jle[jss::result].isMember(jss::error) &&
+                    jle[jss::result].isMember(jss::node) &&
+                    jle[jss::result][jss::node].isMember("LedgerEntryType") &&
+                    jle[jss::result][jss::node]["LedgerEntryType"] ==
+                        jss::Credential &&
+                    jle[jss::result][jss::node][jss::Issuer] ==
+                        issuer.human() &&
+                    jle[jss::result][jss::node][jss::Subject] ==
+                        subject.human() &&
+                    jle[jss::result][jss::node]["CredentialType"] ==
+                        strHex(std::string_view(credType)));
             }
 
             {
@@ -679,6 +749,9 @@ struct Credentials_test : public beast::unit_test::suite
                     jDelCred.isObject() && jDelCred.isMember(jss::result) &&
                     jDelCred[jss::result].isMember(jss::error) &&
                     jDelCred[jss::result][jss::error] == "entryNotFound");
+
+                BEAST_EXPECT(ownerCount(env, issuer) == 0);
+                BEAST_EXPECT(ownerCount(env, subject) == 1);
             }
         }
 
@@ -706,6 +779,14 @@ struct Credentials_test : public beast::unit_test::suite
                 jv = credentials::accept(subject, issuer, credType);
                 env(jv, ter(tecNO_ISSUER));
                 env.close();
+
+                // check that expired credentials were deleted
+                auto const jDelCred =
+                    credentials::ledgerEntry(env, subject, issuer, credType);
+                BEAST_EXPECT(
+                    jDelCred.isObject() && jDelCred.isMember(jss::result) &&
+                    jDelCred[jss::result].isMember(jss::error) &&
+                    jDelCred[jss::result][jss::error] == "entryNotFound");
             }
         }
     }
@@ -753,6 +834,13 @@ struct Credentials_test : public beast::unit_test::suite
             }
 
             {
+                testcase(
+                    "CredentialsDelete fail, invalid credentialType param.");
+                auto jv = credentials::deleteCred(subject, subject, issuer, "");
+                env(jv, ter(temMALFORMED));
+            }
+
+            {
                 const char credType2[] = "fghij";
 
                 env(credentials::create(subject, issuer, credType2));
@@ -762,6 +850,23 @@ struct Credentials_test : public beast::unit_test::suite
                 env(credentials::deleteCred(other, subject, issuer, credType2),
                     ter(tecNO_PERMISSION));
                 env.close();
+
+                // check credential still present
+                auto const jle =
+                    credentials::ledgerEntry(env, subject, issuer, credType2);
+                BEAST_EXPECT(
+                    jle.isObject() && jle.isMember(jss::result) &&
+                    !jle[jss::result].isMember(jss::error) &&
+                    jle[jss::result].isMember(jss::node) &&
+                    jle[jss::result][jss::node].isMember("LedgerEntryType") &&
+                    jle[jss::result][jss::node]["LedgerEntryType"] ==
+                        jss::Credential &&
+                    jle[jss::result][jss::node][jss::Issuer] ==
+                        issuer.human() &&
+                    jle[jss::result][jss::node][jss::Subject] ==
+                        subject.human() &&
+                    jle[jss::result][jss::node]["CredentialType"] ==
+                        strHex(std::string_view(credType2)));
             }
 
             {
@@ -782,6 +887,23 @@ struct Credentials_test : public beast::unit_test::suite
                 env(credentials::deleteCred(other, subject, issuer, credType),
                     ter(tecNO_PERMISSION));
                 env.close();
+
+                // check credential still present
+                auto const jle =
+                    credentials::ledgerEntry(env, subject, issuer, credType);
+                BEAST_EXPECT(
+                    jle.isObject() && jle.isMember(jss::result) &&
+                    !jle[jss::result].isMember(jss::error) &&
+                    jle[jss::result].isMember(jss::node) &&
+                    jle[jss::result][jss::node].isMember("LedgerEntryType") &&
+                    jle[jss::result][jss::node]["LedgerEntryType"] ==
+                        jss::Credential &&
+                    jle[jss::result][jss::node][jss::Issuer] ==
+                        issuer.human() &&
+                    jle[jss::result][jss::node][jss::Subject] ==
+                        subject.human() &&
+                    jle[jss::result][jss::node]["CredentialType"] ==
+                        strHex(std::string_view(credType)));
             }
 
             {

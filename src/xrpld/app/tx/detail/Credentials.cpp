@@ -228,6 +228,14 @@ CredentialDelete::preflight(PreflightContext const& ctx)
         return temINVALID_ACCOUNT_ID;
     }
 
+    auto const credType = ctx.tx[sfCredentialType];
+    if (credType.empty() || (credType.size() > maxCredentialTypeLength))
+    {
+        JLOG(ctx.j.trace())
+            << "Malformed transaction: invalid size of CredentialType.";
+        return temMALFORMED;
+    }
+
     return preflight2(ctx);
 }
 
@@ -285,6 +293,14 @@ CredentialAccept::preflight(PreflightContext const& ctx)
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: Issuer field zeroed.";
         return temINVALID_ACCOUNT_ID;
+    }
+
+    auto const credType = ctx.tx[sfCredentialType];
+    if (credType.empty() || (credType.size() > maxCredentialTypeLength))
+    {
+        JLOG(ctx.j.trace())
+            << "Malformed transaction: invalid size of CredentialType.";
+        return temMALFORMED;
     }
 
     return preflight2(ctx);

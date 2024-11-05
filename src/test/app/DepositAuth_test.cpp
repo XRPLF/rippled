@@ -1189,6 +1189,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
     {
         using namespace jtx;
         const char credType[] = "abcde";
+        const char credType2[] = "fghijkl";
         Account const issuer{"issuer"};
         Account const alice{"alice"};
         Account const bob{"bob"};
@@ -1212,7 +1213,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
                                    ->info()
                                    .parentCloseTime.time_since_epoch()
                                    .count() +
-                40;
+                60;
             jv[sfExpiration.jsonName] = t;
             env(jv);
             env.close();
@@ -1221,35 +1222,81 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env(credentials::accept(alice, issuer, credType));
             env.close();
 
+            // Create credential which not expired
+            jv = credentials::create(alice, issuer, credType2);
+            uint32_t const t2 = env.current()
+                                    ->info()
+                                    .parentCloseTime.time_since_epoch()
+                                    .count() +
+                1000;
+            jv[sfExpiration.jsonName] = t2;
+            env(jv);
+            env.close();
+            env(credentials::accept(alice, issuer, credType2));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+
             // Get the index of the credentials
             jv = credentials::ledgerEntry(env, alice, issuer, credType);
             std::string const credIdx = jv[jss::result][jss::index].asString();
+            jv = credentials::ledgerEntry(env, alice, issuer, credType2);
+            std::string const credIdx2 = jv[jss::result][jss::index].asString();
 
             // Bob require preauthorization
             env(fset(bob, asfDepositAuth));
             env.close();
             // Bob setup DepositPreauth object
-            env(deposit::authCredentials(bob, {{issuer, credType}}));
+            env(deposit::authCredentials(
+                bob, {{issuer, credType}, {issuer, credType2}}));
             env.close();
 
             {
                 // Alice can pay
-                env(pay(alice, bob, XRP(100)), credentials::ids({credIdx}));
+                env(pay(alice, bob, XRP(100)),
+                    credentials::ids({credIdx, credIdx2}));
+                env.close();
                 env.close();
 
                 // Ledger closed, time increased, alice can't pay anymore
                 env(pay(alice, bob, XRP(100)),
-                    credentials::ids({credIdx}),
+                    credentials::ids({credIdx, credIdx2}),
                     ter(tecEXPIRED));
                 env.close();
 
-                // check that expired credentials were deleted
-                auto const jDelCred =
-                    credentials::ledgerEntry(env, alice, issuer, credType);
-                BEAST_EXPECT(
-                    jDelCred.isObject() && jDelCred.isMember(jss::result) &&
-                    jDelCred[jss::result].isMember(jss::error) &&
-                    jDelCred[jss::result][jss::error] == "entryNotFound");
+                {
+                    // check that expired credentials were deleted
+                    auto const jDelCred =
+                        credentials::ledgerEntry(env, alice, issuer, credType);
+                    BEAST_EXPECT(
+                        jDelCred.isObject() && jDelCred.isMember(jss::result) &&
+                        jDelCred[jss::result].isMember(jss::error) &&
+                        jDelCred[jss::result][jss::error] == "entryNotFound");
+                }
+
+                {
+                    // check that non-expired credential still present
+                    auto const jle =
+                        credentials::ledgerEntry(env, alice, issuer, credType2);
+                    BEAST_EXPECT(
+                        jle.isObject() && jle.isMember(jss::result) &&
+                        !jle[jss::result].isMember(jss::error) &&
+                        jle[jss::result].isMember(jss::node) &&
+                        jle[jss::result][jss::node].isMember(
+                            "LedgerEntryType") &&
+                        jle[jss::result][jss::node]["LedgerEntryType"] ==
+                            jss::Credential &&
+                        jle[jss::result][jss::node][jss::Issuer] ==
+                            issuer.human() &&
+                        jle[jss::result][jss::node][jss::Subject] ==
+                            alice.human() &&
+                        jle[jss::result][jss::node]["CredentialType"] ==
+                            strHex(std::string_view(credType2)));
+                }
+
+                BEAST_EXPECT(ownerCount(env, issuer) == 0);
+                BEAST_EXPECT(ownerCount(env, alice) == 1);
             }
 
             {
@@ -1269,6 +1316,9 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 std::string const credIdx =
                     jv[jss::result][jss::index].asString();
 
+                BEAST_EXPECT(ownerCount(env, issuer) == 0);
+                BEAST_EXPECT(ownerCount(env, gw) == 1);
+
                 env.close();
                 env.close();
                 env.close();
@@ -1286,6 +1336,9 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     jDelCred.isObject() && jDelCred.isMember(jss::result) &&
                     jDelCred[jss::result].isMember(jss::error) &&
                     jDelCred[jss::result][jss::error] == "entryNotFound");
+
+                BEAST_EXPECT(ownerCount(env, issuer) == 0);
+                BEAST_EXPECT(ownerCount(env, gw) == 0);
             }
         }
 

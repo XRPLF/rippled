@@ -917,7 +917,7 @@ public:
     {
         {
             testcase(
-                "Destination Constraints with DepositAuth and Credentials");
+                "Destination Constraints with DepositPreauth and Credentials");
 
             using namespace test::jtx;
 
@@ -1026,6 +1026,7 @@ public:
                     jNoCred[jss::result][jss::error] == "entryNotFound");
             }
 
+            testcase("Credentials that aren't required");
             {  // carol issue credentials for daria
                 env(credentials::create(daria, carol, credType));
                 env.close();
@@ -1054,9 +1055,53 @@ public:
             }
 
             {
+                Account const eaton{"eaton"};
+                Account const fred{"fred"};
+
+                env.fund(XRP(5000), eaton, fred);
+
+                // carol issue credentials for eaton
+                env(credentials::create(eaton, carol, credType));
+                env.close();
+                env(credentials::accept(eaton, carol, credType));
+                env.close();
+                std::string const credEaton =
+                    credentials::ledgerEntry(
+                        env, eaton, carol, credType)[jss::result][jss::index]
+                        .asString();
+
+                // fred make preauthorization through autorized account
+                env(fset(fred, asfDepositAuth));
+                env.close();
+                env(deposit::auth(fred, eaton));
+                env.close();
+
+                // Close enough ledgers to be able to delete becky's account.
+                incLgrSeqForAccDel(env, eaton);
+                auto const acctDelFee{drops(env.current()->fees().increment)};
+
+                // eaton use valid credentials, but he already authorized
+                // through "Authorized" field.
+                env(acctdelete(eaton, fred),
+                    credentials::ids({credEaton}),
+                    fee(acctDelFee));
+                env.close();
+
+                // check that credential object deleted too
+                auto const jNoCred =
+                    credentials::ledgerEntry(env, eaton, carol, credType);
+
+                BEAST_EXPECT(
+                    jNoCred.isObject() && jNoCred.isMember(jss::result) &&
+                    jNoCred[jss::result].isMember(jss::error) &&
+                    jNoCred[jss::result][jss::error] == "entryNotFound");
+            }
+
+            testcase("Expired credentials");
+            {
                 Account const john{"john"};
 
-                env.fund(XRP(100000), john);
+                env.fund(XRP(10000), john);
                 env.close();
 
                 auto jv = credentials::create(john, carol, credType);
