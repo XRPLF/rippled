@@ -1070,7 +1070,7 @@ public:
                         env, eaton, carol, credType)[jss::result][jss::index]
                         .asString();
 
-                // fred make preauthorization through autorized account
+                // fred make preauthorization through authorized account
                 env(fset(fred, asfDepositAuth));
                 env.close();
                 env(deposit::auth(fred, eaton));

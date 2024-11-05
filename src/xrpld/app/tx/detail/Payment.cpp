@@ -387,7 +387,6 @@ Payment::doApply()
     if (!depositPreauth && ripple && reqDepositAuth)
         return tecNO_PERMISSION;
 
-    bool const credentialsEnabled = view().rules().enabled(featureCredentials);
     bool const credentialsPresent = ctx_.tx.isFieldPresent(sfCredentialIDs);
 
     if (ripple)
@@ -406,7 +405,7 @@ Payment::doApply()
                 if (!view().exists(
                         keylet::depositPreauth(dstAccountID, account_)))
                 {
-                    if (!credentialsEnabled || !credentialsPresent)
+                    if (!credentialsPresent)
                         return tecNO_PERMISSION;
 
                     if (credentials::removeExpired(view(), ctx_.tx, j_))
@@ -601,7 +600,7 @@ Payment::doApply()
                 if (dstAmount > dstReserve ||
                     sleDst->getFieldAmount(sfBalance) > dstReserve)
                 {
-                    if (!credentialsEnabled || !credentialsPresent)
+                    if (!credentialsPresent)
                         return tecNO_PERMISSION;
 
                     if (credentials::removeExpired(view(), ctx_.tx, j_))

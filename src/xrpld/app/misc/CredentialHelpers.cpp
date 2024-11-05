@@ -187,21 +187,20 @@ TER
 authorized(ApplyContext const& ctx, AccountID const& dst)
 {
     auto const& credIDs(ctx.tx.getFieldV256(sfCredentialIDs));
-    STArray authCreds(sfAuthorizeCredentials, credIDs.size());
+    std::set<std::pair<AccountID, Slice>> out;
     for (auto const& h : credIDs)
     {
         auto const sleCred = ctx.view().read(keylet::credential(h));
         if (!sleCred)  // already checked in preclaim
             return tefINTERNAL;
 
-        auto credential = STObject::makeInnerObject(sfCredential);
-        credential.setAccountID(sfIssuer, sleCred->getAccountID(sfIssuer));
-        credential.setFieldVL(
-            sfCredentialType, sleCred->getFieldVL(sfCredentialType));
-        authCreds.push_back(std::move(credential));
+        auto [it, ins] = out.insert(
+            std::make_pair((*sleCred)[sfIssuer], (*sleCred)[sfCredentialType]));
+        if (!ins)
+            return tefINTERNAL;
     }
 
-    if (!ctx.view().exists(keylet::depositPreauth(dst, makeSorted(authCreds))))
+    if (!ctx.view().exists(keylet::depositPreauth(dst, out)))
     {
         JLOG(ctx.journal.trace()) << "DepositPreauth doesn't exist";
         return tecNO_PERMISSION;

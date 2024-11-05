@@ -430,7 +430,7 @@ struct Credentials_test : public beast::unit_test::suite
         }
 
         {
-            testcase("Delete  by issuer");
+            testcase("Delete by issuer");
             env(credentials::create(subject, issuer, credType));
             env.close();
 

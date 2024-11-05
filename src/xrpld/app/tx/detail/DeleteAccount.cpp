@@ -229,8 +229,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
         return err;
 
     // if credentials then postpone auth check to doApply
-    if (!ctx.view.rules().enabled(featureCredentials) ||
-        !ctx.tx.isFieldPresent(sfCredentialIDs))
+    if (!ctx.tx.isFieldPresent(sfCredentialIDs))
     {
         // Check whether the destination account requires deposit authorization.
         if (ctx.view.rules().enabled(featureDepositAuth) &&
@@ -354,8 +353,7 @@ DeleteAccount::doApply()
     if (!src || !dst)
         return tefBAD_LEDGER;
 
-    if (ctx_.view().rules().enabled(featureCredentials) &&
-        ctx_.tx.isFieldPresent(sfCredentialIDs))
+    if (ctx_.tx.isFieldPresent(sfCredentialIDs))
     {
         if (credentials::removeExpired(view(), ctx_.tx, j_))
             return tecEXPIRED;

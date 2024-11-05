@@ -487,8 +487,7 @@ EscrowFinish::doApply()
             {
                 if (!view().exists(keylet::depositPreauth(destID, account_)))
                 {
-                    if (!ctx_.view().rules().enabled(featureCredentials) ||
-                        !ctx_.tx.isFieldPresent(sfCredentialIDs))
+                    if (!ctx_.tx.isFieldPresent(sfCredentialIDs))
                         return tecNO_PERMISSION;
 
                     if (credentials::removeExpired(view(), ctx_.tx, j_))
