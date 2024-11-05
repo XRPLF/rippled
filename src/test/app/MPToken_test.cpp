@@ -1995,6 +1995,7 @@ class MPToken_test : public beast::unit_test::suite
 
         {
             testcase("Test STAmount MPT arithmetics");
+            using namespace std::string_literals;
             STAmount res = multiply(amt1, amt2, asset3);
             BEAST_EXPECT(res == amt3);
 
@@ -2011,9 +2012,9 @@ class MPToken_test : public beast::unit_test::suite
                 res = multiply(mptOverflow, mptOverflow, asset3);
                 fail("should throw runtime exception 1");
             }
-            catch (std::runtime_error const&)
+            catch (std::runtime_error const& e)
             {
-                pass();
+                BEAST_EXPECTS(e.what() == "MPT value overflow"s, e.what());
             }
             // overflow, (v1 >> 32) * v2 > 2147483648ull
             mptOverflow = STAmount{asset2, 2147483648ull};
@@ -2023,9 +2024,9 @@ class MPToken_test : public beast::unit_test::suite
                     STAmount{asset1, (2ull << 32) + 2}, mptOverflow, asset3);
                 fail("should throw runtime exception 2");
             }
-            catch (std::runtime_error const&)
+            catch (std::runtime_error const& e)
             {
-                pass();
+                BEAST_EXPECTS(e.what() == "MPT value overflow"s, e.what());
             }
         }
 
@@ -2034,6 +2035,7 @@ class MPToken_test : public beast::unit_test::suite
             MPTAmount mptAmt1{100};
             MPTAmount const mptAmt2{100};
             BEAST_EXPECT((mptAmt1 += mptAmt2) == MPTAmount{200});
+            BEAST_EXPECT(mptAmt1 == 200);
             BEAST_EXPECT((mptAmt1 -= mptAmt2) == mptAmt1);
             BEAST_EXPECT(mptAmt1 == mptAmt2);
             BEAST_EXPECT(mptAmt1 == 100);
@@ -2054,6 +2056,10 @@ class MPToken_test : public beast::unit_test::suite
             Json::Value const jv = to_json(asset1);
             BEAST_EXPECT(
                 jv[jss::mpt_issuance_id] == to_string(asset1.get<MPTIssue>()));
+            BEAST_EXPECT(
+                to_string(jv) ==
+                "{\"mpt_issuance_id\":"
+                "\"00000001A407AF5856CCF3C42619DAA925813FC955C72983\"}");
             BEAST_EXPECT(asset1 == assetFromJson(jv));
         }
     }
