@@ -223,6 +223,9 @@ moreripplevalidators.net
 [validator_list_keys]
 03E74EE14CB525AFBB9F1B7D86CD58ECC4B91452294B42AB4E78F260BD905C091D
 030775A669685BD6ABCEBD80385921C7851783D991A8055FD21D2F3966C96F1B56
+
+[validator_list_threshold]
+2
 )rippleConfig");
     return configContents;
 }
@@ -643,6 +646,34 @@ trustthesevalidators.gov
             BEAST_EXPECT(error == expectedError);
         }
         {
+            // load should throw if [validator_list_threshold] is malformed
+            Config c;
+            std::string toLoad(R"rippleConfig(
+[validator_list_sites]
+ripplevalidators.com
+trustthesevalidators.gov
+
+[validator_list_keys]
+021A99A537FDEBC34E4FCA03B39BEADD04299BB19E85097EC92B15A3518801E566
+
+[validator_list_threshold]
+value = 2
+)rippleConfig");
+            std::string error;
+            auto const expectedError =
+                "Config section [validator_list_threshold] should contain "
+                "single value";
+            try
+            {
+                c.loadFromString(toLoad);
+            }
+            catch (std::runtime_error& e)
+            {
+                error = e.what();
+            }
+            BEAST_EXPECT(error == expectedError);
+        }
+        {
             // load should throw if [validator_list_threshold] is negative
             Config c;
             std::string toLoad(R"rippleConfig(
@@ -703,6 +734,10 @@ trustthesevalidators.gov
                 c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
             BEAST_EXPECT(
                 c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 2);
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values().size() ==
+                1);
+            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == 2);
         }
         {
             // load from specified [validators_file] file name
@@ -721,6 +756,10 @@ trustthesevalidators.gov
                 c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
             BEAST_EXPECT(
                 c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 2);
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values().size() ==
+                1);
+            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == 2);
         }
         {
             // load from specified [validators_file] relative path
@@ -739,6 +778,10 @@ trustthesevalidators.gov
                 c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
             BEAST_EXPECT(
                 c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 2);
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values().size() ==
+                1);
+            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == 2);
         }
         {
             // load from validators file in default location
@@ -755,6 +798,10 @@ trustthesevalidators.gov
                 c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
             BEAST_EXPECT(
                 c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 2);
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values().size() ==
+                1);
+            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == 2);
         }
         {
             // load from specified [validators_file] instead
@@ -775,6 +822,10 @@ trustthesevalidators.gov
                 c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
             BEAST_EXPECT(
                 c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 2);
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values().size() ==
+                1);
+            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == 2);
         }
 
         {
@@ -812,6 +863,38 @@ trustthesevalidators.gov
                 c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 4);
             BEAST_EXPECT(
                 c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 3);
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values().size() ==
+                1);
+            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == 2);
+        }
+        {
+            // load should throw if [validator_list_threshold] is present both
+            // in rippled cfg and validators file
+            boost::format cc(R"rippleConfig(
+[validators_file]
+%1%
+
+[validator_list_threshold]
+1
+)rippleConfig");
+            std::string error;
+            detail::ValidatorsTxtGuard const vtg(
+                *this, "test_cfg", "validators.cfg");
+            BEAST_EXPECT(vtg.validatorsFileExists());
+            auto const expectedError =
+                "Config section [validator_list_threshold] should contain "
+                "single value";
+            try
+            {
+                Config c;
+                c.loadFromString(boost::str(cc % vtg.validatorsFile()));
+            }
+            catch (std::runtime_error& e)
+            {
+                error = e.what();
+            }
+            BEAST_EXPECT(error == expectedError);
         }
         {
             // load should throw if [validators], [validator_keys] and

@@ -930,10 +930,13 @@ Config::loadFromString(std::string const& fileContents)
         }
 
         VALIDATOR_LIST_THRESHOLD = [&]() -> std::optional<std::size_t> {
-            std::string strTemp;
-            if (getSingleSection(
-                    secConfig, SECTION_VALIDATOR_LIST_THRESHOLD, strTemp, j_))
+            auto const& listThreshold =
+                section(SECTION_VALIDATOR_LIST_THRESHOLD);
+            if (listThreshold.lines().empty())
+                return std::nullopt;
+            else if (listThreshold.values().size() == 1)
             {
+                auto strTemp = listThreshold.values()[0];
                 auto const listThreshold =
                     beast::lexicalCastThrow<std::size_t>(strTemp);
                 if (listThreshold == 0)
@@ -950,7 +953,13 @@ Config::loadFromString(std::string const& fileContents)
                 }
                 return listThreshold;
             }
-            return std::nullopt;
+            else
+            {
+                Throw<std::runtime_error>(
+                    "Config section "
+                    "[" SECTION_VALIDATOR_LIST_THRESHOLD
+                    "] should contain single value");
+            }
         }();
 
         // Consolidate [validator_keys] and [validators]
