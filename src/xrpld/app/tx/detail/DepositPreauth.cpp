@@ -168,16 +168,20 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
     else if (ctx.tx.isFieldPresent(sfAuthorizeCredentials))
     {
         STArray const& authCred(ctx.tx.getFieldArray(sfAuthorizeCredentials));
+        std::set<std::pair<AccountID, Slice>> sorted;
         for (auto const& o : authCred)
         {
-            if (!ctx.view.exists(keylet::account(o[sfIssuer])))
+            auto const& issuer = o[sfIssuer];
+            if (!ctx.view.exists(keylet::account(issuer)))
                 return tecNO_ISSUER;
+            auto [it, ins] = sorted.emplace(issuer, o[sfCredentialType]);
+            if (!ins)
+                return tefINTERNAL;
         }
 
         // Verify that the Preauth entry they asked to add is not already
         // in the ledger.
-        if (ctx.view.exists(keylet::depositPreauth(
-                account, credentials::makeSorted(authCred))))
+        if (ctx.view.exists(keylet::depositPreauth(account, sorted)))
             return tecDUPLICATE;
     }
     else if (ctx.tx.isFieldPresent(sfUnauthorizeCredentials))

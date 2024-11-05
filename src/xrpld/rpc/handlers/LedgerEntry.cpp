@@ -123,9 +123,9 @@ doLedgerEntry(RPC::JsonContext& context)
             // clang-format off
             else if (
                 (!dp.isMember(jss::owner) || !dp[jss::owner].isString()) ||
-                (dp.isMember(jss::authorized) == dp.isMember(jss::authorize_credentials)) ||
+                (dp.isMember(jss::authorized) == dp.isMember(jss::authorized_credentials)) ||
                 (dp.isMember(jss::authorized) && !dp[jss::authorized].isString()) ||
-                (dp.isMember(jss::authorize_credentials) && !dp[jss::authorize_credentials].isArray())
+                (dp.isMember(jss::authorized_credentials) && !dp[jss::authorized_credentials].isArray())
                 )
             // clang-format on
             {

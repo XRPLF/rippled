@@ -469,6 +469,7 @@ EscrowFinish::doApply()
             return tecCRYPTOCONDITION_ERROR;
     }
 
+    // NOTE: Escrow payments cannot be used to fund accounts.
     AccountID const destID = (*slep)[sfDestination];
     auto const sled = ctx_.view().peek(keylet::account(destID));
     if (!sled)

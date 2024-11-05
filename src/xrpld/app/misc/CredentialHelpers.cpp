@@ -187,20 +187,23 @@ TER
 authorized(ApplyContext const& ctx, AccountID const& dst)
 {
     auto const& credIDs(ctx.tx.getFieldV256(sfCredentialIDs));
-    std::set<std::pair<AccountID, Slice>> out;
+    std::set<std::pair<AccountID, Slice>> sorted;
+    std::vector<std::shared_ptr<SLE const>> lifeExtender;
+    lifeExtender.reserve(credIDs.size());
     for (auto const& h : credIDs)
     {
-        auto const sleCred = ctx.view().read(keylet::credential(h));
+        auto sleCred = ctx.view().read(keylet::credential(h));
         if (!sleCred)  // already checked in preclaim
             return tefINTERNAL;
 
-        auto [it, ins] = out.insert(
-            std::make_pair((*sleCred)[sfIssuer], (*sleCred)[sfCredentialType]));
+        auto [it, ins] =
+            sorted.emplace((*sleCred)[sfIssuer], (*sleCred)[sfCredentialType]);
         if (!ins)
             return tefINTERNAL;
+        lifeExtender.push_back(std::move(sleCred));
     }
 
-    if (!ctx.view().exists(keylet::depositPreauth(dst, out)))
+    if (!ctx.view().exists(keylet::depositPreauth(dst, sorted)))
     {
         JLOG(ctx.journal.trace()) << "DepositPreauth doesn't exist";
         return tecNO_PERMISSION;
@@ -215,7 +218,7 @@ makeSorted(STArray const& in)
     std::set<std::pair<AccountID, Slice>> out;
     for (auto const& cred : in)
     {
-        auto [it, ins] = out.insert({cred[sfIssuer], cred[sfCredentialType]});
+        auto [it, ins] = out.emplace(cred[sfIssuer], cred[sfCredentialType]);
         if (!ins)
             return {};
     }

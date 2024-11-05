@@ -1086,10 +1086,10 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::deposit_preauth][jss::owner] = bob.human();
 
-            jvParams[jss::deposit_preauth][jss::authorize_credentials] =
+            jvParams[jss::deposit_preauth][jss::authorized_credentials] =
                 Json::arrayValue;
             auto& arr(
-                jvParams[jss::deposit_preauth][jss::authorize_credentials]);
+                jvParams[jss::deposit_preauth][jss::authorized_credentials]);
 
             Json::Value jo;
             jo[jss::issuer] = issuer.human();
@@ -1114,10 +1114,10 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::deposit_preauth][jss::owner] = bob.human();
 
-            jvParams[jss::deposit_preauth][jss::authorize_credentials] =
+            jvParams[jss::deposit_preauth][jss::authorized_credentials] =
                 Json::arrayValue;
             auto& arr(
-                jvParams[jss::deposit_preauth][jss::authorize_credentials]);
+                jvParams[jss::deposit_preauth][jss::authorized_credentials]);
 
             Json::Value jo;
             jo[jss::issuer] = to_string(xrpAccount());
@@ -1135,10 +1135,10 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::deposit_preauth][jss::owner] = bob.human();
 
-            jvParams[jss::deposit_preauth][jss::authorize_credentials] =
+            jvParams[jss::deposit_preauth][jss::authorized_credentials] =
                 Json::arrayValue;
             auto& arr(
-                jvParams[jss::deposit_preauth][jss::authorize_credentials]);
+                jvParams[jss::deposit_preauth][jss::authorized_credentials]);
 
             Json::Value jo;
             jo[jss::issuer] = issuer.human();
@@ -1157,10 +1157,10 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::deposit_preauth][jss::owner] = bob.human();
 
-            jvParams[jss::deposit_preauth][jss::authorize_credentials] =
+            jvParams[jss::deposit_preauth][jss::authorized_credentials] =
                 Json::arrayValue;
             auto& arr(
-                jvParams[jss::deposit_preauth][jss::authorize_credentials]);
+                jvParams[jss::deposit_preauth][jss::authorized_credentials]);
 
             Json::Value jo;
             jo[jss::issuer] = issuer.human();
@@ -1174,16 +1174,16 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
 
         {
-            // Failed, authorized and authorize_credentials both present
+            // Failed, authorized and authorized_credentials both present
             Json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::deposit_preauth][jss::owner] = bob.human();
             jvParams[jss::deposit_preauth][jss::authorized] = alice.human();
 
-            jvParams[jss::deposit_preauth][jss::authorize_credentials] =
+            jvParams[jss::deposit_preauth][jss::authorized_credentials] =
                 Json::arrayValue;
             auto& arr(
-                jvParams[jss::deposit_preauth][jss::authorize_credentials]);
+                jvParams[jss::deposit_preauth][jss::authorized_credentials]);
 
             Json::Value jo;
             jo[jss::issuer] = issuer.human();
@@ -1196,11 +1196,11 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
 
         {
-            // Failed, authorize_credentials is not an array
+            // Failed, authorized_credentials is not an array
             Json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::deposit_preauth][jss::owner] = bob.human();
-            jvParams[jss::deposit_preauth][jss::authorize_credentials] = 42;
+            jvParams[jss::deposit_preauth][jss::authorized_credentials] = 42;
 
             auto const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams));
@@ -1208,11 +1208,11 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
 
         {
-            // Failed, authorize_credentials is empty array
+            // Failed, authorized_credentials is empty array
             Json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::deposit_preauth][jss::owner] = bob.human();
-            jvParams[jss::deposit_preauth][jss::authorize_credentials] =
+            jvParams[jss::deposit_preauth][jss::authorized_credentials] =
                 Json::arrayValue;
 
             auto const jrr =
@@ -1222,7 +1222,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
 
         {
-            // Failed, authorize_credentials is too long
+            // Failed, authorized_credentials is too long
 
             static const std::string_view credTypes[] = {
                 "cred1",
@@ -1241,11 +1241,11 @@ class LedgerRPC_test : public beast::unit_test::suite
             Json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::deposit_preauth][jss::owner] = bob.human();
-            jvParams[jss::deposit_preauth][jss::authorize_credentials] =
+            jvParams[jss::deposit_preauth][jss::authorized_credentials] =
                 Json::arrayValue;
 
             auto& arr(
-                jvParams[jss::deposit_preauth][jss::authorize_credentials]);
+                jvParams[jss::deposit_preauth][jss::authorized_credentials]);
 
             for (unsigned i = 0; i < sizeof(credTypes) / sizeof(credTypes[0]);
                  ++i)
@@ -1269,10 +1269,10 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::deposit_preauth][jss::owner] = bob.human();
 
-            jvParams[jss::deposit_preauth][jss::authorize_credentials] =
+            jvParams[jss::deposit_preauth][jss::authorized_credentials] =
                 Json::arrayValue;
             auto& arr(
-                jvParams[jss::deposit_preauth][jss::authorize_credentials]);
+                jvParams[jss::deposit_preauth][jss::authorized_credentials]);
 
             Json::Value jo;
             jo[jss::issuer] = 42;
@@ -1291,10 +1291,10 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::deposit_preauth][jss::owner] = bob.human();
 
-            jvParams[jss::deposit_preauth][jss::authorize_credentials] =
+            jvParams[jss::deposit_preauth][jss::authorized_credentials] =
                 Json::arrayValue;
             auto& arr(
-                jvParams[jss::deposit_preauth][jss::authorize_credentials]);
+                jvParams[jss::deposit_preauth][jss::authorized_credentials]);
 
             Json::Value jo;
             jo[jss::issuer] = "invalid_account";
@@ -1314,10 +1314,10 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::deposit_preauth][jss::owner] = bob.human();
             jvParams[jss::deposit_preauth][jss::authorized] = alice.human();
 
-            jvParams[jss::deposit_preauth][jss::authorize_credentials] =
+            jvParams[jss::deposit_preauth][jss::authorized_credentials] =
                 Json::arrayValue;
             auto& arr(
-                jvParams[jss::deposit_preauth][jss::authorize_credentials]);
+                jvParams[jss::deposit_preauth][jss::authorized_credentials]);
 
             Json::Value jo;
             jo[jss::issuer] = issuer.human();
@@ -1336,10 +1336,10 @@ class LedgerRPC_test : public beast::unit_test::suite
             jvParams[jss::deposit_preauth][jss::owner] = bob.human();
             jvParams[jss::deposit_preauth][jss::authorized] = alice.human();
 
-            jvParams[jss::deposit_preauth][jss::authorize_credentials] =
+            jvParams[jss::deposit_preauth][jss::authorized_credentials] =
                 Json::arrayValue;
             auto& arr(
-                jvParams[jss::deposit_preauth][jss::authorize_credentials]);
+                jvParams[jss::deposit_preauth][jss::authorized_credentials]);
 
             Json::Value jo;
             jo[jss::issuer] = issuer.human();

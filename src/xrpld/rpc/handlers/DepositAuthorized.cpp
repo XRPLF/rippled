@@ -94,7 +94,8 @@ doDepositAuthorized(RPC::JsonContext& context)
         (sleDest->getFlags() & lsfDepositAuth) && (srcAcct != dstAcct);
     bool const credentialsPresent = params.isMember(jss::credentials);
 
-    STArray authCreds(sfAuthorizeCredentials);
+    std::set<std::pair<AccountID, Slice>> sorted;
+    std::vector<std::shared_ptr<SLE const>> lifeExtender;
     if (credentialsPresent)
     {
         auto const& creds(params[jss::credentials]);
@@ -114,6 +115,7 @@ doDepositAuthorized(RPC::JsonContext& context)
                     jss::credentials, "array too long"));
         }
 
+        lifeExtender.reserve(creds.size());
         for (auto const& jo : creds)
         {
             if (!jo.isString())
@@ -136,8 +138,14 @@ doDepositAuthorized(RPC::JsonContext& context)
 
             std::shared_ptr<SLE const> sleCred =
                 ledger->read(keylet::credential(credH));
-            if (!sleCred || (sleCred->getType() != ltCREDENTIAL) ||
-                !(sleCred->getFlags() & lsfAccepted))
+            if (!sleCred)
+            {
+                RPC::inject_error(
+                    rpcBAD_CREDENTIALS, "credentials don't exist", result);
+                return result;
+            }
+
+            if (!(sleCred->getFlags() & lsfAccepted))
             {
                 RPC::inject_error(
                     rpcBAD_CREDENTIALS, "credentials aren't accepted", result);
@@ -152,40 +160,26 @@ doDepositAuthorized(RPC::JsonContext& context)
                 return result;
             }
 
-            if (reqAuth)
+            auto [it, ins] = sorted.emplace(
+                (*sleCred)[sfIssuer], (*sleCred)[sfCredentialType]);
+            if (!ins)
             {
-                auto credential = STObject::makeInnerObject(sfCredential);
-                credential.setAccountID(sfIssuer, (*sleCred)[sfIssuer]);
-                credential.setFieldVL(
-                    sfCredentialType, (*sleCred)[sfCredentialType]);
-                authCreds.push_back(std::move(credential));
+                RPC::inject_error(
+                    rpcBAD_CREDENTIALS, "duplicates in credentials", result);
+                return result;
             }
+            lifeExtender.push_back(std::move(sleCred));
         }
     }
 
     // If the two accounts are the same OR if that flag is
     // not set, then the deposit should be fine.
     bool depositAuthorized = true;
-
     if (reqAuth)
-    {
-        if (credentialsPresent)
-        {
-            auto const sorted = credentials::makeSorted(authCreds);
-            if (sorted.empty())
-            {
-                RPC::inject_error(
-                    rpcBAD_CREDENTIALS, "duplicates in crednetials", result);
-                return result;
-            }
-
-            depositAuthorized =
-                ledger->exists(keylet::depositPreauth(dstAcct, sorted));
-        }
-        else
-            depositAuthorized =
-                ledger->exists(keylet::depositPreauth(dstAcct, srcAcct));
-    }
+        depositAuthorized =
+            ledger->exists(keylet::depositPreauth(dstAcct, srcAcct)) ||
+            (credentialsPresent &&
+             ledger->exists(keylet::depositPreauth(dstAcct, sorted)));
 
     result[jss::source_account] = params[jss::source_account].asString();
     result[jss::destination_account] =
