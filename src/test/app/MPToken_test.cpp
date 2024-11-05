@@ -24,6 +24,7 @@
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
+namespace test {
 
 class MPToken_test : public beast::unit_test::suite
 {
@@ -1989,4 +1990,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE_PRIO(MPToken, tx, ripple, 2);
 
+}  // namespace test
 }  // namespace ripple
