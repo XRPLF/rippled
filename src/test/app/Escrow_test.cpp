@@ -1534,7 +1534,6 @@ struct Escrow_test : public beast::unit_test::suite
             env(escrow(alice, bob, XRP(1000)), finish_time(env.now() + 1s));
             env.close();
 
-            // can finish with old DepositPreauth
             env(fset(bob, asfDepositAuth));
             env.close();
             env(deposit::auth(bob, alice));
@@ -1543,7 +1542,9 @@ struct Escrow_test : public beast::unit_test::suite
             std::string const credIdx =
                 "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
                 "E4";
-            env(finish(bob, alice, seq), credentials::ids({credIdx}));
+            env(finish(bob, alice, seq),
+                credentials::ids({credIdx}),
+                ter(temDISABLED));
         }
 
         {

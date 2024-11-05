@@ -667,9 +667,10 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 TER const expectCredentials(
                     supportsCredentials ? TER(tesSUCCESS) : TER(temDISABLED));
                 TER const expectPayment(
-                    !supportsCredentials || !supportsPreauth
-                        ? TER(tecNO_PERMISSION)
-                        : TER(tesSUCCESS));
+                    !supportsCredentials
+                        ? TER(temDISABLED)
+                        : (!supportsPreauth ? TER(tecNO_PERMISSION)
+                                            : TER(tesSUCCESS)));
                 TER const expectDP(
                     !supportsPreauth
                         ? TER(temDISABLED)
@@ -839,16 +840,15 @@ struct DepositPreauth_test : public beast::unit_test::suite
             // But can create old DepositPreauth
             env(deposit::auth(bob, alice));
             env.close();
-            // And alice can pay without credentials
-            env(pay(alice, bob, XRP(10)));
-            env.close();
 
-            // And alice can pay with any credentials, as they aren't checked if
-            // amendement is not enabled
+            // And alice can't pay with any credentials, amendement is not
+            // enabled
             std::string const invalidIdx =
                 "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E"
                 "01E034";
-            env(pay(alice, bob, XRP(10)), credentials::ids({invalidIdx}));
+            env(pay(alice, bob, XRP(10)),
+                credentials::ids({invalidIdx}),
+                ter(temDISABLED));
             env.close();
         }
 

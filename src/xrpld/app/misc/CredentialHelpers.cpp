@@ -120,8 +120,7 @@ deleteSLE(
 NotTEC
 checkFields(PreflightContext const& ctx)
 {
-    if ((!ctx.rules.enabled(featureCredentials)) ||
-        !ctx.tx.isFieldPresent(sfCredentialIDs))
+    if (!ctx.tx.isFieldPresent(sfCredentialIDs))
         return tesSUCCESS;
 
     auto const& credentials = ctx.tx.getFieldV256(sfCredentialIDs);
@@ -151,8 +150,7 @@ checkFields(PreflightContext const& ctx)
 TER
 valid(PreclaimContext const& ctx, AccountID const& src)
 {
-    if ((!ctx.view.rules().enabled(featureCredentials)) ||
-        !ctx.tx.isFieldPresent(sfCredentialIDs))
+    if (!ctx.tx.isFieldPresent(sfCredentialIDs))
         return tesSUCCESS;
 
     auto const& credIDs(ctx.tx.getFieldV256(sfCredentialIDs));

@@ -42,6 +42,10 @@ DeleteAccount::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureDeletableAccounts))
         return temDISABLED;
 
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
+        !ctx.rules.enabled(featureCredentials))
+        return temDISABLED;
+
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 

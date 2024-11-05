@@ -66,6 +66,10 @@ getMaxSourceAmount(
 NotTEC
 Payment::preflight(PreflightContext const& ctx)
 {
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
+        !ctx.rules.enabled(featureCredentials))
+        return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 

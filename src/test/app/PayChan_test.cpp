@@ -1004,14 +1004,15 @@ struct PayChan_test : public beast::unit_test::suite
                 "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
                 "E4";
 
-            // can claim with old DepositPreauth
+            // can't claim with old DepositPreauth because rule is not enabled.
             env(fset(bob, asfDepositAuth));
             env.close();
             env(deposit::auth(bob, alice));
             env.close();
 
             env(claim(alice, chan, XRP(500).value(), XRP(500).value()),
-                credentials::ids({credIdx}));
+                credentials::ids({credIdx}),
+                ter(temDISABLED));
         }
     }
 
