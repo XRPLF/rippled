@@ -197,6 +197,15 @@ admin = 127.0.0.1
                     .asUInt() == 0);
             BEAST_EXPECT(
                 result[jss::result][jss::TYPES]["AccountID"].asUInt() == 8);
+
+            // test that base_uint types are replaced with "Hash" prefix
+            {
+                auto const types = result[jss::result][jss::TYPES];
+                BEAST_EXPECT(types["Hash128"].asUInt() == 4);
+                BEAST_EXPECT(types["Hash160"].asUInt() == 17);
+                BEAST_EXPECT(types["Hash192"].asUInt() == 21);
+                BEAST_EXPECT(types["Hash256"].asUInt() == 5);
+            }
         }
 
         // test providing the same hash
