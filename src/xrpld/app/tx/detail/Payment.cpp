@@ -374,8 +374,9 @@ Payment::doApply()
     }
 
     // Determine whether the destination requires deposit authorization.
-    bool const reqDepositAuth = sleDst->getFlags() & lsfDepositAuth &&
-        view().rules().enabled(featureDepositAuth);
+    bool const depositAuth = view().rules().enabled(featureDepositAuth);
+    bool const reqDepositAuth =
+        sleDst->getFlags() & lsfDepositAuth && depositAuth;
 
     bool const depositPreauth = view().rules().enabled(featureDepositPreauth);
 
@@ -387,34 +388,22 @@ Payment::doApply()
     if (!depositPreauth && ripple && reqDepositAuth)
         return tecNO_PERMISSION;
 
-    bool const credentialsPresent = ctx_.tx.isFieldPresent(sfCredentialIDs);
-
     if (ripple)
     {
         // Ripple payment with at least one intermediate step and uses
         // transitive balances.
 
-        if (depositPreauth && reqDepositAuth)
+        if (depositPreauth && depositAuth)
         {
             // If depositPreauth is enabled, then an account that requires
             // authorization has two ways to get an IOU Payment in:
             //  1. If Account == Destination, or
             //  2. If Account is deposit preauthorized by destination.
-            if (dstAccountID != account_)
-            {
-                if (!view().exists(
-                        keylet::depositPreauth(dstAccountID, account_)))
-                {
-                    if (!credentialsPresent)
-                        return tecNO_PERMISSION;
 
-                    if (credentials::removeExpired(view(), ctx_.tx, j_))
-                        return tecEXPIRED;
-                    if (auto err = credentials::authorized(ctx_, dstAccountID);
-                        !isTesSuccess(err))
-                        return err;
-                }
-            }
+            if (auto err = credentials::verify(
+                    ctx_, account_, dstAccountID, reqDepositAuth);
+                !isTesSuccess(err))
+                return err;
         }
 
         path::RippleCalc::Input rcInput;
@@ -570,7 +559,7 @@ Payment::doApply()
 
     // The source account does have enough money.  Make sure the
     // source account has authority to deposit to the destination.
-    if (reqDepositAuth)
+    if (depositAuth)
     {
         // If depositPreauth is enabled, then an account that requires
         // authorization has three ways to get an XRP Payment in:
@@ -590,26 +579,17 @@ Payment::doApply()
         // We choose the base reserve as our bound because it is
         // a small number that seldom changes but is always sufficient
         // to get the account un-wedged.
-        if (dstAccountID != account_)
+
+        // Get the base reserve.
+        XRPAmount const dstReserve{view().fees().accountReserve(0)};
+
+        if (dstAmount > dstReserve ||
+            sleDst->getFieldAmount(sfBalance) > dstReserve)
         {
-            if (!view().exists(keylet::depositPreauth(dstAccountID, account_)))
-            {
-                // Get the base reserve.
-                XRPAmount const dstReserve{view().fees().accountReserve(0)};
-
-                if (dstAmount > dstReserve ||
-                    sleDst->getFieldAmount(sfBalance) > dstReserve)
-                {
-                    if (!credentialsPresent)
-                        return tecNO_PERMISSION;
-
-                    if (credentials::removeExpired(view(), ctx_.tx, j_))
-                        return tecEXPIRED;
-                    if (auto err = credentials::authorized(ctx_, dstAccountID);
-                        !isTesSuccess(err))
-                        return err;
-                }
-            }
+            if (auto err = credentials::verify(
+                    ctx_, account_, dstAccountID, reqDepositAuth);
+                !isTesSuccess(err))
+                return err;
         }
     }
 

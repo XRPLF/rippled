@@ -21,6 +21,8 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
+#include <optional>
+
 namespace ripple {
 namespace credentials {
 
@@ -57,6 +59,22 @@ valid(PreclaimContext const& ctx, AccountID const& src);
 // all the checks for the DepositPreauth authorization failed.
 TER
 authorized(ApplyContext const& ctx, AccountID const& dst);
+
+// Check expired credentials and for existing DepositPreauth ledger object
+TER
+verify(
+    ApplyContext& ctx,
+    AccountID const& src,
+    AccountID const& dst,
+    std::optional<std::reference_wrapper<std::shared_ptr<SLE> const>>
+        sleDstOpt = {});
+
+TER
+verify(
+    ApplyContext& ctx,
+    AccountID const& src,
+    AccountID const& dst,
+    bool requireAuth);
 
 // return empty set if there are duplicates
 std::set<std::pair<AccountID, Slice>>

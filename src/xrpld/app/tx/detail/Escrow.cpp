@@ -477,28 +477,9 @@ EscrowFinish::doApply()
 
     if (ctx_.view().rules().enabled(featureDepositAuth))
     {
-        // Is EscrowFinished authorized?
-        if (sled->getFlags() & lsfDepositAuth)
-        {
-            // A destination account that requires authorization has two
-            // ways to get an EscrowFinished into the account:
-            //  1. If Account == Destination, or
-            //  2. If Account is deposit preauthorized by destination.
-            if (account_ != destID)
-            {
-                if (!view().exists(keylet::depositPreauth(destID, account_)))
-                {
-                    if (!ctx_.tx.isFieldPresent(sfCredentialIDs))
-                        return tecNO_PERMISSION;
-
-                    if (credentials::removeExpired(view(), ctx_.tx, j_))
-                        return tecEXPIRED;
-                    if (auto err = credentials::authorized(ctx_, destID);
-                        !isTesSuccess(err))
-                        return err;
-                }
-            }
-        }
+        if (auto err = credentials::verify(ctx_, account_, destID, sled);
+            !isTesSuccess(err))
+            return err;
     }
 
     AccountID const account = (*slep)[sfAccount];

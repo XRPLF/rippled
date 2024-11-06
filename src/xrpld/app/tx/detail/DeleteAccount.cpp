@@ -228,7 +228,8 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if (auto const err = credentials::valid(ctx, account); !isTesSuccess(err))
         return err;
 
-    // if credentials then postpone auth check to doApply
+    // if credentials then postpone auth check to doApply, to check for expired
+    // credentials
     if (!ctx.tx.isFieldPresent(sfCredentialIDs))
     {
         // Check whether the destination account requires deposit authorization.
@@ -353,20 +354,12 @@ DeleteAccount::doApply()
     if (!src || !dst)
         return tefBAD_LEDGER;
 
-    if (ctx_.tx.isFieldPresent(sfCredentialIDs))
+    if (ctx_.view().rules().enabled(featureDepositAuth) &&
+        ctx_.tx.isFieldPresent(sfCredentialIDs))
     {
-        if (credentials::removeExpired(view(), ctx_.tx, j_))
-            return tecEXPIRED;
-
-        // Check whether the destination account requires deposit authorization.
-        if (ctx_.view().rules().enabled(featureDepositAuth) &&
-            (dst->getFlags() & lsfDepositAuth) &&
-            !ctx_.view().exists(keylet::depositPreauth(dstID, account_)))
-        {
-            if (auto err = credentials::authorized(ctx_, dstID);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err = credentials::verify(ctx_, account_, dstID, dst);
+            !isTesSuccess(err))
+            return err;
     }
 
     Keylet const ownerDirKeylet{keylet::ownerDir(account_)};

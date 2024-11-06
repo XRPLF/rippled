@@ -537,27 +537,12 @@ PayChanClaim::doApply()
             (txAccount == src && (sled->getFlags() & lsfDisallowXRP)))
             return tecNO_TARGET;
 
-        // Check whether the destination account requires deposit authorization.
-        if (depositAuth && (sled->getFlags() & lsfDepositAuth))
+        if (depositAuth)
         {
-            // A destination account that requires authorization has two
-            // ways to get a Payment Channel Claim into the account:
-            //  1. If Account == Destination, or
-            //  2. If Account is deposit preauthorized by destination.
-            if (txAccount != dst)
-            {
-                if (!view().exists(keylet::depositPreauth(dst, txAccount)))
-                {
-                    if (!ctx_.tx.isFieldPresent(sfCredentialIDs))
-                        return tecNO_PERMISSION;
-
-                    if (credentials::removeExpired(view(), ctx_.tx, j_))
-                        return tecEXPIRED;
-                    if (auto err = credentials::authorized(ctx_, dst);
-                        !isTesSuccess(err))
-                        return err;
-                }
-            }
+            if (auto err = credentials::verify(
+                    ctx_, txAccount, dst, sled->getFlags() & lsfDepositAuth);
+                !isTesSuccess(err))
+                return err;
         }
 
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
