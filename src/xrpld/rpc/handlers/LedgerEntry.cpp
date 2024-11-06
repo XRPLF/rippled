@@ -151,7 +151,7 @@ doLedgerEntry(RPC::JsonContext& context)
                 }
                 else
                 {
-                    auto const& ac(dp[jss::authorize_credentials]);
+                    auto const& ac(dp[jss::authorized_credentials]);
                     STArray const arr = parseAuthorizeCredentials(ac);
 
                     if (arr.empty() || (arr.size() > maxCredentialsArraySize))

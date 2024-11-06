@@ -470,6 +470,14 @@ Payment::doApply()
             ter != tesSUCCESS)
             return ter;
 
+        if (view().rules().enabled(featureCredentials))
+        {
+            if (auto err = credentials::verify(
+                    ctx_, account_, dstAccountID, reqDepositAuth);
+                !isTesSuccess(err))
+                return err;
+        }
+
         auto const& issuer = mptIssue.getIssuer();
 
         // Transfer rate

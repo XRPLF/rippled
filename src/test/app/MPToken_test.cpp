@@ -1317,6 +1317,157 @@ class MPToken_test : public beast::unit_test::suite
     }
 
     void
+    testDepositPreauth()
+    {
+        testcase("DepositPreauth");
+
+        using namespace test::jtx;
+        Account const alice("alice");  // issuer
+        Account const bob("bob");      // holder
+        Account const diana("diana");
+        Account const dpIssuer("dpIssuer");  // holder
+
+        const char credType[] = "abcde";
+
+        {
+            Env env(*this);
+
+            env.fund(XRP(50000), diana, dpIssuer);
+            env.close();
+
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTRequireAuth | tfMPTCanTransfer});
+
+            env(pay(diana, bob, XRP(500)));
+            env.close();
+
+            // bob creates an empty MPToken
+            mptAlice.authorize({.account = bob});
+            // alice authorizes bob to hold funds
+            mptAlice.authorize({.account = alice, .holder = bob});
+
+            // Bob require preauthorization
+            env(fset(bob, asfDepositAuth));
+            env.close();
+
+            // alice try to send 100 MPT to bob, not authorized
+            mptAlice.pay(alice, bob, 100, tecNO_PERMISSION);
+            env.close();
+
+            // Bob authorize alice
+            env(deposit::auth(bob, alice));
+            env.close();
+
+            // alice sends 100 MPT to bob
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            // Create credentials
+            env(credentials::create(alice, dpIssuer, credType));
+            env.close();
+            env(credentials::accept(alice, dpIssuer, credType));
+            env.close();
+            auto const jv =
+                credentials::ledgerEntry(env, alice, dpIssuer, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            // alice sends 100 MPT to bob with credentials which aren't required
+            mptAlice.pay(alice, bob, 100, tesSUCCESS, {{credIdx}});
+            env.close();
+
+            // Bob revoke authorization
+            env(deposit::unauth(bob, alice));
+            env.close();
+
+            // alice try to send 100 MPT to bob, not authorized
+            mptAlice.pay(alice, bob, 100, tecNO_PERMISSION);
+            env.close();
+
+            // alice sends 100 MPT to bob with credentials, not authorized
+            mptAlice.pay(alice, bob, 100, tecNO_PERMISSION, {{credIdx}});
+            env.close();
+
+            // Bob authorize credentials
+            env(deposit::authCredentials(bob, {{dpIssuer, credType}}));
+            env.close();
+
+            // alice try to send 100 MPT to bob, not authorized
+            mptAlice.pay(alice, bob, 100, tecNO_PERMISSION);
+            env.close();
+
+            // alice sends 100 MPT to bob with credentials
+            mptAlice.pay(alice, bob, 100, tesSUCCESS, {{credIdx}});
+            env.close();
+        }
+
+        testcase("DepositPreauth disabled featureCredentials");
+        {
+            Env env(*this, supported_amendments() - featureCredentials);
+
+            std::string const credIdx =
+                "D007AE4B6E1274B4AF872588267B810C2F82716726351D1C7D38D3E5499FC6"
+                "E2";
+
+            env.fund(XRP(50000), diana, dpIssuer);
+            env.close();
+
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTRequireAuth | tfMPTCanTransfer});
+
+            env(pay(diana, bob, XRP(500)));
+            env.close();
+
+            // bob creates an empty MPToken
+            mptAlice.authorize({.account = bob});
+            // alice authorizes bob to hold funds
+            mptAlice.authorize({.account = alice, .holder = bob});
+
+            // Bob require preauthorization
+            env(fset(bob, asfDepositAuth));
+            env.close();
+
+            // alice try to send 100 MPT to bob, authorization is not checked
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            // alice try to send 100 MPT to bob with credentials, amendment
+            // disabled
+            mptAlice.pay(alice, bob, 100, temDISABLED, {{credIdx}});
+            env.close();
+
+            // Bob authorize alice
+            env(deposit::auth(bob, alice));
+            env.close();
+
+            // alice sends 100 MPT to bob, authorization is not checked
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            // alice sends 100 MPT to bob with credentials, amendment disabled
+            mptAlice.pay(alice, bob, 100, temDISABLED, {{credIdx}});
+            env.close();
+
+            // Bob revoke authorization
+            env(deposit::unauth(bob, alice));
+            env.close();
+
+            // alice try to send 100 MPT to bob, authorization is not checked
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            // alice sends 100 MPT to bob with credentials, amendment disabled
+            mptAlice.pay(alice, bob, 100, temDISABLED, {{credIdx}});
+            env.close();
+        }
+    }
+
+    void
     testMPTInvalidInTx(FeatureBitset features)
     {
         testcase("MPT Amount Invalid in Transaction");
@@ -1979,6 +2130,7 @@ public:
 
         // Test Direct Payment
         testPayment(all);
+        testDepositPreauth();
 
         // Test MPT Amount is invalid in Tx, which don't support MPT
         testMPTInvalidInTx(all);
