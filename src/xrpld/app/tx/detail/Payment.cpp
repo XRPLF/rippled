@@ -150,7 +150,7 @@ Payment::preflight(PreflightContext const& ctx)
         JLOG(j.trace()) << "Malformed transaction: " << "Bad currency.";
         return temBAD_CURRENCY;
     }
-    if (account == dstAccountID && srcAsset == dstAsset && !hasPaths)
+    if (account == dstAccountID && equalTokens(srcAsset, dstAsset) && !hasPaths)
     {
         // You're signing yourself a payment.
         // If hasPaths is true, you might be trying some arbitrage.
