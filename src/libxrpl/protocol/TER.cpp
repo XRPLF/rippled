@@ -116,6 +116,7 @@ transResults()
         MAKE_ERROR(tecARRAY_EMPTY,                   "Array is empty."),
         MAKE_ERROR(tecARRAY_TOO_LARGE,               "Array is too large."),
         MAKE_ERROR(tecLOCKED,                        "Fund is locked."),
+        MAKE_ERROR(tecBAD_CREDENTIALS,               "Bad credentials."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),

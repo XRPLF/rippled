@@ -148,8 +148,11 @@ enum error_code_i {
     // Oracle
     rpcORACLE_MALFORMED = 94,
 
+    // deposit_authorized + credentials
+    rpcBAD_CREDENTIALS = 95,
+
     // Simulate
-    rpcTX_SIGNED = 95,
+    rpcTX_SIGNED = 96,
 
     rpcLAST = rpcTX_SIGNED  // rpcLAST should always equal the last code.
 };
