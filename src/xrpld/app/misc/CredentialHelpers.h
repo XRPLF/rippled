@@ -60,25 +60,18 @@ valid(PreclaimContext const& ctx, AccountID const& src);
 TER
 authorized(ApplyContext const& ctx, AccountID const& dst);
 
-// Check expired credentials and for existing DepositPreauth ledger object
-TER
-verify(
-    ApplyContext& ctx,
-    AccountID const& src,
-    AccountID const& dst,
-    std::optional<std::reference_wrapper<std::shared_ptr<SLE> const>>
-        sleDstOpt = {});
-
-TER
-verify(
-    ApplyContext& ctx,
-    AccountID const& src,
-    AccountID const& dst,
-    bool requireAuth);
-
 // return empty set if there are duplicates
 std::set<std::pair<AccountID, Slice>>
 makeSorted(STArray const& in);
 
 }  // namespace credentials
+
+// Check expired credentials and for existing DepositPreauth ledger object
+TER
+verifyDepositPreauth(
+    ApplyContext& ctx,
+    AccountID const& src,
+    AccountID const& dst,
+    std::shared_ptr<SLE> const& sleDst);
+
 }  // namespace ripple

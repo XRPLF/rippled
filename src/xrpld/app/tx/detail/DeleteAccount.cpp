@@ -357,7 +357,7 @@ DeleteAccount::doApply()
     if (ctx_.view().rules().enabled(featureDepositAuth) &&
         ctx_.tx.isFieldPresent(sfCredentialIDs))
     {
-        if (auto err = credentials::verify(ctx_, account_, dstID, dst);
+        if (auto err = verifyDepositPreauth(ctx_, account_, dstID, dst);
             !isTesSuccess(err))
             return err;
     }

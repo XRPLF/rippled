@@ -212,49 +212,6 @@ authorized(ApplyContext const& ctx, AccountID const& dst)
     return tesSUCCESS;
 }
 
-TER
-verify(
-    ApplyContext& ctx,
-    AccountID const& src,
-    AccountID const& dst,
-    bool requireAuth)
-{
-    // If depositPreauth is enabled, then an account that requires
-    // authorization has at least two ways to get a payment in:
-    //  1. If src == dst, or
-    //  2. If src is deposit preauthorized by dst.
-
-    bool const credentialsPresent = ctx.tx.isFieldPresent(sfCredentialIDs);
-
-    if (credentialsPresent &&
-        credentials::removeExpired(ctx.view(), ctx.tx, ctx.journal))
-        return tecEXPIRED;
-
-    if (!requireAuth || (src == dst))
-        return tesSUCCESS;
-
-    if (ctx.view().exists(keylet::depositPreauth(dst, src)))
-        return tesSUCCESS;
-
-    if (!credentialsPresent)
-        return tecNO_PERMISSION;
-
-    return credentials::authorized(ctx, dst);
-}
-
-TER
-verify(
-    ApplyContext& ctx,
-    AccountID const& src,
-    AccountID const& dst,
-    std::optional<std::reference_wrapper<std::shared_ptr<SLE> const>> sleDstOpt)
-{
-    std::shared_ptr<SLE const> const& sleDst =
-        sleDstOpt ? *sleDstOpt : ctx.view().peek(keylet::account(dst));
-    return verify(
-        ctx, src, dst, sleDst && (sleDst->getFlags() & lsfDepositAuth));
-}
-
 std::set<std::pair<AccountID, Slice>>
 makeSorted(STArray const& in)
 {
@@ -269,4 +226,36 @@ makeSorted(STArray const& in)
 }
 
 }  // namespace credentials
+
+TER
+verifyDepositPreauth(
+    ApplyContext& ctx,
+    AccountID const& src,
+    AccountID const& dst,
+    std::shared_ptr<SLE> const& sleDst)
+{
+    // If depositPreauth is enabled, then an account that requires
+    // authorization has at least two ways to get a payment in:
+    //  1. If src == dst, or
+    //  2. If src is deposit preauthorized by dst.
+
+    bool const credentialsPresent = ctx.tx.isFieldPresent(sfCredentialIDs);
+
+    if (credentialsPresent &&
+        credentials::removeExpired(ctx.view(), ctx.tx, ctx.journal))
+        return tecEXPIRED;
+
+    if (sleDst && (sleDst->getFlags() & lsfDepositAuth))
+    {
+        if (src != dst)
+        {
+            if (!ctx.view().exists(keylet::depositPreauth(dst, src)))
+                return !credentialsPresent ? tecNO_PERMISSION
+                                           : credentials::authorized(ctx, dst);
+        }
+    }
+
+    return tesSUCCESS;
+}
+
 }  // namespace ripple

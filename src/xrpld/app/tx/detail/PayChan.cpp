@@ -539,8 +539,7 @@ PayChanClaim::doApply()
 
         if (depositAuth)
         {
-            if (auto err = credentials::verify(
-                    ctx_, txAccount, dst, sled->getFlags() & lsfDepositAuth);
+            if (auto err = verifyDepositPreauth(ctx_, txAccount, dst, sled);
                 !isTesSuccess(err))
                 return err;
         }
