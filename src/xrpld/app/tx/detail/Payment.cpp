@@ -470,13 +470,10 @@ Payment::doApply()
             ter != tesSUCCESS)
             return ter;
 
-        if (view().rules().enabled(featureCredentials))
-        {
-            if (auto err =
-                    verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
-                !isTesSuccess(err))
-                return err;
-        }
+        if (auto err =
+                verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
+            !isTesSuccess(err))
+            return err;
 
         auto const& issuer = mptIssue.getIssuer();
 

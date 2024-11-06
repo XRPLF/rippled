@@ -155,13 +155,13 @@ doLedgerEntry(RPC::JsonContext& context)
                     STArray const arr = parseAuthorizeCredentials(ac);
 
                     if (arr.empty() || (arr.size() > maxCredentialsArraySize))
-                        jvResult[jss::error] = "malformedAuthorizeCredentials";
+                        jvResult[jss::error] = "malformedAuthorizedCredentials";
                     else
                     {
                         auto sorted = credentials::makeSorted(arr);
                         if (sorted.empty())
                             jvResult[jss::error] =
-                                "malformedAuthorizeCredentials";
+                                "malformedAuthorizedCredentials";
                         else
                             uNodeIndex =
                                 keylet::depositPreauth(*owner, sorted).key;

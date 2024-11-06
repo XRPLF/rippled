@@ -1432,8 +1432,8 @@ class MPToken_test : public beast::unit_test::suite
             env(fset(bob, asfDepositAuth));
             env.close();
 
-            // alice try to send 100 MPT to bob, authorization is not checked
-            mptAlice.pay(alice, bob, 100);
+            // alice try to send 100 MPT to bob, not authorized
+            mptAlice.pay(alice, bob, 100, tecNO_PERMISSION);
             env.close();
 
             // alice try to send 100 MPT to bob with credentials, amendment
@@ -1445,7 +1445,7 @@ class MPToken_test : public beast::unit_test::suite
             env(deposit::auth(bob, alice));
             env.close();
 
-            // alice sends 100 MPT to bob, authorization is not checked
+            // alice sends 100 MPT to bob
             mptAlice.pay(alice, bob, 100);
             env.close();
 
@@ -1457,8 +1457,8 @@ class MPToken_test : public beast::unit_test::suite
             env(deposit::unauth(bob, alice));
             env.close();
 
-            // alice try to send 100 MPT to bob, authorization is not checked
-            mptAlice.pay(alice, bob, 100);
+            // alice try to send 100 MPT to bob
+            mptAlice.pay(alice, bob, 100, tecNO_PERMISSION);
             env.close();
 
             // alice sends 100 MPT to bob with credentials, amendment disabled

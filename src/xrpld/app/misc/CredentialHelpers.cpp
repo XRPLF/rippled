@@ -237,7 +237,8 @@ verifyDepositPreauth(
     // If depositPreauth is enabled, then an account that requires
     // authorization has at least two ways to get a payment in:
     //  1. If src == dst, or
-    //  2. If src is deposit preauthorized by dst.
+    //  2. If src is deposit preauthorized by dst (either by account or by
+    //  credentials).
 
     bool const credentialsPresent = ctx.tx.isFieldPresent(sfCredentialIDs);
 

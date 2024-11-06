@@ -51,11 +51,10 @@ DepositPreauth::preflight(PreflightContext const& ctx)
         return ret;
 
     auto& tx = ctx.tx;
-    auto& j = ctx.j;
 
     if (tx.getFlags() & tfUniversalMask)
     {
-        JLOG(j.trace()) << "Malformed transaction: Invalid flags set.";
+        JLOG(ctx.j.trace()) << "Malformed transaction: Invalid flags set.";
         return temINVALID_FLAG;
     }
 
@@ -66,17 +65,16 @@ DepositPreauth::preflight(PreflightContext const& ctx)
 
     if (authPresent + authCredPresent != 1)
     {
-        // Either both fields are present or neither field is present.  In
-        // either case the transaction is malformed.
-        JLOG(j.trace())
+        // There can only be 1 field out of 4 or the transaction is malformed.
+        JLOG(ctx.j.trace())
             << "Malformed transaction: "
                "Invalid Authorize and Unauthorize field combination.";
         return temMALFORMED;
     }
 
-    // Make sure that the passed account is valid.
     if (authPresent)
     {
+        // Make sure that the passed account is valid.
         AccountID const& target(optAuth ? *optAuth : *optUnauth);
         if (!target)
         {
