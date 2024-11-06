@@ -160,6 +160,15 @@ doDepositAuthorized(RPC::JsonContext& context)
                 return result;
             }
 
+            if ((*sleCred)[sfSubject] != srcAcct)
+            {
+                RPC::inject_error(
+                    rpcBAD_CREDENTIALS,
+                    "credentials doesn't belong to the root account",
+                    result);
+                return result;
+            }
+
             auto [it, ins] = sorted.emplace(
                 (*sleCred)[sfIssuer], (*sleCred)[sfCredentialType]);
             if (!ins)

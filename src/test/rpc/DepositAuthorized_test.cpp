@@ -338,10 +338,11 @@ public:
 
         Account const alice{"alice"};
         Account const becky{"becky"};
+        Account const diana{"diana"};
         Account const carol{"carol"};
 
         Env env(*this);
-        env.fund(XRP(1000), alice, becky, carol);
+        env.fund(XRP(1000), alice, becky, carol, diana);
         env.close();
 
         // carol recognize alice
@@ -514,14 +515,51 @@ public:
         }
 
         {
+            // diana recognize becky
+            env(credentials::create(becky, diana, credType));
+            env.close();
+            env(credentials::accept(becky, diana, credType));
+            env.close();
+
+            // retrieve the index of the credentials
+            auto jv = credentials::ledgerEntry(env, becky, diana, credType);
+            std::string const credBecky =
+                jv[jss::result][jss::index].asString();
+
             testcase("deposit_authorized account without preauth");
-            auto const jv = env.rpc(
+            jv = env.rpc(
                 "json",
                 "deposit_authorized",
-                depositAuthArgs(becky, alice, "validated", {credIdx})
+                depositAuthArgs(becky, alice, "validated", {credBecky})
                     .toStyledString());
             checkCredentialsResponse(
-                jv[jss::result], becky, alice, true, {credIdx});
+                jv[jss::result], becky, alice, true, {credBecky});
+        }
+
+        {
+            // carol recognize diana
+            env(credentials::create(diana, carol, credType));
+            env.close();
+            env(credentials::accept(diana, carol, credType));
+            env.close();
+            // retrieve the index of the credentials
+            auto jv = credentials::ledgerEntry(env, alice, carol, credType);
+            std::string const credDiana =
+                jv[jss::result][jss::index].asString();
+
+            // alice try to use credential for different account
+            jv = env.rpc(
+                "json",
+                "deposit_authorized",
+                depositAuthArgs(becky, alice, "validated", {credDiana})
+                    .toStyledString());
+            checkCredentialsResponse(
+                jv[jss::result],
+                becky,
+                alice,
+                false,
+                {credDiana},
+                "badCredentials");
         }
 
         {
