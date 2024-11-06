@@ -93,7 +93,7 @@ public:
 
     /** Sets the batch prev fields in the metadata. */
     void
-    batchPrevious(ApplyViewImpl& avi);
+    setBatchPrevAcctRootFields(ApplyViewImpl& avi);
 
     /** Get the number of unapplied changes. */
     std::size_t

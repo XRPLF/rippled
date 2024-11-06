@@ -1137,8 +1137,8 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
     }
 
     // Enforce Network bar for batch txn
-    auto const view = m_ledgerMaster.getCurrentLedger();
-    if (view->rules().enabled(featureBatch) &&
+    if (auto const view = m_ledgerMaster.getCurrentLedger();
+        view->rules().enabled(featureBatch) &&
         iTrans->isFieldPresent(sfBatchTxn))
     {
         JLOG(m_journal.error())
@@ -1216,8 +1216,8 @@ NetworkOPsImp::processTransaction(
     auto const view = m_ledgerMaster.getCurrentLedger();
 
     // This function is called by several different parts of the codebase
-    // under no circumstances will we ever accept a batch txn from the
-    // network.
+    // under no circumstances will we ever accept an inner txn within a batch
+    // txn from the network.
     auto const tx = *transaction->getSTransaction();
     if (view->rules().enabled(featureBatch) &&
         tx.isFieldPresent(ripple::sfBatchTxn))
@@ -1486,8 +1486,8 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 auto const toSkip =
                     app_.getHashRouter().shouldRelay(e.transaction->getID());
 
-                auto const txn = *(e.transaction->getSTransaction());
-                if (toSkip && !txn.isFieldPresent(sfBatchTxn))
+                if (auto const txn = *(e.transaction->getSTransaction());
+                    toSkip && !txn.isFieldPresent(sfBatchTxn))
                 {
                     protocol::TMTransaction tx;
                     Serializer s;
@@ -2778,7 +2778,7 @@ NetworkOPsImp::pubProposedTransaction(
     std::shared_ptr<STTx const> const& transaction,
     TER result)
 {
-    // never publish batch txns
+    // never publish an inner txn inside a batch txn
     if (transaction->isFieldPresent(ripple::sfBatchTxn))
         return;
 

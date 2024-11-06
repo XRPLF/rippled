@@ -78,9 +78,9 @@ public:
      * Takes ownership / use std::move
      */
     void
-    addBatchPrevMetaData(STObject const& prevFields)
+    setBatchPrevMetaData(STObject const& prevFields)
     {
-        batchPrev_ = prevFields;
+        batchPrevAcctRootFields_ = prevFields;
     }
 
     void
@@ -123,7 +123,7 @@ public:
 private:
     std::optional<STAmount> deliver_;
     std::vector<STObject> batchExecution_;
-    std::optional<STObject> batchPrev_;
+    std::optional<STObject> batchPrevAcctRootFields_;
 };
 
 }  // namespace ripple

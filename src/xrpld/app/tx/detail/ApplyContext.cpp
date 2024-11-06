@@ -104,25 +104,25 @@ ApplyContext::updateAccountRootEntry()
  *  will be added.
  */
 void
-ApplyContext::batchPrevious(ApplyViewImpl& avi)
+ApplyContext::setBatchPrevAcctRootFields(ApplyViewImpl& avi)
 {
     AccountID const account = tx.getAccountID(sfAccount);
-    auto const sleBase = base_.read(keylet::account(account));
-    auto const sle = view_->peek(keylet::account(account));
-    if (sle && sleBase)
+    auto const sleBaseAcct = base_.read(keylet::account(account));
+    auto const sleAcct = view_->peek(keylet::account(account));
+    if (sleAcct && sleBaseAcct)
     {
         STObject prevFields{sfPreviousFields};
-        for (auto const& obj : *sleBase)
+        for (auto const& obj : *sleBaseAcct)
         {
             if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) &&
-                (!sle->hasMatchingEntry(obj) || obj.getFName() == sfSequence ||
+                (!sleAcct->hasMatchingEntry(obj) || obj.getFName() == sfSequence ||
                  obj.getFName() == sfOwnerCount ||
                  obj.getFName() == sfTicketCount))
             {
                 prevFields.emplace_back(obj);
             }
         }
-        avi.addBatchPrevMetaData(std::move(prevFields));
+        avi.setBatchPrevMetaData(std::move(prevFields));
     }
 }
 

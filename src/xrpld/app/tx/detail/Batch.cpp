@@ -218,15 +218,8 @@ Batch::preflight(PreflightContext const& ctx)
 }
 
 TER
-Batch::preclaim(PreclaimContext const& ctx)
-{
-    return tesSUCCESS;
-}
-
-TER
 Batch::doApply()
 {
-    Sandbox sb(&ctx_.view());
     bool changed = false;
     auto const flags = ctx_.tx.getFlags();
 
@@ -234,10 +227,10 @@ Batch::doApply()
 
     TER result = tesSUCCESS;
     ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
-    OpenView subView(&sb);
+    OpenView subView(&ctx_.view());
 
     auto const& txns = ctx_.tx.getFieldArray(sfRawTransactions);
-    bool const not3rdParty = std::any_of(
+    bool const innerTxnSubmittedByOuterAcct = std::any_of(
         txns.begin(), txns.end(), [outerAccount](STObject const& txn) {
             return txn.getAccountID(sfAccount) == outerAccount;
         });
@@ -302,14 +295,14 @@ Batch::doApply()
     // Apply SubView & PreviousFields
     if (changed)
     {
-        // Only required when not 3rd Party
-        if (not3rdParty)
-            ctx_.batchPrevious(avi);
+        // Only required when the outer account also submitted at least one of
+        // the inner transactions
+        if (innerTxnSubmittedByOuterAcct)
+            ctx_.setBatchPrevAcctRootFields(avi);
 
         ctx_.applyOpenView(subView);
     }
 
-    sb.apply(ctx_.rawView());
     return result;
 }
 

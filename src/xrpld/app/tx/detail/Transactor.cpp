@@ -546,12 +546,14 @@ Transactor::checkBatchSign(PreclaimContext const& ctx)
         if (pkSigner.empty())
         {
             STArray const& txSigners(signer.getFieldArray(sfSigners));
-            ret = checkMultiSign(ctx.view, idAccount, txSigners, ctx.j);
+            if (ret = checkMultiSign(ctx.view, idAccount, txSigners, ctx.j);
+                !isTesSuccess(ret))
+                return ret;
         }
         else
         {
             if (!publicKeyType(makeSlice(pkSigner)))
-                ret = tefBAD_AUTH;
+                return tefBAD_AUTH;
 
             auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
             auto const sleAccount = ctx.view.read(keylet::account(idAccount));
@@ -561,8 +563,10 @@ Transactor::checkBatchSign(PreclaimContext const& ctx)
             if (!sleAccount)
                 return tesSUCCESS;
 
-            ret = checkSingleSign(
-                idSigner, idAccount, sleAccount, ctx.view.rules(), ctx.j);
+            if (ret = checkSingleSign(
+                    idSigner, idAccount, sleAccount, ctx.view.rules(), ctx.j);
+                !isTesSuccess(ret))
+                return ret;
         }
     }
     return ret;
@@ -1049,19 +1053,19 @@ Transactor::operator()()
         applied = isTecClaim(result);
     }
 
-    // Update the AccountRoot entry if the batch transaction was successfull
+    // Update the AccountRoot entry if the batch transaction was successful
     if (applied && ctx_.tx.getTxnType() == ttBATCH && result == tesSUCCESS)
     {
         auto const outerAccount = ctx_.tx.getAccountID(sfAccount);
         auto const& txns = ctx_.tx.getFieldArray(sfRawTransactions);
-        bool const not3rdParty = std::any_of(
+        bool const innerTxnSubmittedByOuterAcct = std::any_of(
             txns.begin(), txns.end(), [outerAccount](STObject const& txn) {
                 return txn.getAccountID(sfAccount) == outerAccount;
             });
 
         // Only update the account root entry if the batch transaction was
         // not a 3rd party transaction
-        if (not3rdParty)
+        if (innerTxnSubmittedByOuterAcct)
             ctx_.updateAccountRootEntry();
     }
 
