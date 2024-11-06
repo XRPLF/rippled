@@ -1950,6 +1950,132 @@ class MPToken_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testTokensEquality()
+    {
+        using namespace test::jtx;
+        testcase("Tokens Equality");
+        Currency const cur1{to_currency("CU1")};
+        Currency const cur2{to_currency("CU2")};
+        Account const gw1{"gw1"};
+        Account const gw2{"gw2"};
+        MPTID const mpt1 = makeMptID(1, gw1);
+        MPTID const mpt1a = makeMptID(1, gw1);
+        MPTID const mpt2 = makeMptID(1, gw2);
+        MPTID const mpt3 = makeMptID(2, gw2);
+        Asset const assetCur1Gw1{Issue{cur1, gw1}};
+        Asset const assetCur1Gw1a{Issue{cur1, gw1}};
+        Asset const assetCur2Gw1{Issue{cur2, gw1}};
+        Asset const assetCur2Gw2{Issue{cur2, gw2}};
+        Asset const assetMpt1Gw1{mpt1};
+        Asset const assetMpt1Gw1a{mpt1a};
+        Asset const assetMpt1Gw2{mpt2};
+        Asset const assetMpt2Gw2{mpt3};
+
+        // Assets holding Issue
+        // Currencies are equal regardless of the issuer
+        BEAST_EXPECT(equalTokens(assetCur1Gw1, assetCur1Gw1a));
+        BEAST_EXPECT(equalTokens(assetCur2Gw1, assetCur2Gw2));
+        // Currencies are different regardless of whether the issuers
+        // are the same or not
+        BEAST_EXPECT(!equalTokens(assetCur1Gw1, assetCur2Gw1));
+        BEAST_EXPECT(!equalTokens(assetCur1Gw1, assetCur2Gw2));
+
+        // Assets holding MPTIssue
+        // MPTIDs are the same if the sequence and the issuer are the same
+        BEAST_EXPECT(equalTokens(assetMpt1Gw1, assetMpt1Gw1a));
+        // MPTIDs are different if sequence and the issuer don't match
+        BEAST_EXPECT(!equalTokens(assetMpt1Gw1, assetMpt1Gw2));
+        BEAST_EXPECT(!equalTokens(assetMpt1Gw2, assetMpt2Gw2));
+
+        // Assets holding Issue and MPTIssue
+        BEAST_EXPECT(!equalTokens(assetCur1Gw1, assetMpt1Gw1));
+        BEAST_EXPECT(!equalTokens(assetMpt2Gw2, assetCur2Gw2));
+    }
+
+    void
+    testHelperFunctions()
+    {
+        using namespace test::jtx;
+        Account const gw{"gw"};
+        Asset const asset1{makeMptID(1, gw)};
+        Asset const asset2{makeMptID(2, gw)};
+        Asset const asset3{makeMptID(3, gw)};
+        STAmount const amt1{asset1, 100};
+        STAmount const amt2{asset2, 100};
+        STAmount const amt3{asset3, 10'000};
+
+        {
+            testcase("Test STAmount MPT arithmetics");
+            using namespace std::string_literals;
+            STAmount res = multiply(amt1, amt2, asset3);
+            BEAST_EXPECT(res == amt3);
+
+            res = mulRound(amt1, amt2, asset3, true);
+            BEAST_EXPECT(res == amt3);
+
+            res = mulRoundStrict(amt1, amt2, asset3, true);
+            BEAST_EXPECT(res == amt3);
+
+            // overflow, any value > 3037000499ull
+            STAmount mptOverflow{asset2, UINT64_C(3037000500)};
+            try
+            {
+                res = multiply(mptOverflow, mptOverflow, asset3);
+                fail("should throw runtime exception 1");
+            }
+            catch (std::runtime_error const& e)
+            {
+                BEAST_EXPECTS(e.what() == "MPT value overflow"s, e.what());
+            }
+            // overflow, (v1 >> 32) * v2 > 2147483648ull
+            mptOverflow = STAmount{asset2, UINT64_C(2147483648)};
+            uint64_t const mantissa = (2ull << 32) + 2;
+            try
+            {
+                res = multiply(STAmount{asset1, mantissa}, mptOverflow, asset3);
+                fail("should throw runtime exception 2");
+            }
+            catch (std::runtime_error const& e)
+            {
+                BEAST_EXPECTS(e.what() == "MPT value overflow"s, e.what());
+            }
+        }
+
+        {
+            testcase("Test MPTAmount arithmetics");
+            MPTAmount mptAmt1{100};
+            MPTAmount const mptAmt2{100};
+            BEAST_EXPECT((mptAmt1 += mptAmt2) == MPTAmount{200});
+            BEAST_EXPECT(mptAmt1 == 200);
+            BEAST_EXPECT((mptAmt1 -= mptAmt2) == mptAmt1);
+            BEAST_EXPECT(mptAmt1 == mptAmt2);
+            BEAST_EXPECT(mptAmt1 == 100);
+            BEAST_EXPECT(MPTAmount::minPositiveAmount() == MPTAmount{1});
+        }
+
+        {
+            testcase("Test MPTIssue from/to Json");
+            MPTIssue const issue1{asset1.get<MPTIssue>()};
+            Json::Value const jv = to_json(issue1);
+            BEAST_EXPECT(
+                jv[jss::mpt_issuance_id] == to_string(asset1.get<MPTIssue>()));
+            BEAST_EXPECT(issue1 == mptIssueFromJson(jv));
+        }
+
+        {
+            testcase("Test Asset from/to Json");
+            Json::Value const jv = to_json(asset1);
+            BEAST_EXPECT(
+                jv[jss::mpt_issuance_id] == to_string(asset1.get<MPTIssue>()));
+            BEAST_EXPECT(
+                to_string(jv) ==
+                "{\"mpt_issuance_id\":"
+                "\"00000001A407AF5856CCF3C42619DAA925813FC955C72983\"}");
+            BEAST_EXPECT(asset1 == assetFromJson(jv));
+        }
+    }
+
 public:
     void
     run() override
@@ -1985,6 +2111,12 @@ public:
 
         // Test parsed MPTokenIssuanceID in API response metadata
         testTxJsonMetaFields(all);
+
+        // Test tokens equality
+        testTokensEquality();
+
+        // Test helpers
+        testHelperFunctions();
     }
 };
 
