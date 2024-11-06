@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,68 +17,18 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_PAYCHAN_H_INCLUDED
-#define RIPPLE_TX_PAYCHAN_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
 
-class PayChanCreate : public Transactor
-{
-public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
-
-    explicit PayChanCreate(ApplyContext& ctx) : Transactor(ctx)
-    {
-    }
-
-    static TxConsequences
-    makeTxConsequences(PreflightContext const& ctx);
-
-    static NotTEC
-    preflight(PreflightContext const& ctx);
-
-    static TER
-    preclaim(PreclaimContext const& ctx);
-
-    TER
-    doApply() override;
-};
-
-using PaymentChannelCreate = PayChanCreate;
-
-//------------------------------------------------------------------------------
-
-class PayChanFund : public Transactor
-{
-public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
-
-    explicit PayChanFund(ApplyContext& ctx) : Transactor(ctx)
-    {
-    }
-
-    static TxConsequences
-    makeTxConsequences(PreflightContext const& ctx);
-
-    static NotTEC
-    preflight(PreflightContext const& ctx);
-
-    TER
-    doApply() override;
-};
-
-using PaymentChannelFund = PayChanFund;
-
-//------------------------------------------------------------------------------
-
-class PayChanClaim : public Transactor
+class CredentialCreate : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit PayChanClaim(ApplyContext& ctx) : Transactor(ctx)
+    explicit CredentialCreate(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -92,8 +42,46 @@ public:
     doApply() override;
 };
 
-using PaymentChannelClaim = PayChanClaim;
+//------------------------------------------------------------------------------
+
+class CredentialDelete : public Transactor
+{
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
+    explicit CredentialDelete(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
+    TER
+    doApply() override;
+};
+
+//------------------------------------------------------------------------------
+
+class CredentialAccept : public Transactor
+{
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
+    explicit CredentialAccept(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
+    TER
+    doApply() override;
+};
 
 }  // namespace ripple
-
-#endif

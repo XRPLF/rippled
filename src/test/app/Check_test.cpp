@@ -108,16 +108,6 @@ class Check_test : public beast::unit_test::suite
         return result;
     }
 
-    // Helper function that returns the owner count on an account.
-    static std::uint32_t
-    ownerCount(test::jtx::Env const& env, test::jtx::Account const& account)
-    {
-        std::uint32_t ret{0};
-        if (auto const sleAccount = env.le(account))
-            ret = sleAccount->getFieldU32(sfOwnerCount);
-        return ret;
-    }
-
     // Helper function that verifies the expected DeliveredAmount is present.
     //
     // NOTE: the function _infers_ the transaction to operate on by calling
