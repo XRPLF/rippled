@@ -581,18 +581,33 @@ Env::do_rpc(
     int retries = 3;
     do
     {
-        auto const ret =
-            rpcClient(args, app().config(), app().logs(), apiVersion, headers)
-                .second;
-        if (cb(ret) || --retries <= 0)
-            return ret;
+        std::string retString;
+        try
+        {
+            auto const ret =
+                rpcClient(
+                    args, app().config(), app().logs(), apiVersion, headers)
+                    .second;
+            if (cb(ret) || --retries <= 0)
+                return ret;
+            test.log << "RPC failure: ";
+            retString = to_string(ret);
+        }
+        catch (std::exception const& e)
+        {
+            using namespace std::string_literals;
+            // TODO: Narrow down the exceptions that can be retried
+            if (--retries <= 0)
+                throw;
+            test.log << "RPC exception: ";
+            retString = e.what();
+        }
         std::stringstream ss;
         for (auto const& arg : args)
         {
             ss << arg << ", ";
         }
-        test.log << "RPC failed: " << ss.str() << " -> " << to_string(ret)
-                 << std::endl;
+        test.log << ss.str() << " -> " << retString << std::endl;
     } while (true);
 }
 
