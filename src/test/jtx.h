@@ -33,6 +33,7 @@
 #include <test/jtx/balance.h>
 #include <test/jtx/batch.h>
 #include <test/jtx/check.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/delivermin.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/did.h>

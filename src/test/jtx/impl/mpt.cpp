@@ -301,14 +301,23 @@ MPTTester::pay(
     Account const& src,
     Account const& dest,
     std::int64_t amount,
-    std::optional<TER> err)
+    std::optional<TER> err,
+    std::optional<std::vector<std::string>> credentials)
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
     auto const srcAmt = getBalance(src);
     auto const destAmt = getBalance(dest);
     auto const outstnAmt = getBalance(issuer_);
-    env_(jtx::pay(src, dest, mpt(amount)), ter(err.value_or(tesSUCCESS)));
+
+    if (credentials)
+        env_(
+            jtx::pay(src, dest, mpt(amount)),
+            ter(err.value_or(tesSUCCESS)),
+            credentials::ids(*credentials));
+    else
+        env_(jtx::pay(src, dest, mpt(amount)), ter(err.value_or(tesSUCCESS)));
+
     if (env_.ter() != tesSUCCESS)
         amount = 0;
     if (close_)

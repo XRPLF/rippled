@@ -80,7 +80,8 @@ ServerDefinitions::translate(std::string const& inp)
 
     if (contains("UINT"))
     {
-        if (contains("256") || contains("160") || contains("128"))
+        if (contains("256") || contains("192") || contains("160") ||
+            contains("128"))
             return replace("UINT", "Hash");
         else
             return replace("UINT", "UInt");

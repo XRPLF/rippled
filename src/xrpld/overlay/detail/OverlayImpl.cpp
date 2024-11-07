@@ -491,6 +491,9 @@ OverlayImpl::start()
 
         // Pool of servers operated by ISRDC - https://isrdc.in
         bootstrapIps.push_back("sahyadri.isrdc.in 51235");
+
+        // Pool of servers operated by @Xrpkuwait - https://xrpkuwait.com
+        bootstrapIps.push_back("hubs.xrpkuwait.com 51235");
     }
 
     m_resolver.resolve(

@@ -343,7 +343,8 @@ enum TECcodes : TERUnderlyingType {
     tecARRAY_EMPTY = 190,
     tecARRAY_TOO_LARGE = 191,
     tecLOCKED = 192,
-    tecBATCH_FAILURE = 193
+    tecBAD_CREDENTIALS = 193,
+    tecBATCH_FAILURE = 194
 };
 
 //------------------------------------------------------------------------------

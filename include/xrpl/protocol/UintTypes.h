@@ -134,6 +134,12 @@ struct hash<ripple::Directory> : ripple::Directory::hasher
     explicit hash() = default;
 };
 
+template <>
+struct hash<ripple::uint256> : ripple::uint256::hasher
+{
+    explicit hash() = default;
+};
+
 }  // namespace std
 
 #endif

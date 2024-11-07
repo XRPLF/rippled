@@ -143,7 +143,7 @@ printHelp(const po::options_description& desc)
            "     connect <ip> [<port>]\n"
            "     consensus_info\n"
            "     deposit_authorized <source_account> <destination_account> "
-           "[<ledger>]\n"
+           "[<ledger> [<credentials>, ...]]\n"
            "     feature [<feature> [accept|reject]]\n"
            "     fetch_info [clear]\n"
            "     gateway_balances [<ledger>] <issuer_account> [ <hotwallet> [ "

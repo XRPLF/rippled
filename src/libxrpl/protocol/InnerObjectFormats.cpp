@@ -148,6 +148,13 @@ InnerObjectFormats::InnerObjectFormats()
             {sfScale, soeDEFAULT},
         });
 
+    add(sfCredential.jsonName.c_str(),
+        sfCredential.getCode(),
+        {
+            {sfIssuer, soeREQUIRED},
+            {sfCredentialType, soeREQUIRED},
+        });
+
     add(sfBatchExecution.jsonName.c_str(),
         sfBatchExecution.getCode(),
         {{sfTransactionType, soeREQUIRED},
@@ -160,6 +167,7 @@ InnerObjectFormats::InnerObjectFormats()
          {sfSigningPubKey, soeOPTIONAL},
          {sfTxnSignature, soeOPTIONAL},
          {sfSigners, soeOPTIONAL}});
+
 }
 
 InnerObjectFormats const&
