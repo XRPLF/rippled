@@ -26,7 +26,6 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/Env_ss.h>
 #include <test/jtx/JTx.h>
-#include <test/jtx/PermissionedDomains.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/account_txn_id.h>
 #include <test/jtx/acctdelete.h>
@@ -51,6 +50,7 @@
 #include <test/jtx/owners.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/prop.h>
 #include <test/jtx/quality.h>
 #include <test/jtx/rate.h>

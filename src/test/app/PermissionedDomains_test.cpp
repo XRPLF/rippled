@@ -25,6 +25,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/jss.h>
+
 #include <algorithm>
 #include <exception>
 #include <map>
@@ -36,6 +37,20 @@
 namespace ripple {
 namespace test {
 namespace jtx {
+
+static std::string
+exceptionExpected(Env& env, Json::Value const& jv)
+{
+    try
+    {
+        env(jv, ter(temMALFORMED));
+    }
+    catch (std::exception const& ex)
+    {
+        return ex.what();
+    }
+    return {};
+}
 
 class PermissionedDomains_test : public beast::unit_test::suite
 {
@@ -51,7 +66,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         Account const alice("alice");
         Env env(*this, withFeature_);
         env.fund(XRP(1000), alice);
-        pd::Credentials credentials{{alice, pd::toBlob("first credential")}};
+        pd::Credentials credentials{{alice, "first credential"}};
         env(pd::setTx(alice, credentials));
         BEAST_EXPECT(pd::ownerInfo(alice, env)["OwnerCount"].asUInt() == 1);
         auto objects = pd::getObjects(alice, env);
@@ -70,7 +85,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         Account const alice("alice");
         Env env(*this, withoutFeature_);
         env.fund(XRP(1000), alice);
-        pd::Credentials credentials{{alice, pd::toBlob("first credential")}};
+        pd::Credentials credentials{{alice, "first credential"}};
         env(pd::setTx(alice, credentials), ter(temDISABLED));
         env(pd::deleteTx(alice, uint256(75)), ter(temDISABLED));
     }
@@ -101,17 +116,17 @@ class PermissionedDomains_test : public beast::unit_test::suite
 
         // Test 11 credentials.
         pd::Credentials const credentials11{
-            {alice2, pd::toBlob("credential1")},
-            {alice3, pd::toBlob("credential2")},
-            {alice4, pd::toBlob("credential3")},
-            {alice5, pd::toBlob("credential4")},
-            {alice6, pd::toBlob("credential5")},
-            {alice7, pd::toBlob("credential6")},
-            {alice8, pd::toBlob("credential7")},
-            {alice9, pd::toBlob("credential8")},
-            {alice10, pd::toBlob("credential9")},
-            {alice11, pd::toBlob("credential10")},
-            {alice12, pd::toBlob("credential11")}};
+            {alice2, "credential1"},
+            {alice3, "credential2"},
+            {alice4, "credential3"},
+            {alice5, "credential4"},
+            {alice6, "credential5"},
+            {alice7, "credential6"},
+            {alice8, "credential7"},
+            {alice9, "credential8"},
+            {alice10, "credential9"},
+            {alice11, "credential10"},
+            {alice12, "credential11"}};
         BEAST_EXPECT(
             credentials11.size() == PermissionedDomainSet::PD_ARRAY_MAX + 1);
         env(pd::setTx(account, credentials11, domain), ter(temMALFORMED));
@@ -119,55 +134,63 @@ class PermissionedDomains_test : public beast::unit_test::suite
         // Test credentials including non-existent issuer.
         Account const nobody("nobody");
         pd::Credentials const credentialsNon{
-            {alice2, pd::toBlob("credential1")},
-            {alice3, pd::toBlob("credential2")},
-            {alice4, pd::toBlob("credential3")},
-            {nobody, pd::toBlob("credential4")},
-            {alice5, pd::toBlob("credential5")},
-            {alice6, pd::toBlob("credential6")},
-            {alice7, pd::toBlob("credential7")}};
+            {alice2, "credential1"},
+            {alice3, "credential2"},
+            {alice4, "credential3"},
+            {nobody, "credential4"},
+            {alice5, "credential5"},
+            {alice6, "credential6"},
+            {alice7, "credential7"}};
         env(pd::setTx(account, credentialsNon, domain), ter(temBAD_ISSUER));
 
         pd::Credentials const credentials4{
-            {alice2, pd::toBlob("credential1")},
-            {alice3, pd::toBlob("credential2")},
-            {alice4, pd::toBlob("credential3")},
-            {alice5, pd::toBlob("credential4")},
+            {alice2, "credential1"},
+            {alice3, "credential2"},
+            {alice4, "credential3"},
+            {alice5, "credential4"},
         };
         auto txJsonMutable = pd::setTx(account, credentials4, domain);
         auto const credentialOrig = txJsonMutable["AcceptedCredentials"][2u];
 
         // Remove Issuer from a credential and apply.
-        txJsonMutable["AcceptedCredentials"][2u]["AcceptedCredential"]
-            .removeMember("Issuer");
-        env(txJsonMutable, ter(temMALFORMED));
+        txJsonMutable["AcceptedCredentials"][2u][jss::Credential].removeMember(
+            jss::Issuer);
+        BEAST_EXPECT(
+            exceptionExpected(env, txJsonMutable).starts_with("invalidParams"));
 
         txJsonMutable["AcceptedCredentials"][2u] = credentialOrig;
         // Make an empty CredentialType.
-        txJsonMutable["AcceptedCredentials"][2u]["AcceptedCredential"]
+        txJsonMutable["AcceptedCredentials"][2u][jss::Credential]
                      ["CredentialType"] = "";
         env(txJsonMutable, ter(temMALFORMED));
 
         // Remove Credentialtype from a credential and apply.
-        txJsonMutable["AcceptedCredentials"][2u]["AcceptedCredential"]
-            .removeMember("CredentialType");
-        env(txJsonMutable, ter(temMALFORMED));
+        txJsonMutable["AcceptedCredentials"][2u][jss::Credential].removeMember(
+            "CredentialType");
+        BEAST_EXPECT(
+            exceptionExpected(env, txJsonMutable).starts_with("invalidParams"));
 
         // Remove both
-        txJsonMutable["AcceptedCredentials"][2u]["AcceptedCredential"]
-            .removeMember("Issuer");
-        env(txJsonMutable, ter(temMALFORMED));
+        txJsonMutable["AcceptedCredentials"][2u][jss::Credential].removeMember(
+            jss::Issuer);
+        BEAST_EXPECT(
+            exceptionExpected(env, txJsonMutable).starts_with("invalidParams"));
 
         // Make 2 identical credentials. The duplicate should be silently
         // removed.
         {
             pd::Credentials const credentialsDup{
-                {alice7, pd::toBlob("credential6")},
-                {alice2, pd::toBlob("credential1")},
-                {alice3, pd::toBlob("credential2")},
-                {alice2, pd::toBlob("credential1")},
-                {alice5, pd::toBlob("credential4")},
+                {alice7, "credential6"},
+                {alice2, "credential1"},
+                {alice3, "credential2"},
+                {alice2, "credential1"},
+                {alice5, "credential4"},
             };
+
+            std::unordered_map<std::string, Account> pubKey2Acc;
+            for (auto const& c : credentialsDup)
+                pubKey2Acc.emplace(c.issuer.human(), c.issuer);
+
             BEAST_EXPECT(pd::sortCredentials(credentialsDup).size() == 4);
             env(pd::setTx(account, credentialsDup, domain));
 
@@ -178,23 +201,26 @@ class PermissionedDomains_test : public beast::unit_test::suite
                 d = pd::getNewDomain(env.meta());
             env.close();
             auto objects = pd::getObjects(account, env);
-            auto const fromObject = pd::credentialsFromJson(objects[d]);
+            auto const fromObject =
+                pd::credentialsFromJson(objects[d], pubKey2Acc);
             auto const sortedCreds = pd::sortCredentials(credentialsDup);
-            BEAST_EXPECT(
-                pd::credentialsFromJson(objects[d]) ==
-                pd::sortCredentials(credentialsDup));
+            BEAST_EXPECT(fromObject == sortedCreds);
         }
 
         // Have equal issuers but different credentials and make sure they
         // sort correctly.
         {
             pd::Credentials const credentialsSame{
-                {alice2, pd::toBlob("credential3")},
-                {alice3, pd::toBlob("credential2")},
-                {alice2, pd::toBlob("credential9")},
-                {alice5, pd::toBlob("credential4")},
-                {alice2, pd::toBlob("credential6")},
+                {alice2, "credential3"},
+                {alice3, "credential2"},
+                {alice2, "credential9"},
+                {alice5, "credential4"},
+                {alice2, "credential6"},
             };
+            std::unordered_map<std::string, Account> pubKey2Acc;
+            for (auto const& c : credentialsSame)
+                pubKey2Acc.emplace(c.issuer.human(), c.issuer);
+
             BEAST_EXPECT(
                 credentialsSame != pd::sortCredentials(credentialsSame));
             env(pd::setTx(account, credentialsSame, domain));
@@ -206,11 +232,10 @@ class PermissionedDomains_test : public beast::unit_test::suite
                 d = pd::getNewDomain(env.meta());
             env.close();
             auto objects = pd::getObjects(account, env);
-            auto const fromObject = pd::credentialsFromJson(objects[d]);
+            auto const fromObject =
+                pd::credentialsFromJson(objects[d], pubKey2Acc);
             auto const sortedCreds = pd::sortCredentials(credentialsSame);
-            BEAST_EXPECT(
-                pd::credentialsFromJson(objects[d]) ==
-                pd::sortCredentials(credentialsSame));
+            BEAST_EXPECT(fromObject == sortedCreds);
         }
     }
 
@@ -220,97 +245,104 @@ class PermissionedDomains_test : public beast::unit_test::suite
     {
         testcase("Set");
         Env env(*this, withFeature_);
-        Account const alice("alice"), alice2("alice2"), alice3("alice3"),
-            alice4("alice4"), alice5("alice5"), alice6("alice6"),
-            alice7("alice7"), alice8("alice8"), alice9("alice9"),
-            alice10("alice10"), alice11("alice11"), alice12("alice12");
-        env.fund(
-            XRP(1000),
-            alice,
-            alice2,
-            alice3,
-            alice4,
-            alice5,
-            alice6,
-            alice7,
-            alice8,
-            alice9,
-            alice10,
-            alice11,
-            alice12);
+
+        const int accNum = 12;
+        Account const alice[accNum] = {
+            "alice",
+            "alice2",
+            "alice3",
+            "alice4",
+            "alice5",
+            "alice6",
+            "alice7",
+            "alice8",
+            "alice9",
+            "alice10",
+            "alice11",
+            "alice12"};
+        std::unordered_map<std::string, Account> pubKey2Acc;
+        for (auto const& c : alice)
+            pubKey2Acc.emplace(c.human(), c);
+
+        for (int i = 0; i < accNum; ++i)
+            env.fund(XRP(1000), alice[i]);
 
         // Create new from existing account with a single credential.
-        pd::Credentials const credentials1{{alice2, pd::toBlob("credential1")}};
+        pd::Credentials const credentials1{{alice[2], "credential1"}};
         {
-            env(pd::setTx(alice, credentials1));
-            BEAST_EXPECT(pd::ownerInfo(alice, env)["OwnerCount"].asUInt() == 1);
+            env(pd::setTx(alice[0], credentials1));
+            BEAST_EXPECT(
+                pd::ownerInfo(alice[0], env)["OwnerCount"].asUInt() == 1);
             auto tx = env.tx()->getJson(JsonOptions::none);
             BEAST_EXPECT(tx[jss::TransactionType] == "PermissionedDomainSet");
-            BEAST_EXPECT(tx["Account"] == alice.human());
-            auto objects = pd::getObjects(alice, env);
+            BEAST_EXPECT(tx["Account"] == alice[0].human());
+            auto objects = pd::getObjects(alice[0], env);
             auto domain = objects.begin()->first;
             auto object = objects.begin()->second;
             BEAST_EXPECT(object["LedgerEntryType"] == "PermissionedDomain");
-            BEAST_EXPECT(object["Owner"] == alice.human());
+            BEAST_EXPECT(object["Owner"] == alice[0].human());
             BEAST_EXPECT(object["Sequence"] == tx["Sequence"]);
-            BEAST_EXPECT(pd::credentialsFromJson(object) == credentials1);
+            BEAST_EXPECT(
+                pd::credentialsFromJson(object, pubKey2Acc) == credentials1);
         }
 
         // Create new from existing account with 10 credentials.
         pd::Credentials const credentials10{
-            {alice2, pd::toBlob("credential1")},
-            {alice3, pd::toBlob("credential2")},
-            {alice4, pd::toBlob("credential3")},
-            {alice5, pd::toBlob("credential4")},
-            {alice6, pd::toBlob("credential5")},
-            {alice7, pd::toBlob("credential6")},
-            {alice8, pd::toBlob("credential7")},
-            {alice9, pd::toBlob("credential8")},
-            {alice10, pd::toBlob("credential9")},
-            {alice11, pd::toBlob("credential10")},
+            {alice[2], "credential1"},
+            {alice[3], "credential2"},
+            {alice[4], "credential3"},
+            {alice[5], "credential4"},
+            {alice[6], "credential5"},
+            {alice[7], "credential6"},
+            {alice[8], "credential7"},
+            {alice[9], "credential8"},
+            {alice[10], "credential9"},
+            {alice[11], "credential10"},
         };
         uint256 domain2;
         {
             BEAST_EXPECT(
                 credentials10.size() == PermissionedDomainSet::PD_ARRAY_MAX);
             BEAST_EXPECT(credentials10 != pd::sortCredentials(credentials10));
-            env(pd::setTx(alice, credentials10));
+            env(pd::setTx(alice[0], credentials10));
             auto tx = env.tx()->getJson(JsonOptions::none);
             domain2 = pd::getNewDomain(env.meta());
-            auto objects = pd::getObjects(alice, env);
+            auto objects = pd::getObjects(alice[0], env);
             auto object = objects[domain2];
             BEAST_EXPECT(
-                pd::credentialsFromJson(object) ==
+                pd::credentialsFromJson(object, pubKey2Acc) ==
                 pd::sortCredentials(credentials10));
         }
 
         // Update with 1 credential.
-        env(pd::setTx(alice, credentials1, domain2));
+        env(pd::setTx(alice[0], credentials1, domain2));
         BEAST_EXPECT(
-            pd::credentialsFromJson(pd::getObjects(alice, env)[domain2]) ==
+            pd::credentialsFromJson(
+                pd::getObjects(alice[0], env)[domain2], pubKey2Acc) ==
             credentials1);
 
         // Update with 10 credentials.
-        env(pd::setTx(alice, credentials10, domain2));
+        env(pd::setTx(alice[0], credentials10, domain2));
         env.close();
         BEAST_EXPECT(
-            pd::credentialsFromJson(pd::getObjects(alice, env)[domain2]) ==
+            pd::credentialsFromJson(
+                pd::getObjects(alice[0], env)[domain2], pubKey2Acc) ==
             pd::sortCredentials(credentials10));
 
         // Update from the wrong owner.
-        env(pd::setTx(alice2, credentials1, domain2),
+        env(pd::setTx(alice[2], credentials1, domain2),
             ter(temINVALID_ACCOUNT_ID));
 
         // Update a uint256(0) domain
-        env(pd::setTx(alice, credentials1, uint256(0)), ter(temMALFORMED));
+        env(pd::setTx(alice[0], credentials1, uint256(0)), ter(temMALFORMED));
 
         // Update non-existent domain
-        env(pd::setTx(alice, credentials1, uint256(75)), ter(tecNO_ENTRY));
+        env(pd::setTx(alice[0], credentials1, uint256(75)), ter(tecNO_ENTRY));
 
         // Test bad data when creating a domain.
-        testBadData(alice, env);
+        testBadData(alice[0], env);
         // Test bad data when updating a domain.
-        testBadData(alice, env, domain2);
+        testBadData(alice[0], env, domain2);
 
         // Try to delete the account with domains.
         auto const acctDelFee(drops(env.current()->fees().increment));
@@ -318,24 +350,24 @@ class PermissionedDomains_test : public beast::unit_test::suite
         {
             // Close enough ledgers to make it potentially deletable if empty.
             std::size_t ownerSeq =
-                pd::ownerInfo(alice, env)["Sequence"].asUInt();
+                pd::ownerInfo(alice[0], env)["Sequence"].asUInt();
             while (deleteDelta + ownerSeq > env.current()->seq())
                 env.close();
-            env(acctdelete(alice, alice2),
+            env(acctdelete(alice[0], alice[2]),
                 fee(acctDelFee),
                 ter(tecHAS_OBLIGATIONS));
         }
 
         {
             // Delete the domains and then the owner account.
-            for (auto const& objs : pd::getObjects(alice, env))
-                env(pd::deleteTx(alice, objs.first));
+            for (auto const& objs : pd::getObjects(alice[0], env))
+                env(pd::deleteTx(alice[0], objs.first));
             env.close();
             std::size_t ownerSeq =
-                pd::ownerInfo(alice, env)["Sequence"].asUInt();
+                pd::ownerInfo(alice[0], env)["Sequence"].asUInt();
             while (deleteDelta + ownerSeq > env.current()->seq())
                 env.close();
-            env(acctdelete(alice, alice2), fee(acctDelFee));
+            env(acctdelete(alice[0], alice[2]), fee(acctDelFee));
         }
     }
 
@@ -349,7 +381,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
 
         env.fund(XRP(1000), alice);
         auto const setFee(drops(env.current()->fees().increment));
-        pd::Credentials credentials{{alice, pd::toBlob("first credential")}};
+        pd::Credentials credentials{{alice, "first credential"}};
         env(pd::setTx(alice, credentials));
         env.close();
         auto objects = pd::getObjects(alice, env);
@@ -403,7 +435,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         BEAST_EXPECT(pd::ownerInfo(alice, env)["OwnerCount"].asUInt() == 0);
 
         // alice does not have enough XRP to cover the reserve.
-        pd::Credentials credentials{{alice, pd::toBlob("first credential")}};
+        pd::Credentials credentials{{alice, "first credential"}};
         env(pd::setTx(alice, credentials), ter(tecINSUFFICIENT_RESERVE));
         BEAST_EXPECT(pd::ownerInfo(alice, env)["OwnerCount"].asUInt() == 0);
         BEAST_EXPECT(pd::getObjects(alice, env).size() == 0);
