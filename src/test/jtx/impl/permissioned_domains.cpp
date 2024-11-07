@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <test/jtx/PermissionedDomains.h>
+#include <test/jtx/permissioned_domains.h>
 #include <exception>
 
 namespace ripple {
@@ -42,12 +42,8 @@ setTx(
     for (auto const& credential : credentials)
     {
         Json::Value obj(Json::objectValue);
-        obj[sfIssuer.jsonName] = to_string(credential.first);
-        obj[sfCredentialType.jsonName] =
-            strHex(Slice{credential.second.data(), credential.second.size()});
-        Json::Value o2(Json::objectValue);
-        o2[sfAcceptedCredential.jsonName] = obj;
-        a.append(o2);
+        obj[sfCredential.jsonName] = credential.toJson();
+        a.append(std::move(obj));
     }
     jv[sfAcceptedCredentials.jsonName] = a;
     return jv;
@@ -105,7 +101,9 @@ objectExists(uint256 const& objID, Env& env)
 
 // Extract credentials from account_object object
 Credentials
-credentialsFromJson(Json::Value const& object)
+credentialsFromJson(
+    Json::Value const& object,
+    std::unordered_map<std::string, Account> const& pubKey2Acc)
 {
     Credentials ret;
     Json::Value a(Json::arrayValue);
@@ -113,12 +111,13 @@ credentialsFromJson(Json::Value const& object)
     for (auto const& credential : a)
     {
         Json::Value obj(Json::objectValue);
-        obj = credential["AcceptedCredential"];
-        auto const& issuer = obj["Issuer"];
+        obj = credential[jss::Credential];
+        auto const& issuer = obj[jss::Issuer];
         auto const& credentialType = obj["CredentialType"];
-        ret.emplace_back(
-            *parseBase58<AccountID>(issuer.asString()),
-            strUnHex(credentialType.asString()).value());
+        auto blob = strUnHex(credentialType.asString()).value();
+        ret.push_back(
+            {pubKey2Acc.at(issuer.asString()),
+             std::string(blob.begin(), blob.end())});
     }
     return ret;
 }
