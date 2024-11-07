@@ -46,11 +46,13 @@
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/resource/Fees.h>
+
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
@@ -59,87 +61,6 @@
 #include <vector>
 
 namespace ripple {
-
-namespace {
-
-//==============================================================================
-/**
-    Automatically unlocks and re-locks a unique_lock object.
-
-    This is the reverse of a std::unique_lock object - instead of locking the
-   mutex for the lifetime of this object, it unlocks it.
-
-    Make sure you don't try to unlock mutexes that aren't actually locked!
-
-    This is essentially a less-versatile boost::reverse_lock.
-
-    e.g. @code
-
-    std::mutex mut;
-
-    for (;;)
-    {
-        std::unique_lock myScopedLock{mut};
-        // mut is now locked
-
-        ... do some stuff with it locked ..
-
-        while (xyz)
-        {
-            ... do some stuff with it locked ..
-
-            ScopedUnlock unlocker{myScopedLock};
-
-            // mut is now unlocked for the remainder of this block,
-            // and re-locked at the end.
-
-            ...do some stuff with it unlocked ...
-        }  // mut gets locked here.
-
-    }  // mut gets unlocked here
-    @endcode
-*/
-template <class MutexType>
-class ScopedUnlock
-{
-    std::unique_lock<MutexType>& lock_;
-
-public:
-    /** Creates a ScopedUnlock.
-
-        As soon as it is created, this will unlock the unique_lock, and
-        when the ScopedLock object is deleted, the unique_lock will
-        be re-locked.
-
-        Make sure this object is created and deleted by the same thread,
-        otherwise there are no guarantees what will happen! Best just to use it
-        as a local stack object, rather than creating on the heap.
-    */
-    explicit ScopedUnlock(std::unique_lock<MutexType>& lock) : lock_(lock)
-    {
-        ASSERT(
-            lock_.owns_lock(), "ripple::ScopedUnlock::ScopedUnlock : own lock");
-        lock_.unlock();
-    }
-
-    ScopedUnlock(ScopedUnlock const&) = delete;
-    ScopedUnlock&
-    operator=(ScopedUnlock const&) = delete;
-
-    /** Destructor.
-
-        The unique_lock will be locked after the destructor is called.
-
-        Make sure this object is created and deleted by the same thread,
-        otherwise there are no guarantees what will happen!
-    */
-    ~ScopedUnlock() noexcept(false)
-    {
-        lock_.lock();
-    }
-};
-
-}  // namespace
 
 // Don't catch up more than 100 ledgers (cannot exceed 256)
 static constexpr int MAX_LEDGER_GAP{100};
@@ -1347,7 +1268,7 @@ LedgerMaster::findNewLedgersToPublish(
     auto valLedger = mValidLedger.get();
     std::uint32_t valSeq = valLedger->info().seq;
 
-    ScopedUnlock sul{sl};
+    scope_unlock sul{sl};
     try
     {
         for (std::uint32_t seq = pubSeq; seq <= valSeq; ++seq)
@@ -1902,7 +1823,7 @@ LedgerMaster::fetchForHistory(
     InboundLedger::Reason reason,
     std::unique_lock<std::recursive_mutex>& sl)
 {
-    ScopedUnlock sul{sl};
+    scope_unlock sul{sl};
     if (auto hash = getLedgerHashForHistory(missing, reason))
     {
         ASSERT(
@@ -2079,7 +2000,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
             for (auto const& ledger : pubLedgers)
             {
                 {
-                    ScopedUnlock sul{sl};
+                    scope_unlock sul{sl};
                     JLOG(m_journal.debug())
                         << "tryAdvance publishing seq " << ledger->info().seq;
                     setFullLedger(ledger, true, true);
@@ -2088,7 +2009,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
                 setPubLedger(ledger);
 
                 {
-                    ScopedUnlock sul{sl};
+                    scope_unlock sul{sl};
                     app_.getOPs().pubLedger(ledger);
                 }
             }

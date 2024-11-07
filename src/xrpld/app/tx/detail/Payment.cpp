@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/tx/detail/Payment.h>
 #include <xrpld/ledger/View.h>
@@ -65,6 +66,10 @@ getMaxSourceAmount(
 NotTEC
 Payment::preflight(PreflightContext const& ctx)
 {
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
+        !ctx.rules.enabled(featureCredentials))
+        return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -145,7 +150,7 @@ Payment::preflight(PreflightContext const& ctx)
         JLOG(j.trace()) << "Malformed transaction: " << "Bad currency.";
         return temBAD_CURRENCY;
     }
-    if (account == dstAccountID && srcAsset == dstAsset && !hasPaths)
+    if (account == dstAccountID && equalTokens(srcAsset, dstAsset) && !hasPaths)
     {
         // You're signing yourself a payment.
         // If hasPaths is true, you might be trying some arbitrage.
@@ -226,6 +231,9 @@ Payment::preflight(PreflightContext const& ctx)
             return temBAD_AMOUNT;
         }
     }
+
+    if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
+        return err;
 
     return preflight2(ctx);
 }
@@ -311,6 +319,10 @@ Payment::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
+        !isTesSuccess(err))
+        return err;
+
     return tesSUCCESS;
 }
 
@@ -362,8 +374,9 @@ Payment::doApply()
     }
 
     // Determine whether the destination requires deposit authorization.
-    bool const reqDepositAuth = sleDst->getFlags() & lsfDepositAuth &&
-        view().rules().enabled(featureDepositAuth);
+    bool const depositAuth = view().rules().enabled(featureDepositAuth);
+    bool const reqDepositAuth =
+        sleDst->getFlags() & lsfDepositAuth && depositAuth;
 
     bool const depositPreauth = view().rules().enabled(featureDepositPreauth);
 
@@ -380,18 +393,17 @@ Payment::doApply()
         // Ripple payment with at least one intermediate step and uses
         // transitive balances.
 
-        if (depositPreauth && reqDepositAuth)
+        if (depositPreauth && depositAuth)
         {
             // If depositPreauth is enabled, then an account that requires
             // authorization has two ways to get an IOU Payment in:
             //  1. If Account == Destination, or
             //  2. If Account is deposit preauthorized by destination.
-            if (dstAccountID != account_)
-            {
-                if (!view().exists(
-                        keylet::depositPreauth(dstAccountID, account_)))
-                    return tecNO_PERMISSION;
-            }
+
+            if (auto err =
+                    verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
+                !isTesSuccess(err))
+                return err;
         }
 
         path::RippleCalc::Input rcInput;
@@ -457,6 +469,11 @@ Payment::doApply()
                 canTransfer(view(), mptIssue, account_, dstAccountID);
             ter != tesSUCCESS)
             return ter;
+
+        if (auto err =
+                verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
+            !isTesSuccess(err))
+            return err;
 
         auto const& issuer = mptIssue.getIssuer();
 
@@ -547,7 +564,7 @@ Payment::doApply()
 
     // The source account does have enough money.  Make sure the
     // source account has authority to deposit to the destination.
-    if (reqDepositAuth)
+    if (depositAuth)
     {
         // If depositPreauth is enabled, then an account that requires
         // authorization has three ways to get an XRP Payment in:
@@ -567,17 +584,17 @@ Payment::doApply()
         // We choose the base reserve as our bound because it is
         // a small number that seldom changes but is always sufficient
         // to get the account un-wedged.
-        if (dstAccountID != account_)
-        {
-            if (!view().exists(keylet::depositPreauth(dstAccountID, account_)))
-            {
-                // Get the base reserve.
-                XRPAmount const dstReserve{view().fees().accountReserve(0)};
 
-                if (dstAmount > dstReserve ||
-                    sleDst->getFieldAmount(sfBalance) > dstReserve)
-                    return tecNO_PERMISSION;
-            }
+        // Get the base reserve.
+        XRPAmount const dstReserve{view().fees().accountReserve(0)};
+
+        if (dstAmount > dstReserve ||
+            sleDst->getFieldAmount(sfBalance) > dstReserve)
+        {
+            if (auto err =
+                    verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
+                !isTesSuccess(err))
+                return err;
         }
     }
 

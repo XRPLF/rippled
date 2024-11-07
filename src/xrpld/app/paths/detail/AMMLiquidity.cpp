@@ -213,6 +213,13 @@ AMMLiquidity<TIn, TOut>::getOffer(
                 return AMMOffer<TIn, TOut>(
                     *this, *amounts, balances, Quality{*amounts});
             }
+            else if (view.rules().enabled(fixAMMv1_2))
+            {
+                if (auto const maxAMMOffer = maxOffer(balances, view.rules());
+                    maxAMMOffer &&
+                    Quality{maxAMMOffer->amount()} > *clobQuality)
+                    return maxAMMOffer;
+            }
         }
         catch (std::overflow_error const& e)
         {

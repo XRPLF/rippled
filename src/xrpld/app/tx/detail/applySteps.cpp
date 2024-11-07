@@ -34,6 +34,7 @@
 #include <xrpld/app/tx/detail/CreateCheck.h>
 #include <xrpld/app/tx/detail/CreateOffer.h>
 #include <xrpld/app/tx/detail/CreateTicket.h>
+#include <xrpld/app/tx/detail/Credentials.h>
 #include <xrpld/app/tx/detail/DID.h>
 #include <xrpld/app/tx/detail/DeleteAccount.h>
 #include <xrpld/app/tx/detail/DeleteOracle.h>
