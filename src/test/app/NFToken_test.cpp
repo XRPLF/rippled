@@ -31,16 +31,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 {
     FeatureBitset const disallowIncoming{featureDisallowIncoming};
 
-    // Helper function that returns the owner count of an account root.
-    static std::uint32_t
-    ownerCount(test::jtx::Env const& env, test::jtx::Account const& acct)
-    {
-        std::uint32_t ret{0};
-        if (auto const sleAcct = env.le(acct))
-            ret = sleAcct->at(sfOwnerCount);
-        return ret;
-    }
-
     // Helper function that returns the number of NFTs minted by an issuer.
     static std::uint32_t
     mintedCount(test::jtx::Env const& env, test::jtx::Account const& issuer)
@@ -3948,7 +3938,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     for (Account const& acct : accounts)
                     {
                         if (std::uint32_t ownerCount =
-                                this->ownerCount(env, acct);
+                                test::jtx::ownerCount(env, acct);
                             ownerCount != 1)
                         {
                             std::stringstream ss;

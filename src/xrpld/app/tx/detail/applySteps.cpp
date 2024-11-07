@@ -19,6 +19,7 @@
 
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/app/tx/detail/AMMBid.h>
+#include <xrpld/app/tx/detail/AMMClawback.h>
 #include <xrpld/app/tx/detail/AMMCreate.h>
 #include <xrpld/app/tx/detail/AMMDelete.h>
 #include <xrpld/app/tx/detail/AMMDeposit.h>
@@ -33,6 +34,7 @@
 #include <xrpld/app/tx/detail/CreateCheck.h>
 #include <xrpld/app/tx/detail/CreateOffer.h>
 #include <xrpld/app/tx/detail/CreateTicket.h>
+#include <xrpld/app/tx/detail/Credentials.h>
 #include <xrpld/app/tx/detail/DID.h>
 #include <xrpld/app/tx/detail/DeleteAccount.h>
 #include <xrpld/app/tx/detail/DeleteOracle.h>
