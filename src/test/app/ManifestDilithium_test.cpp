@@ -35,19 +35,19 @@
 namespace ripple {
 namespace test {
 
-class Manifest_test : public beast::unit_test::suite
+class ManifestDilithium_test : public beast::unit_test::suite
 {
 private:
     static PublicKey
     randomNode()
     {
-        return derivePublicKey(KeyType::secp256k1, randomSecp256k1SecretKey());
+        return derivePublicKey(KeyType::dilithium, randomDilithiumSecretKey());
     }
 
     static PublicKey
     randomMasterKey()
     {
-        return derivePublicKey(KeyType::ed25519, randomSecp256k1SecretKey());
+        return derivePublicKey(KeyType::dilithium, randomDilithiumSecretKey());
     }
 
     static void
@@ -83,7 +83,7 @@ private:
     }
 
 public:
-    Manifest_test()
+    ManifestDilithium_test()
     {
         try
         {
@@ -93,7 +93,7 @@ public:
         {
         }
     }
-    ~Manifest_test()
+    ~ManifestDilithium_test()
     {
         try
         {
@@ -246,7 +246,7 @@ public:
     void
     testLoadStore(ManifestCache& m)
     {
-        testcase("load/store");
+        testcase("load/store - Dilithium");
 
         std::string const dbName("ManifestCacheTestDB");
         {
@@ -424,7 +424,7 @@ public:
     void
     testGetSignature()
     {
-        testcase("getSignature");
+        testcase("getSignature - Dilithium");
         auto const sk = randomSecp256k1SecretKey();
         auto const pk = derivePublicKey(KeyType::ed25519, sk);
         auto const kp = randomKeyPair(KeyType::secp256k1);
@@ -448,7 +448,7 @@ public:
     void
     testGetKeys()
     {
-        testcase("getKeys");
+        testcase("getKeys - Dilithium  ");
 
         ManifestCache cache;
         auto const sk = randomSecp256k1SecretKey();
@@ -507,7 +507,7 @@ public:
     void
     testValidatorToken()
     {
-        testcase("validator token");
+        testcase("validator token - Dilithium");
 
         {
             auto const valSecret = parseBase58<SecretKey>(
@@ -560,7 +560,7 @@ public:
     void
     testManifestVersioning()
     {
-        testcase("Versioning");
+        testcase("Versioning - Dilithium");
 
         auto const sk = generateSecretKey(KeyType::ed25519, randomSeed());
         auto const pk = derivePublicKey(KeyType::ed25519, sk);
@@ -892,7 +892,7 @@ public:
     void
     testManifestDomainNames()
     {
-        testcase("Manifest Domain Names");
+        testcase("Manifest Domain Names - Dilithium");
 
         auto const sk1 = generateSecretKey(KeyType::secp256k1, randomSeed());
         auto const pk1 = derivePublicKey(KeyType::secp256k1, sk1);
@@ -980,7 +980,7 @@ public:
     {
         ManifestCache cache;
         {
-            testcase("apply");
+            testcase("apply - Dilithium");
 
             auto const sk_a = randomSecp256k1SecretKey();
             auto const pk_a = derivePublicKey(KeyType::ed25519, sk_a);
@@ -1083,7 +1083,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Manifest, app, ripple);
+BEAST_DEFINE_TESTSUITE(ManifestDilithium, app, ripple);
 
 }  // namespace test
 }  // namespace ripple

@@ -225,7 +225,7 @@ public:
         BEAST_EXPECT(!parseBase58<SecretKey>(
             TokenType::NodePrivate, "!35gty9mhju8nfjl"));
 
-        auto const good = toBase58(TokenType::NodePrivate, randomSecretKey());
+        auto const good = toBase58(TokenType::NodePrivate, randomSecp256k1SecretKey());
 
         // Short (non-empty) strings
         {
@@ -246,7 +246,13 @@ public:
         for (std::size_t i = 1; i != 16; i++)
         {
             auto s = good;
-            s.resize(s.size() + i, s[i % s.size()]);
+            if (!s.empty()) {
+                s.resize(s.size() + i, s[i % s.size()]);
+            } else {
+                // Handle the case where s is unexpectedly empty
+                std::cerr << "Error: 'good' string is empty, cannot resize." << std::endl;
+                continue; // Skip this iteration or handle it as needed
+            }
             BEAST_EXPECT(!parseBase58<SecretKey>(TokenType::NodePrivate, s));
         }
 
@@ -279,7 +285,7 @@ public:
         keys.reserve(32);
 
         for (std::size_t i = 0; i != keys.capacity(); ++i)
-            keys.emplace_back(randomSecretKey());
+            keys.emplace_back(randomSecp256k1SecretKey());
         BEAST_EXPECT(keys.size() == 32);
 
         for (std::size_t i = 0; i != keys.size(); ++i)

@@ -28,6 +28,7 @@ namespace ripple {
 enum class KeyType {
     secp256k1 = 0,
     ed25519 = 1,
+    dilithium = 2 // Added Dilithium keytype
 };
 
 inline std::optional<KeyType>
@@ -38,6 +39,10 @@ keyTypeFromString(std::string const& s)
 
     if (s == "ed25519")
         return KeyType::ed25519;
+    
+    if (s == "dilithium")  
+        return KeyType::dilithium; // Add Dilithium string representation
+
 
     return {};
 }
@@ -50,6 +55,11 @@ to_string(KeyType type)
 
     if (type == KeyType::ed25519)
         return "ed25519";
+
+    if (type == KeyType::dilithium)// Return string representation for Dilithium
+        return "dilithium";
+    
+    
 
     return "INVALID";
 }

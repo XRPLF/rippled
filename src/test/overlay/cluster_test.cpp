@@ -50,7 +50,7 @@ public:
     PublicKey
     randomNode()
     {
-        return derivePublicKey(KeyType::secp256k1, randomSecretKey());
+        return derivePublicKey(KeyType::secp256k1, randomSecp256k1SecretKey());
     }
 
     void

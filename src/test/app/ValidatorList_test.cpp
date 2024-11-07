@@ -49,13 +49,13 @@ private:
     static PublicKey
     randomNode()
     {
-        return derivePublicKey(KeyType::secp256k1, randomSecretKey());
+        return derivePublicKey(KeyType::secp256k1, randomSecp256k1SecretKey());
     }
 
     static PublicKey
     randomMasterKey()
     {
-        return derivePublicKey(KeyType::ed25519, randomSecretKey());
+        return derivePublicKey(KeyType::ed25519, randomSecp256k1SecretKey());
     }
 
     static std::string
@@ -112,7 +112,7 @@ private:
     static Validator
     randomValidator()
     {
-        auto const secret = randomSecretKey();
+        auto const secret = randomSecp256k1SecretKey();
         auto const masterPublic = derivePublicKey(KeyType::ed25519, secret);
         auto const signingKeys = randomKeyPair(KeyType::secp256k1);
         return {
@@ -227,7 +227,7 @@ private:
         auto const localSigningKeys = randomKeyPair(KeyType::secp256k1);
         auto const localSigningPublicOuter = localSigningKeys.first;
         auto const localSigningSecret = localSigningKeys.second;
-        auto const localMasterSecret = randomSecretKey();
+        auto const localMasterSecret = randomSecp256k1SecretKey();
         auto const localMasterPublic =
             derivePublicKey(KeyType::ed25519, localMasterSecret);
 
@@ -439,7 +439,7 @@ private:
                 app.config().legacy("database_path"),
                 env.journal);
 
-            auto const pubRevokedSecret = randomSecretKey();
+            auto const pubRevokedSecret = randomSecp256k1SecretKey();
             auto const pubRevokedPublic =
                 derivePublicKey(KeyType::ed25519, pubRevokedSecret);
             auto const pubRevokedSigning = randomKeyPair(KeyType::secp256k1);
@@ -547,7 +547,7 @@ private:
                 }
             };
 
-        auto const publisherSecret = randomSecretKey();
+        auto const publisherSecret = randomSecp256k1SecretKey();
         auto const publisherPublic =
             derivePublicKey(KeyType::ed25519, publisherSecret);
         const auto hexPublic =
@@ -931,7 +931,7 @@ private:
             app.config().legacy("database_path"),
             env.journal);
 
-        auto const publisherSecret = randomSecretKey();
+        auto const publisherSecret = randomSecp256k1SecretKey();
         auto const publisherPublic =
             derivePublicKey(KeyType::ed25519, publisherSecret);
         const auto hexPublic =
@@ -984,7 +984,7 @@ private:
 
         {
             // unknown public key
-            auto const badSecret = randomSecretKey();
+            auto const badSecret = randomSecp256k1SecretKey();
             auto const badPublic = derivePublicKey(KeyType::ed25519, badSecret);
             const auto hexBad = strHex(badPublic.begin(), badPublic.end());
 
@@ -1129,7 +1129,7 @@ private:
         }
         {
             // update with manifests
-            auto const masterPrivate = randomSecretKey();
+            auto const masterPrivate = randomSecp256k1SecretKey();
             auto const masterPublic =
                 derivePublicKey(KeyType::ed25519, masterPrivate);
 
@@ -1242,7 +1242,7 @@ private:
                 env.timeKeeper(),
                 app.config().legacy("database_path"),
                 env.journal);
-            auto const publisherSecret = randomSecretKey();
+            auto const publisherSecret = randomSecp256k1SecretKey();
             auto const publisherPublic =
                 derivePublicKey(KeyType::ed25519, publisherSecret);
 
@@ -1535,7 +1535,7 @@ private:
                                      &trustedKeys,
                                      &valKeys,
                                      &siteUri]() {
-                auto const publisherSecret = randomSecretKey();
+                auto const publisherSecret = randomSecp256k1SecretKey();
                 auto const publisherPublic =
                     derivePublicKey(KeyType::ed25519, publisherSecret);
                 auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
@@ -1657,7 +1657,7 @@ private:
 
             using namespace std::chrono_literals;
             auto addPublishedList = [this, &env, &trustedKeys, &validators]() {
-                auto const publisherSecret = randomSecretKey();
+                auto const publisherSecret = randomSecp256k1SecretKey();
                 auto const publisherPublic =
                     derivePublicKey(KeyType::ed25519, publisherSecret);
                 auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);

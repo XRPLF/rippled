@@ -147,7 +147,7 @@ public:
     static Validator
     randomValidator()
     {
-        auto const secret = randomSecretKey();
+        auto const secret = randomSecp256k1SecretKey();
         auto const masterPublic = derivePublicKey(KeyType::ed25519, secret);
         auto const signingKeys = randomKeyPair(KeyType::secp256k1);
         return {
@@ -181,11 +181,10 @@ public:
         : sock_{ioc}
         , ep_{beast::IP::Address::from_string(
                   ripple::test::getEnvLocalhostAddr()),
-              // 0 means let OS pick the port based on what's available
-              0}
+            0} // 0 means let OS pick the port based on what's available
         , acceptor_{ioc}
         , useSSL_{useSSL}
-        , publisherSecret_{randomSecretKey()}
+        , publisherSecret_{randomSecp256k1SecretKey()}
         , publisherPublic_{derivePublicKey(KeyType::ed25519, publisherSecret_)}
     {
         auto const keys = randomKeyPair(KeyType::secp256k1);
@@ -218,10 +217,10 @@ public:
             // Build the contents of a version 1 format UNL file
             std::stringstream l;
             l << "{\"blob\":\"" << blob << "\""
-              << ",\"signature\":\"" << sig << "\""
-              << ",\"manifest\":\"" << manifest << "\""
-              << ",\"refresh_interval\": " << interval
-              << ",\"version\":" << version << '}';
+            << ",\"signature\":\"" << sig << "\""
+            << ",\"manifest\":\"" << manifest << "\""
+            << ",\"refresh_interval\": " << interval
+            << ",\"version\":" << version << '}';
             return l.str();
         };
         for (auto const& future : futures)
@@ -255,15 +254,15 @@ public:
             for (auto const& info : blobInfo)
             {
                 l << "{\"blob\":\"" << info.blob << "\""
-                  << ",\"signature\":\"" << info.signature << "\"},";
+                << ",\"signature\":\"" << info.signature << "\"},";
             }
             std::string blobs = l.str();
             blobs.pop_back();
             l.str(std::string());
             l << "{\"blobs_v2\": [ " << blobs << "],\"manifest\":\"" << manifest
-              << "\""
-              << ",\"refresh_interval\": " << interval
-              << ",\"version\":" << (version + 1) << '}';
+            << "\""
+            << ",\"refresh_interval\": " << interval
+            << ",\"version\":" << (version + 1) << '}';
             return l.str();
         };
 

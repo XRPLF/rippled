@@ -25,8 +25,51 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/detail/secp256k1.h>
 #include <xrpl/protocol/digest.h>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <ed25519.h>
+#include "api.h"
+#include <iostream>
+#include <iterator>
+#include <ostream>
+#include <stdexcept>
+#include <iomanip>
+#include <sstream>
+
+
+//Define the dilithium functions and sizes with respect to functions named here
+#ifndef CRYPTO_PUBLICKEYBYTES
+#define CRYPTO_PUBLICKEYBYTES pqcrystals_dilithium2_PUBLICKEYBYTES 
+#endif
+
+#ifndef CRYPTO_SECRETKEYBYTES
+#define CRYPTO_SECRETKEYBYTES pqcrystals_dilithium2_SECRETKEYBYTES 
+#endif
+
+#ifndef CRYPTO_BYTES
+#define CRYPTO_BYTES pqcrystals_dilithium2_BYTES 
+#endif
+
+#ifndef crypto_sign_keypair
+#define crypto_sign_keypair pqcrystals_dilithium2_ref_keypair 
+#endif
+
+#ifndef crypto_sign_signature
+#define crypto_sign_signature pqcrystals_dilithium2_ref_signature 
+#endif
+
+#ifndef crypto_sign_verify
+#define crypto_sign_verify pqcrystals_dilithium2_ref_verify 
+#endif
+
+#ifndef crypto_sign_open
+#define crypto_sign_open pqcrystals_dilithium2_ref_open 
+#endif
+
+#ifndef crypto_keypair_seed
+#define crypto_keypair_seed pqcrystals_dilithium2_ref_keypair_seed 
+#endif
 
 namespace ripple {
 
@@ -35,17 +78,72 @@ SecretKey::~SecretKey()
     secure_erase(buf_, sizeof(buf_));
 }
 
-SecretKey::SecretKey(std::array<std::uint8_t, 32> const& key)
+SecretKey::SecretKey(std::array<std::uint8_t, 2528> const& key)
 {
+    if (key.size() != 32 && key.size() != 2528) {
+        LogicError("SecretKey::SecretKey: invalid size");
+    }
     std::memcpy(buf_, key.data(), key.size());
 }
 
 SecretKey::SecretKey(Slice const& slice)
 {
-    if (slice.size() != sizeof(buf_))
+    if (slice.size() != 32 && slice.size() != 2528) {
         LogicError("SecretKey::SecretKey: invalid size");
-    std::memcpy(buf_, slice.data(), sizeof(buf_));
+    }
+    std::memcpy(buf_, slice.data(), slice.size());
 }
+
+// Function to convert a byte array to a hex string for printing
+std::string toHexString(const uint8_t* data, size_t length) {
+    std::ostringstream oss;
+    for (size_t i = 0; i < length; ++i) {
+        oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(data[i]);
+    }
+    return oss.str();
+}
+
+
+// class SecretKey {
+// public:
+//     ~SecretKey() {
+//         secure_erase(buf_, sizeof(buf_));
+//     }
+
+//     // Constructor for std::array with key type
+//     SecretKey(std::array<std::uint8_t, 32> const& key, KeyType keyType) {
+//         std::size_t expectedSize = getExpectedSize(keyType);
+//         if (key.size() != expectedSize) {
+//             throw std::logic_error("SecretKey: invalid size for the given key type");
+//         }
+//         std::memcpy(buf_, key.data(), key.size());
+//     }
+
+//     // Constructor for Slice with key type
+//     SecretKey(Slice const& slice, KeyType keyType) {
+//         std::size_t expectedSize = getExpectedSize(keyType);
+//         if (slice.size() != expectedSize) {
+//             throw std::logic_error("SecretKey: invalid size for the given key type");
+//         }
+//         std::memcpy(buf_, slice.data(), slice.size());
+//     }
+
+// private:
+//     std::uint8_t buf_[2528]; // Maximum buffer size  dilithium
+
+//     // Function to get expected key size based on key type
+//     std::size_t getExpectedSize(KeyType keyType) const {
+//         return (keyType == KeyType::secp256k1) ? 32 : 2528;
+//     }
+
+//     // Function to securely erase the buffer
+//     void secure_erase(void* ptr, std::size_t len) {
+//         volatile std::uint8_t* p = reinterpret_cast<volatile std::uint8_t*>(ptr);
+//         while (len--) {
+//             *p++ = 0;
+//         }
+//     }
+// };
 
 std::string
 SecretKey::to_string() const
@@ -208,47 +306,71 @@ public:
 
 }  // namespace detail
 
-Buffer
-signDigest(PublicKey const& pk, SecretKey const& sk, uint256 const& digest)
+Buffer signDigest(PublicKey const& pk, SecretKey const& sk, uint256 const& digest)
 {
-    if (publicKeyType(pk.slice()) != KeyType::secp256k1)
-        LogicError("sign: secp256k1 required for digest signing");
+    std::cout << "Signing digest..." << std::endl;
+    if (publicKeyType(pk.slice()) != KeyType::secp256k1 && publicKeyType(pk.slice()) != KeyType::dilithium)
+        LogicError("sign: secp256k1 or Dilithium required for digest signing");
+    
+    if (publicKeyType(pk.slice()) == KeyType::secp256k1) {
+        BOOST_ASSERT(sk.size() == 32);
+        secp256k1_ecdsa_signature sig_imp;
+        if (secp256k1_ecdsa_sign(
+                secp256k1Context(),
+                &sig_imp,
+                reinterpret_cast<unsigned char const*>(digest.data()),
+                reinterpret_cast<unsigned char const*>(sk.data()),
+                secp256k1_nonce_function_rfc6979,
+                nullptr) != 1)
+            LogicError("sign: secp256k1_ecdsa_sign failed");
 
-    BOOST_ASSERT(sk.size() == 32);
-    secp256k1_ecdsa_signature sig_imp;
-    if (secp256k1_ecdsa_sign(
-            secp256k1Context(),
-            &sig_imp,
-            reinterpret_cast<unsigned char const*>(digest.data()),
-            reinterpret_cast<unsigned char const*>(sk.data()),
-            secp256k1_nonce_function_rfc6979,
-            nullptr) != 1)
-        LogicError("sign: secp256k1_ecdsa_sign failed");
+        unsigned char sig[72];
+        size_t len = sizeof(sig);
+        if (secp256k1_ecdsa_signature_serialize_der(
+                secp256k1Context(), sig, &len, &sig_imp) != 1)
+            LogicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
 
-    unsigned char sig[72];
-    size_t len = sizeof(sig);
-    if (secp256k1_ecdsa_signature_serialize_der(
-            secp256k1Context(), sig, &len, &sig_imp) != 1)
-        LogicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
-
-    return Buffer{sig, len};
+        return Buffer{sig, len};
+    } else if (publicKeyType(pk.slice()) == KeyType::dilithium) {
+        std::cout << "Signing digest with Dilithium" << std::endl;
+        uint8_t dilithium_sig[CRYPTO_BYTES];
+        size_t dilithium_siglen;
+        crypto_sign_signature(dilithium_sig, &dilithium_siglen, digest.data(), digest.size(), sk.data());
+        std::cout << "Signing Digest done with digest and Dilithium Signature Length: " << dilithium_siglen << std::endl;
+        
+        // Verify the signature
+        if (crypto_sign_verify(dilithium_sig, dilithium_siglen, digest.data(), digest.size(), pk.data())) {
+            std::cerr << "Dilithium Signature Verification Failed" << std::endl;
+            LogicError("signDigest: Dilithium Signature Verification Failed");
+        }
+        return Buffer{dilithium_sig, dilithium_siglen};
+    }
+    LogicError("signDigest: unknown key type");
 }
 
-Buffer
-sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
+Buffer sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
 {
+    std::cout << "Signing message..." << std::endl;
     auto const type = publicKeyType(pk.slice());
     if (!type)
         LogicError("sign: invalid type");
     switch (*type)
     {
         case KeyType::ed25519: {
-            Buffer b(64);
+            std::cout << "Signing using ed25519" << std::endl;
+            const size_t ed25519_siglen = 64; // Ed25519 signature length
+            Buffer b(ed25519_siglen);
             ed25519_sign(
                 m.data(), m.size(), sk.data(), pk.data() + 1, b.data());
+
+            // Debugging statements
+            std::cout << "Signature (ed25519): " << toHexString(b.data(), ed25519_siglen) << std::endl;
+            std::cout << "Signature Length (ed25519) : " << ed25519_siglen << " bytes" << std::endl;
+
             return b;
         }
         case KeyType::secp256k1: {
+            std::cout << "Signing using Secp256k1..." << std::endl;
             sha512_half_hasher h;
             h(m.data(), m.size());
             auto const digest = sha512_half_hasher::result_type(h);
@@ -270,21 +392,58 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
                 LogicError(
                     "sign: secp256k1_ecdsa_signature_serialize_der failed");
 
+            // Debugging statements
+            std::cout << "Signature (Secp256k1): " << toHexString(sig, len) << std::endl;
+            std::cout << "Signature Length (Secp256k1): " << len << " bytes" << std::endl;
+
             return Buffer{sig, len};
+        }
+        case KeyType::dilithium: {
+            std::cout << "Signing message using dilithium" << std::endl;
+            uint8_t dilithium_sig[CRYPTO_BYTES];
+            size_t dilithium_siglen;
+            crypto_sign_signature(dilithium_sig, &dilithium_siglen, m.data(), m.size(), sk.data());
+
+            // Debugging statements
+            // std::cout << "Signature Dilthium: " << toHexString(dilithium_sig, dilithium_siglen) << std::endl;
+            std::cout << "Signature Length (Dilithium): " << dilithium_siglen << " bytes" << std::endl;
+
+            // Verify the Signature
+            // int verify_result = crypto_sign_verify(dilithium_sig, dilithium_siglen, m.data(), m.size(), pk.data());
+            // if (verify_result != 0) {
+            //     std::cerr << "Dilithium signature verification failed with error code: " << verify_result << std::endl;
+            //     LogicError("sign: Dilithium Signature Verification failed");
+            // }
+            return Buffer{dilithium_sig, dilithium_siglen};
         }
         default:
             LogicError("sign: invalid type");
     }
 }
 
-SecretKey
-randomSecretKey()
-{
+// Function to generate a secp256k1 secret key
+SecretKey randomSecp256k1SecretKey() {
+    std::cout << "Using Secp256k1" << std::endl;
     std::uint8_t buf[32];
     beast::rngfill(buf, sizeof(buf), crypto_prng());
+    
+    // std::cout << "Secret Key: " << toHexString(buf, sizeof(buf)) << std::endl;
+    std::cout << "Length of Secret Key: " << sizeof(buf) << " bytes" << std::endl;
     SecretKey sk(Slice{buf, sizeof(buf)});
     secure_erase(buf, sizeof(buf));
     return sk;
+}
+
+// Function to generate a Dilithium secret key
+SecretKey randomDilithiumSecretKey() {
+    std::cout << "randomDilithiumSecretKey() called" << std::endl;
+    uint8_t pk[CRYPTO_PUBLICKEYBYTES];
+    uint8_t sk[CRYPTO_SECRETKEYBYTES];
+    crypto_sign_keypair(pk, sk);
+        
+    // std::cout << "Secret Key: " << toHexString(sk, CRYPTO_SECRETKEYBYTES) << std::endl;
+    std::cout << "Length of Secret Key: (dilithium) " << CRYPTO_SECRETKEYBYTES << " bytes" << std::endl;
+    return SecretKey(Slice{sk, CRYPTO_SECRETKEYBYTES});
 }
 
 SecretKey
@@ -292,36 +451,70 @@ generateSecretKey(KeyType type, Seed const& seed)
 {
     if (type == KeyType::ed25519)
     {
+        std::cout << "Generating SecretKey using ed25519..." << std::endl;
         auto key = sha512Half_s(Slice(seed.data(), seed.size()));
         SecretKey sk{Slice{key.data(), key.size()}};
+
+        // Debugging statements
+        std::cout << "Secret Key(ed25519): " << toHexString(key.data(), key.size()) << std::endl;
+        std::cout << "Secret Key Size (ed25519): " << key.size() << " bytes" << std::endl;
+
         secure_erase(key.data(), key.size());
         return sk;
     }
 
     if (type == KeyType::secp256k1)
     {
+        std::cout << "Generating SecretKey using secp256k1..." << std::endl;
         auto key = detail::deriveDeterministicRootKey(seed);
         SecretKey sk{Slice{key.data(), key.size()}};
+
+        // Debugging statements
+        std::cout << "Secret Key (secp256k1) : " << toHexString(key.data(), key.size()) << std::endl;
+        std::cout << "Secret Key Size (secp256k1): " << key.size() << " bytes" << std::endl;
+
         secure_erase(key.data(), key.size());
+        return sk;
+    }
+
+    if (type == KeyType::dilithium)
+    {
+        std::cout << "Generating SecretKey using Dilithium..." << std::endl;
+        uint8_t pk[CRYPTO_PUBLICKEYBYTES];
+        uint8_t sk_temp[CRYPTO_SECRETKEYBYTES];
+
+        // Generate the key pair from the seed
+        if (crypto_keypair_seed(pk, sk_temp, seed.data()) != 0) {
+            throw std::runtime_error("Dilithium key pair generation failed");
+        }
+
+        SecretKey sk{Slice{sk_temp, CRYPTO_SECRETKEYBYTES}};
+
+        // Debugging statements
+        // std::cout << "Secret Key (dilithium): " << toHexString(sk, CRYPTO_SECRETKEYBYTES) << std::endl;
+        std::cout << "Secret Key Size (dilithium): generateKeypair() " << CRYPTO_SECRETKEYBYTES << " bytes" << std::endl;
+
+        // Securely erase the public key if not needed
+        secure_erase(pk, CRYPTO_PUBLICKEYBYTES);
+
         return sk;
     }
 
     LogicError("generateSecretKey: unknown key type");
 }
 
-PublicKey
-derivePublicKey(KeyType type, SecretKey const& sk)
+PublicKey derivePublicKey(KeyType type, SecretKey const& sk)
 {
     switch (type)
     {
         case KeyType::secp256k1: {
+            std::cout << "Deriving PublicKey using secp256k1..." << std::endl;
             secp256k1_pubkey pubkey_imp;
             if (secp256k1_ec_pubkey_create(
                     secp256k1Context(),
                     &pubkey_imp,
                     reinterpret_cast<unsigned char const*>(sk.data())) != 1)
-                LogicError(
-                    "derivePublicKey: secp256k1_ec_pubkey_create failed");
+                LogicError("derivePublicKey: secp256k1_ec_pubkey_create failed");
 
             unsigned char pubkey[33];
             std::size_t len = sizeof(pubkey);
@@ -331,20 +524,64 @@ derivePublicKey(KeyType type, SecretKey const& sk)
                     &len,
                     &pubkey_imp,
                     SECP256K1_EC_COMPRESSED) != 1)
-                LogicError(
-                    "derivePublicKey: secp256k1_ec_pubkey_serialize failed");
+                LogicError("derivePublicKey: secp256k1_ec_pubkey_serialize failed");
+
+            std::cout << "Public Key Length (secp256k1): " << len << " bytes" << std::endl;
 
             return PublicKey{Slice{pubkey, len}};
         }
         case KeyType::ed25519: {
+            std::cout << "Deriving PublicKey using ed25519..." << std::endl;
             unsigned char buf[33];
             buf[0] = 0xED;
             ed25519_publickey(sk.data(), &buf[1]);
+
+            std::cout << "Public Key Length (ed25519): " << sizeof(buf) << " bytes" << std::endl;
+
             return PublicKey(Slice{buf, sizeof(buf)});
         }
-        default:
-            LogicError("derivePublicKey: bad key type");
-    };
+        default: {
+            int expectedKeySize = 0;
+            if (type == KeyType::secp256k1) {
+                expectedKeySize = 32;
+            } else if (type == KeyType::ed25519) {
+                expectedKeySize = 32;
+            } else {
+                expectedKeySize = -1; // Unknown key type
+            }
+
+            std::ostringstream oss;
+            oss << "derivePublicKey: bad key type. "
+                << "Expected key size: 32" 
+                << ", Actual key size: " << sk.size();
+            LogicError(oss.str());
+        }
+    }
+}
+
+PublicKey derivePublicKey(KeyType type, SecretKey const& sk, Seed const& seed)
+{
+    if (type != KeyType::dilithium) {
+        LogicError("derivePublicKey: unsupported key type with seed");
+    }
+
+    uint8_t pk[CRYPTO_PUBLICKEYBYTES];
+    uint8_t sk_buffer[CRYPTO_SECRETKEYBYTES];
+    
+
+    // Debugging statement before key derivation
+    std::cout << "derivePublicKey() using Dilithium..." << std::endl;
+
+    if (pqcrystals_dilithium2_ref_keypair_seed(pk, sk_buffer, seed.data()) != 0) {
+        throw std::runtime_error("derivePublicKey: Dilithium public key derivation failed");
+    }
+
+    // Debugging statements after key derivation
+    // std::cout << "Public Key (Dilithium): " << toHexString(pk, CRYPTO_PUBLICKEYBYTES) << std::endl;
+    // std::cout << "Public Key (Dilithium): " << toHexString(pk, CRYPTO_PUBLICKEYBYTES) << std::endl;
+    std::cout << "derivePublicKey Length (Dilithium): " << CRYPTO_PUBLICKEYBYTES << " bytes" << std::endl;
+
+    return PublicKey{Slice{pk, CRYPTO_PUBLICKEYBYTES}};
 }
 
 std::pair<PublicKey, SecretKey>
@@ -354,21 +591,83 @@ generateKeyPair(KeyType type, Seed const& seed)
     {
         case KeyType::secp256k1: {
             detail::Generator g(seed);
-            return g(0);
+            auto keyPair = g(0);
+            // Debugging statements
+            std::cout << "generateKeypair Using secp256k1..." << std::endl;
+            std::cout << "Public Key (secp256k1): " << toHexString(keyPair.first.data(), keyPair.first.size()) << std::endl;
+           
+            return keyPair;
         }
-        default:
         case KeyType::ed25519: {
+            std::cout << "generateKeypair Using ed25519..." << std::endl;
             auto const sk = generateSecretKey(type, seed);
-            return {derivePublicKey(type, sk), sk};
+            PublicKey pk = derivePublicKey(type, sk);
+
+            // Debugging statements
+            std::cout << "Public Key (ed25519): " << toHexString(pk.data(), pk.size()) << std::endl;
+            std::cout << "Secret Key(ed25519): " << toHexString(sk.data(), sk.size()) << std::endl;
+            std::cout << "Secret Key Length (ed25519): " << sk.size() << " bytes" << std::endl;
+
+            return {pk, sk};
         }
+        case KeyType::dilithium: {
+            std::cout << "generateKeypair Using Dilithium..." << std::endl;
+            auto const sk = generateSecretKey(type, seed);
+            PublicKey pk = derivePublicKey(type, sk ,seed);
+
+
+
+            // Debugging statements
+
+            std::cout << "Secret Key Length (dilithium): generateKeyPair" << sk.size() << " bytes" << std::endl;
+
+            // Return the key pair
+            return {pk, sk};
+        }
+
+        default:
+            throw std::invalid_argument("Unsupported key type");
     }
 }
 
-std::pair<PublicKey, SecretKey>
-randomKeyPair(KeyType type)
+// std::pair<PublicKey, SecretKey>
+// randomKeyPair(KeyType type)
+// {
+//     auto const sk = randomSecretKey();
+//     return {derivePublicKey(type, sk), sk};
+// }
+
+// Added randomKeyPair for dilithium as well along with secp256k1.
+std::pair<PublicKey, SecretKey> randomKeyPair(KeyType type)
 {
-    auto const sk = randomSecretKey();
-    return {derivePublicKey(type, sk), sk};
+    if (type == KeyType::secp256k1) {
+        std::cout << "randomKeyPair using secp256k1" << std::endl;
+        auto const sk = randomSecp256k1SecretKey();
+        auto const pk = derivePublicKey(KeyType::secp256k1, sk);
+
+        // Debugging statements
+        std::cout << "Secret Key (secp256k1): " << toHexString(sk.data(), sk.size()) << std::endl;
+        std::cout << "Public Key (secp256k1): " << toHexString(pk.data(), pk.size()) << std::endl;
+       
+
+        return {pk, sk};
+
+    } else if (type == KeyType::dilithium) {
+        std::cout << "randomKeyPair using Dilithium" << std::endl;
+        auto const sk = randomDilithiumSecretKey();
+        auto const pk = derivePublicKey(KeyType::dilithium, sk, randomSeed());
+
+        // Debugging statements
+        // std::cout << "Secret Key (dilithium) randomKeyPair(): " << toHexString(sk.data(), sk.size()) << std::endl;
+        // std::cout << "Public Key (dilithium) randomKeyPair(): " << toHexString(pk.data(), pk.size()) << std::endl;
+        std::cout << "Secret Key Length (dilithium) randomKeyPair(): " << sk.size() << " bytes" << std::endl;
+        std::cout << "Public Key Length (dilithium) randomKeyPair(): " << pk.size() << " bytes" << std::endl;
+
+        return {pk, sk};
+
+    } else {
+        throw std::invalid_argument("randomKeyPair: unknown key type");
+    }
 }
 
 template <>
@@ -378,7 +677,8 @@ parseBase58(TokenType type, std::string const& s)
     auto const result = decodeBase58Token(s, type);
     if (result.empty())
         return std::nullopt;
-    if (result.size() != 32)
+    //Added size for Dilithium key size with secp256k1 as well.
+    if (result.size() != 32 && result.size() != 2528)
         return std::nullopt;
     return SecretKey(makeSlice(result));
 }

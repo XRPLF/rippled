@@ -204,10 +204,37 @@ enum class PeerFeature {
  */
 class TestPeer : public Peer
 {
+// public:
+//     TestPeer(bool enableLedgerReplay)
+//         : ledgerReplayEnabled_(enableLedgerReplay)
+//         , nodePublicKey_(derivePublicKey(KeyType::ed25519, randomSecp256k1SecretKey()))
+//         , 
+//     {
+//     }
 public:
-    TestPeer(bool enableLedgerReplay)
+    // Existing constructor
+    TestPeer(bool enableLedgerReplay, KeyType keyType)
         : ledgerReplayEnabled_(enableLedgerReplay)
-        , nodePublicKey_(derivePublicKey(KeyType::ed25519, randomSecretKey()))
+        , nodePublicKey_(
+            [keyType]() -> PublicKey {
+                if (keyType == KeyType::secp256k1) {
+                    SecretKey sk = randomSecp256k1SecretKey();
+                    return derivePublicKey(KeyType::secp256k1, sk);
+                } else if (keyType == KeyType::dilithium) {
+                    SecretKey sk = randomDilithiumSecretKey();
+                    
+                    return derivePublicKey(KeyType::dilithium, sk);
+                } else {
+                    throw std::invalid_argument("TestPeer: unknown key type");
+                }
+            }()
+        )
+    {
+    }
+
+    // New overloaded constructor
+    TestPeer(bool enableLedgerReplay)
+        : TestPeer(enableLedgerReplay, KeyType::secp256k1) // Default to secp256k1
     {
     }
 

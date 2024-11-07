@@ -316,7 +316,7 @@ public:
             !parseBase58<PublicKey>(TokenType::NodePublic, "!ty89234gh45"));
 
         auto const good = toBase58(
-            TokenType::NodePublic, derivePublicKey(keyType, randomSecretKey()));
+            TokenType::NodePublic, derivePublicKey(keyType, randomSecp256k1SecretKey()));
 
         // Short (non-empty) strings
         {
@@ -367,7 +367,7 @@ public:
         keys.reserve(32);
 
         for (std::size_t i = 0; i != keys.capacity(); ++i)
-            keys.emplace_back(derivePublicKey(keyType, randomSecretKey()));
+            keys.emplace_back(derivePublicKey(keyType, randomSecp256k1SecretKey()));
         BEAST_EXPECT(keys.size() == 32);
 
         for (std::size_t i = 0; i != keys.size(); ++i)

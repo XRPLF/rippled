@@ -66,7 +66,10 @@ endif()
 set(DILITHIUM_LIB_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/dilithium/ref")
 set(DILITHIUM_INSTALL TRUE)
 add_subdirectory(${DILITHIUM_LIB_PATH})
-add_library(dilithium::dilithium2 ALIAS dilithium2_ref)
+
+
+
+     
 
 # Define the path to api.h
 set(API_H_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/dilithium/ref/api.h")
@@ -82,10 +85,18 @@ else()
 endif()
 
 include(deps/Boost)
-find_package(OpenSSL 1.1.1 REQUIRED)
+find_package(OpenSSL REQUIRED)
 set_target_properties(OpenSSL::SSL PROPERTIES
   INTERFACE_COMPILE_DEFINITIONS OPENSSL_NO_SSL2
 )
+message(STATUS "OpenSSL Include Dir: ${OPENSSL_INCLUDE_DIR}")
+message(STATUS "OpenSSL Libraries: ${OPENSSL_LIBRARIES}")
+
+
+
+
+
+
 set(SECP256K1_INSTALL TRUE)
 add_subdirectory(external/secp256k1)
 add_library(secp256k1::secp256k1 ALIAS secp256k1)

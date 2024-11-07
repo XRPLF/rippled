@@ -59,7 +59,7 @@ class PeerPartial : public Peer
 {
 public:
     PeerPartial()
-        : nodePublicKey_(derivePublicKey(KeyType::ed25519, randomSecretKey()))
+        : nodePublicKey_(derivePublicKey(KeyType::ed25519, randomSecp256k1SecretKey()))
     {
     }
 

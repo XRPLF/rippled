@@ -36,7 +36,7 @@ namespace ripple {
 class SecretKey
 {
 private:
-    std::uint8_t buf_[32];
+    std::uint8_t buf_[2528]; //Changed to 2528 because Dilithium will have largest keysize (2528)
 
 public:
     using const_iterator = std::uint8_t const*;
@@ -48,7 +48,7 @@ public:
 
     ~SecretKey();
 
-    SecretKey(std::array<std::uint8_t, 32> const& data);
+    SecretKey(std::array<std::uint8_t, 2528> const& data);
     SecretKey(Slice const& slice);
 
     std::uint8_t const*
@@ -122,17 +122,24 @@ toBase58(TokenType type, SecretKey const& sk)
     return encodeBase58Token(type, sk.data(), sk.size());
 }
 
-/** Create a secret key using secure random numbers. */
-SecretKey
-randomSecretKey();
+/** Create a secret key using secure random numbers. 
+I have created two seperate functions for the different keytypes so both algorithms can coexist*/
+// SecretKey
+// randomSecretKey();
+
+SecretKey randomSecp256k1SecretKey();
+
+SecretKey randomDilithiumSecretKey();
 
 /** Generate a new secret key deterministically. */
 SecretKey
 generateSecretKey(KeyType type, Seed const& seed);
 
 /** Derive the public key from a secret key. */
-PublicKey
-derivePublicKey(KeyType type, SecretKey const& sk);
+PublicKey derivePublicKey(KeyType type, SecretKey const& sk);
+
+/** Derive the public key from a secret key and a seed. */
+PublicKey derivePublicKey(KeyType type, SecretKey const& sk, Seed const& seed);
 
 /** Generate a key pair deterministically.
 

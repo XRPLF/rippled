@@ -24,6 +24,15 @@
 #include <xrpl/protocol/digest.h>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <ed25519.h>
+#include "api.h"
+
+#ifndef CRYPTO_PUBLICKEYBYTES
+#define CRYPTO_PUBLICKEYBYTES pqcrystals_dilithium2_PUBLICKEYBYTES 
+#endif
+
+#ifndef crypto_sign_verify
+#define crypto_sign_verify pqcrystals_dilithium2_ref_verify 
+#endif
 
 namespace ripple {
 
@@ -175,14 +184,45 @@ ed25519Canonical(Slice const& sig)
 
 PublicKey::PublicKey(Slice const& slice)
 {
-    if (slice.size() < size_)
-        LogicError(
-            "PublicKey::PublicKey - Input slice cannot be an undersized "
-            "buffer");
+    std::cout << "PublicKey constructor called." << std::endl;
+    std::cout << "Input slice size: " << slice.size() << std::endl;
 
-    if (!publicKeyType(slice))
-        LogicError("PublicKey::PublicKey invalid type");
-    std::memcpy(buf_, slice.data(), size_);
+    auto keyType = publicKeyType(slice);
+    if (!keyType)
+    {
+        std::cout << "Invalid public key type detected." << std::endl;
+        LogicError("PublicKey::PublicKey - Invalid public key type");
+        return; // Early return to prevent further processing
+    }
+
+    std::size_t expectedSize = 0;
+    switch (*keyType)
+    {
+        case KeyType::secp256k1:
+            expectedSize = 33; 
+            break;
+        case KeyType::ed25519:
+            expectedSize = 33; 
+            break;
+        case KeyType::dilithium:
+            expectedSize = CRYPTO_PUBLICKEYBYTES;
+            break;
+        default:
+            std::cout << "Unknown key type detected." << std::endl;
+            LogicError("PublicKey::PublicKey - Unknown key type");
+            return; // Early return to prevent further processing
+    }
+
+    std::cout << "Expected public key size: " << expectedSize << std::endl;
+
+    if (slice.size() < expectedSize)
+    {
+        std::cout << "Logic error: PublicKey::PublicKey - Input slice cannot be an undersized buffer" << std::endl;
+        LogicError("PublicKey::PublicKey - Input slice cannot be an undersized buffer");
+        return; // Early return to prevent further processing
+    }
+
+    std::memcpy(buf_, slice.data(), expectedSize);
 }
 
 PublicKey::PublicKey(PublicKey const& other)
@@ -214,6 +254,11 @@ publicKeyType(Slice const& slice)
         if (slice[0] == 0x02 || slice[0] == 0x03)
             return KeyType::secp256k1;
     }
+    else if (slice.size() == CRYPTO_PUBLICKEYBYTES)
+    {
+        return KeyType::dilithium;
+    }
+    
 
     return std::nullopt;
 }
@@ -225,47 +270,77 @@ verifyDigest(
     Slice const& sig,
     bool mustBeFullyCanonical) noexcept
 {
-    if (publicKeyType(publicKey) != KeyType::secp256k1)
-        LogicError("sign: secp256k1 required for digest signing");
-    auto const canonicality = ecdsaCanonicality(sig);
-    if (!canonicality)
-        return false;
-    if (mustBeFullyCanonical &&
-        (*canonicality != ECDSACanonicality::fullyCanonical))
-        return false;
-
-    secp256k1_pubkey pubkey_imp;
-    if (secp256k1_ec_pubkey_parse(
-            secp256k1Context(),
-            &pubkey_imp,
-            reinterpret_cast<unsigned char const*>(publicKey.data()),
-            publicKey.size()) != 1)
-        return false;
-
-    secp256k1_ecdsa_signature sig_imp;
-    if (secp256k1_ecdsa_signature_parse_der(
-            secp256k1Context(),
-            &sig_imp,
-            reinterpret_cast<unsigned char const*>(sig.data()),
-            sig.size()) != 1)
-        return false;
-    if (*canonicality != ECDSACanonicality::fullyCanonical)
+    auto const type = publicKeyType(publicKey);
+    if (!type)
     {
-        secp256k1_ecdsa_signature sig_norm;
-        if (secp256k1_ecdsa_signature_normalize(
-                secp256k1Context(), &sig_norm, &sig_imp) != 1)
-            return false;
-        return secp256k1_ecdsa_verify(
-                   secp256k1Context(),
-                   &sig_norm,
-                   reinterpret_cast<unsigned char const*>(digest.data()),
-                   &pubkey_imp) == 1;
+        LogicError("verifyDigest: unknown public key type");
+        return false;
     }
-    return secp256k1_ecdsa_verify(
-               secp256k1Context(),
-               &sig_imp,
-               reinterpret_cast<unsigned char const*>(digest.data()),
-               &pubkey_imp) == 1;
+
+    switch (*type)
+    {
+        case KeyType::secp256k1:
+        {
+            std::cout << "Verifying digest, public key type: secp256k1" << std::endl;
+            auto const canonicality = ecdsaCanonicality(sig);
+            if (!canonicality)
+                return false;
+            if (mustBeFullyCanonical &&
+                (*canonicality != ECDSACanonicality::fullyCanonical))
+                return false;
+
+            secp256k1_pubkey pubkey_imp;
+            if (secp256k1_ec_pubkey_parse(
+                    secp256k1Context(),
+                    &pubkey_imp,
+                    reinterpret_cast<unsigned char const*>(publicKey.data()),
+                    publicKey.size()) != 1)
+                return false;
+
+            secp256k1_ecdsa_signature sig_imp;
+            if (secp256k1_ecdsa_signature_parse_der(
+                    secp256k1Context(),
+                    &sig_imp,
+                    reinterpret_cast<unsigned char const*>(sig.data()),
+                    sig.size()) != 1)
+                return false;
+            if (*canonicality != ECDSACanonicality::fullyCanonical)
+            {
+                secp256k1_ecdsa_signature sig_norm;
+                if (secp256k1_ecdsa_signature_normalize(
+                        secp256k1Context(), &sig_norm, &sig_imp) != 1)
+                    return false;
+                return secp256k1_ecdsa_verify(
+                           secp256k1Context(),
+                           &sig_norm,
+                           reinterpret_cast<unsigned char const*>(digest.data()),
+                           &pubkey_imp) == 1;
+            }
+            return secp256k1_ecdsa_verify(
+                       secp256k1Context(),
+                       &sig_imp,
+                       reinterpret_cast<unsigned char const*>(digest.data()),
+                       &pubkey_imp) == 1;
+        }
+        case KeyType::ed25519:
+        {
+            std::cout << "Verifying digest, public key type: ed25519" << std::endl;
+            if (!ed25519Canonical(sig))
+                return false;
+
+            return ed25519_sign_open(
+                       digest.data(), digest.size(), publicKey.data() + 1, sig.data()) == 0;
+        }
+        case KeyType::dilithium:
+        {
+            std::cout << "Verifying digest, public key type: Dilithium" << std::endl;
+            return crypto_sign_verify(
+                       sig.data(), sig.size(), digest.data(), digest.size(), publicKey.data()) == 0;
+        }
+        default:
+            LogicError("verifyDigest: invalid public key type");
+            return false;
+    }
 }
 
 bool
@@ -275,15 +350,24 @@ verify(
     Slice const& sig,
     bool mustBeFullyCanonical) noexcept
 {
-    if (auto const type = publicKeyType(publicKey))
+    auto const type = publicKeyType(publicKey);
+    if (!type)
     {
-        if (*type == KeyType::secp256k1)
+        LogicError("verify: unknown public key type");
+        return false;
+    }
+
+    switch (*type)
+    {
+        case KeyType::secp256k1:
         {
+            std::cout << "Verifying message, public key type: secp256k1" << std::endl;
             return verifyDigest(
                 publicKey, sha512Half(m), sig, mustBeFullyCanonical);
         }
-        else if (*type == KeyType::ed25519)
+        case KeyType::ed25519:
         {
+            std::cout << "Verifying message, public key type: ed25519" << std::endl;
             if (!ed25519Canonical(sig))
                 return false;
 
@@ -292,11 +376,20 @@ verify(
             // so when verifying the signature, we need to
             // first strip that prefix.
             return ed25519_sign_open(
-                       m.data(), m.size(), publicKey.data() + 1, sig.data()) ==
-                0;
+                       m.data(), m.size(), publicKey.data() + 1, sig.data()) == 0;
         }
+        case KeyType::dilithium:
+        {
+            std::cout << "Verifying message, public key type: Dilithium" << std::endl;
+            return crypto_sign_verify(
+                       sig.data(), sig.size(), m.data(), m.size(), publicKey.data()) == 0;
+            std::cout << "Verification of message succesfull using dilithium" << std::endl;
+            
+        }
+        default:
+            LogicError("verify: invalid public key type");
+            return false;
     }
-    return false;
 }
 
 NodeID
