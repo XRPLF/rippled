@@ -437,7 +437,7 @@ class Simulate_test : public beast::unit_test::suite
                     BEAST_EXPECT(result[jss::engine_result_code] == -298);
                     BEAST_EXPECT(
                         result[jss::engine_result_message] ==
-                        "Can only send positive amounts.");
+                        "Malformed: Bad amount.");
 
                     BEAST_EXPECT(
                         !result.isMember(jss::meta) &&
