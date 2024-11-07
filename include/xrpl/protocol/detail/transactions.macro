@@ -448,7 +448,7 @@ TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete, ({
 }))
 
 /** This transaction type wraps inner transactions for batch. */
-TRANSACTION(ttBATCH, 58, Batch, ({
+TRANSACTION(ttBATCH, 61, Batch, ({
     {sfRawTransactions, soeREQUIRED},
     {sfTxIDs, soeREQUIRED},
     {sfBatchSigners, soeOPTIONAL},
