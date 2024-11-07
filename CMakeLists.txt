@@ -62,7 +62,24 @@ if(only_docs)
   return()
 endif()
 
-###
+# Include Dilithium library
+set(DILITHIUM_LIB_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/dilithium/ref")
+set(DILITHIUM_INSTALL TRUE)
+add_subdirectory(${DILITHIUM_LIB_PATH})
+add_library(dilithium::dilithium2 ALIAS dilithium2_ref)
+
+# Define the path to api.h
+set(API_H_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/dilithium/ref/api.h")
+
+# Check if the api.h file exists
+if(EXISTS "${API_H_PATH}")
+    include_directories(external/dilithium/ref)
+    message(STATUS "Dilithium library detected and linked: dilithium::dilithium2")
+    message(STATUS "api.h file detected and included.")
+    message(STATUS "Found api.h file at: ${API_H_PATH}")
+else()
+    message(FATAL_ERROR "api.h file not found. Please ensure it exists in external/dilithium/ref.")
+endif()
 
 include(deps/Boost)
 find_package(OpenSSL 1.1.1 REQUIRED)
@@ -95,7 +112,9 @@ find_package(nudb REQUIRED)
 find_package(date REQUIRED)
 find_package(xxHash REQUIRED)
 
+# Link all libraries, including Dilithium
 target_link_libraries(ripple_libs INTERFACE
+  dilithium::dilithium2
   ed25519::ed25519
   lz4::lz4
   OpenSSL::Crypto
