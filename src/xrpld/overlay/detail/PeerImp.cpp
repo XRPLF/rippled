@@ -39,6 +39,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
 // #include <xrpl/beast/core/SemanticVersion.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -1238,11 +1239,11 @@ PeerImp::handleTransaction(
         auto stx = std::make_shared<STTx const>(sit);
         uint256 txID = stx->getTransactionID();
 
-        // Charge strongly for attempting to relay a txn with sfBatchTxn
-        if (stx->isFieldPresent(sfBatchTxn))
+        // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
+        if (stx->isFlag(tfInnerBatchTxn))
         {
             JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
-                                       "sfBatchTxn (handleTransaction).";
+                                       "tfInnerBatchTxn (handleTransaction).";
             fee_ = Resource::feeHighBurdenPeer;
             return;
         }
@@ -2739,10 +2740,10 @@ PeerImp::checkTransaction(
     try
     {
         // charge strongly for relaying batch txns
-        if (stx->isFieldPresent(sfBatchTxn))
+        if (stx->isFlag(tfInnerBatchTxn))
         {
             JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
-                                       "sfBatchTxn (checkSignature).";
+                                       "tfInnerBatchTxn (checkSignature).";
             charge(Resource::feeHighBurdenPeer);
             return;
         }

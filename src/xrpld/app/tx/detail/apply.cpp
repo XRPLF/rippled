@@ -22,6 +22,7 @@
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 
@@ -45,7 +46,7 @@ checkValidity(
     auto const flags = router.getFlags(id);
 
     // Validate Inner BatchTxn
-    if (rules.enabled(featureBatch) && tx.isFieldPresent(sfBatchTxn))
+    if (rules.enabled(featureBatch) && tx.isFlag(tfInnerBatchTxn))
     {
         // batched transactions do not contain signatures
         if (tx.isFieldPresent(sfTxnSignature))

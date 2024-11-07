@@ -27,6 +27,7 @@
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <boost/range/adaptor/transformed.hpp>
 
 namespace ripple {
@@ -123,7 +124,7 @@ OpenLedger::accept(
         auto const txId = tx->getTransactionID();
 
         // skip batch txns
-        if (tx->isFieldPresent(sfBatchTxn))
+        if (tx->isFlag(tfInnerBatchTxn))
             continue;
 
         if (auto const toSkip = app.getHashRouter().shouldRelay(txId))

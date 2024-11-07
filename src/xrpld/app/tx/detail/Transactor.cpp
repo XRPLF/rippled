@@ -32,6 +32,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {
@@ -200,7 +201,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         return temBAD_FEE;
 
     auto const feePaid = ctx.tx[sfFee].xrp();
-    if (ctx.tx.isFieldPresent(sfBatchTxn))
+    if (ctx.tx.isFlag(tfInnerBatchTxn))
     {
         if (feePaid == beast::zero)
         {
@@ -295,16 +296,6 @@ Transactor::checkSeqProxy(
 
     SeqProxy const t_seqProx = tx.getSeqProxy();
     SeqProxy a_seq = SeqProxy::sequence((*sle)[sfSequence]);
-
-    if (tx.isFieldPresent(sfBatchTxn))
-    {
-        if (tx.getFieldU32(sfSequence) != 0)
-        {
-            JLOG(j.trace())
-                << "applyTransaction: BatchTxn has a Sequence number";
-            return temBAD_SEQUENCE;
-        }
-    }
 
     if (t_seqProx.isSeq())
     {
@@ -504,7 +495,7 @@ NotTEC
 Transactor::checkSign(PreclaimContext const& ctx)
 {
     // do not check signature of inner batch txn
-    if (ctx.tx.isFieldPresent(sfBatchTxn))
+    if (ctx.tx.isFlag(tfInnerBatchTxn))
         return tesSUCCESS;
 
     auto const idAccount = ctx.tx.getAccountID(sfAccount);
@@ -964,7 +955,7 @@ Transactor::operator()()
         result = tecOVERSIZE;
 
     if ((isTecClaim(result) && (view().flags() & tapFAIL_HARD) &&
-         !ctx_.tx.isFieldPresent(sfBatchTxn)))
+         !ctx_.tx.isFlag(tfInnerBatchTxn)))
     {
         // If the tapFAIL_HARD flag is set, a tec result
         // must not do anything

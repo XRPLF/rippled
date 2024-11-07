@@ -90,7 +90,6 @@ JSS(Offer);                // ledger type.
 JSS(OfferSequence);        // field.
 JSS(Oracle);               // ledger type.
 JSS(OracleDocumentID);     // field
-JSS(OuterAccount);         // field
 JSS(Owner);                // field
 JSS(Paths);                // in/out: TransactionSign
 JSS(PayChannel);           // ledger type.

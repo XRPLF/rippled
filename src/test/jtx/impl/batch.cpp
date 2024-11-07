@@ -22,6 +22,7 @@
 #include <xrpl/protocol/Batch.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <optional>
 #include <sstream>
@@ -65,20 +66,16 @@ add::operator()(Env& env, JTx& jt) const
     batchTransaction[jss::RawTransaction] = txn_;
     batchTransaction[jss::RawTransaction][jss::SigningPubKey] = "";
     batchTransaction[jss::RawTransaction][sfFee.jsonName] = 0;
-    batchTransaction[jss::RawTransaction][jss::Sequence] = 0;
-
-    // Set batch transaction details
-    auto& batchTxn = batchTransaction[jss::RawTransaction][sfBatchTxn.jsonName];
-    batchTxn = Json::Value{};
-    batchTxn[sfOuterAccount.jsonName] = acct_.human();
-    batchTxn[sfBatchIndex.jsonName] = bi_;
-    batchTxn[sfSequence.jsonName] = seq_;
+    batchTransaction[jss::RawTransaction][jss::Sequence] = seq_;
+    batchTransaction[jss::RawTransaction][jss::Flags] =
+        batchTransaction[jss::RawTransaction][jss::Flags].asUInt() |
+        tfInnerBatchTxn;
 
     // Optionally set ticket sequence
     if (ticket_.has_value())
     {
-        batchTxn[sfSequence.jsonName] = 0;
-        batchTxn[sfTicketSequence.jsonName] = *ticket_;
+         batchTransaction[jss::RawTransaction][jss::Sequence] = 0;
+         batchTransaction[jss::RawTransaction][sfTicketSequence.jsonName] = *ticket_;
     }
 
     // Set the hash of the transaction

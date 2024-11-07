@@ -42,7 +42,6 @@ TYPED_SFIELD(sfTickSize,                 UINT8,     16)
 TYPED_SFIELD(sfUNLModifyDisabling,       UINT8,     17)
 TYPED_SFIELD(sfHookResult,               UINT8,     18)
 TYPED_SFIELD(sfWasLockingChainSend,      UINT8,     19)
-TYPED_SFIELD(sfBatchIndex,               UINT8,     20)
 
 // 16-bit integers (common)
 TYPED_SFIELD(sfLedgerEntryType,          UINT16,     1, SField::sMD_Never)
@@ -282,7 +281,6 @@ TYPED_SFIELD(sfAttestationSignerAccount, ACCOUNT,   20)
 TYPED_SFIELD(sfAttestationRewardAccount, ACCOUNT,   21)
 TYPED_SFIELD(sfLockingChainDoor,         ACCOUNT,   22)
 TYPED_SFIELD(sfIssuingChainDoor,         ACCOUNT,   23)
-TYPED_SFIELD(sfOuterAccount,             ACCOUNT,   24)
 
 // vector of 256-bit
 TYPED_SFIELD(sfIndexes,                  VECTOR256,  1, SField::sMD_Never)
@@ -343,8 +341,7 @@ UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement, OBJECT, 31)
 UNTYPED_SFIELD(sfPriceData,              OBJECT,    32)
 UNTYPED_SFIELD(sfRawTransaction,         OBJECT,    33)
 UNTYPED_SFIELD(sfBatchExecution,         OBJECT,    34)
-UNTYPED_SFIELD(sfBatchTxn,               OBJECT,    35)
-UNTYPED_SFIELD(sfBatchSigner,            OBJECT,    36)
+UNTYPED_SFIELD(sfBatchSigner,            OBJECT,    35)
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array

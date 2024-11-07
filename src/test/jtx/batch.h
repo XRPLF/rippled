@@ -49,20 +49,14 @@ class add
 {
 private:
     Json::Value txn_;
-    Account acct_;
-    std::uint8_t bi_;
     std::uint32_t seq_;
     std::optional<std::uint32_t> ticket_;
 
 public:
     add(Json::Value const& txn,
-        Account const& outerAccount,
-        std::uint8_t const& batchIndex,
         std::uint32_t const& sequence,
         std::optional<std::uint32_t> const& ticket = std::nullopt)
         : txn_(txn)
-        , acct_(outerAccount)
-        , bi_(batchIndex)
         , seq_(sequence)
         , ticket_(ticket)
     {

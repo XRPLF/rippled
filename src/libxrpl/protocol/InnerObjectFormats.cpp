@@ -154,13 +154,6 @@ InnerObjectFormats::InnerObjectFormats()
          {sfInnerResult, soeREQUIRED},
          {sfTransactionHash, soeOPTIONAL}});
 
-    add(sfBatchTxn.jsonName.c_str(),
-        sfBatchTxn.getCode(),
-        {{sfOuterAccount, soeREQUIRED},
-         {sfSequence, soeOPTIONAL},
-         {sfTicketSequence, soeOPTIONAL},
-         {sfBatchIndex, soeREQUIRED}});
-
     add(sfBatchSigner.jsonName.c_str(),
         sfBatchSigner.getCode(),
         {{sfAccount, soeREQUIRED},

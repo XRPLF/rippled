@@ -63,6 +63,7 @@
 #include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
@@ -1139,7 +1140,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
     // Enforce Network bar for batch txn
     if (auto const view = m_ledgerMaster.getCurrentLedger();
         view->rules().enabled(featureBatch) &&
-        iTrans->isFieldPresent(sfBatchTxn))
+        iTrans->isFlag(tfInnerBatchTxn))
     {
         JLOG(m_journal.error())
             << "Submitted transaction invalid: BatchTxn present.";
@@ -1220,7 +1221,7 @@ NetworkOPsImp::processTransaction(
     // txn from the network.
     auto const tx = *transaction->getSTransaction();
     if (view->rules().enabled(featureBatch) &&
-        tx.isFieldPresent(ripple::sfBatchTxn))
+        tx.isFlag(tfInnerBatchTxn))
     {
         transaction->setStatus(INVALID);
         transaction->setResult(temINVALID_BATCH);
@@ -1487,7 +1488,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     app_.getHashRouter().shouldRelay(e.transaction->getID());
 
                 if (auto const txn = *(e.transaction->getSTransaction());
-                    toSkip && !txn.isFieldPresent(sfBatchTxn))
+                    toSkip && !txn.isFlag(tfInnerBatchTxn))
                 {
                     protocol::TMTransaction tx;
                     Serializer s;
@@ -2779,7 +2780,7 @@ NetworkOPsImp::pubProposedTransaction(
     TER result)
 {
     // never publish an inner txn inside a batch txn
-    if (transaction->isFieldPresent(ripple::sfBatchTxn))
+    if (transaction->isFlag(tfInnerBatchTxn))
         return;
 
     MultiApiJson jvObj =
