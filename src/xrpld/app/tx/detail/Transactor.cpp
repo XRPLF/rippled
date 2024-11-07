@@ -137,8 +137,7 @@ preflight2(PreflightContext const& ctx)
         ctx.app.getHashRouter(),
         ctx.tx,
         ctx.rules,
-        ctx.app.config(),
-        ctx.flags);
+        ctx.app.config());
     if (sigValid.first == Validity::SigBad)
     {
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;

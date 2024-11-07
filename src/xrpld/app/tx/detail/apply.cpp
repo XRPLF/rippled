@@ -39,8 +39,7 @@ checkValidity(
     HashRouter& router,
     STTx const& tx,
     Rules const& rules,
-    Config const& config,
-    ApplyFlags const& applyFlags)
+    Config const& config)
 {
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);
