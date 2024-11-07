@@ -218,6 +218,8 @@ ValidatorList::load(
     // Treat local validator key as though it was listed in the config
     if (localPubKey_)
     {
+        // The local validator must meet listThreshold_ so the validator does
+        // not ignore itself.
         auto const [_, inserted] =
             keyListings_.insert({*localPubKey_, listThreshold_});
         if (inserted)

@@ -633,8 +633,8 @@ trustthesevalidators.gov
 )rippleConfig");
             std::string error;
             auto const expectedError =
-                "The file specified in [validators_file] contains an invalid "
-                "value in [validator_list_threshold] config section";
+                "Value in config section [validator_list_threshold] exceeds "
+                "the number of configured list keys";
             try
             {
                 c.loadFromString(toLoad);
@@ -662,7 +662,7 @@ value = 2
             std::string error;
             auto const expectedError =
                 "Config section [validator_list_threshold] should contain "
-                "single value";
+                "single value only";
             try
             {
                 c.loadFromString(toLoad);
@@ -884,7 +884,7 @@ trustthesevalidators.gov
             BEAST_EXPECT(vtg.validatorsFileExists());
             auto const expectedError =
                 "Config section [validator_list_threshold] should contain "
-                "single value";
+                "single value only";
             try
             {
                 Config c;

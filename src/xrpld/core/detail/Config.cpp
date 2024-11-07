@@ -946,10 +946,9 @@ Config::loadFromString(std::string const& fileContents)
                     section(SECTION_VALIDATOR_LIST_KEYS).values().size())
                 {
                     Throw<std::runtime_error>(
-                        "The file specified in [" SECTION_VALIDATORS_FILE
-                        "] contains an invalid value in "
+                        "Value in config section "
                         "[" SECTION_VALIDATOR_LIST_THRESHOLD
-                        "] config section");
+                        "] exceeds the number of configured list keys");
                 }
                 return listThreshold;
             }
@@ -958,7 +957,7 @@ Config::loadFromString(std::string const& fileContents)
                 Throw<std::runtime_error>(
                     "Config section "
                     "[" SECTION_VALIDATOR_LIST_THRESHOLD
-                    "] should contain single value");
+                    "] should contain single value only");
             }
         }();
 
