@@ -141,11 +141,11 @@ Batch::preflight(PreflightContext const& ctx)
         }
     }
 
-    std::set<AccountID> uniqueSigners;
-    std::set<uint256> uniqueHashes;
+    std::unordered_set<AccountID> uniqueSigners;
+    std::unordered_set<uint256, beast::uhash<>> uniqueHashes;
     for (int i = 0; i < txns.size(); ++i)
     {
-        if (!uniqueHashes.insert(hashes[i]).second)
+        if (!uniqueHashes.emplace(hashes[i]).second)
         {
             JLOG(ctx.j.trace()) << "Batch: duplicate TxID found.";
             return temMALFORMED;
@@ -193,7 +193,7 @@ Batch::preflight(PreflightContext const& ctx)
             continue;
 
         // Add the inner account to the unique signers set.
-        uniqueSigners.insert(innerAccount);
+        uniqueSigners.emplace(innerAccount);
 
         // Validate that the account for this (inner) txn has a signature in the
         // batch signers array.
