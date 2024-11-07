@@ -417,7 +417,7 @@ STAmount
 amountFromQuality(std::uint64_t rate);
 
 STAmount
-amountFromString(Asset const& issue, std::string const& amount);
+amountFromString(Asset const& asset, std::string const& amount);
 
 STAmount
 amountFromJson(SField const& name, Json::Value const& v);

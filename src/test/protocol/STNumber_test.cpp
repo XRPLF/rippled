@@ -78,6 +78,15 @@ struct STNumber_test : public beast::unit_test::suite
             STAmount const totalAmount{totalValue, strikePrice.issue()};
             BEAST_EXPECT(totalAmount == Number{10'000});
         }
+
+        {
+            BEAST_EXPECT(
+                numberFromJson(sfNumber, "123") == STNumber(sfNumber, 123));
+            BEAST_EXPECT(
+                numberFromJson(sfNumber, "3.14e2") == STNumber(sfNumber, 314));
+            BEAST_EXPECT(
+                numberFromJson(sfNumber, "1000e-2") == STNumber(sfNumber, 10));
+        }
     }
 };
 
