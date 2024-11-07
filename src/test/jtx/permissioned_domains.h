@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_PERMISSIONEDDOMAINS_H_INCLUDED
-#define RIPPLE_TEST_JTX_PERMISSIONEDDOMAINS_H_INCLUDED
+#pragma once
 
 #include <test/jtx.h>
+#include <test/jtx/deposit.h>
 
 namespace ripple {
 namespace test {
@@ -28,7 +28,7 @@ namespace jtx {
 namespace pd {
 
 // Helpers for PermissionedDomains testing
-using Credential = std::pair<AccountID, Blob>;
+using Credential = ripple::test::jtx::deposit::AuthorizeCredentials;
 using Credentials = std::vector<Credential>;
 
 // helpers
@@ -51,16 +51,11 @@ getObjects(Account const& account, Env& env, bool withType = true);
 bool
 objectExists(uint256 const& objID, Env& env);
 
-// Convert string to Blob
-inline Blob
-toBlob(std::string const& input)
-{
-    return Blob(input.begin(), input.end());
-}
-
 // Extract credentials from account_object object
 Credentials
-credentialsFromJson(Json::Value const& object);
+credentialsFromJson(
+    Json::Value const& object,
+    std::unordered_map<std::string, Account> const& pubKey2Acc);
 
 // Sort credentials the same way as PermissionedDomainSet
 Credentials
@@ -78,5 +73,3 @@ getNewDomain(std::shared_ptr<STObject const> const& meta);
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple
-
-#endif  // RIPPLE_TEST_JTX_PERMISSIONEDDOMAINS_H_INCLUDED
