@@ -78,9 +78,9 @@ public:
      * Takes ownership / use std::move
      */
     void
-    setBatchPrevMetaData(STObject const& prevFields)
+    setBatchPrevMetaData(STObject const& batchPrevAcctRootFields)
     {
-        batchPrevAcctRootFields_ = prevFields;
+        batchPrevAcctRootFields_ = batchPrevAcctRootFields;
     }
 
     void

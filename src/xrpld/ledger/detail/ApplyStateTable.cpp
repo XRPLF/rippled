@@ -116,7 +116,7 @@ ApplyStateTable::apply(
     TER ter,
     std::optional<STAmount> const& deliver,
     std::vector<STObject> const& batchExecution,
-    std::optional<STObject> const& batchPrev,
+    std::optional<STObject> const& batchPrevAcctRootFields,
     beast::Journal j)
 {
     bool const isBatch = tx.getTxnType() == ttBATCH;
@@ -216,10 +216,10 @@ ApplyStateTable::apply(
                         prevs.emplace_back(obj);
                 }
 
-                if (isBatch && nodeType == ltACCOUNT_ROOT && batchPrev)
+                if (isBatch && nodeType == ltACCOUNT_ROOT && batchPrevAcctRootFields)
                 {
                     // TODO: This could fail if the fields already exist
-                    for (auto const& obj : *batchPrev)
+                    for (auto const& obj : *batchPrevAcctRootFields)
                         prevs.emplace_back(obj);
                 }
 
