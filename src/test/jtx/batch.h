@@ -56,9 +56,7 @@ public:
     add(Json::Value const& txn,
         std::uint32_t const& sequence,
         std::optional<std::uint32_t> const& ticket = std::nullopt)
-        : txn_(txn)
-        , seq_(sequence)
-        , ticket_(ticket)
+        : txn_(txn), seq_(sequence), ticket_(ticket)
     {
     }
 

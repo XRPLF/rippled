@@ -115,7 +115,8 @@ ApplyContext::setBatchPrevAcctRootFields(ApplyViewImpl& avi)
         for (auto const& obj : *sleBaseAcct)
         {
             if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) &&
-                (!sleAcct->hasMatchingEntry(obj) || obj.getFName() == sfSequence ||
+                (!sleAcct->hasMatchingEntry(obj) ||
+                 obj.getFName() == sfSequence ||
                  obj.getFName() == sfOwnerCount ||
                  obj.getFName() == sfTicketCount))
             {

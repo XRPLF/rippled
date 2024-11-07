@@ -1641,7 +1641,8 @@ class Batch_test : public beast::unit_test::suite
         // TODO: test with `tfPartialPayment`
         // TODO: add a test case to exercise the behavior where the last signer
         // signature is correct, but previous ones are bad.
-        // TODO: tfUntilFailure verify it's possible that none of the inner txns succeeds and yet the batch txn is "successful"?
+        // TODO: tfUntilFailure verify it's possible that none of the inner txns
+        // succeeds and yet the batch txn is "successful"?
     }
 
 public:

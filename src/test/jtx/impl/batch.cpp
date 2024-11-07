@@ -74,8 +74,9 @@ add::operator()(Env& env, JTx& jt) const
     // Optionally set ticket sequence
     if (ticket_.has_value())
     {
-         batchTransaction[jss::RawTransaction][jss::Sequence] = 0;
-         batchTransaction[jss::RawTransaction][sfTicketSequence.jsonName] = *ticket_;
+        batchTransaction[jss::RawTransaction][jss::Sequence] = 0;
+        batchTransaction[jss::RawTransaction][sfTicketSequence.jsonName] =
+            *ticket_;
     }
 
     // Set the hash of the transaction

@@ -216,7 +216,8 @@ ApplyStateTable::apply(
                         prevs.emplace_back(obj);
                 }
 
-                if (isBatch && nodeType == ltACCOUNT_ROOT && batchPrevAcctRootFields)
+                if (isBatch && nodeType == ltACCOUNT_ROOT &&
+                    batchPrevAcctRootFields)
                 {
                     // TODO: This could fail if the fields already exist
                     for (auto const& obj : *batchPrevAcctRootFields)

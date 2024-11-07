@@ -167,7 +167,6 @@ InnerObjectFormats::InnerObjectFormats()
          {sfSigningPubKey, soeOPTIONAL},
          {sfTxnSignature, soeOPTIONAL},
          {sfSigners, soeOPTIONAL}});
-
 }
 
 InnerObjectFormats const&
