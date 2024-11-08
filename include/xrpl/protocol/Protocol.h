@@ -95,6 +95,15 @@ std::size_t constexpr maxDIDAttestationLength = 256;
 /** The maximum length of a domain */
 std::size_t constexpr maxDomainLength = 256;
 
+/** The maximum length of a URI inside a Credential */
+std::size_t constexpr maxCredentialURILength = 256;
+
+/** The maximum length of a CredentialType inside a Credential */
+std::size_t constexpr maxCredentialTypeLength = 64;
+
+/** The maximum number of credentials can be passed in array */
+std::size_t constexpr maxCredentialsArraySize = 8;
+
 /** The maximum length of MPTokenMetadata */
 std::size_t constexpr maxMPTokenMetadataLength = 1024;
 

@@ -21,6 +21,7 @@
 #define RIPPLE_BASICS_SCOPE_H_INCLUDED
 
 #include <exception>
+#include <mutex>
 #include <type_traits>
 #include <utility>
 
@@ -185,6 +186,70 @@ public:
 
 template <class EF>
 scope_success(EF) -> scope_success<EF>;
+
+/**
+    Automatically unlocks and re-locks a unique_lock object.
+
+    This is the reverse of a std::unique_lock object - instead of locking the
+   mutex for the lifetime of this object, it unlocks it.
+
+    Make sure you don't try to unlock mutexes that aren't actually locked!
+
+    This is essentially a less-versatile boost::reverse_lock.
+
+    e.g. @code
+
+    std::mutex mut;
+
+    for (;;)
+    {
+        std::unique_lock myScopedLock{mut};
+        // mut is now locked
+
+        ... do some stuff with it locked ..
+
+        while (xyz)
+        {
+            ... do some stuff with it locked ..
+
+            scope_unlock unlocker{myScopedLock};
+
+            // mut is now unlocked for the remainder of this block,
+            // and re-locked at the end.
+
+            ...do some stuff with it unlocked ...
+        }  // mut gets locked here.
+
+    }  // mut gets unlocked here
+    @endcode
+*/
+
+template <class Mutex>
+class scope_unlock
+{
+    std::unique_lock<Mutex>* plock;
+
+public:
+    explicit scope_unlock(std::unique_lock<Mutex>& lock) noexcept(true)
+        : plock(&lock)
+    {
+        assert(plock->owns_lock());
+        plock->unlock();
+    }
+
+    // Immovable type
+    scope_unlock(scope_unlock const&) = delete;
+    scope_unlock&
+    operator=(scope_unlock const&) = delete;
+
+    ~scope_unlock() noexcept(true)
+    {
+        plock->lock();
+    }
+};
+
+template <class Mutex>
+scope_unlock(std::unique_lock<Mutex>&) -> scope_unlock<Mutex>;
 
 }  // namespace ripple
 

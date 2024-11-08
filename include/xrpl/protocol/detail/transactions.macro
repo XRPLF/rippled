@@ -37,6 +37,7 @@ TRANSACTION(ttPAYMENT, 0, Payment, ({
     {sfInvoiceID, soeOPTIONAL},
     {sfDestinationTag, soeOPTIONAL},
     {sfDeliverMin, soeOPTIONAL, soeMPTSupported},
+    {sfCredentialIDs, soeOPTIONAL},
 }))
 
 /** This transaction type creates an escrow object. */
@@ -55,6 +56,7 @@ TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish, ({
     {sfOfferSequence, soeREQUIRED},
     {sfFulfillment, soeOPTIONAL},
     {sfCondition, soeOPTIONAL},
+    {sfCredentialIDs, soeOPTIONAL},
 }))
 
 
@@ -139,6 +141,7 @@ TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim, ({
     {sfBalance, soeOPTIONAL},
     {sfSignature, soeOPTIONAL},
     {sfPublicKey, soeOPTIONAL},
+    {sfCredentialIDs, soeOPTIONAL},
 }))
 
 /** This transaction type creates a new check. */
@@ -166,6 +169,8 @@ TRANSACTION(ttCHECK_CANCEL, 18, CheckCancel, ({
 TRANSACTION(ttDEPOSIT_PREAUTH, 19, DepositPreauth, ({
     {sfAuthorize, soeOPTIONAL},
     {sfUnauthorize, soeOPTIONAL},
+    {sfAuthorizeCredentials, soeOPTIONAL},
+    {sfUnauthorizeCredentials, soeOPTIONAL},
 }))
 
 /** This transaction type modifies a trustline between two accounts. */
@@ -179,6 +184,7 @@ TRANSACTION(ttTRUST_SET, 20, TrustSet, ({
 TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete, ({
     {sfDestination, soeREQUIRED},
     {sfDestinationTag, soeOPTIONAL},
+    {sfCredentialIDs, soeOPTIONAL},
 }))
 
 // 22 reserved
@@ -420,6 +426,28 @@ TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize, ({
     {sfHolder, soeOPTIONAL},
 }))
 
+/** This transaction type create an Credential instance */
+TRANSACTION(ttCREDENTIAL_CREATE, 58, CredentialCreate, ({
+    {sfSubject, soeREQUIRED},
+    {sfCredentialType, soeREQUIRED},
+    {sfExpiration, soeOPTIONAL},
+    {sfURI, soeOPTIONAL},
+}))
+
+/** This transaction type accept an Credential object */
+TRANSACTION(ttCREDENTIAL_ACCEPT, 59, CredentialAccept, ({
+    {sfIssuer, soeREQUIRED},
+    {sfCredentialType, soeREQUIRED},
+}))
+
+/** This transaction type delete an Credential object */
+TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete, ({
+    {sfSubject, soeOPTIONAL},
+    {sfIssuer, soeOPTIONAL},
+    {sfCredentialType, soeREQUIRED},
+}))
+
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html
@@ -455,3 +483,4 @@ TRANSACTION(ttUNL_MODIFY, 102, UNLModify, ({
     {sfLedgerSequence, soeREQUIRED},
     {sfUNLModifyValidator, soeREQUIRED},
 }))
+
