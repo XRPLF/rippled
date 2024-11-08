@@ -33,7 +33,9 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/resource/Fees.h>
+
 #include <boost/algorithm/string/case_conv.hpp>
+
 #include <regex>
 
 namespace ripple {
@@ -929,13 +931,14 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 24>
+        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 25>
             types{
                 {{jss::account, ltACCOUNT_ROOT},
                  {jss::amendments, ltAMENDMENTS},
                  {jss::amm, ltAMM},
                  {jss::bridge, ltBRIDGE},
                  {jss::check, ltCHECK},
+                 {jss::credential, ltCREDENTIAL},
                  {jss::deposit_preauth, ltDEPOSIT_PREAUTH},
                  {jss::did, ltDID},
                  {jss::directory, ltDIR_NODE},
