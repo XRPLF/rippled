@@ -188,6 +188,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 0,
                 FreezeHandling::fhIGNORE_FREEZE,
                 WithdrawAll::Yes,
+                mPriorBalance,
                 ctx_.journal);
     else
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
@@ -267,6 +268,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             0,
             FreezeHandling::fhIGNORE_FREEZE,
             WithdrawAll::Yes,
+            mPriorBalance,
             ctx_.journal);
 
     // Because we are doing a two-asset withdrawal,
@@ -284,6 +286,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         0,
         FreezeHandling::fhIGNORE_FREEZE,
         WithdrawAll::No,
+        mPriorBalance,
         ctx_.journal);
 }
 
