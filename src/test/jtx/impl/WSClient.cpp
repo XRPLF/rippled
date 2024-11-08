@@ -173,6 +173,8 @@ public:
         using namespace std::chrono_literals;
 
         {
+            using namespace ripple::test::jtx;
+
             Json::Value jp;
             if (params)
                 jp = params;
@@ -186,7 +188,10 @@ public:
             else
                 jp[jss::command] = cmd;
             auto const s = to_string(jp);
-            ws_.write_some(true, buffer(s));
+            Env::retry(
+                [&]() { ws_.write_some(true, buffer(s)); },
+                "WSClient::invoke write_some",
+                100ms);
         }
 
         auto jv = findMsg(5s, [&](Json::Value const& jval) {
@@ -303,7 +308,18 @@ makeWSClient(
     unsigned rpc_version,
     std::unordered_map<std::string, std::string> const& headers)
 {
-    return std::make_unique<WSClientImpl>(cfg, v2, rpc_version, headers);
+    using namespace std::chrono_literals;
+    using namespace ripple::test::jtx;
+
+    std::unique_ptr<WSClientImpl> ret;
+
+    Env::retry(
+        [&]() {
+            ret = std::make_unique<WSClientImpl>(cfg, v2, rpc_version, headers);
+        },
+        "makeWSClient",
+        250ms);
+    return ret;
 }
 
 }  // namespace test

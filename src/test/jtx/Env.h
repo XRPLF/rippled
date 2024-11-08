@@ -344,6 +344,22 @@ public:
     Json::Value
     rpc(std::string const& cmd, Args&&... args);
 
+    void
+    retry(std::function<void()> cb, std::string const& context);
+
+    static void
+    retry(
+        std::function<void()> cb,
+        std::string const& context,
+        std::chrono::milliseconds delay);
+
+    static void
+    retry(
+        std::function<void()> cb,
+        std::string const& context,
+        beast::unit_test::suite* test,
+        std::chrono::milliseconds delay);
+
     /** Returns the current ledger.
 
         This is a non-modifiable snapshot of the

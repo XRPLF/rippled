@@ -264,8 +264,9 @@ Door<Handler>::reOpen()
     acceptor_.bind(local_address, ec);
     if (ec)
     {
-        JLOG(j_.error()) << "Bind port '" << port_.name
-                         << "' failed:" << ec.message();
+        JLOG(j_.error()) << "Bind port '" << port_.name << "', ("
+                         << local_address << ")"
+                         << "failed:" << ec.message();
         Throw<std::exception>();
     }
 

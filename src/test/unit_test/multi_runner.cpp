@@ -33,7 +33,7 @@ namespace ripple {
 namespace test {
 
 extern void
-incPorts(int times);
+incPorts(int sets, int times);
 
 namespace detail {
 
@@ -511,7 +511,7 @@ multi_runner_child::multi_runner_child(
     , print_log_{!quiet || print_log}
 {
     // incPort twice (2*jobIndex_) because some tests need two envs
-    test::incPorts(2 * job_index_);
+    test::incPorts(2, job_index_);
 
     if (num_jobs_ > 1)
     {

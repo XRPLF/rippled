@@ -17,6 +17,8 @@
 */
 //==============================================================================
 #include <test/jtx/JSONRPCClient.h>
+
+#include <test/jtx/Env.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
@@ -129,10 +131,20 @@ public:
             req.body() = to_string(jr);
         }
         req.prepare_payload();
-        write(stream_, req);
+
+        using namespace std::chrono_literals;
+        using namespace ripple::test::jtx;
+
+        Env::retry(
+            [&]() { write(stream_, req); },
+            "JSONRPCClient::invoke write",
+            10ms);
 
         response<dynamic_body> res;
-        read(stream_, bin_, res);
+        Env::retry(
+            [&]() { read(stream_, bin_, res); },
+            "JSONRPCClient::invoke read",
+            10ms);
 
         Json::Reader jr;
         Json::Value jv;
@@ -154,7 +166,15 @@ public:
 std::unique_ptr<AbstractClient>
 makeJSONRPCClient(Config const& cfg, unsigned rpc_version)
 {
-    return std::make_unique<JSONRPCClient>(cfg, rpc_version);
+    using namespace std::chrono_literals;
+    using namespace ripple::test::jtx;
+
+    std::unique_ptr<JSONRPCClient> ret;
+    Env::retry(
+        [&]() { ret = std::make_unique<JSONRPCClient>(cfg, rpc_version); },
+        "makeJSONRPCClient",
+        250ms);
+    return ret;
 }
 
 }  // namespace test

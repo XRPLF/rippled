@@ -606,6 +606,54 @@ Env::do_rpc(
             ss << arg << ", ";
         }
         test.log << ss.str() << " -> " << retString << std::endl;
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(100ms);
+    } while (true);
+}
+
+void
+Env::retry(std::function<void()> cb, std::string const& context)
+{
+    using namespace std::chrono_literals;
+    retry(cb, context, &test, 100ms);
+}
+
+void
+Env::retry(
+    std::function<void()> cb,
+    std::string const& context,
+    std::chrono::milliseconds delay)
+{
+    retry(cb, context, nullptr, delay);
+}
+
+void
+Env::retry(
+    std::function<void()> cb,
+    std::string const& context,
+    beast::unit_test::suite* test,
+    std::chrono::milliseconds delay)
+{
+    int retries = 3;
+    do
+    {
+        try
+        {
+            return cb();
+        }
+        catch (std::exception const& e)
+        {
+            if (--retries <= 0)
+                throw;
+            if (test)
+                test->log << "Retry exception(" << context << "): " << e.what()
+                          << std::endl;
+            // TODO remove
+            else
+                std::cout << "Retry exception(" << context << "): " << e.what()
+                          << std::endl;
+            std::this_thread::sleep_for(delay);
+        }
     } while (true);
 }
 

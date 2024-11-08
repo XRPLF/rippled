@@ -1284,6 +1284,8 @@ public:
                 auto wscShort = makeWSClient(env.app().config());
                 auto jv = wscShort->invoke("subscribe", request);
                 IdxHashVec vec2;
+                if (!BEAST_EXPECT(jv))
+                    return;
                 if (!BEAST_EXPECT(getTxHash(*wscShort, vec2, count).first))
                     return;
                 if (!BEAST_EXPECT(hashCompare(vec1, vec2, true)))

@@ -26,10 +26,29 @@ namespace ripple {
 namespace test {
 
 int port_base = 8000;
+int port_start = port_base;
+int port_increment = 4;
+int port_reserve = 24;
+int port_max = port_base + port_reserve;
 void
-incPorts(int times)
+incPorts(int sets, int times)
 {
-    port_base += (4 * times);
+    port_increment *= sets;
+    port_base += (port_reserve * times);
+    port_reserve = std::max(port_reserve, port_increment * 2);
+    if (port_base + port_reserve > 65535)
+    {
+        // This should only happen if the runner uses
+        // (65535 - 8100) / 25 ~= 2297 threads.
+        // If the runner uses so many jobs that it overflows, wrap
+        // around and hope for the best. Even then, it won't collide
+        // unless the runner uses (65535 - 1024) / 25 ~= 2580 threads.
+        // If this ever becomes an issue, just decrease the
+        // port_reserve or something.
+        port_base = (port_base % 65535) + 1024;
+    }
+    port_start = port_base;
+    port_max = port_base + port_reserve;
 }
 
 std::atomic<bool> envUseIPv4{false};
@@ -37,6 +56,9 @@ std::atomic<bool> envUseIPv4{false};
 void
 setupConfigForUnitTests(Config& cfg)
 {
+    port_base += port_increment;
+    if (port_base + port_increment >= port_max)
+        port_base = port_start;
     std::string const port_peer = std::to_string(port_base);
     std::string port_rpc = std::to_string(port_base + 1);
     std::string port_ws = std::to_string(port_base + 2);
