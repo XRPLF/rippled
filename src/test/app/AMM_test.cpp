@@ -7065,6 +7065,55 @@ private:
     }
 
     void
+    testFixReserveCheckOnWithdrawal(FeatureBitset features)
+    {
+        testcase("Fix Reserve Check On Withdrawal");
+        using namespace jtx;
+
+        auto const err = features[fixAMMv1_2] ? ter(tecINSUFFICIENT_RESERVE)
+                                              : ter(tesSUCCESS);
+
+        auto test = [&](auto&& cb) {
+            Env env(*this, features);
+            auto const starting_xrp =
+                reserve(env, 2) + env.current()->fees().base * 5;
+            env.fund(starting_xrp, gw);
+            env.fund(starting_xrp, alice);
+            env.trust(USD(2'000), alice);
+            env.close();
+            env(pay(gw, alice, USD(2'000)));
+            env.close();
+            AMM amm(env, gw, EUR(1'000), USD(1'000));
+            amm.deposit(alice, USD(1));
+            cb(amm);
+        };
+
+        // Equal withdraw
+        test([&](AMM& amm) { amm.withdrawAll(alice, std::nullopt, err); });
+
+        // Equal withdraw with a limit
+        test([&](AMM& amm) {
+            amm.withdraw(WithdrawArg{
+                .account = alice,
+                .asset1Out = EUR(0.1),
+                .asset2Out = USD(0.1),
+                .err = err});
+            amm.withdraw(WithdrawArg{
+                .account = alice,
+                .asset1Out = USD(0.1),
+                .asset2Out = EUR(0.1),
+                .err = err});
+        });
+
+        // Single withdraw
+        test([&](AMM& amm) {
+            amm.withdraw(WithdrawArg{
+                .account = alice, .asset1Out = EUR(0.1), .err = err});
+            amm.withdraw(WithdrawArg{.account = alice, .asset1Out = USD(0.1)});
+        });
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{jtx::supported_amendments()};
@@ -7117,6 +7166,8 @@ private:
         testAMMDepositWithFrozenAssets(all);
         testAMMDepositWithFrozenAssets(all - featureAMMClawback);
         testAMMDepositWithFrozenAssets(all - fixAMMv1_1 - featureAMMClawback);
+        testFixReserveCheckOnWithdrawal(all);
+        testFixReserveCheckOnWithdrawal(all - fixAMMv1_2);
     }
 };
 

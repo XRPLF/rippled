@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
@@ -226,9 +227,9 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     if (balance < feePaid)
     {
-        JLOG(ctx.j.trace())
-            << "Insufficient balance:" << " balance=" << to_string(balance)
-            << " paid=" << to_string(feePaid);
+        JLOG(ctx.j.trace()) << "Insufficient balance:"
+                            << " balance=" << to_string(balance)
+                            << " paid=" << to_string(feePaid);
 
         if ((balance > beast::zero) && !ctx.view.open())
         {
@@ -761,6 +762,19 @@ removeExpiredNFTokenOffers(
 }
 
 static void
+removeExpiredCredentials(
+    ApplyView& view,
+    std::vector<uint256> const& creds,
+    beast::Journal viewJ)
+{
+    for (auto const& index : creds)
+    {
+        if (auto const sle = view.peek(keylet::credential(index)))
+            credentials::deleteSLE(view, sle, viewJ);
+    }
+}
+
+static void
 removeDeletedTrustLines(
     ApplyView& view,
     std::vector<uint256> const& trustLines,
@@ -907,19 +921,23 @@ Transactor::operator()()
         std::vector<uint256> removedOffers;
         std::vector<uint256> removedTrustLines;
         std::vector<uint256> expiredNFTokenOffers;
+        std::vector<uint256> expiredCredentials;
 
         bool const doOffers =
             ((result == tecOVERSIZE) || (result == tecKILLED));
         bool const doLines = (result == tecINCOMPLETE);
         bool const doNFTokenOffers = (result == tecEXPIRED);
-        if (doOffers || doLines || doNFTokenOffers)
+        bool const doCredentials = (result == tecEXPIRED);
+        if (doOffers || doLines || doNFTokenOffers || doCredentials)
         {
-            ctx_.visit([&doOffers,
+            ctx_.visit([doOffers,
                         &removedOffers,
-                        &doLines,
+                        doLines,
                         &removedTrustLines,
-                        &doNFTokenOffers,
-                        &expiredNFTokenOffers](
+                        doNFTokenOffers,
+                        &expiredNFTokenOffers,
+                        doCredentials,
+                        &expiredCredentials](
                            uint256 const& index,
                            bool isDelete,
                            std::shared_ptr<SLE const> const& before,
@@ -946,6 +964,10 @@ Transactor::operator()()
                     if (doNFTokenOffers && before && after &&
                         (before->getType() == ltNFTOKEN_OFFER))
                         expiredNFTokenOffers.push_back(index);
+
+                    if (doCredentials && before && after &&
+                        (before->getType() == ltCREDENTIAL))
+                        expiredCredentials.push_back(index);
                 }
             });
         }
@@ -971,6 +993,10 @@ Transactor::operator()()
         if (result == tecINCOMPLETE)
             removeDeletedTrustLines(
                 view(), removedTrustLines, ctx_.app.journal("View"));
+
+        if (result == tecEXPIRED)
+            removeExpiredCredentials(
+                view(), expiredCredentials, ctx_.app.journal("View"));
 
         applied = isTecClaim(result);
     }
