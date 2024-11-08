@@ -25,9 +25,11 @@
 #include <xrpld/perflog/PerfLog.h>
 #include <xrpl/basics/DecayingSample.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/container/aged_map.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/jss.h>
+
 #include <exception>
 #include <memory>
 #include <mutex>
@@ -139,7 +141,7 @@ public:
             if (pendingAcquires_.contains(hash))
                 return;
             pendingAcquires_.insert(hash);
-            lock.unlock();
+            scope_unlock unlock(lock);
             acquire(hash, seq, reason);
         }
         catch (std::exception const& e)
@@ -154,7 +156,6 @@ public:
                 << "Unknown exception thrown for acquiring new inbound ledger "
                 << hash;
         }
-        lock.lock();
         pendingAcquires_.erase(hash);
     }
 
