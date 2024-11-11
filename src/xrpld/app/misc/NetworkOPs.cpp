@@ -1143,7 +1143,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
         view->rules().enabled(featureBatch) && iTrans->isFlag(tfInnerBatchTxn))
     {
         JLOG(m_journal.error())
-            << "Submitted transaction invalid: BatchTxn present.";
+            << "Submitted transaction invalid: tfInnerBatchTxn flag present.";
         return;
     }
 

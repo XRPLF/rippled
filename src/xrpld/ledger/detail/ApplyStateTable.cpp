@@ -115,7 +115,7 @@ ApplyStateTable::apply(
     STTx const& tx,
     TER ter,
     std::optional<STAmount> const& deliver,
-    std::vector<STObject> const& batchExecution,
+    std::vector<STObject> const& batchExecutions,
     std::optional<STObject> const& batchPrevAcctRootFields,
     beast::Journal j)
 {
@@ -130,10 +130,11 @@ ApplyStateTable::apply(
         if (deliver)
             meta.setDeliveredAmount(*deliver);
 
-        if (!batchExecution.empty())
+        if (!batchExecutions.empty())
         {
+            assert(isBatch);
             auto array = STArray{sfBatchExecutions};
-            for (auto element : batchExecution)
+            for (auto const& element : batchExecutions)
                 array.push_back(element);
             meta.setBatchExecutions(array);
         }

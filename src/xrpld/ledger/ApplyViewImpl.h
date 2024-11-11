@@ -84,23 +84,23 @@ public:
     }
 
     void
-    addBatchExecutionMetaData(STObject&& batchExecution)
+    addBatchExecution(STObject&& batchExecution)
     {
-        batchExecution_.push_back(std::move(batchExecution));
+        batchExecutions_.push_back(std::move(batchExecution));
     }
 
     void
-    setBatchMetaData(std::vector<STObject>&& batch)
+    setBatchExecutions(std::vector<STObject>&& batchExecutions)
     {
-        batchExecution_ = std::move(batch);
+        batchExecutions_ = std::move(batchExecutions);
     }
 
     void
     copyBatchMetaData(std::vector<STObject>& execution)
     {
         std::copy(
-            batchExecution_.begin(),
-            batchExecution_.end(),
+            batchExecutions_.begin(),
+            batchExecutions_.end(),
             std::back_inserter(execution));
     }
 
@@ -122,7 +122,7 @@ public:
 
 private:
     std::optional<STAmount> deliver_;
-    std::vector<STObject> batchExecution_;
+    std::vector<STObject> batchExecutions_;
     std::optional<STObject> batchPrevAcctRootFields_;
 };
 

@@ -255,7 +255,7 @@ Batch::doApply()
         meta.setFieldU16(sfTransactionType, stx.getTxnType());
         if (ter == tesSUCCESS || isTecClaim(ter))
             meta.setFieldH256(sfTransactionHash, stx.getTransactionID());
-        avi.addBatchExecutionMetaData(std::move(meta));
+        avi.addBatchExecution(std::move(meta));
 
         if (ter != tesSUCCESS)
         {

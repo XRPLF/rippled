@@ -869,7 +869,7 @@ Transactor::reset(XRPAmount fee)
     avi.copyBatchMetaData(executions);
     ctx_.discard();
     ApplyViewImpl& avi2 = dynamic_cast<ApplyViewImpl&>(ctx_.view());
-    avi2.setBatchMetaData(std::move(executions));
+    avi2.setBatchExecutions(std::move(executions));
 
     auto const txnAcct =
         view().peek(keylet::account(ctx_.tx.getAccountID(sfAccount)));

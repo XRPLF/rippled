@@ -217,7 +217,7 @@ constexpr std::uint32_t tfAMMClawbackMask = ~(tfUniversal | tfClawTwoAssets);
 constexpr std::uint32_t tfClearAccountCreateAmount     = 0x00010000;
 constexpr std::uint32_t tfBridgeModifyMask = ~(tfUniversalV2 | tfClearAccountCreateAmount);
 
-// Batch Flags
+// Batch Flags:
 constexpr std::uint32_t tfAllOrNothing                 = 0x00010000;
 constexpr std::uint32_t tfOnlyOne                      = 0x00020000;
 constexpr std::uint32_t tfUntilFailure                 = 0x00040000;

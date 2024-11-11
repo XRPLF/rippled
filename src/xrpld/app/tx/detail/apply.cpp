@@ -44,7 +44,7 @@ checkValidity(
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);
 
-    // Validate Inner BatchTxn
+    // Validate tfInnerBatchTxn
     if (rules.enabled(featureBatch) && tx.isFlag(tfInnerBatchTxn))
     {
         // batched transactions do not contain signatures

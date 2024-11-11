@@ -32,7 +32,7 @@ void
 ApplyViewImpl::apply(OpenView& to, STTx const& tx, TER ter, beast::Journal j)
 {
     items_.apply(
-        to, tx, ter, deliver_, batchExecution_, batchPrevAcctRootFields_, j);
+        to, tx, ter, deliver_, batchExecutions_, batchPrevAcctRootFields_, j);
 }
 
 std::size_t

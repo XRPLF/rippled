@@ -76,7 +76,7 @@ class Batch_test : public beast::unit_test::suite
 
     void
     validateBatchMeta(
-        Json::Value meta,
+        Json::Value const& meta,
         STAmount const& balance,
         std::uint32_t const& sequence,
         std::optional<std::uint32_t> ownerCount = std::nullopt,
@@ -390,7 +390,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temMALFORMED: Batch: txn hash does not match TxIDs hash.
+        // temMALFORMED: Batch: order of inner transactions does not match TxIDs.
         {
             auto const batchFee = ((1 + 2) * feeDrops) + feeDrops * 2;
             Json::Value jv =
@@ -449,7 +449,7 @@ class Batch_test : public beast::unit_test::suite
             auto const seq = env.seq(alice);
             auto const batchFee = ((1 + 2) * feeDrops) + feeDrops * 2;
             env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
-                batch::add(pay(alice, bob, XRP(10)), seq + 0),
+                batch::add(pay(alice, bob, XRP(10)), seq + 1),
                 batch::add(pay(bob, alice, XRP(5)), env.seq(bob)),
                 batch::sig(carol),
                 ter(temBAD_SIGNER));
@@ -461,7 +461,7 @@ class Batch_test : public beast::unit_test::suite
             auto const seq = env.seq(alice);
             auto const batchFee = ((1 + 2) * feeDrops) + feeDrops * 2;
             env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
-                batch::add(pay(alice, bob, XRP(10)), seq + 0),
+                batch::add(pay(alice, bob, XRP(10)), seq + 1),
                 batch::add(pay(bob, alice, XRP(5)), env.seq(bob)),
                 batch::sig(bob, carol),
                 ter(temBAD_SIGNER));
