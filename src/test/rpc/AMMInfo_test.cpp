@@ -317,12 +317,44 @@ public:
     }
 
     void
+    testInvalidAmmField()
+    {
+        using namespace jtx;
+        testcase("Invalid amm field");
+
+        Env env{*this};
+
+        Account const gw("gw");
+        env.fund(XRP(10000), gw);
+
+        Json::Value jv;
+        jv[jss::TransactionType] = jss::AMMCreate;
+        jv[jss::Account] = gw.human();
+        jv[jss::TradingFee] = "0";
+        jv[jss::Amount] = "10000000";
+        jv[jss::Amount2] =
+            AnyAmount(gw["USD"](10)).value.getJson(JsonOptions::none);
+
+        env(jv, fee(drops(env.current()->fees().increment)));
+        env.close();
+
+        Json::Value jvParams;
+        jvParams[jss::ledger_index] = jss::validated;
+        jvParams[jss::amm_account] = gw.human();
+        auto const resp = env.rpc("json", "amm_info", to_string(jvParams));
+        BEAST_EXPECT(
+            resp.isMember("result") && resp["result"].isMember("error") &&
+            resp["result"]["error"] == "actNotFound");
+    }
+
+    void
     run() override
     {
         testErrors();
         testSimpleRpc();
         testVoteAndBid();
         testFreeze();
+        testInvalidAmmField();
     }
 };
 
