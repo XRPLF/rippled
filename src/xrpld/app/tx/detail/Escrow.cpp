@@ -19,6 +19,7 @@
 
 #include <xrpld/app/tx/detail/Escrow.h>
 
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/conditions/Condition.h>
 #include <xrpld/conditions/Fulfillment.h>
@@ -309,6 +310,10 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
+        !ctx.rules.enabled(featureCredentials))
+        return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -347,6 +352,9 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         }
     }
 
+    if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
+        return err;
+
     return tesSUCCESS;
 }
 
@@ -361,6 +369,19 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     }
 
     return Transactor::calculateBaseFee(view, tx) + extraFee;
+}
+
+TER
+EscrowFinish::preclaim(PreclaimContext const& ctx)
+{
+    if (!ctx.view.rules().enabled(featureCredentials))
+        return Transactor::preclaim(ctx);
+
+    if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
+        !isTesSuccess(err))
+        return err;
+
+    return tesSUCCESS;
 }
 
 TER
@@ -456,19 +477,9 @@ EscrowFinish::doApply()
 
     if (ctx_.view().rules().enabled(featureDepositAuth))
     {
-        // Is EscrowFinished authorized?
-        if (sled->getFlags() & lsfDepositAuth)
-        {
-            // A destination account that requires authorization has two
-            // ways to get an EscrowFinished into the account:
-            //  1. If Account == Destination, or
-            //  2. If Account is deposit preauthorized by destination.
-            if (account_ != destID)
-            {
-                if (!view().exists(keylet::depositPreauth(destID, account_)))
-                    return tecNO_PERMISSION;
-            }
-        }
+        if (auto err = verifyDepositPreauth(ctx_, account_, destID, sled);
+            !isTesSuccess(err))
+            return err;
     }
 
     AccountID const account = (*slep)[sfAccount];

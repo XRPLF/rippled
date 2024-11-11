@@ -342,11 +342,12 @@ AccountRootsNotDeleted::finalize(
         return false;
     }
 
-    // A successful AMMWithdraw MAY delete one account root
+    // A successful AMMWithdraw/AMMClawback MAY delete one account root
     // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
     // deletes the AMM account, accountsDeleted_ is set if it is deleted.
-    if (tx.getTxnType() == ttAMM_WITHDRAW && result == tesSUCCESS &&
-        accountsDeleted_ == 1)
+    if ((tx.getTxnType() == ttAMM_WITHDRAW ||
+         tx.getTxnType() == ttAMM_CLAWBACK) &&
+        result == tesSUCCESS && accountsDeleted_ == 1)
         return true;
 
     if (accountsDeleted_ == 0)
@@ -480,6 +481,7 @@ LedgerEntryTypesMatch::visitEntry(
             case ltORACLE:
             case ltMPTOKEN_ISSUANCE:
             case ltMPTOKEN:
+            case ltCREDENTIAL:
                 break;
             default:
                 invalidTypeAdded_ = true;
