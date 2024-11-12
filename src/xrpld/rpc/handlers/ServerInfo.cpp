@@ -235,19 +235,6 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         defs_[jss::FIELDS][i++] = a;
     }
 
-    {
-        Json::Value a = Json::arrayValue;
-        a[0U] = "index";
-        Json::Value v = Json::objectValue;
-        v[jss::nth] = 258;
-        v[jss::isVLEncoded] = false;
-        v[jss::isSerialized] = false;
-        v[jss::isSigningField] = false;
-        v[jss::type] = "Hash256";
-        a[1U] = v;
-        defs_[jss::FIELDS][i++] = a;
-    }
-
     for (auto const& [code, f] : ripple::SField::getKnownCodeToField())
     {
         if (f->fieldName == "")

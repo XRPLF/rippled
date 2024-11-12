@@ -72,11 +72,10 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 // SFields which, for historical reasons, do not follow naming conventions.
 SField const sfInvalid(access, -1);
 SField const sfGeneric(access, 0);
-SField const sfHash(
-    access,
-    STI_UINT256,
-    257,
-    "hash");  // Not used anywhere, but STTx tests fail if it's removed
+// The following two fields aren't used anywhere, but they break tests/have
+// downstream effects.
+SField const sfHash(access, STI_UINT256, 257, "hash");
+SField const sfIndex(access, STI_UINT256, 258, "index");
 
 #include <xrpl/protocol/detail/sfields.macro>
 
