@@ -198,6 +198,7 @@ class Vault_test : public beast::unit_test::suite
         SUBCASE("MPT cannot transfer")
         {
             MPTTester mptt{env, issuer, {.fund = false}};
+            // Locked because that is the default flag.
             mptt.create();
             Asset asset = mptt.issuanceID();
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});

@@ -82,14 +82,19 @@ VaultDeposit::doApply()
     if (vault->getFlags() & lsfVaultPrivate)
         ;
 
-    // TODO: transfer amount from account_ to vault.PseudoAccount.
-    // - handles balance of account_ and vault.PseudoAccount
-    // TODO: increase vault.AssetTotal
-    // TODO: increase vault.AssetAvailable
-    // TODO: calculate shares to give account_.
-    // TODO: grant shares from issuance to account_.
-    // - handles increasing account_.balance(vault.Asset)
-    // - handles increasing mptIssuance.OutstandingAmount
+    auto const& vaultAccount = vault->at(sfAccount);
+    // Transfer amount from sender to vault.
+    if (auto ter = accountSend(view(), account_, vaultAccount, amount, j_))
+        return ter;
+
+    vault->at(sfAssetTotal) += amount;
+    vault->at(sfAssetAvailable) += amount;
+
+    auto shares = assetsToSharesDeposit(view(), vault, amount);
+    if (!shares)
+        return shares.error();
+    if (auto ter = accountSend(view(), vaultAccount, account_, *shares, j_))
+        return ter;
     // TODO: copy mptIssuance.OutstandingAmount to vault.ShareTotal?
 
     return tesSUCCESS;
