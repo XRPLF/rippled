@@ -227,9 +227,9 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     if (balance < feePaid)
     {
-        JLOG(ctx.j.trace()) << "Insufficient balance:"
-                            << " balance=" << to_string(balance)
-                            << " paid=" << to_string(feePaid);
+        JLOG(ctx.j.trace())
+            << "Insufficient balance:" << " balance=" << to_string(balance)
+            << " paid=" << to_string(feePaid);
 
         if ((balance > beast::zero) && !ctx.view.open())
         {
@@ -1051,7 +1051,7 @@ Transactor::operator()()
         ctx_.apply(result);
     }
 
-    JLOG(j_.trace()) << (applied ? "applied" : "not applied")
+    JLOG(j_.trace()) << (applied ? "applied " : "not applied ")
                      << transToken(result);
 
     return {result, applied};

@@ -97,6 +97,8 @@ EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
 }
 
+// TODO: add calculateBaseFee
+
 NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
 {
@@ -152,6 +154,17 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         if (condition->type != Type::preimageSha256 &&
             !ctx.rules.enabled(featureCryptoConditionsSuite))
             return temDISABLED;
+    }
+
+    if (ctx.tx.isFieldPresent(sfFinishFunction))
+    {
+        auto const code = ctx.tx.getFieldVL(sfFinishFunction);
+        if (code.size() == 0 /* && code.size() > whateverTheMaxIs */)
+        {
+            JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad size";
+            return temMALFORMED;
+        }
+        // TODO: add check to ensure this is valid WASM code
     }
 
     return preflight2(ctx);
@@ -254,6 +267,7 @@ EscrowCreate::doApply()
     (*slep)[~sfCancelAfter] = ctx_.tx[~sfCancelAfter];
     (*slep)[~sfFinishAfter] = ctx_.tx[~sfFinishAfter];
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
+    (*slep)[~sfFinishFunction] = ctx_.tx[~sfFinishFunction];
 
     ctx_.view().insert(slep);
 
@@ -480,6 +494,12 @@ EscrowFinish::doApply()
         if (auto err = verifyDepositPreauth(ctx_, account_, destID, sled);
             !isTesSuccess(err))
             return err;
+    }
+
+    // Execute extension
+    if ((*slep)[~sfFinishFunction])
+    {
+        // TODO: WASM execution
     }
 
     AccountID const account = (*slep)[sfAccount];
