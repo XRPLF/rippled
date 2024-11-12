@@ -347,8 +347,8 @@ public:
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);
 
-        auto const result = env.rpc(
-            env.expectInternalRPCError, "ledger_request", "1")[jss::result];
+        auto const result =
+            env.rpc(env.rejectNever, "ledger_request", "1")[jss::result];
         // The current HTTP/S ServerHandler returns an HTTP 403 error code here
         // rather than a noPermission JSON error.  The JSONRPCClient just eats
         // that error and returns an null result.

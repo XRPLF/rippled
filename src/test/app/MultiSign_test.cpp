@@ -644,7 +644,7 @@ public:
             Json::Value jv_submit;
             jv_submit[jss::tx_json] = jrr[jss::tx_json];
             jrr = env.rpc(
-                env.expectInternalRPCError,
+                env.rejectNever,
                 "json",
                 "submit_multisigned",
                 to_string(jv_submit))[jss::result];

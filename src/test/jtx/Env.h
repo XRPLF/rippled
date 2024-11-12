@@ -287,22 +287,31 @@ public:
         return *bundle_.client;
     }
 
+    /// Given the return value of an RPC call, returns true if it is acceptable.
+    using RpcCallback = std::function<bool(Json::Value const&)>;
+    /// Used as the default callback - any result is acceptable, except an
+    /// internal error, which usually indicates a timeout.
+    const RpcCallback rejectInternalError = [](Json::Value const& jr) {
+        auto const parsedResult = parseResult(jr);
+        return parsedResult.rpcCode != rpcINTERNAL;
+    };
+    /// Used as the callback when any result is acceptable, particularly when an
+    /// internal error is expected.
+    const RpcCallback rejectNever = [](Json::Value const&) { return true; };
+    /// Returns the appropriate callback when the decision of what is acceptible
+    /// is made at run time. For example, when conditional on API version
+    /// number.
+    RpcCallback
+    rejectInternalErrorIf(bool shouldFail)
+    {
+        return shouldFail ? rejectNever : rejectInternalError;
+    }
+
     /** Execute an RPC command.
 
         The command is examined and used to build
         the correct JSON as per the arguments.
     */
-    using rpcCallback = std::function<bool(Json::Value const&)>;
-    const rpcCallback useDefaultCallback{};
-    const rpcCallback expectInternalRPCError = [](Json::Value const&) {
-        return true;
-    };
-    rpcCallback
-    getInternalFailureCallback(bool shouldFail)
-    {
-        return shouldFail ? expectInternalRPCError : useDefaultCallback;
-    }
-
     template <class... Args>
     Json::Value
     rpc(unsigned apiVersion,
@@ -316,7 +325,7 @@ public:
 
     template <class... Args>
     Json::Value
-    rpc(rpcCallback cb,
+    rpc(RpcCallback cb,
         std::unordered_map<std::string, std::string> const& headers,
         std::string const& cmd,
         Args&&... args);
@@ -329,7 +338,7 @@ public:
 
     template <class... Args>
     Json::Value
-    rpc(rpcCallback cb, std::string const& cmd, Args&&... args);
+    rpc(RpcCallback cb, std::string const& cmd, Args&&... args);
 
     template <class... Args>
     Json::Value
@@ -533,10 +542,13 @@ public:
         jtx::required(args...)(*this);
     }
 
-    /** Gets the TER result and `didApply` flag from a RPC Json result object.
+    /** Parses the Json result of an RPC request.
+     *
+     * Includes RPC result status, transaction engine result (TER) if
+     * appropriate, and error information, if any.
      */
     static ParsedResult
-    parseResult(Json::Value const& jr, bool checkTER);
+    parseResult(Json::Value const& jr);
 
     /** Submit an existing JTx.
         This calls postconditions.
@@ -718,7 +730,7 @@ protected:
 
     Json::Value
     do_rpc(
-        rpcCallback cb,
+        RpcCallback cb,
         unsigned apiVersion,
         std::vector<std::string> const& args,
         std::unordered_map<std::string, std::string> const& headers = {});
@@ -769,7 +781,7 @@ Env::rpc(
     Args&&... args)
 {
     return do_rpc(
-        useDefaultCallback,
+        rejectInternalError,
         apiVersion,
         std::vector<std::string>{cmd, std::forward<Args>(args)...},
         headers);
@@ -789,7 +801,7 @@ Env::rpc(unsigned apiVersion, std::string const& cmd, Args&&... args)
 template <class... Args>
 Json::Value
 Env::rpc(
-    rpcCallback cb,
+    RpcCallback cb,
     std::unordered_map<std::string, std::string> const& headers,
     std::string const& cmd,
     Args&&... args)
@@ -808,12 +820,12 @@ Env::rpc(
     std::string const& cmd,
     Args&&... args)
 {
-    return rpc(useDefaultCallback, headers, cmd, std::forward<Args>(args)...);
+    return rpc(rejectInternalError, headers, cmd, std::forward<Args>(args)...);
 }
 
 template <class... Args>
 Json::Value
-Env::rpc(rpcCallback cb, std::string const& cmd, Args&&... args)
+Env::rpc(RpcCallback cb, std::string const& cmd, Args&&... args)
 {
     return rpc(
         cb,

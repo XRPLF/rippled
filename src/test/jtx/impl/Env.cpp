@@ -273,7 +273,7 @@ Env::trust(STAmount const& amount, Account const& account)
 }
 
 Env::ParsedResult
-Env::parseResult(Json::Value const& jr, bool checkTER)
+Env::parseResult(Json::Value const& jr)
 {
     auto error = [](ParsedResult& parsed, Json::Value const& object) {
         // Use an error code that is not used anywhere in the transaction
@@ -296,12 +296,16 @@ Env::parseResult(Json::Value const& jr, bool checkTER)
     if (jr.isObject() && jr.isMember(jss::result))
     {
         auto const& result = jr[jss::result];
-        if (checkTER && result.isMember(jss::engine_result_code))
+        if (result.isMember(jss::engine_result_code))
         {
             parsed.ter = TER::fromInt(result[jss::engine_result_code].asInt());
             parsed.rpcCode.emplace(rpcSUCCESS);
         }
-        else if (!checkTER && !result.isMember(jss::error))
+        else if (
+            !result.isMember(jss::error) && !result.isMember(jss::error_code) &&
+            !result.isMember(jss::error_message) &&
+            !result.isMember(jss::error_exception))
+            // parsed.ter remains unseated
             parsed.rpcCode.emplace(rpcSUCCESS);
         else
             error(parsed, result);
@@ -326,7 +330,7 @@ Env::submit(JTx const& jt)
             Serializer s;
             jt.stx->add(s);
             auto const cb = [&](Json::Value const& jr) {
-                parsedResult = parseResult(jr, true);
+                parsedResult = parseResult(jr);
                 test.expect(parsedResult.ter, "ter uninitialized!");
                 ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
                 return (
@@ -380,7 +384,7 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
     if (!txid_.parseHex(jr[jss::result][jss::tx_json][jss::hash].asString()))
         txid_.zero();
 
-    ParsedResult const parsedResult = parseResult(jr, true);
+    ParsedResult const parsedResult = parseResult(jr);
     test.expect(parsedResult.ter, "ter uninitialized!");
     ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
 
@@ -563,21 +567,15 @@ Env::ust(JTx const& jt)
 
 Json::Value
 Env::do_rpc(
-    rpcCallback cb,
+    RpcCallback cb,
     unsigned apiVersion,
     std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)
 {
     // We shouldn't need to retry, but it fixes the test on macOS for
     // the moment.
-    if (!cb)
-    {
-        static auto const defaultCallback = [](Json::Value const& jr) {
-            auto const parsedResult = parseResult(jr, false);
-            return parsedResult.rpcCode != rpcINTERNAL;
-        };
-        cb = defaultCallback;
-    }
+    if (!test.BEAST_EXPECT(cb))
+        cb = rejectInternalError;
     int retries = 3;
     do
     {
