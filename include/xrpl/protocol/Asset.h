@@ -20,8 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_ASSET_H_INCLUDED
 #define RIPPLE_PROTOCOL_ASSET_H_INCLUDED
 
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 
@@ -94,7 +94,8 @@ public:
     void
     setJson(Json::Value& jv) const;
 
-    STAmount operator() (Number const&) const;
+    STAmount
+    operator()(Number const&) const;
 
     bool
     native() const

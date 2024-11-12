@@ -155,8 +155,9 @@ public:
 
     template <AssetType A>
     STAmount(A const& asset, Number const& number)
-    : STAmount(asset, number.mantissa(), number.exponent())
-    {}
+        : STAmount(asset, number.mantissa(), number.exponent())
+    {
+    }
 
     // Legacy support for new-style amounts
     STAmount(IOUAmount const& amount, Issue const& issue);

@@ -206,23 +206,61 @@ class Vault_test : public beast::unit_test::suite
             env(tx, ter(tecLOCKED));
         }
 
-        SUBCASE("transfer IOU")
+        SUBCASE("transfer XRP")
         {
-            Asset asset = issuer["IOU"];
+            // Construct asset.
+            Asset asset{xrpIssue()};
+            // Depositor already holds asset.
+            // Create vault.
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env.trust(asset(1000), depositor);
-            env(pay(issuer, depositor, asset(1000)));
             env(tx);
             env.close();
 
             {
-                auto tx = vault.deposit({
-                        .depositor = depositor,
-                        .id = keylet.key,
-                        .amount = asset(123)});
+                auto tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(123)});
                 env(tx);
                 env.close();
             }
+        }
+
+        SUBCASE("transfer IOU")
+        {
+            // Construct asset.
+            Asset asset = issuer["IOU"];
+            // Fund depositor with asset.
+            env.trust(asset(1000), depositor);
+            env(pay(issuer, depositor, asset(1000)));
+            // Create vault.
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            {
+                auto tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(123)});
+                env(tx);
+                env.close();
+            }
+        }
+
+        SUBCASE("transfer MPT")
+        {
+            // Construct asset.
+            MPTTester mptt{env, issuer, {.fund = false}};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            Asset asset = mptt.issuanceID();
+            // Fund depositor with asset.
+            mptt.authorize({ .account = depositor });
+            env(pay(issuer, depositor, asset(1000)));
+            // Create vault.
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
         }
 
         // TODO: VaultSet (update) succeed

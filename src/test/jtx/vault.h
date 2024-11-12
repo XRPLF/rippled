@@ -80,6 +80,15 @@ struct Vault
     Json::Value
     deposit(DepositArgs const& args);
 
+    struct WithdrawArgs
+    {
+        Account depositor;
+        uint256 id;
+        STAmount amount;
+    };
+
+    Json::Value
+    withdraw(WithdrawArgs const& args);
 };
 
 }  // namespace jtx
