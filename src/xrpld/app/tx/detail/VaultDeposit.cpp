@@ -74,8 +74,11 @@ VaultDeposit::doApply()
         return tecINSUFFICIENT_FUNDS;
     }
 
-    Number assetTotalNew = vault->at(sfAssetTotal) + amount;
-    if (assetTotalNew > vault->at(sfAssetMaximum))
+    vault->at(sfAssetTotal) += amount;
+    vault->at(sfAssetAvailable) += amount;
+
+    auto maximum = *vault->at(sfAssetMaximum);
+    if (maximum != 0 && *vault->at(sfAssetTotal) > maximum)
         return tecLIMIT_EXCEEDED;
 
     // TODO: Check credentials.
@@ -86,9 +89,6 @@ VaultDeposit::doApply()
     // Transfer amount from sender to vault.
     if (auto ter = accountSend(view(), account_, vaultAccount, amount, j_))
         return ter;
-
-    vault->at(sfAssetTotal) += amount;
-    vault->at(sfAssetAvailable) += amount;
 
     auto shares = assetsToSharesDeposit(view(), vault, amount);
     if (!shares)

@@ -21,9 +21,10 @@
 #define RIPPLE_TEST_JTX_VAULT_H_INCLUDED
 
 #include <test/jtx/Account.h>
-#include <xrpl/json/json_value.h>
+#include <test/jtx/amount.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Keylet.h>
 
@@ -68,6 +69,17 @@ struct Vault
 
     Json::Value
     del(DeleteArgs const& args);
+
+    struct DepositArgs
+    {
+        Account depositor;
+        uint256 id;
+        STAmount amount;
+    };
+
+    Json::Value
+    deposit(DepositArgs const& args);
+
 };
 
 }  // namespace jtx

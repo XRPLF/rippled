@@ -21,7 +21,6 @@
 #define RIPPLE_TEST_JTX_AMOUNT_H_INCLUDED
 
 #include <test/jtx/Account.h>
-#include <test/jtx/amount.h>
 #include <test/jtx/tags.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/FeeUnits.h>

@@ -118,6 +118,7 @@ transResults()
         MAKE_ERROR(tecLOCKED,                        "Fund is locked."),
         MAKE_ERROR(tecBAD_CREDENTIALS,               "Bad credentials."),
         MAKE_ERROR(tecWRONG_ASSET,                   "Wrong asset given."),
+        MAKE_ERROR(tecLIMIT_EXCEEDED,                "Limit exceeded."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),

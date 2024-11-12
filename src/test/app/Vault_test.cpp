@@ -37,7 +37,8 @@ class Vault_test : public beast::unit_test::suite
 
         Account issuer{"issuer"};
         Account owner{"owner"};
-        env.fund(XRP(1000), issuer, owner);
+        Account depositor{"depositor"};
+        env.fund(XRP(1000), issuer, owner, depositor);
         env.close();
         auto vault = env.vault();
 
@@ -203,6 +204,25 @@ class Vault_test : public beast::unit_test::suite
             Asset asset = mptt.issuanceID();
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx, ter(tecLOCKED));
+        }
+
+        SUBCASE("transfer IOU")
+        {
+            Asset asset = issuer["IOU"];
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env.trust(asset(1000), depositor);
+            env(pay(issuer, depositor, asset(1000)));
+            env(tx);
+            env.close();
+
+            {
+                auto tx = vault.deposit({
+                        .depositor = depositor,
+                        .id = keylet.key,
+                        .amount = asset(123)});
+                env(tx);
+                env.close();
+            }
         }
 
         // TODO: VaultSet (update) succeed

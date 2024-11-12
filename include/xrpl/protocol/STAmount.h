@@ -153,6 +153,11 @@ public:
     template <AssetType A>
     STAmount(A const& asset, int mantissa, int exponent = 0);
 
+    template <AssetType A>
+    STAmount(A const& asset, Number const& number)
+    : STAmount(asset, number.mantissa(), number.exponent())
+    {}
+
     // Legacy support for new-style amounts
     STAmount(IOUAmount const& amount, Issue const& issue);
     STAmount(XRPAmount const& amount);

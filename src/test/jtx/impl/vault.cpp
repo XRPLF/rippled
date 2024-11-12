@@ -64,6 +64,17 @@ Vault::del(DeleteArgs const& args)
     return jv;
 }
 
+Json::Value
+Vault::deposit(DepositArgs const& args)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::VaultDeposit;
+    jv[jss::Account] = args.depositor.human();
+    jv[jss::VaultID] = to_string(args.id);
+    jv[jss::Amount] = to_json(args.amount);
+    return jv;
+}
+
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

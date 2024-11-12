@@ -43,6 +43,11 @@ Asset::setJson(Json::Value& jv) const
     std::visit([&](auto&& issue) { issue.setJson(jv); }, issue_);
 }
 
+STAmount Asset::operator() (Number const& number) const
+{
+    return STAmount{*this, number};
+}
+
 std::string
 to_string(Asset const& asset)
 {
