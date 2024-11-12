@@ -377,13 +377,18 @@ accountHolds(
     AuthHandling zeroIfUnauthorized,
     beast::Journal j)
 {
-    return std::visit([&] (auto const& value) {
-            if constexpr (std::is_same_v<std::remove_cvref_t<decltype(value)>, Issue>)
+    return std::visit(
+        [&](auto const& value) {
+            if constexpr (std::is_same_v<
+                              std::remove_cvref_t<decltype(value)>,
+                              Issue>)
             {
                 return accountHolds(view, account, value, zeroIfFrozen, j);
             }
-            return accountHolds(view, account, value, zeroIfFrozen, zeroIfUnauthorized, j);
-        }, asset.value());
+            return accountHolds(
+                view, account, value, zeroIfFrozen, zeroIfUnauthorized, j);
+        },
+        asset.value());
 }
 
 STAmount

@@ -63,9 +63,13 @@ VaultDeposit::doApply()
     if (amount.asset() != asset)
         return tecWRONG_ASSET;
 
-    if (accountHolds(view(), account_, asset,
-                FreezeHandling::fhZERO_IF_FROZEN,
-                AuthHandling::ahZERO_IF_UNAUTHORIZED, j_) < amount)
+    if (accountHolds(
+            view(),
+            account_,
+            asset,
+            FreezeHandling::fhZERO_IF_FROZEN,
+            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            j_) < amount)
     {
         return tecINSUFFICIENT_FUNDS;
     }
@@ -75,7 +79,8 @@ VaultDeposit::doApply()
         return tecLIMIT_EXCEEDED;
 
     // TODO: Check credentials.
-    if (vault->getFlags() & lsfVaultPrivate);
+    if (vault->getFlags() & lsfVaultPrivate)
+        ;
 
     // TODO: transfer amount from account_ to vault.PseudoAccount.
     // - handles balance of account_ and vault.PseudoAccount
