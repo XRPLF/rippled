@@ -265,6 +265,7 @@ TYPED_SFIELD(sfAssetClass,               VL,        28)
 TYPED_SFIELD(sfProvider,                 VL,        29)
 TYPED_SFIELD(sfMPTokenMetadata,          VL,        30)
 TYPED_SFIELD(sfCredentialType,           VL,        31)
+TYPED_SFIELD(sfFinishFunction,           VL,        32)
 
 // account (common)
 TYPED_SFIELD(sfAccount,                  ACCOUNT,    1)
