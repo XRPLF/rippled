@@ -198,6 +198,28 @@ admin = 127.0.0.1
             BEAST_EXPECT(
                 result[jss::result][jss::TYPES]["AccountID"].asUInt() == 8);
 
+            // check exception SFields
+            {
+                auto const fieldExists = [&](std::string name) {
+                    for (auto& field : result[jss::result][jss::FIELDS])
+                    {
+                        if (field[0u].asString() == name)
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+                BEAST_EXPECT(fieldExists("Generic"));
+                BEAST_EXPECT(fieldExists("Invalid"));
+                BEAST_EXPECT(fieldExists("ObjectEndMarker"));
+                BEAST_EXPECT(fieldExists("ArrayEndMarker"));
+                BEAST_EXPECT(fieldExists("taker_gets_funded"));
+                BEAST_EXPECT(fieldExists("taker_pays_funded"));
+                BEAST_EXPECT(fieldExists("hash"));
+                BEAST_EXPECT(fieldExists("index"));
+            }
+
             // test that base_uint types are replaced with "Hash" prefix
             {
                 auto const types = result[jss::result][jss::TYPES];
