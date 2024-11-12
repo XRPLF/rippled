@@ -346,6 +346,7 @@ enum TECcodes : TERUnderlyingType {
     tecLOCKED = 192,
     tecBAD_CREDENTIALS = 193,
     tecWRONG_ASSET = 194,
+    tecLIMIT_EXCEEDED = 195,
 };
 
 //------------------------------------------------------------------------------

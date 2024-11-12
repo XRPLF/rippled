@@ -21,6 +21,7 @@
 
 #include <xrpld/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -69,9 +70,22 @@ VaultDeposit::doApply()
         return tecINSUFFICIENT_FUNDS;
     }
 
-    // STAmount assetTotalNew{sfAssetTotal};
-    // assetTotalNew = vault->at(sfAssetTotal) + amount;
+    Number assetTotalNew = vault->at(sfAssetTotal) + amount;
+    if (assetTotalNew > vault->at(sfAssetMaximum))
+        return tecLIMIT_EXCEEDED;
 
+    // TODO: Check credentials.
+    if (vault->getFlags() & lsfVaultPrivate);
+
+    // TODO: transfer amount from account_ to vault.PseudoAccount.
+    // - handles balance of account_ and vault.PseudoAccount
+    // TODO: increase vault.AssetTotal
+    // TODO: increase vault.AssetAvailable
+    // TODO: calculate shares to give account_.
+    // TODO: grant shares from issuance to account_.
+    // - handles increasing account_.balance(vault.Asset)
+    // - handles increasing mptIssuance.OutstandingAmount
+    // TODO: copy mptIssuance.OutstandingAmount to vault.ShareTotal?
 
     return tesSUCCESS;
 }
