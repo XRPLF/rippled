@@ -102,6 +102,10 @@ EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
 {
+    if (ctx.tx.isFieldPresent(sfFinishFunction) &&
+        ctx.rules.enabled(featureEscrowExtensions))
+        return temDISABLED;
+
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
