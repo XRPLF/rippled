@@ -29,23 +29,26 @@ PermissionedDomainDelete::preflight(PreflightContext const& ctx)
         return temDISABLED;
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
+
+    assert(ctx.tx.isFieldPresent(sfDomainID));
+    auto const domain = ctx.tx.getFieldH256(sfDomainID);
+    if (domain == beast::zero)
+        return temMALFORMED;
+
     return preflight2(ctx);
 }
 
 TER
 PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 {
-    assert(ctx.tx.isFieldPresent(sfDomainID));
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
-    if (domain == beast::zero)
-        return temMALFORMED;
     auto const sleDomain = ctx.view.read({ltPERMISSIONED_DOMAIN, domain});
     if (!sleDomain)
         return tecNO_ENTRY;
     assert(
         sleDomain->isFieldPresent(sfOwner) && ctx.tx.isFieldPresent(sfAccount));
     if (sleDomain->getAccountID(sfOwner) != ctx.tx.getAccountID(sfAccount))
-        return temINVALID_ACCOUNT_ID;
+        return tecNO_PERMISSION;
     return tesSUCCESS;
 }
 

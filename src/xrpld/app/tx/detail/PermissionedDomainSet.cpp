@@ -17,11 +17,12 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/PermissionedDomainSet.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <map>
+
 #include <optional>
 
 namespace ripple {
@@ -34,20 +35,11 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    auto const credentials = ctx.tx.getFieldArray(sfAcceptedCredentials);
-    if (credentials.empty() || credentials.size() > PD_ARRAY_MAX)
-        return temMALFORMED;
-    for (auto const& credential : credentials)
-    {
-        if (!credential.isFieldPresent(sfIssuer) ||
-            !credential.isFieldPresent(sfCredentialType))
-        {
-            return temMALFORMED;
-        }
-        auto sz = credential.getFieldVL(sfCredentialType).size();
-        if (!sz || sz > 64)
-            return temMALFORMED;
-    }
+    if (auto err = credentials::checkArray(
+            ctx.tx.getFieldArray(sfAcceptedCredentials),
+            maxPermissionedDomainCredentialsArraySize);
+        !isTesSuccess(err))
+        return err;
 
     auto const domain = ctx.tx.at(~sfDomainID);
     if (domain && *domain == beast::zero)
@@ -59,26 +51,28 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
 TER
 PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 {
-    if (!ctx.view.read(keylet::account(ctx.tx.getAccountID(sfAccount))))
+    auto const account = ctx.tx.getAccountID(sfAccount);
+
+    if (!ctx.view.exists(keylet::account(account)))
         return tefINTERNAL;
 
-    auto const credentials = ctx.tx.getFieldArray(sfAcceptedCredentials);
+    auto const& credentials = ctx.tx.getFieldArray(sfAcceptedCredentials);
     for (auto const& credential : credentials)
     {
-        if (!ctx.view.read(keylet::account(credential.getAccountID(sfIssuer))))
-            return temBAD_ISSUER;
+        if (!ctx.view.exists(
+                keylet::account(credential.getAccountID(sfIssuer))))
+            return tecNO_ISSUER;
     }
 
-    if (!ctx.tx.isFieldPresent(sfDomainID))
-        return tesSUCCESS;
-    auto const domain = ctx.tx.getFieldH256(sfDomainID);
-    auto const sleDomain = ctx.view.read(keylet::permissionedDomain(domain));
-    if (!sleDomain)
-        return tecNO_ENTRY;
-    auto const owner = sleDomain->getAccountID(sfOwner);
-    auto account = ctx.tx.getAccountID(sfAccount);
-    if (owner != account)
-        return temINVALID_ACCOUNT_ID;
+    if (ctx.tx.isFieldPresent(sfDomainID))
+    {
+        auto const sleDomain = ctx.view.read(
+            keylet::permissionedDomain(ctx.tx.getFieldH256(sfDomainID)));
+        if (!sleDomain)
+            return tecNO_ENTRY;
+        if (sleDomain->getAccountID(sfOwner) != account)
+            return tecNO_PERMISSION;
+    }
 
     return tesSUCCESS;
 }
@@ -88,30 +82,19 @@ TER
 PermissionedDomainSet::doApply()
 {
     auto const ownerSle = view().peek(keylet::account(account_));
+    if (!ownerSle)
+        return tefINTERNAL;
 
-    // The purpose of this lambda is to modify the SLE for either creating a
-    // new or updating an existing object, to reduce code repetition.
-    // All checks have already been done. Just update credentials. Same logic
-    // for either new domain or updating existing.
-    // Silently remove duplicates.
-    auto updateSle = [this](std::shared_ptr<STLedgerEntry> const& sle) {
-        auto const& credentials = ctx_.tx.getFieldArray(sfAcceptedCredentials);
-
-        std::map<
-            std::pair<AccountID, Blob>,
-            std::reference_wrapper<STObject const>>
-            credMap;
-        for (auto const& c : credentials)
-            credMap.insert(
-                {{c.getAccountID(sfIssuer), c.getFieldVL(sfCredentialType)},
-                 c});
-
-        STArray credSorted;
-        credSorted.reserve(credMap.size());
-        for (auto const& [k, v] : credMap)
-            credSorted.push_back(v);
-        sle->setFieldArray(sfAcceptedCredentials, credSorted);
-    };
+    auto const sortedTX =
+        credentials::makeSorted(ctx_.tx.getFieldArray(sfAcceptedCredentials));
+    STArray sortedLE(sfAcceptedCredentials, sortedTX.size());
+    for (auto const& p : sortedTX)
+    {
+        auto cred = STObject::makeInnerObject(sfCredential);
+        cred.setAccountID(sfIssuer, p.first);
+        cred.setFieldVL(sfCredentialType, p.second);
+        sortedLE.push_back(std::move(cred));
+    }
 
     if (ctx_.tx.isFieldPresent(sfDomainID))
     {
@@ -120,8 +103,7 @@ PermissionedDomainSet::doApply()
             keylet::permissionedDomain(ctx_.tx.getFieldH256(sfDomainID)));
         if (!slePd)
             return tefINTERNAL;
-
-        updateSle(slePd);
+        slePd->peekFieldArray(sfAcceptedCredentials) = std::move(sortedLE);
         view().update(slePd);
     }
     else
@@ -142,7 +124,7 @@ PermissionedDomainSet::doApply()
 
         slePd->setAccountID(sfOwner, account_);
         slePd->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence));
-        updateSle(slePd);
+        slePd->peekFieldArray(sfAcceptedCredentials) = std::move(sortedLE);
         auto const page = view().dirInsert(
             keylet::ownerDir(account_), pdKeylet, describeOwnerDir(account_));
         if (!page)

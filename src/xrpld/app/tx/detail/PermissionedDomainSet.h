@@ -16,19 +16,15 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
-#ifndef RIPPLE_TX_PERMISSIONEDDOMAINSET_H_INCLUDED
-#define RIPPLE_TX_PERMISSIONEDDOMAINSET_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
-#include <optional>
 
 namespace ripple {
 
 class PermissionedDomainSet : public Transactor
 {
 public:
-    static constexpr std::size_t PD_ARRAY_MAX = 10;
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
     explicit PermissionedDomainSet(ApplyContext& ctx) : Transactor(ctx)
@@ -47,5 +43,3 @@ public:
 };
 
 }  // namespace ripple
-
-#endif  // RIPPLE_TX_PERMISSIONEDDOMAINSET_H_INCLUDED

@@ -486,6 +486,7 @@ public:
 class ValidPermissionedDomain
 {
     std::size_t credentialsSize_{0};
+    bool isSorted_ = false, isUnique_ = false;
 
 public:
     void

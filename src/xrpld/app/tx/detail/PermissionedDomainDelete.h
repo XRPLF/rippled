@@ -17,8 +17,7 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_PERMISSIONEDDOMAINDELETE_H_INCLUDED
-#define RIPPLE_TX_PERMISSIONEDDOMAINDELETE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
@@ -39,11 +38,9 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Attempt to create the Permissioned Domain. */
+    /** Attempt to delete the Permissioned Domain. */
     TER
     doApply() override;
 };
 
 }  // namespace ripple
-
-#endif  // RIPPLE_TX_PERMISSIONEDDOMAINDELETE_H_INCLUDED

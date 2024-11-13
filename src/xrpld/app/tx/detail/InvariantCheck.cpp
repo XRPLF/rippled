@@ -19,6 +19,7 @@
 
 #include <xrpld/app/tx/detail/InvariantCheck.h>
 
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/app/tx/detail/PermissionedDomainSet.h>
 #include <xrpld/ledger/ReadView.h>
@@ -1135,7 +1136,23 @@ ValidPermissionedDomain::visitEntry(
 {
     if (after->getType() != ltPERMISSIONED_DOMAIN)
         return;
-    credentialsSize_ = after->getFieldArray(sfAcceptedCredentials).size();
+    auto const& credentials = after->getFieldArray(sfAcceptedCredentials);
+    credentialsSize_ = credentials.size();
+    auto const sorted = credentials::makeSorted(credentials);
+    isUnique_ = !sorted.empty();
+
+    if (isUnique_)
+    {
+        unsigned i = 0;
+        for (auto const& cred : sorted)
+        {
+            auto const& credTx(credentials[i++]);
+            isSorted_ = (cred.first == credTx[sfIssuer]) &&
+                (cred.second == credTx[sfCredentialType]);
+            if (!isSorted_)
+                break;
+        }
+    }
 }
 
 bool
@@ -1156,11 +1173,25 @@ ValidPermissionedDomain::finalize(
         return false;
     }
 
-    if (credentialsSize_ > PermissionedDomainSet::PD_ARRAY_MAX)
+    if (credentialsSize_ > maxPermissionedDomainCredentialsArraySize)
     {
         JLOG(j.fatal()) << "Invariant failed: permissioned domain bad "
                            "credentials size "
                         << credentialsSize_;
+        return false;
+    }
+
+    if (!isSorted_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: permissioned domain credentials "
+                           "aren't sorted";
+        return false;
+    }
+
+    if (!isUnique_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: permissioned domain credentials "
+                           "aren't unique";
         return false;
     }
 

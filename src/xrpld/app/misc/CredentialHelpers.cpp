@@ -19,6 +19,7 @@
 
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/View.h>
+#include <xrpl/protocol/digest.h>
 
 #include <unordered_set>
 
@@ -223,6 +224,31 @@ makeSorted(STArray const& in)
             return {};
     }
     return out;
+}
+
+NotTEC
+checkArray(STArray const& in, unsigned maxSize)
+{
+    if (in.empty() || (in.size() > maxSize))
+        return temMALFORMED;
+
+    std::unordered_set<uint256> duplicates;
+    for (auto const& credential : in)
+    {
+        auto const& issuer(credential[sfIssuer]);
+        if (!issuer)
+            return temINVALID_ACCOUNT_ID;
+
+        auto const ct = credential[sfCredentialType];
+        if (ct.empty() || (ct.size() > maxCredentialTypeLength))
+            return temMALFORMED;
+
+        auto [it, ins] = duplicates.insert(sha512Half(issuer, ct));
+        if (!ins)
+            return temMALFORMED;
+    }
+
+    return tesSUCCESS;
 }
 
 }  // namespace credentials
