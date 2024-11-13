@@ -2235,7 +2235,7 @@ getShareTotal(ReadView const& view, std::shared_ptr<SLE> const& vault)
     return issuance->at(sfOutstandingAmount);
 }
 
-[[nodiscard]] Expected<STAmount, TER>
+[[nodiscard]] STAmount
 assetsToSharesDeposit(
     ReadView const& view,
     std::shared_ptr<SLE> const& vault,
@@ -2251,7 +2251,7 @@ assetsToSharesDeposit(
     return amount;
 }
 
-[[nodiscard]] Expected<Number, TER>
+[[nodiscard]] STAmount
 assetsToSharesWithdraw(
     ReadView const& view,
     std::shared_ptr<SLE> const& vault,
@@ -2260,18 +2260,16 @@ assetsToSharesWithdraw(
     assert(assets.asset() == vault->at(sfAsset));
     Number assetTotal = vault->at(sfAssetTotal);
     assetTotal -= vault->at(sfLossUnrealized);
-    // TODO: What error here?
-    if (assets > assetTotal)
-        return Unexpected{tecINTERNAL};
+    STAmount amount{vault->at(sfMPTokenIssuanceID)};
     if (assetTotal == 0)
-        return 0;
+        return amount;
     Number shareTotal = getShareTotal(view, vault);
-    auto shares = shareTotal * (assets / assetTotal);
+    amount = shareTotal * (assets / assetTotal);
     // TODO: Limit by withdrawal policy?
-    return shares;
+    return amount;
 }
 
-[[nodiscard]] Expected<Number, TER>
+[[nodiscard]] STAmount
 sharesToAssetsWithdraw(
     ReadView const& view,
     std::shared_ptr<SLE> const& vault,
@@ -2280,14 +2278,13 @@ sharesToAssetsWithdraw(
     assert(shares.asset() == vault->at(sfMPTokenIssuanceID));
     Number assetTotal = vault->at(sfAssetTotal);
     assetTotal -= vault->at(sfLossUnrealized);
+    STAmount amount{vault->at(sfAsset)};
     if (assetTotal == 0)
-        return 0;
+        return amount;
     Number shareTotal = getShareTotal(view, vault);
-    if (shares > shareTotal)
-        return Unexpected{tecINTERNAL};
-    auto assets = assetTotal * (shares / shareTotal);
+    amount = assetTotal * (shares / shareTotal);
     // TODO: Limit by withdrawal policy?
-    return assets;
+    return amount;
 }
 
 }  // namespace ripple

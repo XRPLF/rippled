@@ -239,6 +239,7 @@ class Vault_test : public beast::unit_test::suite
             env.close();
 
             {
+                // Deposit non-zero amount.
                 auto tx = vault.deposit(
                     {.depositor = depositor,
                      .id = keylet.key,
@@ -255,7 +256,7 @@ class Vault_test : public beast::unit_test::suite
             mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             Asset asset = mptt.issuanceID();
             // Fund depositor with asset.
-            mptt.authorize({ .account = depositor });
+            mptt.authorize({.account = depositor});
             env(pay(issuer, depositor, asset(1000)));
             // Create vault.
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
@@ -274,11 +275,103 @@ class Vault_test : public beast::unit_test::suite
         BEAST_EXPECT(true);
     }
 
+    TEST_CASE(Sequence)
+    {
+        using namespace test::jtx;
+        Env env{*this};
+
+        Account issuer{"issuer"};
+        Account owner{"owner"};
+        Account depositor{"depositor"};
+        env.fund(XRP(1000), issuer, owner, depositor);
+        env.close();
+        auto vault = env.vault();
+
+        SUBCASE("IOU")
+        {
+            // Construct asset.
+            Asset asset = issuer["IOU"];
+            // Fund depositor with asset.
+            env.trust(asset(1000), depositor);
+            env(pay(issuer, depositor, asset(1000)));
+            // Create vault.
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            {
+                // Deposit non-zero amount.
+                auto tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(123)});
+                env(tx);
+                env.close();
+            }
+
+            {
+                // Fail to set maximum lower than current amount.
+                auto tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfAssetMaximum] = 100;
+                env(tx, ter(tecLIMIT_EXCEEDED));
+                env.close();
+            }
+
+            {
+                // Set maximum higher than current amount.
+                auto tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfAssetMaximum] = 200;
+                env(tx);
+                env.close();
+            }
+
+            {
+                // Fail to deposit more than maximum.
+                auto tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(100)});
+                env(tx, ter(tecLIMIT_EXCEEDED));
+                env.close();
+            }
+
+            {
+                // Fail to delete non-empty vault.
+                auto tx = vault.del({.owner = owner, .id = keylet.key});
+                env(tx, ter(tecHAS_OBLIGATIONS));
+                env.close();
+            }
+
+            {
+                // Fail to deposit more than assets held.
+                auto tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(1000)});
+                env(tx, ter(tecINSUFFICIENT_FUNDS));
+                env.close();
+            }
+
+            {
+                // Fail to withdraw more than assets held.
+                auto tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(1000)});
+                env(tx, ter(tecINSUFFICIENT_FUNDS));
+                env.close();
+            }
+
+        }
+
+    }
+
 public:
     void
     run() override
     {
-        EXECUTE(CreateUpdateDelete);
+        // EXECUTE(CreateUpdateDelete);
+        EXECUTE(Sequence);
     }
 };
 

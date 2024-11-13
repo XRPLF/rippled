@@ -19,6 +19,7 @@
 
 #include <xrpld/app/tx/detail/VaultWithdraw.h>
 
+#include <xrpld/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -55,6 +56,65 @@ VaultWithdraw::doApply()
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     if (!vault)
         return tecOBJECT_NOT_FOUND;
+
+    // TODO: Check credentials.
+    if (vault->getFlags() & lsfVaultPrivate)
+        return tecNO_AUTH;
+
+    auto amount = ctx_.tx[sfAmount];
+
+    STAmount shares, assets;
+    if (amount.asset() == vault->at(sfAsset))
+    {
+        // Fixed assets, variable shares.
+        assets = amount;
+        shares = assetsToSharesWithdraw(view(), vault, assets);
+    }
+    else if (amount.asset() == vault->at(sfMPTokenIssuanceID))
+    {
+        // Fixed shares, variable assets.
+        shares = amount;
+        assets = sharesToAssetsWithdraw(view(), vault, shares);
+    }
+    else
+    {
+        return tecWRONG_ASSET;
+    }
+
+    // The depositor must have enough shares.
+    if (accountHolds(
+            view(),
+            account_,
+            shares.asset(),
+            FreezeHandling::fhZERO_IF_FROZEN,
+            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            j_) < shares)
+    {
+        return tecINSUFFICIENT_FUNDS;
+    }
+
+    // The vault must have enough assets on hand.
+    // The vault may hold assets that it has already pledged.
+    // That is why we look at AssetAvailable instead of the account balance.
+    // TODO: Invariant: vault.AssetAvailable <= vault.Account.balance(vault.Asset)
+    if (*vault->at(sfAssetAvailable) < assets)
+        return tecINSUFFICIENT_FUNDS;
+
+    std::cerr << "total before: " << *vault->at(sfAssetTotal) << std::endl;
+    vault->at(sfAssetTotal) -= assets;
+    std::cerr << "total after: " << *vault->at(sfAssetTotal) << std::endl;
+    vault->at(sfAssetAvailable) -= assets;
+
+    auto const& vaultAccount = vault->at(sfAccount);
+    // Transfer shares from depositor to vault.
+    if (auto ter = accountSend(view(), account_, vaultAccount, shares, j_))
+        return ter;
+
+    // Transfer assets from vault to depositor.
+    if (auto ter = accountSend(view(), vaultAccount, account_, assets, j_))
+        return ter;
+
+    view().update(vault);
 
     return tesSUCCESS;
 }

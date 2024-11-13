@@ -58,9 +58,13 @@ VaultDeposit::doApply()
     if (!vault)
         return tecOBJECT_NOT_FOUND;
 
-    auto amount = ctx_.tx[sfAmount];
+    // TODO: Check credentials.
+    if (vault->getFlags() & lsfVaultPrivate)
+        return tecNO_AUTH;
+
+    auto assets = ctx_.tx[sfAmount];
     Asset const& asset = vault->at(sfAsset);
-    if (amount.asset() != asset)
+    if (assets.asset() != asset)
         return tecWRONG_ASSET;
 
     if (accountHolds(
@@ -69,33 +73,30 @@ VaultDeposit::doApply()
             asset,
             FreezeHandling::fhZERO_IF_FROZEN,
             AuthHandling::ahZERO_IF_UNAUTHORIZED,
-            j_) < amount)
+            j_) < assets)
     {
         return tecINSUFFICIENT_FUNDS;
     }
 
-    vault->at(sfAssetTotal) += amount;
-    vault->at(sfAssetAvailable) += amount;
+    vault->at(sfAssetTotal) += assets;
+    vault->at(sfAssetAvailable) += assets;
 
+    // A deposit must not push the vault over its limit.
     auto maximum = *vault->at(sfAssetMaximum);
     if (maximum != 0 && *vault->at(sfAssetTotal) > maximum)
         return tecLIMIT_EXCEEDED;
 
-    // TODO: Check credentials.
-    if (vault->getFlags() & lsfVaultPrivate)
-        ;
-
     auto const& vaultAccount = vault->at(sfAccount);
-    // Transfer amount from sender to vault.
-    if (auto ter = accountSend(view(), account_, vaultAccount, amount, j_))
+    // Transfer assets from depositor to vault.
+    if (auto ter = accountSend(view(), account_, vaultAccount, assets, j_))
         return ter;
 
-    auto shares = assetsToSharesDeposit(view(), vault, amount);
-    if (!shares)
-        return shares.error();
-    if (auto ter = accountSend(view(), vaultAccount, account_, *shares, j_))
+    // Transfer shares from vault to depositor.
+    auto shares = assetsToSharesDeposit(view(), vault, assets);
+    if (auto ter = accountSend(view(), vaultAccount, account_, shares, j_))
         return ter;
-    // TODO: copy mptIssuance.OutstandingAmount to vault.ShareTotal?
+
+    view().update(vault);
 
     return tesSUCCESS;
 }

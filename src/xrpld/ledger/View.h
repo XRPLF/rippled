@@ -621,7 +621,7 @@ deleteAMMTrustLine(
 // From the perspective of a vault,
 // return the number of shares to give the depositor
 // when they deposit a fixed amount of assets.
-[[nodiscard]] Expected<STAmount, TER>
+[[nodiscard]] STAmount
 assetsToSharesDeposit(
     ReadView const& view,
     std::shared_ptr<SLE> const& vault,
@@ -630,7 +630,7 @@ assetsToSharesDeposit(
 // From the perspective of a vault,
 // return the number of shares to demand from the depositor
 // when they ask to withdraw a fixed amount of assets.
-[[nodiscard]] Expected<Number, TER>
+[[nodiscard]] STAmount
 assetsToSharesWithdraw(
     ReadView const& view,
     std::shared_ptr<SLE> const& vault,
@@ -639,7 +639,7 @@ assetsToSharesWithdraw(
 // From the perspective of a vault,
 // return the number of assets to give the depositor
 // when they redeem a fixed amount of shares.
-[[nodiscard]] Expected<Number, TER>
+[[nodiscard]] STAmount
 sharesToAssetsWithdraw(
     ReadView const& view,
     std::shared_ptr<SLE> const& vault,

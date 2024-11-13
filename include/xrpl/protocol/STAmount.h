@@ -236,6 +236,9 @@ public:
     STAmount&
     operator=(XRPAmount const& amount);
 
+    STAmount&
+    operator=(Number const&);
+
     //--------------------------------------------------------------------------
     //
     // Modification
@@ -544,6 +547,15 @@ inline STAmount&
 STAmount::operator=(XRPAmount const& amount)
 {
     *this = STAmount(amount);
+    return *this;
+}
+
+inline STAmount&
+STAmount::operator=(Number const& number)
+{
+    mIsNegative = number.mantissa() < 0;
+    mValue = mIsNegative ? -number.mantissa() : number.mantissa();
+    mOffset = number.exponent();
     return *this;
 }
 

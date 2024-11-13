@@ -55,6 +55,9 @@ Subcase::~Subcase()
         // because only now do we know which subcase was the leaf,
         // and we only want to print one name line for each subcase.
         _.suite.testcase(_.name());
+        // Let the runner know that a test executed,
+        // even if `BEAST_EXPECT` was never called.
+        _.suite.pass();
     }
     if (_.skipped == 0)
     {
