@@ -329,7 +329,7 @@ private:
     void
     doTransactionSyncBatch(
         std::unique_lock<std::mutex>& lock,
-        std::function<bool(std::unique_lock<std::mutex>&)> retryCallback);
+        std::function<bool(std::unique_lock<std::mutex> const&)> retryCallback);
 
 public:
     /**
@@ -1297,7 +1297,7 @@ NetworkOPsImp::doTransactionSync(
     }
 
     doTransactionSyncBatch(
-        lock, [&transaction](std::unique_lock<std::mutex>& lock) {
+        lock, [&transaction](std::unique_lock<std::mutex> const&) {
             return transaction->getApplying();
         });
 }
@@ -1305,7 +1305,7 @@ NetworkOPsImp::doTransactionSync(
 void
 NetworkOPsImp::doTransactionSyncBatch(
     std::unique_lock<std::mutex>& lock,
-    std::function<bool(std::unique_lock<std::mutex>&)> retryCallback)
+    std::function<bool(std::unique_lock<std::mutex> const&)> retryCallback)
 {
     do
     {
@@ -1384,7 +1384,7 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
             mTransactions.push_back(std::move(t));
     }
 
-    doTransactionSyncBatch(lock, [&](std::unique_lock<std::mutex>& lock) {
+    doTransactionSyncBatch(lock, [&](std::unique_lock<std::mutex> const&) {
         assert(lock.owns_lock());
         return std::any_of(
             mTransactions.begin(), mTransactions.end(), [](auto const& t) {

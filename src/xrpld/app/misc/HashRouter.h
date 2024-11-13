@@ -45,6 +45,8 @@ namespace ripple {
 #define SF_PRIVATE5 0x1000
 #define SF_PRIVATE6 0x2000
 
+class Config;
+
 /** Routing table for objects identified by hash.
 
     This table keeps track of which hashes have been received by which peers.
@@ -56,6 +58,27 @@ class HashRouter
 public:
     // The type here *MUST* match the type of Peer::id_t
     using PeerShortID = std::uint32_t;
+
+    /** Structure used to customize @ref HashRouter behavior.
+     *
+     * Even though these items are configurable, don't change them unless there
+     * is a good reason, and network-wide coordination to do it.
+     */
+    struct Setup
+    {
+        /// Default constructor
+        explicit Setup() = default;
+
+        using seconds = std::chrono::seconds;
+
+        /** Expiration time for a hash entry
+         */
+        seconds holdTime{300};
+
+        /** Amount of time required before a relayed item will be relayed again.
+         */
+        seconds relayTime{30};
+    };
 
 private:
     /** An entry in the routing table.
@@ -136,29 +159,8 @@ private:
     };
 
 public:
-    static inline std::chrono::seconds
-    getDefaultHoldTime()
-    {
-        using namespace std::chrono;
-
-        return 300s;
-    }
-
-    static inline std::chrono::seconds
-    getDefaultRelayTime()
-    {
-        using namespace std::chrono;
-
-        return 30s;
-    }
-
-    HashRouter(
-        Stopwatch& clock,
-        std::chrono::seconds entryHoldTime,
-        std::chrono::seconds entryRelayTime)
-        : suppressionMap_(clock)
-        , holdTime_(entryHoldTime)
-        , relayTime_(entryRelayTime)
+    HashRouter(Setup const& setup, Stopwatch& clock)
+        : setup_(setup), suppressionMap_(clock)
     {
     }
 
@@ -234,9 +236,12 @@ private:
         hardened_hash<strong_hash>>
         suppressionMap_;
 
-    std::chrono::seconds const holdTime_;
-    std::chrono::seconds const relayTime_;
+    // Configurable parameters
+    Setup const setup_;
 };
+
+HashRouter::Setup
+setup_HashRouter(Config const&);
 
 }  // namespace ripple
 
