@@ -128,7 +128,8 @@ class PermissionedDomains_test : public beast::unit_test::suite
             {alice11, "credential10"},
             {alice12, "credential11"}};
         BEAST_EXPECT(
-            credentials11.size() == PermissionedDomainSet::PD_ARRAY_MAX + 1);
+            credentials11.size() ==
+            maxPermissionedDomainCredentialsArraySize + 1);
         env(pd::setTx(account, credentials11, domain), ter(temMALFORMED));
 
         // Test credentials including non-existent issuer.
@@ -141,7 +142,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
             {alice5, "credential5"},
             {alice6, "credential6"},
             {alice7, "credential7"}};
-        env(pd::setTx(account, credentialsNon, domain), ter(temBAD_ISSUER));
+        env(pd::setTx(account, credentialsNon, domain), ter(tecNO_ISSUER));
 
         pd::Credentials const credentials4{
             {alice2, "credential1"},
@@ -191,8 +192,12 @@ class PermissionedDomains_test : public beast::unit_test::suite
             for (auto const& c : credentialsDup)
                 pubKey2Acc.emplace(c.issuer.human(), c.issuer);
 
-            BEAST_EXPECT(pd::sortCredentials(credentialsDup).size() == 4);
-            env(pd::setTx(account, credentialsDup, domain));
+            auto const sorted = pd::sortCredentials(credentialsDup);
+            BEAST_EXPECT(sorted.size() == 4);
+            env(pd::setTx(account, credentialsDup, domain), ter(temMALFORMED));
+
+            env.close();
+            env(pd::setTx(account, sorted, domain));
 
             uint256 d;
             if (domain)
@@ -302,7 +307,8 @@ class PermissionedDomains_test : public beast::unit_test::suite
         uint256 domain2;
         {
             BEAST_EXPECT(
-                credentials10.size() == PermissionedDomainSet::PD_ARRAY_MAX);
+                credentials10.size() ==
+                maxPermissionedDomainCredentialsArraySize);
             BEAST_EXPECT(credentials10 != pd::sortCredentials(credentials10));
             env(pd::setTx(alice[0], credentials10));
             auto tx = env.tx()->getJson(JsonOptions::none);
@@ -330,8 +336,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
             pd::sortCredentials(credentials10));
 
         // Update from the wrong owner.
-        env(pd::setTx(alice[2], credentials1, domain2),
-            ter(temINVALID_ACCOUNT_ID));
+        env(pd::setTx(alice[2], credentials1, domain2), ter(tecNO_PERMISSION));
 
         // Update a uint256(0) domain
         env(pd::setTx(alice[0], credentials1, uint256(0)), ter(temMALFORMED));
@@ -391,7 +396,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         // Delete a domain that doesn't belong to the account.
         Account const bob("bob");
         env.fund(XRP(1000), bob);
-        env(pd::deleteTx(bob, domain), ter(temINVALID_ACCOUNT_ID));
+        env(pd::deleteTx(bob, domain), ter(tecNO_PERMISSION));
 
         // Delete a non-existent domain.
         env(pd::deleteTx(alice, uint256(75)), ter(tecNO_ENTRY));
