@@ -24,11 +24,9 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/st.h>
 
 #include <optional>
-#include <unordered_set>
 
 namespace ripple {
 
@@ -94,45 +92,13 @@ DepositPreauth::preflight(PreflightContext const& ctx)
     }
     else
     {
-        STArray const& arr(ctx.tx.getFieldArray(
-            authArrPresent ? sfAuthorizeCredentials
-                           : sfUnauthorizeCredentials));
-        if (arr.empty() || (arr.size() > maxCredentialsArraySize))
-        {
-            JLOG(ctx.j.trace()) << "Malformed transaction: "
-                                   "Invalid AuthorizeCredentials size: "
-                                << arr.size();
-            return temMALFORMED;
-        }
-
-        std::unordered_set<uint256> duplicates;
-        for (auto const& o : arr)
-        {
-            auto const& issuer(o[sfIssuer]);
-            if (!issuer)
-            {
-                JLOG(ctx.j.trace())
-                    << "Malformed transaction: "
-                       "AuthorizeCredentials Issuer account is invalid.";
-                return temINVALID_ACCOUNT_ID;
-            }
-
-            auto const ct = o[sfCredentialType];
-            if (ct.empty() || (ct.size() > maxCredentialTypeLength))
-            {
-                JLOG(ctx.j.trace())
-                    << "Malformed transaction: invalid size of CredentialType.";
-                return temMALFORMED;
-            }
-
-            auto [it, ins] = duplicates.insert(sha512Half(issuer, ct));
-            if (!ins)
-            {
-                JLOG(ctx.j.trace())
-                    << "Malformed transaction: duplicates in credentials.";
-                return temMALFORMED;
-            }
-        }
+        if (auto err = credentials::checkArray(
+                ctx.tx.getFieldArray(
+                    authArrPresent ? sfAuthorizeCredentials
+                                   : sfUnauthorizeCredentials),
+                maxCredentialsArraySize);
+            !isTesSuccess(err))
+            return err;
     }
 
     return preflight2(ctx);
