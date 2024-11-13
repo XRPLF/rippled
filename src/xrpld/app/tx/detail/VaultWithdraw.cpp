@@ -96,13 +96,12 @@ VaultWithdraw::doApply()
     // The vault must have enough assets on hand.
     // The vault may hold assets that it has already pledged.
     // That is why we look at AssetAvailable instead of the account balance.
-    // TODO: Invariant: vault.AssetAvailable <= vault.Account.balance(vault.Asset)
+    // TODO: Invariant: vault.AssetAvailable <=
+    // vault.Account.balance(vault.Asset)
     if (*vault->at(sfAssetAvailable) < assets)
         return tecINSUFFICIENT_FUNDS;
 
-    std::cerr << "total before: " << *vault->at(sfAssetTotal) << std::endl;
     vault->at(sfAssetTotal) -= assets;
-    std::cerr << "total after: " << *vault->at(sfAssetTotal) << std::endl;
     vault->at(sfAssetAvailable) -= assets;
 
     auto const& vaultAccount = vault->at(sfAccount);

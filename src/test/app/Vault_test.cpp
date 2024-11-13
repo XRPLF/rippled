@@ -362,8 +362,27 @@ class Vault_test : public beast::unit_test::suite
                 env.close();
             }
 
-        }
+            {
+                // Withdraw non-zero assets.
+                auto tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(100)});
+                env(tx);
+                env.close();
+            }
 
+            {
+                // TODO: get asset of share.
+                // Redeem non-zero shares.
+                auto tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(1000)});
+                env(tx, ter(tecINSUFFICIENT_FUNDS));
+                env.close();
+            }
+        }
     }
 
 public:
