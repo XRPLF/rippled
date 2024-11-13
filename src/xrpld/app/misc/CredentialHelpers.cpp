@@ -214,10 +214,10 @@ authorized(ApplyContext const& ctx, AccountID const& dst)
 }
 
 std::set<std::pair<AccountID, Slice>>
-makeSorted(STArray const& in)
+makeSorted(STArray const& credentials)
 {
     std::set<std::pair<AccountID, Slice>> out;
-    for (auto const& cred : in)
+    for (auto const& cred : credentials)
     {
         auto [it, ins] = out.emplace(cred[sfIssuer], cred[sfCredentialType]);
         if (!ins)
@@ -227,25 +227,44 @@ makeSorted(STArray const& in)
 }
 
 NotTEC
-checkArray(STArray const& in, unsigned maxSize)
+checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
 {
-    if (in.empty() || (in.size() > maxSize))
+    if (credentials.empty() || (credentials.size() > maxSize))
+    {
+        JLOG(j.trace()) << "Malformed transaction: "
+                           "Invalid credentials size: "
+                        << credentials.size();
         return temMALFORMED;
+    }
 
     std::unordered_set<uint256> duplicates;
-    for (auto const& credential : in)
+    for (auto const& credential : credentials)
     {
         auto const& issuer(credential[sfIssuer]);
         if (!issuer)
+        {
+            JLOG(j.trace()) << "Malformed transaction: "
+                               "Issuer account is invalid: "
+                            << to_string(issuer);
             return temINVALID_ACCOUNT_ID;
+        }
 
         auto const ct = credential[sfCredentialType];
         if (ct.empty() || (ct.size() > maxCredentialTypeLength))
+        {
+            JLOG(j.trace()) << "Malformed transaction: "
+                               "Invalid credentialType size: "
+                            << ct.size();
             return temMALFORMED;
+        }
 
         auto [it, ins] = duplicates.insert(sha512Half(issuer, ct));
         if (!ins)
+        {
+            JLOG(j.trace()) << "Malformed transaction: "
+                               "duplicates in credenentials.";
             return temMALFORMED;
+        }
     }
 
     return tesSUCCESS;
