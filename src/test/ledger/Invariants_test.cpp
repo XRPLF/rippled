@@ -804,7 +804,7 @@ class Invariants_test : public beast::unit_test::suite
         using namespace test::jtx;
         testcase << "PermissionedDomain";
         doInvariantCheck(
-            {{"permissioned domain with no rules"}},
+            {{"permissioned domain with no rules."}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
                 Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
                 auto slePd = std::make_shared<SLE>(pdKeylet);
@@ -820,15 +820,20 @@ class Invariants_test : public beast::unit_test::suite
 
         doInvariantCheck(
             {{"permissioned domain bad credentials size 11"}},
-            [](Account const& A1, Account const&, ApplyContext& ac) {
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
                 Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
                 auto slePd = std::make_shared<SLE>(pdKeylet);
                 slePd->setAccountID(sfOwner, A1);
                 slePd->setFieldU32(sfSequence, 10);
 
-                STArray credentials(sfAcceptedCredentials);
+                STArray credentials(sfAcceptedCredentials, 11);
                 for (std::size_t n = 0; n < 11; ++n)
-                    credentials.push_back(STObject(sfSequence));
+                {
+                    auto cred = STObject::makeInnerObject(sfCredential);
+                    cred.setAccountID(sfIssuer, A2);
+                    cred.setFieldVL(sfCredentialType, Slice("cred_type", 9));
+                    credentials.push_back(std::move(cred));
+                }
                 slePd->setFieldArray(sfAcceptedCredentials, credentials);
                 ac.view().insert(slePd);
                 return true;
