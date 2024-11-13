@@ -41,6 +41,12 @@ parseAuthorizeCredentials(Json::Value const& jv)
     STArray arr(sfAuthorizeCredentials, jv.size());
     for (auto const& jo : jv)
     {
+        if (!jo.isObject() ||  //
+            !jo.isMember(jss::issuer) || !jo[jss::issuer].isString() ||
+            !jo.isMember(jss::credential_type) ||
+            !jo[jss::credential_type].isString())
+            return {};
+
         auto const issuer = parseBase58<AccountID>(jo[jss::issuer].asString());
         if (!issuer || !*issuer)
             return {};
