@@ -26,7 +26,6 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/jss.h>
 
-#include <algorithm>
 #include <exception>
 #include <map>
 #include <optional>
@@ -143,6 +142,11 @@ class PermissionedDomains_test : public beast::unit_test::suite
             {alice6, "credential6"},
             {alice7, "credential7"}};
         env(pd::setTx(account, credentialsNon, domain), ter(tecNO_ISSUER));
+
+        // Test bad fee
+        env(pd::setTx(account, credentials11, domain),
+            fee(1, true),
+            ter(temBAD_FEE));
 
         pd::Credentials const credentials4{
             {alice2, "credential1"},
@@ -400,6 +404,9 @@ class PermissionedDomains_test : public beast::unit_test::suite
 
         // Delete a non-existent domain.
         env(pd::deleteTx(alice, uint256(75)), ter(tecNO_ENTRY));
+
+        // Test bad fee
+        env(pd::deleteTx(alice, uint256(75)), ter(temBAD_FEE), fee(1, true));
 
         // Delete a zero domain.
         env(pd::deleteTx(alice, uint256(0)), ter(temMALFORMED));

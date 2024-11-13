@@ -3145,6 +3145,26 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
 
         {
+            // Fail, invalid permissioned domain index
+            Json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::permissioned_domain] =
+                "12F1F1F1F180D67377B2FAB292A31C922470326268D2B9B74CD1E582645B9A"
+                "DE";
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
+            checkErrorValue(jrr[jss::result], "entryNotFound", "");
+        }
+
+        {
+            // Fail, invalid permissioned domain index
+            Json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::permissioned_domain] = "NotAHexString";
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
+            checkErrorValue(jrr[jss::result], "malformedRequest", "");
+        }
+
+        {
             // Fail, invalid account
             Json::Value params;
             params[jss::ledger_index] = jss::validated;
