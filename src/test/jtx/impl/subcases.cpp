@@ -26,6 +26,7 @@ namespace subcases {
 Subcase::Subcase(Context& context, char const* name)
     : context_(context), name_(name)
 {
+    lastCreated = this;
 }
 
 Subcase::operator bool() const

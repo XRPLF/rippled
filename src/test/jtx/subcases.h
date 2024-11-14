@@ -113,6 +113,7 @@ struct Subcase
     ~Subcase();
     /** Return true if we should enter this subcase. */
     operator bool() const;
+    thread_local static Subcase* lastCreated;
 };
 
 using Supercase = std::function<void(Context&)>;
@@ -123,9 +124,14 @@ execute(beast::unit_test::suite* suite, char const* name, Supercase supercase);
 }  // namespace subcases
 
 #define TEST_CASE(name) void name(subcases::Context& _09876)
-#define SUBCASE(name) if (subcases::Subcase _54321{_09876, name})
+#define SUBCASE(name) if (subcases::Subcase sc##__COUNTER__{_09876, name})
 #define SKIP(name) if (false)
 #define EXECUTE(name) \
     subcases::execute(this, #name, [&](auto& ctx) { name(ctx); })
+// `AND_THEN` defines a subcase to contain all remaining subcases,
+// without having to indent them in a nested block.
+#define AND_THEN(name) \
+    subcases::Subcase sc##__COUNTER__{_09876, name}; \
+    if (!*subcases::Subcase.lastCreated) return;
 
 #endif
