@@ -50,31 +50,6 @@ class WSClientImpl : public WSClient
         }
     };
 
-    static boost::asio::ip::tcp::endpoint
-    getEndpoint(BasicConfig const& cfg, bool v2)
-    {
-        auto& log = std::cerr;
-        ParsedPort common;
-        parse_Port(common, cfg["server"], log);
-        auto const ps = v2 ? "ws2" : "ws";
-        for (auto const& name : cfg.section("server").values())
-        {
-            if (!cfg.exists(name))
-                continue;
-            ParsedPort pp;
-            parse_Port(pp, cfg[name], log);
-            if (pp.protocol.count(ps) == 0)
-                continue;
-            using namespace boost::asio::ip;
-            if (pp.ip && pp.ip->is_unspecified())
-                *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()}
-                                        : address{address_v4::loopback()};
-            return {*pp.ip, *pp.port};
-        }
-        Throw<std::runtime_error>("Missing WebSocket port");
-        return {};  // Silence compiler control paths return value warning
-    }
-
     template <class ConstBuffers>
     static std::string
     buffer_string(ConstBuffers const& b)
@@ -94,6 +69,7 @@ class WSClientImpl : public WSClient
     boost::asio::ip::tcp::socket stream_;
     boost::beast::websocket::stream<boost::asio::ip::tcp::socket&> ws_;
     boost::beast::multi_buffer rb_;
+    std::string endpointLabel_;
 
     bool peerClosed_ = false;
 
@@ -153,6 +129,9 @@ public:
                 rb_,
                 strand_.wrap(std::bind(
                     &WSClientImpl::on_read_msg, this, std::placeholders::_1)));
+            std::stringstream ss;
+            ss << ep;
+            endpointLabel_ = ss.str();
         }
         catch (std::exception&)
         {
@@ -164,6 +143,31 @@ public:
     ~WSClientImpl() override
     {
         cleanup();
+    }
+
+    static boost::asio::ip::tcp::endpoint
+    getEndpoint(BasicConfig const& cfg, bool v2)
+    {
+        auto& log = std::cerr;
+        ParsedPort common;
+        parse_Port(common, cfg["server"], log);
+        auto const ps = v2 ? "ws2" : "ws";
+        for (auto const& name : cfg.section("server").values())
+        {
+            if (!cfg.exists(name))
+                continue;
+            ParsedPort pp;
+            parse_Port(pp, cfg[name], log);
+            if (pp.protocol.count(ps) == 0)
+                continue;
+            using namespace boost::asio::ip;
+            if (pp.ip && pp.ip->is_unspecified())
+                *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()}
+                                        : address{address_v4::loopback()};
+            return {*pp.ip, *pp.port};
+        }
+        Throw<std::runtime_error>("Missing WebSocket port");
+        return {};  // Silence compiler control paths return value warning
     }
 
     Json::Value
@@ -190,7 +194,7 @@ public:
             auto const s = to_string(jp);
             Env::retry(
                 [&]() { ws_.write_some(true, buffer(s)); },
-                "WSClient::invoke write_some",
+                "WSClient::invoke write_some " + endpointLabel_,
                 100ms);
         }
 
@@ -312,12 +316,14 @@ makeWSClient(
     using namespace ripple::test::jtx;
 
     std::unique_ptr<WSClientImpl> ret;
+    std::stringstream endpoint;
+    endpoint << WSClientImpl::getEndpoint(cfg, v2);
 
     Env::retry(
         [&]() {
             ret = std::make_unique<WSClientImpl>(cfg, v2, rpc_version, headers);
         },
-        "makeWSClient",
+        "makeWSClient " + endpoint.str(),
         250ms);
     return ret;
 }
