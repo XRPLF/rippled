@@ -317,24 +317,16 @@ Env::submit(JTx const& jt)
     auto const jr = [&]() {
         if (jt.stx)
         {
-            // We shouldn't need to retry, but it fixes the test on macOS for
-            // the moment.
-            int retries = 3;
-            do
-            {
-                txid_ = jt.stx->getTransactionID();
-                Serializer s;
-                jt.stx->add(s);
-                auto const jr = rpc("submit", strHex(s.slice()));
+            txid_ = jt.stx->getTransactionID();
+            Serializer s;
+            jt.stx->add(s);
+            auto const jr = rpc("submit", strHex(s.slice()));
 
-                parsedResult = parseResult(jr);
-                test.expect(parsedResult.ter, "ter uninitialized!");
-                ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
-                if (ter_ != telENV_RPC_FAILED ||
-                    parsedResult.rpcCode != rpcINTERNAL ||
-                    jt.ter == telENV_RPC_FAILED || --retries <= 0)
-                    return jr;
-            } while (true);
+            parsedResult = parseResult(jr);
+            test.expect(parsedResult.ter, "ter uninitialized!");
+            ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
+
+            return jr;
         }
         else
         {
@@ -566,8 +558,25 @@ Env::do_rpc(
     std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)
 {
-    return rpcClient(args, app().config(), app().logs(), apiVersion, headers)
-        .second;
+    Json::Value ret;
+
+    // Retry 1 - This comment just to make push to ci and retrigger the tests.
+    // It will be removed.
+    for (unsigned ctr = 0; ctr < 6; ++ctr)
+    {
+        auto response =
+            rpcClient(args, app().config(), app().logs(), apiVersion, headers);
+        if (response.first != rpcINTERNAL)
+        {
+            ret = std::move(response.second);
+            break;
+        }
+
+        JLOG(journal.error()) << "Env::do_rpc error, retrying...";
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+
+    return ret;
 }
 
 void
