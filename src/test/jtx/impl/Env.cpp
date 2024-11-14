@@ -558,29 +558,21 @@ Env::do_rpc(
     std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)
 {
-    Json::Value ret;
+    auto response =
+        rpcClient(args, app().config(), app().logs(), apiVersion, headers);
 
-    static unsigned call_id = 0;  // counter to check max retries from one call
-
-    // Retry 2 - This comment just to make push to ci and retrigger the tests.
-    // It will be removed.
-    ++call_id;
-    for (unsigned ctr = 0; ctr < 10; ++ctr)
+    for (unsigned ctr = 0; (ctr < retries_) and (response.first == rpcINTERNAL);
+         ++ctr)
     {
-        auto response =
-            rpcClient(args, app().config(), app().logs(), apiVersion, headers);
-        if (response.first != rpcINTERNAL)
-        {
-            ret = std::move(response.second);
-            break;
-        }
-
         JLOG(journal.error())
-            << "Env::do_rpc error, call_Id: " << call_id << ", retrying...";
+            << "Env::do_rpc error, retrying, attempt #" << ctr + 1 << " ...";
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+        response =
+            rpcClient(args, app().config(), app().logs(), apiVersion, headers);
     }
 
-    return ret;
+    return response.second;
 }
 
 void

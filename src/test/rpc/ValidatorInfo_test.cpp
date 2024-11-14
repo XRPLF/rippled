@@ -50,6 +50,7 @@ public:
     {
         using namespace test::jtx;
         Env env{*this, envconfig(no_admin)};
+        env.set_retries(0);
         auto const info = env.rpc("validator_info")[jss::result];
         BEAST_EXPECT(info.isNull());
     }
