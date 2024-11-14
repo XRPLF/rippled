@@ -21,10 +21,10 @@
 #define RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
-#include <xrpl/basics/IOUAmount.h>
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/SField.h>

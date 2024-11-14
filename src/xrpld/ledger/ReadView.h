@@ -21,12 +21,12 @@
 #define RIPPLE_LEDGER_READVIEW_H_INCLUDED
 
 #include <xrpld/ledger/detail/ReadViewFwdRange.h>
-#include <xrpl/basics/IOUAmount.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>

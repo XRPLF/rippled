@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PATH_IMPL_AMOUNTSPEC_H_INCLUDED
 #define RIPPLE_PATH_IMPL_AMOUNTSPEC_H_INCLUDED
 
-#include <xrpl/basics/IOUAmount.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
 
