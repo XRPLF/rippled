@@ -565,7 +565,7 @@ Env::do_rpc(
          ++ctr)
     {
         JLOG(journal.error())
-            << "Env::do_rpc error, retrying, attempt #" << ctr + 1 << " ...";
+            << "Env::do_rpc error, retrying, attempt #" << ctr + 1 << "  ...";
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         response =
