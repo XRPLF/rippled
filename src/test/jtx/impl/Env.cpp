@@ -560,9 +560,12 @@ Env::do_rpc(
 {
     Json::Value ret;
 
-    // Retry 1 - This comment just to make push to ci and retrigger the tests.
+    static unsigned call_id = 0;  // counter to check max retries from one call
+
+    // Retry 2 - This comment just to make push to ci and retrigger the tests.
     // It will be removed.
-    for (unsigned ctr = 0; ctr < 6; ++ctr)
+    ++call_id;
+    for (unsigned ctr = 0; ctr < 10; ++ctr)
     {
         auto response =
             rpcClient(args, app().config(), app().logs(), apiVersion, headers);
@@ -572,7 +575,8 @@ Env::do_rpc(
             break;
         }
 
-        JLOG(journal.error()) << "Env::do_rpc error, retrying...";
+        JLOG(journal.error())
+            << "Env::do_rpc error, call_Id: " << call_id << ", retrying...";
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
