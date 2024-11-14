@@ -132,6 +132,7 @@ execute(beast::unit_test::suite* suite, char const* name, Supercase supercase);
 // without having to indent them in a nested block.
 #define AND_THEN(name) \
     subcases::Subcase sc##__COUNTER__{_09876, name}; \
-    if (!*subcases::Subcase.lastCreated) return;
+    if (!*subcases::Subcase::lastCreated) return
+#define STEP(name_) _09876.suite.testcase(_09876.name() + " > " + name_)
 
 #endif

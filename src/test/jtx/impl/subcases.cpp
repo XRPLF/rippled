@@ -23,6 +23,8 @@
 
 namespace subcases {
 
+thread_local Subcase* Subcase::lastCreated;
+
 Subcase::Subcase(Context& context, char const* name)
     : context_(context), name_(name)
 {

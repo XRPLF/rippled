@@ -20,6 +20,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/subcases.h>
 #include <test/jtx/utility.h>
 #include <test/jtx/vault.h>
 #include <xrpl/protocol/Asset.h>
@@ -30,11 +31,194 @@ namespace ripple {
 
 class Vault_test : public beast::unit_test::suite
 {
-    TEST_CASE(CreateUpdateDelete)
+
+    // Test for non-asset specific behaviors.
+    TEST_CASE(WithXRP)
     {
         using namespace test::jtx;
         Env env{*this};
+        Account issuer{"issuer"};
+        Account owner{"owner"};
+        Account depositor{"depositor"};
+        env.fund(XRP(1000), issuer, owner, depositor);
+        env.close();
+        auto vault = env.vault();
+        Asset asset = xrpIssue();
 
+        SUBCASE("nothing to delete")
+        {
+            auto tx = vault.del({.owner = issuer, .id = keylet::skip().key});
+            env(tx, ter(tecOBJECT_NOT_FOUND));
+        }
+
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+
+        SUBCASE("insufficient fee")
+        {
+            env(tx, fee(env.current()->fees().base), ter(telINSUF_FEE_P));
+        }
+
+        SUBCASE("insufficient reserve")
+        {
+            // It is possible to construct a complicated mathematical
+            // expression for this amount, but it is sadly not easy.
+            env(pay(owner, issuer, XRP(775)));
+            env.close();
+            env(tx, ter(tecINSUFFICIENT_RESERVE));
+        }
+
+        SUBCASE("data too large")
+        {
+            tx[sfData] = blob257;
+            env(tx, ter(temSTRING_TOO_LARGE));
+        }
+
+        SUBCASE("metadata too large")
+        {
+            // This metadata is for the share token.
+            tx[sfMPTokenMetadata] = blob1025;
+            env(tx, ter(temSTRING_TOO_LARGE));
+        }
+
+        AND_THEN("create");
+        env(tx);
+        env.close();
+        BEAST_EXPECT(env.le(keylet));
+
+        {
+            STEP("fail to deposit more than assets held");
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = XRP(1000)});
+            env(tx, ter(tecINSUFFICIENT_FUNDS));
+        }
+
+        {
+            STEP("deposit non-zero amount");
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = XRP(100)});
+            env(tx);
+        }
+
+        {
+            STEP("fail to delete non-empty vault");
+            auto tx = vault.del({.owner = owner, .id = keylet.key});
+            env(tx, ter(tecHAS_OBLIGATIONS));
+        }
+
+        {
+            STEP("fail to update because wrong owner");
+            auto tx = vault.set({.owner = issuer, .id = keylet.key});
+            env(tx, ter(tecNO_PERMISSION));
+        }
+
+        {
+            STEP("fail to update immutable flags");
+            tx[sfFlags] = tfVaultPrivate;
+            env(tx, ter(temINVALID_FLAG));
+        }
+
+        {
+            STEP("fail to set maximum lower than current amount");
+            auto tx = vault.set({.owner = owner, .id = keylet.key});
+            tx[sfAssetMaximum] = XRP(50);
+            env(tx, ter(tecLIMIT_EXCEEDED));
+        }
+
+        {
+            STEP("set maximum higher than current amount");
+            auto tx = vault.set({.owner = owner, .id = keylet.key});
+            tx[sfAssetMaximum] = XRP(200);
+            env(tx);
+            env.close();
+        }
+
+        {
+            STEP("fail to deposit more than maximum");
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = XRP(200)});
+            env(tx, ter(tecLIMIT_EXCEEDED));
+        }
+
+        {
+            STEP("fail to withdraw more than assets held");
+            auto tx = vault.withdraw(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = XRP(1000)});
+            env(tx, ter(tecINSUFFICIENT_FUNDS));
+        }
+
+        {
+            STEP("deposit up to maximum");
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = XRP(100)});
+            env(tx);
+            env.close();
+        }
+
+        // TODO: redeem.
+
+        {
+            STEP("withdraw non-zero assets");
+            auto tx = vault.withdraw(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = XRP(200)});
+            env(tx);
+            env.close();
+        }
+
+        {
+            STEP("fail to delete because wrong owner");
+            auto tx = vault.del({.owner = issuer, .id = keylet.key});
+            env(tx, ter(tecNO_PERMISSION));
+        }
+
+        {
+            STEP("delete empty vault");
+            auto tx = vault.del({.owner = owner, .id = keylet.key});
+            env(tx);
+            env.close();
+            BEAST_EXPECT(!env.le(keylet));
+        }
+
+    }
+
+    TEST_CASE(WithIOU)
+    {
+        using namespace test::jtx;
+        Env env{*this};
+        Account issuer{"issuer"};
+        Account owner{"owner"};
+        Account depositor{"depositor"};
+        env.fund(XRP(1000), issuer, owner, depositor);
+        env.close();
+        auto vault = env.vault();
+        Asset asset = issuer["IOU"];
+
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+
+        SUBCASE("global freeze")
+        {
+            env(fset(issuer, asfGlobalFreeze));
+            env.close();
+            env(tx, ter(tecFROZEN));
+            env.close();
+        }
+    }
+
+    TEST_CASE(WithMPT)
+    {
+        using namespace test::jtx;
+        Env env{*this};
         Account issuer{"issuer"};
         Account owner{"owner"};
         Account depositor{"depositor"};
@@ -42,103 +226,19 @@ class Vault_test : public beast::unit_test::suite
         env.close();
         auto vault = env.vault();
 
-        SUBCASE("IOU")
+        MPTTester mptt{env, issuer, {.fund = false}};
+
+        SUBCASE("cannot transfer")
         {
-            Asset asset = issuer["IOU"];
+            // Locked because that is the default flag.
+            mptt.create();
+            Asset asset = mptt.issuanceID();
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-
-            SUBCASE("nothing to delete")
-            {
-                tx = vault.del({.owner = issuer, .id = keylet.key});
-                env(tx, ter(tecOBJECT_NOT_FOUND));
-                env.close();
-            }
-
-            SUBCASE("create")
-            {
-                env(tx);
-                {
-                    auto meta = env.meta()->getJson();
-                    // JLOG(env.journal.error()) << meta;
-                    auto n = 0;
-                    for (auto const& affected : meta[sfAffectedNodes])
-                    {
-                        if (!affected[sfCreatedNode])
-                            continue;
-                        ++n;
-                    }
-                }
-                BEAST_EXPECT(env.le(keylet));
-
-                tx = vault.del({.owner = issuer, .id = keylet.key});
-                env(tx, ter(tecNO_PERMISSION));
-                env.close();
-
-                tx = vault.del({.owner = owner, .id = keylet.key});
-                env(tx);
-                {
-                    auto n = 0;
-                    auto meta = env.meta()->getJson();
-                    for (auto const& affected : meta[sfAffectedNodes])
-                    {
-                        if (!affected[sfDeletedNode])
-                            continue;
-                        // JLOG(env.journal.error())
-                        //     << affected[sfDeletedNode][sfLedgerEntryType];
-                        ++n;
-                    }
-                }
-                BEAST_EXPECT(!env.le(keylet));
-                // TODO: Assert all the entries created earlier are deleted.
-            }
-
-            // The vault owner is the transaction submitter.
-            // If that account is missing,
-            // then `preclaim` throws an exception.
-
-            SUBCASE("insufficient fee")
-            {
-                env(tx, fee(env.current()->fees().base), ter(telINSUF_FEE_P));
-                env.close();
-            }
-
-            SUBCASE("insufficient reserve")
-            {
-                // It is possible to construct a complicated mathematical
-                // expression for this amount, but it is sadly not easy.
-                env(pay(owner, issuer, XRP(775)));
-                env.close();
-                env(tx, ter(tecINSUFFICIENT_RESERVE));
-                env.close();
-            }
-
-            SUBCASE("global freeze")
-            {
-                env(fset(issuer, asfGlobalFreeze));
-                env.close();
-                env(tx, ter(tecFROZEN));
-                env.close();
-            }
-
-            SUBCASE("data too large")
-            {
-                tx[sfData] = blob257;
-                env(tx, ter(temSTRING_TOO_LARGE));
-                env.close();
-            }
-
-            SUBCASE("metadata too large")
-            {
-                // This metadata is for the share token.
-                tx[sfMPTokenMetadata] = blob1025;
-                env(tx, ter(temSTRING_TOO_LARGE));
-                env.close();
-            }
+            env(tx, ter(tecLOCKED));
         }
 
-        SUBCASE("MPT")
-        {
-            MPTTester mptt{env, issuer, {.fund = false}};
+        AND_THEN("create");
+
             mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             Asset asset = mptt.issuanceID();
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
@@ -160,32 +260,6 @@ class Vault_test : public beast::unit_test::suite
                         env.close();
                     }
 
-                    SUBCASE("not the owner")
-                    {
-                        tx[sfAccount] = issuer.human();
-                        env(tx, ter(tecNO_PERMISSION));
-                        env.close();
-                    }
-
-                    SUBCASE("data too large")
-                    {
-                        tx[sfData] = blob257;
-                        env(tx, ter(temSTRING_TOO_LARGE));
-                        env.close();
-                    }
-
-                    SUBCASE("shrinking assets")
-                    {
-                        // TODO: VaultSet (update) fail: AssetMaximum <
-                        // AssetTotal
-                    }
-
-                    SUBCASE("immutable flags")
-                    {
-                        tx[sfFlags] = tfVaultPrivate;
-                        env(tx, ter(temINVALID_FLAG));
-                        env.close();
-                    }
                 }
             }
 
@@ -199,11 +273,6 @@ class Vault_test : public beast::unit_test::suite
         SUBCASE("MPT cannot transfer")
         {
             MPTTester mptt{env, issuer, {.fund = false}};
-            // Locked because that is the default flag.
-            mptt.create();
-            Asset asset = mptt.issuanceID();
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx, ter(tecLOCKED));
         }
 
         SUBCASE("transfer XRP")
@@ -299,89 +368,6 @@ class Vault_test : public beast::unit_test::suite
             env(tx);
             env.close();
 
-            {
-                // Deposit non-zero amount.
-                auto tx = vault.deposit(
-                    {.depositor = depositor,
-                     .id = keylet.key,
-                     .amount = asset(123)});
-                env(tx);
-                env.close();
-            }
-
-            {
-                // Fail to set maximum lower than current amount.
-                auto tx = vault.set({.owner = owner, .id = keylet.key});
-                tx[sfAssetMaximum] = 100;
-                env(tx, ter(tecLIMIT_EXCEEDED));
-                env.close();
-            }
-
-            {
-                // Set maximum higher than current amount.
-                auto tx = vault.set({.owner = owner, .id = keylet.key});
-                tx[sfAssetMaximum] = 200;
-                env(tx);
-                env.close();
-            }
-
-            {
-                // Fail to deposit more than maximum.
-                auto tx = vault.deposit(
-                    {.depositor = depositor,
-                     .id = keylet.key,
-                     .amount = asset(100)});
-                env(tx, ter(tecLIMIT_EXCEEDED));
-                env.close();
-            }
-
-            {
-                // Fail to delete non-empty vault.
-                auto tx = vault.del({.owner = owner, .id = keylet.key});
-                env(tx, ter(tecHAS_OBLIGATIONS));
-                env.close();
-            }
-
-            {
-                // Fail to deposit more than assets held.
-                auto tx = vault.deposit(
-                    {.depositor = depositor,
-                     .id = keylet.key,
-                     .amount = asset(1000)});
-                env(tx, ter(tecINSUFFICIENT_FUNDS));
-                env.close();
-            }
-
-            {
-                // Fail to withdraw more than assets held.
-                auto tx = vault.withdraw(
-                    {.depositor = depositor,
-                     .id = keylet.key,
-                     .amount = asset(1000)});
-                env(tx, ter(tecINSUFFICIENT_FUNDS));
-                env.close();
-            }
-
-            {
-                // Withdraw non-zero assets.
-                auto tx = vault.withdraw(
-                    {.depositor = depositor,
-                     .id = keylet.key,
-                     .amount = asset(100)});
-                env(tx);
-                env.close();
-            }
-
-            {
-                // TODO: get asset of share.
-                // Redeem non-zero shares.
-                auto tx = vault.withdraw(
-                    {.depositor = depositor,
-                     .id = keylet.key,
-                     .amount = asset(1000)});
-                env(tx, ter(tecINSUFFICIENT_FUNDS));
-                env.close();
-            }
         }
     }
 
@@ -390,7 +376,7 @@ public:
     run() override
     {
         // EXECUTE(CreateUpdateDelete);
-        EXECUTE(Sequence);
+        EXECUTE(WithXRP);
     }
 };
 

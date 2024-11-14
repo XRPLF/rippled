@@ -131,6 +131,11 @@ public:
     }
 
     operator AnyAmount() const;
+
+    operator Json::Value() const
+    {
+        return to_json(value());
+    }
 };
 
 inline bool
