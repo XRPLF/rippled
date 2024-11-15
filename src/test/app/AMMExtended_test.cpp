@@ -3698,39 +3698,15 @@ private:
         {
             // Account with line deep frozen by issuer
             //    test: can not buy more assets on that line
-            env(offer(bob, G1["USD"](5), XRP(25)));
-            auto affected = env.meta()->getJson(
-                JsonOptions::none)[sfAffectedNodes.fieldName];
-            if (!BEAST_EXPECT(checkArraySize(affected, 4u)))
-                return;
-            auto ff =
-                affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
-            auto amt = STAmount{Issue{to_currency("USD"), noAccount()}, -15}
-                           .value()
-                           .getJson(JsonOptions::none);
             if (features[featureDeepFreeze])
             {
-                BEAST_EXPECT(ff[sfHighLimit.fieldName] == Json::nullValue);
-                BEAST_EXPECT(ff[sfBalance.fieldName] == Json::nullValue);
+                env(offer(bob, G1["USD"](5), XRP(25)), ter(tecFROZEN));
             }
             else
             {
-                BEAST_EXPECT(
-                    ff[sfHighLimit.fieldName] ==
-                    bob["USD"](100).value().getJson(JsonOptions::none));
-                BEAST_EXPECT(ff[sfBalance.fieldName] == amt);
+                env(offer(bob, G1["USD"](5), XRP(25)));
             }
             env.close();
-            if (features[featureDeepFreeze])
-            {
-                BEAST_EXPECT(ammAlice.expectBalances(
-                    XRP(500), G1["USD"](105), ammAlice.tokens()));
-            }
-            else
-            {
-                BEAST_EXPECT(ammAlice.expectBalances(
-                    XRP(525), G1["USD"](100), ammAlice.tokens()));
-            }
         }
 
         {

@@ -257,6 +257,33 @@ CreateOffer::checkAcceptAsset(
         }
     }
 
+    if (view.rules().enabled(featureDeepFreeze))
+    {
+        // An issuer can always accept its own issuance.
+        if (issue.account == id)
+        {
+            return tesSUCCESS;
+        }
+
+        auto const trustLine =
+            view.read(keylet::line(id, issue.account, issue.currency));
+
+        if (!trustLine)
+        {
+            return tesSUCCESS;
+        }
+
+        // There's no difference which side enacted deep freeze, accepting
+        // tokens shouldn't be possible.
+        bool const deepFrozen =
+            (*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze);
+
+        if (deepFrozen)
+        {
+            return tecFROZEN;
+        }
+    }
+
     return tesSUCCESS;
 }
 
