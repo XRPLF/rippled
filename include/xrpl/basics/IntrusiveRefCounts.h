@@ -25,6 +25,9 @@
 #include <cstdint>
 #include <iostream>
 
+#include <cstdlib>
+#include <execinfo.h>
+
 namespace ripple {
 
 /** Action to perform when releasing a strong or weak pointer.
@@ -250,6 +253,22 @@ inline std::atomic<std::uint32_t> IntrusiveRefCounts::maxStrongRefCount = 0;
 inline std::atomic<std::uint32_t> IntrusiveRefCounts::maxWeakRefCount = 0;
 
 inline void
+print_backtrace()
+{
+    constexpr int max_frames = 64;
+    void* buffer[max_frames];
+    int frame_count = backtrace(buffer, max_frames);
+    char** symbols = backtrace_symbols(buffer, frame_count);
+
+    std::cout << "Stack trace:\n";
+    for (int i = 0; i < frame_count; ++i)
+    {
+        std::cout << symbols[i] << "\n";
+    }
+    free(symbols);
+}
+
+inline void
 IntrusiveRefCounts::addStrongRef() const noexcept
 {
     refCounts.fetch_add(strongDelta, std::memory_order_acq_rel);
@@ -262,8 +281,11 @@ IntrusiveRefCounts::addStrongRef() const noexcept
            IntrusiveRefCounts::maxStrongRefCount.compare_exchange_weak(
                currentMax, newStrongRefCount))
     {
-        std::cout << "Maximum strong ref count updated: " << newStrongRefCount
+        std::cout << std::endl
+                  << std::endl
+                  << "Maximum strong ref count updated: " << newStrongRefCount
                   << std::endl;
+        print_backtrace();
     }
 }
 
