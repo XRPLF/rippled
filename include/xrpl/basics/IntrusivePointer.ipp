@@ -54,7 +54,7 @@ SharedIntrusive<T>::SharedIntrusive(SharedIntrusive const& rhs)
 
 template <class T>
 template <class TT>
-requires std::convertible_to<TT*, T*>
+    requires std::convertible_to<TT*, T*>
 SharedIntrusive<T>::SharedIntrusive(SharedIntrusive<TT> const& rhs)
     : ptr_{[&] {
         auto p = rhs.unsafeGetRawPtr();
@@ -73,7 +73,7 @@ SharedIntrusive<T>::SharedIntrusive(SharedIntrusive&& rhs)
 
 template <class T>
 template <class TT>
-requires std::convertible_to<TT*, T*>
+    requires std::convertible_to<TT*, T*>
 SharedIntrusive<T>::SharedIntrusive(SharedIntrusive<TT>&& rhs)
     : ptr_{rhs.unsafeExchange(nullptr)}
 {
@@ -95,9 +95,9 @@ template <class T>
 template <class TT>
 // clang-format off
 requires std::convertible_to<TT*, T*>
-    // clang-format on
-    SharedIntrusive<T>&
-    SharedIntrusive<T>::operator=(SharedIntrusive<TT> const& rhs)
+// clang-format on
+SharedIntrusive<T>&
+SharedIntrusive<T>::operator=(SharedIntrusive<TT> const& rhs)
 {
     if constexpr (std::is_same_v<T, TT>)
     {
@@ -128,9 +128,9 @@ template <class T>
 template <class TT>
 // clang-format off
 requires std::convertible_to<TT*, T*>
-    // clang-format on
-    SharedIntrusive<T>&
-    SharedIntrusive<T>::operator=(SharedIntrusive<TT>&& rhs)
+// clang-format on
+SharedIntrusive<T>&
+SharedIntrusive<T>::operator=(SharedIntrusive<TT>&& rhs)
 {
     if constexpr (std::is_same_v<T, TT>)
     {
@@ -336,9 +336,9 @@ template <class T>
 template <class TT>
 // clang-format off
 requires std::convertible_to<TT*, T*>
-    // clang-format on
-    WeakIntrusive<T>&
-    WeakIntrusive<T>::operator=(SharedIntrusive<TT> const& rhs)
+// clang-format on
+WeakIntrusive<T>&
+WeakIntrusive<T>::operator=(SharedIntrusive<TT> const& rhs)
 {
     unsafeReleaseNoStore();
     auto p = rhs.unsafeGetRawPtr();
@@ -435,7 +435,7 @@ SharedWeakUnion<T>::SharedWeakUnion(SharedWeakUnion const& rhs) : tp_{rhs.tp_}
 
 template <class T>
 template <class TT>
-requires std::convertible_to<TT*, T*>
+    requires std::convertible_to<TT*, T*>
 SharedWeakUnion<T>::SharedWeakUnion(SharedIntrusive<TT> const& rhs)
 {
     auto p = rhs.unsafeGetRawPtr();
@@ -452,7 +452,7 @@ SharedWeakUnion<T>::SharedWeakUnion(SharedWeakUnion&& rhs) : tp_{rhs.tp_}
 
 template <class T>
 template <class TT>
-requires std::convertible_to<TT*, T*>
+    requires std::convertible_to<TT*, T*>
 SharedWeakUnion<T>::SharedWeakUnion(SharedIntrusive<TT>&& rhs)
 {
     auto p = rhs.unsafeGetRawPtr();
@@ -493,9 +493,9 @@ template <class T>
 template <class TT>
 // clang-format off
 requires std::convertible_to<TT*, T*>
-    // clang-format on
-    SharedWeakUnion<T>&
-    SharedWeakUnion<T>::operator=(SharedIntrusive<TT> const& rhs)
+// clang-format on
+SharedWeakUnion<T>&
+SharedWeakUnion<T>::operator=(SharedIntrusive<TT> const& rhs)
 {
     unsafeReleaseNoStore();
     auto p = rhs.unsafeGetRawPtr();
@@ -509,9 +509,9 @@ template <class T>
 template <class TT>
 // clang-format off
 requires std::convertible_to<TT*, T*>
-    // clang-format on
-    SharedWeakUnion<T>&
-    SharedWeakUnion<T>::operator=(SharedIntrusive<TT>&& rhs)
+// clang-format on
+SharedWeakUnion<T>&
+SharedWeakUnion<T>::operator=(SharedIntrusive<TT>&& rhs)
 {
     unsafeReleaseNoStore();
     unsafeSetRawPtr(rhs.unsafeGetRawPtr(), RefStrength::strong);
@@ -686,7 +686,8 @@ SharedWeakUnion<T>::unsafeSetRawPtr(T* p, RefStrength rs)
 }
 
 template <class T>
-void SharedWeakUnion<T>::unsafeSetRawPtr(std::nullptr_t)
+void
+SharedWeakUnion<T>::unsafeSetRawPtr(std::nullptr_t)
 {
     tp_ = 0;
 }

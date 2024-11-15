@@ -320,7 +320,8 @@ SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
 
 // finished modifying, now make shareable
 template <class T>
-requires std::derived_from<T, SHAMapTreeNode> void
+    requires std::derived_from<T, SHAMapTreeNode>
+void
 SHAMapInnerNode::shareChild(int m, SharedIntrusive<T> const& child)
 {
     assert((m >= 0) && (m < branchFactor));

@@ -105,13 +105,13 @@ public:
     template <class TT>
     // TODO: convertible_to isn't quite right. That include a static castable.
     // Find the right concept.
-    requires std::convertible_to<TT*, T*>
+        requires std::convertible_to<TT*, T*>
     SharedIntrusive(SharedIntrusive<TT> const& rhs);
 
     SharedIntrusive(SharedIntrusive&& rhs);
 
     template <class TT>
-    requires std::convertible_to<TT*, T*>
+        requires std::convertible_to<TT*, T*>
     SharedIntrusive(SharedIntrusive<TT>&& rhs);
 
     SharedIntrusive&
@@ -120,9 +120,9 @@ public:
     template <class TT>
     // clang-format off
     requires std::convertible_to<TT*, T*>
-        // clang-format on
-        SharedIntrusive&
-        operator=(SharedIntrusive<TT> const& rhs);
+    // clang-format on
+    SharedIntrusive&
+    operator=(SharedIntrusive<TT> const& rhs);
 
     SharedIntrusive&
     operator=(SharedIntrusive&& rhs);
@@ -130,9 +130,9 @@ public:
     template <class TT>
     // clang-format off
     requires std::convertible_to<TT*, T*>
-        // clang-format on
-        SharedIntrusive&
-        operator=(SharedIntrusive<TT>&& rhs);
+    // clang-format on
+    SharedIntrusive&
+    operator=(SharedIntrusive<TT>&& rhs);
 
     /** Adopt the raw pointer. The strong reference may or may not be
         incremented, depending on the TAdoptTag
@@ -177,7 +177,8 @@ public:
     T*
     operator->() const noexcept;
 
-    explicit operator bool() const noexcept;
+    explicit
+    operator bool() const noexcept;
 
     /** Set the pointer to null, decrement the strong count, and run the
         appropriate release action.
@@ -253,7 +254,8 @@ public:
     WeakIntrusive(SharedIntrusive<T> const&& rhs) = delete;
 
     template <class TT>
-    requires std::convertible_to<TT*, T*> WeakIntrusive&
+        requires std::convertible_to<TT*, T*>
+    WeakIntrusive&
     operator=(SharedIntrusive<TT> const& rhs);
 
     /** Adopt the raw pointer and increment the weak count. */
@@ -318,24 +320,26 @@ public:
     SharedWeakUnion(SharedWeakUnion const& rhs);
 
     template <class TT>
-    requires std::convertible_to<TT*, T*>
+        requires std::convertible_to<TT*, T*>
     SharedWeakUnion(SharedIntrusive<TT> const& rhs);
 
     SharedWeakUnion(SharedWeakUnion&& rhs);
 
     template <class TT>
-    requires std::convertible_to<TT*, T*>
+        requires std::convertible_to<TT*, T*>
     SharedWeakUnion(SharedIntrusive<TT>&& rhs);
 
     SharedWeakUnion&
     operator=(SharedWeakUnion const& rhs);
 
     template <class TT>
-    requires std::convertible_to<TT*, T*> SharedWeakUnion&
+        requires std::convertible_to<TT*, T*>
+    SharedWeakUnion&
     operator=(SharedIntrusive<TT> const& rhs);
 
     template <class TT>
-    requires std::convertible_to<TT*, T*> SharedWeakUnion&
+        requires std::convertible_to<TT*, T*>
+    SharedWeakUnion&
     operator=(SharedIntrusive<TT>&& rhs);
 
     ~SharedWeakUnion();
@@ -350,7 +354,8 @@ public:
     /** Return true if this is a strong pointer and the strong pointer is
         seated.
      */
-    explicit operator bool() const noexcept;
+    explicit
+    operator bool() const noexcept;
 
     /** Set the pointer to null, decrement the appropriate ref count, and
        run the appropriate release action.

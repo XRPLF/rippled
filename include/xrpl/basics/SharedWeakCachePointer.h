@@ -42,24 +42,26 @@ public:
     SharedWeakCachePointer(SharedWeakCachePointer const& rhs);
 
     template <class TT>
-    requires std::convertible_to<TT*, T*>
+        requires std::convertible_to<TT*, T*>
     SharedWeakCachePointer(std::shared_ptr<TT> const& rhs);
 
     SharedWeakCachePointer(SharedWeakCachePointer&& rhs);
 
     template <class TT>
-    requires std::convertible_to<TT*, T*>
+        requires std::convertible_to<TT*, T*>
     SharedWeakCachePointer(std::shared_ptr<TT>&& rhs);
 
     SharedWeakCachePointer&
     operator=(SharedWeakCachePointer const& rhs);
 
     template <class TT>
-    requires std::convertible_to<TT*, T*> SharedWeakCachePointer&
+        requires std::convertible_to<TT*, T*>
+    SharedWeakCachePointer&
     operator=(std::shared_ptr<TT> const& rhs);
 
     template <class TT>
-    requires std::convertible_to<TT*, T*> SharedWeakCachePointer&
+        requires std::convertible_to<TT*, T*>
+    SharedWeakCachePointer&
     operator=(std::shared_ptr<TT>&& rhs);
 
     ~SharedWeakCachePointer();
@@ -73,7 +75,8 @@ public:
     /** Return true if this is a strong pointer and the strong pointer is
         seated.
      */
-    explicit operator bool() const noexcept;
+    explicit
+    operator bool() const noexcept;
 
     /** Set the pointer to null, decrement the appropriate ref count, and run
         the appropriate release action.

@@ -29,7 +29,7 @@ SharedWeakCachePointer<T>::SharedWeakCachePointer(
 
 template <class T>
 template <class TT>
-requires std::convertible_to<TT*, T*>
+    requires std::convertible_to<TT*, T*>
 SharedWeakCachePointer<T>::SharedWeakCachePointer(
     std::shared_ptr<TT> const& rhs)
     : combo_{rhs}
@@ -42,7 +42,7 @@ SharedWeakCachePointer<T>::SharedWeakCachePointer(
 
 template <class T>
 template <class TT>
-requires std::convertible_to<TT*, T*>
+    requires std::convertible_to<TT*, T*>
 SharedWeakCachePointer<T>::SharedWeakCachePointer(std::shared_ptr<TT>&& rhs)
     : combo_{std::move(rhs)}
 {
@@ -55,7 +55,8 @@ SharedWeakCachePointer<T>::operator=(SharedWeakCachePointer const& rhs) =
 
 template <class T>
 template <class TT>
-requires std::convertible_to<TT*, T*> SharedWeakCachePointer<T>&
+    requires std::convertible_to<TT*, T*>
+SharedWeakCachePointer<T>&
 SharedWeakCachePointer<T>::operator=(std::shared_ptr<TT> const& rhs)
 {
     combo_ = rhs;
@@ -64,7 +65,8 @@ SharedWeakCachePointer<T>::operator=(std::shared_ptr<TT> const& rhs)
 
 template <class T>
 template <class TT>
-requires std::convertible_to<TT*, T*> SharedWeakCachePointer<T>&
+    requires std::convertible_to<TT*, T*>
+SharedWeakCachePointer<T>&
 SharedWeakCachePointer<T>::operator=(std::shared_ptr<TT>&& rhs)
 {
     combo_ = std::move(rhs);

@@ -93,7 +93,7 @@ public:
 
     // Needed to support weak intrusive pointers
     virtual void
-    partialDestructor(){};
+    partialDestructor() {};
 
     /** \defgroup SHAMap Copy-on-Write Support
 

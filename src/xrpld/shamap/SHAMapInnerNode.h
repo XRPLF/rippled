@@ -156,7 +156,8 @@ public:
     setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child);
 
     template <class T>
-    requires std::derived_from<T, SHAMapTreeNode> void
+        requires std::derived_from<T, SHAMapTreeNode>
+    void
     shareChild(int m, SharedIntrusive<T> const& child);
 
     SHAMapTreeNode*

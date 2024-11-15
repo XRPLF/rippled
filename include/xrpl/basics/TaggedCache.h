@@ -21,8 +21,8 @@
 #define RIPPLE_BASICS_TAGGEDCACHE_H_INCLUDED
 
 #include <xrpl/basics/IntrusivePointer.h>
-#include <xrpl/basics/SharedWeakCachePointer.ipp>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/SharedWeakCachePointer.ipp>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/clock/abstract_clock.h>
