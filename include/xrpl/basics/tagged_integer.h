@@ -187,7 +187,8 @@ public:
         return *this;
     }
 
-    explicit operator Int() const noexcept
+    explicit
+    operator Int() const noexcept
     {
         return m_value;
     }

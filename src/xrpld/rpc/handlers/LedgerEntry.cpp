@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
@@ -33,6 +34,37 @@
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
+
+static STArray
+parseAuthorizeCredentials(Json::Value const& jv)
+{
+    STArray arr(sfAuthorizeCredentials, jv.size());
+    for (auto const& jo : jv)
+    {
+        if (!jo.isObject() ||  //
+            !jo.isMember(jss::issuer) || !jo[jss::issuer].isString() ||
+            !jo.isMember(jss::credential_type) ||
+            !jo[jss::credential_type].isString())
+            return {};
+
+        auto const issuer = parseBase58<AccountID>(jo[jss::issuer].asString());
+        if (!issuer || !*issuer)
+            return {};
+
+        auto const credentialType =
+            strUnHex(jo[jss::credential_type].asString());
+        if (!credentialType || credentialType->empty() ||
+            credentialType->size() > maxCredentialTypeLength)
+            return {};
+
+        auto credential = STObject::makeInnerObject(sfCredential);
+        credential.setAccountID(sfIssuer, *issuer);
+        credential.setFieldVL(sfCredentialType, *credentialType);
+        arr.push_back(std::move(credential));
+    }
+
+    return arr;
+}
 
 // {
 //   ledger_hash : <ledger>
@@ -84,44 +116,63 @@ doLedgerEntry(RPC::JsonContext& context)
         else if (context.params.isMember(jss::deposit_preauth))
         {
             expectedType = ltDEPOSIT_PREAUTH;
+            auto const& dp = context.params[jss::deposit_preauth];
 
-            if (!context.params[jss::deposit_preauth].isObject())
+            if (!dp.isObject())
             {
-                if (!context.params[jss::deposit_preauth].isString() ||
-                    !uNodeIndex.parseHex(
-                        context.params[jss::deposit_preauth].asString()))
+                if (!dp.isString() || !uNodeIndex.parseHex(dp.asString()))
                 {
                     uNodeIndex = beast::zero;
                     jvResult[jss::error] = "malformedRequest";
                 }
             }
+            // clang-format off
             else if (
-                !context.params[jss::deposit_preauth].isMember(jss::owner) ||
-                !context.params[jss::deposit_preauth][jss::owner].isString() ||
-                !context.params[jss::deposit_preauth].isMember(
-                    jss::authorized) ||
-                !context.params[jss::deposit_preauth][jss::authorized]
-                     .isString())
+                (!dp.isMember(jss::owner) || !dp[jss::owner].isString()) ||
+                (dp.isMember(jss::authorized) == dp.isMember(jss::authorized_credentials)) ||
+                (dp.isMember(jss::authorized) && !dp[jss::authorized].isString()) ||
+                (dp.isMember(jss::authorized_credentials) && !dp[jss::authorized_credentials].isArray())
+                )
+            // clang-format on
             {
                 jvResult[jss::error] = "malformedRequest";
             }
             else
             {
-                auto const owner = parseBase58<AccountID>(
-                    context.params[jss::deposit_preauth][jss::owner]
-                        .asString());
-
-                auto const authorized = parseBase58<AccountID>(
-                    context.params[jss::deposit_preauth][jss::authorized]
-                        .asString());
-
+                auto const owner =
+                    parseBase58<AccountID>(dp[jss::owner].asString());
                 if (!owner)
+                {
                     jvResult[jss::error] = "malformedOwner";
-                else if (!authorized)
-                    jvResult[jss::error] = "malformedAuthorized";
+                }
+                else if (dp.isMember(jss::authorized))
+                {
+                    auto const authorized =
+                        parseBase58<AccountID>(dp[jss::authorized].asString());
+                    if (!authorized)
+                        jvResult[jss::error] = "malformedAuthorized";
+                    else
+                        uNodeIndex =
+                            keylet::depositPreauth(*owner, *authorized).key;
+                }
                 else
-                    uNodeIndex =
-                        keylet::depositPreauth(*owner, *authorized).key;
+                {
+                    auto const& ac(dp[jss::authorized_credentials]);
+                    STArray const arr = parseAuthorizeCredentials(ac);
+
+                    if (arr.empty() || (arr.size() > maxCredentialsArraySize))
+                        jvResult[jss::error] = "malformedAuthorizedCredentials";
+                    else
+                    {
+                        auto sorted = credentials::makeSorted(arr);
+                        if (sorted.empty())
+                            jvResult[jss::error] =
+                                "malformedAuthorizedCredentials";
+                        else
+                            uNodeIndex =
+                                keylet::depositPreauth(*owner, sorted).key;
+                    }
+                }
             }
         }
         else if (context.params.isMember(jss::directory))
@@ -642,6 +693,118 @@ doLedgerEntry(RPC::JsonContext& context)
                     jvResult[jss::error] = "malformedDocumentID";
                 else
                     uNodeIndex = keylet::oracle(*account, *documentID).key;
+            }
+        }
+        else if (context.params.isMember(jss::credential))
+        {
+            expectedType = ltCREDENTIAL;
+            auto const& cred = context.params[jss::credential];
+
+            if (cred.isString())
+            {
+                if (!uNodeIndex.parseHex(cred.asString()))
+                {
+                    uNodeIndex = beast::zero;
+                    jvResult[jss::error] = "malformedRequest";
+                }
+            }
+            else if (
+                (!cred.isMember(jss::subject) ||
+                 !cred[jss::subject].isString()) ||
+                (!cred.isMember(jss::issuer) ||
+                 !cred[jss::issuer].isString()) ||
+                (!cred.isMember(jss::credential_type) ||
+                 !cred[jss::credential_type].isString()))
+            {
+                jvResult[jss::error] = "malformedRequest";
+            }
+            else
+            {
+                auto const subject =
+                    parseBase58<AccountID>(cred[jss::subject].asString());
+                auto const issuer =
+                    parseBase58<AccountID>(cred[jss::issuer].asString());
+                auto const credType =
+                    strUnHex(cred[jss::credential_type].asString());
+                if (!subject || subject->isZero() || !issuer ||
+                    issuer->isZero() || !credType || credType->empty())
+                {
+                    jvResult[jss::error] = "malformedRequest";
+                }
+                else
+                {
+                    uNodeIndex = keylet::credential(
+                                     *subject,
+                                     *issuer,
+                                     Slice(credType->data(), credType->size()))
+                                     .key;
+                }
+            }
+        }
+        else if (context.params.isMember(jss::mpt_issuance))
+        {
+            expectedType = ltMPTOKEN_ISSUANCE;
+            auto const unparsedMPTIssuanceID =
+                context.params[jss::mpt_issuance];
+            if (unparsedMPTIssuanceID.isString())
+            {
+                uint192 mptIssuanceID;
+                if (!mptIssuanceID.parseHex(unparsedMPTIssuanceID.asString()))
+                {
+                    uNodeIndex = beast::zero;
+                    jvResult[jss::error] = "malformedRequest";
+                }
+                else
+                    uNodeIndex = keylet::mptIssuance(mptIssuanceID).key;
+            }
+            else
+            {
+                jvResult[jss::error] = "malformedRequest";
+            }
+        }
+        else if (context.params.isMember(jss::mptoken))
+        {
+            expectedType = ltMPTOKEN;
+            auto const& mptJson = context.params[jss::mptoken];
+            if (!mptJson.isObject())
+            {
+                if (!uNodeIndex.parseHex(mptJson.asString()))
+                {
+                    uNodeIndex = beast::zero;
+                    jvResult[jss::error] = "malformedRequest";
+                }
+            }
+            else if (
+                !mptJson.isMember(jss::mpt_issuance_id) ||
+                !mptJson.isMember(jss::account))
+            {
+                jvResult[jss::error] = "malformedRequest";
+            }
+            else
+            {
+                try
+                {
+                    auto const mptIssuanceIdStr =
+                        mptJson[jss::mpt_issuance_id].asString();
+
+                    uint192 mptIssuanceID;
+                    if (!mptIssuanceID.parseHex(mptIssuanceIdStr))
+                        Throw<std::runtime_error>(
+                            "Cannot parse mpt_issuance_id");
+
+                    auto const account = parseBase58<AccountID>(
+                        mptJson[jss::account].asString());
+
+                    if (!account || account->isZero())
+                        jvResult[jss::error] = "malformedAddress";
+                    else
+                        uNodeIndex =
+                            keylet::mptoken(mptIssuanceID, *account).key;
+                }
+                catch (std::runtime_error const&)
+                {
+                    jvResult[jss::error] = "malformedRequest";
+                }
             }
         }
         else

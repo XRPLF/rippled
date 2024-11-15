@@ -48,11 +48,13 @@
 #include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/BookChanges.h>
 #include <xrpld/rpc/DeliveredAmount.h>
+#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/RFC1751.h>
@@ -2310,7 +2312,7 @@ NetworkOPsImp::recvValidation(
             bypassAccept = BypassAccept::yes;
         else
             pendingValidations_.insert(val->getLedgerHash());
-        lock.unlock();
+        scope_unlock unlock(lock);
         handleNewValidation(app_, val, source, bypassAccept, m_journal);
     }
     catch (std::exception const& e)
@@ -2327,10 +2329,9 @@ NetworkOPsImp::recvValidation(
     }
     if (bypassAccept == BypassAccept::no)
     {
-        lock.lock();
         pendingValidations_.erase(val->getLedgerHash());
-        lock.unlock();
     }
+    lock.unlock();
 
     pubValidation(val);
 
@@ -2963,6 +2964,8 @@ NetworkOPsImp::transJson(
         jvObj[jss::meta] = meta->get().getJson(JsonOptions::none);
         RPC::insertDeliveredAmount(
             jvObj[jss::meta], *ledger, transaction, meta->get());
+        RPC::insertMPTokenIssuanceID(
+            jvObj[jss::meta], transaction, meta->get());
     }
 
     if (!ledger->open())
@@ -3178,8 +3181,8 @@ NetworkOPsImp::pubAccountTransaction(
     }
 
     JLOG(m_journal.trace())
-        << "pubAccountTransaction: "
-        << "proposed=" << iProposed << ", accepted=" << iAccepted;
+        << "pubAccountTransaction: " << "proposed=" << iProposed
+        << ", accepted=" << iAccepted;
 
     if (!notify.empty() || !accountHistoryNotify.empty())
     {
