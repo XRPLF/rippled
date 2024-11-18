@@ -26,7 +26,6 @@
 #include <xrpld/ledger/CachedSLEs.h>
 #include <xrpld/nodestore/Database.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>

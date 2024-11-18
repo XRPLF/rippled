@@ -27,7 +27,6 @@
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/nodestore/DatabaseRotating.h>
 #include <xrpld/nodestore/Scheduler.h>
-#include <xrpl/basics/TaggedCache.ipp>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
