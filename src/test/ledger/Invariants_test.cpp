@@ -818,6 +818,7 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
+        testcase << "PermissionedDomain 2";
         doInvariantCheck(
             {{"permissioned domain bad credentials size 11"}},
             [](Account const& A1, Account const& A2, ApplyContext& ac) {
@@ -828,6 +829,64 @@ class Invariants_test : public beast::unit_test::suite
 
                 STArray credentials(sfAcceptedCredentials, 11);
                 for (std::size_t n = 0; n < 11; ++n)
+                {
+                    auto cred = STObject::makeInnerObject(sfCredential);
+                    cred.setAccountID(sfIssuer, A2);
+                    auto credType =
+                        std::string("cred_type") + std::to_string(n);
+                    cred.setFieldVL(
+                        sfCredentialType,
+                        Slice(credType.c_str(), credType.size()));
+                    credentials.push_back(std::move(cred));
+                }
+                slePd->setFieldArray(sfAcceptedCredentials, credentials);
+                ac.view().insert(slePd);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        testcase << "PermissionedDomain 3";
+        doInvariantCheck(
+            {{"permissioned domain credentials aren't sorted"}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+                slePd->setAccountID(sfOwner, A1);
+                slePd->setFieldU32(sfSequence, 10);
+
+                STArray credentials(sfAcceptedCredentials, 11);
+                for (std::size_t n = 0; n < 2; ++n)
+                {
+                    auto cred = STObject::makeInnerObject(sfCredential);
+                    cred.setAccountID(sfIssuer, A2);
+                    auto credType =
+                        std::string("cred_type") + std::to_string(9 - n);
+                    cred.setFieldVL(
+                        sfCredentialType,
+                        Slice(credType.c_str(), credType.size()));
+                    credentials.push_back(std::move(cred));
+                }
+                slePd->setFieldArray(sfAcceptedCredentials, credentials);
+                ac.view().insert(slePd);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        testcase << "PermissionedDomain 4";
+        doInvariantCheck(
+            {{"permissioned domain credentials aren't unique"}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+                slePd->setAccountID(sfOwner, A1);
+                slePd->setFieldU32(sfSequence, 10);
+
+                STArray credentials(sfAcceptedCredentials, 11);
+                for (std::size_t n = 0; n < 2; ++n)
                 {
                     auto cred = STObject::makeInnerObject(sfCredential);
                     cred.setAccountID(sfIssuer, A2);

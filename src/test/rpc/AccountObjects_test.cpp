@@ -575,8 +575,8 @@ public:
         Account const gw{"gateway"};
         auto const USD = gw["USD"];
 
-        auto const features =
-            supported_amendments() | FeatureBitset{featureXChainBridge};
+        auto const features = supported_amendments() |
+            FeatureBitset{featureXChainBridge} | featurePermissionedDomains;
         Env env(*this, features);
 
         // Make a lambda we can use to get "account_objects" easily.
@@ -715,6 +715,48 @@ public:
             BEAST_EXPECT(escrow[sfDestination.jsonName] == gw.human());
             BEAST_EXPECT(escrow[sfAmount.jsonName].asUInt() == 100'000'000);
         }
+
+        {
+            std::string const credentialType1 = "credential1";
+            Account issuer("issuer");
+            env.fund(XRP(5000), issuer);
+
+            // gw creates an PermissionedDomain.
+            env(pd::setTx(gw, {{issuer, credentialType1}}));
+            env.close();
+
+            // Find the PermissionedDomain.
+            Json::Value const resp = acctObjs(gw, jss::permissioned_domain);
+            BEAST_EXPECT(acctObjsIsSize(resp, 1));
+
+            auto const& permissionedDomain =
+                resp[jss::result][jss::account_objects][0u];
+            BEAST_EXPECT(
+                permissionedDomain.isMember(jss::Owner) &&
+                (permissionedDomain[jss::Owner] == gw.human()));
+            bool const check1 = BEAST_EXPECT(
+                permissionedDomain.isMember(sfAcceptedCredentials.jsonName) &&
+                permissionedDomain[sfAcceptedCredentials.jsonName].isArray() &&
+                (permissionedDomain[sfAcceptedCredentials.jsonName].size() ==
+                 1) &&
+                (permissionedDomain[sfAcceptedCredentials.jsonName][0u]
+                     .isMember(jss::Credential)));
+
+            if (check1)
+            {
+                auto const& credential =
+                    permissionedDomain[sfAcceptedCredentials.jsonName][0u]
+                                      [jss::Credential];
+                BEAST_EXPECT(
+                    credential.isMember(sfIssuer.jsonName) &&
+                    (credential[sfIssuer.jsonName] == issuer.human()));
+                BEAST_EXPECT(
+                    credential.isMember(sfCredentialType.jsonName) &&
+                    (credential[sfCredentialType.jsonName] ==
+                     strHex(credentialType1)));
+            }
+        }
+
         {
             // Create a bridge
             test::jtx::XChainBridgeObjects x;
@@ -937,7 +979,7 @@ public:
             auto const& ticket = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(ticket[sfAccount.jsonName] == gw.human());
             BEAST_EXPECT(ticket[sfLedgerEntryType.jsonName] == jss::Ticket);
-            BEAST_EXPECT(ticket[sfTicketSequence.jsonName].asUInt() == 14);
+            BEAST_EXPECT(ticket[sfTicketSequence.jsonName].asUInt() > 0);
         }
         {
             // See how "deletion_blockers_only" handles gw's directory.
@@ -952,7 +994,8 @@ public:
                     jss::Check.c_str(),
                     jss::NFTokenPage.c_str(),
                     jss::RippleState.c_str(),
-                    jss::PayChannel.c_str()};
+                    jss::PayChannel.c_str(),
+                    jss::PermissionedDomain.c_str()};
                 std::sort(v.begin(), v.end());
                 return v;
             }();

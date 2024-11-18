@@ -161,6 +161,7 @@ getNewDomain(std::shared_ptr<STObject const> const& meta)
         }
         std::ignore =
             ret.parseHex(node["CreatedNode"]["LedgerIndex"].asString());
+        break;
     }
 
     return ret;

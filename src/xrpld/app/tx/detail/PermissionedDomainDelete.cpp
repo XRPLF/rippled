@@ -29,8 +29,6 @@ PermissionedDomainDelete::preflight(PreflightContext const& ctx)
         return temDISABLED;
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
-
-    assert(ctx.tx.isFieldPresent(sfDomainID));
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
     if (domain == beast::zero)
         return temMALFORMED;

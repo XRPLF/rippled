@@ -503,7 +503,8 @@ Env::autofill(JTx& jt)
     }
     catch (parse_error const&)
     {
-        test.log << "parse failed:\n" << pretty(jv) << std::endl;
+        if (!parseFailureExpected_)
+            test.log << "parse failed:\n" << pretty(jv) << std::endl;
         Rethrow();
     }
 }
