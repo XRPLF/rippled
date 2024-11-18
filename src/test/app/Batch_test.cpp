@@ -390,7 +390,8 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temMALFORMED: Batch: order of inner transactions does not match TxIDs.
+        // temMALFORMED: Batch: order of inner transactions does not match
+        // TxIDs.
         {
             auto const batchFee = ((1 + 2) * feeDrops) + feeDrops * 2;
             Json::Value jv =
@@ -419,7 +420,25 @@ class Batch_test : public beast::unit_test::suite
         }
 
         // temINVALID_BATCH: Batch: TransactionType missing in array entry.
-        // DA: Impossible Test
+        {
+            auto const txBlob =
+                "12003D2200010000240000000468400000000000003273210388935426E0D0"
+                "8083314842EDFBB2D517BD47699F9A4527318A8E10468C97C0527446304402"
+                "20280E69E1CD973C909586B3EBF41556F50694F8FE5E905BF6C9E9B6F97417"
+                "A1D40220509BE54BF5CE3B5D7A989D12F302C486657883629CAF34EC648361"
+                "6237AFA9C88114AE123A8556F3CF91154711376AFB0F894F832B3DF01DE022"
+                "22800000002400000005614000000000989680684000000000000000730081"
+                "14AE123A8556F3CF91154711376AFB0F894F832B3D8314F51DFC2A09D62CBB"
+                "A1DFBDD4691DAC96AD98B90FE1F1061320B767AB126F2655B1848233CE8952"
+                "7A1503C7B03A75D8C9DE547FEDB408CA26A1";
+            auto const jrr = env.rpc("submit", txBlob)[jss::result];
+            std::cout << jrr << std::endl;
+            BEAST_EXPECT(
+                jrr[jss::status] == "error" &&
+                jrr[jss::error] == "invalidTransaction");
+
+            env.close();
+        }
 
         // temINVALID_BATCH: Batch: batch cannot have inner batch txn.
         {
@@ -1051,7 +1070,6 @@ class Batch_test : public beast::unit_test::suite
         env(signers(bob, 2, {{carol, 1}, {dave, 1}, {elsa, 1}}));
         env.close();
 
-
         // tefBAD_QUORUM
         {
             auto const seq = env.seq(alice);
@@ -1059,7 +1077,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
                 batch::add(pay(alice, bob, XRP(10)), seq + 1),
                 batch::add(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::msig(bob, {dave}), ter(tefBAD_QUORUM));
+                batch::msig(bob, {dave}),
+                ter(tefBAD_QUORUM));
             env.close();
         }
 
@@ -1070,7 +1089,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
                 batch::add(pay(alice, bob, XRP(10)), seq + 1),
                 batch::add(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::msig(bob, {alice, dave}), ter(tefBAD_SIGNATURE));
+                batch::msig(bob, {alice, dave}),
+                ter(tefBAD_SIGNATURE));
             env.close();
         }
 

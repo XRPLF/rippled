@@ -164,7 +164,7 @@ Batch::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.trace())
                 << "Batch: TransactionType missing in inner txn."
                 << "index: " << i;
-            return temINVALID_BATCH;
+            return temINVALID_BATCH;  // LCOV_EXCL_LINE
         }
 
         if (stx.getFieldU16(sfTransactionType) == ttBATCH)
