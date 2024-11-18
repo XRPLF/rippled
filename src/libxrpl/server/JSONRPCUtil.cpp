@@ -36,7 +36,9 @@ getHTTPHeaderTimestamp()
     char buffer[96];
     time_t now;
     time(&now);
-    struct tm now_gmt{};
+    struct tm now_gmt
+    {
+    };
 #ifndef _MSC_VER
     gmtime_r(&now, &now_gmt);
 #else

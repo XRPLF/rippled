@@ -77,8 +77,9 @@ maybe_reverse_bytes(T& t, Hasher&)
 {
     maybe_reverse_bytes(
         t,
-        std::integral_constant < bool,
-        Hasher::endian != boost::endian::order::native > {});
+        std::integral_constant<
+            bool,
+            Hasher::endian != boost::endian::order::native>{});
 }
 
 }  // namespace detail

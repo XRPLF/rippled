@@ -239,7 +239,7 @@ public:
         // clang-format off
         if (!buf) [[unlikely]]
             return nullptr;
-        // clang-format on
+            // clang-format on
 
 #if BOOST_OS_LINUX
         // When allocating large blocks, attempt to leverage Linux's
