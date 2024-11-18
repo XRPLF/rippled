@@ -22,6 +22,7 @@
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 
@@ -42,6 +43,22 @@ checkValidity(
 {
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);
+
+    // Validate tfInnerBatchTxn
+    if (rules.enabled(featureBatch) && tx.isFlag(tfInnerBatchTxn))
+    {
+        // batched transactions do not contain signatures
+        if (tx.isFieldPresent(sfTxnSignature))
+            return {Validity::SigBad, "Batch txn contains signature."};
+
+        std::string reason;
+        if (!passesLocalChecks(tx, reason))
+            return {Validity::SigGoodOnly, reason};
+
+        router.setFlags(id, SF_SIGGOOD);
+        return {Validity::Valid, ""};
+    }
+
     if (flags & SF_SIGBAD)
         // Signature is known bad
         return {Validity::SigBad, "Transaction has bad signature."};

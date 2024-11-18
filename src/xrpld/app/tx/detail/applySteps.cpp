@@ -26,6 +26,7 @@
 #include <xrpld/app/tx/detail/AMMVote.h>
 #include <xrpld/app/tx/detail/AMMWithdraw.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
+#include <xrpld/app/tx/detail/Batch.h>
 #include <xrpld/app/tx/detail/CancelCheck.h>
 #include <xrpld/app/tx/detail/CancelOffer.h>
 #include <xrpld/app/tx/detail/CashCheck.h>
@@ -93,7 +94,6 @@ with_txn_type(TxType txnType, F&& f)
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
-
         default:
             throw UnknownTxnType(txnType);
     }
@@ -193,6 +193,9 @@ invoke_preclaim(PreclaimContext const& ctx)
                     return result;
 
                 result = T::checkSign(ctx);
+
+                if (ctx.tx.getTxnType() == ttBATCH)
+                    result = T::checkBatchSign(ctx);
 
                 if (result != tesSUCCESS)
                     return result;

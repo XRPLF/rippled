@@ -70,6 +70,8 @@ public:
         STTx const& tx,
         TER ter,
         std::optional<STAmount> const& deliver,
+        std::vector<STObject> const& batchExecution,
+        std::optional<STObject> const& batchPrevAcctRootFields,
         beast::Journal j);
 
     bool

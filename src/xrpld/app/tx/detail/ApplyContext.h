@@ -83,6 +83,18 @@ public:
     /** Apply the transaction result to the base. */
     void apply(TER);
 
+    /** Apply the transaction result to the base. */
+    void
+    applyOpenView(OpenView& open);
+
+    /** Updates the batch txn account root. */
+    void
+    updateAccountRootEntry();
+
+    /** Sets the batch prev fields in the metadata. */
+    void
+    setBatchPrevAcctRootFields(ApplyViewImpl& avi);
+
     /** Get the number of unapplied changes. */
     std::size_t
     size();

@@ -138,11 +138,16 @@ XRPNotCreated::visitEntry(
 bool
 XRPNotCreated::finalize(
     STTx const& tx,
-    TER const,
+    TER const res,
     XRPAmount const fee,
     ReadView const&,
     beast::Journal const& j)
 {
+    if (tx.getTxnType() == ttBATCH && res == tesSUCCESS)
+    {
+        drops_ = -fee.drops();
+    }
+
     // The net change should never be positive, as this would mean that the
     // transaction created XRP out of thin air. That's not possible.
     if (drops_ > 0)

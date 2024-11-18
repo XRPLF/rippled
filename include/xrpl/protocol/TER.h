@@ -139,8 +139,8 @@ enum TEMcodes : TERUnderlyingType {
 
     temARRAY_EMPTY,
     temARRAY_TOO_LARGE,
-
     temBAD_TRANSFER_FEE,
+    temINVALID_BATCH,
 };
 
 //------------------------------------------------------------------------------
@@ -344,6 +344,7 @@ enum TECcodes : TERUnderlyingType {
     tecARRAY_TOO_LARGE = 191,
     tecLOCKED = 192,
     tecBAD_CREDENTIALS = 193,
+    tecBATCH_FAILURE = 194
 };
 
 //------------------------------------------------------------------------------

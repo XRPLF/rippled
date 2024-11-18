@@ -64,6 +64,7 @@
 #include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
@@ -1137,6 +1138,15 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
         return;
     }
 
+    // Enforce Network bar for batch txn
+    if (auto const view = m_ledgerMaster.getCurrentLedger();
+        view->rules().enabled(featureBatch) && iTrans->isFlag(tfInnerBatchTxn))
+    {
+        JLOG(m_journal.error())
+            << "Submitted transaction invalid: tfInnerBatchTxn flag present.";
+        return;
+    }
+
     // this is an asynchronous interface
     auto const trans = sterilize(*iTrans);
 
@@ -1205,11 +1215,21 @@ NetworkOPsImp::processTransaction(
     // but I'm not 100% sure yet.
     // If so, only cost is looking up HashRouter flags.
     auto const view = m_ledgerMaster.getCurrentLedger();
-    auto const [validity, reason] = checkValidity(
-        app_.getHashRouter(),
-        *transaction->getSTransaction(),
-        view->rules(),
-        app_.config());
+
+    // This function is called by several different parts of the codebase
+    // under no circumstances will we ever accept an inner txn within a batch
+    // txn from the network.
+    auto const tx = *transaction->getSTransaction();
+    if (view->rules().enabled(featureBatch) && tx.isFlag(tfInnerBatchTxn))
+    {
+        transaction->setStatus(INVALID);
+        transaction->setResult(temINVALID_BATCH);
+        app_.getHashRouter().setFlags(transaction->getID(), SF_BAD);
+        return;
+    }
+
+    auto const [validity, reason] =
+        checkValidity(app_.getHashRouter(), tx, view->rules(), app_.config());
     assert(validity == Validity::Valid);
 
     // Not concerned with local checks at this point.
@@ -1466,12 +1486,13 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 auto const toSkip =
                     app_.getHashRouter().shouldRelay(e.transaction->getID());
 
-                if (toSkip)
+                if (auto const txn = *(e.transaction->getSTransaction());
+                    toSkip && !txn.isFlag(tfInnerBatchTxn))
                 {
                     protocol::TMTransaction tx;
                     Serializer s;
 
-                    e.transaction->getSTransaction()->add(s);
+                    txn.add(s);
                     tx.set_rawtransaction(s.data(), s.size());
                     tx.set_status(protocol::tsCURRENT);
                     tx.set_receivetimestamp(
@@ -2756,6 +2777,10 @@ NetworkOPsImp::pubProposedTransaction(
     std::shared_ptr<STTx const> const& transaction,
     TER result)
 {
+    // never publish an inner txn inside a batch txn
+    if (transaction->isFlag(tfInnerBatchTxn))
+        return;
+
     MultiApiJson jvObj =
         transJson(transaction, result, false, ledger, std::nullopt);
 
