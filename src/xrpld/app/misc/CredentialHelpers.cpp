@@ -240,7 +240,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
     std::unordered_set<uint256> duplicates;
     for (auto const& credential : credentials)
     {
-        auto const& issuer(credential[sfIssuer]);
+        auto const& issuer = credential[sfIssuer];
         if (!issuer)
         {
             JLOG(j.trace()) << "Malformed transaction: "
