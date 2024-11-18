@@ -45,7 +45,7 @@ NFTokenCreateOffer::preflight(PreflightContext const& ctx)
 
     // Use implementation shared with NFTokenMint
     if (NotTEC notTec = nft::tokenOfferCreatePreflight(
-            ctx.tx[sfAccount],
+            ctx.account,
             ctx.tx[sfAmount],
             ctx.tx[~sfDestination],
             ctx.tx[~sfExpiration],
@@ -70,14 +70,14 @@ NFTokenCreateOffer::preclaim(PreclaimContext const& ctx)
 
     if (!nft::findToken(
             ctx.view,
-            ctx.tx[(txFlags & tfSellNFToken) ? sfAccount : sfOwner],
+            (txFlags & tfSellNFToken) ? ctx.account : ctx.tx[sfOwner],
             nftokenID))
         return tecNO_ENTRY;
 
     // Use implementation shared with NFTokenMint
     return nft::tokenOfferCreatePreclaim(
         ctx.view,
-        ctx.tx[sfAccount],
+        ctx.account,
         nft::getIssuer(nftokenID),
         ctx.tx[sfAmount],
         ctx.tx[~sfDestination],
@@ -94,7 +94,7 @@ NFTokenCreateOffer::doApply()
     // Use implementation shared with NFTokenMint
     return nft::tokenOfferCreateApply(
         view(),
-        ctx_.tx[sfAccount],
+        account_,
         ctx_.tx[sfAmount],
         ctx_.tx[~sfDestination],
         ctx_.tx[~sfExpiration],

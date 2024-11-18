@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/misc/CredentialHelpers.h>
+#include <xrpld/app/tx/detail/AccountPermissionSet.h>
 #include <xrpld/app/tx/detail/DID.h>
 #include <xrpld/app/tx/detail/DeleteAccount.h>
 #include <xrpld/app/tx/detail/DeleteOracle.h>
@@ -52,7 +53,7 @@ DeleteAccount::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
+    if (ctx.account == ctx.tx[sfDestination])
         // An account cannot be deleted and give itself the resulting XRP.
         return temDST_IS_SRC;
 
@@ -179,6 +180,19 @@ removeCredentialFromLedger(
     return credentials::deleteSLE(view, sleDel, j);
 }
 
+TER
+removeAccountPermissionFromLedger(
+    Application& app,
+    ApplyView& view,
+    AccountID const& account,
+    uint256 const& delIndex,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal j)
+{
+    return AccountPermissionSet::deleteAccountPermission(
+        view, sleDel, account, j);
+}
+
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -201,6 +215,8 @@ nonObligationDeleter(LedgerEntryType t)
             return removeDIDFromLedger;
         case ltORACLE:
             return removeOracleFromLedger;
+        case ltACCOUNT_PERMISSION:
+            return removeAccountPermissionFromLedger;
         case ltCREDENTIAL:
             return removeCredentialFromLedger;
         default:
@@ -213,7 +229,7 @@ nonObligationDeleter(LedgerEntryType t)
 TER
 DeleteAccount::preclaim(PreclaimContext const& ctx)
 {
-    AccountID const account{ctx.tx[sfAccount]};
+    AccountID const account{ctx.account};
     AccountID const dst{ctx.tx[sfDestination]};
 
     auto sleDst = ctx.view.read(keylet::account(dst));

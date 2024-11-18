@@ -25,6 +25,7 @@
 #include <xrpld/app/tx/detail/AMMDeposit.h>
 #include <xrpld/app/tx/detail/AMMVote.h>
 #include <xrpld/app/tx/detail/AMMWithdraw.h>
+#include <xrpld/app/tx/detail/AccountPermissionSet.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
 #include <xrpld/app/tx/detail/CancelCheck.h>
 #include <xrpld/app/tx/detail/CancelOffer.h>
@@ -162,7 +163,7 @@ invoke_preflight(PreflightContext const& ctx)
     }
 }
 
-static TER
+static std::pair<TER, std::unordered_set<GranularPermissionType>>
 invoke_preclaim(PreclaimContext const& ctx)
 {
     try
@@ -174,31 +175,40 @@ invoke_preclaim(PreclaimContext const& ctx)
             // doesn't list one, preflight will have already a flagged a
             // failure.
             auto const id = ctx.tx.getAccountID(sfAccount);
+            std::unordered_set<GranularPermissionType> gpSet;
 
             if (id != beast::zero)
             {
                 TER result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
 
                 if (result != tesSUCCESS)
-                    return result;
+                    return std::make_pair(result, gpSet);
 
                 result = T::checkPriorTxAndLastLedger(ctx);
 
                 if (result != tesSUCCESS)
-                    return result;
+                    return std::make_pair(result, gpSet);
 
                 result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
 
                 if (result != tesSUCCESS)
-                    return result;
+                    return std::make_pair(result, gpSet);
 
                 result = T::checkSign(ctx);
 
                 if (result != tesSUCCESS)
-                    return result;
+                    return std::make_pair(result, gpSet);
+
+                if (ctx.isDelegated)
+                    // if this is a delegated transaction, check if the account
+                    // has authorization.
+                    result = T::checkAuthorization(ctx.view, ctx.tx, gpSet);
+
+                if (result != tesSUCCESS)
+                    return std::make_pair(result, gpSet);
             }
 
-            return T::preclaim(ctx);
+            return std::make_pair(T::preclaim(ctx), gpSet);
         });
     }
     catch (UnknownTxnType const& e)
@@ -207,7 +217,7 @@ invoke_preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.fatal())
             << "Unknown transaction type in preclaim: " << e.txnType;
         assert(false);
-        return temUNKNOWN;
+        return {temUNKNOWN, std::unordered_set<GranularPermissionType>{}};
     }
 }
 
@@ -294,15 +304,22 @@ preflight(
     ApplyFlags flags,
     beast::Journal j)
 {
-    PreflightContext const pfctx(app, tx, rules, flags, j);
+    bool const isDelegated =
+        rules.enabled(featureAccountPermission) && tx[~sfOnBehalfOf];
+    AccountID const account = isDelegated ? *tx[~sfOnBehalfOf] : tx[sfAccount];
+    PreflightContext const pfctx(app, tx, rules, flags, account, j);
     try
     {
-        return {pfctx, invoke_preflight(pfctx)};
+        // if AccountPermission is not enabled, do not use OnBehalfOf field.
+        if (!rules.enabled(featureAccountPermission) && tx[~sfOnBehalfOf])
+            throw std::runtime_error("invalid field");
+
+        return {pfctx, isDelegated, account, invoke_preflight(pfctx)};
     }
     catch (std::exception const& e)
     {
         JLOG(j.fatal()) << "apply: " << e.what();
-        return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
+        return {pfctx, false, AccountID(0), {tefEXCEPTION, TxConsequences{tx}}};
     }
 }
 
@@ -327,6 +344,8 @@ preclaim(
             secondFlight.ter,
             secondFlight.tx,
             secondFlight.flags,
+            secondFlight.isDelegated,
+            secondFlight.account,
             secondFlight.j);
     }
     else
@@ -337,18 +356,26 @@ preclaim(
             preflightResult.ter,
             preflightResult.tx,
             preflightResult.flags,
+            preflightResult.isDelegated,
+            preflightResult.account,
             preflightResult.j);
     }
     try
     {
         if (ctx->preflightResult != tesSUCCESS)
-            return {*ctx, ctx->preflightResult};
-        return {*ctx, invoke_preclaim(*ctx)};
+            return {
+                *ctx,
+                ctx->preflightResult,
+                std::unordered_set<GranularPermissionType>{}};
+
+        auto const& res = invoke_preclaim(*ctx);
+        return {*ctx, res.first, res.second};
     }
     catch (std::exception const& e)
     {
         JLOG(ctx->j.fatal()) << "apply: " << e.what();
-        return {*ctx, tefEXCEPTION};
+        return {
+            *ctx, tefEXCEPTION, std::unordered_set<GranularPermissionType>{}};
     }
 }
 
@@ -384,6 +411,9 @@ doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view)
             preclaimResult.ter,
             calculateBaseFee(view, preclaimResult.tx),
             preclaimResult.flags,
+            preclaimResult.isDelegated,
+            preclaimResult.account,
+            preclaimResult.gpSet,
             preclaimResult.j);
         return invoke_apply(ctx);
     }

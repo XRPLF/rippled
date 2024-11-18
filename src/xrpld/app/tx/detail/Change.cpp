@@ -38,7 +38,7 @@ Change::preflight(PreflightContext const& ctx)
     if (!isTesSuccess(ret))
         return ret;
 
-    auto account = ctx.tx.getAccountID(sfAccount);
+    auto account = ctx.account;
     if (account != beast::zero)
     {
         JLOG(ctx.j.warn()) << "Change: Bad source id";

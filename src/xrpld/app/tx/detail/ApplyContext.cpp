@@ -35,11 +35,17 @@ ApplyContext::ApplyContext(
     TER preclaimResult_,
     XRPAmount baseFee_,
     ApplyFlags flags,
+    bool isDelegated,
+    AccountID const account,
+    std::unordered_set<GranularPermissionType> const gpSet,
     beast::Journal journal_)
     : app(app_)
     , tx(tx_)
     , preclaimResult(preclaimResult_)
     , baseFee(baseFee_)
+    , isDelegated(isDelegated)
+    , account(account)
+    , gpSet(std::move(gpSet))
     , journal(journal_)
     , base_(base)
     , flags_(flags)

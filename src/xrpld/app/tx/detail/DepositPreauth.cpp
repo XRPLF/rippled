@@ -85,7 +85,7 @@ DepositPreauth::preflight(PreflightContext const& ctx)
         }
 
         // An account may not preauthorize itself.
-        if (optAuth && (target == ctx.tx[sfAccount]))
+        if (optAuth && (target == ctx.account))
         {
             JLOG(ctx.j.trace())
                 << "Malformed transaction: Attempting to DepositPreauth self.";
@@ -141,7 +141,7 @@ DepositPreauth::preflight(PreflightContext const& ctx)
 TER
 DepositPreauth::preclaim(PreclaimContext const& ctx)
 {
-    AccountID const account(ctx.tx[sfAccount]);
+    AccountID const account(ctx.account);
 
     // Determine which operation we're performing: authorizing or unauthorizing.
     if (ctx.tx.isFieldPresent(sfAuthorize))

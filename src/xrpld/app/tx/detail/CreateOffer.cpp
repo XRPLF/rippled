@@ -128,7 +128,7 @@ CreateOffer::preflight(PreflightContext const& ctx)
 TER
 CreateOffer::preclaim(PreclaimContext const& ctx)
 {
-    auto const id = ctx.tx[sfAccount];
+    auto const id = ctx.account;
 
     auto saTakerPays = ctx.tx[sfTakerPays];
     auto saTakerGets = ctx.tx[sfTakerGets];

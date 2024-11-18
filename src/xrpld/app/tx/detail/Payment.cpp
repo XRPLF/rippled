@@ -105,7 +105,7 @@ Payment::preflight(PreflightContext const& ctx)
 
     auto const account = tx.getAccountID(sfAccount);
     STAmount const maxSourceAmount =
-        getMaxSourceAmount(account, dstAmount, tx[~sfSendMax]);
+        getMaxSourceAmount(ctx.account, dstAmount, tx[~sfSendMax]);
 
     if ((mptDirect && dstAmount.asset() != maxSourceAmount.asset()) ||
         (!mptDirect && maxSourceAmount.holds<MPTIssue>()))
@@ -319,7 +319,7 @@ Payment::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
+    if (auto const err = credentials::valid(ctx, ctx.account);
         !isTesSuccess(err))
         return err;
 
@@ -341,6 +341,24 @@ Payment::doApply()
 
     AccountID const dstAccountID(ctx_.tx.getAccountID(sfDestination));
     STAmount const dstAmount(ctx_.tx.getFieldAmount(sfAmount));
+
+    if (ctx_.isDelegated && !ctx_.gpSet.empty())
+    {
+        bool authorized = false;
+        auto const amountIssue = dstAmount.issue();
+        if (isXRP(amountIssue))
+            return tecNO_AUTH;
+        if (amountIssue.account == account_ &&
+            ctx_.gpSet.find(gpPaymentMint) == ctx_.gpSet.end())
+            authorized = true;
+        if (amountIssue.account == dstAccountID &&
+            ctx_.gpSet.find(gpPaymentBurn) == ctx_.gpSet.end())
+            authorized = true;
+
+        if (!authorized)
+            return tecNO_AUTH;
+    }
+
     bool const mptDirect = dstAmount.holds<MPTIssue>();
     STAmount const maxSourceAmount =
         getMaxSourceAmount(account_, dstAmount, sendMax);

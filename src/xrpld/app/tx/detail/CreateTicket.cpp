@@ -56,7 +56,7 @@ CreateTicket::preflight(PreflightContext const& ctx)
 TER
 CreateTicket::preclaim(PreclaimContext const& ctx)
 {
-    auto const id = ctx.tx[sfAccount];
+    auto const id = ctx.account;
     auto const sleAccountRoot = ctx.view.read(keylet::account(id));
     if (!sleAccountRoot)
         return terNO_ACCOUNT;

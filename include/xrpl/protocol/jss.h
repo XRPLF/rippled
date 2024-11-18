@@ -45,6 +45,7 @@ namespace jss {
 JSS(AL_size);              // out: GetCounts
 JSS(AL_hit_rate);          // out: GetCounts
 JSS(Account);              // in: TransactionSign; field.
+JSS(AccountPermission);    // ledger type.
 JSS(AccountRoot);          // ledger type.
 JSS(AMM);                  // ledger type
 JSS(AMMID);                // field
@@ -132,6 +133,7 @@ JSS(account_hash);           // out: LedgerToJson
 JSS(account_id);             // out: WalletPropose
 JSS(account_nfts);           // out: AccountNFTs
 JSS(account_objects);        // out: AccountObjects
+JSS(account_permission);     // in: AccountPermission
 JSS(account_root);           // in: LedgerEntry
 JSS(account_sequence_next);  // out: SubmitTransaction
 JSS(account_sequence_available);  // out: SubmitTransaction

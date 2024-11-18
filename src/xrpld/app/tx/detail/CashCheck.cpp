@@ -91,7 +91,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
 
     // Only cash a check with this account as the destination.
     AccountID const dstId = sleCheck->at(sfDestination);
-    if (ctx.tx[sfAccount] != dstId)
+    if (ctx.account != dstId)
     {
         JLOG(ctx.j.warn()) << "Cashing a check with wrong Destination.";
         return tecNO_PERMISSION;

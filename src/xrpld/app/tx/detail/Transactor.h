@@ -24,6 +24,7 @@
 #include <xrpld/app/tx/detail/ApplyContext.h>
 #include <xrpl/basics/XRPAmount.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/STAccount.h>
 
 namespace ripple {
 
@@ -35,6 +36,7 @@ public:
     STTx const& tx;
     Rules const rules;
     ApplyFlags flags;
+    AccountID const account;
     beast::Journal const j;
 
     PreflightContext(
@@ -42,6 +44,7 @@ public:
         STTx const& tx_,
         Rules const& rules_,
         ApplyFlags flags_,
+        AccountID const account_,
         beast::Journal j_);
 
     PreflightContext&
@@ -57,6 +60,8 @@ public:
     TER preflightResult;
     STTx const& tx;
     ApplyFlags flags;
+    bool isDelegated;
+    AccountID const account;
     beast::Journal const j;
 
     PreclaimContext(
@@ -65,12 +70,16 @@ public:
         TER preflightResult_,
         STTx const& tx_,
         ApplyFlags flags_,
+        bool isDelegated,
+        AccountID const account,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
         : app(app_)
         , view(view_)
         , preflightResult(preflightResult_)
         , tx(tx_)
         , flags(flags_)
+        , isDelegated(isDelegated)
+        , account(account)
         , j(j_)
     {
     }
@@ -140,6 +149,12 @@ public:
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
+
+    static TER
+    checkAuthorization(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType>& gpSet);
 
     static TER
     preclaim(PreclaimContext const& ctx)

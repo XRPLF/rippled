@@ -150,15 +150,16 @@ PreflightContext::PreflightContext(
     STTx const& tx_,
     Rules const& rules_,
     ApplyFlags flags_,
+    AccountID const account_,
     beast::Journal j_)
-    : app(app_), tx(tx_), rules(rules_), flags(flags_), j(j_)
+    : app(app_), tx(tx_), rules(rules_), flags(flags_), account(account_), j(j_)
 {
 }
 
 //------------------------------------------------------------------------------
 
 Transactor::Transactor(ApplyContext& ctx)
-    : ctx_(ctx), j_(ctx.journal), account_(ctx.tx.getAccountID(sfAccount))
+    : ctx_(ctx), j_(ctx.journal), account_(ctx.account)
 {
 }
 
@@ -178,6 +179,52 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
         tx.isFieldPresent(sfSigners) ? tx.getFieldArray(sfSigners).size() : 0;
 
     return baseFee + (signerCount * baseFee);
+}
+
+TER
+Transactor::checkAuthorization(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType>& gpSet)
+{
+    auto const onBehalfOfAccount = view.read(keylet::account(tx[sfOnBehalfOf]));
+    if (!onBehalfOfAccount)
+        return terNO_ACCOUNT;
+
+    auto const accountPermissionKey =
+        keylet::accountPermission(tx[sfOnBehalfOf], tx[sfAccount]);
+    auto const sle = view.read(accountPermissionKey);
+    if (!sle)
+        return temMALFORMED;  // todo: change error code
+
+    auto const permissions = sle->getFieldArray(sfPermissions);
+    auto const transactionType = tx.getTxnType();
+
+    for (auto const& permission : permissions)
+    {
+        auto const permissionValue = permission[sfPermissionValue];
+        if (permissionValue == transactionType + 1)
+        {
+            // if the transaction permission is authorized, do not need to check
+            // granular permission.
+            gpSet.clear();
+            return tesSUCCESS;
+        }
+
+        auto const gpType =
+            static_cast<GranularPermissionType>(permissionValue);
+        auto const& type = Permission::getInstance().getGranularTxType(gpType);
+        if (type && *type == transactionType)
+            gpSet.insert(gpType);
+    }
+
+    if (gpSet.empty())
+        return terNO_AUTH;
+
+    // When the code reaches here, the transaction permission is not authorized.
+    // But one or more of its granular permission under this transaction type is
+    // authorized. And the granular types are stored in gpSet.
+    return tesSUCCESS;
 }
 
 XRPAmount
@@ -247,6 +294,21 @@ TER
 Transactor::payFee()
 {
     auto const feePaid = ctx_.tx[sfFee].xrp();
+    if (ctx_.isDelegated)
+    {
+        // if the transaction is being delegated to another account,
+        // the sender account will pay the fee.
+        auto const sender = ctx_.tx.getAccountID(sfAccount);
+        auto const sleSender = view().peek(keylet::account(sender));
+        if (!sleSender)
+            return tefINTERNAL;
+
+        auto senderBalance = STAmount{(*sleSender)[sfBalance]}.xrp();
+        senderBalance -= feePaid;
+        sleSender->setFieldAmount(sfBalance, senderBalance);
+        view().update(sleSender);
+        return tesSUCCESS;
+    }
 
     auto const sle = view().peek(keylet::account(account_));
     if (!sle)

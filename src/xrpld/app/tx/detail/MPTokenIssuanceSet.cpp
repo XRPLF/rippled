@@ -43,7 +43,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     else if ((txFlags & tfMPTLock) && (txFlags & tfMPTUnlock))
         return temINVALID_FLAG;
 
-    auto const accountID = ctx.tx[sfAccount];
+    auto const accountID = ctx.account;
     auto const holderID = ctx.tx[~sfHolder];
     if (holderID && accountID == holderID)
         return temMALFORMED;
@@ -65,7 +65,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     // ensure it is issued by the tx submitter
-    if ((*sleMptIssuance)[sfIssuer] != ctx.tx[sfAccount])
+    if ((*sleMptIssuance)[sfIssuer] != ctx.account)
         return tecNO_PERMISSION;
 
     if (auto const holderID = ctx.tx[~sfHolder])
@@ -102,9 +102,20 @@ MPTokenIssuanceSet::doApply()
     std::uint32_t const flagsIn = sle->getFieldU32(sfFlags);
     std::uint32_t flagsOut = flagsIn;
 
-    if (txFlags & tfMPTLock)
+    bool bLock = txFlags & tfMPTLock;
+    bool bUnlock = txFlags & tfMPTUnlock;
+    if (ctx_.isDelegated && !ctx_.gpSet.empty())
+    {
+        if (bLock && ctx_.gpSet.find(gpMPTokenIssuanceLock) == ctx_.gpSet.end())
+            return terNO_AUTH;
+        if (bUnlock &&
+            ctx_.gpSet.find(gpMPTokenIssuanceUnlock) == ctx_.gpSet.end())
+            return terNO_AUTH;
+    }
+
+    if (bLock)
         flagsOut |= lsfMPTLocked;
-    else if (txFlags & tfMPTUnlock)
+    else if (bUnlock)
         flagsOut &= ~lsfMPTLocked;
 
     if (flagsIn != flagsOut)

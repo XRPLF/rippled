@@ -97,7 +97,7 @@ SetSignerList::preflight(PreflightContext const& ctx)
     if (std::get<3>(result) == set)
     {
         // Validate our settings.
-        auto const account = ctx.tx.getAccountID(sfAccount);
+        auto const account = ctx.account;
         NotTEC const ter = validateQuorumAndSignerEntries(
             std::get<1>(result),
             std::get<2>(result),

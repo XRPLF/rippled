@@ -807,6 +807,10 @@ doLedgerEntry(RPC::JsonContext& context)
                 }
             }
         }
+        else if (context.params.isMember(jss::account_permission))
+        {
+            // to be implemented
+        }
         else
         {
             if (context.params.isMember("params") &&

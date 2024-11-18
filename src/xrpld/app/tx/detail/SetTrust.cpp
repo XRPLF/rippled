@@ -84,7 +84,7 @@ SetTrust::preflight(PreflightContext const& ctx)
 TER
 SetTrust::preclaim(PreclaimContext const& ctx)
 {
-    auto const id = ctx.tx[sfAccount];
+    auto const id = ctx.account;
 
     auto const sle = ctx.view.read(keylet::account(id));
     if (!sle)
@@ -242,6 +242,21 @@ SetTrust::doApply()
     bool const bClearNoRipple = (uTxFlags & tfClearNoRipple);
     bool const bSetFreeze = (uTxFlags & tfSetFreeze);
     bool const bClearFreeze = (uTxFlags & tfClearFreeze);
+
+    if (ctx_.isDelegated && !ctx_.gpSet.empty())
+    {
+        if (bSetNoRipple || bClearNoRipple)
+            return terNO_AUTH;
+        if (bSetAuth &&
+            ctx_.gpSet.find(gpTrustlineAuthorize) == ctx_.gpSet.end())
+            return terNO_AUTH;
+        if (bSetFreeze &&
+            ctx_.gpSet.find(gpTrustlineFreeze) == ctx_.gpSet.end())
+            return terNO_AUTH;
+        if (bClearFreeze &&
+            ctx_.gpSet.find(gpTrustlineUnfreeze) == ctx_.gpSet.end())
+            return terNO_AUTH;
+    }
 
     auto viewJ = ctx_.app.journal("View");
 

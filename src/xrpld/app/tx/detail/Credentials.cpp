@@ -101,8 +101,7 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
         return tecNO_TARGET;
     }
 
-    if (ctx.view.exists(
-            keylet::credential(subject, ctx.tx[sfAccount], credType)))
+    if (ctx.view.exists(keylet::credential(subject, ctx.account, credType)))
     {
         JLOG(ctx.j.trace()) << "Credential already exists.";
         return tecDUPLICATE;
@@ -242,7 +241,7 @@ CredentialDelete::preflight(PreflightContext const& ctx)
 TER
 CredentialDelete::preclaim(PreclaimContext const& ctx)
 {
-    AccountID const account{ctx.tx[sfAccount]};
+    AccountID const account{ctx.account};
     auto const subject = ctx.tx[~sfSubject].value_or(account);
     auto const issuer = ctx.tx[~sfIssuer].value_or(account);
     auto const credType(ctx.tx[sfCredentialType]);
@@ -309,7 +308,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
 TER
 CredentialAccept::preclaim(PreclaimContext const& ctx)
 {
-    AccountID const subject = ctx.tx[sfAccount];
+    AccountID const subject = ctx.account;
     AccountID const issuer = ctx.tx[sfIssuer];
     auto const credType(ctx.tx[sfCredentialType]);
 

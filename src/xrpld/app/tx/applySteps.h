@@ -22,6 +22,7 @@
 
 #include <xrpld/ledger/ApplyViewImpl.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/Permissions.h>
 
 namespace ripple {
 
@@ -160,7 +161,10 @@ public:
     ApplyFlags const flags;
     /// From the input - the journal
     beast::Journal const j;
-
+    /// If the transaction is a delegated transaction
+    bool const isDelegated;
+    /// the account that the transaction is operated on
+    AccountID const account;
     /// Intermediate transaction result
     NotTEC const ter;
 
@@ -168,12 +172,16 @@ public:
     template <class Context>
     PreflightResult(
         Context const& ctx_,
+        bool const isDelegated,
+        AccountID const account,
         std::pair<NotTEC, TxConsequences> const& result)
         : tx(ctx_.tx)
         , rules(ctx_.rules)
         , consequences(result.second)
         , flags(ctx_.flags)
         , j(ctx_.j)
+        , isDelegated(isDelegated)
+        , account(account)
         , ter(result.first)
     {
     }
@@ -201,21 +209,34 @@ public:
     ApplyFlags const flags;
     /// From the input - the journal
     beast::Journal const j;
+    /// If the transaction is a delegated transaction
+    bool const isDelegated;
+    /// the account that the transaction is operated on
+    AccountID const account;
 
     /// Intermediate transaction result
     TER const ter;
+    /// granular permissions enabled for the transaction. If empty and
+    /// isDelegated=true, then the entire transaction is authorized.
+    std::unordered_set<GranularPermissionType> gpSet;
     /// Success flag - whether the transaction is likely to
     /// claim a fee
     bool const likelyToClaimFee;
 
     /// Constructor
     template <class Context>
-    PreclaimResult(Context const& ctx_, TER ter_)
+    PreclaimResult(
+        Context const& ctx_,
+        TER ter_,
+        std::unordered_set<GranularPermissionType> gpSet_)
         : view(ctx_.view)
         , tx(ctx_.tx)
         , flags(ctx_.flags)
         , j(ctx_.j)
+        , isDelegated(ctx_.isDelegated)
+        , account(ctx_.account)
         , ter(ter_)
+        , gpSet(std::move(gpSet_))
         , likelyToClaimFee(ter == tesSUCCESS || isTecClaimHardFail(ter, flags))
     {
     }

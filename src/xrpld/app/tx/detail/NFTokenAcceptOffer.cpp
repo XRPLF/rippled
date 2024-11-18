@@ -125,10 +125,10 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             // a broker. After, it must be whoever is submitting the tx.
             if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
             {
-                if (*dest != ctx.tx[sfAccount])
+                if (*dest != ctx.account)
                     return tecNO_PERMISSION;
             }
-            else if (*dest != so->at(sfOwner) && *dest != ctx.tx[sfAccount])
+            else if (*dest != so->at(sfOwner) && *dest != ctx.account)
                 return tecNFTOKEN_BUY_SELL_MISMATCH;
         }
 
@@ -139,10 +139,10 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             // a broker. After, it must be whoever is submitting the tx.
             if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
             {
-                if (*dest != ctx.tx[sfAccount])
+                if (*dest != ctx.account)
                     return tecNO_PERMISSION;
             }
-            else if (*dest != bo->at(sfOwner) && *dest != ctx.tx[sfAccount])
+            else if (*dest != bo->at(sfOwner) && *dest != ctx.account)
                 return tecNFTOKEN_BUY_SELL_MISMATCH;
         }
 
@@ -169,12 +169,11 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             return tecNFTOKEN_OFFER_TYPE_MISMATCH;
 
         // An account can't accept an offer it placed:
-        if ((*bo)[sfOwner] == ctx.tx[sfAccount])
+        if ((*bo)[sfOwner] == ctx.account)
             return tecCANT_ACCEPT_OWN_NFTOKEN_OFFER;
 
         // If not in bridged mode, the account must own the token:
-        if (!so &&
-            !nft::findToken(ctx.view, ctx.tx[sfAccount], (*bo)[sfNFTokenID]))
+        if (!so && !nft::findToken(ctx.view, ctx.account, (*bo)[sfNFTokenID]))
             return tecNO_PERMISSION;
 
         // If not in bridged mode...
@@ -183,7 +182,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             // If the offer has a Destination field, the acceptor must be the
             // Destination.
             if (auto const dest = bo->at(~sfDestination);
-                dest.has_value() && *dest != ctx.tx[sfAccount])
+                dest.has_value() && *dest != ctx.account)
                 return tecNO_PERMISSION;
         }
 
@@ -216,7 +215,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             return tecNFTOKEN_OFFER_TYPE_MISMATCH;
 
         // An account can't accept an offer it placed:
-        if ((*so)[sfOwner] == ctx.tx[sfAccount])
+        if ((*so)[sfOwner] == ctx.account)
             return tecCANT_ACCEPT_OWN_NFTOKEN_OFFER;
 
         // The seller must own the token.
@@ -229,7 +228,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             // If the offer has a Destination field, the acceptor must be the
             // Destination.
             if (auto const dest = so->at(~sfDestination);
-                dest.has_value() && *dest != ctx.tx[sfAccount])
+                dest.has_value() && *dest != ctx.account)
                 return tecNO_PERMISSION;
         }
 
@@ -239,7 +238,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         {
             if (accountHolds(
                     ctx.view,
-                    ctx.tx[sfAccount],
+                    ctx.account,
                     needed.getCurrency(),
                     needed.getIssuer(),
                     fhZERO_IF_FROZEN,
@@ -261,11 +260,8 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             // cover what the buyer will pay, which doesn't make sense, causes
             // an unnecessary tec, and is also resolved with this amendment.
             if (accountFunds(
-                    ctx.view,
-                    ctx.tx[sfAccount],
-                    needed,
-                    fhZERO_IF_FROZEN,
-                    ctx.j) < needed)
+                    ctx.view, ctx.account, needed, fhZERO_IF_FROZEN, ctx.j) <
+                needed)
                 return tecINSUFFICIENT_FUNDS;
         }
     }

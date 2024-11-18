@@ -3307,6 +3307,7 @@ private:
                     *jtx.stx,
                     env.current()->rules(),
                     tapNONE,
+                    AccountID(0),
                     env.journal);
                 auto pf = AMMBid::preflight(pfctx);
                 BEAST_EXPECT(pf == temDISABLED);
@@ -3322,6 +3323,7 @@ private:
                     *jtx.stx,
                     env.current()->rules(),
                     tapNONE,
+                    AccountID(0),
                     env.journal);
                 auto pf = AMMBid::preflight(pfctx);
                 BEAST_EXPECT(pf != tesSUCCESS);
@@ -3337,6 +3339,7 @@ private:
                     *jtx.stx,
                     env.current()->rules(),
                     tapNONE,
+                    AccountID(0),
                     env.journal);
                 auto pf = AMMBid::preflight(pfctx);
                 BEAST_EXPECT(pf == temBAD_AMM_TOKENS);

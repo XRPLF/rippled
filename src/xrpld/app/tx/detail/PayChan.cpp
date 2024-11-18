@@ -181,7 +181,7 @@ PayChanCreate::preflight(PreflightContext const& ctx)
     if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
         return temBAD_AMOUNT;
 
-    if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
+    if (ctx.account == ctx.tx[sfDestination])
         return temDST_IS_SRC;
 
     if (!publicKeyType(ctx.tx[sfPublicKey]))
@@ -193,7 +193,7 @@ PayChanCreate::preflight(PreflightContext const& ctx)
 TER
 PayChanCreate::preclaim(PreclaimContext const& ctx)
 {
-    auto const account = ctx.tx[sfAccount];
+    auto const account = ctx.account;
     auto const sle = ctx.view.read(keylet::account(account));
     if (!sle)
         return terNO_ACCOUNT;
@@ -245,8 +245,7 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
 TER
 PayChanCreate::doApply()
 {
-    auto const account = ctx_.tx[sfAccount];
-    auto const sle = ctx_.view().peek(keylet::account(account));
+    auto const sle = ctx_.view().peek(keylet::account(account_));
     if (!sle)
         return tefINTERNAL;
 
@@ -257,14 +256,14 @@ PayChanCreate::doApply()
     // Note that we we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
     Keylet const payChanKeylet =
-        keylet::payChan(account, dst, ctx_.tx.getSeqProxy().value());
+        keylet::payChan(account_, dst, ctx_.tx.getSeqProxy().value());
     auto const slep = std::make_shared<SLE>(payChanKeylet);
 
     // Funds held in this channel
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
     // Amount channel has already paid
     (*slep)[sfBalance] = ctx_.tx[sfAmount].zeroed();
-    (*slep)[sfAccount] = account;
+    (*slep)[sfAccount] = account_;
     (*slep)[sfDestination] = dst;
     (*slep)[sfSettleDelay] = ctx_.tx[sfSettleDelay];
     (*slep)[sfPublicKey] = ctx_.tx[sfPublicKey];
@@ -277,9 +276,9 @@ PayChanCreate::doApply()
     // Add PayChan to owner directory
     {
         auto const page = ctx_.view().dirInsert(
-            keylet::ownerDir(account),
+            keylet::ownerDir(account_),
             payChanKeylet,
-            describeOwnerDir(account));
+            describeOwnerDir(account_));
         if (!page)
             return tecDIR_FULL;
         (*slep)[sfOwnerNode] = *page;
@@ -335,7 +334,6 @@ PayChanFund::doApply()
         return tecNO_ENTRY;
 
     AccountID const src = (*slep)[sfAccount];
-    auto const txAccount = ctx_.tx[sfAccount];
     auto const expiration = (*slep)[~sfExpiration];
 
     {
@@ -348,7 +346,7 @@ PayChanFund::doApply()
                 slep, ctx_.view(), k.key, ctx_.app.journal("View"));
     }
 
-    if (src != txAccount)
+    if (src != account_)
         // only the owner can add funds or extend
         return tecNO_PERMISSION;
 
@@ -366,7 +364,7 @@ PayChanFund::doApply()
         ctx_.view().update(slep);
     }
 
-    auto const sle = ctx_.view().peek(keylet::account(txAccount));
+    auto const sle = ctx_.view().peek(keylet::account(account_));
     if (!sle)
         return tefINTERNAL;
 
@@ -470,7 +468,7 @@ PayChanClaim::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.rules().enabled(featureCredentials))
         return Transactor::preclaim(ctx);
 
-    if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
+    if (auto const err = credentials::valid(ctx, ctx.account);
         !isTesSuccess(err))
         return err;
 
@@ -487,7 +485,6 @@ PayChanClaim::doApply()
 
     AccountID const src = (*slep)[sfAccount];
     AccountID const dst = (*slep)[sfDestination];
-    AccountID const txAccount = ctx_.tx[sfAccount];
 
     auto const curExpiration = (*slep)[~sfExpiration];
     {
@@ -500,7 +497,7 @@ PayChanClaim::doApply()
                 slep, ctx_.view(), k.key, ctx_.app.journal("View"));
     }
 
-    if (txAccount != src && txAccount != dst)
+    if (account_ != src && account_ != dst)
         return tecNO_PERMISSION;
 
     if (ctx_.tx[~sfBalance])
@@ -509,7 +506,7 @@ PayChanClaim::doApply()
         auto const chanFunds = slep->getFieldAmount(sfAmount).xrp();
         auto const reqBalance = ctx_.tx[sfBalance].xrp();
 
-        if (txAccount == dst && !ctx_.tx[~sfSignature])
+        if (account_ == dst && !ctx_.tx[~sfSignature])
             return temBAD_SIGNATURE;
 
         if (ctx_.tx[~sfSignature])
@@ -534,12 +531,12 @@ PayChanClaim::doApply()
         // featureDepositAuth to remove the bug.
         bool const depositAuth{ctx_.view().rules().enabled(featureDepositAuth)};
         if (!depositAuth &&
-            (txAccount == src && (sled->getFlags() & lsfDisallowXRP)))
+            (account_ == src && (sled->getFlags() & lsfDisallowXRP)))
             return tecNO_TARGET;
 
         if (depositAuth)
         {
-            if (auto err = verifyDepositPreauth(ctx_, txAccount, dst, sled);
+            if (auto err = verifyDepositPreauth(ctx_, account_, dst, sled);
                 !isTesSuccess(err))
                 return err;
         }
@@ -554,7 +551,7 @@ PayChanClaim::doApply()
 
     if (ctx_.tx.getFlags() & tfRenew)
     {
-        if (src != txAccount)
+        if (src != account_)
             return tecNO_PERMISSION;
         (*slep)[~sfExpiration] = std::nullopt;
         ctx_.view().update(slep);
@@ -563,7 +560,7 @@ PayChanClaim::doApply()
     if (ctx_.tx.getFlags() & tfClose)
     {
         // Channel will close immediately if dry or the receiver closes
-        if (dst == txAccount || (*slep)[sfBalance] == (*slep)[sfAmount])
+        if (dst == account_ || (*slep)[sfBalance] == (*slep)[sfAmount])
             return closeChannel(
                 slep, ctx_.view(), k.key, ctx_.app.journal("View"));
 

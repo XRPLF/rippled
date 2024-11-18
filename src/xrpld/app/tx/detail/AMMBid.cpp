@@ -110,8 +110,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto const lpTokens =
-        ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
+    auto const lpTokens = ammLPHolds(ctx.view, *ammSle, ctx.account, ctx.j);
     // Not LP
     if (lpTokens == beast::zero)
     {
