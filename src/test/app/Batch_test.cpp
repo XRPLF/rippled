@@ -126,6 +126,7 @@ class Batch_test : public beast::unit_test::suite
         batchTransaction[jss::RawTransaction][jss::SigningPubKey] = "";
         batchTransaction[jss::RawTransaction][sfFee.jsonName] = 0;
         batchTransaction[jss::RawTransaction][jss::Sequence] = sequence;
+        batchTransaction[jss::RawTransaction][jss::Flags] = tfInnerBatchTxn;
 
         // Optionally set ticket sequence
         if (ticket.has_value())
@@ -290,16 +291,14 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temINVALID_BATCH: Batch: Duplicate signer found: 
+        // temINVALID_BATCH: Batch: Duplicate signer found:
         {
             auto const seq = env.seq(alice);
             auto const batchFee = ((2 + 2) * feeDrops) + feeDrops * 2;
             env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
                 batch::add(pay(alice, bob, XRP(1)), seq + 1),
                 batch::add(pay(alice, bob, XRP(1)), seq + 2),
-                batch::sig(
-                    bob,
-                    bob),
+                batch::sig(bob, bob),
                 ter(temINVALID_BATCH));
             env.close();
         }
@@ -489,6 +488,18 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
+        // temBAD_SIGNER: Batch: outer signature for inner txn.
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = ((1 + 2) * feeDrops) + feeDrops * 2;
+            env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+                batch::add(pay(alice, bob, XRP(10)), seq + 1),
+                batch::add(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::sig(alice, bob),
+                ter(temBAD_SIGNER));
+            env.close();
+        }
+
         // temBAD_SIGNER: Batch: unique signers does not match batch signers.
         {
             auto const seq = env.seq(alice);
@@ -498,6 +509,47 @@ class Batch_test : public beast::unit_test::suite
                 batch::add(pay(bob, alice, XRP(5)), env.seq(bob)),
                 batch::sig(bob, carol),
                 ter(temBAD_SIGNER));
+            env.close();
+        }
+    }
+
+    void
+    testPreclaim(FeatureBitset features)
+    {
+        testcase("preclaim");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        //----------------------------------------------------------------------
+        // preclaim
+
+        test::jtx::Env env{*this, envconfig()};
+
+        auto const feeDrops = env.current()->fees().base;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        env.fund(XRP(1000), alice, bob, carol);
+        env.close();
+
+        // temBAD_FEE(tecBATCH_FAILURE): Batch: sfFee must be zero.
+        {
+            auto const batchFee = ((1 + 2) * feeDrops) + feeDrops * 2;
+            Json::Value jv =
+                batch::batch(alice, env.seq(alice), batchFee, tfAllOrNothing);
+
+            // Tx 1
+            Json::Value tx1 = pay(alice, bob, XRP(10));
+            jv = addBatchTx(jv, tx1, env.seq(alice) + 1);
+            jv[jss::RawTransactions][0u][jss::RawTransaction][sfFee.jsonName] =
+                to_string(feeDrops);
+            auto txn1 = jv[jss::RawTransactions][0u][jss::RawTransaction];
+            STParsedJSONObject parsed1(std::string(jss::tx_json), txn1);
+            STTx const stx1 = STTx{std::move(parsed1.object.value())};
+            jv[sfTxIDs.jsonName].append(to_string(stx1.getTransactionID()));
+
+            env(jv, ter(tecBATCH_FAILURE));
             env.close();
         }
     }
@@ -1724,6 +1776,7 @@ class Batch_test : public beast::unit_test::suite
     {
         testEnable(features);
         testPreflight(features);
+        testPreclaim(features);
         testBadSequence(features);
         testBadFeeNoSigner(features);
         testBadFeeSigner(features);

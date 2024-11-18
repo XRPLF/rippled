@@ -188,9 +188,21 @@ Batch::preflight(PreflightContext const& ctx)
 
         // If the inner account is the same as the outer account, continue.
         // 1. We do not add it to the unique signers set.
-        // 2. We do not check a signature for the inner account exist.
+        // 2. We do check a signature for the inner account does not exist.
         if (innerAccount == outerAccount)
+        {
+            // Validate that the outer account does not have a signature in the
+            // batch signers array.
+            if (ctx.tx.isFieldPresent(sfBatchSigners) &&
+                batchSignersSet.find(innerAccount) != batchSignersSet.end())
+            {
+                JLOG(ctx.j.trace())
+                    << "Batch: outer signature for inner txn."
+                    << "index: " << i;
+                return temBAD_SIGNER;
+            }
             continue;
+        }
 
         // Add the inner account to the unique signers set.
         uniqueSigners.emplace(innerAccount);
