@@ -687,6 +687,53 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
+    testChangesBetweenViews(FeatureBitset features)
+    {
+        testcase("changes between views");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        test::jtx::Env env{*this, envconfig()};
+
+        auto const feeDrops = env.current()->fees().base;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        env.fund(XRP(220), alice, bob, carol);
+        env.close();
+
+        auto const preAlice = env.balance(alice);
+        auto const preBob = env.balance(bob);
+
+        auto const batchFee = XRP(1);
+        auto const seq = env.seq(alice);
+        env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+            batch::add(pay(alice, bob, XRP(10)), seq + 1),
+            batch::add(pay(alice, bob, XRP(10)), seq + 2),
+            ter(tecBATCH_FAILURE));
+        env.close();
+
+        std::vector<TestBatchData> testCases = {
+            {"tesSUCCESS", "Payment"},
+            {"tecUNFUNDED_PAYMENT", "Payment"},
+        };
+
+        Json::Value params;
+        params[jss::ledger_index] = env.current()->seq() - 1;
+        params[jss::transactions] = true;
+        params[jss::expand] = true;
+        auto const jrr = env.rpc("json", "ledger", to_string(params));
+        auto const txn = getTxByIndex(jrr, 1);
+        validateBatchTxns(txn[jss::metaData], 1, testCases);
+        validateBatchMeta(txn[jss::metaData], preAlice, seq);
+
+        BEAST_EXPECT(env.seq(alice) == 5);
+        BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
+        BEAST_EXPECT(env.balance(bob) == preBob);
+    }
+
+    void
     testAllOrNothing(FeatureBitset features)
     {
         testcase("all or nothing");
@@ -1639,6 +1686,7 @@ class Batch_test : public beast::unit_test::suite
         testBadFeeNoSigner(features);
         testBadFeeSigner(features);
         testOutOfSequence(features);
+        testChangesBetweenViews(features);
         testAllOrNothing(features);
         testOnlyOne(features);
         testUntilFailure(features);
