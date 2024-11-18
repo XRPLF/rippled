@@ -254,6 +254,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
     {
         testcase("Set");
         Env env(*this, withFeature_);
+        env.set_parse_failure_expected(true);
 
         const int accNum = 12;
         Account const alice[accNum] = {
@@ -287,6 +288,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
             BEAST_EXPECT(tx["Account"] == alice[0].human());
             auto objects = pd::getObjects(alice[0], env);
             auto domain = objects.begin()->first;
+            BEAST_EXPECT(domain.isNonZero());
             auto object = objects.begin()->second;
             BEAST_EXPECT(object["LedgerEntryType"] == "PermissionedDomain");
             BEAST_EXPECT(object["Owner"] == alice[0].human());

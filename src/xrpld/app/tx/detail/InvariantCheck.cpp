@@ -1141,12 +1141,15 @@ ValidPermissionedDomain::visitEntry(
     auto const sorted = credentials::makeSorted(credentials);
     isUnique_ = !sorted.empty();
 
+    // If array have duplicates then all the other checks are invalid
+    isSorted_ = false;
+
     if (isUnique_)
     {
         unsigned i = 0;
         for (auto const& cred : sorted)
         {
-            auto const& credTx(credentials[i++]);
+            auto const& credTx = credentials[i++];
             isSorted_ = (cred.first == credTx[sfIssuer]) &&
                 (cred.second == credTx[sfCredentialType]);
             if (!isSorted_)
@@ -1181,17 +1184,17 @@ ValidPermissionedDomain::finalize(
         return false;
     }
 
-    if (!isSorted_)
-    {
-        JLOG(j.fatal()) << "Invariant failed: permissioned domain credentials "
-                           "aren't sorted";
-        return false;
-    }
-
     if (!isUnique_)
     {
         JLOG(j.fatal()) << "Invariant failed: permissioned domain credentials "
                            "aren't unique";
+        return false;
+    }
+
+    if (!isSorted_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: permissioned domain credentials "
+                           "aren't sorted";
         return false;
     }
 

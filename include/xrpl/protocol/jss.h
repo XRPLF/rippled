@@ -522,7 +522,7 @@ JSS(peers);                   // out: InboundLedger, handlers/Peers, Overlay
 JSS(peer_disconnects);        // Severed peer connection counter.
 JSS(peer_disconnects_resources); // Severed peer connections because of
                               // excess resource consumption.
-JSS(permissioned_domain);     // out: AccountObjects
+JSS(permissioned_domain);     // in/out: AccountObjects, LedgerEntry
 JSS(port);                    // in: Connect, out: NetworkOPs
 JSS(ports);                   // out: NetworkOPs
 JSS(previous);                // out: Reservations
