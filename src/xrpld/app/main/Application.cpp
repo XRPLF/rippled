@@ -90,6 +90,9 @@
 
 namespace ripple {
 
+static void
+fixConfigPorts(Config& config, Endpoints const& endpoints);
+
 // VFALCO TODO Move the function definitions into the class declaration
 class ApplicationImp : public Application, public BasicApp
 {
@@ -1417,6 +1420,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
                 *config_, beast::logstream{m_journal.error()});
             setup.makeContexts();
             serverHandler_->setup(setup, m_journal);
+            fixConfigPorts(*config_, serverHandler_->endpoints());
         }
         catch (std::exception const& e)
         {
@@ -1538,7 +1542,11 @@ ApplicationImp::start(bool withTimers)
     m_shaMapStore->start();
     if (overlay_)
         overlay_->start();
-    grpcServer_->start();
+
+    if (grpcServer_->start())
+        fixConfigPorts(
+            *config_, {{SECTION_PORT_GRPC, grpcServer_->getEndpoint()}});
+
     ledgerCleaner_->start();
     perfLog_->start();
 }
@@ -2187,6 +2195,26 @@ make_Application(
 {
     return std::make_unique<ApplicationImp>(
         std::move(config), std::move(logs), std::move(timeKeeper));
+}
+
+void
+fixConfigPorts(Config& config, Endpoints const& endpoints)
+{
+    for (auto const& [name, ep] : endpoints)
+    {
+        if (!config.exists(name))
+            continue;
+
+        auto& section = config[name];
+        auto const optPort = section.get("port");
+        if (optPort)
+        {
+            std::uint16_t const port =
+                beast::lexicalCast<std::uint16_t>(*optPort);
+            if (!port)
+                section.set("port", std::to_string(ep.port()));
+        }
+    }
 }
 
 }  // namespace ripple
