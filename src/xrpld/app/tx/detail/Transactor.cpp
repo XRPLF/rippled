@@ -860,16 +860,37 @@ removeDeletedTrustLines(
     }
 }
 
-/** Reset the context, discarding any changes made and adjust the fee */
+
+/**
+ * Reset the context, discarding any changes made and adjust the fee.
+ *
+ * This function handles the reset of the transaction context, including
+ * discarding the current context and reapplying necessary metadata if the
+ * transaction type is a batch. It also ensures the transaction fee is charged
+ * to the account and updates the account's sequence number or consumes a ticket.
+ *
+ * @param fee The transaction fee to be charged.
+ * @return A pair containing the transaction engine result (TER) and the actual
+ *         fee charged (XRPAmount).
+ */
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
 {
-    ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
-    std::vector<STObject> executions;
-    avi.copyBatchMetaData(executions);
-    ctx_.discard();
-    ApplyViewImpl& avi2 = dynamic_cast<ApplyViewImpl&>(ctx_.view());
-    avi2.setBatchExecutions(std::move(executions));
+    auto const tt = ctx_.tx.getTxnType();
+    if (tt == ttBATCH)
+    {
+        // If the transaction is a batch, we need to copy the metadata from the
+        // current context to the new context and then discard the current
+        // context.
+        ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
+        std::vector<STObject> executions;
+        avi.copyBatchMetaData(executions);
+        ctx_.discard();
+        ApplyViewImpl& avi2 = dynamic_cast<ApplyViewImpl&>(ctx_.view());
+        avi2.setBatchExecutions(std::move(executions));
+    }
+    else
+        ctx_.discard();
 
     auto const txnAcct =
         view().peek(keylet::account(ctx_.tx.getAccountID(sfAccount)));
