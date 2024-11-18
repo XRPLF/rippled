@@ -252,9 +252,7 @@ Batch::doApply()
         STObject meta{sfBatchExecution};
         std::string res = transToken(ter);
         meta.setFieldVL(sfInnerResult, ripple::Slice{res.data(), res.size()});
-        meta.setFieldU16(sfTransactionType, stx.getTxnType());
-        if (ter == tesSUCCESS || isTecClaim(ter))
-            meta.setFieldH256(sfTransactionHash, stx.getTransactionID());
+        meta.setFieldH256(sfTransactionHash, stx.getTransactionID());
         avi.addBatchExecution(std::move(meta));
 
         if (ter != tesSUCCESS)

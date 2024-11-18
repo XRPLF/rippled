@@ -157,9 +157,8 @@ InnerObjectFormats::InnerObjectFormats()
 
     add(sfBatchExecution.jsonName.c_str(),
         sfBatchExecution.getCode(),
-        {{sfTransactionType, soeREQUIRED},
-         {sfInnerResult, soeREQUIRED},
-         {sfTransactionHash, soeOPTIONAL}});
+        {{sfInnerResult, soeREQUIRED},
+         {sfTransactionHash, soeREQUIRED}});
 
     add(sfBatchSigner.jsonName.c_str(),
         sfBatchSigner.getCode(),
