@@ -60,7 +60,8 @@ class Batch_test : public beast::unit_test::suite
         std::uint32_t const& txns,
         std::vector<TestBatchData> const& batchResults)
     {
-        BEAST_EXPECT(meta[sfBatchExecutions.jsonName].size() != txns);
+        BEAST_EXPECT(meta[sfBatchExecutions.jsonName].size() != 0);
+        BEAST_EXPECT(meta[sfBatchExecutions.jsonName].size() == txns);
         size_t index = 0;
         for (auto const& _batchTxn : meta[sfBatchExecutions.jsonName])
         {
@@ -75,7 +76,7 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
-    validateBatchMeta(
+    validateBatchPreMeta(
         Json::Value const& meta,
         STAmount const& balance,
         std::uint32_t const& sequence,
@@ -289,6 +290,20 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
+        // temINVALID_BATCH: Batch: Duplicate signer found: 
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = ((2 + 2) * feeDrops) + feeDrops * 2;
+            env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+                batch::add(pay(alice, bob, XRP(1)), seq + 1),
+                batch::add(pay(alice, bob, XRP(1)), seq + 2),
+                batch::sig(
+                    bob,
+                    bob),
+                ter(temINVALID_BATCH));
+            env.close();
+        }
+
         // temARRAY_TOO_LARGE: Batch: signers array exceeds 8 entries.
         {
             auto const seq = env.seq(alice);
@@ -432,7 +447,6 @@ class Batch_test : public beast::unit_test::suite
                 "A1DFBDD4691DAC96AD98B90FE1F1061320B767AB126F2655B1848233CE8952"
                 "7A1503C7B03A75D8C9DE547FEDB408CA26A1";
             auto const jrr = env.rpc("submit", txBlob)[jss::result];
-            std::cout << jrr << std::endl;
             BEAST_EXPECT(
                 jrr[jss::status] == "error" &&
                 jrr[jss::error] == "invalidTransaction");
@@ -514,43 +528,86 @@ class Batch_test : public beast::unit_test::suite
         env(noop(bob), ter(tesSUCCESS));
         env.close();
 
-        auto const preAliceSeq = env.seq(alice);
-        auto const preAlice = env.balance(alice);
-        auto const preAliceUSD = env.balance(alice, USD.issue());
-        auto const preBobSeq = env.seq(bob);
-        auto const preBob = env.balance(bob);
-        auto const preBobUSD = env.balance(bob, USD.issue());
+        // Invalid: Bob Sequence is a future sequence
+        {
+            auto const preAliceSeq = env.seq(alice);
+            auto const preAlice = env.balance(alice);
+            auto const preAliceUSD = env.balance(alice, USD.issue());
+            auto const preBobSeq = env.seq(bob);
+            auto const preBob = env.balance(bob);
+            auto const preBobUSD = env.balance(bob, USD.issue());
 
-        auto const batchFee = ((1 + 2) * feeDrops) + feeDrops * 2;
-        env(batch::batch(alice, preAliceSeq, batchFee, tfAllOrNothing),
-            batch::add(pay(alice, bob, XRP(10)), preAliceSeq + 1),
-            batch::add(pay(bob, alice, XRP(5)), preBobSeq + 10),
-            batch::sig(bob),
-            ter(tecBATCH_FAILURE));
-        auto const envTx = env.tx();
-        auto const txIDs = envTx->getFieldV256(sfTxIDs);
-        std::vector<TestBatchData> testCases = {
-            {"tesSUCCESS", to_string(txIDs[0])},
-            {"terPRE_SEQ", to_string(txIDs[1])},
-        };
-        env.close();
+            auto const batchFee = ((1 + 2) * feeDrops) + feeDrops * 2;
+            env(batch::batch(alice, preAliceSeq, batchFee, tfAllOrNothing),
+                batch::add(pay(alice, bob, XRP(10)), preAliceSeq + 1),
+                batch::add(pay(bob, alice, XRP(5)), preBobSeq + 10),
+                batch::sig(bob),
+                ter(tecBATCH_FAILURE));
+            auto const envTx = env.tx();
+            auto const txIDs = envTx->getFieldV256(sfTxIDs);
+            std::vector<TestBatchData> testCases = {
+                {"tesSUCCESS", to_string(txIDs[0])},
+                {"terPRE_SEQ", to_string(txIDs[1])},
+            };
+            env.close();
 
-        Json::Value params;
-        params[jss::ledger_index] = env.current()->seq() - 1;
-        params[jss::transactions] = true;
-        params[jss::expand] = true;
-        auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 1);
-        validateBatchTxns(txn[jss::metaData], 1, testCases);
-        validateBatchMeta(txn[jss::metaData], preAlice, preAliceSeq);
+            Json::Value params;
+            params[jss::ledger_index] = env.current()->seq() - 1;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(params));
+            auto const txn = getTxByIndex(jrr, 0);
+            validateBatchTxns(txn[jss::metaData], 2, testCases);
+            validateBatchPreMeta(txn[jss::metaData], preAlice, preAliceSeq);
 
-        // Alice pays fee & Bob should not be affected.
-        BEAST_EXPECT(env.seq(alice) == preAliceSeq + 1);
-        BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-        BEAST_EXPECT(env.balance(alice, USD.issue()) == preAliceUSD);
-        BEAST_EXPECT(env.seq(bob) == preBobSeq);
-        BEAST_EXPECT(env.balance(bob) == preBob);
-        BEAST_EXPECT(env.balance(bob, USD.issue()) == preBobUSD);
+            // Alice pays fee & Bob should not be affected.
+            BEAST_EXPECT(env.seq(alice) == preAliceSeq + 1);
+            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.balance(alice, USD.issue()) == preAliceUSD);
+            BEAST_EXPECT(env.seq(bob) == preBobSeq);
+            BEAST_EXPECT(env.balance(bob) == preBob);
+            BEAST_EXPECT(env.balance(bob, USD.issue()) == preBobUSD);
+        }
+
+        // Invalid: Outer and Inner Sequence are the same
+        {
+            auto const preAliceSeq = env.seq(alice);
+            auto const preAlice = env.balance(alice);
+            auto const preAliceUSD = env.balance(alice, USD.issue());
+            auto const preBobSeq = env.seq(bob);
+            auto const preBob = env.balance(bob);
+            auto const preBobUSD = env.balance(bob, USD.issue());
+
+            auto const batchFee = ((1 + 2) * feeDrops) + feeDrops * 2;
+            env(batch::batch(alice, preAliceSeq, batchFee, tfAllOrNothing),
+                batch::add(pay(alice, bob, XRP(10)), preAliceSeq),
+                batch::add(pay(bob, alice, XRP(5)), preBobSeq),
+                batch::sig(bob),
+                ter(tecBATCH_FAILURE));
+            auto const envTx = env.tx();
+            auto const txIDs = envTx->getFieldV256(sfTxIDs);
+            std::vector<TestBatchData> testCases = {
+                {"tefPAST_SEQ", to_string(txIDs[0])},
+            };
+            env.close();
+
+            Json::Value params;
+            params[jss::ledger_index] = env.current()->seq() - 1;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(params));
+            auto const txn = getTxByIndex(jrr, 0);
+            validateBatchTxns(txn[jss::metaData], 1, testCases);
+            validateBatchPreMeta(txn[jss::metaData], preAlice, preAliceSeq);
+
+            // Alice pays fee & Bob should not be affected.
+            BEAST_EXPECT(env.seq(alice) == preAliceSeq + 1);
+            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.balance(alice, USD.issue()) == preAliceUSD);
+            BEAST_EXPECT(env.seq(bob) == preBobSeq);
+            BEAST_EXPECT(env.balance(bob) == preBob);
+            BEAST_EXPECT(env.balance(bob, USD.issue()) == preBobUSD);
+        }
     }
 
     void
@@ -691,9 +748,9 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 1);
-        validateBatchTxns(txn[jss::metaData], 1, testCases);
-        validateBatchMeta(txn[jss::metaData], preAlice, seq);
+        auto const txn = getTxByIndex(jrr, 0);
+        validateBatchTxns(txn[jss::metaData], 2, testCases);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
         BEAST_EXPECT(env.seq(alice) == 5);
         BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
@@ -742,8 +799,8 @@ class Batch_test : public beast::unit_test::suite
             params[jss::expand] = true;
             auto const jrr = env.rpc("json", "ledger", to_string(params));
             auto const txn = getTxByIndex(jrr, 2);
-            validateBatchTxns(txn[jss::metaData], 3, testCases);
-            validateBatchMeta(txn[jss::metaData], preAlice, seq);
+            validateBatchTxns(txn[jss::metaData], 2, testCases);
+            validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
             BEAST_EXPECT(env.seq(alice) == 7);
             BEAST_EXPECT(env.balance(alice) == preAlice - XRP(2) - batchFee);
@@ -783,9 +840,9 @@ class Batch_test : public beast::unit_test::suite
             params[jss::transactions] = true;
             params[jss::expand] = true;
             auto const jrr = env.rpc("json", "ledger", to_string(params));
-            auto const txn = getTxByIndex(jrr, 1);
-            validateBatchTxns(txn[jss::metaData], 1, testCases);
-            validateBatchMeta(txn[jss::metaData], preAlice, seq);
+            auto const txn = getTxByIndex(jrr, 0);
+            validateBatchTxns(txn[jss::metaData], 2, testCases);
+            validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
             BEAST_EXPECT(env.seq(alice) == 5);
             BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
@@ -834,8 +891,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         auto const txn = getTxByIndex(jrr, 2);
-        validateBatchTxns(txn[jss::metaData], 3, testCases);
-        validateBatchMeta(txn[jss::metaData], preAlice, seq);
+        validateBatchTxns(txn[jss::metaData], 2, testCases);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
         BEAST_EXPECT(env.seq(alice) == 7);
         BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1) - batchFee);
@@ -885,8 +942,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         auto const txn = getTxByIndex(jrr, 3);
-        validateBatchTxns(txn[jss::metaData], 4, testCases);
-        validateBatchMeta(txn[jss::metaData], preAlice, seq);
+        validateBatchTxns(txn[jss::metaData], 3, testCases);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
         BEAST_EXPECT(env.seq(alice) == 8);
         BEAST_EXPECT(env.balance(alice) == preAlice - XRP(2) - batchFee);
@@ -936,8 +993,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         auto const txn = getTxByIndex(jrr, 4);
-        validateBatchTxns(txn[jss::metaData], 5, testCases);
-        validateBatchMeta(txn[jss::metaData], preAlice, seq);
+        validateBatchTxns(txn[jss::metaData], 4, testCases);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
         BEAST_EXPECT(env.seq(alice) == 9);
         BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
@@ -987,8 +1044,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         auto const txn = getTxByIndex(jrr, 2);
-        validateBatchTxns(txn[jss::metaData], 3, testCases);
-        validateBatchMeta(txn[jss::metaData], preAlice, seq);
+        validateBatchTxns(txn[jss::metaData], 2, testCases);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
         BEAST_EXPECT(env.seq(alice) == 6);
         BEAST_EXPECT(env.seq(bob) == 6);
@@ -1039,8 +1096,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         auto const txn = getTxByIndex(jrr, 2);
-        validateBatchTxns(txn[jss::metaData], 3, testCases);
-        validateBatchMeta(txn[jss::metaData], preAlice, seq);
+        validateBatchTxns(txn[jss::metaData], 2, testCases);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
         BEAST_EXPECT(env.seq(alice) == 8);
         BEAST_EXPECT(env.balance(alice) == preAlice - XRP(2) - batchFee);
@@ -1117,8 +1174,8 @@ class Batch_test : public beast::unit_test::suite
             params[jss::expand] = true;
             auto const jrr = env.rpc("json", "ledger", to_string(params));
             auto const txn = getTxByIndex(jrr, 2);
-            validateBatchTxns(txn[jss::metaData], 3, testCases);
-            validateBatchMeta(txn[jss::metaData], STAmount(XRP(1000)), 4);
+            validateBatchTxns(txn[jss::metaData], 2, testCases);
+            validateBatchPreMeta(txn[jss::metaData], STAmount(XRP(1000)), 4);
 
             BEAST_EXPECT(env.seq(alice) == 6);
             BEAST_EXPECT(env.seq(bob) == 6);
@@ -1228,9 +1285,9 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 3);
-        validateBatchTxns(txn[jss::metaData], 3, testCases);
-        validateBatchMeta(txn[jss::metaData], preAlice, seq);
+        auto const txn = getTxByIndex(jrr, 2);
+        validateBatchTxns(txn[jss::metaData], 2, testCases);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
         BEAST_EXPECT(env.seq(alice) == 6);
         BEAST_EXPECT(env.seq(bob) == 5);
@@ -1282,8 +1339,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         auto const txn = getTxByIndex(jrr, 2);
-        validateBatchTxns(txn[jss::metaData], 3, testCases);
-        validateBatchMeta(txn[jss::metaData], preAlice, seq);
+        validateBatchTxns(txn[jss::metaData], 2, testCases);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
         auto const sle = env.le(keylet::account(alice));
         BEAST_EXPECT(sle);
@@ -1351,8 +1408,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         auto const txn = getTxByIndex(jrr, 2);
-        validateBatchTxns(txn[jss::metaData], 3, testCases);
-        validateBatchMeta(txn[jss::metaData], preAlice, seq);
+        validateBatchTxns(txn[jss::metaData], 2, testCases);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
         BEAST_EXPECT(env.seq(alice) == 7);
         BEAST_EXPECT(env.seq(bob) == 6);
@@ -1416,8 +1473,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         auto const txn = getTxByIndex(jrr, 2);
-        validateBatchTxns(txn[jss::metaData], 3, testCases);
-        validateBatchMeta(txn[jss::metaData], preAlice, seq);
+        validateBatchTxns(txn[jss::metaData], 2, testCases);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
         BEAST_EXPECT(env.seq(alice) == 7);
         BEAST_EXPECT(env.seq(bob) == 16);
@@ -1479,8 +1536,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         auto const txn = getTxByIndex(jrr, 2);
-        validateBatchTxns(txn[jss::metaData], 3, testCases);
-        validateBatchMeta(txn[jss::metaData], preCarol, seq);
+        validateBatchTxns(txn[jss::metaData], 2, testCases);
+        validateBatchPreMeta(txn[jss::metaData], preCarol, seq);
 
         BEAST_EXPECT(env.seq(alice) == 6);
         BEAST_EXPECT(env.seq(bob) == 6);
@@ -1536,8 +1593,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         auto const txn = getTxByIndex(jrr, 2);
-        validateBatchTxns(txn[jss::metaData], 3, testCases);
-        validateBatchMeta(txn[jss::metaData], preAlice, seq, 10, 10);
+        validateBatchTxns(txn[jss::metaData], 2, testCases);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, seq, 10, 10);
 
         auto const sle = env.le(keylet::account(alice));
         BEAST_EXPECT(sle);
@@ -1592,8 +1649,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         auto const txn = getTxByIndex(jrr, 2);
-        validateBatchTxns(txn[jss::metaData], 3, testCases);
-        validateBatchMeta(txn[jss::metaData], preAlice, seq, 10, 10);
+        validateBatchTxns(txn[jss::metaData], 2, testCases);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, seq, 10, 10);
 
         auto const sle = env.le(keylet::account(alice));
         BEAST_EXPECT(sle);
@@ -1649,8 +1706,8 @@ class Batch_test : public beast::unit_test::suite
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
         auto const txn = getTxByIndex(jrr, 2);
-        validateBatchTxns(txn[jss::metaData], 3, testCases);
-        validateBatchMeta(txn[jss::metaData], preAlice, seq, 10, 10);
+        validateBatchTxns(txn[jss::metaData], 2, testCases);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, seq, 10, 10);
 
         auto const sle = env.le(keylet::account(alice));
         BEAST_EXPECT(sle);
