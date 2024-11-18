@@ -1040,42 +1040,67 @@ class Batch_test : public beast::unit_test::suite
         auto const bob = Account("bob");
         auto const carol = Account("carol");
         auto const dave = Account("dave");
+        auto const elsa = Account("elsa");
 
-        env.fund(XRP(1000), alice, bob, carol, dave);
+        env.fund(XRP(1000), alice, bob, carol, dave, elsa);
         env.close();
 
-        env(signers(bob, 2, {{carol, 1}, {dave, 1}}));
+        env(signers(bob, 2, {{carol, 1}, {dave, 1}, {elsa, 1}}));
         env.close();
 
-        auto const preAlice = env.balance(alice);
-        auto const preBob = env.balance(bob);
 
-        auto const seq = env.seq(alice);
-        auto const batchFee = ((2 + 2) * feeDrops) + feeDrops * 2;
-        env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
-            batch::add(pay(alice, bob, XRP(10)), seq + 1),
-            batch::add(pay(bob, alice, XRP(5)), env.seq(bob)),
-            batch::msig(bob, {dave, carol}));
-        env.close();
+        // tefBAD_QUORUM
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = ((2 + 2) * feeDrops) + feeDrops * 2;
+            env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+                batch::add(pay(alice, bob, XRP(10)), seq + 1),
+                batch::add(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::msig(bob, {dave}), ter(tefBAD_QUORUM));
+            env.close();
+        }
 
-        std::vector<TestBatchData> testCases = {
-            {"tesSUCCESS", "Payment"},
-            {"tesSUCCESS", "Payment"},
-        };
+        // tefBAD_SIGNATURE
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = ((2 + 2) * feeDrops) + feeDrops * 2;
+            env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+                batch::add(pay(alice, bob, XRP(10)), seq + 1),
+                batch::add(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::msig(bob, {alice, dave}), ter(tefBAD_SIGNATURE));
+            env.close();
+        }
 
-        Json::Value params;
-        params[jss::ledger_index] = env.current()->seq() - 1;
-        params[jss::transactions] = true;
-        params[jss::expand] = true;
-        auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 2);
-        validateBatchTxns(txn[jss::metaData], 3, testCases);
-        validateBatchMeta(txn[jss::metaData], STAmount(XRP(1000)), 4);
+        {
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+            auto const seq = env.seq(alice);
+            auto const batchFee = ((2 + 2) * feeDrops) + feeDrops * 2;
+            env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+                batch::add(pay(alice, bob, XRP(10)), seq + 1),
+                batch::add(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::msig(bob, {dave, carol}));
+            env.close();
 
-        BEAST_EXPECT(env.seq(alice) == 6);
-        BEAST_EXPECT(env.seq(bob) == 6);
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(5) - batchFee);
-        BEAST_EXPECT(env.balance(bob) == preBob + XRP(5));
+            std::vector<TestBatchData> testCases = {
+                {"tesSUCCESS", "Payment"},
+                {"tesSUCCESS", "Payment"},
+            };
+
+            Json::Value params;
+            params[jss::ledger_index] = env.current()->seq() - 1;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(params));
+            auto const txn = getTxByIndex(jrr, 2);
+            validateBatchTxns(txn[jss::metaData], 3, testCases);
+            validateBatchMeta(txn[jss::metaData], STAmount(XRP(1000)), 4);
+
+            BEAST_EXPECT(env.seq(alice) == 6);
+            BEAST_EXPECT(env.seq(bob) == 6);
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(5) - batchFee);
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(5));
+        }
     }
 
     void
