@@ -273,20 +273,24 @@ isDeepFrozen(
     AccountID const& issuer)
 {
     if (!view.rules().enabled(featureDeepFreeze))
-        return false;
-    if (isXRP(currency))
-        return false;
-    if (issuer != account)
     {
-        // Check if the issuer deep froze the line
-        auto sle = view.read(keylet::line(account, issuer, currency));
-        if (sle)
-        {
-            if (sle->isFlag(lsfHighDeepFreeze) || sle->isFlag(lsfLowDeepFreeze))
-                return true;
-        }
+        return false;
     }
-    return false;
+
+    if (isXRP(currency))
+    {
+        return false;
+    }
+
+    if (issuer == account)
+    {
+        return false;
+    }
+
+    // Check if the line is deep frozen
+    auto const sle = view.read(keylet::line(account, issuer, currency));
+    return sle &&
+        (sle->isFlag(lsfHighDeepFreeze) || sle->isFlag(lsfLowDeepFreeze));
 }
 
 STAmount
@@ -306,18 +310,25 @@ accountHolds(
 
     // IOU: Return balance on trust line modulo freeze
     auto const sle = view.read(keylet::line(account, issuer, currency));
-    if (!sle)
-    {
-        amount.clear(Issue{currency, issuer});
-    }
-    else if (
-        ((zeroIfFrozen == fhZERO_IF_FROZEN) &&
-         isFrozen(view, account, currency, issuer)) ||
-        isDeepFrozen(view, account, currency, issuer))
-    {
-        amount.clear(Issue{currency, issuer});
-    }
-    else
+    auto const allowBalance = [&]() {
+        if (!sle)
+        {
+            return false;
+        }
+
+        if (zeroIfFrozen == fhZERO_IF_FROZEN)
+        {
+            if (isFrozen(view, account, currency, issuer) ||
+                isDeepFrozen(view, account, currency, issuer))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }();
+
+    if (allowBalance)
     {
         amount = sle->getFieldAmount(sfBalance);
         if (account > issuer)
@@ -327,6 +338,11 @@ accountHolds(
         }
         amount.setIssuer(issuer);
     }
+    else
+    {
+        amount.clear(Issue{currency, issuer});
+    }
+
     JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(account)
                     << " amount=" << amount.getFullText();
 

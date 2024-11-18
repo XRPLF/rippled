@@ -259,7 +259,9 @@ CreateOffer::checkAcceptAsset(
 
     if (view.rules().enabled(featureDeepFreeze))
     {
-        // An issuer can always accept its own issuance.
+        // An account can not create a trustline to itself, so no line can exist
+        // to be frozen. Additionally, an issuer can always accept its own
+        // issuance.
         if (issue.account == id)
         {
             return tesSUCCESS;

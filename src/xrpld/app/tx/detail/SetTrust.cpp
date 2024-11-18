@@ -45,6 +45,16 @@ SetTrust::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
+    if (!ctx.rules.enabled(featureDeepFreeze))
+    {
+        // Even though the deep freeze flags are included in the
+        // `tfTrustSetMask`, they are not valid if the amendment is not enabled.
+        if (uTxFlags & (tfSetDeepFreeze | tfClearDeepFreeze))
+        {
+            return temINVALID_FLAG;
+        }
+    }
+
     STAmount const saLimitAmount(tx.getFieldAmount(sfLimitAmount));
 
     if (!isLegalNet(saLimitAmount))
@@ -242,11 +252,8 @@ SetTrust::doApply()
     bool const bClearNoRipple = (uTxFlags & tfClearNoRipple);
     bool const bSetFreeze = (uTxFlags & tfSetFreeze);
     bool const bClearFreeze = (uTxFlags & tfClearFreeze);
-    bool const bDeepFreezeEnabled = view().rules().enabled(featureDeepFreeze);
-    bool const bSetDeepFreeze =
-        bDeepFreezeEnabled && (uTxFlags & tfSetDeepFreeze);
-    bool const bClearDeepFreeze =
-        bDeepFreezeEnabled && (uTxFlags & tfClearDeepFreeze);
+    bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze);
+    bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze);
 
     auto viewJ = ctx_.app.journal("View");
 
@@ -413,33 +420,35 @@ SetTrust::doApply()
             uFlagsOut &= ~(bHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
 
-        bool willSetFreeze = false;
         if (bSetFreeze && !bClearFreeze && !sle->isFlag(lsfNoFreeze))
         {
             uFlagsOut |= (bHigh ? lsfHighFreeze : lsfLowFreeze);
-            willSetFreeze = true;
         }
         else if (bClearFreeze && !bSetFreeze)
         {
             uFlagsOut &= ~(bHigh ? lsfHighFreeze : lsfLowFreeze);
         }
 
-        bool const alreadyFrozen =
-            bHigh ? sle->isFlag(lsfHighFreeze) : sle->isFlag(lsfLowFreeze);
-        if (bSetDeepFreeze && !bClearDeepFreeze &&
-            (willSetFreeze || alreadyFrozen))
+        if (bSetDeepFreeze && !bClearDeepFreeze && !sle->isFlag(lsfNoFreeze))
         {
-            if (ctx_.view().rules().enabled(featureDeepFreeze))
-                uFlagsOut |= (bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
-            else
-                return temMALFORMED;
+            uFlagsOut |= (bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
         }
         else if (bClearDeepFreeze && !bSetDeepFreeze)
         {
-            if (ctx_.view().rules().enabled(featureDeepFreeze))
-                uFlagsOut &= ~(bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
-            else
-                return temMALFORMED;
+            uFlagsOut &= ~(bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
+        }
+
+        // Checking freeze invariants
+        auto const frozen = uFlagsOut & (bHigh ? lsfHighFreeze : lsfLowFreeze);
+        auto const deepFrozen =
+            uFlagsOut & (bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
+
+        // Trying to set deep freeze on not already frozen trust line must fail
+        // This also checks that clearing normal freeze while deep frozen must
+        // not work
+        if (deepFrozen && !frozen)
+        {
+            return tecNO_PERMISSION;
         }
 
         if (QUALITY_ONE == uLowQualityOut)
