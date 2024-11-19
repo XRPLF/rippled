@@ -20,9 +20,8 @@
 #ifndef RIPPLE_BASICS_TAGGEDCACHE_IPP_INCLUDED
 #define RIPPLE_BASICS_TAGGEDCACHE_IPP_INCLUDED
 
-#include <xrpl/basics/TaggedCache.h>
-
 #include <xrpl/basics/IntrusivePointer.ipp>
+#include <xrpl/basics/TaggedCache.h>
 
 namespace ripple {
 
@@ -35,7 +34,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-TaggedCache<
+inline TaggedCache<
     Key,
     T,
     IsKeyCache,
@@ -72,7 +71,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-auto
+inline auto
 TaggedCache<
     Key,
     T,
@@ -95,7 +94,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-std::size_t
+inline std::size_t
 TaggedCache<
     Key,
     T,
@@ -119,7 +118,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-void
+inline void
 TaggedCache<
     Key,
     T,
@@ -156,7 +155,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-auto
+inline auto
 TaggedCache<
     Key,
     T,
@@ -180,7 +179,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-void
+inline void
 TaggedCache<
     Key,
     T,
@@ -206,7 +205,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-int
+inline int
 TaggedCache<
     Key,
     T,
@@ -230,7 +229,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-int
+inline int
 TaggedCache<
     Key,
     T,
@@ -254,7 +253,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-float
+inline float
 TaggedCache<
     Key,
     T,
@@ -279,7 +278,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-void
+inline void
 TaggedCache<
     Key,
     T,
@@ -304,7 +303,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-void
+inline void
 TaggedCache<
     Key,
     T,
@@ -332,7 +331,7 @@ template <
     class KeyEqual,
     class Mutex>
 template <class KeyComparable>
-bool
+inline bool
 TaggedCache<
     Key,
     T,
@@ -364,7 +363,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-void
+inline void
 TaggedCache<
     Key,
     T,
@@ -444,7 +443,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-bool
+inline bool
 TaggedCache<
     Key,
     T,
@@ -491,7 +490,7 @@ template <
     class KeyEqual,
     class Mutex>
 template <class R>
-bool
+inline bool
 TaggedCache<
     Key,
     T,
@@ -586,7 +585,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-bool
+inline bool
 TaggedCache<
     Key,
     T,
@@ -613,7 +612,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-bool
+inline bool
 TaggedCache<
     Key,
     T,
@@ -637,7 +636,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-SharedPointerType
+inline SharedPointerType
 TaggedCache<
     Key,
     T,
@@ -665,7 +664,7 @@ template <
     class KeyEqual,
     class Mutex>
 template <class ReturnType>
-auto
+inline auto
 TaggedCache<
     Key,
     T,
@@ -703,7 +702,7 @@ template <
     class KeyEqual,
     class Mutex>
 template <class ReturnType>
-auto
+inline auto
 TaggedCache<
     Key,
     T,
@@ -735,7 +734,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-bool
+inline bool
 TaggedCache<
     Key,
     T,
@@ -765,7 +764,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-auto
+inline auto
 TaggedCache<
     Key,
     T,
@@ -788,7 +787,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-auto
+inline auto
 TaggedCache<
     Key,
     T,
@@ -820,7 +819,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-double
+inline double
 TaggedCache<
     Key,
     T,
@@ -848,7 +847,7 @@ template <
     class KeyEqual,
     class Mutex>
 template <class Handler>
-SharedPointerType
+inline SharedPointerType
 TaggedCache<
     Key,
     T,
@@ -888,7 +887,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-SharedPointerType
+inline SharedPointerType
 TaggedCache<
     Key,
     T,
@@ -933,7 +932,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-void
+inline void
 TaggedCache<
     Key,
     T,
@@ -967,7 +966,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-std::thread
+inline std::thread
 TaggedCache<
     Key,
     T,
@@ -1056,7 +1055,7 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-std::thread
+inline std::thread
 TaggedCache<
     Key,
     T,
