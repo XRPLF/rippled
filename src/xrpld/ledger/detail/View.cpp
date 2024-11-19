@@ -265,6 +265,17 @@ isFrozen(
         isIndividualFrozen(view, account, mptIssue);
 }
 
+bool
+isLPTokenFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue asset,
+    Issue asset2)
+{
+    return isFrozen(view, account, asset.currency, asset.account) ||
+        isFrozen(view, account, asset2.currency, asset2.account);
+}
+
 STAmount
 accountHolds(
     ReadView const& view,
@@ -313,16 +324,8 @@ accountHolds(
             assert(sleAmm);
 
             if ((zeroIfFrozen == fhZERO_IF_FROZEN) &&
-                (isFrozen(
-                     view,
-                     account,
-                     (*sleAmm)[sfAsset].currency,
-                     (*sleAmm)[sfAsset].account) ||
-                 isFrozen(
-                     view,
-                     account,
-                     (*sleAmm)[sfAsset2].currency,
-                     (*sleAmm)[sfAsset2].account)))
+                isLPTokenFrozen(
+                    view, account, (*sleAmm)[sfAsset], (*sleAmm)[sfAsset2]))
             {
                 amount.clear(Issue{currency, issuer});
             }

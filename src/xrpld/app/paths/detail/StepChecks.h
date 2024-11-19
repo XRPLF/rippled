@@ -64,16 +64,8 @@ checkFreeze(
             if (!sleAmm)
                 return tecINTERNAL;
 
-            if (isFrozen(
-                    view,
-                    src,
-                    (*sleAmm)[sfAsset].currency,
-                    (*sleAmm)[sfAsset].account) ||
-                isFrozen(
-                    view,
-                    src,
-                    (*sleAmm)[sfAsset2].currency,
-                    (*sleAmm)[sfAsset2].account))
+            if (isLPTokenFrozen(
+                    view, src, (*sleAmm)[sfAsset], (*sleAmm)[sfAsset2]))
             {
                 return terNO_LINE;
             }
