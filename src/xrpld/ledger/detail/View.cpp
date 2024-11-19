@@ -282,7 +282,8 @@ accountHolds(
 
     // IOU: Return balance on trust line modulo freeze
     auto const sle = view.read(keylet::line(account, issuer, currency));
-    if (!sle)
+    auto const sleIssuer = view.read(keylet::account(issuer));
+    if (!sle || !sleIssuer)
     {
         amount.clear(Issue{currency, issuer});
     }
@@ -301,6 +302,31 @@ accountHolds(
             amount.negate();
         }
         amount.setIssuer(issuer);
+
+        // if it's a LPToken, also need to check if issuers of the asset pair
+        // has frozen holder's trustline
+        if (view.rules().enabled(fixLPTokenTransfer) &&
+            sleIssuer->isFieldPresent(sfAMMID))
+        {
+            auto const sleAmm = view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+
+            assert(sleAmm);
+
+            if ((zeroIfFrozen == fhZERO_IF_FROZEN) &&
+                (isFrozen(
+                     view,
+                     account,
+                     (*sleAmm)[sfAsset].currency,
+                     (*sleAmm)[sfAsset].account) ||
+                 isFrozen(
+                     view,
+                     account,
+                     (*sleAmm)[sfAsset2].currency,
+                     (*sleAmm)[sfAsset2].account)))
+            {
+                amount.clear(Issue{currency, issuer});
+            }
+        }
     }
     JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(account)
                     << " amount=" << amount.getFullText();

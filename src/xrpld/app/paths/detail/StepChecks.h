@@ -21,6 +21,7 @@
 #define RIPPLE_APP_PATHS_IMPL_STEP_CHECKS_H_INCLUDED
 
 #include <xrpld/ledger/ReadView.h>
+#include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
@@ -51,6 +52,31 @@ checkFreeze(
         if (sle->isFlag((dst > src) ? lsfHighFreeze : lsfLowFreeze))
         {
             return terNO_LINE;
+        }
+    }
+
+    if (view.rules().enabled(fixLPTokenTransfer))
+    {
+        if (auto const sleDst = view.read(keylet::account(dst));
+            sleDst && sleDst->isFieldPresent(sfAMMID))
+        {
+            auto const sleAmm = view.read(keylet::amm((*sleDst)[sfAMMID]));
+            if (!sleAmm)
+                return tecINTERNAL;
+
+            if (isFrozen(
+                    view,
+                    src,
+                    (*sleAmm)[sfAsset].currency,
+                    (*sleAmm)[sfAsset].account) ||
+                isFrozen(
+                    view,
+                    src,
+                    (*sleAmm)[sfAsset2].currency,
+                    (*sleAmm)[sfAsset2].account))
+            {
+                return terNO_LINE;
+            }
         }
     }
 
