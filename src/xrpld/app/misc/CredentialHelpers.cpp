@@ -167,7 +167,7 @@ valid(PreclaimContext const& ctx, AccountID const& src)
         if (sleCred->getAccountID(sfSubject) != src)
         {
             JLOG(ctx.j.trace())
-                << "Credential doesn’t belong to the source account. Cred: "
+                << "Credential doesn't belong to the source account. Cred: "
                 << h;
             return tecBAD_CREDENTIALS;
         }
