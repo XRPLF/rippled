@@ -268,6 +268,20 @@ SetAccount::doApply()
 
     // legacy AccountSet flags
     std::uint32_t const uTxFlags{tx.getFlags()};
+
+    bool granularDelegated = false;
+    if (ctx_.isDelegated && !ctx_.gpSet.empty())
+    {
+        // if gpSet is not empty, granular delegation is happening.
+        granularDelegated = true;
+
+        // We don't support any flag based granular permission under AccountSet
+        // transaction. If any delegated account is trying to update the flag
+        // onbehalf of another account, it is not authorized.
+        if (uSetFlag != 0 || uClearFlag != 0 || uTxFlags != 0)
+            return tecNO_AUTH;
+    }
+
     bool const bSetRequireDest{
         (uTxFlags & tfRequireDestTag) || (uSetFlag == asfRequireDest)};
     bool const bClearRequireDest{
@@ -450,6 +464,10 @@ SetAccount::doApply()
     //
     if (tx.isFieldPresent(sfEmailHash))
     {
+        if (granularDelegated &&
+            ctx_.gpSet.find(gpAccountEmailHashSet) == ctx_.gpSet.end())
+            return tecNO_AUTH;
+
         uint128 const uHash = tx.getFieldH128(sfEmailHash);
 
         if (!uHash)
@@ -469,6 +487,9 @@ SetAccount::doApply()
     //
     if (tx.isFieldPresent(sfWalletLocator))
     {
+        if (granularDelegated)
+            return tecNO_AUTH;
+
         uint256 const uHash = tx.getFieldH256(sfWalletLocator);
 
         if (!uHash)
@@ -488,6 +509,10 @@ SetAccount::doApply()
     //
     if (tx.isFieldPresent(sfMessageKey))
     {
+        if (granularDelegated &&
+            ctx_.gpSet.find(gpAccountMessageKeySet) == ctx_.gpSet.end())
+            return tecNO_AUTH;
+
         Blob const messageKey = tx.getFieldVL(sfMessageKey);
 
         if (messageKey.empty())
@@ -507,6 +532,10 @@ SetAccount::doApply()
     //
     if (tx.isFieldPresent(sfDomain))
     {
+        if (granularDelegated &&
+            ctx_.gpSet.find(gpAccountDomainSet) == ctx_.gpSet.end())
+            return tecNO_AUTH;
+
         Blob const domain = tx.getFieldVL(sfDomain);
 
         if (domain.empty())
@@ -526,6 +555,10 @@ SetAccount::doApply()
     //
     if (tx.isFieldPresent(sfTransferRate))
     {
+        if (granularDelegated &&
+            ctx_.gpSet.find(gpAccountTransferRateSet) == ctx_.gpSet.end())
+            return tecNO_AUTH;
+
         std::uint32_t uRate = tx.getFieldU32(sfTransferRate);
 
         if (uRate == 0 || uRate == QUALITY_ONE)
@@ -545,6 +578,10 @@ SetAccount::doApply()
     //
     if (tx.isFieldPresent(sfTickSize))
     {
+        if (granularDelegated &&
+            ctx_.gpSet.find(gpAccountTickSizeSet) == ctx_.gpSet.end())
+            return tecNO_AUTH;
+
         auto uTickSize = tx[sfTickSize];
         if ((uTickSize == 0) || (uTickSize == Quality::maxTickSize))
         {

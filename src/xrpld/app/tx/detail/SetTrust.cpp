@@ -243,9 +243,14 @@ SetTrust::doApply()
     bool const bSetFreeze = (uTxFlags & tfSetFreeze);
     bool const bClearFreeze = (uTxFlags & tfClearFreeze);
 
+    bool granularDelegated = false;
     if (ctx_.isDelegated && !ctx_.gpSet.empty())
     {
-        if (bSetNoRipple || bClearNoRipple)
+        granularDelegated = true;
+        // If granular permission is delegated under the TrustSet transaction.
+        // Currently we only support TrustlineAuthorize, TrustlineFreeze and
+        // TrustlineUnfreeze granular permission.
+        if (bSetNoRipple || bClearNoRipple || bQualityIn || bQualityOut)
             return terNO_AUTH;
         if (bSetAuth &&
             ctx_.gpSet.find(gpTrustlineAuthorize) == ctx_.gpSet.end())
@@ -315,6 +320,18 @@ SetTrust::doApply()
         //
         // Limits
         //
+        if (granularDelegated)
+        {
+            // Currently we only support TrustlineAuthorize, TrustlineFreeze and
+            // TrustlineUnfreeze granular permission. So updating the
+            // LimitAmount is not allowed unless the delegated account has full
+            // transaction level permission.
+            auto const curLimit = bHigh
+                ? sleRippleState->getFieldAmount(sfHighLimit)
+                : sleRippleState->getFieldAmount(sfLowLimit);
+            if (curLimit != saLimitAllow)
+                return tecNO_AUTH;
+        }
 
         sleRippleState->setFieldAmount(
             !bHigh ? sfLowLimit : sfHighLimit, saLimitAllow);
@@ -551,6 +568,13 @@ SetTrust::doApply()
     }
     else
     {
+        if (granularDelegated)
+            // currently we only allow TrustlineAuthorize, TrustlineFreeze and
+            // TrustlineUnfreeze granular permission delegation, a delegated
+            // account can not create a new trust line if it is not fully
+            // delegated with the whole TrustSet transaction based permission.
+            return tecNO_PERMISSION;
+
         // Zero balance in currency.
         STAmount saBalance(Issue{currency, noAccount()});
 

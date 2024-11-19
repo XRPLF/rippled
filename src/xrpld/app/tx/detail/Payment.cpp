@@ -344,15 +344,19 @@ Payment::doApply()
 
     if (ctx_.isDelegated && !ctx_.gpSet.empty())
     {
+        // If gpSet is not empty, granular delegation is happening.
+        // Currently we only support PaymentMint and PaymentBurn granular
+        // permission. PaymentMint means the sender is the issuer. PaymentBurn
+        // means the destination is the issuer.
         bool authorized = false;
         auto const amountIssue = dstAmount.issue();
         if (isXRP(amountIssue))
             return tecNO_AUTH;
         if (amountIssue.account == account_ &&
-            ctx_.gpSet.find(gpPaymentMint) == ctx_.gpSet.end())
+            ctx_.gpSet.find(gpPaymentMint) != ctx_.gpSet.end())
             authorized = true;
         if (amountIssue.account == dstAccountID &&
-            ctx_.gpSet.find(gpPaymentBurn) == ctx_.gpSet.end())
+            ctx_.gpSet.find(gpPaymentBurn) != ctx_.gpSet.end())
             authorized = true;
 
         if (!authorized)

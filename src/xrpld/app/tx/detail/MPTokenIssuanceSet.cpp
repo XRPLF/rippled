@@ -106,6 +106,7 @@ MPTokenIssuanceSet::doApply()
     bool bUnlock = txFlags & tfMPTUnlock;
     if (ctx_.isDelegated && !ctx_.gpSet.empty())
     {
+        // if gpSet is not empty, granular delegation is happening.
         if (bLock && ctx_.gpSet.find(gpMPTokenIssuanceLock) == ctx_.gpSet.end())
             return terNO_AUTH;
         if (bUnlock &&
