@@ -371,18 +371,6 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
         if (refCounts.compare_exchange_weak(
                 prevIntVal, nextIntVal, std::memory_order_release))
         {
-            // TODO: remove after test
-            RefCountPair const val = refCounts.load(std::memory_order_acquire);
-            FieldType currentMax = IntrusiveRefCounts::maxWeakRefCount.load();
-            while (currentMax < val.weak &&
-                   IntrusiveRefCounts::maxWeakRefCount.compare_exchange_weak(
-                       currentMax, val.weak))
-            {
-                std::cout << "Maximum weak ref count updated from "
-                             "addWeakReleaseStrongRef: "
-                          << val.weak << std::endl;
-            }
-
             assert(!(prevIntVal & partialDestroyStartedMask));
             return action;
         }
