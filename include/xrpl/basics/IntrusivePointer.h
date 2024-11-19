@@ -43,7 +43,7 @@ struct StaticCastTagSharedIntrusive
 };
 
 /** Tag to create an intrusive pointer from another intrusive pointer by using a
-    static cast. This is useful to create an intrusive pointer to a derived
+    dynamic cast. This is useful to create an intrusive pointer to a derived
     class from an intrusive pointer to a base class. If the cast fails an empty
     (null) intrusive pointer is created.
 */
@@ -198,6 +198,16 @@ public:
     friend SharedIntrusive<TT>
     make_SharedIntrusive(Args&&... args);
 
+    template <class TT>
+    friend class SharedIntrusive;
+
+    template <class TT>
+    friend class SharedWeakUnion;
+
+    template <class TT>
+    friend class WeakIntrusive;
+
+private:
     /** Return the raw pointer held by this object. */
     T*
     unsafeGetRawPtr() const;
@@ -223,7 +233,6 @@ public:
     T*
     unsafeExchange(T* p);
 
-private:
     /** pointer to the type with an intrusive count */
     T* ptr_{nullptr};
 };
