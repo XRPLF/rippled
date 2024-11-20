@@ -262,6 +262,13 @@ public:
     // ref would need to be decremented)
     WeakIntrusive(SharedIntrusive<T> const&& rhs) = delete;
 
+    // Since there are no current use cases for copy assignment in
+    // WeakIntrusive, we delete this operator to simplify the implementation. If
+    // a need arises in the future, we can reintroduce it with proper
+    // consideration."
+    WeakIntrusive&
+    operator=(WeakIntrusive const&) = delete;
+
     template <class TT>
         requires std::convertible_to<TT*, T*>
     WeakIntrusive&
