@@ -209,18 +209,9 @@ class Freeze_test : public beast::unit_test::suite
             //  transaction
             env(trust(G1, A1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
             {
-                auto affected = env.meta()->getJson(
-                    JsonOptions::none)[sfAffectedNodes.fieldName];
-                if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
-                    return;
-                auto ff = affected[1u][sfModifiedNode.fieldName]
-                                  [sfFinalFields.fieldName];
-                BEAST_EXPECT(
-                    ff[jss::Flags].asUInt() &
-                    (lsfLowFreeze | lsfLowDeepFreeze));
-                BEAST_EXPECT(
-                    !(ff[jss::Flags].asUInt() &
-                      (lsfHighFreeze | lsfHighDeepFreeze)));
+                auto const flags = modifiedTrustlineFlags(env);
+                BEAST_EXPECT(flags & (lsfLowFreeze | lsfLowDeepFreeze));
+                BEAST_EXPECT(!(flags & (lsfHighFreeze | lsfHighDeepFreeze)));
                 env.close();
             }
 
@@ -228,18 +219,9 @@ class Freeze_test : public beast::unit_test::suite
             //  transaction
             env(trust(G1, A1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
             {
-                auto affected = env.meta()->getJson(
-                    JsonOptions::none)[sfAffectedNodes.fieldName];
-                if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
-                    return;
-                auto ff = affected[1u][sfModifiedNode.fieldName]
-                                  [sfFinalFields.fieldName];
-                BEAST_EXPECT(
-                    !(ff[jss::Flags].asUInt() &
-                      (lsfLowFreeze | lsfLowDeepFreeze)));
-                BEAST_EXPECT(
-                    !(ff[jss::Flags].asUInt() &
-                      (lsfHighFreeze | lsfHighDeepFreeze)));
+                auto const flags = modifiedTrustlineFlags(env);
+                BEAST_EXPECT(!(flags & (lsfLowFreeze | lsfLowDeepFreeze)));
+                BEAST_EXPECT(!(flags & (lsfHighFreeze | lsfHighDeepFreeze)));
                 env.close();
             }
 
@@ -253,18 +235,9 @@ class Freeze_test : public beast::unit_test::suite
             //  test: Issuer deep freezing already frozen trust line
             env(trust(G1, A1["USD"](0), tfSetDeepFreeze));
             {
-                auto affected = env.meta()->getJson(
-                    JsonOptions::none)[sfAffectedNodes.fieldName];
-                if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
-                    return;
-                auto ff = affected[1u][sfModifiedNode.fieldName]
-                                  [sfFinalFields.fieldName];
-                BEAST_EXPECT(
-                    ff[jss::Flags].asUInt() &
-                    (lsfLowFreeze | lsfLowDeepFreeze));
-                BEAST_EXPECT(
-                    !(ff[jss::Flags].asUInt() &
-                      (lsfHighFreeze | lsfHighDeepFreeze)));
+                auto const flags = modifiedTrustlineFlags(env);
+                BEAST_EXPECT(flags & (lsfLowFreeze | lsfLowDeepFreeze));
+                BEAST_EXPECT(!(flags & (lsfHighFreeze | lsfHighDeepFreeze)));
                 env.close();
             }
 
@@ -275,16 +248,9 @@ class Freeze_test : public beast::unit_test::suite
             //  effect
             env(trust(G1, A1["USD"](0), tfClearDeepFreeze));
             {
-                auto affected = env.meta()->getJson(
-                    JsonOptions::none)[sfAffectedNodes.fieldName];
-                if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
-                    return;
-                auto ff = affected[1u][sfModifiedNode.fieldName]
-                                  [sfFinalFields.fieldName];
-                BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfLowFreeze);
-                BEAST_EXPECT(
-                    !(ff[jss::Flags].asUInt() &
-                      (lsfHighFreeze | lsfHighDeepFreeze)));
+                auto const flags = modifiedTrustlineFlags(env);
+                BEAST_EXPECT(flags & lsfLowFreeze);
+                BEAST_EXPECT(!(flags & (lsfHighFreeze | lsfHighDeepFreeze)));
                 env.close();
             }
         }
@@ -336,7 +302,8 @@ class Freeze_test : public beast::unit_test::suite
             {
                 auto affected = env.meta()->getJson(
                     JsonOptions::none)[sfAffectedNodes.fieldName];
-                BEAST_EXPECT(checkArraySize(affected, 1u));
+                BEAST_EXPECT(checkArraySize(
+                    affected, 1u));  // means no trustline changes
             }
         }
     }
@@ -695,6 +662,19 @@ class Freeze_test : public beast::unit_test::suite
         offers = getAccountOffers(env, A4)[jss::offers];
         if (!BEAST_EXPECT(checkArraySize(offers, 0u)))
             return;
+    }
+
+    uint32_t
+    modifiedTrustlineFlags(test::jtx::Env& env)
+    {
+        using namespace test::jtx;
+        auto const affected =
+            env.meta()->getJson(JsonOptions::none)[sfAffectedNodes.fieldName];
+        if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
+            return 0;
+        auto const ff =
+            affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
+        return ff[jss::Flags].asUInt();
     }
 
 public:
