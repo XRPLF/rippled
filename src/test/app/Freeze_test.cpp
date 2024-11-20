@@ -99,67 +99,23 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
         }
 
-        if (features[featureDeepFreeze])
-        {
-            {
-                // Is created via a TrustSet with SetDeepFreeze flag
-                //   but not tfSetFreeze
-                //   test: does not set LowDeepFreeze | HighDeepFreeze flags
-                env(trust(G1, bob["USD"](0), tfSetDeepFreeze));
-                auto affected = env.meta()->getJson(
-                    JsonOptions::none)[sfAffectedNodes.fieldName];
-                BEAST_EXPECT(checkArraySize(affected, 1u));
-                auto ff = affected[0u][sfModifiedNode.fieldName]
-                                  [sfFinalFields.fieldName];
-                BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfLowDeepFreeze));
-                BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighDeepFreeze));
-                env.close();
-            }
-
-            {
-                // Is created via a TrustSet with SetDeepFreeze flag
-                //   and tfSetFreeze
-                //   test: sets LowDeepFreeze | HighDeepFreeze flags
-                env(trust(G1, bob["USD"](0), tfSetFreeze | tfSetDeepFreeze));
-                auto affected = env.meta()->getJson(
-                    JsonOptions::none)[sfAffectedNodes.fieldName];
-                if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
-                    return;
-                auto ff = affected[1u][sfModifiedNode.fieldName]
-                                  [sfFinalFields.fieldName];
-                BEAST_EXPECT(
-                    ff[sfLowLimit.fieldName] ==
-                    G1["USD"](0).value().getJson(JsonOptions::none));
-                BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfLowDeepFreeze);
-                BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighDeepFreeze));
-                env.close();
-            }
-        }
-
         {
             // Account with line frozen by issuer
             //    test: can buy more assets on that line
             env(offer(bob, G1["USD"](5), XRP(25)));
             auto affected = env.meta()->getJson(
                 JsonOptions::none)[sfAffectedNodes.fieldName];
-            BEAST_EXPECT(
-                checkArraySize(affected, 4u) || checkArraySize(affected, 5u));
+            if (!BEAST_EXPECT(checkArraySize(affected, 5u)))
+                return;
             auto ff =
                 affected[3u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
-            if (affected.size() == 5)
-            {
-                BEAST_EXPECT(
-                    ff[sfHighLimit.fieldName] ==
-                    bob["USD"](100).value().getJson(JsonOptions::none));
-                auto amt = STAmount{Issue{to_currency("USD"), noAccount()}, -15}
-                               .value()
-                               .getJson(JsonOptions::none);
-                BEAST_EXPECT(ff[sfBalance.fieldName] == amt);
-            }
-            else if (affected.size() == 4)
-            {
-                BEAST_EXPECT(ff[sfHighLimit.fieldName] == Json::nullValue);
-            }
+            BEAST_EXPECT(
+                ff[sfHighLimit.fieldName] ==
+                bob["USD"](100).value().getJson(JsonOptions::none));
+            auto amt = STAmount{Issue{to_currency("USD"), noAccount()}, -15}
+                           .value()
+                           .getJson(JsonOptions::none);
+            BEAST_EXPECT(ff[sfBalance.fieldName] == amt);
             env.close();
         }
 
@@ -167,11 +123,8 @@ class Freeze_test : public beast::unit_test::suite
             //    test: can not sell assets from that line
             env(offer(bob, XRP(1), G1["USD"](5)), ter(tecUNFUNDED_OFFER));
 
-            //    test: can receive Payment on that line unless deep frozen
-            if (features[featureDeepFreeze])
-                env(pay(alice, bob, G1["USD"](1)), ter(tecPATH_DRY));
-            else
-                env(pay(alice, bob, G1["USD"](1)));
+            //    test: can receive Payment on that line
+            env(pay(alice, bob, G1["USD"](1)));
 
             //    test: can not make Payment from that line
             env(pay(bob, alice, G1["USD"](1)), ter(tecPATH_DRY));
@@ -193,12 +146,7 @@ class Freeze_test : public beast::unit_test::suite
             if (!BEAST_EXPECT(bobLine))
                 return;
             BEAST_EXPECT(bobLine[jss::freeze] == true);
-            if (features[featureDeepFreeze] && features[featureFlowCross])
-                BEAST_EXPECT(bobLine[jss::balance] == "-10");
-            else if (features[featureFlowCross])
-                BEAST_EXPECT(bobLine[jss::balance] == "-16");
-            else if (features[featureDeepFreeze])
-                BEAST_EXPECT(bobLine[jss::balance] == "-15");
+            BEAST_EXPECT(bobLine[jss::balance] == "-16");
         }
 
         {
@@ -216,13 +164,9 @@ class Freeze_test : public beast::unit_test::suite
             if (!BEAST_EXPECT(g1Line))
                 return;
             BEAST_EXPECT(g1Line[jss::freeze_peer] == true);
-            if (features[featureDeepFreeze] && features[featureFlowCross])
-                BEAST_EXPECT(g1Line[jss::balance] == "10");
-            else if (features[featureFlowCross])
-                BEAST_EXPECT(g1Line[jss::balance] == "16");
-            else if (features[featureDeepFreeze])
-                BEAST_EXPECT(g1Line[jss::balance] == "15");
+            BEAST_EXPECT(g1Line[jss::balance] == "16");
         }
+
         {
             // Is cleared via a TrustSet with ClearFreeze flag
             //    test: sets LowFreeze | HighFreeze flags
@@ -239,6 +183,161 @@ class Freeze_test : public beast::unit_test::suite
             BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfLowFreeze));
             BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighFreeze));
             env.close();
+        }
+    }
+
+    void
+    testDeepFreeze(FeatureBitset features)
+    {
+        testcase("Deep Freeze");
+
+        using namespace test::jtx;
+        Env env(*this, features);
+
+        Account G1{"G1"};
+        Account A1{"A1"};
+
+        env.fund(XRP(10000), G1, A1);
+        env.close();
+
+        env.trust(G1["USD"](1000), A1);
+        env.close();
+
+        if (features[featureDeepFreeze])
+        {
+            //  test: Issuer deep freezing the trust line in a single
+            //  transaction
+            env(trust(G1, A1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            {
+                auto affected = env.meta()->getJson(
+                    JsonOptions::none)[sfAffectedNodes.fieldName];
+                if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
+                    return;
+                auto ff = affected[1u][sfModifiedNode.fieldName]
+                                  [sfFinalFields.fieldName];
+                BEAST_EXPECT(
+                    ff[jss::Flags].asUInt() &
+                    (lsfLowFreeze | lsfLowDeepFreeze));
+                BEAST_EXPECT(
+                    !(ff[jss::Flags].asUInt() &
+                      (lsfHighFreeze | lsfHighDeepFreeze)));
+                env.close();
+            }
+
+            //  test: Issuer clearing deep freeze and normal freeze in a single
+            //  transaction
+            env(trust(G1, A1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            {
+                auto affected = env.meta()->getJson(
+                    JsonOptions::none)[sfAffectedNodes.fieldName];
+                if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
+                    return;
+                auto ff = affected[1u][sfModifiedNode.fieldName]
+                                  [sfFinalFields.fieldName];
+                BEAST_EXPECT(
+                    !(ff[jss::Flags].asUInt() &
+                      (lsfLowFreeze | lsfLowDeepFreeze)));
+                BEAST_EXPECT(
+                    !(ff[jss::Flags].asUInt() &
+                      (lsfHighFreeze | lsfHighDeepFreeze)));
+                env.close();
+            }
+
+            //  test: Issuer deep freezing not already frozen line must fail
+            env(trust(G1, A1["USD"](0), tfSetDeepFreeze),
+                ter(tecNO_PERMISSION));
+
+            env(trust(G1, A1["USD"](0), tfSetFreeze));
+            env.close();
+
+            //  test: Issuer deep freezing already frozen trust line
+            env(trust(G1, A1["USD"](0), tfSetDeepFreeze));
+            {
+                auto affected = env.meta()->getJson(
+                    JsonOptions::none)[sfAffectedNodes.fieldName];
+                if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
+                    return;
+                auto ff = affected[1u][sfModifiedNode.fieldName]
+                                  [sfFinalFields.fieldName];
+                BEAST_EXPECT(
+                    ff[jss::Flags].asUInt() &
+                    (lsfLowFreeze | lsfLowDeepFreeze));
+                BEAST_EXPECT(
+                    !(ff[jss::Flags].asUInt() &
+                      (lsfHighFreeze | lsfHighDeepFreeze)));
+                env.close();
+            }
+
+            //  test: Issuer can't clear normal freeze when line is deep frozen
+            env(trust(G1, A1["USD"](0), tfClearFreeze), ter(tecNO_PERMISSION));
+
+            //  test: Issuer clearing deep freeze but normal freeze is still in
+            //  effect
+            env(trust(G1, A1["USD"](0), tfClearDeepFreeze));
+            {
+                auto affected = env.meta()->getJson(
+                    JsonOptions::none)[sfAffectedNodes.fieldName];
+                if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
+                    return;
+                auto ff = affected[1u][sfModifiedNode.fieldName]
+                                  [sfFinalFields.fieldName];
+                BEAST_EXPECT(ff[jss::Flags].asUInt() & lsfLowFreeze);
+                BEAST_EXPECT(
+                    !(ff[jss::Flags].asUInt() &
+                      (lsfHighFreeze | lsfHighDeepFreeze)));
+                env.close();
+            }
+        }
+        else
+        {
+            //  test: applying deep freeze before amendment fails
+            env(trust(G1, A1["USD"](0), tfSetDeepFreeze), ter(temINVALID_FLAG));
+
+            //  test: clearing deep freeze before amendment fails
+            env(trust(G1, A1["USD"](0), tfClearDeepFreeze),
+                ter(temINVALID_FLAG));
+        }
+    }
+
+    void
+    testSetAndClean(FeatureBitset features)
+    {
+        testcase("Deep Freeze");
+
+        using namespace test::jtx;
+        Env env(*this, features);
+
+        Account G1{"G1"};
+        Account A1{"A1"};
+
+        env.fund(XRP(10000), G1, A1);
+        env.close();
+
+        env.trust(G1["USD"](1000), A1);
+        env.close();
+
+        if (features[featureDeepFreeze])
+        {
+            //  test: can't have both set and clear flag families in the same
+            //  transaction
+            env(trust(G1, A1["USD"](0), tfSetFreeze | tfClearFreeze),
+                ter(tecNO_PERMISSION));
+            env(trust(G1, A1["USD"](0), tfSetFreeze | tfClearDeepFreeze),
+                ter(tecNO_PERMISSION));
+            env(trust(G1, A1["USD"](0), tfSetDeepFreeze | tfClearFreeze),
+                ter(tecNO_PERMISSION));
+            env(trust(G1, A1["USD"](0), tfSetDeepFreeze | tfClearDeepFreeze),
+                ter(tecNO_PERMISSION));
+        }
+        else
+        {
+            //  test: old behavior, transaction succeed with no effect
+            env(trust(G1, A1["USD"](0), tfSetFreeze | tfClearFreeze));
+            {
+                auto affected = env.meta()->getJson(
+                    JsonOptions::none)[sfAffectedNodes.fieldName];
+                BEAST_EXPECT(checkArraySize(affected, 1u));
+            }
         }
     }
 
@@ -410,15 +509,32 @@ class Freeze_test : public beast::unit_test::suite
 
         Account G1{"G1"};
         Account A1{"A1"};
+        Account frozenAcc{"A2"};
+        Account deepFrozenAcc{"A3"};
 
         env.fund(XRP(12000), G1);
         env.fund(XRP(1000), A1);
+        env.fund(XRP(1000), frozenAcc);
+        env.fund(XRP(1000), deepFrozenAcc);
         env.close();
 
         env.trust(G1["USD"](1000), A1);
+        env.trust(G1["USD"](1000), frozenAcc);
+        env.trust(G1["USD"](1000), deepFrozenAcc);
         env.close();
 
         env(pay(G1, A1, G1["USD"](1000)));
+        env(pay(G1, frozenAcc, G1["USD"](1000)));
+        env(pay(G1, deepFrozenAcc, G1["USD"](1000)));
+
+        // Freezing and deep freezing some of the trust lines to check deep
+        // freeze and clearing of freeze separately
+        env(trust(G1, frozenAcc["USD"](0), tfSetFreeze));
+        if (features[featureDeepFreeze])
+        {
+            env(trust(
+                G1, deepFrozenAcc["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+        }
         env.close();
 
         // TrustSet NoFreeze
@@ -444,15 +560,34 @@ class Freeze_test : public beast::unit_test::suite
         env.require(flags(G1, asfGlobalFreeze));
 
         //    test: trustlines can't be frozen
-        env(trust(G1, A1["USD"](0), tfSetFreeze));
-        auto affected =
-            env.meta()->getJson(JsonOptions::none)[sfAffectedNodes.fieldName];
-        if (!BEAST_EXPECT(checkArraySize(affected, 1u)))
-            return;
+        if (features[featureDeepFreeze])
+        {
+            env(trust(G1, A1["USD"](0), tfSetFreeze), ter(tecNO_PERMISSION));
 
-        auto let =
-            affected[0u][sfModifiedNode.fieldName][sfLedgerEntryType.fieldName];
-        BEAST_EXPECT(let == jss::AccountRoot);
+            // test: cannot deep freeze already frozen line
+            env(trust(G1, frozenAcc["USD"](0), tfSetDeepFreeze),
+                ter(tecNO_PERMISSION));
+        }
+        else
+        {
+            env(trust(G1, A1["USD"](0), tfSetFreeze));
+            auto affected = env.meta()->getJson(
+                JsonOptions::none)[sfAffectedNodes.fieldName];
+            if (!BEAST_EXPECT(checkArraySize(affected, 1u)))
+                return;
+
+            auto let = affected[0u][sfModifiedNode.fieldName]
+                               [sfLedgerEntryType.fieldName];
+            BEAST_EXPECT(let == jss::AccountRoot);
+        }
+
+        //  test: can clear freeze on account
+        env(trust(G1, frozenAcc["USD"](0), tfClearFreeze));
+        if (features[featureDeepFreeze])
+        {
+            //  test: can clear deep freeze on account
+            env(trust(G1, deepFrozenAcc["USD"](0), tfClearDeepFreeze));
+        }
     }
 
     void
@@ -568,6 +703,8 @@ public:
     {
         auto testAll = [this](FeatureBitset features) {
             testRippleState(features);
+            testDeepFreeze(features);
+            testSetAndClean(features);
             testGlobalFreeze(features);
             testNoFreeze(features);
             testOffersWhenFrozen(features);

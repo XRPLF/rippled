@@ -26,6 +26,42 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/st.h>
 
+namespace {
+
+uint32_t
+applyFreezeFlags(
+    uint32_t uFlags,
+    bool bHigh,
+    bool bNoFreeze,
+    bool bSetFreeze,
+    bool bClearFreeze,
+    bool bSetDeepFreeze,
+    bool bClearDeepFreeze)
+{
+    if (bSetFreeze && !bClearFreeze && !bNoFreeze)
+    {
+        uFlags |= (bHigh ? ripple::lsfHighFreeze : ripple::lsfLowFreeze);
+    }
+    else if (bClearFreeze && !bSetFreeze)
+    {
+        uFlags &= ~(bHigh ? ripple::lsfHighFreeze : ripple::lsfLowFreeze);
+    }
+    if (bSetDeepFreeze && !bClearDeepFreeze && !bNoFreeze)
+    {
+        uFlags |=
+            (bHigh ? ripple::lsfHighDeepFreeze : ripple::lsfLowDeepFreeze);
+    }
+    else if (bClearDeepFreeze && !bSetDeepFreeze)
+    {
+        uFlags &=
+            ~(bHigh ? ripple::lsfHighDeepFreeze : ripple::lsfLowDeepFreeze);
+    }
+
+    return uFlags;
+}
+
+}  // namespace
+
 namespace ripple {
 
 NotTEC
@@ -192,6 +228,63 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    // Checking all freeze/deep freeze flag invariants.
+    auto sleRippleState =
+        ctx.view.read(keylet::line(id, uDstAccountID, currency));
+
+    if (sleRippleState)
+    {
+        if (ctx.view.rules().enabled(featureDeepFreeze))
+        {
+            bool const bNoFreeze = sle->isFlag(lsfNoFreeze);
+            bool const bSetFreeze = (uTxFlags & tfSetFreeze);
+            bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze);
+
+            if (bNoFreeze)
+            {
+                if (bSetFreeze || bSetDeepFreeze)
+                {
+                    // Cannot freeze the trust line if NoFreeze is set
+                    return tecNO_PERMISSION;
+                }
+            }
+            bool const bClearFreeze = (uTxFlags & tfClearFreeze);
+            bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze);
+            if ((bSetFreeze || bSetDeepFreeze) &&
+                (bClearFreeze || bClearDeepFreeze))
+            {
+                // Freezing and unfreezing in the same transaction should be
+                // illegal
+                return tecNO_PERMISSION;
+            }
+
+            bool const bHigh = id > uDstAccountID;
+            // Fetching current state of trust line
+            std::uint32_t uFlags = sleRippleState->getFieldU32(sfFlags);
+            // Computing expected trust line state
+            uFlags = applyFreezeFlags(
+                uFlags,
+                bHigh,
+                bNoFreeze,
+                bSetFreeze,
+                bClearFreeze,
+                bSetDeepFreeze,
+                bClearDeepFreeze);
+
+            auto const frozen = uFlags & (bHigh ? lsfHighFreeze : lsfLowFreeze);
+            auto const deepFrozen =
+                uFlags & (bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
+
+            // Trying to set deep freeze on not already frozen trust line must
+            // fail. This also checks that clearing normal freeze while deep
+            // frozen must not work
+            if (deepFrozen && !frozen)
+            {
+                return tecNO_PERMISSION;
+            }
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -207,7 +300,7 @@ SetTrust::doApply()
     Currency const currency(saLimitAmount.getCurrency());
     AccountID uDstAccountID(saLimitAmount.getIssuer());
 
-    // true, iff current is high account.
+    // true, if current is high account.
     bool const bHigh = account_ > uDstAccountID;
 
     auto const sle = view().peek(keylet::account(account_));
@@ -257,10 +350,10 @@ SetTrust::doApply()
 
     auto viewJ = ctx_.app.journal("View");
 
-    // Trust lines to self are impossible but because of the old bug there are
-    // two on 19-02-2022. This code was here to allow those trust lines to be
-    // deleted. The fixTrustLinesToSelf fix amendment will remove them when it
-    // enables so this code will no longer be needed.
+    // Trust lines to self are impossible but because of the old bug there
+    // are two on 19-02-2022. This code was here to allow those trust lines
+    // to be deleted. The fixTrustLinesToSelf fix amendment will remove them
+    // when it enables so this code will no longer be needed.
     if (!view().rules().enabled(fixTrustLinesToSelf) &&
         account_ == uDstAccountID)
     {
@@ -420,36 +513,17 @@ SetTrust::doApply()
             uFlagsOut &= ~(bHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
 
-        if (bSetFreeze && !bClearFreeze && !sle->isFlag(lsfNoFreeze))
-        {
-            uFlagsOut |= (bHigh ? lsfHighFreeze : lsfLowFreeze);
-        }
-        else if (bClearFreeze && !bSetFreeze)
-        {
-            uFlagsOut &= ~(bHigh ? lsfHighFreeze : lsfLowFreeze);
-        }
-
-        if (bSetDeepFreeze && !bClearDeepFreeze && !sle->isFlag(lsfNoFreeze))
-        {
-            uFlagsOut |= (bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
-        }
-        else if (bClearDeepFreeze && !bSetDeepFreeze)
-        {
-            uFlagsOut &= ~(bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
-        }
-
-        // Checking freeze invariants
-        auto const frozen = uFlagsOut & (bHigh ? lsfHighFreeze : lsfLowFreeze);
-        auto const deepFrozen =
-            uFlagsOut & (bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
-
-        // Trying to set deep freeze on not already frozen trust line must fail
-        // This also checks that clearing normal freeze while deep frozen must
-        // not work
-        if (deepFrozen && !frozen)
-        {
-            return tecNO_PERMISSION;
-        }
+        // I really want to get rid of NoFreeze check here, but we have to use
+        // it to maintain previous behavior
+        bool const bNoFreeze = sle->isFlag(lsfNoFreeze);
+        uFlagsOut = applyFreezeFlags(
+            uFlagsOut,
+            bHigh,
+            bNoFreeze,
+            bSetFreeze,
+            bClearFreeze,
+            bSetDeepFreeze,
+            bClearDeepFreeze);
 
         if (QUALITY_ONE == uLowQualityOut)
             uLowQualityOut = 0;
@@ -532,8 +606,8 @@ SetTrust::doApply()
         // Reserve is not scaled by load.
         else if (bReserveIncrease && mPriorBalance < reserveCreate)
         {
-            JLOG(j_.trace())
-                << "Delay transaction: Insufficent reserve to add trust line.";
+            JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
+                                "add trust line.";
 
             // Another transaction could provide XRP to the account and then
             // this transaction would succeed.
@@ -549,17 +623,18 @@ SetTrust::doApply()
     // Line does not exist.
     else if (
         !saLimitAmount &&                  // Setting default limit.
-        (!bQualityIn || !uQualityIn) &&    // Not setting quality in or setting
-                                           // default quality in.
-        (!bQualityOut || !uQualityOut) &&  // Not setting quality out or setting
-                                           // default quality out.
+        (!bQualityIn || !uQualityIn) &&    // Not setting quality in or
+                                           // setting default quality in.
+        (!bQualityOut || !uQualityOut) &&  // Not setting quality out or
+                                           // setting default quality out.
         (!bSetAuth))
     {
         JLOG(j_.trace())
             << "Redundant: Setting non-existent ripple line to defaults.";
         return tecNO_LINE_REDUNDANT;
     }
-    else if (mPriorBalance < reserveCreate)  // Reserve is not scaled by load.
+    else if (mPriorBalance < reserveCreate)  // Reserve is not scaled by
+                                             // load.
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
                             "Insufficent reserve to create line.";
