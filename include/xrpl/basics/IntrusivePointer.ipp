@@ -132,13 +132,9 @@ requires std::convertible_to<TT*, T*>
 SharedIntrusive<T>&
 SharedIntrusive<T>::operator=(SharedIntrusive<TT>&& rhs)
 {
-    if constexpr (std::is_same_v<T, TT>)
-    {
-        // This case should never be hit. The operator above will run instead.
-        // (The normal operator= is needed or it will be marked `deleted`)
-        if (this == &rhs)
-            return *this;
-    }
+    static_assert(
+        !std::is_same_v<T, TT>,
+        "This overload should not be instantiated for T == TT");
 
     unsafeReleaseAndStore(rhs.unsafeExchange(nullptr));
     return *this;
