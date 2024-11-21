@@ -822,6 +822,7 @@ parsePermissionedDomains(Json::Value const& pd, Json::Value& jvResult)
     if (
         !pd.isObject() || !pd.isMember(jss::account) ||
         !pd[jss::account].isString() || !pd.isMember(jss::seq) ||
+        (pd[jss::seq].isInt() && pd[jss::seq].asInt() < 0) ||
         (!pd[jss::seq].isInt() && !pd[jss::seq].isUInt()))
     {
         jvResult[jss::error] = "malformedRequest";
