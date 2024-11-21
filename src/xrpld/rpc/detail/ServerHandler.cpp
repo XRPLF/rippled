@@ -44,9 +44,11 @@
 #include <xrpl/server/Server.h>
 #include <xrpl/server/SimpleWriter.h>
 #include <xrpl/server/detail/JSONRPCUtil.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/beast/http/fields.hpp>
 #include <boost/beast/http/string_body.hpp>
+
 #include <algorithm>
 #include <stdexcept>
 
@@ -130,7 +132,26 @@ void
 ServerHandler::setup(Setup const& setup, beast::Journal journal)
 {
     setup_ = setup;
-    m_server->ports(setup.ports);
+    endpoints_ = m_server->ports(setup.ports);
+
+    // fix auto ports
+    for (auto& port : setup_.ports)
+    {
+        if (auto it = endpoints_.find(port.name); it != endpoints_.end())
+        {
+            auto const endpointPort = it->second.port();
+            if (!port.port)
+                port.port = endpointPort;
+
+            if (!setup_.client.port &&
+                (port.protocol.count("http") > 0 ||
+                 port.protocol.count("https") > 0))
+                setup_.client.port = endpointPort;
+
+            if (!setup_.overlay.port() && (port.protocol.count("peer") > 0))
+                setup_.overlay.port(endpointPort);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1094,11 +1115,6 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
         log << "Missing 'port' in [" << p.name << "]";
         Throw<std::exception>();
     }
-    else if (*parsed.port == 0)
-    {
-        log << "Port " << *parsed.port << "in [" << p.name << "] is invalid";
-        Throw<std::exception>();
-    }
     p.port = *parsed.port;
 
     if (parsed.protocol.empty())
@@ -1157,7 +1173,6 @@ parse_Ports(Config const& config, std::ostream& log)
             continue;
 
         ParsedPort parsed = common;
-        parsed.name = name;
         parse_Port(parsed, config[name], log);
         result.push_back(to_Port(parsed, log));
     }
@@ -1232,11 +1247,10 @@ setup_Overlay(ServerHandler::Setup& setup)
         });
     if (iter == setup.ports.cend())
     {
-        setup.overlay.port = 0;
+        setup.overlay = {};
         return;
     }
-    setup.overlay.ip = iter->ip;
-    setup.overlay.port = iter->port;
+    setup.overlay = {iter->ip, iter->port};
 }
 
 ServerHandler::Setup

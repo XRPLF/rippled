@@ -477,7 +477,7 @@ OverlayImpl::start()
 {
     PeerFinder::Config config = PeerFinder::Config::makeConfig(
         app_.config(),
-        serverHandler_.setup().overlay.port,
+        serverHandler_.setup().overlay.port(),
         app_.getValidationPublicKey().has_value(),
         setup_.ipLimit);
 

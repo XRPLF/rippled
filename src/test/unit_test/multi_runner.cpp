@@ -32,9 +32,6 @@
 namespace ripple {
 namespace test {
 
-extern void
-incPorts(int times);
-
 namespace detail {
 
 std::string
@@ -510,9 +507,6 @@ multi_runner_child::multi_runner_child(
     , quiet_{quiet}
     , print_log_{!quiet || print_log}
 {
-    // incPort twice (2*jobIndex_) because some tests need two envs
-    test::incPorts(2 * job_index_);
-
     if (num_jobs_ > 1)
     {
         keep_alive_thread_ = std::thread([this] {

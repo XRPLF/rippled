@@ -23,10 +23,13 @@
 #include <xrpld/core/ConfigSections.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/server/Port.h>
+
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
+
 #include <fstream>
 #include <iostream>
+#include <regex>
 
 namespace ripple {
 namespace detail {
@@ -139,12 +142,15 @@ public:
         path subDir,
         path const& dbPath,
         path const& validatorsFile,
-        bool useCounter = true)
+        bool useCounter = true,
+        std::string confContents = "")
         : FileDirGuard(
               test,
               std::move(subDir),
               path(Config::configFileName),
-              configContents(dbPath.string(), validatorsFile.string()),
+              confContents.empty()
+                  ? configContents(dbPath.string(), validatorsFile.string())
+                  : confContents,
               useCounter)
         , dataDir_(dbPath)
     {
@@ -880,6 +886,27 @@ trustthesevalidators.gov
     }
 
     void
+    testZeroPort()
+    {
+        auto const contents = std::regex_replace(
+            detail::configContents("", ""),
+            std::regex("port\\s+=\\s+\\d+"),
+            "port = 0");
+
+        try
+        {
+            detail::RippledCfgGuard const cfg(
+                *this, "testPort", "", "", true, contents);
+            BEAST_EXPECT(false);
+        }
+        catch (std::exception const& ex)
+        {
+            BEAST_EXPECT(std::string_view(ex.what()).starts_with(
+                "Invalid value '0' for key 'port'"));
+        }
+    }
+
+    void
     testWhitespace()
     {
         Config cfg;
@@ -1289,6 +1316,7 @@ r.ripple.com:51235
         testSetup(false);
         testSetup(true);
         testPort();
+        testZeroPort();
         testWhitespace();
         testColons();
         testComments();
