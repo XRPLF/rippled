@@ -494,6 +494,18 @@ class LedgerRPC_test : public beast::unit_test::suite
                 "json", "ledger", "{ \"ledger_index\" : 1000000000000000 }");
             checkErrorValue(ret, "invalidParams", "Invalid parameters.");
         }
+
+        {
+            // ask for an zero index
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::index] =
+                "00000000000000000000000000000000000000000000000000000000000000"
+                "0000";
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
     }
 
     void
@@ -3105,10 +3117,8 @@ class LedgerRPC_test : public beast::unit_test::suite
         env(pd::setTx(alice, {{alice, "first credential"}}));
         env.close();
         auto const objects = pd::getObjects(alice, env);
-        BEAST_EXPECT(objects.size() == 1);
-        if (objects.empty())
+        if (!BEAST_EXPECT(objects.size() == 1))
             return;
-        // env(pd::deleteTx(alice, domain));
 
         {
             // Succeed
