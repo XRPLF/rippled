@@ -132,6 +132,8 @@ doAMMInfo(RPC::JsonContext& context)
             if (!sle)
                 return Unexpected(rpcACT_MALFORMED);
             ammID = sle->getFieldH256(sfAMMID);
+            if (ammID->isZero())
+                return Unexpected(rpcACT_NOT_FOUND);
         }
 
         if (params.isMember(jss::account))
