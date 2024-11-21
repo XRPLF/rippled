@@ -261,6 +261,59 @@ public:
             w.reset();
             BEAST_EXPECT(TIBase::getState(id) == deleted);
         }
+        {
+            // Testing SharedWeakUnion assignment operator
+
+            TIBase::ResetStatesGuard rsg{true};
+
+            auto strong1 = make_SharedIntrusive<TIBase>();
+            auto strong2 = make_SharedIntrusive<TIBase>();
+
+            auto id1 = strong1->id_;
+            auto id2 = strong2->id_;
+
+            BEAST_EXPECT(id1 != id2);
+
+            SharedWeakUnion<TIBase> union1 = strong1;
+            SharedWeakUnion<TIBase> union2 = strong2;
+
+            BEAST_EXPECT(union1.isStrong());
+            BEAST_EXPECT(union2.isStrong());
+            BEAST_EXPECT(union1.get() == strong1.get());
+            BEAST_EXPECT(union2.get() == strong2.get());
+
+            // 1) Normal assignment: explicitly calls SharedWeakUnion assignment
+            union1 = union2;
+            BEAST_EXPECT(union1.isStrong());
+            BEAST_EXPECT(union2.isStrong());
+            BEAST_EXPECT(union1.get() == union2.get());
+            BEAST_EXPECT(TIBase::getState(id1) == TrackedState::alive);
+            BEAST_EXPECT(TIBase::getState(id2) == TrackedState::alive);
+
+            // 2) Test self-assignment
+            BEAST_EXPECT(union1.isStrong());
+            BEAST_EXPECT(TIBase::getState(id1) == TrackedState::alive);
+            int initialRefCount = strong1->use_count();
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wself-assign-overloaded"
+            union1 = union1;  // Self-assignment
+#pragma clang diagnostic pop
+            BEAST_EXPECT(union1.isStrong());
+            BEAST_EXPECT(TIBase::getState(id1) == TrackedState::alive);
+            BEAST_EXPECT(strong1->use_count() == initialRefCount);
+
+            // 3) Test assignment from null union pointer
+            union1 = SharedWeakUnion<TIBase>();
+            BEAST_EXPECT(union1.get() == nullptr);
+            BEAST_EXPECT(TIBase::getState(id1) == TrackedState::alive);
+
+            // 4) Test assignment to expired union pointer
+            strong2.reset();
+            union2.reset();
+            union1 = union2;
+            BEAST_EXPECT(union1.get() == nullptr);
+            BEAST_EXPECT(TIBase::getState(id2) == TrackedState::deleted);
+        }
     }
 
     void
