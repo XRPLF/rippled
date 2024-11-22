@@ -210,6 +210,7 @@ parseDirectory(Json::Value const& params, Json::Value& jvResult)
             jvResult[jss::error] = "malformedRequest";
             return std::nullopt;
         }
+
         if (!uDirRoot.parseHex(params[jss::dir_root].asString()))
         {
             jvResult[jss::error] = "malformedRequest";
@@ -228,6 +229,7 @@ parseDirectory(Json::Value const& params, Json::Value& jvResult)
             jvResult[jss::error] = "malformedAddress";
             return std::nullopt;
         }
+
         return keylet::page(keylet::ownerDir(*ownerID), uSubIndex).key;
     }
 
@@ -243,10 +245,10 @@ parseEscrow(Json::Value const& params, Json::Value& jvResult)
         uint256 uNodeIndex;
         if (!uNodeIndex.parseHex(params.asString()))
         {
-            uNodeIndex = beast::zero;
             jvResult[jss::error] = "malformedRequest";
             return std::nullopt;
         }
+
         return uNodeIndex;
     }
 
