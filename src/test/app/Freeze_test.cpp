@@ -268,9 +268,9 @@ class Freeze_test : public beast::unit_test::suite
     }
 
     void
-    testSetAndClean(FeatureBitset features)
+    testSetAndClear(FeatureBitset features)
     {
-        testcase("Deep Freeze");
+        testcase("Freeze Set and Clear");
 
         using namespace test::jtx;
         Env env(*this, features);
@@ -689,6 +689,121 @@ class Freeze_test : public beast::unit_test::suite
             return;
     }
 
+    void
+    testPaymentsWhenDeepFrozen(FeatureBitset features)
+    {
+        testcase("Direct payments on frozen trust lines");
+
+        using namespace test::jtx;
+        Env env(*this, features);
+
+        Account G1{"G1"};
+        Account A1{"A1"};
+        Account A2{"A2"};
+
+        env.fund(XRP(10000), G1);
+        env.fund(XRP(10000), A1);
+        env.fund(XRP(10000), A2);
+        env.close();
+
+        env.trust(G1["USD"](1000), A1);
+        env.trust(G1["USD"](1000), A2);
+        env.close();
+
+        env(pay(G1, A1, G1["USD"](1000)));
+        env(pay(G1, A2, G1["USD"](1000)));
+        env.close();
+
+        // Checking payments before freeze
+        // To issuer:
+        env(pay(A1, G1, G1["USD"](1)));
+        env(pay(A2, G1, G1["USD"](1)));
+        env.close();
+
+        // To each other:
+        env(pay(A1, A2, G1["USD"](1)));
+        env(pay(A2, A1, G1["USD"](1)));
+        env.close();
+
+        // Freeze A1
+        env(trust(G1, A1["USD"](0), tfSetFreeze));
+        env.close();
+
+        // Issuer and A1 can send payments to each other
+        env(pay(A1, G1, G1["USD"](1)));
+        env(pay(G1, A1, G1["USD"](1)));
+        env.close();
+
+        // A1 cannot send tokens to A2
+        env(pay(A1, A2, G1["USD"](1)), ter(tecPATH_DRY));
+
+        // A2 can still send to A1
+        env(pay(A2, A1, G1["USD"](1)));
+        env.close();
+
+        if (features[featureDeepFreeze])
+        {
+            // Deep freeze A1
+            env(trust(G1, A1["USD"](0), tfSetDeepFreeze));
+            env.close();
+
+            // Issuer and A1 can send payments to each other
+            env(pay(A1, G1, G1["USD"](1)));
+            env(pay(G1, A1, G1["USD"](1)));
+            env.close();
+
+            // A1 cannot send tokens to A2
+            env(pay(A1, A2, G1["USD"](1)), ter(tecPATH_DRY));
+
+            // A2 cannot send tokens to A1
+            env(pay(A2, A1, G1["USD"](1)), ter(tecPATH_DRY));
+
+            // Clear deep freeze on A1
+            env(trust(G1, A1["USD"](0), tfClearDeepFreeze));
+            env.close();
+        }
+
+        // Clear freeze on A1
+        env(trust(G1, A1["USD"](0), tfClearFreeze));
+        env.close();
+
+        // A1 freezes trust line
+        env(trust(A1, G1["USD"](0), tfSetFreeze));
+        env.close();
+
+        // Issuer and A1 can send payments to each other
+        env(pay(A1, G1, G1["USD"](1)));
+        // env(pay(G1, A1, G1["USD"](1))); // BUG: seems like
+        env.close();
+
+        // Issuer and A2 must not be affected
+        env(pay(A2, G1, G1["USD"](1)));
+        env(pay(G1, A2, G1["USD"](1)));
+        env.close();
+
+        // A1 can send tokens to A2
+        env(pay(A1, A2, G1["USD"](1)));
+        env.close();
+
+        // A2 cannot send tokens to A1
+        env(pay(A2, A1, G1["USD"](1)), ter(tecPATH_DRY));
+
+        if (features[featureDeepFreeze])
+        {
+            // A1 deep freezes trust line
+            env(trust(A1, G1["USD"](0), tfSetDeepFreeze));
+            // Issuer and A1 can send payments to each other
+            env(pay(A1, G1, G1["USD"](1)));
+            // env(pay(G1, A1, G1["USD"](1)));  // BUG: seems like
+            env.close();
+
+            // A1 cannot send tokens to A2
+            env(pay(A1, A2, G1["USD"](1)), ter(tecPATH_DRY));
+            // A2 cannot send tokens to A1
+            env(pay(A2, A1, G1["USD"](1)), ter(tecPATH_DRY));
+        }
+    }
+
     uint32_t
     modifiedTrustlineFlags(test::jtx::Env& env)
     {
@@ -709,10 +824,11 @@ public:
         auto testAll = [this](FeatureBitset features) {
             testRippleState(features);
             testDeepFreeze(features);
-            testSetAndClean(features);
+            testSetAndClear(features);
             testGlobalFreeze(features);
             testNoFreeze(features);
             testOffersWhenFrozen(features);
+            testPaymentsWhenDeepFrozen(features);
         };
         using namespace test::jtx;
         auto const sa = supported_amendments();
