@@ -98,6 +98,7 @@ Admins can still attempt to retrieve old ledgers with the `ledger_request` RPC.
 ### Addition in 2.3
 
 - `book_changes`: Returns a `validated` field in its response, which was missing in prior versions.
+- `validators`: Added new field `validator_list_threshold` in response.
 
 The following additions are non-breaking (because they are purely additive).
 
