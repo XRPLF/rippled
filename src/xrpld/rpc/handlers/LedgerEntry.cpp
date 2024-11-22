@@ -830,7 +830,7 @@ doLedgerEntry(RPC::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    static std::array<LedgerEntry, 21> ledgerEntryParsers = {
+    static std::array ledgerEntryParsers = {
         LedgerEntry{jss::index, parseIndex, ltANY},
         LedgerEntry{jss::account_root, parseAccountRoot, ltACCOUNT_ROOT},
         // TODO: add amendments
