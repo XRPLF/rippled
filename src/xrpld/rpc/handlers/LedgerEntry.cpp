@@ -830,42 +830,38 @@ doLedgerEntry(RPC::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    static std::array ledgerEntryParsers = {
-        LedgerEntry{jss::index, parseIndex, ltANY},
-        LedgerEntry{jss::account_root, parseAccountRoot, ltACCOUNT_ROOT},
+    static auto ledgerEntryParsers = std::to_array<LedgerEntry>({
+        {jss::index, parseIndex, ltANY},
+        {jss::account_root, parseAccountRoot, ltACCOUNT_ROOT},
         // TODO: add amendments
-        LedgerEntry{jss::amm, parseAMM, ltAMM},
-        LedgerEntry{jss::bridge, parseBridge, ltBRIDGE},
-        LedgerEntry{jss::check, parseCheck, ltCHECK},
-        LedgerEntry{jss::credential, parseCredential, ltCREDENTIAL},
-        LedgerEntry{
-            jss::deposit_preauth, parseDepositPreauth, ltDEPOSIT_PREAUTH},
-        LedgerEntry{jss::did, parseDID, ltDID},
-        LedgerEntry{jss::directory, parseDirectory, ltDIR_NODE},
-        LedgerEntry{jss::escrow, parseEscrow, ltESCROW},
+        {jss::amm, parseAMM, ltAMM},
+        {jss::bridge, parseBridge, ltBRIDGE},
+        {jss::check, parseCheck, ltCHECK},
+        {jss::credential, parseCredential, ltCREDENTIAL},
+        {jss::deposit_preauth, parseDepositPreauth, ltDEPOSIT_PREAUTH},
+        {jss::did, parseDID, ltDID},
+        {jss::directory, parseDirectory, ltDIR_NODE},
+        {jss::escrow, parseEscrow, ltESCROW},
         // TODO: add fee, hashes
-        LedgerEntry{
-            jss::mpt_issuance, parseMPTokenIssuance, ltMPTOKEN_ISSUANCE},
-        LedgerEntry{jss::mptoken, parseMPToken, ltMPTOKEN},
+        {jss::mpt_issuance, parseMPTokenIssuance, ltMPTOKEN_ISSUANCE},
+        {jss::mptoken, parseMPToken, ltMPTOKEN},
         // TODO: add NFT Offers
-        LedgerEntry{jss::nft_page, parseNFTokenPage, ltNFTOKEN_PAGE},
+        {jss::nft_page, parseNFTokenPage, ltNFTOKEN_PAGE},
         // TODO: add NegativeUNL
-        LedgerEntry{jss::offer, parseOffer, ltOFFER},
-        LedgerEntry{jss::oracle, parseOracle, ltORACLE},
-        LedgerEntry{jss::payment_channel, parsePaymentChannel, ltPAYCHAN},
-        LedgerEntry{jss::ripple_state, parseRippleState, ltRIPPLE_STATE},
+        {jss::offer, parseOffer, ltOFFER},
+        {jss::oracle, parseOracle, ltORACLE},
+        {jss::payment_channel, parsePaymentChannel, ltPAYCHAN},
+        {jss::ripple_state, parseRippleState, ltRIPPLE_STATE},
         // This is an alias, since the `ledger_data` filter uses jss::state
-        LedgerEntry{jss::state, parseRippleState, ltRIPPLE_STATE},
-        LedgerEntry{jss::ticket, parseTicket, ltTICKET},
-        LedgerEntry{
-            jss::xchain_owned_claim_id,
-            parseXChainOwnedClaimID,
-            ltXCHAIN_OWNED_CLAIM_ID},
-        LedgerEntry{
-            jss::xchain_owned_create_account_claim_id,
-            parseXChainOwnedCreateAccountClaimID,
-            ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
-    };
+        {jss::state, parseRippleState, ltRIPPLE_STATE},
+        {jss::ticket, parseTicket, ltTICKET},
+        {jss::xchain_owned_claim_id,
+         parseXChainOwnedClaimID,
+         ltXCHAIN_OWNED_CLAIM_ID},
+        {jss::xchain_owned_create_account_claim_id,
+         parseXChainOwnedCreateAccountClaimID,
+         ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
+    });
 
     uint256 uNodeIndex;
     LedgerEntryType expectedType = ltANY;
