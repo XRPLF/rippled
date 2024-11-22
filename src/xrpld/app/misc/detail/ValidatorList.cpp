@@ -1791,23 +1791,25 @@ ValidatorList::calculateQuorum(
             if (list.second.status != PublisherStatus::available)
                 unavailable += 1;
         }
-        // There are two, subtly different, sides to list threshold
+        // There are two, subtly different, sides to list threshold:
         //
         // 1. The minimum required intersection between lists listThreshold_
         //    for a validator to be included in trustedMasterKeys_.
         //    If this many (or more) publishers are unavailable, we are likely
         //    to NOT include a validator which otherwise would have been used.
-        // 2. The minimum number of lists which, when UNAVAILABLE, will prevent
-        //    us from hitting the above threshold on ANY validator. This is
-        //    calculated as:
+        //    We disable quorum if this happens.
+        // 2. The minimum number of publishers which, when unavailable, will
+        //    prevent us from hitting the above threshold on ANY validator.
+        //    This is calculated as:
         //      N - M + 1
         //    where
-        //      N: number of lists i.e. publisherLists_.size()
+        //      N: number of publishers i.e. publisherLists_.size()
         //      M: minimum required intersection i.e. listThreshold_
+        //    If this happens, we still have this local validator and we do not
+        //    want it to form a quorum of 1, so we disable quorum as well.
         //
-        // Ideally we want both to be equal, but it is only possible when we
-        // have an odd number of publisher lists; also the user might have
-        // configured a non-standard listThreshold_.
+        // We disable quorum if the number of unavailable publishers exceeds
+        // either of the above thresholds
         auto const errorThreshold = std::min(
             listThreshold_,  //
             publisherLists_.size() - listThreshold_ + 1);
