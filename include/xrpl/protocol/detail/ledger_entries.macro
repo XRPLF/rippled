@@ -22,7 +22,7 @@
 #endif
 
 #ifndef LEDGER_ENTRY_DUPLICATE
-#define LEDGER_ENTRY_DUPLICATE(tag, value, name, rpcName, fields) LEDGER_ENTRY(tag, value, name, rpcName, fields)
+#define LEDGER_ENTRY_DUPLICATE(...) LEDGER_ENTRY(__VA_ARGS__)
 #endif
 
 /**
