@@ -414,8 +414,6 @@ nft_sells(uint256 const& id) noexcept
 Keylet
 amm(Asset const& issue1, Asset const& issue2) noexcept
 {
-    if (!issue1.holds<Issue>() || !issue2.holds<Issue>())
-        Throw<std::runtime_error>("Asset doesn't hold issue");
     auto const& [minI, maxI] =
         std::minmax(issue1.get<Issue>(), issue2.get<Issue>());
     return amm(indexHash(
