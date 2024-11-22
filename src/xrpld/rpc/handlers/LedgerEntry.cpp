@@ -76,6 +76,7 @@ parseIndex(Json::Value const& params, Json::Value& jvResult)
         jvResult[jss::error] = "malformedRequest";
         return std::nullopt;
     }
+
     return uNodeIndex;
 }
 
@@ -88,6 +89,7 @@ parseAccountRoot(Json::Value const& params, Json::Value& jvResult)
         jvResult[jss::error] = "malformedAddress";
         return std::nullopt;
     }
+
     return keylet::account(*account).key;
 }
 
@@ -100,6 +102,7 @@ parseCheck(Json::Value const& params, Json::Value& jvResult)
         jvResult[jss::error] = "malformedRequest";
         return std::nullopt;
     }
+
     return uNodeIndex;
 }
 
@@ -116,6 +119,7 @@ parseDepositPreauth(Json::Value const& dp, Json::Value& jvResult)
         }
         return uNodeIndex;
     }
+
     // clang-format off
     if (
         (!dp.isMember(jss::owner) || !dp[jss::owner].isString()) ||
@@ -135,6 +139,7 @@ parseDepositPreauth(Json::Value const& dp, Json::Value& jvResult)
         jvResult[jss::error] = "malformedOwner";
         return std::nullopt;
     }
+
     if (dp.isMember(jss::authorized))
     {
         auto const authorized =
@@ -155,7 +160,8 @@ parseDepositPreauth(Json::Value const& dp, Json::Value& jvResult)
         jvResult[jss::error] = "malformedAuthorizedCredentials";
         return std::nullopt;
     }
-    auto sorted = credentials::makeSorted(arr);
+
+    auto const& sorted = credentials::makeSorted(arr);
     if (sorted.empty())
     {
         jvResult[jss::error] = "malformedAuthorizedCredentials";
@@ -275,6 +281,7 @@ parseOffer(Json::Value const& params, Json::Value& jvResult)
         }
         return uNodeIndex;
     }
+
     if (!params.isMember(jss::account) || !params.isMember(jss::seq) ||
         !params[jss::seq].isIntegral())
     {
@@ -301,6 +308,7 @@ parsePaymentChannel(Json::Value const& params, Json::Value& jvResult)
         jvResult[jss::error] = "malformedRequest";
         return std::nullopt;
     }
+
     return uNodeIndex;
 }
 
@@ -439,6 +447,7 @@ parseBridge(Json::Value const& params, Json::Value& jvResult)
             {
                 return std::nullopt;
             }
+
             auto const account =
                 parseBase58<AccountID>(jsBridgeAccount.asString());
             if (!account || account->isZero())
@@ -452,6 +461,7 @@ parseBridge(Json::Value const& params, Json::Value& jvResult)
             STXChainBridge const bridge(params[jss::bridge]);
             STXChainBridge::ChainType const chainType =
                 STXChainBridge::srcChain(account == bridge.lockingChainDoor());
+
             if (account != bridge.door(chainType))
                 return std::nullopt;
 
@@ -504,12 +514,13 @@ parseXChainOwnedClaimID(Json::Value const& claim_id, Json::Value& jvResult)
     // four strings defining the bridge (locking_chain_door,
     // locking_chain_issue, issuing_chain_door, issuing_chain_issue)
     // and the claim id sequence number.
-    auto lockingChainDoor = parseBase58<AccountID>(
+    auto const lockingChainDoor = parseBase58<AccountID>(
         claim_id[sfLockingChainDoor.getJsonName()].asString());
-    auto issuingChainDoor = parseBase58<AccountID>(
+    auto const issuingChainDoor = parseBase58<AccountID>(
         claim_id[sfIssuingChainDoor.getJsonName()].asString());
     Issue lockingChainIssue, issuingChainIssue;
     bool valid = lockingChainDoor && issuingChainDoor;
+
     if (valid)
     {
         try
@@ -528,7 +539,7 @@ parseXChainOwnedClaimID(Json::Value const& claim_id, Json::Value& jvResult)
 
     if (valid && claim_id[jss::xchain_owned_claim_id].isIntegral())
     {
-        auto seq = claim_id[jss::xchain_owned_claim_id].asUInt();
+        auto const seq = claim_id[jss::xchain_owned_claim_id].asUInt();
 
         STXChainBridge bridge_spec(
             *lockingChainDoor,
@@ -579,9 +590,9 @@ parseXChainOwnedCreateAccountClaimID(
     // (locking_chain_door, locking_chain_issue, issuing_chain_door,
     // issuing_chain_issue) and the create account claim id sequence
     // number.
-    auto lockingChainDoor = parseBase58<AccountID>(
+    auto const lockingChainDoor = parseBase58<AccountID>(
         claim_id[sfLockingChainDoor.getJsonName()].asString());
-    auto issuingChainDoor = parseBase58<AccountID>(
+    auto const issuingChainDoor = parseBase58<AccountID>(
         claim_id[sfIssuingChainDoor.getJsonName()].asString());
     Issue lockingChainIssue, issuingChainIssue;
     bool valid = lockingChainDoor && issuingChainDoor;
@@ -604,7 +615,8 @@ parseXChainOwnedCreateAccountClaimID(
     if (valid &&
         claim_id[jss::xchain_owned_create_account_claim_id].isIntegral())
     {
-        auto seq = claim_id[jss::xchain_owned_create_account_claim_id].asUInt();
+        auto const seq =
+            claim_id[jss::xchain_owned_create_account_claim_id].asUInt();
 
         STXChainBridge bridge_spec(
             *lockingChainDoor,
@@ -644,45 +656,45 @@ parseOracle(Json::Value const& params, Json::Value& jvResult)
         }
         return uNodeIndex;
     }
-    else if (
-        !params.isMember(jss::oracle_document_id) ||
+
+    if (!params.isMember(jss::oracle_document_id) ||
         !params.isMember(jss::account))
     {
         jvResult[jss::error] = "malformedRequest";
         return std::nullopt;
     }
-    else
+
+    auto const& oracle = params;
+    auto const documentID = [&]() -> std::optional<std::uint32_t> {
+        auto const id = oracle[jss::oracle_document_id];
+        if (id.isUInt() || (id.isInt() && id.asInt() >= 0))
+            return std::make_optional(id.asUInt());
+
+        if (id.isString())
+        {
+            std::uint32_t v;
+            if (beast::lexicalCastChecked(v, id.asString()))
+                return std::make_optional(v);
+        }
+
+        return std::nullopt;
+    }();
+
+    auto const account =
+        parseBase58<AccountID>(oracle[jss::account].asString());
+    if (!account || account->isZero())
     {
-        auto const& oracle = params;
-        auto const documentID = [&]() -> std::optional<std::uint32_t> {
-            auto const& id = oracle[jss::oracle_document_id];
-            if (id.isUInt() || (id.isInt() && id.asInt() >= 0))
-                return std::make_optional(id.asUInt());
-            else if (id.isString())
-            {
-                std::uint32_t v;
-                if (beast::lexicalCastChecked(v, id.asString()))
-                    return std::make_optional(v);
-            }
-            return std::nullopt;
-        }();
-
-        auto const account =
-            parseBase58<AccountID>(oracle[jss::account].asString());
-        if (!account || account->isZero())
-        {
-            jvResult[jss::error] = "malformedAddress";
-            return std::nullopt;
-        }
-
-        if (!documentID)
-        {
-            jvResult[jss::error] = "malformedDocumentID";
-            return std::nullopt;
-        }
-
-        return keylet::oracle(*account, *documentID).key;
+        jvResult[jss::error] = "malformedAddress";
+        return std::nullopt;
     }
+
+    if (!documentID)
+    {
+        jvResult[jss::error] = "malformedDocumentID";
+        return std::nullopt;
+    }
+
+    return keylet::oracle(*account, *documentID).key;
 }
 
 std::optional<uint256>
@@ -707,9 +719,11 @@ parseCredential(Json::Value const& cred, Json::Value& jvResult)
         jvResult[jss::error] = "malformedRequest";
         return std::nullopt;
     }
+
     auto const subject = parseBase58<AccountID>(cred[jss::subject].asString());
     auto const issuer = parseBase58<AccountID>(cred[jss::issuer].asString());
     auto const credType = strUnHex(cred[jss::credential_type].asString());
+
     if (!subject || subject->isZero() || !issuer || issuer->isZero() ||
         !credType || credType->empty())
     {
@@ -763,6 +777,7 @@ parseMPToken(Json::Value const& mptJson, Json::Value& jvResult)
         jvResult[jss::error] = "malformedRequest";
         return std::nullopt;
     }
+
     try
     {
         auto const mptIssuanceIdStr = mptJson[jss::mpt_issuance_id].asString();
@@ -790,7 +805,7 @@ parseMPToken(Json::Value const& mptJson, Json::Value& jvResult)
 }
 
 using FunctionType =
-    std::function<std::optional<uint256>(Json::Value const&, Json::Value&)>;
+    std::optional<uint256> (*)(Json::Value const&, Json::Value&);
 
 struct LedgerEntry
 {
@@ -813,37 +828,41 @@ doLedgerEntry(RPC::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    static LedgerEntry ledgerEntryParsers[] = {
-        {jss::index, parseIndex, ltANY},
-        {jss::account_root, parseAccountRoot, ltACCOUNT_ROOT},
+    static std::array<LedgerEntry, 21> ledgerEntryParsers = {
+        LedgerEntry{jss::index, parseIndex, ltANY},
+        LedgerEntry{jss::account_root, parseAccountRoot, ltACCOUNT_ROOT},
         // TODO: add amendments
-        {jss::amm, parseAMM, ltAMM},
-        {jss::bridge, parseBridge, ltBRIDGE},
-        {jss::check, parseCheck, ltCHECK},
-        {jss::credential, parseCredential, ltCREDENTIAL},
-        {jss::deposit_preauth, parseDepositPreauth, ltDEPOSIT_PREAUTH},
-        {jss::did, parseDID, ltDID},
-        {jss::directory, parseDirectory, ltDIR_NODE},
-        {jss::escrow, parseEscrow, ltESCROW},
+        LedgerEntry{jss::amm, parseAMM, ltAMM},
+        LedgerEntry{jss::bridge, parseBridge, ltBRIDGE},
+        LedgerEntry{jss::check, parseCheck, ltCHECK},
+        LedgerEntry{jss::credential, parseCredential, ltCREDENTIAL},
+        LedgerEntry{
+            jss::deposit_preauth, parseDepositPreauth, ltDEPOSIT_PREAUTH},
+        LedgerEntry{jss::did, parseDID, ltDID},
+        LedgerEntry{jss::directory, parseDirectory, ltDIR_NODE},
+        LedgerEntry{jss::escrow, parseEscrow, ltESCROW},
         // TODO: add fee, hashes
-        {jss::mpt_issuance, parseMPTokenIssuance, ltMPTOKEN_ISSUANCE},
-        {jss::mptoken, parseMPToken, ltMPTOKEN},
+        LedgerEntry{
+            jss::mpt_issuance, parseMPTokenIssuance, ltMPTOKEN_ISSUANCE},
+        LedgerEntry{jss::mptoken, parseMPToken, ltMPTOKEN},
         // TODO: add NFT Offers
-        {jss::nft_page, parseNFTokenPage, ltNFTOKEN_PAGE},
+        LedgerEntry{jss::nft_page, parseNFTokenPage, ltNFTOKEN_PAGE},
         // TODO: add NegativeUNL
-        {jss::offer, parseOffer, ltOFFER},
-        {jss::oracle, parseOracle, ltORACLE},
-        {jss::payment_channel, parsePaymentChannel, ltPAYCHAN},
-        {jss::ripple_state, parseRippleState, ltRIPPLE_STATE},
+        LedgerEntry{jss::offer, parseOffer, ltOFFER},
+        LedgerEntry{jss::oracle, parseOracle, ltORACLE},
+        LedgerEntry{jss::payment_channel, parsePaymentChannel, ltPAYCHAN},
+        LedgerEntry{jss::ripple_state, parseRippleState, ltRIPPLE_STATE},
         // This is an alias, since the `ledger_data` filter uses jss::state
-        {jss::state, parseRippleState, ltRIPPLE_STATE},
-        {jss::ticket, parseTicket, ltTICKET},
-        {jss::xchain_owned_claim_id,
-         parseXChainOwnedClaimID,
-         ltXCHAIN_OWNED_CLAIM_ID},
-        {jss::xchain_owned_create_account_claim_id,
-         parseXChainOwnedCreateAccountClaimID,
-         ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
+        LedgerEntry{jss::state, parseRippleState, ltRIPPLE_STATE},
+        LedgerEntry{jss::ticket, parseTicket, ltTICKET},
+        LedgerEntry{
+            jss::xchain_owned_claim_id,
+            parseXChainOwnedClaimID,
+            ltXCHAIN_OWNED_CLAIM_ID},
+        LedgerEntry{
+            jss::xchain_owned_create_account_claim_id,
+            parseXChainOwnedCreateAccountClaimID,
+            ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
     };
 
     uint256 uNodeIndex;
@@ -886,8 +905,7 @@ doLedgerEntry(RPC::JsonContext& context)
     {
         if (context.apiVersion > 1u)
         {
-            // For apiVersion 2 onwards, any parsing failures that throw
-            // this
+            // For apiVersion 2 onwards, any parsing failures that throw this
             // exception return an invalidParam error.
             jvResult[jss::error] = "invalidParams";
             return jvResult;
@@ -964,7 +982,7 @@ doLedgerEntryGrpc(
         return {response, errorStatus};
     }
 
-    auto key = uint256::fromVoidChecked(request.key());
+    auto const key = uint256::fromVoidChecked(request.key());
     if (!key)
     {
         grpc::Status errorStatus{
