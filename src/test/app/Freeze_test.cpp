@@ -771,20 +771,20 @@ class Freeze_test : public beast::unit_test::suite
         env(trust(A1, G1["USD"](0), tfSetFreeze));
         env.close();
 
-        // Issuer and A1 can send payments to each other
-        env(pay(A1, G1, G1["USD"](1)));
-        // env(pay(G1, A1, G1["USD"](1))); // BUG: seems like
-        env.close();
-
         // Issuer and A2 must not be affected
         env(pay(A2, G1, G1["USD"](1)));
         env(pay(G1, A2, G1["USD"](1)));
         env.close();
 
+        // A1 can send tokens to the issuer
+        env(pay(A1, G1, G1["USD"](1)));
+        env.close();
         // A1 can send tokens to A2
         env(pay(A1, A2, G1["USD"](1)));
         env.close();
 
+        // Issuer cannot sent tokens to A1
+        env(pay(G1, A1, G1["USD"](1)), ter(tecPATH_DRY));
         // A2 cannot send tokens to A1
         env(pay(A2, A1, G1["USD"](1)), ter(tecPATH_DRY));
 
@@ -792,15 +792,23 @@ class Freeze_test : public beast::unit_test::suite
         {
             // A1 deep freezes trust line
             env(trust(A1, G1["USD"](0), tfSetDeepFreeze));
-            // Issuer and A1 can send payments to each other
-            env(pay(A1, G1, G1["USD"](1)));
-            // env(pay(G1, A1, G1["USD"](1)));  // BUG: seems like
             env.close();
 
-            // A1 cannot send tokens to A2
-            env(pay(A1, A2, G1["USD"](1)), ter(tecPATH_DRY));
+            // Issuer and A2 must not be affected
+            env(pay(A2, G1, G1["USD"](1)));
+            env(pay(G1, A2, G1["USD"](1)));
+            env.close();
+
+            // A1 can still send token to issuer
+            env(pay(A1, G1, G1["USD"](1)));
+            env.close();
+
+            // Issuer cannot send tokens to A1
+            env(pay(G1, A1, G1["USD"](1)), ter(tecPATH_DRY));
             // A2 cannot send tokens to A1
             env(pay(A2, A1, G1["USD"](1)), ter(tecPATH_DRY));
+            // A1 cannot send tokens to A2
+            env(pay(A1, A2, G1["USD"](1)), ter(tecPATH_DRY));
         }
     }
 
