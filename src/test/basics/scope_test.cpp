@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/scope.h>
-#include <ripple/beast/unit_test.h>
+#include <xrpl/basics/scope.h>
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 namespace test {

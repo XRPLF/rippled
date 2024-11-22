@@ -17,19 +17,21 @@
 */
 //==============================================================================
 
-#include <ripple/basics/PerfLog.h>
-#include <ripple/basics/random.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/json/json_reader.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/impl/Handler.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <xrpld/perflog/PerfLog.h>
+#include <xrpld/rpc/detail/Handler.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/protocol/jss.h>
+
 #include <atomic>
 #include <chrono>
 #include <cmath>
 #include <random>
 #include <string>
-#include <test/jtx/Env.h>
 #include <thread>
 
 //------------------------------------------------------------------------------
@@ -44,7 +46,11 @@ class PerfLog_test : public beast::unit_test::suite
 
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
-    test::jtx::Env env_{*this};
+    test::jtx::Env env_{
+        *this,
+        test::jtx::envconfig(),
+        nullptr,
+        beast::severities::kDisabled};
     beast::Journal j_{env_.app().journal("PerfLog_test")};
 
     struct Fixture
@@ -304,7 +310,8 @@ public:
 
         // Get the all the labels we can use for RPC interfaces without
         // causing an assert.
-        std::vector<char const*> labels{ripple::RPC::getHandlerNames()};
+        std::vector<char const*> labels =
+            test::jtx::make_vector(ripple::RPC::getHandlerNames());
         std::shuffle(labels.begin(), labels.end(), default_prng());
 
         // Get two IDs to associate with each label.  Errors tend to happen at

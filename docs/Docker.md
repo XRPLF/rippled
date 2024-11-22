@@ -1,16 +1,5 @@
-# Rippled Docker Image
+# `rippled` Docker Image
 
-Rippled has a continuous deployment pipeline that turns every git commit into a
-docker image for quick testing and deployment.
-
-To run the tip of the latest release via docker:
-
-```$ docker run -P -v /srv/rippled/ ripple/rippled:latest```
-
-To run the tip of active development:
-
-```$ docker run -P -v /srv/rippled/ ripple/rippled:develop```
-
-Where ```/srv/rippled``` points to a directory containing a rippled.cfg and
-database files. By default, port 5005/tcp maps to the RPC port and 51235/udp to
-the peer port.
+- Some info relating to Docker containers can be found here: [../Builds/containers](../Builds/containers)
+- Images for building and testing rippled can be found here: [thejohnfreeman/rippled-docker](https://github.com/thejohnfreeman/rippled-docker/)
+  - These images do not have rippled. They have all the tools necessary to build rippled.

@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/UnorderedContainers.h>
-#include <ripple/basics/contract.h>
-#include <ripple/basics/random.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/beast/xor_shift_engine.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/shamap/SHAMap.h>
-#include <ripple/shamap/SHAMapSyncFilter.h>
-#include <functional>
-#include <stdexcept>
 #include <test/shamap/common.h>
 #include <test/unit_test/SuiteJournal.h>
+#include <xrpld/shamap/SHAMap.h>
+#include <xrpld/shamap/SHAMapSyncFilter.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/protocol/digest.h>
+#include <functional>
+#include <stdexcept>
 
 namespace ripple {
 namespace tests {
@@ -85,13 +85,13 @@ public:
         beast::Journal mJournal;
     };
 
-    std::shared_ptr<Item>
+    boost::intrusive_ptr<Item>
     make_random_item(beast::xor_shift_engine& r)
     {
         Serializer s;
         for (int d = 0; d < 3; ++d)
             s.add32(ripple::rand_int<std::uint32_t>(r));
-        return std::make_shared<Item>(s.getSHA512Half(), s.slice());
+        return make_shamapitem(s.getSHA512Half(), s.slice());
     }
 
     void
@@ -99,9 +99,8 @@ public:
     {
         while (n--)
         {
-            std::shared_ptr<SHAMapItem> item(make_random_item(r));
-            auto const result(
-                t.addItem(SHAMapNodeType::tnACCOUNT_STATE, std::move(*item)));
+            auto const result(t.addItem(
+                SHAMapNodeType::tnACCOUNT_STATE, make_random_item(r)));
             assert(result);
             (void)result;
         }

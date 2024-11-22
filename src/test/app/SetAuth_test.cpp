@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -38,8 +38,8 @@ struct SetAuth_test : public beast::unit_test::suite
         using namespace jtx;
         Json::Value jv;
         jv[jss::Account] = account.human();
-        jv[jss::LimitAmount] =
-            STAmount({to_currency(currency), dest}).getJson(JsonOptions::none);
+        jv[jss::LimitAmount] = STAmount(Issue{to_currency(currency), dest})
+                                   .getJson(JsonOptions::none);
         jv[jss::TransactionType] = jss::TrustSet;
         jv[jss::Flags] = tfSetfAuth;
         return jv;

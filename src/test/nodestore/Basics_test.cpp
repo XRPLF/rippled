@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/nodestore/DummyScheduler.h>
-#include <ripple/nodestore/Manager.h>
-#include <ripple/nodestore/impl/DecodedBlob.h>
-#include <ripple/nodestore/impl/EncodedBlob.h>
 #include <test/nodestore/TestBase.h>
+#include <xrpld/nodestore/DummyScheduler.h>
+#include <xrpld/nodestore/Manager.h>
+#include <xrpld/nodestore/detail/DecodedBlob.h>
+#include <xrpld/nodestore/detail/EncodedBlob.h>
 
 namespace ripple {
 namespace NodeStore {
@@ -56,10 +56,9 @@ public:
 
         auto batch = createPredictableBatch(numObjectsToTest, seedValue);
 
-        EncodedBlob encoded;
         for (int i = 0; i < batch.size(); ++i)
         {
-            encoded.prepare(batch[i]);
+            EncodedBlob encoded(batch[i]);
 
             DecodedBlob decoded(
                 encoded.getKey(), encoded.getData(), encoded.getSize());

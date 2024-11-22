@@ -16,15 +16,15 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/basics/random.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/overlay/Message.h>
-#include <ripple/overlay/Peer.h>
-#include <ripple/overlay/Slot.h>
-#include <ripple/overlay/impl/Handshake.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple.pb.h>
 #include <test/jtx/Env.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Peer.h>
+#include <xrpld/overlay/Slot.h>
+#include <xrpld/overlay/detail/Handshake.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/messages.h>
 
 #include <boost/thread.hpp>
 
@@ -58,6 +58,12 @@ static constexpr std::uint32_t MAX_MESSAGES = 200000;
 class PeerPartial : public Peer
 {
 public:
+    PeerPartial()
+        : nodePublicKey_(derivePublicKey(KeyType::ed25519, randomSecretKey()))
+    {
+    }
+
+    PublicKey nodePublicKey_;
     virtual ~PeerPartial()
     {
     }
@@ -103,8 +109,7 @@ public:
     PublicKey const&
     getNodePublic() const override
     {
-        static PublicKey key{};
-        return key;
+        return nodePublicKey_;
     }
     Json::Value
     json() override
@@ -312,9 +317,8 @@ class Validator
     using Links = std::unordered_map<Peer::id_t, LinkSPtr>;
 
 public:
-    Validator()
+    Validator() : pkey_(std::get<0>(randomKeyPair(KeyType::ed25519)))
     {
-        pkey_ = std::get<0>(randomKeyPair(KeyType::ed25519));
         protocol::TMValidation v;
         v.set_validation("validation");
         message_ = std::make_shared<Message>(v, protocol::mtVALIDATION, pkey_);
@@ -439,7 +443,7 @@ public:
 
 private:
     Links links_;
-    PublicKey pkey_{};
+    PublicKey pkey_;
     MessageSPtr message_ = nullptr;
     inline static std::uint16_t sid_ = 0;
     std::uint16_t id_ = 0;
@@ -884,9 +888,8 @@ protected:
     printPeers(const std::string& msg, std::uint16_t validator = 0)
     {
         auto peers = network_.overlay().getPeers(network_.validator(validator));
-        std::cout << msg << " "
-                  << "num peers " << (int)network_.overlay().getNumPeers()
-                  << std::endl;
+        std::cout << msg << " " << "num peers "
+                  << (int)network_.overlay().getNumPeers() << std::endl;
         for (auto& [k, v] : peers)
             std::cout << k << ":" << (int)std::get<reduce_relay::PeerState>(v)
                       << " ";
@@ -926,7 +929,7 @@ protected:
         bool isSelected_ = false;
         Peer::id_t peer_;
         std::uint16_t validator_;
-        PublicKey key_;
+        std::optional<PublicKey> key_;
         time_point<ManualClock> time_;
         bool handled_ = false;
     };
@@ -1052,17 +1055,17 @@ protected:
                 // 4) peer is in Slot's peers_ (if not then it is deleted
                 //    by Slots::deleteIdlePeers())
                 bool mustHandle = false;
-                if (event.state_ == State::On)
+                if (event.state_ == State::On && BEAST_EXPECT(event.key_))
                 {
                     event.isSelected_ =
-                        network_.overlay().isSelected(event.key_, event.peer_);
-                    auto peers = network_.overlay().getPeers(event.key_);
+                        network_.overlay().isSelected(*event.key_, event.peer_);
+                    auto peers = network_.overlay().getPeers(*event.key_);
                     auto d = reduce_relay::epoch<milliseconds>(now).count() -
                         std::get<3>(peers[event.peer_]);
                     mustHandle = event.isSelected_ &&
                         d > milliseconds(reduce_relay::IDLED).count() &&
                         network_.overlay().inState(
-                            event.key_, reduce_relay::PeerState::Squelched) >
+                            *event.key_, reduce_relay::PeerState::Squelched) >
                             0 &&
                         peers.find(event.peer_) != peers.end();
                 }

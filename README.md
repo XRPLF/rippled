@@ -3,16 +3,17 @@
 The [XRP Ledger](https://xrpl.org/) is a decentralized cryptographic ledger powered by a network of peer-to-peer nodes. The XRP Ledger uses a novel Byzantine Fault Tolerant consensus algorithm to settle and record transactions in a secure distributed database without a central operator.
 
 ## XRP
-[XRP](https://xrpl.org/xrp.html) is a public, counterparty-free asset native to the XRP Ledger, and is designed to bridge the many different currencies in use worldwide. XRP is traded on the open-market and is available for anyone to access. The XRP Ledger was created in 2012 with a finite supply of 100 billion units of XRP. Its creators gifted 80 billion XRP to a company, now called [Ripple](https://ripple.com/), to develop the XRP Ledger and its ecosystem. Ripple uses XRP to help build the Internet of Value, ushering in a world in which money moves as fast and efficiently as information does today.
+[XRP](https://xrpl.org/xrp.html) is a public, counterparty-free asset native to the XRP Ledger, and is designed to bridge the many different currencies in use worldwide. XRP is traded on the open-market and is available for anyone to access. The XRP Ledger was created in 2012 with a finite supply of 100 billion units of XRP.
 
 ## rippled
-The server software that powers the XRP Ledger is called `rippled` and is available in this repository under the permissive [ISC open-source license](LICENSE.md). The `rippled` server software is written primarily in C++ and runs on a variety of platforms. The `rippled` server software can run in several modes depending on its [configuration](https://xrpl.org/rippled-server-modes.html).  
+The server software that powers the XRP Ledger is called `rippled` and is available in this repository under the permissive [ISC open-source license](LICENSE.md). The `rippled` server software is written primarily in C++ and runs on a variety of platforms. The `rippled` server software can run in several modes depending on its [configuration](https://xrpl.org/rippled-server-modes.html).
+
+If you are interested in running an **API Server** (including a **Full History Server**), take a look at [Clio](https://github.com/XRPLF/clio). (rippled Reporting Mode has been replaced by Clio.)
 
 ### Build from Source
 
-* [Linux](Builds/linux/README.md)
-* [Mac](Builds/macos/README.md) (Not recommended for production)
-* [Windows](Builds/VisualStudio2017/README.md) (Not recommended for production)
+* [Read the build instructions in `BUILD.md`](BUILD.md)
+* If you encounter any issues, please [open an issue](https://github.com/XRPLF/rippled/issues)
 
 ## Key Features of the XRP Ledger
 
@@ -34,8 +35,12 @@ The server software that powers the XRP Ledger is called `rippled` and is availa
 
 
 ## Source Code
-[![travis-ci.com: Build Status](https://travis-ci.com/ripple/rippled.svg?branch=develop)](https://travis-ci.com/ripple/rippled)
-[![codecov.io: Code Coverage](https://codecov.io/gh/ripple/rippled/branch/develop/graph/badge.svg)](https://codecov.io/gh/ripple/rippled)
+
+Here are some good places to start learning the source code:
+
+- Read the markdown files in the source tree: `src/ripple/**/*.md`.
+- Read [the levelization document](./Builds/levelization) to get an idea of the internal dependency graph.
+- In the big picture, the `main` function constructs an `ApplicationImp` object, which implements the `Application` virtual interface. Almost every component in the application takes an `Application&` parameter in its constructor, typically named `app` and stored as a member variable `app_`. This allows most components to depend on any other component.
 
 ### Repository Contents
 
@@ -51,9 +56,14 @@ Some of the directories under `src` are external repositories included using
 git-subtree. See those directories' README files for more details.
 
 
-## See Also
+## Additional Documentation
 
 * [XRP Ledger Dev Portal](https://xrpl.org/)
 * [Setup and Installation](https://xrpl.org/install-rippled.html)
-* [Source Documentation (Doxygen)](https://ripple.github.io/rippled)
+* [Source Documentation (Doxygen)](https://xrplf.github.io/rippled/)
+
+## See Also
+
+* [Clio API Server for the XRP Ledger](https://github.com/XRPLF/clio)
+* [Mailing List for Release Announcements](https://groups.google.com/g/ripple-server)
 * [Learn more about the XRP Ledger (YouTube)](https://www.youtube.com/playlist?list=PLJQ55Tj1hIVZtJ_JdTvSum2qMTsedWkNi)

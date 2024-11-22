@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/protocol/AmountConversions.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/protocol/Rate.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 
@@ -75,6 +75,7 @@ public:
                     // elsewhere.
                     continue;
                 }
+
                 if (flag == asfAuthorizedNFTokenMinter)
                 {
                     // The asfAuthorizedNFTokenMinter flag requires the
@@ -82,8 +83,24 @@ public:
                     // the transaction.  It is tested elsewhere.
                     continue;
                 }
-                else if (
-                    std::find(goodFlags.begin(), goodFlags.end(), flag) !=
+
+                if (flag == asfDisallowIncomingCheck ||
+                    flag == asfDisallowIncomingPayChan ||
+                    flag == asfDisallowIncomingNFTokenOffer ||
+                    flag == asfDisallowIncomingTrustline)
+                {
+                    // These flags are part of the DisallowIncoming amendment
+                    // and are tested elsewhere
+                    continue;
+                }
+                if (flag == asfAllowTrustLineClawback)
+                {
+                    // The asfAllowTrustLineClawback flag can't be cleared.  It
+                    // is tested elsewhere.
+                    continue;
+                }
+
+                if (std::find(goodFlags.begin(), goodFlags.end(), flag) !=
                     goodFlags.end())
                 {
                     // Good flag

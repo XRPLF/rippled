@@ -19,8 +19,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <test/jtx/Account.h>
 
-#include <ripple/basics/join.h>
-#include <ripple/beast/unit_test.h>
+#include <xrpl/basics/join.h>
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 namespace test {

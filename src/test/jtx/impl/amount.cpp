@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/basics/safe_cast.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/amount.h>
+#include <xrpl/basics/safe_cast.h>
 #include <cassert>
 #include <cmath>
 #include <iomanip>
-#include <test/jtx/Account.h>
-#include <test/jtx/amount.h>
 
 namespace ripple {
 namespace test {
@@ -104,7 +104,8 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
 
 XRP_t const XRP{};
 
-PrettyAmount IOU::operator()(epsilon_t) const
+PrettyAmount
+IOU::operator()(epsilon_t) const
 {
     return {STAmount(issue(), 1, -81), account.name()};
 }

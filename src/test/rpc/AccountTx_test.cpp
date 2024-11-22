@@ -17,11 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/jss.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -108,8 +107,9 @@ class AccountTx_test : public beast::unit_test::suite
     };
 
     void
-    testParameters()
+    testParameters(unsigned int apiVersion)
     {
+        testcase("Parameters APIv" + std::to_string(apiVersion));
         using namespace test::jtx;
 
         Env env(*this);
@@ -120,14 +120,58 @@ class AccountTx_test : public beast::unit_test::suite
         // Ledger 3 has the two txs associated with funding the account
         // All other ledgers have no txs
 
-        auto hasTxs = [](Json::Value const& j) {
-            return j.isMember(jss::result) &&
-                (j[jss::result][jss::status] == "success") &&
-                (j[jss::result][jss::transactions].size() == 2) &&
-                (j[jss::result][jss::transactions][0u][jss::tx]
-                  [jss::TransactionType] == jss::AccountSet) &&
-                (j[jss::result][jss::transactions][1u][jss::tx]
-                  [jss::TransactionType] == jss::Payment);
+        auto hasTxs = [apiVersion](Json::Value const& j) {
+            switch (apiVersion)
+            {
+                case 1:
+                    return j.isMember(jss::result) &&
+                        (j[jss::result][jss::status] == "success") &&
+                        (j[jss::result][jss::transactions].size() == 2) &&
+                        (j[jss::result][jss::transactions][0u][jss::tx]
+                          [jss::TransactionType] == jss::AccountSet) &&
+                        (j[jss::result][jss::transactions][1u][jss::tx]
+                          [jss::TransactionType] == jss::Payment) &&
+                        (j[jss::result][jss::transactions][1u][jss::tx]
+                          [jss::DeliverMax] == "10000000010") &&
+                        (j[jss::result][jss::transactions][1u][jss::tx]
+                          [jss::Amount] ==
+                         j[jss::result][jss::transactions][1u][jss::tx]
+                          [jss::DeliverMax]);
+                case 2:
+                case 3:
+                    if (j.isMember(jss::result) &&
+                        (j[jss::result][jss::status] == "success") &&
+                        (j[jss::result][jss::transactions].size() == 2) &&
+                        (j[jss::result][jss::transactions][0u][jss::tx_json]
+                          [jss::TransactionType] == jss::AccountSet))
+                    {
+                        auto const& payment =
+                            j[jss::result][jss::transactions][1u];
+
+                        return (payment.isMember(jss::tx_json)) &&
+                            (payment[jss::tx_json][jss::TransactionType] ==
+                             jss::Payment) &&
+                            (payment[jss::tx_json][jss::DeliverMax] ==
+                             "10000000010") &&
+                            (!payment[jss::tx_json].isMember(jss::Amount)) &&
+                            (!payment[jss::tx_json].isMember(jss::hash)) &&
+                            (payment[jss::hash] ==
+                             "9F3085D85F472D1CC29627F260DF68EDE59D42D1D0C33E345"
+                             "ECF0D4CE981D0A8") &&
+                            (payment[jss::validated] == true) &&
+                            (payment[jss::ledger_index] == 3) &&
+                            (payment[jss::ledger_hash] ==
+                             "5476DCD816EA04CBBA57D47BBF1FC58A5217CC93A5ADD79CB"
+                             "580A5AFDD727E33") &&
+                            (payment[jss::close_time_iso] ==
+                             "2000-01-01T00:00:10Z");
+                    }
+                    else
+                        return false;
+
+                default:
+                    return false;
+            }
         };
 
         auto noTxs = [](Json::Value const& j) {
@@ -143,6 +187,7 @@ class AccountTx_test : public beast::unit_test::suite
         };
 
         Json::Value jParms;
+        jParms[jss::api_version] = apiVersion;
 
         BEAST_EXPECT(isErr(
             env.rpc("json", "account_tx", to_string(jParms)),
@@ -155,58 +200,90 @@ class AccountTx_test : public beast::unit_test::suite
             rpcACT_MALFORMED));
 
         jParms[jss::account] = A1.human();
-        BEAST_EXPECT(hasTxs(env.rpc("json", "account_tx", to_string(jParms))));
+        BEAST_EXPECT(hasTxs(
+            env.rpc(apiVersion, "json", "account_tx", to_string(jParms))));
 
         // Ledger min/max index
         {
             Json::Value p{jParms};
             p[jss::ledger_index_min] = -1;
             p[jss::ledger_index_max] = -1;
-            BEAST_EXPECT(hasTxs(env.rpc("json", "account_tx", to_string(p))));
+            BEAST_EXPECT(hasTxs(
+                env.rpc(apiVersion, "json", "account_tx", to_string(p))));
 
             p[jss::ledger_index_min] = 0;
             p[jss::ledger_index_max] = 100;
-            BEAST_EXPECT(hasTxs(env.rpc("json", "account_tx", to_string(p))));
+            if (apiVersion < 2u)
+                BEAST_EXPECT(hasTxs(
+                    env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+            else
+                BEAST_EXPECT(isErr(
+                    env.rpc("json", "account_tx", to_string(p)),
+                    rpcLGR_IDX_MALFORMED));
 
             p[jss::ledger_index_min] = 1;
             p[jss::ledger_index_max] = 2;
-            BEAST_EXPECT(noTxs(env.rpc("json", "account_tx", to_string(p))));
+            if (apiVersion < 2u)
+                BEAST_EXPECT(
+                    noTxs(env.rpc("json", "account_tx", to_string(p))));
+            else
+                BEAST_EXPECT(isErr(
+                    env.rpc("json", "account_tx", to_string(p)),
+                    rpcLGR_IDX_MALFORMED));
 
             p[jss::ledger_index_min] = 2;
             p[jss::ledger_index_max] = 1;
             BEAST_EXPECT(isErr(
                 env.rpc("json", "account_tx", to_string(p)),
-                (RPC::apiMaximumSupportedVersion == 1 ? rpcLGR_IDXS_INVALID
-                                                      : rpcINVALID_LGR_RANGE)));
+                (apiVersion == 1 ? rpcLGR_IDXS_INVALID
+                                 : rpcINVALID_LGR_RANGE)));
         }
-
         // Ledger index min only
         {
             Json::Value p{jParms};
             p[jss::ledger_index_min] = -1;
-            BEAST_EXPECT(hasTxs(env.rpc("json", "account_tx", to_string(p))));
+            BEAST_EXPECT(hasTxs(
+                env.rpc(apiVersion, "json", "account_tx", to_string(p))));
 
             p[jss::ledger_index_min] = 1;
-            BEAST_EXPECT(hasTxs(env.rpc("json", "account_tx", to_string(p))));
+            if (apiVersion < 2u)
+                BEAST_EXPECT(hasTxs(
+                    env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+            else
+                BEAST_EXPECT(isErr(
+                    env.rpc("json", "account_tx", to_string(p)),
+                    rpcLGR_IDX_MALFORMED));
 
             p[jss::ledger_index_min] = env.current()->info().seq;
             BEAST_EXPECT(isErr(
                 env.rpc("json", "account_tx", to_string(p)),
-                (RPC::apiMaximumSupportedVersion == 1 ? rpcLGR_IDXS_INVALID
-                                                      : rpcINVALID_LGR_RANGE)));
+                (apiVersion == 1 ? rpcLGR_IDXS_INVALID
+                                 : rpcINVALID_LGR_RANGE)));
         }
 
         // Ledger index max only
         {
             Json::Value p{jParms};
             p[jss::ledger_index_max] = -1;
-            BEAST_EXPECT(hasTxs(env.rpc("json", "account_tx", to_string(p))));
+            BEAST_EXPECT(hasTxs(
+                env.rpc(apiVersion, "json", "account_tx", to_string(p))));
 
             p[jss::ledger_index_max] = env.current()->info().seq;
-            BEAST_EXPECT(hasTxs(env.rpc("json", "account_tx", to_string(p))));
+            if (apiVersion < 2u)
+                BEAST_EXPECT(hasTxs(
+                    env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+            else
+                BEAST_EXPECT(isErr(
+                    env.rpc("json", "account_tx", to_string(p)),
+                    rpcLGR_IDX_MALFORMED));
+
+            p[jss::ledger_index_max] = 3;
+            BEAST_EXPECT(hasTxs(
+                env.rpc(apiVersion, "json", "account_tx", to_string(p))));
 
             p[jss::ledger_index_max] = env.closed()->info().seq;
-            BEAST_EXPECT(hasTxs(env.rpc("json", "account_tx", to_string(p))));
+            BEAST_EXPECT(hasTxs(
+                env.rpc(apiVersion, "json", "account_tx", to_string(p))));
 
             p[jss::ledger_index_max] = env.closed()->info().seq - 1;
             BEAST_EXPECT(noTxs(env.rpc("json", "account_tx", to_string(p))));
@@ -217,7 +294,8 @@ class AccountTx_test : public beast::unit_test::suite
             Json::Value p{jParms};
 
             p[jss::ledger_index] = env.closed()->info().seq;
-            BEAST_EXPECT(hasTxs(env.rpc("json", "account_tx", to_string(p))));
+            BEAST_EXPECT(hasTxs(
+                env.rpc(apiVersion, "json", "account_tx", to_string(p))));
 
             p[jss::ledger_index] = env.closed()->info().seq - 1;
             BEAST_EXPECT(noTxs(env.rpc("json", "account_tx", to_string(p))));
@@ -237,16 +315,101 @@ class AccountTx_test : public beast::unit_test::suite
             Json::Value p{jParms};
 
             p[jss::ledger_hash] = to_string(env.closed()->info().hash);
-            BEAST_EXPECT(hasTxs(env.rpc("json", "account_tx", to_string(p))));
+            BEAST_EXPECT(hasTxs(
+                env.rpc(apiVersion, "json", "account_tx", to_string(p))));
 
             p[jss::ledger_hash] = to_string(env.closed()->info().parentHash);
             BEAST_EXPECT(noTxs(env.rpc("json", "account_tx", to_string(p))));
+        }
+
+        // Ledger index max/min/index all specified
+        // ERRORS out with invalid Parenthesis
+        {
+            jParms[jss::account] = "0xDEADBEEF";
+            jParms[jss::account] = A1.human();
+            Json::Value p{jParms};
+
+            p[jss::ledger_index_max] = -1;
+            p[jss::ledger_index_min] = -1;
+            p[jss::ledger_index] = -1;
+
+            if (apiVersion < 2u)
+                BEAST_EXPECT(hasTxs(
+                    env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+            else
+                BEAST_EXPECT(isErr(
+                    env.rpc("json", "account_tx", to_string(p)),
+                    rpcINVALID_PARAMS));
+        }
+
+        // Ledger index max only
+        {
+            Json::Value p{jParms};
+            p[jss::ledger_index_max] = env.current()->info().seq;
+            if (apiVersion < 2u)
+                BEAST_EXPECT(hasTxs(
+                    env.rpc(apiVersion, "json", "account_tx", to_string(p))));
+            else
+                BEAST_EXPECT(isErr(
+                    env.rpc("json", "account_tx", to_string(p)),
+                    rpcLGR_IDX_MALFORMED));
+        }
+        // test account non-string
+        {
+            auto testInvalidAccountParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::account] = param;
+                auto jrr = env.rpc(
+                    "json", "account_tx", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(
+                    jrr[jss::error_message] == "Invalid field 'account'.");
+            };
+
+            testInvalidAccountParam(1);
+            testInvalidAccountParam(1.1);
+            testInvalidAccountParam(true);
+            testInvalidAccountParam(Json::Value(Json::nullValue));
+            testInvalidAccountParam(Json::Value(Json::objectValue));
+            testInvalidAccountParam(Json::Value(Json::arrayValue));
+        }
+        // test binary and forward for bool/non bool values
+        {
+            Json::Value p{jParms};
+            p[jss::binary] = "asdf";
+            if (apiVersion < 2u)
+            {
+                Json::Value result{env.rpc("json", "account_tx", to_string(p))};
+                BEAST_EXPECT(result[jss::result][jss::status] == "success");
+            }
+            else
+                BEAST_EXPECT(isErr(
+                    env.rpc("json", "account_tx", to_string(p)),
+                    rpcINVALID_PARAMS));
+
+            p[jss::binary] = true;
+            Json::Value result{env.rpc("json", "account_tx", to_string(p))};
+            BEAST_EXPECT(result[jss::result][jss::status] == "success");
+
+            p[jss::forward] = "true";
+            if (apiVersion < 2u)
+                BEAST_EXPECT(result[jss::result][jss::status] == "success");
+            else
+                BEAST_EXPECT(isErr(
+                    env.rpc("json", "account_tx", to_string(p)),
+                    rpcINVALID_PARAMS));
+
+            p[jss::forward] = false;
+            result = env.rpc("json", "account_tx", to_string(p));
+            BEAST_EXPECT(result[jss::result][jss::status] == "success");
         }
     }
 
     void
     testContents()
     {
+        testcase("Contents");
+
         // Get results for all transaction types that can be associated
         // with an account.  Start by generating all transaction types.
         using namespace test::jtx;
@@ -459,6 +622,8 @@ class AccountTx_test : public beast::unit_test::suite
     void
     testAccountDelete()
     {
+        testcase("AccountDelete");
+
         // Verify that if an account is resurrected then the account_tx RPC
         // command still recovers all transactions on that account before
         // and after resurrection.
@@ -547,7 +712,10 @@ class AccountTx_test : public beast::unit_test::suite
 
         // All it takes is a large enough XRP payment to resurrect
         // becky's account.  Try too small a payment.
-        env(pay(alice, becky, XRP(19)), ter(tecNO_DST_INSUF_XRP));
+        env(pay(alice,
+                becky,
+                drops(env.current()->fees().accountReserve(0)) - XRP(1)),
+            ter(tecNO_DST_INSUF_XRP));
         env.close();
 
         // Actually resurrect becky's account.
@@ -590,12 +758,13 @@ public:
     void
     run() override
     {
-        testParameters();
+        forAllApiVersions(
+            std::bind_front(&AccountTx_test::testParameters, this));
         testContents();
         testAccountDelete();
     }
 };
-BEAST_DEFINE_TESTSUITE(AccountTx, app, ripple);
+BEAST_DEFINE_TESTSUITE(AccountTx, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple
