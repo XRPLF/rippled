@@ -45,10 +45,7 @@ namespace jss {
 JSS(AL_size);              // out: GetCounts
 JSS(AL_hit_rate);          // out: GetCounts
 JSS(Account);              // in: TransactionSign; field.
-JSS(AccountRoot);          // ledger type.
-JSS(AMM);                  // ledger type
 JSS(AMMID);                // field
-JSS(Amendments);           // ledger type.
 JSS(Amount);               // in: TransactionSign; field.
 JSS(Amount2);              // in/out: AMM IOU/XRP pool, deposit, withdraw amount
 JSS(Asset);                // in: AMM Asset1
@@ -60,67 +57,47 @@ JSS(AuthAccounts);         // in: AMM Auction Slot
 JSS(BaseAsset);            // in: Oracle
 JSS(BidMax);               // in: AMM Bid
 JSS(BidMin);               // in: AMM Bid
-JSS(Bridge);               // ledger type.
-JSS(Check);                // ledger type.
 JSS(ClearFlag);            // field.
-JSS(Credential);           // ledger type.
-JSS(DID);                  // ledger type.
 JSS(DeliverMax);           // out: alias to Amount
 JSS(DeliverMin);           // in: TransactionSign
 JSS(Destination);          // in: TransactionSign; field.
-JSS(DirectoryNode);        // ledger type.
 JSS(EPrice);               // in: AMM Deposit option
-JSS(Escrow);               // ledger type.
 JSS(Fee);                  // in/out: TransactionSign; field.
-JSS(FeeSettings);          // ledger type.
 JSS(Flags);                // in/out: TransactionSign; field.
 JSS(Holder);               // field.
 JSS(Invalid);              //
 JSS(Issuer);               // in: Credential transactions
 JSS(LastLedgerSequence);   // in: TransactionSign; field
 JSS(LastUpdateTime);       // field.
-JSS(LedgerHashes);         // ledger type.
 JSS(LimitAmount);          // field.
-JSS(MPToken);              // ledger type.
-JSS(MPTokenIssuance);      // ledger type.
 JSS(NetworkID);            // field.
-JSS(NFTokenOffer);         // ledger type.
-JSS(NFTokenPage);          // ledger type.
 JSS(LPTokenOut);           // in: AMM Liquidity Provider deposit tokens
 JSS(LPTokenIn);            // in: AMM Liquidity Provider withdraw tokens
 JSS(LPToken);              // out: AMM Liquidity Provider tokens info
-JSS(Offer);                // ledger type.
 JSS(OfferSequence);        // field.
-JSS(Oracle);               // ledger type.
 JSS(OracleDocumentID);     // field
 JSS(Owner);                // field
 JSS(Paths);                // in/out: TransactionSign
-JSS(PayChannel);           // ledger type.
 JSS(PriceDataSeries);                    // field.
 JSS(PriceData);                          // field.
 JSS(Provider);                           // field.
 JSS(QuoteAsset);                         // in: Oracle.
-JSS(RippleState);                        // ledger type.
 JSS(SLE_hit_rate);                       // out: GetCounts.
 JSS(Scale);                              // field.
 JSS(SettleDelay);                        // in: TransactionSign
 JSS(SendMax);                            // in: TransactionSign
 JSS(Sequence);                           // in/out: TransactionSign; field.
 JSS(SetFlag);                            // field.
-JSS(SignerList);                         // ledger type.
 JSS(SigningPubKey);                      // field.
 JSS(Subject);                            // in: Credential transactions
 JSS(TakerGets);                          // field.
 JSS(TakerPays);                          // field.
-JSS(Ticket);                             // ledger type.
 JSS(TxnSignature);                       // field.
 JSS(TradingFee);                         // in/out: AMM trading fee
 JSS(TransactionType);                    // in: TransactionSign.
 JSS(TransferRate);                       // in: TransferRate.
 JSS(URI);                                // field.
 JSS(VoteSlots);                          // out: AMM Vote
-JSS(XChainOwnedClaimID);                 // ledger type.
-JSS(XChainOwnedCreateAccountClaimID);    // ledger type.
 JSS(aborted);                            // out: InboundLedger
 JSS(accepted);               // out: LedgerToJson, OwnerInfo, SubmitTransaction
 JSS(accountState);           // out: LedgerToJson
@@ -709,7 +686,6 @@ JSS(warning);                 // rpc:
 JSS(warnings);                // out: server_info, server_state
 JSS(workers);
 JSS(write_load);              // out: GetCounts
-JSS(NegativeUNL);                           // out: ValidatorList; ledger type
 // clang-format on
 
 #pragma push_macro("TRANSACTION")
@@ -723,14 +699,22 @@ JSS(NegativeUNL);                           // out: ValidatorList; ledger type
 #pragma pop_macro("TRANSACTION")
 
 #pragma push_macro("LEDGER_ENTRY")
+#pragma push_macro("LEDGER_ENTRY_DUPLICATE")
 #undef LEDGER_ENTRY
+#undef LEDGER_ENTRY_DUPLICATE
 
-#define LEDGER_ENTRY(tag, value, name, rpcName, fields) JSS(rpcName);
+#define LEDGER_ENTRY(tag, value, name, rpcName, fields) \
+    JSS(name);                                          \
+    JSS(rpcName);
+
+#define LEDGER_ENTRY_DUPLICATE(tag, value, name, rpcName, fields) JSS(rpcName);
 
 #include <xrpl/protocol/detail/ledger_entries.macro>
 
 #undef LEDGER_ENTRY
+#undef LEDGER_ENTRY_DUPLICATE
 #pragma pop_macro("LEDGER_ENTRY")
+#pragma pop_macro("LEDGER_ENTRY_DUPLICATE")
 
 #undef JSS
 

@@ -21,6 +21,10 @@
 #error "undefined macro: LEDGER_ENTRY"
 #endif
 
+#ifndef LEDGER_ENTRY_DUPLICATE
+#define LEDGER_ENTRY_DUPLICATE(tag, value, name, rpcName, fields) LEDGER_ENTRY(tag, value, name, rpcName, fields)
+#endif
+
 /**
  * These objects are listed in order of increasing ledger type ID.
  * There are many gaps between these IDs.
@@ -243,7 +247,7 @@ LEDGER_ENTRY(ltOFFER, 0x006f, Offer, offer, ({
 
     \sa keylet::depositPreauth
  */
-LEDGER_ENTRY(ltDEPOSIT_PREAUTH, 0x0070, DepositPreauth, deposit_preauth, ({
+LEDGER_ENTRY_DUPLICATE(ltDEPOSIT_PREAUTH, 0x0070, DepositPreauth, deposit_preauth, ({
     {sfAccount,              soeREQUIRED},
     {sfAuthorize,            soeOPTIONAL},
     {sfOwnerNode,            soeREQUIRED},
@@ -436,3 +440,5 @@ LEDGER_ENTRY(ltCREDENTIAL, 0x0081, Credential, credential, ({
     {sfPreviousTxnID,        soeREQUIRED},
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
 }))
+
+#undef LEDGER_ENTRY_DUPLICATE
