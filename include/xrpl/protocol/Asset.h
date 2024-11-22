@@ -26,9 +26,16 @@
 
 namespace ripple {
 
+class Asset;
+
 template <typename TIss>
 concept ValidIssueType =
     std::is_same_v<TIss, Issue> || std::is_same_v<TIss, MPTIssue>;
+
+template <typename A>
+concept AssetType =
+    std::is_convertible_v<A, Asset> || std::is_convertible_v<A, Issue> ||
+    std::is_convertible_v<A, MPTIssue> || std::is_convertible_v<A, MPTID>;
 
 /* Asset is an abstraction of three different issue types: XRP, IOU, MPT.
  * For historical reasons, two issue types XRP and IOU are wrapped in Issue
@@ -96,6 +103,9 @@ public:
     operator!=(Asset const& lhs, Asset const& rhs);
 
     friend constexpr bool
+    operator<(Asset const& lhs, Asset const& rhs);
+
+    friend constexpr bool
     operator==(Currency const& lhs, Asset const& rhs);
 
     /** Return true if both assets refer to the same currency (regardless of
@@ -155,6 +165,21 @@ constexpr bool
 operator!=(Asset const& lhs, Asset const& rhs)
 {
     return !(lhs == rhs);
+}
+
+constexpr bool
+operator<(Asset const& lhs, Asset const& rhs)
+{
+    return std::visit(
+        [&]<typename TLhs, typename TRhs>(
+            TLhs const& issLhs, TRhs const& issRhs) {
+            if constexpr (std::is_same_v<TLhs, TRhs>)
+                return issLhs < issRhs;
+            else
+                return false;
+        },
+        lhs.issue_,
+        rhs.issue_);
 }
 
 constexpr bool
