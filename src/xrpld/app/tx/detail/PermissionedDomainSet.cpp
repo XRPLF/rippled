@@ -86,10 +86,10 @@ PermissionedDomainSet::doApply()
     if (!ownerSle)
         return tefINTERNAL;
 
-    auto const sortedTX =
+    auto const sortedTxCredentials =
         credentials::makeSorted(ctx_.tx.getFieldArray(sfAcceptedCredentials));
-    STArray sortedLE(sfAcceptedCredentials, sortedTX.size());
-    for (auto const& p : sortedTX)
+    STArray sortedLE(sfAcceptedCredentials, sortedTxCredentials.size());
+    for (auto const& p : sortedTxCredentials)
     {
         auto cred = STObject::makeInnerObject(sfCredential);
         cred.setAccountID(sfIssuer, p.first);

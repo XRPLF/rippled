@@ -27,8 +27,10 @@ PermissionedDomainDelete::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featurePermissionedDomains))
         return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
+
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
     if (domain == beast::zero)
         return temMALFORMED;
@@ -41,12 +43,15 @@ PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 {
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
     auto const sleDomain = ctx.view.read({ltPERMISSIONED_DOMAIN, domain});
+
     if (!sleDomain)
         return tecNO_ENTRY;
+
     assert(
         sleDomain->isFieldPresent(sfOwner) && ctx.tx.isFieldPresent(sfAccount));
     if (sleDomain->getAccountID(sfOwner) != ctx.tx.getAccountID(sfAccount))
         return tecNO_PERMISSION;
+
     return tesSUCCESS;
 }
 
@@ -55,19 +60,23 @@ TER
 PermissionedDomainDelete::doApply()
 {
     assert(ctx_.tx.isFieldPresent(sfDomainID));
+
     auto const slePd =
         view().peek({ltPERMISSIONED_DOMAIN, ctx_.tx.at(sfDomainID)});
-    auto const page{(*slePd)[sfOwnerNode]};
+    auto const page = (*slePd)[sfOwnerNode];
+
     if (!view().dirRemove(keylet::ownerDir(account_), page, slePd->key(), true))
     {
         JLOG(j_.fatal())
             << "Unable to delete permissioned domain directory entry.";
         return tefBAD_LEDGER;
     }
+
     auto const ownerSle = view().peek(keylet::account(account_));
     assert(ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0);
     adjustOwnerCount(view(), ownerSle, -1, ctx_.journal);
     view().erase(slePd);
+
     return tesSUCCESS;
 }
 

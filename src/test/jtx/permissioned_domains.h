@@ -25,7 +25,7 @@
 namespace ripple {
 namespace test {
 namespace jtx {
-namespace pd {
+namespace pdomain {
 
 // Helpers for PermissionedDomains testing
 using Credential = ripple::test::jtx::deposit::AuthorizeCredentials;
@@ -69,7 +69,7 @@ ownerInfo(Account const& account, Env& env);
 uint256
 getNewDomain(std::shared_ptr<STObject const> const& meta);
 
-}  // namespace pd
+}  // namespace pdomain
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

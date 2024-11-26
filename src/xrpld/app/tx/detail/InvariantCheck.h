@@ -482,8 +482,12 @@ public:
  */
 class ValidPermissionedDomain
 {
-    std::size_t credentialsSize_{0};
-    bool isSorted_ = false, isUnique_ = false;
+    struct SleStatus
+    {
+        std::size_t credentialsSize_{0};
+        bool isSorted_ = false, isUnique_ = false;
+    };
+    std::optional<SleStatus> sleStatus_[2];
 
 public:
     void

@@ -23,7 +23,7 @@
 namespace ripple {
 namespace test {
 namespace jtx {
-namespace pd {
+namespace pdomain {
 
 // helpers
 // Make json for PermissionedDomainSet transaction
@@ -167,7 +167,7 @@ getNewDomain(std::shared_ptr<STObject const> const& meta)
     return ret;
 }
 
-}  // namespace pd
+}  // namespace pdomain
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple
