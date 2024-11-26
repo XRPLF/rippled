@@ -69,8 +69,7 @@ ApplyContext::apply(TER ter)
 void
 ApplyContext::applyOpenView(OpenView& open)
 {
-    if (!base_.open())
-        open.apply(base_);
+    open.apply(base_);
 }
 
 /**
