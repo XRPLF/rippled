@@ -3114,9 +3114,9 @@ class LedgerRPC_test : public beast::unit_test::suite
         env.close();
 
         auto const seq = env.seq(alice);
-        env(pd::setTx(alice, {{alice, "first credential"}}));
+        env(pdomain::setTx(alice, {{alice, "first credential"}}));
         env.close();
-        auto const objects = pd::getObjects(alice, env);
+        auto const objects = pdomain::getObjects(alice, env);
         if (!BEAST_EXPECT(objects.size() == 1))
             return;
 

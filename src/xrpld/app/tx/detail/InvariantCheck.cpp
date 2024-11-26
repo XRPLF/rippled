@@ -1134,27 +1134,45 @@ ValidPermissionedDomain::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
-    if (after->getType() != ltPERMISSIONED_DOMAIN)
+    if (before && before->getType() != ltPERMISSIONED_DOMAIN)
         return;
-    auto const& credentials = after->getFieldArray(sfAcceptedCredentials);
-    credentialsSize_ = credentials.size();
-    auto const sorted = credentials::makeSorted(credentials);
-    isUnique_ = !sorted.empty();
+    if (after && after->getType() != ltPERMISSIONED_DOMAIN)
+        return;
 
-    // If array have duplicates then all the other checks are invalid
-    isSorted_ = false;
+    auto check = [](SleStatus& sleStatus,
+                    std::shared_ptr<SLE const> const& sle) {
+        auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
+        sleStatus.credentialsSize_ = credentials.size();
+        auto const sorted = credentials::makeSorted(credentials);
+        sleStatus.isUnique_ = !sorted.empty();
 
-    if (isUnique_)
-    {
-        unsigned i = 0;
-        for (auto const& cred : sorted)
+        // If array have duplicates then all the other checks are invalid
+        sleStatus.isSorted_ = false;
+
+        if (sleStatus.isUnique_)
         {
-            auto const& credTx = credentials[i++];
-            isSorted_ = (cred.first == credTx[sfIssuer]) &&
-                (cred.second == credTx[sfCredentialType]);
-            if (!isSorted_)
-                break;
+            unsigned i = 0;
+            for (auto const& cred : sorted)
+            {
+                auto const& credTx = credentials[i++];
+                sleStatus.isSorted_ = (cred.first == credTx[sfIssuer]) &&
+                    (cred.second == credTx[sfCredentialType]);
+                if (!sleStatus.isSorted_)
+                    break;
+            }
         }
+    };
+
+    if (before)
+    {
+        sleStatus_[0] = SleStatus();
+        check(*sleStatus_[0], after);
+    }
+
+    if (after)
+    {
+        sleStatus_[1] = SleStatus();
+        check(*sleStatus_[1], after);
     }
 }
 
@@ -1169,36 +1187,44 @@ ValidPermissionedDomain::finalize(
     if (tx.getTxnType() != ttPERMISSIONED_DOMAIN_SET || result != tesSUCCESS)
         return true;
 
-    if (!credentialsSize_)
-    {
-        JLOG(j.fatal()) << "Invariant failed: permissioned domain with "
-                           "no rules.";
-        return false;
-    }
+    auto check = [](SleStatus const& sleStatus, beast::Journal const& j) {
+        if (!sleStatus.credentialsSize_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: permissioned domain with "
+                               "no rules.";
+            return false;
+        }
 
-    if (credentialsSize_ > maxPermissionedDomainCredentialsArraySize)
-    {
-        JLOG(j.fatal()) << "Invariant failed: permissioned domain bad "
-                           "credentials size "
-                        << credentialsSize_;
-        return false;
-    }
+        if (sleStatus.credentialsSize_ >
+            maxPermissionedDomainCredentialsArraySize)
+        {
+            JLOG(j.fatal()) << "Invariant failed: permissioned domain bad "
+                               "credentials size "
+                            << sleStatus.credentialsSize_;
+            return false;
+        }
 
-    if (!isUnique_)
-    {
-        JLOG(j.fatal()) << "Invariant failed: permissioned domain credentials "
-                           "aren't unique";
-        return false;
-    }
+        if (!sleStatus.isUnique_)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: permissioned domain credentials "
+                   "aren't unique";
+            return false;
+        }
 
-    if (!isSorted_)
-    {
-        JLOG(j.fatal()) << "Invariant failed: permissioned domain credentials "
-                           "aren't sorted";
-        return false;
-    }
+        if (!sleStatus.isSorted_)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: permissioned domain credentials "
+                   "aren't sorted";
+            return false;
+        }
 
-    return true;
+        return true;
+    };
+
+    return (sleStatus_[0] ? check(*sleStatus_[0], j) : true) &&
+        (sleStatus_[1] ? check(*sleStatus_[1], j) : true);
 }
 
 }  // namespace ripple
