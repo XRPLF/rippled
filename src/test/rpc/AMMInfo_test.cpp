@@ -317,12 +317,31 @@ public:
     }
 
     void
+    testInvalidAmmField()
+    {
+        using namespace jtx;
+        testcase("Invalid amm field");
+
+        testAMM([&](AMM& amm, Env&) {
+            auto const resp = amm.ammRpcInfo(
+                std::nullopt,
+                jss::validated.c_str(),
+                std::nullopt,
+                std::nullopt,
+                gw);
+            BEAST_EXPECT(
+                resp.isMember("error") && resp["error"] == "actNotFound");
+        });
+    }
+
+    void
     run() override
     {
         testErrors();
         testSimpleRpc();
         testVoteAndBid();
         testFreeze();
+        testInvalidAmmField();
     }
 };
 
