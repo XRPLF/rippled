@@ -49,6 +49,7 @@ template <int>
 class STBitString;
 template <class>
 class STInteger;
+class STNumber;
 class STXChainBridge;
 class STVector256;
 class STCurrency;
@@ -70,8 +71,9 @@ class STCurrency;
     STYPE(STI_AMOUNT, 6)                          \
     STYPE(STI_VL, 7)                              \
     STYPE(STI_ACCOUNT, 8)                         \
+    STYPE(STI_NUMBER, 9)                          \
                                                   \
-    /* 9-13 are reserved */                       \
+    /* 10-13 are reserved */                      \
     STYPE(STI_OBJECT, 14)                         \
     STYPE(STI_ARRAY, 15)                          \
                                                   \
@@ -355,6 +357,7 @@ using SF_ACCOUNT = TypedField<STAccount>;
 using SF_AMOUNT = TypedField<STAmount>;
 using SF_ISSUE = TypedField<STIssue>;
 using SF_CURRENCY = TypedField<STCurrency>;
+using SF_NUMBER = TypedField<STNumber>;
 using SF_VL = TypedField<STBlob>;
 using SF_VECTOR256 = TypedField<STVector256>;
 using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
