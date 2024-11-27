@@ -263,12 +263,12 @@ private:
         bool
         isWeak() const
         {
-            return !ptr;
+            return (ptr && ptr.isWeak());
         }
         bool
         isCached() const
         {
-            return !!ptr;
+            return (ptr && ptr.isStrong());
         }
         bool
         isExpired() const
