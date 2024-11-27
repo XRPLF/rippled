@@ -42,7 +42,8 @@ AMMClawback::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;  // LCOV_EXCL_LINE
 
-    if (ctx.tx.getFlags() & tfAMMClawbackMask)
+    auto const flags = ctx.tx.getFlags();
+    if (flags & tfAMMClawbackMask)
         return temINVALID_FLAG;
 
     AccountID const issuer = ctx.tx[sfAccount];
@@ -57,9 +58,18 @@ AMMClawback::preflight(PreflightContext const& ctx)
 
     std::optional<STAmount> const clawAmount = ctx.tx[~sfAmount];
     auto const asset = ctx.tx[sfAsset];
+    auto const asset2 = ctx.tx[sfAsset2];
 
     if (isXRP(asset))
         return temMALFORMED;
+
+    if (flags & tfClawTwoAssets && asset.account != asset2.account)
+    {
+        JLOG(ctx.j.trace())
+            << "AMMClawback: tfClawTwoAssets can only be enabled when two "
+               "assets in the AMM pool are both issued by the issuer";
+        return temINVALID_FLAG;
+    }
 
     if (asset.account != issuer)
     {
@@ -107,15 +117,6 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
     if (!(issuerFlagsIn & lsfAllowTrustLineClawback) ||
         (issuerFlagsIn & lsfNoFreeze))
         return tecNO_PERMISSION;
-
-    auto const flags = ctx.tx.getFlags();
-    if (flags & tfClawTwoAssets && asset.account != asset2.account)
-    {
-        JLOG(ctx.j.trace())
-            << "AMMClawback: tfClawTwoAssets can only be enabled when two "
-               "assets in the AMM pool are both issued by the issuer";
-        return tecNO_PERMISSION;
-    }
 
     return tesSUCCESS;
 }

@@ -194,6 +194,9 @@ TYPED_SFIELD(sfOfferID,                  UINT256,   34)
 TYPED_SFIELD(sfEscrowID,                 UINT256,   35)
 
 
+// number (common)
+TYPED_SFIELD(sfNumber,                   NUMBER,     1)
+
 // currency amount (common)
 TYPED_SFIELD(sfAmount,                   AMOUNT,     1)
 TYPED_SFIELD(sfBalance,                  AMOUNT,     2)
