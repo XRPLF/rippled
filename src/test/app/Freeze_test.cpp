@@ -690,6 +690,109 @@ class Freeze_test : public beast::unit_test::suite
     }
 
     void
+    testOffersWhenDeepFrozen(FeatureBitset features)
+    {
+        testcase("Offers on frozen trust lines");
+
+        using namespace test::jtx;
+        Env env(*this, features);
+
+        Account G1{"G1"};
+        Account A1{"A1"};
+        Account A2{"A2"};
+        Account A3{"A3"};
+
+        env.fund(XRP(10000), G1, A1, A2, A3);
+        env.close();
+
+        env.trust(G1["USD"](1000), A1, A2, A3);
+        env.close();
+
+        env(pay(G1, A1, G1["USD"](1000)));
+        env(pay(G1, A2, G1["USD"](1000)));
+        env.close();
+
+        // Making large passive sell offer
+        // Wants to sell 90 USD for 100 XRP
+        env(offer(A2, XRP(100), G1["USD"](90)), txflags(tfPassive));
+        env.close();
+        // Making large passive buy offer
+        // Wants to buy 100 USD for 100 XRP
+        env(offer(A3, G1["USD"](100), XRP(100)), txflags(tfPassive));
+        env.close();
+        env.require(offers(A2, 1), offers(A3, 1));
+
+        // Checking A1 can buy from A2 by crossing it's offer
+        env(offer(A1, G1["USD"](1), XRP(2)));
+        env.close();
+        env.require(balance(A1, G1["USD"](1001)), balance(A2, G1["USD"](999)));
+
+        // Checking A1 can sell to A3 by crossing it's offer
+        env(offer(A1, XRP(1), G1["USD"](1)));
+        env.close();
+        env.require(balance(A1, G1["USD"](1000)), balance(A3, G1["USD"](1)));
+
+        // Testing aggressive and passive offer placing A1 frozen by issuer
+        {
+            env(trust(G1, A1["USD"](0), tfSetFreeze));
+            env.close();
+
+            // test: can still make passive buy offer
+            env(offer(A1, G1["USD"](1), XRP(0.5)), txflags(tfPassive));
+            env.close();
+            env.require(balance(A1, G1["USD"](1000)), offers(A1, 1));
+            // Cleanup
+            env(offer_cancel(A1, env.seq(A1) - 1));
+            env.close();
+
+            // test: can still buy from A2
+            env(offer(A1, G1["USD"](1), XRP(2)));
+            env.close();
+            env.require(
+                balance(A1, G1["USD"](1001)),
+                balance(A2, G1["USD"](998)),
+                offers(A1, 0));
+
+            // test: cannot create passive sell offer
+            env(offer(A1, XRP(2), G1["USD"](1)), ter(tecUNFUNDED_OFFER));
+            env.require(balance(A1, G1["USD"](1001)), offers(A1, 0));
+
+            // test: cannot sell to A3
+            env(offer(A1, XRP(1), G1["USD"](1)), ter(tecUNFUNDED_OFFER));
+            env.require(balance(A1, G1["USD"](1001)), offers(A1, 0));
+
+            env.require(
+                balance(A1, G1["USD"](1001)), balance(A3, G1["USD"](1)));
+            env(trust(G1, A1["USD"](0), tfClearFreeze));
+            env.close();
+            env.require(
+                balance(A1, G1["USD"](1000)), balance(A3, G1["USD"](2)));
+        }
+
+        // Testing aggressive and passive offer placing A1 deep frozen by issuer
+        if (features[featureDeepFreeze])
+        {
+            env(trust(G1, A1["USD"](1000), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+
+            // test: cannot create passive buy offer
+            env(offer(A1, G1["USD"](1), XRP(0.5)), ter(tecFROZEN));
+
+            // test: cannot buy from A2
+            env(offer(A1, G1["USD"](1), XRP(2)), ter(tecFROZEN));
+
+            // test: cannot create passive sell offer
+            env(offer(A1, XRP(2), G1["USD"](1)), ter(tecUNFUNDED_OFFER));
+
+            // test: cannot sell to A3
+            env(offer(A1, XRP(1), G1["USD"](1)), ter(tecUNFUNDED_OFFER));
+
+            env(trust(G1, A1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+        }
+    }
+
+    void
     testPaymentsWhenDeepFrozen(FeatureBitset features)
     {
         testcase("Direct payments on frozen trust lines");
@@ -701,13 +804,10 @@ class Freeze_test : public beast::unit_test::suite
         Account A1{"A1"};
         Account A2{"A2"};
 
-        env.fund(XRP(10000), G1);
-        env.fund(XRP(10000), A1);
-        env.fund(XRP(10000), A2);
+        env.fund(XRP(10000), G1, A1, A2);
         env.close();
 
-        env.trust(G1["USD"](1000), A1);
-        env.trust(G1["USD"](1000), A2);
+        env.trust(G1["USD"](1000), A1, A2);
         env.close();
 
         env(pay(G1, A1, G1["USD"](1000)));
@@ -836,6 +936,7 @@ public:
             testGlobalFreeze(features);
             testNoFreeze(features);
             testOffersWhenFrozen(features);
+            testOffersWhenDeepFrozen(features);
             testPaymentsWhenDeepFrozen(features);
         };
         using namespace test::jtx;
