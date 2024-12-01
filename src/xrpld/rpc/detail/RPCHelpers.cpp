@@ -33,7 +33,9 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/resource/Fees.h>
+
 #include <boost/algorithm/string/case_conv.hpp>
+
 #include <regex>
 
 namespace ripple {
@@ -158,6 +160,10 @@ getAccountObjects(
     std::uint32_t const limit,
     Json::Value& jvResult)
 {
+    // check if dirIndex is valid
+    if (!dirIndex.isZero() && !ledger.read({ltDIR_NODE, dirIndex}))
+        return false;
+
     auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
                                 LedgerEntryType ledgerType) {
         auto it = std::find(typeFilter.begin(), typeFilter.end(), ledgerType);
@@ -249,8 +255,18 @@ getAccountObjects(
     if (!dir)
     {
         // it's possible the user had nftoken pages but no
-        // directory entries
-        return mlimit < limit;
+        // directory entries. If there's no nftoken page, we will
+        // give empty array for account_objects.
+        if (mlimit >= limit)
+            jvResult[jss::account_objects] = Json::arrayValue;
+
+        // non-zero dirIndex validity was checked in the beginning of this
+        // function; by this point, it should be zero. This function returns
+        // true regardless of nftoken page presence; if absent, account_objects
+        // is already set as an empty array. Notice we will only return false in
+        // this function when entryIndex can not be found, indicating an invalid
+        // marker error.
+        return true;
     }
 
     std::uint32_t i = 0;
@@ -329,9 +345,9 @@ getAccountObjects(
 namespace {
 
 bool
-isValidatedOld(LedgerMaster& ledgerMaster, bool standaloneOrReporting)
+isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
 {
-    if (standaloneOrReporting)
+    if (standalone)
         return false;
 
     return ledgerMaster.getValidatedLedgerAge() > Tuning::maxValidatedLedgerAge;
@@ -371,12 +387,10 @@ ledgerFromRequest(T& ledger, JsonContext& context)
 
     auto const index = indexValue.asString();
 
-    if (index == "current" ||
-        (index.empty() && !context.app.config().reporting()))
+    if (index == "current" || index.empty())
         return getLedger(ledger, LedgerShortcut::CURRENT, context);
 
-    if (index == "validated" ||
-        (index.empty() && context.app.config().reporting()))
+    if (index == "validated")
         return getLedger(ledger, LedgerShortcut::VALIDATED, context);
 
     if (index == "closed")
@@ -442,13 +456,8 @@ ledgerFromSpecifier(
             [[fallthrough]];
         case LedgerCase::LEDGER_NOT_SET: {
             auto const shortcut = specifier.shortcut();
-            // note, unspecified defaults to validated in reporting mode
             if (shortcut ==
-                    org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_VALIDATED ||
-                (shortcut ==
-                     org::xrpl::rpc::v1::LedgerSpecifier::
-                         SHORTCUT_UNSPECIFIED &&
-                 context.app.config().reporting()))
+                org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_VALIDATED)
             {
                 return getLedger(ledger, LedgerShortcut::VALIDATED, context);
             }
@@ -492,8 +501,6 @@ getLedger(T& ledger, uint32_t ledgerIndex, Context& context)
     ledger = context.ledgerMaster.getLedgerBySeq(ledgerIndex);
     if (ledger == nullptr)
     {
-        if (context.app.config().reporting())
-            return {rpcLGR_NOT_FOUND, "ledgerNotFound"};
         auto cur = context.ledgerMaster.getCurrentLedger();
         if (cur->info().seq == ledgerIndex)
         {
@@ -520,10 +527,7 @@ template <class T>
 Status
 getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
 {
-    if (isValidatedOld(
-            context.ledgerMaster,
-            context.app.config().standalone() ||
-                context.app.config().reporting()))
+    if (isValidatedOld(context.ledgerMaster, context.app.config().standalone()))
     {
         if (context.apiVersion == 1)
             return {rpcNO_NETWORK, "InsufficientNetworkMode"};
@@ -546,18 +550,11 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
     {
         if (shortcut == LedgerShortcut::CURRENT)
         {
-            if (context.app.config().reporting())
-                return {
-                    rpcLGR_NOT_FOUND,
-                    "Reporting does not track current ledger"};
             ledger = context.ledgerMaster.getCurrentLedger();
             assert(ledger->open());
         }
         else if (shortcut == LedgerShortcut::CLOSED)
         {
-            if (context.app.config().reporting())
-                return {
-                    rpcLGR_NOT_FOUND, "Reporting does not track closed ledger"};
             ledger = context.ledgerMaster.getClosedLedger();
             assert(!ledger->open());
         }
@@ -934,13 +931,14 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 24>
+        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 25>
             types{
                 {{jss::account, ltACCOUNT_ROOT},
                  {jss::amendments, ltAMENDMENTS},
                  {jss::amm, ltAMM},
                  {jss::bridge, ltBRIDGE},
                  {jss::check, ltCHECK},
+                 {jss::credential, ltCREDENTIAL},
                  {jss::deposit_preauth, ltDEPOSIT_PREAUTH},
                  {jss::did, ltDID},
                  {jss::directory, ltDIR_NODE},
@@ -960,7 +958,9 @@ chooseLedgerEntryType(Json::Value const& params)
                  {jss::ticket, ltTICKET},
                  {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
                  {jss::xchain_owned_create_account_claim_id,
-                  ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID}}};
+                  ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
+                 {jss::mpt_issuance, ltMPTOKEN_ISSUANCE},
+                 {jss::mptoken, ltMPTOKEN}}};
 
         auto const& p = params[jss::type];
         if (!p.isString())
@@ -986,6 +986,22 @@ chooseLedgerEntryType(Json::Value const& params)
         result.second = iter->second;
     }
     return result;
+}
+
+bool
+isAccountObjectsValidType(LedgerEntryType const& type)
+{
+    switch (type)
+    {
+        case LedgerEntryType::ltAMENDMENTS:
+        case LedgerEntryType::ltDIR_NODE:
+        case LedgerEntryType::ltFEE_SETTINGS:
+        case LedgerEntryType::ltLEDGER_HASHES:
+        case LedgerEntryType::ltNEGATIVE_UNL:
+            return false;
+        default:
+            return true;
+    }
 }
 
 beast::SemanticVersion const firstVersion("1.0.0");
@@ -1016,9 +1032,6 @@ getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
 std::variant<std::shared_ptr<Ledger const>, Json::Value>
 getLedgerByContext(RPC::JsonContext& context)
 {
-    if (context.app.config().reporting())
-        return rpcError(rpcREPORTING_UNSUPPORTED);
-
     auto const hasHash = context.params.isMember(jss::ledger_hash);
     auto const hasIndex = context.params.isMember(jss::ledger_index);
     std::uint32_t ledgerIndex = 0;

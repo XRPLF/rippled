@@ -213,7 +213,8 @@ checkPayment(
     if (!dstAccountID)
         return RPC::invalid_field_error("tx_json.Destination");
 
-    if ((doPath == false) && params.isMember(jss::build_path))
+    if (params.isMember(jss::build_path) &&
+        ((doPath == false) || amount.holds<MPTIssue>()))
         return RPC::make_error(
             rpcINVALID_PARAMS,
             "Field 'build_path' not allowed in this context.");
@@ -827,11 +828,7 @@ transactionSign(
     if (!preprocResult.second)
         return preprocResult.first;
 
-    std::shared_ptr<const ReadView> ledger;
-    if (app.config().reporting())
-        ledger = app.getLedgerMaster().getValidatedLedger();
-    else
-        ledger = app.openLedger().current();
+    std::shared_ptr<const ReadView> ledger = app.openLedger().current();
     // Make sure the STTx makes a legitimate Transaction.
     std::pair<Json::Value, Transaction::pointer> txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);

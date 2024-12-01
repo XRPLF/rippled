@@ -71,7 +71,6 @@ constexpr static ErrorInfo unorderedErrorInfos[]{
     {rpcDST_ISR_MALFORMED,      "dstIsrMalformed",      "Destination issuer is malformed.", 400},
     {rpcEXCESSIVE_LGR_RANGE,    "excessiveLgrRange",    "Ledger range exceeds 1000.", 400},
     {rpcFORBIDDEN,              "forbidden",            "Bad credentials.", 403},
-    {rpcFAILED_TO_FORWARD,      "failedToForward",      "Failed to forward request to p2p node", 503},
     {rpcHIGH_FEE,               "highFee",              "Current transaction fee exceeds your limit.", 402},
     {rpcINTERNAL,               "internal",             "Internal error.", 500},
     {rpcINVALID_LGR_RANGE,      "invalidLgrRange",      "Ledger range is invalid.", 400},
@@ -97,7 +96,6 @@ constexpr static ErrorInfo unorderedErrorInfos[]{
     {rpcNO_PF_REQUEST,          "noPathRequest",        "No pathfinding request in progress.", 404},
     {rpcOBJECT_NOT_FOUND,       "objectNotFound",       "The requested object was not found.", 404},
     {rpcPUBLIC_MALFORMED,       "publicMalformed",      "Public key is malformed.", 400},
-    {rpcREPORTING_UNSUPPORTED,  "reportingUnsupported", "Requested operation not supported by reporting mode server", 405},
     {rpcSENDMAX_MALFORMED,      "sendMaxMalformed",     "SendMax amount malformed.", 400},
     {rpcSIGNING_MALFORMED,      "signingMalformed",     "Signing of transaction is malformed.", 400},
     {rpcSLOW_DOWN,              "slowDown",             "You are placing too much load on the server.", 429},
@@ -110,7 +108,8 @@ constexpr static ErrorInfo unorderedErrorInfos[]{
     {rpcTOO_BUSY,               "tooBusy",              "The server is too busy to help you now.", 503},
     {rpcTXN_NOT_FOUND,          "txnNotFound",          "Transaction not found.", 404},
     {rpcUNKNOWN_COMMAND,        "unknownCmd",           "Unknown method.", 405},
-    {rpcORACLE_MALFORMED,       "oracleMalformed",      "Oracle request is malformed.", 400}};
+    {rpcORACLE_MALFORMED,       "oracleMalformed",      "Oracle request is malformed.", 400},
+    {rpcBAD_CREDENTIALS,        "badCredentials",       "Credentials do not exist, are not accepted, or have expired.", 400}};
 // clang-format on
 
 // Sort and validate unorderedErrorInfos at compile time.  Should be

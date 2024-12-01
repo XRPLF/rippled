@@ -54,17 +54,19 @@ doAccountNFTs(RPC::JsonContext& context)
     if (!params.isMember(jss::account))
         return RPC::missing_field_error(jss::account);
 
-    std::shared_ptr<ReadView const> ledger;
-    auto result = RPC::lookupLedger(ledger, context);
-    if (ledger == nullptr)
-        return result;
+    if (!params[jss::account].isString())
+        return RPC::invalid_field_error(jss::account);
 
     auto id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
     {
-        RPC::inject_error(rpcACT_MALFORMED, result);
-        return result;
+        return rpcError(rpcACT_MALFORMED);
     }
+
+    std::shared_ptr<ReadView const> ledger;
+    auto result = RPC::lookupLedger(ledger, context);
+    if (ledger == nullptr)
+        return result;
     auto const accountID{id.value()};
 
     if (!ledger->exists(keylet::account(accountID)))
@@ -183,6 +185,9 @@ doAccountObjects(RPC::JsonContext& context)
     if (!params.isMember(jss::account))
         return RPC::missing_field_error(jss::account);
 
+    if (!params[jss::account].isString())
+        return RPC::invalid_field_error(jss::account);
+
     std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger(ledger, context);
     if (ledger == nullptr)
@@ -217,7 +222,9 @@ doAccountObjects(RPC::JsonContext& context)
             {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
             {jss::xchain_owned_create_account_claim_id,
              ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
-            {jss::bridge, ltBRIDGE}};
+            {jss::bridge, ltBRIDGE},
+            {jss::mpt_issuance, ltMPTOKEN_ISSUANCE},
+            {jss::mptoken, ltMPTOKEN}};
 
         typeFilter.emplace();
         typeFilter->reserve(std::size(deletionBlockers));
@@ -235,6 +242,9 @@ doAccountObjects(RPC::JsonContext& context)
     else
     {
         auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
+
+        if (!RPC::isAccountObjectsValidType(type))
+            return RPC::invalid_field_error(jss::type);
 
         if (rpcStatus)
         {
@@ -260,18 +270,15 @@ doAccountObjects(RPC::JsonContext& context)
         if (!marker.isString())
             return RPC::expected_field_error(jss::marker, "string");
 
-        std::stringstream ss(marker.asString());
-        std::string s;
-        if (!std::getline(ss, s, ','))
+        auto const& markerStr = marker.asString();
+        auto const& idx = markerStr.find(',');
+        if (idx == std::string::npos)
             return RPC::invalid_field_error(jss::marker);
 
-        if (!dirIndex.parseHex(s))
+        if (!dirIndex.parseHex(markerStr.substr(0, idx)))
             return RPC::invalid_field_error(jss::marker);
 
-        if (!std::getline(ss, s, ','))
-            return RPC::invalid_field_error(jss::marker);
-
-        if (!entryIndex.parseHex(s))
+        if (!entryIndex.parseHex(markerStr.substr(idx + 1)))
             return RPC::invalid_field_error(jss::marker);
     }
 
@@ -283,9 +290,7 @@ doAccountObjects(RPC::JsonContext& context)
             entryIndex,
             limit,
             result))
-    {
-        result[jss::account_objects] = Json::arrayValue;
-    }
+        return RPC::invalid_field_error(jss::marker);
 
     result[jss::account] = toBase58(accountID);
     context.loadType = Resource::feeMediumBurdenRPC;

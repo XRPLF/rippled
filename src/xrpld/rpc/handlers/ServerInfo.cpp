@@ -19,7 +19,6 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/NetworkOPs.h>
-#include <xrpld/app/reporting/P2pProxy.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpl/json/json_value.h>
@@ -81,7 +80,8 @@ ServerDefinitions::translate(std::string const& inp)
 
     if (contains("UINT"))
     {
-        if (contains("256") || contains("160") || contains("128"))
+        if (contains("256") || contains("192") || contains("160") ||
+            contains("128"))
             return replace("UINT", "Hash");
         else
             return replace("UINT", "UInt");
@@ -330,14 +330,6 @@ doServerInfo(RPC::JsonContext& context)
         context.params.isMember(jss::counters) &&
             context.params[jss::counters].asBool());
 
-    if (context.app.config().reporting())
-    {
-        Json::Value const proxied = forwardToP2p(context);
-        auto const lf = proxied[jss::result][jss::info][jss::load_factor];
-        auto const vq = proxied[jss::result][jss::info][jss::validation_quorum];
-        ret[jss::info][jss::validation_quorum] = vq.isNull() ? 1 : vq;
-        ret[jss::info][jss::load_factor] = lf.isNull() ? 1 : lf;
-    }
     return ret;
 }
 

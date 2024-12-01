@@ -22,9 +22,9 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/core/Pg.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
+#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/jss.h>
@@ -157,6 +157,12 @@ fillJsonTx(
                     fill.ledger,
                     txn,
                     {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+
+            // If applicable, insert mpt issuance id
+            RPC::insertMPTokenIssuanceID(
+                txJson[jss::meta],
+                txn,
+                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
 
         if (!fill.ledger.open())
@@ -188,6 +194,12 @@ fillJsonTx(
                     fill.ledger,
                     txn,
                     {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+
+            // If applicable, insert mpt issuance id
+            RPC::insertMPTokenIssuanceID(
+                txJson[jss::metaData],
+                txn,
+                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
     }
 
@@ -232,14 +244,7 @@ fillJsonTx(Object& json, LedgerFill const& fill)
             }
         };
 
-        if (fill.context && fill.context->app.config().reporting())
-        {
-            appendAll(flatFetchTransactions(fill.ledger, fill.context->app));
-        }
-        else
-        {
-            appendAll(fill.ledger.txs);
-        }
+        appendAll(fill.ledger.txs);
     }
     catch (std::exception const& ex)
     {

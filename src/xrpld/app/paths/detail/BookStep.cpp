@@ -23,7 +23,6 @@
 #include <xrpld/app/paths/detail/FlatSets.h>
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/app/tx/detail/OfferStream.h>
-#include <xrpld/ledger/Directory.h>
 #include <xrpld/ledger/PaymentSandbox.h>
 #include <xrpl/basics/IOUAmount.h>
 #include <xrpl/basics/Log.h>
@@ -189,8 +188,7 @@ protected:
     logStringImpl(char const* name) const
     {
         std::ostringstream ostr;
-        ostr << name << ": "
-             << "\ninIss: " << book_.in.account
+        ostr << name << ": " << "\ninIss: " << book_.in.account
              << "\noutIss: " << book_.out.account
              << "\ninCur: " << book_.in.currency
              << "\noutCur: " << book_.out.currency;

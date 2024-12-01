@@ -62,7 +62,8 @@ public:
     void
     importDatabase(Database& source) override;
 
-    bool isSameDB(std::uint32_t, std::uint32_t) override
+    bool
+    isSameDB(std::uint32_t, std::uint32_t) override
     {
         // rotating store acts as one logical database
         return true;
@@ -74,9 +75,6 @@ public:
 
     void
     sync() override;
-
-    bool
-    storeLedger(std::shared_ptr<Ledger const> const& srcLedger) override;
 
     void
     sweep() override;

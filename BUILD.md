@@ -98,6 +98,12 @@ Update the compiler settings:
    conan profile update settings.compiler.cppstd=20 default
    ```
 
+Configure Conan (1.x only) to use recipe revisions:
+
+   ```
+   conan config set general.revisions_enabled=1
+   ```
+
 **Linux** developers will commonly have a default Conan [profile][] that compiles
 with GCC and links with libstdc++.
 If you are linking with libstdc++ (see profile setting `compiler.libcxx`),
@@ -187,6 +193,17 @@ It patches their CMake to correctly import its dependencies.
    conan export --version 4.0.3 external/soci
    ```
 
+Export our [Conan recipe for NuDB](./external/nudb).
+It fixes some source files to add missing `#include`s.
+
+
+   ```
+   # Conan 1.x
+   conan export external/nudb nudb/2.0.8@
+   # Conan 2.x
+   conan export --version 2.0.8 external/nudb
+   ```
+
 ### Build and Test
 
 1. Create a build directory and move into it.
@@ -242,7 +259,7 @@ It patches their CMake to correctly import its dependencies.
     Single-config generators:
 
     ```
-    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release ..
+    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtests=ON ..
     ```
 
     Pass the CMake variable [`CMAKE_BUILD_TYPE`][build_type]
@@ -252,7 +269,7 @@ It patches their CMake to correctly import its dependencies.
     Multi-config generators:
 
     ```
-    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
+    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -Dxrpld=ON -Dtests=ON  ..
     ```
 
     **Note:** You can pass build options for `rippled` in this step.
@@ -343,7 +360,7 @@ Example use with some cmake variables set:
 ```
 cd .build
 conan install .. --output-folder . --build missing --settings build_type=Debug
-cmake -DCMAKE_BUILD_TYPE=Debug -Dcoverage=ON -Dcoverage_test_parallelism=2 -Dcoverage_format=html-details -Dcoverage_extra_args="--json coverage.json" -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
+cmake -DCMAKE_BUILD_TYPE=Debug -Dcoverage=ON -Dxrpld=ON -Dtests=ON -Dcoverage_test_parallelism=2 -Dcoverage_format=html-details -Dcoverage_extra_args="--json coverage.json" -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake ..
 cmake --build . --target coverage
 ```
 
@@ -359,11 +376,11 @@ stored inside the build directory, as either of:
 | Option | Default Value | Description |
 | --- | ---| ---|
 | `assert` | OFF | Enable assertions.
-| `reporting` | OFF | Build the reporting mode feature. |
 | `coverage` | OFF | Prepare the coverage report. |
-| `tests` | ON | Build tests. |
-| `unity` | ON | Configure a unity build. |
 | `san` | N/A | Enable a sanitizer with Clang. Choices are `thread` and `address`. |
+| `tests` | OFF | Build tests. |
+| `unity` | ON | Configure a unity build. |
+| `xrpld` | OFF | Build the xrpld (`rippled`) application, and not just the libxrpl library. |
 
 [Unity builds][5] may be faster for the first build
 (at the cost of much more memory) since they concatenate sources into fewer

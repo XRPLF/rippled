@@ -454,32 +454,6 @@ loadByHash(uint256 const& ledgerHash, Application& app, bool acquire = true);
 extern std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
 getLatestLedger(Application& app);
 
-// *** Reporting Mode Only ***
-// Fetch all of the transactions contained in ledger from the nodestore.
-// The transactions are fetched directly as a batch, instead of traversing the
-// transaction SHAMap. Fetching directly is significantly faster than
-// traversing, as there are less database reads, and all of the reads can
-// executed concurrently. This function only works in reporting mode.
-// @param ledger the ledger for which to fetch the contained transactions
-// @param app reference to the Application
-// @return vector of (transaction, metadata) pairs
-extern std::vector<
-    std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>>
-flatFetchTransactions(ReadView const& ledger, Application& app);
-
-// *** Reporting Mode Only ***
-// For each nodestore hash, fetch the transaction.
-// The transactions are fetched directly as a batch, instead of traversing the
-// transaction SHAMap. Fetching directly is significantly faster than
-// traversing, as there are less database reads, and all of the reads can
-// executed concurrently. This function only works in reporting mode.
-// @param nodestoreHashes hashes of the transactions to fetch
-// @param app reference to the Application
-// @return vector of (transaction, metadata) pairs
-extern std::vector<
-    std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>>>
-flatFetchTransactions(Application& app, std::vector<uint256>& nodestoreHashes);
-
 /** Deserialize a SHAMapItem containing a single STTx
 
     Throw:

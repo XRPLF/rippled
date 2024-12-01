@@ -20,7 +20,6 @@
 #ifndef RIPPLE_SHAMAP_TESTS_COMMON_H_INCLUDED
 #define RIPPLE_SHAMAP_TESTS_COMMON_H_INCLUDED
 
-#include <xrpld/nodestore/DatabaseShard.h>
 #include <xrpld/nodestore/DummyScheduler.h>
 #include <xrpld/nodestore/Manager.h>
 #include <xrpld/shamap/Family.h>
@@ -81,12 +80,14 @@ public:
         return j_;
     }
 
-    std::shared_ptr<FullBelowCache> getFullBelowCache(std::uint32_t) override
+    std::shared_ptr<FullBelowCache>
+    getFullBelowCache() override
     {
         return fbCache_;
     }
 
-    std::shared_ptr<TreeNodeCache> getTreeNodeCache(std::uint32_t) override
+    std::shared_ptr<TreeNodeCache>
+    getTreeNodeCache() override
     {
         return tnCache_;
     }
@@ -96,12 +97,6 @@ public:
     {
         fbCache_->sweep();
         tnCache_->sweep();
-    }
-
-    bool
-    isShardBacked() const override
-    {
-        return true;
     }
 
     void

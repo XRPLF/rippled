@@ -46,24 +46,6 @@ namespace ripple {
 class Peer;
 class Transaction;
 
-// This error is thrown when a codepath tries to access the open or closed
-// ledger while the server is running in reporting mode. Any RPCs that request
-// the open or closed ledger should be forwarded to a p2p node. Usually, the
-// decision to forward is made based on the required condition of the handler,
-// or which ledger is specified. However, there are some codepaths which are not
-// covered by the aforementioned logic (though they probably should), so this
-// error is thrown in case a codepath falls through the cracks.
-class ReportingShouldProxy : public std::runtime_error
-{
-public:
-    ReportingShouldProxy()
-        : std::runtime_error(
-              "Reporting mode has no open or closed ledger. Proxy this "
-              "request")
-    {
-    }
-};
-
 // Tracks the current ledger and any ledgers in the process of closing
 // Tracks ledger history
 // Tracks held transactions
@@ -97,10 +79,6 @@ public:
     std::shared_ptr<Ledger const>
     getClosedLedger()
     {
-        if (app_.config().reporting())
-        {
-            Throw<ReportingShouldProxy>();
-        }
         return mClosedLedger.get();
     }
 
@@ -356,9 +334,6 @@ private:
 
     // The last ledger we handled fetching history
     std::shared_ptr<Ledger const> mHistLedger;
-
-    // The last ledger we handled fetching for a shard
-    std::shared_ptr<Ledger const> mShardLedger;
 
     // Fully validated ledger, whether or not we have the ledger resident.
     std::pair<uint256, LedgerIndex> mLastValidLedger{uint256(), 0};

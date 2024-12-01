@@ -34,12 +34,10 @@
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/paths/PathRequests.h>
-#include <xrpld/app/rdb/backend/PostgresDatabase.h>
+#include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/core/DatabaseCon.h>
-#include <xrpld/core/Pg.h>
 #include <xrpld/core/TimeKeeper.h>
-#include <xrpld/nodestore/DatabaseShard.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpl/basics/Log.h>
@@ -48,10 +46,12 @@
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/resource/Fees.h>
+
 #include <algorithm>
 #include <cassert>
 #include <chrono>
@@ -61,86 +61,6 @@
 #include <vector>
 
 namespace ripple {
-
-namespace {
-
-//==============================================================================
-/**
-    Automatically unlocks and re-locks a unique_lock object.
-
-    This is the reverse of a std::unique_lock object - instead of locking the
-   mutex for the lifetime of this object, it unlocks it.
-
-    Make sure you don't try to unlock mutexes that aren't actually locked!
-
-    This is essentially a less-versatile boost::reverse_lock.
-
-    e.g. @code
-
-    std::mutex mut;
-
-    for (;;)
-    {
-        std::unique_lock myScopedLock{mut};
-        // mut is now locked
-
-        ... do some stuff with it locked ..
-
-        while (xyz)
-        {
-            ... do some stuff with it locked ..
-
-            ScopedUnlock unlocker{myScopedLock};
-
-            // mut is now unlocked for the remainder of this block,
-            // and re-locked at the end.
-
-            ...do some stuff with it unlocked ...
-        }  // mut gets locked here.
-
-    }  // mut gets unlocked here
-    @endcode
-*/
-template <class MutexType>
-class ScopedUnlock
-{
-    std::unique_lock<MutexType>& lock_;
-
-public:
-    /** Creates a ScopedUnlock.
-
-        As soon as it is created, this will unlock the unique_lock, and
-        when the ScopedLock object is deleted, the unique_lock will
-        be re-locked.
-
-        Make sure this object is created and deleted by the same thread,
-        otherwise there are no guarantees what will happen! Best just to use it
-        as a local stack object, rather than creating on the heap.
-    */
-    explicit ScopedUnlock(std::unique_lock<MutexType>& lock) : lock_(lock)
-    {
-        assert(lock_.owns_lock());
-        lock_.unlock();
-    }
-
-    ScopedUnlock(ScopedUnlock const&) = delete;
-    ScopedUnlock&
-    operator=(ScopedUnlock const&) = delete;
-
-    /** Destructor.
-
-        The unique_lock will be locked after the destructor is called.
-
-        Make sure this object is created and deleted by the same thread,
-        otherwise there are no guarantees what will happen!
-    */
-    ~ScopedUnlock() noexcept(false)
-    {
-        lock_.lock();
-    }
-};
-
-}  // namespace
 
 // Don't catch up more than 100 ledgers (cannot exceed 256)
 static constexpr int MAX_LEDGER_GAP{100};
@@ -275,12 +195,6 @@ LedgerMaster::getValidatedLedgerAge()
 {
     using namespace std::chrono_literals;
 
-#ifdef RIPPLED_REPORTING
-    if (app_.config().reporting())
-        return static_cast<PostgresDatabase*>(&app_.getRelationalDatabase())
-            ->getValidatedLedgerAge();
-#endif
-
     std::chrono::seconds valClose{mValidLedgerSign.load()};
     if (valClose == 0s)
     {
@@ -305,12 +219,6 @@ bool
 LedgerMaster::isCaughtUp(std::string& reason)
 {
     using namespace std::chrono_literals;
-
-#ifdef RIPPLED_REPORTING
-    if (app_.config().reporting())
-        return static_cast<PostgresDatabase*>(&app_.getRelationalDatabase())
-            ->isCaughtUp(reason);
-#endif
 
     if (getPublishedLedgerAge() > 3min)
     {
@@ -601,9 +509,6 @@ LedgerMaster::clearLedger(std::uint32_t seq)
 bool
 LedgerMaster::isValidated(ReadView const& ledger)
 {
-    if (app_.config().reporting())
-        return true;  // Reporting mode only supports validated ledger
-
     if (ledger.open())
         return false;
 
@@ -677,32 +582,6 @@ LedgerMaster::getFullValidatedRange(
 bool
 LedgerMaster::getValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal)
 {
-    if (app_.config().reporting())
-    {
-        std::string res = getCompleteLedgers();
-        try
-        {
-            if (res == "empty" || res == "error" || res.empty())
-                return false;
-            else if (size_t delim = res.find('-'); delim != std::string::npos)
-            {
-                minVal = std::stol(res.substr(0, delim));
-                maxVal = std::stol(res.substr(delim + 1));
-            }
-            else
-            {
-                minVal = maxVal = std::stol(res);
-            }
-            return true;
-        }
-        catch (std::exception const& e)
-        {
-            JLOG(m_journal.error()) << "LedgerMaster::getValidatedRange: "
-                                       "exception parsing complete ledgers: "
-                                    << e.what();
-            return false;
-        }
-    }
     if (!getFullValidatedRange(minVal, maxVal))
         return false;
 
@@ -830,38 +709,13 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
 void
 LedgerMaster::getFetchPack(LedgerIndex missing, InboundLedger::Reason reason)
 {
-    LedgerIndex const ledgerIndex([&]() {
-        if (reason == InboundLedger::Reason::SHARD)
-        {
-            // Do not acquire a ledger sequence greater
-            // than the last ledger in the shard
-            auto const shardStore{app_.getShardStore()};
-            auto const shardIndex{shardStore->seqToShardIndex(missing)};
-            return std::min(missing + 1, shardStore->lastLedgerSeq(shardIndex));
-        }
-        return missing + 1;
-    }());
+    LedgerIndex const ledgerIndex = missing + 1;
 
     auto const haveHash{getLedgerHashForHistory(ledgerIndex, reason)};
     if (!haveHash || haveHash->isZero())
     {
-        if (reason == InboundLedger::Reason::SHARD)
-        {
-            auto const shardStore{app_.getShardStore()};
-            auto const shardIndex{shardStore->seqToShardIndex(missing)};
-            if (missing < shardStore->lastLedgerSeq(shardIndex))
-            {
-                JLOG(m_journal.error())
-                    << "No hash for fetch pack. "
-                    << "Missing ledger sequence " << missing
-                    << " while acquiring shard " << shardIndex;
-            }
-        }
-        else
-        {
-            JLOG(m_journal.error())
-                << "No hash for fetch pack. Missing Index " << missing;
-        }
+        JLOG(m_journal.error())
+            << "No hash for fetch pack. Missing Index " << missing;
         return;
     }
 
@@ -1342,8 +1196,7 @@ LedgerMaster::getLedgerHashForHistory(
 {
     // Try to get the hash of a ledger we need to fetch for history
     std::optional<LedgerHash> ret;
-    auto const& l{
-        reason == InboundLedger::Reason::SHARD ? mShardLedger : mHistLedger};
+    auto const& l{mHistLedger};
 
     if (l && l->info().seq >= index)
     {
@@ -1405,7 +1258,7 @@ LedgerMaster::findNewLedgersToPublish(
     auto valLedger = mValidLedger.get();
     std::uint32_t valSeq = valLedger->info().seq;
 
-    ScopedUnlock sul{sl};
+    scope_unlock sul{sl};
     try
     {
         for (std::uint32_t seq = pubSeq; seq <= valSeq; ++seq)
@@ -1706,25 +1559,12 @@ LedgerMaster::peekMutex()
 std::shared_ptr<ReadView const>
 LedgerMaster::getCurrentLedger()
 {
-    if (app_.config().reporting())
-    {
-        Throw<ReportingShouldProxy>();
-    }
     return app_.openLedger().current();
 }
 
 std::shared_ptr<Ledger const>
 LedgerMaster::getValidatedLedger()
 {
-#ifdef RIPPLED_REPORTING
-    if (app_.config().reporting())
-    {
-        auto seq = app_.getRelationalDatabase().getMaxLedgerSeq();
-        if (!seq)
-            return {};
-        return getLedgerBySeq(*seq);
-    }
-#endif
     return mValidLedger.get();
 }
 
@@ -1753,11 +1593,6 @@ LedgerMaster::getPublishedLedger()
 std::string
 LedgerMaster::getCompleteLedgers()
 {
-#ifdef RIPPLED_REPORTING
-    if (app_.config().reporting())
-        return static_cast<PostgresDatabase*>(&app_.getRelationalDatabase())
-            ->getCompleteLedgers();
-#endif
     std::lock_guard sl(mCompleteLock);
     return to_string(mCompleteLedgers);
 }
@@ -1969,7 +1804,7 @@ LedgerMaster::fetchForHistory(
     InboundLedger::Reason reason,
     std::unique_lock<std::recursive_mutex>& sl)
 {
-    ScopedUnlock sul{sl};
+    scope_unlock sul{sl};
     if (auto hash = getLedgerHashForHistory(missing, reason))
     {
         assert(hash->isNonZero());
@@ -2001,54 +1836,35 @@ LedgerMaster::fetchForHistory(
             auto seq = ledger->info().seq;
             assert(seq == missing);
             JLOG(m_journal.trace()) << "fetchForHistory acquired " << seq;
-            if (reason == InboundLedger::Reason::SHARD)
+            setFullLedger(ledger, false, false);
+            int fillInProgress;
             {
-                ledger->setFull();
-                {
-                    std::lock_guard lock(m_mutex);
-                    mShardLedger = ledger;
-                }
-                if (!ledger->stateMap().family().isShardBacked())
-                    app_.getShardStore()->storeLedger(ledger);
+                std::lock_guard lock(m_mutex);
+                mHistLedger = ledger;
+                fillInProgress = mFillInProgress;
             }
-            else
+            if (fillInProgress == 0 &&
+                app_.getRelationalDatabase().getHashByIndex(seq - 1) ==
+                    ledger->info().parentHash)
             {
-                setFullLedger(ledger, false, false);
-                int fillInProgress;
                 {
+                    // Previous ledger is in DB
                     std::lock_guard lock(m_mutex);
-                    mHistLedger = ledger;
-                    fillInProgress = mFillInProgress;
+                    mFillInProgress = seq;
                 }
-                if (fillInProgress == 0 &&
-                    app_.getRelationalDatabase().getHashByIndex(seq - 1) ==
-                        ledger->info().parentHash)
-                {
-                    {
-                        // Previous ledger is in DB
-                        std::lock_guard lock(m_mutex);
-                        mFillInProgress = seq;
-                    }
-                    app_.getJobQueue().addJob(
-                        jtADVANCE, "tryFill", [this, ledger]() {
-                            tryFill(ledger);
-                        });
-                }
+                app_.getJobQueue().addJob(
+                    jtADVANCE, "tryFill", [this, ledger]() {
+                        tryFill(ledger);
+                    });
             }
             progress = true;
         }
         else
         {
             std::uint32_t fetchSz;
-            if (reason == InboundLedger::Reason::SHARD)
-                // Do not fetch ledger sequences lower
-                // than the shard's first ledger sequence
-                fetchSz = app_.getShardStore()->firstLedgerSeq(
-                    app_.getShardStore()->seqToShardIndex(missing));
-            else
-                // Do not fetch ledger sequences lower
-                // than the earliest ledger sequence
-                fetchSz = app_.getNodeStore().earliestLedgerSeq();
+            // Do not fetch ledger sequences lower
+            // than the earliest ledger sequence
+            fetchSz = app_.getNodeStore().earliestLedgerSeq();
             fetchSz = missing >= fetchSz
                 ? std::min(ledger_fetch_size_, (missing - fetchSz) + 1)
                 : 0;
@@ -2081,7 +1897,8 @@ LedgerMaster::fetchForHistory(
             << "Ledgers: " << app_.getLedgerMaster().getCompleteLedgers();
         JLOG(m_journal.fatal())
             << "Acquire reason: "
-            << (reason == InboundLedger::Reason::HISTORY ? "HISTORY" : "SHARD");
+            << (reason == InboundLedger::Reason::HISTORY ? "HISTORY"
+                                                         : "NOT HISTORY");
         clearLedger(missing + 1);
         progress = true;
     }
@@ -2133,15 +1950,6 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
                     else
                         missing = std::nullopt;
                 }
-                if (!missing && mFillInProgress == 0)
-                {
-                    if (auto shardStore = app_.getShardStore())
-                    {
-                        missing = shardStore->prepareLedger(mValidLedgerSeq);
-                        if (missing)
-                            reason = InboundLedger::Reason::SHARD;
-                    }
-                }
                 if (missing)
                 {
                     fetchForHistory(*missing, progress, reason, sl);
@@ -2156,7 +1964,6 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
             else
             {
                 mHistLedger.reset();
-                mShardLedger.reset();
                 JLOG(m_journal.trace()) << "tryAdvance not fetching history";
             }
         }
@@ -2167,7 +1974,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
             for (auto const& ledger : pubLedgers)
             {
                 {
-                    ScopedUnlock sul{sl};
+                    scope_unlock sul{sl};
                     JLOG(m_journal.debug())
                         << "tryAdvance publishing seq " << ledger->info().seq;
                     setFullLedger(ledger, true, true);
@@ -2176,7 +1983,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
                 setPubLedger(ledger);
 
                 {
-                    ScopedUnlock sul{sl};
+                    scope_unlock sul{sl};
                     app_.getOPs().pubLedger(ledger);
                 }
             }

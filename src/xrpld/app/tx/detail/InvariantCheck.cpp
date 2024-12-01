@@ -342,11 +342,12 @@ AccountRootsNotDeleted::finalize(
         return false;
     }
 
-    // A successful AMMWithdraw MAY delete one account root
+    // A successful AMMWithdraw/AMMClawback MAY delete one account root
     // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
     // deletes the AMM account, accountsDeleted_ is set if it is deleted.
-    if (tx.getTxnType() == ttAMM_WITHDRAW && result == tesSUCCESS &&
-        accountsDeleted_ == 1)
+    if ((tx.getTxnType() == ttAMM_WITHDRAW ||
+         tx.getTxnType() == ttAMM_CLAWBACK) &&
+        result == tesSUCCESS && accountsDeleted_ == 1)
         return true;
 
     if (accountsDeleted_ == 0)
@@ -478,6 +479,9 @@ LedgerEntryTypesMatch::visitEntry(
             case ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID:
             case ltDID:
             case ltORACLE:
+            case ltMPTOKEN_ISSUANCE:
+            case ltMPTOKEN:
+            case ltCREDENTIAL:
             case ltFIREWALL:
             case ltFIREWALL_PREAUTH:
                 break;
@@ -614,6 +618,10 @@ ValidNFTokenPage::visitEntry(
     static constexpr uint256 const& pageBits = nft::pageMask;
     static constexpr uint256 const accountBits = ~pageBits;
 
+    if ((before && before->getType() != ltNFTOKEN_PAGE) ||
+        (after && after->getType() != ltNFTOKEN_PAGE))
+        return;
+
     auto check = [this, isDelete](std::shared_ptr<SLE const> const& sle) {
         uint256 const account = sle->key() & accountBits;
         uint256 const hiLimit = sle->key() & pageBits;
@@ -675,11 +683,37 @@ ValidNFTokenPage::visitEntry(
         }
     };
 
-    if (before && before->getType() == ltNFTOKEN_PAGE)
+    if (before)
+    {
         check(before);
 
-    if (after && after->getType() == ltNFTOKEN_PAGE)
+        // While an account's NFToken directory contains any NFTokens, the last
+        // NFTokenPage (with 96 bits of 1 in the low part of the index) should
+        // never be deleted.
+        if (isDelete && (before->key() & nft::pageMask) == nft::pageMask &&
+            before->isFieldPresent(sfPreviousPageMin))
+        {
+            deletedFinalPage_ = true;
+        }
+    }
+
+    if (after)
         check(after);
+
+    if (!isDelete && before && after)
+    {
+        // If the NFTokenPage
+        //  1. Has a NextMinPage field in before, but loses it in after, and
+        //  2. This is not the last page in the directory
+        // Then we have identified a corruption in the links between the
+        // NFToken pages in the NFToken directory.
+        if ((before->key() & nft::pageMask) != nft::pageMask &&
+            before->isFieldPresent(sfNextPageMin) &&
+            !after->isFieldPresent(sfNextPageMin))
+        {
+            deletedLink_ = true;
+        }
+    }
 }
 
 bool
@@ -718,6 +752,21 @@ ValidNFTokenPage::finalize(
     {
         JLOG(j.fatal()) << "Invariant failed: NFT page has invalid size.";
         return false;
+    }
+
+    if (view.rules().enabled(fixNFTokenPageLinks))
+    {
+        if (deletedFinalPage_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Last NFT page deleted with "
+                               "non-empty directory.";
+            return false;
+        }
+        if (deletedLink_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Lost NextMinPage link.";
+            return false;
+        }
     }
 
     return true;
@@ -839,6 +888,9 @@ ValidClawback::visitEntry(
 {
     if (before && before->getType() == ltRIPPLE_STATE)
         trustlinesChanged++;
+
+    if (before && before->getType() == ltMPTOKEN)
+        mptokensChanged++;
 }
 
 bool
@@ -861,17 +913,27 @@ ValidClawback::finalize(
             return false;
         }
 
-        AccountID const issuer = tx.getAccountID(sfAccount);
-        STAmount const amount = tx.getFieldAmount(sfAmount);
-        AccountID const& holder = amount.getIssuer();
-        STAmount const holderBalance = accountHolds(
-            view, holder, amount.getCurrency(), issuer, fhIGNORE_FREEZE, j);
-
-        if (holderBalance.signum() < 0)
+        if (mptokensChanged > 1)
         {
             JLOG(j.fatal())
-                << "Invariant failed: trustline balance is negative";
+                << "Invariant failed: more than one mptokens changed.";
             return false;
+        }
+
+        if (trustlinesChanged == 1)
+        {
+            AccountID const issuer = tx.getAccountID(sfAccount);
+            STAmount const& amount = tx.getFieldAmount(sfAmount);
+            AccountID const& holder = amount.getIssuer();
+            STAmount const holderBalance = accountHolds(
+                view, holder, amount.getCurrency(), issuer, fhIGNORE_FREEZE, j);
+
+            if (holderBalance.signum() < 0)
+            {
+                JLOG(j.fatal())
+                    << "Invariant failed: trustline balance is negative";
+                return false;
+            }
         }
     }
     else
@@ -882,9 +944,182 @@ ValidClawback::finalize(
                                "despite failure of the transaction.";
             return false;
         }
+
+        if (mptokensChanged != 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: some mptokens were changed "
+                               "despite failure of the transaction.";
+            return false;
+        }
     }
 
     return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidMPTIssuance::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (after && after->getType() == ltMPTOKEN_ISSUANCE)
+    {
+        if (isDelete)
+            mptIssuancesDeleted_++;
+        else if (!before)
+            mptIssuancesCreated_++;
+    }
+
+    if (after && after->getType() == ltMPTOKEN)
+    {
+        if (isDelete)
+            mptokensDeleted_++;
+        else if (!before)
+            mptokensCreated_++;
+    }
+}
+
+bool
+ValidMPTIssuance::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const _fee,
+    ReadView const& _view,
+    beast::Journal const& j)
+{
+    if (result == tesSUCCESS)
+    {
+        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_CREATE)
+        {
+            if (mptIssuancesCreated_ == 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance creation "
+                                   "succeeded without creating a MPT issuance";
+            }
+            else if (mptIssuancesDeleted_ != 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance creation "
+                                   "succeeded while removing MPT issuances";
+            }
+            else if (mptIssuancesCreated_ > 1)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance creation "
+                                   "succeeded but created multiple issuances";
+            }
+
+            return mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0;
+        }
+
+        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_DESTROY)
+        {
+            if (mptIssuancesDeleted_ == 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance deletion "
+                                   "succeeded without removing a MPT issuance";
+            }
+            else if (mptIssuancesCreated_ > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance deletion "
+                                   "succeeded while creating MPT issuances";
+            }
+            else if (mptIssuancesDeleted_ > 1)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance deletion "
+                                   "succeeded but deleted multiple issuances";
+            }
+
+            return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 1;
+        }
+
+        if (tx.getTxnType() == ttMPTOKEN_AUTHORIZE)
+        {
+            bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
+
+            if (mptIssuancesCreated_ > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT authorize "
+                                   "succeeded but created MPT issuances";
+                return false;
+            }
+            else if (mptIssuancesDeleted_ > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT authorize "
+                                   "succeeded but deleted issuances";
+                return false;
+            }
+            else if (
+                submittedByIssuer &&
+                (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
+            {
+                JLOG(j.fatal())
+                    << "Invariant failed: MPT authorize submitted by issuer "
+                       "succeeded but created/deleted mptokens";
+                return false;
+            }
+            else if (
+                !submittedByIssuer &&
+                (mptokensCreated_ + mptokensDeleted_ != 1))
+            {
+                // if the holder submitted this tx, then a mptoken must be
+                // either created or deleted.
+                JLOG(j.fatal())
+                    << "Invariant failed: MPT authorize submitted by holder "
+                       "succeeded but created/deleted bad number of mptokens";
+                return false;
+            }
+
+            return true;
+        }
+
+        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_SET)
+        {
+            if (mptIssuancesDeleted_ > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
+                                   "succeeded while removing MPT issuances";
+            }
+            else if (mptIssuancesCreated_ > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
+                                   "succeeded while creating MPT issuances";
+            }
+            else if (mptokensDeleted_ > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
+                                   "succeeded while removing MPTokens";
+            }
+            else if (mptokensCreated_ > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
+                                   "succeeded while creating MPTokens";
+            }
+
+            return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
+                mptokensCreated_ == 0 && mptokensDeleted_ == 0;
+        }
+    }
+
+    if (mptIssuancesCreated_ != 0)
+    {
+        JLOG(j.fatal()) << "Invariant failed: a MPT issuance was created";
+    }
+    else if (mptIssuancesDeleted_ != 0)
+    {
+        JLOG(j.fatal()) << "Invariant failed: a MPT issuance was deleted";
+    }
+    else if (mptokensCreated_ != 0)
+    {
+        JLOG(j.fatal()) << "Invariant failed: a MPToken was created";
+    }
+    else if (mptokensDeleted_ != 0)
+    {
+        JLOG(j.fatal()) << "Invariant failed: a MPToken was deleted";
+    }
+
+    return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
+        mptokensCreated_ == 0 && mptokensDeleted_ == 0;
 }
 
 }  // namespace ripple

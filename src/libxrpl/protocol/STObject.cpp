@@ -25,6 +25,7 @@
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 
 namespace ripple {
@@ -604,6 +605,12 @@ STObject::getFieldH160(SField const& field) const
     return getFieldByValue<STUInt160>(field);
 }
 
+uint192
+STObject::getFieldH192(SField const& field) const
+{
+    return getFieldByValue<STUInt192>(field);
+}
+
 uint256
 STObject::getFieldH256(SField const& field) const
 {
@@ -657,6 +664,13 @@ STObject::getFieldCurrency(SField const& field) const
 {
     static STCurrency const empty{};
     return getFieldByConstRef<STCurrency>(field, empty);
+}
+
+STNumber const&
+STObject::getFieldNumber(SField const& field) const
+{
+    static STNumber const empty{};
+    return getFieldByConstRef<STNumber>(field, empty);
 }
 
 void
@@ -755,6 +769,12 @@ STObject::setFieldCurrency(SField const& field, STCurrency const& v)
 
 void
 STObject::setFieldIssue(SField const& field, STIssue const& v)
+{
+    setFieldUsingAssignment(field, v);
+}
+
+void
+STObject::setFieldNumber(SField const& field, STNumber const& v)
 {
     setFieldUsingAssignment(field, v);
 }

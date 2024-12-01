@@ -26,7 +26,6 @@
 #include <xrpld/peerfinder/detail/Fixed.h>
 #include <xrpld/peerfinder/detail/Handouts.h>
 #include <xrpld/peerfinder/detail/Livecache.h>
-#include <xrpld/peerfinder/detail/Reporting.h>
 #include <xrpld/peerfinder/detail/SlotImp.h>
 #include <xrpld/peerfinder/detail/Source.h>
 #include <xrpld/peerfinder/detail/Store.h>
@@ -1110,9 +1109,9 @@ public:
         }
         else
         {
-            JLOG(m_journal.error()) << beast::leftw(18) << "Logic failed "
-                                    << "'" << source->name() << "' fetch, "
-                                    << results.error.message();
+            JLOG(m_journal.error())
+                << beast::leftw(18) << "Logic failed " << "'" << source->name()
+                << "' fetch, " << results.error.message();
         }
     }
 

@@ -8,7 +8,7 @@ The [XRP Ledger](https://xrpl.org/) is a decentralized cryptographic ledger powe
 ## rippled
 The server software that powers the XRP Ledger is called `rippled` and is available in this repository under the permissive [ISC open-source license](LICENSE.md). The `rippled` server software is written primarily in C++ and runs on a variety of platforms. The `rippled` server software can run in several modes depending on its [configuration](https://xrpl.org/rippled-server-modes.html).
 
-If you are interested in running an **API Server** (including a **Full History Server**) or a **Reporting Mode** server, take a look at [Clio](https://github.com/XRPLF/clio). rippled Reporting Mode is expected to be replaced by Clio.
+If you are interested in running an **API Server** (including a **Full History Server**), take a look at [Clio](https://github.com/XRPLF/clio). (rippled Reporting Mode has been replaced by Clio.)
 
 ### Build from Source
 

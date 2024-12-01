@@ -439,6 +439,115 @@ public:
                 BEAST_EXPECT(found);
             }
         }
+        {
+            // N/A: Default values
+            Env env(*this);
+            auto const s = setup_DatabaseCon(env.app().config());
+            if (BEAST_EXPECT(s.txPragma.size() == 4))
+            {
+                BEAST_EXPECT(s.txPragma.at(0) == "PRAGMA page_size=4096;");
+                BEAST_EXPECT(
+                    s.txPragma.at(1) == "PRAGMA journal_size_limit=1582080;");
+                BEAST_EXPECT(
+                    s.txPragma.at(2) == "PRAGMA max_page_count=4294967294;");
+                BEAST_EXPECT(
+                    s.txPragma.at(3) == "PRAGMA mmap_size=17179869184;");
+            }
+        }
+        {
+            // Success: Valid values
+            Env env = [&]() {
+                auto p = test::jtx::envconfig();
+                {
+                    auto& section = p->section("sqlite");
+                    section.set("page_size", "512");
+                    section.set("journal_size_limit", "2582080");
+                }
+                return Env(*this, std::move(p));
+            }();
+            auto const s = setup_DatabaseCon(env.app().config());
+            if (BEAST_EXPECT(s.txPragma.size() == 4))
+            {
+                BEAST_EXPECT(s.txPragma.at(0) == "PRAGMA page_size=512;");
+                BEAST_EXPECT(
+                    s.txPragma.at(1) == "PRAGMA journal_size_limit=2582080;");
+                BEAST_EXPECT(
+                    s.txPragma.at(2) == "PRAGMA max_page_count=4294967294;");
+                BEAST_EXPECT(
+                    s.txPragma.at(3) == "PRAGMA mmap_size=17179869184;");
+            }
+        }
+        {
+            // Error: Invalid values
+            auto const expected =
+                "Invalid page_size. Must be between 512 and 65536.";
+            bool found = false;
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("page_size", "256");
+            }
+            try
+            {
+                Env env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
+                    beast::severities::kWarning);
+                fail();
+            }
+            catch (...)
+            {
+                BEAST_EXPECT(found);
+            }
+        }
+        {
+            // Error: Invalid values
+            auto const expected =
+                "Invalid page_size. Must be between 512 and 65536.";
+            bool found = false;
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("page_size", "131072");
+            }
+            try
+            {
+                Env env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
+                    beast::severities::kWarning);
+                fail();
+            }
+            catch (...)
+            {
+                BEAST_EXPECT(found);
+            }
+        }
+        {
+            // Error: Invalid values
+            auto const expected = "Invalid page_size. Must be a power of 2.";
+            bool found = false;
+            auto p = test::jtx::envconfig();
+            {
+                auto& section = p->section("sqlite");
+                section.set("page_size", "513");
+            }
+            try
+            {
+                Env env(
+                    *this,
+                    std::move(p),
+                    std::make_unique<CheckMessageLogs>(expected, &found),
+                    beast::severities::kWarning);
+                fail();
+            }
+            catch (...)
+            {
+                BEAST_EXPECT(found);
+            }
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -616,37 +725,6 @@ public:
                     std::strcmp(e.what(), "earliest_seq set more than once") ==
                     0);
             }
-
-            // Verify default ledgers per shard
-            {
-                std::unique_ptr<Database> db =
-                    Manager::instance().make_Database(
-                        megabytes(4), scheduler, 2, nodeParams, journal_);
-                BEAST_EXPECT(
-                    db->ledgersPerShard() == DEFAULT_LEDGERS_PER_SHARD);
-            }
-
-            // Set an invalid ledgers per shard
-            try
-            {
-                nodeParams.set("ledgers_per_shard", "100");
-                std::unique_ptr<Database> db =
-                    Manager::instance().make_Database(
-                        megabytes(4), scheduler, 2, nodeParams, journal_);
-            }
-            catch (std::runtime_error const& e)
-            {
-                BEAST_EXPECT(
-                    std::strcmp(e.what(), "Invalid ledgers_per_shard") == 0);
-            }
-
-            // Set a valid ledgers per shard
-            nodeParams.set("ledgers_per_shard", "256");
-            std::unique_ptr<Database> db = Manager::instance().make_Database(
-                megabytes(4), scheduler, 2, nodeParams, journal_);
-
-            // Verify database uses the ledgers per shard
-            BEAST_EXPECT(db->ledgersPerShard() == 256);
         }
     }
 
