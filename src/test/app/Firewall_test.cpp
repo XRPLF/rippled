@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
   This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2023 Ripple Labs Inc.
+  Copyright (c) 2024 Ripple Labs Inc.
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose  with  or without fee is hereby granted, provided that the above
@@ -25,7 +25,7 @@
 
 namespace ripple {
 namespace test {
-struct FirewallSet_test : public beast::unit_test::suite
+struct Firewall_test : public beast::unit_test::suite
 {
     static std::size_t
     ownerDirCount(ReadView const& view, jtx::Account const& acct)
@@ -269,6 +269,24 @@ struct FirewallSet_test : public beast::unit_test::suite
             env.close();
         }
     }
+    
+    void
+    testTransactionTypes(FeatureBitset features)
+    {
+        testcase("transaction types");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        Account const alice = Account("alice");
+        Account const bob = Account("bob");
+        Account const carol = Account("carol");
+        Account const dave = Account("dave");
+
+        // Payment
+        {
+            env(pay(alice, bob, XRP(100)), ter(tesSUCCESS));
+        }
+    }
 
     void
     testWithFeats(FeatureBitset features)
@@ -278,9 +296,11 @@ struct FirewallSet_test : public beast::unit_test::suite
         // testPreclaim(features);
         // testDoApply(features);
         testFirewallSet(features);
+        // testFirewallDelete(features);
         testUpdateAmount(features);
         testUpdatePK(features);
         testMasterDisable(features);
+        testTransactionTypes(features);
     }
 
 public:
@@ -293,6 +313,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FirewallSet, app, ripple);
+BEAST_DEFINE_TESTSUITE(Firewall, app, ripple);
 }  // namespace test
 }  // namespace ripple
