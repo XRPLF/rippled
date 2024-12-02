@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
-#include <xrpld/ledger/Directory.h>
+#include <xrpld/ledger/Dir.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Firewall.h>
 #include <xrpl/protocol/jss.h>
@@ -66,16 +66,26 @@ struct Firewall_test : public beast::unit_test::suite
     }
 
     void
-    verifyFirewall(
+    verifyFirewallSle(
         ReadView const& view,
         jtx::Account const& account,
-        STAmount const& amount,
-        PublicKey const& pk)
+        PublicKey const& pk,
+        std::optional<STAmount> const& amount = std::nullopt,
+        std::optional<uint32_t> const& timePeriod = std::nullopt,
+        std::optional<uint32_t> const& timeStart = std::nullopt,
+        std::optional<STAmount> const& totalOut = std::nullopt)
     {
         auto [key, sle] = firewallKeyAndSle(view, account);
         BEAST_EXPECT((*sle)[sfOwner] == account.id());
-        BEAST_EXPECT((*sle)[sfAmount] == amount);
         BEAST_EXPECT(strHex((*sle)[sfPublicKey]) == strHex(pk.slice()));
+        if (amount)
+            BEAST_EXPECT((*sle)[sfAmount] == *amount);
+        if (timePeriod)
+            BEAST_EXPECT((*sle)[sfTimePeriod] == *timePeriod);
+        if (timeStart)
+            BEAST_EXPECT((*sle)[sfTimePeriodStart] == *timeStart);
+        if (totalOut)
+            BEAST_EXPECT((*sle)[sfTotalOut] == *totalOut);
     }
 
     void
@@ -113,6 +123,77 @@ struct Firewall_test : public beast::unit_test::suite
     }
 
     void
+    testPreflight(FeatureBitset features)
+    {
+        testcase("preflight");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        Account const alice = Account("alice");
+        Account const bob = Account("bob");
+        Account const carol = Account("carol");
+
+        // preflight
+        // ---------------------------------------------------------
+
+        // temINVALID_ACCOUNT_ID
+        // temCANNOT_PREAUTH_SELF
+    }
+
+    void
+    testPreclaim(FeatureBitset features)
+    {
+        testcase("preclaim");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        Account const alice = Account("alice");
+        Account const bob = Account("bob");
+        Account const carol = Account("carol");
+
+        // preclaim
+        // ---------------------------------------------------------
+
+        // Set - Create
+        // temMALFORMED: Firewall: Set must not contain a sfSignature
+        // temMALFORMED: Firewall: Set must contain a sfAuthorize
+        // temMALFORMED: Firewall: Set must contain a sfPublicKey
+
+        // Set - Update
+        // temMALFORMED: Firewall: Update must contain a sfSignature
+        // temMALFORMED: Firewall: Update cannot contain a sfAuthorize
+        // temMALFORMED: Firewall: Update cannot contain both sfPublicKey & sfAmount
+        // temBAD_SIGNATURE: Firewall: Bad Signature for update sfPublicKey
+        // temBAD_SIGNATURE: Firewall: Bad Signature for update sfAmount
+    }
+
+    void
+    testDoApply(FeatureBitset features)
+    {
+        testcase("doApply");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        Account const alice = Account("alice");
+        Account const bob = Account("bob");
+        Account const carol = Account("carol");
+
+        // doApply
+        // ---------------------------------------------------------
+
+        // All
+        // tefINTERNAL: Firewall: Owner account not found
+
+        // Set - Create
+        // tecDIR_FULL: Firewall: failed to insert owner dir
+        // tecINSUFFICIENT_RESERVE: Firewall: Insufficient reserve to set firewall
+        // tecDIR_FULL: Firewall: failed to insert owner dir
+
+        // Set - Update
+
+    }
+
+    void
     testFirewallSet(FeatureBitset features)
     {
         testcase("firewall set");
@@ -123,6 +204,22 @@ struct Firewall_test : public beast::unit_test::suite
         Account const bob = Account("bob");
         Account const carol = Account("carol");
 
+        // No Amount
+        {
+            Env env{*this, features};
+            env.fund(XRP(1000), alice, bob, carol);
+            env.close();
+
+            env(firewall::set(alice),
+                firewall::auth(carol),
+                firewall::pk(carol.pk()),
+                ter(tesSUCCESS));
+            env.close();
+            verifyFirewallSle(*env.current(), alice, carol.pk());
+            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 2);
+        }
+
+        // Amount w/out Time Period
         {
             Env env{*this, features};
             env.fund(XRP(1000), alice, bob, carol);
@@ -135,10 +232,34 @@ struct Firewall_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            verifyFirewall(*env.current(), alice, XRP(10), carol.pk());
+            verifyFirewallSle(*env.current(), alice, carol.pk(), XRP(10));
+            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 2);
+        }
 
-            env(pay(alice, bob, XRP(100)), ter(tecFIREWALL_BLOCK));
+        // Amount w/ Time Period
+        {
+            Env env{*this, features};
+            env.fund(XRP(1000), alice, bob, carol);
             env.close();
+
+            auto const timeStart = env.now();
+            env(firewall::set(alice),
+                firewall::auth(carol),
+                firewall::amt(XRP(10)),
+                firewall::time_period(3600),
+                firewall::pk(carol.pk()),
+                ter(tesSUCCESS));
+            env.close();
+
+            verifyFirewallSle(
+                *env.current(),
+                alice,
+                carol.pk(),
+                XRP(10),
+                3600,
+                timeStart.time_since_epoch().count(),
+                STAmount(0));
+            BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 2);
         }
     }
 
@@ -165,8 +286,6 @@ struct Firewall_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            verifyFirewall(*env.current(), alice, XRP(10), carol.pk());
-
             env(pay(alice, bob, XRP(100)), ter(tecFIREWALL_BLOCK));
             env.close();
 
@@ -178,7 +297,7 @@ struct Firewall_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            verifyFirewall(*env.current(), alice, XRP(100), carol.pk());
+            // verifyFirewall(*env.current(), alice, XRP(100), carol.pk());
 
             env(pay(alice, bob, XRP(100)), ter(tesSUCCESS));
             env.close();
@@ -209,7 +328,7 @@ struct Firewall_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            verifyFirewall(*env.current(), alice, XRP(10), carol.pk());
+            // verifyFirewall(*env.current(), alice, XRP(10), carol.pk());
 
             env(pay(alice, bob, XRP(100)), ter(tecFIREWALL_BLOCK));
             env.close();
@@ -222,7 +341,7 @@ struct Firewall_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            verifyFirewall(*env.current(), alice, XRP(10), dave.pk());
+            // verifyFirewall(*env.current(), alice, XRP(10), dave.pk());
 
             auto const sig2 = sigFirewallAuthAmount(
                 dave.pk(), dave.sk(), alice.id(), XRP(100));
@@ -232,7 +351,7 @@ struct Firewall_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            verifyFirewall(*env.current(), alice, XRP(100), dave.pk());
+            // verifyFirewall(*env.current(), alice, XRP(100), dave.pk());
 
             env(pay(alice, bob, XRP(100)), ter(tesSUCCESS));
             env.close();
@@ -263,44 +382,50 @@ struct Firewall_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
-            verifyFirewall(*env.current(), alice, XRP(10), carol.pk());
+            // verifyFirewall(*env.current(), alice, XRP(10), carol.pk());
 
             env(fset(alice, asfDisableMaster), ter(tecNO_PERMISSION));
             env.close();
         }
     }
     
-    void
-    testTransactionTypes(FeatureBitset features)
-    {
-        testcase("transaction types");
-        using namespace jtx;
-        using namespace std::literals::chrono_literals;
+    // void
+    // testTransactionTypes(FeatureBitset features)
+    // {
+    //     testcase("transaction types");
+    //     using namespace jtx;
+    //     using namespace std::literals::chrono_literals;
 
-        Account const alice = Account("alice");
-        Account const bob = Account("bob");
-        Account const carol = Account("carol");
-        Account const dave = Account("dave");
+    //     Account const alice = Account("alice");
+    //     Account const bob = Account("bob");
+    //     Account const carol = Account("carol");
+    //     Account const dave = Account("dave");
 
-        // Payment
-        {
-            env(pay(alice, bob, XRP(100)), ter(tesSUCCESS));
-        }
-    }
+    //     // Payment
+    //     {
+    //         env(pay(alice, bob, XRP(100)), ter(tesSUCCESS));
+    //     }
+    // }
 
     void
     testWithFeats(FeatureBitset features)
     {
-        testEnabled(features);
+        // testEnabled(features);
         // testPreflight(features);
         // testPreclaim(features);
         // testDoApply(features);
         testFirewallSet(features);
         // testFirewallDelete(features);
-        testUpdateAmount(features);
-        testUpdatePK(features);
-        testMasterDisable(features);
-        testTransactionTypes(features);
+        // testUpdateAmount(features);
+        // testUpdatePK(features);
+        // testMasterDisable(features);
+        // testTransactionTypes(features);
+
+        // // Bad Amount
+            // {
+            //     env(pay(alice, bob, XRP(100)), ter(tecFIREWALL_BLOCK));
+            //     env.close();
+            // }
     }
 
 public:

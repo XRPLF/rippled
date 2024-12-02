@@ -57,9 +57,9 @@ FirewallSet::preflight(PreflightContext const& ctx)
     // Validate Authorize
     if (ctx.tx.isFieldPresent(sfAuthorize))
     {
-        auto const authorizeID = ctx.tx.getAccountID(sfAuthorize);
+        auto const backupID = ctx.tx.getAccountID(sfAuthorize);
         // Make sure that the passed account is valid.
-        if (authorizeID == beast::zero)
+        if (backupID == beast::zero)
         {
             JLOG(ctx.j.debug())
                 << "Malformed transaction: Authorized or Unauthorized "
@@ -68,7 +68,7 @@ FirewallSet::preflight(PreflightContext const& ctx)
         }
 
         // An account may not preauthorize itself.
-        if (authorizeID == ctx.tx[sfAccount])
+        if (backupID == ctx.tx[sfAccount])
         {
             JLOG(ctx.j.debug())
                 << "Malformed transaction: Attempting to FirewallPreauth self.";
@@ -163,40 +163,6 @@ FirewallSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // auto const amount = ctx.tx[~sfAmount];
-    // if (auto const ter = requireAuth(ctx.view, amount.issue(), accountID);
-    //     ter != tesSUCCESS)
-    // {
-    // JLOG(ctx.j.debug())
-    //     << "Firewall: account is not authorized, " << amount.issue();
-    //     return ter;
-    // }
-
-    // // Globally or individually frozen
-    // if (isFrozen(ctx.view, accountID, amount.issue()) ||
-    //     isFrozen(ctx.view, accountID, amount2.issue()))
-    // {
-    //     JLOG(ctx.j.debug()) << "Firewall: involves frozen asset.";
-    //     return tecFROZEN;
-    // }
-
-    // auto noDefaultRipple = [](ReadView const& view, Issue const& issue) {
-    //     if (isXRP(issue))
-    //         return false;
-
-    //     if (auto const issuerAccount =
-    //             view.read(keylet::account(issue.account)))
-    //         return (issuerAccount->getFlags() & lsfDefaultRipple) == 0;
-
-    //     return false;
-    // };
-
-    // if (noDefaultRipple(ctx.view, amount.issue()))
-    // {
-    //     JLOG(ctx.j.debug()) << "Firewall: DefaultRipple not set";
-    //     return terNO_RIPPLE;
-    // }
-
     return tesSUCCESS;
 }
 
@@ -207,7 +173,10 @@ FirewallSet::doApply()
 
     auto const sleOwner = sb.peek(keylet::account(account_));
     if (!sleOwner)
+    {
+        JLOG(j_.debug()) << "Firewall: Owner account not found";
         return tefINTERNAL;
+    }
 
     ripple::Keylet const firewallKeylet = keylet::firewall(account_);
     auto sleFirewall = sb.peek(firewallKeylet);
@@ -219,6 +188,13 @@ FirewallSet::doApply()
         if (ctx_.tx.isFieldPresent(sfAmount))
             sleFirewall->setFieldAmount(
                 sfAmount, ctx_.tx.getFieldAmount(sfAmount));
+
+        if (ctx_.tx.isFieldPresent(sfTimePeriod))
+        {
+            sleFirewall->setFieldU32(sfTimePeriod, ctx_.tx.getFieldU32(sfTimePeriod));
+            sleFirewall->setFieldU32(sfTimePeriodStart, ctx_.view().parentCloseTime().time_since_epoch().count());
+            sleFirewall->setFieldAmount(sfTotalOut, STAmount{0});
+        }
 
         if (auto const page = sb.dirInsert(
                 keylet::ownerDir(account_),
@@ -243,7 +219,7 @@ FirewallSet::doApply()
                 return tecINSUFFICIENT_RESERVE;
         }
 
-        AccountID const auth{ctx_.tx[sfAuthorize]};
+        AccountID const auth = ctx_.tx.getAccountID(sfAuthorize);
         Keylet const preauthKeylet = keylet::firewallPreauth(account_, auth);
         auto slePreauth = std::make_shared<SLE>(preauthKeylet);
 

@@ -183,11 +183,6 @@ invoke_preclaim(PreclaimContext const& ctx)
                 if (result != tesSUCCESS)
                     return result;
 
-                result = T::checkFirewall(ctx, ctx.j);
-
-                if (result != tesSUCCESS)
-                    return result;
-
                 result = T::checkPriorTxAndLastLedger(ctx);
 
                 if (result != tesSUCCESS)

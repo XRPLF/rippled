@@ -34,6 +34,21 @@ namespace firewall {
 Json::Value
 set(Account const& account);
 
+/** Sets the optional TimePeriod on a JTx. */
+class time_period
+{
+private:
+    std::uint32_t value_;
+
+public:
+    explicit time_period(std::uint32_t const& value) : value_(value)
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jtx) const;
+};
+
 /** Sets the optional Amount on a JTx. */
 class amt
 {

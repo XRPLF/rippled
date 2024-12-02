@@ -156,6 +156,9 @@ private:
     friend class detail::STVar;
 };
 
+std::optional<STAmount>
+getAmountInTx(STObject const& tx, Issue const& issue);
+
 bool
 passesLocalChecks(STObject const& st, std::string&);
 

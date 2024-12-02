@@ -31,7 +31,7 @@ namespace ripple {
  * @brief Serializes firewall authorization data into a message.
  *
  * This function serializes the given account and preauthorize account IDs
- * into the provided Serializer object. It adds a shardInfo hash prefix,
+ * into the provided Serializer object. It adds a firewall hash prefix,
  * followed by the account and preauthorize account IDs.
  *
  * @param msg The Serializer object to serialize the data into.
@@ -44,7 +44,7 @@ serializeFirewallAuthorization(
     AccountID const& account,
     AccountID const& preauthorize)
 {
-    msg.add32(HashPrefix::shardInfo);
+    msg.add32(HashPrefix::firewall);
     msg.addBitString(account);
     msg.addBitString(preauthorize);
 }
@@ -53,7 +53,7 @@ serializeFirewallAuthorization(
  * @brief Serializes firewall authorization data into a message.
  *
  * This function serializes the given account ID and amount into the provided
- * Serializer object. It adds a shardInfo hash prefix, followed by the account
+ * Serializer object. It adds a firewall hash prefix, followed by the account
  * ID and the amount's mantissa.
  *
  * @param msg The Serializer object to serialize the data into.
@@ -66,7 +66,7 @@ serializeFirewallAuthorization(
     AccountID const& account,
     STAmount const& amount)
 {
-    msg.add32(HashPrefix::shardInfo);
+    msg.add32(HashPrefix::firewall);
     msg.addBitString(account);
     msg.add64(amount.mantissa());
 }
@@ -75,7 +75,7 @@ serializeFirewallAuthorization(
  * @brief Serializes firewall authorization data into a message.
  *
  * This function serializes the given account ID and public key into the
- * provided Serializer object. It adds a shardInfo hash prefix, followed by
+ * provided Serializer object. It adds a firewall hash prefix, followed by
  * the account ID and the raw bytes of the public key.
  *
  * @param msg The Serializer object to serialize the data into.
@@ -88,7 +88,7 @@ serializeFirewallAuthorization(
     AccountID const& account,
     PublicKey const& pk)
 {
-    msg.add32(HashPrefix::shardInfo);
+    msg.add32(HashPrefix::firewall);
     msg.addBitString(account);
     msg.addRaw(pk.slice());
 }

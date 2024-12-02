@@ -62,17 +62,6 @@ enum LedgerEntryType : std::uint16_t
 
 #undef LEDGER_ENTRY
 #pragma pop_macro("LEDGER_ENTRY")
-
-    /** A ledger object which tracks FIrewall
-        \sa keylet::firewall
-     */
-    ltFIREWALL = 0x0046,
-    
-    /** A ledger object which tracks FIrewall
-        \sa keylet::firewall
-     */
-    ltFIREWALL_PREAUTH = 0x0047,
-
     //---------------------------------------------------------------------------
     /** A special type, matching any ledger entry type.
 

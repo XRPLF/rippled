@@ -569,6 +569,42 @@ invalidMPTAmountInTx(STObject const& tx)
     return false;
 }
 
+std::optional<STAmount>
+getAmountInTx(STObject const& tx, Issue const& issue)
+{
+    auto const txType = tx[~sfTransactionType];
+    if (!txType)
+        return std::nullopt;
+
+    // List of fields to filter out
+    std::set<SField const*> filterOutFields = {&sfFee};
+
+    if (auto const* item =
+            TxFormats::getInstance().findByType(safe_cast<TxType>(*txType)))
+    {
+        for (auto const& e : item->getSOTemplate())
+        {
+            if (tx.isFieldPresent(e.sField()))
+            {
+                // Check if the field is in the filter out list
+                if (filterOutFields.find(&e.sField()) != filterOutFields.end())
+                    continue;
+
+                if (auto const& field = tx.peekAtField(e.sField());
+                    field.getSType() == STI_AMOUNT)
+                {
+                    auto const& amount = static_cast<STAmount const&>(field);
+                    if (amount.issue() == issue)
+                    {
+                        return amount;
+                    }
+                }
+            }
+        }
+    }
+    return std::nullopt;
+}
+
 bool
 passesLocalChecks(STObject const& st, std::string& reason)
 {

@@ -35,6 +35,12 @@ set(Account const& account)
 }
 
 void
+time_period::operator()(Env& env, JTx& jt) const
+{
+    jt.jv[sfTimePeriod.jsonName] = value_;
+}
+
+void
 amt::operator()(Env& env, JTx& jt) const
 {
     jt.jv[sfAmount.jsonName] = amt_.getJson(JsonOptions::none);

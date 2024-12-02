@@ -158,9 +158,6 @@ public:
         uint256 const& ticketIndex,
         beast::Journal j);
 
-    static TER
-    checkFirewall(PreclaimContext const& ctx, beast::Journal j);
-
 protected:
     TER
     apply();
@@ -188,6 +185,9 @@ protected:
         XRPAmount baseFee,
         Fees const& fees,
         ApplyFlags flags);
+
+    TER
+    checkFirewall();
 
 private:
     std::pair<TER, XRPAmount>
