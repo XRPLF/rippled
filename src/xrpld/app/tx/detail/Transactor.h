@@ -137,6 +137,9 @@ public:
     static NotTEC
     checkSign(PreclaimContext const& ctx);
 
+    static NotTEC
+    checkFirewallSign(PreclaimContext const& ctx);
+
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
@@ -157,9 +160,6 @@ public:
         AccountID const& account,
         uint256 const& ticketIndex,
         beast::Journal j);
-
-    static TER
-    checkFirewall(PreclaimContext const& ctx, beast::Journal j);
 
 protected:
     TER
@@ -189,6 +189,9 @@ protected:
         Fees const& fees,
         ApplyFlags flags);
 
+    TER
+    checkFirewall();
+
 private:
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
@@ -198,9 +201,15 @@ private:
     TER
     payFee();
     static NotTEC
-    checkSingleSign(PreclaimContext const& ctx);
+    checkSingleSign(
+        PreclaimContext const& ctx,
+        AccountID const& idAccount,
+        Blob const& pkSigner);
     static NotTEC
-    checkMultiSign(PreclaimContext const& ctx);
+    checkMultiSign(
+        PreclaimContext const& ctx,
+        AccountID const& id,
+        STArray const& txSigners);
 
     void trapTransaction(uint256) const;
 };

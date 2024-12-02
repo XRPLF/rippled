@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2024 Transia, LLC.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_FIREWALL_PREAUTH_H_INCLUDED
-#define RIPPLE_TX_FIREWALL_PREAUTH_H_INCLUDED
+#ifndef RIPPLE_TX_WITHDRAW_PREAUTH_H_INCLUDED
+#define RIPPLE_TX_WITHDRAW_PREAUTH_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
 
-class FirewallPreauth : public Transactor
+class WithdrawPreauth : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit FirewallPreauth(ApplyContext& ctx) : Transactor(ctx)
+    explicit WithdrawPreauth(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 

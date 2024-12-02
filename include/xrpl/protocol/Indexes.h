@@ -294,21 +294,6 @@ Keylet
 oracle(AccountID const& account, std::uint32_t const& documentID) noexcept;
 
 Keylet
-firewall(AccountID const& account) noexcept;
-
-/** A FireallPreauth */
-/** @{ */
-Keylet
-firewallPreauth(
-    AccountID const& owner,
-    AccountID const& preauthorized) noexcept;
-
-inline Keylet
-firewallPreauth(uint256 const& key) noexcept
-{
-    return {ltFIREWALL_PREAUTH, key};
-}
-/** @} */
 credential(
     AccountID const& subject,
     AccountID const& issuer,
@@ -343,6 +328,20 @@ mptoken(uint256 const& mptokenKey)
 
 Keylet
 mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept;
+
+Keylet
+firewall(AccountID const& account) noexcept;
+
+Keylet
+withdrawPreauth(
+    AccountID const& owner,
+    AccountID const& preauthorized) noexcept;
+
+inline Keylet
+withdrawPreauth(uint256 const& key) noexcept
+{
+    return {ltWITHDRAW_PREAUTH, key};
+}
 
 }  // namespace keylet
 

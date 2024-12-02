@@ -154,6 +154,14 @@ InnerObjectFormats::InnerObjectFormats()
             {sfIssuer, soeREQUIRED},
             {sfCredentialType, soeREQUIRED},
         });
+
+    add(sfFirewallSigner.jsonName.c_str(),
+        sfFirewallSigner.getCode(),
+        {
+            {sfAccount, soeREQUIRED},
+            {sfSigningPubKey, soeREQUIRED},
+            {sfTxnSignature, soeREQUIRED},
+        });
 }
 
 InnerObjectFormats const&

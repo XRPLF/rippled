@@ -74,11 +74,11 @@ enum class LedgerNameSpace : std::uint16_t {
     XCHAIN_CREATE_ACCOUNT_CLAIM_ID = 'K',
     DID = 'I',
     ORACLE = 'R',
-    FIREWALL = 'F',
-    FIREWALL_PREAUTH = 'G',
     MPTOKEN_ISSUANCE = '~',
     MPTOKEN = 't',
     CREDENTIAL = 'D',
+    FIREWALL = 'F',
+    WITHDRAW_PREAUTH = 'G',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -484,18 +484,6 @@ oracle(AccountID const& account, std::uint32_t const& documentID) noexcept
 }
 
 Keylet
-firewall(AccountID const& account) noexcept
-{
-    return {ltFIREWALL, indexHash(LedgerNameSpace::FIREWALL, account)};
-}
-
-Keylet
-firewallPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept
-{
-    return {
-        ltFIREWALL_PREAUTH,
-        indexHash(LedgerNameSpace::FIREWALL_PREAUTH, owner, preauthorized)};
-
 mptIssuance(std::uint32_t seq, AccountID const& issuer) noexcept
 {
     return mptIssuance(makeMptID(seq, issuer));
@@ -531,7 +519,20 @@ credential(
     return {
         ltCREDENTIAL,
         indexHash(LedgerNameSpace::CREDENTIAL, subject, issuer, credType)};
+}
 
+Keylet
+firewall(AccountID const& account) noexcept
+{
+    return {ltFIREWALL, indexHash(LedgerNameSpace::FIREWALL, account)};
+}
+
+Keylet
+withdrawPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept
+{
+    return {
+        ltWITHDRAW_PREAUTH,
+        indexHash(LedgerNameSpace::WITHDRAW_PREAUTH, owner, preauthorized)};
 }
 
 }  // namespace keylet
