@@ -713,8 +713,8 @@ class Freeze_test : public beast::unit_test::suite
         env.close();
 
         // Making large passive sell offer
-        // Wants to sell 90 USD for 100 XRP
-        env(offer(A2, XRP(100), G1["USD"](90)), txflags(tfPassive));
+        // Wants to sell 50 USD for 100 XRP
+        env(offer(A2, XRP(100), G1["USD"](50)), txflags(tfPassive));
         env.close();
         // Making large passive buy offer
         // Wants to buy 100 USD for 100 XRP
@@ -743,6 +743,7 @@ class Freeze_test : public beast::unit_test::suite
             env.require(balance(A1, G1["USD"](1000)), offers(A1, 1));
             // Cleanup
             env(offer_cancel(A1, env.seq(A1) - 1));
+            env.require(offers(A1, 0));
             env.close();
 
             // test: can still buy from A2
@@ -755,37 +756,121 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: cannot create passive sell offer
             env(offer(A1, XRP(2), G1["USD"](1)), ter(tecUNFUNDED_OFFER));
+            env.close();
             env.require(balance(A1, G1["USD"](1001)), offers(A1, 0));
 
             // test: cannot sell to A3
             env(offer(A1, XRP(1), G1["USD"](1)), ter(tecUNFUNDED_OFFER));
+            env.close();
             env.require(balance(A1, G1["USD"](1001)), offers(A1, 0));
 
-            env.require(
-                balance(A1, G1["USD"](1001)), balance(A3, G1["USD"](1)));
             env(trust(G1, A1["USD"](0), tfClearFreeze));
             env.close();
-            env.require(
-                balance(A1, G1["USD"](1000)), balance(A3, G1["USD"](2)));
         }
 
         // Testing aggressive and passive offer placing A1 deep frozen by issuer
         if (features[featureDeepFreeze])
         {
-            env(trust(G1, A1["USD"](1000), tfSetFreeze | tfSetDeepFreeze));
+            env(trust(G1, A1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
             env.close();
 
             // test: cannot create passive buy offer
             env(offer(A1, G1["USD"](1), XRP(0.5)), ter(tecFROZEN));
+            env.close();
 
             // test: cannot buy from A2
             env(offer(A1, G1["USD"](1), XRP(2)), ter(tecFROZEN));
+            env.close();
 
             // test: cannot create passive sell offer
             env(offer(A1, XRP(2), G1["USD"](1)), ter(tecUNFUNDED_OFFER));
+            env.close();
 
             // test: cannot sell to A3
             env(offer(A1, XRP(1), G1["USD"](1)), ter(tecUNFUNDED_OFFER));
+            env.close();
+
+            env(trust(G1, A1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+            env.require(balance(A1, G1["USD"](1001)), offers(A1, 0));
+        }
+
+        // Testing already existing offers behavior after trustline is frozen
+        {
+            env.require(balance(A1, G1["USD"](1001)));
+            env(offer(A1, XRP(1.9), G1["USD"](1)));
+            env(offer(A1, G1["USD"](1), XRP(1.1)));
+            env.close();
+            env.require(balance(A1, G1["USD"](1001)), offers(A1, 2));
+
+            env(trust(G1, A1["USD"](0), tfSetFreeze));
+            env.close();
+
+            // A2 wants to sell to A1, must succeed
+            env.require(
+                balance(A1, G1["USD"](1001)), balance(A2, G1["USD"](998)));
+            env(offer(A2, XRP(1.1), G1["USD"](1)), txflags(tfFillOrKill));
+            env.close();
+            env.require(
+                balance(A1, G1["USD"](1002)),
+                balance(A2, G1["USD"](997)),
+                offers(A1, 1));
+
+            // A3 wants to buy from A1, must fail
+            env.require(
+                balance(A1, G1["USD"](1002)),
+                balance(A3, G1["USD"](1)),
+                offers(A1, 1));
+            env(offer(A3, G1["USD"](1), XRP(1.9)),
+                txflags(tfFillOrKill),
+                ter(tecKILLED));
+            env.close();
+            env.require(
+                balance(A1, G1["USD"](1002)),
+                balance(A3, G1["USD"](1)),
+                offers(A1, 0));
+
+            env(trust(G1, A1["USD"](0), tfClearFreeze));
+            env.close();
+        }
+
+        // Testing existing offers behavior after trustline is deep frozen
+        if (features[featureDeepFreeze])
+        {
+            env.require(balance(A1, G1["USD"](1002)));
+            env(offer(A1, XRP(1.9), G1["USD"](1)));
+            env(offer(A1, G1["USD"](1), XRP(1.1)));
+            env.close();
+            env.require(balance(A1, G1["USD"](1002)), offers(A1, 2));
+
+            env(trust(G1, A1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+
+            // A2 wants to sell to A1, must fail
+            env.require(
+                balance(A1, G1["USD"](1002)), balance(A2, G1["USD"](997)));
+            env(offer(A2, XRP(1.1), G1["USD"](1)),
+                txflags(tfFillOrKill),
+                ter(tecKILLED));
+            env.close();
+            env.require(
+                balance(A1, G1["USD"](1002)),
+                balance(A2, G1["USD"](997)),
+                offers(A1, 1));
+
+            // A3 wants to buy from A1, must fail
+            env.require(
+                balance(A1, G1["USD"](1002)),
+                balance(A3, G1["USD"](1)),
+                offers(A1, 1));
+            env(offer(A3, G1["USD"](1), XRP(1.9)),
+                txflags(tfFillOrKill),
+                ter(tecKILLED));
+            env.close();
+            env.require(
+                balance(A1, G1["USD"](1002)),
+                balance(A3, G1["USD"](1)),
+                offers(A1, 0));
 
             env(trust(G1, A1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
             env.close();
