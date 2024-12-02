@@ -26,6 +26,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
+#include "xrpl/protocol/TER.h"
 
 namespace ripple {
 
@@ -100,6 +101,60 @@ checkNoRipple(
 
         return terNO_RIPPLE;
     }
+    return tesSUCCESS;
+}
+
+inline TER
+checkLPTokenAuthorization(
+    ReadView const& view,
+    AccountID const& src,
+    AccountID const& dst,
+    Currency const& currency)
+{
+    if (!view.rules().enabled(fixLPTokenTransfer))
+        return tesSUCCESS;
+
+    if (auto const sleDst = view.read(keylet::account(dst));
+        sleDst && sleDst->isFieldPresent(sfAMMID))
+    {
+        auto const sleAmm = view.read(keylet::amm((*sleDst)[sfAMMID]));
+        if (!sleAmm)
+            return tecINTERNAL;
+
+        auto const assetIssuer1 = (*sleAmm)[sfAsset].account;
+        auto const assetIssuer2 = (*sleAmm)[sfAsset2].account;
+
+        auto const checkRequireAuth = [&](AccountID const& assetIssuer,
+                                          AccountID const& src) -> TER {
+            auto const sleAssetIssuer = view.read(keylet::account(assetIssuer));
+            if (!sleAssetIssuer)
+                return tecINTERNAL;
+
+            auto const sleLine =
+                view.read(keylet::line(assetIssuer, src, currency));
+            if (!sleLine)
+                return terNO_LINE;
+
+            if (sleAssetIssuer->isFlag(lsfRequireAuth))
+            {
+                auto const authFlag =
+                    assetIssuer > src ? lsfHighAuth : lsfLowAuth;
+
+                if (!sleLine->isFlag(authFlag))
+                    return terNO_LINE;
+            }
+            return tesSUCCESS;
+        };
+
+        if (auto const ter = checkRequireAuth(assetIssuer1, src);
+            ter != tesSUCCESS)
+            return ter;
+
+        if (auto const ter = checkRequireAuth(assetIssuer2, src);
+            ter != tesSUCCESS)
+            return ter;
+    }
+
     return tesSUCCESS;
 }
 
