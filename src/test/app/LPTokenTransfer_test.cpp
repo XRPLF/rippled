@@ -27,6 +27,7 @@
 #include <xrpld/app/paths/AMMContext.h>
 #include <xrpld/app/paths/AMMOffer.h>
 #include <xrpld/app/tx/detail/AMMBid.h>
+#include <xrpld/ledger/ApplyViewImpl.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpl/basics/Number.h>
@@ -58,21 +59,17 @@ class LPTokenTransfer_test : public jtx::AMMTest
         AMM ammAlice(env, alice, USD(20'000), BTC(0.5));
         BEAST_EXPECT(
             ammAlice.expectBalances(USD(20'000), BTC(0.5), IOUAmount{100, 0}));
-        BEAST_EXPECT(expectLine(env, alice, USD(0)));
-        BEAST_EXPECT(expectLine(env, alice, BTC(0)));
-        fund(env, gw, {carol}, {USD(2'000), BTC(0.05)}, Fund::Acct);
+
+        fund(env, gw, {carol}, {USD(4'000), BTC(1)}, Fund::Acct);
         ammAlice.deposit(carol, 10);
         BEAST_EXPECT(
             ammAlice.expectBalances(USD(22'000), BTC(0.55), IOUAmount{110, 0}));
-        BEAST_EXPECT(expectLine(env, carol, USD(0)));
-        BEAST_EXPECT(expectLine(env, carol, BTC(0)));
 
-        fund(env, gw, {bob}, {USD(2'000), BTC(0.05)}, Fund::Acct);
+        fund(env, gw, {bob}, {USD(4'000), BTC(1)}, Fund::Acct);
         ammAlice.deposit(bob, 10);
         BEAST_EXPECT(
             ammAlice.expectBalances(USD(24'000), BTC(0.60), IOUAmount{120, 0}));
-        BEAST_EXPECT(expectLine(env, bob, USD(0)));
-        BEAST_EXPECT(expectLine(env, bob, BTC(0)));
+
         auto const lpIssue = ammAlice.lptIssue();
         env.trust(STAmount{lpIssue, 500}, alice);
         env.trust(STAmount{lpIssue, 500}, bob);
@@ -85,7 +82,9 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         // bob can still send to lptoken to carol even tho carol's USD is
         // frozen, regardless of whether fixLPTokenTransfer is enabled or not
+        // Note: Deep freeze is not considered for LPToken transfer
         env(pay(bob, carol, STAmount{lpIssue, 5}));
+        env.close();
 
         if (features[fixLPTokenTransfer])
         {
@@ -99,14 +98,91 @@ class LPTokenTransfer_test : public jtx::AMMTest
         }
     }
 
+    void
+    testRipplingUnathorizedAsset(FeatureBitset features)
+    {
+        testcase("Rippling Unauthorized Asset");
+
+        using namespace jtx;
+
+        // disable AMMClawback to allow single side deposit without owning one
+        // of the assets
+        Env env(*this, features - featureAMMClawback);
+        env.fund(XRP(1000), gw, alice, carol, bob);
+        env(fset(gw, asfRequireAuth));
+        env(rate(gw, 1.25));
+        env.close();
+
+        // gateway authorizes alice
+        auto authAndFund = [&](Account const& account,
+                               std::string const currency) {
+            env(trust(gw, account[currency](100'000)), txflags(tfSetfAuth));
+            env(trust(account, gw[currency](100'000)));
+            env.close();
+            env(pay(gw, account, gw[currency](30'000)));
+            env.close();
+        };
+
+        authAndFund(alice, "BTC");
+        authAndFund(alice, "USD");
+
+        authAndFund(bob, "BTC");
+        authAndFund(bob, "USD");
+
+        // carol only has USD, not BTC
+        authAndFund(carol, "USD");
+
+        AMM ammAlice(env, alice, USD(20'000), BTC(0.5));
+
+        ammAlice.deposit(bob, 10);
+        BEAST_EXPECT(ammAlice.expectLPTokens(bob, IOUAmount(10)));
+
+        // carol does not have BTC and does single side deposit with USD
+        ammAlice.deposit(carol, USD(2000));
+        BEAST_EXPECT(
+            ammAlice.expectLPTokens(carol, IOUAmount(4891252930760500, -15)));
+
+        auto const lpIssue = ammAlice.lptIssue();
+        env.trust(STAmount{lpIssue, 500}, alice);
+        env.trust(STAmount{lpIssue, 500}, bob);
+        env.trust(STAmount{lpIssue, 500}, carol);
+        env.close();
+
+        env.enableFeature(featureAMMClawback);
+        env.close();
+
+        if (features[fixLPTokenTransfer])
+        {
+            // carol does not have BTC line, therefore she cannot receive nor
+            // send LPToken
+            env(pay(carol, bob, STAmount{lpIssue, 1}), ter(tecPATH_DRY));
+            env.close();
+            env(pay(bob, carol, STAmount{lpIssue, 1}), ter(tecPATH_DRY));
+            env.close();
+        }
+        else
+        {
+            // carol can still send and receive LPTOken despite she doesn't have
+            // BTC trustline
+            env(pay(carol, bob, STAmount{lpIssue, 1}));
+            env.close();
+            env(pay(bob, carol, STAmount{lpIssue, 1}));
+            env.close();
+        }
+    }
+
 public:
     void
     run() override
     {
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
-        for (auto const feature : {all, all - fixLPTokenTransfer})
-            testRipplingFrozenAsset(feature);
+        // testRipplingUnathorizedAsset(all);
+        for (auto const features : {all, all - fixLPTokenTransfer})
+        {
+            testRipplingFrozenAsset(features);
+            testRipplingUnathorizedAsset(features);
+        }
     }
 };
 

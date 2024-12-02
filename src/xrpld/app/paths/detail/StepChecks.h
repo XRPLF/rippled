@@ -105,6 +105,31 @@ checkNoRipple(
 }
 
 inline TER
+checkRequireAuth(
+    ReadView const& view,
+    Issue const& issue,
+    AccountID const& acct)
+{
+    auto const sleAssetIssuer = view.read(keylet::account(issue.account));
+    if (!sleAssetIssuer)
+        return tecINTERNAL;
+
+    auto const sleLine =
+        view.read(keylet::line(issue.account, acct, issue.currency));
+    if (!sleLine)
+        return terNO_LINE;
+
+    if (sleAssetIssuer->isFlag(lsfRequireAuth))
+    {
+        auto const authFlag = issue.account > acct ? lsfHighAuth : lsfLowAuth;
+
+        if (!sleLine->isFlag(authFlag))
+            return terNO_LINE;
+    }
+    return tesSUCCESS;
+}
+
+inline TER
 checkLPTokenAuthorization(
     ReadView const& view,
     AccountID const& src,
@@ -121,36 +146,26 @@ checkLPTokenAuthorization(
         if (!sleAmm)
             return tecINTERNAL;
 
-        auto const assetIssuer1 = (*sleAmm)[sfAsset].account;
-        auto const assetIssuer2 = (*sleAmm)[sfAsset2].account;
-
-        auto const checkRequireAuth = [&](AccountID const& assetIssuer,
-                                          AccountID const& src) -> TER {
-            auto const sleAssetIssuer = view.read(keylet::account(assetIssuer));
-            if (!sleAssetIssuer)
-                return tecINTERNAL;
-
-            auto const sleLine =
-                view.read(keylet::line(assetIssuer, src, currency));
-            if (!sleLine)
-                return terNO_LINE;
-
-            if (sleAssetIssuer->isFlag(lsfRequireAuth))
-            {
-                auto const authFlag =
-                    assetIssuer > src ? lsfHighAuth : lsfLowAuth;
-
-                if (!sleLine->isFlag(authFlag))
-                    return terNO_LINE;
-            }
-            return tesSUCCESS;
-        };
-
-        if (auto const ter = checkRequireAuth(assetIssuer1, src);
+        if (auto const ter = checkRequireAuth(view, (*sleAmm)[sfAsset], src);
             ter != tesSUCCESS)
             return ter;
 
-        if (auto const ter = checkRequireAuth(assetIssuer2, src);
+        if (auto const ter = checkRequireAuth(view, (*sleAmm)[sfAsset2], src);
+            ter != tesSUCCESS)
+            return ter;
+    }
+    else if (auto const sleSrc = view.read(keylet::account(src));
+             sleSrc && sleSrc->isFieldPresent(sfAMMID))
+    {
+        auto const sleAmm = view.read(keylet::amm((*sleSrc)[sfAMMID]));
+        if (!sleAmm)
+            return tecINTERNAL;
+
+        if (auto const ter = checkRequireAuth(view, (*sleAmm)[sfAsset], dst);
+            ter != tesSUCCESS)
+            return ter;
+
+        if (auto const ter = checkRequireAuth(view, (*sleAmm)[sfAsset2], dst);
             ter != tesSUCCESS)
             return ter;
     }
