@@ -20,7 +20,7 @@
 #include <xrpld/core/detail/Workers.h>
 #include <xrpld/perflog/PerfLog.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
-#include <cassert>
+#include <xrpl/beast/utility/instrumentation.h>
 
 namespace ripple {
 
@@ -119,7 +119,9 @@ Workers::stop()
     m_cv.wait(lk, [this] { return m_allPaused; });
     lk.unlock();
 
-    assert(numberOfCurrentlyRunningTasks() == 0);
+    ASSERT(
+        numberOfCurrentlyRunningTasks() == 0,
+        "ripple::Workers::stop : zero running tasks");
 }
 
 void
