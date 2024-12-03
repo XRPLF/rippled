@@ -26,6 +26,7 @@
 #include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
+#include <concepts>
 #include <cstdint>
 #include <ostream>
 #include <string>
@@ -125,6 +126,12 @@ public:
         return amount_;
     }
 
+    Number
+    number() const
+    {
+        return amount_;
+    }
+
     operator STAmount const&() const
     {
         return amount_;
@@ -153,6 +160,43 @@ operator!=(PrettyAmount const& lhs, PrettyAmount const& rhs)
 std::ostream&
 operator<<(std::ostream& os, PrettyAmount const& amount);
 
+struct PrettyAsset
+{
+private:
+    Asset asset_;
+    unsigned int scale_;
+
+public:
+    template <typename A>
+        requires std::convertible_to<A, Asset>
+    PrettyAsset(A const& asset, unsigned int scale = 1)
+        : PrettyAsset{Asset{asset}, scale}
+    {
+    }
+
+    PrettyAsset(Asset const& asset, unsigned int scale = 1)
+        : asset_(asset), scale_(scale)
+    {
+    }
+
+    operator Asset const&() const
+    {
+        return asset_;
+    }
+
+    operator Json::Value() const
+    {
+        return to_json(asset_);
+    }
+
+    template <std::integral T>
+    PrettyAmount
+    operator()(T v) const
+    {
+        STAmount amount{asset_, v * scale_};
+        return {amount, "uhh"};
+    }
+};
 //------------------------------------------------------------------------------
 
 // Specifies an order book

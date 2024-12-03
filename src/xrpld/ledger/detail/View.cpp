@@ -921,6 +921,8 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey)
     account->setFieldU32(
         sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
     // Link the pseudo-account with its owner object.
+    // TODO: This debate is unresolved. There is allegedly a need to know
+    // whether a pseudo-account belongs to an AMM specifically.
     // account->setFieldH256(sfPseudoOwner, pseudoOwnerKey);
     view.insert(account);
 

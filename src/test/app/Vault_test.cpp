@@ -29,11 +29,166 @@
 
 namespace ripple {
 
+using namespace test::jtx;
+
 class Vault_test : public beast::unit_test::suite
 {
+    void
+    testSequence(
+        Env& env,
+        Account const& issuer,
+        Account const& owner,
+        Account const& depositor,
+        Vault& vault,
+        PrettyAsset const& asset)
+    {
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(tx);
+        env.close();
+        BEAST_EXPECT(env.le(keylet));
+
+        {
+            testcase("fail to deposit more than assets held");
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(10000)});
+            env(tx, ter(tecINSUFFICIENT_FUNDS));
+        }
+
+        {
+            testcase("deposit non-zero amount");
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(100)});
+            env(tx);
+        }
+
+        {
+            testcase("fail to delete non-empty vault");
+            auto tx = vault.del({.owner = owner, .id = keylet.key});
+            env(tx, ter(tecHAS_OBLIGATIONS));
+        }
+
+        {
+            testcase("fail to update because wrong owner");
+            auto tx = vault.set({.owner = issuer, .id = keylet.key});
+            env(tx, ter(tecNO_PERMISSION));
+        }
+
+        {
+            testcase("fail to update immutable flags");
+            auto tx = vault.set({.owner = owner, .id = keylet.key});
+            tx[sfFlags] = tfVaultPrivate;
+            env(tx, ter(temINVALID_FLAG));
+        }
+
+        {
+            testcase("fail to set maximum lower than current amount");
+            auto tx = vault.set({.owner = owner, .id = keylet.key});
+            tx[sfAssetMaximum] = asset(50).number();
+            env(tx, ter(tecLIMIT_EXCEEDED));
+        }
+
+        {
+            testcase("set maximum higher than current amount");
+            auto tx = vault.set({.owner = owner, .id = keylet.key});
+            tx[sfAssetMaximum] = asset(200).number();
+            env(tx);
+        }
+
+        {
+            testcase("fail to deposit more than maximum");
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(200)});
+            env(tx, ter(tecLIMIT_EXCEEDED));
+        }
+
+        {
+            testcase("fail to withdraw more than assets held");
+            auto tx = vault.withdraw(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(1000)});
+            env(tx, ter(tecINSUFFICIENT_FUNDS));
+        }
+
+        {
+            testcase("deposit up to maximum");
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(100)});
+            env(tx);
+        }
+
+        // TODO: redeem.
+
+        {
+            testcase("withdraw non-zero assets");
+            auto tx = vault.withdraw(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(200)});
+            env(tx);
+        }
+
+        {
+            testcase("fail to delete because wrong owner");
+            auto tx = vault.del({.owner = issuer, .id = keylet.key});
+            env(tx, ter(tecNO_PERMISSION));
+        }
+
+        {
+            testcase("delete empty vault");
+            auto tx = vault.del({.owner = owner, .id = keylet.key});
+            env(tx);
+            BEAST_EXPECT(!env.le(keylet));
+        }
+    }
+
+    TEST_CASE(Sequences)
+    {
+        using namespace test::jtx;
+        Env env{*this};
+        Account issuer{"issuer"};
+        Account owner{"owner"};
+        Account depositor{"depositor"};
+        auto vault = env.vault();
+
+        env.fund(XRP(1000), issuer, owner, depositor);
+        env.close();
+
+        SUBCASE("XRP")
+        {
+            PrettyAsset asset{xrpIssue(), 1'000'000};
+            testSequence(env, issuer, owner, depositor, vault, asset);
+        }
+
+        SUBCASE("IOU")
+        {
+            PrettyAsset asset = issuer["IOU"];
+            env.trust(asset(1000), depositor);
+            env(pay(issuer, depositor, asset(1000)));
+            testSequence(env, issuer, owner, depositor, vault, asset);
+        }
+
+        SUBCASE("MPT")
+        {
+            MPTTester mptt{env, issuer, {.fund = false}};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset asset = mptt.issuanceID();
+            mptt.authorize({.account = depositor});
+            env(pay(issuer, depositor, asset(1000)));
+            testSequence(env, issuer, owner, depositor, vault, asset);
+        }
+    }
 
     // Test for non-asset specific behaviors.
-    TEST_CASE(WithXRP)
+    TEST_CASE(CreateFailXRP)
     {
         using namespace test::jtx;
         Env env{*this};
@@ -79,120 +234,9 @@ class Vault_test : public beast::unit_test::suite
             tx[sfMPTokenMetadata] = blob1025;
             env(tx, ter(temSTRING_TOO_LARGE));
         }
-
-        AND_THEN("create");
-        env(tx);
-        env.close();
-        BEAST_EXPECT(env.le(keylet));
-
-        {
-            STEP("fail to deposit more than assets held");
-            auto tx = vault.deposit(
-                {.depositor = depositor,
-                 .id = keylet.key,
-                 .amount = XRP(1000)});
-            env(tx, ter(tecINSUFFICIENT_FUNDS));
-        }
-
-        {
-            STEP("deposit non-zero amount");
-            auto tx = vault.deposit(
-                {.depositor = depositor,
-                 .id = keylet.key,
-                 .amount = XRP(100)});
-            env(tx);
-        }
-
-        {
-            STEP("fail to delete non-empty vault");
-            auto tx = vault.del({.owner = owner, .id = keylet.key});
-            env(tx, ter(tecHAS_OBLIGATIONS));
-        }
-
-        {
-            STEP("fail to update because wrong owner");
-            auto tx = vault.set({.owner = issuer, .id = keylet.key});
-            env(tx, ter(tecNO_PERMISSION));
-        }
-
-        {
-            STEP("fail to update immutable flags");
-            tx[sfFlags] = tfVaultPrivate;
-            env(tx, ter(temINVALID_FLAG));
-        }
-
-        {
-            STEP("fail to set maximum lower than current amount");
-            auto tx = vault.set({.owner = owner, .id = keylet.key});
-            tx[sfAssetMaximum] = XRP(50);
-            env(tx, ter(tecLIMIT_EXCEEDED));
-        }
-
-        {
-            STEP("set maximum higher than current amount");
-            auto tx = vault.set({.owner = owner, .id = keylet.key});
-            tx[sfAssetMaximum] = XRP(200);
-            env(tx);
-            env.close();
-        }
-
-        {
-            STEP("fail to deposit more than maximum");
-            auto tx = vault.deposit(
-                {.depositor = depositor,
-                 .id = keylet.key,
-                 .amount = XRP(200)});
-            env(tx, ter(tecLIMIT_EXCEEDED));
-        }
-
-        {
-            STEP("fail to withdraw more than assets held");
-            auto tx = vault.withdraw(
-                {.depositor = depositor,
-                 .id = keylet.key,
-                 .amount = XRP(1000)});
-            env(tx, ter(tecINSUFFICIENT_FUNDS));
-        }
-
-        {
-            STEP("deposit up to maximum");
-            auto tx = vault.deposit(
-                {.depositor = depositor,
-                 .id = keylet.key,
-                 .amount = XRP(100)});
-            env(tx);
-            env.close();
-        }
-
-        // TODO: redeem.
-
-        {
-            STEP("withdraw non-zero assets");
-            auto tx = vault.withdraw(
-                {.depositor = depositor,
-                 .id = keylet.key,
-                 .amount = XRP(200)});
-            env(tx);
-            env.close();
-        }
-
-        {
-            STEP("fail to delete because wrong owner");
-            auto tx = vault.del({.owner = issuer, .id = keylet.key});
-            env(tx, ter(tecNO_PERMISSION));
-        }
-
-        {
-            STEP("delete empty vault");
-            auto tx = vault.del({.owner = owner, .id = keylet.key});
-            env(tx);
-            env.close();
-            BEAST_EXPECT(!env.le(keylet));
-        }
-
     }
 
-    TEST_CASE(WithIOU)
+    TEST_CASE(CreateFailIOU)
     {
         using namespace test::jtx;
         Env env{*this};
@@ -215,7 +259,7 @@ class Vault_test : public beast::unit_test::suite
         }
     }
 
-    TEST_CASE(WithMPT)
+    TEST_CASE(CreateFailMPT)
     {
         using namespace test::jtx;
         Env env{*this};
@@ -238,135 +282,14 @@ class Vault_test : public beast::unit_test::suite
         }
 
         AND_THEN("create");
-
         mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
         Asset asset = mptt.issuanceID();
-        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-
-        SUBCASE("create")
-        {
-            env(tx);
-            env.close();
-
-            SUBCASE("update")
-            {
-                auto tx = vault.set({.owner = owner, .id = keylet.key});
-
-                SUBCASE("happy path")
-                {
-                    tx[sfData] = "ABCD";
-                    tx[sfAssetMaximum] = 123;
-                    env(tx);
-                    env.close();
-                }
-
-            }
-        }
 
         SUBCASE("global lock")
         {
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             mptt.set({.account = issuer, .flags = tfMPTLock});
             env(tx, ter(tecLOCKED));
-        }
-
-        SUBCASE("MPT cannot transfer")
-        {
-            MPTTester mptt{env, issuer, {.fund = false}};
-        }
-
-        SUBCASE("transfer XRP")
-        {
-            // Construct asset.
-            Asset asset{xrpIssue()};
-            // Depositor already holds asset.
-            // Create vault.
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx);
-            env.close();
-
-            {
-                auto tx = vault.deposit(
-                    {.depositor = depositor,
-                     .id = keylet.key,
-                     .amount = asset(123)});
-                env(tx);
-                env.close();
-            }
-        }
-
-        SUBCASE("transfer IOU")
-        {
-            // Construct asset.
-            Asset asset = issuer["IOU"];
-            // Fund depositor with asset.
-            env.trust(asset(1000), depositor);
-            env(pay(issuer, depositor, asset(1000)));
-            // Create vault.
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx);
-            env.close();
-
-            {
-                // Deposit non-zero amount.
-                auto tx = vault.deposit(
-                    {.depositor = depositor,
-                     .id = keylet.key,
-                     .amount = asset(123)});
-                env(tx);
-                env.close();
-            }
-        }
-
-        SUBCASE("transfer MPT")
-        {
-            // Construct asset.
-            MPTTester mptt{env, issuer, {.fund = false}};
-            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
-            Asset asset = mptt.issuanceID();
-            // Fund depositor with asset.
-            mptt.authorize({.account = depositor});
-            env(pay(issuer, depositor, asset(1000)));
-            // Create vault.
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx);
-            env.close();
-        }
-
-        // TODO: VaultSet (update) succeed
-        // TODO: VaultSet (update) fail: wrong owner
-        // TODO: VaultSet (update) fail: Data too large
-        // TODO: VaultSet (update) fail: tfPrivate flag
-        // TODO: VaultSet (update) fail: tfShareNonTransferable flag
-        // TODO: Payment to VaultSet.PA fail
-        // TODO: VaultSet (update) fail: missing vault
-
-        BEAST_EXPECT(true);
-    }
-
-    TEST_CASE(Sequence)
-    {
-        using namespace test::jtx;
-        Env env{*this};
-
-        Account issuer{"issuer"};
-        Account owner{"owner"};
-        Account depositor{"depositor"};
-        env.fund(XRP(1000), issuer, owner, depositor);
-        env.close();
-        auto vault = env.vault();
-
-        SUBCASE("IOU")
-        {
-            // Construct asset.
-            Asset asset = issuer["IOU"];
-            // Fund depositor with asset.
-            env.trust(asset(1000), depositor);
-            env(pay(issuer, depositor, asset(1000)));
-            // Create vault.
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx);
-            env.close();
-
         }
     }
 
@@ -374,9 +297,10 @@ public:
     void
     run() override
     {
-        pass();
-        // EXECUTE(CreateUpdateDelete);
-        // EXECUTE(WithXRP);
+        EXECUTE(Sequences);
+        EXECUTE(CreateFailXRP);
+        EXECUTE(CreateFailIOU);
+        EXECUTE(CreateFailMPT);
     }
 };
 
