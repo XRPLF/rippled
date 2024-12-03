@@ -18,9 +18,9 @@
 //==============================================================================
 
 #include <xrpl/beast/clock/basic_seconds_clock.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <atomic>
-#include <cassert>
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
@@ -57,7 +57,9 @@ static_assert(std::atomic<std::chrono::steady_clock::rep>::is_always_lock_free);
 
 seconds_clock_thread::~seconds_clock_thread()
 {
-    assert(thread_.joinable());
+    ASSERT(
+        thread_.joinable(),
+        "beast::seconds_clock_thread::~seconds_clock_thread : thread joinable");
     {
         std::lock_guard lock(mut_);
         stop_ = true;
