@@ -19,6 +19,7 @@
 
 #include <xrpl/protocol/STNumber.h>
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/SField.h>
 
 namespace ripple {
@@ -52,8 +53,10 @@ STNumber::getText() const
 void
 STNumber::add(Serializer& s) const
 {
-    assert(getFName().isBinary());
-    assert(getFName().fieldType == getSType());
+    ASSERT(getFName().isBinary(), "ripple::STNumber::add : field is binary");
+    ASSERT(
+        getFName().fieldType == getSType(),
+        "ripple::STNumber::add : field type match");
     s.add64(value_.mantissa());
     s.add32(value_.exponent());
 }
@@ -85,7 +88,9 @@ STNumber::move(std::size_t n, void* buf)
 bool
 STNumber::isEquivalent(STBase const& t) const
 {
-    assert(t.getSType() == this->getSType());
+    ASSERT(
+        t.getSType() == this->getSType(),
+        "ripple::STNumber::isEquivalent : field type match");
     STNumber const& v = dynamic_cast<STNumber const&>(t);
     return value_ == v;
 }
