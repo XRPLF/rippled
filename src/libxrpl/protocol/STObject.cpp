@@ -862,9 +862,10 @@ STObject::add(Serializer& s, WhichFields whichFields) const
         // the type associated by rule with this field name
         // must be OBJECT, or the object cannot be deserialized
         SerializedTypeID const sType{field->getSType()};
-        assert(
+        ASSERT(
             (sType != STI_OBJECT) ||
-            (field->getFName().fieldType == STI_OBJECT));
+                (field->getFName().fieldType == STI_OBJECT),
+            "ripple::STObject::add : valid field type");
         field->addFieldID(s);
         field->add(s);
         if (sType == STI_ARRAY || sType == STI_OBJECT)
