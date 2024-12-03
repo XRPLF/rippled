@@ -47,13 +47,13 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/scope.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/resource/Fees.h>
 
 #include <algorithm>
-#include <cassert>
 #include <chrono>
 #include <cstdlib>
 #include <limits>
@@ -276,9 +276,11 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
 
     mValidLedger.set(l);
     mValidLedgerSign = signTime.time_since_epoch().count();
-    assert(
+    ASSERT(
         mValidLedgerSeq || !app_.getMaxDisallowedLedger() ||
-        l->info().seq + max_ledger_difference_ > app_.getMaxDisallowedLedger());
+            l->info().seq + max_ledger_difference_ >
+                app_.getMaxDisallowedLedger(),
+        "ripple::LedgerMaster::setValidLedger : valid ledger sequence");
     (void)max_ledger_difference_;
     mValidLedgerSeq = l->info().seq;
 
@@ -343,7 +345,9 @@ LedgerMaster::addHeldTransaction(
 bool
 LedgerMaster::canBeCurrent(std::shared_ptr<Ledger const> const& ledger)
 {
-    assert(ledger);
+    ASSERT(
+        ledger != nullptr,
+        "ripple::LedgerMaster::canBeCurrent : non-null input");
 
     // Never jump to a candidate ledger that precedes our
     // last validated ledger
@@ -411,7 +415,9 @@ LedgerMaster::canBeCurrent(std::shared_ptr<Ledger const> const& ledger)
 void
 LedgerMaster::switchLCL(std::shared_ptr<Ledger const> const& lastClosed)
 {
-    assert(lastClosed);
+    ASSERT(
+        lastClosed != nullptr,
+        "ripple::LedgerMaster::switchLCL : non-null input");
     if (!lastClosed->isImmutable())
         LogicError("mutable ledger in switchLCL");
 
@@ -519,7 +525,9 @@ LedgerMaster::isValidated(ReadView const& ledger)
             // This ledger's hash is not the hash of the validated ledger
             if (hash)
             {
-                assert(hash->isNonZero());
+                ASSERT(
+                    hash->isNonZero(),
+                    "ripple::LedgerMaster::isValidated : nonzero hash");
                 uint256 valHash =
                     app_.getRelationalDatabase().getHashByIndex(seq);
                 if (valHash == ledger.info().hash)
@@ -809,7 +817,9 @@ LedgerMaster::setFullLedger(
     // A new ledger has been accepted as part of the trusted chain
     JLOG(m_journal.debug()) << "Ledger " << ledger->info().seq
                             << " accepted :" << ledger->info().hash;
-    assert(ledger->stateMap().getHash().isNonZero());
+    ASSERT(
+        ledger->stateMap().getHash().isNonZero(),
+        "ripple::LedgerMaster::setFullLedger : nonzero ledger state hash");
 
     ledger->setValidated();
     ledger->setFull();
@@ -1273,7 +1283,9 @@ LedgerMaster::findNewLedgersToPublish(
             {
                 JLOG(m_journal.fatal()) << "Ledger: " << valSeq
                                         << " does not have hash for " << seq;
-                assert(false);
+                UNREACHABLE(
+                    "ripple::LedgerMaster::findNewLedgersToPublish : ledger "
+                    "not found");
             }
             else
             {
@@ -1360,7 +1372,9 @@ LedgerMaster::tryAdvance()
         app_.getJobQueue().addJob(jtADVANCE, "advanceLedger", [this]() {
             std::unique_lock sl(m_mutex);
 
-            assert(!mValidLedger.empty() && mAdvanceThread);
+            ASSERT(
+                !mValidLedger.empty() && mAdvanceThread,
+                "ripple::LedgerMaster::tryAdvance : has valid ledger");
 
             JLOG(m_journal.trace()) << "advanceThread<";
 
@@ -1661,7 +1675,9 @@ LedgerMaster::walkHashBySeq(
     // be located easily and should contain the hash.
     LedgerIndex refIndex = getCandidateLedger(index);
     auto const refHash = hashOfSeq(*referenceLedger, refIndex, m_journal);
-    assert(refHash);
+    ASSERT(
+        refHash.has_value(),
+        "ripple::LedgerMaster::walkHashBySeq : found ledger");
     if (refHash)
     {
         // Try the hash and sequence of a better reference ledger just found
@@ -1686,7 +1702,10 @@ LedgerMaster::walkHashBySeq(
                     *refHash, refIndex, reason))
             {
                 ledgerHash = hashOfSeq(*l, index, m_journal);
-                assert(ledgerHash);
+                ASSERT(
+                    ledgerHash.has_value(),
+                    "ripple::LedgerMaster::walkHashBySeq : has complete "
+                    "ledger");
             }
         }
     }
@@ -1798,7 +1817,9 @@ LedgerMaster::fetchForHistory(
     scope_unlock sul{sl};
     if (auto hash = getLedgerHashForHistory(missing, reason))
     {
-        assert(hash->isNonZero());
+        ASSERT(
+            hash->isNonZero(),
+            "ripple::LedgerMaster::fetchForHistory : found ledger");
         auto ledger = getLedgerByHash(*hash);
         if (!ledger)
         {
@@ -1825,7 +1846,9 @@ LedgerMaster::fetchForHistory(
         if (ledger)
         {
             auto seq = ledger->info().seq;
-            assert(seq == missing);
+            ASSERT(
+                seq == missing,
+                "ripple::LedgerMaster::fetchForHistory : sequence match");
             JLOG(m_journal.trace()) << "fetchForHistory acquired " << seq;
             setFullLedger(ledger, false, false);
             int fillInProgress;
@@ -1866,7 +1889,10 @@ LedgerMaster::fetchForHistory(
                     std::uint32_t seq = missing - i;
                     if (auto h = getLedgerHashForHistory(seq, reason))
                     {
-                        assert(h->isNonZero());
+                        ASSERT(
+                            h->isNonZero(),
+                            "ripple::LedgerMaster::fetchForHistory : "
+                            "prefetched ledger");
                         app_.getInboundLedgers().acquire(*h, seq, reason);
                     }
                 }
@@ -2052,7 +2078,7 @@ populateFetchPack(
     std::uint32_t seq,
     bool withLeaves = true)
 {
-    assert(cnt != 0);
+    ASSERT(cnt != 0, "ripple::populateFetchPack : nonzero count input");
 
     Serializer s(1024);
 

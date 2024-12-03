@@ -22,10 +22,10 @@
 
 #include <xrpl/basics/FeeUnits.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <cassert>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -176,7 +176,9 @@ STValidation::STValidation(
         Throw<std::runtime_error>("Invalid signature in validation");
     }
 
-    assert(nodeID_.isNonZero());
+    ASSERT(
+        nodeID_.isNonZero(),
+        "ripple::STValidation::STValidation(SerialIter) : nonzero node");
 }
 
 /** Construct, sign and trust a new STValidation issued by this node.
@@ -199,7 +201,10 @@ STValidation::STValidation(
     , nodeID_(nodeID)
     , seenTime_(signTime)
 {
-    assert(nodeID_.isNonZero());
+    ASSERT(
+        nodeID_.isNonZero(),
+        "ripple::STValidation::STValidation(PublicKey, SecretKey) : nonzero "
+        "node");
 
     // First, set our own public key:
     if (publicKeyType(pk) != KeyType::secp256k1)
