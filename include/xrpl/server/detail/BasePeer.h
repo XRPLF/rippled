@@ -21,12 +21,12 @@
 #define RIPPLE_SERVER_BASEPEER_H_INCLUDED
 
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/server/Port.h>
 #include <xrpl/server/detail/LowestLayer.h>
 #include <xrpl/server/detail/io_list.h>
 #include <boost/asio.hpp>
 #include <atomic>
-#include <cassert>
 #include <functional>
 #include <string>
 
