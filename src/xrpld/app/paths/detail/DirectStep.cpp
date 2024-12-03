@@ -905,10 +905,13 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
             return ter;
 
         // pure LPToken issue/redeem can't happen with AMM accounts
-        if (auto const ter =
-                checkLPTokenAuthorization(ctx.view, src_, dst_, currency_);
-            ter != tesSUCCESS)
-            return ter;
+        if (ctx.view.rules().enabled(fixLPTokenTransfer))
+        {
+            if (auto const ter =
+                    checkLPTokenAuthorization(ctx.view, src_, dst_, currency_);
+                ter != tesSUCCESS)
+                return ter;
+        }
     }
 
     // If previous step was a direct step then we need to check

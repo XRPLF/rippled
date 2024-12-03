@@ -136,9 +136,6 @@ checkLPTokenAuthorization(
     AccountID const& dst,
     Currency const& currency)
 {
-    if (!view.rules().enabled(fixLPTokenTransfer))
-        return tesSUCCESS;
-
     if (auto const sleDst = view.read(keylet::account(dst));
         sleDst && sleDst->isFieldPresent(sfAMMID))
     {
