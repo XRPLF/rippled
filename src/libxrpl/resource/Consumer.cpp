@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/detail/Entry.h>
 #include <xrpl/resource/detail/Logic.h>
-#include <cassert>
 
 namespace ripple {
 namespace Resource {
@@ -109,14 +109,18 @@ Consumer::charge(Charge const& what)
 bool
 Consumer::warn()
 {
-    assert(m_entry != nullptr);
+    ASSERT(
+        m_entry != nullptr,
+        "ripple::Resource::Consumer::warn : non-null entry");
     return m_logic->warn(*m_entry);
 }
 
 bool
 Consumer::disconnect(beast::Journal const& j)
 {
-    assert(m_entry != nullptr);
+    ASSERT(
+        m_entry != nullptr,
+        "ripple::Resource::Consumer::disconnect : non-null entry");
     bool const d = m_logic->disconnect(*m_entry);
     if (d)
     {
@@ -128,14 +132,18 @@ Consumer::disconnect(beast::Journal const& j)
 int
 Consumer::balance()
 {
-    assert(m_entry != nullptr);
+    ASSERT(
+        m_entry != nullptr,
+        "ripple::Resource::Consumer::balance : non-null entry");
     return m_logic->balance(*m_entry);
 }
 
 Entry&
 Consumer::entry()
 {
-    assert(m_entry != nullptr);
+    ASSERT(
+        m_entry != nullptr,
+        "ripple::Resource::Consumer::entry : non-null entry");
     return *m_entry;
 }
 
