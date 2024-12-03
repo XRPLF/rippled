@@ -64,19 +64,32 @@ void
 SlotImp::state(State state_)
 {
     // Must go through activate() to set active state
-    assert(state_ != active);
+    ASSERT(
+        state_ != active,
+        "ripple::PeerFinder::SlotImp::state : input state is not active");
 
     // The state must be different
-    assert(state_ != m_state);
+    ASSERT(
+        state_ != m_state,
+        "ripple::PeerFinder::SlotImp::state : input state is different from "
+        "current");
 
     // You can't transition into the initial states
-    assert(state_ != accept && state_ != connect);
+    ASSERT(
+        state_ != accept && state_ != connect,
+        "ripple::PeerFinder::SlotImp::state : input state is not an initial");
 
     // Can only become connected from outbound connect state
-    assert(state_ != connected || (!m_inbound && m_state == connect));
+    ASSERT(
+        state_ != connected || (!m_inbound && m_state == connect),
+        "ripple::PeerFinder::SlotImp::state : input state is not connected an "
+        "invalid state");
 
     // Can't gracefully close on an outbound connection attempt
-    assert(state_ != closing || m_state != connect);
+    ASSERT(
+        state_ != closing || m_state != connect,
+        "ripple::PeerFinder::SlotImp::state : input state is not closing an "
+        "invalid state");
 
     m_state = state_;
 }
@@ -85,7 +98,9 @@ void
 SlotImp::activate(clock_type::time_point const& now)
 {
     // Can only become active from the accept or connected state
-    assert(m_state == accept || m_state == connected);
+    ASSERT(
+        m_state == accept || m_state == connected,
+        "ripple::PeerFinder::SlotImp::activate : valid state");
 
     m_state = active;
     whenAcceptEndpoints = now;

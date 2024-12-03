@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Quality.h>
-#include <cassert>
 #include <limits>
 
 namespace ripple {
@@ -35,7 +35,7 @@ Quality::Quality(Amounts const& amount)
 Quality&
 Quality::operator++()
 {
-    assert(m_value > 0);
+    ASSERT(m_value > 0, "ripple::Quality::operator++() : minimum value");
     --m_value;
     return *this;
 }
@@ -51,7 +51,9 @@ Quality::operator++(int)
 Quality&
 Quality::operator--()
 {
-    assert(m_value < std::numeric_limits<value_type>::max());
+    ASSERT(
+        m_value < std::numeric_limits<value_type>::max(),
+        "ripple::Quality::operator--() : maximum value");
     ++m_value;
     return *this;
 }
@@ -81,10 +83,11 @@ ceil_in_impl(
         // Clamp out
         if (result.out > amount.out)
             result.out = amount.out;
-        assert(result.in == limit);
+        ASSERT(
+            result.in == limit, "ripple::ceil_in_impl : result matches limit");
         return result;
     }
-    assert(amount.in <= limit);
+    ASSERT(amount.in <= limit, "ripple::ceil_in_impl : result inside limit");
     return amount;
 }
 
@@ -120,10 +123,12 @@ ceil_out_impl(
         // Clamp in
         if (result.in > amount.in)
             result.in = amount.in;
-        assert(result.out == limit);
+        ASSERT(
+            result.out == limit,
+            "ripple::ceil_out_impl : result matches limit");
         return result;
     }
-    assert(amount.out <= limit);
+    ASSERT(amount.out <= limit, "ripple::ceil_out_impl : result inside limit");
     return amount;
 }
 
@@ -146,17 +151,23 @@ Quality
 composed_quality(Quality const& lhs, Quality const& rhs)
 {
     STAmount const lhs_rate(lhs.rate());
-    assert(lhs_rate != beast::zero);
+    ASSERT(
+        lhs_rate != beast::zero,
+        "ripple::composed_quality : nonzero left input");
 
     STAmount const rhs_rate(rhs.rate());
-    assert(rhs_rate != beast::zero);
+    ASSERT(
+        rhs_rate != beast::zero,
+        "ripple::composed_quality : nonzero right input");
 
     STAmount const rate(mulRound(lhs_rate, rhs_rate, lhs_rate.asset(), true));
 
     std::uint64_t const stored_exponent(rate.exponent() + 100);
     std::uint64_t const stored_mantissa(rate.mantissa());
 
-    assert((stored_exponent > 0) && (stored_exponent <= 255));
+    ASSERT(
+        (stored_exponent > 0) && (stored_exponent <= 255),
+        "ripple::composed_quality : valid exponent");
 
     return Quality((stored_exponent << (64 - 8)) | stored_mantissa);
 }

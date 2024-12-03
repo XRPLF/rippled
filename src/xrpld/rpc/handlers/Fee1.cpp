@@ -81,7 +81,7 @@ doFee(RPC::JsonContext& context)
         return jvResult;
     }
 
-    assert(false);
+    UNREACHABLE("ripple::doFee : invalid result type");
     RPC::inject_error(rpcINTERNAL, context.params);
     return context.params;
 }

@@ -53,17 +53,22 @@ private:
                        int limit,
                        std::chrono::milliseconds avgLatency,
                        std::chrono::milliseconds peakLatency) {
-            assert(m_map.find(jt) == m_map.end());
+            ASSERT(
+                m_map.find(jt) == m_map.end(),
+                "ripple::JobTypes::JobTypes::add : unique job type input");
 
-            auto const [_, inserted] = m_map.emplace(
-                std::piecewise_construct,
-                std::forward_as_tuple(jt),
-                std::forward_as_tuple(
-                    jt, name, limit, avgLatency, peakLatency));
+            [[maybe_unused]] auto const inserted =
+                m_map
+                    .emplace(
+                        std::piecewise_construct,
+                        std::forward_as_tuple(jt),
+                        std::forward_as_tuple(
+                            jt, name, limit, avgLatency, peakLatency))
+                    .second;
 
-            assert(inserted == true);
-            (void)_;
-            (void)inserted;
+            ASSERT(
+                inserted == true,
+                "ripple::JobTypes::JobTypes::add : input is inserted");
         };
 
         // clang-format off
@@ -137,7 +142,7 @@ public:
     get(JobType jt) const
     {
         Map::const_iterator const iter(m_map.find(jt));
-        assert(iter != m_map.end());
+        ASSERT(iter != m_map.end(), "ripple::JobTypes::get : valid input");
 
         if (iter != m_map.end())
             return iter->second;

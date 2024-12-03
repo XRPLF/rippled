@@ -152,7 +152,7 @@ Change::doApply()
         case ttEMIT_FAILURE:
             return applyEmitFailure();
         default:
-            assert(0);
+            UNREACHABLE("ripple::Change::doApply : invalid transaction type");
             return tefFAILURE;
     }
 }
@@ -160,7 +160,8 @@ Change::doApply()
 void
 Change::preCompute()
 {
-    assert(account_ == beast::zero);
+    ASSERT(
+        account_ == beast::zero, "ripple::Change::preCompute : zero account");
 }
 
 void

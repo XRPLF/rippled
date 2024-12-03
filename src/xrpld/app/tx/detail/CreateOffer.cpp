@@ -228,7 +228,9 @@ CreateOffer::checkAcceptAsset(
     Issue const& issue)
 {
     // Only valid for custom currencies
-    assert(!isXRP(issue.currency));
+    ASSERT(
+        !isXRP(issue.currency),
+        "ripple::CreateOffer::checkAcceptAsset : input is not XRP");
 
     auto const issuerAccount = view.read(keylet::account(issue.account));
 
@@ -301,7 +303,9 @@ CreateOffer::select_path(
     OfferStream const& leg2)
 {
     // If we don't have any viable path, why are we here?!
-    assert(have_direct || have_bridge);
+    ASSERT(
+        have_direct || have_bridge,
+        "ripple::CreateOffer::select_path : valid inputs");
 
     // If there's no bridged path, the direct is the best by default.
     if (!have_bridge)
@@ -345,7 +349,9 @@ CreateOffer::bridged_cross(
 {
     auto const& takerAmount = taker.original_offer();
 
-    assert(!isXRP(takerAmount.in) && !isXRP(takerAmount.out));
+    ASSERT(
+        !isXRP(takerAmount.in) && !isXRP(takerAmount.out),
+        "ripple::CreateOffer::bridged_cross : neither is XRP");
 
     if (isXRP(takerAmount.in) || isXRP(takerAmount.out))
         Throw<std::logic_error>("Bridging with XRP and an endpoint.");
@@ -515,7 +521,9 @@ CreateOffer::bridged_cross(
 
         // Postcondition: If we aren't done, then we *must* have consumed at
         //                least one offer fully.
-        assert(direct_consumed || leg1_consumed || leg2_consumed);
+        ASSERT(
+            direct_consumed || leg1_consumed || leg2_consumed,
+            "ripple::CreateOffer::bridged_cross : consumed an offer");
 
         if (!direct_consumed && !leg1_consumed && !leg2_consumed)
             Throw<std::logic_error>(
@@ -605,7 +613,9 @@ CreateOffer::direct_cross(
 
         // Postcondition: If we aren't done, then we *must* have consumed the
         //                offer on the books fully!
-        assert(direct_consumed);
+        ASSERT(
+            direct_consumed,
+            "ripple::CreateOffer::direct_cross : consumed an offer");
 
         if (!direct_consumed)
             Throw<std::logic_error>(
@@ -867,7 +877,9 @@ CreateOffer::flowCross(
                     // remaining output.  This too preserves the offer
                     // Quality.
                     afterCross.out -= result.actualAmountOut;
-                    assert(afterCross.out >= beast::zero);
+                    ASSERT(
+                        afterCross.out >= beast::zero,
+                        "ripple::CreateOffer::flowCross : minimum offer");
                     if (afterCross.out < beast::zero)
                         afterCross.out.clear();
                     afterCross.in = mulRound(
@@ -1075,7 +1087,10 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
         // We expect the implementation of cross to succeed
         // or give a tec.
-        assert(result == tesSUCCESS || isTecClaim(result));
+        ASSERT(
+            result == tesSUCCESS || isTecClaim(result),
+            "ripple::CreateOffer::applyGuts : result is tesSUCCESS or "
+            "tecCLAIM");
 
         if (auto stream = j_.trace())
         {
@@ -1093,8 +1108,12 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             return {result, true};
         }
 
-        assert(saTakerGets.issue() == place_offer.in.issue());
-        assert(saTakerPays.issue() == place_offer.out.issue());
+        ASSERT(
+            saTakerGets.issue() == place_offer.in.issue(),
+            "ripple::CreateOffer::applyGuts : taker gets issue match");
+        ASSERT(
+            saTakerPays.issue() == place_offer.out.issue(),
+            "ripple::CreateOffer::applyGuts : taker pays issue match");
 
         if (takerAmount != place_offer)
             crossed = true;
@@ -1122,7 +1141,9 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         saTakerGets = place_offer.in;
     }
 
-    assert(saTakerPays > zero && saTakerGets > zero);
+    ASSERT(
+        saTakerPays > zero && saTakerGets > zero,
+        "ripple::CreateOffer::applyGuts : taker pays and gets positive");
 
     if (result != tesSUCCESS)
     {

@@ -390,7 +390,9 @@ ManifestCache::applyManifest(Manifest m)
     auto prewriteCheck =
         [this, &m](auto const& iter, bool checkSignature, auto const& lock)
         -> std::optional<ManifestDisposition> {
-        assert(lock.owns_lock());
+        ASSERT(
+            lock.owns_lock(),
+            "ripple::ManifestCache::applyManifest::prewriteCheck : locked");
         (void)lock;  // not used. parameter is present to ensure the mutex is
                      // locked when the lambda is called.
         if (iter != map_.end() && m.sequence <= iter->second.sequence)

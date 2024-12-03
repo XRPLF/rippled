@@ -43,7 +43,7 @@ namespace ripple {
 constexpr std::size_t
 calculatePercent(std::size_t count, std::size_t total)
 {
-    assert(total != 0);
+    assert(total != 0);  // NOTE No ASSERT here, because constexpr
     return ((std::min(count, total) * 100) + total - 1) / total;
 }
 
