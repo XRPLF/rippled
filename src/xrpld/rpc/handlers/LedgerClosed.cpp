@@ -29,7 +29,8 @@ Json::Value
 doLedgerClosed(RPC::JsonContext& context)
 {
     auto ledger = context.ledgerMaster.getClosedLedger();
-    assert(ledger);
+    ASSERT(
+        ledger != nullptr, "ripple::doLedgerClosed : non-null closed ledger");
 
     Json::Value jvResult;
     jvResult[jss::ledger_index] = ledger->info().seq;

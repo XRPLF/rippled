@@ -18,9 +18,9 @@
 //==============================================================================
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <boost/predef.h>
 #include <algorithm>
-#include <cassert>
 #include <numeric>
 #include <stdexcept>
 #include <type_traits>
@@ -235,7 +235,9 @@ Number::operator+=(Number const& y)
         *this = Number{};
         return *this;
     }
-    assert(isnormal() && y.isnormal());
+    ASSERT(
+        isnormal() && y.isnormal(),
+        "ripple::Number::operator+=(Number) : is normal");
     auto xm = mantissa();
     auto xe = exponent();
     int xn = 1;
@@ -374,7 +376,9 @@ Number::operator*=(Number const& y)
         *this = y;
         return *this;
     }
-    assert(isnormal() && y.isnormal());
+    ASSERT(
+        isnormal() && y.isnormal(),
+        "ripple::Number::operator*=(Number) : is normal");
     auto xm = mantissa();
     auto xe = exponent();
     int xn = 1;
@@ -428,7 +432,9 @@ Number::operator*=(Number const& y)
             std::to_string(xe));
     mantissa_ = xm * zn;
     exponent_ = xe;
-    assert(isnormal() || *this == Number{});
+    ASSERT(
+        isnormal() || *this == Number{},
+        "ripple::Number::operator*=(Number) : result is normal");
     return *this;
 }
 
@@ -536,7 +542,7 @@ to_string(Number const& amount)
         negative = true;
     }
 
-    assert(exponent + 43 > 0);
+    ASSERT(exponent + 43 > 0, "ripple::to_string(Number) : minimum exponent");
 
     ptrdiff_t const pad_prefix = 27;
     ptrdiff_t const pad_suffix = 23;
@@ -562,7 +568,9 @@ to_string(Number const& amount)
     if (std::distance(pre_from, pre_to) > pad_prefix)
         pre_from += pad_prefix;
 
-    assert(post_to >= post_from);
+    ASSERT(
+        post_to >= post_from,
+        "ripple::to_string(Number) : first distance check");
 
     pre_from = std::find_if(pre_from, pre_to, [](char c) { return c != '0'; });
 
@@ -571,7 +579,9 @@ to_string(Number const& amount)
     if (std::distance(post_from, post_to) > pad_suffix)
         post_to -= pad_suffix;
 
-    assert(post_to >= post_from);
+    ASSERT(
+        post_to >= post_from,
+        "ripple::to_string(Number) : second distance check");
 
     post_to = std::find_if(
                   std::make_reverse_iterator(post_to),

@@ -231,7 +231,9 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                        "nodes storing large amounts of history, because of the "
                        "difficulty inherent in rebuilding corrupted data.";
             }
-            assert(result->size() == 3);
+            ASSERT(
+                result->size() == 3,
+                "ripple::setup_DatabaseCon::globalPragma : result size is 3");
             return result;
         }();
     }

@@ -36,9 +36,8 @@ Status::codeString() const
     {
         std::string s1, s2;
 
-        auto success = transResultInfo(toTER(), s1, s2);
-        assert(success);
-        (void)success;
+        [[maybe_unused]] auto const success = transResultInfo(toTER(), s1, s2);
+        ASSERT(success, "ripple::RPC::codeString : valid TER result");
 
         return s1 + ": " + s2;
     }
@@ -51,7 +50,7 @@ Status::codeString() const
         return sStr.str();
     }
 
-    assert(false);
+    UNREACHABLE("ripple::RPC::codeString : invalid type");
     return "";
 }
 

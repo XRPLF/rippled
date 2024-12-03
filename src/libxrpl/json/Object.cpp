@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/Object.h>
-#include <cassert>
 
 namespace Json {
 
@@ -168,7 +168,7 @@ Array::append(Json::Value const& v)
             return;
         }
     }
-    assert(false);  // Can't get here.
+    UNREACHABLE("Json::Array::append : invalid type");
 }
 
 void
@@ -203,7 +203,7 @@ Object::set(std::string const& k, Json::Value const& v)
             return;
         }
     }
-    assert(false);  // Can't get here.
+    UNREACHABLE("Json::Object::set : invalid type");
 }
 
 //------------------------------------------------------------------------------
@@ -214,7 +214,7 @@ template <class Object>
 void
 doCopyFrom(Object& to, Json::Value const& from)
 {
-    assert(from.isObjectOrNull());
+    ASSERT(from.isObjectOrNull(), "Json::doCopyFrom : valid input type");
     auto members = from.getMemberNames();
     for (auto& m : members)
         to[m] = from[m];

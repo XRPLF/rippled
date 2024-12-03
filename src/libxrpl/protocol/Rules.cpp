@@ -91,7 +91,10 @@ public:
             return true;
         if (!digest_ || !other.digest_)
             return false;
-        assert(presets_ == other.presets_);
+        ASSERT(
+            presets_ == other.presets_,
+            "ripple::Rules::Impl::operator==(Impl) const : input presets do "
+            "match");
         return *digest_ == *other.digest_;
     }
 };
@@ -118,7 +121,7 @@ Rules::presets() const
 bool
 Rules::enabled(uint256 const& feature) const
 {
-    assert(impl_);
+    ASSERT(impl_ != nullptr, "ripple::Rules::enabled : initialized");
 
     // The functionality of the "NonFungibleTokensV1_1" amendment is
     // precisely the functionality of the following three amendments
@@ -137,7 +140,9 @@ Rules::enabled(uint256 const& feature) const
 bool
 Rules::operator==(Rules const& other) const
 {
-    assert(impl_ && other.impl_);
+    ASSERT(
+        impl_ && other.impl_,
+        "ripple::Rules::operator==(Rules) const : both initialized");
     if (impl_.get() == other.impl_.get())
         return true;
     return *impl_ == *other.impl_;

@@ -20,16 +20,16 @@
 #define BASICS_FEES_H_INCLUDED
 
 #include <xrpl/basics/XRPAmount.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <boost/multiprecision/cpp_int.hpp>
-#include <limits>
-#include <utility>
 
-#include <cassert>
 #include <cmath>
 #include <ios>
 #include <iosfwd>
+#include <limits>
 #include <sstream>
 #include <string>
+#include <utility>
 
 namespace ripple {
 
@@ -419,9 +419,13 @@ mulDivU(Source1 value, Dest mul, Source2 div)
     {
         // split the asserts so if one hits, the user can tell which
         // without a debugger.
-        assert(value.value() >= 0);
-        assert(mul.value() >= 0);
-        assert(div.value() >= 0);
+        ASSERT(
+            value.value() >= 0,
+            "ripple::feeunit::mulDivU : minimum value input");
+        ASSERT(
+            mul.value() >= 0, "ripple::feeunit::mulDivU : minimum mul input");
+        ASSERT(
+            div.value() >= 0, "ripple::feeunit::mulDivU : minimum div input");
         return std::nullopt;
     }
 

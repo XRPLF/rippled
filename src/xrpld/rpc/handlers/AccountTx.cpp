@@ -307,7 +307,9 @@ populateJsonResponse(
 
         if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
         {
-            assert(!args.binary);
+            ASSERT(
+                !args.binary,
+                "ripple::populateJsonResponse : binary is not set");
 
             for (auto const& [txn, txnMeta] : *txnsData)
             {
@@ -354,13 +356,15 @@ populateJsonResponse(
                             jvObj[jss::meta], sttx, *txnMeta);
                     }
                     else
-                        assert(false && "Missing transaction medatata");
+                        UNREACHABLE(
+                            "ripple::populateJsonResponse : missing "
+                            "transaction medatata");
                 }
             }
         }
         else
         {
-            assert(args.binary);
+            ASSERT(args.binary, "ripple::populateJsonResponse : binary is set");
 
             for (auto const& binaryData :
                  std::get<TxnsDataBinary>(result.transactions))

@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/crypto/RFC1751.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/range/adaptor/copied.hpp>
-#include <cassert>
 #include <cstdint>
 #include <string>
 
@@ -270,10 +270,12 @@ RFC1751::extract(char const* s, int start, int length)
     unsigned char cr;
     unsigned long x;
 
-    assert(length <= 11);
-    assert(start >= 0);
-    assert(length >= 0);
-    assert(start + length <= 66);
+    ASSERT(length <= 11, "ripple::RFC1751::extract : maximum length");
+    ASSERT(start >= 0, "ripple::RFC1751::extract : minimum start");
+    ASSERT(length >= 0, "ripple::RFC1751::extract : minimum length");
+    ASSERT(
+        start + length <= 66,
+        "ripple::RFC1751::extract : maximum start + length");
 
     int const shiftR = 24 - (length + (start % 8));
     cl = s[start / 8];  // get components
@@ -320,10 +322,12 @@ RFC1751::insert(char* s, int x, int start, int length)
     unsigned long y;
     int shift;
 
-    assert(length <= 11);
-    assert(start >= 0);
-    assert(length >= 0);
-    assert(start + length <= 66);
+    ASSERT(length <= 11, "ripple::RFC1751::insert : maximum length");
+    ASSERT(start >= 0, "ripple::RFC1751::insert : minimum start");
+    ASSERT(length >= 0, "ripple::RFC1751::insert : minimum length");
+    ASSERT(
+        start + length <= 66,
+        "ripple::RFC1751::insert : maximum start + length");
 
     shift = ((8 - ((start + length) % 8)) % 8);
     y = (long)x << shift;

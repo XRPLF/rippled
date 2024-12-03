@@ -21,7 +21,7 @@
 #define RIPPLE_BASICS_BUFFER_H_INCLUDED
 
 #include <xrpl/basics/Slice.h>
-#include <cassert>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -112,9 +112,10 @@ public:
     operator=(Slice s)
     {
         // Ensure the slice isn't a subset of the buffer.
-        assert(
+        ASSERT(
             s.size() == 0 || size_ == 0 || s.data() < p_.get() ||
-            s.data() >= p_.get() + size_);
+                s.data() >= p_.get() + size_,
+            "ripple::Buffer::operator=(Slice) : input not a subset");
 
         if (auto p = alloc(s.size()))
             std::memcpy(p, s.data(), s.size());

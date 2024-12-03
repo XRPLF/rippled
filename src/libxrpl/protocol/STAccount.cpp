@@ -80,8 +80,10 @@ STAccount::getSType() const
 void
 STAccount::add(Serializer& s) const
 {
-    assert(getFName().isBinary());
-    assert(getFName().fieldType == STI_ACCOUNT);
+    ASSERT(getFName().isBinary(), "ripple::STAccount::add : field is binary");
+    ASSERT(
+        getFName().fieldType == STI_ACCOUNT,
+        "ripple::STAccount::add : valid field type");
 
     // Preserve the serialization behavior of an STBlob:
     //  o If we are default (all zeros) serialize as an empty blob.

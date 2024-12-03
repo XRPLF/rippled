@@ -89,7 +89,10 @@ struct FlowDebugInfo
         void
         pushLiquiditySrc(EitherAmount const& eIn, EitherAmount const& eOut)
         {
-            assert(!liquiditySrcIn.empty());
+            ASSERT(
+                !liquiditySrcIn.empty(),
+                "ripple::path::detail::FlowDebugInfo::pushLiquiditySrc : "
+                "non-empty liquidity source");
             liquiditySrcIn.back().push_back(eIn);
             liquiditySrcOut.back().push_back(eOut);
         }
@@ -122,7 +125,9 @@ struct FlowDebugInfo
         auto i = timePoints.find(tag);
         if (i == timePoints.end())
         {
-            assert(0);
+            UNREACHABLE(
+                "ripple::path::detail::FlowDebugInfo::duration : timepoint not "
+                "found");
             return std::chrono::duration<double>(0);
         }
         auto const& t = i->second;

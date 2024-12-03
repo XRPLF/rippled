@@ -20,9 +20,10 @@
 #ifndef BEAST_MODULE_CORE_TEXT_LEXICALCAST_H_INCLUDED
 #define BEAST_MODULE_CORE_TEXT_LEXICALCAST_H_INCLUDED
 
+#include <xrpl/beast/utility/instrumentation.h>
+
 #include <boost/core/detail/string_view.hpp>
 #include <algorithm>
-#include <cassert>
 #include <cerrno>
 #include <charconv>
 #include <cstdlib>
@@ -159,7 +160,9 @@ struct LexicalCast<Out, char const*>
     bool
     operator()(Out& out, char const* in) const
     {
-        assert(in);
+        ASSERT(
+            in != nullptr,
+            "beast::detail::LexicalCast(char const*) : non-null input");
         return LexicalCast<Out, std::string_view>()(out, in);
     }
 };
@@ -174,7 +177,9 @@ struct LexicalCast<Out, char*>
     bool
     operator()(Out& out, char* in) const
     {
-        assert(in);
+        ASSERT(
+            in != nullptr,
+            "beast::detail::LexicalCast(char*) : non-null input");
         return LexicalCast<Out, std::string_view>()(out, in);
     }
 };

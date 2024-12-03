@@ -73,7 +73,9 @@ void
 LoadManager::start()
 {
     JLOG(journal_.debug()) << "Starting";
-    assert(!thread_.joinable());
+    ASSERT(
+        !thread_.joinable(),
+        "ripple::LoadManager::start : thread not joinable");
 
     thread_ = std::thread{&LoadManager::run, this};
 }
