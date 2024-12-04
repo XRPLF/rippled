@@ -229,59 +229,56 @@ SetTrust::preclaim(PreclaimContext const& ctx)
     }
 
     // Checking all freeze/deep freeze flag invariants.
-    auto sleRippleState =
-        ctx.view.read(keylet::line(id, uDstAccountID, currency));
-
-    if (sleRippleState)
+    if (ctx.view.rules().enabled(featureDeepFreeze))
     {
-        if (ctx.view.rules().enabled(featureDeepFreeze))
+        bool const bNoFreeze = sle->isFlag(lsfNoFreeze);
+        bool const bSetFreeze = (uTxFlags & tfSetFreeze);
+        bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze);
+
+        if (bNoFreeze)
         {
-            bool const bNoFreeze = sle->isFlag(lsfNoFreeze);
-            bool const bSetFreeze = (uTxFlags & tfSetFreeze);
-            bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze);
-
-            if (bNoFreeze)
+            if (bSetFreeze || bSetDeepFreeze)
             {
-                if (bSetFreeze || bSetDeepFreeze)
-                {
-                    // Cannot freeze the trust line if NoFreeze is set
-                    return tecNO_PERMISSION;
-                }
-            }
-            bool const bClearFreeze = (uTxFlags & tfClearFreeze);
-            bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze);
-            if ((bSetFreeze || bSetDeepFreeze) &&
-                (bClearFreeze || bClearDeepFreeze))
-            {
-                // Freezing and unfreezing in the same transaction should be
-                // illegal
+                // Cannot freeze the trust line if NoFreeze is set
                 return tecNO_PERMISSION;
             }
+        }
+        bool const bClearFreeze = (uTxFlags & tfClearFreeze);
+        bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze);
+        if ((bSetFreeze || bSetDeepFreeze) &&
+            (bClearFreeze || bClearDeepFreeze))
+        {
+            // Freezing and unfreezing in the same transaction should be
+            // illegal
+            return tecNO_PERMISSION;
+        }
 
-            bool const bHigh = id > uDstAccountID;
-            // Fetching current state of trust line
-            std::uint32_t uFlags = sleRippleState->getFieldU32(sfFlags);
-            // Computing expected trust line state
-            uFlags = applyFreezeFlags(
-                uFlags,
-                bHigh,
-                bNoFreeze,
-                bSetFreeze,
-                bClearFreeze,
-                bSetDeepFreeze,
-                bClearDeepFreeze);
+        bool const bHigh = id > uDstAccountID;
+        // Fetching current state of trust line
+        auto const sleRippleState =
+            ctx.view.read(keylet::line(id, uDstAccountID, currency));
+        std::uint32_t uFlags =
+            sleRippleState ? sleRippleState->getFieldU32(sfFlags) : 0u;
+        // Computing expected trust line state
+        uFlags = applyFreezeFlags(
+            uFlags,
+            bHigh,
+            bNoFreeze,
+            bSetFreeze,
+            bClearFreeze,
+            bSetDeepFreeze,
+            bClearDeepFreeze);
 
-            auto const frozen = uFlags & (bHigh ? lsfHighFreeze : lsfLowFreeze);
-            auto const deepFrozen =
-                uFlags & (bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
+        auto const frozen = uFlags & (bHigh ? lsfHighFreeze : lsfLowFreeze);
+        auto const deepFrozen =
+            uFlags & (bHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
 
-            // Trying to set deep freeze on not already frozen trust line must
-            // fail. This also checks that clearing normal freeze while deep
-            // frozen must not work
-            if (deepFrozen && !frozen)
-            {
-                return tecNO_PERMISSION;
-            }
+        // Trying to set deep freeze on not already frozen trust line must
+        // fail. This also checks that clearing normal freeze while deep
+        // frozen must not work
+        if (deepFrozen && !frozen)
+        {
+            return tecNO_PERMISSION;
         }
     }
 
