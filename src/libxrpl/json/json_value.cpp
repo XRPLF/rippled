@@ -207,7 +207,7 @@ Value::Value(ValueType type) : type_(type), allocated_(0)
             break;
 
         default:
-            JSON_ASSERT_UNREACHABLE;
+            UNREACHABLE("Json::Value::Value(ValueType) : invalid type");
     }
 }
 
@@ -277,7 +277,7 @@ Value::Value(const Value& other) : type_(other.type_)
             break;
 
         default:
-            JSON_ASSERT_UNREACHABLE;
+            UNREACHABLE("Json::Value::Value(Value const&) : invalid type");
     }
 }
 
@@ -305,7 +305,7 @@ Value::~Value()
             break;
 
         default:
-            JSON_ASSERT_UNREACHABLE;
+            UNREACHABLE("Json::Value::~Value : invalid type");
     }
 }
 
@@ -406,7 +406,7 @@ operator<(const Value& x, const Value& y)
         }
 
         default:
-            JSON_ASSERT_UNREACHABLE;
+            UNREACHABLE("Json::operator<(Value, Value) : invalid type");
     }
 
     return 0;  // unreachable
@@ -452,7 +452,7 @@ operator==(const Value& x, const Value& y)
                 *x.value_.map_ == *y.value_.map_;
 
         default:
-            JSON_ASSERT_UNREACHABLE;
+            UNREACHABLE("Json::operator==(Value, Value) : invalid type");
     }
 
     return 0;  // unreachable
@@ -461,7 +461,7 @@ operator==(const Value& x, const Value& y)
 const char*
 Value::asCString() const
 {
-    JSON_ASSERT(type_ == stringValue);
+    ASSERT(type_ == stringValue, "Json::Value::asCString : valid type");
     return value_.string_;
 }
 
@@ -493,7 +493,7 @@ Value::asString() const
             JSON_ASSERT_MESSAGE(false, "Type is not convertible to string");
 
         default:
-            JSON_ASSERT_UNREACHABLE;
+            UNREACHABLE("Json::Value::asString : invalid type");
     }
 
     return "";  // unreachable
@@ -535,7 +535,7 @@ Value::asInt() const
             JSON_ASSERT_MESSAGE(false, "Type is not convertible to int");
 
         default:
-            JSON_ASSERT_UNREACHABLE;
+            UNREACHABLE("Json::Value::asInt : invalid type");
     }
 
     return 0;  // unreachable;
@@ -577,7 +577,7 @@ Value::asUInt() const
             JSON_ASSERT_MESSAGE(false, "Type is not convertible to uint");
 
         default:
-            JSON_ASSERT_UNREACHABLE;
+            UNREACHABLE("Json::Value::asUInt : invalid type");
     }
 
     return 0;  // unreachable;
@@ -609,7 +609,7 @@ Value::asDouble() const
             JSON_ASSERT_MESSAGE(false, "Type is not convertible to double");
 
         default:
-            JSON_ASSERT_UNREACHABLE;
+            UNREACHABLE("Json::Value::asDouble : invalid type");
     }
 
     return 0;  // unreachable;
@@ -641,7 +641,7 @@ Value::asBool() const
             return value_.map_->size() != 0;
 
         default:
-            JSON_ASSERT_UNREACHABLE;
+            UNREACHABLE("Json::Value::asBool : invalid type");
     }
 
     return false;  // unreachable;
@@ -695,7 +695,7 @@ Value::isConvertibleTo(ValueType other) const
                 (other == nullValue && value_.map_->size() == 0);
 
         default:
-            JSON_ASSERT_UNREACHABLE;
+            UNREACHABLE("Json::Value::isConvertible : invalid type");
     }
 
     return false;  // unreachable;
@@ -729,7 +729,7 @@ Value::size() const
             return Int(value_.map_->size());
 
         default:
-            JSON_ASSERT_UNREACHABLE;
+            UNREACHABLE("Json::Value::size : invalid type");
     }
 
     return 0;  // unreachable;
@@ -752,8 +752,9 @@ Value::operator bool() const
 void
 Value::clear()
 {
-    JSON_ASSERT(
-        type_ == nullValue || type_ == arrayValue || type_ == objectValue);
+    ASSERT(
+        type_ == nullValue || type_ == arrayValue || type_ == objectValue,
+        "Json::Value::clear : valid type");
 
     switch (type_)
     {
@@ -770,7 +771,9 @@ Value::clear()
 Value&
 Value::operator[](UInt index)
 {
-    JSON_ASSERT(type_ == nullValue || type_ == arrayValue);
+    ASSERT(
+        type_ == nullValue || type_ == arrayValue,
+        "Json::Value::operator[](UInt) : valid type");
 
     if (type_ == nullValue)
         *this = Value(arrayValue);
@@ -789,7 +792,9 @@ Value::operator[](UInt index)
 const Value&
 Value::operator[](UInt index) const
 {
-    JSON_ASSERT(type_ == nullValue || type_ == arrayValue);
+    ASSERT(
+        type_ == nullValue || type_ == arrayValue,
+        "Json::Value::operator[](UInt) const : valid type");
 
     if (type_ == nullValue)
         return null;
@@ -812,7 +817,9 @@ Value::operator[](const char* key)
 Value&
 Value::resolveReference(const char* key, bool isStatic)
 {
-    JSON_ASSERT(type_ == nullValue || type_ == objectValue);
+    ASSERT(
+        type_ == nullValue || type_ == objectValue,
+        "Json::Value::resolveReference : valid type");
 
     if (type_ == nullValue)
         *this = Value(objectValue);
@@ -846,7 +853,9 @@ Value::isValidIndex(UInt index) const
 const Value&
 Value::operator[](const char* key) const
 {
-    JSON_ASSERT(type_ == nullValue || type_ == objectValue);
+    ASSERT(
+        type_ == nullValue || type_ == objectValue,
+        "Json::Value::operator[](const char*) const : valid type");
 
     if (type_ == nullValue)
         return null;
@@ -906,7 +915,9 @@ Value::get(std::string const& key, const Value& defaultValue) const
 Value
 Value::removeMember(const char* key)
 {
-    JSON_ASSERT(type_ == nullValue || type_ == objectValue);
+    ASSERT(
+        type_ == nullValue || type_ == objectValue,
+        "Json::Value::removeMember : valid type");
 
     if (type_ == nullValue)
         return null;
@@ -947,7 +958,9 @@ Value::isMember(std::string const& key) const
 Value::Members
 Value::getMemberNames() const
 {
-    JSON_ASSERT(type_ == nullValue || type_ == objectValue);
+    ASSERT(
+        type_ == nullValue || type_ == objectValue,
+        "Json::Value::getMemberNames : valid type");
 
     if (type_ == nullValue)
         return Value::Members();

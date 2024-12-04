@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <array>
-#include <cassert>
 #include <stdexcept>
 
 namespace ripple {
@@ -211,7 +211,9 @@ error_code_http_status(error_code_i code)
 std::string
 rpcErrorString(Json::Value const& jv)
 {
-    assert(RPC::contains_error(jv));
+    ASSERT(
+        RPC::contains_error(jv),
+        "ripple::RPC::rpcErrorString : input contains an error");
     return jv[jss::error].asString() + jv[jss::error_message].asString();
 }
 

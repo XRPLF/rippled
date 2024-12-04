@@ -31,6 +31,7 @@
 #include <xrpl/basics/IOUAmount.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/XRPAmount.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 
 #include <boost/container/flat_set.hpp>
@@ -171,7 +172,9 @@ flow(
                             << "Re-executed limiting step failed. r.first: "
                             << to_string(get<TInAmt>(r.first))
                             << " maxIn: " << to_string(*maxIn);
-                        assert(0);
+                        UNREACHABLE(
+                            "ripple::flow : first step re-executing the "
+                            "limiting step failed");
                         return Result{strand, std::move(ofrsToRm)};
                     }
                 }
@@ -207,7 +210,9 @@ flow(
 #else
                         JLOG(j.fatal()) << "Re-executed limiting step failed";
 #endif
-                        assert(0);
+                        UNREACHABLE(
+                            "ripple::flow : limiting step re-executing the "
+                            "limiting step failed");
                         return Result{strand, std::move(ofrsToRm)};
                     }
                 }
@@ -241,7 +246,9 @@ flow(
 #else
                     JLOG(j.fatal()) << "Re-executed forward pass failed";
 #endif
-                    assert(0);
+                    UNREACHABLE(
+                        "ripple::flow : non-limiting step re-executing the "
+                        "forward pass failed");
                     return Result{strand, std::move(ofrsToRm)};
                 }
                 stepIn = r.second;
@@ -493,7 +500,7 @@ public:
     {
         if (i >= cur_.size())
         {
-            assert(0);
+            UNREACHABLE("ripple::ActiveStrands::get : input out of range");
             return nullptr;
         }
         return cur_[i];
@@ -700,9 +707,10 @@ flow(
                 flowDebugInfo->pushLiquiditySrc(
                     EitherAmount(f.in), EitherAmount(f.out));
 
-            assert(
+            ASSERT(
                 f.out <= remainingOut && f.sandbox &&
-                (!remainingIn || f.in <= *remainingIn));
+                    (!remainingIn || f.in <= *remainingIn),
+                "ripple::flow : remaining constraints");
 
             Quality const q(f.out, f.in);
 
@@ -725,7 +733,7 @@ flow(
 
             if (baseView.rules().enabled(featureFlowSortStrands))
             {
-                assert(!best);
+                ASSERT(!best, "ripple::flow : best is unset");
                 if (!f.inactive)
                     activeStrands.push(strand);
                 best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
@@ -839,7 +847,7 @@ flow(
             // running debug builds of rippled. While this issue still needs to
             // be resolved, the assert is causing more harm than good at this
             // point.
-            // assert(0);
+            // UNREACHABLE("ripple::flow : rounding error");
 
             return {tefEXCEPTION, std::move(ofrsToRmOnFail)};
         }
@@ -876,7 +884,7 @@ flow(
         //   Handles both cases 1. and 2.
         // fixFillOrKill amendment:
         //   Handles 2. 1. is handled above and falls through for tfSell.
-        assert(remainingIn);
+        ASSERT(remainingIn.has_value(), "ripple::flow : nonzero remainingIn");
         if (remainingIn && *remainingIn != beast::zero)
             return {
                 tecPATH_PARTIAL,

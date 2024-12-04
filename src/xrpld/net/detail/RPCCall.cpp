@@ -962,7 +962,9 @@ private:
     parseTransactionEntry(Json::Value const& jvParams)
     {
         // Parameter count should have already been verified.
-        assert(jvParams.size() == 2);
+        ASSERT(
+            jvParams.size() == 2,
+            "ripple::RPCParser::parseTransactionEntry : valid parameter count");
 
         std::string const txHash = jvParams[0u].asString();
         if (txHash.length() != 64)
