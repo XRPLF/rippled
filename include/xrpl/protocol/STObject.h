@@ -737,8 +737,7 @@ STObject::Proxy<T>::assign(U&& u)
         t = dynamic_cast<T*>(st_->getPField(*f_, true));
     else
         t = dynamic_cast<T*>(st_->makeFieldPresent(*f_));
-    XRPL_ASSERT(
-        t != nullptr, "ripple::STObject::Proxy::assign : type cast succeeded");
+    XRPL_ASSERT(t, "ripple::STObject::Proxy::assign : type cast succeeded");
     *t = std::forward<U>(u);
 }
 
@@ -1035,7 +1034,7 @@ STObject::at(TypedField<T> const& f) const
         return u->value();
 
     XRPL_ASSERT(
-        mType != nullptr,
+        mType,
         "ripple::STObject::at(TypedField auto) : field template non-null");
     XRPL_ASSERT(
         b->getSType() == STI_NOTPRESENT,
@@ -1065,7 +1064,7 @@ STObject::at(OptionaledField<T> const& of) const
     if (!u)
     {
         XRPL_ASSERT(
-            mType != nullptr,
+            mType,
             "ripple::STObject::at(OptionaledField auto) : field template "
             "non-null");
         XRPL_ASSERT(

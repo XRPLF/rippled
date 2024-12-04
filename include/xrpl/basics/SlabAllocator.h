@@ -301,7 +301,7 @@ public:
     deallocate(std::uint8_t* ptr) noexcept
     {
         XRPL_ASSERT(
-            ptr != nullptr,
+            ptr,
             "ripple::SlabAllocator::SlabAllocator::deallocate : non-null "
             "input");
 

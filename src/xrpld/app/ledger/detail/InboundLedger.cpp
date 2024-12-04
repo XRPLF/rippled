@@ -619,7 +619,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     if (mHaveHeader && !mHaveState && !failed_)
     {
         XRPL_ASSERT(
-            mLedger != nullptr,
+            mLedger,
             "ripple::InboundLedger::trigger : non-null ledger to read state "
             "from");
 
@@ -694,7 +694,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     if (mHaveHeader && !mHaveTransactions && !failed_)
     {
         XRPL_ASSERT(
-            mLedger != nullptr,
+            mLedger,
             "ripple::InboundLedger::trigger : non-null ledger to read "
             "transactions from");
 

@@ -67,8 +67,7 @@ internalDirNext(
         else
             page = view.peek(keylet::page(root, next));
 
-        XRPL_ASSERT(
-            page != nullptr, "ripple::detail::internalDirNext : non-null root");
+        XRPL_ASSERT(page, "ripple::detail::internalDirNext : non-null root");
 
         if (!page)
             return false;
@@ -836,7 +835,7 @@ adjustOwnerCount(
 {
     if (!sle)
         return;
-    XRPL_ASSERT(amount != 0, "ripple::adjustOwnerCount : nonzero amount input");
+    XRPL_ASSERT(amount, "ripple::adjustOwnerCount : nonzero amount input");
     std::uint32_t const current{sle->getFieldU32(sfOwnerCount)};
     AccountID const id = (*sle)[sfAccount];
     std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
@@ -901,7 +900,7 @@ trustCreate(
     const bool bSetDst = saLimit.getIssuer() == uDstAccountID;
     const bool bSetHigh = bSrcHigh ^ bSetDst;
 
-    XRPL_ASSERT(sleAccount != nullptr, "ripple::trustCreate : non-null SLE");
+    XRPL_ASSERT(sleAccount, "ripple::trustCreate : non-null SLE");
     if (!sleAccount)
         return tefINTERNAL;
 

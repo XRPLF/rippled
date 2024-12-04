@@ -1263,9 +1263,7 @@ void
 Consensus<Adaptor>::phaseEstablish()
 {
     // can only establish consensus if we already took a stance
-    XRPL_ASSERT(
-        result_.has_value(),
-        "ripple::Consensus::phaseEstablish : result is set");
+    XRPL_ASSERT(result_, "ripple::Consensus::phaseEstablish : result is set");
 
     using namespace std::chrono;
     ConsensusParms const& parms = adaptor_.parms();
@@ -1367,8 +1365,7 @@ Consensus<Adaptor>::updateOurPositions()
 {
     // We must have a position if we are updating it
     XRPL_ASSERT(
-        result_.has_value(),
-        "ripple::Consensus::updateOurPositions : result is set");
+        result_, "ripple::Consensus::updateOurPositions : result is set");
     ConsensusParms const& parms = adaptor_.parms();
 
     // Compute a cutoff time
@@ -1552,8 +1549,7 @@ bool
 Consensus<Adaptor>::haveConsensus()
 {
     // Must have a stance if we are checking for consensus
-    XRPL_ASSERT(
-        result_.has_value(), "ripple::Consensus::haveConsensus : has result");
+    XRPL_ASSERT(result_, "ripple::Consensus::haveConsensus : has result");
 
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
@@ -1628,9 +1624,7 @@ void
 Consensus<Adaptor>::createDisputes(TxSet_t const& o)
 {
     // Cannot create disputes without our stance
-    XRPL_ASSERT(
-        result_.has_value(),
-        "ripple::Consensus::createDisputes : result is set");
+    XRPL_ASSERT(result_, "ripple::Consensus::createDisputes : result is set");
 
     // Only create disputes if this is a new set
     if (!result_->compares.emplace(o.id()).second)
@@ -1690,9 +1684,7 @@ void
 Consensus<Adaptor>::updateDisputes(NodeID_t const& node, TxSet_t const& other)
 {
     // Cannot updateDisputes without our stance
-    XRPL_ASSERT(
-        result_.has_value(),
-        "ripple::Consensus::updateDisputes : result is set");
+    XRPL_ASSERT(result_, "ripple::Consensus::updateDisputes : result is set");
 
     // Ensure we have created disputes against this set if we haven't seen
     // it before

@@ -345,9 +345,7 @@ LedgerMaster::addHeldTransaction(
 bool
 LedgerMaster::canBeCurrent(std::shared_ptr<Ledger const> const& ledger)
 {
-    XRPL_ASSERT(
-        ledger != nullptr,
-        "ripple::LedgerMaster::canBeCurrent : non-null input");
+    XRPL_ASSERT(ledger, "ripple::LedgerMaster::canBeCurrent : non-null input");
 
     // Never jump to a candidate ledger that precedes our
     // last validated ledger
@@ -415,9 +413,7 @@ LedgerMaster::canBeCurrent(std::shared_ptr<Ledger const> const& ledger)
 void
 LedgerMaster::switchLCL(std::shared_ptr<Ledger const> const& lastClosed)
 {
-    XRPL_ASSERT(
-        lastClosed != nullptr,
-        "ripple::LedgerMaster::switchLCL : non-null input");
+    XRPL_ASSERT(lastClosed, "ripple::LedgerMaster::switchLCL : non-null input");
     if (!lastClosed->isImmutable())
         LogicError("mutable ledger in switchLCL");
 
@@ -1684,9 +1680,7 @@ LedgerMaster::walkHashBySeq(
     // be located easily and should contain the hash.
     LedgerIndex refIndex = getCandidateLedger(index);
     auto const refHash = hashOfSeq(*referenceLedger, refIndex, m_journal);
-    XRPL_ASSERT(
-        refHash.has_value(),
-        "ripple::LedgerMaster::walkHashBySeq : found ledger");
+    XRPL_ASSERT(refHash, "ripple::LedgerMaster::walkHashBySeq : found ledger");
     if (refHash)
     {
         // Try the hash and sequence of a better reference ledger just found
@@ -1712,7 +1706,7 @@ LedgerMaster::walkHashBySeq(
             {
                 ledgerHash = hashOfSeq(*l, index, m_journal);
                 XRPL_ASSERT(
-                    ledgerHash.has_value(),
+                    ledgerHash,
                     "ripple::LedgerMaster::walkHashBySeq : has complete "
                     "ledger");
             }
@@ -2087,7 +2081,7 @@ populateFetchPack(
     std::uint32_t seq,
     bool withLeaves = true)
 {
-    XRPL_ASSERT(cnt != 0, "ripple::populateFetchPack : nonzero count input");
+    XRPL_ASSERT(cnt, "ripple::populateFetchPack : nonzero count input");
 
     Serializer s(1024);
 

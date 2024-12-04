@@ -577,7 +577,7 @@ ApplyStateTable::getForMod(
         if (miter != mods.end())
         {
             XRPL_ASSERT(
-                miter->second != nullptr,
+                miter->second,
                 "ripple::ApplyStateTable::getForMod : non-null result");
             return miter->second;
         }

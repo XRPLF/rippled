@@ -326,7 +326,7 @@ SHAMap::walkMapParallel(
                         std::shared_ptr<SHAMapInnerNode> node =
                             std::move(nodeStack.top());
                         XRPL_ASSERT(
-                            node != nullptr,
+                            node,
                             "ripple::SHAMap::walkMapParallel : non-null node");
                         nodeStack.pop();
 

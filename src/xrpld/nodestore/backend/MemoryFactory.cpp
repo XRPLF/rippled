@@ -132,8 +132,7 @@ public:
     fetch(void const* key, std::shared_ptr<NodeObject>* pObject) override
     {
         XRPL_ASSERT(
-            db_ != nullptr,
-            "ripple::NodeStore::MemoryBackend::fetch : non-null database");
+            db_, "ripple::NodeStore::MemoryBackend::fetch : non-null database");
         uint256 const hash(uint256::fromVoid(key));
 
         std::lock_guard _(db_->mutex);
@@ -170,8 +169,7 @@ public:
     store(std::shared_ptr<NodeObject> const& object) override
     {
         XRPL_ASSERT(
-            db_ != nullptr,
-            "ripple::NodeStore::MemoryBackend::store : non-null database");
+            db_, "ripple::NodeStore::MemoryBackend::store : non-null database");
         std::lock_guard _(db_->mutex);
         db_->table.emplace(object->getHash(), object);
     }
@@ -192,7 +190,7 @@ public:
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
         XRPL_ASSERT(
-            db_ != nullptr,
+            db_,
             "ripple::NodeStore::MemoryBackend::for_each : non-null database");
         for (auto const& e : db_->table)
             f(e.second);

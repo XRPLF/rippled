@@ -374,8 +374,7 @@ class LedgerTrie
         Node* curr = root.get();
 
         // Root is always defined and is in common with all ledgers
-        XRPL_ASSERT(
-            curr != nullptr, "ripple::LedgerTrie::find : non-null root");
+        XRPL_ASSERT(curr, "ripple::LedgerTrie::find : non-null root");
         Seq pos = curr->span.diff(ledger);
 
         bool done = false;
@@ -456,8 +455,7 @@ public:
         auto const [loc, diffSeq] = find(ledger);
 
         // There is always a place to insert
-        XRPL_ASSERT(
-            loc != nullptr, "ripple::LedgerTrie::insert : valid input ledger");
+        XRPL_ASSERT(loc, "ripple::LedgerTrie::insert : valid input ledger");
 
         // Node from which to start incrementing branchSupport
         Node* incNode = loc;
@@ -499,9 +497,7 @@ public:
                 child->parent = newNode.get();
 
             // Loc truncates to prefix and newNode is its child
-            XRPL_ASSERT(
-                prefix.has_value(),
-                "ripple::LedgerTrie::insert : prefix is set");
+            XRPL_ASSERT(prefix, "ripple::LedgerTrie::insert : prefix is set");
             loc->span = *prefix;
             newNode->parent = loc;
             loc->children.emplace_back(std::move(newNode));

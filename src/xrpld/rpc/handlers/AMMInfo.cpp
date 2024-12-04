@@ -155,9 +155,7 @@ doAMMInfo(RPC::JsonContext& context)
         auto const ammKeylet = [&]() {
             if (issue1 && issue2)
                 return keylet::amm(*issue1, *issue2);
-            XRPL_ASSERT(
-                ammID.has_value(),
-                "ripple::doAMMInfo::ammKeylet : ammID is set");
+            XRPL_ASSERT(ammID, "ripple::doAMMInfo::ammKeylet : ammID is set");
             return keylet::amm(*ammID);
         }();
         auto const amm = ledger->read(ammKeylet);

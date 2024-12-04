@@ -56,7 +56,7 @@ public:
         if (size)
         {
             XRPL_ASSERT(
-                data != nullptr,
+                data,
                 "ripple::Serializer::Serializer(void const*) : non-null input");
             std::memcpy(mData.data(), data, size);
         }

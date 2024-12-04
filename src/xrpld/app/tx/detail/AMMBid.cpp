@@ -306,7 +306,7 @@ applyBid(
     {
         // Price the slot was purchased at.
         STAmount const pricePurchased = auctionSlot[sfPrice];
-        XRPL_ASSERT(timeSlot.has_value(), "ripple::applyBid : timeSlot is set");
+        XRPL_ASSERT(timeSlot, "ripple::applyBid : timeSlot is set");
         auto const fractionUsed =
             (Number(*timeSlot) + 1) / AUCTION_SLOT_TIME_INTERVALS;
         auto const fractionRemaining = Number(1) - fractionUsed;

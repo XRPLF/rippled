@@ -161,8 +161,7 @@ struct LexicalCast<Out, char const*>
     operator()(Out& out, char const* in) const
     {
         XRPL_ASSERT(
-            in != nullptr,
-            "beast::detail::LexicalCast(char const*) : non-null input");
+            in, "beast::detail::LexicalCast(char const*) : non-null input");
         return LexicalCast<Out, std::string_view>()(out, in);
     }
 };
@@ -177,9 +176,7 @@ struct LexicalCast<Out, char*>
     bool
     operator()(Out& out, char* in) const
     {
-        XRPL_ASSERT(
-            in != nullptr,
-            "beast::detail::LexicalCast(char*) : non-null input");
+        XRPL_ASSERT(in, "beast::detail::LexicalCast(char*) : non-null input");
         return LexicalCast<Out, std::string_view>()(out, in);
     }
 };

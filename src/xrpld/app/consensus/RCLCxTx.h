@@ -112,8 +112,7 @@ public:
     RCLTxSet(std::shared_ptr<SHAMap> m) : map_{std::move(m)}
     {
         XRPL_ASSERT(
-            map_ != nullptr,
-            "ripple::RCLTxSet::MutableTxSet::RCLTxSet : non-null input");
+            map_, "ripple::RCLTxSet::MutableTxSet::RCLTxSet : non-null input");
     }
 
     /** Constructor from a previously created MutableTxSet

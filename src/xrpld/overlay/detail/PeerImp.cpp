@@ -2016,7 +2016,7 @@ PeerImp::onValidatorListMessage(
             std::lock_guard<std::mutex> sl(recentLock_);
 
             XRPL_ASSERT(
-                applyResult.publisherKey.has_value(),
+                applyResult.publisherKey,
                 "ripple::PeerImp::onValidatorListMessage : publisher key is "
                 "set");
             auto const& pubKey = *applyResult.publisherKey;
@@ -2833,8 +2833,7 @@ PeerImp::checkPropose(
     JLOG(p_journal_.trace())
         << "Checking " << (isTrusted ? "trusted" : "UNTRUSTED") << " proposal";
 
-    XRPL_ASSERT(
-        packet != nullptr, "ripple::PeerImp::checkPropose : non-null packet");
+    XRPL_ASSERT(packet, "ripple::PeerImp::checkPropose : non-null packet");
 
     if (!cluster() && !peerPos.checkSign())
     {

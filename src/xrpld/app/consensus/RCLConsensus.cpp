@@ -94,8 +94,7 @@ RCLConsensus::Adaptor::Adaptor(
     , nUnlVote_(validatorKeys_.nodeID, j_)
 {
     XRPL_ASSERT(
-        valCookie_ != 0,
-        "ripple::RCLConsensus::Adaptor::Adaptor : nonzero cookie");
+        valCookie_, "ripple::RCLConsensus::Adaptor::Adaptor : nonzero cookie");
 
     JLOG(j_.info()) << "Consensus engine started (cookie: " +
             std::to_string(valCookie_) + ")";

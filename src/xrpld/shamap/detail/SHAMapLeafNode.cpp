@@ -56,7 +56,7 @@ SHAMapLeafNode::peekItem() const
 bool
 SHAMapLeafNode::setItem(boost::intrusive_ptr<SHAMapItem const> item)
 {
-    XRPL_ASSERT(cowid_ != 0, "ripple::SHAMapLeafNode::setItem : nonzero cowid");
+    XRPL_ASSERT(cowid_, "ripple::SHAMapLeafNode::setItem : nonzero cowid");
     item_ = std::move(item);
 
     auto const oldHash = hash_;
@@ -96,8 +96,7 @@ SHAMapLeafNode::invariants(bool) const
 {
     XRPL_ASSERT(
         hash_.isNonZero(), "ripple::SHAMapLeafNode::invariants : nonzero hash");
-    XRPL_ASSERT(
-        item_ != nullptr, "ripple::SHAMapLeafNode::invariants : non-null item");
+    XRPL_ASSERT(item_, "ripple::SHAMapLeafNode::invariants : non-null item");
 }
 
 }  // namespace ripple

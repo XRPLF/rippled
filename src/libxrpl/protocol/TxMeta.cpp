@@ -56,7 +56,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
     auto affectedNodes =
         dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
     XRPL_ASSERT(
-        affectedNodes != nullptr,
+        affectedNodes,
         "ripple::TxMeta::TxMeta(STObject) : type cast succeeded");
     if (affectedNodes)
         mNodes = *affectedNodes;
@@ -132,7 +132,7 @@ TxMeta::getAffectedAccounts() const
         {
             auto inner = dynamic_cast<STObject const*>(&it.peekAtIndex(index));
             XRPL_ASSERT(
-                inner != nullptr,
+                inner,
                 "ripple::getAffectedAccounts : STObject type cast succeeded");
             if (inner)
             {
@@ -154,7 +154,7 @@ TxMeta::getAffectedAccounts() const
                     {
                         auto lim = dynamic_cast<STAmount const*>(&field);
                         XRPL_ASSERT(
-                            lim != nullptr,
+                            lim,
                             "ripple::getAffectedAccounts : STAmount type cast "
                             "succeeded");
 

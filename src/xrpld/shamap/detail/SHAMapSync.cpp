@@ -377,7 +377,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
                     fullBelow = fullBelow && was;  // was and still is
                 }
                 XRPL_ASSERT(
-                    node != nullptr,
+                    node,
                     "ripple::SHAMap::getMissingNodes : first non-null node");
             }
         }
@@ -410,7 +410,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
                 pos = mn.stack_.top();
                 mn.stack_.pop();
                 XRPL_ASSERT(
-                    node != nullptr,
+                    node,
                     "ripple::SHAMap::getMissingNodes : second non-null node");
             }
         }

@@ -563,8 +563,7 @@ Ledger::rawTxInsert(
     std::shared_ptr<Serializer const> const& metaData)
 {
     XRPL_ASSERT(
-        metaData != nullptr,
-        "ripple::Ledger::rawTxInsert : non-null metadata input");
+        metaData, "ripple::Ledger::rawTxInsert : non-null metadata input");
 
     // low-level - just add to table
     Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
@@ -582,7 +581,7 @@ Ledger::rawTxInsertWithHash(
     std::shared_ptr<Serializer const> const& metaData)
 {
     XRPL_ASSERT(
-        metaData != nullptr,
+        metaData,
         "ripple::Ledger::rawTxInsertWithHash : non-null metadata input");
 
     // low-level - just add to table

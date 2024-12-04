@@ -81,7 +81,7 @@ public:
     explicit EncodedBlob(std::shared_ptr<NodeObject> const& obj)
         : size_([&obj]() {
             XRPL_ASSERT(
-                obj != nullptr,
+                obj,
                 "ripple::NodeStore::EncodedBlob::EncodedBlob : non-null input");
 
             if (!obj)

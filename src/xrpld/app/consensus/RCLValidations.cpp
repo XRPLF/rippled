@@ -199,8 +199,7 @@ handleNewValidation(
             if (bypassAccept == BypassAccept::yes)
             {
                 XRPL_ASSERT(
-                    j.has_value(),
-                    "ripple::handleNewValidation : journal is available");
+                    j, "ripple::handleNewValidation : journal is available");
                 if (j.has_value())
                 {
                     JLOG(j->trace()) << "Bypassing checkAccept for validation "

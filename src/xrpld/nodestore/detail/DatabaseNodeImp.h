@@ -77,7 +77,7 @@ public:
         }
 
         XRPL_ASSERT(
-            backend_ != nullptr,
+            backend_,
             "ripple::NodeStore::DatabaseNodeImp::DatabaseNodeImp : non-null "
             "backend");
     }

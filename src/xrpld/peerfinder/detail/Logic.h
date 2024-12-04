@@ -1,4 +1,3 @@
-//------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012, 2013 Ripple Labs Inc.
@@ -823,7 +822,7 @@ public:
         for (auto const& ep : list)
         {
             XRPL_ASSERT(
-                ep.hops != 0,
+                ep.hops,
                 "ripple::PeerFinder::Logic::on_endpoints : nonzero hops");
 
             slot->recent.insert(ep.address, ep.hops);

@@ -35,8 +35,7 @@ Message::Message(
     auto const messageBytes = messageSize(message);
 
     XRPL_ASSERT(
-        messageBytes != 0,
-        "ripple::Message::Message : non-empty message input");
+        messageBytes, "ripple::Message::Message : non-empty message input");
 
     buffer_.resize(headerBytes + messageBytes);
 

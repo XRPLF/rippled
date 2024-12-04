@@ -683,7 +683,7 @@ private:
 inline SHAMap::const_iterator::const_iterator(SHAMap const* map) : map_(map)
 {
     XRPL_ASSERT(
-        map_ != nullptr,
+        map_,
         "ripple::SHAMap::const_iterator::const_iterator : non-null input");
 
     if (auto temp = map_->peekFirstItem(stack_))

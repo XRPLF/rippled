@@ -1974,7 +1974,7 @@ ValidatorList::updateTrusted(
             std::optional<PublicKey> const signingKey =
                 validatorManifests_.getSigningKey(k);
             XRPL_ASSERT(
-                signingKey.has_value(),
+                signingKey,
                 "ripple::ValidatorList::updateTrusted : found signing key");
             trustedSigningKeys_.insert(*signingKey);
         }

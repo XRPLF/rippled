@@ -41,7 +41,7 @@ Database::Database(
     , readThreads_(std::max(1, readThreads))
 {
     XRPL_ASSERT(
-        readThreads != 0,
+        readThreads,
         "ripple::NodeStore::Database::Database : nonzero threads input");
 
     if (earliestLedgerSeq_ < 1)
@@ -220,7 +220,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
 
     srcDB.for_each([&](std::shared_ptr<NodeObject> nodeObject) {
         XRPL_ASSERT(
-            nodeObject != nullptr,
+            nodeObject,
             "ripple::NodeStore::Database::importInternal : non-null node");
         if (!nodeObject)  // This should never happen
             return;

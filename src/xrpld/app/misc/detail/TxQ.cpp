@@ -298,8 +298,7 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
 {
     // If the rules or flags change, preflight again
     XRPL_ASSERT(
-        pfresult.has_value(),
-        "ripple::TxQ::MaybeTx::apply : preflight result is set");
+        pfresult, "ripple::TxQ::MaybeTx::apply : preflight result is set");
     STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
     NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
 

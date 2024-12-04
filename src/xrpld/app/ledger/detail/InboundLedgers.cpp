@@ -329,7 +329,7 @@ public:
             for (auto const& it : mLedgers)
             {
                 XRPL_ASSERT(
-                    it.second != nullptr,
+                    it.second,
                     "ripple::InboundLedgersImp::getInfo : non-null ledger");
                 acqs.push_back(it);
             }
@@ -366,7 +366,7 @@ public:
             for (auto const& it : mLedgers)
             {
                 XRPL_ASSERT(
-                    it.second != nullptr,
+                    it.second,
                     "ripple::InboundLedgersImp::gotFetchPack : non-null "
                     "ledger");
                 acquires.push_back(it.second);

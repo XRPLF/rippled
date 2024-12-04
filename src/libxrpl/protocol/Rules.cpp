@@ -121,7 +121,7 @@ Rules::presets() const
 bool
 Rules::enabled(uint256 const& feature) const
 {
-    XRPL_ASSERT(impl_ != nullptr, "ripple::Rules::enabled : initialized");
+    XRPL_ASSERT(impl_, "ripple::Rules::enabled : initialized");
 
     // The functionality of the "NonFungibleTokensV1_1" amendment is
     // precisely the functionality of the following three amendments

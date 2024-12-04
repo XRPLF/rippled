@@ -1544,7 +1544,7 @@ NetworkOPsImp::getOwnerInfo(
             {
                 auto sleCur = lpLedger->read(keylet::child(uDirEntry));
                 XRPL_ASSERT(
-                    sleCur != nullptr,
+                    sleCur,
                     "ripple::NetworkOPsImp::getOwnerInfo : non-null child SLE");
 
                 switch (sleCur->getType())
@@ -1585,7 +1585,7 @@ NetworkOPsImp::getOwnerInfo(
             {
                 sleNode = lpLedger->read(keylet::page(root, uNodeDir));
                 XRPL_ASSERT(
-                    sleNode != nullptr,
+                    sleNode,
                     "ripple::NetworkOPsImp::getOwnerInfo : read next page");
             }
         } while (uNodeDir);

@@ -389,8 +389,7 @@ OverlayImpl::makeErrorResponse(
 void
 OverlayImpl::connect(beast::IP::Endpoint const& remote_endpoint)
 {
-    XRPL_ASSERT(
-        work_.has_value(), "ripple::OverlayImpl::connect : work is set");
+    XRPL_ASSERT(work_, "ripple::OverlayImpl::connect : work is set");
 
     auto usage = resourceManager().newOutboundEndpoint(remote_endpoint);
     if (usage.disconnect(journal_))
@@ -619,7 +618,7 @@ OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
                            << ")";
 
     // We just accepted this peer so we have non-zero active peers
-    XRPL_ASSERT(size() != 0, "ripple::OverlayImpl::activate : nonzero peers");
+    XRPL_ASSERT(size(), "ripple::OverlayImpl::activate : nonzero peers");
 }
 
 void
@@ -659,7 +658,7 @@ OverlayImpl::onManifests(
                 //       reload it here.
                 mo = deserializeManifest(serialized);
                 XRPL_ASSERT(
-                    mo.has_value(),
+                    mo,
                     "ripple::OverlayImpl::onManifests : manifest "
                     "deserialization succeeded");
 

@@ -114,7 +114,7 @@ SHAMap::dirtyUp(
             std::dynamic_pointer_cast<SHAMapInnerNode>(stack.top().first);
         SHAMapNodeID nodeID = stack.top().second;
         stack.pop();
-        XRPL_ASSERT(node != nullptr, "ripple::SHAMap::dirtyUp : non-null node");
+        XRPL_ASSERT(node, "ripple::SHAMap::dirtyUp : non-null node");
 
         int branch = selectBranch(nodeID, target);
         XRPL_ASSERT(branch >= 0, "ripple::SHAMap::dirtyUp : valid branch");
@@ -1012,7 +1012,7 @@ SHAMap::preFlushNode(std::shared_ptr<Node> node) const
     // A shared node should never need to be flushed
     // because that would imply someone modified it
     XRPL_ASSERT(
-        node->cowid() != 0, "ripple::SHAMap::preFlushNode : valid input node");
+        node->cowid(), "ripple::SHAMap::preFlushNode : valid input node");
 
     if (node->cowid() != cowid_)
     {
@@ -1243,8 +1243,7 @@ SHAMap::invariants() const
 {
     (void)getHash();  // update node hashes
     auto node = root_.get();
-    XRPL_ASSERT(
-        node != nullptr, "ripple::SHAMap::invariants : non-null root node");
+    XRPL_ASSERT(node, "ripple::SHAMap::invariants : non-null root node");
     XRPL_ASSERT(
         !node->isLeaf(), "ripple::SHAMap::invariants : root node is not leaf");
     SharedPtrNodeStack stack;

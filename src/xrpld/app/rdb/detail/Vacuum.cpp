@@ -57,8 +57,7 @@ doVacuumDB(DatabaseCon::Setup const& setup, beast::Journal j)
 
     session << "VACUUM;";
     XRPL_ASSERT(
-        setup.globalPragma != nullptr,
-        "ripple:doVacuumDB : non-null global pragma");
+        setup.globalPragma, "ripple:doVacuumDB : non-null global pragma");
     for (auto const& p : *setup.globalPragma)
         session << p;
     session << "PRAGMA page_size;", soci::into(pageSize);

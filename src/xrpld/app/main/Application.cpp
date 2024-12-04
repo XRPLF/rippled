@@ -587,7 +587,7 @@ public:
     getServerHandler() override
     {
         XRPL_ASSERT(
-            serverHandler_ != nullptr,
+            serverHandler_,
             "ripple::ApplicationImp::getServerHandler : non-null server "
             "handle");
         return *serverHandler_;
@@ -796,8 +796,7 @@ public:
     overlay() override
     {
         XRPL_ASSERT(
-            overlay_ != nullptr,
-            "ripple::ApplicationImp::overlay : non-null overlay");
+            overlay_, "ripple::ApplicationImp::overlay : non-null overlay");
         return *overlay_;
     }
 
@@ -805,7 +804,7 @@ public:
     getTxQ() override
     {
         XRPL_ASSERT(
-            txQ_.get() != nullptr,
+            txQ_,
             "ripple::ApplicationImp::getTxQ : non-null transaction queue");
         return *txQ_;
     }
@@ -814,7 +813,7 @@ public:
     getRelationalDatabase() override
     {
         XRPL_ASSERT(
-            mRelationalDatabase.get() != nullptr,
+            mRelationalDatabase,
             "ripple::ApplicationImp::getRelationalDatabase : non-null "
             "relational database");
         return *mRelationalDatabase;
@@ -824,7 +823,7 @@ public:
     getWalletDB() override
     {
         XRPL_ASSERT(
-            mWalletDB.get() != nullptr,
+            mWalletDB,
             "ripple::ApplicationImp::getWalletDB : non-null wallet database");
         return *mWalletDB;
     }
@@ -1246,8 +1245,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             {
                 auto const f = ripple::getRegisteredFeature(a);
                 XRPL_ASSERT(
-                    f.has_value(),
-                    "ripple::ApplicationImp::setup : registered feature");
+                    f, "ripple::ApplicationImp::setup : registered feature");
                 if (f)
                     supported.emplace_back(a, *f, vote);
             }

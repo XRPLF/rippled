@@ -281,8 +281,7 @@ XRPEndpointStep<TDerived>::fwdImp(
     boost::container::flat_set<uint256>& ofrsToRm,
     XRPAmount const& in)
 {
-    XRPL_ASSERT(
-        cache_.has_value(), "ripple::XRPEndpointStep::fwdImp : cache is set");
+    XRPL_ASSERT(cache_, "ripple::XRPEndpointStep::fwdImp : cache is set");
     auto const balance = static_cast<TDerived const*>(this)->xrpLiquid(sb);
 
     auto const result = isLast_ ? in : std::min(balance, in);

@@ -514,7 +514,7 @@ SHAMapStoreImp::clearSql(
     std::function<void(LedgerIndex)> const& deleteBeforeSeq)
 {
     XRPL_ASSERT(
-        deleteInterval_ != 0,
+        deleteInterval_,
         "ripple::SHAMapStoreImp::clearSql : nonzero delete interval");
     LedgerIndex min = std::numeric_limits<LedgerIndex>::max();
 

@@ -788,7 +788,7 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
     }
 
     XRPL_ASSERT(
-        nextPage != nullptr,
+        nextPage,
         "ripple::nft::repairNFTokenDirectoryLinks : next page is available");
     if (nextPage->isFieldPresent(sfNextPageMin))
     {
@@ -898,8 +898,7 @@ tokenOfferCreatePreclaim(
     {
         auto const root = view.read(keylet::account(nftIssuer));
         XRPL_ASSERT(
-            root != nullptr,
-            "ripple::nft::tokenOfferCreatePreclaim : non-null account");
+            root, "ripple::nft::tokenOfferCreatePreclaim : non-null account");
 
         if (auto minter = (*root)[~sfNFTokenMinter]; minter != acctID)
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;

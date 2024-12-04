@@ -635,8 +635,7 @@ DirectStepI<TDerived>::fwdImp(
     boost::container::flat_set<uint256>& /*ofrsToRm*/,
     IOUAmount const& in)
 {
-    XRPL_ASSERT(
-        cache_.has_value(), "ripple::DirectStepI::fwdImp : cache is set");
+    XRPL_ASSERT(cache_, "ripple::DirectStepI::fwdImp : cache is set");
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);

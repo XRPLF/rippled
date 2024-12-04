@@ -62,11 +62,9 @@ BasicTaker::BasicTaker(
         "ripple::BasicTaker::BasicTaker : positive remaining out");
 
     XRPL_ASSERT(
-        m_rate_in.value != 0,
-        "ripple::BasicTaker::BasicTaker : nonzero rate in");
+        m_rate_in.value, "ripple::BasicTaker::BasicTaker : nonzero rate in");
     XRPL_ASSERT(
-        m_rate_out.value != 0,
-        "ripple::BasicTaker::BasicTaker : nonzero rate out");
+        m_rate_out.value, "ripple::BasicTaker::BasicTaker : nonzero rate out");
 
     // If we are dealing with a particular flavor, make sure that it's the
     // flavor we expect:

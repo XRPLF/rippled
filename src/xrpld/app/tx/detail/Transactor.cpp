@@ -369,8 +369,7 @@ TER
 Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
     XRPL_ASSERT(
-        sleAccount != nullptr,
-        "ripple::Transactor::consumeSeqProxy : non-null account");
+        sleAccount, "ripple::Transactor::consumeSeqProxy : non-null account");
     SeqProxy const seqProx = ctx_.tx.getSeqProxy();
     if (seqProx.isSeq())
     {

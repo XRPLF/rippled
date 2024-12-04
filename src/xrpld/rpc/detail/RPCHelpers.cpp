@@ -1093,7 +1093,7 @@ getLedgerByContext(RPC::JsonContext& context)
             auto const refIndex = getCandidateLedger(ledgerIndex);
             auto refHash = hashOfSeq(*ledger, refIndex, j);
             XRPL_ASSERT(
-                refHash.has_value(),
+                refHash,
                 "ripple::RPC::getLedgerByContext : nonzero ledger hash");
 
             ledger = ledgerMaster.getLedgerByHash(*refHash);
@@ -1129,7 +1129,7 @@ getLedgerByContext(RPC::JsonContext& context)
             neededHash = hashOfSeq(*ledger, ledgerIndex, j);
         }
         XRPL_ASSERT(
-            neededHash.has_value(),
+            neededHash,
             "ripple::RPC::getLedgerByContext : nonzero needed hash");
         ledgerHash = neededHash ? *neededHash : beast::zero;  // kludge
     }

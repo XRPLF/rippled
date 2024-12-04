@@ -884,8 +884,7 @@ flow(
         //   Handles both cases 1. and 2.
         // fixFillOrKill amendment:
         //   Handles 2. 1. is handled above and falls through for tfSell.
-        XRPL_ASSERT(
-            remainingIn.has_value(), "ripple::flow : nonzero remainingIn");
+        XRPL_ASSERT(remainingIn, "ripple::flow : nonzero remainingIn");
         if (remainingIn && *remainingIn != beast::zero)
             return {
                 tecPATH_PARTIAL,

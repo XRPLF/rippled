@@ -175,7 +175,7 @@ private:
             , m_probe(probe)
         {
             XRPL_ASSERT(
-                m_probe != nullptr,
+                m_probe,
                 "beast::io_latency_probe::sample_op::sample_op : non-null "
                 "probe input");
             m_probe->addref();
@@ -188,7 +188,7 @@ private:
             , m_probe(from.m_probe)
         {
             XRPL_ASSERT(
-                m_probe != nullptr,
+                m_probe,
                 "beast::io_latency_probe::sample_op::sample_op(sample_op&&) : "
                 "non-null probe input");
             from.m_probe = nullptr;

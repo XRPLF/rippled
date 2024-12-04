@@ -300,8 +300,7 @@ STTx::getMetaSQL(
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
     auto format = TxFormats::getInstance().findByType(tx_type_);
-    XRPL_ASSERT(
-        format != nullptr, "ripple::STTx::getMetaSQL : non-null type format");
+    XRPL_ASSERT(format, "ripple::STTx::getMetaSQL : non-null type format");
 
     return str(
         boost::format(bfTrans) % to_string(getTransactionID()) %

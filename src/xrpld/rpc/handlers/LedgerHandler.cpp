@@ -136,8 +136,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
             for (auto& i : ledger->txs)
             {
                 XRPL_ASSERT(
-                    i.first != nullptr,
-                    "ripple::doLedgerGrpc : non-null transaction");
+                    i.first, "ripple::doLedgerGrpc : non-null transaction");
                 if (request.expand())
                 {
                     auto txn = response.mutable_transactions_list()

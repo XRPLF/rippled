@@ -29,7 +29,7 @@ STBase::STBase() : fName(&sfGeneric)
 
 STBase::STBase(SField const& n) : fName(&n)
 {
-    XRPL_ASSERT(fName != nullptr, "ripple::STBase::STBase : field is set");
+    XRPL_ASSERT(fName, "ripple::STBase::STBase : field is set");
 }
 
 STBase&
@@ -127,7 +127,7 @@ void
 STBase::setFName(SField const& n)
 {
     fName = &n;
-    XRPL_ASSERT(fName != nullptr, "ripple::STBase::setFName : field is set");
+    XRPL_ASSERT(fName, "ripple::STBase::setFName : field is set");
 }
 
 SField const&

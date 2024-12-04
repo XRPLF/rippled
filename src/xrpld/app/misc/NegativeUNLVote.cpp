@@ -90,7 +90,7 @@ NegativeUNLVote::doVoting(
             auto n =
                 choose(prevLedger->info().hash, candidates.toDisableCandidates);
             XRPL_ASSERT(
-                nidToKeyMap.count(n) != 0,
+                nidToKeyMap.contains(n),
                 "ripple::NegativeUNLVote::doVoting : found node to disable");
             addTx(seq, nidToKeyMap.at(n), ToDisable, initialSet);
         }
@@ -100,7 +100,7 @@ NegativeUNLVote::doVoting(
             auto n = choose(
                 prevLedger->info().hash, candidates.toReEnableCandidates);
             XRPL_ASSERT(
-                nidToKeyMap.count(n) != 0,
+                nidToKeyMap.contains(n),
                 "ripple::NegativeUNLVote::doVoting : found node to enable");
             addTx(seq, nidToKeyMap.at(n), ToReEnable, initialSet);
         }

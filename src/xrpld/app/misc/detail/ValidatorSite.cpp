@@ -589,7 +589,7 @@ ValidatorSite::onSiteFetch(
                         auto newLocation =
                             processRedirect(res, siteIdx, lock_sites);
                         XRPL_ASSERT(
-                            newLocation != nullptr,
+                            newLocation,
                             "ripple::ValidatorSite::onSiteFetch : non-null "
                             "validator");
                         // for perm redirects, also update our starting URI

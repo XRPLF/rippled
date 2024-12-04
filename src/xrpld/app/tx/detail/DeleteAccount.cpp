@@ -244,8 +244,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
 
     auto sleAccount = ctx.view.read(keylet::account(account));
     XRPL_ASSERT(
-        sleAccount != nullptr,
-        "ripple::DeleteAccount::preclaim : non-null account");
+        sleAccount, "ripple::DeleteAccount::preclaim : non-null account");
     if (!sleAccount)
         return terNO_ACCOUNT;
 
@@ -349,14 +348,12 @@ DeleteAccount::doApply()
 {
     auto src = view().peek(keylet::account(account_));
     XRPL_ASSERT(
-        src != nullptr,
-        "ripple::DeleteAccount::doApply : non-null source account");
+        src, "ripple::DeleteAccount::doApply : non-null source account");
 
     auto const dstID = ctx_.tx[sfDestination];
     auto dst = view().peek(keylet::account(dstID));
     XRPL_ASSERT(
-        dst != nullptr,
-        "ripple::DeleteAccount::doApply : non-null destination account");
+        dst, "ripple::DeleteAccount::doApply : non-null destination account");
 
     if (!src || !dst)
         return tefBAD_LEDGER;

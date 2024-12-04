@@ -117,9 +117,7 @@ const_iterator::next_page()
     {
         page_ = keylet::page(root_, next);
         sle_ = view_->read(page_);
-        XRPL_ASSERT(
-            sle_ != nullptr,
-            "ripple::const_iterator::next_page : non-null SLE");
+        XRPL_ASSERT(sle_, "ripple::const_iterator::next_page : non-null SLE");
         indexes_ = &sle_->getFieldV256(sfIndexes);
         if (indexes_->empty())
         {
