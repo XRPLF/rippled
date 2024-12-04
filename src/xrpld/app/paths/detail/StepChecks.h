@@ -54,7 +54,7 @@ checkFreeze(
         }
         if (view.rules().enabled(featureDeepFreeze))
         {
-            // Unline normal freeze, a deep frozen trust line acts the same
+            // Unlike normal freeze, a deep frozen trust line acts the same
             // regardless of which side froze it
             if (sle->isFlag(lsfHighDeepFreeze) || sle->isFlag(lsfLowDeepFreeze))
             {
