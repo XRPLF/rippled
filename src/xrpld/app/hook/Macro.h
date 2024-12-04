@@ -10,24 +10,27 @@
  * were then used.
  */
 
+// MSVC doesn't expand __VA_ARGS__ correctly, so use this to work around it
+#define EXPAND1(x) x
 #define LPAREN (
 #define LPAREN (
 #define RPAREN )
 #define COMMA ,
-#define EXPAND(...) __VA_ARGS__
-#define CAT(a, ...) PRIMITIVE_CAT(a, __VA_ARGS__)
+#define EXPAND(...) EXPAND1(__VA_ARGS__)
+#define CAT(a, ...) EXPAND1(PRIMITIVE_CAT(a, __VA_ARGS__))
 #define CAT2(L, R) CAT2_(L, R)
 #define CAT2_(L, R) L##R
-#define PRIMITIVE_CAT(a, ...) a##__VA_ARGS__
+#define PRIMITIVE_CAT(a, ...) EXPAND1(a##__VA_ARGS__)
 #define EMPTY()
 #define DEFER(id) id EMPTY()
-#define OBSTRUCT(...) __VA_ARGS__ DEFER(EMPTY)()
-#define VA_NARGS_IMPL(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, N, ...) N
+#define OBSTRUCT(...) EXPAND1(__VA_ARGS__ DEFER(EMPTY)())
+#define VA_NARGS_IMPL(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, N, ...) \
+    EXPAND1(N)
 #define VA_NARGS(__drop, ...) \
-    VA_NARGS_IMPL(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
+    EXPAND1(VA_NARGS_IMPL(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
 #define FIRST(a, b) a
 #define SECOND(a, b) b
-#define STRIP_TYPES(...) FOR_VARS(SECOND, 0, __VA_ARGS__)
+#define STRIP_TYPES(...) EXPAND1(FOR_VARS(SECOND, 0, __VA_ARGS__))
 
 #define DELIM_0 ,
 #define DELIM_1
@@ -37,24 +40,24 @@
 #define FOR_VAR_1(T, S, D) SEP(T, D)
 #define FOR_VAR_2(T, S, a, b) FOR_VAR_1(T, S, a) DELIM(S) FOR_VAR_1(T, S, b)
 #define FOR_VAR_3(T, S, a, ...) \
-    FOR_VAR_1(T, S, a) DELIM(S) FOR_VAR_2(T, S, __VA_ARGS__)
+    FOR_VAR_1(T, S, a) EXPAND1(DELIM(S) FOR_VAR_2(T, S, __VA_ARGS__))
 #define FOR_VAR_4(T, S, a, ...) \
-    FOR_VAR_1(T, S, a) DELIM(S) FOR_VAR_3(T, S, __VA_ARGS__)
+    FOR_VAR_1(T, S, a) EXPAND1(DELIM(S) FOR_VAR_3(T, S, __VA_ARGS__))
 #define FOR_VAR_5(T, S, a, ...) \
-    FOR_VAR_1(T, S, a) DELIM(S) FOR_VAR_4(T, S, __VA_ARGS__)
+    FOR_VAR_1(T, S, a) EXPAND1(DELIM(S) FOR_VAR_4(T, S, __VA_ARGS__))
 #define FOR_VAR_6(T, S, a, ...) \
-    FOR_VAR_1(T, S, a) DELIM(S) FOR_VAR_5(T, S, __VA_ARGS__)
+    FOR_VAR_1(T, S, a) EXPAND1(DELIM(S) FOR_VAR_5(T, S, __VA_ARGS__))
 #define FOR_VAR_7(T, S, a, ...) \
-    FOR_VAR_1(T, S, a) DELIM(S) FOR_VAR_6(T, S, __VA_ARGS__)
+    FOR_VAR_1(T, S, a) EXPAND1(DELIM(S) FOR_VAR_6(T, S, __VA_ARGS__))
 #define FOR_VAR_8(T, S, a, ...) \
-    FOR_VAR_1(T, S, a) DELIM(S) FOR_VAR_7(T, S, __VA_ARGS__)
+    FOR_VAR_1(T, S, a) EXPAND1(DELIM(S) FOR_VAR_7(T, S, __VA_ARGS__))
 #define FOR_VAR_9(T, S, a, ...) \
-    FOR_VAR_1(T, S, a) DELIM(S) FOR_VAR_8(T, S, __VA_ARGS__)
+    FOR_VAR_1(T, S, a) EXPAND1(DELIM(S) FOR_VAR_8(T, S, __VA_ARGS__))
 #define FOR_VAR_10(T, S, a, ...) \
-    FOR_VAR_1(T, S, a) DELIM(S) FOR_VAR_9(T, S, __VA_ARGS__)
-#define FOR_VARS(T, S, ...)                          \
-    DEFER(CAT(FOR_VAR_, VA_NARGS(NULL, __VA_ARGS__)) \
-              CAT(LPAREN T COMMA S COMMA OBSTRUCT(__VA_ARGS__) RPAREN))
+    FOR_VAR_1(T, S, a) EXPAND1(DELIM(S) FOR_VAR_9(T, S, __VA_ARGS__))
+#define FOR_VARS(T, S, ...)                                       \
+    EXPAND1(DEFER(CAT(FOR_VAR_, VA_NARGS(NULL, __VA_ARGS__)) CAT( \
+        LPAREN T COMMA S COMMA OBSTRUCT(__VA_ARGS__) RPAREN)))
 
 #define SEP(OP, D) EXPAND(OP CAT2(SEP_, D) RPAREN)
 #define SEP_uint32_t LPAREN uint32_t COMMA
@@ -83,19 +86,19 @@
 
 #define WASM_VAL_TYPE(T, b) CAT2(TYP_, T)
 
-#define DECLARE_HOOK_FUNCTION(R, F, ...)                      \
-    R F(hook::HookContext& hookCtx,                           \
-        WasmEdge_MemoryInstanceContext& memoryCtx,            \
-        __VA_ARGS__);                                         \
-    extern WasmEdge_Result WasmFunction##F(                   \
-        void* data_ptr,                                       \
-        WasmEdge_MemoryInstanceContext* memCtx,               \
-        const WasmEdge_Value* in,                             \
-        WasmEdge_Value* out);                                 \
-    extern WasmEdge_ValType WasmFunctionParams##F[];          \
-    extern WasmEdge_ValType WasmFunctionResult##F[];          \
-    extern WasmEdge_FunctionTypeContext* WasmFunctionType##F; \
-    extern WasmEdge_String WasmFunctionName##F;
+#define DECLARE_HOOK_FUNCTION(R, F, ...)                               \
+    EXPAND1(R F(hook::HookContext& hookCtx,                            \
+                WasmEdge_MemoryInstanceContext& memoryCtx,             \
+                __VA_ARGS__);                                          \
+            extern WasmEdge_Result WasmFunction##F(                    \
+                void* data_ptr,                                        \
+                WasmEdge_MemoryInstanceContext* memCtx,                \
+                const WasmEdge_Value* in,                              \
+                WasmEdge_Value* out);                                  \
+            extern WasmEdge_ValType WasmFunctionParams##F[];           \
+            extern WasmEdge_ValType WasmFunctionResult##F[];           \
+            extern WasmEdge_FunctionTypeContext * WasmFunctionType##F; \
+            extern WasmEdge_String WasmFunctionName##F;)
 
 #define DECLARE_HOOK_FUNCNARG(R, F)                           \
     R F(hook::HookContext& hookCtx,                           \
@@ -109,40 +112,40 @@
     extern WasmEdge_FunctionTypeContext* WasmFunctionType##F; \
     extern WasmEdge_String WasmFunctionName##F;
 
-#define DEFINE_HOOK_FUNCTION(R, F, ...)                               \
-    WasmEdge_Result hook_api::WasmFunction##F(                        \
-        void* data_ptr,                                               \
-        WasmEdge_MemoryInstanceContext* memCtx,                       \
-        const WasmEdge_Value* in,                                     \
-        WasmEdge_Value* out)                                          \
-    {                                                                 \
-        int _stack = 0;                                               \
-        FOR_VARS(VAR_ASSIGN, 2, __VA_ARGS__);                         \
-        hook::HookContext* hookCtx =                                  \
-            reinterpret_cast<hook::HookContext*>(data_ptr);           \
-        R return_code =                                               \
-            hook_api::F(*hookCtx, *memCtx, STRIP_TYPES(__VA_ARGS__)); \
-        if (return_code == RC_ROLLBACK || return_code == RC_ACCEPT)   \
-            return WasmEdge_Result_Terminate;                         \
-        out[0] = RET_ASSIGN(R, return_code);                          \
-        return WasmEdge_Result_Success;                               \
-    };                                                                \
-    WasmEdge_ValType hook_api::WasmFunctionParams##F[] = {            \
-        FOR_VARS(WASM_VAL_TYPE, 0, __VA_ARGS__)};                     \
-    WasmEdge_ValType hook_api::WasmFunctionResult##F[1] = {           \
-        WASM_VAL_TYPE(R, dummy)};                                     \
-    WasmEdge_FunctionTypeContext* hook_api::WasmFunctionType##F =     \
-        WasmEdge_FunctionTypeCreate(                                  \
-            WasmFunctionParams##F,                                    \
-            VA_NARGS(NULL, __VA_ARGS__),                              \
-            WasmFunctionResult##F,                                    \
-            1);                                                       \
-    WasmEdge_String hook_api::WasmFunctionName##F =                   \
-        WasmEdge_StringCreateByCString(#F);                           \
-    R hook_api::F(                                                    \
-        hook::HookContext& hookCtx,                                   \
-        WasmEdge_MemoryInstanceContext& memoryCtx,                    \
-        __VA_ARGS__)
+#define DEFINE_HOOK_FUNCTION(R, F, ...)                                       \
+    EXPAND1(                                                                  \
+        WasmEdge_Result hook_api::WasmFunction##F(                            \
+            void* data_ptr,                                                   \
+            WasmEdge_MemoryInstanceContext* memCtx,                           \
+            const WasmEdge_Value* in,                                         \
+            WasmEdge_Value* out) {                                            \
+            int _stack = 0;                                                   \
+            FOR_VARS(VAR_ASSIGN, 2, __VA_ARGS__);                             \
+            hook::HookContext* hookCtx =                                      \
+                reinterpret_cast<hook::HookContext*>(data_ptr);               \
+            R return_code =                                                   \
+                hook_api::F(*hookCtx, *memCtx, STRIP_TYPES(__VA_ARGS__));     \
+            if (return_code == RC_ROLLBACK || return_code == RC_ACCEPT)       \
+                return WasmEdge_Result_Terminate;                             \
+            out[0] = RET_ASSIGN(R, return_code);                              \
+            return WasmEdge_Result_Success;                                   \
+        };                                                                    \
+        WasmEdge_ValType hook_api::WasmFunctionParams##F[] = {FOR_VARS(       \
+            WASM_VAL_TYPE, 0, __VA_ARGS__)};                                  \
+        WasmEdge_ValType hook_api::WasmFunctionResult##F[1] = {WASM_VAL_TYPE( \
+            R, dummy)};                                                       \
+        WasmEdge_FunctionTypeContext* hook_api::WasmFunctionType##F =         \
+            WasmEdge_FunctionTypeCreate(                                      \
+                WasmFunctionParams##F,                                        \
+                VA_NARGS(NULL, __VA_ARGS__),                                  \
+                WasmFunctionResult##F,                                        \
+                1);                                                           \
+        WasmEdge_String hook_api::WasmFunctionName##F =                       \
+            WasmEdge_StringCreateByCString(#F);                               \
+        R hook_api::F(                                                        \
+            hook::HookContext & hookCtx,                                      \
+            WasmEdge_MemoryInstanceContext & memoryCtx,                       \
+            __VA_ARGS__))
 
 #define DEFINE_HOOK_FUNCNARG(R, F)                                    \
     WasmEdge_Result hook_api::WasmFunction##F(                        \
