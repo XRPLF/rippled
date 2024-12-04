@@ -134,14 +134,11 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         AMM ammAlice(env, alice, USD(20'000), BTC(0.5));
 
+        // bob single side deposits with BTC
         ammAlice.deposit(bob, BTC(10));
-        //  BEAST_EXPECT(ammAlice.expectLPTokens(bob, IOUAmount(10)));
 
-        // carol does not have BTC and does single side deposit with USD
+        // carol single side deposits with USD
         ammAlice.deposit(carol, USD(2000));
-        // BEAST_EXPECT(
-        //     ammAlice.expectLPTokens(carol, IOUAmount(4891252930760500,
-        //     -15)));
 
         // increase limit for lptoken lines so that they can transfer lptokens
         // to each other
@@ -194,6 +191,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env(trust(carol, gw["BTC"](100'000)));
         env.close();
 
+        // With fixLPTokenTransfer amendment, carol and bob cannot receive nor
+        // send lptoken if they have unauthorized trustlines
         if (features[fixLPTokenTransfer])
         {
             executeLPTokenPayments(tecPATH_DRY);
@@ -205,6 +204,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
             executeLPTokenPayments(tesSUCCESS);
         }
 
+        // gateway authorizes bob and carol for their respective trustlines
         env(trust(gw, bob["USD"](100'000)), txflags(tfSetfAuth));
         env.close();
         env(trust(gw, carol["BTC"](100'000)), txflags(tfSetfAuth));
@@ -221,6 +221,7 @@ public:
     {
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
+
         for (auto const features : {all, all - fixLPTokenTransfer})
         {
             testRipplingFrozenAsset(features);
