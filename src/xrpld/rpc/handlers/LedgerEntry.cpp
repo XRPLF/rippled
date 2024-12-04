@@ -888,6 +888,7 @@ doLedgerEntry(RPC::JsonContext& context)
                     return jvResult;
                 }
                 found = true;
+                break;
             }
         }
         if (!found)
