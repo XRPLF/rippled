@@ -293,8 +293,7 @@ accountHolds(
 
     // IOU: Return balance on trust line modulo freeze
     auto const sle = view.read(keylet::line(account, issuer, currency));
-    auto const sleIssuer = view.read(keylet::account(issuer));
-    if (!sle || !sleIssuer)
+    if (!sle)
     {
         amount.clear(Issue{currency, issuer});
     }
@@ -316,22 +315,31 @@ accountHolds(
 
         // if it's a LPToken, also need to check if issuers of the asset pair
         // has frozen holder's trustline
-        if (view.rules().enabled(fixLPTokenTransfer) &&
-            sleIssuer->isFieldPresent(sfAMMID))
+        if (view.rules().enabled(fixLPTokenTransfer))
         {
-            auto const sleAmm = view.read(keylet::amm((*sleIssuer)[sfAMMID]));
-
-            assert(sleAmm);
-
-            if ((zeroIfFrozen == fhZERO_IF_FROZEN) &&
-                isLPTokenFrozen(
-                    view, account, (*sleAmm)[sfAsset], (*sleAmm)[sfAsset2]))
+            auto const sleIssuer = view.read(keylet::account(issuer));
+            if (!sleIssuer)
             {
                 amount.clear(Issue{currency, issuer});
             }
+            else if (sleIssuer->isFieldPresent(sfAMMID))
+            {
+                auto const sleAmm =
+                    view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+
+                assert(sleAmm);
+
+                if ((zeroIfFrozen == fhZERO_IF_FROZEN) &&
+                    isLPTokenFrozen(
+                        view, account, (*sleAmm)[sfAsset], (*sleAmm)[sfAsset2]))
+                {
+                    amount.clear(Issue{currency, issuer});
+                }
+            }
         }
     }
-    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(account)
+    JLOG(j.trace()) << "accountHolds:"
+                    << " account=" << to_string(account)
                     << " amount=" << amount.getFullText();
 
     return view.balanceHook(account, issuer, amount);
@@ -480,7 +488,8 @@ xrpLiquid(
     STAmount const amount =
         (balance < reserve) ? STAmount{0} : balance - reserve;
 
-    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(id)
+    JLOG(j.trace()) << "accountHolds:"
+                    << " account=" << to_string(id)
                     << " amount=" << amount.getFullText()
                     << " fullBalance=" << fullBalance.getFullText()
                     << " balance=" << balance.getFullText()

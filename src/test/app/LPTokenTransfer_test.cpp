@@ -48,9 +48,9 @@ namespace test {
 class LPTokenTransfer_test : public jtx::AMMTest
 {
     void
-    testRipplingFrozenAsset(FeatureBitset features)
+    testDirectStep(FeatureBitset features)
     {
-        testcase("Rippling Frozen Asset");
+        testcase("DirectStep");
 
         using namespace jtx;
         Env env{*this, features};
@@ -100,9 +100,9 @@ class LPTokenTransfer_test : public jtx::AMMTest
     }
 
     void
-    testOrderBookFrozenAsset(FeatureBitset features)
+    testBookStep(FeatureBitset features)
     {
-        testcase("Rippling Order Book");
+        testcase("BookStep");
 
         using namespace jtx;
         Env env{*this, features};
@@ -118,6 +118,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         ammAlice.deposit(bob, 1'000);
 
         auto const lpIssue = ammAlice.lptIssue();
+
         env(offer(carol, XRP(10), STAmount{lpIssue, 10}), txflags(tfPassive));
         env.close();
         BEAST_EXPECT(expectOffers(env, carol, 1));
@@ -132,8 +133,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
 
         // bob can still send to lptoken to carol even tho carol's USD is
-        // frozen, regardless of whether fixLPTokenTransfer is enabled or not
-        // Note: Deep freeze is not considered for LPToken transfer
+        // frozen, regardless of whether fixLPTokenTransfer is enabled or
+        // not Note: Deep freeze is not considered for LPToken transfer
         env(pay(bob, carol, STAmount{lpIssue, 1}));
         env.close();
 
@@ -193,6 +194,93 @@ class LPTokenTransfer_test : public jtx::AMMTest
     //         expectOffers(env, alice, 0) && expectOffers(env, carol, 0));
     // });
 
+    void
+    testOfferCreation(FeatureBitset features)
+    {
+        testcase("Create offer");
+
+        using namespace jtx;
+        Env env{*this, features};
+
+        fund(
+            env,
+            gw,
+            {alice, bob, carol},
+            {USD(10'000), EUR(10'000)},
+            Fund::All);
+        AMM ammAlice(env, alice, USD(10'000), EUR(10'000));
+        ammAlice.deposit(carol, 1'000);
+        ammAlice.deposit(bob, 1'000);
+
+        auto const lpIssue = ammAlice.lptIssue();
+
+        if (features[fixLPTokenTransfer])
+        {
+            // gateway freezes carol's USD
+            env(trust(gw, carol["USD"](0), tfSetFreeze));
+            env.close();
+
+            env(offer(carol, XRP(10), STAmount{lpIssue, 10}),
+                txflags(tfPassive),
+                ter(tecUNFUNDED_OFFER));
+            env.close();
+            BEAST_EXPECT(expectOffers(env, carol, 0));
+
+            // gateway freezes carol's USD
+            env(trust(gw, carol["USD"](1'000'000'000), tfClearFreeze));
+            env.close();
+
+            env(offer(carol, XRP(10), STAmount{lpIssue, 10}),
+                txflags(tfPassive));
+            env.close();
+            BEAST_EXPECT(expectOffers(env, carol, 1));
+        }
+        else
+        {
+            env(offer(carol, XRP(10), STAmount{lpIssue, 10}),
+                txflags(tfPassive));
+            env.close();
+            BEAST_EXPECT(expectOffers(env, carol, 1));
+        }
+    }
+
+    void
+    testCheck(FeatureBitset features)
+    {
+        testcase("Check");
+
+        using namespace jtx;
+        Env env{*this, features};
+
+        fund(
+            env,
+            gw,
+            {alice, bob, carol},
+            {USD(10'000), EUR(10'000)},
+            Fund::All);
+        AMM ammAlice(env, alice, USD(10'000), EUR(10'000));
+        ammAlice.deposit(carol, 1'000);
+        ammAlice.deposit(bob, 1'000);
+
+        auto const lpIssue = ammAlice.lptIssue();
+
+        // gateway freezes carol's USD
+        env(trust(gw, carol["USD"](0), tfSetFreeze));
+        env.close();
+
+        uint256 const chkId{keylet::check(carol, env.seq(carol)).key};
+        env(check::create(carol, bob, STAmount{lpIssue, 10}));
+        env.close();
+
+        if (features[fixLPTokenTransfer])
+            env(check::cash(bob, chkId, STAmount{lpIssue, 10}),
+                ter(tecPATH_PARTIAL));
+        else
+            env(check::cash(bob, chkId, STAmount{lpIssue, 10}));
+
+        env.close();
+    }
+
 public:
     void
     run() override
@@ -202,8 +290,10 @@ public:
 
         for (auto const features : {all, all - fixLPTokenTransfer})
         {
-            //  testRipplingFrozenAsset(features);
-            testOrderBookFrozenAsset(features);
+            testDirectStep(features);
+            testBookStep(features);
+            testOfferCreation(features);
+            testCheck(features);
         }
     }
 };
