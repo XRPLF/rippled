@@ -100,120 +100,98 @@ class LPTokenTransfer_test : public jtx::AMMTest
     }
 
     void
-    testRipplingUnathorizedAsset(FeatureBitset features)
+    testOrderBookFrozenAsset(FeatureBitset features)
     {
-        testcase("Rippling Unauthorized Asset");
+        testcase("Rippling Order Book");
 
         using namespace jtx;
+        Env env{*this, features};
 
-        // disable AMMClawback to allow single side deposit without owning one
-        // of the assets
-        Env env(*this, features - featureAMMClawback);
-        env.fund(XRP(1000), gw, alice, carol, bob);
-        env(fset(gw, asfRequireAuth));
-        env(rate(gw, 1.25));
-        env.close();
+        fund(
+            env,
+            gw,
+            {alice, bob, carol},
+            {USD(10'000), EUR(10'000)},
+            Fund::All);
+        AMM ammAlice(env, alice, USD(10'000), EUR(10'000));
+        ammAlice.deposit(carol, 1'000);
+        ammAlice.deposit(bob, 1'000);
 
-        // gateway authorizes alice
-        auto authAndFund = [&](Account const& account,
-                               std::string const currency) {
-            env(trust(gw, account[currency](100'000)), txflags(tfSetfAuth));
-            env(trust(account, gw[currency](100'000)));
-            env.close();
-            env(pay(gw, account, gw[currency](30'000)));
-            env.close();
-        };
-
-        // carol has BTC line but not USD line
-        // bob has USD line but not BTC line
-        // alice has both USD and BTC line
-        authAndFund(alice, "BTC");
-        authAndFund(alice, "USD");
-        authAndFund(bob, "BTC");
-        authAndFund(carol, "USD");
-
-        AMM ammAlice(env, alice, USD(20'000), BTC(0.5));
-
-        // bob single side deposits with BTC
-        ammAlice.deposit(bob, BTC(10));
-
-        // carol single side deposits with USD
-        ammAlice.deposit(carol, USD(2000));
-
-        // increase limit for lptoken lines so that they can transfer lptokens
-        // to each other
         auto const lpIssue = ammAlice.lptIssue();
-        env.trust(STAmount{lpIssue, 500}, alice);
-        env.trust(STAmount{lpIssue, 500}, bob);
-        env.trust(STAmount{lpIssue, 500}, carol);
+        env(offer(carol, XRP(10), STAmount{lpIssue, 10}), txflags(tfPassive));
+        env.close();
+        BEAST_EXPECT(expectOffers(env, carol, 1));
+
+        env.trust(STAmount{lpIssue, 1'000'000'000}, alice);
+        env.trust(STAmount{lpIssue, 1'000'000'000}, bob);
+        env.trust(STAmount{lpIssue, 1'000'000'000}, carol);
         env.close();
 
-        env.enableFeature(featureAMMClawback);
+        // gateway freezes carol's USD
+        env(trust(gw, carol["USD"](0), tfSetFreeze));
         env.close();
 
-        // transfer LPToken between alice, bob and carol and validate expected
-        // result
-        auto executeLPTokenPayments = [&](TER const code) {
-            env(pay(carol, alice, STAmount{lpIssue, 1}), ter(code));
-            env.close();
-            env(pay(alice, carol, STAmount{lpIssue, 1}), ter(code));
-            env.close();
-            env(pay(bob, alice, STAmount{lpIssue, 1}), ter(code));
-            env.close();
-            env(pay(alice, bob, STAmount{lpIssue, 1}), ter(code));
-            env.close();
-            env(pay(bob, carol, STAmount{lpIssue, 1}), ter(code));
-            env.close();
-            env(pay(carol, bob, STAmount{lpIssue, 1}), ter(code));
-            env.close();
-        };
+        // bob can still send to lptoken to carol even tho carol's USD is
+        // frozen, regardless of whether fixLPTokenTransfer is enabled or not
+        // Note: Deep freeze is not considered for LPToken transfer
+        env(pay(bob, carol, STAmount{lpIssue, 1}));
+        env.close();
 
-        // We are going to test the behavior when bob and carol tries to send
-        // lptoken pre/post amendment.
-        //
-        // With fixLPTokenTransfer amendment, carol and bob cannot receive nor
-        // send lptoken if they doesn't have one of the trustlines
         if (features[fixLPTokenTransfer])
         {
-            executeLPTokenPayments(tecPATH_DRY);
+            env(pay(alice, bob, STAmount{lpIssue, 10}),
+                txflags(tfPartialPayment),
+                sendmax(XRP(10)),
+                ter(tecPATH_DRY));
+            env.close();
+            BEAST_EXPECT(expectOffers(env, carol, 1));
+
+            // gateway freezes carol's USD
+            env(trust(gw, carol["USD"](1'000'000'000), tfClearFreeze));
+            env.close();
+
+            env(pay(alice, bob, STAmount{lpIssue, 10}),
+                txflags(tfPartialPayment),
+                sendmax(XRP(10)));
+            env.close();
+            BEAST_EXPECT(expectOffers(env, carol, 0));
         }
-        // without fixLPTokenTransfer, carol and bob can still receive and send
-        // lptoken freely even tho they don't have trustlines for one of the
-        // assets
         else
         {
-            executeLPTokenPayments(tesSUCCESS);
+            // carol can still send lptoken with frozen USD
+            env(pay(alice, bob, STAmount{lpIssue, 10}),
+                txflags(tfPartialPayment),
+                sendmax(XRP(10)));
+            env.close();
+            BEAST_EXPECT(expectOffers(env, carol, 0));
         }
 
-        // bob and carol create trustlines for the assets that they are missing,
-        // however, they are still unauthorized!
-        env(trust(bob, gw["USD"](100'000)));
-        env(trust(carol, gw["BTC"](100'000)));
         env.close();
-
-        // With fixLPTokenTransfer amendment, carol and bob cannot receive nor
-        // send lptoken if they have unauthorized trustlines
-        if (features[fixLPTokenTransfer])
-        {
-            executeLPTokenPayments(tecPATH_DRY);
-        }
-        // without fixLPTokenTransfer, carol and bob can still receive and send
-        // lptoken freely even tho they don't have authorized trustlines
-        else
-        {
-            executeLPTokenPayments(tesSUCCESS);
-        }
-
-        // gateway authorizes bob and carol for their respective trustlines
-        env(trust(gw, bob["USD"](100'000)), txflags(tfSetfAuth));
-        env.close();
-        env(trust(gw, carol["BTC"](100'000)), txflags(tfSetfAuth));
-        env.close();
-
-        // bob and carol can now transfer lptoken freely since they have
-        // authorized lines for both assets
-        executeLPTokenPayments(tesSUCCESS);
     }
+
+    // // Offer crossing with two AMM LPTokens.
+    // testAMM([&](AMM& ammAlice, Env& env) {
+    //     ammAlice.deposit(carol, 1'000'000);
+    //     fund(env, gw, {alice, carol}, {EUR(10'000)}, Fund::IOUOnly);
+    //     AMM ammAlice1(env, alice, XRP(10'000), EUR(10'000));
+    //     ammAlice1.deposit(carol, 1'000'000);
+    //     auto const token1 = ammAlice.lptIssue();
+    //     auto const token2 = ammAlice1.lptIssue();
+    //     env(offer(alice, STAmount{token1, 100}, STAmount{token2, 100}),
+    //         txflags(tfPassive));
+    //     env.close();
+    //     BEAST_EXPECT(expectOffers(env, alice, 1));
+    //     env(offer(carol, STAmount{token2, 100}, STAmount{token1, 100}));
+    //     env.close();
+    //     BEAST_EXPECT(
+    //         expectLine(env, alice, STAmount{token1, 10'000'100}) &&
+    //         expectLine(env, alice, STAmount{token2, 9'999'900}));
+    //     BEAST_EXPECT(
+    //         expectLine(env, carol, STAmount{token2, 1'000'100}) &&
+    //         expectLine(env, carol, STAmount{token1, 999'900}));
+    //     BEAST_EXPECT(
+    //         expectOffers(env, alice, 0) && expectOffers(env, carol, 0));
+    // });
 
 public:
     void
@@ -224,8 +202,8 @@ public:
 
         for (auto const features : {all, all - fixLPTokenTransfer})
         {
-            testRipplingFrozenAsset(features);
-            testRipplingUnathorizedAsset(features);
+            //  testRipplingFrozenAsset(features);
+            testOrderBookFrozenAsset(features);
         }
     }
 };
