@@ -26,14 +26,17 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #ifdef NDEBUG
 #error "Antithesis instrumentation requires Debug build"
 #endif
-#else
-#define NO_ANTITHESIS_SDK
-#define ANTITHESIS_SDK_ALWAYS_POLYFILL(cond, message, ...) \
-    assert((message) && (cond))
-#endif
-
-// Define instrumentation macros ALWAYS ALWAYS_OR_UNREACHABLE UNREACHABLE etc.
 #include <antithesis_sdk.h>
+#else
+// Macros below are copied from antithesis_sdk.h and slightly simplified
+// The duplication is because Visual Studio 2019 cannot compile this header
+// even with the option -Zc:__cplusplus added.
+#define ALWAYS(cond, message, ...) assert((message) && (cond))
+#define ALWAYS_OR_UNREACHABLE(cond, message, ...) assert((message) && (cond))
+#define SOMETIMES(cond, message, ...)
+#define REACHABLE(message, ...)
+#define UNREACHABLE(message, ...) assert((message) && false)
+#endif
 
 #define XRPL_ASSERT ALWAYS_OR_UNREACHABLE
 

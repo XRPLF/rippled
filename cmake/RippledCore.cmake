@@ -90,7 +90,7 @@ target_link_libraries(xrpl.libxrpl
     secp256k1::secp256k1
     xrpl.libpb
     xxHash::xxhash
-    antithesis-sdk-cpp
+    $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>
 )
 
 if(xrpld)
