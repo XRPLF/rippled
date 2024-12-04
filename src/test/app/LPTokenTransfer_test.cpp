@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
   This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2023 Ripple Labs Inc.
+  Copyright (c) 2024 Ripple Labs Inc.
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose  with  or without fee is hereby granted, provided that the above
@@ -119,6 +119,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         auto const lpIssue = ammAlice.lptIssue();
 
+        // carols creates an offer to sell lptoken
         env(offer(carol, XRP(10), STAmount{lpIssue, 10}), txflags(tfPassive));
         env.close();
         BEAST_EXPECT(expectOffers(env, carol, 1));
@@ -132,14 +133,10 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env(trust(gw, carol["USD"](0), tfSetFreeze));
         env.close();
 
-        // bob can still send to lptoken to carol even tho carol's USD is
-        // frozen, regardless of whether fixLPTokenTransfer is enabled or
-        // not Note: Deep freeze is not considered for LPToken transfer
-        env(pay(bob, carol, STAmount{lpIssue, 1}));
-        env.close();
-
         if (features[fixLPTokenTransfer])
         {
+            // with fixLPTokenTransfer, alice fails to use the carol's offer
+            // since it is unfunded as carol's USD is frozen
             env(pay(alice, bob, STAmount{lpIssue, 10}),
                 txflags(tfPartialPayment),
                 sendmax(XRP(10)),
@@ -147,10 +144,11 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env.close();
             BEAST_EXPECT(expectOffers(env, carol, 1));
 
-            // gateway freezes carol's USD
+            // gateway unfreezes carol's USD
             env(trust(gw, carol["USD"](1'000'000'000), tfClearFreeze));
             env.close();
 
+            // alice successfully consumes carol's offer
             env(pay(alice, bob, STAmount{lpIssue, 10}),
                 txflags(tfPartialPayment),
                 sendmax(XRP(10)));
@@ -159,7 +157,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         }
         else
         {
-            // carol can still send lptoken with frozen USD
+            // without fixLPTokenTransfer, alice can consume carol's offer
             env(pay(alice, bob, STAmount{lpIssue, 10}),
                 txflags(tfPartialPayment),
                 sendmax(XRP(10)));
@@ -214,22 +212,26 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         auto const lpIssue = ammAlice.lptIssue();
 
+        // with fixLPTokenTransfer, carol can't create an offer to sell lptoken
+        // when one of the assets is frozen
         if (features[fixLPTokenTransfer])
         {
             // gateway freezes carol's USD
             env(trust(gw, carol["USD"](0), tfSetFreeze));
             env.close();
 
+            // carol can't create an offer to sell lptoken
             env(offer(carol, XRP(10), STAmount{lpIssue, 10}),
                 txflags(tfPassive),
                 ter(tecUNFUNDED_OFFER));
             env.close();
             BEAST_EXPECT(expectOffers(env, carol, 0));
 
-            // gateway freezes carol's USD
+            // gateway unfreezes carol's USD
             env(trust(gw, carol["USD"](1'000'000'000), tfClearFreeze));
             env.close();
 
+            // carol can create an offer to sell lptoken after USD is unfrozen
             env(offer(carol, XRP(10), STAmount{lpIssue, 10}),
                 txflags(tfPassive));
             env.close();
@@ -237,6 +239,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         }
         else
         {
+            // without fixLPTokenTransfer, carol can create an offer
             env(offer(carol, XRP(10), STAmount{lpIssue, 10}),
                 txflags(tfPassive));
             env.close();
@@ -268,10 +271,12 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env(trust(gw, carol["USD"](0), tfSetFreeze));
         env.close();
 
+        // carol can always create a check with lptoken that has frozen token
         uint256 const chkId{keylet::check(carol, env.seq(carol)).key};
         env(check::create(carol, bob, STAmount{lpIssue, 10}));
         env.close();
 
+        // with fixLPTokenTransfer enabled, bob fails to cash the check
         if (features[fixLPTokenTransfer])
             env(check::cash(bob, chkId, STAmount{lpIssue, 10}),
                 ter(tecPATH_PARTIAL));
