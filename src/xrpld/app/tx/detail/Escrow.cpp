@@ -21,6 +21,7 @@
 
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/misc/WasmVM.h>
 #include <xrpld/conditions/Condition.h>
 #include <xrpld/conditions/Fulfillment.h>
 #include <xrpld/ledger/ApplyView.h>
@@ -97,9 +98,18 @@ EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
 }
 
+// TODO: add calculateBaseFee
+
 NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
 {
+    if (ctx.tx.isFieldPresent(sfFinishFunction) &&
+        !ctx.rules.enabled(featureEscrowExtensions))
+    {
+        JLOG(ctx.j.debug()) << "EscrowExtensions not enabled";
+        return temDISABLED;
+    }
+
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
@@ -152,6 +162,17 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         if (condition->type != Type::preimageSha256 &&
             !ctx.rules.enabled(featureCryptoConditionsSuite))
             return temDISABLED;
+    }
+
+    if (ctx.tx.isFieldPresent(sfFinishFunction))
+    {
+        auto const code = ctx.tx.getFieldVL(sfFinishFunction);
+        if (code.size() == 0 /* && code.size() > whateverTheMaxIs */)
+        {
+            JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad size";
+            return temMALFORMED;
+        }
+        // TODO: add check to ensure this is valid WASM code
     }
 
     return preflight2(ctx);
@@ -254,6 +275,8 @@ EscrowCreate::doApply()
     (*slep)[~sfCancelAfter] = ctx_.tx[~sfCancelAfter];
     (*slep)[~sfFinishAfter] = ctx_.tx[~sfFinishAfter];
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
+    (*slep)[~sfFinishFunction] = ctx_.tx[~sfFinishFunction];
+    (*slep)[~sfData] = ctx_.tx[~sfData];
 
     ctx_.view().insert(slep);
 
@@ -384,6 +407,22 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+struct EscrowLedgerDataProvider : public LedgerDataProvider
+{
+    ApplyView& view_;
+
+public:
+    EscrowLedgerDataProvider(ApplyView& view) : view_(view)
+    {
+    }
+
+    int32_t
+    get_ledger_sqn() override
+    {
+        return (int32_t)view_.seq();
+    }
+};
+
 TER
 EscrowFinish::doApply()
 {
@@ -401,11 +440,17 @@ EscrowFinish::doApply()
 
         // Too soon: can't execute before the finish time
         if ((*slep)[~sfFinishAfter] && !after(now, (*slep)[sfFinishAfter]))
+        {
+            JLOG(j_.debug()) << "Too soon";
             return tecNO_PERMISSION;
+        }
 
         // Too late: can't execute after the cancel time
         if ((*slep)[~sfCancelAfter] && after(now, (*slep)[sfCancelAfter]))
+        {
+            JLOG(j_.debug()) << "Too late";
             return tecNO_PERMISSION;
+        }
     }
     else
     {
@@ -413,13 +458,19 @@ EscrowFinish::doApply()
         if ((*slep)[~sfFinishAfter] &&
             ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
                 (*slep)[sfFinishAfter])
+        {
+            JLOG(j_.debug()) << "Too soon?";
             return tecNO_PERMISSION;
+        }
 
         // Too late?
         if ((*slep)[~sfCancelAfter] &&
             ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
                 (*slep)[sfCancelAfter])
+        {
+            JLOG(j_.debug()) << "Too late?";
             return tecNO_PERMISSION;
+        }
     }
 
     // Check cryptocondition fulfillment
@@ -480,6 +531,45 @@ EscrowFinish::doApply()
         if (auto err = verifyDepositPreauth(ctx_, account_, destID, sled);
             !isTesSuccess(err))
             return err;
+    }
+
+    // Execute extension
+    if ((*slep)[~sfFinishFunction])
+    {
+        JLOG(j_.fatal()) << "HAS FINISH FUNCTION";
+        // WASM execution
+        auto const wasmStr = slep->getFieldVL(sfFinishFunction);
+        std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+        std::string funcName("ready");
+
+        auto const escrowTx =
+            ctx_.tx.getJson(JsonOptions::none).toStyledString();
+        auto const escrowObj =
+            slep->getJson(JsonOptions::none).toStyledString();
+        // JLOG(j_.fatal()) << escrowTx;
+        // JLOG(j_.fatal()) << escrowObj;
+        std::vector<uint8_t> escrowTxData(escrowTx.begin(), escrowTx.end());
+        std::vector<uint8_t> escrowObjData(escrowObj.begin(), escrowObj.end());
+
+        EscrowLedgerDataProvider ledgerDataProvider(ctx_.view());
+
+        auto re = runEscrowWasm(wasm, funcName, &ledgerDataProvider);
+        JLOG(j_.fatal()) << "ESCROW RAN";
+        if (re.has_value())
+        {
+            auto reValue = re.value();
+            JLOG(j_.fatal()) << "Success: " + std::to_string(reValue);
+            if (!reValue)
+            {
+                // ctx_.view().update(slep);
+                return tecWASM_REJECTED;
+            }
+        }
+        else
+        {
+            JLOG(j_.fatal()) << "Failure: " + transHuman(re.error());
+            return re.error();
+        }
     }
 
     AccountID const account = (*slep)[sfAccount];
