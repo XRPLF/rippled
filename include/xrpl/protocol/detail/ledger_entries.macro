@@ -22,7 +22,8 @@
 #endif
 
 #ifndef LEDGER_ENTRY_DUPLICATE
-#define LEDGER_ENTRY_DUPLICATE(...) LEDGER_ENTRY(__VA_ARGS__)
+#define EXPAND(x) x
+#define LEDGER_ENTRY_DUPLICATE(...) EXPAND(LEDGER_ENTRY(__VA_ARGS__))
 #endif
 
 /**
@@ -441,4 +442,5 @@ LEDGER_ENTRY(ltCREDENTIAL, 0x0081, Credential, credential, ({
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
 }))
 
+#undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE

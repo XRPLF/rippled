@@ -699,8 +699,8 @@ JSS(write_load);              // out: GetCounts
 #pragma pop_macro("TRANSACTION")
 
 #pragma push_macro("LEDGER_ENTRY")
-#pragma push_macro("LEDGER_ENTRY_DUPLICATE")
 #undef LEDGER_ENTRY
+#pragma push_macro("LEDGER_ENTRY_DUPLICATE")
 #undef LEDGER_ENTRY_DUPLICATE
 
 #define LEDGER_ENTRY(tag, value, name, rpcName, fields) \
@@ -712,8 +712,8 @@ JSS(write_load);              // out: GetCounts
 #include <xrpl/protocol/detail/ledger_entries.macro>
 
 #undef LEDGER_ENTRY
-#undef LEDGER_ENTRY_DUPLICATE
 #pragma pop_macro("LEDGER_ENTRY")
+#undef LEDGER_ENTRY_DUPLICATE
 #pragma pop_macro("LEDGER_ENTRY_DUPLICATE")
 
 #undef JSS
