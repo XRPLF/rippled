@@ -28,6 +28,7 @@
 #include <xrpl/basics/FeeUnits.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/mulDiv.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -242,7 +243,9 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     }
 
     auto sleAccount = ctx.view.read(keylet::account(account));
-    assert(sleAccount);
+    ASSERT(
+        sleAccount != nullptr,
+        "ripple::DeleteAccount::preclaim : non-null account");
     if (!sleAccount)
         return terNO_ACCOUNT;
 
@@ -345,11 +348,15 @@ TER
 DeleteAccount::doApply()
 {
     auto src = view().peek(keylet::account(account_));
-    assert(src);
+    ASSERT(
+        src != nullptr,
+        "ripple::DeleteAccount::doApply : non-null source account");
 
     auto const dstID = ctx_.tx[sfDestination];
     auto dst = view().peek(keylet::account(dstID));
-    assert(dst);
+    ASSERT(
+        dst != nullptr,
+        "ripple::DeleteAccount::doApply : non-null destination account");
 
     if (!src || !dst)
         return tefBAD_LEDGER;
@@ -377,7 +384,9 @@ DeleteAccount::doApply()
                 return {result, SkipEntry::No};
             }
 
-            assert(!"Undeletable entry should be found in preclaim.");
+            UNREACHABLE(
+                "ripple::DeleteAccount::doApply : undeletable item not found "
+                "in preclaim");
             JLOG(j_.error()) << "DeleteAccount undeletable item not "
                                 "found in preclaim.";
             return {tecHAS_OBLIGATIONS, SkipEntry::No};
@@ -391,7 +400,9 @@ DeleteAccount::doApply()
     (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
     ctx_.deliver(mSourceBalance);
 
-    assert((*src)[sfBalance] == XRPAmount(0));
+    ASSERT(
+        (*src)[sfBalance] == XRPAmount(0),
+        "ripple::DeleteAccount::doApply : source balance is zero");
 
     // If there's still an owner directory associated with the source account
     // delete it.

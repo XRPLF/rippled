@@ -214,7 +214,9 @@ struct ConsensusResult
     ConsensusResult(TxSet_t&& s, Proposal_t&& p)
         : txns{std::move(s)}, position{std::move(p)}
     {
-        assert(txns.id() == position.position());
+        ASSERT(
+            txns.id() == position.position(),
+            "ripple::ConsensusResult : valid inputs");
     }
 
     //! The set of transactions consensus agrees go in the ledger

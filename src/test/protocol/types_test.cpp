@@ -28,8 +28,16 @@ struct types_test : public beast::unit_test::suite
     testAccountID()
     {
         auto const s = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-        if (BEAST_EXPECT(parseBase58<AccountID>(s)))
-            BEAST_EXPECT(toBase58(*parseBase58<AccountID>(s)) == s);
+        if (auto const parsed = parseBase58<AccountID>(s); BEAST_EXPECT(parsed))
+        {
+            BEAST_EXPECT(toBase58(*parsed) == s);
+        }
+
+        {
+            auto const s =
+                "âabcd1rNxp4h8apvRis6mJf9Sh8C6iRxfrDWNâabcdAVâ\xc2\x80\xc2\x8f";
+            BEAST_EXPECT(!parseBase58<AccountID>(s));
+        }
     }
 
     void
