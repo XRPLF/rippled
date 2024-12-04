@@ -26,30 +26,31 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #ifdef NDEBUG
 #error "Antithesis instrumentation requires Debug build"
 #endif
-#include <antithesis_sdk.h>
 #else
-#define ALWAYS(cond, name, ...) assert((name) && (cond))
-#define ALWAYS_OR_UNREACHABLE(cond, name, ...) assert((name) && (cond))
-#define SOMETIMES(cond, name, ...)
-#define REACHABLE(name, ...)
-#define UNREACHABLE(name, ...) assert((name) && false)
+#define NO_ANTITHESIS_SDK
+#define ANTITHESIS_SDK_ALWAYS_POLYFILL(cond, message, ...) \
+    assert((message) && (cond))
 #endif
+
+// Define instrumentation macros ALWAYS ALWAYS_OR_UNREACHABLE UNREACHABLE etc.
+#include <antithesis_sdk.h>
 
 #define XRPL_ASSERT ALWAYS_OR_UNREACHABLE
 
 // How to use the instrumentation macros:
 //
 // * XRPL_ASSERT if cond must be true but the line might not be reached during
-//   fuzzing.
+//   fuzzing. Same like `assert` in normal use.
 // * ALWAYS if cond must be true _and_ the line must be reached during fuzzing.
+//   Same like `assert` in normal use.
 // * REACHABLE if the line must be reached during fuzzing
 // * SOMETIMES a hint for the fuzzer to try to make the cond true
 // * UNREACHABLE if the line must not be reached (in fuzzing or in normal use).
+//   Same like `assert(false)` in normal use.
 //
-// NOTE: XRPL_ASSERT has similar semantics as C `assert` macro, with minor
+// NOTE: XRPL_ASSERT has similar semantics as C `assert` macro, with only minor
 // differences:
 // * XRPL_ASSERT must have an unique name (naming convention in CONTRIBUTING.md)
-// * the condition (which comes first) must be *implicitly* convertible to bool
 // * during fuzzing, the program will continue execution past failed XRPL_ASSERT
 //
 // We continue to use regular C `assert` inside unit tests and inside constexpr
@@ -57,10 +58,10 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //
 // NOTE: UNREACHABLE does *not* have the same semantics as std::unreachable.
 // The program will continue execution past an UNREACHABLE in a Release build
-// and during fuzzing (similar to XRPL_ASSERT).
+// and during fuzzing (similar to failed XRPL_ASSERT).
 // Also, the naming convention in UNREACHABLE is subtly different from other
 // instrumentation macros - its name describes the condition which was _not_
-// meant to happen, while name in other macros describe the condition that is
+// meant to happen, while name in other macros describes the condition that is
 // meant to happen (e.g. as in "assert that this happens").
 
 #endif
