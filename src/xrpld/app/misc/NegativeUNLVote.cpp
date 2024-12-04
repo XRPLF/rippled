@@ -89,7 +89,7 @@ NegativeUNLVote::doVoting(
         {
             auto n =
                 choose(prevLedger->info().hash, candidates.toDisableCandidates);
-            ASSERT(
+            XRPL_ASSERT(
                 nidToKeyMap.count(n) != 0,
                 "ripple::NegativeUNLVote::doVoting : found node to disable");
             addTx(seq, nidToKeyMap.at(n), ToDisable, initialSet);
@@ -99,7 +99,7 @@ NegativeUNLVote::doVoting(
         {
             auto n = choose(
                 prevLedger->info().hash, candidates.toReEnableCandidates);
-            ASSERT(
+            XRPL_ASSERT(
                 nidToKeyMap.count(n) != 0,
                 "ripple::NegativeUNLVote::doVoting : found node to enable");
             addTx(seq, nidToKeyMap.at(n), ToReEnable, initialSet);
@@ -144,7 +144,7 @@ NegativeUNLVote::choose(
     uint256 const& randomPadData,
     std::vector<NodeID> const& candidates)
 {
-    ASSERT(
+    XRPL_ASSERT(
         !candidates.empty(),
         "ripple::NegativeUNLVote::choose : non-empty input");
     static_assert(NodeID::bytes <= uint256::bytes);

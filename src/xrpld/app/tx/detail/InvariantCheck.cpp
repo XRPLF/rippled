@@ -400,7 +400,7 @@ AccountRootsDeletedClean::finalize(
             JLOG(j.fatal())
                 << "Invariant failed: account deletion left behind a "
                 << typeName << " object";
-            ASSERT(
+            XRPL_ASSERT(
                 enforce,
                 "ripple::AccountRootsDeletedClean::finalize::objectExists : "
                 "account deletion left no objects behind");

@@ -586,7 +586,7 @@ public:
     virtual ServerHandler&
     getServerHandler() override
     {
-        ASSERT(
+        XRPL_ASSERT(
             serverHandler_ != nullptr,
             "ripple::ApplicationImp::getServerHandler : non-null server "
             "handle");
@@ -795,7 +795,7 @@ public:
     Overlay&
     overlay() override
     {
-        ASSERT(
+        XRPL_ASSERT(
             overlay_ != nullptr,
             "ripple::ApplicationImp::overlay : non-null overlay");
         return *overlay_;
@@ -804,7 +804,7 @@ public:
     TxQ&
     getTxQ() override
     {
-        ASSERT(
+        XRPL_ASSERT(
             txQ_.get() != nullptr,
             "ripple::ApplicationImp::getTxQ : non-null transaction queue");
         return *txQ_;
@@ -813,7 +813,7 @@ public:
     RelationalDatabase&
     getRelationalDatabase() override
     {
-        ASSERT(
+        XRPL_ASSERT(
             mRelationalDatabase.get() != nullptr,
             "ripple::ApplicationImp::getRelationalDatabase : non-null "
             "relational database");
@@ -823,7 +823,7 @@ public:
     DatabaseCon&
     getWalletDB() override
     {
-        ASSERT(
+        XRPL_ASSERT(
             mWalletDB.get() != nullptr,
             "ripple::ApplicationImp::getWalletDB : non-null wallet database");
         return *mWalletDB;
@@ -840,7 +840,7 @@ public:
     bool
     initRelationalDatabase()
     {
-        ASSERT(
+        XRPL_ASSERT(
             mWalletDB.get() == nullptr,
             "ripple::ApplicationImp::initRelationalDatabase : null wallet "
             "database");
@@ -1245,7 +1245,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             for (auto const& [a, vote] : amendments)
             {
                 auto const f = ripple::getRegisteredFeature(a);
-                ASSERT(
+                XRPL_ASSERT(
                     f.has_value(),
                     "ripple::ApplicationImp::setup : registered feature");
                 if (f)
@@ -1710,7 +1710,7 @@ ApplicationImp::startGenesisLedger()
     auto const next =
         std::make_shared<Ledger>(*genesis, timeKeeper().closeTime());
     next->updateSkipList();
-    ASSERT(
+    XRPL_ASSERT(
         next->info().seq < XRP_LEDGER_EARLIEST_FEES ||
             next->read(keylet::fees()),
         "ripple::ApplicationImp::startGenesisLedger : valid ledger fees");
@@ -1732,7 +1732,7 @@ ApplicationImp::getLastFullLedger()
         if (!ledger)
             return ledger;
 
-        ASSERT(
+        XRPL_ASSERT(
             ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
                 ledger->read(keylet::fees()),
             "ripple::ApplicationImp::getLastFullLedger : valid ledger fees");
@@ -1887,7 +1887,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
         loadLedger->stateMap().flushDirty(hotACCOUNT_NODE);
 
-        ASSERT(
+        XRPL_ASSERT(
             loadLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
                 loadLedger->read(keylet::fees()),
             "ripple::ApplicationImp::loadLedgerFromFile : valid ledger fees");

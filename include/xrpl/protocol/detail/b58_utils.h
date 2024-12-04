@@ -148,11 +148,11 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
         unsigned __int128 const denom128 = denom;
         unsigned __int128 const d = num / denom128;
         unsigned __int128 const r = num - (denom128 * d);
-        ASSERT(
+        XRPL_ASSERT(
             d >> 64 == 0,
             "ripple::b58_fast::detail::inplace_bigint_div_rem::div_rem_64 : "
             "valid division result");
-        ASSERT(
+        XRPL_ASSERT(
             r >> 64 == 0,
             "ripple::b58_fast::detail::inplace_bigint_div_rem::div_rem_64 : "
             "valid remainder");
@@ -179,7 +179,7 @@ b58_10_to_b58_be(std::uint64_t input)
 {
     [[maybe_unused]] static constexpr std::uint64_t B_58_10 =
         430804206899405824;  // 58^10;
-    ASSERT(
+    XRPL_ASSERT(
         input < B_58_10,
         "ripple::b58_fast::detail::b58_10_to_b58_be : valid input");
     constexpr std::size_t resultSize = 10;

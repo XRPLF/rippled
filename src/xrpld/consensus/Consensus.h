@@ -863,7 +863,7 @@ Consensus<Adaptor>::gotTxSet(
     {
         // Our position is added to acquired_ as soon as we create it,
         // so this txSet must differ
-        ASSERT(
+        XRPL_ASSERT(
             id != result_->position.position(),
             "ripple::Consensus::gotTxSet : updated transaction set");
         bool any = false;
@@ -1010,7 +1010,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::handleWrongLedger(typename Ledger_t::ID const& lgrId)
 {
-    ASSERT(
+    XRPL_ASSERT(
         lgrId != prevLedgerID_ || previousLedger_.id() != lgrId,
         "ripple::Consensus::handleWrongLedger : have wrong ledger");
 
@@ -1263,7 +1263,7 @@ void
 Consensus<Adaptor>::phaseEstablish()
 {
     // can only establish consensus if we already took a stance
-    ASSERT(
+    XRPL_ASSERT(
         result_.has_value(),
         "ripple::Consensus::phaseEstablish : result is set");
 
@@ -1313,7 +1313,7 @@ void
 Consensus<Adaptor>::closeLedger()
 {
     // We should not be closing if we already have a position
-    ASSERT(!result_, "ripple::Consensus::closeLedger : result is not set");
+    XRPL_ASSERT(!result_, "ripple::Consensus::closeLedger : result is not set");
 
     phase_ = ConsensusPhase::establish;
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::establish";
@@ -1366,7 +1366,7 @@ void
 Consensus<Adaptor>::updateOurPositions()
 {
     // We must have a position if we are updating it
-    ASSERT(
+    XRPL_ASSERT(
         result_.has_value(),
         "ripple::Consensus::updateOurPositions : result is set");
     ConsensusParms const& parms = adaptor_.parms();
@@ -1552,7 +1552,7 @@ bool
 Consensus<Adaptor>::haveConsensus()
 {
     // Must have a stance if we are checking for consensus
-    ASSERT(
+    XRPL_ASSERT(
         result_.has_value(), "ripple::Consensus::haveConsensus : has result");
 
     // CHECKME: should possibly count unacquired TX sets as disagreeing
@@ -1628,7 +1628,7 @@ void
 Consensus<Adaptor>::createDisputes(TxSet_t const& o)
 {
     // Cannot create disputes without our stance
-    ASSERT(
+    XRPL_ASSERT(
         result_.has_value(),
         "ripple::Consensus::createDisputes : result is set");
 
@@ -1651,7 +1651,7 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o)
     {
         ++dc;
         // create disputed transactions (from the ledger that has them)
-        ASSERT(
+        XRPL_ASSERT(
             (inThisSet && result_->txns.find(txId) && !o.find(txId)) ||
                 (!inThisSet && !result_->txns.find(txId) && o.find(txId)),
             "ripple::Consensus::createDisputes : has disputed transactions");
@@ -1690,7 +1690,7 @@ void
 Consensus<Adaptor>::updateDisputes(NodeID_t const& node, TxSet_t const& other)
 {
     // Cannot updateDisputes without our stance
-    ASSERT(
+    XRPL_ASSERT(
         result_.has_value(),
         "ripple::Consensus::updateDisputes : result is set");
 

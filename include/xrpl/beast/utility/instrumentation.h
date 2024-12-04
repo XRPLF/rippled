@@ -35,29 +35,31 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define UNREACHABLE(name, ...) assert((name) && false)
 #endif
 
-#define ASSERT ALWAYS_OR_UNREACHABLE
+#define XRPL_ASSERT ALWAYS_OR_UNREACHABLE
 
 // How to use the instrumentation macros:
 //
-// ALWAYS if cond must be true and the line must be reached during fuzzing
-// ASSERT if cond must be true but the line might not be reached during fuzzing
-// REACHABLE if the line must be reached during fuzzing
-// SOMETIMES a hint for the fuzzer to try to make the cond true
-// UNREACHABLE if the line must not be reached (in fuzzing or in normal use)
+// * XRPL_ASSERT if cond must be true but the line might not be reached during
+//   fuzzing.
+// * ALWAYS if cond must be true _and_ the line must be reached during fuzzing.
+// * REACHABLE if the line must be reached during fuzzing
+// * SOMETIMES a hint for the fuzzer to try to make the cond true
+// * UNREACHABLE if the line must not be reached (in fuzzing or in normal use).
 //
-// NOTE: ASSERT has similar semantics as C assert macro, with minor differences:
-// * ASSERT must have an unique name (naming convention in CONTRIBUTING.md)
+// NOTE: XRPL_ASSERT has similar semantics as C `assert` macro, with minor
+// differences:
+// * XRPL_ASSERT must have an unique name (naming convention in CONTRIBUTING.md)
 // * the condition (which comes first) must be *implicitly* convertible to bool
-// * during fuzzing, the program will continue execution past a failed ASSERT
+// * during fuzzing, the program will continue execution past failed XRPL_ASSERT
 //
-// We continue to use regular C assert inside unit tests and inside constexpr
+// We continue to use regular C `assert` inside unit tests and inside constexpr
 // functions.
 //
 // NOTE: UNREACHABLE does *not* have the same semantics as std::unreachable.
 // The program will continue execution past an UNREACHABLE in a Release build
-// and during fuzzing (similar to ASSERT).
+// and during fuzzing (similar to XRPL_ASSERT).
 // Also, the naming convention in UNREACHABLE is subtly different from other
-// instrumentation macros - its name describes the condition which was *not*
+// instrumentation macros - its name describes the condition which was _not_
 // meant to happen, while name in other macros describe the condition that is
 // meant to happen (e.g. as in "assert that this happens").
 

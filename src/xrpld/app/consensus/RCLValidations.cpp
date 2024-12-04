@@ -50,7 +50,7 @@ RCLValidatedLedger::RCLValidatedLedger(
     auto const hashIndex = ledger->read(keylet::skip());
     if (hashIndex)
     {
-        ASSERT(
+        XRPL_ASSERT(
             hashIndex->getFieldU32(sfLastLedgerSequence) == (seq() - 1),
             "ripple::RCLValidatedLedger::RCLValidatedLedger(Ledger) : valid "
             "last ledger sequence");
@@ -154,10 +154,10 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
         return std::nullopt;
     }
 
-    ASSERT(
+    XRPL_ASSERT(
         !ledger->open() && ledger->isImmutable(),
         "ripple::RCLValidationsAdaptor::acquire : valid ledger state");
-    ASSERT(
+    XRPL_ASSERT(
         ledger->info().hash == hash,
         "ripple::RCLValidationsAdaptor::acquire : ledger hash match");
 
@@ -198,7 +198,7 @@ handleNewValidation(
         {
             if (bypassAccept == BypassAccept::yes)
             {
-                ASSERT(
+                XRPL_ASSERT(
                     j.has_value(),
                     "ripple::handleNewValidation : journal is available");
                 if (j.has_value())

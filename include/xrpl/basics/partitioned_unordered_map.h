@@ -246,7 +246,7 @@ public:
             ? *partitions
             : std::thread::hardware_concurrency();
         map_.resize(partitions_);
-        ASSERT(
+        XRPL_ASSERT(
             partitions_ != 0,
             "ripple::partitioned_unordered_map::partitioned_unordered_map : "
             "nonzero partitions");

@@ -275,7 +275,7 @@ public:
     Status
     fetch(void const* key, std::shared_ptr<NodeObject>* pObject) override
     {
-        ASSERT(
+        XRPL_ASSERT(
             m_db != nullptr,
             "ripple::NodeStore::RocksDBBackend::fetch : non-null database");
         pObject->reset();
@@ -353,7 +353,7 @@ public:
     void
     storeBatch(Batch const& batch) override
     {
-        ASSERT(
+        XRPL_ASSERT(
             m_db != nullptr,
             "ripple::NodeStore::RocksDBBackend::storeBatch : non-null "
             "database");
@@ -388,7 +388,7 @@ public:
     void
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        ASSERT(
+        XRPL_ASSERT(
             m_db != nullptr,
             "ripple::NodeStore::RocksDBBackend::for_each : non-null database");
         rocksdb::ReadOptions const options;

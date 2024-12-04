@@ -243,7 +243,7 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     }
 
     auto sleAccount = ctx.view.read(keylet::account(account));
-    ASSERT(
+    XRPL_ASSERT(
         sleAccount != nullptr,
         "ripple::DeleteAccount::preclaim : non-null account");
     if (!sleAccount)
@@ -348,13 +348,13 @@ TER
 DeleteAccount::doApply()
 {
     auto src = view().peek(keylet::account(account_));
-    ASSERT(
+    XRPL_ASSERT(
         src != nullptr,
         "ripple::DeleteAccount::doApply : non-null source account");
 
     auto const dstID = ctx_.tx[sfDestination];
     auto dst = view().peek(keylet::account(dstID));
-    ASSERT(
+    XRPL_ASSERT(
         dst != nullptr,
         "ripple::DeleteAccount::doApply : non-null destination account");
 
@@ -400,7 +400,7 @@ DeleteAccount::doApply()
     (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
     ctx_.deliver(mSourceBalance);
 
-    ASSERT(
+    XRPL_ASSERT(
         (*src)[sfBalance] == XRPAmount(0),
         "ripple::DeleteAccount::doApply : source balance is zero");
 

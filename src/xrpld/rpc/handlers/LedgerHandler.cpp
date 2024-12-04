@@ -135,7 +135,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
         {
             for (auto& i : ledger->txs)
             {
-                ASSERT(
+                XRPL_ASSERT(
                     i.first != nullptr,
                     "ripple::doLedgerGrpc : non-null transaction");
                 if (request.expand())
@@ -213,7 +213,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
             obj->set_key(k.data(), k.size());
             if (inDesired)
             {
-                ASSERT(
+                XRPL_ASSERT(
                     inDesired->size() > 0,
                     "ripple::doLedgerGrpc : non-empty desired");
                 obj->set_data(inDesired->data(), inDesired->size());
