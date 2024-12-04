@@ -52,8 +52,13 @@ public:
         operation on this object is to call the
         destructor.
     */
-    void
-    apply(OpenView& to, STTx const& tx, TER ter, beast::Journal j);
+    std::optional<TxMeta>
+    apply(
+        OpenView& to,
+        STTx const& tx,
+        TER ter,
+        bool isDryRun,
+        beast::Journal j);
 
     /** Set the amount of currency delivered.
 

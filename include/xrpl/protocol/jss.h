@@ -107,7 +107,9 @@ JSS(SettleDelay);                        // in: TransactionSign
 JSS(SendMax);                            // in: TransactionSign
 JSS(Sequence);                           // in/out: TransactionSign; field.
 JSS(SetFlag);                            // field.
+JSS(Signer);                             // field.
 JSS(SignerList);                         // ledger type.
+JSS(Signers);                            // field.
 JSS(SigningPubKey);                      // field.
 JSS(Subject);                            // in: Credential transactions
 JSS(TakerGets);                          // field.

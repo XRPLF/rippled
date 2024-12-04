@@ -1062,11 +1062,10 @@ public:
 
             env.app().openLedger().modify(
                 [&](OpenView& view, beast::Journal j) {
-                    // No need to initialize, since it's about to get set
-                    bool didApply;
-                    std::tie(parsed.ter, didApply) = ripple::apply(
+                    auto result = ripple::apply(
                         env.app(), view, *jt.stx, tapNONE, env.journal);
-                    return didApply;
+                    parsed.ter = result.ter;
+                    return result.applied;
                 });
             env.postconditions(jt, parsed);
         }
@@ -4174,8 +4173,8 @@ public:
                 env.jt(noop(alice), seq(aliceSeq), openLedgerFee(env));
             auto const result =
                 ripple::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
-            BEAST_EXPECT(result.first == tesSUCCESS && result.second);
-            return result.second;
+            BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
+            return result.applied;
         });
         // the queued transaction is still there
         checkMetrics(__LINE__, env, 1, std::nullopt, 5, 3, 256);
@@ -4246,8 +4245,8 @@ public:
                 noop(alice), ticket::use(tktSeq0 + 1), openLedgerFee(env));
             auto const result =
                 ripple::apply(env.app(), view, *tx.stx, tapUNLIMITED, j);
-            BEAST_EXPECT(result.first == tesSUCCESS && result.second);
-            return result.second;
+            BEAST_EXPECT(result.ter == tesSUCCESS && result.applied);
+            return result.applied;
         });
         // the queued transaction is still there
         checkMetrics(__LINE__, env, 1, std::nullopt, 5, 3, 256);

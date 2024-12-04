@@ -2160,6 +2160,31 @@ public:
             BEAST_EXPECT(RPC::contains_error(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
+
+        {
+            // transaction with a higher base fee
+            Json::Value req;
+            test::jtx::Account const alice("alice");
+            Json::Reader().parse(
+                "{ \"tx_json\" : { \"TransactionType\": \"AccountDelete\", "
+                "\"Account\": \"" +
+                    env.master.human() + "\", \"Destination\": \"" +
+                    alice.human() + "\" } } ",
+                req);
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] == 50000000);
+        }
     }
 
     void

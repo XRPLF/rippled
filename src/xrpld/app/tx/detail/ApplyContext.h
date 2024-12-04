@@ -69,6 +69,12 @@ public:
         return *view_;
     }
 
+    ApplyFlags const&
+    flags()
+    {
+        return flags_;
+    }
+
     /** Sets the DeliveredAmount field in the metadata */
     void
     deliver(STAmount const& amount)
@@ -81,7 +87,7 @@ public:
     discard();
 
     /** Apply the transaction result to the base. */
-    void apply(TER);
+    std::optional<TxMeta> apply(TER);
 
     /** Get the number of unapplied changes. */
     std::size_t

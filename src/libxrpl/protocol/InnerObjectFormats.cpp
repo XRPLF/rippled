@@ -36,7 +36,7 @@ InnerObjectFormats::InnerObjectFormats()
             {sfWalletLocator, soeOPTIONAL},
         });
 
-    add(sfSigner.jsonName.c_str(),
+    add(sfSigner.jsonName,
         sfSigner.getCode(),
         {
             {sfAccount, soeREQUIRED},

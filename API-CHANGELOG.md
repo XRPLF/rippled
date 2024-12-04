@@ -83,21 +83,26 @@ The [commandline](https://xrpl.org/docs/references/http-websocket-apis/api-conve
 
 The `network_id` field was added in the `server_info` response in version 1.5.0 (2019), but it is not returned in [reporting mode](https://xrpl.org/rippled-server-modes.html#reporting-mode). However, use of reporting mode is now discouraged, in favor of using [Clio](https://github.com/XRPLF/clio) instead.
 
+## XRP Ledger server version 2.3.0
+
+### BREAKING CHANGES
+
+- `book_changes`: If the requested ledger version is not available on this node, a `ledgerNotFound` error is returned and the node does not attempt to acquire the ledger from the p2p network (as with other non-admin RPCs). Admins can still attempt to retrieve old ledgers with the `ledger_request` RPC.
+
+### Additions
+
+Additions are intended to be non-breaking (because they are purely additive).
+
+- `book_changes`: Returns a `validated` field in its response, which was missing in prior versions.
+- `simulate`: A new RPC that executes a dry run of a transaction submission without actually submitting it to the network for inclusion.
+
 ## XRP Ledger server version 2.2.0
 
 The following is a non-breaking addition to the API.
 
 - The `feature` method now has a non-admin mode for users. (It was previously only available to admin connections.) The method returns an updated list of amendments, including their names and other information. ([#4781](https://github.com/XRPLF/rippled/pull/4781))
 
-### Breaking change in 2.3
-
-- `book_changes`: If the requested ledger version is not available on this node, a `ledgerNotFound` error is returned and the node does not attempt to acquire the ledger from the p2p network (as with other non-admin RPCs).
-
-Admins can still attempt to retrieve old ledgers with the `ledger_request` RPC.
-
-### Addition in 2.3
-
-- `book_changes`: Returns a `validated` field in its response, which was missing in prior versions.
+## XRP Ledger server version 2.0.0
 
 The following additions are non-breaking (because they are purely additive).
 
@@ -147,7 +152,7 @@ The following additions are non-breaking (because they are purely additive).
 
 [Version 1.11.0](https://github.com/XRPLF/rippled/releases/tag/1.11.0) was released on Jun 20, 2023.
 
-### Breaking changes in 1.11
+### Breaking changes
 
 - Added the ability to mark amendments as obsolete. For the `feature` admin API, there is a new possible value for the `vetoed` field. (https://github.com/XRPLF/rippled/pull/4291)
   - The value of `vetoed` can now be `true`, `false`, or `"Obsolete"`.
@@ -166,7 +171,7 @@ The following additions are non-breaking (because they are purely additive).
     - `telREQUIRES_NETWORK_ID`: a `NetworkID` is required, but is not present. Add the field to the transaction, and try again.
     - `telWRONG_NETWORK`: a `NetworkID` is specified, but it is for a different network. Submit the transaction to a different server which is connected to the correct network.
 
-### Additions and bug fixes in 1.11
+### Additions and bug fixes
 
 - Added `nftoken_id`, `nftoken_ids` and `offer_id` meta fields into NFT `tx` and `account_tx` responses. (https://github.com/XRPLF/rippled/pull/4447)
 - Added an `account_flags` object to the `account_info` method response. (https://github.com/XRPLF/rippled/pull/4459)
@@ -178,7 +183,7 @@ The following additions are non-breaking (because they are purely additive).
 [Version 1.10.0](https://github.com/XRPLF/rippled/releases/tag/1.10.0)
 was released on Mar 14, 2023.
 
-### Breaking changes in 1.10
+### Breaking changes
 
 - If the `XRPFees` feature is enabled, the `fee_ref` field will be
   removed from the [ledger subscription stream](https://xrpl.org/subscribe.html#ledger-stream), because it will no longer
