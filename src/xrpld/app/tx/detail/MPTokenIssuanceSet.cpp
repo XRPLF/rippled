@@ -43,7 +43,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     else if ((txFlags & tfMPTLock) && (txFlags & tfMPTUnlock))
         return temINVALID_FLAG;
 
-    auto const accountID = ctx.account;
+    auto const accountID = ctx.tx[sfAccount];
     auto const holderID = ctx.tx[~sfHolder];
     if (holderID && accountID == holderID)
         return temMALFORMED;
@@ -65,7 +65,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     // ensure it is issued by the tx submitter
-    if ((*sleMptIssuance)[sfIssuer] != ctx.account)
+    if ((*sleMptIssuance)[sfIssuer] != ctx.tx[sfAccount])
         return tecNO_PERMISSION;
 
     if (auto const holderID = ctx.tx[~sfHolder])
@@ -104,13 +104,13 @@ MPTokenIssuanceSet::doApply()
 
     bool bLock = txFlags & tfMPTLock;
     bool bUnlock = txFlags & tfMPTUnlock;
-    if (ctx_.isDelegated && !ctx_.gpSet.empty())
+
+    if (ctx_.tx.isDelegated() && !ctx_.permissions.empty())
     {
-        // if gpSet is not empty, granular delegation is happening.
-        if (bLock && ctx_.gpSet.find(gpMPTokenIssuanceLock) == ctx_.gpSet.end())
+        // if permissions is not empty, granular delegation is happening.
+        if (bLock && !ctx_.permissions.contains(MPTokenIssuanceLock))
             return terNO_AUTH;
-        if (bUnlock &&
-            ctx_.gpSet.find(gpMPTokenIssuanceUnlock) == ctx_.gpSet.end())
+        if (bUnlock && !ctx_.permissions.contains(MPTokenIssuanceUnlock))
             return terNO_AUTH;
     }
 

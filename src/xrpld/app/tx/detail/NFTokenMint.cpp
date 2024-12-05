@@ -84,7 +84,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
     }
 
     // An issuer must only be set if the tx is executed by the minter
-    if (auto iss = ctx.tx[~sfIssuer]; iss == ctx.account)
+    if (auto iss = ctx.tx[~sfIssuer]; iss == ctx.tx[sfAccount])
         return temMALFORMED;
 
     if (auto uri = ctx.tx[~sfURI])
@@ -104,7 +104,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
         // do the validation.  We pass tfSellNFToken as the transaction flags
         // because a Mint is only allowed to create a sell offer.
         if (NotTEC notTec = nft::tokenOfferCreatePreflight(
-                ctx.account,
+                ctx.tx[sfAccount],
                 ctx.tx[sfAmount],
                 ctx.tx[~sfDestination],
                 ctx.tx[~sfExpiration],
@@ -177,7 +177,8 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
         if (!sle)
             return tecNO_ISSUER;
 
-        if (auto const minter = (*sle)[~sfNFTokenMinter]; minter != ctx.account)
+        if (auto const minter = (*sle)[~sfNFTokenMinter];
+            minter != ctx.tx[sfAccount])
             return tecNO_PERMISSION;
     }
 
@@ -192,8 +193,8 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
         // because a Mint is only allowed to create a sell offer.
         if (TER const ter = nft::tokenOfferCreatePreclaim(
                 ctx.view,
-                ctx.account,
-                ctx.tx[~sfIssuer].value_or(ctx.account),
+                ctx.tx[sfAccount],
+                ctx.tx[~sfIssuer].value_or(ctx.tx[sfAccount]),
                 ctx.tx[sfAmount],
                 ctx.tx[~sfDestination],
                 extractNFTokenFlagsFromTxFlags(ctx.tx.getFlags()),
@@ -321,7 +322,7 @@ NFTokenMint::doApply()
         // because a Mint is only allowed to create a sell offer.
         if (TER const ter = nft::tokenOfferCreateApply(
                 view(),
-                account_,
+                ctx_.tx[sfAccount],
                 ctx_.tx[sfAmount],
                 ctx_.tx[~sfDestination],
                 ctx_.tx[~sfExpiration],

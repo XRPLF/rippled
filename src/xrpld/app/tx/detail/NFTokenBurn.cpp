@@ -51,7 +51,7 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
         if (ctx.tx.isFieldPresent(sfOwner))
             return ctx.tx.getAccountID(sfOwner);
 
-        return ctx.account;
+        return ctx.tx[sfAccount];
     }();
 
     if (!nft::findToken(ctx.view, owner, ctx.tx[sfNFTokenID]))
@@ -59,7 +59,7 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
 
     // The owner of a token can always burn it, but the issuer can only
     // do so if the token is marked as burnable.
-    if (auto const account = ctx.account; owner != account)
+    if (auto const account = ctx.tx[sfAccount]; owner != account)
     {
         if (!(nft::getFlags(ctx.tx[sfNFTokenID]) & nft::flagBurnable))
             return tecNO_PERMISSION;
@@ -93,7 +93,7 @@ NFTokenBurn::doApply()
     auto const ret = nft::removeToken(
         view(),
         ctx_.tx.isFieldPresent(sfOwner) ? ctx_.tx.getAccountID(sfOwner)
-                                        : account_,
+                                        : ctx_.tx.getAccountID(sfAccount),
         ctx_.tx[sfNFTokenID]);
 
     // Should never happen since preclaim() verified the token is present.

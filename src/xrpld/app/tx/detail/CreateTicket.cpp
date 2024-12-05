@@ -31,7 +31,7 @@ TxConsequences
 CreateTicket::makeTxConsequences(PreflightContext const& ctx)
 {
     // Create TxConsequences identifying the number of sequences consumed.
-    return TxConsequences{ctx.tx, ctx.tx[sfTicketCount]};
+    return TxConsequences{ctx.tx.getTx(), ctx.tx[sfTicketCount]};
 }
 
 NotTEC
@@ -56,7 +56,7 @@ CreateTicket::preflight(PreflightContext const& ctx)
 TER
 CreateTicket::preclaim(PreclaimContext const& ctx)
 {
-    auto const id = ctx.account;
+    auto const id = ctx.tx[sfAccount];
     auto const sleAccountRoot = ctx.view.read(keylet::account(id));
     if (!sleAccountRoot)
         return terNO_ACCOUNT;

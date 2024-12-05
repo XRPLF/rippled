@@ -170,6 +170,7 @@ JSS(attestations);
 JSS(attestation_reward_account);
 JSS(auction_slot);            // out: amm_info
 JSS(authorized);              // out: AccountLines
+JSS(authorize);               // out: account_permission
 JSS(authorized_credentials);   // in: ledger_entry DepositPreauth
 JSS(auth_accounts);           // out: amm_info
 JSS(auth_change);             // out: AccountInfo

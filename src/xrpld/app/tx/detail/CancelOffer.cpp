@@ -53,7 +53,7 @@ CancelOffer::preflight(PreflightContext const& ctx)
 TER
 CancelOffer::preclaim(PreclaimContext const& ctx)
 {
-    auto const id = ctx.account;
+    auto const id = ctx.tx[sfAccount];
     auto const offerSequence = ctx.tx[sfOfferSequence];
 
     auto const sle = ctx.view.read(keylet::account(id));

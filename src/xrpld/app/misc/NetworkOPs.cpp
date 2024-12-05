@@ -2993,7 +2993,9 @@ NetworkOPsImp::transJson(
 
     if (transaction->getTxnType() == ttOFFER_CREATE)
     {
-        auto const account = transaction->getAccountID(sfAccount);
+        auto const& account = transaction->isFieldPresent(sfOnBehalfOf)
+            ? transaction->getAccountID(sfOnBehalfOf)
+            : transaction->getAccountID(sfAccount);
         auto const amount = transaction->getFieldAmount(sfTakerGets);
 
         // If the offer create is not self funded then add the owner balance

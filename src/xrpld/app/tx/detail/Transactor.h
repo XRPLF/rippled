@@ -33,18 +33,16 @@ struct PreflightContext
 {
 public:
     Application& app;
-    STTx const& tx;
+    STTxWr const& tx;
     Rules const rules;
     ApplyFlags flags;
-    AccountID const account;
     beast::Journal const j;
 
     PreflightContext(
         Application& app_,
-        STTx const& tx_,
+        STTxWr const& tx_,
         Rules const& rules_,
         ApplyFlags flags_,
-        AccountID const account_,
         beast::Journal j_);
 
     PreflightContext&
@@ -58,28 +56,22 @@ public:
     Application& app;
     ReadView const& view;
     TER preflightResult;
-    STTx const& tx;
+    STTxWr const& tx;
     ApplyFlags flags;
-    bool isDelegated;
-    AccountID const account;
     beast::Journal const j;
 
     PreclaimContext(
         Application& app_,
         ReadView const& view_,
         TER preflightResult_,
-        STTx const& tx_,
+        STTxWr const& tx_,
         ApplyFlags flags_,
-        bool isDelegated,
-        AccountID const account,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
         : app(app_)
         , view(view_)
         , preflightResult(preflightResult_)
         , tx(tx_)
         , flags(flags_)
-        , isDelegated(isDelegated)
-        , account(account)
         , j(j_)
     {
     }
@@ -151,10 +143,10 @@ public:
     calculateBaseFee(ReadView const& view, STTx const& tx);
 
     static TER
-    checkAuthorization(
+    checkPermissions(
         ReadView const& view,
         STTx const& tx,
-        std::unordered_set<GranularPermissionType>& gpSet);
+        std::unordered_set<GranularPermissionType>& permissions);
 
     static TER
     preclaim(PreclaimContext const& ctx)

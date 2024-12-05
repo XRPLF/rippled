@@ -118,7 +118,7 @@ requires(T::ConsequencesFactory == Transactor::Normal)
 TxConsequences
     consequences_helper(PreflightContext const& ctx)
 {
-    return TxConsequences(ctx.tx);
+    return TxConsequences(ctx.tx.getTx());
 };
 
 // For Transactor::Blocker
@@ -127,7 +127,7 @@ requires(T::ConsequencesFactory == Transactor::Blocker)
 TxConsequences
     consequences_helper(PreflightContext const& ctx)
 {
-    return TxConsequences(ctx.tx, TxConsequences::blocker);
+    return TxConsequences(ctx.tx.getTx(), TxConsequences::blocker);
 };
 
 // For Transactor::Custom
@@ -175,40 +175,42 @@ invoke_preclaim(PreclaimContext const& ctx)
             // doesn't list one, preflight will have already a flagged a
             // failure.
             auto const id = ctx.tx.getAccountID(sfAccount);
-            std::unordered_set<GranularPermissionType> gpSet;
+            std::unordered_set<GranularPermissionType> permissions;
 
             if (id != beast::zero)
             {
-                TER result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
+                TER result = T::checkSeqProxy(ctx.view, ctx.tx.getTx(), ctx.j);
 
                 if (result != tesSUCCESS)
-                    return std::make_pair(result, gpSet);
+                    return std::make_pair(result, permissions);
 
                 result = T::checkPriorTxAndLastLedger(ctx);
 
                 if (result != tesSUCCESS)
-                    return std::make_pair(result, gpSet);
+                    return std::make_pair(result, permissions);
 
-                result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
+                result = T::checkFee(
+                    ctx, calculateBaseFee(ctx.view, ctx.tx.getTx()));
 
                 if (result != tesSUCCESS)
-                    return std::make_pair(result, gpSet);
+                    return std::make_pair(result, permissions);
 
                 result = T::checkSign(ctx);
 
                 if (result != tesSUCCESS)
-                    return std::make_pair(result, gpSet);
+                    return std::make_pair(result, permissions);
 
-                if (ctx.isDelegated)
+                if (ctx.tx.isDelegated())
                     // if this is a delegated transaction, check if the account
                     // has authorization.
-                    result = T::checkAuthorization(ctx.view, ctx.tx, gpSet);
+                    result = T::checkPermissions(
+                        ctx.view, ctx.tx.getTx(), permissions);
 
                 if (result != tesSUCCESS)
-                    return std::make_pair(result, gpSet);
+                    return std::make_pair(result, permissions);
             }
 
-            return std::make_pair(T::preclaim(ctx), gpSet);
+            return std::make_pair(T::preclaim(ctx), permissions);
         });
     }
     catch (UnknownTxnType const& e)
@@ -300,26 +302,19 @@ PreflightResult
 preflight(
     Application& app,
     Rules const& rules,
-    STTx const& tx,
+    STTxWr const& tx,
     ApplyFlags flags,
     beast::Journal j)
 {
-    bool const isDelegated =
-        rules.enabled(featureAccountPermission) && tx[~sfOnBehalfOf];
-    AccountID const account = isDelegated ? *tx[~sfOnBehalfOf] : tx[sfAccount];
-    PreflightContext const pfctx(app, tx, rules, flags, account, j);
+    PreflightContext const pfctx(app, tx, rules, flags, j);
     try
     {
-        // if AccountPermission is not enabled, do not use OnBehalfOf field.
-        if (!rules.enabled(featureAccountPermission) && tx[~sfOnBehalfOf])
-            throw std::runtime_error("invalid field");
-
-        return {pfctx, isDelegated, account, invoke_preflight(pfctx)};
+        return {pfctx, invoke_preflight(pfctx)};
     }
     catch (std::exception const& e)
     {
         JLOG(j.fatal()) << "apply: " << e.what();
-        return {pfctx, false, AccountID(0), {tefEXCEPTION, TxConsequences{tx}}};
+        return {pfctx, {tefEXCEPTION, TxConsequences{tx.getTx()}}};
     }
 }
 
@@ -344,8 +339,6 @@ preclaim(
             secondFlight.ter,
             secondFlight.tx,
             secondFlight.flags,
-            secondFlight.isDelegated,
-            secondFlight.account,
             secondFlight.j);
     }
     else
@@ -356,8 +349,6 @@ preclaim(
             preflightResult.ter,
             preflightResult.tx,
             preflightResult.flags,
-            preflightResult.isDelegated,
-            preflightResult.account,
             preflightResult.j);
     }
     try
@@ -409,11 +400,9 @@ doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view)
             view,
             preclaimResult.tx,
             preclaimResult.ter,
-            calculateBaseFee(view, preclaimResult.tx),
+            calculateBaseFee(view, preclaimResult.tx.getTx()),
             preclaimResult.flags,
-            preclaimResult.isDelegated,
-            preclaimResult.account,
-            preclaimResult.gpSet,
+            preclaimResult.permissions,
             preclaimResult.j);
         return invoke_apply(ctx);
     }

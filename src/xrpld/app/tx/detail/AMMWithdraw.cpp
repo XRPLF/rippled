@@ -170,7 +170,7 @@ tokensWithdraw(
 TER
 AMMWithdraw::preclaim(PreclaimContext const& ctx)
 {
-    auto const accountID = ctx.account;
+    auto const accountID = ctx.tx[sfAccount];
 
     auto const ammSle =
         ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
@@ -304,7 +304,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     if (!accountSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const lpTokens =
-        ammLPHolds(ctx_.view(), *ammSle, account_, ctx_.journal);
+        ammLPHolds(ctx_.view(), *ammSle, ctx_.tx[sfAccount], ctx_.journal);
     auto const lpTokensWithdraw =
         tokensWithdraw(lpTokens, ctx_.tx[~sfLPTokenIn], ctx_.tx.getFlags());
 
@@ -470,7 +470,7 @@ AMMWithdraw::withdraw(
         lpTokensWithdraw,
         tfee,
         FreezeHandling::fhZERO_IF_FROZEN,
-        isWithdrawAll(ctx_.tx),
+        isWithdrawAll(ctx_.tx.getTx()),
         mPriorBalance,
         j_);
     return {ter, newLPTokenBalance};
@@ -707,7 +707,7 @@ AMMWithdraw::equalWithdrawTokens(
             lpTokensWithdraw,
             tfee,
             FreezeHandling::fhZERO_IF_FROZEN,
-            isWithdrawAll(ctx_.tx),
+            isWithdrawAll(ctx_.tx.getTx()),
             mPriorBalance,
             ctx_.journal);
     return {ter, newLPTokenBalance};

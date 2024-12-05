@@ -41,7 +41,7 @@ namespace ripple {
 NotTEC
 preflight0(PreflightContext const& ctx)
 {
-    if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
+    if (!isPseudoTx(ctx.tx.getTx()) || ctx.tx.isFieldPresent(sfNetworkID))
     {
         uint32_t nodeNID = ctx.app.config().NETWORK_ID;
         std::optional<uint32_t> txNID = ctx.tx[~sfNetworkID];
@@ -81,6 +81,10 @@ preflight0(PreflightContext const& ctx)
 NotTEC
 preflight1(PreflightContext const& ctx)
 {
+    if (!ctx.rules.enabled(featureAccountPermission) &&
+        ctx.tx.isFieldPresent(sfOnBehalfOf))
+        return temDISABLED;
+
     // This is inappropriate in preflight0, because only Change transactions
     // skip this function, and those do not allow an sfTicketSequence field.
     if (ctx.tx.isFieldPresent(sfTicketSequence) &&
@@ -126,6 +130,10 @@ preflight1(PreflightContext const& ctx)
         ctx.tx.isFieldPresent(sfAccountTxnID))
         return temINVALID;
 
+    if (!ctx.rules.enabled(featureAccountPermission) &&
+        ctx.tx.isFieldPresent(sfOnBehalfOf))
+        return temDISABLED;
+
     return tesSUCCESS;
 }
 
@@ -134,7 +142,7 @@ NotTEC
 preflight2(PreflightContext const& ctx)
 {
     auto const sigValid = checkValidity(
-        ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
+        ctx.app.getHashRouter(), ctx.tx.getTx(), ctx.rules, ctx.app.config());
     if (sigValid.first == Validity::SigBad)
     {
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
@@ -147,19 +155,18 @@ preflight2(PreflightContext const& ctx)
 
 PreflightContext::PreflightContext(
     Application& app_,
-    STTx const& tx_,
+    STTxWr const& tx_,
     Rules const& rules_,
     ApplyFlags flags_,
-    AccountID const account_,
     beast::Journal j_)
-    : app(app_), tx(tx_), rules(rules_), flags(flags_), account(account_), j(j_)
+    : app(app_), tx(tx_), rules(rules_), flags(flags_), j(j_)
 {
 }
 
 //------------------------------------------------------------------------------
 
 Transactor::Transactor(ApplyContext& ctx)
-    : ctx_(ctx), j_(ctx.journal), account_(ctx.account)
+    : ctx_(ctx), j_(ctx.journal), account_(ctx.tx.getAccountID(sfAccount))
 {
 }
 
@@ -182,13 +189,12 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
 }
 
 TER
-Transactor::checkAuthorization(
+Transactor::checkPermissions(
     ReadView const& view,
     STTx const& tx,
-    std::unordered_set<GranularPermissionType>& gpSet)
+    std::unordered_set<GranularPermissionType>& permissions)
 {
-    auto const onBehalfOfAccount = view.read(keylet::account(tx[sfOnBehalfOf]));
-    if (!onBehalfOfAccount)
+    if (!view.read(keylet::account(tx[sfOnBehalfOf])))
         return terNO_ACCOUNT;
 
     auto const accountPermissionKey =
@@ -197,17 +203,17 @@ Transactor::checkAuthorization(
     if (!sle)
         return temMALFORMED;  // todo: change error code
 
-    auto const permissions = sle->getFieldArray(sfPermissions);
+    auto const permissionArray = sle->getFieldArray(sfPermissions);
     auto const transactionType = tx.getTxnType();
 
-    for (auto const& permission : permissions)
+    for (auto const& permission : permissionArray)
     {
         auto const permissionValue = permission[sfPermissionValue];
         if (permissionValue == transactionType + 1)
         {
             // if the transaction permission is authorized, do not need to check
             // granular permission.
-            gpSet.clear();
+            permissions.clear();
             return tesSUCCESS;
         }
 
@@ -215,15 +221,15 @@ Transactor::checkAuthorization(
             static_cast<GranularPermissionType>(permissionValue);
         auto const& type = Permission::getInstance().getGranularTxType(gpType);
         if (type && *type == transactionType)
-            gpSet.insert(gpType);
+            permissions.insert(gpType);
     }
 
-    if (gpSet.empty())
+    if (permissions.empty())
         return terNO_AUTH;
 
     // When the code reaches here, the transaction permission is not authorized.
     // But one or more of its granular permission under this transaction type is
-    // authorized. And the granular types are stored in gpSet.
+    // authorized. And the granular types are stored in permissions.
     return tesSUCCESS;
 }
 
@@ -294,11 +300,11 @@ TER
 Transactor::payFee()
 {
     auto const feePaid = ctx_.tx[sfFee].xrp();
-    if (ctx_.isDelegated)
+    if (ctx_.tx.isDelegated())
     {
         // if the transaction is being delegated to another account,
         // the sender account will pay the fee.
-        auto const sender = ctx_.tx.getAccountID(sfAccount);
+        auto const sender = ctx_.tx.getTx().getAccountID(sfAccount);
         auto const sleSender = view().peek(keylet::account(sender));
         if (!sleSender)
             return tefINTERNAL;
@@ -564,7 +570,7 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
 
     // Look up the account.
     auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
-    auto const idAccount = ctx.tx.getAccountID(sfAccount);
+    auto const idAccount = ctx.tx.getTx().getAccountID(sfAccount);
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
     if (!sleAccount)
         return terNO_ACCOUNT;
@@ -928,7 +934,7 @@ Transactor::operator()()
         SerialIter sit(ser.slice());
         STTx s2(sit);
 
-        if (!s2.isEquivalent(ctx_.tx))
+        if (!s2.isEquivalent(ctx_.tx.getTx()))
         {
             JLOG(j_.fatal()) << "Transaction serdes mismatch";
             JLOG(j_.info()) << to_string(ctx_.tx.getJson(JsonOptions::none));

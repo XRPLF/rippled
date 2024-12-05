@@ -116,7 +116,11 @@ apply(
     STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
     NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
-    auto pfresult = preflight(app, view.rules(), tx, flags, j);
+    bool const isDelegated = view.rules().enabled(featureAccountPermission) &&
+        tx.isFieldPresent(sfOnBehalfOf);
+    STTxWr txWr(tx, isDelegated);
+
+    auto pfresult = preflight(app, view.rules(), txWr, flags, j);
     auto pcresult = preclaim(pfresult, app, view);
     return doApply(pcresult, app, view);
 }

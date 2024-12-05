@@ -38,7 +38,7 @@ Change::preflight(PreflightContext const& ctx)
     if (!isTesSuccess(ret))
         return ret;
 
-    auto account = ctx.account;
+    auto account = ctx.tx.getAccountID(sfAccount);
     if (account != beast::zero)
     {
         JLOG(ctx.j.warn()) << "Change: Bad source id";
@@ -358,9 +358,9 @@ Change::applyFee()
     };
     if (view().rules().enabled(featureXRPFees))
     {
-        set(feeObject, ctx_.tx, sfBaseFeeDrops);
-        set(feeObject, ctx_.tx, sfReserveBaseDrops);
-        set(feeObject, ctx_.tx, sfReserveIncrementDrops);
+        set(feeObject, ctx_.tx.getTx(), sfBaseFeeDrops);
+        set(feeObject, ctx_.tx.getTx(), sfReserveBaseDrops);
+        set(feeObject, ctx_.tx.getTx(), sfReserveIncrementDrops);
         // Ensure the old fields are removed
         feeObject->makeFieldAbsent(sfBaseFee);
         feeObject->makeFieldAbsent(sfReferenceFeeUnits);
@@ -369,10 +369,10 @@ Change::applyFee()
     }
     else
     {
-        set(feeObject, ctx_.tx, sfBaseFee);
-        set(feeObject, ctx_.tx, sfReferenceFeeUnits);
-        set(feeObject, ctx_.tx, sfReserveBase);
-        set(feeObject, ctx_.tx, sfReserveIncrement);
+        set(feeObject, ctx_.tx.getTx(), sfBaseFee);
+        set(feeObject, ctx_.tx.getTx(), sfReferenceFeeUnits);
+        set(feeObject, ctx_.tx.getTx(), sfReserveBase);
+        set(feeObject, ctx_.tx.getTx(), sfReserveIncrement);
     }
 
     view().update(feeObject);

@@ -45,7 +45,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
     if (ctx.tx.getFlags() & tfAMMClawbackMask)
         return temINVALID_FLAG;
 
-    AccountID const issuer = ctx.account;
+    AccountID const issuer = ctx.tx[sfAccount];
     AccountID const holder = ctx.tx[sfHolder];
 
     if (issuer == holder)
@@ -86,7 +86,7 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
 {
     auto const asset = ctx.tx[sfAsset];
     auto const asset2 = ctx.tx[sfAsset2];
-    auto const sleIssuer = ctx.view.read(keylet::account(ctx.account));
+    auto const sleIssuer = ctx.view.read(keylet::account(ctx.tx[sfAccount]));
     if (!sleIssuer)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
@@ -136,6 +136,7 @@ TER
 AMMClawback::applyGuts(Sandbox& sb)
 {
     std::optional<STAmount> const clawAmount = ctx_.tx[~sfAmount];
+    AccountID const issuer = ctx_.tx[sfAccount];
     AccountID const holder = ctx_.tx[sfHolder];
     Issue const asset = ctx_.tx[sfAsset];
     Issue const asset2 = ctx_.tx[sfAsset2];
@@ -215,8 +216,7 @@ AMMClawback::applyGuts(Sandbox& sb)
         << to_string(newLPTokenBalance.iou())
         << " old balance: " << to_string(lptAMMBalance.iou());
 
-    auto const ter =
-        rippleCredit(sb, holder, account_, amountWithdraw, true, j_);
+    auto const ter = rippleCredit(sb, holder, issuer, amountWithdraw, true, j_);
     if (ter != tesSUCCESS)
         return ter;  // LCOV_EXCL_LINE
 
@@ -229,7 +229,7 @@ AMMClawback::applyGuts(Sandbox& sb)
 
     auto const flags = ctx_.tx.getFlags();
     if (flags & tfClawTwoAssets)
-        return rippleCredit(sb, holder, account_, *amount2Withdraw, true, j_);
+        return rippleCredit(sb, holder, issuer, *amount2Withdraw, true, j_);
 
     return tesSUCCESS;
 }

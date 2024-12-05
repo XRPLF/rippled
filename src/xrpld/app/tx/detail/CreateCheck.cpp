@@ -44,7 +44,7 @@ CreateCheck::preflight(PreflightContext const& ctx)
         JLOG(ctx.j.warn()) << "Malformed transaction: Invalid flags set.";
         return temINVALID_FLAG;
     }
-    if (ctx.account == ctx.tx[sfDestination])
+    if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
     {
         // They wrote a check to themselves.
         JLOG(ctx.j.warn()) << "Malformed transaction: Check to self.";
@@ -125,7 +125,7 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
             //
             // Note that we DO allow create check for a currency that the
             // account does not yet have a trustline to.
-            AccountID const srcId{ctx.account};
+            AccountID const srcId{ctx.tx.getAccountID(sfAccount)};
             if (issuerId != srcId)
             {
                 // Check if the issuer froze the line

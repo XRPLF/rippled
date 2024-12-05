@@ -1331,7 +1331,7 @@ struct Escrow_test : public beast::unit_test::suite
             auto const pf = preflight(
                 env.app(),
                 env.current()->rules(),
-                *jtx.stx,
+                STTxWr(*jtx.stx, false),
                 tapNONE,
                 env.journal);
             BEAST_EXPECT(pf.ter == tesSUCCESS);
@@ -1345,7 +1345,7 @@ struct Escrow_test : public beast::unit_test::suite
             auto const pf = preflight(
                 env.app(),
                 env.current()->rules(),
-                *jtx.stx,
+                STTxWr(*jtx.stx, false),
                 tapNONE,
                 env.journal);
             BEAST_EXPECT(pf.ter == tesSUCCESS);
@@ -1359,7 +1359,7 @@ struct Escrow_test : public beast::unit_test::suite
             auto const pf = preflight(
                 env.app(),
                 env.current()->rules(),
-                *jtx.stx,
+                STTxWr(*jtx.stx, false),
                 tapNONE,
                 env.journal);
             BEAST_EXPECT(pf.ter == tesSUCCESS);

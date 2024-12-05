@@ -81,7 +81,7 @@ SetSignerList::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
+    auto const result = determineOperation(ctx.tx.getTx(), ctx.flags, ctx.j);
 
     if (std::get<0>(result) != tesSUCCESS)
         return std::get<0>(result);
@@ -97,7 +97,7 @@ SetSignerList::preflight(PreflightContext const& ctx)
     if (std::get<3>(result) == set)
     {
         // Validate our settings.
-        auto const account = ctx.account;
+        auto const account = ctx.tx.getAccountID(sfAccount);
         NotTEC const ter = validateQuorumAndSignerEntries(
             std::get<1>(result),
             std::get<2>(result),
@@ -136,7 +136,7 @@ void
 SetSignerList::preCompute()
 {
     // Get the quorum and operation info.
-    auto result = determineOperation(ctx_.tx, view().flags(), j_);
+    auto result = determineOperation(ctx_.tx.getTx(), view().flags(), j_);
     assert(std::get<0>(result) == tesSUCCESS);
     assert(std::get<3>(result) != unknown);
 

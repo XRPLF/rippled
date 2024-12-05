@@ -27,32 +27,32 @@ namespace ripple {
 Permission::Permission()
 {
     granularPermissionMap = {
-        {"TrustlineAuthorize", gpTrustlineAuthorize},
-        {"TrustlineFreeze", gpTrustlineFreeze},
-        {"TrustlineUnfreeze", gpTrustlineUnfreeze},
-        {"AccountDomainSet", gpAccountDomainSet},
-        {"AccountEmailHashSet", gpAccountEmailHashSet},
-        {"AccountMessageKeySet", gpAccountMessageKeySet},
-        {"AccountTransferRateSet", gpAccountTransferRateSet},
-        {"AccountTickSizeSet", gpAccountTickSizeSet},
-        {"PaymentMint", gpPaymentMint},
-        {"PaymentBurn", gpPaymentBurn},
-        {"MPTokenIssuanceLock", gpMPTokenIssuanceLock},
-        {"MPTokenIssuanceUnlock", gpMPTokenIssuanceUnlock}};
+        {"TrustlineAuthorize", TrustlineAuthorize},
+        {"TrustlineFreeze", TrustlineFreeze},
+        {"TrustlineUnfreeze", TrustlineUnfreeze},
+        {"AccountDomainSet", AccountDomainSet},
+        {"AccountEmailHashSet", AccountEmailHashSet},
+        {"AccountMessageKeySet", AccountMessageKeySet},
+        {"AccountTransferRateSet", AccountTransferRateSet},
+        {"AccountTickSizeSet", AccountTickSizeSet},
+        {"PaymentMint", PaymentMint},
+        {"PaymentBurn", PaymentBurn},
+        {"MPTokenIssuanceLock", MPTokenIssuanceLock},
+        {"MPTokenIssuanceUnlock", MPTokenIssuanceUnlock}};
 
     granularTxTypeMap = {
-        {gpTrustlineAuthorize, ttTRUST_SET},
-        {gpTrustlineFreeze, ttTRUST_SET},
-        {gpTrustlineUnfreeze, ttTRUST_SET},
-        {gpAccountDomainSet, ttACCOUNT_SET},
-        {gpAccountEmailHashSet, ttACCOUNT_SET},
-        {gpAccountMessageKeySet, ttACCOUNT_SET},
-        {gpAccountTransferRateSet, ttACCOUNT_SET},
-        {gpAccountTickSizeSet, ttACCOUNT_SET},
-        {gpPaymentMint, ttPAYMENT},
-        {gpPaymentBurn, ttPAYMENT},
-        {gpMPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET},
-        {gpMPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET}};
+        {TrustlineAuthorize, ttTRUST_SET},
+        {TrustlineFreeze, ttTRUST_SET},
+        {TrustlineUnfreeze, ttTRUST_SET},
+        {AccountDomainSet, ttACCOUNT_SET},
+        {AccountEmailHashSet, ttACCOUNT_SET},
+        {AccountMessageKeySet, ttACCOUNT_SET},
+        {AccountTransferRateSet, ttACCOUNT_SET},
+        {AccountTickSizeSet, ttACCOUNT_SET},
+        {PaymentMint, ttPAYMENT},
+        {PaymentBurn, ttPAYMENT},
+        {MPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET},
+        {MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET}};
 }
 
 Permission const&

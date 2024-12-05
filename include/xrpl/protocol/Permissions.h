@@ -34,29 +34,29 @@ namespace ripple {
  */
 
 enum GranularPermissionType : std::uint32_t {
-    gpTrustlineAuthorize = 65537,
+    TrustlineAuthorize = 65537,
 
-    gpTrustlineFreeze = 65538,
+    TrustlineFreeze = 65538,
 
-    gpTrustlineUnfreeze = 65539,
+    TrustlineUnfreeze = 65539,
 
-    gpAccountDomainSet = 65540,
+    AccountDomainSet = 65540,
 
-    gpAccountEmailHashSet = 65541,
+    AccountEmailHashSet = 65541,
 
-    gpAccountMessageKeySet = 65542,
+    AccountMessageKeySet = 65542,
 
-    gpAccountTransferRateSet = 65543,
+    AccountTransferRateSet = 65543,
 
-    gpAccountTickSizeSet = 65544,
+    AccountTickSizeSet = 65544,
 
-    gpPaymentMint = 65545,
+    PaymentMint = 65545,
 
-    gpPaymentBurn = 65546,
+    PaymentBurn = 65546,
 
-    gpMPTokenIssuanceLock = 65547,
+    MPTokenIssuanceLock = 65547,
 
-    gpMPTokenIssuanceUnlock = 65548,
+    MPTokenIssuanceUnlock = 65548,
 };
 
 class Permission
@@ -72,6 +72,10 @@ private:
 public:
     static Permission const&
     getInstance();
+
+    Permission(const Permission&) = delete;
+    Permission&
+    operator=(const Permission&) = delete;
 
     std::optional<std::uint32_t>
     getGranularValue(std::string const& name) const;

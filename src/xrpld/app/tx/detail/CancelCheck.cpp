@@ -73,7 +73,7 @@ CancelCheck::preclaim(PreclaimContext const& ctx)
     {
         // If the check is not yet expired, then only the creator or the
         // destination may cancel the check.
-        AccountID const acctId{ctx.account};
+        AccountID const acctId{ctx.tx[sfAccount]};
         if (acctId != (*sleCheck)[sfAccount] &&
             acctId != (*sleCheck)[sfDestination])
         {

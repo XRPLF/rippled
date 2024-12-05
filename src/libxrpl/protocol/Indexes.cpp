@@ -77,7 +77,7 @@ enum class LedgerNameSpace : std::uint16_t {
     MPTOKEN_ISSUANCE = '~',
     MPTOKEN = 't',
     CREDENTIAL = 'D',
-    ACCOUNT_PERMISSION = 'P',
+    ACCOUNT_PERMISSION = 'E',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.

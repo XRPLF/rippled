@@ -52,7 +52,8 @@ SetAccount::makeTxConsequences(PreflightContext const& ctx)
         return TxConsequences::normal;
     };
 
-    return TxConsequences{ctx.tx, getTxConsequencesCategory(ctx.tx)};
+    return TxConsequences{
+        ctx.tx.getTx(), getTxConsequencesCategory(ctx.tx.getTx())};
 }
 
 NotTEC
@@ -262,7 +263,7 @@ SetAccount::doApply()
     std::uint32_t const uFlagsIn = sle->getFieldU32(sfFlags);
     std::uint32_t uFlagsOut = uFlagsIn;
 
-    STTx const& tx{ctx_.tx};
+    STTx const& tx{ctx_.tx.getTx()};
     std::uint32_t const uSetFlag{tx.getFieldU32(sfSetFlag)};
     std::uint32_t const uClearFlag{tx.getFieldU32(sfClearFlag)};
 
@@ -270,9 +271,9 @@ SetAccount::doApply()
     std::uint32_t const uTxFlags{tx.getFlags()};
 
     bool granularDelegated = false;
-    if (ctx_.isDelegated && !ctx_.gpSet.empty())
+    if (ctx_.tx.isDelegated() && !ctx_.permissions.empty())
     {
-        // if gpSet is not empty, granular delegation is happening.
+        // if permissions is not empty, granular delegation is happening.
         granularDelegated = true;
 
         // We don't support any flag based granular permission under AccountSet
@@ -465,7 +466,8 @@ SetAccount::doApply()
     if (tx.isFieldPresent(sfEmailHash))
     {
         if (granularDelegated &&
-            ctx_.gpSet.find(gpAccountEmailHashSet) == ctx_.gpSet.end())
+            ctx_.permissions.find(AccountEmailHashSet) ==
+                ctx_.permissions.end())
             return tecNO_AUTH;
 
         uint128 const uHash = tx.getFieldH128(sfEmailHash);
@@ -510,7 +512,8 @@ SetAccount::doApply()
     if (tx.isFieldPresent(sfMessageKey))
     {
         if (granularDelegated &&
-            ctx_.gpSet.find(gpAccountMessageKeySet) == ctx_.gpSet.end())
+            ctx_.permissions.find(AccountMessageKeySet) ==
+                ctx_.permissions.end())
             return tecNO_AUTH;
 
         Blob const messageKey = tx.getFieldVL(sfMessageKey);
@@ -533,7 +536,7 @@ SetAccount::doApply()
     if (tx.isFieldPresent(sfDomain))
     {
         if (granularDelegated &&
-            ctx_.gpSet.find(gpAccountDomainSet) == ctx_.gpSet.end())
+            ctx_.permissions.find(AccountDomainSet) == ctx_.permissions.end())
             return tecNO_AUTH;
 
         Blob const domain = tx.getFieldVL(sfDomain);
@@ -556,7 +559,8 @@ SetAccount::doApply()
     if (tx.isFieldPresent(sfTransferRate))
     {
         if (granularDelegated &&
-            ctx_.gpSet.find(gpAccountTransferRateSet) == ctx_.gpSet.end())
+            ctx_.permissions.find(AccountTransferRateSet) ==
+                ctx_.permissions.end())
             return tecNO_AUTH;
 
         std::uint32_t uRate = tx.getFieldU32(sfTransferRate);
@@ -579,7 +583,7 @@ SetAccount::doApply()
     if (tx.isFieldPresent(sfTickSize))
     {
         if (granularDelegated &&
-            ctx_.gpSet.find(gpAccountTickSizeSet) == ctx_.gpSet.end())
+            ctx_.permissions.find(AccountTickSizeSet) == ctx_.permissions.end())
             return tecNO_AUTH;
 
         auto uTickSize = tx[sfTickSize];

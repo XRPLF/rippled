@@ -26,7 +26,7 @@
 #include <xrpl/basics/XRPAmount.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Permissions.h>
-#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STTxWr.h>
 #include <optional>
 #include <utility>
 
@@ -39,22 +39,18 @@ public:
     explicit ApplyContext(
         Application& app,
         OpenView& base,
-        STTx const& tx,
+        STTxWr const& tx,
         TER preclaimResult,
         XRPAmount baseFee,
         ApplyFlags flags,
-        bool isDelegated,
-        AccountID const account,
-        std::unordered_set<GranularPermissionType> const gpSet,
+        std::unordered_set<GranularPermissionType> const permissions,
         beast::Journal = beast::Journal{beast::Journal::getNullSink()});
 
     Application& app;
-    STTx const& tx;
+    STTxWr const& tx;
     TER const preclaimResult;
     XRPAmount const baseFee;
-    bool isDelegated;
-    AccountID const account;
-    std::unordered_set<GranularPermissionType> gpSet;
+    std::unordered_set<GranularPermissionType> permissions;
     beast::Journal const journal;
 
     ApplyView&

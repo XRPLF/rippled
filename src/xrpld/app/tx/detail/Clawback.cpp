@@ -39,7 +39,7 @@ preflightHelper<Issue>(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfHolder))
         return temMALFORMED;
 
-    AccountID const issuer = ctx.account;
+    AccountID const issuer = ctx.tx[sfAccount];
     STAmount const clawAmount = ctx.tx[sfAmount];
 
     // The issuer field is used for the token holder instead
@@ -65,7 +65,7 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
         return temMALFORMED;
 
     // issuer is the same as holder
-    if (ctx.account == *mptHolder)
+    if (ctx.tx[sfAccount] == *mptHolder)
         return temMALFORMED;
 
     if (clawAmount.mpt() > MPTAmount{maxMPTokenAmount} ||
@@ -197,7 +197,7 @@ preclaimHelper<MPTIssue>(
 TER
 Clawback::preclaim(PreclaimContext const& ctx)
 {
-    AccountID const issuer = ctx.account;
+    AccountID const issuer = ctx.tx[sfAccount];
     auto const clawAmount = ctx.tx[sfAmount];
     AccountID const holder =
         clawAmount.holds<Issue>() ? clawAmount.getIssuer() : ctx.tx[sfHolder];
@@ -226,7 +226,7 @@ template <>
 TER
 applyHelper<Issue>(ApplyContext& ctx)
 {
-    AccountID const issuer = ctx.account;
+    AccountID const issuer = ctx.tx[sfAccount];
     STAmount clawAmount = ctx.tx[sfAmount];
     AccountID const holder = clawAmount.getIssuer();  // cannot be reference
 
@@ -257,7 +257,7 @@ template <>
 TER
 applyHelper<MPTIssue>(ApplyContext& ctx)
 {
-    AccountID const issuer = ctx.account;
+    AccountID const issuer = ctx.tx[sfAccount];
     auto clawAmount = ctx.tx[sfAmount];
     AccountID const holder = ctx.tx[sfHolder];
 

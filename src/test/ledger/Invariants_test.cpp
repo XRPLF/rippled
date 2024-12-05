@@ -94,12 +94,10 @@ class Invariants_test : public beast::unit_test::suite
         ApplyContext ac{
             env.app(),
             ov,
-            tx,
+            STTxWr(tx, false),
             tesSUCCESS,
             env.current()->fees().base,
             tapNONE,
-            false,
-            AccountID(0),
             std::unordered_set<GranularPermissionType>{},
             jlog};
 

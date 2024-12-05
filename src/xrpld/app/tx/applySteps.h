@@ -23,6 +23,7 @@
 #include <xrpld/ledger/ApplyViewImpl.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/STTxWr.h>
 
 namespace ripple {
 
@@ -152,7 +153,7 @@ struct PreflightResult
 {
 public:
     /// From the input - the transaction
-    STTx const& tx;
+    STTxWr const& tx;
     /// From the input - the rules
     Rules const rules;
     /// Consequences of the transaction
@@ -161,10 +162,6 @@ public:
     ApplyFlags const flags;
     /// From the input - the journal
     beast::Journal const j;
-    /// If the transaction is a delegated transaction
-    bool const isDelegated;
-    /// the account that the transaction is operated on
-    AccountID const account;
     /// Intermediate transaction result
     NotTEC const ter;
 
@@ -172,16 +169,12 @@ public:
     template <class Context>
     PreflightResult(
         Context const& ctx_,
-        bool const isDelegated,
-        AccountID const account,
         std::pair<NotTEC, TxConsequences> const& result)
         : tx(ctx_.tx)
         , rules(ctx_.rules)
         , consequences(result.second)
         , flags(ctx_.flags)
         , j(ctx_.j)
-        , isDelegated(isDelegated)
-        , account(account)
         , ter(result.first)
     {
     }
@@ -204,21 +197,17 @@ public:
     /// From the input - the ledger view
     ReadView const& view;
     /// From the input - the transaction
-    STTx const& tx;
+    STTxWr const& tx;
     /// From the input - the flags
     ApplyFlags const flags;
     /// From the input - the journal
     beast::Journal const j;
-    /// If the transaction is a delegated transaction
-    bool const isDelegated;
-    /// the account that the transaction is operated on
-    AccountID const account;
 
     /// Intermediate transaction result
     TER const ter;
     /// granular permissions enabled for the transaction. If empty and
     /// isDelegated=true, then the entire transaction is authorized.
-    std::unordered_set<GranularPermissionType> gpSet;
+    std::unordered_set<GranularPermissionType> permissions;
     /// Success flag - whether the transaction is likely to
     /// claim a fee
     bool const likelyToClaimFee;
@@ -228,15 +217,13 @@ public:
     PreclaimResult(
         Context const& ctx_,
         TER ter_,
-        std::unordered_set<GranularPermissionType> gpSet_)
+        std::unordered_set<GranularPermissionType> permissions_)
         : view(ctx_.view)
         , tx(ctx_.tx)
         , flags(ctx_.flags)
         , j(ctx_.j)
-        , isDelegated(ctx_.isDelegated)
-        , account(ctx_.account)
         , ter(ter_)
-        , gpSet(std::move(gpSet_))
+        , permissions(std::move(permissions_))
         , likelyToClaimFee(ter == tesSUCCESS || isTecClaimHardFail(ter, flags))
     {
     }
@@ -267,7 +254,7 @@ PreflightResult
 preflight(
     Application& app,
     Rules const& rules,
-    STTx const& tx,
+    STTxWr const& tx,
     ApplyFlags flags,
     beast::Journal j);
 

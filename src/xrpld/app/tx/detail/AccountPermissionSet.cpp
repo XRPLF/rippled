@@ -46,11 +46,6 @@ AccountPermissionSet::preflight(PreflightContext const& ctx)
 
     for (auto const& permission : permissions)
     {
-        auto permissionObj = dynamic_cast<STObject const*>(&permission);
-
-        if (!permissionObj || (permissionObj->getFName() != sfPermission))
-            return temMALFORMED;
-
         auto const permissionValue = permission[sfPermissionValue];
 
         if (permissionSet.find(permissionValue) != permissionSet.end())
@@ -65,7 +60,7 @@ AccountPermissionSet::preflight(PreflightContext const& ctx)
 TER
 AccountPermissionSet::preclaim(PreclaimContext const& ctx)
 {
-    auto const account = ctx.view.read(keylet::account(ctx.account));
+    auto const account = ctx.view.read(keylet::account(ctx.tx[sfAccount]));
     if (!account)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 

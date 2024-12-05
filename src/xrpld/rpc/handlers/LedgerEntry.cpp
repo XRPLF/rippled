@@ -809,7 +809,37 @@ doLedgerEntry(RPC::JsonContext& context)
         }
         else if (context.params.isMember(jss::account_permission))
         {
-            // to be implemented
+            expectedType = ltACCOUNT_PERMISSION;
+            auto const& permission = context.params[jss::account_permission];
+
+            if (!permission.isObject())
+            {
+                if (!uNodeIndex.parseHex(permission.asString()))
+                {
+                    uNodeIndex = beast::zero;
+                    jvResult[jss::error] = "malformedRequest";
+                }
+            }
+            else if (
+                !permission.isMember(jss::account) ||
+                !permission.isMember(jss::authorize))
+            {
+                jvResult[jss::error] = "malformedRequest";
+            }
+            else
+            {
+                auto const account =
+                    parseBase58<AccountID>(permission[jss::account].asString());
+                auto const authorize = parseBase58<AccountID>(
+                    permission[jss::authorize].asString());
+                if (!account)
+                    jvResult[jss::error] = "malformedAccount";
+                else if (!authorize)
+                    jvResult[jss::error] = "malformedAuthorize";
+                else
+                    uNodeIndex =
+                        keylet::accountPermission(*account, *authorize).key;
+            }
         }
         else
         {

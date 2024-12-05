@@ -94,7 +94,7 @@ after(NetClock::time_point now, std::uint32_t mark)
 TxConsequences
 EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
+    return TxConsequences{ctx.tx.getTx(), ctx.tx[sfAmount].xrp()};
 }
 
 NotTEC
@@ -206,7 +206,8 @@ EscrowCreate::doApply()
         }
     }
 
-    auto const sle = ctx_.view().peek(keylet::account(account_));
+    auto const account = ctx_.tx[sfAccount];
+    auto const sle = ctx_.view().peek(keylet::account(account));
     if (!sle)
         return tefINTERNAL;
 
@@ -243,10 +244,10 @@ EscrowCreate::doApply()
     // Create escrow in ledger.  Note that we we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
     Keylet const escrowKeylet =
-        keylet::escrow(account_, ctx_.tx.getSeqProxy().value());
+        keylet::escrow(account, ctx_.tx.getSeqProxy().value());
     auto const slep = std::make_shared<SLE>(escrowKeylet);
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
-    (*slep)[sfAccount] = account_;
+    (*slep)[sfAccount] = account;
     (*slep)[~sfCondition] = ctx_.tx[~sfCondition];
     (*slep)[~sfSourceTag] = ctx_.tx[~sfSourceTag];
     (*slep)[sfDestination] = ctx_.tx[sfDestination];
@@ -259,16 +260,14 @@ EscrowCreate::doApply()
     // Add escrow to sender's owner directory
     {
         auto page = ctx_.view().dirInsert(
-            keylet::ownerDir(account_),
-            escrowKeylet,
-            describeOwnerDir(account_));
+            keylet::ownerDir(account), escrowKeylet, describeOwnerDir(account));
         if (!page)
             return tecDIR_FULL;
         (*slep)[sfOwnerNode] = *page;
     }
 
     // If it's not a self-send, add escrow to recipient's owner directory.
-    if (auto const dest = ctx_.tx[sfDestination]; dest != account_)
+    if (auto const dest = ctx_.tx[sfDestination]; dest != ctx_.tx[sfAccount])
     {
         auto page = ctx_.view().dirInsert(
             keylet::ownerDir(dest), escrowKeylet, describeOwnerDir(dest));
@@ -378,7 +377,7 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.rules().enabled(featureCredentials))
         return Transactor::preclaim(ctx);
 
-    if (auto const err = credentials::valid(ctx, ctx.account);
+    if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
         !isTesSuccess(err))
         return err;
 

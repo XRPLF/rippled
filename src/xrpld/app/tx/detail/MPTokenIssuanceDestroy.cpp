@@ -52,7 +52,7 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
         return tecOBJECT_NOT_FOUND;
 
     // ensure it is issued by the tx submitter
-    if ((*sleMPT)[sfIssuer] != ctx.account)
+    if ((*sleMPT)[sfIssuer] != ctx.tx[sfAccount])
         return tecNO_PERMISSION;
 
     // ensure it has no outstanding balances

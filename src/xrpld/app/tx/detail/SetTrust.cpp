@@ -84,7 +84,7 @@ SetTrust::preflight(PreflightContext const& ctx)
 TER
 SetTrust::preclaim(PreclaimContext const& ctx)
 {
-    auto const id = ctx.account;
+    auto const id = ctx.tx[sfAccount];
 
     auto const sle = ctx.view.read(keylet::account(id));
     if (!sle)
@@ -244,7 +244,7 @@ SetTrust::doApply()
     bool const bClearFreeze = (uTxFlags & tfClearFreeze);
 
     bool granularDelegated = false;
-    if (ctx_.isDelegated && !ctx_.gpSet.empty())
+    if (ctx_.tx.isDelegated() && !ctx_.permissions.empty())
     {
         granularDelegated = true;
         // If granular permission is delegated under the TrustSet transaction.
@@ -252,14 +252,11 @@ SetTrust::doApply()
         // TrustlineUnfreeze granular permission.
         if (bSetNoRipple || bClearNoRipple || bQualityIn || bQualityOut)
             return terNO_AUTH;
-        if (bSetAuth &&
-            ctx_.gpSet.find(gpTrustlineAuthorize) == ctx_.gpSet.end())
+        if (bSetAuth && !ctx_.permissions.contains(TrustlineAuthorize))
             return terNO_AUTH;
-        if (bSetFreeze &&
-            ctx_.gpSet.find(gpTrustlineFreeze) == ctx_.gpSet.end())
+        if (bSetFreeze && !ctx_.permissions.contains(TrustlineFreeze))
             return terNO_AUTH;
-        if (bClearFreeze &&
-            ctx_.gpSet.find(gpTrustlineUnfreeze) == ctx_.gpSet.end())
+        if (bClearFreeze && !ctx_.permissions.contains(TrustlineUnfreeze))
             return terNO_AUTH;
     }
 

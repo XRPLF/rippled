@@ -91,7 +91,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
 
     // Only cash a check with this account as the destination.
     AccountID const dstId = sleCheck->at(sfDestination);
-    if (ctx.account != dstId)
+    if (ctx.tx[sfAccount] != dstId)
     {
         JLOG(ctx.j.warn()) << "Cashing a check with wrong Destination.";
         return tecNO_PERMISSION;
@@ -138,7 +138,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
         STAmount const value{[](STTx const& tx) {
             auto const optAmount = tx[~sfAmount];
             return optAmount ? *optAmount : tx[sfDeliverMin];
-        }(ctx.tx)};
+        }(ctx.tx.getTx())};
 
         STAmount const sendMax = sleCheck->at(sfSendMax);
         Currency const currency{value.getCurrency()};

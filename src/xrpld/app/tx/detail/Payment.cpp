@@ -42,7 +42,7 @@ Payment::makeTxConsequences(PreflightContext const& ctx)
         return maxAmount.native() ? maxAmount.xrp() : beast::zero;
     };
 
-    return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
+    return TxConsequences{ctx.tx.getTx(), calculateMaxXRPSpend(ctx.tx.getTx())};
 }
 
 STAmount
@@ -105,7 +105,7 @@ Payment::preflight(PreflightContext const& ctx)
 
     auto const account = tx.getAccountID(sfAccount);
     STAmount const maxSourceAmount =
-        getMaxSourceAmount(ctx.account, dstAmount, tx[~sfSendMax]);
+        getMaxSourceAmount(account, dstAmount, tx[~sfSendMax]);
 
     if ((mptDirect && dstAmount.asset() != maxSourceAmount.asset()) ||
         (!mptDirect && maxSourceAmount.holds<MPTIssue>()))
@@ -319,7 +319,7 @@ Payment::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (auto const err = credentials::valid(ctx, ctx.account);
+    if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
         !isTesSuccess(err))
         return err;
 
@@ -342,9 +342,9 @@ Payment::doApply()
     AccountID const dstAccountID(ctx_.tx.getAccountID(sfDestination));
     STAmount const dstAmount(ctx_.tx.getFieldAmount(sfAmount));
 
-    if (ctx_.isDelegated && !ctx_.gpSet.empty())
+    if (ctx_.tx.isDelegated() && !ctx_.permissions.empty())
     {
-        // If gpSet is not empty, granular delegation is happening.
+        // If permissions is not empty, granular delegation is happening.
         // Currently we only support PaymentMint and PaymentBurn granular
         // permission. PaymentMint means the sender is the issuer. PaymentBurn
         // means the destination is the issuer.
@@ -353,10 +353,10 @@ Payment::doApply()
         if (isXRP(amountIssue))
             return tecNO_AUTH;
         if (amountIssue.account == account_ &&
-            ctx_.gpSet.find(gpPaymentMint) != ctx_.gpSet.end())
+            ctx_.permissions.contains(PaymentMint))
             authorized = true;
         if (amountIssue.account == dstAccountID &&
-            ctx_.gpSet.find(gpPaymentBurn) != ctx_.gpSet.end())
+            ctx_.permissions.contains(PaymentBurn))
             authorized = true;
 
         if (!authorized)

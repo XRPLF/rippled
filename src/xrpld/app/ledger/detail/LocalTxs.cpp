@@ -62,7 +62,10 @@ public:
         : m_txn(txn)
         , m_expire(index + holdLedgers)
         , m_id(txn->getTransactionID())
-        , m_account(txn->getAccountID(sfAccount))
+        , m_account(
+              txn->isFieldPresent(sfOnBehalfOf)
+                  ? txn->getAccountID(sfOnBehalfOf)
+                  : txn->getAccountID(sfAccount))
         , m_seqProxy(txn->getSeqProxy())
     {
         if (txn->isFieldPresent(sfLastLedgerSequence))

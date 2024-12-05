@@ -168,7 +168,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
 TER
 AMMDeposit::preclaim(PreclaimContext const& ctx)
 {
-    auto const accountID = ctx.account;
+    auto const accountID = ctx.tx[sfAccount];
 
     auto const ammSle =
         ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));

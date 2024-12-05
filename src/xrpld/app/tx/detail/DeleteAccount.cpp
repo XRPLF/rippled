@@ -53,7 +53,7 @@ DeleteAccount::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.account == ctx.tx[sfDestination])
+    if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
         // An account cannot be deleted and give itself the resulting XRP.
         return temDST_IS_SRC;
 
@@ -229,7 +229,7 @@ nonObligationDeleter(LedgerEntryType t)
 TER
 DeleteAccount::preclaim(PreclaimContext const& ctx)
 {
-    AccountID const account{ctx.account};
+    AccountID const account{ctx.tx[sfAccount]};
     AccountID const dst{ctx.tx[sfDestination]};
 
     auto sleDst = ctx.view.read(keylet::account(dst));

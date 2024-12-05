@@ -88,7 +88,7 @@ AMMCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 TER
 AMMCreate::preclaim(PreclaimContext const& ctx)
 {
-    auto const accountID = ctx.account;
+    auto const accountID = ctx.tx[sfAccount];
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];
 

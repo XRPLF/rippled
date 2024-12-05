@@ -70,7 +70,8 @@ SetOracle::preflight(PreflightContext const& ctx)
 TER
 SetOracle::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleSetter = ctx.view.read(keylet::account(ctx.account));
+    auto const sleSetter =
+        ctx.view.read(keylet::account(ctx.tx.getAccountID(sfAccount)));
     if (!sleSetter)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
@@ -91,8 +92,8 @@ SetOracle::preclaim(PreclaimContext const& ctx)
         lastUpdateTimeEpoch > (closeTime + maxLastUpdateTimeDelta))
         return tecINVALID_UPDATE_TIME;
 
-    auto const sle =
-        ctx.view.read(keylet::oracle(ctx.account, ctx.tx[sfOracleDocumentID]));
+    auto const sle = ctx.view.read(keylet::oracle(
+        ctx.tx.getAccountID(sfAccount), ctx.tx[sfOracleDocumentID]));
 
     // token pairs to add/update
     std::set<std::pair<Currency, Currency>> pairs;
@@ -184,7 +185,8 @@ SetOracle::preclaim(PreclaimContext const& ctx)
 static bool
 adjustOwnerCount(ApplyContext& ctx, int count)
 {
-    if (auto const sleAccount = ctx.view().peek(keylet::account(ctx.account)))
+    if (auto const sleAccount =
+            ctx.view().peek(keylet::account(ctx.tx[sfAccount])))
     {
         adjustOwnerCount(ctx.view(), sleAccount, count, ctx.journal);
         return true;
@@ -279,7 +281,7 @@ SetOracle::doApply()
         // create
 
         sle = std::make_shared<SLE>(oracleID);
-        sle->setAccountID(sfOwner, account_);
+        sle->setAccountID(sfOwner, ctx_.tx.getAccountID(sfAccount));
         sle->setFieldVL(sfProvider, ctx_.tx[sfProvider]);
         if (ctx_.tx.isFieldPresent(sfURI))
             sle->setFieldVL(sfURI, ctx_.tx[sfURI]);

@@ -56,7 +56,7 @@ NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 TER
 NFTokenCancelOffer::preclaim(PreclaimContext const& ctx)
 {
-    auto const account = ctx.account;
+    auto const account = ctx.tx[sfAccount];
 
     auto const& ids = ctx.tx[sfNFTokenOffers];
 

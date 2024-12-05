@@ -37,7 +37,7 @@ MPTokenAuthorize::preflight(PreflightContext const& ctx)
     if (ctx.tx.getFlags() & tfMPTokenAuthorizeMask)
         return temINVALID_FLAG;
 
-    if (ctx.account == ctx.tx[~sfHolder])
+    if (ctx.tx[sfAccount] == ctx.tx[~sfHolder])
         return temMALFORMED;
 
     return preflight2(ctx);
@@ -46,7 +46,7 @@ MPTokenAuthorize::preflight(PreflightContext const& ctx)
 TER
 MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 {
-    auto const accountID = ctx.account;
+    auto const accountID = ctx.tx[sfAccount];
     auto const holderID = ctx.tx[~sfHolder];
 
     // if non-issuer account submits this tx, then they are trying either:
