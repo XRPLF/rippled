@@ -1,3 +1,4 @@
+//------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012, 2013 Ripple Labs Inc.

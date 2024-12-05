@@ -29,7 +29,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <antithesis_sdk.h>
 #else
 // Macros below are copied from antithesis_sdk.h and slightly simplified
-// The duplication is because Visual Studio 2019 cannot compile this header
+// The duplication is because Visual Studio 2019 cannot compile that header
 // even with the option -Zc:__cplusplus added.
 #define ALWAYS(cond, message, ...) assert((message) && (cond))
 #define ALWAYS_OR_UNREACHABLE(cond, message, ...) assert((message) && (cond))
