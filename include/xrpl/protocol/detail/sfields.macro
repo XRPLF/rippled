@@ -192,6 +192,9 @@ TYPED_SFIELD(sfHookHash,                 UINT256,   31)
 TYPED_SFIELD(sfHookNamespace,            UINT256,   32)
 TYPED_SFIELD(sfHookSetTxnID,             UINT256,   33)
 
+// number (common)
+TYPED_SFIELD(sfNumber,                   NUMBER,     1)
+
 // currency amount (common)
 TYPED_SFIELD(sfAmount,                   AMOUNT,     1)
 TYPED_SFIELD(sfBalance,                  AMOUNT,     2)

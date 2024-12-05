@@ -120,9 +120,10 @@ InboundLedger::init(ScopedLockType& collectionLock)
 
     JLOG(journal_.debug()) << "Acquiring ledger we already have in "
                            << " local store. " << hash_;
-    assert(
+    ASSERT(
         mLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-        mLedger->read(keylet::fees()));
+            mLedger->read(keylet::fees()),
+        "ripple::InboundLedger::init : valid ledger fees");
     mLedger->setImmutable();
 
     if (mReason == Reason::HISTORY)
@@ -351,9 +352,10 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
     {
         JLOG(journal_.debug()) << "Had everything locally";
         complete_ = true;
-        assert(
+        ASSERT(
             mLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-            mLedger->read(keylet::fees()));
+                mLedger->read(keylet::fees()),
+            "ripple::InboundLedger::tryDB : valid ledger fees");
         mLedger->setImmutable();
     }
 }
@@ -447,13 +449,16 @@ InboundLedger::done()
                                       std::to_string(timeouts_) + " "))
                            << mStats.get();
 
-    assert(complete_ || failed_);
+    ASSERT(
+        complete_ || failed_,
+        "ripple::InboundLedger::done : complete or failed");
 
     if (complete_ && !failed_ && mLedger)
     {
-        assert(
+        ASSERT(
             mLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
-            mLedger->read(keylet::fees()));
+                mLedger->read(keylet::fees()),
+            "ripple::InboundLedger::done : valid ledger fees");
         mLedger->setImmutable();
         switch (mReason)
         {
@@ -613,7 +618,10 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     // if we wind up abandoning this fetch.
     if (mHaveHeader && !mHaveState && !failed_)
     {
-        assert(mLedger);
+        ASSERT(
+            mLedger != nullptr,
+            "ripple::InboundLedger::trigger : non-null ledger to read state "
+            "from");
 
         if (!mLedger->stateMap().isValid())
         {
@@ -685,7 +693,10 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
     if (mHaveHeader && !mHaveTransactions && !failed_)
     {
-        assert(mLedger);
+        ASSERT(
+            mLedger != nullptr,
+            "ripple::InboundLedger::trigger : non-null ledger to read "
+            "transactions from");
 
         if (!mLedger->txMap().isValid())
         {
@@ -950,7 +961,7 @@ InboundLedger::takeAsRootNode(Slice const& data, SHAMapAddNode& san)
 
     if (!mHaveHeader)
     {
-        assert(false);
+        UNREACHABLE("ripple::InboundLedger::takeAsRootNode : no ledger header");
         return false;
     }
 
@@ -975,7 +986,7 @@ InboundLedger::takeTxRootNode(Slice const& data, SHAMapAddNode& san)
 
     if (!mHaveHeader)
     {
-        assert(false);
+        UNREACHABLE("ripple::InboundLedger::takeTxRootNode : no ledger header");
         return false;
     }
 

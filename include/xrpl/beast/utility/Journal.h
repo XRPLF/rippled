@@ -20,7 +20,7 @@
 #ifndef BEAST_UTILITY_JOURNAL_H_INCLUDED
 #define BEAST_UTILITY_JOURNAL_H_INCLUDED
 
-#include <cassert>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <sstream>
 
 namespace beast {
@@ -205,7 +205,9 @@ public:
         */
         Stream(Sink& sink, Severity level) : m_sink(sink), m_level(level)
         {
-            assert(m_level < severities::kDisabled);
+            ASSERT(
+                m_level < severities::kDisabled,
+                "beast::Journal::Stream::Stream : maximum level");
         }
 
         /** Construct or copy another Stream. */

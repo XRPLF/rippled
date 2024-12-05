@@ -18,8 +18,8 @@
 #ifndef RIPPLE_BASICS_SPINLOCK_H_INCLUDED
 #define RIPPLE_BASICS_SPINLOCK_H_INCLUDED
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <atomic>
-#include <cassert>
 #include <limits>
 #include <type_traits>
 
@@ -117,7 +117,9 @@ public:
     packed_spinlock(std::atomic<T>& lock, int index)
         : bits_(lock), mask_(static_cast<T>(1) << index)
     {
-        assert(index >= 0 && (mask_ != 0));
+        ASSERT(
+            index >= 0 && (mask_ != 0),
+            "ripple::packed_spinlock::packed_spinlock : valid index and mask");
     }
 
     [[nodiscard]] bool

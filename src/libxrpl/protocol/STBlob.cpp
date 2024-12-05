@@ -54,10 +54,11 @@ STBlob::getText() const
 void
 STBlob::add(Serializer& s) const
 {
-    assert(getFName().isBinary());
-    assert(
+    ASSERT(getFName().isBinary(), "ripple::STBlob::add : field is binary");
+    ASSERT(
         (getFName().fieldType == STI_VL) ||
-        (getFName().fieldType == STI_ACCOUNT));
+            (getFName().fieldType == STI_ACCOUNT),
+        "ripple::STBlob::add : valid field type");
     s.addVL(value_.data(), value_.size());
 }
 

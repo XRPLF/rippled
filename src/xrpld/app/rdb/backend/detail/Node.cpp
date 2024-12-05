@@ -58,7 +58,7 @@ to_string(TableType type)
         case TableType::AccountTransactions:
             return "AccountTransactions";
         default:
-            assert(false);
+            UNREACHABLE("ripple::detail::to_string : invalid TableType");
             return "Unknown";
     }
 }
@@ -202,7 +202,7 @@ saveValidatedLedger(
     if (!ledger->info().accountHash.isNonZero())
     {
         JLOG(j.fatal()) << "AH is zero: " << getJson({*ledger, {}});
-        assert(false);
+        UNREACHABLE("ripple::detail::saveValidatedLedger : zero account hash");
     }
 
     if (ledger->info().accountHash != ledger->stateMap().getHash().as_uint256())
@@ -211,10 +211,13 @@ saveValidatedLedger(
                         << " != " << ledger->stateMap().getHash();
         JLOG(j.fatal()) << "saveAcceptedLedger: seq=" << seq
                         << ", current=" << current;
-        assert(false);
+        UNREACHABLE(
+            "ripple::detail::saveValidatedLedger : mismatched account hash");
     }
 
-    assert(ledger->info().txHash == ledger->txMap().getHash().as_uint256());
+    ASSERT(
+        ledger->info().txHash == ledger->txMap().getHash().as_uint256(),
+        "ripple::detail::saveValidatedLedger : transaction hash match");
 
     // Save the ledger header in the hashed object store
     {

@@ -158,7 +158,7 @@ PathRequest::updateComplete()
 {
     std::lock_guard sl(mIndexLock);
 
-    assert(mInProgress);
+    ASSERT(mInProgress, "ripple::PathRequest::updateComplete : in progress");
     mInProgress = false;
 
     if (fCompletion)

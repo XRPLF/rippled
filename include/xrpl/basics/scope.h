@@ -20,6 +20,8 @@
 #ifndef RIPPLE_BASICS_SCOPE_H_INCLUDED
 #define RIPPLE_BASICS_SCOPE_H_INCLUDED
 
+#include <xrpl/beast/utility/instrumentation.h>
+
 #include <exception>
 #include <mutex>
 #include <type_traits>
@@ -233,7 +235,9 @@ public:
     explicit scope_unlock(std::unique_lock<Mutex>& lock) noexcept(true)
         : plock(&lock)
     {
-        assert(plock->owns_lock());
+        ASSERT(
+            plock->owns_lock(),
+            "ripple::scope_unlock::scope_unlock : mutex must be locked");
         plock->unlock();
     }
 

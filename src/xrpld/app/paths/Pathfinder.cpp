@@ -189,7 +189,9 @@ Pathfinder::Pathfinder(
     , app_(app)
     , j_(app.journal("Pathfinder"))
 {
-    assert(!uSrcIssuer || isXRP(uSrcCurrency) == isXRP(uSrcIssuer.value()));
+    ASSERT(
+        !uSrcIssuer || isXRP(uSrcCurrency) == isXRP(uSrcIssuer.value()),
+        "ripple::Pathfinder::Pathfinder : valid inputs");
 }
 
 bool
@@ -577,7 +579,9 @@ Pathfinder::getBestPaths(
     if (mCompletePaths.empty() && extraPaths.empty())
         return mCompletePaths;
 
-    assert(fullLiquidityPath.empty());
+    ASSERT(
+        fullLiquidityPath.empty(),
+        "ripple::Pathfinder::getBestPaths : first empty path result");
     const bool issuerIsSender =
         isXRP(mSrcCurrency) || (srcIssuer == mSrcAccount);
 
@@ -638,7 +642,7 @@ Pathfinder::getBestPaths(
 
         if (path.empty())
         {
-            assert(false);
+            UNREACHABLE("ripple::Pathfinder::getBestPaths : path not found");
             continue;
         }
 
@@ -681,7 +685,9 @@ Pathfinder::getBestPaths(
 
     if (remaining > beast::zero)
     {
-        assert(fullLiquidityPath.empty());
+        ASSERT(
+            fullLiquidityPath.empty(),
+            "ripple::Pathfinder::getBestPaths : second empty path result");
         JLOG(j_.info()) << "Paths could not send " << remaining << " of "
                         << mDstAmount;
     }
@@ -830,7 +836,9 @@ Pathfinder::addPathsForType(
     {
         case nt_SOURCE:
             // Source must always be at the start, so pathsOut has to be empty.
-            assert(pathsOut.empty());
+            ASSERT(
+                pathsOut.empty(),
+                "ripple::Pathfinder::addPathsForType : empty paths");
             pathsOut.push_back(STPath());
             break;
 
@@ -1282,7 +1290,7 @@ void
 fillPaths(Pathfinder::PaymentType type, PathCostList const& costs)
 {
     auto& list = mPathTable[type];
-    assert(list.empty());
+    ASSERT(list.empty(), "ripple::fillPaths : empty paths");
     for (auto& cost : costs)
         list.push_back({cost.cost, makePath(cost.path)});
 }

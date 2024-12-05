@@ -41,6 +41,14 @@ class Number
     int exponent_{std::numeric_limits<int>::lowest()};
 
 public:
+    // The range for the mantissa when normalized
+    constexpr static std::int64_t minMantissa = 1'000'000'000'000'000LL;
+    constexpr static std::int64_t maxMantissa = 9'999'999'999'999'999LL;
+
+    // The range for the exponent when normalized
+    constexpr static int minExponent = -32768;
+    constexpr static int maxExponent = 32768;
+
     struct unchecked
     {
         explicit unchecked() = default;
@@ -190,14 +198,6 @@ private:
     normalize();
     constexpr bool
     isnormal() const noexcept;
-
-    // The range for the mantissa when normalized
-    constexpr static std::int64_t minMantissa = 1'000'000'000'000'000LL;
-    constexpr static std::int64_t maxMantissa = 9'999'999'999'999'999LL;
-
-    // The range for the exponent when normalized
-    constexpr static int minExponent = -32768;
-    constexpr static int maxExponent = 32768;
 
     class Guard;
 };

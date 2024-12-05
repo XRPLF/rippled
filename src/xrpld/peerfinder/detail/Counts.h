@@ -71,7 +71,9 @@ public:
     can_activate(Slot const& s) const
     {
         // Must be handshaked and in the right state
-        assert(s.state() == Slot::connected || s.state() == Slot::accept);
+        ASSERT(
+            s.state() == Slot::connected || s.state() == Slot::accept,
+            "ripple::PeerFinder::Counts::can_activate : valid input state");
 
         if (s.fixed() || s.reserved())
             return true;
@@ -262,13 +264,18 @@ private:
         switch (s.state())
         {
             case Slot::accept:
-                assert(s.inbound());
+                ASSERT(
+                    s.inbound(),
+                    "ripple::PeerFinder::Counts::adjust : input is inbound");
                 m_acceptCount += n;
                 break;
 
             case Slot::connect:
             case Slot::connected:
-                assert(!s.inbound());
+                ASSERT(
+                    !s.inbound(),
+                    "ripple::PeerFinder::Counts::adjust : input is not "
+                    "inbound");
                 m_attempts += n;
                 break;
 
@@ -290,7 +297,8 @@ private:
                 break;
 
             default:
-                assert(false);
+                UNREACHABLE(
+                    "ripple::PeerFinder::Counts::adjust : invalid input state");
                 break;
         };
     }

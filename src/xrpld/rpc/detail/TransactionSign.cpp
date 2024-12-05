@@ -1031,7 +1031,9 @@ transactionSignFor(
     if (!preprocResult.second)
         return preprocResult.first;
 
-    assert(signForParams.validMultiSign());
+    ASSERT(
+        signForParams.validMultiSign(),
+        "ripple::RPC::transactionSignFor : valid multi-signature");
 
     {
         std::shared_ptr<SLE const> account_state =

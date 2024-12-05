@@ -953,7 +953,7 @@ operator>>(std::istream& sin, Value& root)
     Json::Reader reader;
     bool ok = reader.parse(sin, root);
 
-    // JSON_ASSERT( ok );
+    // ASSERT(ok, "Json::operator>>() : parse succeeded");
     if (!ok)
         ripple::Throw<std::runtime_error>(reader.getFormatedErrorMessages());
 

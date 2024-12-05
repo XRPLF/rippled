@@ -381,7 +381,8 @@ AccountRootsDeletedClean::finalize(
     // transaction processing results, however unlikely, only fail if the
     // feature is enabled. Enabled, or not, though, a fatal-level message will
     // be logged
-    bool const enforce = view.rules().enabled(featureInvariantsV1_1);
+    [[maybe_unused]] bool const enforce =
+        view.rules().enabled(featureInvariantsV1_1);
 
     auto const objectExists = [&view, enforce, &j](auto const& keylet) {
         if (auto const sle = view.read(keylet))
@@ -399,8 +400,10 @@ AccountRootsDeletedClean::finalize(
             JLOG(j.fatal())
                 << "Invariant failed: account deletion left behind a "
                 << typeName << " object";
-            (void)enforce;
-            assert(enforce);
+            ASSERT(
+                enforce,
+                "ripple::AccountRootsDeletedClean::finalize::objectExists : "
+                "account deletion left no objects behind");
             return true;
         }
         return false;

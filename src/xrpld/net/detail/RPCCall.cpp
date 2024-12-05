@@ -668,6 +668,21 @@ private:
         return jvRequest;
     }
 
+    // ledger_entry [id] [<index>]
+    Json::Value
+    parseLedgerEntry(Json::Value const& jvParams)
+    {
+        Json::Value jvRequest{Json::objectValue};
+
+        jvRequest[jss::index] = jvParams[0u].asString();
+
+        if (jvParams.size() == 2 &&
+            !jvParseLedger(jvRequest, jvParams[1u].asString()))
+            return rpcError(rpcLGR_IDX_MALFORMED);
+
+        return jvRequest;
+    }
+
     // log_level:                           Get log levels
     // log_level <severity>:                Set master log level to the
     // specified severity log_level <partition> <severity>:    Set specified
@@ -962,7 +977,9 @@ private:
     parseTransactionEntry(Json::Value const& jvParams)
     {
         // Parameter count should have already been verified.
-        assert(jvParams.size() == 2);
+        ASSERT(
+            jvParams.size() == 2,
+            "ripple::RPCParser::parseTransactionEntry : valid parameter count");
 
         std::string const txHash = jvParams[0u].asString();
         if (txHash.length() != 64)
@@ -1181,8 +1198,7 @@ public:
             {"ledger_accept", &RPCParser::parseAsIs, 0, 0},
             {"ledger_closed", &RPCParser::parseAsIs, 0, 0},
             {"ledger_current", &RPCParser::parseAsIs, 0, 0},
-            //      {   "ledger_entry",         &RPCParser::parseLedgerEntry,
-            //      -1, -1   },
+            {"ledger_entry", &RPCParser::parseLedgerEntry, 1, 2},
             {"ledger_header", &RPCParser::parseLedgerId, 1, 1},
             {"ledger_request", &RPCParser::parseLedgerId, 1, 1},
             {"log_level", &RPCParser::parseLogLevel, 0, 2},

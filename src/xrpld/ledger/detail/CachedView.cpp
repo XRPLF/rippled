@@ -63,20 +63,17 @@ CachedViewImpl::read(Keylet const& k) const
         hits.increment();
     else
         misses.increment();
-    std::lock_guard lock(mutex_);
-    auto const er = map_.emplace(k.key, *digest);
-    bool const inserted = er.second;
-    if (sle && !k.check(*sle))
+
+    if (!cacheHit)
     {
-        if (!inserted)
-        {
-            // On entry, this function did not find this key in map_. Now
-            // something (another thread?) has inserted the sle into the map and
-            // it has the wrong type.
-            LogicError("CachedView::read: wrong type");
-        }
-        return nullptr;
+        // Avoid acquiring this lock unless necessary. It is only necessary if
+        // the key was not found in the map_. The lock is needed to add the key
+        // and digest.
+        std::lock_guard lock(mutex_);
+        map_.emplace(k.key, *digest);
     }
+    if (!sle || !k.check(*sle))
+        return nullptr;
     return sle;
 }
 

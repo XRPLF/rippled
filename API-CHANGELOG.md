@@ -83,11 +83,13 @@ The [commandline](https://xrpl.org/docs/references/http-websocket-apis/api-conve
 
 The `network_id` field was added in the `server_info` response in version 1.5.0 (2019), but it is not returned in [reporting mode](https://xrpl.org/rippled-server-modes.html#reporting-mode). However, use of reporting mode is now discouraged, in favor of using [Clio](https://github.com/XRPLF/clio) instead.
 
-## XRP Ledger server version 2.2.0
+## XRP Ledger server version 2.4.0
 
-The following is a non-breaking addition to the API.
+### Addition in 2.4
 
-- The `feature` method now has a non-admin mode for users. (It was previously only available to admin connections.) The method returns an updated list of amendments, including their names and other information. ([#4781](https://github.com/XRPLF/rippled/pull/4781))
+- `ledger_entry`: `state` is added an alias for `ripple_state`.
+
+## XRP Ledger server version 2.3.0
 
 ### Breaking change in 2.3
 
@@ -104,6 +106,12 @@ The following additions are non-breaking (because they are purely additive).
 - `server_definitions`: A new RPC that generates a `definitions.json`-like output that can be used in XRPL libraries.
 - In `Payment` transactions, `DeliverMax` has been added. This is a replacement for the `Amount` field, which should not be used. Typically, the `delivered_amount` (in transaction metadata) should be used. To ease the transition, `DeliverMax` is present regardless of API version, since adding a field is non-breaking.
 - API version 2 has been moved from beta to supported, meaning that it is generally available (regardless of the `beta_rpc_api` setting).
+
+## XRP Ledger server version 2.2.0
+
+The following is a non-breaking addition to the API.
+
+- The `feature` method now has a non-admin mode for users. (It was previously only available to admin connections.) The method returns an updated list of amendments, including their names and other information. ([#4781](https://github.com/XRPLF/rippled/pull/4781))
 
 ## XRP Ledger server version 1.12.0
 

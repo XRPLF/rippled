@@ -29,6 +29,7 @@
 #include <xrpl/basics/XRPAmount.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -222,7 +223,9 @@ claimHelper(
         auto i = signersList.find(a.keyAccount);
         if (i == signersList.end())
         {
-            assert(0);  // should have already been checked
+            UNREACHABLE(
+                "ripple::claimHelper : invalid inputs");  // should have already
+                                                          // been checked
             continue;
         }
         weight += i->second;
@@ -437,7 +440,9 @@ transferHelper(
     if (amt.native())
     {
         auto const sleSrc = psb.peek(keylet::account(src));
-        assert(sleSrc);
+        ASSERT(
+            sleSrc != nullptr,
+            "ripple::transferHelper : non-null source account");
         if (!sleSrc)
             return tecINTERNAL;
 

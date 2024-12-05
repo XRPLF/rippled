@@ -26,7 +26,6 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
-#include <cassert>
 #include <condition_variable>
 #include <functional>
 #include <memory>
