@@ -16,9 +16,9 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/beast/clock/manual_clock.h>
-#include <ripple/beast/unit_test.h>
 #include <test/csf.h>
+#include <xrpl/beast/clock/manual_clock.h>
+#include <xrpl/beast/unit_test.h>
 #include <utility>
 
 namespace ripple {
@@ -66,8 +66,8 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         for (TrustGraph<Peer*>::ForkInfo const& fi :
              sim.trustGraph.forkablePairs(0.8))
         {
-            std::cout << "Can fork " << PeerGroup{fi.unlA} << " "
-                      << " " << PeerGroup{fi.unlB} << " overlap " << fi.overlap
+            std::cout << "Can fork " << PeerGroup{fi.unlA} << " " << " "
+                      << PeerGroup{fi.unlB} << " overlap " << fi.overlap
                       << " required " << fi.required << "\n";
         };
 
@@ -78,7 +78,7 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         // All peers see some TX 0
         for (Peer* peer : network)
         {
-            peer->submit(Tx(0));
+            peer->submit(Tx{0});
             // Peers 0,1,2,6 will close the next ledger differently by injecting
             // a non-consensus approved transaciton
             if (byzantineNodes.contains(peer))

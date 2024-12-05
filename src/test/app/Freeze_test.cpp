@@ -16,43 +16,17 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 
 class Freeze_test : public beast::unit_test::suite
 {
-    static Json::Value
-    getAccountLines(test::jtx::Env& env, test::jtx::Account const& account)
-    {
-        Json::Value jq;
-        jq[jss::account] = account.human();
-        return env.rpc("json", "account_lines", to_string(jq))[jss::result];
-    }
-
-    static Json::Value
-    getAccountOffers(
-        test::jtx::Env& env,
-        test::jtx::Account const& account,
-        bool current = false)
-    {
-        Json::Value jq;
-        jq[jss::account] = account.human();
-        jq[jss::ledger_index] = current ? "current" : "validated";
-        return env.rpc("json", "account_offers", to_string(jq))[jss::result];
-    }
-
-    static bool
-    checkArraySize(Json::Value const& val, unsigned int size)
-    {
-        return val.isArray() && val.size() == size;
-    }
-
     void
     testRippleState(FeatureBitset features)
     {

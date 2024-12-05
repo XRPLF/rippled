@@ -4,8 +4,1288 @@
 
 This document contains the release notes for `rippled`, the reference server implementation of the XRP Ledger protocol. To learn more about how to build, run or update a `rippled` server, visit https://xrpl.org/install-rippled.html
 
- 
-Have new ideas? Need help with setting up your node? Come visit us [here](https://github.com/ripple/rippled/issues/new/choose)
+Have new ideas? Need help with setting up your node? [Please open an issue here](https://github.com/xrplf/rippled/issues/new/choose).
+
+# Version 2.3.0
+
+Version 2.3.0 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release includes 8 new amendments, including Multi-Purpose Tokens, Credentials, Clawback support for AMMs, and the ability to make offers as part of minting NFTs. Additionally, this release includes important fixes for stability, so server operators are encouraged to upgrade as soon as possible.
+
+
+## Action Required
+
+If you run an XRP Ledger server, upgrade to version 2.3.0 as soon as possible to ensure service continuity.
+
+Additionally, new amendments are now open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+
+## Full Changelog
+
+### Amendments
+
+The following amendments are open for voting with this release:
+
+- **XLS-70 Credentials** - Users can issue Credentials on the ledger and use Credentials to pre-approve incoming payments when using Deposit Authorization instead of individually approving payers. ([#5103](https://github.com/XRPLF/rippled/pull/5103))
+    - related fix: #5189 (https://github.com/XRPLF/rippled/pull/5189)
+- **XLS-33 Multi-Purpose Tokens** - A new type of fungible token optimized for institutional DeFi including stablecoins. ([#5143](https://github.com/XRPLF/rippled/pull/5143))
+- **XLS-37 AMM Clawback** - Allows clawback-enabled tokens to be used in AMMs, with appropriate guardrails. ([#5142](https://github.com/XRPLF/rippled/pull/5142))
+- **XLS-52 NFTokenMintOffer** - Allows creating an NFT sell offer as part of minting a new NFT. ([#4845](https://github.com/XRPLF/rippled/pull/4845))
+- **fixAMMv1_2** - Fixes two bugs in Automated Market Maker (AMM) transaction processing. ([#5176](https://github.com/XRPLF/rippled/pull/5176))
+- **fixNFTokenPageLinks** - Fixes a bug that can cause NFT directories to have missing links, and introduces a transaction to repair corrupted ledger state. ([#4945](https://github.com/XRPLF/rippled/pull/4945))
+- **fixEnforceNFTokenTrustline** - Fixes two bugs in the interaction between NFT offers and trust lines. ([#4946](https://github.com/XRPLF/rippled/pull/4946))
+- **fixInnerObjTemplate2** - Standardizes the way inner objects are enforced across all transaction and ledger data. ([#5047](https://github.com/XRPLF/rippled/pull/5047))
+
+The following amendment is partially implemented but not open for voting:
+
+- **InvariantsV1_1** - Adds new invariants to ensure transactions process as intended, starting with an invariant to ensure that ledger entries owned by an account are deleted when the account is deleted. ([#4663](https://github.com/XRPLF/rippled/pull/4663))
+
+### New Features
+
+- Allow configuration of SQLite database page size. ([#5135](https://github.com/XRPLF/rippled/pull/5135), [#5140](https://github.com/XRPLF/rippled/pull/5140))
+- In the `libxrpl` C++ library, provide a list of known amendments. ([#5026](https://github.com/XRPLF/rippled/pull/5026)) 
+
+### Deprecations
+
+- History Shards are removed. ([#5066](https://github.com/XRPLF/rippled/pull/5066))
+- Reporting mode is removed. ([#5092](https://github.com/XRPLF/rippled/pull/5092))
+
+For users wanting to store more ledger history, it is recommended to run a Clio server instead.
+
+### Bug fixes
+
+- Fix a crash in debug builds when amm_info request contains an invalid AMM account ID. ([#5188](https://github.com/XRPLF/rippled/pull/5188))
+- Fix a crash caused by a race condition in peer-to-peer code. ([#5071](https://github.com/XRPLF/rippled/pull/5071))
+- Fix a crash in certain situations
+- Fix several bugs in the book_changes API method. ([#5096](https://github.com/XRPLF/rippled/pull/5096))
+- Fix bug triggered by providing an invalid marker to the account_nfts API method. ([#5045](https://github.com/XRPLF/rippled/pull/5045))
+- Accept lower-case hexadecimal in compact transaction identifier (CTID) parameters in API methods. ([#5049](https://github.com/XRPLF/rippled/pull/5049))
+- Disallow filtering by types that an account can't own in the account_objects API method. ([#5056](https://github.com/XRPLF/rippled/pull/5056))
+- Fix error code returned by the feature API method when providing an invalid parameter. ([#5063](https://github.com/XRPLF/rippled/pull/5063))
+- (API v3) Fix error code returned by amm_info when providing invalid parameters. ([#4924](https://github.com/XRPLF/rippled/pull/4924))
+
+### Other Improvements
+
+- Adds a new default hub, hubs.xrpkuwait.com, to the config file and bootstrapping code. ([#5169](https://github.com/XRPLF/rippled/pull/5169))
+- Improve error message when commandline interface fails with `rpcInternal` because there was no response from the server. ([#4959](https://github.com/XRPLF/rippled/pull/4959))
+- Add tools for debugging specific transactions via replay. ([#5027](https://github.com/XRPLF/rippled/pull/5027), [#5087](https://github.com/XRPLF/rippled/pull/5087))
+- Major reorganization of source code files. ([#4997](https://github.com/XRPLF/rippled/pull/4997))
+- Add new unit tests. ([#4886](https://github.com/XRPLF/rippled/pull/4886))
+- Various improvements to build tools and contributor documentation. ([#5001](https://github.com/XRPLF/rippled/pull/5001), [#5028](https://github.com/XRPLF/rippled/pull/5028), [#5052](https://github.com/XRPLF/rippled/pull/5052), [#5091](https://github.com/XRPLF/rippled/pull/5091), [#5084](https://github.com/XRPLF/rippled/pull/5084), [#5120](https://github.com/XRPLF/rippled/pull/5120), [#5010](https://github.com/XRPLF/rippled/pull/5010). [#5055](https://github.com/XRPLF/rippled/pull/5055), [#5067](https://github.com/XRPLF/rippled/pull/5067), [#5061](https://github.com/XRPLF/rippled/pull/5061), [#5072](https://github.com/XRPLF/rippled/pull/5072), [#5044](https://github.com/XRPLF/rippled/pull/5044) )
+- Various code cleanup and refactoring. ([#4509](https://github.com/XRPLF/rippled/pull/4509), [#4521](https://github.com/XRPLF/rippled/pull/4521), [#4856](https://github.com/XRPLF/rippled/pull/4856), [#5190](https://github.com/XRPLF/rippled/pull/5190), [#5081](https://github.com/XRPLF/rippled/pull/5081), [#5053](https://github.com/XRPLF/rippled/pull/5053), [#5058](https://github.com/XRPLF/rippled/pull/5058), [#5122](https://github.com/XRPLF/rippled/pull/5122), [#5059](https://github.com/XRPLF/rippled/pull/5059), [#5041](https://github.com/XRPLF/rippled/pull/5041))
+
+
+Bug Bounties and Responsible Disclosures:
+
+We welcome reviews of the `rippled` code and urge researchers to responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to: <bugs@xrpl.org>
+
+
+# Version 2.2.3
+
+Version 2.2.3 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release fixes a problem that can cause full-history servers to run out of space in their SQLite databases, depending on configuration. There are no new amendments in this release.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+## Background
+
+The `rippled` server uses a SQLite database for tracking transactions, in addition to the main data store (usually NuDB) for ledger data. In servers keeping a large amount of history, this database can run out of space based on the configured number and size of database pages, even if the machine has disk space available. Based on the size of full history on Mainnet, servers with the default SQLite page size of 4096 may now run out of space if they store full history. In this case, your server may shut down with an error such as the following:
+
+```text
+Free SQLite space for transaction db is less than 512MB. To fix this, rippled
+  must be executed with the vacuum <sqlitetmpdir> parameter before restarting.
+  Note that this activity can take multiple days, depending on database size.
+```
+
+The exact timing of when a server runs out of space can vary based on a few factors. Server operators who encountered a similar problem in 2018 and followed steps to [increase the SQLite transaction database page size issue](../../../docs/infrastructure/troubleshooting/fix-sqlite-tx-db-page-size-issue) may not encounter this problem at all. The `--vacuum` commandline option to `rippled` from that time may work to free up space in the database, but requires extended downtime.
+
+Version 2.2.3 of `rippled` reconfigures the maximum number of SQLite pages so that the issue does not occur.
+
+Clio servers providing full history are not affected by this issue.
+
+
+## Action Required
+
+If you run an [XRP Ledger full history server](https://xrpl.org/docs/infrastructure/configuration/data-retention/configure-full-history), upgrading to version 2.2.3 may prevent the server from crashing when `transaction.db` exceeds approximately 8.7 terabytes.
+
+Additionally, five amendments introduced in version 2.2.0 are open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators. If you operate an XRP Ledger server older than version 2.2.0, upgrade by Sep 23, 2024 to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+
+## Changelog
+
+### Bug Fixes
+
+- Update SQLite3 max_page_count to match current defaults ([#5114](https://github.com/XRPLF/rippled/pull/5114))
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+
+## Credits
+
+The following people contributed directly to this release:
+
+J. Scott Branson <the@rabbitkick.club>
+
+
+Bug Bounties and Responsible Disclosures:
+
+We welcome reviews of the `rippled` code and urge researchers to responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to: <bugs@xrpl.org>
+
+
+# Version 2.2.2
+
+Version 2.2.2 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release fixes an ongoing issue with Mainnet where validators can stall during consensus processing due to lock contention, preventing ledgers from being validated for up to two minutes. There are no new amendments in this release.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+## Action Required
+
+If you run an XRP Ledger validator, upgrade to version 2.2.2 as soon as possible to ensure stable and uninterrupted network behavior.
+
+Additionally, five amendments introduced in version 2.2.0 are open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators. If you operate an XRP Ledger server older than version 2.2.0, upgrade by September 17, 2024 to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network. Version 2.2.2 is recommended because of known bugs affecting stability of versions 2.2.0 and 2.2.1.
+
+If you operate a Clio server, Clio needs to be updated to 2.1.2 before updating to rippled 2.2.0. Clio will be blocked if it is not updated.
+
+## Changelog
+
+### Amendments and New Features
+
+- None
+
+### Bug Fixes and Performance Improvements
+
+- Allow only 1 job queue slot for acquiring inbound ledger [#5115](https://github.com/XRPLF/rippled/pull/5115) ([7741483](https://github.com/XRPLF/rippled/commit/774148389467781aca7c01bac90af2fba870570c))
+
+- Allow only 1 job queue slot for each validation ledger check [#5115](https://github.com/XRPLF/rippled/pull/5115) ([fbbea9e](https://github.com/XRPLF/rippled/commit/fbbea9e6e25795a8a6bd1bf64b780771933a9579))
+
+### Other improvements
+
+ -  Track latencies of certain code blocks, and log if they take too long [#5115](https://github.com/XRPLF/rippled/pull/5115) ([00ed7c9](https://github.com/XRPLF/rippled/commit/00ed7c942436f02644a13169002b5123f4e2a116))
+
+### Docs and Build System
+
+- None
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+
+## Credits
+
+The following people contributed directly to this release:
+
+Mark Travis <mtrippled@users.noreply.github.com>
+Valentin Balaschenko <13349202+vlntb@users.noreply.github.com>
+
+Bug Bounties and Responsible Disclosures:
+
+We welcome reviews of the `rippled` code and urge researchers to responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to: <bugs@xrpl.org>
+
+# Version 2.2.1
+
+Version 2.2.1 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release fixes a critical bug introduced in 2.2.0 handling some types of RPC requests.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+## Action Required
+
+If you run an XRP Ledger validator, upgrade to version 2.2.1 as soon as possible to ensure stable and uninterrupted network behavior.
+
+Additionally, five amendments introduced in version 2.2.0 are open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators. If you operate an XRP Ledger server older than version 2.2.0, upgrade by August 14, 2024 to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network. Version 2.2.1 is recommended because of known bugs affecting stability of versions 2.2.0.
+
+If you operate a Clio server, Clio needs to be updated to 2.2.2 before updating to rippled 2.2.1. Clio will be blocked if it is not updated.
+
+## Changelog
+
+### Amendments and New Features
+
+- None
+
+### Bug Fixes and Performance Improvements
+
+- Improve error handling in some RPC commands. [#5078](https://github.com/XRPLF/rippled/pull/5078)
+
+- Use error codes throughout fast Base58 implementation. [#5078](https://github.com/XRPLF/rippled/pull/5078)
+
+### Docs and Build System
+
+- None
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+
+## Credits
+
+The following people contributed directly to this release:
+
+John Freeman <jfreeman08@gmail.com>
+Mayukha Vadari <mvadari@gmail.com>
+
+Bug Bounties and Responsible Disclosures:
+
+We welcome reviews of the `rippled` code and urge researchers to responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to: <bugs@xrpl.org>
+
+
+# Version 2.2.0
+
+Version 2.2.0 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release adds performance optimizations, several bug fixes, and introduces the `featurePriceOracle`, `fixEmptyDID`, `fixXChainRewardRounding`, `fixPreviousTxnID`, and `fixAMMv1_1` amendments.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+## Action Required
+
+Five new amendments are now open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators.
+
+If you operate an XRP Ledger server, upgrade to version 2.2.0 by June 17, 2024 to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+
+If you operate a Clio server, Clio needs to be updated to 2.1.2 before updating to rippled 2.2.0. Clio will be blocked if it is not updated.
+
+## Changelog
+
+### Amendments and New Features
+(These are changes which may impact or be useful to end users. For example, you may be able to update your code/workflow to take advantage of these changes.)
+
+- **featurePriceOracle** amendment: Implements a price oracle as defined in the [XLS-47](https://github.com/XRPLF/XRPL-Standards/blob/master/XLS-47d-PriceOracles/README.md) spec. A Price Oracle is used to bring real-world data, such as market prices, onto the blockchain, enabling dApps to access and utilize information that resides outside the blockchain. [#4789](https://github.com/XRPLF/rippled/pull/4789) 
+
+- **fixEmptyDID** amendment: Modifies the behavior of the DID amendment: adds an additional check to ensure that DIDs are non-empty when created, and returns a `tecEMPTY_DID` error if the DID would be empty. [#4950](https://github.com/XRPLF/rippled/pull/4950)
+
+- **fixXChainRewardRounding** amendment: Modifies the behavior of the XChainBridge amendment: fixes rounding so reward shares are always rounded down, even when the `fixUniversalNumber` amendment is active. [#4933](https://github.com/XRPLF/rippled/pull/4933)
+
+- **fixPreviousTxnID** amendment: Adds `PreviousTxnID` and `PreviousTxnLgrSequence` as fields to all ledger entries that did not already have them included (`DirectoryNode`, `Amendments`, `FeeSettings`, `NegativeUNL`, and `AMM`). Existing ledger entries will gain the fields whenever transactions modify those entries. [#4751](https://github.com/XRPLF/rippled/pull/4751). 
+
+- **fixAMMv1_1** amendment: Fixes AMM offer rounding and low quality order book offers from blocking the AMM. [#4983](https://github.com/XRPLF/rippled/pull/4983)
+
+- Add a non-admin version of `feature` API method. [#4781](https://github.com/XRPLF/rippled/pull/4781)
+
+### Bug Fixes and Performance Improvements
+(These are behind-the-scenes improvements, such as internal changes to the code, which are not expected to impact end users.)
+
+- Optimize the base58 encoder and decoder. The algorithm is now about 10 times faster for encoding and 15 times faster for decoding. [#4327](https://github.com/XRPLF/rippled/pull/4327)
+
+- Optimize the `account_tx` SQL query. [#4955](https://github.com/XRPLF/rippled/pull/4955)
+
+- Don't reach consensus as quickly if no other proposals are seen. [#4763](https://github.com/XRPLF/rippled/pull/4763)
+
+- Fix a potential deadlock in the database module. [#4989](https://github.com/XRPLF/rippled/pull/4989)
+
+- Enforce no duplicate slots from incoming connections. [#4944](https://github.com/XRPLF/rippled/pull/4944)
+
+- Fix an order book update variable swap. [#4890](https://github.com/XRPLF/rippled/pull/4890)
+
+### Docs and Build System
+
+- Add unit test to raise the test coverage of the AMM. [#4971](https://github.com/XRPLF/rippled/pull/4971)
+
+- Improve test coverage reporting. [#4977](https://github.com/XRPLF/rippled/pull/4977)
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+
+## Credits
+
+The following people contributed directly to this release:
+
+Alex Kremer <akremer@ripple.com>
+Alloy Networks <45832257+alloynetworks@users.noreply.github.com>
+Bronek Kozicki <brok@incorrekt.com>
+Chenna Keshava <ckeshavabs@gmail.com>
+Denis Angell <dangell@transia.co>
+Ed Hennis <ed@ripple.com>
+Gregory Tsipenyuk <gtsipenyuk@ripple.com>
+Howard Hinnant <howard.hinnant@gmail.com>
+John Freeman <jfreeman08@gmail.com>
+Mark Travis <mtrippled@users.noreply.github.com>
+Mayukha Vadari <mvadari@gmail.com>
+Michael Legleux <mlegleux@ripple.com>
+Nik Bougalis <nikb@bougalis.net>
+Olek <115580134+oleks-rip@users.noreply.github.com>
+Scott Determan <scott.determan@yahoo.com>
+Snoppy <michaleli@foxmail.com>
+
+Bug Bounties and Responsible Disclosures:
+
+We welcome reviews of the `rippled` code and urge researchers to responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to: <bugs@xrpl.org>
+
+
+## Version 2.1.1
+
+The `rippled` 2.1.1 release fixes a critical bug in the integration of AMMs with the payment engine.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+
+## Action Required
+
+One new amendment is now open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators.
+
+If you operate an XRP Ledger server, upgrade to version 2.1.1 by April 8, 2024 to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+
+## Changelog
+
+### Amendments
+
+- **fixAMMOverflowOffer**: Fix improper handling of large synthetic AMM offers in the payment engine. Due to the importance of this fix, the default vote in the source code has been set to YES. For information on how to configure your validator's amendment voting, see [Configure Amendment Voting](https://xrpl.org/docs/infrastructure/configuration/configure-amendment-voting).
+
+# Introducing XRP Ledger version 2.1.0
+
+Version 2.1.0 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release adds a bug fix, build improvements, and introduces the `fixNFTokenReserve` and `fixInnerObjTemplate` amendments.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+
+## Action Required
+
+Two new amendments are now open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators.
+
+If you operate an XRP Ledger server, upgrade to version 2.1.0 by March 5, 2024 to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+
+## Changelog
+
+### Amendments
+(These are changes which may impact or be useful to end users. For example, you may be able to update your code/workflow to take advantage of these changes.)
+
+- **fixNFTokenReserve**: Adds a check to the `NFTokenAcceptOffer` transactor to see if the `OwnerCount` changed. If it did, it checks that the reserve requirement is met. [#4767](https://github.com/XRPLF/rippled/pull/4767)
+
+- **fixInnerObjTemplate**: Adds an `STObject` constructor overload that includes an additional boolean argument to set the inner object template; currently, the inner object template isn't set upon object creation. In some circumstances, this causes a `tefEXCEPTION` error when trying to access the AMM `sfTradingFee` and `sfDiscountedFee` fields in the inner objects of `sfVoteEntry` and `sfAuctionSlot`. [#4906](https://github.com/XRPLF/rippled/pull/4906)
+
+
+### Bug Fixes and Performance Improvements
+(These are behind-the-scenes improvements, such as internal changes to the code, which are not expected to impact end users.)
+
+- Fixed a bug that prevented the gRPC port info from being specified in the `rippled` config file. [#4728](https://github.com/XRPLF/rippled/pull/4728)
+
+
+### Docs and Build System
+
+- Added unit tests to check that payees and payers aren't the same account. [#4860](https://github.com/XRPLF/rippled/pull/4860)
+
+- Removed a workaround that bypassed Windows CI unit test failures. [#4871](https://github.com/XRPLF/rippled/pull/4871)
+
+- Updated library names to be platform-agnostic in Conan recipes. [#4831](https://github.com/XRPLF/rippled/pull/4831)
+
+- Added headers required in the Conan package to build xbridge witness servers. [#4885](https://github.com/XRPLF/rippled/pull/4885)
+
+- Improved object lifetime management when creating a temporary `Rules` object, fixing a crash in Windows unit tests. [#4917](https://github.com/XRPLF/rippled/pull/4917)
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+
+## Credits
+
+The following people contributed directly to this release:
+
+- Bronek Kozicki <brok@incorrekt.com>
+- CJ Cobb <cj@axelar.network>
+- Chenna Keshava B S <21219765+ckeshava@users.noreply.github.com>
+- Ed Hennis <ed@ripple.com>
+- Elliot Lee <github.public@intelliot.com>
+- Gregory Tsipenyuk <gregtatcam@users.noreply.github.com>
+- John Freeman <jfreeman08@gmail.com>
+- Michael Legleux <legleux@users.noreply.github.com>
+- Ryan Molley
+- Shawn Xie <35279399+shawnxie999@users.noreply.github.com>
+
+
+Bug Bounties and Responsible Disclosures:
+
+We welcome reviews of the `rippled` code and urge researchers to responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to: <bugs@xrpl.org>
+
+# Introducing XRP Ledger version 2.0.1
+
+Version 2.0.1 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release includes minor fixes, unit test improvements, and doc updates.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+
+## Action Required
+
+If you operate an XRP Ledger server, upgrade to version 2.0.1 to take advantage of the changes included in this update. Nodes on version 1.12 should upgrade as soon as possible.
+
+
+## Changelog
+
+
+### Changes
+(These are changes which may impact or be useful to end users. For example, you may be able to update your code/workflow to take advantage of these changes.)
+
+- Updated the `send_queue_limit` to 500 in the default `rippled` config to handle increased transaction loads. [#4867](https://github.com/XRPLF/rippled/pull/4867)
+
+
+### Bug Fixes and Performance Improvements
+(These are behind-the-scenes improvements, such as internal changes to the code, which are not expected to impact end users.)
+
+- Fixed an assertion that occurred when `rippled` was under heavy websocket client load. [#4848](https://github.com/XRPLF/rippled/pull/4848)
+
+- Improved lifetime management of serialized type ledger entries to improve memory usage. [#4822](https://github.com/XRPLF/rippled/pull/4822)
+
+- Fixed a clang warning about deprecated sprintf usage. [#4747](https://github.com/XRPLF/rippled/pull/4747)
+
+
+### Docs and Build System
+
+- Added `DeliverMax` to more JSONRPC tests. [#4826](https://github.com/XRPLF/rippled/pull/4826)
+
+- Updated the pull request template to include a `Type of Change` checkbox and additional contextual questions. [#4875](https://github.com/XRPLF/rippled/pull/4875)
+
+- Updated help messages for unit tests pattern matching. [#4846](https://github.com/XRPLF/rippled/pull/4846)
+
+- Improved the time it take to generate coverage reports. [#4849](https://github.com/XRPLF/rippled/pull/4849)
+
+- Fixed broken links in the Conan build docs. [#4699](https://github.com/XRPLF/rippled/pull/4699)
+
+- Spurious codecov uploads are now retried if there's an error uploading them the first time. [#4896](https://github.com/XRPLF/rippled/pull/4896)
+
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+
+## Credits
+
+The following people contributed directly to this release:
+
+- Bronek Kozicki <brok@incorrekt.com>
+- Chenna Keshava B S <21219765+ckeshava@users.noreply.github.com>
+- Ed Hennis <ed@ripple.com>
+- Elliot Lee <github.public@intelliot.com>
+- Lathan Britz <jucallme@gmail.com>
+- Mark Travis <mtrippled@users.noreply.github.com>
+- nixer89 <pbnixer@gmail.com>
+
+Bug Bounties and Responsible Disclosures:
+
+We welcome reviews of the `rippled` code and urge researchers to responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to: <bugs@xrpl.org>
+
+# Introducing XRP Ledger version 2.0.0
+
+Version 2.0.0 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release adds new features and bug fixes, and introduces these amendments:
+
+- `DID`
+- `XChainBridge`
+- `fixDisallowIncomingV1`
+- `fixFillOrKill`
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+
+## Action Required
+
+Four new amendments are now open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators.
+
+If you operate an XRP Ledger server, upgrade to version 2.0.0 by January 22, 2024 to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+
+
+## Changelog
+
+
+### Amendments, New Features, and Changes
+(These are changes which may impact or be useful to end users. For example, you may be able to update your code/workflow to take advantage of these changes.)
+
+- **XChainBridge**: Introduces cross-chain bridges, enabling interoperability between the XRP Ledger and sidechains. [#4292](https://github.com/XRPLF/rippled/pull/4292)
+
+- **DID**: Introduces decentralized identifiers. [#4636](https://github.com/XRPLF/rippled/pull/4636)
+
+- **fixDisallowIncomingV1**: Fixes an issue that occurs when users try to authorize a trustline while the `lsfDisallowIncomingTrustline` flag is enabled on their account. [#4721](https://github.com/XRPLF/rippled/pull/4721)
+
+- **fixFillOrKill**: Fixes an issue introduced in the `flowCross` amendment. The `tfFillOrKill` and `tfSell` flags are now properly handled to allow offers to cross in certain scenarios. [#4694](https://github.com/XRPLF/rippled/pull/4694)
+
+- **API v2 released with these changes:**
+
+  - Accepts currency codes in ASCII, using the full alphabet. [#4566](https://github.com/XRPLF/rippled/pull/4566)
+  - Added test to verify the `check` field is a string. [#4630](https://github.com/XRPLF/rippled/pull/4630)
+  - Added errors for malformed `account_tx` and `noripple_check` fields. [#4620](https://github.com/XRPLF/rippled/pull/4620)
+  - Added errors for malformed `gateway_balances` and `channel_authorize` requests. [#4618](https://github.com/XRPLF/rippled/pull/4618)
+  - Added a `DeliverMax` alias to `Amount` and removed `Amount`. [#4733](https://github.com/XRPLF/rippled/pull/4733)
+  - Removed `tx_history` and `ledger_header` methods. Also updated `RPC::Handler` to allow for version-specific methods. [#4759](https://github.com/XRPLF/rippled/pull/4759)
+  - Standardized the JSON serialization format of transactions. [#4727](https://github.com/XRPLF/rippled/issues/4727)
+  - Bumped API support to v2, but kept the command-line interface for `rippled` and unit tests at v1. [#4803](https://github.com/XRPLF/rippled/pull/4803)
+  - Standardized `ledger_index` to return as a number. [#4820](https://github.com/XRPLF/rippled/pull/4820)
+
+- Added a `server_definitions` command that returns an SDK-compatible `definitions.json` file, generated from the `rippled` instance currently running. [#4703](https://github.com/XRPLF/rippled/pull/4703)
+
+- Improved unit test command line input and run times. [#4634](https://github.com/XRPLF/rippled/pull/4634)
+
+- Added the link compression setting to the the `rippled-example.cfg` file. [#4753](https://github.com/XRPLF/rippled/pull/4753)
+
+- Changed the reserved hook error code name from `tecHOOK_ERROR` to `tecHOOK_REJECTED`. [#4559](https://github.com/XRPLF/rippled/pull/4559)
+
+
+### Bug Fixes and Performance Improvements
+(These are behind-the-scenes improvements, such as internal changes to the code, which are not expected to impact end users.)
+
+- Simplified `TxFormats` common fields logic. [#4637](https://github.com/XRPLF/rippled/pull/4637)
+
+- Improved transaction throughput by asynchronously writing batches to *NuDB*. [#4503](https://github.com/XRPLF/rippled/pull/4503)
+
+- Removed 2 unused functions. [#4708](https://github.com/XRPLF/rippled/pull/4708)
+
+- Removed an unused variable that caused clang 14 build errors. [#4672](https://github.com/XRPLF/rippled/pull/4672)
+
+- Fixed comment about return value of `LedgerHistory::fixIndex`. [#4574](https://github.com/XRPLF/rippled/pull/4574)
+
+- Updated `secp256k1` to 0.3.2. [#4653](https://github.com/XRPLF/rippled/pull/4653)
+
+- Removed built-in SNTP clock issues. [#4628](https://github.com/XRPLF/rippled/pull/4628)
+
+- Fixed amendment flapping. This issue usually occurred when an amendment was on the verge of gaining majority, but a validator not in favor of the amendment went offline. [#4410](https://github.com/XRPLF/rippled/pull/4410)
+
+- Fixed asan stack-use-after-scope issue. [#4676](https://github.com/XRPLF/rippled/pull/4676)
+
+- Transactions and pseudo-transactions share the same `commonFields` again. [#4715](https://github.com/XRPLF/rippled/pull/4715)
+
+- Reduced boilerplate in `applySteps.cpp`. When a new transactor is added, only one function needs to be modified now. [#4710](https://github.com/XRPLF/rippled/pull/4710)
+
+- Removed an incorrect assert. [#4743](https://github.com/XRPLF/rippled/pull/4743)
+
+- Replaced some asserts in `PeerFinder::Logic` with `LogicError` to better indicate the nature of server crashes. [#4562](https://github.com/XRPLF/rippled/pull/4562)
+
+- Fixed an issue with enabling new amendments on a network with an ID greater than 1024. [#4737](https://github.com/XRPLF/rippled/pull/4737)
+
+
+### Docs and Build System
+
+- Updated `rippled-example.cfg` docs to clarify usage of *ssl_cert* vs *ssl_chain*. [#4667](https://github.com/XRPLF/rippled/pull/4667)
+
+- Updated `BUILD.md`:
+    - Made the `environment.md` link easier to find. Also made it easier to find platform-specific info. [#4507](https://github.com/XRPLF/rippled/pull/4507)
+    - Fixed typo. [#4718](https://github.com/XRPLF/rippled/pull/4718)
+    - Updated the minimum compiler requirements. [#4700](https://github.com/XRPLF/rippled/pull/4700)
+    - Added note about enabling `XRPFees`. [#4741](https://github.com/XRPLF/rippled/pull/4741)
+
+- Updated `API-CHANGELOG.md`:
+    - Explained API v2 is releasing with `rippled` 2.0.0. [#4633](https://github.com/XRPLF/rippled/pull/4633)
+    - Clarified the location of the `signer_lists` field in the `account_info` response for API v2. [#4724](https://github.com/XRPLF/rippled/pull/4724)
+    - Added documentation for the new `DeliverMax` field. [#4784](https://github.com/XRPLF/rippled/pull/4784)
+    - Removed references to API v2 being "in progress" and "in beta". [#4828](https://github.com/XRPLF/rippled/pull/4828)
+    - Clarified that all breaking API changes will now occur in API v3 or later. [#4773](https://github.com/XRPLF/rippled/pull/4773)
+
+- Fixed a mistake in the overlay README. [#4635](https://github.com/XRPLF/rippled/pull/4635)
+
+- Fixed an early return from `RippledRelease.cmake` that prevented targets from being created during packaging. [#4707](https://github.com/XRPLF/rippled/pull/4707)
+
+- Fixed a build error with Intel Macs. [#4632](https://github.com/XRPLF/rippled/pull/4632)
+
+- Added `.build` to `.gitignore`. [#4722](https://github.com/XRPLF/rippled/pull/4722)
+
+- Fixed a `uint is not universally defined` Windows build error. [#4731](https://github.com/XRPLF/rippled/pull/4731)
+
+- Reenabled Windows CI build with Artifactory support. [#4596](https://github.com/XRPLF/rippled/pull/4596)
+
+- Fixed output of remote step in Nix workflow. [#4746](https://github.com/XRPLF/rippled/pull/4746)
+
+- Fixed a broken link in `conan.md`. [#4740](https://github.com/XRPLF/rippled/pull/4740)
+
+- Added a `python` call to fix the `pip` upgrade command in Windows CI. [#4768](https://github.com/XRPLF/rippled/pull/4768)
+
+- Added an API Impact section to `pull_request_template.md`. [#4757](https://github.com/XRPLF/rippled/pull/4757)
+
+- Set permissions for the Doxygen workflow. [#4756](https://github.com/XRPLF/rippled/pull/4756)
+
+- Switched to Unity builds to speed up Windows CI. [#4780](https://github.com/XRPLF/rippled/pull/4780)
+
+- Clarified what makes consensus healthy in `FeeEscalation.md`. [#4729](https://github.com/XRPLF/rippled/pull/4729)
+
+- Removed a dependency on the <ranges> header for unit tests. [#4788](https://github.com/XRPLF/rippled/pull/4788)
+
+- Fixed a clang `unused-but-set-variable` warning. [#4677](https://github.com/XRPLF/rippled/pull/4677)
+
+- Removed an unused Dockerfile. [#4791](https://github.com/XRPLF/rippled/pull/4791)
+
+- Fixed unit tests to work with API v2. [#4785](https://github.com/XRPLF/rippled/pull/4785)
+
+- Added support for the mold linker on Linux. [#4807](https://github.com/XRPLF/rippled/pull/4807)
+
+- Updated Linux distribtuions `rippled` smoke tests run on. [#4813](https://github.com/XRPLF/rippled/pull/4813)
+
+- Added codename `bookworm` to the distribution matrix during Artifactory uploads, enabling Debian 12 clients to install `rippled` packages. [#4836](https://github.com/XRPLF/rippled/pull/4836)
+
+- Added a workaround for compilation errors with GCC 13 and other compilers relying on libstdc++ version 13. [#4817](https://github.com/XRPLF/rippled/pull/4817)
+
+- Fixed a minor typo in the code comments of `AMMCreate.h`. [4821](https://github.com/XRPLF/rippled/pull/4821)
+
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+
+## Credits
+
+The following people contributed directly to this release:
+
+- Bronek Kozicki <brok@incorrekt.com>
+- Chenna Keshava B S <21219765+ckeshava@users.noreply.github.com>
+- Denis Angell <dangell@transia.co>
+- Ed Hennis <ed@ripple.com>
+- Elliot Lee <github.public@intelliot.com>
+- Florent <36513774+florent-uzio@users.noreply.github.com>
+- ForwardSlashBack <142098649+ForwardSlashBack@users.noreply.github.com>
+- Gregory Tsipenyuk <gregtatcam@users.noreply.github.com>
+- Howard Hinnant <howard.hinnant@gmail.com>
+- Hussein Badakhchani <husseinb01@gmail.com>
+- Jackson Mills <aim4math@gmail.com>
+- John Freeman <jfreeman08@gmail.com>
+- Manoj Doshi <mdoshi@ripple.com>
+- Mark Pevec <mark.pevec@gmail.com>
+- Mark Travis <mtrippled@users.noreply.github.com>
+- Mayukha Vadari <mvadari@gmail.com>
+- Michael Legleux <legleux@users.noreply.github.com>
+- Nik Bougalis <nikb@bougalis.net>
+- Peter Chen <34582813+PeterChen13579@users.noreply.github.com>
+- Rome Reginelli <rome@ripple.com>
+- Scott Determan <scott.determan@yahoo.com>
+- Scott Schurr <scott@ripple.com>
+- Sophia Xie <106177003+sophiax851@users.noreply.github.com>
+- Stefan van Kessel <van_kessel@freenet.de>
+- pwang200 <354723+pwang200@users.noreply.github.com>
+- shichengsg002 <147461171+shichengsg002@users.noreply.github.com>
+- sokkaofthewatertribe <140777955+sokkaofthewatertribe@users.noreply.github.com>
+
+Bug Bounties and Responsible Disclosures:
+
+We welcome reviews of the rippled code and urge researchers to responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to: <bugs@xrpl.org>
+
+
+# Introducing XRP Ledger version 1.12.0
+
+Version 1.12.0 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release adds new features and bug fixes, and introduces these amendments:
+
+- `AMM`
+- `Clawback`
+- `fixReducedOffersV1`
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+## Action Required
+
+Three new amendments are now open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators.
+
+If you operate an XRP Ledger server, upgrade to version 1.12.0 by September 20, 2023 to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+
+
+## Install / Upgrade
+
+On supported platforms, see the [instructions on installing or updating `rippled`](https://xrpl.org/install-rippled.html).
+
+The XRPL Foundation publishes portable binaries, which are drop-in replacements for the `rippled` daemon. [See information and downloads for the portable binaries](https://github.com/XRPLF/rippled-portable-builds#portable-builds-of-the-rippled-server). This will work on most distributions, including Ubuntu 16.04, 18.04, 20.04, and 22.04; CentOS; and others. Please test and open issues on GitHub if there are problems.
+
+
+## Changelog
+
+### Amendments, New Features, and Changes
+(These are changes which may impact or be useful to end users. For example, you may be able to update your code/workflow to take advantage of these changes.)
+
+- **`AMM`**: Introduces an automated market maker (AMM) protocol to the XRP Ledger's decentralized exchange, enabling you to trade assets without a counterparty. For more information about AMMs, see: [Automated Market Maker](https://opensource.ripple.com/docs/xls-30d-amm/amm-uc/). [#4294](https://github.com/XRPLF/rippled/pull/4294)
+
+- **`Clawback`**: Adds a setting, *Allow Clawback*, which lets an issuer recover, or _claw back_, tokens that they previously issued. Issuers cannot enable this setting if they have issued tokens already. For additional documentation on this feature, see: [#4553](https://github.com/XRPLF/rippled/pull/4553).
+
+- **`fixReducedOffersV1`**: Reduces the occurrence of order books that are blocked by reduced offers. [#4512](https://github.com/XRPLF/rippled/pull/4512)
+
+- Added WebSocket and RPC port info to `server_info` responses. [#4427](https://github.com/XRPLF/rippled/pull/4427)
+
+- Removed the deprecated `accepted`, `seqNum`, `hash`, and `totalCoins` fields from the `ledger` method. [#4244](https://github.com/XRPLF/rippled/pull/4244)
+
+
+### Bug Fixes and Performance Improvements
+(These are behind-the-scenes improvements, such as internal changes to the code, which are not expected to impact end users.)
+
+- Added a pre-commit hook that runs the clang-format linter locally before committing changes. To install this feature, see: [CONTRIBUTING](https://github.com/XRPLF/xrpl-dev-portal/blob/master/CONTRIBUTING.md). [#4599](https://github.com/XRPLF/rippled/pull/4599)
+
+- In order to make it more straightforward to catch and handle overflows: changed the output type of the `mulDiv()` function from `std::pair<bool, uint64_t>` to `std::optional`. [#4243](https://github.com/XRPLF/rippled/pull/4243)
+
+- Updated `Handler::Condition` enum values to make the code less brittle. [#4239](https://github.com/XRPLF/rippled/pull/4239)
+
+- Renamed `ServerHandlerImp` to `ServerHandler`. [#4516](https://github.com/XRPLF/rippled/pull/4516), [#4592](https://github.com/XRPLF/rippled/pull/4592)
+
+- Replaced hand-rolled code with `std::from_chars` for better maintainability. [#4473](https://github.com/XRPLF/rippled/pull/4473)
+
+- Removed an unused `TypedField` move constructor. [#4567](https://github.com/XRPLF/rippled/pull/4567)
+
+
+### Docs and Build System
+
+- Updated checkout versions to resolve warnings during GitHub jobs. [#4598](https://github.com/XRPLF/rippled/pull/4598)
+
+- Fixed an issue with the Debian package build. [#4591](https://github.com/XRPLF/rippled/pull/4591)
+
+- Updated build instructions with additional steps to take after updating dependencies. [#4623](https://github.com/XRPLF/rippled/pull/4623)
+
+- Updated contributing doc to clarify that beta releases should also be pushed to the `release` branch. [#4589](https://github.com/XRPLF/rippled/pull/4589)
+
+- Enabled the `BETA_RPC_API` flag in the default unit tests config, making the API v2 (beta) available to unit tests. [#4573](https://github.com/XRPLF/rippled/pull/4573)
+
+- Conan dependency management.
+  - Fixed package definitions for Conan. [#4485](https://github.com/XRPLF/rippled/pull/4485)
+  - Updated build dependencies to the most recent versions in Conan Center. [#4595](https://github.com/XRPLF/rippled/pull/4595)
+  - Updated Conan recipe for NuDB. [#4615](https://github.com/XRPLF/rippled/pull/4615)
+
+- Added binary hardening and linker flags to enhance security during the build process. [#4603](https://github.com/XRPLF/rippled/pull/4603)
+
+- Added an Artifactory to the `nix` workflow to improve build times. [#4556](https://github.com/XRPLF/rippled/pull/4556)
+
+- Added quality-of-life improvements to workflows, using new [concurrency control](https://docs.github.com/en/actions/using-jobs/using-concurrency) features. [#4597](https://github.com/XRPLF/rippled/pull/4597)
+
+
+[Full Commit Log](https://github.com/XRPLF/rippled/compare/1.11.0...1.12.0)
+
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+
+## Credits
+
+The following people contributed directly to this release:
+
+- Alphonse N. Mousse <39067955+a-noni-mousse@users.noreply.github.com>
+- Arihant Kothari <arihantkothari17@gmail.com>
+- Chenna Keshava B S <21219765+ckeshava@users.noreply.github.com>
+- Denis Angell <dangell@transia.co>
+- Ed Hennis <ed@ripple.com>
+- Elliot Lee <github.public@intelliot.com>
+- Gregory Tsipenyuk <gregtatcam@users.noreply.github.com>
+- Howard Hinnant <howard.hinnant@gmail.com>
+- Ikko Eltociear Ashimine <eltociear@gmail.com>
+- John Freeman <jfreeman08@gmail.com>
+- Manoj Doshi <mdoshi@ripple.com>
+- Mark Travis <mtravis@ripple.com>
+- Mayukha Vadari <mvadari@gmail.com>
+- Michael Legleux <legleux@users.noreply.github.com>
+- Peter Chen <34582813+PeterChen13579@users.noreply.github.com>
+- RichardAH <richard.holland@starstone.co.nz>
+- Rome Reginelli <rome@ripple.com>
+- Scott Schurr <scott@ripple.com>
+- Shawn Xie <35279399+shawnxie999@users.noreply.github.com>
+- drlongle <drlongle@gmail.com>
+
+Bug Bounties and Responsible Disclosures:
+
+We welcome reviews of the rippled code and urge researchers to responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to: <bugs@xrpl.org>
+
+
+# Introducing XRP Ledger version 1.11.0
+
+Version 1.11.0 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available.
+
+This release reduces memory usage, introduces the `fixNFTokenRemint` amendment, and adds new features and bug fixes. For example, the new NetworkID field in transactions helps to prevent replay attacks with side-chains.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+## Action Required
+
+The `fixNFTokenRemint` amendment is now open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators.
+
+If you operate an XRP Ledger server, upgrade to version 1.11.0 by July 5 to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+
+
+## Install / Upgrade
+
+On supported platforms, see the [instructions on installing or updating `rippled`](https://xrpl.org/install-rippled.html).
+
+
+## What's Changed
+
+### New Features and Improvements
+
+* Allow port numbers be be specified using a either a colon or a space by @RichardAH in https://github.com/XRPLF/rippled/pull/4328
+* Eliminate memory allocation from critical path: by @nbougalis in https://github.com/XRPLF/rippled/pull/4353
+* Make it easy for projects to depend on libxrpl by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4449
+* Add the ability to mark amendments as obsolete by @ximinez in https://github.com/XRPLF/rippled/pull/4291
+* Always create the FeeSettings object in genesis ledger by @ximinez in https://github.com/XRPLF/rippled/pull/4319
+* Log exception messages in several locations by @drlongle in https://github.com/XRPLF/rippled/pull/4400
+* Parse flags in account_info method by @drlongle in https://github.com/XRPLF/rippled/pull/4459
+* Add NFTokenPages to account_objects RPC by @RichardAH in https://github.com/XRPLF/rippled/pull/4352
+* add jss fields used by clio `nft_info` by @ledhed2222 in https://github.com/XRPLF/rippled/pull/4320
+* Introduce a slab-based memory allocator and optimize SHAMapItem by @nbougalis in https://github.com/XRPLF/rippled/pull/4218
+* Add NetworkID field to transactions to help prevent replay attacks on and from side-chains by @RichardAH in https://github.com/XRPLF/rippled/pull/4370
+* If present, set quorum based on command line. by @mtrippled in https://github.com/XRPLF/rippled/pull/4489
+* API does not accept seed or public key for account by @drlongle in https://github.com/XRPLF/rippled/pull/4404
+* Add `nftoken_id`, `nftoken_ids` and `offer_id` meta fields into NFT `Tx` responses by @shawnxie999 in https://github.com/XRPLF/rippled/pull/4447
+
+### Bug Fixes
+
+* fix(gateway_balances): handle overflow exception by @RichardAH in https://github.com/XRPLF/rippled/pull/4355
+* fix(ValidatorSite): handle rare null pointer dereference in timeout by @ximinez in https://github.com/XRPLF/rippled/pull/4420
+* RPC commands understand markers derived from all ledger object types by @ximinez in https://github.com/XRPLF/rippled/pull/4361
+* `fixNFTokenRemint`: prevent NFT re-mint: by @shawnxie999 in https://github.com/XRPLF/rippled/pull/4406
+* Fix a case where ripple::Expected returned a json array, not a value by @scottschurr in https://github.com/XRPLF/rippled/pull/4401
+* fix: Ledger data returns an empty list (instead of null) when all entries are filtered out by @drlongle in https://github.com/XRPLF/rippled/pull/4398
+* Fix unit test ripple.app.LedgerData by @drlongle in https://github.com/XRPLF/rippled/pull/4484
+* Fix the fix for std::result_of by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4496
+* Fix errors for Clang 16 by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4501
+* Ensure that switchover vars are initialized before use: by @seelabs in https://github.com/XRPLF/rippled/pull/4527
+* Move faulty assert by @ximinez in https://github.com/XRPLF/rippled/pull/4533
+* Fix unaligned load and stores: (#4528) by @seelabs in https://github.com/XRPLF/rippled/pull/4531
+* fix node size estimation by @dangell7 in https://github.com/XRPLF/rippled/pull/4536
+* fix: remove redundant moves by @ckeshava in https://github.com/XRPLF/rippled/pull/4565
+
+### Code Cleanup and Testing
+
+* Replace compare() with the three-way comparison operator in base_uint, Issue and Book by @drlongle in https://github.com/XRPLF/rippled/pull/4411
+* Rectify the import paths of boost::function_output_iterator by @ckeshava in https://github.com/XRPLF/rippled/pull/4293
+* Expand Linux test matrix by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4454
+* Add patched recipe for SOCI by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4510
+* Switch to self-hosted runners for macOS by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4511
+* [TRIVIAL] Add missing includes by @seelabs in https://github.com/XRPLF/rippled/pull/4555
+
+### Docs
+
+* Refactor build instructions by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4381
+* Add install instructions for package managers by @thejohnfreeman in https://github.com/XRPLF/rippled/pull/4472
+* Fix typo by @solmsted in https://github.com/XRPLF/rippled/pull/4508
+* Update environment.md by @sappenin in https://github.com/XRPLF/rippled/pull/4498
+* Update BUILD.md by @oeggert in https://github.com/XRPLF/rippled/pull/4514
+* Trivial: add comments for NFToken-related invariants by @scottschurr in https://github.com/XRPLF/rippled/pull/4558
+
+## New Contributors
+* @drlongle made their first contribution in https://github.com/XRPLF/rippled/pull/4411
+* @ckeshava made their first contribution in https://github.com/XRPLF/rippled/pull/4293
+* @solmsted made their first contribution in https://github.com/XRPLF/rippled/pull/4508
+* @sappenin made their first contribution in https://github.com/XRPLF/rippled/pull/4498
+* @oeggert made their first contribution in https://github.com/XRPLF/rippled/pull/4514
+
+**Full Changelog**: https://github.com/XRPLF/rippled/compare/1.10.1...1.11.0
+
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+### Credits
+
+The following people contributed directly to this release:
+- Alloy Networks <45832257+alloynetworks@users.noreply.github.com>
+- Brandon Wilson <brandon@coil.com>
+- Chenna Keshava B S <21219765+ckeshava@users.noreply.github.com>
+- David Fuelling <sappenin@gmail.com>
+- Denis Angell <dangell@transia.co>
+- Ed Hennis <ed@ripple.com>
+- Elliot Lee <github.public@intelliot.com>
+- John Freeman <jfreeman08@gmail.com>
+- Mark Travis <mtrippled@users.noreply.github.com>
+- Nik Bougalis <nikb@bougalis.net>
+- RichardAH <richard.holland@starstone.co.nz>
+- Scott Determan <scott.determan@yahoo.com>
+- Scott Schurr <scott@ripple.com>
+- Shawn Xie <35279399+shawnxie999@users.noreply.github.com>
+- drlongle <drlongle@gmail.com>
+- ledhed2222 <ledhed2222@users.noreply.github.com>
+- oeggert <117319296+oeggert@users.noreply.github.com>
+- solmsted <steven.olm@gmail.com>
+
+
+Bug Bounties and Responsible Disclosures:
+We welcome reviews of the rippled code and urge researchers to
+responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to:
+
+    bugs@xrpl.org
+
+
+# Introducing XRP Ledger version 1.10.1
+
+Version 1.10.1 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release restores packages for Ubuntu 18.04.
+
+Compared to version 1.10.0, the only C++ code change fixes an edge case in Reporting Mode.
+
+If you are already running version 1.10.0, then upgrading to version 1.10.1 is generally not required.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+## Install / Upgrade
+
+On supported platforms, see the [instructions on installing or updating `rippled`](https://xrpl.org/install-rippled.html).
+
+## Changelog
+
+- [`da18c86cbf`](https://github.com/ripple/rippled/commit/da18c86cbfea1d8fe6940035f9103e15890d47ce) Build packages with Ubuntu 18.04
+- [`f7b3ddd87b`](https://github.com/ripple/rippled/commit/f7b3ddd87b8ef093a06ab1420bea57ed1e77643a) Reporting Mode: Do not attempt to acquire missing data from peer network (#4458)
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+### Credits
+
+The following people contributed directly to this release:
+
+- John Freeman <jfreeman08@gmail.com>
+- Mark Travis <mtrippled@users.noreply.github.com>
+- Michael Legleux <mlegleux@ripple.com>
+
+Bug Bounties and Responsible Disclosures:
+We welcome reviews of the rippled code and urge researchers to
+responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to:
+
+    bugs@xrpl.org
+
+
+# Introducing XRP Ledger version 1.10.0
+
+Version 1.10.0 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release introduces six new amendments, detailed below, and cleans up code to improve performance.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+## Action Required
+
+Six new amendments are now open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators.
+
+If you operate an XRP Ledger server, upgrade to version 1.10.0 by March 21 to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+
+
+## Install / Upgrade
+
+On supported platforms, see the [instructions on installing or updating `rippled`](https://xrpl.org/install-rippled.html).
+
+
+## New Amendments
+
+- **`featureImmediateOfferKilled`**: Changes the response code of an `OfferCreate` transaction with the `tfImmediateOrCancel` flag to return `tecKILLED` when no funds are moved. The previous return code of `tecSUCCESS` was unintuitive. [#4157](https://github.com/XRPLF/rippled/pull/4157)
+
+- **`featureDisallowIncoming`**: Enables an account to block incoming checks, payment channels, NFToken offers, and trust lines. [#4336](https://github.com/XRPLF/rippled/pull/4336)
+
+- **`featureXRPFees`**: Simplifies transaction cost calculations to use XRP directly, rather than calculating indirectly in "fee units" and translating the results to XRP. Updates all instances of "fee units" in the protocol and ledger data to be drops of XRP instead. [#4247](https://github.com/XRPLF/rippled/pull/4247) 
+
+- **`fixUniversalNumber`**: Simplifies and unifies the code for decimal floating point math. In some cases, this provides slightly better accuracy than the previous code, resulting in calculations whose least significant digits are different than when calculated with the previous code. The different results may cause other edge case differences where precise calculations are used, such as ranking of offers or processing of payments that use several different paths. [#4192](https://github.com/XRPLF/rippled/pull/4192)
+
+- **`fixNonFungibleTokensV1_2`**: This amendment is a combination of NFToken fixes. [#4417](https://github.com/XRPLF/rippled/pull/4417)
+  - Fixes unburnable NFTokens when it has over 500 offers. [#4346](https://github.com/XRPLF/rippled/pull/4346)
+  - Fixes 3 NFToken offer acceptance issues. [#4380](https://github.com/XRPLF/rippled/pull/4380)
+  - Prevents brokered sales of NFTokens to owners. [#4403](https://github.com/XRPLF/rippled/pull/4403)
+  - Only allows the destination to settle NFToken offers through brokerage. [#4399](https://github.com/XRPLF/rippled/pull/4399)
+
+- **`fixTrustLinesToSelf`**: Trust lines must be between two different accounts, but two exceptions exist because of a bug that briefly existed. This amendment removes those trust lines. [69bb2be](https://github.com/XRPLF/rippled/pull/4270/commits/69bb2be446e3cc24c694c0835b48bd2ecd3d119e)
+
+
+## Changelog
+
+
+### New Features and Improvements
+
+- **Improve Handshake in the peer protocol**: Switched to using a cryptographically secure PRNG for the Instance Cookie. `rippled` now uses hex encoding for the `Closed-Ledger` and `Previous-Ledger` fields in the Handshake. Also added `--newnodeid` and `--nodeid` command line options. [5a15229](https://github.com/XRPLF/rippled/pull/4270/commits/5a15229eeb13b69c8adf1f653b88a8f8b9480546)
+
+- **RPC tooBusy response now has 503 HTTP status code**: Added ripplerpc 3.0, enabling RPC tooBusy responses to return relevant HTTP status codes. This is a non-breaking change that only applies to JSON-RPC when you include `"ripplerpc": "3.0"` in the request. [#4143](https://github.com/XRPLF/rippled/pull/4143)
+
+- **Use the Conan package manager**: Added a `conanfile.py` and Conan recipe for Snappy. Removed the RocksDB recipe from the repo; you can now get it from Conan Center. [#4367](https://github.com/XRPLF/rippled/pull/4367), [c2b03fe](https://github.com/XRPLF/rippled/commit/c2b03fecca19a304b37467b01fa78593d3dce3fb)
+
+- **Update Build Instructions**: Updated the build instructions to build with the Conan package manager and restructured info for easier comprehension. [#4376](https://github.com/XRPLF/rippled/pull/4376), [#4383](https://github.com/XRPLF/rippled/pull/4383)
+
+- **Revise CONTRIBUTING**: Updated code contribution guidelines. `rippled` is an open source project and contributions are very welcome. [#4382](https://github.com/XRPLF/rippled/pull/4382)
+
+- **Update documented pathfinding configuration defaults**: `417cfc2` changed the default Path Finding configuration values, but missed updating the values documented in rippled-example.cfg. Updated those defaults and added recommended values for nodes that want to support advanced pathfinding. [#4409](https://github.com/XRPLF/rippled/pull/4409)
+
+- **Remove gRPC code previously used for the Xpring SDK**: Removed gRPC code used for the Xpring SDK. The gRPC API is also enabled locally by default in `rippled-example.cfg`. This API is used for [Reporting Mode](https://xrpl.org/build-run-rippled-in-reporting-mode.html) and [Clio](https://github.com/XRPLF/clio). [28f4cc7](https://github.com/XRPLF/rippled/pull/4321/commits/28f4cc7817c2e477f0d7e9ade8f07a45ff2b81f1)
+
+- **Switch from C++17 to C++20**: Updated `rippled` to use C++20. [92d35e5](https://github.com/XRPLF/rippled/pull/4270/commits/92d35e54c7de6bbe44ff6c7c52cc0765b3f78258)
+
+- **Support for Boost 1.80.0:**: [04ef885](https://github.com/XRPLF/rippled/pull/4321/commits/04ef8851081f6ee9176783ad3725960b8a931ebb)
+
+- **Reduce default reserves to 10/2**: Updated the hard-coded default reserves to match the current settings on Mainnet. [#4329](https://github.com/XRPLF/rippled/pull/4329)
+
+- **Improve self-signed certificate generation**: Improved speed and security of TLS certificate generation on fresh startup. [0ecfc7c](https://github.com/XRPLF/rippled/pull/4270/commits/0ecfc7cb1a958b731e5f184876ea89ae2d4214ee)
+
+
+### Bug Fixes
+
+- **Update command-line usage help message**: Added `manifest` and `validator_info` to the `rippled` CLI usage statement. [b88ed5a](https://github.com/XRPLF/rippled/pull/4270/commits/b88ed5a8ec2a0735031ca23dc6569d54787dc2f2)
+
+- **Work around gdb bug by changing a template parameter**: Added a workaround for a bug in gdb, where unsigned template parameters caused issues with RTTI. [#4332](https://github.com/XRPLF/rippled/pull/4332)
+
+- **Fix clang 15 warnings**: [#4325](https://github.com/XRPLF/rippled/pull/4325)
+
+- **Catch transaction deserialization error in doLedgerGrpc**: Fixed an issue in the gRPC API, so `Clio` can extract ledger headers and state objects from specific transactions that can't be deserialized by `rippled` code. [#4323](https://github.com/XRPLF/rippled/pull/4323)
+
+- **Update dependency: gRPC**: New Conan recipes broke the old version of gRPC, so the dependency was updated. [#4407](https://github.com/XRPLF/rippled/pull/4407)
+
+- **Fix Doxygen workflow**: Added options to build documentation that don't depend on the library dependencies of `rippled`. [#4372](https://github.com/XRPLF/rippled/pull/4372)
+
+- **Don't try to read SLE with key 0 from the ledger**: Fixed the `preclaim` function to check for 0 in `NFTokenSellOffer` and `NFTokenBuyOffer` before calling `Ledger::read`. This issue only affected debug builds. [#4351](https://github.com/XRPLF/rippled/pull/4351)
+
+- **Update broken link to hosted Doxygen content**: [5e1cb09](https://github.com/XRPLF/rippled/pull/4270/commits/5e1cb09b8892e650f6c34a66521b6b1673bd6b65)
+
+
+### Code Cleanup
+
+- **Prevent unnecessary `shared_ptr` copies by accepting a value in `SHAMapInnerNode::setChild`**: [#4266](https://github.com/XRPLF/rippled/pull/4266)
+
+- **Release TaggedCache object memory outside the lock**: [3726f8b](https://github.com/XRPLF/rippled/pull/4321/commits/3726f8bf31b3eab8bab39dce139656fd705ae9a0)
+
+- **Rename SHAMapStoreImp::stopping() to healthWait()**: [7e9e910](https://github.com/XRPLF/rippled/pull/4321/commits/7e9e9104eabbf0391a0837de5630af17a788e233)
+
+- **Improve wrapper around OpenSSL RAND**: [7b3507b](https://github.com/XRPLF/rippled/pull/4270/commits/7b3507bb873495a974db33c57a888221ddabcacc)
+
+- **Improve AccountID string conversion caching**: Improved memory cache usage. [e2eed96](https://github.com/XRPLF/rippled/pull/4270/commits/e2eed966b0ecb6445027e6a023b48d702c5f4832)
+
+- **Build the command map at compile time**: [9aaa0df](https://github.com/XRPLF/rippled/pull/4270/commits/9aaa0dff5fd422e5f6880df8e20a1fd5ad3b4424)
+
+- **Avoid unnecessary copying and dynamic memory allocations**: [d318ab6](https://github.com/XRPLF/rippled/pull/4270/commits/d318ab612adc86f1fd8527a50af232f377ca89ef)
+
+- **Use constexpr to check memo validity**: [e67f905](https://github.com/XRPLF/rippled/pull/4270/commits/e67f90588a9050162881389d7e7d1d0fb31066b0)
+
+- **Remove charUnHex**: [83ac141](https://github.com/XRPLF/rippled/pull/4270/commits/83ac141f656b1a95b5661853951ebd95b3ffba99)
+
+- **Remove deprecated AccountTxOld.cpp**: [ce64f7a](https://github.com/XRPLF/rippled/pull/4270/commits/ce64f7a90f99c6b5e68d3c3d913443023de061a6)
+
+- **Remove const_cast usage**: [23ce431](https://github.com/XRPLF/rippled/pull/4321/commits/23ce4318768b718c82e01004d23f1abc9a9549ff)
+
+- **Remove inaccessible code paths and outdated data format wchar_t**: [95fabd5](https://github.com/XRPLF/rippled/pull/4321/commits/95fabd5762a4917753c06268192e4d4e4baef8e4)
+
+- **Improve move semantics in Expected**: [#4326](https://github.com/XRPLF/rippled/pull/4326)
+
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+### Credits
+
+The following people contributed directly to this release:
+
+- Alexander Kremer <akremer@ripple.com>
+- Alloy Networks <45832257+alloynetworks@users.noreply.github.com>
+- CJ Cobb <46455409+cjcobb23@users.noreply.github.com>
+- Chenna Keshava B S <ckbs.keshava56@gmail.com>
+- Crypto Brad Garlinghouse <cryptobradgarlinghouse@protonmail.com>
+- Denis Angell <dangell@transia.co>
+- Ed Hennis <ed@ripple.com>
+- Elliot Lee <github.public@intelliot.com>
+- Gregory Popovitch <greg7mdp@gmail.com>
+- Howard Hinnant <howard.hinnant@gmail.com>
+- J. Scott Branson <18340247+crypticrabbit@users.noreply.github.com>
+- John Freeman <jfreeman08@gmail.com>
+- ledhed2222 <ledhed2222@users.noreply.github.com>
+- Levin Winter <33220502+levinwinter@users.noreply.github.com>
+- manojsdoshi <mdoshi@ripple.com>
+- Nik Bougalis <nikb@bougalis.net>
+- RichardAH <richard.holland@starstone.co.nz>
+- Scott Determan <scott.determan@yahoo.com>
+- Scott Schurr <scott@ripple.com>
+- Shawn Xie <35279399+shawnxie999@users.noreply.github.com>
+
+Security Bug Bounty Acknowledgements:
+- Aaron Hook
+- Levin Winter
+
+Bug Bounties and Responsible Disclosures:
+We welcome reviews of the rippled code and urge researchers to
+responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to:
+
+    bugs@xrpl.org
+
+
+# Introducing XRP Ledger version 1.9.4
+
+Version 1.9.4 of `rippled`, the reference implementation of the XRP Ledger protocol is now available. This release introduces an amendment that removes the ability for an NFT issuer to indicate that trust lines should be automatically created for royalty payments from secondary sales of NFTs, in response to a bug report that indicated how this functionality could be abused to mount a denial of service attack against the issuer.
+
+## Action Required
+
+This release introduces a new amendment to the XRP Ledger protocol, **`fixRemoveNFTokenAutoTrustLine`** to mitigate a potential denial-of-service attack against NFT issuers that minted NFTs and allowed secondary trading of those NFTs to create trust lines for any asset.
+
+This amendment is open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators.
+
+If you operate an XRP Ledger server, then you should upgrade to version 1.9.4 within two weeks, to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+
+For more information about NFTs on the XRP Ledger, see [NFT Conceptual Overview](https://xrpl.org/nft-conceptual-overview.html).
+
+
+## Install / Upgrade
+
+On supported platforms, see the [instructions on installing or updating `rippled`](https://xrpl.org/install-rippled.html).
+
+## Changelog
+
+## Contributions
+
+The primary change in this release is the following bug fix:
+
+- **Introduce fixRemoveNFTokenAutoTrustLine amendment**: Introduces the `fixRemoveNFTokenAutoTrustLine` amendment, which disables the `tfTrustLine` flag, which a malicious attacker could exploit to mount denial-of-service attacks against NFT issuers that specified the flag on their NFTs. ([#4301](https://github.com/XRPLF/rippled/4301))
+
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers and help us build the Internet of Value.
+
+### Credits
+
+The following people contributed directly to this release:
+
+- Scott Schurr <scott@ripple.com>
+- Howard Hinnant <howard@ripple.com>
+- Scott Determan <scott.determan@yahoo.com>
+- Ikko Ashimine <eltociear@gmail.com>
+
+
+# Introducing XRP Ledger version 1.9.3
+
+Version 1.9.3 of `rippled`, the reference server implementation of the XRP Ledger protocol is now available. This release corrects minor technical flaws with the code that loads configured amendment votes after a startup and the copy constructor of `PublicKey`.
+
+## Install / Upgrade
+
+On supported platforms, see the [instructions on installing or updating `rippled`](https://xrpl.org/install-rippled.html).
+
+## Changelog
+
+## Contributions
+
+This release contains the following bug fixes:
+
+- **Change by-value to by-reference to persist vote**: A minor technical flaw, caused by use of a copy instead of a reference, resulted in operator-configured "yes" votes to not be properly loaded after a restart. ([#4256](https://github.com/XRPLF/rippled/pull/4256))
+- **Properly handle self-assignment of PublicKey**: The `PublicKey` copy assignment operator mishandled the case where a `PublicKey` would be assigned to itself, and could result in undefined behavior. 
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome contributions, big and small, and invite everyone to join the community of XRP Ledger developers and help us build the Internet of Value.
+
+### Credits
+
+The following people contributed directly to this release:
+
+- Howard Hinnant <howard@ripple.com>
+- Crypto Brad Garlinghouse <cryptobradgarlinghouse@protonmail.com>
+- Wo Jake <87929946+wojake@users.noreply.github.com>
+
+
+# Introducing XRP Ledger version 1.9.2
+
+Version 1.9.2 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release includes several fixes and improvements, including a second new fix amendment to correct a bug in Non-Fungible Tokens (NFTs) code, a new API method for order book changes, less noisy logging, and other small fixes.
+
+<!-- BREAK -->
+
+
+## Action Required
+
+This release introduces a two new amendments to the XRP Ledger protocol. The first, **fixNFTokenNegOffer**, fixes a bug in code associated with the **NonFungibleTokensV1** amendment, originally introduced in [version 1.9.0](https://xrpl.org/blog/2022/rippled-1.9.0.html). The second, **NonFungibleTokensV1_1**, is a "roll-up" amendment that enables the **NonFungibleTokensV1** feature plus the two fix amendments associated with it, **fixNFTokenDirV1** and **fixNFTokenNegOffer**.
+
+If you want to enable NFT code on the XRP Ledger Mainnet, you can vote in favor of only the **NonFungibleTokensV1_1** amendment to support enabling the feature and fixes together, without risk that the unfixed NFT code may become enabled first.
+
+These amendments are now open for voting according to the XRP Ledger's [amendment process](https://xrpl.org/amendments.html), which enables protocol changes following two weeks of >80% support from trusted validators.
+
+If you operate an XRP Ledger server, then you should upgrade to version 1.9.2 within two weeks, to ensure service continuity. The exact time that protocol changes take effect depends on the voting decisions of the decentralized network.
+
+For more information about NFTs on the XRP Ledger, see [NFT Conceptual Overview](https://xrpl.org/nft-conceptual-overview.html).
+
+## Install / Upgrade
+
+On supported platforms, see the [instructions on installing or updating `rippled`](https://xrpl.org/install-rippled.html).
+
+## Changelog
+
+This release contains the following features and improvements.
+
+- **Introduce fixNFTokenNegOffer amendment.** This amendment fixes a bug in the Non-Fungible Tokens (NFTs) functionality provided by the NonFungibleTokensV1 amendment (not currently enabled on Mainnet). The bug allowed users to place offers to buy tokens for negative amounts of money when using Brokered Mode. Anyone who accepted such an offer would transfer the token _and_ pay money. This amendment explicitly disallows offers to buy or sell NFTs for negative amounts of money, and returns an appropriate error code. This also corrects the error code returned when placing offers to buy or sell NFTs for negative amounts in Direct Mode. ([8266d9d](https://github.com/XRPLF/rippled/commit/8266d9d598d19f05e1155956b30ca443c27e119e))
+- **Introduce `NonFungibleTokensV1_1` amendment.** This amendment encompasses three NFT-related amendments: the original NonFungibleTokensV1 amendment (from version 1.9.0), the fixNFTokenDirV1 amendment (from version 1.9.1), and the new fixNFTokenNegOffer amendment from this release. This amendment contains no changes other than enabling those three amendments together; this allows validators to vote in favor of _only_ enabling the feature and fixes at the same time. ([59326bb](https://github.com/XRPLF/rippled/commit/59326bbbc552287e44b3a0d7b8afbb1ddddb3e3b))
+- **Handle invalid port numbers.** If the user specifies a URL with an invalid port number, the server would silently attempt to use port 0 instead. Now it raises an error instead. This affects admin API methods and config file parameters for downloading history shards and specifying validator list sites. ([#4213](https://github.com/XRPLF/rippled/pull/4213))
+- **Reduce log noisiness.** Decreased the severity of benign log messages in several places: "addPathsForType" messages during regular operation, expected errors during unit tests, and missing optional documentation components when compiling from source. ([#4178](https://github.com/XRPLF/rippled/pull/4178), [#4166](https://github.com/XRPLF/rippled/pull/4166), [#4180](https://github.com/XRPLF/rippled/pull/4180))
+- **Fix race condition in history shard implementation and support clang's ThreadSafetyAnalysis tool.**  Added build settings so that developers can use this feature of the clang compiler to analyze the code for correctness, and fix an error found by this tool, which was the source of rare crashes in unit tests. ([#4188](https://github.com/XRPLF/rippled/pull/4188))
+- **Prevent crash when rotating a database with missing data.** When rotating databases, a missing entry could cause the server to crash. While there should never be a missing database entry, this change keeps the server running by aborting database rotation. ([#4182](https://github.com/XRPLF/rippled/pull/4182))
+- **Fix bitwise comparison in OfferCreate.** Fixed an expression that incorrectly used a bitwise comparison for two boolean values rather than a true boolean comparison. The outcome of the two comparisons is equivalent, so this is not a transaction processing change, but the bitwise comparison relied on compilers to implicitly fix the expression. ([#4183](https://github.com/XRPLF/rippled/pull/4183))
+- **Disable cluster timer when not in a cluster.** Disabled a timer that was unused on servers not running in clustered mode. The functionality of clustered servers is unchanged. ([#4173](https://github.com/XRPLF/rippled/pull/4173))
+- **Limit how often to process peer discovery messages.** In the peer-to-peer network, servers periodically share IP addresses of their peers with each other to facilitate peer discovery. It is not necessary to process these types of messages too often; previously, the code tracked whether it needed to process new messages of this type but always processed them anyway. With this change, the server no longer processes peer discovery messages if it has done so recently. ([#4202](https://github.com/XRPLF/rippled/pull/4202))
+- **Improve STVector256 deserialization.** Optimized the processing of this data type in protocol messages. This data type is used in several types of ledger entry that are important for bookkeeping, including directory pages that track other ledger types, amendments tracking, and the ledger hashes history. ([#4204](https://github.com/XRPLF/rippled/pull/4204))
+- **Fix and refactor spinlock code.** The spinlock code, which protects the `SHAMapInnerNode` child lists, had a mistake that allowed the same child to be repeatedly locked under some circumstances. Fixed this bug and improved the spinlock code to make it easier to use correctly and easier to verify that the code works correctly. ([#4201](https://github.com/XRPLF/rippled/pull/4201))
+- **Improve comments and contributor documentation.** Various minor documentation changes including some to reflect the fact that the source code repository is now owned by the XRP Ledger Foundation. ([#4214](https://github.com/XRPLF/rippled/pull/4214), [#4179](https://github.com/XRPLF/rippled/pull/4179), [#4222](https://github.com/XRPLF/rippled/pull/4222))
+- **Introduces a new API book_changes to provide information in a format that is useful for building charts that highlight DEX activity at a per-ledger level.**  ([#4212](https://github.com/XRPLF/rippled/pull/4212))
+
+## Contributions
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome contributions, big and small, and invite everyone to join the community of XRP Ledger developers and help us build the Internet of Value.
+
+### Credits
+
+The following people contributed directly to this release:
+
+- Chenna Keshava B S <ckbs.keshava56@gmail.com>
+- Ed Hennis <ed@ripple.com>
+- Ikko Ashimine <eltociear@gmail.com>
+- Nik Bougalis <nikb@bougalis.net>
+- Richard Holland <richard.holland@starstone.co.nz>
+- Scott Schurr <scott@ripple.com>
+- Scott Determan <scott.determan@yahoo.com>
+
+For a real-time view of all lifetime contributors, including links to the commits made by each, please visit the "Contributors" section of the GitHub repository: <https://github.com/XRPLF/rippled/graphs/contributors>.
 
 # Introducing XRP Ledger version 1.9.1
 

@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_JSON_H_INCLUDED
 #define RIPPLE_TEST_JTX_JSON_H_INCLUDED
 
-#include <ripple/json/json_value.h>
 #include <test/jtx/Env.h>
+#include <xrpl/json/json_value.h>
 
 namespace ripple {
 namespace test {

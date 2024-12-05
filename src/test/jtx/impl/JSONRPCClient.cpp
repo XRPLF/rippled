@@ -16,10 +16,11 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/json/json_reader.h>
-#include <ripple/json/to_string.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/server/Port.h>
+#include <test/jtx/JSONRPCClient.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/server/Port.h>
 #include <boost/asio.hpp>
 #include <boost/beast/http/dynamic_body.hpp>
 #include <boost/beast/http/message.hpp>
@@ -27,7 +28,6 @@
 #include <boost/beast/http/string_body.hpp>
 #include <boost/beast/http/write.hpp>
 #include <string>
-#include <test/jtx/JSONRPCClient.h>
 
 namespace ripple {
 namespace test {

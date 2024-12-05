@@ -38,6 +38,41 @@ auth(Account const& account, Account const& auth);
 Json::Value
 unauth(Account const& account, Account const& unauth);
 
+struct AuthorizeCredentials
+{
+    jtx::Account issuer;
+    std::string credType;
+
+    Json::Value
+    toJson() const
+    {
+        Json::Value jv;
+        jv[jss::Issuer] = issuer.human();
+        jv[sfCredentialType.jsonName] = strHex(credType);
+        return jv;
+    }
+
+    // "ledger_entry" uses a different naming convention
+    Json::Value
+    toLEJson() const
+    {
+        Json::Value jv;
+        jv[jss::issuer] = issuer.human();
+        jv[jss::credential_type] = strHex(credType);
+        return jv;
+    }
+};
+
+Json::Value
+authCredentials(
+    jtx::Account const& account,
+    std::vector<AuthorizeCredentials> const& auth);
+
+Json::Value
+unauthCredentials(
+    jtx::Account const& account,
+    std::vector<AuthorizeCredentials> const& auth);
+
 }  // namespace deposit
 
 }  // namespace jtx

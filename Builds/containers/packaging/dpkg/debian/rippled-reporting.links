@@ -1,3 +1,0 @@
-opt/rippled-reporting/etc/rippled-reporting.cfg etc/opt/rippled-reporting/rippled-reporting.cfg
-opt/rippled-reporting/etc/validators.txt etc/opt/rippled-reporting/validators.txt
-opt/rippled-reporting/bin/rippled-reporting usr/local/bin/rippled-reporting

@@ -1,0 +1,91 @@
+name: windows
+
+on:
+  pull_request:
+  push:
+    # If the branches list is ever changed, be sure to change it on all
+    # build/test jobs (nix, macos, windows)
+    branches:
+      # Always build the package branches
+      - develop
+      - release
+      - master
+      # Branches that opt-in to running
+      - 'ci/**'
+
+# https://docs.github.com/en/actions/using-jobs/using-concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        generator:
+          - Visual Studio 16 2019
+        configuration:
+          - Release
+          # Github hosted runners tend to hang when running Debug unit tests.
+          # Instead of trying to work around it, disable the Debug job until
+          # something beefier (i.e. a heavy self-hosted runner) becomes
+          # available.
+          # - Debug
+    runs-on: windows-2019
+    env:
+      build_dir: .build
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: choose Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.9
+      - name: learn Python cache directory
+        id: pip-cache
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          echo "dir=$(pip cache dir)" | tee ${GITHUB_OUTPUT}
+      - name: restore Python cache directory
+        uses: actions/cache@v4
+        with:
+            path: ${{ steps.pip-cache.outputs.dir }}
+            key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
+      - name: install Conan
+        run: pip install wheel 'conan<2'
+      - name: check environment
+        run: |
+          dir env:
+          $env:PATH -split ';'
+          python --version
+          conan --version
+          cmake --version
+      - name: configure Conan
+        shell: bash
+        run: |
+          conan profile new default --detect
+          conan profile update settings.compiler.cppstd=20 default
+          conan profile update settings.compiler.runtime=MT${{ matrix.configuration == 'Debug' && 'd' || '' }} default
+      - name: build dependencies
+        uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+          CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
+          CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
+        with:
+          configuration: ${{ matrix.configuration }}
+      - name: build
+        uses: ./.github/actions/build
+        with:
+          generator: '${{ matrix.generator }}'
+          configuration: ${{ matrix.configuration }}
+          # Hard code for now. Move to the matrix if varied options are needed
+          cmake-args: '-Dassert=ON -Dreporting=OFF -Dunity=ON'
+          cmake-target: install
+      - name: test
+        shell: bash
+        run: |
+          ${build_dir}/${{ matrix.configuration }}/rippled --unittest --unittest-jobs $(nproc)

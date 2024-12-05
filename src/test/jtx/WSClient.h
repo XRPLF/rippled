@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_WSCLIENT_H_INCLUDED
 #define RIPPLE_TEST_WSCLIENT_H_INCLUDED
 
-#include <ripple/core/Config.h>
 #include <test/jtx/AbstractClient.h>
+#include <xrpld/core/Config.h>
 
 #include <chrono>
 #include <memory>

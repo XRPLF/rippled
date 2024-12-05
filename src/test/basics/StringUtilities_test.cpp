@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/ToString.h>
-#include <ripple/beast/unit_test.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/ToString.h>
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 
@@ -289,6 +289,13 @@ public:
             BEAST_EXPECT(!parseUrl(pUrl, "nonsense"));
             BEAST_EXPECT(!parseUrl(pUrl, "://"));
             BEAST_EXPECT(!parseUrl(pUrl, ":///"));
+            BEAST_EXPECT(
+                !parseUrl(pUrl, "scheme://user:pass@domain:65536/abc:321"));
+            BEAST_EXPECT(!parseUrl(pUrl, "UPPER://domain:23498765/"));
+            BEAST_EXPECT(!parseUrl(pUrl, "UPPER://domain:0/"));
+            BEAST_EXPECT(!parseUrl(pUrl, "UPPER://domain:+7/"));
+            BEAST_EXPECT(!parseUrl(pUrl, "UPPER://domain:-7234/"));
+            BEAST_EXPECT(!parseUrl(pUrl, "UPPER://domain:@#$56!/"));
         }
 
         {

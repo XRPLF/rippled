@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/misc/TxQ.h>
-#include <ripple/beast/hash/uhash.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/json/to_string.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/misc/TxQ.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
 #include <boost/lexical_cast.hpp>
 #include <optional>
@@ -50,7 +50,7 @@ public:
     {
         using namespace jtx;
         {
-            Account a;
+            Account a("chenna");
             Account b(a);
             a = b;
             a = std::move(b);
@@ -747,8 +747,12 @@ public:
             // Force the factor low enough to fail
             params[jss::fee_mult_max] = 1;
             params[jss::fee_div_max] = 2;
-            // RPC errors result in temINVALID
-            envs(noop(alice), fee(none), seq(none), ter(temINVALID))(params);
+            envs(
+                noop(alice),
+                fee(none),
+                seq(none),
+                rpc(rpcHIGH_FEE,
+                    "Fee of 10 exceeds the requested tx limit of 5"))(params);
 
             auto tx = env.tx();
             BEAST_EXPECT(!tx);
@@ -888,10 +892,14 @@ public:
     testExceptionalShutdown()
     {
         except([this] {
-            jtx::Env env{*this, jtx::envconfig([](std::unique_ptr<Config> cfg) {
-                             (*cfg).deprecatedClearSection("port_rpc");
-                             return cfg;
-                         })};
+            jtx::Env env{
+                *this,
+                jtx::envconfig([](std::unique_ptr<Config> cfg) {
+                    (*cfg).deprecatedClearSection("port_rpc");
+                    return cfg;
+                }),
+                nullptr,
+                beast::severities::kDisabled};
         });
         pass();
     }

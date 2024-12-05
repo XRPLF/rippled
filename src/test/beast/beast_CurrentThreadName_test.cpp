@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/beast/core/CurrentThreadName.h>
-#include <ripple/beast/unit_test.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/unit_test.h>
 #include <atomic>
 #include <thread>
 
