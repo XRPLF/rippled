@@ -96,3 +96,8 @@ jobs:
           run: |
             cd ${BUILD_DIR}
             ./rippled --version | grep libvoidstar
+
+        - name: run unit tests
+          run: |
+            cd ${BUILD_DIR}
+            ./rippled -u --unittest-jobs $(( $(nproc)/4 ))
