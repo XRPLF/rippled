@@ -107,7 +107,9 @@ int
 Serializer::addFieldID(int type, int name)
 {
     int ret = mData.size();
-    assert((type > 0) && (type < 256) && (name > 0) && (name < 256));
+    ASSERT(
+        (type > 0) && (type < 256) && (name > 0) && (name < 256),
+        "ripple::Serializer::addFieldID : inputs inside range");
 
     if (type < 16)
     {
@@ -176,9 +178,10 @@ Serializer::addVL(Blob const& vector)
 {
     int ret = addEncoded(vector.size());
     addRaw(vector);
-    assert(
+    ASSERT(
         mData.size() ==
-        (ret + vector.size() + encodeLengthLength(vector.size())));
+            (ret + vector.size() + encodeLengthLength(vector.size())),
+        "ripple::Serializer::addVL : size matches expected");
     return ret;
 }
 
@@ -482,7 +485,8 @@ SerialIter::getVLDataLength()
     }
     else
     {
-        assert(lenLen == 3);
+        ASSERT(
+            lenLen == 3, "ripple::SerialIter::getVLDataLength : lenLen is 3");
         int b2 = get8();
         int b3 = get8();
         datLen = Serializer::decodeVLLength(b1, b2, b3);

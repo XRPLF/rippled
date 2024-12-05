@@ -20,7 +20,9 @@
 #ifndef RIPPLE_BASICS_SLABALLOCATOR_H_INCLUDED
 #define RIPPLE_BASICS_SLABALLOCATOR_H_INCLUDED
 
+#include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/type_name.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/align.hpp>
 #include <boost/container/static_vector.hpp>
@@ -28,10 +30,10 @@
 
 #include <algorithm>
 #include <atomic>
-#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <mutex>
+#include <vector>
 
 #if BOOST_OS_LINUX
 #include <sys/mman.h>
@@ -141,7 +143,9 @@ class SlabAllocator
         void
         deallocate(std::uint8_t* ptr) noexcept
         {
-            assert(own(ptr));
+            ASSERT(
+                own(ptr),
+                "ripple::SlabAllocator::SlabBlock::deallocate : own input");
 
             std::lock_guard l(m_);
 
@@ -184,7 +188,9 @@ public:
               boost::alignment::align_up(sizeof(Type) + extra, itemAlignment_))
         , slabSize_(alloc)
     {
-        assert((itemAlignment_ & (itemAlignment_ - 1)) == 0);
+        ASSERT(
+            (itemAlignment_ & (itemAlignment_ - 1)) == 0,
+            "ripple::SlabAllocator::SlabAllocator : valid alignment");
     }
 
     SlabAllocator(SlabAllocator const& other) = delete;
@@ -294,7 +300,10 @@ public:
     bool
     deallocate(std::uint8_t* ptr) noexcept
     {
-        assert(ptr);
+        ASSERT(
+            ptr != nullptr,
+            "ripple::SlabAllocator::SlabAllocator::deallocate : non-null "
+            "input");
 
         for (auto slab = slabs_.load(); slab != nullptr; slab = slab->next_)
         {

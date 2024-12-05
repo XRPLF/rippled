@@ -23,6 +23,7 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
@@ -354,7 +355,10 @@ STAmount::STAmount(
     , mIsNegative(negative)
 {
     // mValue is uint64, but needs to fit in the range of int64
-    assert(mValue <= std::numeric_limits<std::int64_t>::max());
+    ASSERT(
+        mValue <= std::numeric_limits<std::int64_t>::max(),
+        "ripple::STAmount::STAmount(SField, A, std::uint64_t, int, bool) : "
+        "maximum mantissa input");
     canonicalize();
 }
 

@@ -21,12 +21,11 @@
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
-
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/operators.hpp>
 
-#include <cassert>
 #include <cmath>
 #include <ios>
 #include <iosfwd>
@@ -427,9 +426,13 @@ mulDivU(Source1 value, Dest mul, Source2 div)
     {
         // split the asserts so if one hits, the user can tell which
         // without a debugger.
-        assert(value.value() >= 0);
-        assert(mul.value() >= 0);
-        assert(div.value() >= 0);
+        ASSERT(
+            value.value() >= 0,
+            "ripple::feeunit::mulDivU : minimum value input");
+        ASSERT(
+            mul.value() >= 0, "ripple::feeunit::mulDivU : minimum mul input");
+        ASSERT(
+            div.value() >= 0, "ripple::feeunit::mulDivU : minimum div input");
         return std::nullopt;
     }
 

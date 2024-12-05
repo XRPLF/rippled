@@ -20,6 +20,7 @@ install (
     xrpl.libxrpl.resource
     xrpl.libxrpl.server
     xrpl.libxrpl
+    antithesis-sdk-cpp
   EXPORT RippleExports
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
