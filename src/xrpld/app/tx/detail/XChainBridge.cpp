@@ -440,9 +440,7 @@ transferHelper(
     if (amt.native())
     {
         auto const sleSrc = psb.peek(keylet::account(src));
-        ASSERT(
-            sleSrc != nullptr,
-            "ripple::transferHelper : non-null source account");
+        XRPL_ASSERT(sleSrc, "ripple::transferHelper : non-null source account");
         if (!sleSrc)
             return tecINTERNAL;
 

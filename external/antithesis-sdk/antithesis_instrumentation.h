@@ -7,7 +7,7 @@ This header file can be used in both C and C++ programs. (The rest of the SDK wo
 
 You should include it in a single .cpp or .c file.
 
-The instructions (such as required compiler flags) and usage guidance are found at https://antithesis.com/docs/using_antithesis/sdk/cpp/overview.html.
+The instructions (such as required compiler flags) and usage guidance are found at https://antithesis.com/docs/using_antithesis/sdk/cpp/overview/.
 */
 
 #include <unistd.h>

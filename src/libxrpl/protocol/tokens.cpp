@@ -248,7 +248,7 @@ encodeBase58(
             iter[-1] = carry % 58;
             carry /= 58;
         }
-        ASSERT(
+        XRPL_ASSERT(
             carry == 0, "ripple::b58_ref::detail::encodeBase58 : zero carry");
         pbegin++;
     }
@@ -299,7 +299,7 @@ decodeBase58(std::string const& s)
             *iter = carry % 256;
             carry /= 256;
         }
-        ASSERT(
+        XRPL_ASSERT(
             carry == 0, "ripple::b58_ref::detail::decodeBase58 : zero carry");
         ++psz;
         --remain;
@@ -537,7 +537,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
         ripple::b58_fast::detail::div_rem(input.size(), 10);
     auto const num_partial_coeffs = partial_coeff_len ? 1 : 0;
     auto const num_b_58_10_coeffs = num_full_coeffs + num_partial_coeffs;
-    ASSERT(
+    XRPL_ASSERT(
         num_b_58_10_coeffs <= b_58_10_coeff.size(),
         "ripple::b58_fast::detail::b58_to_b256_be : maximum coeff");
     for (auto c : input.substr(0, partial_coeff_len))

@@ -107,7 +107,7 @@ int
 Serializer::addFieldID(int type, int name)
 {
     int ret = mData.size();
-    ASSERT(
+    XRPL_ASSERT(
         (type > 0) && (type < 256) && (name > 0) && (name < 256),
         "ripple::Serializer::addFieldID : inputs inside range");
 
@@ -178,7 +178,7 @@ Serializer::addVL(Blob const& vector)
 {
     int ret = addEncoded(vector.size());
     addRaw(vector);
-    ASSERT(
+    XRPL_ASSERT(
         mData.size() ==
             (ret + vector.size() + encodeLengthLength(vector.size())),
         "ripple::Serializer::addVL : size matches expected");
@@ -485,7 +485,7 @@ SerialIter::getVLDataLength()
     }
     else
     {
-        ASSERT(
+        XRPL_ASSERT(
             lenLen == 3, "ripple::SerialIter::getVLDataLength : lenLen is 3");
         int b2 = get8();
         int b3 = get8();

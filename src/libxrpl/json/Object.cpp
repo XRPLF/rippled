@@ -214,7 +214,7 @@ template <class Object>
 void
 doCopyFrom(Object& to, Json::Value const& from)
 {
-    ASSERT(from.isObjectOrNull(), "Json::doCopyFrom : valid input type");
+    XRPL_ASSERT(from.isObjectOrNull(), "Json::doCopyFrom : valid input type");
     auto members = from.getMemberNames();
     for (auto& m : members)
         to[m] = from[m];

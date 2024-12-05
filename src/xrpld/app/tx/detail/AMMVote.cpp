@@ -200,7 +200,7 @@ applyVote(
         }
     }
 
-    ASSERT(
+    XRPL_ASSERT(
         !ctx_.view().rules().enabled(fixInnerObjTemplate) ||
             ammSle->isFieldPresent(sfAuctionSlot),
         "ripple::applyVote : has auction slot");

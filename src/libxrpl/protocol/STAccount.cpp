@@ -80,8 +80,9 @@ STAccount::getSType() const
 void
 STAccount::add(Serializer& s) const
 {
-    ASSERT(getFName().isBinary(), "ripple::STAccount::add : field is binary");
-    ASSERT(
+    XRPL_ASSERT(
+        getFName().isBinary(), "ripple::STAccount::add : field is binary");
+    XRPL_ASSERT(
         getFName().fieldType == STI_ACCOUNT,
         "ripple::STAccount::add : valid field type");
 

@@ -401,7 +401,7 @@ public:
     {
         std::lock_guard _(lock_);
         Entry& entry(iter->second);
-        ASSERT(
+        XRPL_ASSERT(
             entry.refcount == 0,
             "ripple::Resource::Logic::erase : entry not used");
         inactive_.erase(inactive_.iterator_to(entry));

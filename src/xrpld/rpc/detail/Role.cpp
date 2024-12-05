@@ -28,7 +28,7 @@ namespace ripple {
 bool
 passwordUnrequiredOrSentCorrect(Port const& port, Json::Value const& params)
 {
-    ASSERT(
+    XRPL_ASSERT(
         !(port.admin_nets_v4.empty() && port.admin_nets_v6.empty()),
         "ripple::passwordUnrequiredOrSentCorrect : non-empty admin nets");
     bool const passwordRequired =

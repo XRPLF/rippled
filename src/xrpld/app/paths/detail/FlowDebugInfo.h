@@ -89,7 +89,7 @@ struct FlowDebugInfo
         void
         pushLiquiditySrc(EitherAmount const& eIn, EitherAmount const& eOut)
         {
-            ASSERT(
+            XRPL_ASSERT(
                 !liquiditySrcIn.empty(),
                 "ripple::path::detail::FlowDebugInfo::pushLiquiditySrc : "
                 "non-empty liquidity source");

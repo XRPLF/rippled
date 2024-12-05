@@ -512,7 +512,7 @@ template <class String>
 void
 BaseWSPeer<Handler, Impl>::fail(error_code ec, String const& what)
 {
-    ASSERT(
+    XRPL_ASSERT(
         strand_.running_in_this_thread(),
         "ripple::BaseWSPeer::fail : strand in this thread");
 

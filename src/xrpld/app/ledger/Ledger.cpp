@@ -369,7 +369,7 @@ Ledger::setAccepted(
     bool correctCloseTime)
 {
     // Used when we witnessed the consensus.
-    ASSERT(!open(), "ripple::Ledger::setAccepted : valid ledger state");
+    XRPL_ASSERT(!open(), "ripple::Ledger::setAccepted : valid ledger state");
 
     info_.closeTime = closeTime;
     info_.closeTimeResolution = closeResolution;
@@ -562,9 +562,8 @@ Ledger::rawTxInsert(
     std::shared_ptr<Serializer const> const& txn,
     std::shared_ptr<Serializer const> const& metaData)
 {
-    ASSERT(
-        metaData != nullptr,
-        "ripple::Ledger::rawTxInsert : non-null metadata input");
+    XRPL_ASSERT(
+        metaData, "ripple::Ledger::rawTxInsert : non-null metadata input");
 
     // low-level - just add to table
     Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
@@ -581,8 +580,8 @@ Ledger::rawTxInsertWithHash(
     std::shared_ptr<Serializer const> const& txn,
     std::shared_ptr<Serializer const> const& metaData)
 {
-    ASSERT(
-        metaData != nullptr,
+    XRPL_ASSERT(
+        metaData,
         "ripple::Ledger::rawTxInsertWithHash : non-null metadata input");
 
     // low-level - just add to table
@@ -679,7 +678,7 @@ Ledger::setup()
 void
 Ledger::defaultFees(Config const& config)
 {
-    ASSERT(
+    XRPL_ASSERT(
         fees_.base == 0 && fees_.reserve == 0 && fees_.increment == 0,
         "ripple::Ledger::defaultFees : zero fees");
     if (fees_.base == 0)
@@ -911,7 +910,7 @@ Ledger::updateSkipList()
             created = false;
         }
 
-        ASSERT(
+        XRPL_ASSERT(
             hashes.size() <= 256,
             "ripple::Ledger::updateSkipList : first maximum hashes size");
         hashes.push_back(info_.parentHash);
@@ -938,7 +937,7 @@ Ledger::updateSkipList()
         hashes = static_cast<decltype(hashes)>(sle->getFieldV256(sfHashes));
         created = false;
     }
-    ASSERT(
+    XRPL_ASSERT(
         hashes.size() <= 256,
         "ripple::Ledger::updateSkipList : second maximum hashes size");
     if (hashes.size() == 256)
@@ -1020,7 +1019,7 @@ pendSaveValidated(
         }
     }
 
-    ASSERT(
+    XRPL_ASSERT(
         ledger->isImmutable(), "ripple::pendSaveValidated : immutable ledger");
 
     if (!app.pendingSaves().shouldWork(ledger->info().seq, isSynchronous))
@@ -1098,7 +1097,7 @@ finishLoadByIndexOrHash(
     if (!ledger)
         return;
 
-    ASSERT(
+    XRPL_ASSERT(
         ledger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
             ledger->read(keylet::fees()),
         "ripple::finishLoadByIndexOrHash : valid ledger fees");
@@ -1140,7 +1139,7 @@ loadByHash(uint256 const& ledgerHash, Application& app, bool acquire)
     {
         std::shared_ptr<Ledger> ledger = loadLedgerHelper(*info, app, acquire);
         finishLoadByIndexOrHash(ledger, app.config(), app.journal("Ledger"));
-        ASSERT(
+        XRPL_ASSERT(
             !ledger || ledger->info().hash == ledgerHash,
             "ripple::loadByHash : ledger hash match if loaded");
         return ledger;

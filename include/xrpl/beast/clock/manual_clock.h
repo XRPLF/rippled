@@ -61,7 +61,7 @@ public:
     void
     set(time_point const& when)
     {
-        ASSERT(
+        XRPL_ASSERT(
             !Clock::is_steady || when >= now_,
             "beast::manual_clock::set(time_point) : forward input");
         now_ = when;
@@ -80,7 +80,7 @@ public:
     void
     advance(std::chrono::duration<Rep, Period> const& elapsed)
     {
-        ASSERT(
+        XRPL_ASSERT(
             !Clock::is_steady || (now_ + elapsed) >= now_,
             "beast::manual_clock::advance(duration) : forward input");
         now_ += elapsed;

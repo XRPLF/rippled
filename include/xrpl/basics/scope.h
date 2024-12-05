@@ -235,7 +235,7 @@ public:
     explicit scope_unlock(std::unique_lock<Mutex>& lock) noexcept(true)
         : plock(&lock)
     {
-        ASSERT(
+        XRPL_ASSERT(
             plock->owns_lock(),
             "ripple::scope_unlock::scope_unlock : mutex must be locked");
         plock->unlock();

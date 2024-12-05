@@ -159,7 +159,7 @@ Bootcache::on_success(beast::IP::Endpoint const& endpoint)
         ++entry.valence();
         m_map.erase(result.first);
         result = m_map.insert(value_type(endpoint, entry));
-        ASSERT(
+        XRPL_ASSERT(
             result.second,
             "ripple:PeerFinder::Bootcache::on_success : endpoint inserted");
     }
@@ -187,7 +187,7 @@ Bootcache::on_failure(beast::IP::Endpoint const& endpoint)
         --entry.valence();
         m_map.erase(result.first);
         result = m_map.insert(value_type(endpoint, entry));
-        ASSERT(
+        XRPL_ASSERT(
             result.second,
             "ripple:PeerFinder::Bootcache::on_failure : endpoint inserted");
     }

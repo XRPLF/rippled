@@ -42,7 +42,7 @@ rngfill(void* buffer, std::size_t bytes, Generator& g)
         bytes -= sizeof(v);
     }
 
-    ASSERT(
+    XRPL_ASSERT(
         bytes < sizeof(result_type), "beast::rngfill(void*) : maximum bytes");
 
 #ifdef __GNUC__

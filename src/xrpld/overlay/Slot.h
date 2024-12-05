@@ -362,7 +362,7 @@ Slot<clock_type>::update(
             << consideredPoolSize << " selected " << *s << " "
             << *std::next(s, 1) << " " << *std::next(s, 2);
 
-        ASSERT(
+        XRPL_ASSERT(
             peers_.size() >= MAX_SELECTED_PEERS,
             "ripple::reduce_relay::Slot::update : minimum peers");
 

@@ -53,7 +53,7 @@ JobQueue::Coro::Coro(
 inline JobQueue::Coro::~Coro()
 {
 #ifndef NDEBUG
-    ASSERT(finished_, "ripple::JobQueue::Coro::~Coro : is finished");
+    XRPL_ASSERT(finished_, "ripple::JobQueue::Coro::~Coro : is finished");
 #endif
 }
 
@@ -103,7 +103,7 @@ JobQueue::Coro::resume()
     auto saved = detail::getLocalValues().release();
     detail::getLocalValues().reset(&lvs_);
     std::lock_guard lock(mutex_);
-    ASSERT(
+    XRPL_ASSERT(
         static_cast<bool>(coro_),
         "ripple::JobQueue::Coro::resume : is runnable");
     coro_();

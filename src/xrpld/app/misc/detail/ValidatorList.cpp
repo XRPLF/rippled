@@ -276,7 +276,7 @@ ValidatorList::buildFileData(
 {
     Json::Value value(Json::objectValue);
 
-    ASSERT(
+    XRPL_ASSERT(
         pubCollection.rawVersion == 2 || pubCollection.remaining.empty(),
         "ripple::ValidatorList::buildFileData : valid publisher list input");
     auto const effectiveVersion =
@@ -378,7 +378,7 @@ ValidatorList::parseBlobs(std::uint32_t version, Json::Value const& body)
             ValidatorBlobInfo& info = result.emplace_back();
             info.blob = body[jss::blob].asString();
             info.signature = body[jss::signature].asString();
-            ASSERT(
+            XRPL_ASSERT(
                 result.size() == 1,
                 "ripple::ValidatorList::parseBlobs : single element result");
             return result;
@@ -415,7 +415,7 @@ ValidatorList::parseBlobs(std::uint32_t version, Json::Value const& body)
                     info.manifest = blobInfo[jss::manifest].asString();
                 }
             }
-            ASSERT(
+            XRPL_ASSERT(
                 result.size() == blobs.size(),
                 "ripple::ValidatorList::parseBlobs(version, Jason::Value) : "
                 "result size matches");
@@ -449,7 +449,7 @@ ValidatorList::parseBlobs(protocol::TMValidatorListCollection const& body)
             info.manifest = blob.manifest();
         }
     }
-    ASSERT(
+    XRPL_ASSERT(
         result.size() == body.blobs_size(),
         "ripple::ValidatorList::parseBlobs(TMValidatorList) : result size "
         "match");
@@ -474,7 +474,7 @@ splitMessage(
 {
     if (begin == 0 && end == 0)
         end = largeMsg.blobs_size();
-    ASSERT(begin < end, "ripple::splitMessage : valid inputs");
+    XRPL_ASSERT(begin < end, "ripple::splitMessage : valid inputs");
     if (end <= begin)
         return 0;
 
@@ -508,7 +508,7 @@ splitMessageParts(
         if (blob.has_manifest())
             smallMsg.set_manifest(blob.manifest());
 
-        ASSERT(
+        XRPL_ASSERT(
             Message::totalSize(smallMsg) <= maximiumMessageSize,
             "ripple::splitMessageParts : maximum message size");
 
@@ -558,7 +558,7 @@ buildValidatorListMessage(
     ValidatorBlobInfo const& currentBlob,
     std::size_t maxSize)
 {
-    ASSERT(
+    XRPL_ASSERT(
         messages.empty(),
         "ripple::buildValidatorListMessage(ValidatorBlobInfo) : empty messages "
         "input");
@@ -572,7 +572,7 @@ buildValidatorListMessage(
     // Override the version
     msg.set_version(version);
 
-    ASSERT(
+    XRPL_ASSERT(
         Message::totalSize(msg) <= maximiumMessageSize,
         "ripple::buildValidatorListMessage(ValidatorBlobInfo) : maximum "
         "message size");
@@ -594,7 +594,7 @@ buildValidatorListMessage(
     std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
     std::size_t maxSize)
 {
-    ASSERT(
+    XRPL_ASSERT(
         messages.empty(),
         "ripple::buildValidatorListMessage(std::map<std::size_t, "
         "ValidatorBlobInfo>) : empty messages input");
@@ -613,7 +613,7 @@ buildValidatorListMessage(
         if (blobInfo.manifest)
             blob.set_manifest(*blobInfo.manifest);
     }
-    ASSERT(
+    XRPL_ASSERT(
         msg.blobs_size() > 0,
         "ripple::buildValidatorListMessage(std::map<std::size_t, "
         "ValidatorBlobInfo>) : minimum message blobs");
@@ -645,7 +645,7 @@ ValidatorList::buildValidatorListMessages(
     std::vector<ValidatorList::MessageWithHash>& messages,
     std::size_t maxSize /*= maximiumMessageSize*/)
 {
-    ASSERT(
+    XRPL_ASSERT(
         !blobInfos.empty(),
         "ripple::ValidatorList::buildValidatorListMessages : empty messages "
         "input");
@@ -731,7 +731,7 @@ ValidatorList::sendValidatorList(
         messages);
     if (newPeerSequence)
     {
-        ASSERT(
+        XRPL_ASSERT(
             !messages.empty(),
             "ripple::ValidatorList::sendValidatorList : non-empty messages "
             "input");
@@ -750,7 +750,7 @@ ValidatorList::sendValidatorList(
         }
         // The only way sent wil be false is if the messages was too big, and
         // thus there will only be one entry without a message
-        ASSERT(
+        XRPL_ASSERT(
             sent || messages.size() == 1,
             "ripple::ValidatorList::sendValidatorList : sent or one message");
         if (sent)
@@ -766,7 +766,7 @@ ValidatorList::sendValidatorList(
                     << "]";
             else
             {
-                ASSERT(
+                XRPL_ASSERT(
                     numVLs == 1,
                     "ripple::ValidatorList::sendValidatorList : one validator "
                     "list");
@@ -864,7 +864,7 @@ ValidatorList::broadcastBlobs(
         // be built to hold info for all of the valid VLs.
         std::map<std::size_t, ValidatorBlobInfo> blobInfos;
 
-        ASSERT(
+        XRPL_ASSERT(
             lists.current.sequence == maxSequence ||
                 lists.remaining.count(maxSequence) == 1,
             "ripple::ValidatorList::broadcastBlobs : valid sequence");
@@ -1011,7 +1011,7 @@ ValidatorList::applyLists(
         for (auto iter = remaining.begin(); iter != remaining.end();)
         {
             auto next = std::next(iter);
-            ASSERT(
+            XRPL_ASSERT(
                 next == remaining.end() || next->first > iter->first,
                 "ripple::ValidatorList::applyLists : next is valid");
             if (iter->first <= current.sequence ||
@@ -1185,7 +1185,7 @@ ValidatorList::applyList(
         // Remove the entry in "remaining"
         pubCollection.remaining.erase(sequence);
         // Done
-        ASSERT(
+        XRPL_ASSERT(
             publisher.sequence == sequence,
             "ripple::ValidatorList::applyList : publisher sequence match");
     }
@@ -1481,7 +1481,7 @@ ValidatorList::removePublisherList(
     PublicKey const& publisherKey,
     PublisherStatus reason)
 {
-    ASSERT(
+    XRPL_ASSERT(
         reason != PublisherStatus::available &&
             reason != PublisherStatus::unavailable,
         "ripple::ValidatorList::removePublisherList : valid reason input");
@@ -1669,7 +1669,7 @@ ValidatorList::getJson() const
             Json::Value& r = remaining.append(Json::objectValue);
             appendList(future, r);
             // Race conditions can happen, so make this check "fuzzy"
-            ASSERT(
+            XRPL_ASSERT(
                 future.validFrom > timeKeeper_.now() + 600s,
                 "ripple::ValidatorList::getJson : minimum valid from");
         }
@@ -1736,7 +1736,7 @@ ValidatorList::for_each_available(
     {
         if (plCollection.status != PublisherStatus::available)
             continue;
-        ASSERT(
+        XRPL_ASSERT(
             plCollection.maxSequence != 0,
             "ripple::ValidatorList::for_each_available : nonzero maxSequence");
         func(
@@ -1872,12 +1872,12 @@ ValidatorList::updateTrusted(
                      next->second.validFrom <= closeTime;
                      ++iter, ++next)
                 {
-                    ASSERT(
+                    XRPL_ASSERT(
                         std::next(iter) == next,
                         "ripple::ValidatorList::updateTrusted : sequential "
                         "remaining");
                 }
-                ASSERT(
+                XRPL_ASSERT(
                     iter != remaining.end(),
                     "ripple::ValidatorList::updateTrusted : non-end of "
                     "remaining");
@@ -1886,7 +1886,7 @@ ValidatorList::updateTrusted(
                 auto sequence = iter->first;
                 auto& candidate = iter->second;
                 auto& current = collection.current;
-                ASSERT(
+                XRPL_ASSERT(
                     candidate.validFrom <= closeTime,
                     "ripple::ValidatorList::updateTrusted : maximum time");
 
@@ -1894,7 +1894,7 @@ ValidatorList::updateTrusted(
                 current = std::move(candidate);
                 if (collection.status != PublisherStatus::available)
                     collection.status = PublisherStatus::available;
-                ASSERT(
+                XRPL_ASSERT(
                     current.sequence == sequence,
                     "ripple::ValidatorList::updateTrusted : sequence match");
                 // If the list is expired, remove the validators so they don't
@@ -1973,8 +1973,8 @@ ValidatorList::updateTrusted(
         {
             std::optional<PublicKey> const signingKey =
                 validatorManifests_.getSigningKey(k);
-            ASSERT(
-                signingKey.has_value(),
+            XRPL_ASSERT(
+                signingKey,
                 "ripple::ValidatorList::updateTrusted : found signing key");
             trustedSigningKeys_.insert(*signingKey);
         }

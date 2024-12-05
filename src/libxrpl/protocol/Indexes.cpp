@@ -95,7 +95,8 @@ indexHash(LedgerNameSpace space, Args const&... args)
 uint256
 getBookBase(Book const& book)
 {
-    ASSERT(isConsistent(book), "ripple::getBookBase : input is consistent");
+    XRPL_ASSERT(
+        isConsistent(book), "ripple::getBookBase : input is consistent");
 
     auto const index = indexHash(
         LedgerNameSpace::BOOK_DIR,
@@ -135,7 +136,7 @@ getTicketIndex(AccountID const& account, std::uint32_t ticketSeq)
 uint256
 getTicketIndex(AccountID const& account, SeqProxy ticketSeq)
 {
-    ASSERT(ticketSeq.isTicket(), "ripple::getTicketIndex : valid input");
+    XRPL_ASSERT(ticketSeq.isTicket(), "ripple::getTicketIndex : valid input");
     return getTicketIndex(account, ticketSeq.value());
 }
 
@@ -222,7 +223,8 @@ line(
     // There is code in SetTrust that calls us with id0 == id1, to allow users
     // to locate and delete such "weird" trustlines. If we remove that code, we
     // could enable this assert:
-    // ASSERT(id0 != id1, "ripple::keylet::line : accounts must be different");
+    // XRPL_ASSERT(id0 != id1, "ripple::keylet::line : accounts must be
+    // different");
 
     // A trust line is shared between two accounts; while we typically think
     // of this as an "issuer" and a "holder" the relationship is actually fully
@@ -251,7 +253,8 @@ offer(AccountID const& id, std::uint32_t seq) noexcept
 Keylet
 quality(Keylet const& k, std::uint64_t q) noexcept
 {
-    ASSERT(k.type == ltDIR_NODE, "ripple::keylet::quality : valid input type");
+    XRPL_ASSERT(
+        k.type == ltDIR_NODE, "ripple::keylet::quality : valid input type");
 
     // Indexes are stored in big endian format: they print as hex as stored.
     // Most significant bytes are first and the least significant bytes
@@ -269,7 +272,7 @@ quality(Keylet const& k, std::uint64_t q) noexcept
 Keylet
 next_t::operator()(Keylet const& k) const
 {
-    ASSERT(
+    XRPL_ASSERT(
         k.type == ltDIR_NODE,
         "ripple::keylet::next_t::operator() : valid input type");
     return {ltDIR_NODE, getQualityNext(k.key)};
@@ -389,7 +392,7 @@ nftpage_max(AccountID const& owner)
 Keylet
 nftpage(Keylet const& k, uint256 const& token)
 {
-    ASSERT(
+    XRPL_ASSERT(
         k.type == ltNFTOKEN_PAGE, "ripple::keylet::nftpage : valid input type");
     return {ltNFTOKEN_PAGE, (k.key & ~nft::pageMask) + (token & nft::pageMask)};
 }
