@@ -22,6 +22,8 @@
 #endif
 
 #ifndef LEDGER_ENTRY_DUPLICATE
+// The EXPAND macro is needed for Windows
+// https://stackoverflow.com/questions/5134523/msvc-doesnt-expand-va-args-correctly
 #define EXPAND(x) x
 #define LEDGER_ENTRY_DUPLICATE(...) EXPAND(LEDGER_ENTRY(__VA_ARGS__))
 #endif
