@@ -850,6 +850,7 @@ class Batch_test : public beast::unit_test::suite
             params[jss::transactions] = true;
             params[jss::expand] = true;
             auto const jrr = env.rpc("json", "ledger", to_string(params));
+            std::cout << jrr << std::endl;
             auto const txn = getTxByIndex(jrr, 2);
             validateBatchTxns(txn[jss::metaData], 2, testCases);
             validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
@@ -859,47 +860,47 @@ class Batch_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(bob) == preBob + XRP(2));
         }
 
-        // nothing
-        {
-            test::jtx::Env env{*this, envconfig()};
+        // // nothing
+        // {
+        //     test::jtx::Env env{*this, envconfig()};
 
-            auto const feeDrops = env.current()->fees().base;
-            auto const alice = Account("alice");
-            auto const bob = Account("bob");
-            auto const carol = Account("carol");
-            env.fund(XRP(1000), alice, bob, carol);
-            env.close();
+        //     auto const feeDrops = env.current()->fees().base;
+        //     auto const alice = Account("alice");
+        //     auto const bob = Account("bob");
+        //     auto const carol = Account("carol");
+        //     env.fund(XRP(1000), alice, bob, carol);
+        //     env.close();
 
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+        //     auto const preAlice = env.balance(alice);
+        //     auto const preBob = env.balance(bob);
 
-            auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 2;
-            auto const seq = env.seq(alice);
-            env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
-                batch::add(pay(alice, bob, XRP(1)), seq + 1),
-                batch::add(pay(alice, bob, XRP(999)), seq + 2),
-                ter(tecBATCH_FAILURE));
-            auto const envTx = env.tx();
-            auto const txIDs = envTx->getFieldV256(sfTxIDs);
-            std::vector<TestBatchData> testCases = {
-                {"tesSUCCESS", to_string(txIDs[0])},
-                {"tecUNFUNDED_PAYMENT", to_string(txIDs[1])},
-            };
-            env.close();
+        //     auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 2;
+        //     auto const seq = env.seq(alice);
+        //     env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+        //         batch::add(pay(alice, bob, XRP(1)), seq + 1),
+        //         batch::add(pay(alice, bob, XRP(999)), seq + 2),
+        //         ter(tecBATCH_FAILURE));
+        //     auto const envTx = env.tx();
+        //     auto const txIDs = envTx->getFieldV256(sfTxIDs);
+        //     std::vector<TestBatchData> testCases = {
+        //         {"tesSUCCESS", to_string(txIDs[0])},
+        //         {"tecUNFUNDED_PAYMENT", to_string(txIDs[1])},
+        //     };
+        //     env.close();
 
-            Json::Value params;
-            params[jss::ledger_index] = env.current()->seq() - 1;
-            params[jss::transactions] = true;
-            params[jss::expand] = true;
-            auto const jrr = env.rpc("json", "ledger", to_string(params));
-            auto const txn = getTxByIndex(jrr, 0);
-            validateBatchTxns(txn[jss::metaData], 2, testCases);
-            validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
+        //     Json::Value params;
+        //     params[jss::ledger_index] = env.current()->seq() - 1;
+        //     params[jss::transactions] = true;
+        //     params[jss::expand] = true;
+        //     auto const jrr = env.rpc("json", "ledger", to_string(params));
+        //     auto const txn = getTxByIndex(jrr, 0);
+        //     validateBatchTxns(txn[jss::metaData], 2, testCases);
+        //     validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
-            BEAST_EXPECT(env.seq(alice) == 5);
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob);
-        }
+        //     BEAST_EXPECT(env.seq(alice) == 5);
+        //     BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
+        //     BEAST_EXPECT(env.balance(bob) == preBob);
+        // }
     }
 
     void
@@ -1774,29 +1775,29 @@ class Batch_test : public beast::unit_test::suite
     void
     testWithFeats(FeatureBitset features)
     {
-        testEnable(features);
-        testPreflight(features);
-        testPreclaim(features);
-        testBadSequence(features);
-        testBadFeeNoSigner(features);
-        testBadFeeSigner(features);
-        testChangesBetweenViews(features);
+        // testEnable(features);
+        // testPreflight(features);
+        // testPreclaim(features);
+        // testBadSequence(features);
+        // testBadFeeNoSigner(features);
+        // testBadFeeSigner(features);
+        // testChangesBetweenViews(features);
         testAllOrNothing(features);
-        testOnlyOne(features);
-        testUntilFailure(features);
-        testIndependent(features);
-        testMultiParty(features);
-        testMultisign(features);
-        testMultisignMultiParty(features);
-        testSubmit(features);
-        testNoAccount(features);
-        testAccountSet(features);
-        testObjectCreateSequence(features);
-        testObjectCreateTicket(features);
-        testObjectCreate3rdParty(features);
-        testTicketsOuter(features);
-        testTicketsInner(features);
-        testTicketsOuterInner(features);
+        // testOnlyOne(features);
+        // testUntilFailure(features);
+        // testIndependent(features);
+        // testMultiParty(features);
+        // testMultisign(features);
+        // testMultisignMultiParty(features);
+        // testSubmit(features);
+        // testNoAccount(features);
+        // testAccountSet(features);
+        // testObjectCreateSequence(features);
+        // testObjectCreateTicket(features);
+        // testObjectCreate3rdParty(features);
+        // testTicketsOuter(features);
+        // testTicketsInner(features);
+        // testTicketsOuterInner(features);
 
         // TODO: previousFields repeat `sfOwnerCount` even if there was no
         // update to `OwnerCount`

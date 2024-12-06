@@ -1099,8 +1099,8 @@ Transactor::operator()()
 
         // Only update the account root entry if the batch transaction was
         // not a 3rd party transaction
-        if (innerTxnSubmittedByOuterAcct)
-            ctx_.updateAccountRootEntry();
+        // if (innerTxnSubmittedByOuterAcct)
+        //     ctx_.updateAccountRootEntry();
     }
 
     if (applied)

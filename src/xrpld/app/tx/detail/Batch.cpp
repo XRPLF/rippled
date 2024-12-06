@@ -302,8 +302,8 @@ Batch::doApply()
     {
         // Only required when the outer account also submitted at least one of
         // the inner transactions
-        if (innerTxnSubmittedByOuterAcct)
-            ctx_.setBatchPrevAcctRootFields(avi);
+        // if (innerTxnSubmittedByOuterAcct)
+        //     ctx_.setBatchPrevAcctRootFields(avi);
 
         ctx_.applyOpenView(subView);
     }
