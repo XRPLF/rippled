@@ -3304,7 +3304,7 @@ private:
                 env.app().config().features.erase(featureAMM);
                 PreflightContext pfctx(
                     env.app(),
-                    *jtx.stx,
+                    STTxWr(*jtx.stx, false),
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
@@ -3319,7 +3319,7 @@ private:
                 jtx.stx = env.ust(jtx);
                 PreflightContext pfctx(
                     env.app(),
-                    *jtx.stx,
+                    STTxWr(*jtx.stx, false),
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
@@ -3334,7 +3334,7 @@ private:
                 jtx.stx = env.ust(jtx);
                 PreflightContext pfctx(
                     env.app(),
-                    *jtx.stx,
+                    STTxWr(*jtx.stx, false),
                     env.current()->rules(),
                     tapNONE,
                     env.journal);

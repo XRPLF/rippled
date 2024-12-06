@@ -168,7 +168,7 @@ closeChannel(
 TxConsequences
 PayChanCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
+    return TxConsequences{ctx.tx.getTx(), ctx.tx[sfAmount].xrp()};
 }
 
 NotTEC
@@ -310,7 +310,7 @@ PayChanCreate::doApply()
 TxConsequences
 PayChanFund::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
+    return TxConsequences{ctx.tx.getTx(), ctx.tx[sfAmount].xrp()};
 }
 
 NotTEC

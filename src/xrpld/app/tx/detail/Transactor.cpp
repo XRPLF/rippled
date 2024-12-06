@@ -41,7 +41,7 @@ namespace ripple {
 NotTEC
 preflight0(PreflightContext const& ctx)
 {
-    if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
+    if (!isPseudoTx(ctx.tx.getTx()) || ctx.tx.isFieldPresent(sfNetworkID))
     {
         uint32_t nodeNID = ctx.app.config().NETWORK_ID;
         std::optional<uint32_t> txNID = ctx.tx[~sfNetworkID];
@@ -81,6 +81,10 @@ preflight0(PreflightContext const& ctx)
 NotTEC
 preflight1(PreflightContext const& ctx)
 {
+    if (!ctx.rules.enabled(featureAccountPermission) &&
+        ctx.tx.isFieldPresent(sfOnBehalfOf))
+        return temDISABLED;
+
     // This is inappropriate in preflight0, because only Change transactions
     // skip this function, and those do not allow an sfTicketSequence field.
     if (ctx.tx.isFieldPresent(sfTicketSequence) &&
@@ -93,7 +97,7 @@ preflight1(PreflightContext const& ctx)
     if (!isTesSuccess(ret))
         return ret;
 
-    auto const id = ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.getTx().getAccountID(sfAccount);
     if (id == beast::zero)
     {
         JLOG(ctx.j.warn()) << "preflight1: bad account id";
@@ -126,6 +130,10 @@ preflight1(PreflightContext const& ctx)
         ctx.tx.isFieldPresent(sfAccountTxnID))
         return temINVALID;
 
+    if (!ctx.rules.enabled(featureAccountPermission) &&
+        ctx.tx.isFieldPresent(sfOnBehalfOf))
+        return temDISABLED;
+
     return tesSUCCESS;
 }
 
@@ -134,7 +142,7 @@ NotTEC
 preflight2(PreflightContext const& ctx)
 {
     auto const sigValid = checkValidity(
-        ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
+        ctx.app.getHashRouter(), ctx.tx.getTx(), ctx.rules, ctx.app.config());
     if (sigValid.first == Validity::SigBad)
     {
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
@@ -147,7 +155,7 @@ preflight2(PreflightContext const& ctx)
 
 PreflightContext::PreflightContext(
     Application& app_,
-    STTx const& tx_,
+    STTxWr const& tx_,
     Rules const& rules_,
     ApplyFlags flags_,
     beast::Journal j_)
@@ -178,6 +186,51 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
         tx.isFieldPresent(sfSigners) ? tx.getFieldArray(sfSigners).size() : 0;
 
     return baseFee + (signerCount * baseFee);
+}
+
+TER
+Transactor::checkPermissions(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType>& permissions)
+{
+    if (!view.read(keylet::account(tx[sfOnBehalfOf])))
+        return terNO_ACCOUNT;
+
+    auto const accountPermissionKey =
+        keylet::accountPermission(tx[sfOnBehalfOf], tx[sfAccount]);
+    auto const sle = view.read(accountPermissionKey);
+    if (!sle)
+        return temMALFORMED;  // todo: change error code
+
+    auto const permissionArray = sle->getFieldArray(sfPermissions);
+    auto const transactionType = tx.getTxnType();
+
+    for (auto const& permission : permissionArray)
+    {
+        auto const permissionValue = permission[sfPermissionValue];
+        if (permissionValue == transactionType + 1)
+        {
+            // if the transaction permission is authorized, do not need to check
+            // granular permission.
+            permissions.clear();
+            return tesSUCCESS;
+        }
+
+        auto const gpType =
+            static_cast<GranularPermissionType>(permissionValue);
+        auto const& type = Permission::getInstance().getGranularTxType(gpType);
+        if (type && *type == transactionType)
+            permissions.insert(gpType);
+    }
+
+    if (permissions.empty())
+        return terNO_AUTH;
+
+    // When the code reaches here, the transaction permission is not authorized.
+    // But one or more of its granular permission under this transaction type is
+    // authorized. And the granular types are stored in permissions.
+    return tesSUCCESS;
 }
 
 XRPAmount
@@ -218,7 +271,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     if (feePaid == beast::zero)
         return tesSUCCESS;
 
-    auto const id = ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.getTx().getAccountID(sfAccount);
     auto const sle = ctx.view.read(keylet::account(id));
     if (!sle)
         return terNO_ACCOUNT;
@@ -247,6 +300,21 @@ TER
 Transactor::payFee()
 {
     auto const feePaid = ctx_.tx[sfFee].xrp();
+    if (ctx_.tx.isDelegated())
+    {
+        // if the transaction is being delegated to another account,
+        // the sender account will pay the fee.
+        auto const sender = ctx_.tx.getTx().getAccountID(sfAccount);
+        auto const sleSender = view().peek(keylet::account(sender));
+        if (!sleSender)
+            return tefINTERNAL;
+
+        auto senderBalance = STAmount{(*sleSender)[sfBalance]}.xrp();
+        senderBalance -= feePaid;
+        sleSender->setFieldAmount(sfBalance, senderBalance);
+        view().update(sleSender);
+        return tesSUCCESS;
+    }
 
     auto const sle = view().peek(keylet::account(account_));
     if (!sle)
@@ -338,7 +406,7 @@ Transactor::checkSeqProxy(
 NotTEC
 Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 {
-    auto const id = ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.getTx().getAccountID(sfAccount);
 
     auto const sle = ctx.view.read(keylet::account(id));
 
@@ -508,7 +576,7 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
 
     // Look up the account.
     auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
-    auto const idAccount = ctx.tx.getAccountID(sfAccount);
+    auto const idAccount = ctx.tx.getTx().getAccountID(sfAccount);
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
     if (!sleAccount)
         return terNO_ACCOUNT;
@@ -571,7 +639,7 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
 NotTEC
 Transactor::checkMultiSign(PreclaimContext const& ctx)
 {
-    auto const id = ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.getTx().getAccountID(sfAccount);
     // Get mTxnAccountID's SignerList and Quorum.
     std::shared_ptr<STLedgerEntry const> sleAccountSigners =
         ctx.view.read(keylet::signers(id));
@@ -879,7 +947,7 @@ Transactor::operator()()
         SerialIter sit(ser.slice());
         STTx s2(sit);
 
-        if (!s2.isEquivalent(ctx_.tx))
+        if (!s2.isEquivalent(ctx_.tx.getTx()))
         {
             JLOG(j_.fatal()) << "Transaction serdes mismatch";
             JLOG(j_.info()) << to_string(ctx_.tx.getJson(JsonOptions::none));

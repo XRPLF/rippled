@@ -102,9 +102,21 @@ MPTokenIssuanceSet::doApply()
     std::uint32_t const flagsIn = sle->getFieldU32(sfFlags);
     std::uint32_t flagsOut = flagsIn;
 
-    if (txFlags & tfMPTLock)
+    bool bLock = txFlags & tfMPTLock;
+    bool bUnlock = txFlags & tfMPTUnlock;
+
+    if (ctx_.tx.isDelegated() && !ctx_.permissions.empty())
+    {
+        // if permissions is not empty, granular delegation is happening.
+        if (bLock && !ctx_.permissions.contains(MPTokenIssuanceLock))
+            return terNO_AUTH;
+        if (bUnlock && !ctx_.permissions.contains(MPTokenIssuanceUnlock))
+            return terNO_AUTH;
+    }
+
+    if (bLock)
         flagsOut |= lsfMPTLocked;
-    else if (txFlags & tfMPTUnlock)
+    else if (bUnlock)
         flagsOut &= ~lsfMPTLocked;
 
     if (flagsIn != flagsOut)

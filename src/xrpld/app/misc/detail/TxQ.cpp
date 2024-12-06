@@ -751,7 +751,10 @@ TxQ::apply(
     // See if the transaction is valid, properly formed,
     // etc. before doing potentially expensive queue
     // replace and multi-transaction operations.
-    auto const pfresult = preflight(app, view.rules(), *tx, flags, j);
+    bool const isDelegated = view.rules().enabled(featureAccountPermission) &&
+        tx->isFieldPresent(sfOnBehalfOf);
+    STTxWr txWr(*tx, isDelegated);
+    auto const pfresult = preflight(app, view.rules(), txWr, flags, j);
     if (pfresult.ter != tesSUCCESS)
         return {pfresult.ter, false};
 

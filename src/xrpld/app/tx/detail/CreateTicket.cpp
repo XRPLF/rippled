@@ -31,7 +31,7 @@ TxConsequences
 CreateTicket::makeTxConsequences(PreflightContext const& ctx)
 {
     // Create TxConsequences identifying the number of sequences consumed.
-    return TxConsequences{ctx.tx, ctx.tx[sfTicketCount]};
+    return TxConsequences{ctx.tx.getTx(), ctx.tx[sfTicketCount]};
 }
 
 NotTEC

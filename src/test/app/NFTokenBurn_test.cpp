@@ -807,10 +807,11 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
                 ApplyContext ac{
                     env.app(),
                     ov,
-                    tx,
+                    STTxWr(tx, false),
                     tesSUCCESS,
                     env.current()->fees().base,
                     tapNONE,
+                    std::unordered_set<GranularPermissionType>{},
                     jlog};
 
                 // Verify that the last page is present and contains one NFT.
@@ -851,10 +852,11 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
                 ApplyContext ac{
                     env.app(),
                     ov,
-                    tx,
+                    STTxWr(tx, false),
                     tesSUCCESS,
                     env.current()->fees().base,
                     tapNONE,
+                    std::unordered_set<GranularPermissionType>{},
                     jlog};
 
                 // Verify that the middle  page is present.

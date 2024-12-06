@@ -36,7 +36,7 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
         return amount.native() ? amount.xrp() : beast::zero;
     };
 
-    return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
+    return TxConsequences{ctx.tx.getTx(), calculateMaxXRPSpend(ctx.tx.getTx())};
 }
 
 NotTEC
