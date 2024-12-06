@@ -21,7 +21,7 @@
 #define RIPPLE_APP_PATHS_CREDIT_H_INCLUDED
 
 #include <xrpld/ledger/View.h>
-#include <xrpl/basics/IOUAmount.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
 
 namespace ripple {

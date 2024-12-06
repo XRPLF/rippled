@@ -22,11 +22,11 @@
 #include <xrpld/app/paths/detail/StepChecks.h>
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/ledger/PaymentSandbox.h>
-#include <xrpl/basics/IOUAmount.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/XRPAmount.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <boost/container/flat_set.hpp>
 
