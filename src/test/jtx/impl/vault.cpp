@@ -86,6 +86,18 @@ Vault::withdraw(WithdrawArgs const& args)
     return jv;
 }
 
+Json::Value
+Vault::clawback(ClawbackArgs const& args)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::VaultClawback;
+    jv[jss::Account] = args.issuer.human();
+    jv[jss::VaultID] = to_string(args.id);
+    jv[jss::Holder] = args.holder.human();
+    jv[jss::Amount] = to_json(args.amount);
+    return jv;
+}
+
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

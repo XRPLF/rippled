@@ -2044,7 +2044,7 @@ requireAuth(
 
     // if account has no MPToken, fail
     if (!sleToken)
-        return tecNO_AUTH;
+        return tecNO_LINE;
 
     // mptoken must be authorized if issuance enabled requireAuth
     if (sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth &&
@@ -2245,12 +2245,12 @@ assetsToSharesDeposit(
 {
     assert(assets.asset() == vault->at(sfAsset));
     Number assetTotal = *vault->at(sfAssetTotal);
+    STAmount shares{vault->at(sfMPTokenIssuanceID), static_cast<Number>(assets)};
     if (assetTotal == 0)
-        return assets;
+        return shares;
     Number shareTotal = getShareTotal(view, vault);
-    auto shares = shareTotal * (assets / assetTotal);
-    STAmount amount{vault->at(sfMPTokenIssuanceID), shares};
-    return amount;
+    shares = shareTotal * (assets / assetTotal);
+    return shares;
 }
 
 [[nodiscard]] STAmount
@@ -2262,13 +2262,13 @@ assetsToSharesWithdraw(
     assert(assets.asset() == vault->at(sfAsset));
     Number assetTotal = vault->at(sfAssetTotal);
     assetTotal -= vault->at(sfLossUnrealized);
-    STAmount amount{vault->at(sfMPTokenIssuanceID)};
+    STAmount shares{vault->at(sfMPTokenIssuanceID)};
     if (assetTotal == 0)
-        return amount;
+        return shares;
     Number shareTotal = getShareTotal(view, vault);
-    amount = shareTotal * (assets / assetTotal);
+    shares = shareTotal * (assets / assetTotal);
     // TODO: Limit by withdrawal policy?
-    return amount;
+    return shares;
 }
 
 [[nodiscard]] STAmount
@@ -2280,13 +2280,13 @@ sharesToAssetsWithdraw(
     assert(shares.asset() == vault->at(sfMPTokenIssuanceID));
     Number assetTotal = vault->at(sfAssetTotal);
     assetTotal -= vault->at(sfLossUnrealized);
-    STAmount amount{vault->at(sfAsset)};
+    STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
-        return amount;
+        return assets;
     Number shareTotal = getShareTotal(view, vault);
-    amount = assetTotal * (shares / shareTotal);
+    assets = assetTotal * (shares / shareTotal);
     // TODO: Limit by withdrawal policy?
-    return amount;
+    return assets;
 }
 
 }  // namespace ripple

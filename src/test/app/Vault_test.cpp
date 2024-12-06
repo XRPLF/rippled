@@ -61,7 +61,16 @@ class Vault_test : public beast::unit_test::suite
             auto tx = vault.deposit(
                 {.depositor = depositor,
                  .id = keylet.key,
-                 .amount = asset(100)});
+                 .amount = asset(50)});
+            env(tx);
+        }
+
+        {
+            testcase("deposit non-zero amount again");
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(50)});
             env(tx);
         }
 
@@ -125,14 +134,38 @@ class Vault_test : public beast::unit_test::suite
             env(tx);
         }
 
+        if (!asset.raw().native())
+        {
+            testcase("fail to clawback because wrong issuer");
+            auto tx = vault.clawback(
+                {.issuer = owner,
+                 .id = keylet.key,
+                 .holder = depositor,
+                 .amount = asset(50)});
+            env(tx, ter(tecNO_PERMISSION));
+        }
+
+        {
+            testcase("clawback");
+            auto code =
+                asset.raw().native() ? ter(tecNO_PERMISSION) : ter(tesSUCCESS);
+            auto tx = vault.clawback(
+                {.issuer = issuer,
+                 .id = keylet.key,
+                 .holder = depositor,
+                 .amount = asset(50)});
+            env(tx, code);
+        }
+
         // TODO: redeem.
 
         {
             testcase("withdraw non-zero assets");
+            auto number = asset.raw().native() ? 200 : 150;
             auto tx = vault.withdraw(
                 {.depositor = depositor,
                  .id = keylet.key,
-                 .amount = asset(200)});
+                 .amount = asset(number)});
             env(tx);
         }
 
@@ -284,16 +317,54 @@ class Vault_test : public beast::unit_test::suite
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx, ter(tecLOCKED));
         }
+    }
 
-        AND_THEN("create");
+    TEST_CASE(WithMPT)
+    {
+        using namespace test::jtx;
+        Env env{*this};
+        Account issuer{"issuer"};
+        Account owner{"owner"};
+        Account depositor{"depositor"};
+        env.fund(XRP(1000), issuer, owner, depositor);
+        env.close();
+        auto vault = env.vault();
+
+        MPTTester mptt{env, issuer, {.fund = false}};
         mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
-        Asset asset = mptt.issuanceID();
+        PrettyAsset asset = mptt.issuanceID();
+        mptt.authorize({.account = depositor});
+        env(pay(issuer, depositor, asset(1000)));
+        env.close();
 
         SUBCASE("global lock")
         {
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             mptt.set({.account = issuer, .flags = tfMPTLock});
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx, ter(tecLOCKED));
+        }
+
+        SUBCASE("deposit non-zero amount")
+        {
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+            tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(100)});
+            env(tx);
+            env.close();
+            // Check that the OutstandingAmount field of MPTIssuance
+            // accounts for the issued shares.
+            auto v = env.le(keylet);
+            BEAST_EXPECT(v);
+            MPTID share = (*v)[sfMPTokenIssuanceID];
+            auto issuance = env.le(keylet::mptIssuance(share));
+            BEAST_EXPECT(issuance);
+            Number outstandingShares = issuance->at(sfOutstandingAmount);
+            BEAST_EXPECT(outstandingShares > 0);
+            BEAST_EXPECT(outstandingShares == 100);
         }
     }
 
@@ -305,6 +376,7 @@ public:
         EXECUTE(CreateFailXRP);
         EXECUTE(CreateFailIOU);
         EXECUTE(CreateFailMPT);
+        EXECUTE(WithMPT);
     }
 };
 

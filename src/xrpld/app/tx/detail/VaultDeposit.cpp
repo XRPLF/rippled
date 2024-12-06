@@ -19,6 +19,7 @@
 
 #include <xrpld/app/tx/detail/VaultDeposit.h>
 
+#include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -60,9 +61,9 @@ VaultDeposit::doApply()
 
     // TODO: Check credentials.
     if (vault->getFlags() & lsfVaultPrivate)
-        return tecNO_AUTH;
+        return tecNO_PERMISSION;
 
-    auto assets = ctx_.tx[sfAmount];
+    auto const assets = ctx_.tx[sfAmount];
     Asset const& asset = vault->at(sfAsset);
     if (assets.asset() != asset)
         return tecWRONG_ASSET;
@@ -78,11 +79,34 @@ VaultDeposit::doApply()
         return tecINSUFFICIENT_FUNDS;
     }
 
+    // Make sure the depositor can hold shares.
+    auto share = (*vault)[sfMPTokenIssuanceID];
+    auto canHold = requireAuth(view(), MPTIssue(share), account_);
+    if (canHold == tecNO_LINE)
+    {
+        if (auto ter = MPTokenAuthorize::authorize(
+            view(),
+            j_,
+            {.priorBalance = mPriorBalance,
+             .mptIssuanceID = share,
+             .accountID = account_}))
+            return ter;
+    }
+    else if (canHold != tesSUCCESS)
+    {
+        return canHold;
+    }
+
+    // Compute exchange before transferring any amounts.
+    auto const shares = assetsToSharesDeposit(view(), vault, assets);
+    XRPL_ASSERT(shares.asset() != assets.asset(), "do not mix up assets and shares");
+
     vault->at(sfAssetTotal) += assets;
     vault->at(sfAssetAvailable) += assets;
+    view().update(vault);
 
     // A deposit must not push the vault over its limit.
-    auto maximum = *vault->at(sfAssetMaximum);
+    auto const maximum = *vault->at(sfAssetMaximum);
     if (maximum != 0 && *vault->at(sfAssetTotal) > maximum)
         return tecLIMIT_EXCEEDED;
 
@@ -92,11 +116,8 @@ VaultDeposit::doApply()
         return ter;
 
     // Transfer shares from vault to depositor.
-    auto shares = assetsToSharesDeposit(view(), vault, assets);
     if (auto ter = accountSend(view(), vaultAccount, account_, shares, j_))
         return ter;
-
-    view().update(vault);
 
     return tesSUCCESS;
 }

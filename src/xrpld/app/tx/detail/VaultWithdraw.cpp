@@ -59,7 +59,7 @@ VaultWithdraw::doApply()
 
     // TODO: Check credentials.
     if (vault->getFlags() & lsfVaultPrivate)
-        return tecNO_AUTH;
+        return tecNO_PERMISSION;
 
     auto amount = ctx_.tx[sfAmount];
 
@@ -81,17 +81,18 @@ VaultWithdraw::doApply()
         return tecWRONG_ASSET;
     }
 
-    // The depositor must have enough shares.
-    if (accountHolds(
-            view(),
-            account_,
-            shares.asset(),
-            FreezeHandling::fhZERO_IF_FROZEN,
-            AuthHandling::ahZERO_IF_UNAUTHORIZED,
-            j_) < shares)
-    {
-        return tecINSUFFICIENT_FUNDS;
-    }
+    // // The depositor must have enough shares.
+    // // TODO: accountFunds throws here. Why?
+    // if (accountHolds(
+    //         view(),
+    //         account_,
+    //         shares.asset(),
+    //         FreezeHandling::fhZERO_IF_FROZEN,
+    //         AuthHandling::ahZERO_IF_UNAUTHORIZED,
+    //         j_) < shares)
+    // {
+    //     return tecINSUFFICIENT_FUNDS;
+    // }
 
     // The vault must have enough assets on hand.
     // The vault may hold assets that it has already pledged.
@@ -103,6 +104,7 @@ VaultWithdraw::doApply()
 
     vault->at(sfAssetTotal) -= assets;
     vault->at(sfAssetAvailable) -= assets;
+    view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from depositor to vault.
@@ -112,8 +114,6 @@ VaultWithdraw::doApply()
     // Transfer assets from vault to depositor.
     if (auto ter = accountSend(view(), vaultAccount, account_, assets, j_))
         return ter;
-
-    view().update(vault);
 
     return tesSUCCESS;
 }

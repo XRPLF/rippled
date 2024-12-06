@@ -89,6 +89,17 @@ struct Vault
 
     Json::Value
     withdraw(WithdrawArgs const& args);
+
+    struct ClawbackArgs
+    {
+        Account issuer;
+        uint256 id;
+        Account holder;
+        STAmount amount;
+    };
+
+    Json::Value
+    clawback(ClawbackArgs const& args);
 };
 
 }  // namespace jtx

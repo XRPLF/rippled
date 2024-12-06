@@ -19,6 +19,8 @@
 
 #include <xrpld/app/tx/detail/VaultClawback.h>
 
+#include <xrpld/ledger/View.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -52,9 +54,67 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 TER
 VaultClawback::doApply()
 {
-    auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
+    auto const& tx = ctx_.tx;
+    auto const vault = view().peek(keylet::vault(tx[sfVaultID]));
     if (!vault)
         return tecOBJECT_NOT_FOUND;
+
+    Asset const asset = (*vault)[sfAsset];
+    if (asset.native())
+        // Cannot clawback XRP.
+        return tecNO_PERMISSION;
+    else if (asset.getIssuer() != account_)
+        // Only issuers can clawback.
+        return tecNO_PERMISSION;
+
+    AccountID holder = tx[sfHolder];
+    STAmount const amount = tx[sfAmount];
+
+    if (asset != amount.asset())
+        return tecWRONG_ASSET;
+
+    STAmount assets, shares;
+    if (amount == beast::zero)
+    {
+        Asset share = *(*vault)[sfMPTokenIssuanceID];
+        shares = accountHolds(
+            view(),
+            holder,
+            share,
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            j_);
+        assets = sharesToAssetsWithdraw(view(), vault, shares);
+    }
+    else
+    {
+        assets = amount;
+        shares = assetsToSharesWithdraw(view(), vault, assets);
+    }
+
+    // Clamp to maximum.
+    Number maxAssets = *vault->at(sfAssetAvailable);
+    if (assets > maxAssets)
+    {
+        assets = maxAssets;
+        shares = assetsToSharesWithdraw(view(), vault, assets);
+    }
+
+    if (shares == beast::zero)
+        return tecINSUFFICIENT_FUNDS;
+
+    vault->at(sfAssetTotal) -= assets;
+    vault->at(sfAssetAvailable) -= assets;
+    view().update(vault);
+
+    // auto const& vaultAccount = vault->at(sfAccount);
+    // // Transfer shares from holder to vault.
+    // if (auto ter = accountSend(view(), holder, vaultAccount, shares, j_))
+    //     return ter;
+
+    // // Transfer assets from vault to issuer.
+    // if (auto ter = accountSend(view(), vaultAccount, account_, assets, j_))
+    //     return ter;
 
     return tesSUCCESS;
 }

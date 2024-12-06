@@ -179,6 +179,12 @@ public:
     {
     }
 
+    Asset const&
+    raw() const
+    {
+        return asset_;
+    }
+
     operator Asset const&() const
     {
         return asset_;
