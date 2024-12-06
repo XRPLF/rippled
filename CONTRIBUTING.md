@@ -145,9 +145,7 @@ credibility of the existing approvals is insufficient.
 Pull requests must be merged by [squash-and-merge][2]
 to preserve a linear history for the `develop` branch.
 
-### When and how to merge pull requests
-
-#### "Passed"
+### "Passed"
 
 A pull request should only have the "Passed" label added when it
 meets a few criteria:
@@ -177,131 +175,6 @@ meets a few criteria:
 
 Once the "Passed" label is added, a maintainer may merge the PR at
 any time, so don't use it lightly.
-
-#### Instructions for maintainers
-
-The maintainer should double-check that the PR has met all the
-necessary criteria, and can request additional information from the
-owner, or additional reviews, and can always feel free to remove the
-"Passed" label if appropriate. The maintainer has final say on
-whether a PR gets merged, and are encouraged to communicate and
-issues or concerns to other maintainers.
-
-##### Most pull requests: "Squash and merge"
-
-Most pull requests don't need special handling, and can simply be
-merged using the "Squash and merge" button on the Github UI. Update
-the suggested commit message if necessary.
-
-##### Slightly more complicated pull requests
-
-Some pull requests need to be pushed to `develop` as more than one
-commit. There are multiple ways to accomplish this. If the author
-describes a process, and it is reasonable, follow it. Otherwise, do
-a fast forward only merge (`--ff-only`) on the command line and push.
-
-Either way, check that:
-* The commits are based on the current tip of `develop`.
-* The commits are clean: No merge commits (except when reverse
-  merging), no "[FOLD]" or "fixup!" messages.
-* All commits are signed. If the commits are not signed by the author, use
-  `git commit --amend -S` to sign them yourself.
-* At least one (but preferably all) of the commits has the PR number
-  in the commit message.
-
-**Never use the "Create a merge commit" or "Rebase and merge"
- functions!**
-
-##### Releases, release candidates, and betas
-
-All releases, including release candidates and betas, are handled
-differently from typical PRs. Most importantly, never use
-the Github UI to merge a release.
-
-1. There are two possible conditions that the `develop` branch will
-   be in when preparing a release.
-   1. Ready or almost ready to go: There may be one or two PRs that
-      need to be merged, but otherwise, the only change needed is to
-      update the version number in `BuildInfo.cpp`. In this case,
-      merge those PRs as appropriate, updating the second one, and
-      waiting for CI to finish in between. Then update
-      `BuildInfo.cpp`.
-   2. Several pending PRs: In this case, do not use the Github UI,
-      because the delays waiting for CI in between each merge will be
-      unnecessarily onerous. Instead, create a working branch (e.g.
-      `develop-next`) based off of `develop`. Squash the changes
-      from each PR onto the branch, one commit each (unless
-      more are needed), being sure to sign each commit and update
-      the commit message to include the PR number. You may be able
-      to use a fast-forward merge for the first PR. The workflow may
-      look something like:
-```
-git fetch upstream
-git checkout upstream/develop
-git checkout -b develop-next
-# Use -S on the ff-only merge if prbranch1 isn't signed.
-# Or do another branch first.
-git merge --ff-only user1/prbranch1
-git merge --squash user2/prbranch2
-git commit -S
-git merge --squash user3/prbranch3
-git commit -S
-[...]
-git push --set-upstream origin develop-next
-</pre>
-```
-2. Create the Pull Request with `release` as the base branch. If any
-   of the included PRs are still open,
-   [use closing keywords](https://docs.github.com/articles/closing-issues-using-keywords)
-   in the description to ensure they are closed when the code is
-   released. e.g. "Closes #1234"
-3. Instead of the default template, reuse and update the message from
-   the previous release. Include the following verbiage somewhere in
-   the description:
-```
-The base branch is release. All releases (including betas) go in
-release. This PR will be merged with --ff-only (not squashed or
-rebased, and not using the GitHub UI) to both release and develop.
-```
-4. Sign-offs for the three platforms usually occur offline, but at
-   least one approval will be needed on the PR.
-5. Once everything is ready to go, open a terminal, and do the
-   fast-forward merges manually. Do not push any branches until you
-   verify that all of them update correctly.
-```
-git fetch upstream
-git checkout -b upstream--develop -t upstream/develop || git checkout upstream--develop
-git reset --hard upstream/develop
-# develop-next must be signed already!
-git merge --ff-only origin/develop-next
-git checkout -b upstream--release -t upstream/release || git checkout upstream--release
-git reset --hard upstream/release
-git merge --ff-only origin/develop-next
-# Only do these 3 steps if pushing a release. No betas or RCs
-git checkout -b upstream--master -t upstream/master || git checkout upstream--master
-git reset --hard upstream/master
-git merge --ff-only origin/develop-next
-# Check that all of the branches are updated
-git log -1 --oneline
-# The output should look like:
-# 02ec8b7962 (HEAD -> upstream--master, origin/develop-next, upstream--release, upstream--develop, develop-next) Set version to 2.2.0-rc1
-# Note that all of the upstream--develop/release/master are on this commit.
-# (Master will be missing for betas, etc.)
-# Just to be safe, do a dry run first:
-git push --dry-run upstream-push HEAD:develop
-git push --dry-run upstream-push HEAD:release
-# git push --dry-run upstream-push HEAD:master
-# Now push
-git push upstream-push HEAD:develop
-git push upstream-push HEAD:release
-# git push upstream-push HEAD:master
-# Don't forget to tag the release, too.
-git tag <version number>
-git push upstream-push <version number>
-```
-6. Finally
-[create a new release on Github](https://github.com/XRPLF/rippled/releases).
-
 
 # Style guide
 
@@ -514,3 +387,129 @@ Code Reviewers are developers who have the ability to review and approve source 
 
 [1]: https://docs.github.com/en/get-started/quickstart/contributing-to-projects
 [2]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#squash-and-merge-your-commits
+
+### When and how to merge pull requests
+
+#### Instructions for maintainers
+
+The maintainer should double-check that the PR has met all the
+necessary criteria, and can request additional information from the
+owner, or additional reviews, and can always feel free to remove the
+"Passed" label if appropriate. The maintainer has final say on
+whether a PR gets merged, and are encouraged to communicate and
+issues or concerns to other maintainers.
+
+##### Most pull requests: "Squash and merge"
+
+Most pull requests don't need special handling, and can simply be
+merged using the "Squash and merge" button on the Github UI. Update
+the suggested commit message if necessary.
+
+##### Slightly more complicated pull requests
+
+Some pull requests need to be pushed to `develop` as more than one
+commit. There are multiple ways to accomplish this. If the author
+describes a process, and it is reasonable, follow it. Otherwise, do
+a fast forward only merge (`--ff-only`) on the command line and push.
+
+Either way, check that:
+* The commits are based on the current tip of `develop`.
+* The commits are clean: No merge commits (except when reverse
+  merging), no "[FOLD]" or "fixup!" messages.
+* All commits are signed. If the commits are not signed by the author, use
+  `git commit --amend -S` to sign them yourself.
+* At least one (but preferably all) of the commits has the PR number
+  in the commit message.
+
+**Never use the "Create a merge commit" or "Rebase and merge"
+ functions!**
+
+##### Releases, release candidates, and betas
+
+All releases, including release candidates and betas, are handled
+differently from typical PRs. Most importantly, never use
+the Github UI to merge a release.
+
+1. There are two possible conditions that the `develop` branch will
+   be in when preparing a release.
+   1. Ready or almost ready to go: There may be one or two PRs that
+      need to be merged, but otherwise, the only change needed is to
+      update the version number in `BuildInfo.cpp`. In this case,
+      merge those PRs as appropriate, updating the second one, and
+      waiting for CI to finish in between. Then update
+      `BuildInfo.cpp`.
+   2. Several pending PRs: In this case, do not use the Github UI,
+      because the delays waiting for CI in between each merge will be
+      unnecessarily onerous. Instead, create a working branch (e.g.
+      `develop-next`) based off of `develop`. Squash the changes
+      from each PR onto the branch, one commit each (unless
+      more are needed), being sure to sign each commit and update
+      the commit message to include the PR number. You may be able
+      to use a fast-forward merge for the first PR. The workflow may
+      look something like:
+```
+git fetch upstream
+git checkout upstream/develop
+git checkout -b develop-next
+# Use -S on the ff-only merge if prbranch1 isn't signed.
+# Or do another branch first.
+git merge --ff-only user1/prbranch1
+git merge --squash user2/prbranch2
+git commit -S
+git merge --squash user3/prbranch3
+git commit -S
+[...]
+git push --set-upstream origin develop-next
+</pre>
+```
+2. Create the Pull Request with `release` as the base branch. If any
+   of the included PRs are still open,
+   [use closing keywords](https://docs.github.com/articles/closing-issues-using-keywords)
+   in the description to ensure they are closed when the code is
+   released. e.g. "Closes #1234"
+3. Instead of the default template, reuse and update the message from
+   the previous release. Include the following verbiage somewhere in
+   the description:
+```
+The base branch is release. All releases (including betas) go in
+release. This PR will be merged with --ff-only (not squashed or
+rebased, and not using the GitHub UI) to both release and develop.
+```
+4. Sign-offs for the three platforms usually occur offline, but at
+   least one approval will be needed on the PR.
+5. Once everything is ready to go, open a terminal, and do the
+   fast-forward merges manually. Do not push any branches until you
+   verify that all of them update correctly.
+```
+git fetch upstream
+git checkout -b upstream--develop -t upstream/develop || git checkout upstream--develop
+git reset --hard upstream/develop
+# develop-next must be signed already!
+git merge --ff-only origin/develop-next
+git checkout -b upstream--release -t upstream/release || git checkout upstream--release
+git reset --hard upstream/release
+git merge --ff-only origin/develop-next
+# Only do these 3 steps if pushing a release. No betas or RCs
+git checkout -b upstream--master -t upstream/master || git checkout upstream--master
+git reset --hard upstream/master
+git merge --ff-only origin/develop-next
+# Check that all of the branches are updated
+git log -1 --oneline
+# The output should look like:
+# 02ec8b7962 (HEAD -> upstream--master, origin/develop-next, upstream--release, upstream--develop, develop-next) Set version to 2.2.0-rc1
+# Note that all of the upstream--develop/release/master are on this commit.
+# (Master will be missing for betas, etc.)
+# Just to be safe, do a dry run first:
+git push --dry-run upstream-push HEAD:develop
+git push --dry-run upstream-push HEAD:release
+# git push --dry-run upstream-push HEAD:master
+# Now push
+git push upstream-push HEAD:develop
+git push upstream-push HEAD:release
+# git push upstream-push HEAD:master
+# Don't forget to tag the release, too.
+git tag <version number>
+git push upstream-push <version number>
+```
+6. Finally
+[create a new release on Github](https://github.com/XRPLF/rippled/releases).
