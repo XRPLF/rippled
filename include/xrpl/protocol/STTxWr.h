@@ -35,11 +35,11 @@ namespace ripple {
 class STTxWr
 {
 private:
-    STTx tx_;           // Wrap an instance of STTx
+    const STTx& tx_;    // Wrap an instance of STTx
     bool isDelegated_;  // if the transaction is delegated by another account
 
 public:
-    explicit STTxWr(STTx tx, bool isDelegated)
+    explicit STTxWr(STTx const& tx, bool isDelegated)
         : tx_(tx), isDelegated_(isDelegated)
     {
     }

@@ -97,7 +97,7 @@ preflight1(PreflightContext const& ctx)
     if (!isTesSuccess(ret))
         return ret;
 
-    auto const id = ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.getTx().getAccountID(sfAccount);
     if (id == beast::zero)
     {
         JLOG(ctx.j.warn()) << "preflight1: bad account id";
@@ -271,7 +271,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     if (feePaid == beast::zero)
         return tesSUCCESS;
 
-    auto const id = ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.getTx().getAccountID(sfAccount);
     auto const sle = ctx.view.read(keylet::account(id));
     if (!sle)
         return terNO_ACCOUNT;
@@ -406,7 +406,7 @@ Transactor::checkSeqProxy(
 NotTEC
 Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 {
-    auto const id = ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.getTx().getAccountID(sfAccount);
 
     auto const sle = ctx.view.read(keylet::account(id));
 
@@ -639,7 +639,7 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
 NotTEC
 Transactor::checkMultiSign(PreclaimContext const& ctx)
 {
-    auto const id = ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.getTx().getAccountID(sfAccount);
     // Get mTxnAccountID's SignerList and Quorum.
     std::shared_ptr<STLedgerEntry const> sleAccountSigners =
         ctx.view.read(keylet::signers(id));
