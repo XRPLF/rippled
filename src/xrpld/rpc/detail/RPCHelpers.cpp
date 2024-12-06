@@ -945,7 +945,7 @@ chooseLedgerEntryType(Json::Value const& params)
                  {jss::escrow, ltESCROW},
                  {jss::fee, ltFEE_SETTINGS},
                  {jss::firewall, ltFIREWALL},
-                 {jss::firewall_preauth, ltFIREWALL_PREAUTH},
+                 {jss::withdraw_preauth, ltWITHDRAW_PREAUTH},
                  {jss::hashes, ltLEDGER_HASHES},
                  {jss::nunl, ltNEGATIVE_UNL},
                  {jss::oracle, ltORACLE},

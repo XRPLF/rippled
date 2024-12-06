@@ -333,14 +333,14 @@ Keylet
 firewall(AccountID const& account) noexcept;
 
 Keylet
-firewallPreauth(
+withdrawPreauth(
     AccountID const& owner,
     AccountID const& preauthorized) noexcept;
 
 inline Keylet
-firewallPreauth(uint256 const& key) noexcept
+withdrawPreauth(uint256 const& key) noexcept
 {
-    return {ltFIREWALL_PREAUTH, key};
+    return {ltWITHDRAW_PREAUTH, key};
 }
 
 }  // namespace keylet

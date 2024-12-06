@@ -442,7 +442,7 @@ LEDGER_ENTRY(ltCREDENTIAL, 0x0081, Credential, ({
  */
 LEDGER_ENTRY(ltFIREWALL, 0x0046, Firewall, ({
     {sfOwner,               soeREQUIRED},
-    {sfPublicKey,           soeREQUIRED},
+    {sfIssuer,              soeREQUIRED},
     {sfAmount,              soeOPTIONAL},
     {sfTimePeriod,          soeOPTIONAL},
     {sfTimePeriodStart,     soeOPTIONAL},
@@ -452,10 +452,10 @@ LEDGER_ENTRY(ltFIREWALL, 0x0046, Firewall, ({
     {sfPreviousTxnLgrSeq,   soeREQUIRED}
 }))
 
-/** A ledger object which tracks FirewallPreauth
-    \sa keylet::firewallPreauth
+/** A ledger object which tracks WithdrawPreauth
+    \sa keylet::WithdrawPreauth
  */
-LEDGER_ENTRY(ltFIREWALL_PREAUTH, 0x0047, FirewallPreauth, ({
+LEDGER_ENTRY(ltWITHDRAW_PREAUTH, 0x0047, WithdrawPreauth, ({
     {sfAccount,              soeREQUIRED},
     {sfAuthorize,            soeREQUIRED},
     {sfOwnerNode,            soeREQUIRED},

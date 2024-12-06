@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2018 Ripple Labs Inc.
+    Copyright (c) 2024 Transia, LLC.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/FirewallPreauth.h>
+#include <xrpld/app/tx/detail/WithdrawPreauth.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
@@ -29,7 +29,7 @@
 namespace ripple {
 
 NotTEC
-FirewallPreauth::preflight(PreflightContext const& ctx)
+WithdrawPreauth::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureFirewall))
         return temDISABLED;
@@ -71,7 +71,7 @@ FirewallPreauth::preflight(PreflightContext const& ctx)
     if (optAuth && (target == ctx.tx[sfAccount]))
     {
         JLOG(j.trace())
-            << "Malformed transaction: Attempting to FirewallPreauth self.";
+            << "Malformed transaction: Attempting to WithdrawPreauth self.";
         return temCANNOT_PREAUTH_SELF;
     }
 
@@ -79,7 +79,7 @@ FirewallPreauth::preflight(PreflightContext const& ctx)
 }
 
 TER
-FirewallPreauth::preclaim(PreclaimContext const& ctx)
+WithdrawPreauth::preclaim(PreclaimContext const& ctx)
 {
     Serializer msg;
     AccountID const accountID = ctx.tx[sfAccount];
@@ -94,7 +94,7 @@ FirewallPreauth::preclaim(PreclaimContext const& ctx)
 
         // Verify that the Preauth entry they asked to add is not already
         // in the ledger.
-        if (ctx.view.exists(keylet::firewallPreauth(ctx.tx[sfAccount], auth)))
+        if (ctx.view.exists(keylet::withdrawPreauth(ctx.tx[sfAccount], auth)))
             return tecDUPLICATE;
         
         serializeFirewallAuthorization(msg, accountID, auth);
@@ -104,7 +104,7 @@ FirewallPreauth::preclaim(PreclaimContext const& ctx)
         // Verify that the Preauth entry they asked to remove is in the ledger.
         AccountID const unauth{ctx.tx[sfUnauthorize]};
         if (!ctx.view.exists(
-                keylet::firewallPreauth(ctx.tx[sfAccount], unauth)))
+                keylet::withdrawPreauth(ctx.tx[sfAccount], unauth)))
             return tecNO_ENTRY;
         
         serializeFirewallAuthorization(msg, accountID, unauth);
@@ -115,27 +115,28 @@ FirewallPreauth::preclaim(PreclaimContext const& ctx)
     auto const sleFirewall = ctx.view.read(firewallKeylet);
     if (!sleFirewall)
     {
-        JLOG(ctx.j.debug()) << "FirewallPreauth: Firewall does not exist.";
+        JLOG(ctx.j.debug()) << "WithdrawPreauth: Firewall does not exist.";
         return tecNO_TARGET;
     }
-    if (!sleFirewall->isFieldPresent(sfPublicKey))
+    if (!sleFirewall->isFieldPresent(sfIssuer))
     {
-        JLOG(ctx.j.debug()) << "FirewallPreauth: Missing Firewall Public Key.";
+        JLOG(ctx.j.debug()) << "WithdrawPreauth: Missing Firewall Issuer.";
         return tecINTERNAL;
     }
     auto const sig = ctx.tx.getFieldVL(sfSignature);
-    PublicKey const pk(makeSlice(sleFirewall->getFieldVL(sfPublicKey)));
+    PublicKey const pk(makeSlice(ctx.tx.getFieldVL(sfPublicKey)));
+    // TODO: Valid PK (AccountID) == sfIssuer
     if (!verify(pk, msg.slice(), makeSlice(sig), /*canonical*/ true))
     {
         JLOG(ctx.j.debug())
-            << "FirewallPreauth: Bad Signature for update.";
+            << "WithdrawPreauth: Bad Signature for update.";
         return temBAD_SIGNATURE;
     }
     return tesSUCCESS;
 }
 
 TER
-FirewallPreauth::doApply()
+WithdrawPreauth::doApply()
 {
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
@@ -157,7 +158,7 @@ FirewallPreauth::doApply()
         // Preclaim already verified that the Preauth entry does not yet exist.
         // Create and populate the Preauth entry.
         AccountID const auth{ctx_.tx[sfAuthorize]};
-        Keylet const preauthKeylet = keylet::firewallPreauth(account_, auth);
+        Keylet const preauthKeylet = keylet::withdrawPreauth(account_, auth);
         auto slePreauth = std::make_shared<SLE>(preauthKeylet);
 
         slePreauth->setAccountID(sfAccount, account_);
@@ -170,7 +171,7 @@ FirewallPreauth::doApply()
             preauthKeylet,
             describeOwnerDir(account_));
 
-        JLOG(j_.trace()) << "Adding FirewallPreauth to owner directory "
+        JLOG(j_.trace()) << "Adding WithdrawPreauth to owner directory "
                          << to_string(preauthKeylet.key) << ": "
                          << (page ? "success" : "failure");
 
@@ -185,16 +186,16 @@ FirewallPreauth::doApply()
     else
     {
         auto const preauth =
-            keylet::firewallPreauth(account_, ctx_.tx[sfUnauthorize]);
+            keylet::withdrawPreauth(account_, ctx_.tx[sfUnauthorize]);
 
-        return FirewallPreauth::removeFromLedger(
+        return WithdrawPreauth::removeFromLedger(
             ctx_.app, view(), preauth.key, j_);
     }
     return tesSUCCESS;
 }
 
 TER
-FirewallPreauth::removeFromLedger(
+WithdrawPreauth::removeFromLedger(
     Application& app,
     ApplyView& view,
     uint256 const& preauthIndex,
@@ -203,10 +204,10 @@ FirewallPreauth::removeFromLedger(
     // Verify that the Preauth entry they asked to remove is
     // in the ledger.
     std::shared_ptr<SLE> const slePreauth{
-        view.peek(keylet::firewallPreauth(preauthIndex))};
+        view.peek(keylet::withdrawPreauth(preauthIndex))};
     if (!slePreauth)
     {
-        JLOG(j.warn()) << "Selected FirewallPreauth does not exist.";
+        JLOG(j.warn()) << "Selected WithdrawPreauth does not exist.";
         return tecNO_ENTRY;
     }
 
@@ -214,18 +215,18 @@ FirewallPreauth::removeFromLedger(
     std::uint64_t const page{(*slePreauth)[sfOwnerNode]};
     if (!view.dirRemove(keylet::ownerDir(account), page, preauthIndex, false))
     {
-        JLOG(j.fatal()) << "Unable to delete FirewallPreauth from owner.";
+        JLOG(j.fatal()) << "Unable to delete WithdrawPreauth from owner.";
         return tefBAD_LEDGER;
     }
 
-    // If we succeeded, update the FirewallPreauth owner's reserve.
+    // If we succeeded, update the WithdrawPreauth owner's reserve.
     auto const sleOwner = view.peek(keylet::account(account));
     if (!sleOwner)
         return tefINTERNAL;
 
     adjustOwnerCount(view, sleOwner, -1, app.journal("View"));
 
-    // Remove FirewallPreauth from ledger.
+    // Remove WithdrawPreauth from ledger.
     view.erase(slePreauth);
 
     return tesSUCCESS;

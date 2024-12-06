@@ -78,7 +78,7 @@ enum class LedgerNameSpace : std::uint16_t {
     MPTOKEN = 't',
     CREDENTIAL = 'D',
     FIREWALL = 'F',
-    FIREWALL_PREAUTH = 'G',
+    WITHDRAW_PREAUTH = 'G',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -528,11 +528,11 @@ firewall(AccountID const& account) noexcept
 }
 
 Keylet
-firewallPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept
+withdrawPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept
 {
     return {
-        ltFIREWALL_PREAUTH,
-        indexHash(LedgerNameSpace::FIREWALL_PREAUTH, owner, preauthorized)};
+        ltWITHDRAW_PREAUTH,
+        indexHash(LedgerNameSpace::WITHDRAW_PREAUTH, owner, preauthorized)};
 }
 
 }  // namespace keylet

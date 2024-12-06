@@ -472,15 +472,18 @@ Transactor::checkFirewall()
         AccountID const dest = ctx_.tx.getAccountID(sfDestination);
         
         // Check if there is a preauthorization for the destination account
-        if (auto const sleFirewallPreauth =
-                view().read(keylet::firewallPreauth(account, dest));
-            sleFirewallPreauth)
+        if (auto const sleWithdrawPreauth =
+                view().read(keylet::withdrawPreauth(account, dest));
+            sleWithdrawPreauth)
         {
             JLOG(j_.debug())
                 << "checkFirewall: Preauthorized transactions are not blocked";
             return tesSUCCESS;
         }
     }
+
+    // Reject Pathing Transactions?
+    // Check self transactions?
 
     if (sleFirewall->isFieldPresent(sfAmount))
     {
@@ -521,6 +524,7 @@ Transactor::checkFirewall()
                 std::cout << "checkFirewall: Resetting monitoring period 1"
                           << std::endl;
                 totalOut = *txnAmount;
+                totalOut += ctx_.tx.getFieldAmount(sfFee);
                 std::cout << "checkFirewall: Resetting monitoring period 2"
                           << std::endl;
             }
@@ -530,6 +534,7 @@ Transactor::checkFirewall()
                           << std::endl;
                 // Add the transaction amount to the ongoing total
                 totalOut += *txnAmount;
+                totalOut += ctx_.tx.getFieldAmount(sfFee);
             }
 
             std::cout << "totalOut: " << totalOut << std::endl;

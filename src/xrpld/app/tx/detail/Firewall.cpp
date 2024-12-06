@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2024 Transia, LLC.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -71,7 +71,7 @@ FirewallSet::preflight(PreflightContext const& ctx)
         if (backupID == ctx.tx[sfAccount])
         {
             JLOG(ctx.j.debug())
-                << "Malformed transaction: Attempting to FirewallPreauth self.";
+                << "Malformed transaction: Attempting to WithdrawPreauth self.";
             return temCANNOT_PREAUTH_SELF;
         }
     }
@@ -99,9 +99,9 @@ FirewallSet::preclaim(PreclaimContext const& ctx)
             JLOG(ctx.j.debug()) << "Firewall: Set must contain a sfAuthorize";
             return temMALFORMED;
         }
-        if (!ctx.tx.isFieldPresent(sfPublicKey))
+        if (!ctx.tx.isFieldPresent(sfIssuer))
         {
-            JLOG(ctx.j.debug()) << "Firewall: Set must contain a sfPublicKey";
+            JLOG(ctx.j.debug()) << "Firewall: Set must contain a sfIssuer";
             return temMALFORMED;
         }
     }
@@ -121,46 +121,46 @@ FirewallSet::preclaim(PreclaimContext const& ctx)
             return temMALFORMED;
         }
 
-        if (ctx.tx.isFieldPresent(sfPublicKey) &&
+        if (ctx.tx.isFieldPresent(sfIssuer) &&
             ctx.tx.isFieldPresent(sfAmount))
         {
             JLOG(ctx.j.debug()) << "Firewall: Update cannot contain both "
-                                   "sfPublicKey & sfAmount";
+                                   "sfIssuer & sfAmount";
             return temMALFORMED;
         }
 
-        if (ctx.tx.isFieldPresent(sfSignature) &&
-            ctx.tx.isFieldPresent(sfPublicKey))
-        {
-            PublicKey const txPK(makeSlice(ctx.tx.getFieldVL(sfPublicKey)));
-            auto const sig = ctx.tx.getFieldVL(sfSignature);
-            PublicKey const fPK(
-                makeSlice(sleFirewall->getFieldVL(sfPublicKey)));
-            Serializer msg;
-            serializeFirewallAuthorization(msg, accountID, txPK);
-            if (!verify(fPK, msg.slice(), makeSlice(sig), /*canonical*/ true))
-            {
-                JLOG(ctx.j.debug())
-                    << "Firewall: Bad Signature for update sfPublicKey";
-                return temBAD_SIGNATURE;
-            }
-        }
+        // if (ctx.tx.isFieldPresent(sfSignature) &&
+        //     ctx.tx.isFieldPresent(sfPublicKey))
+        // {
+        //     PublicKey const txPK(makeSlice(ctx.tx.getFieldVL(sfPublicKey)));
+        //     auto const sig = ctx.tx.getFieldVL(sfSignature);
+        //     PublicKey const fPK(
+        //         makeSlice(sleFirewall->getFieldVL(sfPublicKey)));
+        //     Serializer msg;
+        //     serializeFirewallAuthorization(msg, accountID, txPK);
+        //     if (!verify(fPK, msg.slice(), makeSlice(sig), /*canonical*/ true))
+        //     {
+        //         JLOG(ctx.j.debug())
+        //             << "Firewall: Bad Signature for update sfPublicKey";
+        //         return temBAD_SIGNATURE;
+        //     }
+        // }
 
-        if (ctx.tx.isFieldPresent(sfSignature) &&
-            ctx.tx.isFieldPresent(sfAmount))
-        {
-            auto const amount = ctx.tx.getFieldAmount(sfAmount);
-            auto const sig = ctx.tx.getFieldVL(sfSignature);
-            PublicKey const pk(makeSlice(sleFirewall->getFieldVL(sfPublicKey)));
-            Serializer msg;
-            serializeFirewallAuthorization(msg, accountID, amount);
-            if (!verify(pk, msg.slice(), makeSlice(sig), /*canonical*/ true))
-            {
-                JLOG(ctx.j.debug())
-                    << "Firewall: Bad Signature for update sfAmount";
-                return temBAD_SIGNATURE;
-            }
-        }
+        // if (ctx.tx.isFieldPresent(sfSignature) &&
+        //     ctx.tx.isFieldPresent(sfAmount))
+        // {
+        //     auto const amount = ctx.tx.getFieldAmount(sfAmount);
+        //     auto const sig = ctx.tx.getFieldVL(sfSignature);
+        //     PublicKey const pk(makeSlice(sleFirewall->getFieldVL(sfPublicKey)));
+        //     Serializer msg;
+        //     serializeFirewallAuthorization(msg, accountID, amount);
+        //     if (!verify(pk, msg.slice(), makeSlice(sig), /*canonical*/ true))
+        //     {
+        //         JLOG(ctx.j.debug())
+        //             << "Firewall: Bad Signature for update sfAmount";
+        //         return temBAD_SIGNATURE;
+        //     }
+        // }
     }
 
     return tesSUCCESS;
@@ -184,7 +184,7 @@ FirewallSet::doApply()
     {
         auto const sleFirewall = std::make_shared<SLE>(firewallKeylet);
         (*sleFirewall)[sfOwner] = account_;
-        sleFirewall->setFieldVL(sfPublicKey, ctx_.tx.getFieldVL(sfPublicKey));
+        sleFirewall->setAccountID(sfIssuer, ctx_.tx.getAccountID(sfIssuer));
         if (ctx_.tx.isFieldPresent(sfAmount))
             sleFirewall->setFieldAmount(
                 sfAmount, ctx_.tx.getFieldAmount(sfAmount));
@@ -220,7 +220,7 @@ FirewallSet::doApply()
         }
 
         AccountID const auth = ctx_.tx.getAccountID(sfAuthorize);
-        Keylet const preauthKeylet = keylet::firewallPreauth(account_, auth);
+        Keylet const preauthKeylet = keylet::withdrawPreauth(account_, auth);
         auto slePreauth = std::make_shared<SLE>(preauthKeylet);
 
         slePreauth->setAccountID(sfAccount, account_);
@@ -243,9 +243,9 @@ FirewallSet::doApply()
     }
     else
     {
-        if (ctx_.tx.isFieldPresent(sfPublicKey))
-            sleFirewall->setFieldVL(
-                sfPublicKey, ctx_.tx.getFieldVL(sfPublicKey));
+        if (ctx_.tx.isFieldPresent(sfIssuer))
+            sleFirewall->setAccountID(
+                sfIssuer, ctx_.tx.getAccountID(sfIssuer));
         if (ctx_.tx.isFieldPresent(sfAmount))
             sleFirewall->setFieldAmount(
                 sfAmount, ctx_.tx.getFieldAmount(sfAmount));

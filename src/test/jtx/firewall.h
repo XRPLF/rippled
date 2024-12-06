@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2024 Transia, LLC.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -64,6 +64,21 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
+/** Sets the optional Issuer on a JTx. */
+class issuer
+{
+private:
+    jtx::Account issuer_;
+
+public:
+    explicit issuer(jtx::Account const& issuer) : issuer_(issuer)
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jtx) const;
+};
+
 /** Sets the optional Authorize on a JTx. */
 class auth
 {
@@ -94,19 +109,114 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-/** Set the optional Signature on a JTx */
+/** Set a firewall signature on a JTx. */
 class sig
 {
-private:
-    Buffer sig_;
+public:
+    struct Reg
+    {
+        Account acct;
+        Account sig;
+
+        Reg(Account const& masterSig) : acct(masterSig), sig(masterSig)
+        {
+        }
+
+        Reg(Account const& acct_, Account const& regularSig)
+            : acct(acct_), sig(regularSig)
+        {
+        }
+
+        Reg(char const* masterSig) : acct(masterSig), sig(masterSig)
+        {
+        }
+
+        Reg(char const* acct_, char const* regularSig)
+            : acct(acct_), sig(regularSig)
+        {
+        }
+
+        bool
+        operator<(Reg const& rhs) const
+        {
+            return acct < rhs.acct;
+        }
+    };
+
+    std::vector<Reg> signers;
 
 public:
-    explicit sig(Buffer const& sig) : sig_(sig)
+    sig(std::vector<Reg> signers_);
+
+    template <class AccountType, class... Accounts>
+        requires std::convertible_to<AccountType, Reg>
+    explicit sig(AccountType&& a0, Accounts&&... aN)
+        : sig{std::vector<Reg>{
+              std::forward<AccountType>(a0),
+              std::forward<Accounts>(aN)...}}
     {
     }
 
     void
-    operator()(Env&, JTx& jtx) const;
+    operator()(Env&, JTx& jt) const;
+};
+
+/** Set a firewall multi signature on a JTx. */
+class msig
+{
+public:
+    struct Reg
+    {
+        Account acct;
+        Account sig;
+
+        Reg(Account const& masterSig) : acct(masterSig), sig(masterSig)
+        {
+        }
+
+        Reg(Account const& acct_, Account const& regularSig)
+            : acct(acct_), sig(regularSig)
+        {
+        }
+
+        Reg(char const* masterSig) : acct(masterSig), sig(masterSig)
+        {
+        }
+
+        Reg(char const* acct_, char const* regularSig)
+            : acct(acct_), sig(regularSig)
+        {
+        }
+
+        bool
+        operator<(Reg const& rhs) const
+        {
+            return acct < rhs.acct;
+        }
+    };
+
+    Account master;  // Add a member to hold the master account
+    std::vector<Reg> signers;
+
+public:
+    msig(Account const& masterAccount, std::vector<Reg> signers_);
+
+    template <class AccountType, class... Accounts>
+        requires std::convertible_to<AccountType, Reg>
+    explicit msig(
+        Account const& masterAccount,
+        AccountType&& a0,
+        Accounts&&... aN)
+        : master(masterAccount)
+        ,  // Initialize master account
+        signers{std::vector<Reg>{
+            std::forward<AccountType>(a0),
+            std::forward<Accounts>(aN)...}}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const;
 };
 
 }  // namespace firewall

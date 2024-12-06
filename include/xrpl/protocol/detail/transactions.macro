@@ -447,20 +447,22 @@ TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete, ({
     {sfCredentialType, soeREQUIRED},
 }))
 
-/** This transaction type creates an FirewallPreauth instance */
-TRANSACTION(ttFIREWALL_PREAUTH, 61, FirewallPreauth, ({
+/** This transaction type creates an WithdrawPreauth instance */
+TRANSACTION(ttWITHDRAW_PREAUTH, 61, WithdrawPreauth, ({
     {sfAuthorize, soeOPTIONAL},
     {sfUnauthorize, soeOPTIONAL},
+    {sfPublicKey, soeREQUIRED},
     {sfSignature, soeREQUIRED},
 }))
 
 /** This transaction type creates an Firewall instance */
 TRANSACTION(ttFIREWALL_SET, 62, FirewallSet, ({
-    {sfAmount, soeOPTIONAL},
-    {sfPublicKey, soeOPTIONAL},
+    {sfIssuer, soeOPTIONAL},
     {sfAuthorize, soeOPTIONAL},
-    {sfSignature, soeOPTIONAL},
+    {sfAmount, soeOPTIONAL},
     {sfTimePeriod, soeOPTIONAL},
+    {sfPublicKey, soeOPTIONAL},
+    {sfSignature, soeOPTIONAL},
 }))
 
 // /** This transaction type deletes an Firewall instance */

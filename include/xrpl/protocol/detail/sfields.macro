@@ -349,6 +349,7 @@ UNTYPED_SFIELD(sfXChainClaimAttestationCollectionElement, OBJECT, 30)
 UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement, OBJECT, 31)
 UNTYPED_SFIELD(sfPriceData,              OBJECT,    32)
 UNTYPED_SFIELD(sfCredential,             OBJECT,    33)
+UNTYPED_SFIELD(sfFirewallSigner,         OBJECT,    34)
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array
@@ -378,3 +379,4 @@ UNTYPED_SFIELD(sfPriceDataSeries,        ARRAY,     24)
 UNTYPED_SFIELD(sfAuthAccounts,           ARRAY,     25)
 UNTYPED_SFIELD(sfAuthorizeCredentials,   ARRAY,     26)
 UNTYPED_SFIELD(sfUnauthorizeCredentials, ARRAY,     27)
+UNTYPED_SFIELD(sfFirewallSigners,        ARRAY,     28)

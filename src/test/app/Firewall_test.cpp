@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
   This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2024 Ripple Labs Inc.
+  Copyright (c) 2024 Transia, LLC.
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose  with  or without fee is hereby granted, provided that the above
@@ -69,7 +69,7 @@ struct Firewall_test : public beast::unit_test::suite
     verifyFirewallSle(
         ReadView const& view,
         jtx::Account const& account,
-        PublicKey const& pk,
+        jtx::Account const& issuer,
         std::optional<STAmount> const& amount = std::nullopt,
         std::optional<uint32_t> const& timePeriod = std::nullopt,
         std::optional<uint32_t> const& timeStart = std::nullopt,
@@ -77,7 +77,7 @@ struct Firewall_test : public beast::unit_test::suite
     {
         auto [key, sle] = firewallKeyAndSle(view, account);
         BEAST_EXPECT((*sle)[sfOwner] == account.id());
-        BEAST_EXPECT(strHex((*sle)[sfPublicKey]) == strHex(pk.slice()));
+        BEAST_EXPECT((*sle)[sfIssuer] == issuer.id());
         if (amount)
             BEAST_EXPECT((*sle)[sfAmount] == *amount);
         if (timePeriod)
@@ -212,10 +212,10 @@ struct Firewall_test : public beast::unit_test::suite
 
             env(firewall::set(alice),
                 firewall::auth(carol),
-                firewall::pk(carol.pk()),
+                firewall::issuer(carol),
                 ter(tesSUCCESS));
             env.close();
-            verifyFirewallSle(*env.current(), alice, carol.pk());
+            verifyFirewallSle(*env.current(), alice, carol);
             BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 2);
         }
 
@@ -228,11 +228,11 @@ struct Firewall_test : public beast::unit_test::suite
             env(firewall::set(alice),
                 firewall::auth(carol),
                 firewall::amt(XRP(10)),
-                firewall::pk(carol.pk()),
+                firewall::issuer(carol),
                 ter(tesSUCCESS));
             env.close();
 
-            verifyFirewallSle(*env.current(), alice, carol.pk(), XRP(10));
+            verifyFirewallSle(*env.current(), alice, carol, XRP(10));
             BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 2);
         }
 
@@ -247,14 +247,14 @@ struct Firewall_test : public beast::unit_test::suite
                 firewall::auth(carol),
                 firewall::amt(XRP(10)),
                 firewall::time_period(3600),
-                firewall::pk(carol.pk()),
+                firewall::issuer(carol),
                 ter(tesSUCCESS));
             env.close();
 
             verifyFirewallSle(
                 *env.current(),
                 alice,
-                carol.pk(),
+                carol,
                 XRP(10),
                 3600,
                 timeStart.time_since_epoch().count(),
@@ -289,18 +289,18 @@ struct Firewall_test : public beast::unit_test::suite
             env(pay(alice, bob, XRP(100)), ter(tecFIREWALL_BLOCK));
             env.close();
 
-            auto const sig = sigFirewallAuthAmount(
-                carol.pk(), carol.sk(), alice.id(), XRP(100));
-            env(firewall::set(alice),
-                firewall::amt(XRP(100)),
-                firewall::sig(sig),
-                ter(tesSUCCESS));
-            env.close();
+            // auto const sig = sigFirewallAuthAmount(
+            //     carol.pk(), carol.sk(), alice.id(), XRP(100));
+            // env(firewall::set(alice),
+            //     firewall::amt(XRP(100)),
+            //     firewall::sig(sig),
+            //     ter(tesSUCCESS));
+            // env.close();
 
-            // verifyFirewall(*env.current(), alice, XRP(100), carol.pk());
+            // // verifyFirewall(*env.current(), alice, XRP(100), carol.pk());
 
-            env(pay(alice, bob, XRP(100)), ter(tesSUCCESS));
-            env.close();
+            // env(pay(alice, bob, XRP(100)), ter(tesSUCCESS));
+            // env.close();
         }
     }
 
@@ -333,23 +333,23 @@ struct Firewall_test : public beast::unit_test::suite
             env(pay(alice, bob, XRP(100)), ter(tecFIREWALL_BLOCK));
             env.close();
 
-            auto const sig1 = sigFirewallAuthPK(
-                carol.pk(), carol.sk(), alice.id(), dave.pk());
-            env(firewall::set(alice),
-                firewall::pk(dave.pk()),
-                firewall::sig(sig1),
-                ter(tesSUCCESS));
-            env.close();
+            // auto const sig1 = sigFirewallAuthPK(
+            //     carol.pk(), carol.sk(), alice.id(), dave.pk());
+            // env(firewall::set(alice),
+            //     firewall::pk(dave.pk()),
+            //     firewall::sig(sig1),
+            //     ter(tesSUCCESS));
+            // env.close();
 
             // verifyFirewall(*env.current(), alice, XRP(10), dave.pk());
 
-            auto const sig2 = sigFirewallAuthAmount(
-                dave.pk(), dave.sk(), alice.id(), XRP(100));
-            env(firewall::set(alice),
-                firewall::amt(XRP(100)),
-                firewall::sig(sig2),
-                ter(tesSUCCESS));
-            env.close();
+            // auto const sig2 = sigFirewallAuthAmount(
+            //     dave.pk(), dave.sk(), alice.id(), XRP(100));
+            // env(firewall::set(alice),
+            //     firewall::amt(XRP(100)),
+            //     firewall::sig(sig2),
+            //     ter(tesSUCCESS));
+            // env.close();
 
             // verifyFirewall(*env.current(), alice, XRP(100), dave.pk());
 
@@ -416,7 +416,7 @@ struct Firewall_test : public beast::unit_test::suite
         // testDoApply(features);
         testFirewallSet(features);
         // testFirewallDelete(features);
-        // testUpdateAmount(features);
+        testUpdateAmount(features);
         // testUpdatePK(features);
         // testMasterDisable(features);
         // testTransactionTypes(features);
