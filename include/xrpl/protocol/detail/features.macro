@@ -28,11 +28,12 @@
 // Keep it sorted in reverse chronological order.
 // If you add an amendment here, then do not forget to increment `numFeatures`
 // in include/xrpl/protocol/Feature.h.
+// clang-format off
 
-// InvariantsV1_1 will be changes to Supported::yes when all the
-// invariants expected to be included under it are complete.
 XRPL_FEATURE(DeepFreeze,                 Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(MPTokensV1,                 Supported::yes, VoteBehavior::DefaultNo)
+// InvariantsV1_1 will be changes to Supported::yes when all the
+// invariants expected to be included under it are complete.
 XRPL_FEATURE(InvariantsV1_1,             Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (NFTokenPageLinks,           Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (InnerObjTemplate2,          Supported::yes, VoteBehavior::DefaultNo)
@@ -112,3 +113,5 @@ XRPL_FIX    (NFTokenNegOffer,       Supported::yes, VoteBehavior::Obsolete)
 XRPL_FIX    (NFTokenDirV1,          Supported::yes, VoteBehavior::Obsolete)
 XRPL_FEATURE(NonFungibleTokensV1,   Supported::yes, VoteBehavior::Obsolete)
 XRPL_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete)
+
+// clang-format on

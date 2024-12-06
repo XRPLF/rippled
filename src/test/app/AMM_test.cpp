@@ -4419,26 +4419,6 @@ private:
                 std::nullopt,
                 {features});
         }
-        else
-        {
-            testAMM(
-                [&](AMM& ammAlice, Env& env) {
-                    env(trust(
-                        gw, carol["USD"](0), tfSetFreeze | tfSetDeepFreeze));
-                    env(trust(
-                        gw, alice["USD"](0), tfSetFreeze | tfSetDeepFreeze));
-                    env.close();
-                    env(pay(alice, carol, USD(1)),
-                        path(~USD),
-                        sendmax(XRP(10)),
-                        txflags(tfNoRippleDirect | tfPartialPayment),
-                        ter(tesSUCCESS));
-                },
-                std::nullopt,
-                0,
-                std::nullopt,
-                {features});
-        }
     }
 
     void

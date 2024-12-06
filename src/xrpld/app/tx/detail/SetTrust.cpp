@@ -29,7 +29,7 @@
 namespace {
 
 uint32_t
-applyFreezeFlags(
+computeFreezeFlags(
     uint32_t uFlags,
     bool bHigh,
     bool bNoFreeze,
@@ -260,7 +260,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         std::uint32_t uFlags =
             sleRippleState ? sleRippleState->getFieldU32(sfFlags) : 0u;
         // Computing expected trust line state
-        uFlags = applyFreezeFlags(
+        uFlags = computeFreezeFlags(
             uFlags,
             bHigh,
             bNoFreeze,
@@ -510,10 +510,9 @@ SetTrust::doApply()
             uFlagsOut &= ~(bHigh ? lsfHighNoRipple : lsfLowNoRipple);
         }
 
-        // I really want to get rid of NoFreeze check here, but we have to use
-        // it to maintain previous behavior
+        // Have to use lsfNoFreeze to maintain pre-deep freeze behavior
         bool const bNoFreeze = sle->isFlag(lsfNoFreeze);
-        uFlagsOut = applyFreezeFlags(
+        uFlagsOut = computeFreezeFlags(
             uFlagsOut,
             bHigh,
             bNoFreeze,
