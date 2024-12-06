@@ -1,0 +1,46 @@
+//------------------------------------------------------------------------------
+/*
+    This file is part of rippled: https://github.com/ripple/rippled
+    Copyright (c) 2023 Ripple Labs Inc.
+
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose  with  or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
+
+    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+//==============================================================================
+#ifndef RIPPLE_APP_MISC_WASMVM_H_INLCUDED
+#define RIPPLE_APP_MISC_WASMVM_H_INLCUDED
+
+#include <xrpl/basics/Expected.h>
+// #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/TER.h>
+
+#include <wasmedge/wasmedge.h>
+
+namespace ripple {
+
+Expected<bool, TER>
+runEscrowWasm(
+    std::vector<uint8_t> const& wasmCode,
+    std::string const& funcName,
+    int32_t input);
+
+// class WasmVM final
+//{
+// public:
+//     explicit WasmVM(beast::Journal j);
+//     ~WasmVM() = default;
+//
+// private:
+//     beast::Journal j_;
+// };
+}  // namespace ripple
+#endif  // RIPPLE_APP_MISC_WASMVM_H_INLCUDED
