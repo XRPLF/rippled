@@ -449,7 +449,7 @@ TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete, ({
 
 /** This transaction creates a single asset vault. */
 TRANSACTION(ttVAULT_CREATE, 61, VaultCreate, ({
-    {sfAsset, soeREQUIRED},
+    {sfAsset, soeREQUIRED, soeMPTSupported},
     {sfAssetMaximum, soeOPTIONAL},
     {sfMPTokenMetadata, soeOPTIONAL},
     // no PermissionedDomainID yet
