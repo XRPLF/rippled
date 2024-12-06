@@ -45,16 +45,28 @@ DisableFormat:   false
 ExperimentalAutoDetectBinPacking: false
 ForEachMacros:   [ Q_FOREACH,  BOOST_FOREACH ]
 IncludeCategories:
-  - Regex:           '^<(test)/'
-    Priority:        0
-  - Regex:           '^<(xrpld)/'
-    Priority:        1
-  - Regex:           '^<(xrpl)/'
-    Priority:        2
-  - Regex:           '^<(boost)/'
-    Priority:        3
+  # Do not place anything at priority 0. That is the priority for the "main"
+  # header, the header corresponding to an implementation file.
+  # Private headers of our CTest tests.
+  - Regex:           '^<tests/'
+    Priority:        10
+  # Private headers of our non-CTest tests.
+  - Regex:           '^<test/'
+    Priority:        20
+  # Private headers of our internal targets.
+  - Regex:           '^<(libxrpl|xrpld)/'
+    Priority:        30
+  # Public headers of our internal libraries.
+  - Regex:           '^<xrpl/'
+    Priority:        40
+  # External libraries.
+  - Regex:           '^<.*/'
+    Priority:        50
+  - Regex:           '\.h(pp)?>$'
+    Priority:        50
+  # Standard library.
   - Regex:           '.*'
-    Priority:        4
+    Priority:        100
 IncludeIsMainRegex: '$'
 IndentCaseLabels: true
 IndentFunctionDeclarationAfterType: false

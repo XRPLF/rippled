@@ -20,8 +20,8 @@
 #ifndef BEAST_NUDB_VARINT_H_INCLUDED
 #define BEAST_NUDB_VARINT_H_INCLUDED
 
-#include <cstdint>
 #include <nudb/detail/stream.hpp>
+#include <cstdint>
 #include <type_traits>
 
 namespace ripple {

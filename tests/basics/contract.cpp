@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
+    Copyright (c) 2012 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,46 +17,40 @@
 */
 //==============================================================================
 
-#include <test/jtx/Env.h>
-#include <xrpl/beast/utility/temp_dir.h>
-#include <xrpl/crypto/csprng.h>
-#include <boost/filesystem.hpp>
-#include <fstream>
-#include <streambuf>
+#include <xrpl/basics/contract.h>
 
-namespace ripple {
+#include <doctest/doctest.h>
 
-class CryptoPRNG_test : public beast::unit_test::suite
+#include <stdexcept>
+#include <string>
+
+using namespace ripple;
+
+TEST_CASE("contract")
 {
-    void
-    testGetValues()
+    try
     {
-        testcase("Get Values");
+        Throw<std::runtime_error>("Throw test");
+    }
+    catch (std::runtime_error const& e1)
+    {
+        CHECK(std::string(e1.what()) == "Throw test");
+
         try
         {
-            auto& engine = crypto_prng();
-            auto rand_val = engine();
-            BEAST_EXPECT(rand_val >= engine.min());
-            BEAST_EXPECT(rand_val <= engine.max());
-
-            uint16_t twoByte{0};
-            engine(&twoByte, sizeof(uint16_t));
-            pass();
+            Rethrow();
         }
-        catch (std::exception&)
+        catch (std::runtime_error const& e2)
         {
-            fail();
+            CHECK(std::string(e2.what()) == "Throw test");
+        }
+        catch (...)
+        {
+            CHECK(false);
         }
     }
-
-public:
-    void
-    run() override
+    catch (...)
     {
-        testGetValues();
+        CHECK(false);
     }
-};
-
-BEAST_DEFINE_TESTSUITE(CryptoPRNG, core, ripple);
-
-}  // namespace ripple
+}
