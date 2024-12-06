@@ -249,14 +249,9 @@ Batch::doApply()
 
     for (STObject txn : txns)
     {
-        OpenView innerView(&subView);
-
         STTx const stx = STTx{std::move(txn)};
         auto const [ter, applied] =
-            ripple::apply(ctx_.app, innerView, stx, tapFAIL_HARD, ctx_.journal);
-
-        if (applied)
-            innerView.apply(subView);
+            ripple::apply(ctx_.app, subView, stx, tapFAIL_HARD, ctx_.journal);
 
         changed = true;
 
