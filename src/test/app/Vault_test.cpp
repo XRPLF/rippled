@@ -173,6 +173,7 @@ class Vault_test : public beast::unit_test::suite
             PrettyAsset asset = issuer["IOU"];
             env.trust(asset(1000), depositor);
             env(pay(issuer, depositor, asset(1000)));
+            env.close();
             testSequence(env, issuer, owner, depositor, vault, asset);
         }
 
@@ -183,6 +184,7 @@ class Vault_test : public beast::unit_test::suite
             PrettyAsset asset = mptt.issuanceID();
             mptt.authorize({.account = depositor});
             env(pay(issuer, depositor, asset(1000)));
+            env.close();
             testSequence(env, issuer, owner, depositor, vault, asset);
         }
     }
@@ -224,14 +226,16 @@ class Vault_test : public beast::unit_test::suite
 
         SUBCASE("data too large")
         {
-            tx[sfData] = blob257;
+            // A hexadecimal string of 257 bytes.
+            tx[sfData] = std::string(514, 'A');
             env(tx, ter(temSTRING_TOO_LARGE));
         }
 
         SUBCASE("metadata too large")
         {
             // This metadata is for the share token.
-            tx[sfMPTokenMetadata] = blob1025;
+            // A hexadecimal string of 1025 bytes.
+            tx[sfMPTokenMetadata] = std::string(2050, 'B');
             env(tx, ter(temSTRING_TOO_LARGE));
         }
     }

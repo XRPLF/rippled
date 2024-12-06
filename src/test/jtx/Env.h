@@ -792,9 +792,6 @@ Env::rpc(std::string const& cmd, Args&&... args)
         std::forward<Args>(args)...);
 }
 
-extern std::string blob257;
-extern std::string blob1025;
-
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple
