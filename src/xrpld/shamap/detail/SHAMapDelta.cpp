@@ -129,7 +129,9 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
     // many differences throws on corrupt tables or missing nodes CAUTION:
     // otherMap is not locked and must be immutable
 
-    assert(isValid() && otherMap.isValid());
+    ASSERT(
+        isValid() && otherMap.isValid(),
+        "ripple::SHAMap::compare : valid state and valid input");
 
     if (getHash() == otherMap.getHash())
         return true;
@@ -146,7 +148,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
 
         if (!ourNode || !otherNode)
         {
-            assert(false);
+            UNREACHABLE("ripple::SHAMap::compare : missing a node");
             Throw<SHAMapMissingNode>(type_, uint256());
         }
 
@@ -227,7 +229,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
                 }
         }
         else
-            assert(false);
+            UNREACHABLE("ripple::SHAMap::compare : invalid node");
     }
 
     return true;
@@ -324,7 +326,9 @@ SHAMap::walkMapParallel(
                     {
                         intr_ptr::SharedPtr<SHAMapInnerNode> node =
                             std::move(nodeStack.top());
-                        assert(node);
+                        ASSERT(
+                            node != nullptr,
+                            "ripple::SHAMap::walkMapParallel : non-null node");
                         nodeStack.pop();
 
                         for (int i = 0; i < 16; ++i)

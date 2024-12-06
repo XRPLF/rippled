@@ -34,7 +34,7 @@
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <cassert>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <stack>
 #include <vector>
 
@@ -601,7 +601,9 @@ SHAMap::setLedgerSeq(std::uint32_t lseq)
 inline void
 SHAMap::setImmutable()
 {
-    assert(state_ != SHAMapState::Invalid);
+    ASSERT(
+        state_ != SHAMapState::Invalid,
+        "ripple::SHAMap::setImmutable : state is valid");
     state_ = SHAMapState::Immutable;
 }
 
@@ -682,7 +684,9 @@ private:
 
 inline SHAMap::const_iterator::const_iterator(SHAMap const* map) : map_(map)
 {
-    assert(map_ != nullptr);
+    ASSERT(
+        map_ != nullptr,
+        "ripple::SHAMap::const_iterator::const_iterator : non-null input");
 
     if (auto temp = map_->peekFirstItem(stack_))
         item_ = temp->peekItem().get();
@@ -734,7 +738,10 @@ SHAMap::const_iterator::operator++(int)
 inline bool
 operator==(SHAMap::const_iterator const& x, SHAMap::const_iterator const& y)
 {
-    assert(x.map_ == y.map_);
+    ASSERT(
+        x.map_ == y.map_,
+        "ripple::operator==(SHAMap::const_iterator, SHAMap::const_iterator) : "
+        "inputs map do match");
     return x.item_ == y.item_;
 }
 
