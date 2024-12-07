@@ -47,6 +47,12 @@ setupConfigForUnitTests(Config& cfg)
     cfg.setupControl(true, true, true);
     cfg["server"].append(PORT_PEER);
     cfg[PORT_PEER].set("ip", getEnvLocalhostAddr());
+
+    // Using port 0 asks the operating system to allocate an unused port, which
+    // can be obtained after a "bind" call.
+    // Works for all system (Linux, Windows, Unix, Mac).
+    // Check https://man7.org/linux/man-pages/man7/ip.7.html
+    // "ip_local_port_range" section for more info
     cfg[PORT_PEER].set("port", "0");
     cfg[PORT_PEER].set("protocol", "peer");
 
@@ -126,6 +132,9 @@ addGrpcConfigWithSecureGateway(
     std::string const& secureGateway)
 {
     (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
+
+    // Check https://man7.org/linux/man-pages/man7/ip.7.html
+    // "ip_local_port_range" section for using 0 ports
     (*cfg)[SECTION_PORT_GRPC].set("port", "0");
     (*cfg)[SECTION_PORT_GRPC].set("secure_gateway", secureGateway);
     return cfg;

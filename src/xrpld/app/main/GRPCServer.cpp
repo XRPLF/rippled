@@ -564,7 +564,9 @@ GRPCServerImpl::start()
     JLOG(journal_.info()) << "Starting gRPC server at " << serverAddress_;
 
     grpc::ServerBuilder builder;
+
     // Listen on the given address without any authentication mechanism.
+    // Actually binded port will be returned into "port" variable.
     int port = 0;
     builder.AddListeningPort(
         serverAddress_, grpc::InsecureServerCredentials(), &port);
