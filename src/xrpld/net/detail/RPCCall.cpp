@@ -1634,7 +1634,10 @@ fromNetwork(
     constexpr auto RPC_REPLY_MAX_BYTES = megabytes(256);
 
     using namespace std::chrono_literals;
-    auto constexpr RPC_NOTIFY = 10min;
+    // Wietse: used to be 10m, but which backend
+    // ever requires 10 minutes to respond?
+    // Lower = prevent stacking pending calls
+    auto constexpr RPC_WEBHOOK_TIMEOUT = 30s;
 
     HTTPClient::request(
         bSSL,
@@ -1651,7 +1654,7 @@ fromNetwork(
             std::placeholders::_2,
             j),
         RPC_REPLY_MAX_BYTES,
-        RPC_NOTIFY,
+        RPC_WEBHOOK_TIMEOUT,
         std::bind(
             &RPCCallImp::onResponse,
             callbackFuncP,
