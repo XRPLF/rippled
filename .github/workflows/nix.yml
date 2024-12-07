@@ -154,6 +154,56 @@ jobs:
         run: |
           ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
 
+  reference-fee-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux
+        compiler:
+          - gcc
+        configuration:
+          - Release
+        cmake-args:
+          - "-DUNIT_TEST_REFERENCE_FEE=200"
+          - "-DUNIT_TEST_REFERENCE_FEE=1000"
+    needs: dependencies
+    runs-on: [self-hosted, heavy]
+    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    env:
+      build_dir: .build
+    steps:
+      - name: download cache
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+      - name: extract cache
+        run: |
+          mkdir -p ~/.conan
+          tar -xzf conan.tar -C ~/.conan
+      - name: check environment
+        run: |
+          env | sort
+          echo ${PATH} | tr ':' '\n'
+          conan --version
+          cmake --version
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: dependencies
+        uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+        with:
+          configuration: ${{ matrix.configuration }}
+      - name: build
+        uses: ./.github/actions/build
+        with:
+          generator: Ninja
+          configuration: ${{ matrix.configuration }}
+          cmake-args: ${{ matrix.cmake-args }}
+      - name: test
+        run: |
+          ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
 
   coverage:
     strategy:
