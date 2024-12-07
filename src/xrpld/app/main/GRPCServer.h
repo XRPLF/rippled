@@ -142,6 +142,7 @@ public:
     std::vector<std::shared_ptr<Processor>>
     setupListeners();
 
+    // Obtaining actually binded endpoint (if port 0 was used for server setup).
     boost::asio::ip::tcp::endpoint
     getEndpoint() const;
 

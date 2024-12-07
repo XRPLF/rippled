@@ -890,7 +890,7 @@ trustthesevalidators.gov
     {
         auto const contents = std::regex_replace(
             detail::configContents("", ""),
-            std::regex("port\\s+=\\s+\\d+"),
+            std::regex("port\\s*=\\s*\\d+"),
             "port = 0");
 
         try

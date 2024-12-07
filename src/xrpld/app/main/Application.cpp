@@ -2210,8 +2210,8 @@ fixConfigPorts(Config& config, Endpoints const& endpoints)
         auto const optPort = section.get("port");
         if (optPort)
         {
-            std::uint16_t port = 0;
-            port = beast::lexicalCast<std::uint16_t>(*optPort);
+            std::uint16_t const port =
+                beast::lexicalCast<std::uint16_t>(*optPort);
             if (!port)
                 section.set("port", std::to_string(ep.port()));
         }

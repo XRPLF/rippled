@@ -435,14 +435,8 @@ checkZeroPorts(Config const& config)
         auto const optResult = section.get("port");
         if (optResult)
         {
-            try
-            {
-                if (auto const port =
-                        beast::lexicalCast<std::uint16_t>(*optResult);
-                    !port)
-                    Throw<std::exception>();
-            }
-            catch (std::exception const&)
+            auto const port = beast::lexicalCast<std::uint16_t>(*optResult);
+            if (!port)
             {
                 std::stringstream ss;
                 ss << "Invalid value '" << *optResult << "' for key 'port' in ["
