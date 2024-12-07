@@ -33,6 +33,7 @@ namespace ripple {
 // TODO convert these macros to int constants or an enum
 #define SF_BAD 0x02  // Temporarily bad
 #define SF_SAVED 0x04
+#define SF_HELD 0x08  // Held by LedgerMaster after potential processing failure
 #define SF_TRUSTED 0x10  // comes from trusted source
 
 // Private flags, used internally in apply.cpp.
@@ -43,6 +44,8 @@ namespace ripple {
 #define SF_PRIVATE4 0x0800
 #define SF_PRIVATE5 0x1000
 #define SF_PRIVATE6 0x2000
+
+class Config;
 
 /** Routing table for objects identified by hash.
 
@@ -55,6 +58,27 @@ class HashRouter
 public:
     // The type here *MUST* match the type of Peer::id_t
     using PeerShortID = std::uint32_t;
+
+    /** Structure used to customize @ref HashRouter behavior.
+     *
+     * Even though these items are configurable, don't change them unless there
+     * is a good reason, and network-wide coordination to do it.
+     */
+    struct Setup
+    {
+        /// Default constructor
+        explicit Setup() = default;
+
+        using seconds = std::chrono::seconds;
+
+        /** Expiration time for a hash entry
+         */
+        seconds holdTime{300};
+
+        /** Amount of time required before a relayed item will be relayed again.
+         */
+        seconds relayTime{30};
+    };
 
 private:
     /** An entry in the routing table.
@@ -135,16 +159,8 @@ private:
     };
 
 public:
-    static inline std::chrono::seconds
-    getDefaultHoldTime()
-    {
-        using namespace std::chrono;
-
-        return 300s;
-    }
-
-    HashRouter(Stopwatch& clock, std::chrono::seconds entryHoldTimeInSeconds)
-        : suppressionMap_(clock), holdTime_(entryHoldTimeInSeconds)
+    HashRouter(Setup const& setup, Stopwatch& clock)
+        : setup_(setup), suppressionMap_(clock)
     {
     }
 
@@ -195,11 +211,11 @@ public:
         Effects:
 
             If the item should be relayed, this function will not
-            return `true` again until the hold time has expired.
+            return a seated optional again until the relay time has expired.
             The internal set of peers will also be reset.
 
         @return A `std::optional` set of peers which do not need to be
-            relayed to. If the result is uninitialized, the item should
+            relayed to. If the result is unseated, the item should
             _not_ be relayed.
     */
     std::optional<std::set<PeerShortID>>
@@ -220,8 +236,12 @@ private:
         hardened_hash<strong_hash>>
         suppressionMap_;
 
-    std::chrono::seconds const holdTime_;
+    // Configurable parameters
+    Setup const setup_;
 };
+
+HashRouter::Setup
+setup_HashRouter(Config const&);
 
 }  // namespace ripple
 
