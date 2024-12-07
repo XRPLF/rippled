@@ -63,14 +63,14 @@ struct Escrow_test : public beast::unit_test::suite
          0x57, 0x0D, 0x15, 0x85, 0x8B, 0xD4, 0x81, 0x01, 0x04}};
 
     void
-    testEnablement()
+    testEnablement(FeatureBitset features)
     {
         testcase("Enablement");
 
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this);
+        Env env(*this, features);
         env.fund(XRP(5000), "alice", "bob");
         env(escrow("alice", "bob", XRP(1000)), finish_time(env.now() + 1s));
         env.close();
@@ -99,14 +99,14 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testTiming()
+    testTiming(FeatureBitset features)
     {
         using namespace jtx;
         using namespace std::chrono;
 
         {
             testcase("Timing: Finish Only");
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), "alice", "bob");
             env.close();
 
@@ -128,7 +128,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             testcase("Timing: Cancel Only");
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), "alice", "bob");
             env.close();
 
@@ -160,7 +160,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             testcase("Timing: Finish and Cancel -> Finish");
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), "alice", "bob");
             env.close();
 
@@ -194,7 +194,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             testcase("Timing: Finish and Cancel -> Cancel");
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), "alice", "bob");
             env.close();
 
@@ -236,14 +236,14 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testTags()
+    testTags(FeatureBitset features)
     {
         testcase("Tags");
 
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this);
+        Env env(*this, features);
 
         auto const alice = Account("alice");
         auto const bob = Account("bob");
@@ -272,7 +272,7 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testDisallowXRP()
+    testDisallowXRP(FeatureBitset features)
     {
         testcase("Disallow XRP");
 
@@ -281,7 +281,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // Respect the "asfDisallowXRP" account flag:
-            Env env(*this, supported_amendments() - featureDepositAuth);
+            Env env(*this, features - featureDepositAuth);
 
             env.fund(XRP(5000), "bob", "george");
             env(fset("george", asfDisallowXRP));
@@ -292,7 +292,7 @@ struct Escrow_test : public beast::unit_test::suite
         {
             // Ignore the "asfDisallowXRP" account flag, which we should
             // have been doing before.
-            Env env(*this);
+            Env env(*this, features);
 
             env.fund(XRP(5000), "bob", "george");
             env(fset("george", asfDisallowXRP));
@@ -301,7 +301,7 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    test1571()
+    test1571(FeatureBitset features)
     {
         using namespace jtx;
         using namespace std::chrono;
@@ -309,7 +309,7 @@ struct Escrow_test : public beast::unit_test::suite
         {
             testcase("Implied Finish Time (without fix1571)");
 
-            Env env(*this, supported_amendments() - fix1571);
+            Env env(*this, features - fix1571);
             env.fund(XRP(5000), "alice", "bob", "carol");
             env.close();
 
@@ -343,7 +343,7 @@ struct Escrow_test : public beast::unit_test::suite
         {
             testcase("Implied Finish Time (with fix1571)");
 
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), "alice", "bob", "carol");
             env.close();
 
@@ -370,14 +370,14 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testFails()
+    testFails(FeatureBitset features)
     {
         testcase("Failure Cases");
 
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this);
+        Env env(*this, features);
         env.fund(XRP(5000), "alice", "bob");
         env.close();
 
@@ -400,9 +400,13 @@ struct Escrow_test : public beast::unit_test::suite
         env.fund(XRP(5000), "carol");
 
         // Using non-XRP:
+        bool const withTokenEscrow =
+            env.current()->rules().enabled(featureTokenEscrow);
+        auto const txResult =
+            withTokenEscrow ? ter(tecNO_PERMISSION) : ter(temDISABLED);
         env(escrow("alice", "carol", Account("alice")["USD"](500)),
             finish_time(env.now() + 1s),
-            ter(temBAD_AMOUNT));
+            txResult);
 
         // Sending zero or no XRP:
         env(escrow("alice", "carol", XRP(0)),
@@ -502,7 +506,7 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testLockup()
+    testLockup(FeatureBitset features)
     {
         testcase("Lockup");
 
@@ -511,7 +515,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // Unconditional
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), "alice", "bob");
             auto const seq = env.seq("alice");
             env(escrow("alice", "alice", XRP(1000)),
@@ -535,7 +539,7 @@ struct Escrow_test : public beast::unit_test::suite
             // Unconditionally pay from Alice to Bob.  Zelda (neither source nor
             // destination) signs all cancels and finishes.  This shows that
             // Escrow will make a payment to Bob with no intervention from Bob.
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), "alice", "bob", "zelda");
             auto const seq = env.seq("alice");
             env(escrow("alice", "bob", XRP(1000)), finish_time(env.now() + 5s));
@@ -560,7 +564,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // Bob sets DepositAuth so only Bob can finish the escrow.
-            Env env(*this);
+            Env env(*this, features);
 
             env.fund(XRP(5000), "alice", "bob", "zelda");
             env(fset("bob", asfDepositAuth));
@@ -598,7 +602,7 @@ struct Escrow_test : public beast::unit_test::suite
         {
             // Bob sets DepositAuth but preauthorizes Zelda, so Zelda can
             // finish the escrow.
-            Env env(*this);
+            Env env(*this, features);
 
             env.fund(XRP(5000), "alice", "bob", "zelda");
             env(fset("bob", asfDepositAuth));
@@ -625,7 +629,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // Conditional
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), "alice", "bob");
             auto const seq = env.seq("alice");
             env(escrow("alice", "alice", XRP(1000)),
@@ -666,7 +670,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // Self-escrowed conditional with DepositAuth.
-            Env env(*this);
+            Env env(*this, features);
 
             env.fund(XRP(5000), "alice", "bob");
             auto const seq = env.seq("alice");
@@ -702,7 +706,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // Self-escrowed conditional with DepositAuth and DepositPreauth.
-            Env env(*this);
+            Env env(*this, features);
 
             env.fund(XRP(5000), "alice", "bob", "zelda");
             auto const seq = env.seq("alice");
@@ -745,7 +749,7 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testEscrowConditions()
+    testEscrowConditions(FeatureBitset features)
     {
         testcase("Escrow with CryptoConditions");
 
@@ -753,7 +757,7 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         {  // Test cryptoconditions
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), "alice", "bob", "carol");
             auto const seq = env.seq("alice");
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
@@ -826,7 +830,7 @@ struct Escrow_test : public beast::unit_test::suite
             env(cancel("bob", "carol", 1), ter(tecNO_TARGET));
         }
         {  // Test cancel when condition is present
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), "alice", "bob", "carol");
             auto const seq = env.seq("alice");
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
@@ -842,7 +846,7 @@ struct Escrow_test : public beast::unit_test::suite
             BEAST_EXPECT(!env.le(keylet::escrow(Account("alice").id(), seq)));
         }
         {
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), "alice", "bob", "carol");
             env.close();
             auto const seq = env.seq("alice");
@@ -864,7 +868,7 @@ struct Escrow_test : public beast::unit_test::suite
             env.require(balance("carol", XRP(5000)));
         }
         {  // Test long & short conditions during creation
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), "alice", "bob", "carol");
 
             std::vector<std::uint8_t> v;
@@ -921,7 +925,7 @@ struct Escrow_test : public beast::unit_test::suite
             env.require(balance("carol", XRP(6000)));
         }
         {  // Test long and short conditions & fulfillments during finish
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), "alice", "bob", "carol");
 
             std::vector<std::uint8_t> cv;
@@ -1067,7 +1071,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {  // Test empty condition during creation and
            // empty condition & fulfillment during finish
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), "alice", "bob", "carol");
 
             env(escrow("alice", "carol", XRP(1000)),
@@ -1113,7 +1117,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {  // Test a condition other than PreimageSha256, which
            // would require a separate amendment
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), "alice", "bob");
 
             std::array<std::uint8_t, 45> cb = {
@@ -1133,7 +1137,7 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testMetaAndOwnership()
+    testMetaAndOwnership(FeatureBitset features)
     {
         using namespace jtx;
         using namespace std::chrono;
@@ -1145,7 +1149,7 @@ struct Escrow_test : public beast::unit_test::suite
         {
             testcase("Metadata to self");
 
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), alice, bruce, carol);
             auto const aseq = env.seq(alice);
             auto const bseq = env.seq(bruce);
@@ -1220,7 +1224,7 @@ struct Escrow_test : public beast::unit_test::suite
         {
             testcase("Metadata to other");
 
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), alice, bruce, carol);
             auto const aseq = env.seq(alice);
             auto const bseq = env.seq(bruce);
@@ -1310,13 +1314,13 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testConsequences()
+    testConsequences(FeatureBitset features)
     {
         testcase("Consequences");
 
         using namespace jtx;
         using namespace std::chrono;
-        Env env(*this);
+        Env env(*this, features);
 
         env.memoize("alice");
         env.memoize("bob");
@@ -1370,7 +1374,7 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testEscrowWithTickets()
+    testEscrowWithTickets(FeatureBitset features)
     {
         testcase("Escrow with tickets");
 
@@ -1381,7 +1385,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // Create escrow and finish using tickets.
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), alice, bob);
             env.close();
 
@@ -1442,7 +1446,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // Create escrow and cancel using tickets.
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), alice, bob);
             env.close();
 
@@ -1509,7 +1513,7 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testCredentials()
+    testCredentials(FeatureBitset features)
     {
         testcase("Test with credentials");
 
@@ -1526,7 +1530,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // Credentials amendment not enabled
-            Env env(*this, supported_amendments() - featureCredentials);
+            Env env(*this, features - featureCredentials);
             env.fund(XRP(5000), alice, bob);
             env.close();
 
@@ -1548,7 +1552,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
 
         {
-            Env env(*this);
+            Env env(*this, features);
 
             env.fund(XRP(5000), alice, bob, carol, dillon, zelda);
             env.close();
@@ -1600,7 +1604,7 @@ struct Escrow_test : public beast::unit_test::suite
             testcase("Escrow with credentials without depositPreauth");
             using namespace std::chrono;
 
-            Env env(*this);
+            Env env(*this, features);
 
             env.fund(XRP(5000), alice, bob, carol, dillon, zelda);
             env.close();
@@ -1657,20 +1661,30 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
+    testWithFeats(FeatureBitset features)
+    {
+        testEnablement(features);
+        testTiming(features);
+        testTags(features);
+        testDisallowXRP(features);
+        test1571(features);
+        testFails(features);
+        testLockup(features);
+        testEscrowConditions(features);
+        testMetaAndOwnership(features);
+        testConsequences(features);
+        testEscrowWithTickets(features);
+        testCredentials(features);
+    }
+
+public:
+    void
     run() override
     {
-        testEnablement();
-        testTiming();
-        testTags();
-        testDisallowXRP();
-        test1571();
-        testFails();
-        testLockup();
-        testEscrowConditions();
-        testMetaAndOwnership();
-        testConsequences();
-        testEscrowWithTickets();
-        testCredentials();
+        using namespace test::jtx;
+        FeatureBitset const all{supported_amendments()};
+        testWithFeats(all);
+        testWithFeats(all - featureTokenEscrow);
     }
 };
 

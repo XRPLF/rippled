@@ -153,6 +153,9 @@ isFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
         asset.value());
 }
 
+[[nodiscard]] bool
+noDefaultRipple(ReadView const& view, Issue const& issue);
+
 // Returns the amount an account can spend without going into debt.
 //
 // <-- saAmount: amount of currency held by account. May be negative.

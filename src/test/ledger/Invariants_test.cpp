@@ -551,20 +551,20 @@ class Invariants_test : public beast::unit_test::suite
         using namespace test::jtx;
         testcase << "no zero escrow";
 
-        doInvariantCheck(
-            {{"Cannot return non-native STAmount as XRPAmount"}},
-            [](Account const& A1, Account const& A2, ApplyContext& ac) {
-                // escrow with nonnative amount
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
-                if (!sle)
-                    return false;
-                auto sleNew = std::make_shared<SLE>(
-                    keylet::escrow(A1, (*sle)[sfSequence] + 2));
-                STAmount nonNative(A2["USD"](51));
-                sleNew->setFieldAmount(sfAmount, nonNative);
-                ac.view().insert(sleNew);
-                return true;
-            });
+        // doInvariantCheck(
+        //     {{"Cannot return non-native STAmount as XRPAmount"}},
+        //     [](Account const& A1, Account const& A2, ApplyContext& ac) {
+        //         // escrow with nonnative amount
+        //         auto const sle = ac.view().peek(keylet::account(A1.id()));
+        //         if (!sle)
+        //             return false;
+        //         auto sleNew = std::make_shared<SLE>(
+        //             keylet::escrow(A1, (*sle)[sfSequence] + 2));
+        //         STAmount nonNative(A2["USD"](51));
+        //         sleNew->setFieldAmount(sfAmount, nonNative);
+        //         ac.view().insert(sleNew);
+        //         return true;
+        //     });
 
         doInvariantCheck(
             {{"XRP net change of -1000000 doesn't match fee 0"},

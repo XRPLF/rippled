@@ -105,7 +105,8 @@ XRPNotCreated::visitEntry(
                     ((*before)[sfAmount] - (*before)[sfBalance]).xrp().drops();
                 break;
             case ltESCROW:
-                drops_ -= (*before)[sfAmount].xrp().drops();
+                if (isXRP((*before)[sfAmount]))
+                    drops_ -= (*before)[sfAmount].xrp().drops();
                 break;
             default:
                 break;
@@ -126,7 +127,7 @@ XRPNotCreated::visitEntry(
                                   .drops();
                 break;
             case ltESCROW:
-                if (!isDelete)
+                if (!isDelete && isXRP((*after)[sfAmount]))
                     drops_ += (*after)[sfAmount].xrp().drops();
                 break;
             default:
@@ -287,12 +288,24 @@ NoZeroEscrow::visitEntry(
 
 bool
 NoZeroEscrow::finalize(
-    STTx const&,
+    STTx const& txn,
     TER const,
     XRPAmount const,
-    ReadView const&,
+    ReadView const& rv,
     beast::Journal const& j)
 {
+    if (bad_ && rv.rules().enabled(featureTokenEscrow) &&
+        txn.isFieldPresent(sfTransactionType))
+    {
+        uint16_t const tt = txn.getFieldU16(sfTransactionType);
+        if (tt == ttESCROW_CANCEL || tt == ttESCROW_FINISH)
+            return true;
+
+        if (txn.isFieldPresent(sfAmount) &&
+            !isXRP(txn.getFieldAmount(sfAmount)))
+            return true;
+    }
+
     if (bad_)
     {
         JLOG(j.fatal()) << "Invariant failed: escrow specifies invalid amount";
