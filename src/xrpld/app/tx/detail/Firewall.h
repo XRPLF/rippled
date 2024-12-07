@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2024 Transia, LLC.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,43 +17,35 @@
 */
 //==============================================================================
 
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/jss.h>
-#include <utility>
+#ifndef RIPPLE_TX_FIREWALLSET_H_INCLUDED
+#define RIPPLE_TX_FIREWALLSET_H_INCLUDED
+
+#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 
-LedgerFormats::LedgerFormats()
+class FirewallSet : public Transactor
 {
-    // Fields shared by all ledger formats:
-    static const std::initializer_list<SOElement> commonFields{
-        {sfLedgerIndex, soeOPTIONAL},
-        {sfLedgerEntryType, soeREQUIRED},
-        {sfFlags, soeREQUIRED},
-    };
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-#pragma push_macro("UNWRAP")
-#undef UNWRAP
-#pragma push_macro("LEDGER_ENTRY")
-#undef LEDGER_ENTRY
+    explicit FirewallSet(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
 
-#define UNWRAP(...) __VA_ARGS__
-#define LEDGER_ENTRY(tag, value, name, fields) \
-    add(jss::name, tag, UNWRAP fields, commonFields);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-#include <xrpl/protocol/detail/ledger_entries.macro>
+    static TER
+    preclaim(PreclaimContext const& ctx);
 
-#undef LEDGER_ENTRY
-#pragma pop_macro("LEDGER_ENTRY")
-#undef UNWRAP
-#pragma pop_macro("UNWRAP")
-}
-
-LedgerFormats const&
-LedgerFormats::getInstance()
-{
-    static LedgerFormats instance;
-    return instance;
-}
+    TER
+    doApply() override;
+};
 
 }  // namespace ripple
+
+#endif

@@ -329,6 +329,20 @@ mptoken(uint256 const& mptokenKey)
 Keylet
 mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept;
 
+Keylet
+firewall(AccountID const& account) noexcept;
+
+Keylet
+withdrawPreauth(
+    AccountID const& owner,
+    AccountID const& preauthorized) noexcept;
+
+inline Keylet
+withdrawPreauth(uint256 const& key) noexcept
+{
+    return {ltWITHDRAW_PREAUTH, key};
+}
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

@@ -124,6 +124,10 @@ public:
     checkSign(RequireFullyCanonicalSig requireCanonicalSig, Rules const& rules)
         const;
 
+    Expected<void, std::string>
+    checkFirewallSign(RequireFullyCanonicalSig requireCanonicalSig, Rules const& rules)
+        const;
+
     // SQL Functions with metadata.
     static std::string const&
     getMetaSQLInsertReplaceHeader();
@@ -141,10 +145,11 @@ public:
 
 private:
     Expected<void, std::string>
-    checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const;
+    checkSingleSign(STObject const& obj, RequireFullyCanonicalSig requireCanonicalSig) const;
 
     Expected<void, std::string>
     checkMultiSign(
+        STObject const& obj,
         RequireFullyCanonicalSig requireCanonicalSig,
         Rules const& rules) const;
 
@@ -155,6 +160,9 @@ private:
 
     friend class detail::STVar;
 };
+
+std::optional<STAmount>
+getAmountInTx(STObject const& tx, Issue const& issue);
 
 bool
 passesLocalChecks(STObject const& st, std::string&);

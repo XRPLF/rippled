@@ -87,6 +87,9 @@ enum class HashPrefix : std::uint32_t {
 
     /** Credentials signature */
     credential = detail::make_hash_prefix('C', 'R', 'D'),
+
+    /** Firewall signature */
+    firewall = detail::make_hash_prefix('F', 'I', 'R'),
 };
 
 template <class Hasher>

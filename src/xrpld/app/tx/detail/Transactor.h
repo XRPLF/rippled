@@ -186,6 +186,9 @@ protected:
         Fees const& fees,
         ApplyFlags flags);
 
+    TER
+    checkFirewall();
+
 private:
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
