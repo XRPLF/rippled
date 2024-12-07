@@ -43,6 +43,9 @@ struct AuthorizeCredentials
     jtx::Account issuer;
     std::string credType;
 
+    auto
+    operator<=>(const AuthorizeCredentials&) const = default;
+
     Json::Value
     toJson() const
     {
