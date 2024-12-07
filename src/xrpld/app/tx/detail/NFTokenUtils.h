@@ -105,6 +105,13 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner);
 bool
 compareTokens(uint256 const& a, uint256 const& b);
 
+TER
+changeTokenURI(
+    ApplyView& view,
+    AccountID const& owner,
+    uint256 const& nftokenID,
+    std::optional<ripple::Slice> const& uri);
+
 /** Preflight checks shared by NFTokenCreateOffer and NFTokenMint */
 NotTEC
 tokenOfferCreatePreflight(
