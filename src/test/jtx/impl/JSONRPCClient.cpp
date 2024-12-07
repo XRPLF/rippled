@@ -17,6 +17,8 @@
 */
 //==============================================================================
 #include <test/jtx/JSONRPCClient.h>
+
+#include <test/jtx/Env.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
@@ -34,6 +36,41 @@ namespace test {
 
 class JSONRPCClient : public AbstractClient
 {
+    template <class ConstBufferSequence>
+    static std::string
+    buffer_string(ConstBufferSequence const& b)
+    {
+        using namespace boost::asio;
+        std::string s;
+        s.resize(buffer_size(b));
+        buffer_copy(buffer(&s[0], s.size()), b);
+        return s;
+    }
+
+    boost::asio::ip::tcp::endpoint ep_;
+    std::string endpointLabel_;
+    boost::asio::io_service ios_;
+    boost::asio::ip::tcp::socket stream_;
+    boost::beast::multi_buffer bin_;
+    boost::beast::multi_buffer bout_;
+    unsigned rpc_version_;
+
+public:
+    explicit JSONRPCClient(Config const& cfg, unsigned rpc_version)
+        : ep_(getEndpoint(cfg)), stream_(ios_), rpc_version_(rpc_version)
+    {
+        stream_.connect(ep_);
+        std::stringstream ss;
+        ss << ep_;
+        endpointLabel_ = ss.str();
+    }
+
+    ~JSONRPCClient() override
+    {
+        // stream_.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
+        // stream_.close();
+    }
+
     static boost::asio::ip::tcp::endpoint
     getEndpoint(BasicConfig const& cfg)
     {
@@ -56,37 +93,6 @@ class JSONRPCClient : public AbstractClient
         }
         Throw<std::runtime_error>("Missing HTTP port");
         return {};  // Silence compiler control paths return value warning
-    }
-
-    template <class ConstBufferSequence>
-    static std::string
-    buffer_string(ConstBufferSequence const& b)
-    {
-        using namespace boost::asio;
-        std::string s;
-        s.resize(buffer_size(b));
-        buffer_copy(buffer(&s[0], s.size()), b);
-        return s;
-    }
-
-    boost::asio::ip::tcp::endpoint ep_;
-    boost::asio::io_service ios_;
-    boost::asio::ip::tcp::socket stream_;
-    boost::beast::multi_buffer bin_;
-    boost::beast::multi_buffer bout_;
-    unsigned rpc_version_;
-
-public:
-    explicit JSONRPCClient(Config const& cfg, unsigned rpc_version)
-        : ep_(getEndpoint(cfg)), stream_(ios_), rpc_version_(rpc_version)
-    {
-        stream_.connect(ep_);
-    }
-
-    ~JSONRPCClient() override
-    {
-        // stream_.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
-        // stream_.close();
     }
 
     /*
@@ -129,10 +135,20 @@ public:
             req.body() = to_string(jr);
         }
         req.prepare_payload();
-        write(stream_, req);
+
+        using namespace std::chrono_literals;
+        using namespace ripple::test::jtx;
+
+        Env::retry(
+            [&]() { write(stream_, req); },
+            "JSONRPCClient::invoke write " + endpointLabel_,
+            10ms);
 
         response<dynamic_body> res;
-        read(stream_, bin_, res);
+        Env::retry(
+            [&]() { read(stream_, bin_, res); },
+            "JSONRPCClient::invoke read " + endpointLabel_,
+            10ms);
 
         Json::Reader jr;
         Json::Value jv;
@@ -154,7 +170,17 @@ public:
 std::unique_ptr<AbstractClient>
 makeJSONRPCClient(Config const& cfg, unsigned rpc_version)
 {
-    return std::make_unique<JSONRPCClient>(cfg, rpc_version);
+    using namespace std::chrono_literals;
+    using namespace ripple::test::jtx;
+
+    std::unique_ptr<JSONRPCClient> ret;
+    std::stringstream endpoint;
+    endpoint << JSONRPCClient::getEndpoint(cfg);
+    Env::retry(
+        [&]() { ret = std::make_unique<JSONRPCClient>(cfg, rpc_version); },
+        "makeJSONRPCClient " + endpoint.str(),
+        250ms);
+    return ret;
 }
 
 }  // namespace test

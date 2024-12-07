@@ -485,12 +485,18 @@ class ServerStatus_test : public beast::unit_test::suite,
         async_connect(sock, it, yield[ec]);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
-        async_write(sock, boost::asio::buffer(req_string), yield[ec]);
+        env.retry(
+            [&]() {
+                async_write(sock, boost::asio::buffer(req_string), yield[ec]);
+            },
+            "ServerStatus testTruncatedWSUpgrade async_write");
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
         // since we've sent an incomplete request, the server will
         // keep trying to read until it gives up (by timeout)
-        async_read(sock, sb, resp, yield[ec]);
+        env.retry(
+            [&]() { async_read(sock, sb, resp, yield[ec]); },
+            "ServerStatus testTruncatedWSUpgrade async_read");
         BEAST_EXPECT(ec);
     }
 
