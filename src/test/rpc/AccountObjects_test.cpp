@@ -575,8 +575,8 @@ public:
         Account const gw{"gateway"};
         auto const USD = gw["USD"];
 
-        auto const features = supported_amendments() |
-            FeatureBitset{featureXChainBridge} | featurePermissionedDomains;
+        auto const features = supported_amendments() | featureXChainBridge |
+            featurePermissionedDomains;
         Env env(*this, features);
 
         // Make a lambda we can use to get "account_objects" easily.
