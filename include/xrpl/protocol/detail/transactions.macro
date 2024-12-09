@@ -447,6 +447,17 @@ TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete, ({
     {sfCredentialType, soeREQUIRED},
 }))
 
+/** This transaction type creates or modifies a Permissioned Domain */
+TRANSACTION(ttPERMISSIONED_DOMAIN_SET, 61, PermissionedDomainSet, ({
+    {sfDomainID, soeOPTIONAL},
+    {sfAcceptedCredentials, soeREQUIRED},
+}))
+
+/** This transaction type deletes a Permissioned Domain */
+TRANSACTION(ttPERMISSIONED_DOMAIN_DELETE, 62, PermissionedDomainDelete, ({
+    {sfDomainID, soeREQUIRED},
+}))
+
 
 /** This system-generated transaction type is used to update the status of the various amendments.
 
