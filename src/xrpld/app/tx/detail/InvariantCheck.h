@@ -479,6 +479,9 @@ public:
  *
  * Since only permissions constitute rules, an empty credentials list
  * means that there are no rules and the invariant is violated.
+ *
+ * Credentials must be sorted and no duplicates allowed
+ *
  */
 class ValidPermissionedDomain
 {
