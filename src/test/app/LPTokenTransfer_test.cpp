@@ -37,6 +37,7 @@
 #include <xrpl/resource/Fees.h>
 
 #include "xrpl/protocol/TER.h"
+#include "xrpl/protocol/TxFlags.h"
 #include <chrono>
 #include <utility>
 #include <vector>
@@ -168,30 +169,6 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
     }
 
-    // // Offer crossing with two AMM LPTokens.
-    // testAMM([&](AMM& ammAlice, Env& env) {
-    //     ammAlice.deposit(carol, 1'000'000);
-    //     fund(env, gw, {alice, carol}, {EUR(10'000)}, Fund::IOUOnly);
-    //     AMM ammAlice1(env, alice, XRP(10'000), EUR(10'000));
-    //     ammAlice1.deposit(carol, 1'000'000);
-    //     auto const token1 = ammAlice.lptIssue();
-    //     auto const token2 = ammAlice1.lptIssue();
-    //     env(offer(alice, STAmount{token1, 100}, STAmount{token2, 100}),
-    //         txflags(tfPassive));
-    //     env.close();
-    //     BEAST_EXPECT(expectOffers(env, alice, 1));
-    //     env(offer(carol, STAmount{token2, 100}, STAmount{token1, 100}));
-    //     env.close();
-    //     BEAST_EXPECT(
-    //         expectLine(env, alice, STAmount{token1, 10'000'100}) &&
-    //         expectLine(env, alice, STAmount{token2, 9'999'900}));
-    //     BEAST_EXPECT(
-    //         expectLine(env, carol, STAmount{token2, 1'000'100}) &&
-    //         expectLine(env, carol, STAmount{token1, 999'900}));
-    //     BEAST_EXPECT(
-    //         expectOffers(env, alice, 0) && expectOffers(env, carol, 0));
-    // });
-
     void
     testOfferCreation(FeatureBitset features)
     {
@@ -248,6 +225,68 @@ class LPTokenTransfer_test : public jtx::AMMTest
     }
 
     void
+    testOfferCrossing(FeatureBitset features)
+    {
+        testcase("Offer crossing");
+
+        using namespace jtx;
+        Env env{*this, features};
+
+        // Offer crossing with two AMM LPTokens.
+        fund(env, gw, {alice, carol}, {USD(10'000)}, Fund::All);
+        AMM ammAlice(env, alice, XRP(10'000), USD(10'000));
+        ammAlice.deposit(carol, 10'000'000);
+
+        fund(env, gw, {alice, carol}, {EUR(10'000)}, Fund::IOUOnly);
+        AMM ammAlice1(env, alice, XRP(10'000), EUR(10'000));
+        ammAlice1.deposit(carol, 10'000'000);
+        auto const token1 = ammAlice.lptIssue();
+        auto const token2 = ammAlice1.lptIssue();
+
+        // carol creates offer
+        env(offer(carol, STAmount{token2, 100}, STAmount{token1, 100}));
+        env.close();
+        BEAST_EXPECT(expectOffers(env, carol, 1));
+
+        // gateway freezes carol's USD, carol's token1 should be frozen as well
+        env(trust(gw, carol["USD"](1'000'000'000), tfSetFreeze));
+        env.close();
+
+        if (features[fixLPTokenTransfer])
+        {
+            // with fixLPTokenTransfer enabled, alice's offer can no longer
+            // cross with carol's offer
+            env(offer(alice, STAmount{token1, 100}, STAmount{token2, 100}));
+            env.close();
+
+            BEAST_EXPECT(
+                expectLine(env, alice, STAmount{token1, 10'000'000}) &&
+                expectLine(env, alice, STAmount{token2, 10'000'000}));
+            BEAST_EXPECT(
+                expectLine(env, carol, STAmount{token2, 10'000'000}) &&
+                expectLine(env, carol, STAmount{token1, 10'000'000}));
+            BEAST_EXPECT(
+                expectOffers(env, alice, 1) && expectOffers(env, carol, 0));
+        }
+        else
+        {
+            // alice's offer still crosses with carol's offer despite carol's
+            // token1 is frozen
+            env(offer(alice, STAmount{token1, 100}, STAmount{token2, 100}));
+            env.close();
+
+            BEAST_EXPECT(
+                expectLine(env, alice, STAmount{token1, 10'000'100}) &&
+                expectLine(env, alice, STAmount{token2, 9'999'900}));
+            BEAST_EXPECT(
+                expectLine(env, carol, STAmount{token2, 10'000'100}) &&
+                expectLine(env, carol, STAmount{token1, 9'999'900}));
+            BEAST_EXPECT(
+                expectOffers(env, alice, 0) && expectOffers(env, carol, 0));
+        }
+    }
+
+    void
     testCheck(FeatureBitset features)
     {
         testcase("Check");
@@ -271,7 +310,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env(trust(gw, carol["USD"](0), tfSetFreeze));
         env.close();
 
-        // carol can always create a check with lptoken that has frozen token
+        // carol can always create a check with lptoken that has frozen
+        // token
         uint256 const chkId{keylet::check(carol, env.seq(carol)).key};
         env(check::create(carol, bob, STAmount{lpIssue, 10}));
         env.close();
@@ -298,6 +338,7 @@ public:
             testDirectStep(features);
             testBookStep(features);
             testOfferCreation(features);
+            testOfferCrossing(features);
             testCheck(features);
         }
     }
