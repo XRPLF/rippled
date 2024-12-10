@@ -16,8 +16,8 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <xrpl/basics/FeeUnits.h>
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <type_traits>
 
