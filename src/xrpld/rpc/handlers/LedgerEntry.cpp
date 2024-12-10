@@ -811,12 +811,7 @@ parsePermissionedDomains(Json::Value const& pd, Json::Value& jvResult)
 {
     if (pd.isString())
     {
-        uint256 uNodeIndex;
-        if (uNodeIndex.parseHex(pd.asString()))
-            return uNodeIndex;
-
-        jvResult[jss::error] = "malformedRequest";
-        return std::nullopt;
+        return parseIndex(pd, jvResult);
     }
 
     if (!pd.isObject() || !pd.isMember(jss::account) ||

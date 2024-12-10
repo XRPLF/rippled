@@ -825,7 +825,7 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"permissioned domain bad credentials size " +
               std::to_string(tooBig)}},
-            [tooBig](Account const& A1, Account const& A2, ApplyContext& ac) {
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
                 Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
                 auto slePd = std::make_shared<SLE>(pdKeylet);
                 slePd->setAccountID(sfOwner, A1);
