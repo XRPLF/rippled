@@ -265,7 +265,7 @@ isFrozen(
         isIndividualFrozen(view, account, mptIssue);
 }
 
-static bool
+bool
 isDeepFrozen(
     ReadView const& view,
     AccountID const& account,
