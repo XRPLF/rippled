@@ -44,8 +44,10 @@ concept AssetType =
  */
 class Asset
 {
-private:
+public:
     using value_type = std::variant<Issue, MPTIssue>;
+
+private:
     value_type issue_;
 
 public:
