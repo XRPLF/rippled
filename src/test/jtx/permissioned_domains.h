@@ -61,10 +61,6 @@ credentialsFromJson(
 Credentials
 sortCredentials(Credentials const& input);
 
-// Get account_info
-Json::Value
-ownerInfo(Account const& account, Env& env);
-
 // Get newly created domain from transaction metadata.
 uint256
 getNewDomain(std::shared_ptr<STObject const> const& meta);

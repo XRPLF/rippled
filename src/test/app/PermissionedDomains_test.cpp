@@ -67,8 +67,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice);
         pdomain::Credentials credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials));
-        BEAST_EXPECT(
-            pdomain::ownerInfo(alice, env)["OwnerCount"].asUInt() == 1);
+        BEAST_EXPECT(env.ownerCount(alice) == 1);
         auto objects = pdomain::getObjects(alice, env);
         BEAST_EXPECT(objects.size() == 1);
         // Test that account_objects is correct without passing it the type
@@ -284,8 +283,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         pdomain::Credentials const credentials1{{alice[2], "credential1"}};
         {
             env(pdomain::setTx(alice[0], credentials1));
-            BEAST_EXPECT(
-                pdomain::ownerInfo(alice[0], env)["OwnerCount"].asUInt() == 1);
+            BEAST_EXPECT(env.ownerCount(alice[0]) == 1);
             auto tx = env.tx()->getJson(JsonOptions::none);
             BEAST_EXPECT(tx[jss::TransactionType] == "PermissionedDomainSet");
             BEAST_EXPECT(tx["Account"] == alice[0].human());
@@ -368,8 +366,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         constexpr std::size_t deleteDelta = 255;
         {
             // Close enough ledgers to make it potentially deletable if empty.
-            std::size_t ownerSeq =
-                pdomain::ownerInfo(alice[0], env)["Sequence"].asUInt();
+            std::size_t ownerSeq = env.seq(alice[0]);
             while (deleteDelta + ownerSeq > env.current()->seq())
                 env.close();
             env(acctdelete(alice[0], alice[2]),
@@ -382,8 +379,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
             for (auto const& objs : pdomain::getObjects(alice[0], env))
                 env(pdomain::deleteTx(alice[0], objs.first));
             env.close();
-            std::size_t ownerSeq =
-                pdomain::ownerInfo(alice[0], env)["Sequence"].asUInt();
+            std::size_t ownerSeq = env.seq(alice[0]);
             while (deleteDelta + ownerSeq > env.current()->seq())
                 env.close();
             env(acctdelete(alice[0], alice[2]), fee(acctDelFee));
@@ -424,8 +420,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         env(pdomain::deleteTx(alice, uint256(0)), ter(temMALFORMED));
 
         // Make sure owner count reflects the existing domain.
-        BEAST_EXPECT(
-            pdomain::ownerInfo(alice, env)["OwnerCount"].asUInt() == 1);
+        BEAST_EXPECT(env.ownerCount(alice) == 1);
         auto const objID = pdomain::getObjects(alice, env).begin()->first;
         BEAST_EXPECT(pdomain::objectExists(objID, env));
         // Delete domain that belongs to user.
@@ -433,8 +428,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         auto const tx = env.tx()->getJson(JsonOptions::none);
         BEAST_EXPECT(tx[jss::TransactionType] == "PermissionedDomainDelete");
         // Make sure the owner count goes back to 0.
-        BEAST_EXPECT(
-            pdomain::ownerInfo(alice, env)["OwnerCount"].asUInt() == 0);
+        BEAST_EXPECT(env.ownerCount(alice) == 0);
         // The object needs to be gone.
         BEAST_EXPECT(pdomain::getObjects(alice, env).empty());
         BEAST_EXPECT(!pdomain::objectExists(objID, env));
@@ -458,14 +452,12 @@ class PermissionedDomains_test : public beast::unit_test::suite
         env.fund(acctReserve, alice);
         env.close();
         BEAST_EXPECT(env.balance(alice) == acctReserve);
-        BEAST_EXPECT(
-            pdomain::ownerInfo(alice, env)["OwnerCount"].asUInt() == 0);
+        BEAST_EXPECT(env.ownerCount(alice) == 0);
 
         // alice does not have enough XRP to cover the reserve.
         pdomain::Credentials credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials), ter(tecINSUFFICIENT_RESERVE));
-        BEAST_EXPECT(
-            pdomain::ownerInfo(alice, env)["OwnerCount"].asUInt() == 0);
+        BEAST_EXPECT(env.ownerCount(alice) == 0);
         BEAST_EXPECT(pdomain::getObjects(alice, env).size() == 0);
         env.close();
 
@@ -481,8 +473,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         // alice still does not have enough XRP for the reserve.
         env(pdomain::setTx(alice, credentials), ter(tecINSUFFICIENT_RESERVE));
         env.close();
-        BEAST_EXPECT(
-            pdomain::ownerInfo(alice, env)["OwnerCount"].asUInt() == 0);
+        BEAST_EXPECT(env.ownerCount(alice) == 0);
 
         // Pay alice enough to make the reserve.
         env(pay(env.master, alice, drops(baseFee) + drops(1)));
@@ -491,8 +482,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         // Now alice can create a PermissionedDomain.
         env(pdomain::setTx(alice, credentials));
         env.close();
-        BEAST_EXPECT(
-            pdomain::ownerInfo(alice, env)["OwnerCount"].asUInt() == 1);
+        BEAST_EXPECT(env.ownerCount(alice) == 1);
     }
 
 public:

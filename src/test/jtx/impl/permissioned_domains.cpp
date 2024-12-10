@@ -38,6 +38,7 @@ setTx(
     jv[sfAccount] = to_string(account);
     if (domain)
         jv[sfDomainID] = to_string(*domain);
+
     Json::Value credentials2(Json::arrayValue);
     for (auto const& credential : credentials)
     {
@@ -45,6 +46,7 @@ setTx(
         object[sfCredential] = credential.toJson();
         credentials2.append(std::move(object));
     }
+
     jv[sfAcceptedCredentials] = credentials2;
     return jv;
 }
@@ -69,6 +71,7 @@ getObjects(Account const& account, Env& env, bool withType)
     params[jss::account] = account.human();
     if (withType)
         params[jss::type] = jss::permissioned_domain;
+
     auto const& resp = env.rpc("json", "account_objects", to_string(params));
     Json::Value objects(Json::arrayValue);
     objects = resp[jss::result][jss::account_objects];
@@ -84,10 +87,12 @@ getObjects(Account const& account, Env& env, bool withType)
             }
             continue;
         }
+
         uint256 index;
         std::ignore = index.parseHex(object[jss::index].asString());
         ret[index] = object;
     }
+
     return ret;
 }
 
@@ -97,13 +102,16 @@ objectExists(uint256 const& objID, Env& env)
 {
     Json::Value params;
     params[jss::index] = to_string(objID);
-    auto const& resp =
-        env.rpc("json", "ledger_entry", to_string(params))["result"]["status"]
-            .asString();
-    if (resp == "success")
+
+    auto const result =
+        env.rpc("json", "ledger_entry", to_string(params))["result"];
+
+    if (result["status"] == "success")
         return true;
-    if (resp == "error")
+
+    if ((result["status"] == "error") && (result["error"] == "entryNotFound"))
         return false;
+
     throw std::runtime_error("Error getting ledger_entry RPC result.");
 }
 
@@ -139,17 +147,6 @@ sortCredentials(Credentials const& input)
     for (auto const& credential : input)
         credentialsSet.insert(credential);
     return {credentialsSet.begin(), credentialsSet.end()};
-}
-
-// Get account_info
-Json::Value
-ownerInfo(Account const& account, Env& env)
-{
-    Json::Value params;
-    params[jss::account] = account.human();
-    auto const& resp = env.rpc("json", "account_info", to_string(params));
-    return env.rpc(
-        "json", "account_info", to_string(params))["result"]["account_data"];
 }
 
 uint256
