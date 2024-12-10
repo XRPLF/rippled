@@ -72,6 +72,7 @@ public:
     {
         init(fieldName);
     }
+
     template <typename T>
         requires(std::is_same_v<T, STAmount> || std::is_same_v<T, STIssue>)
     SOElement(

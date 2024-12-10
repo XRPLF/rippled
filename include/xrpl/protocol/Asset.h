@@ -99,11 +99,8 @@ public:
     friend constexpr bool
     operator==(Asset const& lhs, Asset const& rhs);
 
-    friend constexpr bool
-    operator!=(Asset const& lhs, Asset const& rhs);
-
-    friend constexpr bool
-    operator<(Asset const& lhs, Asset const& rhs);
+    friend constexpr std::weak_ordering
+    operator<=>(Asset const& lhs, Asset const& rhs);
 
     friend constexpr bool
     operator==(Currency const& lhs, Asset const& rhs);
@@ -161,22 +158,19 @@ operator==(Asset const& lhs, Asset const& rhs)
         rhs.issue_);
 }
 
-constexpr bool
-operator!=(Asset const& lhs, Asset const& rhs)
-{
-    return !(lhs == rhs);
-}
-
-constexpr bool
-operator<(Asset const& lhs, Asset const& rhs)
+constexpr std::weak_ordering
+operator<=>(Asset const& lhs, Asset const& rhs)
 {
     return std::visit(
-        [&]<typename TLhs, typename TRhs>(
-            TLhs const& issLhs, TRhs const& issRhs) {
+        []<ValidIssueType TLhs, ValidIssueType TRhs>(
+            TLhs const& lhs_, TRhs const& rhs_) {
             if constexpr (std::is_same_v<TLhs, TRhs>)
-                return issLhs < issRhs;
+                return std::weak_ordering(lhs_ <=> rhs_);
+            else if constexpr (
+                std::is_same_v<TLhs, Issue> && std::is_same_v<TRhs, MPTIssue>)
+                return std::weak_ordering::greater;
             else
-                return false;
+                return std::weak_ordering::less;
         },
         lhs.issue_,
         rhs.issue_);

@@ -101,7 +101,7 @@ template <ValidIssueType TIss>
 bool
 STIssue::holds() const
 {
-    return std::holds_alternative<TIss>(asset_.value());
+    return asset_.holds<TIss>();
 }
 
 template <ValidIssueType TIss>
