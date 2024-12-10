@@ -204,6 +204,15 @@ Env::balance(Account const& account, Issue const& issue) const
 }
 
 std::uint32_t
+Env::ownerCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfOwnerCount);
+}
+
+std::uint32_t
 Env::seq(Account const& account) const
 {
     auto const sle = le(account);

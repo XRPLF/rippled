@@ -735,17 +735,16 @@ public:
                 permissionedDomain.isMember(jss::Owner) &&
                 (permissionedDomain[jss::Owner] == gw.human()));
             bool const check1 = BEAST_EXPECT(
-                permissionedDomain.isMember(sfAcceptedCredentials.jsonName) &&
-                permissionedDomain[sfAcceptedCredentials.jsonName].isArray() &&
-                (permissionedDomain[sfAcceptedCredentials.jsonName].size() ==
-                 1) &&
-                (permissionedDomain[sfAcceptedCredentials.jsonName][0u]
-                     .isMember(jss::Credential)));
+                permissionedDomain.isMember(jss::AcceptedCredentials) &&
+                permissionedDomain[jss::AcceptedCredentials].isArray() &&
+                (permissionedDomain[jss::AcceptedCredentials].size() == 1) &&
+                (permissionedDomain[jss::AcceptedCredentials][0u].isMember(
+                    jss::Credential)));
 
             if (check1)
             {
                 auto const& credential =
-                    permissionedDomain[sfAcceptedCredentials.jsonName][0u]
+                    permissionedDomain[jss::AcceptedCredentials][0u]
                                       [jss::Credential];
                 BEAST_EXPECT(
                     credential.isMember(sfIssuer.jsonName) &&
@@ -968,10 +967,13 @@ public:
             BEAST_EXPECT(entry[sfAccount.jsonName] == alice.human());
             BEAST_EXPECT(entry[sfSignerWeight.jsonName].asUInt() == 7);
         }
-        // Create a Ticket for gw.
-        env(ticket::create(gw, 1));
-        env.close();
+
         {
+            auto const seq = env.seq(gw);
+            // Create a Ticket for gw.
+            env(ticket::create(gw, 1));
+            env.close();
+
             // Find the ticket.
             Json::Value const resp = acctObjs(gw, jss::ticket);
             BEAST_EXPECT(acctObjsIsSize(resp, 1));
@@ -979,8 +981,9 @@ public:
             auto const& ticket = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(ticket[sfAccount.jsonName] == gw.human());
             BEAST_EXPECT(ticket[sfLedgerEntryType.jsonName] == jss::Ticket);
-            BEAST_EXPECT(ticket[sfTicketSequence.jsonName].asUInt() > 0);
+            BEAST_EXPECT(ticket[sfTicketSequence.jsonName].asUInt() == seq + 1);
         }
+
         {
             // See how "deletion_blockers_only" handles gw's directory.
             Json::Value params;
