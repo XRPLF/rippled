@@ -802,6 +802,7 @@ class Invariants_test : public beast::unit_test::suite
     testPermissionedDomainInvariants()
     {
         using namespace test::jtx;
+
         testcase << "PermissionedDomain";
         doInvariantCheck(
             {{"permissioned domain with no rules."}},
@@ -819,16 +820,19 @@ class Invariants_test : public beast::unit_test::suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
         testcase << "PermissionedDomain 2";
+
+        auto constexpr tooBig = maxPermissionedDomainCredentialsArraySize + 1;
         doInvariantCheck(
-            {{"permissioned domain bad credentials size 11"}},
-            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+            {{"permissioned domain bad credentials size " +
+              std::to_string(tooBig)}},
+            [tooBig](Account const& A1, Account const& A2, ApplyContext& ac) {
                 Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
                 auto slePd = std::make_shared<SLE>(pdKeylet);
                 slePd->setAccountID(sfOwner, A1);
                 slePd->setFieldU32(sfSequence, 10);
 
-                STArray credentials(sfAcceptedCredentials, 11);
-                for (std::size_t n = 0; n < 11; ++n)
+                STArray credentials(sfAcceptedCredentials, tooBig);
+                for (std::size_t n = 0; n < tooBig; ++n)
                 {
                     auto cred = STObject::makeInnerObject(sfCredential);
                     cred.setAccountID(sfIssuer, A2);
@@ -844,7 +848,7 @@ class Invariants_test : public beast::unit_test::suite
                 return true;
             },
             XRPAmount{},
-            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
         testcase << "PermissionedDomain 3";
@@ -856,7 +860,7 @@ class Invariants_test : public beast::unit_test::suite
                 slePd->setAccountID(sfOwner, A1);
                 slePd->setFieldU32(sfSequence, 10);
 
-                STArray credentials(sfAcceptedCredentials, 11);
+                STArray credentials(sfAcceptedCredentials, 2);
                 for (std::size_t n = 0; n < 2; ++n)
                 {
                     auto cred = STObject::makeInnerObject(sfCredential);
@@ -873,7 +877,7 @@ class Invariants_test : public beast::unit_test::suite
                 return true;
             },
             XRPAmount{},
-            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
         testcase << "PermissionedDomain 4";
@@ -885,7 +889,7 @@ class Invariants_test : public beast::unit_test::suite
                 slePd->setAccountID(sfOwner, A1);
                 slePd->setFieldU32(sfSequence, 10);
 
-                STArray credentials(sfAcceptedCredentials, 11);
+                STArray credentials(sfAcceptedCredentials, 2);
                 for (std::size_t n = 0; n < 2; ++n)
                 {
                     auto cred = STObject::makeInnerObject(sfCredential);
