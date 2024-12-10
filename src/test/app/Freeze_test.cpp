@@ -210,7 +210,8 @@ class Freeze_test : public beast::unit_test::suite
             env(trust(G1, A1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
             {
                 auto const flags = getTrustlineFlags(env, 2u, 1u);
-                BEAST_EXPECT(flags & (lsfLowFreeze | lsfLowDeepFreeze));
+                BEAST_EXPECT(flags & lsfLowFreeze);
+                BEAST_EXPECT(flags & lsfLowDeepFreeze);
                 BEAST_EXPECT(!(flags & (lsfHighFreeze | lsfHighDeepFreeze)));
                 env.close();
             }
@@ -236,7 +237,8 @@ class Freeze_test : public beast::unit_test::suite
             env(trust(G1, A1["USD"](0), tfSetDeepFreeze));
             {
                 auto const flags = getTrustlineFlags(env, 2u, 1u);
-                BEAST_EXPECT(flags & (lsfLowFreeze | lsfLowDeepFreeze));
+                BEAST_EXPECT(flags & lsfLowFreeze);
+                BEAST_EXPECT(flags & lsfLowDeepFreeze);
                 BEAST_EXPECT(!(flags & (lsfHighFreeze | lsfHighDeepFreeze)));
                 env.close();
             }
@@ -250,20 +252,18 @@ class Freeze_test : public beast::unit_test::suite
             {
                 auto const flags = getTrustlineFlags(env, 2u, 1u);
                 BEAST_EXPECT(flags & lsfLowFreeze);
-                BEAST_EXPECT(
-                    !(flags &
-                      (lsfLowDeepFreeze | lsfHighFreeze | lsfHighDeepFreeze)));
+                BEAST_EXPECT(!(flags & lsfLowDeepFreeze));
+                BEAST_EXPECT(!(flags & (lsfHighFreeze | lsfHighDeepFreeze)));
                 env.close();
             }
         }
         else
         {
             //  test: applying deep freeze before amendment fails
-            env(trust(G1, A1["USD"](0), tfSetDeepFreeze), ter(temINVALID_FLAG));
+            env(trust(G1, A1["USD"](0), tfSetDeepFreeze), ter(temDISABLED));
 
             //  test: clearing deep freeze before amendment fails
-            env(trust(G1, A1["USD"](0), tfClearDeepFreeze),
-                ter(temINVALID_FLAG));
+            env(trust(G1, A1["USD"](0), tfClearDeepFreeze), ter(temDISABLED));
         }
     }
 
@@ -281,36 +281,37 @@ class Freeze_test : public beast::unit_test::suite
         env.fund(XRP(10000), G1, A1);
         env.close();
 
-        // // test: can create frozen trustline
-        // {
-        //     env(trust(G1, A1["USD"](1000), tfSetFreeze));
-        //     auto const flags = getTrustlineFlags(env, 5u, 3u, false);
-        //     BEAST_EXPECT(flags & lsfLowFreeze);
-        //     env.close();
-        //     env.require(lines(A1, 1));
-        // }
+        // test: can create frozen trustline
+        {
+            env(trust(G1, A1["USD"](1000), tfSetFreeze));
+            auto const flags = getTrustlineFlags(env, 5u, 3u, false);
+            BEAST_EXPECT(flags & lsfLowFreeze);
+            env.close();
+            env.require(lines(A1, 1));
+        }
 
-        // // Cleanup
-        // env(trust(G1, A1["USD"](0), tfClearFreeze));
-        // env.close();
-        // env.require(lines(G1, 0));
-        // env.require(lines(A1, 0));
+        // Cleanup
+        env(trust(G1, A1["USD"](0), tfClearFreeze));
+        env.close();
+        env.require(lines(G1, 0));
+        env.require(lines(A1, 0));
 
-        // // test: cannot create deep frozen trustline without normal freeze
-        // if (features[featureDeepFreeze])
-        // {
-        //     env(trust(G1, A1["USD"](1000), tfSetDeepFreeze),
-        //         ter(tecNO_PERMISSION));
-        //     env.close();
-        //     env.require(lines(A1, 0));
-        // }
+        // test: cannot create deep frozen trustline without normal freeze
+        if (features[featureDeepFreeze])
+        {
+            env(trust(G1, A1["USD"](1000), tfSetDeepFreeze),
+                ter(tecNO_PERMISSION));
+            env.close();
+            env.require(lines(A1, 0));
+        }
 
         // test: can create deep frozen trustline together with normal freeze
         if (features[featureDeepFreeze])
         {
             env(trust(G1, A1["USD"](1000), tfSetFreeze | tfSetDeepFreeze));
             auto const flags = getTrustlineFlags(env, 5u, 3u, false);
-            BEAST_EXPECT(flags & (lsfLowFreeze | lsfLowDeepFreeze));
+            BEAST_EXPECT(flags & lsfLowFreeze);
+            BEAST_EXPECT(flags & lsfLowDeepFreeze);
             env.close();
             env.require(lines(A1, 1));
         }
@@ -561,7 +562,8 @@ class Freeze_test : public beast::unit_test::suite
             {
                 auto const flags = getTrustlineFlags(env, 2u, 1u);
                 BEAST_EXPECT(!(flags & (lsfLowFreeze | lsfLowDeepFreeze)));
-                BEAST_EXPECT(flags & (lsfHighFreeze | lsfHighDeepFreeze));
+                BEAST_EXPECT(flags & lsfHighFreeze);
+                BEAST_EXPECT(flags & lsfHighDeepFreeze);
             }
         }
         env.close();

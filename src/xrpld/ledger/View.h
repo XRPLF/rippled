@@ -438,6 +438,7 @@ trustCreate(
     const bool bAuth,           // --> authorize account.
     const bool bNoRipple,       // --> others cannot ripple through
     const bool bFreeze,         // --> funds cannot leave
+    bool bDeepFreeze,           // --> can neither receive nor send funds
     STAmount const& saBalance,  // --> balance of account being set.
                                 // Issuer should be noAccount()
     STAmount const& saLimit,    // --> limit for account being set.

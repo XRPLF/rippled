@@ -87,7 +87,7 @@ SetTrust::preflight(PreflightContext const& ctx)
         // `tfTrustSetMask`, they are not valid if the amendment is not enabled.
         if (uTxFlags & (tfSetDeepFreeze | tfClearDeepFreeze))
         {
-            return temINVALID_FLAG;
+            return temDISABLED;
         }
     }
 
@@ -660,6 +660,7 @@ SetTrust::doApply()
             bSetAuth,
             bSetNoRipple && !bClearNoRipple,
             bSetFreeze && !bClearFreeze,
+            bSetDeepFreeze,
             saBalance,
             saLimitAllow,  // Limit for who is being charged.
             uQualityIn,

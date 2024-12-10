@@ -272,11 +272,6 @@ isDeepFrozen(
     Currency const& currency,
     AccountID const& issuer)
 {
-    if (!view.rules().enabled(featureDeepFreeze))
-    {
-        return false;
-    }
-
     if (isXRP(currency))
     {
         return false;
@@ -898,6 +893,7 @@ trustCreate(
     const bool bAuth,           // --> authorize account.
     const bool bNoRipple,       // --> others cannot ripple through
     const bool bFreeze,         // --> funds cannot leave
+    bool bDeepFreeze,           // --> can neither receive nor send funds
     STAmount const& saBalance,  // --> balance of account being set.
                                 // Issuer should be noAccount()
     STAmount const& saLimit,    // --> limit for account being set.
@@ -978,7 +974,11 @@ trustCreate(
     }
     if (bFreeze)
     {
-        uFlags |= (!bSetHigh ? lsfLowFreeze : lsfHighFreeze);
+        uFlags |= (bSetHigh ? lsfHighFreeze : lsfLowFreeze);
+    }
+    if (bDeepFreeze)
+    {
+        uFlags |= (bSetHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
     }
 
     if ((slePeer->getFlags() & lsfDefaultRipple) == 0)
@@ -1214,6 +1214,7 @@ rippleCreditIOU(
         sleAccount,
         false,
         noRipple,
+        false,
         false,
         saBalance,
         saReceiverLimit,
@@ -1700,6 +1701,7 @@ issueIOU(
         receiverAccount,
         false,
         noRipple,
+        false,
         false,
         final_balance,
         limit,

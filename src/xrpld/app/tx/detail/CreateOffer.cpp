@@ -257,33 +257,30 @@ CreateOffer::checkAcceptAsset(
         }
     }
 
-    if (view.rules().enabled(featureDeepFreeze))
+    // An account can not create a trustline to itself, so no line can exist
+    // to be frozen. Additionally, an issuer can always accept its own
+    // issuance.
+    if (issue.account == id)
     {
-        // An account can not create a trustline to itself, so no line can exist
-        // to be frozen. Additionally, an issuer can always accept its own
-        // issuance.
-        if (issue.account == id)
-        {
-            return tesSUCCESS;
-        }
+        return tesSUCCESS;
+    }
 
-        auto const trustLine =
-            view.read(keylet::line(id, issue.account, issue.currency));
+    auto const trustLine =
+        view.read(keylet::line(id, issue.account, issue.currency));
 
-        if (!trustLine)
-        {
-            return tesSUCCESS;
-        }
+    if (!trustLine)
+    {
+        return tesSUCCESS;
+    }
 
-        // There's no difference which side enacted deep freeze, accepting
-        // tokens shouldn't be possible.
-        bool const deepFrozen =
-            (*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze);
+    // There's no difference which side enacted deep freeze, accepting
+    // tokens shouldn't be possible.
+    bool const deepFrozen =
+        (*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze);
 
-        if (deepFrozen)
-        {
-            return tecFROZEN;
-        }
+    if (deepFrozen)
+    {
+        return tecFROZEN;
     }
 
     return tesSUCCESS;
