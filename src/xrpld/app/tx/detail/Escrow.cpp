@@ -21,6 +21,7 @@
 
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/misc/WasmVM.h>
 #include <xrpld/conditions/Condition.h>
 #include <xrpld/conditions/Fulfillment.h>
 #include <xrpld/ledger/ApplyView.h>
@@ -103,8 +104,11 @@ NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfFinishFunction) &&
-        ctx.rules.enabled(featureEscrowExtensions))
+        !ctx.rules.enabled(featureEscrowExtensions))
+    {
+        JLOG(ctx.j.debug()) << "EscrowExtensions not enabled";
         return temDISABLED;
+    }
 
     if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
@@ -419,11 +423,17 @@ EscrowFinish::doApply()
 
         // Too soon: can't execute before the finish time
         if ((*slep)[~sfFinishAfter] && !after(now, (*slep)[sfFinishAfter]))
+        {
+            JLOG(j_.debug()) << "Too soon";
             return tecNO_PERMISSION;
+        }
 
         // Too late: can't execute after the cancel time
         if ((*slep)[~sfCancelAfter] && after(now, (*slep)[sfCancelAfter]))
+        {
+            JLOG(j_.debug()) << "Too late";
             return tecNO_PERMISSION;
+        }
     }
     else
     {
@@ -431,13 +441,19 @@ EscrowFinish::doApply()
         if ((*slep)[~sfFinishAfter] &&
             ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
                 (*slep)[sfFinishAfter])
+        {
+            JLOG(j_.debug()) << "Too soon?";
             return tecNO_PERMISSION;
+        }
 
         // Too late?
         if ((*slep)[~sfCancelAfter] &&
             ctx_.view().info().parentCloseTime.time_since_epoch().count() <=
                 (*slep)[sfCancelAfter])
+        {
+            JLOG(j_.debug()) << "Too late?";
             return tecNO_PERMISSION;
+        }
     }
 
     // Check cryptocondition fulfillment
@@ -503,7 +519,26 @@ EscrowFinish::doApply()
     // Execute extension
     if ((*slep)[~sfFinishFunction])
     {
-        // TODO: WASM execution
+        JLOG(j_.fatal()) << "HAS ESCROW";
+        // WASM execution
+        auto const wasmStr = slep->getFieldVL(sfFinishFunction);
+        std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+        std::string funcName("mock_escrow");
+        auto re = runEscrowWasm(wasm, funcName, ctx_.tx[sfSequence]);
+        JLOG(j_.fatal()) << "ESCROW RAN";
+        if (re)
+        {
+            JLOG(j_.fatal()) << "Success: " + std::to_string(re.value());
+            if (!re.value())
+            {
+                return tecNO_PERMISSION;
+            }
+        }
+        else
+        {
+            JLOG(j_.fatal()) << "Failure: " + transHuman(re.error());
+            return re.error();
+        }
     }
 
     AccountID const account = (*slep)[sfAccount];
