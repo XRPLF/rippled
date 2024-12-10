@@ -1519,7 +1519,7 @@ struct Escrow_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const bob{"bob"};
         Account const carol{"carol"};
-        Account const dillon{"dillon "};
+        Account const dillon{"dillon"};
         Account const zelda{"zelda"};
 
         const char credType[] = "abcde";
@@ -1657,20 +1657,71 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
+    testFinishFunction()
+    {
+        testcase("PoC escrow function");
+
+        using namespace jtx;
+        using namespace std::chrono;
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const dillon{"dillon"};
+        Account const zelda{"zelda"};
+
+        static auto const wasmHex =
+            "0061736d0100000001090260017f017f6000000305040001010004050170010101"
+            "05030100100609017f01418080c0000b071802066d656d6f727902000b6d6f636b"
+            "5f657363726f7700030a25040800200041056f450b02000b0e0010818080800010"
+            "81808080000b08002000100010020b0072046e616d650011106d6f636b5f657363"
+            "726f772e7761736d014404000b6d6f636b5f657363726f77010564756d6d790211"
+            "5f5f7761736d5f63616c6c5f64746f7273031a6d6f636b5f657363726f772e636f"
+            "6d6d616e645f6578706f7274071201000f5f5f737461636b5f706f696e74657200"
+            "c0010970726f64756365727302086c616e67756167650204527573740003433131"
+            "000c70726f6365737365642d62790205727573746325312e38332e302d6e696768"
+            "746c79202863326637346333663920323032342d30392d30392905636c616e675f"
+            "31382e312e322d776173692d73646b202868747470733a2f2f6769746875622e63"
+            "6f6d2f6c6c766d2f6c6c766d2d70726f6a65637420323661316436363031643732"
+            "376139366634333031643064383634376235613432373630616530632900560f74"
+            "61726765745f6665617475726573052b0b62756c6b2d6d656d6f72792b0a6d756c"
+            "746976616c75652b0f6d757461626c652d676c6f62616c732b0f7265666572656e"
+            "63652d74797065732b087369676e2d657874";
+
+        {
+            Env env(*this);
+            env.fund(XRP(5000), "alice", "bob", "carol");
+            auto const seq = env.seq("alice");
+            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
+            auto escrowCreate = escrow("alice", "carol", XRP(1000));
+            // escrowCreate[sfCancelAfter.jsonName] = (env.now() + 1s);
+            escrowCreate[sfFinishFunction.jsonName] = wasmHex;
+            env(escrowCreate);
+            env.close();
+            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
+            env.require(balance("alice", XRP(4000) - drops(10)));
+            env.require(balance("carol", XRP(5000)));
+
+            env(finish(carol, alice, seq));
+        }
+    }
+
+    void
     run() override
     {
-        testEnablement();
-        testTiming();
-        testTags();
-        testDisallowXRP();
-        test1571();
-        testFails();
-        testLockup();
-        testEscrowConditions();
-        testMetaAndOwnership();
-        testConsequences();
-        testEscrowWithTickets();
-        testCredentials();
+        // testEnablement();
+        // testTiming();
+        // testTags();
+        // testDisallowXRP();
+        // test1571();
+        // testFails();
+        // testLockup();
+        // testEscrowConditions();
+        // testMetaAndOwnership();
+        // testConsequences();
+        // testEscrowWithTickets();
+        // testCredentials();
+        testFinishFunction();
     }
 };
 
