@@ -34,18 +34,18 @@ setTx(
     std::optional<uint256> domain)
 {
     Json::Value jv;
-    jv[sfTransactionType.jsonName] = jss::PermissionedDomainSet;
-    jv[sfAccount.jsonName] = to_string(account);
+    jv[sfTransactionType] = jss::PermissionedDomainSet;
+    jv[sfAccount] = to_string(account);
     if (domain)
-        jv[sfDomainID.jsonName] = to_string(*domain);
-    Json::Value a(Json::arrayValue);
+        jv[sfDomainID] = to_string(*domain);
+    Json::Value credentials2(Json::arrayValue);
     for (auto const& credential : credentials)
     {
-        Json::Value obj(Json::objectValue);
-        obj[sfCredential.jsonName] = credential.toJson();
-        a.append(std::move(obj));
+        Json::Value object(Json::objectValue);
+        object[sfCredential] = credential.toJson();
+        credentials2.append(std::move(object));
     }
-    jv[sfAcceptedCredentials.jsonName] = a;
+    jv[sfAcceptedCredentials] = credentials2;
     return jv;
 }
 
@@ -54,9 +54,9 @@ Json::Value
 deleteTx(AccountID const& account, uint256 const& domain)
 {
     Json::Value jv{Json::objectValue};
-    jv[sfTransactionType.jsonName] = jss::PermissionedDomainDelete;
-    jv[sfAccount.jsonName] = to_string(account);
-    jv[sfDomainID.jsonName] = to_string(domain);
+    jv[sfTransactionType] = jss::PermissionedDomainDelete;
+    jv[sfAccount] = to_string(account);
+    jv[sfDomainID] = to_string(domain);
     return jv;
 }
 
@@ -70,12 +70,20 @@ getObjects(Account const& account, Env& env, bool withType)
     if (withType)
         params[jss::type] = jss::permissioned_domain;
     auto const& resp = env.rpc("json", "account_objects", to_string(params));
-    Json::Value a(Json::arrayValue);
-    a = resp[jss::result][jss::account_objects];
-    for (auto const& object : a)
+    Json::Value objects(Json::arrayValue);
+    objects = resp[jss::result][jss::account_objects];
+    for (auto const& object : objects)
     {
         if (object["LedgerEntryType"] != "PermissionedDomain")
+        {
+            if (withType)
+            {  // impossible to get there
+                Throw<std::runtime_error>(
+                    "Invalid object type: " +
+                    object["LedgerEntryType"].asString());  // LCOV_EXCL_LINE
+            }
             continue;
+        }
         uint256 index;
         std::ignore = index.parseHex(object[jss::index].asString());
         ret[index] = object;
@@ -106,9 +114,9 @@ credentialsFromJson(
     std::unordered_map<std::string, Account> const& pubKey2Acc)
 {
     Credentials ret;
-    Json::Value a(Json::arrayValue);
-    a = object["AcceptedCredentials"];
-    for (auto const& credential : a)
+    Json::Value credentials(Json::arrayValue);
+    credentials = object["AcceptedCredentials"];
+    for (auto const& credential : credentials)
     {
         Json::Value obj(Json::objectValue);
         obj = credential[jss::Credential];
@@ -128,8 +136,8 @@ Credentials
 sortCredentials(Credentials const& input)
 {
     std::set<Credential> credentialsSet;
-    for (auto const& c : input)
-        credentialsSet.insert(c);
+    for (auto const& credential : input)
+        credentialsSet.insert(credential);
     return {credentialsSet.begin(), credentialsSet.end()};
 }
 
