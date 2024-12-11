@@ -19,8 +19,6 @@ runs:
       run: |
         env | sort
         echo ${PATH} | tr ':' '\n'
-        type python
-        python --version
         type conan
         conan --version
         type cmake
