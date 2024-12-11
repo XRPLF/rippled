@@ -37,7 +37,7 @@ jobs:
       - name: install Conan
         run: |
           brew install conan
-          echo '/opt/homebrew/opt/conan/bin' >> $GITHUB_PATH
+          echo '/opt/homebrew/opt/conan/bin' >> ${GITHUB_PATH}
       - name: install Ninja
         if: matrix.generator == 'Ninja'
         run: brew install ninja
@@ -45,9 +45,9 @@ jobs:
         run: |
           env | sort
           echo ${PATH} | tr ':' '\n'
-          python --version | tee "${GITHUB_STEP_SUMMARY}"
-          conan --version | tee "${GITHUB_STEP_SUMMARY}"
-          cmake --version | tee "${GITHUB_STEP_SUMMARY}"
+          python --version | tee --append "${GITHUB_STEP_SUMMARY}"
+          conan --version | tee --append "${GITHUB_STEP_SUMMARY}"
+          cmake --version | tee --append "${GITHUB_STEP_SUMMARY}"
       - name: configure Conan
         run : |
           conan config install .github/conan/

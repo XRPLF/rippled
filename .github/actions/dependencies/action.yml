@@ -13,7 +13,7 @@ runs:
         conan remote remove ripple || true
         # Do not quote the URL. An empty string will be accepted (with
         # a non-fatal warning), but a missing argument will not.
-        conan remote add ripple ${{ env.CONAN_URL }} --index 0
+        conan remote add --index 0 ripple ${{ env.CONAN_URL }}
     - name: try to authenticate to Ripple Conan remote
       id: remote
       shell: bash

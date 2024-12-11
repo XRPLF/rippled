@@ -72,9 +72,9 @@ jobs:
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
-          python --version | tee "${GITHUB_STEP_SUMMARY}"
-          conan --version | tee "${GITHUB_STEP_SUMMARY}"
-          cmake --version | tee "${GITHUB_STEP_SUMMARY}"
+          python --version | tee --append "${GITHUB_STEP_SUMMARY}"
+          conan --version | tee --append "${GITHUB_STEP_SUMMARY}"
+          cmake --version | tee --append "${GITHUB_STEP_SUMMARY}"
           env | sort
       - name: configure Conan
         run: |
@@ -139,9 +139,9 @@ jobs:
         run: |
           env | sort
           echo ${PATH} | tr ':' '\n'
-          python --version | tee "${GITHUB_STEP_SUMMARY}"
-          conan --version | tee "${GITHUB_STEP_SUMMARY}"
-          cmake --version | tee "${GITHUB_STEP_SUMMARY}"
+          python --version
+          conan --version
+          cmake --version
       - name: checkout
         uses: actions/checkout@v4
       - name: dependencies
@@ -191,9 +191,9 @@ jobs:
         run: |
           echo ${PATH} | tr ':' '\n'
           env | sort
-          conan --version | tee "${GITHUB_STEP_SUMMARY}"
-          cmake --version | tee "${GITHUB_STEP_SUMMARY}"
-          gcovr --version | tee "${GITHUB_STEP_SUMMARY}"
+          conan --version
+          cmake --version
+          gcovr --version
           ls ~/.conan2
       - name: checkout
         uses: actions/checkout@v4
