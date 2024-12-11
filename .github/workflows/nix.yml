@@ -248,6 +248,7 @@ jobs:
           configuration: ${{ env.configuration }}
       - name: export
         run: |
+          apt install jq
           version=$(conan inspect --format json . | jq --raw-output .version)
           reference="xrpl/${version}@local/test"
           conan remove -f ${reference} || true
