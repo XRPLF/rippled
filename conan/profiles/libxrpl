@@ -1,0 +1,18 @@
+include(default)
+
+[settings]
+compiler.cppstd=20
+{% if platform.system() == "Windows" %}
+arch=x86_64
+{% endif %}
+{% if platform.system() == "Linux" %}
+compiler.libcxx=libstdc++11
+{% endif %}
+
+[conf]
+tools.build:cxxflags+=["-DBOOST_BEAST_USE_STD_STRING_VIEW"]
+tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]
+tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]
+
+[options]
+boost/*:extra_b2_flags="define=BOOST_ASIO_HAS_STD_INVOKE_RESULT"
