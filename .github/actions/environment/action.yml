@@ -9,6 +9,7 @@ runs:
         pip install --upgrade conan
     - name: install Conan and Ninja
       if: runner.os == 'macOS'
+      shell: bash
       run: |
         brew install conan
         brew install ninja
