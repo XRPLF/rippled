@@ -24,7 +24,7 @@
 #include <xrpld/ledger/OpenView.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/detail/ApplyStateTable.h>
-#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 namespace ripple {
 namespace detail {

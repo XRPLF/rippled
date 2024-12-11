@@ -83,6 +83,13 @@ The [commandline](https://xrpl.org/docs/references/http-websocket-apis/api-conve
 
 The `network_id` field was added in the `server_info` response in version 1.5.0 (2019), but it is not returned in [reporting mode](https://xrpl.org/rippled-server-modes.html#reporting-mode). However, use of reporting mode is now discouraged, in favor of using [Clio](https://github.com/XRPLF/clio) instead.
 
+## XRP Ledger server version 2.4.0
+
+### Additions in 2.4
+
+- `simulate`: A new RPC that executes a dry run of a transaction submission without actually submitting it to the network for inclusion.
+- `ledger_entry`: `state` is added an alias for `ripple_state`.
+
 ## XRP Ledger server version 2.3.0
 
 ### BREAKING CHANGES
@@ -94,7 +101,6 @@ The `network_id` field was added in the `server_info` response in version 1.5.0 
 Additions are intended to be non-breaking (because they are purely additive).
 
 - `book_changes`: Returns a `validated` field in its response, which was missing in prior versions.
-- `simulate`: A new RPC that executes a dry run of a transaction submission without actually submitting it to the network for inclusion.
 
 ## XRP Ledger server version 2.2.0
 

@@ -20,8 +20,8 @@
 #ifndef BEAST_RANDOM_RNGFILL_H_INCLUDED
 #define BEAST_RANDOM_RNGFILL_H_INCLUDED
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <array>
-#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <type_traits>
@@ -42,7 +42,8 @@ rngfill(void* buffer, std::size_t bytes, Generator& g)
         bytes -= sizeof(v);
     }
 
-    assert(bytes < sizeof(result_type));
+    ASSERT(
+        bytes < sizeof(result_type), "beast::rngfill(void*) : maximum bytes");
 
 #ifdef __GNUC__
     // gcc 11.1 (falsely) warns about an array-bounds overflow in release mode.

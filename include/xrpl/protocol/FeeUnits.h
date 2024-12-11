@@ -19,22 +19,29 @@
 #ifndef BASICS_FEES_H_INCLUDED
 #define BASICS_FEES_H_INCLUDED
 
-#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
 #include <boost/multiprecision/cpp_int.hpp>
-#include <limits>
-#include <utility>
+#include <boost/operators.hpp>
 
-#include <cassert>
 #include <cmath>
 #include <ios>
 #include <iosfwd>
+#include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 
 namespace ripple {
 
 namespace feeunit {
 
+/** "drops" are the smallest divisible amount of XRP. This is what most
+    of the code uses. */
+struct dropTag;
 /** "fee units" calculations are a not-really-unitless value that is used
     to express the cost of a given transaction vs. a reference transaction.
     They are primarily used by the Transactor classes. */
@@ -419,9 +426,13 @@ mulDivU(Source1 value, Dest mul, Source2 div)
     {
         // split the asserts so if one hits, the user can tell which
         // without a debugger.
-        assert(value.value() >= 0);
-        assert(mul.value() >= 0);
-        assert(div.value() >= 0);
+        ASSERT(
+            value.value() >= 0,
+            "ripple::feeunit::mulDivU : minimum value input");
+        ASSERT(
+            mul.value() >= 0, "ripple::feeunit::mulDivU : minimum mul input");
+        ASSERT(
+            div.value() >= 0, "ripple::feeunit::mulDivU : minimum div input");
         return std::nullopt;
     }
 
