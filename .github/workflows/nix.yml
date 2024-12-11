@@ -236,14 +236,10 @@ jobs:
         run: |
           mkdir -p ~/.conan2
           tar -xzf conan.tar -C ~/.conan2
-      - name: check environment
-        run: |
-          env | sort
-          echo ${PATH} | tr ':' '\n'
-          conan --version
-          cmake --version
       - name: checkout
         uses: actions/checkout@v4
+      - name: environment
+        uses: ./.github/actions/environment
       - name: dependencies
         uses: ./.github/actions/dependencies
         env:
