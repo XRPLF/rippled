@@ -66,12 +66,15 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v4
-      - name: check environment
+      - name: install Conan
         run: |
           pip install --upgrade conan
+      - name: check environment
+        run: |
           echo ${PATH} | tr ':' '\n'
-          conan --version
-          cmake --version
+          python --version | tee "${GITHUB_STEP_SUMMARY}"
+          conan --version | tee "${GITHUB_STEP_SUMMARY}"
+          cmake --version | tee "${GITHUB_STEP_SUMMARY}"
           env | sort
       - name: configure Conan
         run: |
@@ -85,7 +88,7 @@ jobs:
           EOF
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
-        run: tar -czf conan.tar -C ~/.conan .
+        run: tar -czf conan.tar -C ~/.conan2 .
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
@@ -129,14 +132,15 @@ jobs:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
         run: |
-          mkdir -p ~/.conan
-          tar -xzf conan.tar -C ~/.conan
+          mkdir -p ~/.conan2
+          tar -xzf conan.tar -C ~/.conan2
       - name: check environment
         run: |
           env | sort
           echo ${PATH} | tr ':' '\n'
-          conan --version
-          cmake --version
+          python --version | tee "${GITHUB_STEP_SUMMARY}"
+          conan --version | tee "${GITHUB_STEP_SUMMARY}"
+          cmake --version | tee "${GITHUB_STEP_SUMMARY}"
       - name: checkout
         uses: actions/checkout@v4
       - name: dependencies
@@ -178,18 +182,18 @@ jobs:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
         run: |
-          mkdir -p ~/.conan
-          tar -xzf conan.tar -C ~/.conan
+          mkdir -p ~/.conan2
+          tar -xzf conan.tar -C ~/.conan2
       - name: install gcovr
         run: pip install "gcovr>=7,<8"
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
-          conan --version
-          cmake --version
-          gcovr --version
           env | sort
-          ls ~/.conan
+          conan --version | tee "${GITHUB_STEP_SUMMARY}"
+          cmake --version | tee "${GITHUB_STEP_SUMMARY}"
+          gcovr --version | tee "${GITHUB_STEP_SUMMARY}"
+          ls ~/.conan2
       - name: checkout
         uses: actions/checkout@v4
       - name: dependencies
@@ -248,8 +252,8 @@ jobs:
           name: linux-gcc-${{ env.configuration }}
       - name: extract cache
         run: |
-          mkdir -p ~/.conan
-          tar -xzf conan.tar -C ~/.conan
+          mkdir -p ~/.conan2
+          tar -xzf conan.tar -C ~/.conan2
       - name: check environment
         run: |
           env | sort
