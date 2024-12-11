@@ -36,14 +36,13 @@ See [System Requirements](https://xrpl.org/system-requirements.html).
 Building rippled generally requires git, Python, Conan, CMake, and a C++ compiler. Some guidance on setting up such a [C++ development environment can be found here](./docs/build/environment.md).
 
 - [Python 3.7](https://www.python.org/downloads/)
-- [Conan 1.60](https://conan.io/downloads.html)[^1]
+- [Conan 2.0](https://conan.io/downloads.html)[^1]
 - [CMake 3.16](https://cmake.org/download/)
 
-[^1]: It is possible to build with Conan 2.x,
-but the instructions are significantly different,
-which is why we are not recommending it yet.
-Notably, the `conan profile update` command is removed in 2.x.
-Profiles must be edited by hand.
+[^1]: It has been possible to build with Conan 1.x,
+and it may still be,
+but we are no longer promising it,
+and the instructions are significantly different.
 
 `rippled` is written in the C++20 dialect and includes the `<concepts>` header.
 The [minimum compiler versions][2] required are:
@@ -86,56 +85,11 @@ These instructions assume a basic familiarity with Conan and CMake.
 
 If you are unfamiliar with Conan, then please read [this crash course](./docs/build/conan.md) or the official [Getting Started][3] walkthrough.
 
-You'll need at least one Conan profile:
+The easiest way to configure Conan is to install the sample profiles in this project:
 
    ```
-   conan profile new default --detect
-   ```
-
-Update the compiler settings:
-
-   ```
-   conan profile update settings.compiler.cppstd=20 default
-   ```
-
-Configure Conan (1.x only) to use recipe revisions:
-
-   ```
-   conan config set general.revisions_enabled=1
-   ```
-
-**Linux** developers will commonly have a default Conan [profile][] that compiles
-with GCC and links with libstdc++.
-If you are linking with libstdc++ (see profile setting `compiler.libcxx`),
-then you will need to choose the `libstdc++11` ABI:
-
-   ```
-   conan profile update settings.compiler.libcxx=libstdc++11 default
-   ```
-
-
-Ensure inter-operability between `boost::string_view` and `std::string_view` types:
-
-```
-conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_BEAST_USE_STD_STRING_VIEW"]' default
-conan profile update 'env.CXXFLAGS="-DBOOST_BEAST_USE_STD_STRING_VIEW"' default
-```
-
-If you have other flags in the `conf.tools.build` or `env.CXXFLAGS` sections, make sure to retain the existing flags and append the new ones. You can check them with:
-```
-conan profile show default
-```
-
-
-**Windows** developers may need to use the x64 native build tools.
-An easy way to do that is to run the shortcut "x64 Native Tools Command
-Prompt" for the version of Visual Studio that you have installed.
-
-   Windows developers must also build `rippled` and its dependencies for the x64
-   architecture:
-
-   ```
-   conan profile update settings.arch=x86_64 default
+   conan profile detect
+   conan config install conan/
    ```
 
 ### Multiple compilers
@@ -153,56 +107,6 @@ conan profile update 'conf.tools.build:compiler_executables={"c": "/usr/bin/gcc"
 ```
 
 Replace `/usr/bin/gcc` and `/usr/bin/g++` with paths to the desired compilers.
-
-It should choose the compiler for dependencies as well,
-but not all of them have a Conan recipe that respects this setting (yet).
-For the rest, you can set these environment variables.
-Replace `<path>` with paths to the desired compilers:
-
-- `conan profile update env.CC=<path> default`
-- `conan profile update env.CXX=<path> default`
-
-Export our [Conan recipe for Snappy](./external/snappy).
-It does not explicitly link the C++ standard library,
-which allows you to statically link it with GCC, if you want.
-
-   ```
-   # Conan 1.x
-   conan export external/snappy snappy/1.1.10@
-   # Conan 2.x
-   conan export --version 1.1.10 external/snappy
-   ```
-
-Export our [Conan recipe for RocksDB](./external/rocksdb).
-It does not override paths to dependencies when building with Visual Studio.
-
-   ```
-   # Conan 1.x
-   conan export external/rocksdb rocksdb/6.29.5@
-   # Conan 2.x
-   conan export --version 6.29.5 external/rocksdb
-   ```
-
-Export our [Conan recipe for SOCI](./external/soci).
-It patches their CMake to correctly import its dependencies.
-
-   ```
-   # Conan 1.x
-   conan export external/soci soci/4.0.3@
-   # Conan 2.x
-   conan export --version 4.0.3 external/soci
-   ```
-
-Export our [Conan recipe for NuDB](./external/nudb).
-It fixes some source files to add missing `#include`s.
-
-
-   ```
-   # Conan 1.x
-   conan export external/nudb nudb/2.0.8@
-   # Conan 2.x
-   conan export --version 2.0.8 external/nudb
-   ```
 
 ### Build and Test
 
