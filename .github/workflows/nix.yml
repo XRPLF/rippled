@@ -68,20 +68,21 @@ jobs:
         uses: actions/checkout@v4
       - name: check environment
         run: |
+          pip install --upgrade conan
           echo ${PATH} | tr ':' '\n'
           conan --version
           cmake --version
           env | sort
       - name: configure Conan
         run: |
-          conan profile new default --detect
-          conan profile update settings.compiler.cppstd=20 default
-          conan profile update settings.compiler=${{ matrix.compiler }} default
-          conan profile update settings.compiler.version=${{ matrix.profile.version }} default
-          conan profile update settings.compiler.libcxx=libstdc++11 default
-          conan profile update env.CC=${{ matrix.profile.cc }} default
-          conan profile update env.CXX=${{ matrix.profile.cxx }} default
-          conan profile update conf.tools.build:compiler_executables='{"c": "${{ matrix.profile.cc }}", "cpp": "${{ matrix.profile.cxx }}"}' default
+          conan config install .github/conan/
+          conan profile detect --name detected
+          cat >$(conan config home)/profiles/matrix <<EOF
+          {% set compiler = "${{ matrix.compiler }}" %}
+          {% set version = "${{ matrix.profile.version }}" %}
+          {% set cc = "${{ matrix.profile.cc }}" %}
+          {% set cxx = "${{ matrix.profile.cxx }}" %}
+          EOF
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
         run: tar -czf conan.tar -C ~/.conan .

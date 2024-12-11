@@ -1,0 +1,30 @@
+include(detected)
+
+{% import "matrix" as matrix %}
+
+[settings]
+compiler.cppstd=20
+
+{% if platform.system() == "Linux" %}
+compiler={{ matrix.compiler }}
+compiler.version={{ matrix.version }}
+compiler.libcxx=libstdc++11
+{% endif %}
+
+{% if platform.system() == "Window" %}
+compiler.runtime={{ matrix.runtime }}
+{% endif %}
+
+[conf]
+tools.build:cxxflags+=["-DBOOST_BEAST_USE_STD_STRING_VIEW"]
+tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]
+tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]
+
+{% if platform.system() == "Linux" %}
+tools.build:compiler_executables='{"c": "{{ matrix.cc }}", "cpp": "{{ matrix.cxx }}"}'
+{% endif %}
+
+[options]
+boost/*:extra_b2_flags="define=BOOST_ASIO_HAS_STD_INVOKE_RESULT"
+xrpl/*:xrpld=True
+xrpl/*:tests=True

@@ -55,7 +55,7 @@ jobs:
             path: ${{ steps.pip-cache.outputs.dir }}
             key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
       - name: install Conan
-        run: pip install wheel 'conan<2'
+        run: pip install wheel conan
       - name: check environment
         run: |
           dir env:
@@ -66,9 +66,11 @@ jobs:
       - name: configure Conan
         shell: bash
         run: |
-          conan profile new default --detect
-          conan profile update settings.compiler.cppstd=20 default
-          conan profile update settings.compiler.runtime=MT${{ matrix.configuration == 'Debug' && 'd' || '' }} default
+          conan config install .github/conan/
+          conan profile detect --name detected
+          cat >$(conan config home)/profiles/matrix <<EOF
+          {% set runtime = "MT${{ matrix.configuration == 'Debug' && 'd' || '' }}" %}
+          EOF
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
