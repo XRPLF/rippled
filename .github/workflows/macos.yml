@@ -45,16 +45,16 @@ jobs:
         run: |
           env | sort
           echo ${PATH} | tr ':' '\n'
-          python --version | tee --append "${GITHUB_STEP_SUMMARY}"
-          conan --version | tee --append "${GITHUB_STEP_SUMMARY}"
-          cmake --version | tee --append "${GITHUB_STEP_SUMMARY}"
+          python --version | tee -a "${GITHUB_STEP_SUMMARY}"
+          conan --version | tee -a "${GITHUB_STEP_SUMMARY}"
+          cmake --version | tee -a "${GITHUB_STEP_SUMMARY}"
       - name: configure Conan
         run : |
           conan config install .github/conan/
           conan profile detect --name detected || true
           touch $(conan config home)/profiles/matrix
           echo '```' >> "${GITHUB_STEP_SUMMARY}"
-          conan profile show --profile default | tee --append "${GITHUB_STEP_SUMMARY}"
+          conan profile show --profile default | tee -a "${GITHUB_STEP_SUMMARY}"
           echo '```' >> "${GITHUB_STEP_SUMMARY}"
       - name: build dependencies
         uses: ./.github/actions/dependencies
