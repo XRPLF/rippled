@@ -71,7 +71,9 @@ jobs:
           cat >$(conan config home)/profiles/matrix <<EOF
           {% set runtime = "MT${{ matrix.configuration == 'Debug' && 'd' || '' }}" %}
           EOF
-          conan profile show --profile default | tee "${GITHUB_STEP_SUMMARY}"
+          echo '```' >> "${GITHUB_STEP_SUMMARY}"
+          conan profile show --profile default | tee --append "${GITHUB_STEP_SUMMARY}"
+          echo '```' >> "${GITHUB_STEP_SUMMARY}"
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
