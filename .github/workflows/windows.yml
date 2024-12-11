@@ -37,8 +37,6 @@ jobs:
     env:
       build_dir: .build
     steps:
-      - name: checkout
-        uses: actions/checkout@v4
       - name: choose Python
         uses: actions/setup-python@v5
         with:
@@ -54,15 +52,8 @@ jobs:
         with:
             path: ${{ steps.pip-cache.outputs.dir }}
             key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
-      - name: install Conan
-        run: pip install wheel conan
-      - name: check environment
-        run: |
-          dir env:
-          $env:PATH -split ';'
-          python --version | tee -Append "$env:GITHUB_STEP_SUMMARY"
-          conan --version | tee -Append "$env:GITHUB_STEP_SUMMARY"
-          cmake --version | tee -Append "$env:GITHUB_STEP_SUMMARY"
+      - name: environment
+        uses: ./.github/actions/environment
       - name: configure Conan
         shell: bash
         run: |
@@ -71,9 +62,8 @@ jobs:
           cat >$(conan config home)/profiles/matrix <<EOF
           {% set runtime = "MT${{ matrix.configuration == 'Debug' && 'd' || '' }}" %}
           EOF
-          echo '```' >> "${GITHUB_STEP_SUMMARY}"
-          conan profile show --profile default | tee --append "${GITHUB_STEP_SUMMARY}"
-          echo '```' >> "${GITHUB_STEP_SUMMARY}"
+      - name: checkout
+        uses: actions/checkout@v4
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:

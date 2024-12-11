@@ -1,0 +1,26 @@
+name: environment
+runs:
+  using: composite
+  steps:
+    - name: install Conan
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        pip install --upgrade conan
+    - name: install Conan and Ninja
+      if: runner.os == 'macOS'
+      run: |
+        brew install conan
+        brew install ninja
+        echo '/opt/homebrew/opt/conan/bin' >> ${GITHUB_PATH}
+    - name: check environment
+      shell: bash
+      run: |
+        env | sort
+        echo ${PATH} | tr ':' '\n'
+        type python
+        python --version
+        type conan
+        conan --version
+        type cmake
+        cmake --version

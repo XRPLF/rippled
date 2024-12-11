@@ -64,18 +64,8 @@ jobs:
     env:
       build_dir: .build
     steps:
-      - name: checkout
-        uses: actions/checkout@v4
-      - name: install Conan
-        run: |
-          pip install --upgrade conan
-      - name: check environment
-        run: |
-          env | sort
-          echo ${PATH} | tr ':' '\n'
-          python --version | tee --append "${GITHUB_STEP_SUMMARY}"
-          conan --version | tee --append "${GITHUB_STEP_SUMMARY}"
-          cmake --version | tee --append "${GITHUB_STEP_SUMMARY}"
+      - name: environment
+        uses: ./.github/actions/environment
       - name: configure Conan
         run: |
           conan config install .github/conan/
@@ -86,12 +76,11 @@ jobs:
           {% set cc = "${{ matrix.profile.cc }}" %}
           {% set cxx = "${{ matrix.profile.cxx }}" %}
           EOF
-          echo '```' >> "${GITHUB_STEP_SUMMARY}"
-          conan profile show --profile default | tee --append "${GITHUB_STEP_SUMMARY}"
-          echo '```' >> "${GITHUB_STEP_SUMMARY}"
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
         run: tar -czf conan.tar -C ~/.conan2 .
+      - name: checkout
+        uses: actions/checkout@v4
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
@@ -129,9 +118,7 @@ jobs:
     env:
       build_dir: .build
     steps:
-      - name: install Conan
-        run: |
-          pip install --upgrade conan
+
       - name: download cache
         uses: actions/download-artifact@v3
         with:
@@ -140,13 +127,8 @@ jobs:
         run: |
           mkdir -p ~/.conan2
           tar -xzf conan.tar -C ~/.conan2
-      - name: check environment
-        run: |
-          env | sort
-          echo ${PATH} | tr ':' '\n'
-          python --version
-          conan --version
-          cmake --version
+      - name: environment
+        uses: ./.github/actions/environment
       - name: checkout
         uses: actions/checkout@v4
       - name: dependencies
@@ -192,14 +174,8 @@ jobs:
           tar -xzf conan.tar -C ~/.conan2
       - name: install gcovr
         run: pip install "gcovr>=7,<8"
-      - name: check environment
-        run: |
-          echo ${PATH} | tr ':' '\n'
-          env | sort
-          conan --version
-          cmake --version
-          gcovr --version
-          ls ~/.conan2
+      - name: environment
+        uses: ./.github/actions/environment
       - name: checkout
         uses: actions/checkout@v4
       - name: dependencies

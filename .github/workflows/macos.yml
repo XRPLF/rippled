@@ -32,30 +32,15 @@ jobs:
       build_dir: .build
       NUM_PROCESSORS: 12
     steps:
-      - name: checkout
-        uses: actions/checkout@v4
-      - name: install Conan
-        run: |
-          brew install conan
-          echo '/opt/homebrew/opt/conan/bin' >> ${GITHUB_PATH}
-      - name: install Ninja
-        if: matrix.generator == 'Ninja'
-        run: brew install ninja
-      - name: check environment
-        run: |
-          env | sort
-          echo ${PATH} | tr ':' '\n'
-          python --version | tee -a "${GITHUB_STEP_SUMMARY}"
-          conan --version | tee -a "${GITHUB_STEP_SUMMARY}"
-          cmake --version | tee -a "${GITHUB_STEP_SUMMARY}"
+      - name: environment
+        uses: ./.github/actions/environment
       - name: configure Conan
         run : |
           conan config install .github/conan/
           conan profile detect --name detected || true
           touch $(conan config home)/profiles/matrix
-          echo '```' >> "${GITHUB_STEP_SUMMARY}"
-          conan profile show --profile default | tee -a "${GITHUB_STEP_SUMMARY}"
-          echo '```' >> "${GITHUB_STEP_SUMMARY}"
+      - name: checkout
+        uses: actions/checkout@v4
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:

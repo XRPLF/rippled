@@ -6,6 +6,12 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Conan profile
+      shell: bash
+      run : |
+        echo '```' >> "${GITHUB_STEP_SUMMARY}"
+        conan profile show --profile default | tee -a "${GITHUB_STEP_SUMMARY}"
+        echo '```' >> "${GITHUB_STEP_SUMMARY}"
     - name: add Ripple Conan remote
       shell: bash
       run: |
@@ -18,12 +24,10 @@ runs:
       id: remote
       shell: bash
       run: |
-        # `conan user` implicitly uses the environment variables
+        # `conan remote auth` implicitly uses the environment variables
         # CONAN_LOGIN_USERNAME_<REMOTE> and CONAN_PASSWORD_<REMOTE>.
-        # https://docs.conan.io/1/reference/commands/misc/user.html#using-environment-variables
-        # https://docs.conan.io/1/reference/env_vars.html#conan-login-username-conan-login-username-remote-name
-        # https://docs.conan.io/1/reference/env_vars.html#conan-password-conan-password-remote-name
-        echo outcome=$(conan user --remote ripple --password >&2 \
+        # https://docs.conan.io/2/reference/commands/remote.html
+        echo outcome=$(conan remote auth ripple >&2 \
           && echo success || echo failure) | tee ${GITHUB_OUTPUT}
     - name: list missing binaries
       id: binaries
@@ -47,4 +51,4 @@ runs:
     - name: upload dependencies to remote
       if: (steps.binaries.outputs.missing != '[]') && (steps.remote.outputs.outcome == 'success')
       shell: bash
-      run: conan upload --remote ripple '*' --all --parallel --confirm
+      run: conan upload --remote ripple --confirm '*'
