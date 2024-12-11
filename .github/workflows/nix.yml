@@ -86,7 +86,7 @@ jobs:
           {% set cc = "${{ matrix.profile.cc }}" %}
           {% set cxx = "${{ matrix.profile.cxx }}" %}
           EOF
-          conan profile show --profile default
+          conan profile show --profile default | tee "${GITHUB_STEP_SUMMARY}"
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
         run: tar -czf conan.tar -C ~/.conan2 .

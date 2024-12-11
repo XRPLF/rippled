@@ -53,7 +53,7 @@ jobs:
           conan config install .github/conan/
           conan profile detect --name detected || true
           touch $(conan config home)/profiles/matrix
-          conan profile show --profile default
+          conan profile show --profile default | tee "${GITHUB_STEP_SUMMARY}"
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
