@@ -101,9 +101,11 @@ However, if this compiler cannot build rippled or its dependencies, then you can
 install another compiler and set Conan and CMake to use it.
 Update the `conf.tools.build:compiler_executables` setting in order to set the correct variables (`CMAKE_<LANG>_COMPILER`) in the
 generated CMake toolchain file.
-For example, on Ubuntu 20, you may have gcc at `/usr/bin/gcc` and g++ at `/usr/bin/g++`; if that is the case, you can select those compilers with:
+For example, on Ubuntu 20, you may have gcc at `/usr/bin/gcc` and g++ at `/usr/bin/g++`; if that is the case, then you can select those compilers with:
 ```
-conan profile update 'conf.tools.build:compiler_executables={"c": "/usr/bin/gcc", "cpp": "/usr/bin/g++"}' default
+> $EDITOR $(conan config home)/profiles/libxrpl
+# Add this line to the [conf] section.
+tools.build:compiler_executables={"c": "/usr/bin/gcc", "cpp": "/usr/bin/g++"}
 ```
 
 Replace `/usr/bin/gcc` and `/usr/bin/g++` with paths to the desired compilers.
@@ -307,33 +309,6 @@ After any updates or changes to dependencies, you may need to do the following:
 4. Re-run [conan install](#build-and-test).
 
 
-### no std::result_of
-
-If your compiler version is recent enough to have removed `std::result_of` as
-part of C++20, e.g. Apple Clang 15.0, then you might need to add a preprocessor
-definition to your build.
-
-```
-conan profile update 'options.boost:extra_b2_flags="define=BOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
-conan profile update 'env.CFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
-conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
-conan profile update 'conf.tools.build:cflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
-conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
-```
-
-
-### call to 'async_teardown' is ambiguous
-
-If you are compiling with an early version of Clang 16, then you might hit
-a [regression][6] when compiling C++20 that manifests as an [error in a Boost
-header][7]. You can workaround it by adding this preprocessor definition:
-
-```
-conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_DISABLE_CONCEPTS"' default
-conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
-```
-
-
 ### recompile with -fPIC
 
 If you get a linker error suggesting that you recompile Boost with
@@ -374,8 +349,6 @@ If you want to experiment with a new package, follow these steps:
 [2]: https://en.cppreference.com/w/cpp/compiler_support/20
 [3]: https://docs.conan.io/en/latest/getting_started.html
 [5]: https://en.wikipedia.org/wiki/Unity_build
-[6]: https://github.com/boostorg/beast/issues/2648
-[7]: https://github.com/boostorg/beast/issues/2661
 [gcovr]: https://gcovr.com/en/stable/getting-started.html
 [python-pip]: https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/
 [build_type]: https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html

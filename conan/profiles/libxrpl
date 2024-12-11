@@ -11,7 +11,17 @@ compiler.libcxx=libstdc++11
 
 [conf]
 tools.build:cxxflags+=["-DBOOST_BEAST_USE_STD_STRING_VIEW"]
+
+# If your compiler version is recent enough to have removed `std::result_of`
+# as part of C++20, e.g. Apple Clang 15.0, then you need to tell Boost to use
+# `std::invoke_result` instead.
 tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]
+
+# If you are compiling with an early version of Clang 16, then you might hit
+# a regression when compiling C++20 that manifests as an error in a Boost
+# header: "call to 'async_teardown' is ambiguous".
+# https://github.com/boostorg/beast/issues/2648
+# https://github.com/boostorg/beast/issues/2661
 tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]
 
 [options]
