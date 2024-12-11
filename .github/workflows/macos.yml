@@ -32,6 +32,9 @@ jobs:
       build_dir: .build
       NUM_PROCESSORS: 12
     steps:
+      # We must checkout first to make local actions available.
+      - name: checkout
+        uses: actions/checkout@v4
       - name: environment
         uses: ./.github/actions/environment
       - name: configure Conan
@@ -39,8 +42,6 @@ jobs:
           conan config install .github/conan/
           conan profile detect --name detected || true
           touch $(conan config home)/profiles/matrix
-      - name: checkout
-        uses: actions/checkout@v4
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:

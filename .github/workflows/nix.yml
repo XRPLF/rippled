@@ -64,6 +64,9 @@ jobs:
     env:
       build_dir: .build
     steps:
+      # We must checkout first to make local actions available.
+      - name: checkout
+        uses: actions/checkout@v4
       - name: environment
         uses: ./.github/actions/environment
       - name: configure Conan
@@ -79,8 +82,6 @@ jobs:
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
         run: tar -czf conan.tar -C ~/.conan2 .
-      - name: checkout
-        uses: actions/checkout@v4
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:

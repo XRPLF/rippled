@@ -52,6 +52,9 @@ jobs:
         with:
             path: ${{ steps.pip-cache.outputs.dir }}
             key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
+      # We must checkout first to make local actions available.
+      - name: checkout
+        uses: actions/checkout@v4
       - name: environment
         uses: ./.github/actions/environment
       - name: configure Conan
@@ -62,8 +65,6 @@ jobs:
           cat >$(conan config home)/profiles/matrix <<EOF
           {% set runtime = "MT${{ matrix.configuration == 'Debug' && 'd' || '' }}" %}
           EOF
-      - name: checkout
-        uses: actions/checkout@v4
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
