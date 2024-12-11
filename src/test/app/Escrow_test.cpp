@@ -1689,20 +1689,33 @@ struct Escrow_test : public beast::unit_test::suite
             "63652d74797065732b087369676e2d657874";
 
         {
+            // create escrow
             Env env(*this);
             env.fund(XRP(5000), "alice", "bob", "carol");
             auto const seq = env.seq("alice");
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
             auto escrowCreate = escrow("alice", "carol", XRP(1000));
-            // escrowCreate[sfCancelAfter.jsonName] = (env.now() + 1s);
+            std::uint32_t const finishTime =
+                (env.now() + 1s).time_since_epoch().count();
+            escrowCreate[sfFinishAfter.jsonName] = finishTime;
             escrowCreate[sfFinishFunction.jsonName] = wasmHex;
             env(escrowCreate);
             env.close();
+
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
             env.require(balance("alice", XRP(4000) - drops(10)));
             env.require(balance("carol", XRP(5000)));
 
-            env(finish(carol, alice, seq));
+            // finish escrow
+            while (true)
+            {
+                auto const carolSeq = env.seq(carol);
+                TER const expected =
+                    (carolSeq % 5 == 0) ? TER(tesSUCCESS) : tecNO_PERMISSION;
+                env(finish(carol, alice, seq), ter(expected));
+                if (expected == tesSUCCESS)
+                    break;
+            }
         }
     }
 
