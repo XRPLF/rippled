@@ -21,7 +21,7 @@ tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]
 tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]
 
 {% if platform.system() == "Linux" %}
-tools.build:compiler_executables='{"c": "{{ matrix.cc }}", "cpp": "{{ matrix.cxx }}"}'
+tools.build:compiler_executables={"c": "{{ matrix.cc }}", "cpp": "{{ matrix.cxx }}"}
 {% endif %}
 
 [options]
