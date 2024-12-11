@@ -3,7 +3,7 @@ runs:
   using: composite
   steps:
     - name: install Conan
-      if: runner.os == 'Linux'
+      if: contains(['Linux', 'Windows'], runner.os)
       shell: bash
       run: |
         pip install --upgrade conan
