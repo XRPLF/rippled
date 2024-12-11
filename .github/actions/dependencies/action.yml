@@ -36,7 +36,8 @@ runs:
       # Print the list of dependencies that would need to be built locally.
       # A non-empty list means we have "failed" to cache binaries remotely.
       run: |
-        echo missing=$(conan graph build-order --build missing --settings build_type=${{ inputs.configuration }} --reduce --order-by configuration --format json 2>/dev/null | jq .order) | tee ${GITHUB_OUTPUT}
+        echo missing=$(conan graph build-order --build missing --settings build_type=${{ inputs.configuration }} --reduce --order-by configuration --format json 2>error | jq .order) | tee ${GITHUB_OUTPUT}
+        cat error
     - name: install dependencies
       shell: bash
       run: |
