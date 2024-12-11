@@ -60,9 +60,9 @@ jobs:
         run: |
           dir env:
           $env:PATH -split ';'
-          python --version | tee "${GITHUB_STEP_SUMMARY}"
-          conan --version | tee "${GITHUB_STEP_SUMMARY}"
-          cmake --version | tee "${GITHUB_STEP_SUMMARY}"
+          python --version | tee "$env:GITHUB_STEP_SUMMARY"
+          conan --version | tee "$env:GITHUB_STEP_SUMMARY"
+          cmake --version | tee "$env:GITHUB_STEP_SUMMARY"
       - name: configure Conan
         shell: bash
         run: |
