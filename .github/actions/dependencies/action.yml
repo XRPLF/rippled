@@ -27,7 +27,7 @@ runs:
         # `conan remote auth` implicitly uses the environment variables
         # CONAN_LOGIN_USERNAME_<REMOTE> and CONAN_PASSWORD_<REMOTE>.
         # https://docs.conan.io/2/reference/commands/remote.html
-        echo outcome=$((conan remote auth ripple | grep -q error) \
+        echo outcome=$((conan remote auth ripple | tee /dev/tty | grep -q error) \
           && echo failure || echo success) | tee ${GITHUB_OUTPUT}
     - name: list missing binaries
       id: binaries
@@ -47,6 +47,6 @@ runs:
           --settings build_type=${{ inputs.configuration }} \
           ..
     - name: upload dependencies to remote
-      if: (steps.binaries.outputs.missing != '[]') && (steps.remote.outputs.outcome == 'success')
+      if: false && (steps.binaries.outputs.missing != '[]') && (steps.remote.outputs.outcome == 'success')
       shell: bash
       run: conan upload --remote ripple --confirm '*'
