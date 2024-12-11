@@ -716,18 +716,22 @@ getBaseFee(Application const& app, Config const& config, Json::Value tx)
     {
         tx[jss::Fee] = "0";
     }
+
     if (!tx.isMember(jss::Sequence))
     {
         tx[jss::Sequence] = "0";
     }
+
     if (!tx.isMember(jss::SigningPubKey))
     {
         tx[jss::SigningPubKey] = "";
     }
+
     if (!tx.isMember(jss::TxnSignature))
     {
         tx[jss::TxnSignature] = "";
     }
+
     if (tx.isMember(jss::Signers))
     {
         if (!tx[jss::Signers].isArray())
@@ -745,6 +749,7 @@ getBaseFee(Application const& app, Config const& config, Json::Value tx)
             }
         }
     }
+
     STParsedJSONObject parsed(std::string(jss::tx_json), tx);
     if (!parsed.object.has_value())
     {

@@ -265,7 +265,7 @@ ApplyStateTable::apply(
         if (!isDryRun)
         {
             // add any new modified nodes to the modification set
-            for (auto& mod : newMod)
+            for (auto const& mod : newMod)
                 to.rawReplace(mod.second);
         }
 

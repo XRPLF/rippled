@@ -52,11 +52,13 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
             return feeOrError;
         tx_json[jss::Fee] = feeOrError;
     }
+
     if (!tx_json.isMember(sfSigningPubKey.jsonName))
     {
         // autofill SigningPubKey
         tx_json[sfSigningPubKey.jsonName] = "";
     }
+
     if (tx_json.isMember(jss::Signers))
     {
         if (!tx_json[jss::Signers].isArray())
@@ -81,6 +83,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
             }
         }
     }
+
     if (!tx_json.isMember(sfTxnSignature.jsonName))
     {
         // autofill TxnSignature
@@ -91,6 +94,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         // Transaction must not be signed
         return rpcError(rpcTX_SIGNED);
     }
+
     if (!tx_json.isMember(jss::Sequence))
     {
         // autofill Sequence
@@ -101,6 +105,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
             // sanity check, should fail earlier
             return RPC::invalid_field_error("tx.Account");  // LCOV_EXCL_LINE
         }
+
         auto const srcAddressID =
             parseBase58<AccountID>(tx_json[jss::Account].asString());
         if (!srcAddressID.has_value())
@@ -108,6 +113,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
             return RPC::make_error(
                 rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx.Account"));
         }
+
         std::shared_ptr<SLE const> sle =
             context.app.openLedger().current()->read(
                 keylet::account(*srcAddressID));
@@ -119,6 +125,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
 
             return rpcError(rpcSRC_ACT_NOT_FOUND);
         }
+
         tx_json[jss::Sequence] = hasTicketSeq
             ? 0
             : context.app.getTxQ().nextQueuableSeq(sle).value();
@@ -128,11 +135,9 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
 }
 
 // {
-//   tx_blob: <string>,
-//   tx_json: <object>,
+//   tx_blob: <string> XOR tx_json: <object>,
 //   binary: <bool>
 // }
-// tx_blob XOR tx_json
 Json::Value
 doSimulate(RPC::JsonContext& context)
 {

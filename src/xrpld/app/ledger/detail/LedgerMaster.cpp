@@ -471,7 +471,7 @@ LedgerMaster::applyHeldTransactions()
             ApplyFlags flags = tapNONE;
             auto const result =
                 app_.getTxQ().apply(app_, view, it.second, flags, j);
-            if (result.applied)
+            if (any | result.applied)
                 any = true;
         }
         return any;

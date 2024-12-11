@@ -1062,7 +1062,7 @@ public:
 
             env.app().openLedger().modify(
                 [&](OpenView& view, beast::Journal j) {
-                    auto result = ripple::apply(
+                    auto const result = ripple::apply(
                         env.app(), view, *jt.stx, tapNONE, env.journal);
                     parsed.ter = result.ter;
                     return result.applied;

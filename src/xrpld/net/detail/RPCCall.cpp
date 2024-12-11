@@ -928,6 +928,7 @@ private:
         {
             jvRequest[jss::tx_blob] = jvParams[0u].asString();
         }
+
         if (jvParams.size() == 2)
         {
             if (!jvParams[1u].isString() || jvParams[1u].asString() != "binary")
