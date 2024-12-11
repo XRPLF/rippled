@@ -129,6 +129,9 @@ jobs:
     env:
       build_dir: .build
     steps:
+      - name: install Conan
+        run: |
+          pip install --upgrade conan
       - name: download cache
         uses: actions/download-artifact@v3
         with:
