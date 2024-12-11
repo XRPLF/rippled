@@ -172,12 +172,12 @@ jobs:
         run: |
           mkdir -p ~/.conan2
           tar -xzf conan.tar -C ~/.conan2
-      - name: install gcovr
-        run: pip install "gcovr>=7,<8"
-      - name: environment
-        uses: ./.github/actions/environment
       - name: checkout
         uses: actions/checkout@v4
+      - name: environment
+        uses: ./.github/actions/environment
+      - name: install gcovr
+        run: pip install "gcovr>=7,<8"
       - name: dependencies
         uses: ./.github/actions/dependencies
         env:
