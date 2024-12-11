@@ -57,7 +57,6 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
         // MPT
         if (noAccount() == account)
         {
-            uint192 mptID;
             MPTID mptID;
             std::uint32_t sequence = sit.get32();
             static_assert(
@@ -108,9 +107,6 @@ STIssue::add(Serializer& s) const
 {
     if (holds<Issue>())
     {
-        s.addBitString(asset_.get<Issue>().currency);
-        if (!isXRP(asset_.get<Issue>().currency))
-            s.addBitString(asset_.get<Issue>().account);
         auto const& issue = asset_.get<Issue>();
         s.addBitString(issue.currency);
         if (!isXRP(issue.currency))
@@ -123,6 +119,7 @@ STIssue::add(Serializer& s) const
         s.addBitString(noAccount());
         std::uint32_t sequence;
         memcpy(&sequence, issue.getMptID().data(), sizeof(sequence));
+        s.add32(sequence);
     }
 }
 
