@@ -76,6 +76,9 @@ public:
     bool
     isDefault() const override;
 
+    friend constexpr bool
+    operator==(STIssue const& lhs, STIssue const& rhs);
+
     friend constexpr std::weak_ordering
     operator<=>(STIssue const& lhs, STIssue const& rhs);
 
@@ -136,6 +139,12 @@ STIssue::setIssue(Asset const& asset)
             "Invalid asset: currency and account native mismatch");
 
     asset_ = asset;
+}
+
+constexpr bool
+operator==(STIssue const& lhs, STIssue const& rhs)
+{
+    return lhs.asset_ == rhs.asset_;
 }
 
 constexpr std::weak_ordering
