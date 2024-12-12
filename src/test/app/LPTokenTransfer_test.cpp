@@ -353,7 +353,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env(token::mint(bob, 0), txflags(tfTransferable));
         env.close();
 
-        // bob creates a sell offer accepting lptoken
+        // bob creates a sell offer for lptoken
         uint256 const sellOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
         env(token::createOffer(bob, nftID, STAmount{lpIssue, 10}),
             txflags(tfSellNFToken));
@@ -378,7 +378,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env(trust(gw, carol["USD"](1'000'000), tfClearFreeze));
             env.close();
 
-            // carol can buy the nft
+            // carol can now accept the offer and own the nft
             env(token::acceptSellOffer(carol, sellOfferIndex));
             env.close();
 
