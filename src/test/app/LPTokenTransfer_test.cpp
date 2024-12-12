@@ -136,8 +136,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         if (features[fixLPTokenTransfer])
         {
-            // with fixLPTokenTransfer, alice fails to use the carol's offer
-            // since it is unfunded as carol's USD is frozen
+            // with fixLPTokenTransfer, alice fails to consume carol's offer
+            // since carol's USD is frozen
             env(pay(alice, bob, STAmount{lpIssue, 10}),
                 txflags(tfPartialPayment),
                 sendmax(XRP(10)),
@@ -158,7 +158,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
         }
         else
         {
-            // without fixLPTokenTransfer, alice can consume carol's offer
+            // without fixLPTokenTransfer, alice can consume carol's offer even
+            // when carol's USD is frozen
             env(pay(alice, bob, STAmount{lpIssue, 10}),
                 txflags(tfPartialPayment),
                 sendmax(XRP(10)));
