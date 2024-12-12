@@ -260,7 +260,7 @@ jobs:
           mkdir ${build_dir}
           cd ${build_dir}
           conan install .. --output-folder . \
-            --require-override ${reference} --build missing
+            --requires ${reference} --build missing
           cmake .. \
             -DCMAKE_TOOLCHAIN_FILE:FILEPATH=./build/${configuration}/generators/conan_toolchain.cmake \
             -DCMAKE_BUILD_TYPE=${configuration}
