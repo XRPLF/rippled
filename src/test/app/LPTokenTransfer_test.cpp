@@ -189,10 +189,11 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         auto const lpIssue = ammAlice.lptIssue();
 
-        // with fixLPTokenTransfer, carol can't create an offer to sell lptoken
-        // when one of the assets is frozen
         if (features[fixLPTokenTransfer])
         {
+            // with fixLPTokenTransfer, carol can't create an offer to sell
+            // lptoken when one of the assets is frozen
+
             // gateway freezes carol's USD
             env(trust(gw, carol["USD"](0), tfSetFreeze));
             env.close();
@@ -234,14 +235,14 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         // Offer crossing with two AMM LPTokens.
         fund(env, gw, {alice, carol}, {USD(10'000)}, Fund::All);
-        AMM ammAlice(env, alice, XRP(10'000), USD(10'000));
-        ammAlice.deposit(carol, 10'000'000);
+        AMM ammAlice1(env, alice, XRP(10'000), USD(10'000));
+        ammAlice1.deposit(carol, 10'000'000);
 
         fund(env, gw, {alice, carol}, {EUR(10'000)}, Fund::IOUOnly);
-        AMM ammAlice1(env, alice, XRP(10'000), EUR(10'000));
-        ammAlice1.deposit(carol, 10'000'000);
-        auto const token1 = ammAlice.lptIssue();
-        auto const token2 = ammAlice1.lptIssue();
+        AMM ammAlice2(env, alice, XRP(10'000), EUR(10'000));
+        ammAlice2.deposit(carol, 10'000'000);
+        auto const token1 = ammAlice1.lptIssue();
+        auto const token2 = ammAlice2.lptIssue();
 
         // carol creates offer
         env(offer(carol, STAmount{token2, 100}, STAmount{token1, 100}));
@@ -252,13 +253,15 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env(trust(gw, carol["USD"](1'000'000'000), tfSetFreeze));
         env.close();
 
+        // alice creates an offer which exhibits different behavior on offer
+        // crossing depending on if fixLPTokenTransfer is enabled
+        env(offer(alice, STAmount{token1, 100}, STAmount{token2, 100}));
+        env.close();
+
         if (features[fixLPTokenTransfer])
         {
             // with fixLPTokenTransfer enabled, alice's offer can no longer
             // cross with carol's offer
-            env(offer(alice, STAmount{token1, 100}, STAmount{token2, 100}));
-            env.close();
-
             BEAST_EXPECT(
                 expectLine(env, alice, STAmount{token1, 10'000'000}) &&
                 expectLine(env, alice, STAmount{token2, 10'000'000}));
@@ -272,9 +275,6 @@ class LPTokenTransfer_test : public jtx::AMMTest
         {
             // alice's offer still crosses with carol's offer despite carol's
             // token1 is frozen
-            env(offer(alice, STAmount{token1, 100}, STAmount{token2, 100}));
-            env.close();
-
             BEAST_EXPECT(
                 expectLine(env, alice, STAmount{token1, 10'000'100}) &&
                 expectLine(env, alice, STAmount{token2, 9'999'900}));
@@ -326,6 +326,107 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
     }
 
+    void
+    testNFTOffers(FeatureBitset features)
+    {
+        testcase("NFT Offers");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+
+        // Setup AMM
+        fund(
+            env,
+            gw,
+            {alice, bob, carol},
+            {USD(10'000), EUR(10'000)},
+            Fund::All);
+        AMM ammAlice(env, alice, USD(10'000), EUR(10'000));
+        ammAlice.deposit(carol, 1'000);
+        ammAlice.deposit(bob, 1'000);
+
+        auto const lpIssue = ammAlice.lptIssue();
+
+        // bob mints a nft
+        uint256 const nftID{token::getNextID(env, bob, 0u, tfTransferable)};
+        env(token::mint(bob, 0), txflags(tfTransferable));
+        env.close();
+
+        // bob creates a sell offer accepting lptoken
+        uint256 const sellOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
+        env(token::createOffer(bob, nftID, STAmount{lpIssue, 10}),
+            txflags(tfSellNFToken));
+        env.close();
+
+        // gateway freezes carol's USD
+        env(trust(gw, carol["USD"](0), tfSetFreeze));
+        env.close();
+
+        if (features[fixLPTokenTransfer])
+        {
+            // with fixLPTokenTransfer, freezing USD will prevent buy/sell
+            // offers with lptokens from being created/accepted
+
+            // carol fails to accept bob's offer with lptoken because carol's
+            // USD is frozen
+            env(token::acceptSellOffer(carol, sellOfferIndex),
+                ter(tecINSUFFICIENT_FUNDS));
+            env.close();
+
+            // gateway unfreezes carol's USD
+            env(trust(gw, carol["USD"](1'000'000), tfClearFreeze));
+            env.close();
+
+            // carol can buy the nft
+            env(token::acceptSellOffer(carol, sellOfferIndex));
+            env.close();
+
+            // gateway freezes bobs's USD
+            env(trust(gw, bob["USD"](0), tfSetFreeze));
+            env.close();
+
+            // bob fails to create a buy offer with lptoken for carol's nft
+            // since bob's USD is frozen
+            env(token::createOffer(bob, nftID, STAmount{lpIssue, 10}),
+                token::owner(carol),
+                ter(tecUNFUNDED_OFFER));
+            env.close();
+
+            // gateway unfreezes bob's USD
+            env(trust(gw, bob["USD"](1'000'000), tfClearFreeze));
+            env.close();
+
+            // bob can now create a buy offer
+            env(token::createOffer(bob, nftID, STAmount{lpIssue, 10}),
+                token::owner(carol));
+            env.close();
+        }
+        else
+        {
+            // without fixLPTokenTransfer, freezing USD will still allow
+            // buy/sell offers to be created/accepted with lptoken
+
+            // carol can still accept bob's offer despite carol's USD is frozen
+            env(token::acceptSellOffer(carol, sellOfferIndex));
+            env.close();
+
+            // gateway freezes bob's USD
+            env(trust(gw, bob["USD"](0), tfSetFreeze));
+            env.close();
+
+            // bob creates a buy offer with lptoken despite bob's USD is frozen
+            uint256 const buyOfferIndex =
+                keylet::nftoffer(bob, env.seq(bob)).key;
+            env(token::createOffer(bob, nftID, STAmount{lpIssue, 10}),
+                token::owner(carol));
+            env.close();
+
+            // carol accepts bob's offer
+            env(token::acceptBuyOffer(carol, buyOfferIndex));
+            env.close();
+        }
+    }
+
 public:
     void
     run() override
@@ -340,6 +441,7 @@ public:
             testOfferCreation(features);
             testOfferCrossing(features);
             testCheck(features);
+            testNFTOffers(features);
         }
     }
 };
