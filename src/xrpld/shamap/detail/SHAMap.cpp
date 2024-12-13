@@ -445,7 +445,7 @@ SHAMap::unshareNode(intr_ptr::SharedPtr<Node> node, SHAMapNodeID const& nodeID)
         ASSERT(
             state_ != SHAMapState::Immutable,
             "ripple::SHAMap::unshareNode : not immutable");
-        node = std::static_pointer_cast<Node>(node->clone(cowid_));
+        node = intr_ptr::static_pointer_cast<Node>(node->clone(cowid_));
         if (nodeID.isRoot())
             root_ = node;
     }
@@ -476,7 +476,7 @@ SHAMap::belowHelper(
     {
         if (!inner->isEmptyBranch(i))
         {
-            node = descendThrow(inner, i);
+            node.adopt(descendThrow(inner.get(), i));
             ASSERT(
                 !stack.empty(),
                 "ripple::SHAMap::belowHelper : non-empty stack");
@@ -588,7 +588,7 @@ SHAMap::peekNextItem(uint256 const& id, SharedPtrNodeStack& stack) const
         ASSERT(
             !node->isLeaf(),
             "ripple::SHAMap::peekNextItem : another node is not leaf");
-        auto inner = std::static_pointer_cast<SHAMapInnerNode>(node);
+        auto inner = intr_ptr::static_pointer_cast<SHAMapInnerNode>(node);
         for (auto i = selectBranch(nodeID, id) + 1; i < branchFactor; ++i)
         {
             if (!inner->isEmptyBranch(i))

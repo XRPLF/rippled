@@ -24,7 +24,6 @@
 // The ref counts are kept on the tree pointers themselves
 // I.e. this is an intrusive pointer type.
 
-#include <cassert>
 #include <concepts>
 #include <cstdint>
 #include <type_traits>
@@ -116,6 +115,12 @@ public:
 
     SharedIntrusive&
     operator=(SharedIntrusive const& rhs);
+
+    bool
+    operator!=(std::nullptr_t) const;
+
+    bool
+    operator==(std::nullptr_t) const;
 
     template <class TT>
     // clang-format off

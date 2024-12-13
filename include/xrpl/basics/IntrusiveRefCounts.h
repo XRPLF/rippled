@@ -21,7 +21,6 @@
 #define RIPPLE_BASICS_INTRUSIVEREFCOUNTS_H_INCLUDED
 
 #include <atomic>
-#include <cassert>
 #include <cstdint>
 
 namespace ripple {
@@ -263,7 +262,9 @@ IntrusiveRefCounts::releaseStrongRef() const
     while (1)
     {
         RefCountPair const prevVal{prevIntVal};
-        assert(prevVal.strong >= strongDelta);
+        ASSERT(
+            (prevVal.strong >= strongDelta),
+            "ripple::IntrusiveRefCounts : prevVal.strong >= strongDelta");
         auto nextIntVal = prevIntVal - strongDelta;
         ReleaseRefAction action = noop;
         if (prevVal.strong == 1)
@@ -285,8 +286,11 @@ IntrusiveRefCounts::releaseStrongRef() const
             // Can't be in partial destroy because only decrementing the strong
             // count to zero can start a partial destroy, and that can't happen
             // twice.
-            assert(
-                (action == noop) || !(prevIntVal & partialDestroyStartedMask));
+            ASSERT(
+                (action == noop) || !(prevIntVal & partialDestroyStartedMask),
+                "ripple::IntrusiveRefCounts : Can't be in partial destroy "
+                "because only decrementing the strong count to zero can start "
+                "a partial destroy, and that can't happen twice.");
             return action;
         }
     }
@@ -315,7 +319,11 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
         // Can't be in partial destroy because only decrementing the
         // strong count to zero can start a partial destroy, and that
         // can't happen twice.
-        assert(!prevVal.partialDestroyStartedBit);
+        ASSERT(
+            (!prevVal.partialDestroyStartedBit),
+            "ripple::IntrusiveRefCounts : Can't be in partial destroy because "
+            "only decrementing the strong count to zero can start a partial "
+            "destroy, and that can't happen twice.");
 
         auto nextIntVal = prevIntVal + delta;
         ReleaseRefAction action = noop;
@@ -334,7 +342,10 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
         if (refCounts.compare_exchange_weak(
                 prevIntVal, nextIntVal, std::memory_order_release))
         {
-            assert(!(prevIntVal & partialDestroyStartedMask));
+            ASSERT(
+                (!(prevIntVal & partialDestroyStartedMask)),
+                "ripple::IntrusiveRefCounts : !(prevIntVal & "
+                "partialDestroyStartedMask)");
             return action;
         }
     }
@@ -403,9 +414,11 @@ inline IntrusiveRefCounts::~IntrusiveRefCounts() noexcept
 {
 #ifndef NDEBUG
     auto v = refCounts.load(std::memory_order_acquire);
-    assert(!(v & valueMask));
+    ASSERT((!(v & valueMask)), "ripple::IntrusiveRefCounts : !(v & valueMask)");
     auto t = v & tagMask;
-    assert(!t || t == tagMask);
+    ASSERT(
+        (!t || t == tagMask),
+        "ripple::IntrusiveRefCounts : (!t || t == tagMask)");
 #endif
 }
 
@@ -418,7 +431,10 @@ inline IntrusiveRefCounts::RefCountPair::RefCountPair(
     , partialDestroyStartedBit{v & partialDestroyStartedMask}
     , partialDestroyFinishedBit{v & partialDestroyFinishedMask}
 {
-    assert(strong < checkStrongMaxValue && weak < checkWeakMaxValue);
+    ASSERT(
+        (strong < checkStrongMaxValue && weak < checkWeakMaxValue),
+        "ripple::IntrusiveRefCounts : (strong < checkStrongMaxValue && weak < "
+        "checkWeakMaxValue)");
 }
 
 inline IntrusiveRefCounts::RefCountPair::RefCountPair(
@@ -426,13 +442,19 @@ inline IntrusiveRefCounts::RefCountPair::RefCountPair(
     IntrusiveRefCounts::CountType w) noexcept
     : strong{s}, weak{w}
 {
-    assert(strong < checkStrongMaxValue && weak < checkWeakMaxValue);
+    ASSERT(
+        (strong < checkStrongMaxValue && weak < checkWeakMaxValue),
+        "ripple::IntrusiveRefCounts : (strong < checkStrongMaxValue && weak < "
+        "checkWeakMaxValue)");
 }
 
 inline IntrusiveRefCounts::FieldType
 IntrusiveRefCounts::RefCountPair::combinedValue() const noexcept
 {
-    assert(strong < checkStrongMaxValue && weak < checkWeakMaxValue);
+    ASSERT(
+        (strong < checkStrongMaxValue && weak < checkWeakMaxValue),
+        "ripple::IntrusiveRefCounts : (strong < checkStrongMaxValue && weak < "
+        "checkWeakMaxValue)");
     return (static_cast<IntrusiveRefCounts::FieldType>(weak)
             << IntrusiveRefCounts::StrongCountNumBits) |
         static_cast<IntrusiveRefCounts::FieldType>(strong) |
@@ -446,9 +468,12 @@ partialDestructorFinished(T** o)
     T& self = **o;
     IntrusiveRefCounts::RefCountPair p =
         self.refCounts.fetch_or(IntrusiveRefCounts::partialDestroyFinishedMask);
-    assert(
-        !p.partialDestroyFinishedBit && p.partialDestroyStartedBit &&
-        !p.strong);
+    ASSERT(
+        (!p.partialDestroyFinishedBit && p.partialDestroyStartedBit &&
+         !p.strong),
+        "ripple::IntrusiveRefCounts : (!p.partialDestroyFinishedBit && "
+        "p.partialDestroyStartedBit && "
+        "!p.strong)");
     if (!p.weak)
     {
         // There was a weak count before the partial destructor ran (or we would

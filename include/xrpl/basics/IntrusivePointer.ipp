@@ -141,6 +141,20 @@ SharedIntrusive<T>::operator=(SharedIntrusive<TT>&& rhs)
 }
 
 template <class T>
+bool
+SharedIntrusive<T>::operator!=(std::nullptr_t) const
+{
+    return this->get() != nullptr;
+}
+
+template <class T>
+bool
+SharedIntrusive<T>::operator==(std::nullptr_t) const
+{
+    return this->get() == nullptr;
+}
+
+template <class T>
 template <CAdoptTag TAdoptTag>
 void
 SharedIntrusive<T>::adopt(T* p)
@@ -405,8 +419,9 @@ WeakIntrusive<T>::unsafeReleaseNoStore()
             delete ptr_;
             break;
         case partialDestroy:
-            assert(0);  // only a strong pointer should case a
-                        // partialDestruction
+            UNREACHABLE(
+                "ripple::WeakIntrusive::unsafeReleaseNoStore : only a strong "
+                "pointer should case a partialDestruction");
             ptr_->partialDestructor();
             partialDestructorFinished(&ptr_);
             // ptr_ is null and may no longer be used
@@ -623,7 +638,10 @@ SharedWeakUnion<T>::convertToStrong()
     {
         auto action = p->releaseWeakRef();
         (void)action;
-        assert(action == ReleaseRefAction::noop);
+        ASSERT(
+            (action == ReleaseRefAction::noop),
+            "ripple::SharedWeakUnion::convertToStrong : "
+            "ReleaseRefAction::noop");
         unsafeSetRawPtr(p, RefStrength::strong);
         return true;
     }
@@ -649,7 +667,9 @@ SharedWeakUnion<T>::convertToWeak()
             break;
         case destroy:
             // We just added a weak ref. How could we destroy?
-            assert(0);
+            UNREACHABLE(
+                "ripple::SharedWeakUnion::convertToWeak : We just added a weak "
+                "ref. How could we destroy?");
             delete p;
             unsafeSetRawPtr(nullptr);
             return true;  // Should never happen
