@@ -252,7 +252,7 @@ changeTokenURI(
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
-        return tecNO_ENTRY;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Locate the NFT in the page
     STArray& arr = page->peekFieldArray(sfNFTokens);
@@ -263,7 +263,7 @@ changeTokenURI(
         });
 
     if (nftIter == arr.end())
-        return tecNO_ENTRY;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (uri)
         nftIter->setFieldVL(sfURI, *uri);
