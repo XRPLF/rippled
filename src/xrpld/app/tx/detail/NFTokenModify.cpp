@@ -69,8 +69,7 @@ NFTokenModify::preclaim(PreclaimContext const& ctx)
     {
         if (auto const sle = ctx.view.read(keylet::account(issuer)); !sle)
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        if (auto const minter = (*sle)[~sfNFTokenMinter];
-                 minter != account)
+        if (auto const minter = (*sle)[~sfNFTokenMinter]; minter != account)
             return tecNO_PERMISSION;
     }
 
