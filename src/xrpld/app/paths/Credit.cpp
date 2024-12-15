@@ -31,7 +31,7 @@ creditLimit(
     AccountID const& issuer,
     Currency const& currency)
 {
-    STAmount result({currency, account});
+    STAmount result(Issue{currency, account});
 
     auto sleRippleState = view.read(keylet::line(account, issuer, currency));
 
@@ -42,8 +42,12 @@ creditLimit(
         result.setIssuer(account);
     }
 
-    assert(result.getIssuer() == account);
-    assert(result.getCurrency() == currency);
+    ASSERT(
+        result.getIssuer() == account,
+        "ripple::creditLimit : result issuer match");
+    ASSERT(
+        result.getCurrency() == currency,
+        "ripple::creditLimit : result currency match");
     return result;
 }
 
@@ -64,7 +68,7 @@ creditBalance(
     AccountID const& issuer,
     Currency const& currency)
 {
-    STAmount result({currency, account});
+    STAmount result(Issue{currency, account});
 
     auto sleRippleState = view.read(keylet::line(account, issuer, currency));
 
@@ -76,8 +80,12 @@ creditBalance(
         result.setIssuer(account);
     }
 
-    assert(result.getIssuer() == account);
-    assert(result.getCurrency() == currency);
+    ASSERT(
+        result.getIssuer() == account,
+        "ripple::creditBalance : result issuer match");
+    ASSERT(
+        result.getCurrency() == currency,
+        "ripple::creditBalance : result currency match");
     return result;
 }
 

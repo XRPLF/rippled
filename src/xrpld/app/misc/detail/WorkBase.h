@@ -282,7 +282,9 @@ WorkBase<Impl>::onResponse(error_code const& ec)
         return fail(ec);
 
     close();
-    assert(cb_);
+    ASSERT(
+        cb_ != nullptr,
+        "ripple::detail::WorkBase::onResponse : callback is set");
     cb_(ec, lastEndpoint_, std::move(res_));
     cb_ = nullptr;
 }

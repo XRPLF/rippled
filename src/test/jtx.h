@@ -32,6 +32,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
 #include <test/jtx/check.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/delivermin.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/did.h>
@@ -42,6 +43,7 @@
 #include <test/jtx/last_ledger_sequence.h>
 #include <test/jtx/ledgerStateFix.h>
 #include <test/jtx/memo.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/offer.h>

@@ -137,7 +137,9 @@ STTx::getMentionedAccounts() const
     {
         if (auto sacc = dynamic_cast<STAccount const*>(&it))
         {
-            assert(!sacc->isDefault());
+            ASSERT(
+                !sacc->isDefault(),
+                "ripple::STTx::getMentionedAccounts : account is set");
             if (!sacc->isDefault())
                 list.insert(sacc->value());
         }
@@ -298,7 +300,8 @@ STTx::getMetaSQL(
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
     auto format = TxFormats::getInstance().findByType(tx_type_);
-    assert(format != nullptr);
+    ASSERT(
+        format != nullptr, "ripple::STTx::getMetaSQL : non-null type format");
 
     return str(
         boost::format(bfTrans) % to_string(getTransactionID()) %
@@ -543,6 +546,32 @@ isAccountFieldOkay(STObject const& st)
     return true;
 }
 
+static bool
+invalidMPTAmountInTx(STObject const& tx)
+{
+    auto const txType = tx[~sfTransactionType];
+    if (!txType)
+        return false;
+    if (auto const* item =
+            TxFormats::getInstance().findByType(safe_cast<TxType>(*txType)))
+    {
+        for (auto const& e : item->getSOTemplate())
+        {
+            if (tx.isFieldPresent(e.sField()) && e.supportMPT() != soeMPTNone)
+            {
+                if (auto const& field = tx.peekAtField(e.sField());
+                    field.getSType() == STI_AMOUNT &&
+                    static_cast<STAmount const&>(field).holds<MPTIssue>())
+                {
+                    if (e.supportMPT() != soeMPTSupported)
+                        return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 bool
 passesLocalChecks(STObject const& st, std::string& reason)
 {
@@ -560,6 +589,13 @@ passesLocalChecks(STObject const& st, std::string& reason)
         reason = "Cannot submit pseudo transactions.";
         return false;
     }
+
+    if (invalidMPTAmountInTx(st))
+    {
+        reason = "Amount can not be MPT.";
+        return false;
+    }
+
     return true;
 }
 

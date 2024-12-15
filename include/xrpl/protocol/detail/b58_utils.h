@@ -21,12 +21,12 @@
 #define RIPPLE_PROTOCOL_B58_UTILS_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/detail/token_errors.h>
 
 #include <boost/outcome.hpp>
 #include <boost/outcome/result.hpp>
 
-#include <cassert>
 #include <cinttypes>
 #include <span>
 #include <system_error>
@@ -130,7 +130,9 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
     {
         // should never happen, but if it does then it seems natural to define
         // the a null set of numbers to be zero, so the remainder is also zero.
-        assert(0);
+        UNREACHABLE(
+            "ripple::b58_fast::detail::inplace_bigint_div_rem : empty "
+            "numerator");
         return 0;
     }
 
@@ -146,8 +148,14 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
         unsigned __int128 const denom128 = denom;
         unsigned __int128 const d = num / denom128;
         unsigned __int128 const r = num - (denom128 * d);
-        assert(d >> 64 == 0);
-        assert(r >> 64 == 0);
+        ASSERT(
+            d >> 64 == 0,
+            "ripple::b58_fast::detail::inplace_bigint_div_rem::div_rem_64 : "
+            "valid division result");
+        ASSERT(
+            r >> 64 == 0,
+            "ripple::b58_fast::detail::inplace_bigint_div_rem::div_rem_64 : "
+            "valid remainder");
         return {static_cast<std::uint64_t>(d), static_cast<std::uint64_t>(r)};
     };
 
@@ -169,8 +177,11 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
 [[nodiscard]] inline std::array<std::uint8_t, 10>
 b58_10_to_b58_be(std::uint64_t input)
 {
-    constexpr std::uint64_t B_58_10 = 430804206899405824;  // 58^10;
-    assert(input < B_58_10);
+    [[maybe_unused]] static constexpr std::uint64_t B_58_10 =
+        430804206899405824;  // 58^10;
+    ASSERT(
+        input < B_58_10,
+        "ripple::b58_fast::detail::b58_10_to_b58_be : valid input");
     constexpr std::size_t resultSize = 10;
     std::array<std::uint8_t, resultSize> result{};
     int i = 0;

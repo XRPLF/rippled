@@ -46,77 +46,81 @@ transferFeeAsRate(std::uint16_t fee)
 STAmount
 multiply(STAmount const& amount, Rate const& rate)
 {
-    assert(rate.value != 0);
+    ASSERT(rate.value != 0, "ripple::nft::multiply : nonzero rate input");
 
     if (rate == parityRate)
         return amount;
 
-    return multiply(amount, detail::as_amount(rate), amount.issue());
+    return multiply(amount, detail::as_amount(rate), amount.asset());
 }
 
 STAmount
 multiplyRound(STAmount const& amount, Rate const& rate, bool roundUp)
 {
-    assert(rate.value != 0);
+    ASSERT(rate.value != 0, "ripple::nft::multiplyRound : nonzero rate input");
 
     if (rate == parityRate)
         return amount;
 
-    return mulRound(amount, detail::as_amount(rate), amount.issue(), roundUp);
+    return mulRound(amount, detail::as_amount(rate), amount.asset(), roundUp);
 }
 
 STAmount
 multiplyRound(
     STAmount const& amount,
     Rate const& rate,
-    Issue const& issue,
+    Asset const& asset,
     bool roundUp)
 {
-    assert(rate.value != 0);
+    ASSERT(
+        rate.value != 0,
+        "ripple::nft::multiplyRound(Issue) : nonzero rate input");
 
     if (rate == parityRate)
     {
         return amount;
     }
 
-    return mulRound(amount, detail::as_amount(rate), issue, roundUp);
+    return mulRound(amount, detail::as_amount(rate), asset, roundUp);
 }
 
 STAmount
 divide(STAmount const& amount, Rate const& rate)
 {
-    assert(rate.value != 0);
+    ASSERT(rate.value != 0, "ripple::nft::divide : nonzero rate input");
 
     if (rate == parityRate)
         return amount;
 
-    return divide(amount, detail::as_amount(rate), amount.issue());
+    return divide(amount, detail::as_amount(rate), amount.asset());
 }
 
 STAmount
 divideRound(STAmount const& amount, Rate const& rate, bool roundUp)
 {
-    assert(rate.value != 0);
+    ASSERT(rate.value != 0, "ripple::nft::divideRound : nonzero rate input");
 
     if (rate == parityRate)
         return amount;
 
-    return divRound(amount, detail::as_amount(rate), amount.issue(), roundUp);
+    return divRound(amount, detail::as_amount(rate), amount.asset(), roundUp);
 }
 
 STAmount
 divideRound(
     STAmount const& amount,
     Rate const& rate,
-    Issue const& issue,
+    Asset const& asset,
     bool roundUp)
 {
-    assert(rate.value != 0);
+    ASSERT(
+        rate.value != 0,
+        "ripple::nft::divideRound(Issue) : nonzero rate input");
 
     if (rate == parityRate)
         return amount;
 
-    return divRound(amount, detail::as_amount(rate), issue, roundUp);
+    return divRound(amount, detail::as_amount(rate), asset, roundUp);
 }
 
 }  // namespace ripple

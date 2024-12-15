@@ -244,6 +244,37 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             : tecUNFUNDED_AMM;
     };
 
+    if (ctx.view.rules().enabled(featureAMMClawback))
+    {
+        // Check if either of the assets is frozen, AMMDeposit is not allowed
+        // if either asset is frozen
+        auto checkAsset = [&](Issue const& asset) -> TER {
+            if (auto const ter = requireAuth(ctx.view, asset, accountID))
+            {
+                JLOG(ctx.j.debug())
+                    << "AMM Deposit: account is not authorized, " << asset;
+                return ter;
+            }
+
+            if (isFrozen(ctx.view, accountID, asset))
+            {
+                JLOG(ctx.j.debug())
+                    << "AMM Deposit: account or currency is frozen, "
+                    << to_string(accountID) << " " << to_string(asset.currency);
+
+                return tecFROZEN;
+            }
+
+            return tesSUCCESS;
+        };
+
+        if (auto const ter = checkAsset(ctx.tx[sfAsset]))
+            return ter;
+
+        if (auto const ter = checkAsset(ctx.tx[sfAsset2]))
+            return ter;
+    }
+
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];
     auto const ammAccountID = ammSle->getAccountID(sfAccount);
@@ -435,7 +466,9 @@ AMMDeposit::applyGuts(Sandbox& sb)
 
     if (result == tesSUCCESS)
     {
-        assert(newLPTokenBalance > beast::zero);
+        ASSERT(
+            newLPTokenBalance > beast::zero,
+            "ripple::AMMDeposit::applyGuts : valid new LP token balance");
         ammSle->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
         // LP depositing into AMM empty state gets the auction slot
         // and the voting

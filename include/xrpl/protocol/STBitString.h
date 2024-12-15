@@ -84,6 +84,7 @@ private:
 
 using STUInt128 = STBitString<128>;
 using STUInt160 = STBitString<160>;
+using STUInt192 = STBitString<192>;
 using STUInt256 = STBitString<256>;
 
 template <int Bits>
@@ -138,6 +139,13 @@ STUInt160::getSType() const
 
 template <>
 inline SerializedTypeID
+STUInt192::getSType() const
+{
+    return STI_UINT192;
+}
+
+template <>
+inline SerializedTypeID
 STUInt256::getSType() const
 {
     return STI_UINT256;
@@ -162,8 +170,10 @@ template <int Bits>
 void
 STBitString<Bits>::add(Serializer& s) const
 {
-    assert(getFName().isBinary());
-    assert(getFName().fieldType == getSType());
+    ASSERT(getFName().isBinary(), "ripple::STBitString::add : field is binary");
+    ASSERT(
+        getFName().fieldType == getSType(),
+        "ripple::STBitString::add : field type match");
     s.addBitString<Bits>(value_);
 }
 

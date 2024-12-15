@@ -30,6 +30,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+
 #include <cstdint>
 
 namespace ripple {
@@ -189,6 +190,11 @@ check(uint256 const& key) noexcept
 Keylet
 depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept;
 
+Keylet
+depositPreauth(
+    AccountID const& owner,
+    std::set<std::pair<AccountID, Slice>> const& authCreds) noexcept;
+
 inline Keylet
 depositPreauth(uint256 const& key) noexcept
 {
@@ -214,7 +220,7 @@ page(uint256 const& root, std::uint64_t index = 0) noexcept;
 inline Keylet
 page(Keylet const& root, std::uint64_t index = 0) noexcept
 {
-    assert(root.type == ltDIR_NODE);
+    ASSERT(root.type == ltDIR_NODE, "ripple::keylet::page : valid root type");
     return page(root.key, index);
 }
 /** @} */
@@ -287,6 +293,42 @@ did(AccountID const& account) noexcept;
 Keylet
 oracle(AccountID const& account, std::uint32_t const& documentID) noexcept;
 
+Keylet
+credential(
+    AccountID const& subject,
+    AccountID const& issuer,
+    Slice const& credType) noexcept;
+
+inline Keylet
+credential(uint256 const& key) noexcept
+{
+    return {ltCREDENTIAL, key};
+}
+
+Keylet
+mptIssuance(std::uint32_t seq, AccountID const& issuer) noexcept;
+
+Keylet
+mptIssuance(MPTID const& issuanceID) noexcept;
+
+inline Keylet
+mptIssuance(uint256 const& issuanceKey)
+{
+    return {ltMPTOKEN_ISSUANCE, issuanceKey};
+}
+
+Keylet
+mptoken(MPTID const& issuanceID, AccountID const& holder) noexcept;
+
+inline Keylet
+mptoken(uint256 const& mptokenKey)
+{
+    return {ltMPTOKEN, mptokenKey};
+}
+
+Keylet
+mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept;
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:
@@ -326,6 +368,9 @@ std::array<keyletDesc<AccountID const&>, 6> const directAccountKeylets{
      {&keylet::nftpage_min, jss::NFTokenPage, true},
      {&keylet::nftpage_max, jss::NFTokenPage, true},
      {&keylet::did, jss::DID, true}}};
+
+MPTID
+makeMptID(std::uint32_t sequence, AccountID const& account);
 
 }  // namespace ripple
 

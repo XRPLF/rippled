@@ -60,14 +60,18 @@ const_iterator::operator==(const_iterator const& other) const
     if (view_ == nullptr || other.view_ == nullptr)
         return false;
 
-    assert(view_ == other.view_ && root_.key == other.root_.key);
+    ASSERT(
+        view_ == other.view_ && root_.key == other.root_.key,
+        "ripple::const_iterator::operator== : views and roots are matching");
     return page_.key == other.page_.key && index_ == other.index_;
 }
 
 const_iterator::reference
 const_iterator::operator*() const
 {
-    assert(index_ != beast::zero);
+    ASSERT(
+        index_ != beast::zero,
+        "ripple::const_iterator::operator* : nonzero index");
     if (!cache_)
         cache_ = view_->read(keylet::child(index_));
     return *cache_;
@@ -76,7 +80,9 @@ const_iterator::operator*() const
 const_iterator&
 const_iterator::operator++()
 {
-    assert(index_ != beast::zero);
+    ASSERT(
+        index_ != beast::zero,
+        "ripple::const_iterator::operator++ : nonzero index");
     if (++it_ != std::end(*indexes_))
     {
         index_ = *it_;
@@ -90,7 +96,9 @@ const_iterator::operator++()
 const_iterator
 const_iterator::operator++(int)
 {
-    assert(index_ != beast::zero);
+    ASSERT(
+        index_ != beast::zero,
+        "ripple::const_iterator::operator++(int) : nonzero index");
     const_iterator tmp(*this);
     ++(*this);
     return tmp;
@@ -109,7 +117,9 @@ const_iterator::next_page()
     {
         page_ = keylet::page(root_, next);
         sle_ = view_->read(page_);
-        assert(sle_);
+        ASSERT(
+            sle_ != nullptr,
+            "ripple::const_iterator::next_page : non-null SLE");
         indexes_ = &sle_->getFieldV256(sfIndexes);
         if (indexes_->empty())
         {

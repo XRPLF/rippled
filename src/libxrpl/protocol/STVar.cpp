@@ -29,6 +29,7 @@
 #include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
@@ -115,129 +116,15 @@ STVar::STVar(SerialIter& sit, SField const& name, int depth)
 {
     if (depth > 10)
         Throw<std::runtime_error>("Maximum nesting depth of STVar exceeded");
-    switch (name.fieldType)
-    {
-        case STI_NOTPRESENT:
-            construct<STBase>(name);
-            return;
-        case STI_UINT8:
-            construct<STUInt8>(sit, name);
-            return;
-        case STI_UINT16:
-            construct<STUInt16>(sit, name);
-            return;
-        case STI_UINT32:
-            construct<STUInt32>(sit, name);
-            return;
-        case STI_UINT64:
-            construct<STUInt64>(sit, name);
-            return;
-        case STI_AMOUNT:
-            construct<STAmount>(sit, name);
-            return;
-        case STI_UINT128:
-            construct<STUInt128>(sit, name);
-            return;
-        case STI_UINT160:
-            construct<STUInt160>(sit, name);
-            return;
-        case STI_UINT256:
-            construct<STUInt256>(sit, name);
-            return;
-        case STI_VECTOR256:
-            construct<STVector256>(sit, name);
-            return;
-        case STI_VL:
-            construct<STBlob>(sit, name);
-            return;
-        case STI_ACCOUNT:
-            construct<STAccount>(sit, name);
-            return;
-        case STI_PATHSET:
-            construct<STPathSet>(sit, name);
-            return;
-        case STI_OBJECT:
-            construct<STObject>(sit, name, depth);
-            return;
-        case STI_ARRAY:
-            construct<STArray>(sit, name, depth);
-            return;
-        case STI_ISSUE:
-            construct<STIssue>(sit, name);
-            return;
-        case STI_XCHAIN_BRIDGE:
-            construct<STXChainBridge>(sit, name);
-            return;
-        case STI_CURRENCY:
-            construct<STCurrency>(sit, name);
-            return;
-        default:
-            Throw<std::runtime_error>("Unknown object type");
-    }
+    constructST(name.fieldType, depth, sit, name);
 }
 
 STVar::STVar(SerializedTypeID id, SField const& name)
 {
-    assert((id == STI_NOTPRESENT) || (id == name.fieldType));
-    switch (id)
-    {
-        case STI_NOTPRESENT:
-            construct<STBase>(name);
-            return;
-        case STI_UINT8:
-            construct<STUInt8>(name);
-            return;
-        case STI_UINT16:
-            construct<STUInt16>(name);
-            return;
-        case STI_UINT32:
-            construct<STUInt32>(name);
-            return;
-        case STI_UINT64:
-            construct<STUInt64>(name);
-            return;
-        case STI_AMOUNT:
-            construct<STAmount>(name);
-            return;
-        case STI_UINT128:
-            construct<STUInt128>(name);
-            return;
-        case STI_UINT160:
-            construct<STUInt160>(name);
-            return;
-        case STI_UINT256:
-            construct<STUInt256>(name);
-            return;
-        case STI_VECTOR256:
-            construct<STVector256>(name);
-            return;
-        case STI_VL:
-            construct<STBlob>(name);
-            return;
-        case STI_ACCOUNT:
-            construct<STAccount>(name);
-            return;
-        case STI_PATHSET:
-            construct<STPathSet>(name);
-            return;
-        case STI_OBJECT:
-            construct<STObject>(name);
-            return;
-        case STI_ARRAY:
-            construct<STArray>(name);
-            return;
-        case STI_ISSUE:
-            construct<STIssue>(name);
-            return;
-        case STI_XCHAIN_BRIDGE:
-            construct<STXChainBridge>(name);
-            return;
-        case STI_CURRENCY:
-            construct<STCurrency>(name);
-            return;
-        default:
-            Throw<std::runtime_error>("Unknown object type");
-    }
+    ASSERT(
+        (id == STI_NOTPRESENT) || (id == name.fieldType),
+        "ripple::detail::STVar::STVar(SerializedTypeID) : valid type input");
+    constructST(id, 0, name);
 }
 
 void
@@ -249,6 +136,100 @@ STVar::destroy()
         p_->~STBase();
 
     p_ = nullptr;
+}
+
+template <typename... Args>
+    requires ValidConstructSTArgs<Args...>
+void
+STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
+{
+    auto constructWithDepth = [&]<typename T>() {
+        if constexpr (std::is_same_v<
+                          std::tuple<std::remove_cvref_t<Args>...>,
+                          std::tuple<SField>>)
+        {
+            construct<T>(std::forward<Args>(args)...);
+        }
+        else if constexpr (std::is_same_v<
+                               std::tuple<std::remove_cvref_t<Args>...>,
+                               std::tuple<SerialIter, SField>>)
+        {
+            construct<T>(std::forward<Args>(args)..., depth);
+        }
+        else
+        {
+            constexpr bool alwaysFalse =
+                !std::is_same_v<std::tuple<Args...>, std::tuple<Args...>>;
+            static_assert(alwaysFalse, "Invalid STVar constructor arguments");
+        }
+    };
+
+    switch (id)
+    {
+        case STI_NOTPRESENT: {
+            // Last argument is always SField
+            SField const& field =
+                std::get<sizeof...(args) - 1>(std::forward_as_tuple(args...));
+            construct<STBase>(field);
+            return;
+        }
+        case STI_UINT8:
+            construct<STUInt8>(std::forward<Args>(args)...);
+            return;
+        case STI_UINT16:
+            construct<STUInt16>(std::forward<Args>(args)...);
+            return;
+        case STI_UINT32:
+            construct<STUInt32>(std::forward<Args>(args)...);
+            return;
+        case STI_UINT64:
+            construct<STUInt64>(std::forward<Args>(args)...);
+            return;
+        case STI_AMOUNT:
+            construct<STAmount>(std::forward<Args>(args)...);
+            return;
+        case STI_UINT128:
+            construct<STUInt128>(std::forward<Args>(args)...);
+            return;
+        case STI_UINT160:
+            construct<STUInt160>(std::forward<Args>(args)...);
+            return;
+        case STI_UINT192:
+            construct<STUInt192>(std::forward<Args>(args)...);
+            return;
+        case STI_UINT256:
+            construct<STUInt256>(std::forward<Args>(args)...);
+            return;
+        case STI_VECTOR256:
+            construct<STVector256>(std::forward<Args>(args)...);
+            return;
+        case STI_VL:
+            construct<STBlob>(std::forward<Args>(args)...);
+            return;
+        case STI_ACCOUNT:
+            construct<STAccount>(std::forward<Args>(args)...);
+            return;
+        case STI_PATHSET:
+            construct<STPathSet>(std::forward<Args>(args)...);
+            return;
+        case STI_OBJECT:
+            constructWithDepth.template operator()<STObject>();
+            return;
+        case STI_ARRAY:
+            constructWithDepth.template operator()<STArray>();
+            return;
+        case STI_ISSUE:
+            construct<STIssue>(std::forward<Args>(args)...);
+            return;
+        case STI_XCHAIN_BRIDGE:
+            construct<STXChainBridge>(std::forward<Args>(args)...);
+            return;
+        case STI_CURRENCY:
+            construct<STCurrency>(std::forward<Args>(args)...);
+            return;
+        default:
+            Throw<std::runtime_error>("Unknown object type");
+    }
 }
 
 }  // namespace detail

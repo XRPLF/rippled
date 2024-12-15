@@ -33,7 +33,9 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/resource/Fees.h>
+
 #include <boost/algorithm/string/case_conv.hpp>
+
 #include <regex>
 
 namespace ripple {
@@ -158,6 +160,10 @@ getAccountObjects(
     std::uint32_t const limit,
     Json::Value& jvResult)
 {
+    // check if dirIndex is valid
+    if (!dirIndex.isZero() && !ledger.read({ltDIR_NODE, dirIndex}))
+        return false;
+
     auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
                                 LedgerEntryType ledgerType) {
         auto it = std::find(typeFilter.begin(), typeFilter.end(), ledgerType);
@@ -249,8 +255,18 @@ getAccountObjects(
     if (!dir)
     {
         // it's possible the user had nftoken pages but no
-        // directory entries
-        return mlimit < limit;
+        // directory entries. If there's no nftoken page, we will
+        // give empty array for account_objects.
+        if (mlimit >= limit)
+            jvResult[jss::account_objects] = Json::arrayValue;
+
+        // non-zero dirIndex validity was checked in the beginning of this
+        // function; by this point, it should be zero. This function returns
+        // true regardless of nftoken page presence; if absent, account_objects
+        // is already set as an empty array. Notice we will only return false in
+        // this function when entryIndex can not be found, indicating an invalid
+        // marker error.
+        return true;
     }
 
     std::uint32_t i = 0;
@@ -528,19 +544,21 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
             return {rpcNOT_SYNCED, "notSynced"};
         }
 
-        assert(!ledger->open());
+        ASSERT(
+            !ledger->open(), "ripple::RPC::getLedger : validated is not open");
     }
     else
     {
         if (shortcut == LedgerShortcut::CURRENT)
         {
             ledger = context.ledgerMaster.getCurrentLedger();
-            assert(ledger->open());
+            ASSERT(ledger->open(), "ripple::RPC::getLedger : current is open");
         }
         else if (shortcut == LedgerShortcut::CLOSED)
         {
             ledger = context.ledgerMaster.getClosedLedger();
-            assert(!ledger->open());
+            ASSERT(
+                !ledger->open(), "ripple::RPC::getLedger : closed is not open");
         }
         else
         {
@@ -915,24 +933,27 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 22>
+        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 25>
             types{
                 {{jss::account, ltACCOUNT_ROOT},
                  {jss::amendments, ltAMENDMENTS},
                  {jss::amm, ltAMM},
                  {jss::bridge, ltBRIDGE},
                  {jss::check, ltCHECK},
+                 {jss::credential, ltCREDENTIAL},
                  {jss::deposit_preauth, ltDEPOSIT_PREAUTH},
                  {jss::did, ltDID},
                  {jss::directory, ltDIR_NODE},
                  {jss::escrow, ltESCROW},
                  {jss::fee, ltFEE_SETTINGS},
                  {jss::hashes, ltLEDGER_HASHES},
-                 {jss::nunl, ltNEGATIVE_UNL},
-                 {jss::oracle, ltORACLE},
+                 {jss::mpt_issuance, ltMPTOKEN_ISSUANCE},
+                 {jss::mptoken, ltMPTOKEN},
                  {jss::nft_offer, ltNFTOKEN_OFFER},
                  {jss::nft_page, ltNFTOKEN_PAGE},
+                 {jss::nunl, ltNEGATIVE_UNL},
                  {jss::offer, ltOFFER},
+                 {jss::oracle, ltORACLE},
                  {jss::payment_channel, ltPAYCHAN},
                  {jss::signer_list, ltSIGNER_LIST},
                  {jss::state, ltRIPPLE_STATE},
@@ -946,7 +967,9 @@ chooseLedgerEntryType(Json::Value const& params)
         {
             result.first = RPC::Status{
                 rpcINVALID_PARAMS, "Invalid field 'type', not string."};
-            assert(result.first.type() == RPC::Status::Type::error_code_i);
+            ASSERT(
+                result.first.type() == RPC::Status::Type::error_code_i,
+                "ripple::RPC::chooseLedgerEntryType : first valid result type");
             return result;
         }
 
@@ -959,7 +982,10 @@ chooseLedgerEntryType(Json::Value const& params)
         {
             result.first =
                 RPC::Status{rpcINVALID_PARAMS, "Invalid field 'type'."};
-            assert(result.first.type() == RPC::Status::Type::error_code_i);
+            ASSERT(
+                result.first.type() == RPC::Status::Type::error_code_i,
+                "ripple::RPC::chooseLedgerEntryType : second valid result "
+                "type");
             return result;
         }
         result.second = iter->second;
@@ -1065,7 +1091,9 @@ getLedgerByContext(RPC::JsonContext& context)
             // ledger
             auto const refIndex = getCandidateLedger(ledgerIndex);
             auto refHash = hashOfSeq(*ledger, refIndex, j);
-            assert(refHash);
+            ASSERT(
+                refHash.has_value(),
+                "ripple::RPC::getLedgerByContext : nonzero ledger hash");
 
             ledger = ledgerMaster.getLedgerByHash(*refHash);
             if (!ledger)
@@ -1099,7 +1127,9 @@ getLedgerByContext(RPC::JsonContext& context)
 
             neededHash = hashOfSeq(*ledger, ledgerIndex, j);
         }
-        assert(neededHash);
+        ASSERT(
+            neededHash.has_value(),
+            "ripple::RPC::getLedgerByContext : nonzero needed hash");
         ledgerHash = neededHash ? *neededHash : beast::zero;  // kludge
     }
 

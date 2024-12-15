@@ -27,9 +27,9 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/SField.h>
-#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <iomanip>
@@ -55,7 +55,9 @@ public:
 
         if (size)
         {
-            assert(data != nullptr);
+            ASSERT(
+                data != nullptr,
+                "ripple::Serializer::Serializer(void const*) : non-null input");
             std::memcpy(mData.data(), data, size);
         }
     }
@@ -83,12 +85,43 @@ public:
     add8(unsigned char i);
     int
     add16(std::uint16_t i);
+
+    template <typename T>
+        requires(std::is_same_v<
+                 std::make_unsigned_t<std::remove_cv_t<T>>,
+                 std::uint32_t>)
     int
-    add32(std::uint32_t i);  // ledger indexes, account sequence, timestamps
+    add32(T i)
+    {
+        int ret = mData.size();
+        mData.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
+        mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
+        mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
+        mData.push_back(static_cast<unsigned char>(i & 0xff));
+        return ret;
+    }
+
     int
     add32(HashPrefix p);
+
+    template <typename T>
+        requires(std::is_same_v<
+                 std::make_unsigned_t<std::remove_cv_t<T>>,
+                 std::uint64_t>)
     int
-    add64(std::uint64_t i);  // native currency amounts
+    add64(T i)
+    {
+        int ret = mData.size();
+        mData.push_back(static_cast<unsigned char>((i >> 56) & 0xff));
+        mData.push_back(static_cast<unsigned char>((i >> 48) & 0xff));
+        mData.push_back(static_cast<unsigned char>((i >> 40) & 0xff));
+        mData.push_back(static_cast<unsigned char>((i >> 32) & 0xff));
+        mData.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
+        mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
+        mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
+        mData.push_back(static_cast<unsigned char>(i & 0xff));
+        return ret;
+    }
 
     template <typename Integer>
     int addInteger(Integer);
@@ -300,7 +333,7 @@ Serializer::addVL(Iter begin, Iter end, int len)
         len -= begin->size();
 #endif
     }
-    assert(len == 0);
+    ASSERT(len == 0, "ripple::Serializer::addVL : length matches distance");
     return ret;
 }
 
@@ -353,9 +386,13 @@ public:
 
     std::uint32_t
     get32();
+    std::int32_t
+    geti32();
 
     std::uint64_t
     get64();
+    std::int64_t
+    geti64();
 
     template <std::size_t Bits, class Tag = void>
     base_uint<Bits, Tag>
@@ -371,6 +408,12 @@ public:
     get160()
     {
         return getBitString<160>();
+    }
+
+    uint192
+    get192()
+    {
+        return getBitString<192>();
     }
 
     uint256

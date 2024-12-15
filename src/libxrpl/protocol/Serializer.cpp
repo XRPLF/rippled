@@ -21,6 +21,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
+#include <cstdint>
 #include <type_traits>
 
 namespace ripple {
@@ -35,17 +36,6 @@ Serializer::add16(std::uint16_t i)
 }
 
 int
-Serializer::add32(std::uint32_t i)
-{
-    int ret = mData.size();
-    mData.push_back(static_cast<unsigned char>(i >> 24));
-    mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
-    mData.push_back(static_cast<unsigned char>(i & 0xff));
-    return ret;
-}
-
-int
 Serializer::add32(HashPrefix p)
 {
     // This should never trigger; the size & type of a hash prefix are
@@ -54,21 +44,6 @@ Serializer::add32(HashPrefix p)
         std::is_same_v<std::uint32_t, std::underlying_type_t<decltype(p)>>);
 
     return add32(safe_cast<std::uint32_t>(p));
-}
-
-int
-Serializer::add64(std::uint64_t i)
-{
-    int ret = mData.size();
-    mData.push_back(static_cast<unsigned char>(i >> 56));
-    mData.push_back(static_cast<unsigned char>((i >> 48) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 40) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 32) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
-    mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
-    mData.push_back(static_cast<unsigned char>(i & 0xff));
-    return ret;
 }
 
 template <>
@@ -132,7 +107,9 @@ int
 Serializer::addFieldID(int type, int name)
 {
     int ret = mData.size();
-    assert((type > 0) && (type < 256) && (name > 0) && (name < 256));
+    ASSERT(
+        (type > 0) && (type < 256) && (name > 0) && (name < 256),
+        "ripple::Serializer::addFieldID : inputs inside range");
 
     if (type < 16)
     {
@@ -201,9 +178,10 @@ Serializer::addVL(Blob const& vector)
 {
     int ret = addEncoded(vector.size());
     addRaw(vector);
-    assert(
+    ASSERT(
         mData.size() ==
-        (ret + vector.size() + encodeLengthLength(vector.size())));
+            (ret + vector.size() + encodeLengthLength(vector.size())),
+        "ripple::Serializer::addVL : size matches expected");
     return ret;
 }
 
@@ -410,6 +388,30 @@ SerialIter::get64()
         (std::uint64_t(t[6]) << 8) + std::uint64_t(t[7]);
 }
 
+std::int32_t
+SerialIter::geti32()
+{
+    if (remain_ < 4)
+        Throw<std::runtime_error>("invalid SerialIter geti32");
+    auto t = p_;
+    p_ += 4;
+    used_ += 4;
+    remain_ -= 4;
+    return boost::endian::load_big_s32(t);
+}
+
+std::int64_t
+SerialIter::geti64()
+{
+    if (remain_ < 8)
+        Throw<std::runtime_error>("invalid SerialIter geti64");
+    auto t = p_;
+    p_ += 8;
+    used_ += 8;
+    remain_ -= 8;
+    return boost::endian::load_big_s64(t);
+}
+
 void
 SerialIter::getFieldID(int& type, int& name)
 {
@@ -483,7 +485,8 @@ SerialIter::getVLDataLength()
     }
     else
     {
-        assert(lenLen == 3);
+        ASSERT(
+            lenLen == 3, "ripple::SerialIter::getVLDataLength : lenLen is 3");
         int b2 = get8();
         int b3 = get8();
         datLen = Serializer::decodeVLLength(b1, b2, b3);

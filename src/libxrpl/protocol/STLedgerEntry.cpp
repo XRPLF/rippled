@@ -125,6 +125,10 @@ STLedgerEntry::getJson(JsonOptions options) const
 
     ret[jss::index] = to_string(key_);
 
+    if (getType() == ltMPTOKEN_ISSUANCE)
+        ret[jss::mpt_issuance_id] = to_string(
+            makeMptID(getFieldU32(sfSequence), getAccountID(sfIssuer)));
+
     return ret;
 }
 
@@ -157,7 +161,9 @@ STLedgerEntry::thread(
     if (oldPrevTxID == txID)
     {
         // this transaction is already threaded
-        assert(getFieldU32(sfPreviousTxnLgrSeq) == ledgerSeq);
+        ASSERT(
+            getFieldU32(sfPreviousTxnLgrSeq) == ledgerSeq,
+            "ripple::STLedgerEntry::thread : ledger sequence match");
         return false;
     }
 

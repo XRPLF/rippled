@@ -77,7 +77,9 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
         196418, 317811, 514229, 832040, 1346269};
     // clang-format on
 
-    assert(!ammContext_.maxItersReached());
+    ASSERT(
+        !ammContext_.maxItersReached(),
+        "ripple::AMMLiquidity::generateFibSeqOffer : maximum iterations");
 
     cur.out = toAmount<TOut>(
         getIssue(balances.out),
@@ -210,6 +212,13 @@ AMMLiquidity<TIn, TOut>::getOffer(
             {
                 return AMMOffer<TIn, TOut>(
                     *this, *amounts, balances, Quality{*amounts});
+            }
+            else if (view.rules().enabled(fixAMMv1_2))
+            {
+                if (auto const maxAMMOffer = maxOffer(balances, view.rules());
+                    maxAMMOffer &&
+                    Quality{maxAMMOffer->amount()} > *clobQuality)
+                    return maxAMMOffer;
             }
         }
         catch (std::overflow_error const& e)
