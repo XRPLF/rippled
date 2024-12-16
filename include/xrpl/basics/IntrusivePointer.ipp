@@ -625,12 +625,11 @@ SharedWeakUnion<T>::convertToStrong()
     auto p = unsafeGetRawPtr();
     if (p && p->checkoutStrongRefFromWeak())
     {
-        auto action = p->releaseWeakRef();
-        (void)action;
+        [[maybe_unused]] auto action = p->releaseWeakRef();
         ASSERT(
             (action == ReleaseWeakRefAction::noop),
             "ripple::SharedWeakUnion::convertToStrong : "
-            "ReleaseWeakRefAction::noop");
+            "action is noop");
         unsafeSetRawPtr(p, RefStrength::strong);
         return true;
     }
@@ -657,8 +656,8 @@ SharedWeakUnion<T>::convertToWeak()
         case destroy:
             // We just added a weak ref. How could we destroy?
             UNREACHABLE(
-                "ripple::SharedWeakUnion::convertToWeak : We just added a weak "
-                "ref. How could we destroy?");
+                "ripple::SharedWeakUnion::convertToWeak : destroying freshly "
+                "added ref");
             delete p;
             unsafeSetRawPtr(nullptr);
             return true;  // Should never happen
