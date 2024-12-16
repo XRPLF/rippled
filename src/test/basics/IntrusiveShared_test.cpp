@@ -152,14 +152,14 @@ public:
             BEAST_EXPECT(b.use_count() == 1);
             b.addWeakRef();
             BEAST_EXPECT(b.use_count() == 1);
-            auto a = b.releaseStrongRef();
-            BEAST_EXPECT(a == ReleaseRefAction::partialDestroy);
+            auto s = b.releaseStrongRef();
+            BEAST_EXPECT(s == ReleaseStrongRefAction::partialDestroy);
             BEAST_EXPECT(b.use_count() == 0);
             TIBase* pb = &b;
             partialDestructorFinished(&pb);
             BEAST_EXPECT(!pb);
-            a = b.releaseWeakRef();
-            BEAST_EXPECT(a == ReleaseRefAction::destroy);
+            auto w = b.releaseWeakRef();
+            BEAST_EXPECT(w == ReleaseWeakRefAction::destroy);
         }
 
         std::vector<SharedIntrusive<TIBase>> strong;

@@ -30,7 +30,7 @@ using TreeNodeCache = TaggedCache<
     uint256,
     SHAMapTreeNode,
     /*IsKeyCache*/ false,
-    SharedWeakUnion<SHAMapTreeNode>,
+    intr_ptr::SharedWeakUnionPtr<SHAMapTreeNode>,
     intr_ptr::SharedPtr<SHAMapTreeNode>>;
 }  // namespace ripple
 

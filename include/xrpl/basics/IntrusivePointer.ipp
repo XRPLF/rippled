@@ -302,7 +302,7 @@ SharedIntrusive<T>::unsafeReleaseAndStore(T* next)
     if (!prev)
         return;
 
-    using enum ReleaseRefAction;
+    using enum ReleaseStrongRefAction;
     auto action = prev->releaseStrongRef();
     switch (action)
     {
@@ -406,7 +406,7 @@ WeakIntrusive<T>::unsafeReleaseNoStore()
     if (!ptr_)
         return;
 
-    using enum ReleaseRefAction;
+    using enum ReleaseWeakRefAction;
     auto action = ptr_->releaseWeakRef();
     switch (action)
     {
@@ -414,14 +414,6 @@ WeakIntrusive<T>::unsafeReleaseNoStore()
             break;
         case destroy:
             delete ptr_;
-            break;
-        case partialDestroy:
-            UNREACHABLE(
-                "ripple::WeakIntrusive::unsafeReleaseNoStore : only a strong "
-                "pointer should case a partialDestruction");
-            ptr_->partialDestructor();
-            partialDestructorFinished(&ptr_);
-            // ptr_ is null and may no longer be used
             break;
     }
 }
@@ -636,9 +628,9 @@ SharedWeakUnion<T>::convertToStrong()
         auto action = p->releaseWeakRef();
         (void)action;
         ASSERT(
-            (action == ReleaseRefAction::noop),
+            (action == ReleaseWeakRefAction::noop),
             "ripple::SharedWeakUnion::convertToStrong : "
-            "ReleaseRefAction::noop");
+            "ReleaseWeakRefAction::noop");
         unsafeSetRawPtr(p, RefStrength::strong);
         return true;
     }
@@ -656,7 +648,7 @@ SharedWeakUnion<T>::convertToWeak()
     if (!p)
         return false;
 
-    using enum ReleaseRefAction;
+    using enum ReleaseStrongRefAction;
     auto action = p->addWeakReleaseStrongRef();
     switch (action)
     {
@@ -713,20 +705,36 @@ SharedWeakUnion<T>::unsafeReleaseNoStore()
     if (!p)
         return;
 
-    using enum ReleaseRefAction;
-    auto action = isStrong() ? p->releaseStrongRef() : p->releaseWeakRef();
-    switch (action)
+    if (isStrong())
     {
-        case noop:
-            break;
-        case destroy:
-            delete p;
-            break;
-        case partialDestroy:
-            p->partialDestructor();
-            partialDestructorFinished(&p);
-            // p is null and may no longer be used
-            break;
+        using enum ReleaseStrongRefAction;
+        auto strongAction = p->releaseStrongRef();
+        switch (strongAction)
+        {
+            case noop:
+                break;
+            case destroy:
+                delete p;
+                break;
+            case partialDestroy:
+                p->partialDestructor();
+                partialDestructorFinished(&p);
+                // p is null and may no longer be used
+                break;
+        }
+    }
+    else
+    {
+        using enum ReleaseWeakRefAction;
+        auto weakAction = p->releaseWeakRef();
+        switch (weakAction)
+        {
+            case noop:
+                break;
+            case destroy:
+                delete p;
+                break;
+        }
     }
 }
 

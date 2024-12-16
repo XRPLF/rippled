@@ -491,6 +491,9 @@ using SharedPtr = SharedIntrusive<T>;
 template <class T>
 using WeakPtr = WeakIntrusive<T>;
 
+template <class T>
+using SharedWeakUnionPtr = SharedWeakUnion<T>;
+
 template <class T, class... A>
 SharedPtr<T>
 make_shared(A&&... args)

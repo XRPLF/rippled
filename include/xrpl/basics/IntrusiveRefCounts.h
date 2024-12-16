@@ -25,7 +25,7 @@
 
 namespace ripple {
 
-/** Action to perform when releasing a strong or weak pointer.
+/** Action to perform when releasing a strong pointer.
 
     noop: Do nothing. For example, a `noop` action will occur when a count is
     decremented to a non-zero value.
@@ -36,7 +36,17 @@ namespace ripple {
     destroy: Run the destructor. This action will occur when either the strong
     count or weak count is decremented and the other count is also zero.
  */
-enum class ReleaseRefAction { noop, partialDestroy, destroy };
+enum class ReleaseStrongRefAction { noop, partialDestroy, destroy };
+
+/** Action to perform when releasing a weak pointer.
+
+    noop: Do nothing. For example, a `noop` action will occur when a count is
+    decremented to a non-zero value.
+
+    destroy: Run the destructor. This action will occur when either the strong
+    count or weak count is decremented and the other count is also zero.
+ */
+enum class ReleaseWeakRefAction { noop, destroy };
 
 /** Implement the strong count, weak count, and bit flags for an intrusive
     pointer.
@@ -56,7 +66,7 @@ struct IntrusiveRefCounts
     void
     addWeakRef() const noexcept;
 
-    ReleaseRefAction
+    ReleaseStrongRefAction
     releaseStrongRef() const;
 
     // Same as:
@@ -65,10 +75,10 @@ struct IntrusiveRefCounts
     //   return releaseStrongRef;
     // }
     // done as one atomic operation
-    ReleaseRefAction
+    ReleaseStrongRefAction
     addWeakReleaseStrongRef() const;
 
-    ReleaseRefAction
+    ReleaseWeakRefAction
     releaseWeakRef() const;
 
     // Returns true is able to checkout a strong ref. False otherwise
@@ -247,7 +257,7 @@ IntrusiveRefCounts::addWeakRef() const noexcept
     refCounts.fetch_add(weakDelta, std::memory_order_acq_rel);
 }
 
-inline ReleaseRefAction
+inline ReleaseStrongRefAction
 IntrusiveRefCounts::releaseStrongRef() const
 {
     // Subtract `strongDelta` from refCounts. If this releases the last strong
@@ -257,7 +267,7 @@ IntrusiveRefCounts::releaseStrongRef() const
     // atomically, the loop could be replaced with a `fetch_sub` and a
     // conditional `fetch_or`. This loop will almost always run once.
 
-    using enum ReleaseRefAction;
+    using enum ReleaseStrongRefAction;
     auto prevIntVal = refCounts.load(std::memory_order_acquire);
     while (1)
     {
@@ -266,7 +276,7 @@ IntrusiveRefCounts::releaseStrongRef() const
             (prevVal.strong >= strongDelta),
             "ripple::IntrusiveRefCounts : prevVal.strong >= strongDelta");
         auto nextIntVal = prevIntVal - strongDelta;
-        ReleaseRefAction action = noop;
+        ReleaseStrongRefAction action = noop;
         if (prevVal.strong == 1)
         {
             if (prevVal.weak == 0)
@@ -296,10 +306,10 @@ IntrusiveRefCounts::releaseStrongRef() const
     }
 }
 
-inline ReleaseRefAction
+inline ReleaseStrongRefAction
 IntrusiveRefCounts::addWeakReleaseStrongRef() const
 {
-    using enum ReleaseRefAction;
+    using enum ReleaseStrongRefAction;
 
     static_assert(weakDelta > strongDelta);
     auto constexpr delta = weakDelta - strongDelta;
@@ -326,7 +336,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
             "destroy, and that can't happen twice.");
 
         auto nextIntVal = prevIntVal + delta;
-        ReleaseRefAction action = noop;
+        ReleaseStrongRefAction action = noop;
         if (prevVal.strong == 1)
         {
             if (prevVal.weak == 0)
@@ -351,7 +361,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
     }
 }
 
-inline ReleaseRefAction
+inline ReleaseWeakRefAction
 IntrusiveRefCounts::releaseWeakRef() const
 {
     auto prevIntVal = refCounts.fetch_sub(weakDelta, std::memory_order_acq_rel);
@@ -373,9 +383,9 @@ IntrusiveRefCounts::releaseWeakRef() const
             // using weak pointers)
             refCounts.wait(prevIntVal - weakDelta, std::memory_order_acq_rel);
         }
-        return ReleaseRefAction::destroy;
+        return ReleaseWeakRefAction::destroy;
     }
-    return ReleaseRefAction::noop;
+    return ReleaseWeakRefAction::noop;
 }
 
 inline bool
