@@ -170,7 +170,7 @@ STXChainBridge::lockingChainDoor() const
 inline Issue const&
 STXChainBridge::lockingChainIssue() const
 {
-    return lockingChainIssue_.value();
+    return lockingChainIssue_.value().get<Issue>();
 };
 
 inline AccountID const&
@@ -182,7 +182,7 @@ STXChainBridge::issuingChainDoor() const
 inline Issue const&
 STXChainBridge::issuingChainIssue() const
 {
-    return issuingChainIssue_.value();
+    return issuingChainIssue_.value().get<Issue>();
 };
 
 inline STXChainBridge::value_type const&
