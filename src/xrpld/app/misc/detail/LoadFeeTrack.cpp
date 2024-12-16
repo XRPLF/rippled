@@ -20,10 +20,10 @@
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/ledger/ReadView.h>
-#include <xrpl/basics/FeeUnits.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
 
