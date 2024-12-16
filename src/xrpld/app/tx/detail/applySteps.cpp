@@ -193,8 +193,10 @@ invoke_preclaim(PreclaimContext const& ctx)
                     return result;
 
                 result = T::checkSign(ctx);
-               if (result != tesSUCCESS)
+
+                if (result != tesSUCCESS)
                     return result;
+
                 if (ctx.tx.getTxnType() == ttBATCH)
                     result = T::checkBatchSign(ctx);
 
@@ -305,7 +307,28 @@ preflight(
     }
     catch (std::exception const& e)
     {
-        JLOG(j.fatal()) << "apply: " << e.what();
+        JLOG(j.fatal()) << "apply (preflight): " << e.what();
+        return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
+    }
+}
+
+PreflightResult
+preflight(
+    Application& app,
+    Rules const& rules,
+    uint256 const& batchId,
+    STTx const& tx,
+    ApplyFlags flags,
+    beast::Journal j)
+{
+    PreflightContext const pfctx(app, tx, batchId, rules, flags, j);
+    try
+    {
+        return {pfctx, invoke_preflight(pfctx)};
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(j.fatal()) << "apply (preflight): " << e.what();
         return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
     }
 }
@@ -319,18 +342,31 @@ preclaim(
     std::optional<PreclaimContext const> ctx;
     if (preflightResult.rules != view.rules())
     {
-        auto secondFlight = preflight(
-            app,
-            view.rules(),
-            preflightResult.tx,
-            preflightResult.flags,
-            preflightResult.j);
+        auto secondFlight = [&]() {
+            if (preflightResult.batchId)
+                return preflight(
+                    app,
+                    view.rules(),
+                    preflightResult.batchId.value(),
+                    preflightResult.tx,
+                    preflightResult.flags,
+                    preflightResult.j);
+
+            return preflight(
+                app,
+                view.rules(),
+                preflightResult.tx,
+                preflightResult.flags,
+                preflightResult.j);
+        }();
+
         ctx.emplace(
             app,
             view,
             secondFlight.ter,
             secondFlight.tx,
             secondFlight.flags,
+            secondFlight.batchId,
             secondFlight.j);
     }
     else
@@ -341,8 +377,10 @@ preclaim(
             preflightResult.ter,
             preflightResult.tx,
             preflightResult.flags,
+            preflightResult.batchId,
             preflightResult.j);
     }
+
     try
     {
         if (ctx->preflightResult != tesSUCCESS)
@@ -351,7 +389,7 @@ preclaim(
     }
     catch (std::exception const& e)
     {
-        JLOG(ctx->j.fatal()) << "apply: " << e.what();
+        JLOG(ctx->j.fatal()) << "apply (preclaim): " << e.what();
         return {*ctx, tefEXCEPTION};
     }
 }
@@ -384,6 +422,7 @@ doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view)
         ApplyContext ctx(
             app,
             view,
+            preclaimResult.batchId,
             preclaimResult.tx,
             preclaimResult.ter,
             calculateBaseFee(view, preclaimResult.tx),

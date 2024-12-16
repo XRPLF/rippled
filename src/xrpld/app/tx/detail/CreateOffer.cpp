@@ -50,14 +50,14 @@ CreateOffer::preflight(PreflightContext const& ctx)
 
     std::uint32_t const uTxFlags = tx.getFlags();
 
+    bool const bImmediateOrCancel(uTxFlags & tfImmediateOrCancel);
+    bool const bFillOrKill(uTxFlags & tfFillOrKill);
+
     if (uTxFlags & tfOfferCreateMask)
     {
         JLOG(j.debug()) << "Malformed transaction: Invalid flags set.";
         return temINVALID_FLAG;
     }
-
-    bool const bImmediateOrCancel(uTxFlags & tfImmediateOrCancel);
-    bool const bFillOrKill(uTxFlags & tfFillOrKill);
 
     if (bImmediateOrCancel && bFillOrKill)
     {
@@ -1113,8 +1113,10 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     if (bFillOrKill)
     {
         JLOG(j_.trace()) << "Fill or Kill: offer killed";
+
         if (sb.rules().enabled(fix1578))
             return {tecKILLED, false};
+
         return {tesSUCCESS, false};
     }
 

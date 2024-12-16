@@ -35,14 +35,31 @@ public:
     STTx const& tx;
     Rules const rules;
     ApplyFlags flags;
+    std::optional<uint256 const> batchId;
     beast::Journal const j;
+
+    PreflightContext(
+        Application& app_,
+        STTx const& tx_,
+        uint256 batchId_,
+        Rules const& rules_,
+        ApplyFlags flags_,
+        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
+        : app(app_), tx(tx_), rules(rules_), flags(flags_), batchId(batchId_), j(j_)
+    {
+        assert((flags_ & tapBATCH) == tapBATCH);
+    }
 
     PreflightContext(
         Application& app_,
         STTx const& tx_,
         Rules const& rules_,
         ApplyFlags flags_,
-        beast::Journal j_);
+        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
+        : app(app_), tx(tx_), rules(rules_), flags(flags_), j(j_)
+    {
+        assert((flags_ & tapBATCH) == 0);
+    }
 
     PreflightContext&
     operator=(PreflightContext const&) = delete;
@@ -55,8 +72,9 @@ public:
     Application& app;
     ReadView const& view;
     TER preflightResult;
-    STTx const& tx;
     ApplyFlags flags;
+    STTx const& tx;
+    std::optional<uint256 const> const batchId;
     beast::Journal const j;
 
     PreclaimContext(
@@ -65,13 +83,34 @@ public:
         TER preflightResult_,
         STTx const& tx_,
         ApplyFlags flags_,
+        std::optional<uint256> batchId_,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
         : app(app_)
         , view(view_)
         , preflightResult(preflightResult_)
-        , tx(tx_)
         , flags(flags_)
+        , tx(tx_)
+        , batchId(batchId_)
         , j(j_)
+    {
+        assert(batchId.has_value() == ((flags_ & tapBATCH) == tapBATCH));
+    }
+
+    PreclaimContext(
+        Application& app_,
+        ReadView const& view_,
+        TER preflightResult_,
+        STTx const& tx_,
+        ApplyFlags flags_,
+        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
+        : PreclaimContext(
+              app_,
+              view_,
+              preflightResult_,
+              tx_,
+              flags_,
+              std::nullopt,
+              j_)
     {
     }
 
@@ -211,7 +250,9 @@ private:
         STArray const& txSigners,
         beast::Journal j);
 
-    void trapTransaction(uint256) const;
+    /// The sole purpose of this function is to provide a convenient, named
+    /// location to set a breakpoint, to be used when replaying transactions.
+    void trapTransaction(uint256 const&) const noexcept;
 };
 
 /** Performs early sanity checks on the txid */

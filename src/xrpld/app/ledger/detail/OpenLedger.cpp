@@ -123,9 +123,14 @@ OpenLedger::accept(
         auto const& tx = txpair.first;
         auto const txId = tx->getTransactionID();
 
+        assert(txpair.second);
+
         // skip batch txns
         if (tx->isFlag(tfInnerBatchTxn))
+        {
+            assert(txpair.second && txpair.second->isFieldPresent(sfBatchTransactionID));
             continue;
+        }
 
         if (auto const toSkip = app.getHashRouter().shouldRelay(txId))
         {

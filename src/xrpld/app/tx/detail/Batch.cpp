@@ -34,12 +34,19 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // Calculate the Inner Txn Fees
     XRPAmount txnFees{0};
+
     if (tx.isFieldPresent(sfRawTransactions))
     {
         XRPAmount txFees{0};
         auto const& txns = tx.getFieldArray(sfRawTransactions);
         for (STObject txn : txns)
         {
+            // FIXME: THIS IS BROKEN! This will call the base class' version of
+            //        calculateBaseFee, but many transactors customize what the
+            //        base fee should (e.g. EscrowFinish). As written, it would
+            //        be cheaper to submit some transactions as part of a batch
+            //        or even as a single transaction batch than to submit them
+            //        individually.
             STTx const stx = STTx{std::move(txn)};
             txFees += Transactor::calculateBaseFee(view, tx);
         }
@@ -63,43 +70,44 @@ Batch::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
+    auto const outerAccount = ctx.tx.getAccountID(sfAccount);
     auto const flags = ctx.tx.getFlags();
+
     if (flags & tfBatchMask)
     {
         JLOG(ctx.j.trace()) << "Batch: invalid flags.";
         return temINVALID_FLAG;
     }
 
-    if (std::popcount(flags & tfBatchSubTx) != 1)
+    if (std::popcount(flags & (tfAllOrNothing | tfOnlyOne | tfUntilFailure | tfIndependent)) != 1)
     {
         JLOG(ctx.j.trace()) << "Batch: too many flags.";
         return temMALFORMED;
     }
 
-    AccountID const outerAccount = ctx.tx.getAccountID(sfAccount);
-
     auto const& txns = ctx.tx.getFieldArray(sfRawTransactions);
-    STVector256 const& hashes = ctx.tx.getFieldV256(sfTxIDs);
+
+    if (txns.size() == 0)
+    {
+        JLOG(ctx.j.trace()) << "Batch: txns array is empty.";
+        return temARRAY_EMPTY;
+    }
+
+    if (txns.size() > maxBatchTxCount)
+    {
+        JLOG(ctx.j.trace()) << "Batch: txns array exceeds 8 entries.";
+        return temARRAY_TOO_LARGE;
+    }
+
+    auto const& hashes = ctx.tx.getFieldV256(sfTransactionIDs);
+
     if (hashes.size() != txns.size())
     {
         JLOG(ctx.j.trace()) << "Batch: hashes array size does not match txns.";
         return temMALFORMED;
     }
 
-    if (txns.empty())
-    {
-        JLOG(ctx.j.trace()) << "Batch: txns array empty.";
-        return temARRAY_EMPTY;
-    }
-
-    if (txns.size() > 8)
-    {
-        JLOG(ctx.j.trace()) << "Batch: txns array exceeds 8 entries.";
-        return temARRAY_TOO_LARGE;
-    }
-
-    auto const ret = preflight2(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight2(ctx); !isTesSuccess(ret))
         return ret;
 
     std::set<AccountID> batchSignersSet;
@@ -232,83 +240,7 @@ Batch::preflight(PreflightContext const& ctx)
 TER
 Batch::doApply()
 {
-    bool changed = false;
-    auto const flags = ctx_.tx.getFlags();
-
-    AccountID const outerAccount = ctx_.tx.getAccountID(sfAccount);
-
-    TER result = tesSUCCESS;
-    ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
-    OpenView subView(&ctx_.view());
-
-    auto const& txns = ctx_.tx.getFieldArray(sfRawTransactions);
-    bool const innerTxnSubmittedByOuterAcct = std::any_of(
-        txns.begin(), txns.end(), [outerAccount](STObject const& txn) {
-            return txn.getAccountID(sfAccount) == outerAccount;
-        });
-
-    for (STObject txn : txns)
-    {
-        STTx const stx = STTx{std::move(txn)};
-        auto const [ter, applied] =
-            ripple::apply(ctx_.app, subView, stx, tapFAIL_HARD, ctx_.journal);
-
-        changed = true;
-
-        // Add Inner Txn Metadata
-        STObject meta{sfBatchExecution};
-        std::string res = transToken(ter);
-        meta.setFieldVL(sfInnerResult, ripple::Slice{res.data(), res.size()});
-        meta.setFieldH256(sfTransactionHash, stx.getTransactionID());
-        avi.addBatchExecution(std::move(meta));
-
-        if (ter != tesSUCCESS)
-        {
-            // Atomic Revert on non tec failure
-            if (!isTecClaim(ter))
-            {
-                JLOG(ctx_.journal.trace()) << "Batch: Inner txn failed." << ter;
-                result = tecBATCH_FAILURE;
-                changed = false;
-                break;
-            }
-
-            if (flags & tfUntilFailure)
-            {
-                result = tesSUCCESS;
-                break;
-            }
-            if (flags & tfOnlyOne)
-            {
-                continue;
-            }
-            if (flags & tfAllOrNothing)
-            {
-                result = tecBATCH_FAILURE;
-                changed = false;
-                break;
-            }
-        }
-
-        if (ter == tesSUCCESS && flags & tfOnlyOne)
-        {
-            result = tesSUCCESS;
-            break;
-        }
-    }
-
-    // Apply SubView & PreviousFields
-    if (changed)
-    {
-        // Only required when the outer account also submitted at least one of
-        // the inner transactions
-        // if (innerTxnSubmittedByOuterAcct)
-        //     ctx_.setBatchPrevAcctRootFields(avi);
-
-        ctx_.applyOpenView(subView);
-    }
-
-    return result;
+    return tesSUCCESS;
 }
 
 }  // namespace ripple

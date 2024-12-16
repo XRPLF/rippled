@@ -45,13 +45,13 @@ batch(
     jv[jss::TransactionType] = jss::Batch;
     jv[jss::Account] = account.human();
     jv[jss::RawTransactions] = Json::Value{Json::arrayValue};
-    jv[sfTxIDs.jsonName] = Json::Value{Json::arrayValue};
+    jv[sfTransactionIDs.jsonName] = Json::Value{Json::arrayValue};
     jv[jss::Sequence] = seq;
     jv[jss::Flags] = flags;
     jv[jss::Fee] = to_string(fee);
     jv[jss::SigningPubKey] = strHex(account.pk());
     jv[sfRawTransactions.jsonName] = Json::Value{Json::arrayValue};
-    jv[sfTxIDs.jsonName] = Json::Value{Json::arrayValue};
+    jv[sfTransactionIDs.jsonName] = Json::Value{Json::arrayValue};
     return jv;
 }
 
@@ -85,7 +85,7 @@ add::operator()(Env& env, JTx& jt) const
         std::optional<STObject> st =
             parse(jt.jv[jss::RawTransactions][index][jss::RawTransaction]);
         STTx const stx = STTx{std::move(*st)};
-        jt.jv[sfTxIDs.jsonName][index] = to_string(stx.getTransactionID());
+        jt.jv[sfTransactionIDs.jsonName][index] = to_string(stx.getTransactionID());
     }
     catch (parse_error const&)
     {
@@ -128,7 +128,7 @@ sig::operator()(Env& env, JTx& jt) const
         jo[jss::SigningPubKey] = strHex(e.sig.pk().slice());
 
         Serializer msg;
-        serializeBatch(msg, st->getFlags(), st->getFieldV256(sfTxIDs));
+        serializeBatch(msg, st->getFlags(), st->getFieldV256(sfTransactionIDs));
         auto const sig = ripple::sign(
             *publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
         jo[sfTxnSignature.getJsonName()] =
@@ -175,7 +175,7 @@ msig::operator()(Env& env, JTx& jt) const
         iso[jss::SigningPubKey] = strHex(e.sig.pk().slice());
 
         Serializer msg;
-        serializeBatch(msg, st->getFlags(), st->getFieldV256(sfTxIDs));
+        serializeBatch(msg, st->getFlags(), st->getFieldV256(sfTransactionIDs));
         auto const sig = ripple::sign(
             *publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
         iso[sfTxnSignature.getJsonName()] =

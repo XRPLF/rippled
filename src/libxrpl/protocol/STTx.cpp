@@ -386,7 +386,7 @@ STTx::checkBatchSingleSign(
     RequireFullyCanonicalSig requireCanonicalSig) const
 {
     Serializer msg;
-    serializeBatch(msg, getFlags(), getFieldV256(sfTxIDs));
+    serializeBatch(msg, getFlags(), getFieldV256(sfTransactionIDs));
     return singleSignHelper(
         batchSigner, msg.slice(), requireCanonicalSig, getFlags());
 }
@@ -483,7 +483,7 @@ STTx::checkBatchMultiSign(
         (requireCanonicalSig == RequireFullyCanonicalSig::yes);
 
     Serializer msg;
-    serializeBatch(msg, getFlags(), getFieldV256(sfTxIDs));
+    serializeBatch(msg, getFlags(), getFieldV256(sfTransactionIDs));
 
     return multiSignHelper(
         signers,
@@ -706,10 +706,13 @@ sterilize(STTx const& stx)
 bool
 isPseudoTx(STObject const& tx)
 {
-    auto t = tx[~sfTransactionType];
+    auto const t = tx[~sfTransactionType];
+
     if (!t)
         return false;
-    auto tt = safe_cast<TxType>(*t);
+
+    auto const tt = safe_cast<TxType>(*t);
+
     return tt == ttAMENDMENT || tt == ttFEE || tt == ttUNL_MODIFY;
 }
 

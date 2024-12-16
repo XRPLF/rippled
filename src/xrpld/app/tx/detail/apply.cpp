@@ -122,6 +122,16 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
         router.setFlags(txid, flags);
 }
 
+template <typename PreflightChecks>
+std::pair<TER, bool>
+apply(Application& app, OpenView& view, PreflightChecks&& preflightChecks)
+{
+    STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
+    NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
+
+    return doApply(preclaim(preflightChecks(), app, view), app, view);
+}
+
 std::pair<TER, bool>
 apply(
     Application& app,
@@ -130,12 +140,83 @@ apply(
     ApplyFlags flags,
     beast::Journal j)
 {
-    STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
-    NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
+    return apply(app, view, [&]() mutable {
+        return preflight(app, view.rules(), tx, flags, j);
+    });
+}
 
-    auto pfresult = preflight(app, view.rules(), tx, flags, j);
-    auto pcresult = preclaim(pfresult, app, view);
-    return doApply(pcresult, app, view);
+std::pair<TER, bool>
+apply(
+    Application& app,
+    OpenView& view,
+    uint256 const& batchId,
+    STTx const& tx,
+    ApplyFlags flags,
+    beast::Journal j)
+{
+    return apply(app, view, [&]() mutable {
+        return preflight(app, view.rules(), batchId, tx, flags, j);
+    });
+}
+
+static
+bool
+applyBatchTransactions(
+    Application& app,
+    OpenView& batchView,
+    STTx const& txn,
+    beast::Journal j)
+{
+    assert(txn.getTxnType() == ttBATCH && !txn.getFieldArray(sfRawTransactions).empty());
+
+    auto const batchId = txn.getTransactionID();
+    auto const mode = txn.getFlags();
+
+    auto applyOneTransaction = [&app, &j, &batchId, &batchView](STTx&& tx) {
+        OpenView perTxBatchView(batch_view, batchView);
+
+        JLOG(j.debug()) << "TXN " << tx.getTransactionID() << " (BATCH "
+                        << batchId << ")";
+
+        auto const ret = apply(app, perTxBatchView, batchId, tx, tapBATCH, j);
+        assert(ret.second == (isTesSuccess(ret.first) || isTecClaim(ret.first)));
+
+        JLOG(j.debug()) << "Transaction "
+                        << (ret.second ? "applied" : "failure") << ": "
+                        << transToken(ret.first);
+
+        // If the transaction should be applied push its changes to the
+        // whole-batch view.
+        if (ret.second && (isTesSuccess(ret.first) || isTecClaim(ret.first)))
+            perTxBatchView.apply(batchView);
+
+        return ret;
+    };
+
+    int applied = 0;
+
+    for (STObject rb : txn.getFieldArray(sfRawTransactions))
+    {
+        auto const result = applyOneTransaction(STTx{std::move(rb)});
+        assert(result.second == (isTesSuccess(result.first) || isTecClaim(result.first)));
+
+        if (result.second)
+            ++applied;
+
+        if (!isTesSuccess(result.first))
+        {
+            if (mode & tfAllOrNothing)
+                return false;
+
+            if (mode & tfUntilFailure)
+                break;
+        }
+
+        if (isTesSuccess(result.first) && (mode & tfOnlyOne))
+            break;
+    }
+
+    return applied != 0;
 }
 
 ApplyResult
@@ -151,16 +232,27 @@ applyTransaction(
     if (retryAssured)
         flags = flags | tapRETRY;
 
-    JLOG(j.debug()) << "TXN " << txn.getTransactionID()
-                    << (retryAssured ? "/retry" : "/final");
+    JLOG(j.debug()) << "TXN " << txn.getTransactionID() << (retryAssured ? "/retry" : "/final");
 
     try
     {
         auto const result = apply(app, view, txn, flags, j);
+
         if (result.second)
         {
             JLOG(j.debug())
-                << "Transaction applied: " << transHuman(result.first);
+                << "Transaction applied: " << transToken(result.first);
+
+            // The batch transaction was just applied; now we need to apply
+            // its inner transactions as necessary.
+            if (isTesSuccess(result.first) && txn.getTxnType() == ttBATCH)
+            {
+                OpenView wholeBatchView(batch_view, view);
+
+                if (applyBatchTransactions(app, wholeBatchView, txn, j))
+                    wholeBatchView.apply(view);
+            }
+
             return ApplyResult::Success;
         }
 
@@ -169,11 +261,11 @@ applyTransaction(
         {
             // failure
             JLOG(j.debug())
-                << "Transaction failure: " << transHuman(result.first);
+                << "Transaction failure: " << transToken(result.first);
             return ApplyResult::Fail;
         }
 
-        JLOG(j.debug()) << "Transaction retry: " << transHuman(result.first);
+        JLOG(j.debug()) << "Transaction retry: " << transToken(result.first);
         return ApplyResult::Retry;
     }
     catch (std::exception const& ex)

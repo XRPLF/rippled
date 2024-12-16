@@ -146,18 +146,6 @@ preflight2(PreflightContext const& ctx)
 
 //------------------------------------------------------------------------------
 
-PreflightContext::PreflightContext(
-    Application& app_,
-    STTx const& tx_,
-    Rules const& rules_,
-    ApplyFlags flags_,
-    beast::Journal j_)
-    : app(app_), tx(tx_), rules(rules_), flags(flags_), j(j_)
-{
-}
-
-//------------------------------------------------------------------------------
-
 Transactor::Transactor(ApplyContext& ctx)
     : ctx_(ctx), j_(ctx.journal), account_(ctx.tx.getAccountID(sfAccount))
 {
@@ -198,12 +186,12 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         return temBAD_FEE;
 
     auto const feePaid = ctx.tx[sfFee].xrp();
+
     if (ctx.tx.isFlag(tfInnerBatchTxn))
     {
         if (feePaid == beast::zero)
-        {
             return tesSUCCESS;
-        }
+
         JLOG(ctx.j.warn()) << "Batch: sfFee must be zero.";
         return temBAD_FEE;
     }
@@ -256,19 +244,20 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 TER
 Transactor::payFee()
 {
-    auto const feePaid = ctx_.tx[sfFee].xrp();
+    if (auto const feePaid = ctx_.tx[sfFee].xrp())
+    { // Deduct the fee amount so it's not available during the transaction.
+        auto const sle = view().peek(keylet::account(account_));
 
-    auto const sle = view().peek(keylet::account(account_));
-    if (!sle)
-        return tefINTERNAL;
+        if (!sle)
+            return tefINTERNAL;
 
-    // Deduct the fee, so it's not available during the transaction.
-    // Will only write the account back if the transaction succeeds.
+        // Will only write the account back if the transaction succeeds.
 
-    mSourceBalance -= feePaid;
-    sle->setFieldAmount(sfBalance, mSourceBalance);
+        mSourceBalance -= feePaid;
+        sle->setFieldAmount(sfBalance, mSourceBalance);
 
-    // VFALCO Should we call view().rawDestroyXRP() here as well?
+        // VFALCO Should we call view().rawDestroyXRP() here as well?
+    }
 
     return tesSUCCESS;
 }
@@ -291,8 +280,8 @@ Transactor::checkSeqProxy(
         return terNO_ACCOUNT;
     }
 
-    SeqProxy const t_seqProx = tx.getSeqProxy();
-    SeqProxy a_seq = SeqProxy::sequence((*sle)[sfSequence]);
+    auto const t_seqProx = tx.getSeqProxy();
+    auto const a_seq = SeqProxy::sequence((*sle)[sfSequence]);
 
     if (t_seqProx.isSeq())
     {
@@ -379,17 +368,16 @@ TER
 Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
     assert(sleAccount);
-    SeqProxy const seqProx = ctx_.tx.getSeqProxy();
-    if (seqProx.isSeq())
-    {
-        // Note that if this transaction is a TicketCreate, then
-        // the transaction will modify the account root sfSequence
-        // yet again.
-        sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
-        return tesSUCCESS;
-    }
-    return ticketDelete(
-        view(), account_, getTicketIndex(account_, seqProx), j_);
+
+    auto const seqProx = ctx_.tx.getSeqProxy();
+
+    if (!seqProx.isSeq())
+        return ticketDelete(view(), account_, getTicketIndex(account_, seqProx), j_);
+
+    // Note that if this transaction is a TicketCreate, then the transaction will modify
+    // the account root sfSequence yet again.
+    sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
+    return tesSUCCESS;
 }
 
 // Remove a single Ticket from the ledger.
@@ -462,8 +450,8 @@ Transactor::apply()
     // list one, preflight will have already a flagged a failure.
     auto const sle = view().peek(keylet::account(account_));
 
-    // sle must exist except for transactions
-    // that allow zero account.
+    // sle must exist except for transactions that allow the zero account as
+    // the source (system-generated pseudo-transactions).
     assert(sle != nullptr || account_ == beast::zero);
 
     if (sle)
@@ -471,12 +459,10 @@ Transactor::apply()
         mPriorBalance = STAmount{(*sle)[sfBalance]}.xrp();
         mSourceBalance = mPriorBalance;
 
-        TER result = consumeSeqProxy(sle);
-        if (result != tesSUCCESS)
+        if (auto const result = consumeSeqProxy(sle); result != tesSUCCESS)
             return result;
 
-        result = payFee();
-        if (result != tesSUCCESS)
+        if (auto const result = payFee(); result != tesSUCCESS)
             return result;
 
         if (sle->isFieldPresent(sfAccountTxnID))
@@ -861,42 +847,22 @@ removeDeletedTrustLines(
 }
 
 
-/**
- * Reset the context, discarding any changes made and adjust the fee.
- *
- * This function handles the reset of the transaction context, including
- * discarding the current context and reapplying necessary metadata if the
- * transaction type is a batch. It also ensures the transaction fee is charged
- * to the account and updates the account's sequence number or consumes a ticket.
- *
- * @param fee The transaction fee to be charged.
- * @return A pair containing the transaction engine result (TER) and the actual
- *         fee charged (XRPAmount).
+/** Reset the context, discarding any changes made and adjust the fee.
+
+    @param fee The transaction fee to be charged.
+    @return A pair containing the transaction result and the actual fee charged.
  */
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
 {
-    auto const tt = ctx_.tx.getTxnType();
-    if (tt == ttBATCH)
-    {
-        // If the transaction is a batch, we need to copy the metadata from the
-        // current context to the new context and then discard the current
-        // context.
-        ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
-        std::vector<STObject> executions;
-        avi.copyBatchMetaData(executions);
-        ctx_.discard();
-        ApplyViewImpl& avi2 = dynamic_cast<ApplyViewImpl&>(ctx_.view());
-        avi2.setBatchExecutions(std::move(executions));
-    }
-    else
-        ctx_.discard();
+    ctx_.discard();
 
     auto const txnAcct =
         view().peek(keylet::account(ctx_.tx.getAccountID(sfAccount)));
+
+    // The account should never be missing from the ledger.  But if it
+    // is missing then we can't very well charge it a fee, can we?
     if (!txnAcct)
-        // The account should never be missing from the ledger.  But if it
-        // is missing then we can't very well charge it a fee, can we?
         return {tefINTERNAL, beast::zero};
 
     auto const balance = txnAcct->getFieldAmount(sfBalance).xrp();
@@ -925,10 +891,8 @@ Transactor::reset(XRPAmount fee)
     return {ter, fee};
 }
 
-// The sole purpose of this function is to provide a convenient, named
-// location to set a breakpoint, to be used when replaying transactions.
 void
-Transactor::trapTransaction(uint256 txHash) const
+Transactor::trapTransaction(uint256 const& txHash) const noexcept
 {
     JLOG(j_.debug()) << "Transaction trapped: " << txHash;
 }
@@ -962,11 +926,8 @@ Transactor::operator()()
     }
 #endif
 
-    if (auto const& trap = ctx_.app.trapTxID();
-        trap && *trap == ctx_.tx.getTransactionID())
-    {
-        trapTransaction(*trap);
-    }
+    if (ctx_.app.trapTxID() == ctx_.tx.getTransactionID()) [[unlikely]]
+        trapTransaction(ctx_.tx.getTransactionID());
 
     auto result = ctx_.preclaimResult;
     if (result == tesSUCCESS)
@@ -985,8 +946,7 @@ Transactor::operator()()
     if (ctx_.size() > oversizeMetaDataCap)
         result = tecOVERSIZE;
 
-    if ((isTecClaim(result) && (view().flags() & tapFAIL_HARD) &&
-         !ctx_.tx.isFlag(tfInnerBatchTxn)))
+    if (isTecClaim(result) && (view().flags() & tapFAIL_HARD))
     {
         // If the tapFAIL_HARD flag is set, a tec result
         // must not do anything
@@ -1087,22 +1047,6 @@ Transactor::operator()()
         applied = isTecClaim(result);
     }
 
-    // Update the AccountRoot entry if the batch transaction was successful
-    if (applied && ctx_.tx.getTxnType() == ttBATCH && result == tesSUCCESS)
-    {
-        auto const outerAccount = ctx_.tx.getAccountID(sfAccount);
-        auto const& txns = ctx_.tx.getFieldArray(sfRawTransactions);
-        bool const innerTxnSubmittedByOuterAcct = std::any_of(
-            txns.begin(), txns.end(), [outerAccount](STObject const& txn) {
-                return txn.getAccountID(sfAccount) == outerAccount;
-            });
-
-        // Only update the account root entry if the batch transaction was
-        // not a 3rd party transaction
-        // if (innerTxnSubmittedByOuterAcct)
-        //     ctx_.updateAccountRootEntry();
-    }
-
     if (applied)
     {
         // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
@@ -1153,7 +1097,7 @@ Transactor::operator()()
         ctx_.apply(result);
     }
 
-    JLOG(j_.trace()) << (applied ? "applied" : "not applied")
+    JLOG(j_.trace()) << (applied ? "applied" : "not applied") << ", "
                      << transToken(result);
 
     return {result, applied};

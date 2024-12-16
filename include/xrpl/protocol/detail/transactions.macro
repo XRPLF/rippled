@@ -450,7 +450,7 @@ TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete, ({
 /** This transaction type wraps inner transactions for batch. */
 TRANSACTION(ttBATCH, 61, Batch, ({
     {sfRawTransactions, soeREQUIRED},
-    {sfTxIDs, soeREQUIRED},
+    {sfTransactionIDs, soeREQUIRED},
     {sfBatchSigners, soeOPTIONAL},
 }))
 
@@ -489,4 +489,3 @@ TRANSACTION(ttUNL_MODIFY, 102, UNLModify, ({
     {sfLedgerSequence, soeREQUIRED},
     {sfUNLModifyValidator, soeREQUIRED},
 }))
-

@@ -31,6 +31,7 @@ namespace ripple {
 ApplyContext::ApplyContext(
     Application& app_,
     OpenView& base,
+    std::optional<uint256 const> const& batchId,
     STTx const& tx_,
     TER preclaimResult_,
     XRPAmount baseFee_,
@@ -43,6 +44,7 @@ ApplyContext::ApplyContext(
     , journal(journal_)
     , base_(base)
     , flags_(flags)
+    , batchId_(batchId)
 {
     view_.emplace(&base_, flags_);
 }
@@ -56,74 +58,7 @@ ApplyContext::discard()
 void
 ApplyContext::apply(TER ter)
 {
-    view_->apply(base_, tx, ter, journal);
-}
-
-/**
- * Applies the changes in the given OpenView to the ApplyContext's base.
- * If the base is not open, the changes in the OpenView are directly applied to
- * the base.
- *
- * @param open The OpenView containing the changes to be applied.
- */
-void
-ApplyContext::applyOpenView(OpenView& open)
-{
-    open.apply(base_);
-}
-
-/**
- * Update the AccountRoot ledger entry associated with the batch transaction
- * to ensure that the final entry accurately reflects all modifications made
- * by inner transactions that affect the same account.
- *
- * This function retrieves the current AccountRoot entry for the account
- * associated with the batch transaction and replaces it in the view.
- * This is necessary because inner transactions are processed first, and
- * their changes may impact the overall entry of the account. By updating
- * the AccountRoot entry, we ensure that any changes made by these inner
- * transactions are accounted for in the final entry of the batch transaction.
- */
-void
-ApplyContext::updateAccountRootEntry()
-{
-    AccountID const account = tx.getAccountID(sfAccount);
-    auto const sleBase = base_.read(keylet::account(account));
-    if (sleBase)
-        view_->rawReplace(std::make_shared<SLE>(*sleBase));
-}
-
-/**
- * Capture the previous state of the AccountRoot ledger entry associated
- * with the batch transaction before applying inner transactions. This
- * function retrieves the current AccountRoot entry and prepares metadata
- * that reflects any changes made by inner transactions that may affect
- * the account's overall state.
- *  @param avi The ApplyViewImpl instance to which the previous metadata
- *  will be added.
- */
-void
-ApplyContext::setBatchPrevAcctRootFields(ApplyViewImpl& avi)
-{
-    AccountID const account = tx.getAccountID(sfAccount);
-    auto const sleBaseAcct = base_.read(keylet::account(account));
-    auto const sleAcct = view_->peek(keylet::account(account));
-    if (sleAcct && sleBaseAcct)
-    {
-        STObject prevFields{sfPreviousFields};
-        for (auto const& obj : *sleBaseAcct)
-        {
-            if (obj.getFName().shouldMeta(SField::sMD_ChangeOrig) &&
-                (!sleAcct->hasMatchingEntry(obj) ||
-                 obj.getFName() == sfSequence ||
-                 obj.getFName() == sfOwnerCount ||
-                 obj.getFName() == sfTicketCount))
-            {
-                prevFields.emplace_back(obj);
-            }
-        }
-        avi.setBatchPrevMetaData(std::move(prevFields));
-    }
+    view_->apply(base_, tx, ter, batchId_, journal);
 }
 
 std::size_t

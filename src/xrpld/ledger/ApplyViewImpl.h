@@ -53,7 +53,12 @@ public:
         destructor.
     */
     void
-    apply(OpenView& to, STTx const& tx, TER ter, beast::Journal j);
+    apply(
+        OpenView& to,
+        STTx const& tx,
+        TER ter,
+        std::optional<uint256> batchId,
+        beast::Journal j);
 
     /** Set the amount of currency delivered.
 
@@ -66,42 +71,6 @@ public:
     deliver(STAmount const& amount)
     {
         deliver_ = amount;
-    }
-
-    TxMeta
-    generateProvisionalMeta(
-        OpenView const& to,
-        STTx const& tx,
-        beast::Journal j);
-
-    /* Set hook metadata for a hook execution
-     * Takes ownership / use std::move
-     */
-    void
-    setBatchPrevMetaData(STObject const& batchPrevAcctRootFields)
-    {
-        batchPrevAcctRootFields_ = batchPrevAcctRootFields;
-    }
-
-    void
-    addBatchExecution(STObject&& batchExecution)
-    {
-        batchExecutions_.push_back(std::move(batchExecution));
-    }
-
-    void
-    setBatchExecutions(std::vector<STObject>&& batchExecutions)
-    {
-        batchExecutions_ = std::move(batchExecutions);
-    }
-
-    void
-    copyBatchMetaData(std::vector<STObject>& execution)
-    {
-        std::copy(
-            batchExecutions_.begin(),
-            batchExecutions_.end(),
-            std::back_inserter(execution));
     }
 
     /** Get the number of modified entries
@@ -122,8 +91,6 @@ public:
 
 private:
     std::optional<STAmount> deliver_;
-    std::vector<STObject> batchExecutions_;
-    std::optional<STObject> batchPrevAcctRootFields_;
 };
 
 }  // namespace ripple

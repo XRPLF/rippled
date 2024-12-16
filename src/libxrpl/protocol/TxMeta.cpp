@@ -43,9 +43,6 @@ TxMeta::TxMeta(
 
     if (obj.isFieldPresent(sfDeliveredAmount))
         setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
-
-    if (obj.isFieldPresent(sfBatchExecutions))
-        setBatchExecutions(obj.getFieldArray(sfBatchExecutions));
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
@@ -64,9 +61,6 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
 
     if (obj.isFieldPresent(sfDeliveredAmount))
         setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
-
-    if (obj.isFieldPresent(sfBatchExecutions))
-        setBatchExecutions(obj.getFieldArray(sfBatchExecutions));
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
@@ -82,11 +76,12 @@ TxMeta::TxMeta(
 {
 }
 
-TxMeta::TxMeta(uint256 const& transactionID, std::uint32_t ledger)
+TxMeta::TxMeta(uint256 const& transactionID, std::uint32_t ledger, std::optional<uint256> batchId)
     : mTransactionID(transactionID)
     , mLedger(ledger)
     , mIndex(static_cast<std::uint32_t>(-1))
     , mResult(255)
+    , mBatchId(batchId)
     , mNodes(sfAffectedNodes)
 {
     mNodes.reserve(32);
@@ -206,13 +201,13 @@ TxMeta::getAsObject() const
 {
     STObject metaData(sfTransactionMetaData);
     assert(mResult != 255);
+    if (mBatchId)
+        metaData.setFieldH256(sfBatchTransactionID, mBatchId.value());
     metaData.setFieldU8(sfTransactionResult, mResult);
     metaData.setFieldU32(sfTransactionIndex, mIndex);
     metaData.emplace_back(mNodes);
     if (hasDeliveredAmount())
         metaData.setFieldAmount(sfDeliveredAmount, getDeliveredAmount());
-    if (hasBatchExecutions())
-        metaData.setFieldArray(sfBatchExecutions, getBatchExecutions());
     return metaData;
 }
 

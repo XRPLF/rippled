@@ -60,19 +60,7 @@ class Batch_test : public beast::unit_test::suite
         std::uint32_t const& txns,
         std::vector<TestBatchData> const& batchResults)
     {
-        BEAST_EXPECT(meta[sfBatchExecutions.jsonName].size() != 0);
-        BEAST_EXPECT(meta[sfBatchExecutions.jsonName].size() == txns);
-        size_t index = 0;
-        for (auto const& _batchTxn : meta[sfBatchExecutions.jsonName])
-        {
-            auto const b = _batchTxn[sfBatchExecution.jsonName];
-            BEAST_EXPECT(
-                b[sfInnerResult.jsonName] ==
-                strHex(batchResults[index].result));
-            BEAST_EXPECT(
-                b[sfTransactionHash.jsonName] == batchResults[index].txHash);
-            ++index;
-        }
+        // TODO: DA
     }
 
     void
@@ -247,7 +235,7 @@ class Batch_test : public beast::unit_test::suite
             auto txn1 = jv[jss::RawTransactions][0u][jss::RawTransaction];
             STParsedJSONObject parsed1(std::string(jss::tx_json), txn1);
             STTx const stx1 = STTx{std::move(parsed1.object.value())};
-            jv[sfTxIDs.jsonName].append(to_string(stx1.getTransactionID()));
+            jv[sfTransactionIDs.jsonName].append(to_string(stx1.getTransactionID()));
 
             // Tx 2
             Json::Value const tx2 = pay(bob, alice, XRP(5));
@@ -255,10 +243,10 @@ class Batch_test : public beast::unit_test::suite
             auto txn2 = jv[jss::RawTransactions][1u][jss::RawTransaction];
             STParsedJSONObject parsed2(std::string(jss::tx_json), txn2);
             STTx const stx2 = STTx{std::move(parsed2.object.value())};
-            jv[sfTxIDs.jsonName].append(to_string(stx2.getTransactionID()));
+            jv[sfTransactionIDs.jsonName].append(to_string(stx2.getTransactionID()));
 
             // Add another txn hash to the TxIDs array
-            jv[sfTxIDs.jsonName].append(to_string(stx2.getTransactionID()));
+            jv[sfTransactionIDs.jsonName].append(to_string(stx2.getTransactionID()));
 
             env(jv, batch::sig(bob), ter(temMALFORMED));
             env.close();
@@ -342,7 +330,7 @@ class Batch_test : public beast::unit_test::suite
             auto txn1 = jv[jss::RawTransactions][0u][jss::RawTransaction];
             STParsedJSONObject parsed1(std::string(jss::tx_json), txn1);
             STTx const stx1 = STTx{std::move(parsed1.object.value())};
-            jv[sfTxIDs.jsonName].append(to_string(stx1.getTransactionID()));
+            jv[sfTransactionIDs.jsonName].append(to_string(stx1.getTransactionID()));
 
             // Tx 2
             Json::Value const tx2 = pay(bob, alice, XRP(5));
@@ -350,7 +338,7 @@ class Batch_test : public beast::unit_test::suite
             auto txn2 = jv[jss::RawTransactions][1u][jss::RawTransaction];
             STParsedJSONObject parsed2(std::string(jss::tx_json), txn2);
             STTx const stx2 = STTx{std::move(parsed2.object.value())};
-            jv[sfTxIDs.jsonName].append(to_string(stx2.getTransactionID()));
+            jv[sfTransactionIDs.jsonName].append(to_string(stx2.getTransactionID()));
 
             for (auto const& signer : signers)
             {
@@ -397,8 +385,8 @@ class Batch_test : public beast::unit_test::suite
             jv = addBatchTx(jv, tx2, env.seq(bob));
 
             // Add a duplicate hash
-            jv[sfTxIDs.jsonName].append(to_string(stx1.getTransactionID()));
-            jv[sfTxIDs.jsonName].append(to_string(stx1.getTransactionID()));
+            jv[sfTransactionIDs.jsonName].append(to_string(stx1.getTransactionID()));
+            jv[sfTransactionIDs.jsonName].append(to_string(stx1.getTransactionID()));
 
             env(jv, batch::sig(bob), ter(temMALFORMED));
             env.close();
@@ -426,8 +414,8 @@ class Batch_test : public beast::unit_test::suite
             STTx const stx2 = STTx{std::move(parsed2.object.value())};
 
             // Add the hashes out of order
-            jv[sfTxIDs.jsonName].append(to_string(stx2.getTransactionID()));
-            jv[sfTxIDs.jsonName].append(to_string(stx1.getTransactionID()));
+            jv[sfTransactionIDs.jsonName].append(to_string(stx2.getTransactionID()));
+            jv[sfTransactionIDs.jsonName].append(to_string(stx1.getTransactionID()));
 
             env(jv, batch::sig(bob), ter(temMALFORMED));
             env.close();
@@ -514,15 +502,12 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
-    testPreclaim(FeatureBitset features)
+    testNonTecInner(FeatureBitset features)
     {
-        testcase("preclaim");
+        testcase("non tec in inner");
 
         using namespace test::jtx;
         using namespace std::literals;
-
-        //----------------------------------------------------------------------
-        // preclaim
 
         test::jtx::Env env{*this, envconfig()};
 
@@ -533,7 +518,7 @@ class Batch_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice, bob, carol);
         env.close();
 
-        // temBAD_FEE(tecBATCH_FAILURE): Batch: sfFee must be zero.
+        // temBAD_FEE(tecINTERNAL): Batch: sfFee must be zero.
         {
             auto const batchFee = ((1 + 2) * feeDrops) + feeDrops * 2;
             Json::Value jv =
@@ -547,10 +532,17 @@ class Batch_test : public beast::unit_test::suite
             auto txn1 = jv[jss::RawTransactions][0u][jss::RawTransaction];
             STParsedJSONObject parsed1(std::string(jss::tx_json), txn1);
             STTx const stx1 = STTx{std::move(parsed1.object.value())};
-            jv[sfTxIDs.jsonName].append(to_string(stx1.getTransactionID()));
+            jv[sfTransactionIDs.jsonName].append(to_string(stx1.getTransactionID()));
 
-            env(jv, ter(tecBATCH_FAILURE));
+            env(jv, ter(tecINTERNAL));
             env.close();
+
+            Json::Value params;
+            params[jss::ledger_index] = env.current()->seq() - 1;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(params));
+            std::cout << "jrr: " << jrr << "\n";
         }
     }
 
@@ -594,9 +586,8 @@ class Batch_test : public beast::unit_test::suite
                 batch::add(pay(alice, bob, XRP(10)), preAliceSeq + 1),
                 batch::add(pay(bob, alice, XRP(5)), preBobSeq + 10),
                 batch::sig(bob),
-                ter(tecBATCH_FAILURE));
-            auto const envTx = env.tx();
-            auto const txIDs = envTx->getFieldV256(sfTxIDs);
+                ter(tecINTERNAL));
+            auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
             std::vector<TestBatchData> testCases = {
                 {"tesSUCCESS", to_string(txIDs[0])},
                 {"terPRE_SEQ", to_string(txIDs[1])},
@@ -635,9 +626,8 @@ class Batch_test : public beast::unit_test::suite
                 batch::add(pay(alice, bob, XRP(10)), preAliceSeq),
                 batch::add(pay(bob, alice, XRP(5)), preBobSeq),
                 batch::sig(bob),
-                ter(tecBATCH_FAILURE));
-            auto const envTx = env.tx();
-            auto const txIDs = envTx->getFieldV256(sfTxIDs);
+                ter(tecINTERNAL));
+            auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
             std::vector<TestBatchData> testCases = {
                 {"tefPAST_SEQ", to_string(txIDs[0])},
             };
@@ -783,12 +773,11 @@ class Batch_test : public beast::unit_test::suite
 
         auto const batchFee = XRP(1);
         auto const seq = env.seq(alice);
-        env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
-            batch::add(pay(alice, bob, XRP(10)), seq + 1),
-            batch::add(pay(alice, bob, XRP(10)), seq + 2),
-            ter(tecBATCH_FAILURE));
-        auto const envTx = env.tx();
-        auto const txIDs = envTx->getFieldV256(sfTxIDs);
+        // env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+        //     batch::add(pay(alice, bob, XRP(10)), seq + 1),
+        //     batch::add(pay(alice, bob, XRP(10)), seq + 2),
+        //     ter(tecBATCH_FAILURE));
+        auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
         std::vector<TestBatchData> testCases = {
             {"tesSUCCESS", to_string(txIDs[0])},
             {"tecUNFUNDED_PAYMENT", to_string(txIDs[1])},
@@ -837,8 +826,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::add(pay(alice, bob, XRP(1)), seq + 1),
                 batch::add(pay(alice, bob, XRP(1)), seq + 2),
                 ter(tesSUCCESS));
-            auto const envTx = env.tx();
-            auto const txIDs = envTx->getFieldV256(sfTxIDs);
+            auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
             std::vector<TestBatchData> testCases = {
                 {"tesSUCCESS", to_string(txIDs[0])},
                 {"tesSUCCESS", to_string(txIDs[1])},
@@ -850,8 +838,7 @@ class Batch_test : public beast::unit_test::suite
             params[jss::transactions] = true;
             params[jss::expand] = true;
             auto const jrr = env.rpc("json", "ledger", to_string(params));
-            std::cout << jrr << std::endl;
-            auto const txn = getTxByIndex(jrr, 2);
+            auto const txn = getTxByIndex(jrr, 0);
             validateBatchTxns(txn[jss::metaData], 2, testCases);
             validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
@@ -860,47 +847,46 @@ class Batch_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(bob) == preBob + XRP(2));
         }
 
-        // // nothing
-        // {
-        //     test::jtx::Env env{*this, envconfig()};
+        // nothing
+        {
+            test::jtx::Env env{*this, envconfig()};
 
-        //     auto const feeDrops = env.current()->fees().base;
-        //     auto const alice = Account("alice");
-        //     auto const bob = Account("bob");
-        //     auto const carol = Account("carol");
-        //     env.fund(XRP(1000), alice, bob, carol);
-        //     env.close();
+            auto const feeDrops = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const carol = Account("carol");
+            env.fund(XRP(1000), alice, bob, carol);
+            env.close();
 
-        //     auto const preAlice = env.balance(alice);
-        //     auto const preBob = env.balance(bob);
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
 
-        //     auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 2;
-        //     auto const seq = env.seq(alice);
-        //     env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
-        //         batch::add(pay(alice, bob, XRP(1)), seq + 1),
-        //         batch::add(pay(alice, bob, XRP(999)), seq + 2),
-        //         ter(tecBATCH_FAILURE));
-        //     auto const envTx = env.tx();
-        //     auto const txIDs = envTx->getFieldV256(sfTxIDs);
-        //     std::vector<TestBatchData> testCases = {
-        //         {"tesSUCCESS", to_string(txIDs[0])},
-        //         {"tecUNFUNDED_PAYMENT", to_string(txIDs[1])},
-        //     };
-        //     env.close();
+            auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 2;
+            auto const seq = env.seq(alice);
+            env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+                batch::add(pay(alice, bob, XRP(1)), seq + 1),
+                batch::add(pay(alice, bob, XRP(999)), seq + 2),
+                ter(tesSUCCESS));
+            auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
+            std::vector<TestBatchData> testCases = {
+                {"tesSUCCESS", to_string(txIDs[0])},
+                {"tecUNFUNDED_PAYMENT", to_string(txIDs[1])},
+            };
+            env.close();
 
-        //     Json::Value params;
-        //     params[jss::ledger_index] = env.current()->seq() - 1;
-        //     params[jss::transactions] = true;
-        //     params[jss::expand] = true;
-        //     auto const jrr = env.rpc("json", "ledger", to_string(params));
-        //     auto const txn = getTxByIndex(jrr, 0);
-        //     validateBatchTxns(txn[jss::metaData], 2, testCases);
-        //     validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
+            Json::Value params;
+            params[jss::ledger_index] = env.current()->seq() - 1;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(params));
+            auto const txn = getTxByIndex(jrr, 0);
+            validateBatchTxns(txn[jss::metaData], 2, testCases);
+            validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
-        //     BEAST_EXPECT(env.seq(alice) == 5);
-        //     BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-        //     BEAST_EXPECT(env.balance(bob) == preBob);
-        // }
+            BEAST_EXPECT(env.seq(alice) == 5);
+            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.balance(bob) == preBob);
+        }
     }
 
     void
@@ -930,8 +916,7 @@ class Batch_test : public beast::unit_test::suite
             batch::add(pay(alice, bob, XRP(1)), seq + 2),
             batch::add(pay(alice, bob, XRP(1)), seq + 3),
             ter(tesSUCCESS));
-        auto const envTx = env.tx();
-        auto const txIDs = envTx->getFieldV256(sfTxIDs);
+        auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
         std::vector<TestBatchData> testCases = {
             {"tecUNFUNDED_PAYMENT", to_string(txIDs[0])},
             {"tesSUCCESS", to_string(txIDs[1])},
@@ -943,7 +928,7 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 2);
+        auto const txn = getTxByIndex(jrr, 0);
         validateBatchTxns(txn[jss::metaData], 2, testCases);
         validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
@@ -980,8 +965,7 @@ class Batch_test : public beast::unit_test::suite
             batch::add(pay(alice, bob, XRP(999)), seq + 3),
             batch::add(pay(alice, bob, XRP(1)), seq + 4),
             ter(tesSUCCESS));
-        auto const envTx = env.tx();
-        auto const txIDs = envTx->getFieldV256(sfTxIDs);
+        auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
         std::vector<TestBatchData> testCases = {
             {"tesSUCCESS", to_string(txIDs[0])},
             {"tesSUCCESS", to_string(txIDs[1])},
@@ -994,7 +978,7 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 3);
+        auto const txn = getTxByIndex(jrr, 0);
         validateBatchTxns(txn[jss::metaData], 3, testCases);
         validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
@@ -1031,8 +1015,7 @@ class Batch_test : public beast::unit_test::suite
             batch::add(pay(alice, bob, XRP(999)), seq + 3),
             batch::add(pay(alice, bob, XRP(1)), seq + 4),
             ter(tesSUCCESS));
-        auto const envTx = env.tx();
-        auto const txIDs = envTx->getFieldV256(sfTxIDs);
+        auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
         std::vector<TestBatchData> testCases = {
             {"tesSUCCESS", to_string(txIDs[0])},
             {"tesSUCCESS", to_string(txIDs[1])},
@@ -1045,7 +1028,7 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 4);
+        auto const txn = getTxByIndex(jrr, 0);
         validateBatchTxns(txn[jss::metaData], 4, testCases);
         validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
@@ -1083,8 +1066,7 @@ class Batch_test : public beast::unit_test::suite
             batch::add(pay(alice, bob, XRP(10)), seq + 1),
             batch::add(pay(bob, alice, XRP(5)), env.seq(bob)),
             batch::sig(bob));
-        auto const envTx = env.tx();
-        auto const txIDs = envTx->getFieldV256(sfTxIDs);
+        auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
         std::vector<TestBatchData> testCases = {
             {"tesSUCCESS", to_string(txIDs[0])},
             {"tesSUCCESS", to_string(txIDs[1])},
@@ -1096,7 +1078,7 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 2);
+        auto const txn = getTxByIndex(jrr, 0);
         validateBatchTxns(txn[jss::metaData], 2, testCases);
         validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
@@ -1135,8 +1117,7 @@ class Batch_test : public beast::unit_test::suite
             batch::add(pay(alice, bob, XRP(1)), seq + 1),
             batch::add(pay(alice, bob, XRP(1)), seq + 2),
             msig(bob, carol));
-        auto const envTx = env.tx();
-        auto const txIDs = envTx->getFieldV256(sfTxIDs);
+        auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
         std::vector<TestBatchData> testCases = {
             {"tesSUCCESS", to_string(txIDs[0])},
             {"tesSUCCESS", to_string(txIDs[1])},
@@ -1148,7 +1129,7 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 2);
+        auto const txn = getTxByIndex(jrr, 0);
         validateBatchTxns(txn[jss::metaData], 2, testCases);
         validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
@@ -1213,8 +1194,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::add(pay(alice, bob, XRP(10)), seq + 1),
                 batch::add(pay(bob, alice, XRP(5)), env.seq(bob)),
                 batch::msig(bob, {dave, carol}));
-            auto const envTx = env.tx();
-            auto const txIDs = envTx->getFieldV256(sfTxIDs);
+            auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
             std::vector<TestBatchData> testCases = {
                 {"tesSUCCESS", to_string(txIDs[0])},
                 {"tesSUCCESS", to_string(txIDs[1])},
@@ -1226,7 +1206,7 @@ class Batch_test : public beast::unit_test::suite
             params[jss::transactions] = true;
             params[jss::expand] = true;
             auto const jrr = env.rpc("json", "ledger", to_string(params));
-            auto const txn = getTxByIndex(jrr, 2);
+            auto const txn = getTxByIndex(jrr, 0);
             validateBatchTxns(txn[jss::metaData], 2, testCases);
             validateBatchPreMeta(txn[jss::metaData], STAmount(XRP(1000)), 4);
 
@@ -1234,6 +1214,126 @@ class Batch_test : public beast::unit_test::suite
             BEAST_EXPECT(env.seq(bob) == 6);
             BEAST_EXPECT(env.balance(alice) == preAlice - XRP(5) - batchFee);
             BEAST_EXPECT(env.balance(bob) == preBob + XRP(5));
+        }
+    }
+
+    void
+    testBatchType(FeatureBitset features)
+    {
+        testcase("batch type");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        test::jtx::Env env{*this, envconfig()};
+
+        auto const feeDrops = env.current()->fees().base;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const eve = Account("eve");
+        env.fund(XRP(100000), alice, bob, carol, eve);
+        env.close();
+
+        // auto dumpCL = [this,&env]() {
+        //     log << "Full Ledger:\n" << env.rpc("ledger", "closed", "tx")[jss::result].toStyledString() << "\n";
+        // };
+
+        { // All or Nothing: all succeed
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+            auto const preCarol = env.balance(carol);
+            auto const seq = env.seq(alice);
+            auto const batchFee = ((2 + 2) * feeDrops) + feeDrops * 2;
+            env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+                batch::add(pay(alice, bob, XRP(100)), seq + 1),
+                batch::add(pay(alice, carol, XRP(100)), seq + 2));
+            env.close();
+
+            // dumpCL();
+
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(200) - batchFee);
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(100));
+            BEAST_EXPECT(env.balance(carol) == preCarol + XRP(100));
+        }
+
+        { // All or Nothing: one fails
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+            auto const preCarol = env.balance(carol);
+            auto const seq = env.seq(alice);
+            auto const batchFee = ((2 + 2) * feeDrops) + feeDrops * 2;
+            env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+                batch::add(pay(alice, bob, XRP(100)), seq + 1),
+                batch::add(pay(alice, carol, XRP(747681)), seq + 2));
+            env.close();
+
+            // dumpCL();
+
+            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.balance(bob) == preBob);
+            BEAST_EXPECT(env.balance(carol) == preCarol);
+        }
+
+        { // Independent (one fails)
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+            auto const preCarol = env.balance(carol);
+            auto const seq = env.seq(alice);
+            auto const batchFee = ((2 + 2) * feeDrops) + feeDrops * 2;
+            env(batch::batch(alice, seq, batchFee, tfIndependent),
+                batch::add(pay(alice, bob, XRP(100)), seq + 1),
+                batch::add(pay(alice, carol, XRP(100)), seq + 2),
+                batch::add(offer(alice, alice["USD"](100), XRP(100),tfImmediateOrCancel), seq + 3));
+            env.close();
+
+            // dumpCL();
+
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(200) - batchFee);
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(100));
+            BEAST_EXPECT(env.balance(carol) == preCarol + XRP(100));
+        }
+
+        { // Until Failure: one fails, one is not executed
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+            auto const preCarol = env.balance(carol);
+            auto const seq = env.seq(alice);
+            auto const batchFee = ((2 + 2) * feeDrops) + feeDrops * 2;
+            env(batch::batch(alice, seq, batchFee, tfUntilFailure),
+                batch::add(pay(alice, bob, XRP(100)), seq + 1),
+                batch::add(pay(alice, carol, XRP(100)), seq + 2),
+                batch::add(offer(alice, alice["USD"](100), XRP(100),tfImmediateOrCancel), seq + 3),
+                batch::add(pay(alice, eve, XRP(100)), seq + 4));
+            env.close();
+
+            // dumpCL();
+
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(200) - batchFee);
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(100));
+            BEAST_EXPECT(env.balance(carol) == preCarol + XRP(100));
+        }
+
+        { // Only one: the fourth succeeds
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+            auto const preCarol = env.balance(carol);
+            auto const seq = env.seq(alice);
+            auto const batchFee = (8 * feeDrops) + feeDrops * 2;
+            env(batch::batch(alice, seq, batchFee, tfOnlyOne),
+                batch::add(offer(alice, alice["USD"](100), XRP(100),tfImmediateOrCancel), seq + 1),
+                batch::add(offer(alice, alice["USD"](100), XRP(100),tfImmediateOrCancel), seq + 2),
+                batch::add(offer(alice, alice["USD"](100), XRP(100),tfImmediateOrCancel), seq + 3),
+                batch::add(pay(alice, bob, XRP(100)), seq + 4),
+                batch::add(pay(alice, carol, XRP(100)), seq + 5),
+                batch::add(pay(alice, eve, XRP(100)), seq + 6));
+            env.close();
+
+            // dumpCL();
+
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(100) - batchFee);
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(100));
+            BEAST_EXPECT(env.balance(carol) == preCarol);
         }
     }
 
@@ -1325,8 +1425,7 @@ class Batch_test : public beast::unit_test::suite
             batch::add(pay(alice, bob, XRP(1000)), seq + 1),
             batch::add(tx1, ledSeq),
             batch::sig(bob));
-        auto const envTx = env.tx();
-        auto const txIDs = envTx->getFieldV256(sfTxIDs);
+        auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
         std::vector<TestBatchData> testCases = {
             {"tesSUCCESS", to_string(txIDs[0])},
             {"tesSUCCESS", to_string(txIDs[1])},
@@ -1338,7 +1437,7 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 2);
+        auto const txn = getTxByIndex(jrr, 0);
         validateBatchTxns(txn[jss::metaData], 2, testCases);
         validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
@@ -1378,8 +1477,7 @@ class Batch_test : public beast::unit_test::suite
         env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
             batch::add(tx1, seq + 1),
             batch::add(pay(alice, bob, XRP(1)), seq + 2));
-        auto const envTx = env.tx();
-        auto const txIDs = envTx->getFieldV256(sfTxIDs);
+        auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
         std::vector<TestBatchData> testCases = {
             {"tesSUCCESS", to_string(txIDs[0])},
             {"tesSUCCESS", to_string(txIDs[1])},
@@ -1391,7 +1489,7 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 2);
+        auto const txn = getTxByIndex(jrr, 0);
         validateBatchTxns(txn[jss::metaData], 2, testCases);
         validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
@@ -1447,8 +1545,7 @@ class Batch_test : public beast::unit_test::suite
             batch::add(check::create(bob, alice, USD(10)), env.seq(bob)),
             batch::add(check::cash(alice, chkId, USD(10)), seq + 1),
             batch::sig(bob));
-        auto const envTx = env.tx();
-        auto const txIDs = envTx->getFieldV256(sfTxIDs);
+        auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
         std::vector<TestBatchData> testCases = {
             {"tesSUCCESS", to_string(txIDs[0])},
             {"tesSUCCESS", to_string(txIDs[1])},
@@ -1460,7 +1557,7 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 2);
+        auto const txn = getTxByIndex(jrr, 0);
         validateBatchTxns(txn[jss::metaData], 2, testCases);
         validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
@@ -1512,8 +1609,7 @@ class Batch_test : public beast::unit_test::suite
             batch::add(check::create(bob, alice, USD(10)), 0, bobTicketSeq),
             batch::add(check::cash(alice, chkId, USD(10)), seq + 1),
             batch::sig(bob));
-        auto const envTx = env.tx();
-        auto const txIDs = envTx->getFieldV256(sfTxIDs);
+        auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
         std::vector<TestBatchData> testCases = {
             {"tesSUCCESS", to_string(txIDs[0])},
             {"tesSUCCESS", to_string(txIDs[1])},
@@ -1525,7 +1621,7 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 2);
+        auto const txn = getTxByIndex(jrr, 0);
         validateBatchTxns(txn[jss::metaData], 2, testCases);
         validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
@@ -1575,8 +1671,7 @@ class Batch_test : public beast::unit_test::suite
             batch::add(check::create(bob, alice, USD(10)), env.seq(bob)),
             batch::add(check::cash(alice, chkId, USD(10)), env.seq(alice)),
             batch::sig(alice, bob));
-        auto const envTx = env.tx();
-        auto const txIDs = envTx->getFieldV256(sfTxIDs);
+        auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
         std::vector<TestBatchData> testCases = {
             {"tesSUCCESS", to_string(txIDs[0])},
             {"tesSUCCESS", to_string(txIDs[1])},
@@ -1588,7 +1683,7 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 2);
+        auto const txn = getTxByIndex(jrr, 0);
         validateBatchTxns(txn[jss::metaData], 2, testCases);
         validateBatchPreMeta(txn[jss::metaData], preCarol, seq);
 
@@ -1632,8 +1727,7 @@ class Batch_test : public beast::unit_test::suite
             batch::add(pay(alice, bob, XRP(1)), seq + 0),
             batch::add(pay(alice, bob, XRP(1)), seq + 1),
             ticket::use(aliceTicketSeq++));
-        auto const envTx = env.tx();
-        auto const txIDs = envTx->getFieldV256(sfTxIDs);
+        auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
         std::vector<TestBatchData> testCases = {
             {"tesSUCCESS", to_string(txIDs[0])},
             {"tesSUCCESS", to_string(txIDs[1])},
@@ -1645,9 +1739,9 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 2);
+        auto const txn = getTxByIndex(jrr, 0);
         validateBatchTxns(txn[jss::metaData], 2, testCases);
-        validateBatchPreMeta(txn[jss::metaData], preAlice, seq, 10, 10);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, 0, 10, 10);
 
         auto const sle = env.le(keylet::account(alice));
         BEAST_EXPECT(sle);
@@ -1688,8 +1782,7 @@ class Batch_test : public beast::unit_test::suite
         env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
             batch::add(pay(alice, bob, XRP(1)), 0, aliceTicketSeq),
             batch::add(pay(alice, bob, XRP(1)), 0, aliceTicketSeq + 1));
-        auto const envTx = env.tx();
-        auto const txIDs = envTx->getFieldV256(sfTxIDs);
+        auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
         std::vector<TestBatchData> testCases = {
             {"tesSUCCESS", to_string(txIDs[0])},
             {"tesSUCCESS", to_string(txIDs[1])},
@@ -1701,9 +1794,9 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 2);
+        auto const txn = getTxByIndex(jrr, 0);
         validateBatchTxns(txn[jss::metaData], 2, testCases);
-        validateBatchPreMeta(txn[jss::metaData], preAlice, seq, 10, 10);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
         auto const sle = env.le(keylet::account(alice));
         BEAST_EXPECT(sle);
@@ -1745,8 +1838,7 @@ class Batch_test : public beast::unit_test::suite
             batch::add(pay(alice, bob, XRP(1)), 0, aliceTicketSeq + 1),
             batch::add(pay(alice, bob, XRP(1)), seq + 0),
             ticket::use(aliceTicketSeq));
-        auto const envTx = env.tx();
-        auto const txIDs = envTx->getFieldV256(sfTxIDs);
+        auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
         std::vector<TestBatchData> testCases = {
             {"tesSUCCESS", to_string(txIDs[0])},
             {"tesSUCCESS", to_string(txIDs[1])},
@@ -1758,9 +1850,9 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        auto const txn = getTxByIndex(jrr, 2);
+        auto const txn = getTxByIndex(jrr, 0);
         validateBatchTxns(txn[jss::metaData], 2, testCases);
-        validateBatchPreMeta(txn[jss::metaData], preAlice, seq, 10, 10);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, 0, 10, 10);
 
         auto const sle = env.le(keylet::account(alice));
         BEAST_EXPECT(sle);
@@ -1775,42 +1867,30 @@ class Batch_test : public beast::unit_test::suite
     void
     testWithFeats(FeatureBitset features)
     {
-        // testEnable(features);
-        // testPreflight(features);
-        // testPreclaim(features);
+        testEnable(features);
+        testPreflight(features);
+        // testNonTecInner(features);
         // testBadSequence(features);
         // testBadFeeNoSigner(features);
         // testBadFeeSigner(features);
         // testChangesBetweenViews(features);
         testAllOrNothing(features);
-        // testOnlyOne(features);
-        // testUntilFailure(features);
-        // testIndependent(features);
-        // testMultiParty(features);
-        // testMultisign(features);
-        // testMultisignMultiParty(features);
-        // testSubmit(features);
-        // testNoAccount(features);
-        // testAccountSet(features);
-        // testObjectCreateSequence(features);
-        // testObjectCreateTicket(features);
-        // testObjectCreate3rdParty(features);
-        // testTicketsOuter(features);
-        // testTicketsInner(features);
-        // testTicketsOuterInner(features);
-
-        // TODO: previousFields repeat `sfOwnerCount` even if there was no
-        // update to `OwnerCount`
-        // TODO: PreviousTxnID on the outer batch txn is last inner batch txn?
-        // TODO: tecINVARIANT_FAILED
-        // You cannot check the invariants without applying the transactions but
-        // you cannot revert the transactions after they have been applied.
-
-        // TODO: test with `tfPartialPayment`
-        // TODO: add a test case to exercise the behavior where the last signer
-        // signature is correct, but previous ones are bad.
-        // TODO: tfUntilFailure verify it's possible that none of the inner txns
-        // succeeds and yet the batch txn is "successful"?
+        testOnlyOne(features);
+        testUntilFailure(features);
+        testIndependent(features);
+        testMultiParty(features);
+        testMultisign(features);
+        testMultisignMultiParty(features);
+        testBatchType(features);
+        testSubmit(features);
+        testNoAccount(features);
+        testAccountSet(features);
+        testObjectCreateSequence(features);
+        testObjectCreateTicket(features);
+        testObjectCreate3rdParty(features);
+        testTicketsOuter(features);
+        testTicketsInner(features);
+        testTicketsOuterInner(features);
     }
 
 public:

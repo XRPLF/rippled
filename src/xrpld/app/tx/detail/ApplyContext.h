@@ -36,13 +36,35 @@ class ApplyContext
 {
 public:
     explicit ApplyContext(
-        Application& app,
+        Application& app_,
         OpenView& base,
-        STTx const& tx,
-        TER preclaimResult,
-        XRPAmount baseFee,
+        std::optional<uint256 const> const& batchId,
+        STTx const& tx_,
+        TER preclaimResult_,
+        XRPAmount baseFee_,
         ApplyFlags flags,
-        beast::Journal = beast::Journal{beast::Journal::getNullSink()});
+        beast::Journal journal_ = beast::Journal{
+            beast::Journal::getNullSink()});
+
+    explicit ApplyContext(
+        Application& app_,
+        OpenView& base,
+        STTx const& tx_,
+        TER preclaimResult_,
+        XRPAmount baseFee_,
+        ApplyFlags flags,
+        beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
+        : ApplyContext(
+              app_,
+              base,
+              std::nullopt,
+              tx_,
+              preclaimResult_,
+              baseFee_,
+              flags,
+              journal)
+    {
+    }
 
     Application& app;
     STTx const& tx;
@@ -83,18 +105,6 @@ public:
     /** Apply the transaction result to the base. */
     void apply(TER);
 
-    /** Apply the transaction result to the base. */
-    void
-    applyOpenView(OpenView& open);
-
-    /** Updates the batch txn account root. */
-    void
-    updateAccountRootEntry();
-
-    /** Sets the batch prev fields in the metadata. */
-    void
-    setBatchPrevAcctRootFields(ApplyViewImpl& avi);
-
     /** Get the number of unapplied changes. */
     std::size_t
     size();
@@ -122,6 +132,12 @@ public:
     TER
     checkInvariants(TER const result, XRPAmount const fee);
 
+    std::optional<uint256 const> const&
+    getBatchId() const
+    {
+        return batchId_;
+    }
+
 private:
     TER
     failInvariantCheck(TER const result);
@@ -136,6 +152,9 @@ private:
     OpenView& base_;
     ApplyFlags flags_;
     std::optional<ApplyViewImpl> view_;
+
+    // The ID of the batch transaction we are executing under, if seated.
+    std::optional<uint256 const> batchId_;
 };
 
 }  // namespace ripple

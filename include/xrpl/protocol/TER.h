@@ -343,8 +343,7 @@ enum TECcodes : TERUnderlyingType {
     tecARRAY_EMPTY = 190,
     tecARRAY_TOO_LARGE = 191,
     tecLOCKED = 192,
-    tecBAD_CREDENTIALS = 193,
-    tecBATCH_FAILURE = 194
+    tecBAD_CREDENTIALS = 193
 };
 
 //------------------------------------------------------------------------------
@@ -630,37 +629,37 @@ using TER = TERSubset<CanCvtToTER>;
 //------------------------------------------------------------------------------
 
 inline bool
-isTelLocal(TER x)
+isTelLocal(TER x) noexcept
 {
-    return ((x) >= telLOCAL_ERROR && (x) < temMALFORMED);
+    return (x >= telLOCAL_ERROR && x < temMALFORMED);
 }
 
 inline bool
-isTemMalformed(TER x)
+isTemMalformed(TER x) noexcept
 {
-    return ((x) >= temMALFORMED && (x) < tefFAILURE);
+    return (x >= temMALFORMED && x < tefFAILURE);
 }
 
 inline bool
-isTefFailure(TER x)
+isTefFailure(TER x) noexcept
 {
-    return ((x) >= tefFAILURE && (x) < terRETRY);
+    return (x >= tefFAILURE && x < terRETRY);
 }
 
 inline bool
-isTerRetry(TER x)
+isTerRetry(TER x) noexcept
 {
-    return ((x) >= terRETRY && (x) < tesSUCCESS);
+    return (x >= terRETRY && x < tesSUCCESS);
 }
 
 inline bool
-isTesSuccess(TER x)
+isTesSuccess(TER x) noexcept
 {
-    return ((x) == tesSUCCESS);
+    return (x == tesSUCCESS);
 }
 
 inline bool
-isTecClaim(TER x)
+isTecClaim(TER x) noexcept
 {
     return ((x) >= tecCLAIM);
 }

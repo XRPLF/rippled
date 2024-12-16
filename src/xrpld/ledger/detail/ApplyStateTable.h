@@ -70,9 +70,9 @@ public:
         STTx const& tx,
         TER ter,
         std::optional<STAmount> const& deliver,
-        std::vector<STObject> const& batchExecution,
-        std::optional<STObject> const& batchPrevAcctRootFields,
-        beast::Journal j);
+        std::optional<uint256 const> const& batchId,
+        beast::Journal j,
+        int xxx);
 
     bool
     exists(ReadView const& base, Keylet const& k) const;

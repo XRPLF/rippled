@@ -99,6 +99,7 @@ constexpr std::uint32_t tfPassive                          = 0x00010000;
 constexpr std::uint32_t tfImmediateOrCancel                = 0x00020000;
 constexpr std::uint32_t tfFillOrKill                       = 0x00040000;
 constexpr std::uint32_t tfSell                             = 0x00080000;
+
 constexpr std::uint32_t tfOfferCreateMask =
     ~(tfUniversalV2 | tfPassive | tfImmediateOrCancel | tfFillOrKill | tfSell);
 
