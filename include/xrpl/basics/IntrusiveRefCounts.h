@@ -424,9 +424,12 @@ inline IntrusiveRefCounts::~IntrusiveRefCounts() noexcept
 #ifndef NDEBUG
     auto v = refCounts.load(std::memory_order_acquire);
     ASSERT(
-        (!(v & valueMask)), "ripple::IntrusiveRefCounts::~IntrusiveRefCounts : count must be zero");
+        (!(v & valueMask)),
+        "ripple::IntrusiveRefCounts::~IntrusiveRefCounts : count must be zero");
     auto t = v & tagMask;
-    ASSERT((!t || t == tagMask), "ripple::IntrusiveRefCounts::~IntrusiveRefCounts : valid tag");
+    ASSERT(
+        (!t || t == tagMask),
+        "ripple::IntrusiveRefCounts::~IntrusiveRefCounts : valid tag");
 #endif
 }
 
