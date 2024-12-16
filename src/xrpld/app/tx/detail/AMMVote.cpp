@@ -38,7 +38,8 @@ AMMVote::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2]))
+    if (auto const res = invalidAMMAssetPair(
+            ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
     {
         JLOG(ctx.j.debug()) << "AMM Vote: invalid asset pair.";
         return res;
@@ -200,9 +201,10 @@ applyVote(
         }
     }
 
-    assert(
+    XRPL_ASSERT(
         !ctx_.view().rules().enabled(fixInnerObjTemplate) ||
-        ammSle->isFieldPresent(sfAuctionSlot));
+            ammSle->isFieldPresent(sfAuctionSlot),
+        "ripple::applyVote : has auction slot");
 
     // Update the vote entries and the trading/discounted fee.
     ammSle->setFieldArray(sfVoteSlots, updatedVoteSlots);

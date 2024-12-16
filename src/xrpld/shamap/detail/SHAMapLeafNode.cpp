@@ -28,7 +28,10 @@ SHAMapLeafNode::SHAMapLeafNode(
     std::uint32_t cowid)
     : SHAMapTreeNode(cowid), item_(std::move(item))
 {
-    assert(item_->size() >= 12);
+    XRPL_ASSERT(
+        item_->size() >= 12,
+        "ripple::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
+        "SHAMapItem const>, std::uint32_t) : minimum input size");
 }
 
 SHAMapLeafNode::SHAMapLeafNode(
@@ -37,7 +40,11 @@ SHAMapLeafNode::SHAMapLeafNode(
     SHAMapHash const& hash)
     : SHAMapTreeNode(cowid, hash), item_(std::move(item))
 {
-    assert(item_->size() >= 12);
+    XRPL_ASSERT(
+        item_->size() >= 12,
+        "ripple::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
+        "SHAMapItem const>, std::uint32_t, SHAMapHash const&) : minimum input "
+        "size");
 }
 
 boost::intrusive_ptr<SHAMapItem const> const&
@@ -49,7 +56,7 @@ SHAMapLeafNode::peekItem() const
 bool
 SHAMapLeafNode::setItem(boost::intrusive_ptr<SHAMapItem const> item)
 {
-    assert(cowid_ != 0);
+    XRPL_ASSERT(cowid_, "ripple::SHAMapLeafNode::setItem : nonzero cowid");
     item_ = std::move(item);
 
     auto const oldHash = hash_;
@@ -87,8 +94,9 @@ SHAMapLeafNode::getString(const SHAMapNodeID& id) const
 void
 SHAMapLeafNode::invariants(bool) const
 {
-    assert(hash_.isNonZero());
-    assert(item_ != nullptr);
+    XRPL_ASSERT(
+        hash_.isNonZero(), "ripple::SHAMapLeafNode::invariants : nonzero hash");
+    XRPL_ASSERT(item_, "ripple::SHAMapLeafNode::invariants : non-null item");
 }
 
 }  // namespace ripple
