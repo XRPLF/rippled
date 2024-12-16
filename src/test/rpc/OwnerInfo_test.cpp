@@ -18,10 +18,10 @@
 //==============================================================================
 #include <test/jtx.h>
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 
@@ -56,14 +56,16 @@ class OwnerInfo_test : public beast::unit_test::suite
                     result.isMember(jss::accepted) &&
                     result.isMember(jss::current)))
             {
-                BEAST_EXPECT(result[jss::accepted][jss::error] == "badSeed");
+                BEAST_EXPECT(
+                    result[jss::accepted][jss::error] == "actMalformed");
                 BEAST_EXPECT(
                     result[jss::accepted][jss::error_message] ==
-                    "Disallowed seed.");
-                BEAST_EXPECT(result[jss::current][jss::error] == "badSeed");
+                    "Account malformed.");
+                BEAST_EXPECT(
+                    result[jss::current][jss::error] == "actMalformed");
                 BEAST_EXPECT(
                     result[jss::current][jss::error_message] ==
-                    "Disallowed seed.");
+                    "Account malformed.");
             }
         }
 

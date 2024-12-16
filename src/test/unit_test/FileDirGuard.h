@@ -20,9 +20,9 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #ifndef TEST_UNIT_TEST_DIRGUARD_H
 #define TEST_UNIT_TEST_DIRGUARD_H
 
-#include <ripple/basics/contract.h>
-#include <boost/filesystem.hpp>
 #include <test/jtx/TestSuite.h>
+#include <xrpl/basics/contract.h>
+#include <boost/filesystem.hpp>
 
 namespace ripple {
 namespace test {
@@ -86,9 +86,6 @@ public:
 
             if (rmSubDir_)
                 rmDir(subDir_);
-            else
-                test_.log << "Skipping rm dir: " << subDir_.string()
-                          << std::endl;
         }
         catch (std::exception& e)
         {

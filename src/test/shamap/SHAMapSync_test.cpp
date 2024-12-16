@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/random.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/beast/xor_shift_engine.h>
-#include <ripple/shamap/SHAMap.h>
-#include <ripple/shamap/SHAMapItem.h>
 #include <test/shamap/common.h>
 #include <test/unit_test/SuiteJournal.h>
+#include <xrpld/shamap/SHAMap.h>
+#include <xrpld/shamap/SHAMapItem.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/xor_shift_engine.h>
 
 namespace ripple {
 namespace tests {
@@ -34,14 +34,14 @@ class SHAMapSync_test : public beast::unit_test::suite
 public:
     beast::xor_shift_engine eng_;
 
-    std::shared_ptr<SHAMapItem>
+    boost::intrusive_ptr<SHAMapItem>
     makeRandomAS()
     {
         Serializer s;
 
         for (int d = 0; d < 3; ++d)
             s.add32(rand_int<std::uint32_t>(eng_));
-        return std::make_shared<SHAMapItem>(s.getSHA512Half(), s.slice());
+        return make_shamapitem(s.getSHA512Half(), s.slice());
     }
 
     bool
@@ -55,10 +55,10 @@ public:
 
         for (int i = 0; i < count; ++i)
         {
-            std::shared_ptr<SHAMapItem> item = makeRandomAS();
+            auto item = makeRandomAS();
             items.push_back(item->key());
 
-            if (!map.addItem(SHAMapNodeType::tnACCOUNT_STATE, std::move(*item)))
+            if (!map.addItem(SHAMapNodeType::tnACCOUNT_STATE, item))
             {
                 log << "Unable to add item to map\n";
                 return false;
@@ -97,8 +97,7 @@ public:
         int items = 10000;
         for (int i = 0; i < items; ++i)
         {
-            source.addItem(
-                SHAMapNodeType::tnACCOUNT_STATE, std::move(*makeRandomAS()));
+            source.addItem(SHAMapNodeType::tnACCOUNT_STATE, makeRandomAS());
             if (i % 100 == 0)
                 source.invariants();
         }
@@ -184,7 +183,6 @@ public:
 
         BEAST_EXPECT(source.deepCompare(destination));
 
-        log << "Checking destination invariants..." << std::endl;
         destination.invariants();
     }
 };

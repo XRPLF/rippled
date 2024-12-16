@@ -19,9 +19,9 @@
 #ifndef RIPPLE_TEST_CSF_PEERGROUP_H_INCLUDED
 #define RIPPLE_TEST_CSF_PEERGROUP_H_INCLUDED
 
-#include <algorithm>
 #include <test/csf/Peer.h>
 #include <test/csf/random.h>
+#include <algorithm>
 #include <vector>
 
 namespace ripple {

@@ -16,10 +16,10 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/beast/clock/manual_clock.h>
-#include <ripple/beast/unit_test.h>
 #include <test/csf.h>
 #include <test/csf/random.h>
+#include <xrpl/beast/clock/manual_clock.h>
+#include <xrpl/beast/unit_test.h>
 #include <utility>
 
 namespace ripple {

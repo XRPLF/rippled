@@ -1,0 +1,39 @@
+From d491bf7b5040d314ffd0c6310ba01f78ff44c85e Mon Sep 17 00:00:00 2001
+From: Rasmus Thomsen <rasmus.thomsen@dampsoft.de>
+Date: Fri, 14 Apr 2023 09:16:29 +0200
+Subject: [PATCH] Remove hardcoded INSTALL_NAME_DIR for relocatable libraries
+ on MacOS
+
+---
+ cmake/SociBackend.cmake | 2 +-
+ src/core/CMakeLists.txt | 1 -
+ 2 files changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/cmake/SociBackend.cmake b/cmake/SociBackend.cmake
+index 5d4ef0df..39fe1f77 100644
+--- a/cmake/SociBackend.cmake
++++ b/cmake/SociBackend.cmake
+@@ -171,7 +171,7 @@ macro(soci_backend NAME)
+           set_target_properties(${THIS_BACKEND_TARGET}
+             PROPERTIES
+             SOVERSION ${${PROJECT_NAME}_SOVERSION}
+-            INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/lib)
++          )
+ 
+           if(APPLE)
+             set_target_properties(${THIS_BACKEND_TARGET}
+diff --git a/src/core/CMakeLists.txt b/src/core/CMakeLists.txt
+index 3e7deeae..f9eae564 100644
+--- a/src/core/CMakeLists.txt
++++ b/src/core/CMakeLists.txt
+@@ -59,7 +59,6 @@ if (SOCI_SHARED)
+       PROPERTIES
+       VERSION ${SOCI_VERSION}
+       SOVERSION ${SOCI_SOVERSION}
+-      INSTALL_NAME_DIR ${CMAKE_INSTALL_PREFIX}/lib
+       CLEAN_DIRECT_OUTPUT 1)
+   endif()
+ 
+-- 
+2.25.1
+

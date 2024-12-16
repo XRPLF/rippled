@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/Feature.h>
 #include <test/jtx.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/Feature.h>
 
 namespace ripple {
 namespace test {

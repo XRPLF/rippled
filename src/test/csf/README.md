@@ -144,7 +144,7 @@ sim.collectors.add(simDur);
 ```
 
 The next lines add a single collector to the simulation.  The
-`SimDurationCollector` is a a simple example collector which tracks the total
+`SimDurationCollector` is a simple example collector which tracks the total
 duration of the simulation.  More generally, a collector is any class that
 implements `void on(NodeID, SimTime, Event)` for all [Events](./events.h)
 emitted by a Peer.  Events are arbitrary types used to indicate some action or

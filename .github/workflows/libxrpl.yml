@@ -1,0 +1,88 @@
+name: Check libXRPL compatibility with Clio
+env:
+  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+  CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
+  CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
+on:
+  pull_request:
+    paths:
+      - 'src/libxrpl/protocol/BuildInfo.cpp'
+      - '.github/workflows/libxrpl.yml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish libXRPL
+    outputs:
+      outcome: ${{ steps.upload.outputs.outcome }}
+      version: ${{ steps.version.outputs.version }}
+      channel: ${{ steps.channel.outputs.channel }}
+    runs-on: [self-hosted, heavy]
+    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    steps:
+      - name: Wait for essential checks to succeed
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          running-workflow-name: wait-for-check-regexp
+          check-regexp: '(dependencies|test).*linux.*' # Ignore windows and mac tests but make sure linux passes
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Generate channel
+        id: channel
+        shell: bash
+        run: |
+          echo channel="clio/pr_${{ github.event.pull_request.number }}" | tee ${GITHUB_OUTPUT}
+      - name: Export new package
+        shell: bash
+        run: |
+          conan export . ${{ steps.channel.outputs.channel }}
+      - name: Add Ripple Conan remote
+        shell: bash
+        run: |
+          conan remote list
+          conan remote remove ripple || true
+          # Do not quote the URL. An empty string will be accepted (with a non-fatal warning), but a missing argument will not.
+          conan remote add ripple ${{ env.CONAN_URL }} --insert 0
+      - name: Parse new version
+        id: version
+        shell: bash
+        run: |
+          echo version="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" \
+            | awk -F '"' '{print $2}')" | tee ${GITHUB_OUTPUT}
+      - name: Try to authenticate to Ripple Conan remote
+        id: remote
+        shell: bash
+        run: |
+          # `conan user` implicitly uses the environment variables CONAN_LOGIN_USERNAME_<REMOTE> and CONAN_PASSWORD_<REMOTE>.
+          # https://docs.conan.io/1/reference/commands/misc/user.html#using-environment-variables
+          # https://docs.conan.io/1/reference/env_vars.html#conan-login-username-conan-login-username-remote-name
+          # https://docs.conan.io/1/reference/env_vars.html#conan-password-conan-password-remote-name
+          echo outcome=$(conan user --remote ripple --password >&2 \
+            && echo success || echo failure) | tee ${GITHUB_OUTPUT}
+      - name: Upload new package
+        id: upload
+        if: (steps.remote.outputs.outcome == 'success')
+        shell: bash
+        run: |
+          echo "conan upload version ${{ steps.version.outputs.version }} on channel ${{ steps.channel.outputs.channel }}"
+          echo outcome=$(conan upload xrpl/${{ steps.version.outputs.version }}@${{ steps.channel.outputs.channel }} --remote ripple --confirm >&2 \
+            && echo success || echo failure) | tee ${GITHUB_OUTPUT}
+  notify_clio:
+    name: Notify Clio
+    runs-on: ubuntu-latest
+    needs: publish
+    env:
+      GH_TOKEN: ${{ secrets.CLIO_NOTIFY_TOKEN }}
+    steps:
+      - name: Notify Clio about new version
+        if: (needs.publish.outputs.outcome == 'success')
+        shell: bash
+        run: |
+          gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/xrplf/clio/dispatches -f "event_type=check_libxrpl" \
+          -F "client_payload[version]=${{ needs.publish.outputs.version }}@${{ needs.publish.outputs.channel }}"
