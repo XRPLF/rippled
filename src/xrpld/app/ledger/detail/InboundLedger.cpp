@@ -120,7 +120,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
 
     JLOG(journal_.debug()) << "Acquiring ledger we already have in "
                            << " local store. " << hash_;
-    ASSERT(
+    XRPL_ASSERT(
         mLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
             mLedger->read(keylet::fees()),
         "ripple::InboundLedger::init : valid ledger fees");
@@ -352,7 +352,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
     {
         JLOG(journal_.debug()) << "Had everything locally";
         complete_ = true;
-        ASSERT(
+        XRPL_ASSERT(
             mLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
                 mLedger->read(keylet::fees()),
             "ripple::InboundLedger::tryDB : valid ledger fees");
@@ -449,13 +449,13 @@ InboundLedger::done()
                                       std::to_string(timeouts_) + " "))
                            << mStats.get();
 
-    ASSERT(
+    XRPL_ASSERT(
         complete_ || failed_,
         "ripple::InboundLedger::done : complete or failed");
 
     if (complete_ && !failed_ && mLedger)
     {
-        ASSERT(
+        XRPL_ASSERT(
             mLedger->info().seq < XRP_LEDGER_EARLIEST_FEES ||
                 mLedger->read(keylet::fees()),
             "ripple::InboundLedger::done : valid ledger fees");
@@ -618,8 +618,8 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     // if we wind up abandoning this fetch.
     if (mHaveHeader && !mHaveState && !failed_)
     {
-        ASSERT(
-            mLedger != nullptr,
+        XRPL_ASSERT(
+            mLedger,
             "ripple::InboundLedger::trigger : non-null ledger to read state "
             "from");
 
@@ -693,8 +693,8 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
     if (mHaveHeader && !mHaveTransactions && !failed_)
     {
-        ASSERT(
-            mLedger != nullptr,
+        XRPL_ASSERT(
+            mLedger,
             "ripple::InboundLedger::trigger : non-null ledger to read "
             "transactions from");
 

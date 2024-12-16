@@ -176,7 +176,7 @@ STValidation::STValidation(
         Throw<std::runtime_error>("Invalid signature in validation");
     }
 
-    ASSERT(
+    XRPL_ASSERT(
         nodeID_.isNonZero(),
         "ripple::STValidation::STValidation(SerialIter) : nonzero node");
 }
@@ -201,7 +201,7 @@ STValidation::STValidation(
     , nodeID_(nodeID)
     , seenTime_(signTime)
 {
-    ASSERT(
+    XRPL_ASSERT(
         nodeID_.isNonZero(),
         "ripple::STValidation::STValidation(PublicKey, SecretKey) : nonzero "
         "node");

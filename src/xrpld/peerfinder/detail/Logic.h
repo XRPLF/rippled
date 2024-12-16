@@ -304,7 +304,7 @@ public:
         // Add slot to table
         auto const result(slots_.emplace(slot->remote_endpoint(), slot));
         // Remote address must not already exist
-        ASSERT(
+        XRPL_ASSERT(
             result.second,
             "ripple::PeerFinder::Logic::new_inbound_slot : remote endpoint "
             "inserted");
@@ -342,7 +342,7 @@ public:
         // Add slot to table
         auto const result = slots_.emplace(slot->remote_endpoint(), slot);
         // Remote address must not already exist
-        ASSERT(
+        XRPL_ASSERT(
             result.second,
             "ripple::PeerFinder::Logic::new_outbound_slot : remote endpoint "
             "inserted");
@@ -368,7 +368,7 @@ public:
         std::lock_guard _(lock_);
 
         // The object must exist in our table
-        ASSERT(
+        XRPL_ASSERT(
             slots_.find(slot->remote_endpoint()) != slots_.end(),
             "ripple::PeerFinder::Logic::onConnected : valid slot input");
         // Assign the local endpoint now that it's known
@@ -379,7 +379,7 @@ public:
             auto const iter(slots_.find(local_endpoint));
             if (iter != slots_.end())
             {
-                ASSERT(
+                XRPL_ASSERT(
                     iter->second->local_endpoint() == slot->remote_endpoint(),
                     "ripple::PeerFinder::Logic::onConnected : local and remote "
                     "endpoints do match");
@@ -407,11 +407,11 @@ public:
         std::lock_guard _(lock_);
 
         // The object must exist in our table
-        ASSERT(
+        XRPL_ASSERT(
             slots_.find(slot->remote_endpoint()) != slots_.end(),
             "ripple::PeerFinder::Logic::activate : valid slot input");
         // Must be accepted or connected
-        ASSERT(
+        XRPL_ASSERT(
             slot->state() == Slot::accept || slot->state() == Slot::connected,
             "ripple::PeerFinder::Logic::activate : valid slot state");
 
@@ -439,7 +439,7 @@ public:
         {
             [[maybe_unused]] bool const inserted = keys_.insert(key).second;
             // Public key must not already exist
-            ASSERT(
+            XRPL_ASSERT(
                 inserted,
                 "ripple::PeerFinder::Logic::activate : public key inserted");
         }
@@ -803,12 +803,12 @@ public:
         std::lock_guard _(lock_);
 
         // The object must exist in our table
-        ASSERT(
+        XRPL_ASSERT(
             slots_.find(slot->remote_endpoint()) != slots_.end(),
             "ripple::PeerFinder::Logic::on_endpoints : valid slot input");
 
         // Must be handshaked!
-        ASSERT(
+        XRPL_ASSERT(
             slot->state() == Slot::active,
             "ripple::PeerFinder::Logic::on_endpoints : valid slot state");
 
@@ -822,8 +822,8 @@ public:
 
         for (auto const& ep : list)
         {
-            ASSERT(
-                ep.hops != 0,
+            XRPL_ASSERT(
+                ep.hops,
                 "ripple::PeerFinder::Logic::on_endpoints : nonzero hops");
 
             slot->recent.insert(ep.address, ep.hops);
