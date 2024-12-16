@@ -112,7 +112,7 @@ public:
     operator=(Slice s)
     {
         // Ensure the slice isn't a subset of the buffer.
-        ASSERT(
+        XRPL_ASSERT(
             s.size() == 0 || size_ == 0 || s.data() < p_.get() ||
                 s.data() >= p_.get() + size_,
             "ripple::Buffer::operator=(Slice) : input not a subset");

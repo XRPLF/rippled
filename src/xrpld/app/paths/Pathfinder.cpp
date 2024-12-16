@@ -189,7 +189,7 @@ Pathfinder::Pathfinder(
     , app_(app)
     , j_(app.journal("Pathfinder"))
 {
-    ASSERT(
+    XRPL_ASSERT(
         !uSrcIssuer || isXRP(uSrcCurrency) == isXRP(uSrcIssuer.value()),
         "ripple::Pathfinder::Pathfinder : valid inputs");
 }
@@ -579,7 +579,7 @@ Pathfinder::getBestPaths(
     if (mCompletePaths.empty() && extraPaths.empty())
         return mCompletePaths;
 
-    ASSERT(
+    XRPL_ASSERT(
         fullLiquidityPath.empty(),
         "ripple::Pathfinder::getBestPaths : first empty path result");
     const bool issuerIsSender =
@@ -685,7 +685,7 @@ Pathfinder::getBestPaths(
 
     if (remaining > beast::zero)
     {
-        ASSERT(
+        XRPL_ASSERT(
             fullLiquidityPath.empty(),
             "ripple::Pathfinder::getBestPaths : second empty path result");
         JLOG(j_.info()) << "Paths could not send " << remaining << " of "
@@ -836,7 +836,7 @@ Pathfinder::addPathsForType(
     {
         case nt_SOURCE:
             // Source must always be at the start, so pathsOut has to be empty.
-            ASSERT(
+            XRPL_ASSERT(
                 pathsOut.empty(),
                 "ripple::Pathfinder::addPathsForType : empty paths");
             pathsOut.push_back(STPath());
@@ -1290,7 +1290,7 @@ void
 fillPaths(Pathfinder::PaymentType type, PathCostList const& costs)
 {
     auto& list = mPathTable[type];
-    ASSERT(list.empty(), "ripple::fillPaths : empty paths");
+    XRPL_ASSERT(list.empty(), "ripple::fillPaths : empty paths");
     for (auto& cost : costs)
         list.push_back({cost.cost, makePath(cost.path)});
 }

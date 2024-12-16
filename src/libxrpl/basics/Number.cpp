@@ -235,7 +235,7 @@ Number::operator+=(Number const& y)
         *this = Number{};
         return *this;
     }
-    ASSERT(
+    XRPL_ASSERT(
         isnormal() && y.isnormal(),
         "ripple::Number::operator+=(Number) : is normal");
     auto xm = mantissa();
@@ -376,7 +376,7 @@ Number::operator*=(Number const& y)
         *this = y;
         return *this;
     }
-    ASSERT(
+    XRPL_ASSERT(
         isnormal() && y.isnormal(),
         "ripple::Number::operator*=(Number) : is normal");
     auto xm = mantissa();
@@ -432,7 +432,7 @@ Number::operator*=(Number const& y)
             std::to_string(xe));
     mantissa_ = xm * zn;
     exponent_ = xe;
-    ASSERT(
+    XRPL_ASSERT(
         isnormal() || *this == Number{},
         "ripple::Number::operator*=(Number) : result is normal");
     return *this;
@@ -532,7 +532,8 @@ to_string(Number const& amount)
         negative = true;
     }
 
-    ASSERT(exponent + 43 > 0, "ripple::to_string(Number) : minimum exponent");
+    XRPL_ASSERT(
+        exponent + 43 > 0, "ripple::to_string(Number) : minimum exponent");
 
     ptrdiff_t const pad_prefix = 27;
     ptrdiff_t const pad_suffix = 23;
@@ -558,7 +559,7 @@ to_string(Number const& amount)
     if (std::distance(pre_from, pre_to) > pad_prefix)
         pre_from += pad_prefix;
 
-    ASSERT(
+    XRPL_ASSERT(
         post_to >= post_from,
         "ripple::to_string(Number) : first distance check");
 
@@ -569,7 +570,7 @@ to_string(Number const& amount)
     if (std::distance(post_from, post_to) > pad_suffix)
         post_to -= pad_suffix;
 
-    ASSERT(
+    XRPL_ASSERT(
         post_to >= post_from,
         "ripple::to_string(Number) : second distance check");
 

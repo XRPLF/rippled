@@ -355,7 +355,7 @@ STAmount::STAmount(
     , mIsNegative(negative)
 {
     // mValue is uint64, but needs to fit in the range of int64
-    ASSERT(
+    XRPL_ASSERT(
         mValue <= std::numeric_limits<std::int64_t>::max(),
         "ripple::STAmount::STAmount(SField, A, std::uint64_t, int, bool) : "
         "maximum mantissa input");

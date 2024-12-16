@@ -82,7 +82,7 @@ getNextLedgerTimeResolution(
     bool previousAgree,
     Seq ledgerSeq)
 {
-    ASSERT(
+    XRPL_ASSERT(
         ledgerSeq != Seq{0},
         "ripple:getNextLedgerTimeResolution : valid ledger sequence");
 
@@ -92,7 +92,7 @@ getNextLedgerTimeResolution(
         std::begin(ledgerPossibleTimeResolutions),
         std::end(ledgerPossibleTimeResolutions),
         previousResolution);
-    ASSERT(
+    XRPL_ASSERT(
         iter != std::end(ledgerPossibleTimeResolutions),
         "ripple:getNextLedgerTimeResolution : found time resolution");
 

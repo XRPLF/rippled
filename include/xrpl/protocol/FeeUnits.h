@@ -426,12 +426,12 @@ mulDivU(Source1 value, Dest mul, Source2 div)
     {
         // split the asserts so if one hits, the user can tell which
         // without a debugger.
-        ASSERT(
+        XRPL_ASSERT(
             value.value() >= 0,
             "ripple::feeunit::mulDivU : minimum value input");
-        ASSERT(
+        XRPL_ASSERT(
             mul.value() >= 0, "ripple::feeunit::mulDivU : minimum mul input");
-        ASSERT(
+        XRPL_ASSERT(
             div.value() >= 0, "ripple::feeunit::mulDivU : minimum div input");
         return std::nullopt;
     }

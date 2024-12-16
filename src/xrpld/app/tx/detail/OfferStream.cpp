@@ -51,7 +51,7 @@ TOfferStreamBase<TIn, TOut>::TOfferStreamBase(
     , tip_(view, book_)
     , counter_(counter)
 {
-    ASSERT(
+    XRPL_ASSERT(
         validBook_, "ripple::TOfferStreamBase::TOfferStreamBase : valid book");
 }
 

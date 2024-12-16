@@ -35,7 +35,7 @@ Quality::Quality(Amounts const& amount)
 Quality&
 Quality::operator++()
 {
-    ASSERT(m_value > 0, "ripple::Quality::operator++() : minimum value");
+    XRPL_ASSERT(m_value > 0, "ripple::Quality::operator++() : minimum value");
     --m_value;
     return *this;
 }
@@ -51,7 +51,7 @@ Quality::operator++(int)
 Quality&
 Quality::operator--()
 {
-    ASSERT(
+    XRPL_ASSERT(
         m_value < std::numeric_limits<value_type>::max(),
         "ripple::Quality::operator--() : maximum value");
     ++m_value;
@@ -83,11 +83,12 @@ ceil_in_impl(
         // Clamp out
         if (result.out > amount.out)
             result.out = amount.out;
-        ASSERT(
+        XRPL_ASSERT(
             result.in == limit, "ripple::ceil_in_impl : result matches limit");
         return result;
     }
-    ASSERT(amount.in <= limit, "ripple::ceil_in_impl : result inside limit");
+    XRPL_ASSERT(
+        amount.in <= limit, "ripple::ceil_in_impl : result inside limit");
     return amount;
 }
 
@@ -123,12 +124,13 @@ ceil_out_impl(
         // Clamp in
         if (result.in > amount.in)
             result.in = amount.in;
-        ASSERT(
+        XRPL_ASSERT(
             result.out == limit,
             "ripple::ceil_out_impl : result matches limit");
         return result;
     }
-    ASSERT(amount.out <= limit, "ripple::ceil_out_impl : result inside limit");
+    XRPL_ASSERT(
+        amount.out <= limit, "ripple::ceil_out_impl : result inside limit");
     return amount;
 }
 
@@ -151,12 +153,12 @@ Quality
 composed_quality(Quality const& lhs, Quality const& rhs)
 {
     STAmount const lhs_rate(lhs.rate());
-    ASSERT(
+    XRPL_ASSERT(
         lhs_rate != beast::zero,
         "ripple::composed_quality : nonzero left input");
 
     STAmount const rhs_rate(rhs.rate());
-    ASSERT(
+    XRPL_ASSERT(
         rhs_rate != beast::zero,
         "ripple::composed_quality : nonzero right input");
 
@@ -165,7 +167,7 @@ composed_quality(Quality const& lhs, Quality const& rhs)
     std::uint64_t const stored_exponent(rate.exponent() + 100);
     std::uint64_t const stored_mantissa(rate.mantissa());
 
-    ASSERT(
+    XRPL_ASSERT(
         (stored_exponent > 0) && (stored_exponent <= 255),
         "ripple::composed_quality : valid exponent");
 

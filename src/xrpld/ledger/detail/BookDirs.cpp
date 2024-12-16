@@ -30,7 +30,8 @@ BookDirs::BookDirs(ReadView const& view, Book const& book)
     , next_quality_(getQualityNext(root_))
     , key_(view_->succ(root_, next_quality_).value_or(beast::zero))
 {
-    ASSERT(root_ != beast::zero, "ripple::BookDirs::BookDirs : nonzero root");
+    XRPL_ASSERT(
+        root_ != beast::zero, "ripple::BookDirs::BookDirs : nonzero root");
     if (key_ != beast::zero)
     {
         if (!cdirFirst(*view_, key_, sle_, entry_, index_))
@@ -70,7 +71,7 @@ BookDirs::const_iterator::operator==(
     if (view_ == nullptr || other.view_ == nullptr)
         return false;
 
-    ASSERT(
+    XRPL_ASSERT(
         view_ == other.view_ && root_ == other.root_,
         "ripple::BookDirs::const_iterator::operator== : views and roots are "
         "matching");
@@ -81,7 +82,7 @@ BookDirs::const_iterator::operator==(
 BookDirs::const_iterator::reference
 BookDirs::const_iterator::operator*() const
 {
-    ASSERT(
+    XRPL_ASSERT(
         index_ != beast::zero,
         "ripple::BookDirs::const_iterator::operator* : nonzero index");
     if (!cache_)
@@ -94,7 +95,7 @@ BookDirs::const_iterator::operator++()
 {
     using beast::zero;
 
-    ASSERT(
+    XRPL_ASSERT(
         index_ != zero,
         "ripple::BookDirs::const_iterator::operator++ : nonzero index");
     if (!cdirNext(*view_, cur_key_, sle_, entry_, index_))
@@ -122,7 +123,7 @@ BookDirs::const_iterator::operator++()
 BookDirs::const_iterator
 BookDirs::const_iterator::operator++(int)
 {
-    ASSERT(
+    XRPL_ASSERT(
         index_ != beast::zero,
         "ripple::BookDirs::const_iterator::operator++(int) : nonzero index");
     const_iterator tmp(*this);

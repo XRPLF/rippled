@@ -52,7 +52,7 @@ getFeeLevelPaid(ReadView const& view, STTx const& tx)
         return std::pair{baseFee + mod, feePaid + mod};
     }();
 
-    ASSERT(baseFee.signum() > 0, "ripple::getFeeLevelPaid : positive fee");
+    XRPL_ASSERT(baseFee.signum() > 0, "ripple::getFeeLevelPaid : positive fee");
     if (effectiveFeePaid.signum() <= 0 || baseFee.signum() <= 0)
     {
         return FeeLevel64(0);
@@ -95,7 +95,7 @@ TxQ::FeeMetrics::update(
         feeLevels.push_back(getFeeLevelPaid(view, *tx.first));
     });
     std::sort(feeLevels.begin(), feeLevels.end());
-    ASSERT(
+    XRPL_ASSERT(
         size == feeLevels.size(),
         "ripple::TxQ::FeeMetrics::update : fee levels size");
 
@@ -249,7 +249,7 @@ TxQ::FeeMetrics::escalatedSeriesFeeLevel(
     auto const target = snapshot.txnsExpected;
     auto const multiplier = snapshot.escalationMultiplier;
 
-    ASSERT(
+    XRPL_ASSERT(
         current > target,
         "ripple::TxQ::FeeMetrics::escalatedSeriesFeeLevel : current over "
         "target");
@@ -297,9 +297,8 @@ std::pair<TER, bool>
 TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
 {
     // If the rules or flags change, preflight again
-    ASSERT(
-        pfresult.has_value(),
-        "ripple::TxQ::MaybeTx::apply : preflight result is set");
+    XRPL_ASSERT(
+        pfresult, "ripple::TxQ::MaybeTx::apply : preflight result is set");
     STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
     NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
@@ -344,8 +343,9 @@ TxQ::TxQAccount::add(MaybeTx&& txn)
     auto const seqProx = txn.seqProxy;
 
     auto result = transactions.emplace(seqProx, std::move(txn));
-    ASSERT(result.second, "ripple::TxQ::TxQAccount::add : emplace succeeded");
-    ASSERT(
+    XRPL_ASSERT(
+        result.second, "ripple::TxQ::TxQAccount::add : emplace succeeded");
+    XRPL_ASSERT(
         &result.first->second != &txn,
         "ripple::TxQ::TxQAccount::add : transaction moved");
 
@@ -456,7 +456,7 @@ TxQ::erase(TxQ::FeeMultiSet::const_iterator_type candidateIter)
     // intrusive list remove it from the TxQAccount
     // so the memory can be freed.
     [[maybe_unused]] auto const found = txQAccount.remove(seqProx);
-    ASSERT(found, "ripple::TxQ::erase : account removed");
+    XRPL_ASSERT(found, "ripple::TxQ::erase : account removed");
 
     return newCandidateIter;
 }
@@ -468,18 +468,18 @@ TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
     auto& txQAccount = byAccount_.at(candidateIter->account);
     auto const accountIter =
         txQAccount.transactions.find(candidateIter->seqProxy);
-    ASSERT(
+    XRPL_ASSERT(
         accountIter != txQAccount.transactions.end(),
         "ripple::TxQ::eraseAndAdvance : account found");
 
     // Note that sequence-based transactions must be applied in sequence order
     // from smallest to largest.  But ticket-based transactions can be
     // applied in any order.
-    ASSERT(
+    XRPL_ASSERT(
         candidateIter->seqProxy.isTicket() ||
             accountIter == txQAccount.transactions.begin(),
         "ripple::TxQ::eraseAndAdvance : ticket or sequence");
-    ASSERT(
+    XRPL_ASSERT(
         byFee_.iterator_to(accountIter->second) == candidateIter,
         "ripple::TxQ::eraseAndAdvance : found in byFee");
     auto const accountNextIter = std::next(accountIter);
@@ -528,7 +528,7 @@ TxQ::tryClearAccountQueueUpThruTx(
     beast::Journal j)
 {
     SeqProxy const tSeqProx{tx.getSeqProxy()};
-    ASSERT(
+    XRPL_ASSERT(
         beginTxIter != accountIter->second.transactions.end(),
         "ripple::TxQ::tryClearAccountQueueUpThruTx : non-empty accounts input");
 
@@ -1013,7 +1013,8 @@ TxQ::apply(
             //  o The current first thing in the queue has a Ticket and
             //    * The tx has a Ticket that precedes it or
             //    * txSeqProx == acctSeqProx.
-            ASSERT(prevIter != txIter->end, "ripple::TxQ::apply : not end");
+            XRPL_ASSERT(
+                prevIter != txIter->end, "ripple::TxQ::apply : not end");
             if (prevIter == txIter->end || txSeqProx < prevIter->first)
             {
                 // The first Sequence number in the queue must be the
@@ -1134,7 +1135,7 @@ TxQ::apply(
             // inserted in the middle from fouling up later transactions.
             auto const potentialTotalSpend = totalFee +
                 std::min(balance - std::min(balance, reserve), potentialSpend);
-            ASSERT(
+            XRPL_ASSERT(
                 potentialTotalSpend > XRPAmount{0} ||
                     (potentialTotalSpend == XRPAmount{0} &&
                      multiTxn->applyView.fees().base == 0),
@@ -1168,7 +1169,7 @@ TxQ::apply(
         return {pcresult.ter, false};
 
     // Too low of a fee should get caught by preclaim
-    ASSERT(feeLevelPaid >= baseLevel, "ripple::TxQ::apply : minimum fee");
+    XRPL_ASSERT(feeLevelPaid >= baseLevel, "ripple::TxQ::apply : minimum fee");
 
     JLOG(j_.trace()) << "Transaction " << transactionID << " from account "
                      << account << " has fee level of " << feeLevelPaid
@@ -1293,7 +1294,7 @@ TxQ::apply(
             // The queue is full, and this transaction is more
             // valuable, so kick out the cheapest transaction.
             auto dropRIter = endAccount.transactions.rbegin();
-            ASSERT(
+            XRPL_ASSERT(
                 dropRIter->second.account == lastRIter->account,
                 "ripple::TxQ::apply : cheapest transaction found");
             JLOG(j_.info())
@@ -1324,7 +1325,7 @@ TxQ::apply(
         [[maybe_unused]] bool created = false;
         std::tie(accountIter, created) =
             byAccount_.emplace(account, TxQAccount(tx));
-        ASSERT(created, "ripple::TxQ::apply : account created");
+        XRPL_ASSERT(created, "ripple::TxQ::apply : account created");
     }
     // Modify the flags for use when coming out of the queue.
     // These changes _may_ cause an extra `preflight`, but as long as
@@ -1537,7 +1538,7 @@ TxQ::accept(Application& app, OpenView& view)
                         // making things worse, drop the _last_ transaction for
                         // this account.
                         auto dropRIter = account.transactions.rbegin();
-                        ASSERT(
+                        XRPL_ASSERT(
                             dropRIter->second.account == candidateIter->account,
                             "ripple::TxQ::accept : account check");
 
@@ -1570,7 +1571,8 @@ TxQ::accept(Application& app, OpenView& view)
     LedgerHash const& parentHash = view.info().parentHash;
 #if !NDEBUG
     auto const startingSize = byFee_.size();
-    ASSERT(parentHash != parentHash_, "ripple::TxQ::accept : new parent hash");
+    XRPL_ASSERT(
+        parentHash != parentHash_, "ripple::TxQ::accept : new parent hash");
     parentHash_ = parentHash;
 #endif
     // byFee_ doesn't "own" the candidate objects inside it, so it's
@@ -1592,7 +1594,7 @@ TxQ::accept(Application& app, OpenView& view)
             byFee_.insert(candidate);
         }
     }
-    ASSERT(
+    XRPL_ASSERT(
         byFee_.size() == startingSize,
         "ripple::TxQ::accept : byFee size match");
 
@@ -1753,16 +1755,16 @@ TxQ::removeFromByFee(
         // If the transaction we're holding replaces a transaction in the
         // queue, remove the transaction that is being replaced.
         auto deleteIter = byFee_.iterator_to((*replacedTxIter)->second);
-        ASSERT(
+        XRPL_ASSERT(
             deleteIter != byFee_.end(),
             "ripple::TxQ::removeFromByFee : found in byFee");
-        ASSERT(
+        XRPL_ASSERT(
             &(*replacedTxIter)->second == &*deleteIter,
             "ripple::TxQ::removeFromByFee : matching transaction");
-        ASSERT(
+        XRPL_ASSERT(
             deleteIter->seqProxy == tx->getSeqProxy(),
             "ripple::TxQ::removeFromByFee : matching sequence");
-        ASSERT(
+        XRPL_ASSERT(
             deleteIter->account == (*tx)[sfAccount],
             "ripple::TxQ::removeFromByFee : matching account");
 

@@ -877,7 +877,7 @@ AMMWithdraw::equalWithdrawLimit(
 
     frac = Number{amount2} / amount2Balance;
     auto const amountWithdraw = amountBalance * frac;
-    ASSERT(
+    XRPL_ASSERT(
         amountWithdraw <= amount,
         "ripple::AMMWithdraw::equalWithdrawLimit : maximum amountWithdraw");
     return withdraw(

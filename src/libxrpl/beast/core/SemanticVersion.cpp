@@ -304,7 +304,7 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
 
             if (isNumeric(left))
             {
-                ASSERT(
+                XRPL_ASSERT(
                     isNumeric(right), "beast::compare : both inputs numeric");
 
                 int const iLeft(lexicalCastThrow<int>(left));
@@ -317,7 +317,7 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
             }
             else
             {
-                ASSERT(
+                XRPL_ASSERT(
                     !isNumeric(right),
                     "beast::compare : both inputs non-numeric");
 

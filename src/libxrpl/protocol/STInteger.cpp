@@ -199,14 +199,14 @@ Json::Value
 STUInt64::getJson(JsonOptions) const
 {
     auto convertToString = [](uint64_t const value, int const base) {
-        ASSERT(
+        XRPL_ASSERT(
             base == 10 || base == 16,
             "ripple::STUInt64::getJson : base 10 or 16");
         std::string str(
             base == 10 ? 20 : 16, 0);  // Allocate space depending on base
         auto ret =
             std::to_chars(str.data(), str.data() + str.size(), value, base);
-        ASSERT(
+        XRPL_ASSERT(
             ret.ec == std::errc(),
             "ripple::STUInt64::getJson : to_chars succeeded");
         str.resize(std::distance(str.data(), ret.ptr));

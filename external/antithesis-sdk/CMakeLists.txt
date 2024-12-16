@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
 # Note, version set explicitly by rippled project
-project(antithesis-sdk-cpp VERSION 0.4.2 LANGUAGES CXX)
+project(antithesis-sdk-cpp VERSION 0.4.4 LANGUAGES CXX)
 
 add_library(antithesis-sdk-cpp INTERFACE antithesis_sdk.h)
 

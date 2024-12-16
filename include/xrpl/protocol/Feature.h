@@ -151,7 +151,7 @@ public:
 
     explicit FeatureBitset(base const& b) : base(b)
     {
-        ASSERT(
+        XRPL_ASSERT(
             b.count() == count(),
             "ripple::FeatureBitset::FeatureBitset(base) : count match");
     }
@@ -160,7 +160,7 @@ public:
     explicit FeatureBitset(uint256 const& f, Fs&&... fs)
     {
         initFromFeatures(f, std::forward<Fs>(fs)...);
-        ASSERT(
+        XRPL_ASSERT(
             count() == (sizeof...(fs) + 1),
             "ripple::FeatureBitset::FeatureBitset(uint256) : count and "
             "sizeof... do match");
@@ -171,7 +171,7 @@ public:
     {
         for (auto const& f : fs)
             set(featureToBitsetIndex(f));
-        ASSERT(
+        XRPL_ASSERT(
             fs.size() == count(),
             "ripple::FeatureBitset::FeatureBitset(Container auto) : count and "
             "size do match");

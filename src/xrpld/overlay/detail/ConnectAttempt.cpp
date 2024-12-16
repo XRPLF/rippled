@@ -90,7 +90,7 @@ ConnectAttempt::run()
 void
 ConnectAttempt::close()
 {
-    ASSERT(
+    XRPL_ASSERT(
         strand_.running_in_this_thread(),
         "ripple::ConnectAttempt::close : strand in this thread");
     if (socket_.is_open())

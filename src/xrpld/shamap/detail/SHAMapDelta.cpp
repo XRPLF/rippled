@@ -128,7 +128,7 @@ SHAMap::compare(SHAMap const& otherMap, Delta& differences, int maxCount) const
     // many differences throws on corrupt tables or missing nodes CAUTION:
     // otherMap is not locked and must be immutable
 
-    ASSERT(
+    XRPL_ASSERT(
         isValid() && otherMap.isValid(),
         "ripple::SHAMap::compare : valid state and valid input");
 
@@ -325,8 +325,8 @@ SHAMap::walkMapParallel(
                     {
                         std::shared_ptr<SHAMapInnerNode> node =
                             std::move(nodeStack.top());
-                        ASSERT(
-                            node != nullptr,
+                        XRPL_ASSERT(
+                            node,
                             "ripple::SHAMap::walkMapParallel : non-null node");
                         nodeStack.pop();
 

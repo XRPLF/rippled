@@ -211,7 +211,7 @@ error_code_http_status(error_code_i code)
 std::string
 rpcErrorString(Json::Value const& jv)
 {
-    ASSERT(
+    XRPL_ASSERT(
         RPC::contains_error(jv),
         "ripple::RPC::rpcErrorString : input contains an error");
     return jv[jss::error].asString() + jv[jss::error_message].asString();

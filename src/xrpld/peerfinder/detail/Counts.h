@@ -71,7 +71,7 @@ public:
     can_activate(Slot const& s) const
     {
         // Must be handshaked and in the right state
-        ASSERT(
+        XRPL_ASSERT(
             s.state() == Slot::connected || s.state() == Slot::accept,
             "ripple::PeerFinder::Counts::can_activate : valid input state");
 
@@ -264,7 +264,7 @@ private:
         switch (s.state())
         {
             case Slot::accept:
-                ASSERT(
+                XRPL_ASSERT(
                     s.inbound(),
                     "ripple::PeerFinder::Counts::adjust : input is inbound");
                 m_acceptCount += n;
@@ -272,7 +272,7 @@ private:
 
             case Slot::connect:
             case Slot::connected:
-                ASSERT(
+                XRPL_ASSERT(
                     !s.inbound(),
                     "ripple::PeerFinder::Counts::adjust : input is not "
                     "inbound");

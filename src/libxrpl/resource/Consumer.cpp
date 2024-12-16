@@ -109,18 +109,15 @@ Consumer::charge(Charge const& what, std::string const& context)
 bool
 Consumer::warn()
 {
-    ASSERT(
-        m_entry != nullptr,
-        "ripple::Resource::Consumer::warn : non-null entry");
+    XRPL_ASSERT(m_entry, "ripple::Resource::Consumer::warn : non-null entry");
     return m_logic->warn(*m_entry);
 }
 
 bool
 Consumer::disconnect(beast::Journal const& j)
 {
-    ASSERT(
-        m_entry != nullptr,
-        "ripple::Resource::Consumer::disconnect : non-null entry");
+    XRPL_ASSERT(
+        m_entry, "ripple::Resource::Consumer::disconnect : non-null entry");
     bool const d = m_logic->disconnect(*m_entry);
     if (d)
     {
@@ -132,18 +129,15 @@ Consumer::disconnect(beast::Journal const& j)
 int
 Consumer::balance()
 {
-    ASSERT(
-        m_entry != nullptr,
-        "ripple::Resource::Consumer::balance : non-null entry");
+    XRPL_ASSERT(
+        m_entry, "ripple::Resource::Consumer::balance : non-null entry");
     return m_logic->balance(*m_entry);
 }
 
 Entry&
 Consumer::entry()
 {
-    ASSERT(
-        m_entry != nullptr,
-        "ripple::Resource::Consumer::entry : non-null entry");
+    XRPL_ASSERT(m_entry, "ripple::Resource::Consumer::entry : non-null entry");
     return *m_entry;
 }
 

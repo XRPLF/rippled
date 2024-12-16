@@ -54,8 +54,8 @@ STBlob::getText() const
 void
 STBlob::add(Serializer& s) const
 {
-    ASSERT(getFName().isBinary(), "ripple::STBlob::add : field is binary");
-    ASSERT(
+    XRPL_ASSERT(getFName().isBinary(), "ripple::STBlob::add : field is binary");
+    XRPL_ASSERT(
         (getFName().fieldType == STI_VL) ||
             (getFName().fieldType == STI_ACCOUNT),
         "ripple::STBlob::add : valid field type");

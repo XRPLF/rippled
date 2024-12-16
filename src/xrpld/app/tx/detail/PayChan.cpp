@@ -150,7 +150,7 @@ closeChannel(
     if (!sle)
         return tefINTERNAL;
 
-    ASSERT(
+    XRPL_ASSERT(
         (*slep)[sfAmount] >= (*slep)[sfBalance],
         "ripple::closeChannel : minimum channel amount");
     (*sle)[sfBalance] =
@@ -548,7 +548,7 @@ PayChanClaim::doApply()
 
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
         XRPAmount const reqDelta = reqBalance - chanBalance;
-        ASSERT(
+        XRPL_ASSERT(
             reqDelta >= beast::zero,
             "ripple::PayChanClaim::doApply : minimum balance delta");
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;

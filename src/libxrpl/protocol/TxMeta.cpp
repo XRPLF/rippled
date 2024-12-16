@@ -55,8 +55,8 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
 
     auto affectedNodes =
         dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
-    ASSERT(
-        affectedNodes != nullptr,
+    XRPL_ASSERT(
+        affectedNodes,
         "ripple::TxMeta::TxMeta(STObject) : type cast succeeded");
     if (affectedNodes)
         mNodes = *affectedNodes;
@@ -108,7 +108,7 @@ TxMeta::setAffectedNode(
     mNodes.push_back(STObject(type));
     STObject& obj = mNodes.back();
 
-    ASSERT(
+    XRPL_ASSERT(
         obj.getFName() == type,
         "ripple::TxMeta::setAffectedNode : field type match");
     obj.setFieldH256(sfLedgerIndex, node);
@@ -131,8 +131,8 @@ TxMeta::getAffectedAccounts() const
         if (index != -1)
         {
             auto inner = dynamic_cast<STObject const*>(&it.peekAtIndex(index));
-            ASSERT(
-                inner != nullptr,
+            XRPL_ASSERT(
+                inner,
                 "ripple::getAffectedAccounts : STObject type cast succeeded");
             if (inner)
             {
@@ -140,7 +140,7 @@ TxMeta::getAffectedAccounts() const
                 {
                     if (auto sa = dynamic_cast<STAccount const*>(&field))
                     {
-                        ASSERT(
+                        XRPL_ASSERT(
                             !sa->isDefault(),
                             "ripple::getAffectedAccounts : account is set");
                         if (!sa->isDefault())
@@ -153,8 +153,8 @@ TxMeta::getAffectedAccounts() const
                         (field.getFName() == sfTakerGets))
                     {
                         auto lim = dynamic_cast<STAmount const*>(&field);
-                        ASSERT(
-                            lim != nullptr,
+                        XRPL_ASSERT(
+                            lim,
                             "ripple::getAffectedAccounts : STAmount type cast "
                             "succeeded");
 
@@ -186,7 +186,7 @@ TxMeta::getAffectedNode(SLE::ref node, SField const& type)
     mNodes.push_back(STObject(type));
     STObject& obj = mNodes.back();
 
-    ASSERT(
+    XRPL_ASSERT(
         obj.getFName() == type,
         "ripple::TxMeta::getAffectedNode(SLE::ref) : field type match");
     obj.setFieldH256(sfLedgerIndex, index);
@@ -212,7 +212,7 @@ STObject
 TxMeta::getAsObject() const
 {
     STObject metaData(sfTransactionMetaData);
-    ASSERT(mResult != 255, "ripple::TxMeta::getAsObject : result is set");
+    XRPL_ASSERT(mResult != 255, "ripple::TxMeta::getAsObject : result is set");
     metaData.setFieldU8(sfTransactionResult, mResult);
     metaData.setFieldU32(sfTransactionIndex, mIndex);
     metaData.emplace_back(mNodes);
@@ -226,7 +226,7 @@ TxMeta::addRaw(Serializer& s, TER result, std::uint32_t index)
 {
     mResult = TERtoInt(result);
     mIndex = index;
-    ASSERT(
+    XRPL_ASSERT(
         (mResult == 0) || ((mResult > 100) && (mResult <= 255)),
         "ripple::TxMeta::addRaw : valid TER input");
 

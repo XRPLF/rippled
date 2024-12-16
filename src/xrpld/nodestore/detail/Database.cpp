@@ -40,8 +40,8 @@ Database::Database(
     , requestBundle_(get<int>(config, "rq_bundle", 4))
     , readThreads_(std::max(1, readThreads))
 {
-    ASSERT(
-        readThreads != 0,
+    XRPL_ASSERT(
+        readThreads,
         "ripple::NodeStore::Database::Database : nonzero threads input");
 
     if (earliestLedgerSeq_ < 1)
@@ -89,7 +89,7 @@ Database::Database(
 
                     for (auto it = read.begin(); it != read.end(); ++it)
                     {
-                        ASSERT(
+                        XRPL_ASSERT(
                             !it->second.empty(),
                             "ripple::NodeStore::Database::Database : non-empty "
                             "data");
@@ -166,7 +166,7 @@ Database::stop()
 
     while (readThreads_.load() != 0)
     {
-        ASSERT(
+        XRPL_ASSERT(
             steady_clock::now() - start < 30s,
             "ripple::NodeStore::Database::stop : maximum stop duration");
         std::this_thread::yield();
@@ -219,8 +219,8 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
     };
 
     srcDB.for_each([&](std::shared_ptr<NodeObject> nodeObject) {
-        ASSERT(
-            nodeObject != nullptr,
+        XRPL_ASSERT(
+            nodeObject,
             "ripple::NodeStore::Database::importInternal : non-null node");
         if (!nodeObject)  // This should never happen
             return;
@@ -265,7 +265,7 @@ Database::fetchNodeObject(
 void
 Database::getCountsJson(Json::Value& obj)
 {
-    ASSERT(
+    XRPL_ASSERT(
         obj.isObject(),
         "ripple::NodeStore::Database::getCountsJson : valid input type");
 

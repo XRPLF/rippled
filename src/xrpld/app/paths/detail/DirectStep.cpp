@@ -514,7 +514,7 @@ DirectStepI<TDerived>::revImp(
 
     auto const [srcQOut, dstQIn] =
         qualities(sb, srcDebtDir, StrandDirection::reverse);
-    ASSERT(
+    XRPL_ASSERT(
         static_cast<TDerived const*>(this)->verifyDstQualityIn(dstQIn),
         "ripple::DirectStepI : valid destination quality");
 
@@ -635,7 +635,7 @@ DirectStepI<TDerived>::fwdImp(
     boost::container::flat_set<uint256>& /*ofrsToRm*/,
     IOUAmount const& in)
 {
-    ASSERT(cache_.has_value(), "ripple::DirectStepI::fwdImp : cache is set");
+    XRPL_ASSERT(cache_, "ripple::DirectStepI::fwdImp : cache is set");
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
@@ -722,7 +722,7 @@ DirectStepI<TDerived>::validFwd(
 
     auto const savCache = *cache_;
 
-    ASSERT(!in.native, "ripple::DirectStepI::validFwd : input is not XRP");
+    XRPL_ASSERT(!in.native, "ripple::DirectStepI::validFwd : input is not XRP");
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
@@ -786,7 +786,7 @@ DirectStepI<TDerived>::qualitiesSrcIssues(
 {
     // Charge a transfer rate when issuing and previous step redeems
 
-    ASSERT(
+    XRPL_ASSERT(
         static_cast<TDerived const*>(this)->verifyPrevStepDebtDirection(
             prevStepDebtDirection),
         "ripple::DirectStepI::qualitiesSrcIssues : will prevStepDebtDirection "

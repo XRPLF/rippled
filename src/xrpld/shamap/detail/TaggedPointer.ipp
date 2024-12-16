@@ -79,7 +79,7 @@ constexpr auto chunksPerBlock =
 [[nodiscard]] inline std::uint8_t
 numAllocatedChildren(std::uint8_t n)
 {
-    ASSERT(
+    XRPL_ASSERT(
         n <= SHAMapInnerNode::branchFactor,
         "ripple::numAllocatedChildren : valid input");
     return *std::lower_bound(boundaries.begin(), boundaries.end(), n);
@@ -88,7 +88,7 @@ numAllocatedChildren(std::uint8_t n)
 [[nodiscard]] inline std::size_t
 boundariesIndex(std::uint8_t numChildren)
 {
-    ASSERT(
+    XRPL_ASSERT(
         numChildren <= SHAMapInnerNode::branchFactor,
         "ripple::boundariesIndex : valid input");
     return std::distance(
@@ -160,7 +160,7 @@ allocateArrays(std::uint8_t numChildren)
 inline void
 deallocateArrays(std::uint8_t boundaryIndex, void* p)
 {
-    ASSERT(
+    XRPL_ASSERT(
         isFromArrayFuns[boundaryIndex](p),
         "ripple::deallocateArrays : valid inputs");
     freeArrayFuns[boundaryIndex](p);
@@ -276,11 +276,11 @@ TaggedPointer::getChildIndex(std::uint16_t isBranch, int i) const
 inline TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t numChildren)
 {
     auto [tag, p] = allocateArrays(numChildren);
-    ASSERT(
+    XRPL_ASSERT(
         tag < boundaries.size(),
         "ripple::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
         "maximum tag");
-    ASSERT(
+    XRPL_ASSERT(
         (reinterpret_cast<std::uintptr_t>(p) & ptrMask) ==
             reinterpret_cast<std::uintptr_t>(p),
         "ripple::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
@@ -294,7 +294,7 @@ inline TaggedPointer::TaggedPointer(
     std::uint16_t dstBranches,
     std::uint8_t toAllocate)
 {
-    ASSERT(
+    XRPL_ASSERT(
         toAllocate >= popcnt16(dstBranches),
         "ripple::TaggedPointer::TaggedPointer(TaggedPointer&& ...) : minimum "
         "toAllocate input");
@@ -442,7 +442,7 @@ inline TaggedPointer::TaggedPointer(
             }
         }
         // If sparse, may need to run additional constructors
-        ASSERT(
+        XRPL_ASSERT(
             !dstIsDense || dstIndex == dstNumAllocated,
             "ripple::TaggedPointer::TaggedPointer(TaggedPointer&& ...) : "
             "non-sparse or valid sparse");

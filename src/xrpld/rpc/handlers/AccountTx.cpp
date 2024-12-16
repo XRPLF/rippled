@@ -307,7 +307,7 @@ populateJsonResponse(
 
         if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
         {
-            ASSERT(
+            XRPL_ASSERT(
                 !args.binary,
                 "ripple::populateJsonResponse : binary is not set");
 
@@ -364,7 +364,8 @@ populateJsonResponse(
         }
         else
         {
-            ASSERT(args.binary, "ripple::populateJsonResponse : binary is set");
+            XRPL_ASSERT(
+                args.binary, "ripple::populateJsonResponse : binary is set");
 
             for (auto const& binaryData :
                  std::get<TxnsDataBinary>(result.transactions))
