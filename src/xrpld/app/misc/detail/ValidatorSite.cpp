@@ -411,7 +411,7 @@ ValidatorSite::parseJsonResponse(
     }
 
     auto const manifest = body[jss::manifest].asString();
-    ASSERT(
+    XRPL_ASSERT(
         version == body[jss::version].asUInt(),
         "ripple::ValidatorSite::parseJsonResponse : version match");
     auto const& uri = sites_[siteIdx].activeResource->uri;
@@ -588,8 +588,8 @@ ValidatorSite::onSiteFetch(
                     case status::temporary_redirect: {
                         auto newLocation =
                             processRedirect(res, siteIdx, lock_sites);
-                        ASSERT(
-                            newLocation != nullptr,
+                        XRPL_ASSERT(
+                            newLocation,
                             "ripple::ValidatorSite::onSiteFetch : non-null "
                             "validator");
                         // for perm redirects, also update our starting URI

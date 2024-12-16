@@ -2,10 +2,38 @@
 
 // This header file contains the Antithesis C++ SDK, which enables C++ applications to integrate with the [Antithesis platform].
 //
-// Documentation for the SDK is found at https://antithesis.com/docs/using_antithesis/sdk/cpp/overview.html.
+// Documentation for the SDK is found at https://antithesis.com/docs/using_antithesis/sdk/cpp/overview/.
+
+#ifndef NO_ANTITHESIS_SDK
+
+#if __cplusplus < 202000L
+    #error "The Antithesis C++ API requires C++20 or higher"
+    #define NO_ANTITHESIS_SDK
+#endif
+
+#if !defined(__clang__)
+    #error "The Antithesis C++ API requires a clang compiler"
+    #define NO_ANTITHESIS_SDK
+#endif
+
+#if __clang_major__ < 16
+    #error "The Antithesis C++ API requires clang version 16 or higher"
+    #define NO_ANTITHESIS_SDK
+#endif
+
+#else
+
+#if __cplusplus < 201700L
+    #error "The Antithesis C++ API (with NO_ANTITHESIS_SDK) requires C++17 or higher"
+#endif
+
+#endif
+
+/*****************************************************************************
+ * COMMON
+ *****************************************************************************/
 
 #include <cstdint>
-#include <random>
 #include <string>
 #include <map>
 #include <set>
@@ -14,9 +42,40 @@
 #include <utility>
 
 namespace antithesis {
-    inline const char* SDK_VERSION = "0.4.0";
+    inline const char* SDK_VERSION = "0.4.4";
     inline const char* PROTOCOL_VERSION = "1.1.0";
 
+    struct JSON; struct JSONArray;
+    typedef std::variant<JSON, std::nullptr_t, std::string, bool, char, int, uint64_t, float, double, const char*, JSONArray> JSONValue;
+
+    struct JSONArray : std::vector<JSONValue> {
+        using std::vector<JSONValue>::vector;
+
+        template<typename T, typename std::enable_if<std::is_convertible<T, JSONValue>::value, bool>::type = true>
+        JSONArray(std::vector<T> vals) : std::vector<JSONValue>(vals.begin(), vals.end()) {}
+    };
+
+    struct JSON : std::map<std::string, JSONValue> {
+        JSON() : std::map<std::string, JSONValue>() {}
+        JSON( std::initializer_list<std::pair<const std::string, JSONValue>> args) : std::map<std::string, JSONValue>(args) {}
+
+        JSON( std::initializer_list<std::pair<const std::string, JSONValue>> args, std::vector<std::pair<const std::string, JSONValue>> more_args ) : std::map<std::string, JSONValue>(args) {
+            for (auto& pair : more_args) {
+                (*this)[pair.first] = pair.second;
+            }
+        }
+    };
+}
+
+
+/*****************************************************************************
+ * INTERNAL HELPERS: LOCAL RANDOM
+ * Used in both the NO_ANTITHESIS_SDK version and when running locally
+ *****************************************************************************/
+
+#include <random>
+
+namespace antithesis::internal::random {
     struct LocalRandom {
         std::random_device device;
         std::mt19937_64 gen;
@@ -32,78 +91,127 @@ namespace antithesis {
 #endif
         }
     };
+}
 
-    struct JSON; struct JSONArray;
-    typedef std::variant<JSON, std::nullptr_t, std::string, bool, char, int, uint64_t, float, double, const char*, JSONArray> JSONValue;
+/*****************************************************************************
+ * INTERNAL HELPERS: JSON
+ *****************************************************************************/
 
-    struct JSONArray : std::vector<JSONValue> {
-        using std::vector<JSONValue>::vector;
+#ifndef NO_ANTITHESIS_SDK
 
-        template<typename T, std::enable_if<std::is_convertible<T, JSONValue>::value, bool>::type = true>
-        JSONArray(std::vector<T> vals) : std::vector<JSONValue>(vals.begin(), vals.end()) {}
-    };
+#include <array>
+#include <iomanip>
 
-    struct JSON : std::map<std::string, JSONValue> {
-        JSON() : std::map<std::string, JSONValue>() {}
-        JSON( std::initializer_list<std::pair<const std::string, JSONValue>> args) : std::map<std::string, JSONValue>(args) {}
+namespace antithesis::internal::json {
+    template<class>
+    inline constexpr bool always_false_v = false;
 
-        JSON( std::initializer_list<std::pair<const std::string, JSONValue>> args, std::vector<std::pair<const std::string, JSONValue>> more_args ) : std::map<std::string, JSONValue>(args) {
-            for (auto& pair : more_args) {
-                (*this)[pair.first] = pair.second;
-            }
+    static std::ostream& operator<<(std::ostream& out, const JSON& details);
+
+    static void escaped(std::ostream& out, const char c) {
+        const char HEX[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+        switch (c) {
+            case '\t': out << "\\t"; break;
+            case '\b': out << "\\b"; break;
+            case '\n': out << "\\n"; break;
+            case '\f': out << "\\f"; break;
+            case '\r': out << "\\r"; break;
+            case '\"': out << "\\\""; break;
+            case '\\': out << "\\\\"; break;
+            default:
+                if ('\u0000' <= c && c <= '\u001F') {
+                    out << "\\u00" << HEX[(c >> 4) & 0x0F] << HEX[c & 0x0F];
+                } else {
+                    out << c;
+                }
         }
-    };
+    }
 
-    // Declarations that we expose
-    uint64_t get_random();
+    static std::ostream& operator<<(std::ostream& out, const JSONValue& json) {
+        std::visit([&](auto&& arg) {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, std::string>) {
+                out << '"';
+                for (auto c : arg) {
+                    escaped(out, c);
+                }
+                out << '"';
+            } else if constexpr (std::is_same_v<T, bool>) {
+                out << (arg ? "true" : "false");
+            } else if constexpr (std::is_same_v<T, char>) {
+                out << '"';
+                escaped(out, arg);
+                out << '"';
+            } else if constexpr (std::is_same_v<T, int>) {
+                out << arg;
+            } else if constexpr (std::is_same_v<T, uint64_t>) {
+                out << arg;
+            } else if constexpr (std::is_same_v<T, float>) {
+                out << arg;
+            } else if constexpr (std::is_same_v<T, double>) {
+                out << arg;
+            } else if constexpr (std::is_same_v<T, const char*>) {
+                out << '"';
+                for (auto str = arg; *str != '\0'; str++) {
+                    escaped(out, *str);
+                }
+                out << '"';
+            } else if constexpr (std::is_same_v<T, std::nullptr_t>) {
+                out << "null";
+            } else if constexpr (std::is_same_v<T, JSON>) {
+                out << arg;
+            } else if constexpr (std::is_same_v<T, JSONArray>) {
+                out << '[';
+                bool first = true;
+                for (auto &item : arg) {
+                    if (!first) {
+                        out << ',';
+                    }
+                    first = false;
+                    out << item;
+                }
+                out << ']';
+            } else {
+                static_assert(always_false_v<T>, "non-exhaustive JSONValue visitor!");
+            }
+        }, json);
+
+        return out;
+    }
+
+    static std::ostream& operator<<(std::ostream& out, const JSON& details) {
+        out << '{';
+
+        bool first = true;
+        for (auto [key, value] : details) {
+            if (!first) {
+                out << ',';
+            }
+            out << '"';
+            for (auto c : key) {
+                escaped(out, c);
+            }
+            out << '"' << ':' << value;
+            first = false;
+        }
+
+        out << '}';
+        return out;
+    }
 }
 
-#if defined(NO_ANTITHESIS_SDK) || __cplusplus < 202000L || (defined(__clang__) && __clang_major__ < 16)
-
-#if __cplusplus < 202000L
-    #error "The Antithesis C++ API requires C++20 or higher"
-#endif
-#if defined(__clang__) && __clang_major__ < 16
-    #error "The Antithesis C++ API requires clang version 16 or higher"
 #endif
 
-#define ALWAYS(cond, message, ...)
-#define ALWAYS_OR_UNREACHABLE(cond, message, ...)
-#define SOMETIMES(cond, message, ...)
-#define REACHABLE(message, ...)
-#define UNREACHABLE(message, ...)
-#define ALWAYS_GREATER_THAN(val, threshold, message, ...)
-#define ALWAYS_GREATER_THAN_OR_EQUAL_TO(val, threshold, message, ...)
-#define SOMETIMES_GREATER_THAN(val, threshold, message, ...)
-#define SOMETIMES_GREATER_THAN_OR_EQUAL_TO(val, threshold, message, ...)
-#define ALWAYS_LESS_THAN(val, threshold, message, ...)
-#define ALWAYS_LESS_THAN_OR_EQUAL_TO(val, threshold, message, ...)
-#define SOMETIMES_LESS_THAN(val, threshold, message, ...)
-#define SOMETIMES_LESS_THAN_OR_EQUAL_TO(val, threshold, message, ...)
-#define ALWAYS_SOME(pairs, message, ...)
-#define SOMETIMES_ALL(pairs, message, ...)
+/*****************************************************************************
+ * INTERNAL HELPERS: HANDLERS
+ * Implementations for running locally and running in Antithesis
+ *****************************************************************************/
 
-namespace antithesis {
-    inline uint64_t get_random() {
-        static LocalRandom random_gen;
-        return random_gen.random();
-    }
-
-    inline void setup_complete(const JSON& details) {
-    }
-
-    inline void send_event(const char* name, const JSON& details) {
-    }
-}
-
-#else
+#ifndef NO_ANTITHESIS_SDK
 
 #include <cstdio>
-#include <array>
-#include <source_location>
 #include <iostream>
 #include <sstream>
-#include <iomanip>
 #include <dlfcn.h>
 #include <memory>
 #include <cstring>
@@ -112,13 +220,14 @@ namespace antithesis {
 #include <unistd.h>
 #include <sys/stat.h>
 
-namespace antithesis {
+
+namespace antithesis::internal::handlers {
     constexpr const char* const ERROR_LOG_LINE_PREFIX = "[* antithesis-sdk-cpp *]";
     constexpr const char* LIB_PATH = "/usr/lib/libvoidstar.so";
     constexpr const char* LOCAL_OUTPUT_ENVIRONMENT_VARIABLE = "ANTITHESIS_SDK_LOCAL_OUTPUT";
-    
-    static std::ostream& operator<<(std::ostream& out, const JSON& details);
 
+    using namespace antithesis::internal::json;
+    
     struct LibHandler {
         virtual ~LibHandler() = default;
         virtual void output(const char* message) const = 0;
@@ -214,7 +323,7 @@ namespace antithesis {
         }
     private:
         FILE* file;
-        LocalRandom random_gen;
+        antithesis::internal::random::LocalRandom random_gen;
 
         LocalHandler(FILE* file): file(file), random_gen() {
         }
@@ -259,6 +368,41 @@ namespace antithesis {
         }
     }
 
+    inline LibHandler& get_lib_handler() {
+        static LibHandler* lib_handler = nullptr;
+        if (lib_handler == nullptr) {
+            lib_handler = init().release(); // Leak on exit, rather than exit-time-destructor
+
+            JSON language_block{
+              {"name", "C++"},
+              {"version", __VERSION__}
+            };
+
+            JSON version_message{
+                {"antithesis_sdk", JSON{
+                    {"language", language_block},
+                    {"sdk_version", SDK_VERSION},
+                    {"protocol_version", PROTOCOL_VERSION}
+                }
+            }};
+            lib_handler->output(version_message);
+        }
+
+        return *lib_handler;
+    }
+}
+
+#endif
+
+/*****************************************************************************
+ * INTERNAL HELPERS: Various classes related to assertions
+ *****************************************************************************/
+
+#ifndef NO_ANTITHESIS_SDK
+
+namespace antithesis::internal::assertions {
+    using namespace antithesis::internal::handlers;
+
     struct AssertionState {
         uint8_t false_not_seen : 1;
         uint8_t true_not_seen : 1;
@@ -266,69 +410,6 @@ namespace antithesis {
 
         AssertionState() : false_not_seen(true), true_not_seen(true), rest(0)  {}
     };
-
-    template<class>
-    inline constexpr bool always_false_v = false;
-
-    static std::ostream& operator<<(std::ostream& out, const JSONValue& json) {
-        std::visit([&](auto&& arg)
-        {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<T, std::string>) {
-                out << std::quoted(arg);
-            } else if constexpr (std::is_same_v<T, bool>) {
-                out << (arg ? "true" : "false");
-            } else if constexpr (std::is_same_v<T, char>) {
-                char tmp[2] = {arg, '\0'};
-                out << std::quoted(tmp);
-            } else if constexpr (std::is_same_v<T, int>) {
-                out << arg;
-            } else if constexpr (std::is_same_v<T, uint64_t>) {
-                out << arg;
-            } else if constexpr (std::is_same_v<T, float>) {
-                out << arg;
-            } else if constexpr (std::is_same_v<T, double>) {
-                out << arg;
-            } else if constexpr (std::is_same_v<T, const char*>) {
-                out << std::quoted(arg);
-            } else if constexpr (std::is_same_v<T, std::nullptr_t>) {
-                out << "null";
-            } else if constexpr (std::is_same_v<T, JSON>) {
-                out << arg;
-            } else if constexpr (std::is_same_v<T, JSONArray>) {
-                out << '[';
-                bool first = true;
-                for (auto &item : arg) {
-                    if (!first) {
-                        out << ',';
-                    }
-                    first = false;
-                    out << item;
-                }
-                out << ']';
-            } else {
-                static_assert(always_false_v<T>, "non-exhaustive JSONValue visitor!");
-            }
-        }, json);
-
-        return out;
-    }
-
-    static std::ostream& operator<<(std::ostream& out, const JSON& details) {
-        out << '{';
-
-        bool first = true;
-        for (auto [key, value] : details) {
-            if (!first) {
-                out << ',';
-            }
-            out << std::quoted(key) << ':' << value;
-            first = false;
-        }
-
-        out << '}';
-        return out;
-    }
 
     enum AssertionType {
         ALWAYS_ASSERTION,
@@ -395,29 +476,6 @@ namespace antithesis {
         return message;
     }
 
-    inline LibHandler& get_lib_handler() {
-        static LibHandler* lib_handler = nullptr;
-        if (lib_handler == nullptr) {
-            lib_handler = init().release(); // Leak on exit, rather than exit-time-destructor
-
-            JSON language_block{
-              {"name", "C++"},
-              {"version", __VERSION__}
-            };
-
-            JSON version_message{
-                {"antithesis_sdk", JSON{
-                    {"language", language_block},
-                    {"sdk_version", SDK_VERSION},
-                    {"protocol_version", PROTOCOL_VERSION}
-                }
-            }};
-            lib_handler->output(version_message);
-        }
-
-        return *lib_handler;
-    }
-
     inline void assert_impl(bool cond, const char* message, const JSON& details, const LocationInfo& location_info,
                     bool hit, bool must_hit, const char* assert_type, const char* display_type, const char* id) {
         JSON assertion{
@@ -433,7 +491,7 @@ namespace antithesis {
                 {"details", details},
             }}
         };
-        get_lib_handler().output(assertion);
+        antithesis::internal::handlers::get_lib_handler().output(assertion);
     }
 
     inline void assert_raw(bool cond, const char* message, const JSON& details, 
@@ -475,12 +533,13 @@ namespace antithesis {
             }
         }
 
-        [[clang::always_inline]] inline void check_assertion(bool cond, const JSON& details) {
+        [[clang::always_inline]] inline void check_assertion(auto&& cond, const JSON& details)
+            requires requires { static_cast<bool>(std::forward<decltype(cond)>(cond)); } {
             #if defined(NO_ANTITHESIS_SDK)
               #error "Antithesis SDK has been disabled"
             #endif
             if (__builtin_expect(state.false_not_seen || state.true_not_seen, false)) {
-                check_assertion_internal(cond, details);
+                check_assertion_internal(static_cast<bool>(std::forward<decltype(cond)>(cond)), details);
             }
         }
 
@@ -507,25 +566,6 @@ namespace antithesis {
             }
         }
     };
-
-    inline uint64_t get_random() {
-        return get_lib_handler().random();
-    }
-
-    inline void setup_complete(const JSON& details) {
-        JSON json{ 
-            { "antithesis_setup", JSON{ 
-                {"status", "complete"}, 
-                {"details", details}
-            }} 
-        };
-        get_lib_handler().output(json);
-    }
-
-    inline void send_event(const char* name, const JSON& details) {
-        JSON json = { { name, details } };
-        get_lib_handler().output(json);
-    }
 
     enum GuidepostType {
         GUIDEPOST_MAXIMIZE,
@@ -725,7 +765,8 @@ namespace antithesis {
     };
 }
 
-namespace {
+namespace antithesis::internal {
+namespace { // Anonymous namespace which is translation-unit-specific; certain symbols aren't exposed in the symbol table as a result
     template <std::size_t N>
     struct fixed_string {
         std::array<char, N> contents;
@@ -763,50 +804,55 @@ namespace {
     }
     #pragma clang diagnostic pop
 
-    template <antithesis::AssertionType type, fixed_string message, fixed_string file_name, fixed_string function_name, int line, int column>
+    template <antithesis::internal::assertions::AssertionType type, fixed_string message, fixed_string file_name, fixed_string function_name, int line, int column>
     struct CatalogEntry {
-        [[clang::always_inline]] static inline antithesis::Assertion create() {
-            antithesis::LocationInfo location{ "", function_name.c_str(), file_name.c_str(), line, column };
-            return antithesis::Assertion(message.c_str(), type, std::move(location));
+        [[clang::always_inline]] static inline antithesis::internal::assertions::Assertion create() {
+            antithesis::internal::assertions::LocationInfo location{ "", function_name.c_str(), file_name.c_str(), line, column };
+            return antithesis::internal::assertions::Assertion(message.c_str(), type, std::move(location));
         }
 
-        static inline antithesis::Assertion assertion = create();
+        static inline antithesis::internal::assertions::Assertion assertion = create();
     };
 
-    template<typename GuidanceDataType, antithesis::GuidepostType type, fixed_string message, fixed_string file_name, fixed_string function_name, int line, int column>
+    template<typename GuidanceDataType, antithesis::internal::assertions::GuidepostType type, fixed_string message, fixed_string file_name, fixed_string function_name, int line, int column>
     struct BooleanGuidanceCatalogEntry {
-        [[clang::always_inline]] static inline antithesis::BooleanGuidepost<GuidanceDataType> create() {
-            antithesis::LocationInfo location{ "", function_name.c_str(), file_name.c_str(), line, column };
+        [[clang::always_inline]] static inline antithesis::internal::assertions::BooleanGuidepost<GuidanceDataType> create() {
+            antithesis::internal::assertions::LocationInfo location{ "", function_name.c_str(), file_name.c_str(), line, column };
             switch (type) {
-                case antithesis::GUIDEPOST_ALL:
-                case antithesis::GUIDEPOST_NONE:
-                    return antithesis::BooleanGuidepost<GuidanceDataType>(message.c_str(), std::move(location), type);
+                case antithesis::internal::assertions::GUIDEPOST_ALL:
+                case antithesis::internal::assertions::GUIDEPOST_NONE:
+                    return antithesis::internal::assertions::BooleanGuidepost<GuidanceDataType>(message.c_str(), std::move(location), type);
                 default:
                     throw std::runtime_error("Can't create boolean guidepost with non-boolean type");
             }
         }
         
-        static inline antithesis::BooleanGuidepost<GuidanceDataType> guidepost = create();
+        static inline antithesis::internal::assertions::BooleanGuidepost<GuidanceDataType> guidepost = create();
     };
 
-    template<typename NumericType, antithesis::GuidepostType type, fixed_string message, fixed_string file_name, fixed_string function_name, int line, int column>
+    template<typename NumericType, antithesis::internal::assertions::GuidepostType type, fixed_string message, fixed_string file_name, fixed_string function_name, int line, int column>
     struct NumericGuidanceCatalogEntry {
-        [[clang::always_inline]] static inline antithesis::NumericGuidepost<NumericType> create() {
-            antithesis::LocationInfo location{ "", function_name.c_str(), file_name.c_str(), line, column };
+        [[clang::always_inline]] static inline antithesis::internal::assertions::NumericGuidepost<NumericType> create() {
+            antithesis::internal::assertions::LocationInfo location{ "", function_name.c_str(), file_name.c_str(), line, column };
             switch (type) {
-                case antithesis::GUIDEPOST_MAXIMIZE:
-                case antithesis::GUIDEPOST_MINIMIZE:
-                    return antithesis::NumericGuidepost<NumericType>(message.c_str(), std::move(location), type);
+                case antithesis::internal::assertions::GUIDEPOST_MAXIMIZE:
+                case antithesis::internal::assertions::GUIDEPOST_MINIMIZE:
+                    return antithesis::internal::assertions::NumericGuidepost<NumericType>(message.c_str(), std::move(location), type);
                 default:
                     throw std::runtime_error("Can't create numeric guidepost with non-numeric type");
             }
         }
         
-        static inline antithesis::NumericGuidepost<NumericType> guidepost = create();
+        static inline antithesis::internal::assertions::NumericGuidepost<NumericType> guidepost = create();
     };
 }
+}
 
-#define FIXED_STRING_FROM_C_STR(s) (fixed_string<string_length(s)+1>::from_c_str(s))
+#endif
+
+/*****************************************************************************
+ * PUBLIC SDK: ASSERTIONS
+ *****************************************************************************/
 
 #define _NL_1(foo) { #foo, foo }
 #define _NL_2(foo, ...) { #foo, foo }, _NL_1(__VA_ARGS__)
@@ -826,220 +872,130 @@ namespace {
 
 #define NAMED_LIST(...) { _GET_NL(__VA_ARGS__)(__VA_ARGS__) }
 
+#ifdef NO_ANTITHESIS_SDK
+
+#ifndef ANTITHESIS_SDK_ALWAYS_POLYFILL
+    #define ANTITHESIS_SDK_ALWAYS_POLYFILL(...)
+#endif
+
+#ifndef ANTITHESIS_SDK_SOMETIMES_POLYFILL
+    #define ANTITHESIS_SDK_SOMETIMES_POLYFILL(...)
+#endif
+
+#ifndef ANTITHESIS_SDK_ALWAYS_OR_UNREACHABLE_POLYFILL
+    #define ANTITHESIS_SDK_ALWAYS_OR_UNREACHABLE_POLYFILL(...) \
+    ANTITHESIS_SDK_ALWAYS_POLYFILL(__VA_ARGS__)
+#endif
+
+#define ALWAYS(cond, message, ...) \
+    ANTITHESIS_SDK_ALWAYS_POLYFILL(cond, message, __VA_ARGS__)
+#define ALWAYS_OR_UNREACHABLE(cond, message, ...) \
+    ANTITHESIS_SDK_ALWAYS_OR_UNREACHABLE_POLYFILL(cond, message, __VA_ARGS__)
+#define SOMETIMES(cond, message, ...) \
+    ANTITHESIS_SDK_SOMETIMES_POLYFILL(cond, message, __VA_ARGS__)
+#define REACHABLE(message, ...) \
+    ANTITHESIS_SDK_SOMETIMES_POLYFILL(true, message, __VA_ARGS__)
+#define UNREACHABLE(message, ...) \
+    ANTITHESIS_SDK_ALWAYS_POLYFILL(false, message, __VA_ARGS__)
+#define ALWAYS_GREATER_THAN(val, threshold, message, ...) \
+    ANTITHESIS_SDK_ALWAYS_POLYFILL((val > threshold), message, __VA_ARGS__)
+#define ALWAYS_GREATER_THAN_OR_EQUAL_TO(val, threshold, message, ...) \
+    ANTITHESIS_SDK_ALWAYS_POLYFILL((val >= threshold), message, __VA_ARGS__)
+#define SOMETIMES_GREATER_THAN(val, threshold, message, ...) \
+    ANTITHESIS_SDK_SOMETIMES_POLYFILL((val > threshold), message, __VA_ARGS__)
+#define SOMETIMES_GREATER_THAN_OR_EQUAL_TO(val, threshold, message, ...) \
+    ANTITHESIS_SDK_SOMETIMES_POLYFILL((val >= threshold), message, __VA_ARGS__)
+#define ALWAYS_LESS_THAN(val, threshold, message, ...) \
+    ANTITHESIS_SDK_ALWAYS_POLYFILL((val < threshold), message, __VA_ARGS__)
+#define ALWAYS_LESS_THAN_OR_EQUAL_TO(val, threshold, message, ...) \
+    ANTITHESIS_SDK_ALWAYS_POLYFILL((val <= threshold), message, __VA_ARGS__)
+#define SOMETIMES_LESS_THAN(val, threshold, message, ...) \
+    ANTITHESIS_SDK_SOMETIMES_POLYFILL((val < threshold), message, __VA_ARGS__)
+#define SOMETIMES_LESS_THAN_OR_EQUAL_TO(val, threshold, message, ...) \
+    ANTITHESIS_SDK_SOMETIMES_POLYFILL((val <= threshold), message, __VA_ARGS__)
+#define ALWAYS_SOME(pairs, message, ...) \
+    ANTITHESIS_SDK_ALWAYS_POLYFILL(([&](){ \
+    std::initializer_list<std::pair<std::string, bool>> ps = pairs; \
+    for (auto const& pair : ps) \
+        if (pair.second) return true; \
+    return false; }()), message, __VA_ARGS__)
+#define SOMETIMES_ALL(pairs, message, ...) \
+    ANTITHESIS_SDK_SOMETIMES_POLYFILL(([&](){ \
+    std::initializer_list<std::pair<std::string, bool>> ps = pairs; \
+    for (auto const& pair : ps) \
+        if (!pair.second) return false; \
+    return true; }()), message, __VA_ARGS__)
+
+#else
+
+#include <source_location>
+
+#define FIXED_STRING_FROM_C_STR(s) (antithesis::internal::fixed_string<antithesis::internal::string_length(s)+1>::from_c_str(s))
+
 #define ANTITHESIS_ASSERT_RAW(type, cond, message, ...) ( \
-    CatalogEntry< \
+    antithesis::internal::CatalogEntry< \
         type, \
-        fixed_string(message), \
+        antithesis::internal::fixed_string(message), \
         FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
         FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
         std::source_location::current().line(), \
         std::source_location::current().column() \
     >::assertion.check_assertion(cond, (antithesis::JSON(__VA_ARGS__)) ) )
 
-#define ALWAYS(cond, message, ...) ANTITHESIS_ASSERT_RAW(antithesis::ALWAYS_ASSERTION, cond, message, __VA_ARGS__)
-#define ALWAYS_OR_UNREACHABLE(cond, message, ...) ANTITHESIS_ASSERT_RAW(antithesis::ALWAYS_OR_UNREACHABLE_ASSERTION, cond, message, __VA_ARGS__)
-#define SOMETIMES(cond, message, ...) ANTITHESIS_ASSERT_RAW(antithesis::SOMETIMES_ASSERTION, cond, message, __VA_ARGS__)
-#define REACHABLE(message, ...) ANTITHESIS_ASSERT_RAW(antithesis::REACHABLE_ASSERTION, true, message, __VA_ARGS__)
-#define UNREACHABLE(message, ...) ANTITHESIS_ASSERT_RAW(antithesis::UNREACHABLE_ASSERTION, false, message, __VA_ARGS__)
+#define ALWAYS(cond, message, ...) ANTITHESIS_ASSERT_RAW(antithesis::internal::assertions::ALWAYS_ASSERTION, cond, message, __VA_ARGS__)
+#define ALWAYS_OR_UNREACHABLE(cond, message, ...) ANTITHESIS_ASSERT_RAW(antithesis::internal::assertions::ALWAYS_OR_UNREACHABLE_ASSERTION, cond, message, __VA_ARGS__)
+#define SOMETIMES(cond, message, ...) ANTITHESIS_ASSERT_RAW(antithesis::internal::assertions::SOMETIMES_ASSERTION, cond, message, __VA_ARGS__)
+#define REACHABLE(message, ...) ANTITHESIS_ASSERT_RAW(antithesis::internal::assertions::REACHABLE_ASSERTION, true, message, __VA_ARGS__)
+#define UNREACHABLE(message, ...) ANTITHESIS_ASSERT_RAW(antithesis::internal::assertions::UNREACHABLE_ASSERTION, false, message, __VA_ARGS__)
+
+#define ANTITHESIS_NUMERIC_ASSERT_RAW(name, assertion_type, guidepost_type, left, cmp, right, message, ...) \
+do { \
+    static_assert(std::is_same_v<decltype(left), decltype(right)>, "Values compared in " #name " must be of same type"); \
+    ANTITHESIS_ASSERT_RAW(assertion_type, left cmp right, message, __VA_ARGS__ __VA_OPT__(,) {{ "left", left }, { "right", right }} ); \
+    antithesis::internal::NumericGuidanceCatalogEntry< \
+        decltype(left), \
+        guidepost_type, \
+        antithesis::internal::fixed_string(message), \
+        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
+        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
+        std::source_location::current().line(), \
+        std::source_location::current().column() \
+    >::guidepost.send_guidance({ left, right }); \
+} while (0)
 
 #define ALWAYS_GREATER_THAN(left, right, message, ...) \
-do { \
-    static_assert(std::is_same_v<decltype(left), decltype(right)>, "Values compared in ALWAYS_GREATER_THAN must be of same type"); \
-    CatalogEntry< \
-        antithesis::ALWAYS_ASSERTION, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::assertion.check_assertion(left > right, (antithesis::JSON(__VA_ARGS__, {{ "left", left }, { "right", right }})) ); \
-    NumericGuidanceCatalogEntry< \
-        decltype(left), \
-        antithesis::GUIDEPOST_MINIMIZE, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::guidepost.send_guidance({ left, right }); \
-} while (0)
-
+ANTITHESIS_NUMERIC_ASSERT_RAW(ALWAYS_GREATER_THAN, antithesis::internal::assertions::ALWAYS_ASSERTION, antithesis::internal::assertions::GUIDEPOST_MINIMIZE, left, >, right, message, __VA_ARGS__)
 #define ALWAYS_GREATER_THAN_OR_EQUAL_TO(left, right, message, ...) \
-do { \
-    static_assert(std::is_same_v<decltype(left), decltype(right)>, "Values compared in ALWAYS_GREATER_THAN_OR_EQUAL_TO must be of same type"); \
-    CatalogEntry< \
-        antithesis::ALWAYS_ASSERTION, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::assertion.check_assertion(left >= right, (antithesis::JSON(__VA_ARGS__, {{ "left", left }, { "right", right }})) ); \
-    NumericGuidanceCatalogEntry< \
-        decltype(left), \
-        antithesis::GUIDEPOST_MINIMIZE, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::guidepost.send_guidance({ left, right }); \
-} while (0)
-
+ANTITHESIS_NUMERIC_ASSERT_RAW(ALWAYS_GREATER_THAN_OR_EQUAL_TO, antithesis::internal::assertions::ALWAYS_ASSERTION, antithesis::internal::assertions::GUIDEPOST_MINIMIZE, left, >=, right, message, __VA_ARGS__)
 #define SOMETIMES_GREATER_THAN(left, right, message, ...) \
-do { \
-    static_assert(std::is_same_v<decltype(left), decltype(right)>, "Values compared in SOMETIMES_GREATER_THAN must be of same type"); \
-    CatalogEntry< \
-        antithesis::SOMETIMES_ASSERTION, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::assertion.check_assertion(left > right, (antithesis::JSON(__VA_ARGS__, {{ "left", left }, { "right", right }})) ); \
-    NumericGuidanceCatalogEntry< \
-        decltype(left), \
-        antithesis::GUIDEPOST_MAXIMIZE, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::guidepost.send_guidance({ left, right }); \
-} while (0)
-
+ANTITHESIS_NUMERIC_ASSERT_RAW(SOMETIMES_GREATER_THAN, antithesis::internal::assertions::SOMETIMES_ASSERTION, antithesis::internal::assertions::GUIDEPOST_MAXIMIZE, left, >, right, message, __VA_ARGS__)
 #define SOMETIMES_GREATER_THAN_OR_EQUAL_TO(left, right, message, ...) \
-do { \
-    static_assert(std::is_same_v<decltype(left), decltype(right)>, "Values compared in SOMETIMES_GREATER_THAN_OR_EQUAL_TO must be of same type"); \
-    CatalogEntry< \
-        antithesis::SOMETIMES_ASSERTION, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::assertion.check_assertion(left >= right, (antithesis::JSON(__VA_ARGS__, {{ "left", left }, { "right", right }})) ); \
-    NumericGuidanceCatalogEntry< \
-        decltype(left), \
-        antithesis::GUIDEPOST_MAXIMIZE, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::guidepost.send_guidance({ left, right }); \
-} while (0)
-
+ANTITHESIS_NUMERIC_ASSERT_RAW(SOMETIMES_GREATER_THAN_OR_EQUAL_TO, antithesis::internal::assertions::SOMETIMES_ASSERTION, antithesis::internal::assertions::GUIDEPOST_MAXIMIZE, left, >=, right, message, __VA_ARGS__)
 #define ALWAYS_LESS_THAN(left, right, message, ...) \
-do { \
-    static_assert(std::is_same_v<decltype(left), decltype(right)>, "Values compared in ALWAYS_LESS_THAN must be of same type"); \
-    CatalogEntry< \
-        antithesis::ALWAYS_ASSERTION, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::assertion.check_assertion(left < right, (antithesis::JSON(__VA_ARGS__, {{ "left", left }, { "right", right }})) ); \
-    NumericGuidanceCatalogEntry< \
-        decltype(left), \
-        antithesis::GUIDEPOST_MAXIMIZE, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::guidepost.send_guidance({ left, right }); \
-} while (0)
-
+ANTITHESIS_NUMERIC_ASSERT_RAW(ALWAYS_LESS_THAN, antithesis::internal::assertions::ALWAYS_ASSERTION, antithesis::internal::assertions::GUIDEPOST_MAXIMIZE, left, <, right, message, __VA_ARGS__)
 #define ALWAYS_LESS_THAN_OR_EQUAL_TO(left, right, message, ...) \
-do { \
-    static_assert(std::is_same_v<decltype(left), decltype(right)>, "Values compared in ALWAYS_LESS_THAN_OR_EQUAL_TO must be of same type"); \
-    CatalogEntry< \
-        antithesis::ALWAYS_ASSERTION, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::assertion.check_assertion(left <= right, (antithesis::JSON(__VA_ARGS__, {{ "left", left }, { "right", right }})) ); \
-    NumericGuidanceCatalogEntry< \
-        decltype(left), \
-        antithesis::GUIDEPOST_MAXIMIZE, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::guidepost.send_guidance({ left, right }); \
-} while (0)
-
+ANTITHESIS_NUMERIC_ASSERT_RAW(ALWAYS_LESS_THAN_OR_EQUAL_TO, antithesis::internal::assertions::ALWAYS_ASSERTION, antithesis::internal::assertions::GUIDEPOST_MAXIMIZE, left, <=, right, message, __VA_ARGS__)
 #define SOMETIMES_LESS_THAN(left, right, message, ...) \
-do { \
-    static_assert(std::is_same_v<decltype(left), decltype(right)>, "Values compared in SOMETIMES_LESS_THAN must be of same type"); \
-    CatalogEntry< \
-        antithesis::SOMETIMES_ASSERTION, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::assertion.check_assertion(left < right, (antithesis::JSON(__VA_ARGS__, {{ "left", left }, { "right", right }})) ); \
-    NumericGuidanceCatalogEntry< \
-        decltype(left), \
-        antithesis::GUIDEPOST_MINIMIZE, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::guidepost.send_guidance({ left, right }); \
-} while (0)
-
+ANTITHESIS_NUMERIC_ASSERT_RAW(SOMETIMES_LESS_THAN, antithesis::internal::assertions::SOMETIMES_ASSERTION, antithesis::internal::assertions::GUIDEPOST_MINIMIZE, left, <, right, message, __VA_ARGS__)
 #define SOMETIMES_LESS_THAN_OR_EQUAL_TO(left, right, message, ...) \
-do { \
-    static_assert(std::is_same_v<decltype(left), decltype(right)>, "Values compared in SOMETIMES_LESS_THAN_OR_EQUAL_TO must be of same type"); \
-    CatalogEntry< \
-        antithesis::SOMETIMES_ASSERTION, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::assertion.check_assertion(left <= right, (antithesis::JSON(__VA_ARGS__, {{ "left", left }, { "right", right }})) ); \
-    NumericGuidanceCatalogEntry< \
-        decltype(left), \
-        antithesis::GUIDEPOST_MINIMIZE, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::guidepost.send_guidance({ left, right }); \
-} while (0)
+ANTITHESIS_NUMERIC_ASSERT_RAW(SOMETIMES_LESS_THAN_OR_EQUAL_TO, antithesis::internal::assertions::SOMETIMES_ASSERTION, antithesis::internal::assertions::GUIDEPOST_MINIMIZE, left, <=, right, message, __VA_ARGS__)
 
 #define ALWAYS_SOME(pairs, message, ...) \
 do { \
     bool disjunction = false; \
-    for (std::pair<std::string, bool> pair : pairs) { \
+    std::vector<std::pair<std::string, bool>> vec_pairs = pairs; \
+    for (std::pair<std::string, bool> pair : vec_pairs) { \
         if (pair.second) { \
             disjunction = true; \
             break; \
         } \
     } \
-    CatalogEntry< \
-        antithesis::ALWAYS_ASSERTION, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::assertion.check_assertion(disjunction, (antithesis::JSON(__VA_ARGS__, pairs)) ); \
-    antithesis::json json_pairs = antithesis::json(pairs); \
-    BooleanGuidanceCatalogEntry< \
+    ANTITHESIS_ASSERT_RAW(antithesis::internal::assertions::ALWAYS_ASSERTION, disjunction, message, __VA_ARGS__ __VA_OPT__(,) pairs); \
+    antithesis::JSON json_pairs = antithesis::JSON(pairs); \
+    antithesis::internal::BooleanGuidanceCatalogEntry< \
         decltype(json_pairs), \
-        antithesis::GUIDEPOST_NONE, \
-        fixed_string(message), \
+        antithesis::internal::assertions::GUIDEPOST_NONE, \
+        antithesis::internal::fixed_string(message), \
         FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
         FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
         std::source_location::current().line(), \
@@ -1050,31 +1006,87 @@ do { \
 #define SOMETIMES_ALL(pairs, message, ...) \
 do { \
     bool conjunction = true; \
-    for (std::pair<std::string, bool> pair : pairs) { \
+    std::vector<std::pair<std::string, bool>> vec_pairs = pairs; \
+    for (std::pair<std::string, bool> pair : vec_pairs) { \
         if (!pair.second) { \
             conjunction = false; \
             break; \
         } \
     } \
-    CatalogEntry< \
-        antithesis::SOMETIMES_ASSERTION, \
-        fixed_string(message), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
-        FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
-        std::source_location::current().line(), \
-        std::source_location::current().column() \
-    >::assertion.check_assertion(conjunction, (antithesis::JSON(__VA_ARGS__, pairs)) ); \
-    antithesis::json json_pairs = antithesis::json(pairs); \
-    BooleanGuidanceCatalogEntry< \
+    ANTITHESIS_ASSERT_RAW(antithesis::internal::assertions::SOMETIMES_ASSERTION, conjunction, message, __VA_ARGS__ __VA_OPT__(,) pairs); \
+    antithesis::JSON json_pairs = antithesis::JSON(pairs); \
+    antithesis::internal::BooleanGuidanceCatalogEntry< \
         decltype(json_pairs), \
-        antithesis::GUIDEPOST_ALL, \
-        fixed_string(message), \
+        antithesis::internal::assertions::GUIDEPOST_ALL, \
+        antithesis::internal::fixed_string(message), \
         FIXED_STRING_FROM_C_STR(std::source_location::current().file_name()), \
         FIXED_STRING_FROM_C_STR(std::source_location::current().function_name()), \
         std::source_location::current().line(), \
         std::source_location::current().column() \
     >::guidepost.send_guidance(json_pairs); \
 } while (0)
+
+#endif
+
+/*****************************************************************************
+ * PUBLIC SDK: LIFECYCLE
+ *****************************************************************************/
+
+#ifdef NO_ANTITHESIS_SDK
+
+namespace antithesis {
+    inline void setup_complete(const JSON& details) {
+    }
+
+    inline void send_event(const char* name, const JSON& details) {
+    }
+}
+
+#else
+
+namespace antithesis {
+    inline void setup_complete(const JSON& details) {
+        JSON json{ 
+            { "antithesis_setup", JSON{ 
+                {"status", "complete"}, 
+                {"details", details}
+            }} 
+        };
+        antithesis::internal::handlers::get_lib_handler().output(json);
+    }
+
+    inline void send_event(const char* name, const JSON& details) {
+        JSON json = { { name, details } };
+        antithesis::internal::handlers::get_lib_handler().output(json);
+    }
+}
+#endif
+
+/*****************************************************************************
+ * PUBLIC SDK: RANDOM
+ *****************************************************************************/
+
+namespace antithesis {
+    // Declarations that we expose
+    uint64_t get_random();
+}
+
+#ifdef NO_ANTITHESIS_SDK
+
+namespace antithesis {
+    inline uint64_t get_random() {
+        static antithesis::internal::random::LocalRandom random_gen;
+        return random_gen.random();
+    }
+}
+
+#else
+
+namespace antithesis {
+    inline uint64_t get_random() {
+        return antithesis::internal::handlers::get_lib_handler().random();
+    }
+}
 
 #endif
 

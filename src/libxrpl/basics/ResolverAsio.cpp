@@ -48,7 +48,7 @@ public:
     ~AsyncObject()
     {
         // Destroying the object with I/O pending? Not a clean exit!
-        ASSERT(
+        XRPL_ASSERT(
             m_pending.load() == 0,
             "ripple::AsyncObject::~AsyncObject : nothing pending");
     }
@@ -155,10 +155,10 @@ public:
 
     ~ResolverAsioImpl() override
     {
-        ASSERT(
+        XRPL_ASSERT(
             m_work.empty(),
             "ripple::ResolverAsioImpl::~ResolverAsioImpl : no pending work");
-        ASSERT(
+        XRPL_ASSERT(
             m_stopped, "ripple::ResolverAsioImpl::~ResolverAsioImpl : stopped");
     }
 
@@ -181,8 +181,9 @@ public:
     void
     start() override
     {
-        ASSERT(m_stopped == true, "ripple::ResolverAsioImpl::start : stopped");
-        ASSERT(
+        XRPL_ASSERT(
+            m_stopped == true, "ripple::ResolverAsioImpl::start : stopped");
+        XRPL_ASSERT(
             m_stop_called == false,
             "ripple::ResolverAsioImpl::start : not stopping");
 
@@ -224,10 +225,10 @@ public:
     resolve(std::vector<std::string> const& names, HandlerType const& handler)
         override
     {
-        ASSERT(
+        XRPL_ASSERT(
             m_stop_called == false,
             "ripple::ResolverAsioImpl::resolve : not stopping");
-        ASSERT(
+        XRPL_ASSERT(
             !names.empty(),
             "ripple::ResolverAsioImpl::resolve : names non-empty");
 
@@ -246,7 +247,7 @@ public:
     void
     do_stop(CompletionCounter)
     {
-        ASSERT(
+        XRPL_ASSERT(
             m_stop_called == true,
             "ripple::ResolverAsioImpl::do_stop : stopping");
 
@@ -394,7 +395,7 @@ public:
         HandlerType const& handler,
         CompletionCounter)
     {
-        ASSERT(
+        XRPL_ASSERT(
             !names.empty(),
             "ripple::ResolverAsioImpl::do_resolve : names non-empty");
 

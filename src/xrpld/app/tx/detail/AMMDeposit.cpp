@@ -466,7 +466,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
 
     if (result == tesSUCCESS)
     {
-        ASSERT(
+        XRPL_ASSERT(
             newLPTokenBalance > beast::zero,
             "ripple::AMMDeposit::applyGuts : valid new LP token balance");
         ammSle->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);

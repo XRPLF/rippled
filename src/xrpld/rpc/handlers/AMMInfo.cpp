@@ -147,7 +147,7 @@ doAMMInfo(RPC::JsonContext& context)
         if (context.apiVersion >= 3 && invalid(params))
             return Unexpected(rpcINVALID_PARAMS);
 
-        ASSERT(
+        XRPL_ASSERT(
             (issue1.has_value() == issue2.has_value()) &&
                 (issue1.has_value() != ammID.has_value()),
             "ripple::doAMMInfo : issue1 and issue2 do match");
@@ -155,9 +155,7 @@ doAMMInfo(RPC::JsonContext& context)
         auto const ammKeylet = [&]() {
             if (issue1 && issue2)
                 return keylet::amm(*issue1, *issue2);
-            ASSERT(
-                ammID.has_value(),
-                "ripple::doAMMInfo::ammKeylet : ammID is set");
+            XRPL_ASSERT(ammID, "ripple::doAMMInfo::ammKeylet : ammID is set");
             return keylet::amm(*ammID);
         }();
         auto const amm = ledger->read(ammKeylet);
@@ -216,7 +214,7 @@ doAMMInfo(RPC::JsonContext& context)
     }
     if (voteSlots.size() > 0)
         ammResult[jss::vote_slots] = std::move(voteSlots);
-    ASSERT(
+    XRPL_ASSERT(
         !ledger->rules().enabled(fixInnerObjTemplate) ||
             amm->isFieldPresent(sfAuctionSlot),
         "ripple::doAMMInfo : auction slot is set");
