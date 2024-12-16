@@ -58,6 +58,9 @@ public:
 
     bool
     native() const;
+
+    friend constexpr std::weak_ordering
+    operator<=>(Issue const& lhs, Issue const& rhs);
 };
 
 bool
@@ -95,7 +98,7 @@ operator==(Issue const& lhs, Issue const& rhs)
 
 /** Strict weak ordering. */
 /** @{ */
-[[nodiscard]] inline constexpr std::weak_ordering
+[[nodiscard]] constexpr std::weak_ordering
 operator<=>(Issue const& lhs, Issue const& rhs)
 {
     if (auto const c{lhs.currency <=> rhs.currency}; c != 0)

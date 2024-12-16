@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -417,9 +418,10 @@ nft_sells(uint256 const& id) noexcept
 }
 
 Keylet
-amm(Issue const& issue1, Issue const& issue2) noexcept
+amm(Asset const& issue1, Asset const& issue2) noexcept
 {
-    auto const& [minI, maxI] = std::minmax(issue1, issue2);
+    auto const& [minI, maxI] =
+        std::minmax(issue1.get<Issue>(), issue2.get<Issue>());
     return amm(indexHash(
         LedgerNameSpace::AMM,
         minI.account,

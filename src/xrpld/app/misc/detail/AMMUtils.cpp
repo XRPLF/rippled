@@ -51,8 +51,8 @@ ammHolds(
     beast::Journal const j)
 {
     auto const issues = [&]() -> std::optional<std::pair<Issue, Issue>> {
-        auto const issue1 = ammSle[sfAsset];
-        auto const issue2 = ammSle[sfAsset2];
+        auto const issue1 = ammSle[sfAsset].get<Issue>();
+        auto const issue2 = ammSle[sfAsset2].get<Issue>();
         if (optIssue1 && optIssue2)
         {
             if (invalidAMMAssetPair(
@@ -134,8 +134,8 @@ ammLPHolds(
 {
     return ammLPHolds(
         view,
-        ammSle[sfAsset].currency,
-        ammSle[sfAsset2].currency,
+        ammSle[sfAsset].get<Issue>().currency,
+        ammSle[sfAsset2].get<Issue>().currency,
         ammSle[sfAccount],
         lpAccount,
         j);

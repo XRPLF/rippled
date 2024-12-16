@@ -129,8 +129,8 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
             }
             else if (sle->getType() == ltAMM)
             {
-                auto const issue1 = (*sle)[sfAsset];
-                auto const issue2 = (*sle)[sfAsset2];
+                auto const issue1 = (*sle)[sfAsset].get<Issue>();
+                auto const issue2 = (*sle)[sfAsset2].get<Issue>();
                 auto addBook = [&](Issue const& in, Issue const& out) {
                     allBooks[in].insert(out);
 
