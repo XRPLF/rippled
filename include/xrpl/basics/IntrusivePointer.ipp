@@ -395,9 +395,6 @@ template <class T>
 void
 WeakIntrusive<T>::reset()
 {
-    if (!ptr_)
-        return;
-
     unsafeReleaseNoStore();
     ptr_ = nullptr;
 }

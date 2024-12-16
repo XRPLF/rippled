@@ -305,7 +305,6 @@ public:
             // 3) Test assignment from null union pointer
             union1 = SharedWeakUnion<TIBase>();
             BEAST_EXPECT(union1.get() == nullptr);
-            BEAST_EXPECT(TIBase::getState(id1) == TrackedState::alive);
 
             // 4) Test assignment to expired union pointer
             strong2.reset();
