@@ -77,7 +77,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
         196418, 317811, 514229, 832040, 1346269};
     // clang-format on
 
-    ASSERT(
+    XRPL_ASSERT(
         !ammContext_.maxItersReached(),
         "ripple::AMMLiquidity::generateFibSeqOffer : maximum iterations");
 

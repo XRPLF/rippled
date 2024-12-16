@@ -24,14 +24,14 @@
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/app/tx/detail/OfferStream.h>
 #include <xrpld/ledger/PaymentSandbox.h>
-#include <xrpl/basics/IOUAmount.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/XRPAmount.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -380,8 +380,8 @@ private:
     getQuality(std::optional<Quality> const& limitQuality)
     {
         // It's really a programming error if the quality is missing.
-        ASSERT(
-            limitQuality.has_value(),
+        XRPL_ASSERT(
+            limitQuality,
             "ripple::BookOfferCrossingStep::getQuality : nonzero quality");
         if (!limitQuality)
             Throw<FlowException>(tefINTERNAL, "Offer requires quality.");
@@ -1133,7 +1133,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
     boost::container::flat_set<uint256>& ofrsToRm,
     TIn const& in)
 {
-    ASSERT(cache_.has_value(), "ripple::BookStep::fwdImp : cache is set");
+    XRPL_ASSERT(cache_, "ripple::BookStep::fwdImp : cache is set");
 
     TAmounts<TIn, TOut> result(beast::zero, beast::zero);
 
@@ -1152,9 +1152,8 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
                          TOut const& ownerGives,
                          std::uint32_t transferRateIn,
                          std::uint32_t transferRateOut) mutable -> bool {
-        ASSERT(
-            cache_.has_value(),
-            "ripple::BookStep::fwdImp::eachOffer : cache is set");
+        XRPL_ASSERT(
+            cache_, "ripple::BookStep::fwdImp::eachOffer : cache is set");
 
         if (remainingIn <= beast::zero)
             return false;

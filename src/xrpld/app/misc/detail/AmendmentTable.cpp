@@ -656,7 +656,7 @@ AmendmentTableImpl::persistVote(
     std::string const& name,
     AmendmentVote vote) const
 {
-    ASSERT(
+    XRPL_ASSERT(
         vote != AmendmentVote::obsolete,
         "ripple::AmendmentTableImpl::persistVote : valid vote input");
     auto db = db_.checkoutDb();

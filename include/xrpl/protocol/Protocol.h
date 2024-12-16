@@ -22,6 +22,7 @@
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/partitioned_unordered_map.h>
 #include <cstdint>
 
 namespace ripple {

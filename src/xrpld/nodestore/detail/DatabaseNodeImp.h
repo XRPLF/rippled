@@ -76,8 +76,8 @@ public:
                 j);
         }
 
-        ASSERT(
-            backend_ != nullptr,
+        XRPL_ASSERT(
+            backend_,
             "ripple::NodeStore::DatabaseNodeImp::DatabaseNodeImp : non-null "
             "backend");
     }

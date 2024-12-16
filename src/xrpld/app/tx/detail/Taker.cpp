@@ -54,34 +54,32 @@ BasicTaker::BasicTaker(
     , cross_type_(cross_type)
     , journal_(journal)
 {
-    ASSERT(
+    XRPL_ASSERT(
         remaining_.in > beast::zero,
         "ripple::BasicTaker::BasicTaker : positive remaining in");
-    ASSERT(
+    XRPL_ASSERT(
         remaining_.out > beast::zero,
         "ripple::BasicTaker::BasicTaker : positive remaining out");
 
-    ASSERT(
-        m_rate_in.value != 0,
-        "ripple::BasicTaker::BasicTaker : nonzero rate in");
-    ASSERT(
-        m_rate_out.value != 0,
-        "ripple::BasicTaker::BasicTaker : nonzero rate out");
+    XRPL_ASSERT(
+        m_rate_in.value, "ripple::BasicTaker::BasicTaker : nonzero rate in");
+    XRPL_ASSERT(
+        m_rate_out.value, "ripple::BasicTaker::BasicTaker : nonzero rate out");
 
     // If we are dealing with a particular flavor, make sure that it's the
     // flavor we expect:
-    ASSERT(
+    XRPL_ASSERT(
         cross_type != CrossType::XrpToIou ||
             (isXRP(issue_in()) && !isXRP(issue_out())),
         "ripple::BasicTaker::BasicTaker : valid cross to IOU");
 
-    ASSERT(
+    XRPL_ASSERT(
         cross_type != CrossType::IouToXrp ||
             (!isXRP(issue_in()) && isXRP(issue_out())),
         "ripple::BasicTaker::BasicTaker : valid cross to XRP");
 
     // And make sure we're not crossing XRP for XRP
-    ASSERT(
+    XRPL_ASSERT(
         !isXRP(issue_in()) || !isXRP(issue_out()),
         "ripple::BasicTaker::BasicTaker : not crossing XRP for XRP");
 
@@ -162,7 +160,7 @@ BasicTaker::remaining_offer() const
 
     if (sell_)
     {
-        ASSERT(
+        XRPL_ASSERT(
             remaining_.in > beast::zero,
             "ripple::BasicTaker::remaining_offer : positive remaining in");
 
@@ -172,7 +170,7 @@ BasicTaker::remaining_offer() const
             divRound(remaining_.in, quality_.rate(), issue_out_, true));
     }
 
-    ASSERT(
+    XRPL_ASSERT(
         remaining_.out > beast::zero,
         "ripple::BasicTaker::remaining_offer : positive remaining out");
 
@@ -440,7 +438,7 @@ BasicTaker::do_cross(Amounts offer, Quality quality, AccountID const& owner)
     remaining_.out -= result.order.out;
     remaining_.in -= result.order.in;
 
-    ASSERT(
+    XRPL_ASSERT(
         remaining_.in >= beast::zero,
         "ripple::BasicTaker::do_cross : minimum remaining in");
 
@@ -457,15 +455,15 @@ BasicTaker::do_cross(
     Quality quality2,
     AccountID const& owner2)
 {
-    ASSERT(
+    XRPL_ASSERT(
         !offer1.in.native(),
         "ripple::BasicTaker::do_cross : offer1 in is not XRP");
-    ASSERT(
+    XRPL_ASSERT(
         offer1.out.native(),
         "ripple::BasicTaker::do_cross : offer1 out is XRP");
-    ASSERT(
+    XRPL_ASSERT(
         offer2.in.native(), "ripple::BasicTaker::do_cross : offer2 in is XRP");
-    ASSERT(
+    XRPL_ASSERT(
         !offer2.out.native(),
         "ripple::BasicTaker::do_cross : offer2 out is not XRP");
 
@@ -584,10 +582,10 @@ Taker::Taker(
     , direct_crossings_(0)
     , bridge_crossings_(0)
 {
-    ASSERT(
+    XRPL_ASSERT(
         issue_in() == offer.in.issue(),
         "ripple::Taker::Taker : issue in is a match");
-    ASSERT(
+    XRPL_ASSERT(
         issue_out() == offer.out.issue(),
         "ripple::Taker::Taker : issue out is a match");
 
@@ -718,7 +716,7 @@ Taker::fill(BasicTaker::Flow const& flow, Offer& offer)
 
     if (cross_type() != CrossType::XrpToIou)
     {
-        ASSERT(
+        XRPL_ASSERT(
             !isXRP(flow.order.in), "ripple::Taker::fill : order in is not XRP");
 
         if (result == tesSUCCESS)
@@ -731,7 +729,8 @@ Taker::fill(BasicTaker::Flow const& flow, Offer& offer)
     }
     else
     {
-        ASSERT(isXRP(flow.order.in), "ripple::Taker::fill : order in is XRP");
+        XRPL_ASSERT(
+            isXRP(flow.order.in), "ripple::Taker::fill : order in is XRP");
 
         if (result == tesSUCCESS)
             result = transferXRP(account(), offer.owner(), flow.order.in);
@@ -740,7 +739,7 @@ Taker::fill(BasicTaker::Flow const& flow, Offer& offer)
     // Now send funds from the account whose offer we're taking
     if (cross_type() != CrossType::IouToXrp)
     {
-        ASSERT(
+        XRPL_ASSERT(
             !isXRP(flow.order.out),
             "ripple::Taker::fill : order out is not XRP");
 
@@ -754,7 +753,8 @@ Taker::fill(BasicTaker::Flow const& flow, Offer& offer)
     }
     else
     {
-        ASSERT(isXRP(flow.order.out), "ripple::Taker::fill : order out is XRP");
+        XRPL_ASSERT(
+            isXRP(flow.order.out), "ripple::Taker::fill : order out is XRP");
 
         if (result == tesSUCCESS)
             result = transferXRP(offer.owner(), account(), flow.order.out);

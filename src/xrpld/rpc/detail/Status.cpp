@@ -37,7 +37,7 @@ Status::codeString() const
         std::string s1, s2;
 
         [[maybe_unused]] auto const success = transResultInfo(toTER(), s1, s2);
-        ASSERT(success, "ripple::RPC::codeString : valid TER result");
+        XRPL_ASSERT(success, "ripple::RPC::codeString : valid TER result");
 
         return s1 + ": " + s2;
     }

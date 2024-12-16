@@ -28,11 +28,11 @@
 #include <xrpld/app/paths/detail/FlatSets.h>
 #include <xrpld/app/paths/detail/FlowDebugInfo.h>
 #include <xrpld/app/paths/detail/Steps.h>
-#include <xrpl/basics/IOUAmount.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/XRPAmount.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -707,7 +707,7 @@ flow(
                 flowDebugInfo->pushLiquiditySrc(
                     EitherAmount(f.in), EitherAmount(f.out));
 
-            ASSERT(
+            XRPL_ASSERT(
                 f.out <= remainingOut && f.sandbox &&
                     (!remainingIn || f.in <= *remainingIn),
                 "ripple::flow : remaining constraints");
@@ -733,7 +733,7 @@ flow(
 
             if (baseView.rules().enabled(featureFlowSortStrands))
             {
-                ASSERT(!best, "ripple::flow : best is unset");
+                XRPL_ASSERT(!best, "ripple::flow : best is unset");
                 if (!f.inactive)
                     activeStrands.push(strand);
                 best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
@@ -884,7 +884,7 @@ flow(
         //   Handles both cases 1. and 2.
         // fixFillOrKill amendment:
         //   Handles 2. 1. is handled above and falls through for tfSell.
-        ASSERT(remainingIn.has_value(), "ripple::flow : nonzero remainingIn");
+        XRPL_ASSERT(remainingIn, "ripple::flow : nonzero remainingIn");
         if (remainingIn && *remainingIn != beast::zero)
             return {
                 tecPATH_PARTIAL,

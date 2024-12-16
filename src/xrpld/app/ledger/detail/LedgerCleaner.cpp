@@ -231,7 +231,7 @@ private:
                 });
                 if (shouldExit_)
                     break;
-                ASSERT(
+                XRPL_ASSERT(
                     state_ == State::cleaning,
                     "ripple::LedgerCleanerImp::run : is cleaning");
             }
@@ -355,7 +355,7 @@ private:
                 LedgerHash refHash = getLedgerHash(referenceLedger, refIndex);
 
                 bool const nonzero(refHash.isNonZero());
-                ASSERT(
+                XRPL_ASSERT(
                     nonzero,
                     "ripple::LedgerCleanerImp::getHash : nonzero hash");
                 if (nonzero)

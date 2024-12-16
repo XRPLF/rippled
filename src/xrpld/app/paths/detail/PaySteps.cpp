@@ -19,12 +19,12 @@
 
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/ledger/ReadView.h>
-#include <xrpl/basics/IOUAmount.h>
-#include <xrpl/basics/XRPAmount.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
 #include <numeric>
@@ -105,7 +105,7 @@ toStep(
         return {temBAD_PATH, std::unique_ptr<Step>{}};
     }
 
-    ASSERT(
+    XRPL_ASSERT(
         (e2->getNodeType() & STPathElement::typeCurrency) ||
             (e2->getNodeType() & STPathElement::typeIssuer),
         "ripple::toStep : currency or issuer");
@@ -122,7 +122,7 @@ toStep(
         return {temBAD_PATH, std::unique_ptr<Step>{}};
     }
 
-    ASSERT(e2->isOffer(), "ripple::toStep : is offer");
+    XRPL_ASSERT(e2->isOffer(), "ripple::toStep : is offer");
 
     if (isXRP(outCurrency))
         return make_BookStepIX(ctx, curIssue);

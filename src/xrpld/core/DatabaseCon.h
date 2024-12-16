@@ -97,7 +97,7 @@ public:
         std::vector<std::string> const*
         commonPragma() const
         {
-            ASSERT(
+            XRPL_ASSERT(
                 !useGlobalPragma || globalPragma,
                 "ripple::DatabaseCon::Setup::commonPragma : consistent global "
                 "pragma");

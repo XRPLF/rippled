@@ -29,6 +29,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/hardened_hash.h>
+#include <xrpl/basics/partitioned_unordered_map.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -290,7 +291,7 @@ public:
             std::is_trivially_copyable<typename Container::value_type>::value>>
     explicit base_uint(Container const& c)
     {
-        ASSERT(
+        XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
             "ripple::base_uint::base_uint(Container auto) : input size match");
         std::memcpy(data_.data(), c.data(), size());
@@ -303,7 +304,7 @@ public:
         base_uint&>
     operator=(Container const& c)
     {
-        ASSERT(
+        XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
             "ripple::base_uint::operator=(Container auto) : input size match");
         std::memcpy(data_.data(), c.data(), size());
@@ -635,6 +636,17 @@ inline std::ostream&
 operator<<(std::ostream& out, base_uint<Bits, Tag> const& u)
 {
     return out << to_string(u);
+}
+
+template <>
+inline std::size_t
+extract(uint256 const& key)
+{
+    std::size_t result;
+    // Use memcpy to avoid unaligned UB
+    // (will optimize to equivalent code)
+    std::memcpy(&result, key.data(), sizeof(std::size_t));
+    return result;
 }
 
 #ifndef __INTELLISENSE__

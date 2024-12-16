@@ -400,7 +400,7 @@ public:
         for (auto const& s : *keepAlive)
         {
             std::size_t const length(s.size());
-            ASSERT(
+            XRPL_ASSERT(
                 !s.empty(),
                 "beast::insight::detail::StatsDCollectorImp::send_buffers : "
                 "non-empty payload");

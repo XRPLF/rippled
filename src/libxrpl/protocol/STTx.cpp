@@ -137,7 +137,7 @@ STTx::getMentionedAccounts() const
     {
         if (auto sacc = dynamic_cast<STAccount const*>(&it))
         {
-            ASSERT(
+            XRPL_ASSERT(
                 !sacc->isDefault(),
                 "ripple::STTx::getMentionedAccounts : account is set");
             if (!sacc->isDefault())
@@ -300,8 +300,7 @@ STTx::getMetaSQL(
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
     auto format = TxFormats::getInstance().findByType(tx_type_);
-    ASSERT(
-        format != nullptr, "ripple::STTx::getMetaSQL : non-null type format");
+    XRPL_ASSERT(format, "ripple::STTx::getMetaSQL : non-null type format");
 
     return str(
         boost::format(bfTrans) % to_string(getTransactionID()) %
@@ -560,8 +559,10 @@ invalidMPTAmountInTx(STObject const& tx)
             if (tx.isFieldPresent(e.sField()) && e.supportMPT() != soeMPTNone)
             {
                 if (auto const& field = tx.peekAtField(e.sField());
-                    field.getSType() == STI_AMOUNT &&
-                    static_cast<STAmount const&>(field).holds<MPTIssue>())
+                    (field.getSType() == STI_AMOUNT &&
+                     static_cast<STAmount const&>(field).holds<MPTIssue>()) ||
+                    (field.getSType() == STI_ISSUE &&
+                     static_cast<STIssue const&>(field).holds<MPTIssue>()))
                 {
                     if (e.supportMPT() != soeMPTSupported)
                         return true;

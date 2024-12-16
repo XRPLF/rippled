@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PROTOCOL_STVALIDATION_H_INCLUDED
 #define RIPPLE_PROTOCOL_STVALIDATION_H_INCLUDED
 
-#include <xrpl/basics/FeeUnits.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
@@ -176,7 +176,7 @@ STValidation::STValidation(
         Throw<std::runtime_error>("Invalid signature in validation");
     }
 
-    ASSERT(
+    XRPL_ASSERT(
         nodeID_.isNonZero(),
         "ripple::STValidation::STValidation(SerialIter) : nonzero node");
 }
@@ -201,7 +201,7 @@ STValidation::STValidation(
     , nodeID_(nodeID)
     , seenTime_(signTime)
 {
-    ASSERT(
+    XRPL_ASSERT(
         nodeID_.isNonZero(),
         "ripple::STValidation::STValidation(PublicKey, SecretKey) : nonzero "
         "node");

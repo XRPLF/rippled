@@ -251,7 +251,8 @@ populateJsonResponse(
         // populate binary metadata
         if (auto blob = std::get_if<Blob>(&result.meta))
         {
-            ASSERT(args.binary, "ripple::populateJsonResponse : binary is set");
+            XRPL_ASSERT(
+                args.binary, "ripple::populateJsonResponse : binary is set");
             auto json_meta =
                 (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
             response[json_meta] = strHex(makeSlice(*blob));

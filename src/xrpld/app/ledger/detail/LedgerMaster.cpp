@@ -276,7 +276,7 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
 
     mValidLedger.set(l);
     mValidLedgerSign = signTime.time_since_epoch().count();
-    ASSERT(
+    XRPL_ASSERT(
         mValidLedgerSeq || !app_.getMaxDisallowedLedger() ||
             l->info().seq + max_ledger_difference_ >
                 app_.getMaxDisallowedLedger(),
@@ -345,9 +345,7 @@ LedgerMaster::addHeldTransaction(
 bool
 LedgerMaster::canBeCurrent(std::shared_ptr<Ledger const> const& ledger)
 {
-    ASSERT(
-        ledger != nullptr,
-        "ripple::LedgerMaster::canBeCurrent : non-null input");
+    XRPL_ASSERT(ledger, "ripple::LedgerMaster::canBeCurrent : non-null input");
 
     // Never jump to a candidate ledger that precedes our
     // last validated ledger
@@ -415,9 +413,7 @@ LedgerMaster::canBeCurrent(std::shared_ptr<Ledger const> const& ledger)
 void
 LedgerMaster::switchLCL(std::shared_ptr<Ledger const> const& lastClosed)
 {
-    ASSERT(
-        lastClosed != nullptr,
-        "ripple::LedgerMaster::switchLCL : non-null input");
+    XRPL_ASSERT(lastClosed, "ripple::LedgerMaster::switchLCL : non-null input");
     if (!lastClosed->isImmutable())
         LogicError("mutable ledger in switchLCL");
 
@@ -534,7 +530,7 @@ LedgerMaster::isValidated(ReadView const& ledger)
             // This ledger's hash is not the hash of the validated ledger
             if (hash)
             {
-                ASSERT(
+                XRPL_ASSERT(
                     hash->isNonZero(),
                     "ripple::LedgerMaster::isValidated : nonzero hash");
                 uint256 valHash =
@@ -826,7 +822,7 @@ LedgerMaster::setFullLedger(
     // A new ledger has been accepted as part of the trusted chain
     JLOG(m_journal.debug()) << "Ledger " << ledger->info().seq
                             << " accepted :" << ledger->info().hash;
-    ASSERT(
+    XRPL_ASSERT(
         ledger->stateMap().getHash().isNonZero(),
         "ripple::LedgerMaster::setFullLedger : nonzero ledger state hash");
 
@@ -1381,7 +1377,7 @@ LedgerMaster::tryAdvance()
         app_.getJobQueue().addJob(jtADVANCE, "advanceLedger", [this]() {
             std::unique_lock sl(m_mutex);
 
-            ASSERT(
+            XRPL_ASSERT(
                 !mValidLedger.empty() && mAdvanceThread,
                 "ripple::LedgerMaster::tryAdvance : has valid ledger");
 
@@ -1684,9 +1680,7 @@ LedgerMaster::walkHashBySeq(
     // be located easily and should contain the hash.
     LedgerIndex refIndex = getCandidateLedger(index);
     auto const refHash = hashOfSeq(*referenceLedger, refIndex, m_journal);
-    ASSERT(
-        refHash.has_value(),
-        "ripple::LedgerMaster::walkHashBySeq : found ledger");
+    XRPL_ASSERT(refHash, "ripple::LedgerMaster::walkHashBySeq : found ledger");
     if (refHash)
     {
         // Try the hash and sequence of a better reference ledger just found
@@ -1711,8 +1705,8 @@ LedgerMaster::walkHashBySeq(
                     *refHash, refIndex, reason))
             {
                 ledgerHash = hashOfSeq(*l, index, m_journal);
-                ASSERT(
-                    ledgerHash.has_value(),
+                XRPL_ASSERT(
+                    ledgerHash,
                     "ripple::LedgerMaster::walkHashBySeq : has complete "
                     "ledger");
             }
@@ -1826,7 +1820,7 @@ LedgerMaster::fetchForHistory(
     scope_unlock sul{sl};
     if (auto hash = getLedgerHashForHistory(missing, reason))
     {
-        ASSERT(
+        XRPL_ASSERT(
             hash->isNonZero(),
             "ripple::LedgerMaster::fetchForHistory : found ledger");
         auto ledger = getLedgerByHash(*hash);
@@ -1855,7 +1849,7 @@ LedgerMaster::fetchForHistory(
         if (ledger)
         {
             auto seq = ledger->info().seq;
-            ASSERT(
+            XRPL_ASSERT(
                 seq == missing,
                 "ripple::LedgerMaster::fetchForHistory : sequence match");
             JLOG(m_journal.trace()) << "fetchForHistory acquired " << seq;
@@ -1898,7 +1892,7 @@ LedgerMaster::fetchForHistory(
                     std::uint32_t seq = missing - i;
                     if (auto h = getLedgerHashForHistory(seq, reason))
                     {
-                        ASSERT(
+                        XRPL_ASSERT(
                             h->isNonZero(),
                             "ripple::LedgerMaster::fetchForHistory : "
                             "prefetched ledger");
@@ -2087,7 +2081,7 @@ populateFetchPack(
     std::uint32_t seq,
     bool withLeaves = true)
 {
-    ASSERT(cnt != 0, "ripple::populateFetchPack : nonzero count input");
+    XRPL_ASSERT(cnt, "ripple::populateFetchPack : nonzero count input");
 
     Serializer s(1024);
 

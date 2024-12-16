@@ -53,8 +53,9 @@ STNumber::getText() const
 void
 STNumber::add(Serializer& s) const
 {
-    ASSERT(getFName().isBinary(), "ripple::STNumber::add : field is binary");
-    ASSERT(
+    XRPL_ASSERT(
+        getFName().isBinary(), "ripple::STNumber::add : field is binary");
+    XRPL_ASSERT(
         getFName().fieldType == getSType(),
         "ripple::STNumber::add : field type match");
     s.add64(value_.mantissa());
@@ -88,7 +89,7 @@ STNumber::move(std::size_t n, void* buf)
 bool
 STNumber::isEquivalent(STBase const& t) const
 {
-    ASSERT(
+    XRPL_ASSERT(
         t.getSType() == this->getSType(),
         "ripple::STNumber::isEquivalent : field type match");
     STNumber const& v = dynamic_cast<STNumber const&>(t);

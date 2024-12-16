@@ -46,7 +46,8 @@ AMMBid::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2]))
+    if (auto const res = invalidAMMAssetPair(
+            ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
     {
         JLOG(ctx.j.debug()) << "AMM Bid: Invalid asset pair.";
         return res;
@@ -181,7 +182,7 @@ applyBid(
     }
     else
     {
-        ASSERT(
+        XRPL_ASSERT(
             ammSle->isFieldPresent(sfAuctionSlot),
             "ripple::applyBid : has auction slot");
         if (!ammSle->isFieldPresent(sfAuctionSlot))
@@ -306,7 +307,7 @@ applyBid(
     {
         // Price the slot was purchased at.
         STAmount const pricePurchased = auctionSlot[sfPrice];
-        ASSERT(timeSlot.has_value(), "ripple::applyBid : timeSlot is set");
+        XRPL_ASSERT(timeSlot, "ripple::applyBid : timeSlot is set");
         auto const fractionUsed =
             (Number(*timeSlot) + 1) / AUCTION_SLOT_TIME_INTERVALS;
         auto const fractionRemaining = Number(1) - fractionUsed;

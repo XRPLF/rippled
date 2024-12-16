@@ -26,7 +26,6 @@
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/XRPAmount.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -41,6 +40,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XChainAttestations.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/st.h>
 #include <unordered_map>
@@ -440,9 +440,7 @@ transferHelper(
     if (amt.native())
     {
         auto const sleSrc = psb.peek(keylet::account(src));
-        ASSERT(
-            sleSrc != nullptr,
-            "ripple::transferHelper : non-null source account");
+        XRPL_ASSERT(sleSrc, "ripple::transferHelper : non-null source account");
         if (!sleSrc)
             return tecINTERNAL;
 

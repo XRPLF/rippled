@@ -25,11 +25,11 @@
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
 #include <xrpld/ledger/View.h>
-#include <xrpl/basics/FeeUnits.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -243,9 +243,8 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     }
 
     auto sleAccount = ctx.view.read(keylet::account(account));
-    ASSERT(
-        sleAccount != nullptr,
-        "ripple::DeleteAccount::preclaim : non-null account");
+    XRPL_ASSERT(
+        sleAccount, "ripple::DeleteAccount::preclaim : non-null account");
     if (!sleAccount)
         return terNO_ACCOUNT;
 
@@ -348,15 +347,13 @@ TER
 DeleteAccount::doApply()
 {
     auto src = view().peek(keylet::account(account_));
-    ASSERT(
-        src != nullptr,
-        "ripple::DeleteAccount::doApply : non-null source account");
+    XRPL_ASSERT(
+        src, "ripple::DeleteAccount::doApply : non-null source account");
 
     auto const dstID = ctx_.tx[sfDestination];
     auto dst = view().peek(keylet::account(dstID));
-    ASSERT(
-        dst != nullptr,
-        "ripple::DeleteAccount::doApply : non-null destination account");
+    XRPL_ASSERT(
+        dst, "ripple::DeleteAccount::doApply : non-null destination account");
 
     if (!src || !dst)
         return tefBAD_LEDGER;
@@ -400,7 +397,7 @@ DeleteAccount::doApply()
     (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
     ctx_.deliver(mSourceBalance);
 
-    ASSERT(
+    XRPL_ASSERT(
         (*src)[sfBalance] == XRPAmount(0),
         "ripple::DeleteAccount::doApply : source balance is zero");
 

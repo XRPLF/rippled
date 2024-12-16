@@ -432,7 +432,7 @@ Livecache<Allocator>::insert(Endpoint const& ep)
     // but we will use it to make connections and hand it out
     // when redirecting.
     //
-    ASSERT(
+    XRPL_ASSERT(
         ep.hops <= (Tuning::maxHops + 1),
         "ripple::PeerFinder::Livecache::insert : maximum input hops");
     auto result = m_cache.emplace(ep.address, ep);
@@ -532,7 +532,7 @@ template <class Allocator>
 void
 Livecache<Allocator>::hops_t::insert(Element& e)
 {
-    ASSERT(
+    XRPL_ASSERT(
         e.endpoint.hops <= Tuning::maxHops + 1,
         "ripple::PeerFinder::Livecache::hops_t::insert : maximum input hops");
     // This has security implications without a shuffle
@@ -544,7 +544,7 @@ template <class Allocator>
 void
 Livecache<Allocator>::hops_t::reinsert(Element& e, std::uint32_t numHops)
 {
-    ASSERT(
+    XRPL_ASSERT(
         numHops <= Tuning::maxHops + 1,
         "ripple::PeerFinder::Livecache::hops_t::reinsert : maximum hops input");
 

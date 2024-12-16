@@ -22,8 +22,8 @@
 
 #include <xrpld/app/paths/detail/AmountSpec.h>
 #include <xrpld/ledger/PaymentSandbox.h>
-#include <xrpl/basics/IOUAmount.h>
-#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <boost/container/flat_map.hpp>
 
@@ -89,7 +89,7 @@ struct FlowDebugInfo
         void
         pushLiquiditySrc(EitherAmount const& eIn, EitherAmount const& eOut)
         {
-            ASSERT(
+            XRPL_ASSERT(
                 !liquiditySrcIn.empty(),
                 "ripple::path::detail::FlowDebugInfo::pushLiquiditySrc : "
                 "non-empty liquidity source");

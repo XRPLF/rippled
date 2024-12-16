@@ -461,7 +461,7 @@ operator==(const Value& x, const Value& y)
 const char*
 Value::asCString() const
 {
-    ASSERT(type_ == stringValue, "Json::Value::asCString : valid type");
+    XRPL_ASSERT(type_ == stringValue, "Json::Value::asCString : valid type");
     return value_.string_;
 }
 
@@ -752,7 +752,7 @@ Value::operator bool() const
 void
 Value::clear()
 {
-    ASSERT(
+    XRPL_ASSERT(
         type_ == nullValue || type_ == arrayValue || type_ == objectValue,
         "Json::Value::clear : valid type");
 
@@ -771,7 +771,7 @@ Value::clear()
 Value&
 Value::operator[](UInt index)
 {
-    ASSERT(
+    XRPL_ASSERT(
         type_ == nullValue || type_ == arrayValue,
         "Json::Value::operator[](UInt) : valid type");
 
@@ -792,7 +792,7 @@ Value::operator[](UInt index)
 const Value&
 Value::operator[](UInt index) const
 {
-    ASSERT(
+    XRPL_ASSERT(
         type_ == nullValue || type_ == arrayValue,
         "Json::Value::operator[](UInt) const : valid type");
 
@@ -817,7 +817,7 @@ Value::operator[](const char* key)
 Value&
 Value::resolveReference(const char* key, bool isStatic)
 {
-    ASSERT(
+    XRPL_ASSERT(
         type_ == nullValue || type_ == objectValue,
         "Json::Value::resolveReference : valid type");
 
@@ -853,7 +853,7 @@ Value::isValidIndex(UInt index) const
 const Value&
 Value::operator[](const char* key) const
 {
-    ASSERT(
+    XRPL_ASSERT(
         type_ == nullValue || type_ == objectValue,
         "Json::Value::operator[](const char*) const : valid type");
 
@@ -915,7 +915,7 @@ Value::get(std::string const& key, const Value& defaultValue) const
 Value
 Value::removeMember(const char* key)
 {
-    ASSERT(
+    XRPL_ASSERT(
         type_ == nullValue || type_ == objectValue,
         "Json::Value::removeMember : valid type");
 
@@ -958,7 +958,7 @@ Value::isMember(std::string const& key) const
 Value::Members
 Value::getMemberNames() const
 {
-    ASSERT(
+    XRPL_ASSERT(
         type_ == nullValue || type_ == objectValue,
         "Json::Value::getMemberNames : valid type");
 

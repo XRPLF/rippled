@@ -30,7 +30,7 @@ TransactionStateSF::gotNode(
     SHAMapNodeType type) const
 
 {
-    ASSERT(
+    XRPL_ASSERT(
         type != SHAMapNodeType::tnTRANSACTION_NM,
         "ripple::TransactionStateSF::gotNode : valid input");
     db_.store(
