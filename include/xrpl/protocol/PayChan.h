@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PROTOCOL_PAYCHAN_H_INCLUDED
 #define RIPPLE_PROTOCOL_PAYCHAN_H_INCLUDED
 
-#include <xrpl/basics/XRPAmount.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 namespace ripple {
 

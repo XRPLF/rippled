@@ -25,8 +25,8 @@
 #include <xrpld/app/tx/detail/ApplyContext.h>
 #include <xrpld/ledger/PaymentSandbox.h>
 #include <xrpld/ledger/detail/ApplyViewBase.h>
-#include <xrpl/basics/XRPAmount.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <variant>
 
 namespace ripple {

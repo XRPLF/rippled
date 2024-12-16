@@ -1877,160 +1877,164 @@ class LedgerRPC_test : public beast::unit_test::suite
         env(pay(gw, alice, USD(97)));
         env.close();
 
-        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        // check both aliases
+        for (auto const& fieldName : {jss::ripple_state, jss::state})
         {
-            // Request the trust line using the accounts and currency.
-            Json::Value jvParams;
-            jvParams[jss::ripple_state] = Json::objectValue;
-            jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-            jvParams[jss::ripple_state][jss::accounts][0u] = alice.human();
-            jvParams[jss::ripple_state][jss::accounts][1u] = gw.human();
-            jvParams[jss::ripple_state][jss::currency] = "USD";
-            jvParams[jss::ledger_hash] = ledgerHash;
-            Json::Value const jrr = env.rpc(
-                "json", "ledger_entry", to_string(jvParams))[jss::result];
-            BEAST_EXPECT(
-                jrr[jss::node][sfBalance.jsonName][jss::value] == "-97");
-            BEAST_EXPECT(
-                jrr[jss::node][sfHighLimit.jsonName][jss::value] == "999");
-        }
-        {
-            // ripple_state is not an object.
-            Json::Value jvParams;
-            jvParams[jss::ripple_state] = "ripple_state";
-            jvParams[jss::ledger_hash] = ledgerHash;
-            Json::Value const jrr = env.rpc(
-                "json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "malformedRequest", "");
-        }
-        {
-            // ripple_state.currency is missing.
-            Json::Value jvParams;
-            jvParams[jss::ripple_state] = Json::objectValue;
-            jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-            jvParams[jss::ripple_state][jss::accounts][0u] = alice.human();
-            jvParams[jss::ripple_state][jss::accounts][1u] = gw.human();
-            jvParams[jss::ledger_hash] = ledgerHash;
-            Json::Value const jrr = env.rpc(
-                "json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "malformedRequest", "");
-        }
-        {
-            // ripple_state accounts is not an array.
-            Json::Value jvParams;
-            jvParams[jss::ripple_state] = Json::objectValue;
-            jvParams[jss::ripple_state][jss::accounts] = 2;
-            jvParams[jss::ripple_state][jss::currency] = "USD";
-            jvParams[jss::ledger_hash] = ledgerHash;
-            Json::Value const jrr = env.rpc(
-                "json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "malformedRequest", "");
-        }
-        {
-            // ripple_state one of the accounts is missing.
-            Json::Value jvParams;
-            jvParams[jss::ripple_state] = Json::objectValue;
-            jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-            jvParams[jss::ripple_state][jss::accounts][0u] = alice.human();
-            jvParams[jss::ripple_state][jss::currency] = "USD";
-            jvParams[jss::ledger_hash] = ledgerHash;
-            Json::Value const jrr = env.rpc(
-                "json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "malformedRequest", "");
-        }
-        {
-            // ripple_state more than 2 accounts.
-            Json::Value jvParams;
-            jvParams[jss::ripple_state] = Json::objectValue;
-            jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-            jvParams[jss::ripple_state][jss::accounts][0u] = alice.human();
-            jvParams[jss::ripple_state][jss::accounts][1u] = gw.human();
-            jvParams[jss::ripple_state][jss::accounts][2u] = alice.human();
-            jvParams[jss::ripple_state][jss::currency] = "USD";
-            jvParams[jss::ledger_hash] = ledgerHash;
-            Json::Value const jrr = env.rpc(
-                "json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "malformedRequest", "");
-        }
-        {
-            // ripple_state account[0] is not a string.
-            Json::Value jvParams;
-            jvParams[jss::ripple_state] = Json::objectValue;
-            jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-            jvParams[jss::ripple_state][jss::accounts][0u] = 44;
-            jvParams[jss::ripple_state][jss::accounts][1u] = gw.human();
-            jvParams[jss::ripple_state][jss::currency] = "USD";
-            jvParams[jss::ledger_hash] = ledgerHash;
-            Json::Value const jrr = env.rpc(
-                "json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "malformedRequest", "");
-        }
-        {
-            // ripple_state account[1] is not a string.
-            Json::Value jvParams;
-            jvParams[jss::ripple_state] = Json::objectValue;
-            jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-            jvParams[jss::ripple_state][jss::accounts][0u] = alice.human();
-            jvParams[jss::ripple_state][jss::accounts][1u] = 21;
-            jvParams[jss::ripple_state][jss::currency] = "USD";
-            jvParams[jss::ledger_hash] = ledgerHash;
-            Json::Value const jrr = env.rpc(
-                "json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "malformedRequest", "");
-        }
-        {
-            // ripple_state account[0] == account[1].
-            Json::Value jvParams;
-            jvParams[jss::ripple_state] = Json::objectValue;
-            jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-            jvParams[jss::ripple_state][jss::accounts][0u] = alice.human();
-            jvParams[jss::ripple_state][jss::accounts][1u] = alice.human();
-            jvParams[jss::ripple_state][jss::currency] = "USD";
-            jvParams[jss::ledger_hash] = ledgerHash;
-            Json::Value const jrr = env.rpc(
-                "json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "malformedRequest", "");
-        }
-        {
-            // ripple_state malformed account[0].
-            Json::Value jvParams;
-            jvParams[jss::ripple_state] = Json::objectValue;
-            jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-            jvParams[jss::ripple_state][jss::accounts][0u] =
-                makeBadAddress(alice.human());
-            jvParams[jss::ripple_state][jss::accounts][1u] = gw.human();
-            jvParams[jss::ripple_state][jss::currency] = "USD";
-            jvParams[jss::ledger_hash] = ledgerHash;
-            Json::Value const jrr = env.rpc(
-                "json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "malformedAddress", "");
-        }
-        {
-            // ripple_state malformed account[1].
-            Json::Value jvParams;
-            jvParams[jss::ripple_state] = Json::objectValue;
-            jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-            jvParams[jss::ripple_state][jss::accounts][0u] = alice.human();
-            jvParams[jss::ripple_state][jss::accounts][1u] =
-                makeBadAddress(gw.human());
-            jvParams[jss::ripple_state][jss::currency] = "USD";
-            jvParams[jss::ledger_hash] = ledgerHash;
-            Json::Value const jrr = env.rpc(
-                "json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "malformedAddress", "");
-        }
-        {
-            // ripple_state malformed currency.
-            Json::Value jvParams;
-            jvParams[jss::ripple_state] = Json::objectValue;
-            jvParams[jss::ripple_state][jss::accounts] = Json::arrayValue;
-            jvParams[jss::ripple_state][jss::accounts][0u] = alice.human();
-            jvParams[jss::ripple_state][jss::accounts][1u] = gw.human();
-            jvParams[jss::ripple_state][jss::currency] = "USDollars";
-            jvParams[jss::ledger_hash] = ledgerHash;
-            Json::Value const jrr = env.rpc(
-                "json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "malformedCurrency", "");
+            std::string const ledgerHash{to_string(env.closed()->info().hash)};
+            {
+                // Request the trust line using the accounts and currency.
+                Json::Value jvParams;
+                jvParams[fieldName] = Json::objectValue;
+                jvParams[fieldName][jss::accounts] = Json::arrayValue;
+                jvParams[fieldName][jss::accounts][0u] = alice.human();
+                jvParams[fieldName][jss::accounts][1u] = gw.human();
+                jvParams[fieldName][jss::currency] = "USD";
+                jvParams[jss::ledger_hash] = ledgerHash;
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                BEAST_EXPECT(
+                    jrr[jss::node][sfBalance.jsonName][jss::value] == "-97");
+                BEAST_EXPECT(
+                    jrr[jss::node][sfHighLimit.jsonName][jss::value] == "999");
+            }
+            {
+                // ripple_state is not an object.
+                Json::Value jvParams;
+                jvParams[fieldName] = "ripple_state";
+                jvParams[jss::ledger_hash] = ledgerHash;
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                checkErrorValue(jrr, "malformedRequest", "");
+            }
+            {
+                // ripple_state.currency is missing.
+                Json::Value jvParams;
+                jvParams[fieldName] = Json::objectValue;
+                jvParams[fieldName][jss::accounts] = Json::arrayValue;
+                jvParams[fieldName][jss::accounts][0u] = alice.human();
+                jvParams[fieldName][jss::accounts][1u] = gw.human();
+                jvParams[jss::ledger_hash] = ledgerHash;
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                checkErrorValue(jrr, "malformedRequest", "");
+            }
+            {
+                // ripple_state accounts is not an array.
+                Json::Value jvParams;
+                jvParams[fieldName] = Json::objectValue;
+                jvParams[fieldName][jss::accounts] = 2;
+                jvParams[fieldName][jss::currency] = "USD";
+                jvParams[jss::ledger_hash] = ledgerHash;
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                checkErrorValue(jrr, "malformedRequest", "");
+            }
+            {
+                // ripple_state one of the accounts is missing.
+                Json::Value jvParams;
+                jvParams[fieldName] = Json::objectValue;
+                jvParams[fieldName][jss::accounts] = Json::arrayValue;
+                jvParams[fieldName][jss::accounts][0u] = alice.human();
+                jvParams[fieldName][jss::currency] = "USD";
+                jvParams[jss::ledger_hash] = ledgerHash;
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                checkErrorValue(jrr, "malformedRequest", "");
+            }
+            {
+                // ripple_state more than 2 accounts.
+                Json::Value jvParams;
+                jvParams[fieldName] = Json::objectValue;
+                jvParams[fieldName][jss::accounts] = Json::arrayValue;
+                jvParams[fieldName][jss::accounts][0u] = alice.human();
+                jvParams[fieldName][jss::accounts][1u] = gw.human();
+                jvParams[fieldName][jss::accounts][2u] = alice.human();
+                jvParams[fieldName][jss::currency] = "USD";
+                jvParams[jss::ledger_hash] = ledgerHash;
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                checkErrorValue(jrr, "malformedRequest", "");
+            }
+            {
+                // ripple_state account[0] is not a string.
+                Json::Value jvParams;
+                jvParams[fieldName] = Json::objectValue;
+                jvParams[fieldName][jss::accounts] = Json::arrayValue;
+                jvParams[fieldName][jss::accounts][0u] = 44;
+                jvParams[fieldName][jss::accounts][1u] = gw.human();
+                jvParams[fieldName][jss::currency] = "USD";
+                jvParams[jss::ledger_hash] = ledgerHash;
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                checkErrorValue(jrr, "malformedRequest", "");
+            }
+            {
+                // ripple_state account[1] is not a string.
+                Json::Value jvParams;
+                jvParams[fieldName] = Json::objectValue;
+                jvParams[fieldName][jss::accounts] = Json::arrayValue;
+                jvParams[fieldName][jss::accounts][0u] = alice.human();
+                jvParams[fieldName][jss::accounts][1u] = 21;
+                jvParams[fieldName][jss::currency] = "USD";
+                jvParams[jss::ledger_hash] = ledgerHash;
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                checkErrorValue(jrr, "malformedRequest", "");
+            }
+            {
+                // ripple_state account[0] == account[1].
+                Json::Value jvParams;
+                jvParams[fieldName] = Json::objectValue;
+                jvParams[fieldName][jss::accounts] = Json::arrayValue;
+                jvParams[fieldName][jss::accounts][0u] = alice.human();
+                jvParams[fieldName][jss::accounts][1u] = alice.human();
+                jvParams[fieldName][jss::currency] = "USD";
+                jvParams[jss::ledger_hash] = ledgerHash;
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                checkErrorValue(jrr, "malformedRequest", "");
+            }
+            {
+                // ripple_state malformed account[0].
+                Json::Value jvParams;
+                jvParams[fieldName] = Json::objectValue;
+                jvParams[fieldName][jss::accounts] = Json::arrayValue;
+                jvParams[fieldName][jss::accounts][0u] =
+                    makeBadAddress(alice.human());
+                jvParams[fieldName][jss::accounts][1u] = gw.human();
+                jvParams[fieldName][jss::currency] = "USD";
+                jvParams[jss::ledger_hash] = ledgerHash;
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                checkErrorValue(jrr, "malformedAddress", "");
+            }
+            {
+                // ripple_state malformed account[1].
+                Json::Value jvParams;
+                jvParams[fieldName] = Json::objectValue;
+                jvParams[fieldName][jss::accounts] = Json::arrayValue;
+                jvParams[fieldName][jss::accounts][0u] = alice.human();
+                jvParams[fieldName][jss::accounts][1u] =
+                    makeBadAddress(gw.human());
+                jvParams[fieldName][jss::currency] = "USD";
+                jvParams[jss::ledger_hash] = ledgerHash;
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                checkErrorValue(jrr, "malformedAddress", "");
+            }
+            {
+                // ripple_state malformed currency.
+                Json::Value jvParams;
+                jvParams[fieldName] = Json::objectValue;
+                jvParams[fieldName][jss::accounts] = Json::arrayValue;
+                jvParams[fieldName][jss::accounts][0u] = alice.human();
+                jvParams[fieldName][jss::accounts][1u] = gw.human();
+                jvParams[fieldName][jss::currency] = "USDollars";
+                jvParams[jss::ledger_hash] = ledgerHash;
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+                checkErrorValue(jrr, "malformedCurrency", "");
+            }
         }
     }
 
@@ -3055,6 +3059,33 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testLedgerEntryCLI()
+    {
+        testcase("ledger_entry command-line");
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto const checkId = keylet::check(env.master, env.seq(env.master));
+
+        env(check::create(env.master, alice, XRP(100)));
+        env.close();
+
+        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        {
+            // Request a check.
+            Json::Value const jrr =
+                env.rpc("ledger_entry", to_string(checkId.key))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Check);
+            BEAST_EXPECT(jrr[jss::node][sfSendMax.jsonName] == "100000000");
+        }
+    }
+
 public:
     void
     run() override
@@ -3085,6 +3116,7 @@ public:
         testInvalidOracleLedgerEntry();
         testOracleLedgerEntry();
         testLedgerEntryMPT();
+        testLedgerEntryCLI();
 
         forAllApiVersions(std::bind_front(
             &LedgerRPC_test::testLedgerEntryInvalidParams, this));
