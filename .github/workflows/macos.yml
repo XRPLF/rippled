@@ -76,9 +76,5 @@ jobs:
       - name: test
         run: |
           n=$(nproc)
-          if [[ $n -gt 2 ]]
-          then
-            : $[ n/=2 ]
-          fi
           echo "Using $n test jobs"
           ${build_dir}/rippled --unittest --unittest-jobs $n
