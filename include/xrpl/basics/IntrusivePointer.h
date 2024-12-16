@@ -20,10 +20,6 @@
 #ifndef RIPPLE_BASICS_INTRUSIVEPOINTER_H_INCLUDED
 #define RIPPLE_BASICS_INTRUSIVEPOINTER_H_INCLUDED
 
-// shared pointer class for tree pointers
-// The ref counts are kept on the tree pointers themselves
-// I.e. this is an intrusive pointer type.
-
 #include <concepts>
 #include <cstdint>
 #include <type_traits>

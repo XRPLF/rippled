@@ -319,10 +319,10 @@ SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
 }
 
 // finished modifying, now make shareable
-template <class T>
-    requires std::derived_from<T, SHAMapTreeNode>
 void
-SHAMapInnerNode::shareChild(int m, SharedIntrusive<T> const& child)
+SHAMapInnerNode::shareChild(
+    int m,
+    intr_ptr::SharedPtr<SHAMapTreeNode> const& child)
 {
     ASSERT(
         (m >= 0) && (m < branchFactor),
@@ -480,15 +480,5 @@ SHAMapInnerNode::invariants(bool is_root) const
         (count == 0) ? hash_.isZero() : hash_.isNonZero(),
         "ripple::SHAMapInnerNode::invariants : hash and count do match");
 }
-
-template void
-ripple::SHAMapInnerNode::shareChild<ripple::SHAMapTreeNode>(
-    int,
-    ripple::SharedIntrusive<ripple::SHAMapTreeNode> const&);
-
-template void
-ripple::SHAMapInnerNode::shareChild<ripple::SHAMapInnerNode>(
-    int,
-    ripple::SharedIntrusive<ripple::SHAMapInnerNode> const&);
 
 }  // namespace ripple
