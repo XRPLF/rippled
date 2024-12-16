@@ -83,12 +83,12 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
 
         // bob can still send to lptoken to carol even tho carol's USD is
-        // frozen, regardless of whether fixLPTokenTransfer is enabled or not
-        // Note: Deep freeze is not considered for LPToken transfer
+        // frozen, regardless of whether fixFrozenLPTokenTransfer is enabled or
+        // not Note: Deep freeze is not considered for LPToken transfer
         env(pay(bob, carol, STAmount{lpIssue, 5}));
         env.close();
 
-        if (features[fixLPTokenTransfer])
+        if (features[fixFrozenLPTokenTransfer])
         {
             // carol is frozen on USD and therefore can't send lptoken to bob
             env(pay(carol, bob, STAmount{lpIssue, 5}), ter(tecPATH_DRY));
@@ -134,10 +134,10 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env(trust(gw, carol["USD"](0), tfSetFreeze));
         env.close();
 
-        if (features[fixLPTokenTransfer])
+        if (features[fixFrozenLPTokenTransfer])
         {
-            // with fixLPTokenTransfer, alice fails to consume carol's offer
-            // since carol's USD is frozen
+            // with fixFrozenLPTokenTransfer, alice fails to consume carol's
+            // offer since carol's USD is frozen
             env(pay(alice, bob, STAmount{lpIssue, 10}),
                 txflags(tfPartialPayment),
                 sendmax(XRP(10)),
@@ -158,8 +158,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
         }
         else
         {
-            // without fixLPTokenTransfer, alice can consume carol's offer even
-            // when carol's USD is frozen
+            // without fixFrozenLPTokenTransfer, alice can consume carol's offer
+            // even when carol's USD is frozen
             env(pay(alice, bob, STAmount{lpIssue, 10}),
                 txflags(tfPartialPayment),
                 sendmax(XRP(10)));
@@ -190,10 +190,10 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         auto const lpIssue = ammAlice.lptIssue();
 
-        if (features[fixLPTokenTransfer])
+        if (features[fixFrozenLPTokenTransfer])
         {
-            // with fixLPTokenTransfer, carol can't create an offer to sell
-            // lptoken when one of the assets is frozen
+            // with fixFrozenLPTokenTransfer, carol can't create an offer to
+            // sell lptoken when one of the assets is frozen
 
             // gateway freezes carol's USD
             env(trust(gw, carol["USD"](0), tfSetFreeze));
@@ -218,7 +218,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         }
         else
         {
-            // without fixLPTokenTransfer, carol can create an offer
+            // without fixFrozenLPTokenTransfer, carol can create an offer
             env(offer(carol, XRP(10), STAmount{lpIssue, 10}),
                 txflags(tfPassive));
             env.close();
@@ -255,14 +255,14 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
 
         // alice creates an offer which exhibits different behavior on offer
-        // crossing depending on if fixLPTokenTransfer is enabled
+        // crossing depending on if fixFrozenLPTokenTransfer is enabled
         env(offer(alice, STAmount{token1, 100}, STAmount{token2, 100}));
         env.close();
 
-        if (features[fixLPTokenTransfer])
+        if (features[fixFrozenLPTokenTransfer])
         {
-            // with fixLPTokenTransfer enabled, alice's offer can no longer
-            // cross with carol's offer
+            // with fixFrozenLPTokenTransfer enabled, alice's offer can no
+            // longer cross with carol's offer
             BEAST_EXPECT(
                 expectLine(env, alice, STAmount{token1, 10'000'000}) &&
                 expectLine(env, alice, STAmount{token2, 10'000'000}));
@@ -317,8 +317,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env(check::create(carol, bob, STAmount{lpIssue, 10}));
         env.close();
 
-        // with fixLPTokenTransfer enabled, bob fails to cash the check
-        if (features[fixLPTokenTransfer])
+        // with fixFrozenLPTokenTransfer enabled, bob fails to cash the check
+        if (features[fixFrozenLPTokenTransfer])
             env(check::cash(bob, chkId, STAmount{lpIssue, 10}),
                 ter(tecPATH_PARTIAL));
         else
@@ -363,9 +363,9 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env(trust(gw, carol["USD"](0), tfSetFreeze));
         env.close();
 
-        if (features[fixLPTokenTransfer])
+        if (features[fixFrozenLPTokenTransfer])
         {
-            // with fixLPTokenTransfer, freezing USD will prevent buy/sell
+            // with fixFrozenLPTokenTransfer, freezing USD will prevent buy/sell
             // offers with lptokens from being created/accepted
 
             // carol fails to accept bob's offer with lptoken because carol's
@@ -404,7 +404,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         }
         else
         {
-            // without fixLPTokenTransfer, freezing USD will still allow
+            // without fixFrozenLPTokenTransfer, freezing USD will still allow
             // buy/sell offers to be created/accepted with lptoken
 
             // carol can still accept bob's offer despite carol's USD is frozen
@@ -435,7 +435,7 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
 
-        for (auto const features : {all, all - fixLPTokenTransfer})
+        for (auto const features : {all, all - fixFrozenLPTokenTransfer})
         {
             testDirectStep(features);
             testBookStep(features);

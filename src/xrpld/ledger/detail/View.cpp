@@ -315,7 +315,7 @@ accountHolds(
 
         // if it's a LPToken, also need to check if issuers of the asset pair
         // has frozen holder's trustline
-        if (view.rules().enabled(fixLPTokenTransfer))
+        if (view.rules().enabled(fixFrozenLPTokenTransfer))
         {
             auto const sleIssuer = view.read(keylet::account(issuer));
             if (!sleIssuer)

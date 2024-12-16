@@ -56,7 +56,7 @@ checkFreeze(
         }
     }
 
-    if (view.rules().enabled(fixLPTokenTransfer))
+    if (view.rules().enabled(fixFrozenLPTokenTransfer))
     {
         if (auto const sleDst = view.read(keylet::account(dst));
             sleDst && sleDst->isFieldPresent(sfAMMID))
