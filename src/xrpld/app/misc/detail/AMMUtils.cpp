@@ -145,7 +145,7 @@ std::uint16_t
 getTradingFee(ReadView const& view, SLE const& ammSle, AccountID const& account)
 {
     using namespace std::chrono;
-    ASSERT(
+    XRPL_ASSERT(
         !view.rules().enabled(fixInnerObjTemplate) ||
             ammSle.isFieldPresent(sfAuctionSlot),
         "ripple::getTradingFee : auction present");

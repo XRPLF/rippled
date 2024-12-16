@@ -1330,7 +1330,7 @@ public:
     size_type
     bucket(Key const& k) const
     {
-        ASSERT(
+        XRPL_ASSERT(
             bucket_count() != 0,
             "beast::detail::aged_unordered_container::bucket : nonzero bucket "
             "count");
@@ -1474,7 +1474,7 @@ private:
     {
         if (would_exceed(additional))
             m_buck.resize(size() + additional, m_cont);
-        ASSERT(
+        XRPL_ASSERT(
             load_factor() <= max_load_factor(),
             "beast::detail::aged_unordered_container::maybe_rehash : maximum "
             "load factor");

@@ -73,7 +73,7 @@ void
 LoadManager::start()
 {
     JLOG(journal_.debug()) << "Starting";
-    ASSERT(
+    XRPL_ASSERT(
         !thread_.joinable(),
         "ripple::LoadManager::start : thread not joinable");
 
