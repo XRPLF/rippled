@@ -934,34 +934,18 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 25>
-            types{
-                {{jss::account, ltACCOUNT_ROOT},
-                 {jss::amendments, ltAMENDMENTS},
-                 {jss::amm, ltAMM},
-                 {jss::bridge, ltBRIDGE},
-                 {jss::check, ltCHECK},
-                 {jss::credential, ltCREDENTIAL},
-                 {jss::deposit_preauth, ltDEPOSIT_PREAUTH},
-                 {jss::did, ltDID},
-                 {jss::directory, ltDIR_NODE},
-                 {jss::escrow, ltESCROW},
-                 {jss::fee, ltFEE_SETTINGS},
-                 {jss::hashes, ltLEDGER_HASHES},
-                 {jss::mpt_issuance, ltMPTOKEN_ISSUANCE},
-                 {jss::mptoken, ltMPTOKEN},
-                 {jss::nft_offer, ltNFTOKEN_OFFER},
-                 {jss::nft_page, ltNFTOKEN_PAGE},
-                 {jss::nunl, ltNEGATIVE_UNL},
-                 {jss::offer, ltOFFER},
-                 {jss::oracle, ltORACLE},
-                 {jss::payment_channel, ltPAYCHAN},
-                 {jss::signer_list, ltSIGNER_LIST},
-                 {jss::state, ltRIPPLE_STATE},
-                 {jss::ticket, ltTICKET},
-                 {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
-                 {jss::xchain_owned_create_account_claim_id,
-                  ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID}}};
+        static constexpr auto types =
+            std::to_array<std::pair<char const*, LedgerEntryType>>({
+#pragma push_macro("LEDGER_ENTRY")
+#undef LEDGER_ENTRY
+
+#define LEDGER_ENTRY(tag, value, name, rpcName, fields) {jss::rpcName, tag},
+
+#include <xrpl/protocol/detail/ledger_entries.macro>
+
+#undef LEDGER_ENTRY
+#pragma pop_macro("LEDGER_ENTRY")
+            });
 
         auto const& p = params[jss::type];
         if (!p.isString())
