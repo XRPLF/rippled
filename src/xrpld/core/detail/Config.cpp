@@ -420,6 +420,35 @@ Config::setup(
     get_if_exists(nodeDbSection, "fast_load", FAST_LOAD);
 }
 
+// 0 ports are allowed for unit tests, but still not allowed to be present in
+// config file
+static void
+checkZeroPorts(Config const& config)
+{
+    if (!config.exists("server"))
+        return;
+
+    for (auto const& name : config.section("server").values())
+    {
+        if (!config.exists(name))
+            return;
+
+        auto const& section = config[name];
+        auto const optResult = section.get("port");
+        if (optResult)
+        {
+            auto const port = beast::lexicalCast<std::uint16_t>(*optResult);
+            if (!port)
+            {
+                std::stringstream ss;
+                ss << "Invalid value '" << *optResult << "' for key 'port' in ["
+                   << name << "]";
+                Throw<std::runtime_error>(ss.str());
+            }
+        }
+    }
+}
+
 void
 Config::load()
 {
@@ -440,6 +469,7 @@ Config::load()
     }
 
     loadFromString(fileContents);
+    checkZeroPorts(*this);
 }
 
 void
