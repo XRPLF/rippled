@@ -93,9 +93,8 @@ RCLConsensus::Adaptor::Adaptor(
               std::numeric_limits<std::uint64_t>::max() - 1))
     , nUnlVote_(validatorKeys_.nodeID, j_)
 {
-    ASSERT(
-        valCookie_ != 0,
-        "ripple::RCLConsensus::Adaptor::Adaptor : nonzero cookie");
+    XRPL_ASSERT(
+        valCookie_, "ripple::RCLConsensus::Adaptor::Adaptor : nonzero cookie");
 
     JLOG(j_.info()) << "Consensus engine started (cookie: " +
             std::to_string(valCookie_) + ")";
@@ -149,10 +148,10 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
         return std::nullopt;
     }
 
-    ASSERT(
+    XRPL_ASSERT(
         !built->open() && built->isImmutable(),
         "ripple::RCLConsensus::Adaptor::acquireLedger : valid ledger state");
-    ASSERT(
+    XRPL_ASSERT(
         built->info().hash == hash,
         "ripple::RCLConsensus::Adaptor::acquireLedger : ledger hash match");
 
@@ -680,10 +679,10 @@ RCLConsensus::Adaptor::doAccept(
         ledgerMaster_.switchLCL(built.ledger_);
 
         // Do these need to exist?
-        ASSERT(
+        XRPL_ASSERT(
             ledgerMaster_.getClosedLedger()->info().hash == built.id(),
             "ripple::RCLConsensus::Adaptor::doAccept : ledger hash match");
-        ASSERT(
+        XRPL_ASSERT(
             app_.openLedger().current()->info().parentHash == built.id(),
             "ripple::RCLConsensus::Adaptor::doAccept : parent hash match");
     }
@@ -781,7 +780,7 @@ RCLConsensus::Adaptor::buildLCL(
     std::shared_ptr<Ledger> built = [&]() {
         if (auto const replayData = ledgerMaster_.releaseReplay())
         {
-            ASSERT(
+            XRPL_ASSERT(
                 replayData->parent()->info().hash == previousLedger.id(),
                 "ripple::RCLConsensus::Adaptor::buildLCL : parent hash match");
             return buildLedger(*replayData, tapNONE, app_, j_);

@@ -5,4 +5,4 @@ This library provides methods for C++ programs to configure the [Antithesis](htt
 * Randomness functions for requesting both structured and unstructured randomness from the Antithesis platform.
 * Lifecycle functions that inform the Antithesis environment that particular test phases or milestones have been reached.
 
-For general usage guidance see the [Antithesis C++ SDK Documentation](https://antithesis.com/docs/using_antithesis/sdk/cpp/overview.html)
+For general usage guidance see the [Antithesis C++ SDK Documentation](https://antithesis.com/docs/using_antithesis/sdk/cpp/overview/)
