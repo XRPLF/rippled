@@ -263,7 +263,7 @@ OpenLedger::apply(
 
     // If there are any transactions left, we must have
     // tried them in at least one final pass
-    ASSERT(
+    XRPL_ASSERT(
         retries.empty() || !retry, "ripple::OpenLedger::apply : valid retries");
 }
 

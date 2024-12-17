@@ -626,7 +626,7 @@ SharedWeakUnion<T>::convertToStrong()
     if (p && p->checkoutStrongRefFromWeak())
     {
         [[maybe_unused]] auto action = p->releaseWeakRef();
-        ASSERT(
+        XRPL_ASSERT(
             (action == ReleaseWeakRefAction::noop),
             "ripple::SharedWeakUnion::convertToStrong : "
             "action is noop");

@@ -54,8 +54,8 @@ public:
     friend constexpr bool
     operator==(MPTIssue const& lhs, MPTIssue const& rhs);
 
-    friend constexpr bool
-    operator!=(MPTIssue const& lhs, MPTIssue const& rhs);
+    friend constexpr std::weak_ordering
+    operator<=>(MPTIssue const& lhs, MPTIssue const& rhs);
 
     bool
     native() const
@@ -70,10 +70,10 @@ operator==(MPTIssue const& lhs, MPTIssue const& rhs)
     return lhs.mptID_ == rhs.mptID_;
 }
 
-constexpr bool
-operator!=(MPTIssue const& lhs, MPTIssue const& rhs)
+constexpr std::weak_ordering
+operator<=>(MPTIssue const& lhs, MPTIssue const& rhs)
 {
-    return !(lhs == rhs);
+    return lhs.mptID_ <=> rhs.mptID_;
 }
 
 /** MPT is a non-native token.
