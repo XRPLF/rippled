@@ -417,9 +417,6 @@ $ git config user.signingkey
 
 ### When and how to merge pull requests
 
-**Never use the "Create a merge commit" or "Rebase and merge" Github UI
- functions!**
-
 The maintainer should double-check that the PR has met all the
 necessary criteria, and can request additional information from the
 owner, or additional reviews, and can always feel free to remove the
