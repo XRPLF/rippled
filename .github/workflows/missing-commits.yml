@@ -1,0 +1,47 @@
+name: missing-commits
+
+on:
+  push:
+    branches:
+      # Only check that develop is up to date when building develop
+      # TODO: Uncomment the next line before merging
+      # - develop
+    
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    env:
+      CLANG_VERSION: 18
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Check for missing commits
+      id: commits
+      env:
+        SUGGESTION: |
+
+          If you are reading this, then there are commits that are
+          missing from "develop". Do a reverse-merge as soon as
+          possible. See CONTRIBUTING.md for instructions.
+      run: |
+        set -o pipefail
+        branches=()
+        for branch in master release
+        do
+          if git ls-remote --exit-code --heads origin \
+            refs/heads/${branch} > /dev/null
+          then
+            branches+=( origin/${branch} )
+          fi
+        done
+
+        echo "Checking ${branches[@]} for commits missing from develop"
+        git log --oneline --no-merges "${branches[@]}" \
+          ^origin/develop | tee "missing-commits.txt"
+        if [[ $( cat missing-commits.txt | wc -l ) -ne 0 ]]
+        then
+          echo "${SUGGESTION}"
+          exit 1
+        fi
