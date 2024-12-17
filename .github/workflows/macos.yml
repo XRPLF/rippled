@@ -32,27 +32,16 @@ jobs:
       build_dir: .build
       NUM_PROCESSORS: 12
     steps:
+      # We must checkout first to make local actions available.
       - name: checkout
         uses: actions/checkout@v4
-      - name: install Conan
-        run: |
-          brew install conan@1
-          echo '/opt/homebrew/opt/conan@1/bin' >> $GITHUB_PATH
-      - name: install Ninja
-        if: matrix.generator == 'Ninja'
-        run: brew install ninja
-      - name: check environment
-        run: |
-          env | sort
-          echo ${PATH} | tr ':' '\n'
-          python --version
-          conan --version
-          cmake --version
+      - name: environment
+        uses: ./.github/actions/environment
       - name: configure Conan
         run : |
-          conan profile new default --detect || true
-          conan profile update settings.compiler.cppstd=20 default
-          conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
+          conan config install .github/conan/
+          conan profile detect --name detected || true
+          touch $(conan config home)/profiles/matrix
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
