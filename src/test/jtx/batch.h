@@ -51,12 +51,14 @@ private:
     Json::Value txn_;
     std::uint32_t seq_;
     std::optional<std::uint32_t> ticket_;
+    std::optional<std::uint32_t> fee_;
 
 public:
     add(Json::Value const& txn,
         std::uint32_t const& sequence,
-        std::optional<std::uint32_t> const& ticket = std::nullopt)
-        : txn_(txn), seq_(sequence), ticket_(ticket)
+        std::optional<std::uint32_t> const& ticket = std::nullopt,
+        std::optional<std::uint32_t> const& fee = std::nullopt)
+        : txn_(txn), seq_(sequence), ticket_(ticket), fee_(fee)
     {
     }
 

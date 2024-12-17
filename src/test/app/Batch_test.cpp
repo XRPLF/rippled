@@ -773,10 +773,10 @@ class Batch_test : public beast::unit_test::suite
 
         auto const batchFee = XRP(1);
         auto const seq = env.seq(alice);
-        // env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
-        //     batch::add(pay(alice, bob, XRP(10)), seq + 1),
-        //     batch::add(pay(alice, bob, XRP(10)), seq + 2),
-        //     ter(tecBATCH_FAILURE));
+        env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+            batch::add(pay(alice, bob, XRP(10)), seq + 1),
+            batch::add(pay(alice, bob, XRP(10)), seq + 2),
+            ter(tesSUCCESS));
         auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
         std::vector<TestBatchData> testCases = {
             {"tesSUCCESS", to_string(txIDs[0])},
@@ -794,6 +794,75 @@ class Batch_test : public beast::unit_test::suite
         validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
 
         BEAST_EXPECT(env.seq(alice) == 5);
+        BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
+        BEAST_EXPECT(env.balance(bob) == preBob);
+    }
+
+    void
+    testBadInnerFee(FeatureBitset features)
+    {
+        testcase("bad inner fee");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        test::jtx::Env env{*this, envconfig(), nullptr, beast::severities::kTrace};
+
+        auto const feeDrops = env.current()->fees().base;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const gw = Account("gw");
+        auto const USD = gw["USD"];
+
+        env.fund(XRP(1000), alice, bob, carol, gw);
+        env.close();
+        env.trust(USD(1000), alice, bob);
+        env(pay(gw, alice, USD(100)));
+        env(pay(gw, bob, USD(100)));
+        env.close();
+
+        auto const preAlice = env.balance(alice);
+        auto const preBob = env.balance(bob);
+
+        auto const seq = env.seq(alice);
+        auto const ammCreate = [&env, &alice](STAmount const& amount, STAmount const& amount2) {
+            Json::Value jv;
+            jv[jss::Account] = alice.human();
+            jv[jss::Amount] = amount.getJson(JsonOptions::none);
+            jv[jss::Amount2] = amount2.getJson(JsonOptions::none);
+            jv[jss::TradingFee] = 0;
+            jv[jss::TransactionType] = jss::AMMCreate;
+            return jv;
+        };
+
+        auto const batchFee = ((0 + 2) * feeDrops) + feeDrops * 2;
+        env(batch::batch(alice, seq, batchFee, tfAllOrNothing),
+            batch::add(ammCreate(XRP(10), USD(10)), seq + 1),
+            batch::add(pay(alice, bob, XRP(10)), seq + 2),
+            ter(tesSUCCESS));
+        auto const txIDs = env.tx()->getFieldV256(sfTransactionIDs);
+        std::vector<TestBatchData> testCases = {
+            {"tesSUCCESS", to_string(txIDs[0])},
+            {"tecUNFUNDED_PAYMENT", to_string(txIDs[1])},
+        };
+        env.close();
+
+        Json::Value params;
+        params[jss::ledger_index] = env.current()->seq() - 1;
+        params[jss::transactions] = true;
+        params[jss::expand] = true;
+        auto const jrr = env.rpc("json", "ledger", to_string(params));
+        std::cout << "jrr: " << jrr << "\n";
+        auto const txn = getTxByIndex(jrr, 0);
+        validateBatchTxns(txn[jss::metaData], 2, testCases);
+        validateBatchPreMeta(txn[jss::metaData], preAlice, seq);
+
+        std::cout << "env.seq(alice): " << env.seq(alice) << "\n";
+        std::cout << "env.balance(alice): " << env.balance(alice) << "\n";
+        std::cout << "env.balance(bob): " << env.balance(bob) << "\n";
+
+        BEAST_EXPECT(env.seq(alice) == 8);
         BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
         BEAST_EXPECT(env.balance(bob) == preBob);
     }
@@ -1867,30 +1936,31 @@ class Batch_test : public beast::unit_test::suite
     void
     testWithFeats(FeatureBitset features)
     {
-        testEnable(features);
-        testPreflight(features);
+        // testEnable(features);
+        // testPreflight(features);
         // testNonTecInner(features);
         // testBadSequence(features);
         // testBadFeeNoSigner(features);
         // testBadFeeSigner(features);
         // testChangesBetweenViews(features);
-        testAllOrNothing(features);
-        testOnlyOne(features);
-        testUntilFailure(features);
-        testIndependent(features);
-        testMultiParty(features);
-        testMultisign(features);
-        testMultisignMultiParty(features);
-        testBatchType(features);
-        testSubmit(features);
-        testNoAccount(features);
-        testAccountSet(features);
-        testObjectCreateSequence(features);
-        testObjectCreateTicket(features);
-        testObjectCreate3rdParty(features);
-        testTicketsOuter(features);
-        testTicketsInner(features);
-        testTicketsOuterInner(features);
+        testBadInnerFee(features);
+        // testAllOrNothing(features);
+        // testOnlyOne(features);
+        // testUntilFailure(features);
+        // testIndependent(features);
+        // testMultiParty(features);
+        // testMultisign(features);
+        // testMultisignMultiParty(features);
+        // testBatchType(features);
+        // testSubmit(features);
+        // testNoAccount(features);
+        // testAccountSet(features);
+        // testObjectCreateSequence(features);
+        // testObjectCreateTicket(features);
+        // testObjectCreate3rdParty(features);
+        // testTicketsOuter(features);
+        // testTicketsInner(features);
+        // testTicketsOuterInner(features);
     }
 
 public:

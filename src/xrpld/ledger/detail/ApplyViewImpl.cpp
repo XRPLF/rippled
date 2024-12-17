@@ -36,7 +36,7 @@ ApplyViewImpl::apply(
     std::optional<uint256> batchId,
     beast::Journal j)
 {
-    items_.apply(to, tx, ter, deliver_, batchId, j, 89);
+    items_.apply(to, tx, ter, deliver_, batchId, j);
 }
 
 std::size_t

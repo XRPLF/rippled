@@ -65,11 +65,17 @@ add::operator()(Env& env, JTx& jt) const
     batchTransaction = Json::Value{};
     batchTransaction[jss::RawTransaction] = txn_;
     batchTransaction[jss::RawTransaction][jss::SigningPubKey] = "";
-    batchTransaction[jss::RawTransaction][sfFee.jsonName] = 0;
     batchTransaction[jss::RawTransaction][jss::Sequence] = seq_;
     batchTransaction[jss::RawTransaction][jss::Flags] =
         batchTransaction[jss::RawTransaction][jss::Flags].asUInt() |
         tfInnerBatchTxn;
+
+    // Optionally set new fee
+    if (fee_.has_value())
+        batchTransaction[jss::RawTransaction][jss::Fee] = to_string(*fee_);
+
+    if (!batchTransaction[jss::RawTransaction][jss::Fee] && !fee_.has_value())
+        batchTransaction[jss::RawTransaction][sfFee.jsonName] = to_string(env.current()->fees().base);
 
     // Optionally set ticket sequence
     if (ticket_.has_value())

@@ -186,16 +186,6 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         return temBAD_FEE;
 
     auto const feePaid = ctx.tx[sfFee].xrp();
-
-    if (ctx.tx.isFlag(tfInnerBatchTxn))
-    {
-        if (feePaid == beast::zero)
-            return tesSUCCESS;
-
-        JLOG(ctx.j.warn()) << "Batch: sfFee must be zero.";
-        return temBAD_FEE;
-    }
-
     if (!isLegalAmount(feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
 

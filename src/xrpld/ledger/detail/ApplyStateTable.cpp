@@ -116,8 +116,7 @@ ApplyStateTable::apply(
     TER ter,
     std::optional<STAmount> const& deliver,
     std::optional<uint256 const> const& batchId,
-    beast::Journal j,
-    int xxx)
+    beast::Journal j)
 {
     // Build metadata and insert
     auto const sTx = std::make_shared<Serializer>();

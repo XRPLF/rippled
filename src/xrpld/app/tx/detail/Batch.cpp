@@ -32,33 +32,12 @@ namespace ripple {
 XRPAmount
 Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    // Calculate the Inner Txn Fees
-    XRPAmount txnFees{0};
-
-    if (tx.isFieldPresent(sfRawTransactions))
-    {
-        XRPAmount txFees{0};
-        auto const& txns = tx.getFieldArray(sfRawTransactions);
-        for (STObject txn : txns)
-        {
-            // FIXME: THIS IS BROKEN! This will call the base class' version of
-            //        calculateBaseFee, but many transactors customize what the
-            //        base fee should (e.g. EscrowFinish). As written, it would
-            //        be cheaper to submit some transactions as part of a batch
-            //        or even as a single transaction batch than to submit them
-            //        individually.
-            STTx const stx = STTx{std::move(txn)};
-            txFees += Transactor::calculateBaseFee(view, tx);
-        }
-        txnFees += txFees;
-    }
-
     // Calculate the BatchSigners Fees
     std::int32_t signerCount = tx.isFieldPresent(sfBatchSigners)
         ? tx.getFieldArray(sfBatchSigners).size()
         : 0;
 
-    return ((signerCount + 2) * view.fees().base) + txnFees;
+    return ((signerCount + 2) * view.fees().base);
 }
 
 NotTEC

@@ -71,8 +71,7 @@ public:
         TER ter,
         std::optional<STAmount> const& deliver,
         std::optional<uint256 const> const& batchId,
-        beast::Journal j,
-        int xxx);
+        beast::Journal j);
 
     bool
     exists(ReadView const& base, Keylet const& k) const;
