@@ -11,8 +11,20 @@ instructions specific to this project.
 
 ## Before you start
 
-In general, contributions should be developed in your personal
-[fork](https://github.com/XRPLF/rippled/fork).
+In general, external contributions should be developed in your personal
+[fork](https://github.com/XRPLF/rippled/fork). Contributions from
+developers with write permissions should be done in this repository
+in a branch with a permitted prefix. Permitted prefixes are:
+* XLS-[a-zA-Z0-9]+/.+
+  * e.g. XLS-0033d/mpt-clarify-STEitherAmount
+* [GitHub username]/.+
+  * e.g. WietseWind/fix-rpc-webhook-queue
+* [Organization name]/.+
+  * e.g. ripple/antithesis
+
+Regardless of where the branch is created, please open a *draft* pull
+request as soon as possible after pushing the branch to Github, to
+increase visibility, and ease feedback during the development process.
 
 The following branches exist in the main project repository:
 
@@ -49,6 +61,7 @@ author delegates that responsibility to others.
 
 
 ## Before making a pull request
+(Or marking a draft pull request as ready.)
 
 Changes that alter transaction processing must be guarded by an
 [Amendment](https://xrpl.org/amendments.html).
@@ -58,13 +71,11 @@ Amendment.
 Ensure that your code compiles according to the build instructions in
 [`BUILD.md`](./BUILD.md).
 If you create new source files, they must go under `src/ripple`.
-You will need to add them to one of the
-[source lists](./Builds/CMake/RippledCore.cmake) in CMake.
+TODO: Update the folder structure
 
 Please write tests for your code.
 If you create new test source files, they must go under `src/test`.
-You will need to add them to one of the
-[source lists](./Builds/CMake/RippledCore.cmake) in CMake.
+TODO: Update the folder structure
 If your test can be run offline, in under 60 seconds, then it can be an
 automatic test run by `rippled --unittest`.
 Otherwise, it must be a manual test.
@@ -119,7 +130,10 @@ unit tests for Feature X (#1234)`.
 ## Pull requests
 
 In general, pull requests use `develop` as the base branch.
-(Hotfixes are an exception.)
+The exceptions are
+* Fixes and improvements to a release candidate use `release` as the
+  base.
+* Hotfixes use `master` as the base.
 
 If your changes are not quite ready, but you want to make it easily available
 for preliminary examination or review, you can create a "Draft" pull request.
@@ -164,7 +178,7 @@ meets a few criteria:
      merge, they should also ensure the commit message(s) are updated
      as well.
 4. The PR branch must be up to date with the base branch (usually
-   `develop`). This is usually accomplised by merging the base branch
+   `develop`). This is usually accomplished by merging the base branch
    into the feature branch, but if the other criteria are met, the
    changes can be squashed and rebased on top of the base branch.
 5. Finally, and most importantly, the author of the PR must
@@ -185,7 +199,7 @@ coherent rather than a set of _thou shalt not_ commandments.
 
 ## Formatting
 
-All code must conform to `clang-format` version 10,
+All code must conform to `clang-format` version 18,
 according to the settings in [`.clang-format`](./.clang-format),
 unless the result would be unreasonably difficult to read or maintain.
 To demarcate lines that should be left as-is, surround them with comments like
@@ -388,9 +402,8 @@ Code Reviewers are developers who have the ability to review and approve source 
 * [RichardAH](https://github.com/RichardAH) (XRPL Labs + XRP Ledger Foundation)
 * [dangell7](https://github.com/dangell7) (XRPL Labs)
 
-
-[1]: https://docs.github.com/en/get-started/quickstart/contributing-to-projects
-[2]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#squash-and-merge-your-commits
+Developers not on this list are able and encouraged to submit feedback
+on pending code changes (open pull requests).
 
 ## Instructions for maintainers
 
@@ -412,13 +425,10 @@ It also assumes you have a default gpg signing key set up in git. e.g.
 ```
 $ git config user.signingkey
 968479A1AFF927E37D1A566BB5690EEEBB952194
-# (This is github's key. Probably not what you want.)
+# (This is github's key. Use your own.)
 ```
 
 ### When and how to merge pull requests
-
-**Never use the "Create a merge commit" or "Rebase and merge" Github UI
- functions!**
 
 The maintainer should double-check that the PR has met all the
 necessary criteria, and can request additional information from the
@@ -431,7 +441,7 @@ issues or concerns to other maintainers.
 
 Most pull requests don't need special handling, and can simply be
 merged using the "Squash and merge" button on the Github UI. Update
-the suggested commit message as needed.
+the suggested commit message, or modify it as needed.
 
 #### Slightly more complicated pull requests
 
@@ -452,35 +462,54 @@ Either way, check that:
 **Never use the "Create a merge commit" or "Rebase and merge" Github UI
  functions!**
 
-### Releases, release candidates, and betas
+### Releases
 
 All releases, including release candidates and betas, are handled
 differently from typical PRs. Most importantly, never use
 the Github UI to merge a release.
 
-#### Preparing the `develop` branch
+Rippled uses a linear workflow model that can be summarized as:
+
+1. In between releases, developers work against the `develop` branch.
+2. Periodically, a maintainer will build and tag a beta version from
+   `develop`, which is pushed to `release`.
+   * Betas are usually released every two to three weeks, though that
+     schedule can vary depending on progress, availability, and other
+     factors.
+3. When the changes in `develop` are considered stable and mature enough
+   to be ready to release, a release candidate (RC) is built and tagged
+   from `develop`, and merged to `release`.
+   * Further development for that release (primarily fixes) then
+     continues against `release`, while other development continues on
+     `develop`. These changes must be reverse merged to `develop`.
+4. When the candidate has passed testing and is ready for release, the
+   final release is merged to `master`.
+5. If any issues are found post-release, a hotfix / point release may be
+   created, which is merged to `master`, and then reverse merged to
+   `develop`.
+
+#### Betas, and the first release candidate
+
+##### Preparing the `develop` branch
 
 1. Optimally, the `develop` branch will be ready to go, with all
    relevant PRs already merged.
 2. If there are any PRs pending, merge them **BEFORE** preparing the beta.
-   1. If only one or two PRs need to be merged,
-      merge those PRs [as normal](#when-and-how-to-merge-pull-requests),
-      updating the second one, and waiting for CI to finish in between.
-   2. Several pending PRs: In this case, do not use the Github UI,
+   1. If only one or two PRs need to be merged, merge those PRs [as
+      normal](#when-and-how-to-merge-pull-requests), updating the second
+      one, and waiting for CI to finish in between.
+   2. If there are several pending PRs, do not use the Github UI,
       because the delays waiting for CI in between each merge will be
       unnecessarily onerous. (Incidentally, this process can also be
-      used to merge if the Github UI has issues.)
-      Merge each PR branch directly to `develop` on
-      your local machine and push.
-      1. Squash the changes
-         from each PR, one commit each (unless
-         more are needed), being sure to sign each commit and update
-         the commit message to include the PR number. You may be able
-         to use a fast-forward merge for the first PR.
+      used to merge if the Github UI has issues.) Merge each PR branch
+      directly to `develop` on your local machine and push.
+      1. Squash the changes from each PR, one commit each (unless more
+         are needed), being sure to sign each commit and update the
+         commit message to include the PR number. You may be able to use
+         a fast-forward merge for the first PR.
       2. Push directly to `develop`.
 
-      The workflow may
-      look something like:
+      The workflow may look something like:
 ```
 git fetch --multiple upstreams user1 user2 user3 [...]
 git checkout -B upstream--develop --track upstream/develop
@@ -503,14 +532,16 @@ git commit -S # Use the commit message provided on the PR
 git log --show-signature "upstream/develop..HEAD"
 
 git push upstream-push HEAD:develop
+git fetch upstreams
 ```
+TODO: Can this be converted to a script in the repo?
 
-You may also need to manually close the open PRs.
-Be sure to include the commit ID.
+You may also need to manually close the open PRs. Be sure to include the
+commit ID.
 
-#### Making a new release
+##### Making the release
 
-This includes, betas, release candidates (RC), and final releases.
+This includes, betas, and the first release candidates (RC).
 
 1. Ensure there is no old `release-next` branch hanging around.
    Then make a `release-next` branch that only changes the version
@@ -518,7 +549,7 @@ This includes, betas, release candidates (RC), and final releases.
 ```
 git fetch upstreams
 
-git checkout --no-track -b release-next upstream/develop
+git checkout --no-track -B release-next upstream/develop
 
 v="2.4.0-b1"
 build=$( find -name BuildInfo.cpp )
@@ -533,7 +564,7 @@ git commit -S -m "Set version to ${v}"
 # You could use your "origin" repo, but some CI tests work better on upstream.
 git push upstream-push
 git fetch upstreams
-git checkout -B release-next upstream/release-next
+git branch --set-upstream-to=upstream/release-next
 ```
 2. Create a Pull Request for `release-next` with **`develop`** as
    the base branch.
@@ -548,92 +579,249 @@ soon as Github CI actions successfully complete.
 3. Wait for CI to successfully complete, and get someone to approve
    the PR. (It is safe to ignore known CI issues.)
 4. Push the updated `develop` branch using your `release-next`
-   branch. **Do not use the Github CI. It's important to preserve
+   branch. **Do not use the Github UI. It's important to preserve
    commit IDs.**
-   * In the unlikely event that the push fails because someone has
-     merged something else in the meantime, rebase your branch onto the
-     updated `develop` branch, push again
-     (`git push upstream-push && git fetch upstreams`),
-     and go back to step 3.
-   * Ensure that your PR against `develop` is closed. Github should
-     do it automatically.
 ```
 git push upstream-push release-next:develop
 ```
-5. Once this is done, forward progress on `develop` can continue
-   (other PRs may be merged). *Note that during a formal code
-   freeze, such as in the lead up to a release, only PRs related to
-   the release may be merged to `develop`.*
-6. Now create a Pull Request for `release-next` with **`release`**
-   as the base branch.
-   Instead of the default template, reuse and update the message from
-   the previous release. Include the following verbiage somewhere in
-   the description:
+5. In the unlikely event that the push fails because someone has merged
+   something else in the meantime, rebase your branch onto the updated
+   `develop` branch, push again (`git push upstream-push && git fetch
+   upstreams`), and go back to step 3.
+6. Ensure that your PR against `develop` is closed. Github should do it
+   automatically.
+7. Once this is done, forward progress on `develop` can continue
+   (other PRs may be merged).
+8. Now create a Pull Request for `release-next` with **`release`** as
+   the base branch.  Instead of the default template, reuse and update
+   the message from the previous release. Include the following verbiage
+   somewhere in the description:
 ```
-The base branch is release. All releases (including betas) go in
-release. This PR branch will be pushed directly to release
-(not squashed or rebased, and not using the GitHub UI).
+The base branch is `release`. [All releases (including
+betas)](https://github.com/XRPLF/rippled/blob/develop/CONTRIBUTING.md#before-you-start)
+go in `release`. This PR branch will be pushed directly to `release` (not
+squashed or rebased, and not using the GitHub UI).
 ```
-7. Sign-offs for the three platforms usually occur offline, but at
-   least one approval will be needed on the PR.
-   * If issues are discovered during testing, simply abandon the release.
-     It's easy to start a new release, it should be easy to
+7. Sign-offs for the three platforms (Linux, Mac, Windows) usually occur
+   offline, but at least one approval will be needed on the PR.
+   * If issues are discovered during testing, simply abandon the
+     release.  It's easy to start a new release, it should be easy to
      abandon one. **DO NOT REUSE THE VERSION NUMBER.** e.g. If you
      abandon 2.4.0-b1, the next attempt will be 2.4.0-b2.
-8. Once everything is ready to go, push to release.
-   * In the unlikely even that the push fails, and you're sure you have
-     sufficient permissions, then something has gone wrong with the
-     release, and you may need to start over or get extra permissions.
+8. Once everything is ready to go, push to `release`.
 ```
 git fetch upstreams
 
 # Just to be safe, do a dry run first:
 git push --dry-run upstream-push release-next:release
-# Only push final releases to master
-# git push --dry-run upstream-push release-next:master
 
 # If everything looks right, push the branch
 git push upstream-push release-next:release
-# git push upstream-push release-next:master
 
 # Check that all of the branches are updated
 git fetch upstreams
 git log -1 --oneline
 # The output should look like:
-# 0123456789 (HEAD -> upstream/release-next, upstream/release, upstream/develop) Set version to 2.4.0-b1
-# Note that all of the upstream/develop, upstream/release
-# (and maybe upstream/master) are on this commit.
-# Other branches, including upstream-push, may
-# also be present.
+# 0123456789 (HEAD -> upstream/release-next, upstream/release,
+#            upstream/develop) Set version to 2.4.0-b1
+# Note that upstream/develop may not be on this commit, but
+# upstream/release must be.
+# Other branches, including some from upstream-push, may also be
+# present.
 
 # Don't forget to tag the release, too.
 git tag <version number>
 git push upstream-push <version number>
 ```
-9. Delete the `release-next` branch.
-10. Finally
-[create a new release on Github](https://github.com/XRPLF/rippled/releases).
+9. Delete the `release-next` branch on the repo.
+```
+git push --delete upstream-push release-next
+```
+10. Finally [create a new release on
+    Github](https://github.com/XRPLF/rippled/releases).
 
-##### Final releases
+#### Release candidates after the first
 
-The statement above:
+Once the first release candidate is [merged into
+release](#making-the-release), then `release` and `develop` are allowed
+to diverge. Any further work for that release must be based on `release`
+(including PRs).
 
-> It's easy to start a new release, it should be easy to
-     abandon one.
+If a bug or issue is discovered in a version that has a release
+candidate being tested, any fix and new version will need to be applied
+against `release`, then reverse-merged to `develop`. This helps keep git
+history is kept as linear as possible.
 
-**does not apply to final releases**. (A final release is any
-release that is not a beta or RC, such as 2.2.0.)
+TODO: Should PRs be merged directly to `release`, or should they be
+combined into a `release-next` first?
+
+1. Create a `release-next` branch from `release`.
+```
+git checkout --no-track -b release-next upstream/release
+git push upstream-push
+git fetch upstreams
+git branch --set-upstream-to=upstream/release-next
+```
+2. Open any PRs for the pending release using `release-next` as the base,
+   so they can be merged directly in to it. Unlike `develop`, though,
+   `release-next` can be thrown away and recreated if necessary.
+3. Once a new release candidate is ready, create a version commit as in
+   step 1 [above](#making-the-release) on `release-next`.
+4. Jump to step 8 ("Now create a Pull Request for `release-next` with
+   **`release`** as the base") from the process
+   [above](#making-the-release) to merge `release-next` into `release`.
+
+##### Follow up: reverse merge
+
+Once the RC is merged and tagged, it needs to be reverse merged into
+`develop` as soon as possible.
+
+1. Create a branch, based on `upstream/develop`.
+   The branch name is not important, but could include "mergeNNNrcN".
+   E.g. For release 2.4.0-rc3, use `merge240rc3`.
+```
+git fetch upstreams
+
+git checkout --no-track -b merge240rc3 upstream/develop
+```
+2. Merge `release` into your branch.
+```
+# I like the "--edit --log --verbose" parameters, but they are
+# not required.
+git merge upstream/release
+```
+3. `BuildInfo.cpp` will have a conflict with the version number.
+   Resolve it with the version from `develop` - the higher version.
+4. Push your branch to your repo (or `upstream` if you have permission),
+   and open a normal PR against `develop`. The "High level overview" can
+   simply indicate that this is a merge of the RC. The "Context" should
+   summarize the changes from the RC. Include the following text
+   prominently:
+```
+This PR must be merged manually using a --ff-only merge. Do not use the Github UI.
+```
+5. Depending on the complexity of the hotfix, and/or merge conflicts,
+   the PR may need a thorough review, or just a sign-off that the
+   merge was done correctly.
+6. If `develop` is updated before this PR is merged, do not merge
+   `develop` back into your branch. Instead rebase preserving merges,
+   or do the merge again. (See also the `rerere` git config setting.)
+```
+git rebase --rebase-merges upstream/develop
+# OR
+git reset --hard upstream/develop
+git merge upstream/master
+```
+7. When the PR is ready, ff-only merge it to `develop`.
+```
+git fetch upstreams
+git checkout -B upstream--develop --track upstream/develop
+
+git merge --ff-only origin/merge240rc3
+
+# Make sure the commits look right
+git log --show-signature "upstream/develop..HEAD"
+
+git push upstream-push HEAD:develop
+git fetch upstreams
+```
+Development on `develop` can proceed as normal. It is
+recommended to create a beta (or RC) immediately to ensure
+that everything worked as expected.
+
+
+#### Final releases
+
+A final release is any release that is not a beta or RC, such as 2.2.0.
 
 Only code that has already been tested and vetted across all three
-platforms should be included in a final release. Most of the time,
-that means that the commit immediately preceding the commit
-setting the version number will be an RC. Occasionally, there may
-be last-minute bug fixes included as well. If so, those bug fixes must
-have been tested internally as if they were RCs (at minimum,
-ensuring unit tests pass, and the app starts, syncs, and stops cleanly
-across all three platforms.)
+platforms should be included in a final release. Most of the time, that
+means that the commit immediately preceding the commit setting the
+version number will be an RC. Occasionally, there may be last-minute bug
+fixes included as well. If so, those bug fixes must have been tested
+internally as if they were RCs (at minimum, ensuring unit tests pass,
+and the app starts, syncs, and stops cleanly across all three
+platforms.)
 
-If in doubt, make an RC first.
+*If in doubt, make an RC first.*
+
+The process for building a final release is very similar to [the process
+for building a beta](#making-the-release), except the code will be
+moving from `release` to `master` instead of from `develop` to
+`release`, and both branches will be pushed at the same time.
+
+1. Ensure there is no old `master-next` branch hanging around.
+   Then make a `master-next` branch that only changes the version
+   number. e.g.
+```
+git fetch upstreams
+
+git checkout --no-track -B master-next upstream/release
+
+v="2.4.0"
+build=$( find -name BuildInfo.cpp )
+sed 's/\(^.*versionString =\).*$/\1 "'${v}'"/' ${build} > version.txt && mv -vi version.txt ${build}
+
+git diff
+
+git add ${build}
+
+git commit -S -m "Set version to ${v}"
+
+# You could use your "origin" repo, but some CI tests work better on upstream.
+git push upstream-push
+git fetch upstreams
+git branch --set-upstream-to=upstream/master-next
+```
+2. Create a Pull Request for `master-next` with **`master`** as
+   the base branch.  Instead of the default template, reuse and update
+   the message from the previous final release. Include the following verbiage
+   somewhere in the description:
+```
+The base branch is `master`. This PR branch will be pushed directly to
+`release` and `master` (not squashed or rebased, and not using the
+GitHub UI).
+```
+7. Sign-offs for the three platforms (Linux, Mac, Windows) usually occur
+   offline, but at least one approval will be needed on the PR.
+   * If issues are discovered during testing, close the PR, delete
+     `master-next`, and move development back to `release`, [issuing
+     more RCs as necessary](#release-candidates-after-the-first)
+8. Once everything is ready to go, push to `release` and `master`.
+```
+git fetch upstreams
+
+# Just to be safe, do dry runs first:
+git push --dry-run upstream-push master-next:release
+git push --dry-run upstream-push master-next:master
+
+# If everything looks right, push the branch
+git push upstream-push master-next:release
+git push upstream-push master-next:master
+
+# Check that all of the branches are updated
+git fetch upstreams
+git log -1 --oneline
+# The output should look like:
+# 0123456789 (HEAD -> upstream/master-next, upstream/master,
+#            upstream/release) Set version to 2.4.0-b1
+# Note that both upstream/release and upstream/master must be on this
+# commit.
+# Other branches, including some from upstream-push, may also be
+# present.
+
+# Don't forget to tag the release, too.
+git tag <version number>
+git push upstream-push <version number>
+```
+9. Delete the `master-next` branch on the repo.
+```
+git push --delete upstream-push master-next
+```
+10. [Create a new release on
+    Github](https://github.com/XRPLF/rippled/releases). Be sure that
+    "Set as the latest release" is checked.
+11. Finally [reverse merge the release into `develop`](#follow-up-reverse-merge).
 
 #### Special cases: point releases, hotfixes, etc.
 
@@ -645,31 +833,82 @@ and often in `release`.
 Because git history is kept as linear as possible, any fix and new
 version will need to be applied against `master`.
 
-The spirit of most of the instructions above still apply, except that
-no changes will be made to `develop` or `release`.
+The process for building a hotfix release is very similar to [the
+process for building release candidates after the
+first](#release-candidates-after-the-first) and [for building a final
+release](#final-releases), except the changes will be done against
+`master` instead of `release`.
 
-Here are the differences for this type of release:
-
-1. Instead of a `release-next` branch, use a `master-next` branch,
-   which is be based off of `master` instead of `develop`. The
-   different branch name will avoid conflicts with parallel
-   mainline development.
+1. Create a `master-next` branch from `master`.
 ```
-git checkout --no-track -b master-next upstream/master # Or use the version number tag
+git checkout --no-track -b master-next upstream/master
 git push upstream-push
 git fetch upstreams
-git checkout -B master-next upstream/master-next
+git branch --set-upstream-to=upstream/master-next
 ```
-2. Open any PRs for the hotfix using `master-next` as the base,
+2. Open any PRs for the pending hotfix using `master-next` as the base,
    so they can be merged directly in to it. Unlike `develop`, though,
    `master-next` can be thrown away and recreated if necessary.
-3. Some, but not all hotfixes will have RC versions commits. Betas are
-   usually not necessary or appropriate. RCs are **NEVER** merged
-   into `master`.
-4. Steps 2-5 [above](#making-a-new-release) are skipped.
-5. The process picks up with step 6, but using **`master`** as the
-   base branch.
-6. Step 8 *only* pushes to `master`.
+3. Once the hotfix is ready, create a version commit.
+```
+v="2.4.1"
+build=$( find -name BuildInfo.cpp )
+sed 's/\(^.*versionString =\).*$/\1 "'${v}'"/' ${build} > version.txt && mv -vi version.txt ${build}
+
+git diff
+
+git add ${build}
+
+git commit -S -m "Set version to ${v}"
+
+git push upstream-push
+git fetch upstreams
+```
+4. Create a Pull Request for `master-next` with **`master`** as
+   the base branch.  Instead of the default template, reuse and update
+   the message from the previous final release. Include the following verbiage
+   somewhere in the description:
+```
+The base branch is `master`. This PR branch will be pushed directly to
+`master` (not squashed or rebased, and not using the GitHub UI).
+```
+7. Sign-offs for the three platforms (Linux, Mac, Windows) usually occur
+   offline, but at least one approval will be needed on the PR.
+   * If issues are discovered during testing, close the PR, delete
+     `master-next`, and move development back to `release`, [issuing
+     more RCs as necessary](#release-candidates-after-the-first)
+8. Once everything is ready to go, push to `master` **only**.
+```
+git fetch upstreams
+
+# Just to be safe, do a dry run first:
+git push --dry-run upstream-push master-next:master
+
+# If everything looks right, push the branch
+git push upstream-push master-next:master
+
+# Check that all of the branches are updated
+git fetch upstreams
+git log -1 --oneline
+# The output should look like:
+# 0123456789 (HEAD -> upstream/master-next, upstream/master) Set version
+#            to 2.4.1
+# Note that upstream/master must be on this commit. upstream/release and
+# upstream/develop should not.
+# Other branches, including some from upstream-push, may also be
+# present.
+
+# Don't forget to tag the release, too.
+git tag <version number>
+git push upstream-push <version number>
+```
+9. Delete the `master-next` branch on the repo.
+```
+git push --delete upstream-push master-next
+```
+10. [Create a new release on
+    Github](https://github.com/XRPLF/rippled/releases). Be sure that
+    "Set as the latest release" is checked.
 
 Once the hotfix is released, it needs to be reverse merged into
 `develop` as soon as possible.
@@ -722,20 +961,18 @@ git log --show-signature "upstream/develop..HEAD"
 
 git push upstream-push HEAD:develop
 ```
-Development on `develop` can proceed as normal. It is
-recommended to create a beta (or RC) immediately to ensure
-that everything worked as expected.
+Development on `develop` can proceed as normal. It is recommended to
+create a beta (or RC) immediately to ensure that everything worked as
+expected.
 
 ##### An even rarer scenario: A hotfix on an old release
 
-Historically, once a final release is tagged and packages are
-released, versions older than the latest final release are no
-longer supported. However, there
-is a possibility that a very high severity bug may occur in a
-non-amendment blocked version that is still being run by a
-significant faction of users, which would necessitate a
-hotfix / point release to that version as well as any later
-versions.
+Historically, once a final release is tagged and packages are released,
+versions older than the latest final release are no longer supported.
+However, there is a possibility that a very high severity bug may occur
+in a non-amendment blocked version that is still being run by
+a significant faction of users, which would necessitate a hotfix / point
+release to that version as well as any later versions.
 
 This scenario would follow the same basic procedure as above,
 except that *none* of `develop`, `release`, or `master`
@@ -756,7 +993,7 @@ git checkout --no-track -b master212-next master-2.1.2
 git push upstream-push
 
 git fetch upstreams
-git checkout -B master212-next upstream/master212-next
+git branch --set-upstream-to=upstream/master212-next
 ```
 2. Work continues as above, except using `master-2.1.2`as
    the base branch for any merging, packaging, etc.
@@ -771,3 +1008,6 @@ git checkout -B master212-next upstream/master212-next
    sense to reverse merge `master-2.1.2` into `master`,
    release a hotfix for _that_ version, then reverse merge
    from `master` to `develop`. (Please don't do this.)
+
+[1]: https://docs.github.com/en/get-started/quickstart/contributing-to-projects
+[2]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#squash-and-merge-your-commits
