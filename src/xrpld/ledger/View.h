@@ -561,6 +561,21 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j);
 
+struct TokenDescriptor
+{
+    std::shared_ptr<SLE const> token;
+    std::shared_ptr<SLE const> issuance;
+};
+
+[[nodiscard]] Expected<TokenDescriptor, TER>
+findToken(
+    ReadView const& view,
+    MPTIssue const& mptIssue,
+    AccountID const& account);
+
+[[nodiscard]] TER
+requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
+
 /** Check if the account lacks required authorization.
  *   Return tecNO_AUTH or tecNO_LINE if it does
  *   and tesSUCCESS otherwise.

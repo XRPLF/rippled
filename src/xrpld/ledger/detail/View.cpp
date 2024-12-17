@@ -2021,8 +2021,8 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
     return tesSUCCESS;
 }
 
-TER
-requireAuth(
+[[nodiscard]] Expected<TokenDescriptor, TER>
+findToken(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& account)
@@ -2031,20 +2031,43 @@ requireAuth(
     auto const sleIssuance = view.read(mptID);
 
     if (!sleIssuance)
-        return tecOBJECT_NOT_FOUND;
+        return Unexpected(tecOBJECT_NOT_FOUND);
 
     auto const mptIssuer = sleIssuance->getAccountID(sfIssuer);
-
-    // issuer is always "authorized"
+    // Issuer won't have mptoken, i.e. "the operation failed succcessfully"
     if (mptIssuer == account)
-        return tesSUCCESS;
+        return Unexpected(tesSUCCESS);
 
     auto const mptokenID = keylet::mptoken(mptID.key, account);
     auto const sleToken = view.read(mptokenID);
 
     // if account has no MPToken, fail
     if (!sleToken)
-        return tecNO_LINE;
+        return Unexpected(tecNO_LINE);
+
+    return {TokenDescriptor{.token = sleToken, .issuance = sleIssuance}};
+}
+
+TER
+requireAuth(
+    ReadView const& view,
+    MPTIssue const& mptIssue,
+    AccountID const& account)
+{
+    auto maybeToken = findToken(view, mptIssue, account);
+
+    // Whatever reason why we could not find
+    if (!maybeToken)
+    {
+        // Convert tecNO_LINE to useful error
+        if (maybeToken.error() == tecNO_LINE)
+            return tecNO_AUTH;
+        // Note, error() is tesSUCCESS if no authorization was needed
+        return maybeToken.error();
+    }
+
+    auto sleToken = maybeToken->token;
+    auto sleIssuance = maybeToken->issuance;
 
     // mptoken must be authorized if issuance enabled requireAuth
     if (sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth &&

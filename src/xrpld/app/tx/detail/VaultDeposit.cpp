@@ -81,20 +81,23 @@ VaultDeposit::doApply()
 
     // Make sure the depositor can hold shares.
     auto share = (*vault)[sfMPTokenIssuanceID];
-    auto canHold = requireAuth(view(), MPTIssue(share), account_);
-    if (canHold == tecNO_LINE)
+    auto maybeToken = findToken(view(), MPTIssue(share), account_);
+    if (!maybeToken)
     {
-        if (auto ter = MPTokenAuthorize::authorize(
-            view(),
-            j_,
-            {.priorBalance = mPriorBalance,
-             .mptIssuanceID = share,
-             .accountID = account_}))
-            return ter;
-    }
-    else if (canHold != tesSUCCESS)
-    {
-        return canHold;
+        if (maybeToken.error() == tecNO_LINE)
+        {
+            if (auto ter = MPTokenAuthorize::authorize(
+                    view(),
+                    j_,
+                    {.priorBalance = mPriorBalance,
+                     .mptIssuanceID = share,
+                     .accountID = account_}))
+                return ter;
+        }
+        else if (maybeToken.error() != tesSUCCESS)
+        {
+            return maybeToken.error();
+        }
     }
 
     // Compute exchange before transferring any amounts.
