@@ -25,8 +25,8 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/detail/secp256k1.h>
 #include <xrpl/protocol/digest.h>
-#include <cstring>
 #include <ed25519.h>
+#include <cstring>
 
 namespace ripple {
 
