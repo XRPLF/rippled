@@ -267,6 +267,17 @@ isFrozen(
         isIndividualFrozen(view, account, mptIssue);
 }
 
+bool
+noDefaultRipple(ReadView const& view, Issue const& issue)
+{
+    if (isXRP(issue))
+        return false;
+    if (auto const issuerAccount = view.read(keylet::account(issue.account)))
+        return (issuerAccount->getFlags() & lsfDefaultRipple) == 0;
+
+    return false;
+}
+
 STAmount
 accountHolds(
     ReadView const& view,
