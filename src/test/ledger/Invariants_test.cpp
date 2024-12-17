@@ -904,6 +904,152 @@ class Invariants_test : public beast::unit_test::suite
             XRPAmount{},
             STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        auto const createPD = [](ApplyContext& ac,
+                                 std::shared_ptr<SLE>& sle,
+                                 Account const& A1,
+                                 Account const& A2) {
+            sle->setAccountID(sfOwner, A1);
+            sle->setFieldU32(sfSequence, 10);
+
+            STArray credentials(sfAcceptedCredentials, 2);
+            for (std::size_t n = 0; n < 2; ++n)
+            {
+                auto cred = STObject::makeInnerObject(sfCredential);
+                cred.setAccountID(sfIssuer, A2);
+                auto credType = "cred_type" + std::to_string(n);
+                cred.setFieldVL(
+                    sfCredentialType, Slice(credType.c_str(), credType.size()));
+                credentials.push_back(std::move(cred));
+            }
+            sle->setFieldArray(sfAcceptedCredentials, credentials);
+            ac.view().insert(sle);
+        };
+
+        testcase << "PermissionedDomain Set 1";
+        doInvariantCheck(
+            {{"permissioned domain with no rules."}},
+            [createPD](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+
+                // create PD
+                createPD(ac, slePd, A1, A2);
+
+                // update PD with empty rules
+                {
+                    STArray credentials(sfAcceptedCredentials, 2);
+                    slePd->setFieldArray(sfAcceptedCredentials, credentials);
+                    ac.view().update(slePd);
+                }
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        testcase << "PermissionedDomain Set 2";
+        doInvariantCheck(
+            {{"permissioned domain bad credentials size " +
+              std::to_string(tooBig)}},
+            [createPD](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+
+                // create PD
+                createPD(ac, slePd, A1, A2);
+
+                // update PD
+                {
+                    STArray credentials(sfAcceptedCredentials, tooBig);
+
+                    for (std::size_t n = 0; n < tooBig; ++n)
+                    {
+                        auto cred = STObject::makeInnerObject(sfCredential);
+                        cred.setAccountID(sfIssuer, A2);
+                        auto credType = "cred_type2" + std::to_string(n);
+                        cred.setFieldVL(
+                            sfCredentialType,
+                            Slice(credType.c_str(), credType.size()));
+                        credentials.push_back(std::move(cred));
+                    }
+
+                    slePd->setFieldArray(sfAcceptedCredentials, credentials);
+                    ac.view().update(slePd);
+                }
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        testcase << "PermissionedDomain Set 3";
+        doInvariantCheck(
+            {{"permissioned domain credentials aren't sorted"}},
+            [createPD](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+
+                // create PD
+                createPD(ac, slePd, A1, A2);
+
+                // update PD
+                {
+                    STArray credentials(sfAcceptedCredentials, 2);
+                    for (std::size_t n = 0; n < 2; ++n)
+                    {
+                        auto cred = STObject::makeInnerObject(sfCredential);
+                        cred.setAccountID(sfIssuer, A2);
+                        auto credType =
+                            std::string("cred_type2") + std::to_string(9 - n);
+                        cred.setFieldVL(
+                            sfCredentialType,
+                            Slice(credType.c_str(), credType.size()));
+                        credentials.push_back(std::move(cred));
+                    }
+
+                    slePd->setFieldArray(sfAcceptedCredentials, credentials);
+                    ac.view().update(slePd);
+                }
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        testcase << "PermissionedDomain Set 4";
+        doInvariantCheck(
+            {{"permissioned domain credentials aren't unique"}},
+            [createPD](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+
+                // create PD
+                createPD(ac, slePd, A1, A2);
+
+                // update PD
+                {
+                    STArray credentials(sfAcceptedCredentials, 2);
+                    for (std::size_t n = 0; n < 2; ++n)
+                    {
+                        auto cred = STObject::makeInnerObject(sfCredential);
+                        cred.setAccountID(sfIssuer, A2);
+                        cred.setFieldVL(
+                            sfCredentialType, Slice("cred_type", 9));
+                        credentials.push_back(std::move(cred));
+                    }
+                    slePd->setFieldArray(sfAcceptedCredentials, credentials);
+                    ac.view().update(slePd);
+                }
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
     }
 
 public:

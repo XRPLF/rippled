@@ -39,15 +39,15 @@ setTx(
     if (domain)
         jv[sfDomainID] = to_string(*domain);
 
-    Json::Value credentials2(Json::arrayValue);
+    Json::Value acceptedCredentials(Json::arrayValue);
     for (auto const& credential : credentials)
     {
         Json::Value object(Json::objectValue);
         object[sfCredential] = credential.toJson();
-        credentials2.append(std::move(object));
+        acceptedCredentials.append(std::move(object));
     }
 
-    jv[sfAcceptedCredentials] = credentials2;
+    jv[sfAcceptedCredentials] = acceptedCredentials;
     return jv;
 }
 
