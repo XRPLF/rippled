@@ -164,11 +164,21 @@ class PermissionedDomains_test : public beast::unit_test::suite
         BEAST_EXPECT(
             exceptionExpected(env, txJsonMutable).starts_with("invalidParams"));
 
-        txJsonMutable["AcceptedCredentials"][2u] = credentialOrig;
         // Make an empty CredentialType.
+        txJsonMutable["AcceptedCredentials"][2u] = credentialOrig;
         txJsonMutable["AcceptedCredentials"][2u][jss::Credential]
                      ["CredentialType"] = "";
         env(txJsonMutable, ter(temMALFORMED));
+
+        // Make too long CredentialType.
+        constexpr std::string_view longCredentialType =
+            "Cred0123456789012345678901234567890123456789012345678901234567890";
+        static_assert(longCredentialType.size() == maxCredentialTypeLength + 1);
+        txJsonMutable["AcceptedCredentials"][2u] = credentialOrig;
+        txJsonMutable["AcceptedCredentials"][2u][jss::Credential]
+                     ["CredentialType"] = std::string(longCredentialType);
+        BEAST_EXPECT(
+            exceptionExpected(env, txJsonMutable).starts_with("invalidParams"));
 
         // Remove Credentialtype from a credential and apply.
         txJsonMutable["AcceptedCredentials"][2u][jss::Credential].removeMember(
@@ -182,8 +192,8 @@ class PermissionedDomains_test : public beast::unit_test::suite
         BEAST_EXPECT(
             exceptionExpected(env, txJsonMutable).starts_with("invalidParams"));
 
-        // Make 2 identical credentials. The duplicate should be silently
-        // removed.
+        // Make 2 identical credentials. Duplicates are not supported by
+        // permissioned domains, so transactions should return errors
         {
             pdomain::Credentials const credentialsDup{
                 {alice7, "credential6"},
@@ -299,6 +309,44 @@ class PermissionedDomains_test : public beast::unit_test::suite
                 credentials1);
         }
 
+        // Make longest possible CredentialType.
+        {
+            constexpr std::string_view longCredentialType =
+                "Cred0123456789012345678901234567890123456789012345678901234567"
+                "89";
+            static_assert(longCredentialType.size() == maxCredentialTypeLength);
+            pdomain::Credentials const longCredentials{
+                {alice[1], std::string(longCredentialType)}};
+
+            env(pdomain::setTx(alice[0], longCredentials));
+
+            // One account can create multiple domains
+            BEAST_EXPECT(env.ownerCount(alice[0]) == 2);
+
+            auto tx = env.tx()->getJson(JsonOptions::none);
+            BEAST_EXPECT(tx[jss::TransactionType] == "PermissionedDomainSet");
+            BEAST_EXPECT(tx["Account"] == alice[0].human());
+
+            bool findSeq = false;
+            for (auto const& [domain, object] :
+                 pdomain::getObjects(alice[0], env))
+            {
+                findSeq = object["Sequence"] == tx["Sequence"];
+                if (findSeq)
+                {
+                    BEAST_EXPECT(domain.isNonZero());
+                    BEAST_EXPECT(
+                        object["LedgerEntryType"] == "PermissionedDomain");
+                    BEAST_EXPECT(object["Owner"] == alice[0].human());
+                    BEAST_EXPECT(
+                        pdomain::credentialsFromJson(object, pubKey2Acc) ==
+                        longCredentials);
+                    break;
+                }
+            }
+            BEAST_EXPECT(findSeq);
+        }
+
         // Create new from existing account with 10 credentials.
         pdomain::Credentials const credentials10{
             {alice[2], "credential1"},
@@ -396,9 +444,11 @@ class PermissionedDomains_test : public beast::unit_test::suite
 
         env.fund(XRP(1000), alice);
         auto const setFee(drops(env.current()->fees().increment));
+
         pdomain::Credentials credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials));
         env.close();
+
         auto objects = pdomain::getObjects(alice, env);
         BEAST_EXPECT(objects.size() == 1);
         auto const domain = objects.begin()->first;
@@ -423,12 +473,15 @@ class PermissionedDomains_test : public beast::unit_test::suite
         BEAST_EXPECT(env.ownerCount(alice) == 1);
         auto const objID = pdomain::getObjects(alice, env).begin()->first;
         BEAST_EXPECT(pdomain::objectExists(objID, env));
+
         // Delete domain that belongs to user.
-        env(pdomain::deleteTx(alice, domain), ter(tesSUCCESS));
+        env(pdomain::deleteTx(alice, domain));
         auto const tx = env.tx()->getJson(JsonOptions::none);
         BEAST_EXPECT(tx[jss::TransactionType] == "PermissionedDomainDelete");
+
         // Make sure the owner count goes back to 0.
         BEAST_EXPECT(env.ownerCount(alice) == 0);
+
         // The object needs to be gone.
         BEAST_EXPECT(pdomain::getObjects(alice, env).empty());
         BEAST_EXPECT(!pdomain::objectExists(objID, env));

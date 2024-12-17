@@ -67,9 +67,9 @@ PermissionedDomainDelete::doApply()
 
     if (!view().dirRemove(keylet::ownerDir(account_), page, slePd->key(), true))
     {
-        JLOG(j_.fatal())
-            << "Unable to delete permissioned domain directory entry.";
-        return tefBAD_LEDGER;
+        JLOG(j_.fatal())  // LCOV_EXCL_LINE
+            << "Unable to delete permissioned domain directory entry.";  // LCOV_EXCL_LINE
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
     auto const ownerSle = view().peek(keylet::account(account_));

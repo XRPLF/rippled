@@ -55,7 +55,7 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
     auto const account = ctx.tx.getAccountID(sfAccount);
 
     if (!ctx.view.exists(keylet::account(account)))
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const& credentials = ctx.tx.getFieldArray(sfAcceptedCredentials);
     for (auto const& credential : credentials)
@@ -84,7 +84,7 @@ PermissionedDomainSet::doApply()
 {
     auto const ownerSle = view().peek(keylet::account(account_));
     if (!ownerSle)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sortedTxCredentials =
         credentials::makeSorted(ctx_.tx.getFieldArray(sfAcceptedCredentials));
@@ -103,7 +103,7 @@ PermissionedDomainSet::doApply()
         auto slePd = view().peek(
             keylet::permissionedDomain(ctx_.tx.getFieldH256(sfDomainID)));
         if (!slePd)
-            return tefINTERNAL;
+            return tefINTERNAL;  // LCOV_EXCL_LINE
         slePd->peekFieldArray(sfAcceptedCredentials) = std::move(sortedLE);
         view().update(slePd);
     }
@@ -121,7 +121,7 @@ PermissionedDomainSet::doApply()
             account_, ctx_.tx.getFieldU32(sfSequence));
         auto slePd = std::make_shared<SLE>(pdKeylet);
         if (!slePd)
-            return tefINTERNAL;
+            return tefINTERNAL;  // LCOV_EXCL_LINE
 
         slePd->setAccountID(sfOwner, account_);
         slePd->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence));
@@ -129,7 +129,8 @@ PermissionedDomainSet::doApply()
         auto const page = view().dirInsert(
             keylet::ownerDir(account_), pdKeylet, describeOwnerDir(account_));
         if (!page)
-            return tecDIR_FULL;
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
+
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.
         adjustOwnerCount(view(), ownerSle, 1, ctx_.journal);
