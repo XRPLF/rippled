@@ -301,9 +301,18 @@ Env::parseResult(Json::Value const& jr)
             parsed.ter = TER::fromInt(result[jss::engine_result_code].asInt());
             parsed.rpcCode.emplace(rpcSUCCESS);
         }
+        else if (
+            !result.isMember(jss::error) && !result.isMember(jss::error_code) &&
+            !result.isMember(jss::error_message) &&
+            !result.isMember(jss::error_exception))
+            // parsed.ter remains unseated
+            parsed.rpcCode.emplace(rpcSUCCESS);
         else
             error(parsed, result);
     }
+    else if (
+        jr.isObject() && jr.isMember(jss::error) && jr[jss::error].isObject())
+        error(parsed, jr[jss::error]);
     else
         error(parsed, jr);
 
@@ -317,24 +326,20 @@ Env::submit(JTx const& jt)
     auto const jr = [&]() {
         if (jt.stx)
         {
-            // We shouldn't need to retry, but it fixes the test on macOS for
-            // the moment.
-            int retries = 3;
-            do
-            {
-                txid_ = jt.stx->getTransactionID();
-                Serializer s;
-                jt.stx->add(s);
-                auto const jr = rpc("submit", strHex(s.slice()));
-
+            txid_ = jt.stx->getTransactionID();
+            Serializer s;
+            jt.stx->add(s);
+            auto const cb = [&](Json::Value const& jr) {
                 parsedResult = parseResult(jr);
                 test.expect(parsedResult.ter, "ter uninitialized!");
                 ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
-                if (ter_ != telENV_RPC_FAILED ||
+                return (
+                    ter_ != telENV_RPC_FAILED ||
                     parsedResult.rpcCode != rpcINTERNAL ||
-                    jt.ter == telENV_RPC_FAILED || --retries <= 0)
-                    return jr;
-            } while (true);
+                    jt.ter == telENV_RPC_FAILED);
+            };
+            // rpc() will call cb(), which does all the parsing
+            return rpc(cb, "submit", strHex(s.slice()));
         }
         else
         {
@@ -562,12 +567,94 @@ Env::ust(JTx const& jt)
 
 Json::Value
 Env::do_rpc(
+    RpcCallback cb,
     unsigned apiVersion,
     std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)
 {
-    return rpcClient(args, app().config(), app().logs(), apiVersion, headers)
-        .second;
+    // We shouldn't need to retry, but it fixes the test on macOS for
+    // the moment.
+    if (!test.BEAST_EXPECT(cb))
+        cb = rejectInternalError;
+    int retries = 3;
+    do
+    {
+        std::string retString;
+        try
+        {
+            auto const ret =
+                rpcClient(
+                    args, app().config(), app().logs(), apiVersion, headers)
+                    .second;
+            if (cb(ret) || --retries <= 0)
+                return ret;
+            test.log << "RPC failure: ";
+            retString = to_string(ret);
+        }
+        catch (std::exception const& e)
+        {
+            using namespace std::string_literals;
+            // TODO: Narrow down the exceptions that can be retried
+            if (--retries <= 0)
+                throw;
+            test.log << "RPC exception: ";
+            retString = e.what();
+        }
+        std::stringstream ss;
+        for (auto const& arg : args)
+        {
+            ss << arg << ", ";
+        }
+        test.log << ss.str() << " -> " << retString << std::endl;
+        using namespace std::chrono_literals;
+        std::this_thread::sleep_for(100ms);
+    } while (true);
+}
+
+void
+Env::retry(std::function<void()> cb, std::string const& context)
+{
+    using namespace std::chrono_literals;
+    retry(cb, context, &test, 100ms);
+}
+
+void
+Env::retry(
+    std::function<void()> cb,
+    std::string const& context,
+    std::chrono::milliseconds delay)
+{
+    retry(cb, context, nullptr, delay);
+}
+
+void
+Env::retry(
+    std::function<void()> cb,
+    std::string const& context,
+    beast::unit_test::suite* test,
+    std::chrono::milliseconds delay)
+{
+    int retries = 3;
+    do
+    {
+        try
+        {
+            return cb();
+        }
+        catch (std::exception const& e)
+        {
+            if (--retries <= 0)
+                throw;
+            if (test)
+                test->log << "Retry exception(" << context << "): " << e.what()
+                          << std::endl;
+            // TODO remove
+            else
+                std::cout << "Retry exception(" << context << "): " << e.what()
+                          << std::endl;
+            std::this_thread::sleep_for(delay);
+        }
+    } while (true);
 }
 
 void

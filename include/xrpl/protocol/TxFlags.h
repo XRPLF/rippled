@@ -134,7 +134,7 @@ constexpr std::uint32_t const tfTrustLine                  = 0x00000004;
 constexpr std::uint32_t const tfTransferable               = 0x00000008;
 
 // MPTokenIssuanceCreate flags:
-// NOTE - there is intentionally no flag here for lsfMPTLocked, which this transaction cannot mutate. 
+// NOTE - there is intentionally no flag here for lsfMPTLocked, which this transaction cannot mutate.
 constexpr std::uint32_t const tfMPTCanLock                 = lsfMPTCanLock;
 constexpr std::uint32_t const tfMPTRequireAuth             = lsfMPTRequireAuth;
 constexpr std::uint32_t const tfMPTCanEscrow               = lsfMPTCanEscrow;
