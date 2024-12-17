@@ -912,6 +912,13 @@ Config::loadFromString(std::string const& fileContents)
             if (valListKeys)
                 section(SECTION_VALIDATOR_LIST_KEYS).append(*valListKeys);
 
+            auto valListThreshold =
+                getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_THRESHOLD);
+
+            if (valListThreshold)
+                section(SECTION_VALIDATOR_LIST_THRESHOLD)
+                    .append(*valListThreshold);
+
             if (!entries && !valKeyEntries && !valListKeys)
                 Throw<std::runtime_error>(
                     "The file specified in [" SECTION_VALIDATORS_FILE
@@ -925,6 +932,38 @@ Config::loadFromString(std::string const& fileContents)
                     " section: " +
                     validatorsFile.string());
         }
+
+        VALIDATOR_LIST_THRESHOLD = [&]() -> std::optional<std::size_t> {
+            auto const& listThreshold =
+                section(SECTION_VALIDATOR_LIST_THRESHOLD);
+            if (listThreshold.lines().empty())
+                return std::nullopt;
+            else if (listThreshold.values().size() == 1)
+            {
+                auto strTemp = listThreshold.values()[0];
+                auto const listThreshold =
+                    beast::lexicalCastThrow<std::size_t>(strTemp);
+                if (listThreshold == 0)
+                    return std::nullopt;  // NOTE: Explicitly ask for computed
+                else if (
+                    listThreshold >
+                    section(SECTION_VALIDATOR_LIST_KEYS).values().size())
+                {
+                    Throw<std::runtime_error>(
+                        "Value in config section "
+                        "[" SECTION_VALIDATOR_LIST_THRESHOLD
+                        "] exceeds the number of configured list keys");
+                }
+                return listThreshold;
+            }
+            else
+            {
+                Throw<std::runtime_error>(
+                    "Config section "
+                    "[" SECTION_VALIDATOR_LIST_THRESHOLD
+                    "] should contain single value only");
+            }
+        }();
 
         // Consolidate [validator_keys] and [validators]
         section(SECTION_VALIDATORS)

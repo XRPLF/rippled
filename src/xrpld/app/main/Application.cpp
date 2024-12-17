@@ -1360,7 +1360,8 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         if (!validators_->load(
                 localSigningKey,
                 config().section(SECTION_VALIDATORS).values(),
-                config().section(SECTION_VALIDATOR_LIST_KEYS).values()))
+                config().section(SECTION_VALIDATOR_LIST_KEYS).values(),
+                config().VALIDATOR_LIST_THRESHOLD))
         {
             JLOG(m_journal.fatal())
                 << "Invalid entry in validator configuration.";
