@@ -40,6 +40,8 @@
 #include <xrpld/app/tx/detail/DeleteOracle.h>
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/app/tx/detail/Escrow.h>
+#include <xrpld/app/tx/detail/Firewall.h>
+#include <xrpld/app/tx/detail/WithdrawPreauth.h>
 #include <xrpld/app/tx/detail/LedgerStateFix.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/app/tx/detail/MPTokenIssuanceCreate.h>
@@ -93,7 +95,6 @@ with_txn_type(TxType txnType, F&& f)
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
-
         default:
             throw UnknownTxnType(txnType);
     }
@@ -196,6 +197,14 @@ invoke_preclaim(PreclaimContext const& ctx)
 
                 if (result != tesSUCCESS)
                     return result;
+
+                if (ctx.tx.getTxnType() == ttFIREWALL_SET ||
+                    ctx.tx.getTxnType() == ttWITHDRAW_PREAUTH)
+                {
+                    result = T::checkFirewallSign(ctx);
+                    if (result != tesSUCCESS)
+                        return result;
+                }
             }
 
             return T::preclaim(ctx);

@@ -249,6 +249,17 @@ SetAccount::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    // Firewall - Cannot Set Disable Master
+    if (ctx.view.rules().enabled(featureFirewall))
+    {
+        if (auto const sleFirewall = ctx.view.read(keylet::firewall(id));
+            sleFirewall && uSetFlag == asfDisableMaster)
+        {
+            JLOG(ctx.j.trace()) << "Blocked by Firewall.";
+            return tecNO_PERMISSION;
+        }
+    }
+
     return tesSUCCESS;
 }
 

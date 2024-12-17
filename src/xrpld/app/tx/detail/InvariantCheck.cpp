@@ -485,6 +485,8 @@ LedgerEntryTypesMatch::visitEntry(
             case ltMPTOKEN_ISSUANCE:
             case ltMPTOKEN:
             case ltCREDENTIAL:
+            case ltFIREWALL:
+            case ltWITHDRAW_PREAUTH:
                 break;
             default:
                 invalidTypeAdded_ = true;

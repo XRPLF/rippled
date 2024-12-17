@@ -447,6 +447,28 @@ TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete, ({
     {sfCredentialType, soeREQUIRED},
 }))
 
+/** This transaction type creates an WithdrawPreauth instance */
+TRANSACTION(ttWITHDRAW_PREAUTH, 61, WithdrawPreauth, ({
+    {sfAuthorize, soeOPTIONAL},
+    {sfUnauthorize, soeOPTIONAL},
+    {sfPublicKey, soeREQUIRED},
+    {sfSignature, soeREQUIRED},
+}))
+
+/** This transaction type creates an Firewall instance */
+TRANSACTION(ttFIREWALL_SET, 62, FirewallSet, ({
+    {sfIssuer, soeOPTIONAL},
+    {sfAuthorize, soeOPTIONAL},
+    {sfAmount, soeOPTIONAL},
+    {sfTimePeriod, soeOPTIONAL},
+    {sfFirewallSigners, soeOPTIONAL},
+}))
+
+// /** This transaction type deletes an Firewall instance */
+// TRANSACTION(ttFIREWALL_DELETE, 63, FirewallDelete, ({
+//     {sfSignature, soeREQUIRED},
+// }))
+
 
 /** This system-generated transaction type is used to update the status of the various amendments.
 
