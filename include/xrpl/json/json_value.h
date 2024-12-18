@@ -217,6 +217,7 @@ public:
     Value(UInt value);
     Value(double value);
     Value(const char* value);
+    Value(ripple::Number const& value);
     /** \brief Constructs a value from a static string.
 
      * Like other value string constructor but do not duplicate the string for
@@ -240,9 +241,15 @@ public:
     operator=(Value&& other);
 
     template <typename T>
-        requires(!std::convertible_to<T, Value>)
     Value&
-    operator=(T const& rhs);
+    operator=(T const& rhs)
+        requires(
+            !std::is_convertible_v<T, Value> &&
+            std::is_convertible_v<decltype(to_json(std::declval<T>())), Value>)
+    {
+        *this = to_json(rhs);
+        return *this;
+    }
 
     Value(Value&& other) noexcept;
 
@@ -443,6 +450,12 @@ private:
     ValueType type_ : 8;
     int allocated_ : 1;  // Notes: if declared as bool, bitfield is useless.
 };
+
+inline Value
+to_json(ripple::Number const& number)
+{
+    return to_string(number);
+}
 
 bool
 operator==(const Value&, const Value&);
@@ -688,48 +701,6 @@ public:
         return deref();
     }
 };
-
-// https://ericniebler.com/2014/10/21/customization-point-design-in-c11-and-beyond/
-namespace detail {
-
-inline Value
-to_json(ripple::Number const& number)
-{
-    return to_string(number);
-}
-
-struct to_json_fn
-{
-    template <typename T>
-    Value
-    operator()(T&& t) const
-    {
-        return to_json(std::forward<T>(t));
-    }
-};
-
-template <typename T>
-struct static_const
-{
-    static constexpr T value = {};
-};
-
-}  // namespace detail
-
-namespace {
-
-constexpr auto const& to_json = detail::static_const<detail::to_json_fn>::value;
-
-}
-
-template <typename T>
-    requires(!std::convertible_to<T, Value>)
-Value&
-Value::operator=(T const& rhs)
-{
-    *this = to_json(rhs);
-    return *this;
-}
 
 }  // namespace Json
 
