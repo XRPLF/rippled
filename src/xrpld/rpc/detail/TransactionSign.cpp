@@ -1106,7 +1106,7 @@ transactionSignFor(
     if (!preprocResult.second)
         return preprocResult.first;
 
-    ASSERT(
+    XRPL_ASSERT(
         signForParams.validMultiSign(),
         "ripple::RPC::transactionSignFor : valid multi-signature");
 

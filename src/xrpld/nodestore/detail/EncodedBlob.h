@@ -80,8 +80,8 @@ class EncodedBlob
 public:
     explicit EncodedBlob(std::shared_ptr<NodeObject> const& obj)
         : size_([&obj]() {
-            ASSERT(
-                obj != nullptr,
+            XRPL_ASSERT(
+                obj,
                 "ripple::NodeStore::EncodedBlob::EncodedBlob : non-null input");
 
             if (!obj)
@@ -102,7 +102,7 @@ public:
 
     ~EncodedBlob()
     {
-        ASSERT(
+        XRPL_ASSERT(
             ((ptr_ == payload_.data()) && (size_ <= payload_.size())) ||
                 ((ptr_ != payload_.data()) && (size_ > payload_.size())),
             "ripple::NodeStore::EncodedBlob::~EncodedBlob : valid payload "

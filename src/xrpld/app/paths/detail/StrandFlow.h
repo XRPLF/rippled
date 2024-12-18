@@ -707,7 +707,7 @@ flow(
                 flowDebugInfo->pushLiquiditySrc(
                     EitherAmount(f.in), EitherAmount(f.out));
 
-            ASSERT(
+            XRPL_ASSERT(
                 f.out <= remainingOut && f.sandbox &&
                     (!remainingIn || f.in <= *remainingIn),
                 "ripple::flow : remaining constraints");
@@ -733,7 +733,7 @@ flow(
 
             if (baseView.rules().enabled(featureFlowSortStrands))
             {
-                ASSERT(!best, "ripple::flow : best is unset");
+                XRPL_ASSERT(!best, "ripple::flow : best is unset");
                 if (!f.inactive)
                     activeStrands.push(strand);
                 best.emplace(f.in, f.out, std::move(*f.sandbox), *strand, q);
@@ -884,7 +884,7 @@ flow(
         //   Handles both cases 1. and 2.
         // fixFillOrKill amendment:
         //   Handles 2. 1. is handled above and falls through for tfSell.
-        ASSERT(remainingIn.has_value(), "ripple::flow : nonzero remainingIn");
+        XRPL_ASSERT(remainingIn, "ripple::flow : nonzero remainingIn");
         if (remainingIn && *remainingIn != beast::zero)
             return {
                 tecPATH_PARTIAL,

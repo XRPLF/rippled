@@ -235,7 +235,7 @@ TxConsequences::TxConsequences(NotTEC pfresult)
     , seqProx_(SeqProxy::sequence(0))
     , sequencesConsumed_(0)
 {
-    ASSERT(
+    XRPL_ASSERT(
         !isTesSuccess(pfresult),
         "ripple::TxConsequences::TxConsequences : is not tesSUCCESS");
 }

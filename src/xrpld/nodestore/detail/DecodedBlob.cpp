@@ -72,7 +72,7 @@ DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
 std::shared_ptr<NodeObject>
 DecodedBlob::createObject()
 {
-    ASSERT(
+    XRPL_ASSERT(
         m_success,
         "ripple::NodeStore::DecodedBlob::createObject : valid object type");
 

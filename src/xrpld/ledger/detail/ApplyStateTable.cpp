@@ -157,7 +157,7 @@ ApplyStateTable::apply(
             meta.setAffectedNode(item.first, *type, nodeType);
             if (type == &sfDeletedNode)
             {
-                ASSERT(
+                XRPL_ASSERT(
                     origNode && curNode,
                     "ripple::detail::ApplyStateTable::apply : valid nodes for "
                     "deletion");
@@ -192,7 +192,7 @@ ApplyStateTable::apply(
             }
             else if (type == &sfModifiedNode)
             {
-                ASSERT(
+                XRPL_ASSERT(
                     curNode && origNode,
                     "ripple::detail::ApplyStateTable::apply : valid nodes for "
                     "modification");
@@ -230,7 +230,7 @@ ApplyStateTable::apply(
             }
             else if (type == &sfCreatedNode)  // if created, thread to owner(s)
             {
-                ASSERT(
+                XRPL_ASSERT(
                     curNode && !origNode,
                     "ripple::detail::ApplyStateTable::apply : valid nodes for "
                     "creation");
@@ -558,7 +558,7 @@ ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 
         if (node.getFieldIndex(sfPreviousTxnID) == -1)
         {
-            ASSERT(
+            XRPL_ASSERT(
                 node.getFieldIndex(sfPreviousTxnLgrSeq) == -1,
                 "ripple::ApplyStateTable::threadItem : previous ledger is not "
                 "set");
@@ -566,11 +566,11 @@ ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
             node.setFieldU32(sfPreviousTxnLgrSeq, prevLgrID);
         }
 
-        ASSERT(
+        XRPL_ASSERT(
             node.getFieldH256(sfPreviousTxnID) == prevTxID,
             "ripple::ApplyStateTable::threadItem : previous transaction is a "
             "match");
-        ASSERT(
+        XRPL_ASSERT(
             node.getFieldU32(sfPreviousTxnLgrSeq) == prevLgrID,
             "ripple::ApplyStateTable::threadItem : previous ledger is a match");
     }
@@ -587,8 +587,8 @@ ApplyStateTable::getForMod(
         auto miter = mods.find(key);
         if (miter != mods.end())
         {
-            ASSERT(
-                miter->second != nullptr,
+            XRPL_ASSERT(
+                miter->second,
                 "ripple::ApplyStateTable::getForMod : non-null result");
             return miter->second;
         }
@@ -645,7 +645,7 @@ ApplyStateTable::threadTx(
         return;
     }
     // threadItem only applied to AccountRoot
-    ASSERT(
+    XRPL_ASSERT(
         sle->isThreadedType(base.rules()),
         "ripple::ApplyStateTable::threadTx : SLE is threaded");
     threadItem(meta, sle);

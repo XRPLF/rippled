@@ -50,7 +50,7 @@ template <class Object, class HandlerImpl>
 Status
 handle(JsonContext& context, Object& object)
 {
-    ASSERT(
+    XRPL_ASSERT(
         context.apiVersion >= HandlerImpl::minApiVer &&
             context.apiVersion <= HandlerImpl::maxApiVer,
         "ripple::RPC::handle : valid API version");
@@ -206,10 +206,10 @@ private:
         unsigned minVer,
         unsigned maxVer)
     {
-        ASSERT(
+        XRPL_ASSERT(
             minVer <= maxVer,
             "ripple::RPC::HandlerTable : valid API version range");
-        ASSERT(
+        XRPL_ASSERT(
             maxVer <= RPC::apiMaximumValidVersion,
             "ripple::RPC::HandlerTable : valid max API version");
 

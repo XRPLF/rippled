@@ -1007,7 +1007,7 @@ private:
     parseTransactionEntry(Json::Value const& jvParams)
     {
         // Parameter count should have already been verified.
-        ASSERT(
+        XRPL_ASSERT(
             jvParams.size() == 2,
             "ripple::RPCParser::parseTransactionEntry : valid parameter count");
 
