@@ -66,7 +66,10 @@ checkFreeze(
                 return tecINTERNAL;
 
             if (isLPTokenFrozen(
-                    view, src, (*sleAmm)[sfAsset], (*sleAmm)[sfAsset2]))
+                    view,
+                    src,
+                    (*sleAmm)[sfAsset].get<Issue>(),
+                    (*sleAmm)[sfAsset2].get<Issue>()))
             {
                 return terNO_LINE;
             }

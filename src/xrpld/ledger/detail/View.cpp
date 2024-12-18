@@ -333,7 +333,10 @@ accountHolds(
 
                 if ((zeroIfFrozen == fhZERO_IF_FROZEN) &&
                     isLPTokenFrozen(
-                        view, account, (*sleAmm)[sfAsset], (*sleAmm)[sfAsset2]))
+                        view,
+                        account,
+                        (*sleAmm)[sfAsset].get<Issue>(),
+                        (*sleAmm)[sfAsset2].get<Issue>()))
                 {
                     amount.clear(Issue{currency, issuer});
                 }
