@@ -1037,7 +1037,8 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 1;
         }
 
-        if (tx.getTxnType() == ttMPTOKEN_AUTHORIZE || tx.getTxnType() == ttVAULT_DEPOSIT)
+        if (tx.getTxnType() == ttMPTOKEN_AUTHORIZE ||
+            tx.getTxnType() == ttVAULT_DEPOSIT)
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
@@ -1063,8 +1064,7 @@ ValidMPTIssuance::finalize(
                 return false;
             }
             else if (
-                !submittedByIssuer &&
-                (tx.getTxnType() != ttVAULT_DEPOSIT) &&
+                !submittedByIssuer && (tx.getTxnType() != ttVAULT_DEPOSIT) &&
                 (mptokensCreated_ + mptokensDeleted_ != 1))
             {
                 // if the holder submitted this tx, then a mptoken must be

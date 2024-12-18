@@ -2268,7 +2268,8 @@ assetsToSharesDeposit(
 {
     assert(assets.asset() == vault->at(sfAsset));
     Number assetTotal = *vault->at(sfAssetTotal);
-    STAmount shares{vault->at(sfMPTokenIssuanceID), static_cast<Number>(assets)};
+    STAmount shares{
+        vault->at(sfMPTokenIssuanceID), static_cast<Number>(assets)};
     if (assetTotal == 0)
         return shares;
     Number shareTotal = getShareTotal(view, vault);

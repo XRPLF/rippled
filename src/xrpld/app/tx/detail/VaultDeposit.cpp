@@ -102,7 +102,8 @@ VaultDeposit::doApply()
 
     // Compute exchange before transferring any amounts.
     auto const shares = assetsToSharesDeposit(view(), vault, assets);
-    XRPL_ASSERT(shares.asset() != assets.asset(), "do not mix up assets and shares");
+    XRPL_ASSERT(
+        shares.asset() != assets.asset(), "do not mix up assets and shares");
 
     vault->at(sfAssetTotal) += assets;
     vault->at(sfAssetAvailable) += assets;
