@@ -266,7 +266,8 @@ Config::Config()
 void
 Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
 {
-    assert(NODE_SIZE == 0);
+    XRPL_ASSERT(
+        NODE_SIZE == 0, "ripple::Config::setupControl : node size not set");
 
     QUIET = bQuiet || bSilent;
     SILENT = bSilent;
@@ -287,7 +288,9 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
                 return (limit == 0) || (ramSize_ < limit);
             });
 
-        assert(ns != threshold.second.end());
+        XRPL_ASSERT(
+            ns != threshold.second.end(),
+            "ripple::Config::setupControl : valid node size");
 
         if (ns != threshold.second.end())
             NODE_SIZE = std::distance(threshold.second.begin(), ns);
@@ -298,7 +301,8 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
             NODE_SIZE = std::min<std::size_t>(hc / 2, NODE_SIZE);
     }
 
-    assert(NODE_SIZE <= 4);
+    XRPL_ASSERT(
+        NODE_SIZE <= 4, "ripple::Config::setupControl : node size is set");
 }
 
 void
@@ -1004,8 +1008,12 @@ int
 Config::getValueFor(SizedItem item, std::optional<std::size_t> node) const
 {
     auto const index = static_cast<std::underlying_type_t<SizedItem>>(item);
-    assert(index < sizedItems.size());
-    assert(!node || *node <= 4);
+    XRPL_ASSERT(
+        index < sizedItems.size(),
+        "ripple::Config::getValueFor : valid index input");
+    XRPL_ASSERT(
+        !node || *node <= 4,
+        "ripple::Config::getValueFor : unset or valid node");
     return sizedItems.at(index).second.at(node.value_or(NODE_SIZE));
 }
 

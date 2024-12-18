@@ -100,8 +100,8 @@ AMMDeposit::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    auto const asset = ctx.tx[sfAsset];
-    auto const asset2 = ctx.tx[sfAsset2];
+    auto const asset = ctx.tx[sfAsset].get<Issue>();
+    auto const asset2 = ctx.tx[sfAsset2].get<Issue>();
     if (auto const res = invalidAMMAssetPair(asset, asset2))
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid asset pair.";
@@ -268,10 +268,10 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             return tesSUCCESS;
         };
 
-        if (auto const ter = checkAsset(ctx.tx[sfAsset]))
+        if (auto const ter = checkAsset(ctx.tx[sfAsset].get<Issue>()))
             return ter;
 
-        if (auto const ter = checkAsset(ctx.tx[sfAsset2]))
+        if (auto const ter = checkAsset(ctx.tx[sfAsset2].get<Issue>()))
             return ter;
     }
 
@@ -466,7 +466,9 @@ AMMDeposit::applyGuts(Sandbox& sb)
 
     if (result == tesSUCCESS)
     {
-        assert(newLPTokenBalance > beast::zero);
+        XRPL_ASSERT(
+            newLPTokenBalance > beast::zero,
+            "ripple::AMMDeposit::applyGuts : valid new LP token balance");
         ammSle->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
         // LP depositing into AMM empty state gets the auction slot
         // and the voting

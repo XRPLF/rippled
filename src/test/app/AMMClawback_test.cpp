@@ -303,13 +303,13 @@ class AMMClawback_test : public jtx::AMMTest
             // gw creates AMM pool of XRP/USD.
             AMM amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
 
-            // Return tecNO_PERMISSION because the issuer set tfClawTwoAssets,
+            // Return temINVALID_FLAG because the issuer set tfClawTwoAssets,
             // but the issuer only issues USD in the pool. The issuer is not
             // allowed to set tfClawTwoAssets flag if he did not issue both
-            // assts in the pool.
+            // assets in the pool.
             env(amm::ammClawback(gw, alice, USD, XRP, std::nullopt),
                 txflags(tfClawTwoAssets),
-                ter(tecNO_PERMISSION));
+                ter(temINVALID_FLAG));
         }
 
         // Test clawing back XRP is being prohibited.
