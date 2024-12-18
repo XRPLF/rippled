@@ -64,12 +64,13 @@ public:
     void
     apply(RawView& to) const;
 
-    void
+    std::optional<TxMeta>
     apply(
         OpenView& to,
         STTx const& tx,
         TER ter,
         std::optional<STAmount> const& deliver,
+        bool isDryRun,
         beast::Journal j);
 
     bool

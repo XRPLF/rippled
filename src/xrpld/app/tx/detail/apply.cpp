@@ -105,7 +105,7 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
         router.setFlags(txid, flags);
 }
 
-std::pair<TER, bool>
+TxApplyResult
 apply(
     Application& app,
     OpenView& view,
@@ -140,23 +140,23 @@ applyTransaction(
     try
     {
         auto const result = apply(app, view, txn, flags, j);
-        if (result.second)
+        if (result.applied)
         {
             JLOG(j.debug())
-                << "Transaction applied: " << transHuman(result.first);
+                << "Transaction applied: " << transHuman(result.ter);
             return ApplyResult::Success;
         }
 
-        if (isTefFailure(result.first) || isTemMalformed(result.first) ||
-            isTelLocal(result.first))
+        if (isTefFailure(result.ter) || isTemMalformed(result.ter) ||
+            isTelLocal(result.ter))
         {
             // failure
             JLOG(j.debug())
-                << "Transaction failure: " << transHuman(result.first);
+                << "Transaction failure: " << transHuman(result.ter);
             return ApplyResult::Fail;
         }
 
-        JLOG(j.debug()) << "Transaction retry: " << transHuman(result.first);
+        JLOG(j.debug()) << "Transaction retry: " << transHuman(result.ter);
         return ApplyResult::Retry;
     }
     catch (std::exception const& ex)

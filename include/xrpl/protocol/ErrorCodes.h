@@ -151,7 +151,10 @@ enum error_code_i {
     // deposit_authorized + credentials
     rpcBAD_CREDENTIALS = 95,
 
-    rpcLAST = rpcBAD_CREDENTIALS  // rpcLAST should always equal the last code.
+    // Simulate
+    rpcTX_SIGNED = 96,
+
+    rpcLAST = rpcTX_SIGNED  // rpcLAST should always equal the last code.
 };
 
 /** Codes returned in the `warnings` array of certain RPC commands.

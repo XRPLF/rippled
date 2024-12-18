@@ -20,6 +20,7 @@
 #ifndef RIPPLE_TX_APPLY_H_INCLUDED
 #define RIPPLE_TX_APPLY_H_INCLUDED
 
+#include <xrpld/app/tx/applySteps.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -119,7 +120,7 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity);
     @return A pair with the `TER` and a `bool` indicating
             whether or not the transaction was applied.
 */
-std::pair<TER, bool>
+TxApplyResult
 apply(
     Application& app,
     OpenView& view,
