@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <xrpld/ledger/ReadView.h>
+// TODO: Move the helper out of the `app` module.
+#include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
@@ -26,8 +28,12 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/st.h>
 #include <optional>
+#include <type_traits>
+#include <variant>
 
 namespace ripple {
 
@@ -360,6 +366,29 @@ accountHolds(
     }
 
     return amount;
+}
+
+[[nodiscard]] STAmount
+accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
+    beast::Journal j)
+{
+    return std::visit(
+        [&](auto const& value) {
+            if constexpr (std::is_same_v<
+                              std::remove_cvref_t<decltype(value)>,
+                              Issue>)
+            {
+                return accountHolds(view, account, value, zeroIfFrozen, j);
+            }
+            return accountHolds(
+                view, account, value, zeroIfFrozen, zeroIfUnauthorized, j);
+        },
+        asset.value());
 }
 
 STAmount
@@ -853,6 +882,54 @@ describeOwnerDir(AccountID const& account)
 }
 
 TER
+dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object)
+{
+    auto const page = view.dirInsert(
+        keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
+    if (!page)
+        return tecDIR_FULL;
+    object->setFieldU64(sfOwnerNode, *page);
+    return tesSUCCESS;
+}
+
+Expected<std::shared_ptr<SLE>, TER>
+createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey)
+{
+    AccountID accountId;
+    for (auto i = 0;; ++i)
+    {
+        if (i >= 256)
+            return Unexpected(tecDUPLICATE);
+        ripesha_hasher rsh;
+        auto const hash = sha512Half(i, view.info().parentHash, pseudoOwnerKey);
+        rsh(hash.data(), hash.size());
+        accountId = static_cast<ripesha_hasher::result_type>(rsh);
+        if (!view.read(keylet::account(accountId)))
+            break;
+    }
+
+    // Create pseudo-account.
+    auto account = std::make_shared<SLE>(keylet::account(accountId));
+    account->setAccountID(sfAccount, accountId);
+    account->setFieldAmount(sfBalance, STAmount{});
+    std::uint32_t const seqno{
+        view.rules().enabled(featureDeletableAccounts) ? view.seq() : 1};
+    account->setFieldU32(sfSequence, seqno);
+    // Ignore reserves requirement, disable the master key, allow default
+    // rippling, and enable deposit authorization to prevent payments into
+    // pseudo-account.
+    account->setFieldU32(
+        sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+    // Link the pseudo-account with its owner object.
+    // TODO: This debate is unresolved. There is allegedly a need to know
+    // whether a pseudo-account belongs to an AMM specifically.
+    // account->setFieldH256(sfPseudoOwner, pseudoOwnerKey);
+    view.insert(account);
+
+    return account;
+}
+
+TER
 trustCreate(
     ApplyView& view,
     const bool bSrcHigh,
@@ -1004,6 +1081,119 @@ trustDelete(
     view.erase(sleRippleState);
 
     return tesSUCCESS;
+}
+
+[[nodiscard]] TER
+addEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    XRPAmount priorBalance,
+    Asset const& asset,
+    beast::Journal journal)
+{
+    if (asset.holds<Issue>())
+    {
+        auto const& issue = asset.get<Issue>();
+        // Every account can hold XRP.
+        if (issue.native())
+            return tesSUCCESS;
+
+        auto const& issuerId = issue.getIssuer();
+        auto const& currency = issue.currency;
+        if (isGlobalFrozen(view, issuerId))
+            return tecFROZEN;
+
+        auto const& srcId = issuerId;
+        auto const& dstId = accountID;
+        auto const high = srcId > dstId;
+        auto const index = keylet::line(srcId, dstId, currency);
+        auto const sle = view.peek(keylet::account(accountID));
+        return trustCreate(
+            view,
+            high,
+            srcId,
+            dstId,
+            index.key,
+            sle,
+            /*auth=*/false,
+            /*noRipple=*/true,
+            /*freeze=*/false,
+            /*balance=*/STAmount{Issue{currency, noAccount()}},
+            /*limit=*/STAmount{Issue{currency, dstId}},
+            /*qualityIn=*/0,
+            /*qualityOut=*/0,
+            journal);
+    }
+
+    if (asset.holds<MPTIssue>())
+    {
+        auto const& mptIssue = asset.get<MPTIssue>();
+        auto const& mptID = mptIssue.getMptID();
+        auto const mpt = view.peek(keylet::mptIssuance(mptID));
+        if (mpt->getFlags() & lsfMPTLocked)
+            return tecLOCKED;
+        return MPTokenAuthorize::authorize(
+            view,
+            journal,
+            {.priorBalance = priorBalance,
+             .mptIssuanceID = mptID,
+             .accountID = accountID});
+    }
+
+    // Should be unreachable.
+    return tecINTERNAL;
+}
+
+[[nodiscard]] TER
+removeEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    Asset const& asset,
+    beast::Journal journal)
+{
+    if (asset.holds<Issue>())
+    {
+        auto const& issue = asset.get<Issue>();
+        if (issue.native())
+        {
+            auto const sle = view.read(keylet::account(accountID));
+            if (!sle)
+                return tecINTERNAL;
+            auto const balance = sle->getFieldAmount(sfBalance);
+            if (balance.xrp() != 0)
+                return tecHAS_OBLIGATIONS;
+            return tesSUCCESS;
+        }
+
+        // `asset` is an IOU.
+        auto const line = view.peek(keylet::line(accountID, issue));
+        if (!line)
+            return tecOBJECT_NOT_FOUND;
+        if (line->at(sfBalance)->iou() != beast::zero)
+            return tecHAS_OBLIGATIONS;
+        return trustDelete(
+            view,
+            line,
+            line->at(sfLowLimit)->getIssuer(),
+            line->at(sfHighLimit)->getIssuer(),
+            journal);
+    }
+
+    if (asset.holds<MPTIssue>())
+    {
+        auto const& mptIssue = asset.get<MPTIssue>();
+        auto const& mptID = mptIssue.getMptID();
+        // `MPTokenAuthorize::authorize` asserts that the balance is 0.
+        return MPTokenAuthorize::authorize(
+            view,
+            journal,
+            {.mptIssuanceID = mptID,
+             .accountID = accountID,
+             .flags = tfMPTUnauthorize});
+    }
+
+    // Should be unreachable.
+    return tecINTERNAL;
 }
 
 TER
@@ -1831,8 +2021,8 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
     return tesSUCCESS;
 }
 
-TER
-requireAuth(
+[[nodiscard]] Expected<TokenDescriptor, TER>
+findToken(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& account)
@@ -1841,20 +2031,43 @@ requireAuth(
     auto const sleIssuance = view.read(mptID);
 
     if (!sleIssuance)
-        return tecOBJECT_NOT_FOUND;
+        return Unexpected(tecOBJECT_NOT_FOUND);
 
     auto const mptIssuer = sleIssuance->getAccountID(sfIssuer);
-
-    // issuer is always "authorized"
+    // Issuer won't have mptoken, i.e. "the operation failed succcessfully"
     if (mptIssuer == account)
-        return tesSUCCESS;
+        return Unexpected(tesSUCCESS);
 
     auto const mptokenID = keylet::mptoken(mptID.key, account);
     auto const sleToken = view.read(mptokenID);
 
     // if account has no MPToken, fail
     if (!sleToken)
-        return tecNO_AUTH;
+        return Unexpected(tecNO_LINE);
+
+    return {TokenDescriptor{.token = sleToken, .issuance = sleIssuance}};
+}
+
+TER
+requireAuth(
+    ReadView const& view,
+    MPTIssue const& mptIssue,
+    AccountID const& account)
+{
+    auto maybeToken = findToken(view, mptIssue, account);
+
+    // Whatever reason why we could not find
+    if (!maybeToken)
+    {
+        // Convert tecNO_LINE to useful error
+        if (maybeToken.error() == tecNO_LINE)
+            return tecNO_AUTH;
+        // Note, error() is tesSUCCESS if no authorization was needed
+        return maybeToken.error();
+    }
+
+    auto sleToken = maybeToken->token;
+    auto sleIssuance = maybeToken->issuance;
 
     // mptoken must be authorized if issuance enabled requireAuth
     if (sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth &&
@@ -2037,6 +2250,67 @@ rippleCredit(
             }
         },
         saAmount.asset().value());
+}
+
+static Number
+getShareTotal(ReadView const& view, std::shared_ptr<SLE> const& vault)
+{
+    auto issuance =
+        view.read(keylet::mptIssuance(vault->at(sfMPTokenIssuanceID)));
+    return issuance->at(sfOutstandingAmount);
+}
+
+[[nodiscard]] STAmount
+assetsToSharesDeposit(
+    ReadView const& view,
+    std::shared_ptr<SLE> const& vault,
+    STAmount const& assets)
+{
+    assert(assets.asset() == vault->at(sfAsset));
+    Number assetTotal = *vault->at(sfAssetTotal);
+    STAmount shares{
+        vault->at(sfMPTokenIssuanceID), static_cast<Number>(assets)};
+    if (assetTotal == 0)
+        return shares;
+    Number shareTotal = getShareTotal(view, vault);
+    shares = shareTotal * (assets / assetTotal);
+    return shares;
+}
+
+[[nodiscard]] STAmount
+assetsToSharesWithdraw(
+    ReadView const& view,
+    std::shared_ptr<SLE> const& vault,
+    STAmount const& assets)
+{
+    assert(assets.asset() == vault->at(sfAsset));
+    Number assetTotal = vault->at(sfAssetTotal);
+    assetTotal -= vault->at(sfLossUnrealized);
+    STAmount shares{vault->at(sfMPTokenIssuanceID)};
+    if (assetTotal == 0)
+        return shares;
+    Number shareTotal = getShareTotal(view, vault);
+    shares = shareTotal * (assets / assetTotal);
+    // TODO: Limit by withdrawal policy?
+    return shares;
+}
+
+[[nodiscard]] STAmount
+sharesToAssetsWithdraw(
+    ReadView const& view,
+    std::shared_ptr<SLE> const& vault,
+    STAmount const& shares)
+{
+    assert(shares.asset() == vault->at(sfMPTokenIssuanceID));
+    Number assetTotal = vault->at(sfAssetTotal);
+    assetTotal -= vault->at(sfLossUnrealized);
+    STAmount assets{vault->at(sfAsset)};
+    if (assetTotal == 0)
+        return assets;
+    Number shareTotal = getShareTotal(view, vault);
+    assets = assetTotal * (shares / shareTotal);
+    // TODO: Limit by withdrawal policy?
+    return assets;
 }
 
 }  // namespace ripple

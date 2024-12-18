@@ -587,6 +587,5 @@ Env::disableFeature(uint256 const feature)
 }
 
 }  // namespace jtx
-
 }  // namespace test
 }  // namespace ripple

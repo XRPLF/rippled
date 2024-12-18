@@ -113,14 +113,17 @@ JSS(Subject);                            // in: Credential transactions
 JSS(TakerGets);                          // field.
 JSS(TakerPays);                          // field.
 JSS(Ticket);                             // ledger type.
-JSS(TxnSignature);                       // field.
 JSS(TradingFee);                         // in/out: AMM trading fee
 JSS(TransactionType);                    // in: TransactionSign.
 JSS(TransferRate);                       // in: TransferRate.
+JSS(TxnSignature);                       // field.
 JSS(URI);                                // field.
+JSS(Vault);                              // ledger type.
+JSS(VaultID);                            // field.
 JSS(VoteSlots);                          // out: AMM Vote
 JSS(XChainOwnedClaimID);                 // ledger type.
 JSS(XChainOwnedCreateAccountClaimID);    // ledger type.
+                                         //
 JSS(aborted);                            // out: InboundLedger
 JSS(accepted);               // out: LedgerToJson, OwnerInfo, SubmitTransaction
 JSS(account);                // in/out: many
@@ -748,6 +751,8 @@ JSS(NegativeUNL);                           // out: ValidatorList; ledger type
 #pragma pop_macro("TRANSACTION")
 
 #undef JSS
+
+// clang-format on
 
 }  // namespace jss
 }  // namespace ripple

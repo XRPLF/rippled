@@ -67,7 +67,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     return preflight2(ctx);
 }
 
-TER
+Expected<MPTID, TER>
 MPTokenIssuanceCreate::create(
     ApplyView& view,
     beast::Journal journal,
@@ -75,14 +75,10 @@ MPTokenIssuanceCreate::create(
 {
     auto const acct = view.peek(keylet::account(args.account));
     if (!acct)
-        return tecINTERNAL;
+        return Unexpected(tecINTERNAL);
 
-    if (args.priorBalance <
-        view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
-        return tecINSUFFICIENT_RESERVE;
-
-    auto const mptIssuanceKeylet =
-        keylet::mptIssuance(args.sequence, args.account);
+    auto mptId = makeMptID(args.sequence, args.account);
+    auto const mptIssuanceKeylet = keylet::mptIssuance(mptId);
 
     // create the MPTokenIssuance
     {
@@ -92,7 +88,7 @@ MPTokenIssuanceCreate::create(
             describeOwnerDir(args.account));
 
         if (!ownerNode)
-            return tecDIR_FULL;
+            return Unexpected(tecDIR_FULL);
 
         auto mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
         (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
@@ -119,24 +115,29 @@ MPTokenIssuanceCreate::create(
     // Update owner count.
     adjustOwnerCount(view, acct, 1, journal);
 
-    return tesSUCCESS;
+    return mptId;
 }
 
 TER
 MPTokenIssuanceCreate::doApply()
 {
     auto const& tx = ctx_.tx;
-    return create(
-        ctx_.view(),
-        ctx_.journal,
-        {.priorBalance = mPriorBalance,
-         .account = account_,
+
+    auto const acct = view().peek(keylet::account(account_));
+    if (mPriorBalance < view().fees().accountReserve((*acct)[sfOwnerCount] + 1))
+        return tecINSUFFICIENT_RESERVE;
+
+    auto result = create(
+        view(),
+        j_,
+        {.account = account_,
          .sequence = tx.getSeqProxy().value(),
          .flags = tx.getFlags(),
          .maxAmount = tx[~sfMaximumAmount],
          .assetScale = tx[~sfAssetScale],
          .transferFee = tx[~sfTransferFee],
          .metadata = tx[~sfMPTokenMetadata]});
+    return result ? tesSUCCESS : result.error();
 }
 
 }  // namespace ripple

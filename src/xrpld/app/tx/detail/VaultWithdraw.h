@@ -17,25 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_MPTOKENISSUANCEDESTROY_H_INCLUDED
-#define RIPPLE_TX_MPTOKENISSUANCEDESTROY_H_INCLUDED
+#ifndef RIPPLE_TX_VAULTWITHDRAW_H_INCLUDED
+#define RIPPLE_TX_VAULTWITHDRAW_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
 
-struct MPTDestroyArgs
-{
-    AccountID const& account;
-    MPTID issuanceID;
-};
-
-class MPTokenIssuanceDestroy : public Transactor
+class VaultWithdraw : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit MPTokenIssuanceDestroy(ApplyContext& ctx) : Transactor(ctx)
+    explicit VaultWithdraw(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -44,12 +38,6 @@ public:
 
     static TER
     preclaim(PreclaimContext const& ctx);
-
-    static TER
-    destroy(
-        ApplyView& view,
-        beast::Journal journal,
-        MPTDestroyArgs const& args);
 
     TER
     doApply() override;

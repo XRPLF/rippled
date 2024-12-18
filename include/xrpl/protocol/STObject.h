@@ -152,8 +152,7 @@ public:
     getText() const override;
 
     // TODO(tom): options should be an enum.
-    Json::Value
-    getJson(JsonOptions options) const override;
+    Json::Value getJson(JsonOptions = JsonOptions::none) const override;
 
     void
     addWithoutSigningFields(Serializer& s) const;
@@ -482,9 +481,19 @@ private:
 template <class T>
 class STObject::Proxy
 {
-protected:
+public:
     using value_type = typename T::value_type;
 
+    value_type
+    value() const;
+
+    value_type
+    operator*() const;
+
+    T const*
+    operator->() const;
+
+protected:
     STObject* st_;
     SOEStyle style_;
     TypedField<T> const* f_;
@@ -492,9 +501,6 @@ protected:
     Proxy(Proxy const&) = default;
 
     Proxy(STObject* st, TypedField<T> const* f);
-
-    value_type
-    value() const;
 
     T const*
     find() const;
@@ -510,7 +516,7 @@ template <typename U>
 concept IsArithmetic = std::is_arithmetic_v<U> || std::is_same_v<U, STAmount>;
 
 template <class T>
-class STObject::ValueProxy : private Proxy<T>
+class STObject::ValueProxy : public Proxy<T>
 {
 private:
     using value_type = typename T::value_type;
@@ -536,6 +542,20 @@ public:
 
     operator value_type() const;
 
+    template <typename U>
+    friend bool
+    operator==(U const& lhs, STObject::ValueProxy<T> const& rhs)
+    {
+        return rhs.value() == lhs;
+    }
+
+    template <typename U>
+    friend bool
+    operator!=(U const& lhs, STObject::ValueProxy<T> const& rhs)
+    {
+        return !(lhs == rhs);
+    }
+
 private:
     friend class STObject;
 
@@ -543,7 +563,7 @@ private:
 };
 
 template <class T>
-class STObject::OptionalProxy : private Proxy<T>
+class STObject::OptionalProxy : public Proxy<T>
 {
 private:
     using value_type = typename T::value_type;
@@ -562,15 +582,6 @@ public:
     */
     explicit
     operator bool() const noexcept;
-
-    /** Return the contained value
-
-        Throws:
-
-            STObject::FieldErr if !engaged()
-    */
-    value_type
-    operator*() const;
 
     operator optional_type() const;
 
@@ -716,6 +727,20 @@ STObject::Proxy<T>::value() const -> value_type
 }
 
 template <class T>
+auto
+STObject::Proxy<T>::operator*() const -> value_type
+{
+    return this->value();
+}
+
+template <class T>
+T const*
+STObject::Proxy<T>::operator->() const
+{
+    return this->find();
+}
+
+template <class T>
 inline T const*
 STObject::Proxy<T>::find() const
 {
@@ -788,13 +813,6 @@ template <class T>
 STObject::OptionalProxy<T>::operator bool() const noexcept
 {
     return engaged();
-}
-
-template <class T>
-auto
-STObject::OptionalProxy<T>::operator*() const -> value_type
-{
-    return this->value();
 }
 
 template <class T>

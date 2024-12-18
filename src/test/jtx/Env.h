@@ -28,6 +28,7 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/require.h>
 #include <test/jtx/tags.h>
+#include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/OpenLedger.h>
@@ -451,6 +452,12 @@ public:
      */
     std::uint32_t
     ownerCount(Account const& account) const;
+
+    Vault
+    vault()
+    {
+        return Vault{*this};
+    }
 
     /** Return an account root.
         @return empty if the account does not exist.
