@@ -116,13 +116,34 @@ ammLPHolds(
     AccountID const& lpAccount,
     beast::Journal const j)
 {
-    return accountHolds(
-        view,
-        lpAccount,
-        ammLPTCurrency(cur1, cur2),
-        ammAccount,
-        FreezeHandling::fhZERO_IF_FROZEN,
-        j);
+    auto const currency = ammLPTCurrency(cur1, cur2);
+    STAmount amount;
+
+    // IOU: Return balance on trust line modulo freeze
+    auto const sle = view.read(keylet::line(lpAccount, ammAccount, currency));
+    if (!sle)
+    {
+        amount.clear(Issue{currency, ammAccount});
+    }
+    else if (isFrozen(view, lpAccount, currency, ammAccount))
+    {
+        amount.clear(Issue{currency, ammAccount});
+    }
+    else
+    {
+        amount = sle->getFieldAmount(sfBalance);
+        if (lpAccount > ammAccount)
+        {
+            // Put balance in account terms.
+            amount.negate();
+        }
+        amount.setIssuer(ammAccount);
+    }
+    JLOG(j.trace()) << "ammLPHolds:"
+                    << " account=" << to_string(lpAccount)
+                    << " amount=" << amount.getFullText();
+
+    return view.balanceHook(lpAccount, ammAccount, amount);
 }
 
 STAmount
