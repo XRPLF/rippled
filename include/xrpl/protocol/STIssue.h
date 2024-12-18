@@ -37,6 +37,7 @@ public:
     using value_type = Asset;
 
     STIssue() = default;
+    STIssue(STIssue const& rhs) = default;
 
     explicit STIssue(SerialIter& sit, SField const& name);
 

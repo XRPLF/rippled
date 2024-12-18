@@ -701,7 +701,7 @@ to_json(ripple::Number const& number)
 struct to_json_fn
 {
     template <typename T>
-    constexpr Value
+    Value
     operator()(T&& t) const
     {
         return to_json(std::forward<T>(t));
@@ -711,11 +711,8 @@ struct to_json_fn
 template <typename T>
 struct static_const
 {
-    static constexpr T value{};
+    static constexpr T value = {};
 };
-
-template <typename T>
-constexpr T static_const<T>::value;
 
 }  // namespace detail
 

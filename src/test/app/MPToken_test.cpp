@@ -22,7 +22,6 @@
 #include <test/jtx/xchain_bridge.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
-#include <format>
 
 namespace ripple {
 namespace test {
