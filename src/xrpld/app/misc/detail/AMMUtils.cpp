@@ -116,10 +116,14 @@ ammLPHolds(
     AccountID const& lpAccount,
     beast::Journal const j)
 {
+    // This function looks similar to `accountHolds`. However, it only checks if
+    // a LPToken holder has enough balance. On the other hand, `accountHolds`
+    // checks if the underlying assets of LPToken are frozen with the
+    // fixFrozenLPTokenTransfer amendment
+
     auto const currency = ammLPTCurrency(cur1, cur2);
     STAmount amount;
 
-    // IOU: Return balance on trust line modulo freeze
     auto const sle = view.read(keylet::line(lpAccount, ammAccount, currency));
     if (!sle)
     {
@@ -140,7 +144,7 @@ ammLPHolds(
         amount.setIssuer(ammAccount);
     }
     JLOG(j.trace()) << "ammLPHolds:"
-                    << " account=" << to_string(lpAccount)
+                    << " lpAccount=" << to_string(lpAccount)
                     << " amount=" << amount.getFullText();
 
     return view.balanceHook(lpAccount, ammAccount, amount);
