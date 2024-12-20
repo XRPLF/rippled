@@ -53,7 +53,7 @@ private:
                        int limit,
                        std::chrono::milliseconds avgLatency,
                        std::chrono::milliseconds peakLatency) {
-            ASSERT(
+            XRPL_ASSERT(
                 m_map.find(jt) == m_map.end(),
                 "ripple::JobTypes::JobTypes::add : unique job type input");
 
@@ -66,7 +66,7 @@ private:
                             jt, name, limit, avgLatency, peakLatency))
                     .second;
 
-            ASSERT(
+            XRPL_ASSERT(
                 inserted == true,
                 "ripple::JobTypes::JobTypes::add : input is inserted");
         };
@@ -142,7 +142,7 @@ public:
     get(JobType jt) const
     {
         Map::const_iterator const iter(m_map.find(jt));
-        ASSERT(iter != m_map.end(), "ripple::JobTypes::get : valid input");
+        XRPL_ASSERT(iter != m_map.end(), "ripple::JobTypes::get : valid input");
 
         if (iter != m_map.end())
             return iter->second;
