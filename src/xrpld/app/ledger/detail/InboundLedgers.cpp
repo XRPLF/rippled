@@ -73,7 +73,7 @@ public:
         InboundLedger::Reason reason) override
     {
         auto doAcquire = [&, seq, reason]() -> std::shared_ptr<Ledger const> {
-            ASSERT(
+            XRPL_ASSERT(
                 hash.isNonZero(),
                 "ripple::InboundLedgersImp::acquire::doAcquire : nonzero hash");
 
@@ -247,7 +247,7 @@ public:
     std::shared_ptr<InboundLedger>
     find(uint256 const& hash) override
     {
-        ASSERT(
+        XRPL_ASSERT(
             hash.isNonZero(),
             "ripple::InboundLedgersImp::find : nonzero input");
 
@@ -411,8 +411,8 @@ public:
             acqs.reserve(mLedgers.size());
             for (auto const& it : mLedgers)
             {
-                ASSERT(
-                    it.second != nullptr,
+                XRPL_ASSERT(
+                    it.second,
                     "ripple::InboundLedgersImp::getInfo : non-null ledger");
                 acqs.push_back(it);
             }
@@ -448,8 +448,8 @@ public:
             acquires.reserve(mLedgers.size());
             for (auto const& it : mLedgers)
             {
-                ASSERT(
-                    it.second != nullptr,
+                XRPL_ASSERT(
+                    it.second,
                     "ripple::InboundLedgersImp::gotFetchPack : non-null "
                     "ledger");
                 acquires.push_back(it.second);

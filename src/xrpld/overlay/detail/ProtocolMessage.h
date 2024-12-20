@@ -181,7 +181,7 @@ parseMessageHeader(
 
     MessageHeader hdr;
     auto iter = buffersBegin(bufs);
-    ASSERT(
+    XRPL_ASSERT(
         iter != buffersEnd(bufs),
         "ripple::detail::parseMessageHeader : non-empty buffer");
 

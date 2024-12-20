@@ -349,7 +349,7 @@ We are using [Antithesis](https://antithesis.com/) for continuous fuzzing,
 and keep a copy of [Antithesis C++ SDK](https://github.com/antithesishq/antithesis-sdk-cpp/)
 in `external/antithesis-sdk`. One of the aims of fuzzing is to identify bugs
 by finding external conditions which cause contracts violations inside `rippled`.
-The contracts are expressed as `ASSERT` or `UNREACHABLE` (defined in
+The contracts are expressed as `XRPL_ASSERT` or `UNREACHABLE` (defined in
 `include/xrpl/beast/utility/instrumentation.h`), which are effectively (outside
 of Antithesis) wrappers for `assert(...)` with added name. The purpose of name
 is to provide contracts with stable identity which does not rely on line numbers.
@@ -372,7 +372,7 @@ For this reason:
   * `constexpr` functions
   * unit tests i.e. files under `src/test`
   * unit tests-related modules (files under `beast/test` and `beast/unit_test`)
-* Outside of the listed locations, do not use `assert`; use `ASSERT` instead,
+* Outside of the listed locations, do not use `assert`; use `XRPL_ASSERT` instead,
   giving it unique name, with the short description of the contract.
 * Outside of the listed locations, do not use `assert(false)`; use
   `UNREACHABLE` instead, giving it unique name, with the description of the
@@ -391,7 +391,7 @@ For this reason:
   situation which caused the line to have been reached.
 * Example good name for an
   `UNREACHABLE` macro `"Json::operator==(Value, Value) : invalid type"`; example
-  good name for an `ASSERT` macro `"Json::Value::asCString : valid type"`.
+  good name for an `XRPL_ASSERT` macro `"Json::Value::asCString : valid type"`.
 * Example **bad** name
   `"RFC1751::insert(char* s, int x, int start, int length) : length is greater than or equal zero"`
   (missing namespace, unnecessary full function signature, description too verbose).

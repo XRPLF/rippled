@@ -80,7 +80,7 @@ template <class ValueType>
 bool
 ReadViewFwdRange<ValueType>::iterator::operator==(iterator const& other) const
 {
-    ASSERT(
+    XRPL_ASSERT(
         view_ == other.view_,
         "ripple::detail::ReadViewFwdRange::iterator::operator==(iterator) "
         "const : input view match");
