@@ -36,11 +36,6 @@
 
 namespace ripple {
 
-template <typename A>
-concept AssetType =
-    std::is_same_v<A, Asset> || std::is_convertible_v<A, Issue> ||
-    std::is_convertible_v<A, MPTIssue> || std::is_convertible_v<A, MPTID>;
-
 // Internal form:
 // 1: If amount is zero, then value is zero and offset is -100
 // 2: Otherwise:
@@ -355,7 +350,7 @@ STAmount::STAmount(
     , mIsNegative(negative)
 {
     // mValue is uint64, but needs to fit in the range of int64
-    ASSERT(
+    XRPL_ASSERT(
         mValue <= std::numeric_limits<std::int64_t>::max(),
         "ripple::STAmount::STAmount(SField, A, std::uint64_t, int, bool) : "
         "maximum mantissa input");
