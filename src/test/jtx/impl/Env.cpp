@@ -17,27 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/app/misc/TxQ.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/contract.h>
-#include <ripple/consensus/LedgerTiming.h>
-#include <ripple/json/to_string.h>
-#include <ripple/net/HTTPClient.h>
-#include <ripple/net/RPCCall.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/LedgerFormats.h>
-#include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/SystemParameters.h>
-#include <ripple/protocol/TER.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/UintTypes.h>
-#include <ripple/protocol/jss.h>
-#include <memory>
 #include <test/jtx/Env.h>
 #include <test/jtx/JSONRPCClient.h>
 #include <test/jtx/balance.h>
@@ -49,6 +28,27 @@
 #include <test/jtx/sig.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/utility.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/misc/TxQ.h>
+#include <xrpld/consensus/LedgerTiming.h>
+#include <xrpld/net/HTTPClient.h>
+#include <xrpld/net/RPCCall.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
+#include <memory>
 
 namespace ripple {
 namespace test {
@@ -83,7 +83,7 @@ Env::AppBundle::AppBundle(
         std::move(config), std::move(logs), std::move(timeKeeper_));
     app = owned.get();
     app->logs().threshold(thresh);
-    if (!app->setup())
+    if (!app->setup({}))
         Throw<std::runtime_error>("Env::AppBundle: setup failed");
     timeKeeper->set(app->getLedgerMaster().getClosedLedger()->info().closeTime);
     app->start(false /*don't start timers*/);
@@ -163,7 +163,10 @@ Env::lookup(AccountID const& id) const
 {
     auto const iter = map_.find(id);
     if (iter == map_.end())
+    {
+        std::cout << "Unknown account: " << id << "\n";
         Throw<std::runtime_error>("Env::lookup:: unknown account ID");
+    }
     return iter->second;
 }
 
@@ -269,46 +272,85 @@ Env::trust(STAmount const& amount, Account const& account)
     test.expect(balance(account) == start);
 }
 
-std::pair<TER, bool>
+Env::ParsedResult
 Env::parseResult(Json::Value const& jr)
 {
-    TER ter;
-    if (jr.isObject() && jr.isMember(jss::result) &&
-        jr[jss::result].isMember(jss::engine_result_code))
-        ter = TER::fromInt(jr[jss::result][jss::engine_result_code].asInt());
+    auto error = [](ParsedResult& parsed, Json::Value const& object) {
+        // Use an error code that is not used anywhere in the transaction
+        // engine to distinguish this case.
+        parsed.ter = telENV_RPC_FAILED;
+        // Extract information about the error
+        if (!object.isObject())
+            return;
+        if (object.isMember(jss::error_code))
+            parsed.rpcCode =
+                safe_cast<error_code_i>(object[jss::error_code].asInt());
+        if (object.isMember(jss::error_message))
+            parsed.rpcMessage = object[jss::error_message].asString();
+        if (object.isMember(jss::error))
+            parsed.rpcError = object[jss::error].asString();
+        if (object.isMember(jss::error_exception))
+            parsed.rpcException = object[jss::error_exception].asString();
+    };
+    ParsedResult parsed;
+    if (jr.isObject() && jr.isMember(jss::result))
+    {
+        auto const& result = jr[jss::result];
+        if (result.isMember(jss::engine_result_code))
+        {
+            parsed.ter = TER::fromInt(result[jss::engine_result_code].asInt());
+            parsed.rpcCode.emplace(rpcSUCCESS);
+        }
+        else
+            error(parsed, result);
+    }
     else
-        ter = temINVALID;
-    return std::make_pair(ter, isTesSuccess(ter) || isTecClaim(ter));
+        error(parsed, jr);
+
+    return parsed;
 }
 
 void
 Env::submit(JTx const& jt)
 {
-    bool didApply;
-    if (jt.stx)
-    {
-        txid_ = jt.stx->getTransactionID();
-        Serializer s;
-        jt.stx->add(s);
-        auto const jr = rpc("submit", strHex(s.slice()));
+    ParsedResult parsedResult;
+    auto const jr = [&]() {
+        if (jt.stx)
+        {
+            // We shouldn't need to retry, but it fixes the test on macOS for
+            // the moment.
+            int retries = 3;
+            do
+            {
+                txid_ = jt.stx->getTransactionID();
+                Serializer s;
+                jt.stx->add(s);
+                auto const jr = rpc("submit", strHex(s.slice()));
 
-        std::tie(ter_, didApply) = parseResult(jr);
-    }
-    else
-    {
-        // Parsing failed or the JTx is
-        // otherwise missing the stx field.
-        ter_ = temMALFORMED;
-        didApply = false;
-    }
-    return postconditions(jt, ter_, didApply);
+                parsedResult = parseResult(jr);
+                test.expect(parsedResult.ter, "ter uninitialized!");
+                ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
+                if (ter_ != telENV_RPC_FAILED ||
+                    parsedResult.rpcCode != rpcINTERNAL ||
+                    jt.ter == telENV_RPC_FAILED || --retries <= 0)
+                    return jr;
+            } while (true);
+        }
+        else
+        {
+            // Parsing failed or the JTx is
+            // otherwise missing the stx field.
+            parsedResult.ter = ter_ = temMALFORMED;
+
+            return Json::Value();
+        }
+    }();
+    return postconditions(jt, parsedResult, jr);
 }
 
 void
 Env::sign_and_submit(JTx const& jt, Json::Value params)
 {
-    bool didApply;
-
     auto const account = lookup(jt.jv[jss::Account].asString());
     auto const& passphrase = account.name();
 
@@ -337,22 +379,59 @@ Env::sign_and_submit(JTx const& jt, Json::Value params)
     if (!txid_.parseHex(jr[jss::result][jss::tx_json][jss::hash].asString()))
         txid_.zero();
 
-    std::tie(ter_, didApply) = parseResult(jr);
+    ParsedResult const parsedResult = parseResult(jr);
+    test.expect(parsedResult.ter, "ter uninitialized!");
+    ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
 
-    return postconditions(jt, ter_, didApply);
+    return postconditions(jt, parsedResult, jr);
 }
 
 void
-Env::postconditions(JTx const& jt, TER ter, bool didApply)
+Env::postconditions(
+    JTx const& jt,
+    ParsedResult const& parsed,
+    Json::Value const& jr)
 {
-    if (jt.ter &&
-        !test.expect(
-            ter == *jt.ter,
-            "apply: Got " + transToken(ter) + " (" + transHuman(ter) +
-                "); Expected " + transToken(*jt.ter) + " (" +
-                transHuman(*jt.ter) + ")"))
+    bool bad = !test.expect(parsed.ter, "apply: No ter result!");
+    bad =
+        (jt.ter && parsed.ter &&
+         !test.expect(
+             *parsed.ter == *jt.ter,
+             "apply: Got " + transToken(*parsed.ter) + " (" +
+                 transHuman(*parsed.ter) + "); Expected " +
+                 transToken(*jt.ter) + " (" + transHuman(*jt.ter) + ")"));
+    using namespace std::string_literals;
+    bad = (jt.rpcCode &&
+           !test.expect(
+               parsed.rpcCode == jt.rpcCode->first &&
+                   parsed.rpcMessage == jt.rpcCode->second,
+               "apply: Got RPC result "s +
+                   (parsed.rpcCode
+                        ? RPC::get_error_info(*parsed.rpcCode).token.c_str()
+                        : "NO RESULT") +
+                   " (" + parsed.rpcMessage + "); Expected " +
+                   RPC::get_error_info(jt.rpcCode->first).token.c_str() + " (" +
+                   jt.rpcCode->second + ")")) ||
+        bad;
+    // If we have an rpcCode (just checked), then the rpcException check is
+    // optional - the 'error' field may not be defined, but if it is, it must
+    // match rpcError.
+    bad =
+        (jt.rpcException &&
+         !test.expect(
+             (jt.rpcCode && parsed.rpcError.empty()) ||
+                 (parsed.rpcError == jt.rpcException->first &&
+                  (!jt.rpcException->second ||
+                   parsed.rpcException == *jt.rpcException->second)),
+             "apply: Got RPC result "s + parsed.rpcError + " (" +
+                 parsed.rpcException + "); Expected " + jt.rpcException->first +
+                 " (" + jt.rpcException->second.value_or("n/a") + ")")) ||
+        bad;
+    if (bad)
     {
         test.log << pretty(jt.jv) << std::endl;
+        if (jr)
+            test.log << pretty(jr) << std::endl;
         // Don't check postconditions if
         // we didn't get the expected result.
         return;
@@ -412,6 +491,11 @@ Env::autofill(JTx& jt)
         jtx::fill_fee(jv, *current());
     if (jt.fill_seq)
         jtx::fill_seq(jv, *current());
+
+    uint32_t networkID = app().config().NETWORK_ID;
+    if (!jv.isMember(jss::NetworkID) && networkID > 1024)
+        jv[jss::NetworkID] = std::to_string(networkID);
+
     // Must come last
     try
     {
@@ -450,12 +534,40 @@ Env::st(JTx const& jt)
     return nullptr;
 }
 
+std::shared_ptr<STTx const>
+Env::ust(JTx const& jt)
+{
+    // The parse must succeed, since we
+    // generated the JSON ourselves.
+    std::optional<STObject> obj;
+    try
+    {
+        obj = jtx::parse(jt.jv);
+    }
+    catch (jtx::parse_error const&)
+    {
+        test.log << "Exception: parse_error\n" << pretty(jt.jv) << std::endl;
+        Rethrow();
+    }
+
+    try
+    {
+        return std::make_shared<STTx const>(std::move(*obj));
+    }
+    catch (std::exception const&)
+    {
+    }
+    return nullptr;
+}
+
 Json::Value
 Env::do_rpc(
+    unsigned apiVersion,
     std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)
 {
-    return rpcClient(args, app().config(), app().logs(), headers).second;
+    return rpcClient(args, app().config(), app().logs(), apiVersion, headers)
+        .second;
 }
 
 void
@@ -464,6 +576,14 @@ Env::enableFeature(uint256 const feature)
     // Env::close() must be called for feature
     // enable to take place.
     app().config().features.insert(feature);
+}
+
+void
+Env::disableFeature(uint256 const feature)
+{
+    // Env::close() must be called for feature
+    // enable to take place.
+    app().config().features.erase(feature);
 }
 
 }  // namespace jtx

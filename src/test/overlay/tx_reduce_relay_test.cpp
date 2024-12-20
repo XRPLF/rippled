@@ -16,12 +16,12 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <ripple/basics/make_SSLContext.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/overlay/impl/OverlayImpl.h>
-#include <ripple/overlay/impl/PeerImp.h>
-#include <ripple/peerfinder/impl/SlotImp.h>
 #include <test/jtx/Env.h>
+#include <xrpld/overlay/detail/OverlayImpl.h>
+#include <xrpld/overlay/detail/PeerImp.h>
+#include <xrpld/peerfinder/detail/SlotImp.h>
+#include <xrpl/basics/make_SSLContext.h>
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 
@@ -189,7 +189,10 @@ private:
             consumer,
             std::move(stream_ptr),
             overlay);
+        BEAST_EXPECT(
+            overlay.findPeerByPublicKey(key) == std::shared_ptr<PeerImp>{});
         overlay.add_active(peer);
+        BEAST_EXPECT(overlay.findPeerByPublicKey(key) == peer);
         peers.emplace_back(peer);  // overlay stores week ptr to PeerImp
         lid_ += 2;
         rid_ += 2;

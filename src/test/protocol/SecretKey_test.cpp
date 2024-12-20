@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/beast/utility/rngfill.h>
-#include <ripple/crypto/csprng.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/Seed.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/utility/rngfill.h>
+#include <xrpl/crypto/csprng.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -275,10 +275,12 @@ public:
         }
 
         // Try some random secret keys
-        std::array<SecretKey, 32> keys;
+        std::vector<SecretKey> keys;
+        keys.reserve(32);
 
-        for (std::size_t i = 0; i != keys.size(); ++i)
-            keys[i] = randomSecretKey();
+        for (std::size_t i = 0; i != keys.capacity(); ++i)
+            keys.emplace_back(randomSecretKey());
+        BEAST_EXPECT(keys.size() == 32);
 
         for (std::size_t i = 0; i != keys.size(); ++i)
         {

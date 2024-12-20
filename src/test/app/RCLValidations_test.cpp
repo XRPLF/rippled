@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/app/consensus/RCLValidations.h>
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/basics/base_uint.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/ledger/View.h>
 #include <test/jtx.h>
+#include <xrpld/app/consensus/RCLValidations.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/ledger/View.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 namespace test {
@@ -106,9 +106,10 @@ class RCLValidations_test : public beast::unit_test::suite
                 *prev, env.app().timeKeeper().closeTime());
             // Force a different hash on the first iteration
             next->updateSkipList();
+            BEAST_EXPECT(next->read(keylet::fees()));
             if (forceHash)
             {
-                next->setImmutable(config);
+                next->setImmutable();
                 forceHash = false;
             }
 

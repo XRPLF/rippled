@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerHistory.h>
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/tx/apply.h>
-#include <ripple/beast/insight/NullCollector.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/ledger/OpenView.h>
+#include <test/jtx.h>
+#include <test/jtx/CheckMessageLogs.h>
+#include <xrpld/app/ledger/LedgerHistory.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/tx/apply.h>
+#include <xrpld/ledger/OpenView.h>
+#include <xrpl/beast/insight/NullCollector.h>
+#include <xrpl/beast/unit_test.h>
 #include <chrono>
 #include <memory>
 #include <sstream>
-#include <test/jtx.h>
-#include <test/jtx/CheckMessageLogs.h>
 
 namespace ripple {
 namespace test {
@@ -81,8 +81,7 @@ public:
         res->setAccepted(
             res->info().closeTime,
             res->info().closeTimeResolution,
-            true /* close time correct*/,
-            env.app().config());
+            true /* close time correct*/);
         lh.insert(res, false);
         return res;
     }

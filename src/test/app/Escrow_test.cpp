@@ -17,15 +17,16 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/applySteps.h>
-#include <ripple/ledger/Directory.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/jss.h>
+#include <test/jtx.h>
+#include <xrpld/app/tx/applySteps.h>
+#include <xrpld/ledger/Dir.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
+
 #include <algorithm>
 #include <iterator>
-#include <test/jtx.h>
 
 namespace ripple {
 namespace test {
@@ -60,134 +61,6 @@ struct Escrow_test : public beast::unit_test::suite
          0xA4, 0x26, 0x8B, 0x3F, 0xA6, 0x3B, 0x1B, 0x60, 0x6F, 0x2D,
          0x26, 0x4A, 0x2D, 0x85, 0x7B, 0xE8, 0xA0, 0x9C, 0x1D, 0xFD,
          0x57, 0x0D, 0x15, 0x85, 0x8B, 0xD4, 0x81, 0x01, 0x04}};
-
-    /** Set the "FinishAfter" time tag on a JTx */
-    struct finish_time
-    {
-    private:
-        NetClock::time_point value_;
-
-    public:
-        explicit finish_time(NetClock::time_point const& value) : value_(value)
-        {
-        }
-
-        void
-        operator()(jtx::Env&, jtx::JTx& jt) const
-        {
-            jt.jv[sfFinishAfter.jsonName] = value_.time_since_epoch().count();
-        }
-    };
-
-    /** Set the "CancelAfter" time tag on a JTx */
-    struct cancel_time
-    {
-    private:
-        NetClock::time_point value_;
-
-    public:
-        explicit cancel_time(NetClock::time_point const& value) : value_(value)
-        {
-        }
-
-        void
-        operator()(jtx::Env&, jtx::JTx& jt) const
-        {
-            jt.jv[sfCancelAfter.jsonName] = value_.time_since_epoch().count();
-        }
-    };
-
-    struct condition
-    {
-    private:
-        std::string value_;
-
-    public:
-        explicit condition(Slice cond) : value_(strHex(cond))
-        {
-        }
-
-        template <size_t N>
-        explicit condition(std::array<std::uint8_t, N> c)
-            : condition(makeSlice(c))
-        {
-        }
-
-        void
-        operator()(jtx::Env&, jtx::JTx& jt) const
-        {
-            jt.jv[sfCondition.jsonName] = value_;
-        }
-    };
-
-    struct fulfillment
-    {
-    private:
-        std::string value_;
-
-    public:
-        explicit fulfillment(Slice condition) : value_(strHex(condition))
-        {
-        }
-
-        template <size_t N>
-        explicit fulfillment(std::array<std::uint8_t, N> f)
-            : fulfillment(makeSlice(f))
-        {
-        }
-
-        void
-        operator()(jtx::Env&, jtx::JTx& jt) const
-        {
-            jt.jv[sfFulfillment.jsonName] = value_;
-        }
-    };
-
-    static Json::Value
-    escrow(
-        jtx::Account const& account,
-        jtx::Account const& to,
-        STAmount const& amount)
-    {
-        using namespace jtx;
-        Json::Value jv;
-        jv[jss::TransactionType] = jss::EscrowCreate;
-        jv[jss::Flags] = tfUniversal;
-        jv[jss::Account] = account.human();
-        jv[jss::Destination] = to.human();
-        jv[jss::Amount] = amount.getJson(JsonOptions::none);
-        return jv;
-    }
-
-    static Json::Value
-    finish(
-        jtx::Account const& account,
-        jtx::Account const& from,
-        std::uint32_t seq)
-    {
-        Json::Value jv;
-        jv[jss::TransactionType] = jss::EscrowFinish;
-        jv[jss::Flags] = tfUniversal;
-        jv[jss::Account] = account.human();
-        jv[sfOwner.jsonName] = from.human();
-        jv[sfOfferSequence.jsonName] = seq;
-        return jv;
-    }
-
-    static Json::Value
-    cancel(
-        jtx::Account const& account,
-        jtx::Account const& from,
-        std::uint32_t seq)
-    {
-        Json::Value jv;
-        jv[jss::TransactionType] = jss::EscrowCancel;
-        jv[jss::Flags] = tfUniversal;
-        jv[jss::Account] = account.human();
-        jv[sfOwner.jsonName] = from.human();
-        jv[sfOfferSequence.jsonName] = seq;
-        return jv;
-    }
 
     void
     testEnablement()
@@ -1636,6 +1509,154 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
+    testCredentials()
+    {
+        testcase("Test with credentials");
+
+        using namespace jtx;
+        using namespace std::chrono;
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const dillon{"dillon "};
+        Account const zelda{"zelda"};
+
+        const char credType[] = "abcde";
+
+        {
+            // Credentials amendment not enabled
+            Env env(*this, supported_amendments() - featureCredentials);
+            env.fund(XRP(5000), alice, bob);
+            env.close();
+
+            auto const seq = env.seq(alice);
+            env(escrow(alice, bob, XRP(1000)), finish_time(env.now() + 1s));
+            env.close();
+
+            env(fset(bob, asfDepositAuth));
+            env.close();
+            env(deposit::auth(bob, alice));
+            env.close();
+
+            std::string const credIdx =
+                "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
+                "E4";
+            env(finish(bob, alice, seq),
+                credentials::ids({credIdx}),
+                ter(temDISABLED));
+        }
+
+        {
+            Env env(*this);
+
+            env.fund(XRP(5000), alice, bob, carol, dillon, zelda);
+            env.close();
+
+            env(credentials::create(carol, zelda, credType));
+            env.close();
+            auto const jv =
+                credentials::ledgerEntry(env, carol, zelda, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            auto const seq = env.seq(alice);
+            env(escrow(alice, bob, XRP(1000)), finish_time(env.now() + 50s));
+            env.close();
+
+            // Bob require preauthorization
+            env(fset(bob, asfDepositAuth));
+            env.close();
+
+            // Fail, credentials not accepted
+            env(finish(carol, alice, seq),
+                credentials::ids({credIdx}),
+                ter(tecBAD_CREDENTIALS));
+
+            env.close();
+
+            env(credentials::accept(carol, zelda, credType));
+            env.close();
+
+            // Fail, credentials doesn’t belong to root account
+            env(finish(dillon, alice, seq),
+                credentials::ids({credIdx}),
+                ter(tecBAD_CREDENTIALS));
+
+            // Fail, no depositPreauth
+            env(finish(carol, alice, seq),
+                credentials::ids({credIdx}),
+                ter(tecNO_PERMISSION));
+
+            env(deposit::authCredentials(bob, {{zelda, credType}}));
+            env.close();
+
+            // Success
+            env.close();
+            env(finish(carol, alice, seq), credentials::ids({credIdx}));
+            env.close();
+        }
+
+        {
+            testcase("Escrow with credentials without depositPreauth");
+            using namespace std::chrono;
+
+            Env env(*this);
+
+            env.fund(XRP(5000), alice, bob, carol, dillon, zelda);
+            env.close();
+
+            env(credentials::create(carol, zelda, credType));
+            env.close();
+            env(credentials::accept(carol, zelda, credType));
+            env.close();
+            auto const jv =
+                credentials::ledgerEntry(env, carol, zelda, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            auto const seq = env.seq(alice);
+            env(escrow(alice, bob, XRP(1000)), finish_time(env.now() + 50s));
+            // time advance
+            env.close();
+            env.close();
+            env.close();
+            env.close();
+            env.close();
+            env.close();
+
+            // Succeed, Bob doesn't require preauthorization
+            env(finish(carol, alice, seq), credentials::ids({credIdx}));
+            env.close();
+
+            {
+                const char credType2[] = "fghijk";
+
+                env(credentials::create(bob, zelda, credType2));
+                env.close();
+                env(credentials::accept(bob, zelda, credType2));
+                env.close();
+                auto const credIdxBob =
+                    credentials::ledgerEntry(
+                        env, bob, zelda, credType2)[jss::result][jss::index]
+                        .asString();
+
+                auto const seq = env.seq(alice);
+                env(escrow(alice, bob, XRP(1000)), finish_time(env.now() + 1s));
+                env.close();
+
+                // Bob require preauthorization
+                env(fset(bob, asfDepositAuth));
+                env.close();
+                env(deposit::authCredentials(bob, {{zelda, credType}}));
+                env.close();
+
+                // Use any valid credentials if account == dst
+                env(finish(bob, alice, seq), credentials::ids({credIdxBob}));
+                env.close();
+            }
+        }
+    }
+
+    void
     run() override
     {
         testEnablement();
@@ -1649,6 +1670,7 @@ struct Escrow_test : public beast::unit_test::suite
         testMetaAndOwnership();
         testConsequences();
         testEscrowWithTickets();
+        testCredentials();
     }
 };
 

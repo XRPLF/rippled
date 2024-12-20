@@ -37,7 +37,7 @@ Your report should include the following:
 - The steps to reproduce the vulnerability;
 - Any other relevant details or artifacts, including code, scripts or patches.
 
-In your mail, please describe of the issue or the potential threat; if possible, please include a "repro" (code that can reproduce the issue) or describe the best way to reproduce and replicate the issue. Please make your report as extensive as possible.
+In your email, please describe the issue or potential threat. If possible, include a "repro" (code that can reproduce the issue) or describe the best way to reproduce and replicate the issue. Please make your report as detailed and comprehensive as possible.
 
 For more information on responsible disclosure, please read this [Wikipedia article](https://en.wikipedia.org/wiki/Responsible_disclosure).
 
@@ -60,15 +60,15 @@ While we commit to responding with 24 hours of your initial report with our tria
 
 ## Bug Bounty Program
 
-[Ripple](https://ripple.com) is generously sponsoring a bug bounty program for vulnerabilities in [`rippled`](https://github.com/ripple/rippled) (and other related projects, like [`ripple-lib`](https://github.com/ripple/ripple-lib)).
+[Ripple](https://ripple.com) is generously sponsoring a bug bounty program for vulnerabilities in [`rippled`](https://github.com/XRPLF/rippled) (and other related projects, like [`xrpl.js`](https://github.com/XRPLF/xrpl.js), [`xrpl-py`](https://github.com/XRPLF/xrpl-py), [`xrpl4j`](https://github.com/XRPLF/xrpl4j)).
 
-This program allows us to recognize and reward individuals or groups that identify and report bugs. In summary, order to qualify for a bounty, the bug must be:
+This program allows us to recognize and reward individuals or groups that identify and report bugs. In summary, in order to qualify for a bounty, the bug must be:
 
-1. **In scope**. Only bugs in software under the scope of the program qualify. Currently, that means `rippled` and `ripple-lib`.
-2. **Relevant**. A security issue, posing a danger to user funds, privacy or the operation of the XRP Ledger.
+1. **In scope**. Only bugs in software under the scope of the program qualify. Currently, that means `rippled`, `xrpl.js`, `xrpl-py`, `xrpl4j`.
+2. **Relevant**. A security issue, posing a danger to user funds, privacy, or the operation of the XRP Ledger.
 3. **Original and previously unknown**. Bugs that are already known and discussed in public do not qualify. Previously reported bugs, even if publicly unknown, are not eligible.
 4. **Specific**. We welcome general security advice or recommendations, but we cannot pay bounties for that.
-5. **Fixable**. There has to be something we can do to permanently fix the problem. Note that bugs in other people’s software may still qualify in some cases. For example, if you find a bug in a library that we use which can compromises the security of software that is in scope and we can get it fixed, you may qualify for a bounty.
+5. **Fixable**. There has to be something we can do to permanently fix the problem. Note that bugs in other people’s software may still qualify in some cases. For example, if you find a bug in a library that we use which can compromise the security of software that is in scope and we can get it fixed, you may qualify for a bounty.
 6. **Unused**. If you use the exploit to attack the XRP Ledger, you do not qualify for a bounty. If you report a vulnerability used in an ongoing or past attack and there is specific, concrete evidence that suggests you are the attacker we reserve the right not to pay a bounty.
 
 The amount paid varies dramatically. Vulnerabilities that are harmless on their own, but could form part of a critical exploit will usually receive a bounty. Full-blown exploits can receive much higher bounties. Please don’t hold back partial vulnerabilities while trying to construct a full-blown exploit. We will pay a bounty to anyone who reports a complete chain of vulnerabilities even if they have reported each component of the exploit separately and those vulnerabilities have been fixed in the meantime. However, to qualify for a the full bounty, you must to have been the first to report each of the partial exploits.

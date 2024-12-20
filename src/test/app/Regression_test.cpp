@@ -15,13 +15,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/apply.h>
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/json/json_reader.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
+#include <xrpld/app/tx/apply.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -149,7 +149,9 @@ struct Regression_test : public beast::unit_test::suite
             secp256r1Sig->setFieldVL(sfSigningPubKey, *pubKeyBlob);
             jt.stx.reset(secp256r1Sig.release());
 
-            env(jt, ter(temINVALID));
+            env(jt,
+                rpc("invalidTransaction",
+                    "fails local checks: Invalid signature."));
         };
 
         Account const alice{"alice", KeyType::secp256k1};

@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/BuildLedger.h>
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/ledger/LedgerReplay.h>
-#include <ripple/app/ledger/LedgerReplayTask.h>
-#include <ripple/app/ledger/LedgerReplayer.h>
-#include <ripple/app/ledger/impl/LedgerDeltaAcquire.h>
-#include <ripple/app/ledger/impl/LedgerReplayMsgHandler.h>
-#include <ripple/app/ledger/impl/SkipListAcquire.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/overlay/PeerSet.h>
-#include <ripple/overlay/impl/PeerImp.h>
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
+#include <xrpld/app/ledger/BuildLedger.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerReplay.h>
+#include <xrpld/app/ledger/LedgerReplayTask.h>
+#include <xrpld/app/ledger/LedgerReplayer.h>
+#include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
+#include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
+#include <xrpld/app/ledger/detail/SkipListAcquire.h>
+#include <xrpld/overlay/PeerSet.h>
+#include <xrpld/overlay/detail/PeerImp.h>
+#include <xrpl/basics/Slice.h>
 
 #include <chrono>
 #include <thread>
@@ -106,6 +106,14 @@ public:
         return {};
     }
 
+    virtual void
+    acquireAsync(
+        uint256 const& hash,
+        std::uint32_t seq,
+        InboundLedger::Reason reason) override
+    {
+    }
+
     virtual std::shared_ptr<InboundLedger>
     find(LedgerHash const& hash) override
     {
@@ -173,6 +181,12 @@ public:
     {
     }
 
+    virtual size_t
+    cacheSize() override
+    {
+        return 0;
+    }
+
     LedgerMaster& ledgerSource;
     LedgerMaster& ledgerSink;
     InboundLedgersBehavior bhvr;
@@ -191,7 +205,9 @@ enum class PeerFeature {
 class TestPeer : public Peer
 {
 public:
-    TestPeer(bool enableLedgerReplay) : ledgerReplayEnabled_(enableLedgerReplay)
+    TestPeer(bool enableLedgerReplay)
+        : ledgerReplayEnabled_(enableLedgerReplay)
+        , nodePublicKey_(derivePublicKey(KeyType::ed25519, randomSecretKey()))
     {
     }
 
@@ -231,8 +247,7 @@ public:
     PublicKey const&
     getNodePublic() const override
     {
-        static PublicKey key{};
-        return key;
+        return nodePublicKey_;
     }
     Json::Value
     json() override
@@ -308,6 +323,7 @@ public:
     }
 
     bool ledgerReplayEnabled_;
+    PublicKey nodePublicKey_;
 };
 
 enum class PeerSetBehavior {
@@ -465,7 +481,7 @@ struct LedgerServer
         assert(param.initLedgers > 0);
         createAccounts(param.initAccounts);
         createLedgerHistory();
-        app.logs().threshold(beast::severities::Severity::kWarning);
+        app.logs().threshold(beast::severities::kWarning);
     }
 
     /**
@@ -567,7 +583,10 @@ public:
         PeerSetBehavior behavior = PeerSetBehavior::Good,
         InboundLedgersBehavior inboundBhvr = InboundLedgersBehavior::Good,
         PeerFeature peerFeature = PeerFeature::LedgerReplayEnabled)
-        : env(suite, jtx::envconfig(jtx::port_increment, 3))
+        : env(suite,
+              jtx::envconfig(jtx::port_increment, 3),
+              nullptr,
+              beast::severities::kDisabled)
         , app(env.app())
         , ledgerMaster(env.app().getLedgerMaster())
         , inboundLedgers(
@@ -1289,8 +1308,8 @@ struct LedgerReplayer_test : public beast::unit_test::suite
 
         std::uint8_t payload[55] = {
             0x6A, 0x09, 0xE6, 0x67, 0xF3, 0xBC, 0xC9, 0x08, 0xB2};
-        auto item = std::make_shared<SHAMapItem>(
-            uint256(12345), Slice(payload, sizeof(payload)));
+        auto item =
+            make_shamapitem(uint256(12345), Slice(payload, sizeof(payload)));
         skipList->processData(l->seq(), item);
 
         std::vector<TaskStatus> deltaStatuses;

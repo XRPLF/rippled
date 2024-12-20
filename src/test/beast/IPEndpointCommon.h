@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/basics/random.h>
-#include <ripple/beast/net/IPEndpoint.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 
 namespace beast {
 namespace IP {

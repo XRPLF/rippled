@@ -13,12 +13,15 @@ then
   git clean -ix
 fi
 
+# Ensure all sorting is ASCII-order consistently across platforms.
+export LANG=C
+
 rm -rfv results
 mkdir results
 includes="$( pwd )/results/rawincludes.txt"
 pushd ../..
 echo Raw includes:
-grep -r '#include.*/.*\.h' src/ripple/ src/test/ | \
+grep -r '#include.*/.*\.h' include src | \
     grep -v boost | tee ${includes}
 popd
 pushd results

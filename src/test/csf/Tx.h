@@ -18,13 +18,16 @@
 //==============================================================================
 #ifndef RIPPLE_TEST_CSF_TX_H_INCLUDED
 #define RIPPLE_TEST_CSF_TX_H_INCLUDED
-#include <ripple/beast/hash/hash_append.h>
-#include <ripple/beast/hash/uhash.h>
+#include <xrpl/beast/hash/hash_append.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <boost/container/flat_set.hpp>
-#include <boost/function_output_iterator.hpp>
+#include <boost/iterator/function_output_iterator.hpp>
+#include <algorithm>
 #include <map>
 #include <ostream>
+#include <sstream>
 #include <string>
+#include <type_traits>
 
 namespace ripple {
 namespace test {
@@ -37,6 +40,11 @@ public:
     using ID = std::uint32_t;
 
     Tx(ID i) : id_{i}
+    {
+    }
+
+    template <typename T, typename = std::enable_if_t<std::is_same_v<T, Tx>>>
+    Tx(T const* t) : id_{t->id_}
     {
     }
 

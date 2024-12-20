@@ -1,0 +1,194 @@
+sources:
+  "0.13.5":
+    Windows:
+      "x86_64":
+        Visual Studio:
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.13.5/WasmEdge-0.13.5-windows.zip"
+            sha256: "db533289ba26ec557b5193593c9ed03db75be3bc7aa737e2caa5b56b8eef888a"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.13.5/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    Linux:
+      "x86_64":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.13.5/WasmEdge-0.13.5-manylinux2014_x86_64.tar.gz"
+            sha256: "3686e0226871bf17b62ec57e1c15778c2947834b90af0dfad14f2e0202bf9284"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.13.5/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      "armv8":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.13.5/WasmEdge-0.13.5-manylinux2014_aarch64.tar.gz"
+            sha256: "472de88e0257c539c120b33fdd1805e1e95063121acc2df1d5626e4676b93529"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.11.1/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    Macos:
+      "x86_64":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.13.5/WasmEdge-0.13.5-darwin_x86_64.tar.gz"
+            sha256: "b7fdfaf59805951241f47690917b501ddfa06d9b6f7e0262e44e784efe4a7b33"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.13.5/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      "armv8":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.13.5/WasmEdge-0.13.5-darwin_arm64.tar.gz"
+            sha256: "acc93721210294ced0887352f360e42e46dcc05332e6dd78c1452fb3a35d5255"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.13.5/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    Android:
+      "armv8":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.13.5/WasmEdge-0.13.5-android_aarch64.tar.gz"
+            sha256: "59a0d68a0c7368b51cc65cb5a44a68037d79fd449883ef42792178d57c8784a8"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.13.5/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+  "0.11.2":
+    Windows:
+      "x86_64":
+        Visual Studio:
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.11.2/WasmEdge-0.11.2-windows.zip"
+            sha256: "ca49b98c0cf5f187e08c3ba71afc8d71365fde696f10b4219379a4a4d1a91e6d"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.11.2/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    Linux:
+      "x86_64":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.11.2/WasmEdge-0.11.2-manylinux2014_x86_64.tar.gz"
+            sha256: "784bf1eb25928e2cf02aa88e9372388fad682b4a188485da3cd9162caeedf143"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.11.2/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      "armv8":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.11.2/WasmEdge-0.11.2-manylinux2014_aarch64.tar.gz"
+            sha256: "a2766a4c1edbaea298a30e5431a4e795003a10d8398a933d923f23d4eb4fa5d1"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.11.1/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    Macos:
+      "x86_64":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.11.2/WasmEdge-0.11.2-darwin_x86_64.tar.gz"
+            sha256: "aedec53f29b1e0b657e46e67dba3e2f32a2924f4d9136e60073ea1aba3073e70"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.11.2/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      "armv8":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.11.2/WasmEdge-0.11.2-darwin_arm64.tar.gz"
+            sha256: "fe391df90e1eee69cf1e976f5ddf60c20f29b651710aaa4fc03e2ab4fe52c0d3"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.11.2/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    Android:
+      "armv8":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.11.2/WasmEdge-0.11.2-android_aarch64.tar.gz"
+            sha256: "69e308f5927c753b2bb5639569d10219b60598174d8b304bdf310093fd7b2464"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.11.2/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+  "0.11.1":
+    Windows:
+      "x86_64":
+        Visual Studio:
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.11.1/WasmEdge-0.11.1-windows.zip"
+            sha256: "c86f6384555a0484a5dd81faba5636bba78f5e3d6eaf627d880e34843f9e24bf"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.11.1/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    Linux:
+      "x86_64":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.11.1/WasmEdge-0.11.1-manylinux2014_x86_64.tar.gz"
+            sha256: "76ce4ea0eb86adfa52c73f6c6b44383626d94990e0923cae8b1e6f060ef2bf5b"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.11.1/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      "armv8":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.11.1/WasmEdge-0.11.1-manylinux2014_aarch64.tar.gz"
+            sha256: "cb9ea32932360463991cfda80e09879b2cf6c69737f12f3f2b371cd0af4e9ce8"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.11.1/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    Macos:
+      "x86_64":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.11.1/WasmEdge-0.11.1-darwin_x86_64.tar.gz"
+            sha256: "56df2b00669c25b8143ea2c17370256cd6a33f3b316d3b47857dd38d603cb69a"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.11.1/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      "armv8":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.11.1/WasmEdge-0.11.1-darwin_arm64.tar.gz"
+            sha256: "82f7da1a7a36ec1923fb045193784dd090a03109e84da042af97297205a71f08"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.11.1/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    Android:
+      "armv8":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.11.1/WasmEdge-0.11.1-android_aarch64.tar.gz"
+            sha256: "af8694e93bf72ac5506450d4caebccc340fbba254dca3d58ec0712e96ec9dedd"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.11.1/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+  "0.10.0":
+    Windows:
+      "x86_64":
+        Visual Studio:
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.10.0/WasmEdge-0.10.0-windows.zip"
+            sha256: "63b8a02cced52a723aa283dba02bbe887656256ecca69bb0fff17872c0fb5ebc"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.10.0/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    Linux:
+      "x86_64":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.10.0/WasmEdge-0.10.0-manylinux2014_x86_64.tar.gz"
+            sha256: "4c1ffca9fd8cbdeb8f0951ddaffbbefe81ae123d5b80f61e80ea8d9b56853cde"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.10.0/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      "armv8":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.10.0/WasmEdge-0.10.0-manylinux2014_aarch64.tar.gz"
+            sha256: "c000bf96d0a73a1d360659246c0806c2ce78620b6f78c1147fbf9e2be0280bd9"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.10.0/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+  "0.9.1":
+    Windows:
+      "x86_64":
+        Visual Studio:
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.9.1/WasmEdge-0.9.1-windows.zip"
+            sha256: "68240d8aee23d44db5cc252d8c1cf5d0c77ab709a122af2747a4b836ba461671"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.9.1/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    Linux:
+      "x86_64":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.9.1/WasmEdge-0.9.1-manylinux2014_x86_64.tar.gz"
+            sha256: "bcb6fe3d6e30db0d0aa267ec3bd9b7248f8c8c387620cef4049d682d293c8371"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.9.1/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      "armv8":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.9.1/WasmEdge-0.9.1-manylinux2014_aarch64.tar.gz"
+            sha256: "515bcac3520cd546d9d14372b7930ab48b43f1c5dc258a9f61a82b22c0107eef"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.9.1/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+  "0.9.0":
+    Windows:
+      "x86_64":
+        Visual Studio:
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.9.0/WasmEdge-0.9.0-windows.zip"
+            sha256: "f81bfea4cf09053510e3e74c16c1ee010fc93def8a7e78744443b950f0011c3b"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.9.0/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    Linux:
+      "x86_64":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.9.0/WasmEdge-0.9.0-manylinux2014_x86_64.tar.gz"
+            sha256: "27847f15e4294e707486458e857d7cb11806481bb67a26f076a717a1446827ed"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.9.0/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+      "armv8":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.9.0/WasmEdge-0.9.0-manylinux2014_aarch64.tar.gz"
+            sha256: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.9.0/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    Macos:
+      "armv8":
+        "gcc":
+          - url: "https://github.com/WasmEdge/WasmEdge/releases/download/0.9.0/WasmEdge-0.9.0-darwin_arm64.tar.gz"
+            sha256: "236a407a646f746ab78a1d0a39fa4e85fe28eae219b1635ba49f908d7944686d"
+          - url: "https://raw.githubusercontent.com/WasmEdge/WasmEdge/0.9.0/LICENSE"
+            sha256: "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
