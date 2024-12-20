@@ -191,7 +191,7 @@ getPageForToken(
         : carr[0].getFieldH256(sfNFTokenID);
 
     auto np = std::make_shared<SLE>(keylet::nftpage(base, tokenIDForNewPage));
-    ASSERT(
+    XRPL_ASSERT(
         np->key() > base.key,
         "ripple::nft::getPageForToken : valid NFT page index");
     np->setFieldArray(sfNFTokens, narr);
@@ -278,7 +278,7 @@ changeTokenURI(
 TER
 insertToken(ApplyView& view, AccountID owner, STObject&& nft)
 {
-    ASSERT(
+    XRPL_ASSERT(
         nft.isFieldPresent(sfNFTokenID),
         "ripple::nft::insertToken : has NFT token");
 
@@ -820,8 +820,8 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
         return didRepair;
     }
 
-    ASSERT(
-        nextPage != nullptr,
+    XRPL_ASSERT(
+        nextPage,
         "ripple::nft::repairNFTokenDirectoryLinks : next page is available");
     if (nextPage->isFieldPresent(sfNextPageMin))
     {
@@ -930,9 +930,8 @@ tokenOfferCreatePreclaim(
     if (nftIssuer != acctID && !(nftFlags & nft::flagTransferable))
     {
         auto const root = view.read(keylet::account(nftIssuer));
-        ASSERT(
-            root != nullptr,
-            "ripple::nft::tokenOfferCreatePreclaim : non-null account");
+        XRPL_ASSERT(
+            root, "ripple::nft::tokenOfferCreatePreclaim : non-null account");
 
         if (auto minter = (*root)[~sfNFTokenMinter]; minter != acctID)
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;
