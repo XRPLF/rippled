@@ -111,9 +111,8 @@ public:
     */
     RCLTxSet(std::shared_ptr<SHAMap> m) : map_{std::move(m)}
     {
-        ASSERT(
-            map_ != nullptr,
-            "ripple::RCLTxSet::MutableTxSet::RCLTxSet : non-null input");
+        XRPL_ASSERT(
+            map_, "ripple::RCLTxSet::MutableTxSet::RCLTxSet : non-null input");
     }
 
     /** Constructor from a previously created MutableTxSet
@@ -179,7 +178,7 @@ public:
         std::map<uint256, bool> ret;
         for (auto const& [k, v] : delta)
         {
-            ASSERT(
+            XRPL_ASSERT(
                 (v.first && !v.second) || (v.second && !v.first),
                 "ripple::RCLTxSet::compare : either side is set");
 

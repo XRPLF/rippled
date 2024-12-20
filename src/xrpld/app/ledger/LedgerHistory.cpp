@@ -58,7 +58,7 @@ LedgerHistory::insert(
     if (!ledger->isImmutable())
         LogicError("mutable Ledger in insert");
 
-    ASSERT(
+    XRPL_ASSERT(
         ledger->stateMap().getHash().isNonZero(),
         "ripple::LedgerHistory::insert : nonzero hash");
 
@@ -101,7 +101,7 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
     if (!ret)
         return ret;
 
-    ASSERT(
+    XRPL_ASSERT(
         ret->info().seq == index,
         "ripple::LedgerHistory::getLedgerBySeq : result sequence match");
 
@@ -109,7 +109,7 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
         // Add this ledger to the local tracking by index
         std::unique_lock sl(m_ledgers_by_hash.peekMutex());
 
-        ASSERT(
+        XRPL_ASSERT(
             ret->isImmutable(),
             "ripple::LedgerHistory::getLedgerBySeq : immutable result ledger");
         m_ledgers_by_hash.canonicalize_replace_client(ret->info().hash, ret);
@@ -125,11 +125,11 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 
     if (ret)
     {
-        ASSERT(
+        XRPL_ASSERT(
             ret->isImmutable(),
             "ripple::LedgerHistory::getLedgerByHash : immutable fetched "
             "ledger");
-        ASSERT(
+        XRPL_ASSERT(
             ret->info().hash == hash,
             "ripple::LedgerHistory::getLedgerByHash : fetched ledger hash "
             "match");
@@ -141,14 +141,14 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
     if (!ret)
         return ret;
 
-    ASSERT(
+    XRPL_ASSERT(
         ret->isImmutable(),
         "ripple::LedgerHistory::getLedgerByHash : immutable loaded ledger");
-    ASSERT(
+    XRPL_ASSERT(
         ret->info().hash == hash,
         "ripple::LedgerHistory::getLedgerByHash : loaded ledger hash match");
     m_ledgers_by_hash.canonicalize_replace_client(ret->info().hash, ret);
-    ASSERT(
+    XRPL_ASSERT(
         ret->info().hash == hash,
         "ripple::LedgerHistory::getLedgerByHash : result hash match");
 
@@ -194,7 +194,7 @@ log_metadata_difference(
     auto validMetaData = getMeta(validLedger, tx);
     auto builtMetaData = getMeta(builtLedger, tx);
 
-    ASSERT(
+    XRPL_ASSERT(
         validMetaData || builtMetaData,
         "ripple::log_metadata_difference : some metadata present");
 
@@ -340,7 +340,7 @@ LedgerHistory::handleMismatch(
     std::optional<uint256> const& validatedConsensusHash,
     Json::Value const& consensus)
 {
-    ASSERT(
+    XRPL_ASSERT(
         built != valid,
         "ripple::LedgerHistory::handleMismatch : unequal hashes");
     ++mismatch_counter_;
@@ -357,7 +357,7 @@ LedgerHistory::handleMismatch(
         return;
     }
 
-    ASSERT(
+    XRPL_ASSERT(
         builtLedger->info().seq == validLedger->info().seq,
         "ripple::LedgerHistory::handleMismatch : sequence match");
 
@@ -452,7 +452,8 @@ LedgerHistory::builtLedger(
 {
     LedgerIndex index = ledger->info().seq;
     LedgerHash hash = ledger->info().hash;
-    ASSERT(!hash.isZero(), "ripple::LedgerHistory::builtLedger : nonzero hash");
+    XRPL_ASSERT(
+        !hash.isZero(), "ripple::LedgerHistory::builtLedger : nonzero hash");
 
     std::unique_lock sl(m_consensus_validated.peekMutex());
 
@@ -492,7 +493,7 @@ LedgerHistory::validatedLedger(
 {
     LedgerIndex index = ledger->info().seq;
     LedgerHash hash = ledger->info().hash;
-    ASSERT(
+    XRPL_ASSERT(
         !hash.isZero(),
         "ripple::LedgerHistory::validatedLedger : nonzero hash");
 

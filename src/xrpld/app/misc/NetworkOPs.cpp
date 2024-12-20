@@ -106,7 +106,7 @@ class NetworkOPsImp final : public NetworkOPs
             FailHard f)
             : transaction(t), admin(a), local(l), failType(f)
         {
-            ASSERT(
+            XRPL_ASSERT(
                 local || failType == FailHard::no,
                 "ripple::NetworkOPsImp::TransactionStatus::TransactionStatus : "
                 "valid inputs");
@@ -1222,7 +1222,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
         *transaction->getSTransaction(),
         view->rules(),
         app_.config());
-    ASSERT(
+    XRPL_ASSERT(
         validity == Validity::Valid,
         "ripple::NetworkOPsImp::processTransaction : valid validity");
 
@@ -1418,10 +1418,10 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
     std::vector<TransactionStatus> submit_held;
     std::vector<TransactionStatus> transactions;
     mTransactions.swap(transactions);
-    ASSERT(
+    XRPL_ASSERT(
         !transactions.empty(),
         "ripple::NetworkOPsImp::apply : non-empty transactions");
-    ASSERT(
+    XRPL_ASSERT(
         mDispatchState != DispatchState::running,
         "ripple::NetworkOPsImp::apply : is not running");
 
@@ -1693,8 +1693,8 @@ NetworkOPsImp::getOwnerInfo(
             for (auto const& uDirEntry : sleNode->getFieldV256(sfIndexes))
             {
                 auto sleCur = lpLedger->read(keylet::child(uDirEntry));
-                ASSERT(
-                    sleCur != nullptr,
+                XRPL_ASSERT(
+                    sleCur,
                     "ripple::NetworkOPsImp::getOwnerInfo : non-null child SLE");
 
                 switch (sleCur->getType())
@@ -1734,8 +1734,8 @@ NetworkOPsImp::getOwnerInfo(
             if (uNodeDir)
             {
                 sleNode = lpLedger->read(keylet::page(root, uNodeDir));
-                ASSERT(
-                    sleNode != nullptr,
+                XRPL_ASSERT(
+                    sleNode,
                     "ripple::NetworkOPsImp::getOwnerInfo : read next page");
             }
         } while (uNodeDir);
@@ -1967,7 +1967,7 @@ NetworkOPsImp::switchLastClosedLedger(
 bool
 NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
 {
-    ASSERT(
+    XRPL_ASSERT(
         networkClosed.isNonZero(),
         "ripple::NetworkOPsImp::beginConsensus : nonzero input");
 
@@ -1990,11 +1990,11 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
         return false;
     }
 
-    ASSERT(
+    XRPL_ASSERT(
         prevLedger->info().hash == closingInfo.parentHash,
         "ripple::NetworkOPsImp::beginConsensus : prevLedger hash matches "
         "parent");
-    ASSERT(
+    XRPL_ASSERT(
         closingInfo.parentHash == m_ledgerMaster.getClosedLedger()->info().hash,
         "ripple::NetworkOPsImp::beginConsensus : closedLedger parent matches "
         "hash");
@@ -2970,7 +2970,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             lpAccepted->info().hash, alpAccepted);
     }
 
-    ASSERT(
+    XRPL_ASSERT(
         alpAccepted->getLedger().get() == lpAccepted.get(),
         "ripple::NetworkOPsImp::pubLedger : accepted input");
 
@@ -3375,7 +3375,7 @@ NetworkOPsImp::pubAccountTransaction(
         if (last)
             jvObj.set(jss::account_history_boundary, true);
 
-        ASSERT(
+        XRPL_ASSERT(
             jvObj.isMember(jss::account_history_tx_stream) ==
                 MultiApiJson::none,
             "ripple::NetworkOPsImp::pubAccountTransaction : "
@@ -3452,7 +3452,7 @@ NetworkOPsImp::pubProposedAccountTransaction(
                 isrListener->getApiVersion(),  //
                 [&](Json::Value const& jv) { isrListener->send(jv, true); });
 
-        ASSERT(
+        XRPL_ASSERT(
             jvObj.isMember(jss::account_history_tx_stream) ==
                 MultiApiJson::none,
             "ripple::NetworkOPs::pubProposedAccountTransaction : "
@@ -4004,7 +4004,8 @@ NetworkOPsImp::acceptLedger(
 {
     // This code-path is exclusively used when the server is in standalone
     // mode via `ledger_accept`
-    ASSERT(m_standalone, "ripple::NetworkOPsImp::acceptLedger : is standalone");
+    XRPL_ASSERT(
+        m_standalone, "ripple::NetworkOPsImp::acceptLedger : is standalone");
 
     if (!m_standalone)
         Throw<std::runtime_error>(

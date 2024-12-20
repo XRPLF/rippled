@@ -270,10 +270,10 @@ RFC1751::extract(char const* s, int start, int length)
     unsigned char cr;
     unsigned long x;
 
-    ASSERT(length <= 11, "ripple::RFC1751::extract : maximum length");
-    ASSERT(start >= 0, "ripple::RFC1751::extract : minimum start");
-    ASSERT(length >= 0, "ripple::RFC1751::extract : minimum length");
-    ASSERT(
+    XRPL_ASSERT(length <= 11, "ripple::RFC1751::extract : maximum length");
+    XRPL_ASSERT(start >= 0, "ripple::RFC1751::extract : minimum start");
+    XRPL_ASSERT(length >= 0, "ripple::RFC1751::extract : minimum length");
+    XRPL_ASSERT(
         start + length <= 66,
         "ripple::RFC1751::extract : maximum start + length");
 
@@ -322,10 +322,10 @@ RFC1751::insert(char* s, int x, int start, int length)
     unsigned long y;
     int shift;
 
-    ASSERT(length <= 11, "ripple::RFC1751::insert : maximum length");
-    ASSERT(start >= 0, "ripple::RFC1751::insert : minimum start");
-    ASSERT(length >= 0, "ripple::RFC1751::insert : minimum length");
-    ASSERT(
+    XRPL_ASSERT(length <= 11, "ripple::RFC1751::insert : maximum length");
+    XRPL_ASSERT(start >= 0, "ripple::RFC1751::insert : minimum start");
+    XRPL_ASSERT(length >= 0, "ripple::RFC1751::insert : minimum length");
+    XRPL_ASSERT(
         start + length <= 66,
         "ripple::RFC1751::insert : maximum start + length");
 
