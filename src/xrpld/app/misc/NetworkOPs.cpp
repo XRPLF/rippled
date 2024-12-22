@@ -2987,8 +2987,7 @@ NetworkOPsImp::transJson(
         jvObj[jss::meta] = meta->get().getJson(JsonOptions::none);
         RPC::insertDeliveredAmount(
             jvObj[jss::meta], *ledger, transaction, meta->get());
-        RPC::insertNFTSyntheticInJson(
-            jvObj[jss::meta], transaction, meta->get());
+        RPC::insertNFTSyntheticInJson(jvObj, transaction, meta->get());
         RPC::insertMPTokenIssuanceID(
             jvObj[jss::meta], transaction, meta->get());
     }
