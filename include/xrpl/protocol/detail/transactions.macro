@@ -448,7 +448,7 @@ TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete, ({
 }))
 
 /** This transaction type modify a NFToken */
-TRANSACTION(ttNFTokenModify, 61, NFTokenModify, ({
+TRANSACTION(ttNFTOKEN_MODIFY, 61, NFTokenModify, ({
     {sfNFTokenID, soeREQUIRED},
     {sfOwner, soeOPTIONAL},
     {sfURI, soeOPTIONAL},
