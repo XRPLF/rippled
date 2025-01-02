@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/MPTAmount.h>
+#include <xrpl/protocol/MPTAmount.h>
 
 namespace ripple {
 
