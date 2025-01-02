@@ -70,7 +70,7 @@ public:
     }
 
     ApplyFlags const&
-    flags()
+    flags() const
     {
         return flags_;
     }

@@ -709,9 +709,11 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 
 //------------------------------------------------------------------------------
 
-XRPAmount
-getBaseFee(Application const& app, Config const& config, Json::Value tx)
+static XRPAmount
+getTxFee(Application const& app, Config const& config, Json::Value tx)
 {
+    // autofilling only needed in this function so that the `STParsedJSONObject`
+    // parsing works properly it should not be modifying the actual `tx` object
     if (!tx.isMember(jss::Fee))
     {
         tx[jss::Fee] = "0";
@@ -736,7 +738,8 @@ getBaseFee(Application const& app, Config const& config, Json::Value tx)
     {
         if (!tx[jss::Signers].isArray())
             return config.FEES.reference_fee;
-        // check multisigned signers
+
+        // check multi-signed signers
         for (auto& signer : tx[jss::Signers])
         {
             if (!signer.isMember(jss::Signer) ||
@@ -768,17 +771,17 @@ getBaseFee(Application const& app, Config const& config, Json::Value tx)
 }
 
 Json::Value
-getCurrentFee(
+getCurrentNetworkFee(
     Role const role,
     Config const& config,
     LoadFeeTrack const& feeTrack,
     TxQ const& txQ,
     Application const& app,
-    Json::Value tx,
+    Json::Value& tx,
     int mult,
     int div)
 {
-    XRPAmount const feeDefault = getBaseFee(app, config, tx);
+    XRPAmount const feeDefault = getTxFee(app, config, tx);
 
     auto ledger = app.openLedger().current();
     // Administrative and identified endpoints are exempt from local fees.
@@ -871,7 +874,7 @@ checkFee(
     }
 
     auto feeOrError =
-        getCurrentFee(role, config, feeTrack, txQ, app, tx, mult, div);
+        getCurrentNetworkFee(role, config, feeTrack, txQ, app, tx, mult, div);
     if (feeOrError.isMember(jss::error))
         return feeOrError;
     tx[jss::Fee] = feeOrError;

@@ -41,7 +41,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         // autofill Fee
         // Must happen after all the other autofills happen
         // Error handling/messaging works better that way
-        auto feeOrError = RPC::getCurrentFee(
+        auto feeOrError = RPC::getCurrentNetworkFee(
             context.role,
             context.app.config(),
             context.app.getFeeTrack(),

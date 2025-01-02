@@ -136,7 +136,26 @@ preflight2(PreflightContext const& ctx)
     if (ctx.flags & tapDRY_RUN)  // simulation
     {
         if (ctx.tx.getSignature().empty())
-            return tesSUCCESS;
+        {
+            if (ctx.tx.isFieldPresent(sfSigners))
+            {
+                for (auto const& signer : ctx.tx.getFieldArray(sfSigners))
+                {
+                    if (signer.isFieldPresent(sfTxnSignature) &&
+                        !ctx.tx.getSignature().empty())
+                    {
+                        // NOTE: This code should never be hit because it's
+                        // checked in the `simulate` RPC
+                        return temINVALID;  // LCOV_EXCL_LINE
+                    }
+                }
+                return tesSUCCESS;
+            }
+            else
+            {
+                return tesSUCCESS;
+            }
+        }
         // NOTE: This code should never be hit because it's checked in the
         // `simulate` RPC
         return temINVALID;  // LCOV_EXCL_LINE

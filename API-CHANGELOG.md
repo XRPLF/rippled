@@ -92,29 +92,27 @@ The `network_id` field was added in the `server_info` response in version 1.5.0 
 
 ## XRP Ledger server version 2.3.0
 
-### BREAKING CHANGES
+### Breaking change in 2.3
 
-- `book_changes`: If the requested ledger version is not available on this node, a `ledgerNotFound` error is returned and the node does not attempt to acquire the ledger from the p2p network (as with other non-admin RPCs). Admins can still attempt to retrieve old ledgers with the `ledger_request` RPC.
+- `book_changes`: If the requested ledger version is not available on this node, a `ledgerNotFound` error is returned and the node does not attempt to acquire the ledger from the p2p network (as with other non-admin RPCs).
 
-### Additions
+Admins can still attempt to retrieve old ledgers with the `ledger_request` RPC.
 
-Additions are intended to be non-breaking (because they are purely additive).
+### Additions in 2.3
 
 - `book_changes`: Returns a `validated` field in its response, which was missing in prior versions.
-
-## XRP Ledger server version 2.2.0
-
-The following is a non-breaking addition to the API.
-
-- The `feature` method now has a non-admin mode for users. (It was previously only available to admin connections.) The method returns an updated list of amendments, including their names and other information. ([#4781](https://github.com/XRPLF/rippled/pull/4781))
-
-## XRP Ledger server version 2.0.0
 
 The following additions are non-breaking (because they are purely additive).
 
 - `server_definitions`: A new RPC that generates a `definitions.json`-like output that can be used in XRPL libraries.
 - In `Payment` transactions, `DeliverMax` has been added. This is a replacement for the `Amount` field, which should not be used. Typically, the `delivered_amount` (in transaction metadata) should be used. To ease the transition, `DeliverMax` is present regardless of API version, since adding a field is non-breaking.
 - API version 2 has been moved from beta to supported, meaning that it is generally available (regardless of the `beta_rpc_api` setting).
+
+## XRP Ledger server version 2.2.0
+
+The following is a non-breaking addition to the API.
+
+- The `feature` method now has a non-admin mode for users. (It was previously only available to admin connections.) The method returns an updated list of amendments, including their names and other information. ([#4781](https://github.com/XRPLF/rippled/pull/4781))
 
 ## XRP Ledger server version 1.12.0
 
@@ -158,7 +156,7 @@ The following additions are non-breaking (because they are purely additive).
 
 [Version 1.11.0](https://github.com/XRPLF/rippled/releases/tag/1.11.0) was released on Jun 20, 2023.
 
-### Breaking changes
+### Breaking changes in 1.11
 
 - Added the ability to mark amendments as obsolete. For the `feature` admin API, there is a new possible value for the `vetoed` field. (https://github.com/XRPLF/rippled/pull/4291)
   - The value of `vetoed` can now be `true`, `false`, or `"Obsolete"`.
@@ -177,7 +175,7 @@ The following additions are non-breaking (because they are purely additive).
     - `telREQUIRES_NETWORK_ID`: a `NetworkID` is required, but is not present. Add the field to the transaction, and try again.
     - `telWRONG_NETWORK`: a `NetworkID` is specified, but it is for a different network. Submit the transaction to a different server which is connected to the correct network.
 
-### Additions and bug fixes
+### Additions and bug fixes in 1.11
 
 - Added `nftoken_id`, `nftoken_ids` and `offer_id` meta fields into NFT `tx` and `account_tx` responses. (https://github.com/XRPLF/rippled/pull/4447)
 - Added an `account_flags` object to the `account_info` method response. (https://github.com/XRPLF/rippled/pull/4459)
@@ -189,7 +187,7 @@ The following additions are non-breaking (because they are purely additive).
 [Version 1.10.0](https://github.com/XRPLF/rippled/releases/tag/1.10.0)
 was released on Mar 14, 2023.
 
-### Breaking changes
+### Breaking changes in 1.10
 
 - If the `XRPFees` feature is enabled, the `fee_ref` field will be
   removed from the [ledger subscription stream](https://xrpl.org/subscribe.html#ledger-stream), because it will no longer

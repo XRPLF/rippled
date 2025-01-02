@@ -37,13 +37,13 @@ class TxQ;
 namespace RPC {
 
 Json::Value
-getCurrentFee(
+getCurrentNetworkFee(
     Role const role,
     Config const& config,
     LoadFeeTrack const& feeTrack,
     TxQ const& txQ,
     Application const& app,
-    Json::Value tx,
+    Json::Value& tx,
     int mult = Tuning::defaultAutoFillFeeMultiplier,
     int div = Tuning::defaultAutoFillFeeDivisor);
 

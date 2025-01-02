@@ -2183,7 +2183,8 @@ public:
             BEAST_EXPECT(!RPC::contains_error(result));
             BEAST_EXPECT(
                 req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] == 50000000);
+                req[jss::tx_json][jss::Fee] ==
+                    env.current()->fees().increment.jsonClipped());
         }
     }
 

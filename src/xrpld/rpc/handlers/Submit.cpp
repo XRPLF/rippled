@@ -40,7 +40,7 @@ getFailHard(RPC::JsonContext const& context)
 }
 
 // {
-//   tx_blob: <object>,
+//   tx_blob: <string> XOR tx_json: <object>,
 //   secret: <secret>
 // }
 Json::Value

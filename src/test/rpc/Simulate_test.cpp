@@ -41,8 +41,8 @@ class Simulate_test : public beast::unit_test::suite
     checkBasicReturnValidity(
         Json::Value& result,
         Json::Value& tx,
-        int sequence = 1,
-        std::string fee = "10")
+        int expectedSequence,
+        std::string expectedFee)
     {
         BEAST_EXPECT(result[jss::applied] == false);
         BEAST_EXPECT(result.isMember(jss::engine_result));
@@ -69,8 +69,20 @@ class Simulate_test : public beast::unit_test::suite
             tx_json[jss::SigningPubKey] == tx.get(jss::SigningPubKey, ""));
         BEAST_EXPECT(
             tx_json[jss::TxnSignature] == tx.get(jss::TxnSignature, ""));
-        BEAST_EXPECT(tx_json[jss::Fee] == tx.get(jss::Fee, fee));
-        BEAST_EXPECT(tx_json[jss::Sequence] == tx.get(jss::Sequence, sequence));
+        BEAST_EXPECT(tx_json[jss::Fee] == tx.get(jss::Fee, expectedFee));
+        BEAST_EXPECT(
+            tx_json[jss::Sequence] == tx.get(jss::Sequence, expectedSequence));
+    }
+
+    void
+    checkBasicReturnValidity(
+        Json::Value& result,
+        Json::Value& tx,
+        int expectedSequence,
+        XRPAmount expectedFee)
+    {
+        return checkBasicReturnValidity(
+            result, tx, expectedSequence, expectedFee.jsonClipped().asString());
     }
 
     void
@@ -228,7 +240,9 @@ class Simulate_test : public beast::unit_test::suite
             params[jss::tx_json] = tx_json;
 
             auto resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(resp[jss::result][jss::error] == "srcActMalformed");
+            BEAST_EXPECTS(
+                resp[jss::result][jss::error] == "srcActMalformed",
+                resp[jss::result][jss::error].toStyledString());
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Invalid field 'tx.Account'.");
@@ -347,7 +361,8 @@ class Simulate_test : public beast::unit_test::suite
         {
             auto validateOutput = [&](Json::Value resp, Json::Value& tx) {
                 auto result = resp[jss::result];
-                checkBasicReturnValidity(result, tx);
+                checkBasicReturnValidity(
+                    result, tx, 1, env.current()->fees().base);
 
                 BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
                 BEAST_EXPECT(result[jss::engine_result_code] == 0);
@@ -431,7 +446,8 @@ class Simulate_test : public beast::unit_test::suite
             std::function<void(Json::Value, Json::Value&)> testSimulation =
                 [&](Json::Value resp, Json::Value& tx) {
                     auto result = resp[jss::result];
-                    checkBasicReturnValidity(result, tx);
+                    checkBasicReturnValidity(
+                        result, tx, 1, env.current()->fees().base);
 
                     BEAST_EXPECT(result[jss::engine_result] == "temBAD_AMOUNT");
                     BEAST_EXPECT(result[jss::engine_result_code] == -298);
@@ -479,7 +495,8 @@ class Simulate_test : public beast::unit_test::suite
             std::function<void(Json::Value, Json::Value&)> testSimulation =
                 [&](Json::Value resp, Json::Value& tx) {
                     auto result = resp[jss::result];
-                    checkBasicReturnValidity(result, tx);
+                    checkBasicReturnValidity(
+                        result, tx, 1, env.current()->fees().base);
 
                     BEAST_EXPECT(
                         result[jss::engine_result] == "tecNO_DST_INSUF_XRP");
@@ -677,7 +694,8 @@ class Simulate_test : public beast::unit_test::suite
             std::function<void(Json::Value, Json::Value&)> testSimulation =
                 [&](Json::Value resp, Json::Value& tx) {
                     auto result = resp[jss::result];
-                    checkBasicReturnValidity(result, tx, 3);
+                    checkBasicReturnValidity(
+                        result, tx, 3, env.current()->fees().base);
 
                     BEAST_EXPECT(
                         result[jss::engine_result] == "tefMASTER_DISABLED");
@@ -712,6 +730,74 @@ class Simulate_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testMultisignedBadPubKey()
+    {
+        testcase("Multi-signed transaction with a bad public key");
+
+        using namespace jtx;
+        Env env(*this);
+        static auto const newDomain = "123ABC";
+        Account const alice("alice");
+        Account const becky("becky");
+        Account const carol("carol");
+        Account const dylan("dylan");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        // set up valid multisign
+        env(signers(alice, 1, {{becky, 1}, {carol, 1}}));
+
+        {
+            auto validateOutput = [&](Json::Value resp, Json::Value& tx) {
+                auto result = resp[jss::result];
+                checkBasicReturnValidity(result, tx, 5, "20");
+
+                BEAST_EXPECTS(
+                    result[jss::engine_result] == "tefBAD_SIGNATURE",
+                    result[jss::engine_result].toStyledString());
+                BEAST_EXPECT(result[jss::engine_result_code] == -186);
+                BEAST_EXPECT(
+                    result[jss::engine_result_message] ==
+                    "A signature is provided for a non-signer.");
+
+                BEAST_EXPECT(
+                    !result.isMember(jss::meta) &&
+                    !result.isMember(jss::meta_blob));
+            };
+
+            Json::Value tx;
+
+            tx[jss::Account] = alice.human();
+            tx[jss::TransactionType] = jss::AccountSet;
+            tx[sfDomain.jsonName] = newDomain;
+            tx[sfSigners.jsonName] = Json::arrayValue;
+            {
+                Json::Value signer;
+                signer[jss::Account] = becky.human();
+                signer[jss::SigningPubKey] = strHex(dylan.pk().slice());
+                Json::Value signerOuter;
+                signerOuter[sfSigner.jsonName] = signer;
+                tx[sfSigners.jsonName].append(signerOuter);
+            }
+
+            // test with autofill
+            testTx(env, tx, validateOutput, false);
+
+            tx[sfSigningPubKey.jsonName] = "";
+            tx[sfTxnSignature.jsonName] = "";
+            tx[sfSequence.jsonName] = 5;
+            tx[sfFee.jsonName] = "20";  // also tests a non-base fee
+            tx[sfSigners.jsonName][0u][sfSigner.jsonName][jss::TxnSignature] =
+                "";
+
+            // test without autofill
+            testTx(env, tx, validateOutput);
+
+            // TODO: check that the ledger wasn't affected
+        }
+    }
+
 public:
     void
     run() override
@@ -722,6 +808,7 @@ public:
         testTransactionTecFailure();
         testSuccessfulTransactionMultisigned();
         testTransactionSigningFailure();
+        testMultisignedBadPubKey();
     }
 };
 
