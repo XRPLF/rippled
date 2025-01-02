@@ -1,0 +1,4 @@
+include(libxrpl)
+[options]
+xrpl/*:xrpld=True
+xrpl/*:tests=True
