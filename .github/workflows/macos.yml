@@ -45,7 +45,7 @@ jobs:
         run: |
           env | sort
           echo ${PATH} | tr ':' '\n'
-          python --version
+          python --version || brew install python && ln -s /opt/homebrew/bin/python3 /opt/homebrew/bin/python
           conan --version
           cmake --version
       - name: configure Conan
