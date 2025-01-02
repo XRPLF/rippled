@@ -25,6 +25,10 @@
 // The EXPAND macro is needed for Windows
 // https://stackoverflow.com/questions/5134523/msvc-doesnt-expand-va-args-correctly
 #define EXPAND(x) x
+
+// The `LEDGER_ENTRY_DUPLICATE macro is needed to avoid JSS conflicts
+// Since some transactions and ledger entries have the same name (like `DepositPreauth`)
+// The compiler won't accept two instances of `JSS(DepositPreauth)`
 #define LEDGER_ENTRY_DUPLICATE(...) EXPAND(LEDGER_ENTRY(__VA_ARGS__))
 #endif
 
