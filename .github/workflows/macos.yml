@@ -41,6 +41,16 @@ jobs:
       - name: install Ninja
         if: matrix.generator == 'Ninja'
         run: brew install ninja
+      - name: install python
+        run: | 
+          brew install python
+          if which python > /dev/null 2>&1; then
+              echo "Python executable exists"
+          else
+              ln -s /opt/homebrew/bin/python3 /opt/homebrew/bin/python
+          fi
+      - name: install cmake
+        run: brew install cmake
       - name: check environment
         run: |
           env | sort
