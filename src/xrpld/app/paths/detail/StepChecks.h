@@ -21,10 +21,12 @@
 #define RIPPLE_APP_PATHS_IMPL_STEP_CHECKS_H_INCLUDED
 
 #include <xrpld/ledger/ReadView.h>
+#include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
+#include "xrpl/protocol/TER.h"
 
 namespace ripple {
 
@@ -51,6 +53,26 @@ checkFreeze(
         if (sle->isFlag((dst > src) ? lsfHighFreeze : lsfLowFreeze))
         {
             return terNO_LINE;
+        }
+    }
+
+    if (view.rules().enabled(fixFrozenLPTokenTransfer))
+    {
+        if (auto const sleDst = view.read(keylet::account(dst));
+            sleDst && sleDst->isFieldPresent(sfAMMID))
+        {
+            auto const sleAmm = view.read(keylet::amm((*sleDst)[sfAMMID]));
+            if (!sleAmm)
+                return tecINTERNAL;
+
+            if (isLPTokenFrozen(
+                    view,
+                    src,
+                    (*sleAmm)[sfAsset].get<Issue>(),
+                    (*sleAmm)[sfAsset2].get<Issue>()))
+            {
+                return terNO_LINE;
+            }
         }
     }
 

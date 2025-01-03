@@ -29,6 +29,7 @@
 // If you add an amendment here, then do not forget to increment `numFeatures`
 // in include/xrpl/protocol/Feature.h.
 
+XRPL_FIX    (FrozenLPTokenTransfer,      Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Credentials,                Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(AMMClawback,                Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (AMMv1_2,                    Supported::yes, VoteBehavior::DefaultNo)

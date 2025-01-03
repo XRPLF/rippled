@@ -153,6 +153,13 @@ isFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
         asset.value());
 }
 
+[[nodiscard]] bool
+isLPTokenFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue asset,
+    Issue asset2);
+
 // Returns the amount an account can spend without going into debt.
 //
 // <-- saAmount: amount of currency held by account. May be negative.

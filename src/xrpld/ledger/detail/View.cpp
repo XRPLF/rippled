@@ -267,6 +267,17 @@ isFrozen(
         isIndividualFrozen(view, account, mptIssue);
 }
 
+bool
+isLPTokenFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue asset,
+    Issue asset2)
+{
+    return isFrozen(view, account, asset.currency, asset.account) ||
+        isFrozen(view, account, asset2.currency, asset2.account);
+}
+
 STAmount
 accountHolds(
     ReadView const& view,
@@ -303,8 +314,36 @@ accountHolds(
             amount.negate();
         }
         amount.setIssuer(issuer);
+
+        // if it's a LPToken, also need to check if issuers of the asset pair
+        // has frozen holder's trustline
+        if (view.rules().enabled(fixFrozenLPTokenTransfer) &&
+            zeroIfFrozen == fhZERO_IF_FROZEN)
+        {
+            auto const sleIssuer = view.read(keylet::account(issuer));
+            if (!sleIssuer)
+            {
+                amount.clear(Issue{currency, issuer});
+            }
+            else if (sleIssuer->isFieldPresent(sfAMMID))
+            {
+                auto const sleAmm =
+                    view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+
+                if (!sleAmm ||
+                    isLPTokenFrozen(
+                        view,
+                        account,
+                        (*sleAmm)[sfAsset].get<Issue>(),
+                        (*sleAmm)[sfAsset2].get<Issue>()))
+                {
+                    amount.clear(Issue{currency, issuer});
+                }
+            }
+        }
     }
-    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(account)
+    JLOG(j.trace()) << "accountHolds:"
+                    << " account=" << to_string(account)
                     << " amount=" << amount.getFullText();
 
     return view.balanceHook(account, issuer, amount);
@@ -453,7 +492,8 @@ xrpLiquid(
     STAmount const amount =
         (balance < reserve) ? STAmount{0} : balance - reserve;
 
-    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(id)
+    JLOG(j.trace()) << "accountHolds:"
+                    << " account=" << to_string(id)
                     << " amount=" << amount.getFullText()
                     << " fullBalance=" << fullBalance.getFullText()
                     << " balance=" << balance.getFullText()
