@@ -63,12 +63,9 @@ struct SharedIntrusiveAdoptNoIncrementTag
 //------------------------------------------------------------------------------
 //
 
-// clang-format off
 template <class T>
-concept CAdoptTag =
-    std::is_same_v<T, SharedIntrusiveAdoptIncrementStrongTag> ||
+concept CAdoptTag = std::is_same_v<T, SharedIntrusiveAdoptIncrementStrongTag> ||
     std::is_same_v<T, SharedIntrusiveAdoptNoIncrementTag>;
-// clang-format on
 
 //------------------------------------------------------------------------------
 
@@ -119,9 +116,7 @@ public:
     operator==(std::nullptr_t) const;
 
     template <class TT>
-    // clang-format off
-    requires std::convertible_to<TT*, T*>
-    // clang-format on
+        requires std::convertible_to<TT*, T*>
     SharedIntrusive&
     operator=(SharedIntrusive<TT> const& rhs);
 
@@ -129,9 +124,7 @@ public:
     operator=(SharedIntrusive&& rhs);
 
     template <class TT>
-    // clang-format off
-    requires std::convertible_to<TT*, T*>
-    // clang-format on
+        requires std::convertible_to<TT*, T*>
     SharedIntrusive&
     operator=(SharedIntrusive<TT>&& rhs);
 
