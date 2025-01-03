@@ -320,6 +320,9 @@ private:
 template <class T>
 class SharedWeakUnion
 {
+    // Tagged pointer. Low bit determines if this is a strong or a weak
+    // pointer. The low bit must be masked to zero when converting back to a
+    // pointer. If the low bit is '1', this is a weak pointer.
     static_assert(
         alignof(T) >= 2,
         "Bad alignment: Combo pointer requires low bit to be zero");
