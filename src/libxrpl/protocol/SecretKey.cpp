@@ -73,77 +73,63 @@
 
 namespace ripple {
 
-SecretKey::~SecretKey()
-{
-    secure_erase(buf_, sizeof(buf_));
-}
-
-SecretKey::SecretKey(std::array<std::uint8_t, 2528> const& key)
-{
-    if (key.size() != 32 && key.size() != 2528) {
-        LogicError("SecretKey::SecretKey: invalid size");
+// Securely erase memory
+void secure_erase(std::uint8_t* data, std::size_t size) {
+    if (data) {
+        std::memset(data, 0, size);
     }
-    std::memcpy(buf_, key.data(), key.size());
 }
 
-SecretKey::SecretKey(Slice const& slice)
-{
+
+// Constructor with KeyType
+SecretKey::SecretKey(KeyType type, Slice const& slice) {
+    // Determine the key size based on the KeyType
+    if (type == KeyType::secp256k1) {
+        keySize_ = 32; // secp256k1 keys are 32 bytes
+    } else if (type == KeyType::dilithium) {
+        keySize_ = 2528; // Dilithium keys are 2528 bytes
+    } else {
+        throw std::logic_error("SecretKey::SecretKey: unsupported KeyType");
+    }
+
+    // Validate the input slice size
+    if (slice.size() != keySize_) {
+        throw std::logic_error("SecretKey::SecretKey: invalid key size for the given KeyType");
+    }
+
+    // Allocate the buffer dynamically to match the key size
+    buf_.resize(keySize_);
+
+    // Copy the key data into the buffer
+    std::memcpy(buf_.data(), slice.data(), keySize_);
+}
+
+// Constructor from std::vector
+SecretKey::SecretKey(std::vector<std::uint8_t> const& data) {
+    if (data.size() != 32 && data.size() != 2528) {
+        throw std::logic_error("SecretKey::SecretKey: invalid size");
+    }
+    keySize_ = data.size(); // Set the key size
+    buf_ = std::vector<std::uint8_t>(data.begin(), data.end()); // Copy the key data
+}
+
+// Constructor from Slice
+SecretKey::SecretKey(Slice const& slice) {
     if (slice.size() != 32 && slice.size() != 2528) {
-        LogicError("SecretKey::SecretKey: invalid size");
+        throw std::logic_error("SecretKey::SecretKey: invalid size");
     }
-    std::memcpy(buf_, slice.data(), slice.size());
+    keySize_ = slice.size(); // Set the key size
+    buf_.resize(keySize_); // Allocate memory dynamically
+    std::memcpy(buf_.data(), slice.data(), keySize_); // Copy the key data
 }
 
-// Function to convert a byte array to a hex string for printing
-std::string toHexString(const uint8_t* data, size_t length) {
+std::string toHexString(const std::uint8_t* data, std::size_t size) {
     std::ostringstream oss;
-    for (size_t i = 0; i < length; ++i) {
+    for (std::size_t i = 0; i < size; ++i) {
         oss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(data[i]);
     }
     return oss.str();
 }
-
-
-// class SecretKey {
-// public:
-//     ~SecretKey() {
-//         secure_erase(buf_, sizeof(buf_));
-//     }
-
-//     // Constructor for std::array with key type
-//     SecretKey(std::array<std::uint8_t, 32> const& key, KeyType keyType) {
-//         std::size_t expectedSize = getExpectedSize(keyType);
-//         if (key.size() != expectedSize) {
-//             throw std::logic_error("SecretKey: invalid size for the given key type");
-//         }
-//         std::memcpy(buf_, key.data(), key.size());
-//     }
-
-//     // Constructor for Slice with key type
-//     SecretKey(Slice const& slice, KeyType keyType) {
-//         std::size_t expectedSize = getExpectedSize(keyType);
-//         if (slice.size() != expectedSize) {
-//             throw std::logic_error("SecretKey: invalid size for the given key type");
-//         }
-//         std::memcpy(buf_, slice.data(), slice.size());
-//     }
-
-// private:
-//     std::uint8_t buf_[2528]; // Maximum buffer size  dilithium
-
-//     // Function to get expected key size based on key type
-//     std::size_t getExpectedSize(KeyType keyType) const {
-//         return (keyType == KeyType::secp256k1) ? 32 : 2528;
-//     }
-
-//     // Function to securely erase the buffer
-//     void secure_erase(void* ptr, std::size_t len) {
-//         volatile std::uint8_t* p = reinterpret_cast<volatile std::uint8_t*>(ptr);
-//         while (len--) {
-//             *p++ = 0;
-//         }
-//     }
-// };
 
 std::string
 SecretKey::to_string() const

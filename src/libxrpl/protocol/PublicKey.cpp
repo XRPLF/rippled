@@ -182,64 +182,70 @@ ed25519Canonical(Slice const& sig)
 
 //------------------------------------------------------------------------------
 
-PublicKey::PublicKey(Slice const& slice)
-{
+// Constructor from Slice
+PublicKey::PublicKey(Slice const& slice) {
     std::cout << "PublicKey constructor called." << std::endl;
     std::cout << "Input slice size: " << slice.size() << std::endl;
 
+    // Determine the key type from the slice
     auto keyType = publicKeyType(slice);
-    if (!keyType)
-    {
+    if (!keyType) {
         std::cout << "Invalid public key type detected." << std::endl;
-        LogicError("PublicKey::PublicKey - Invalid public key type");
-        return; // Early return to prevent further processing
+        throw std::logic_error("PublicKey::PublicKey - Invalid public key type");
     }
 
+    // Determine the expected size based on the key type
     std::size_t expectedSize = 0;
-    switch (*keyType)
-    {
+    switch (*keyType) {
         case KeyType::secp256k1:
-            expectedSize = 33; 
+            expectedSize = 33; // secp256k1 public keys are 33 bytes
             break;
         case KeyType::ed25519:
-            expectedSize = 33; 
+            expectedSize = 33; // ed25519 public keys are 33 bytes
             break;
         case KeyType::dilithium:
-            expectedSize = CRYPTO_PUBLICKEYBYTES;
-            break;
+            expectedSize = CRYPTO_PUBLICKEYBYTES; // Dilithium public keys
+            std::cout << "Verification of message successful using dilithium" << std::endl;
+            break; // Add this break statement to prevent fallthrough
         default:
             std::cout << "Unknown key type detected." << std::endl;
-            LogicError("PublicKey::PublicKey - Unknown key type");
-            return; // Early return to prevent further processing
+            throw std::logic_error("PublicKey::PublicKey - Unknown key type");
     }
 
     std::cout << "Expected public key size: " << expectedSize << std::endl;
 
-    if (slice.size() < expectedSize)
-    {
+    // Validate the input slice size
+    if (slice.size() < expectedSize) {
         std::cout << "Logic error: PublicKey::PublicKey - Input slice cannot be an undersized buffer" << std::endl;
-        LogicError("PublicKey::PublicKey - Input slice cannot be an undersized buffer");
-        return; // Early return to prevent further processing
+        throw std::logic_error("PublicKey::PublicKey - Input slice cannot be an undersized buffer");
+    } else if (slice.size() > expectedSize) {
+        std::cout << "Logic error: PublicKey::PublicKey - Input slice cannot be an oversized buffer" << std::endl;
+        throw std::logic_error("PublicKey::PublicKey - Input slice cannot be an oversized buffer");
     }
 
-    std::memcpy(buf_, slice.data(), expectedSize);
+    // Allocate the buffer dynamically to match the key size
+    keySize_ = expectedSize;
+    buf_.resize(keySize_);
+
+    // Copy the key data into the buffer
+    std::memcpy(buf_.data(), slice.data(), keySize_);
 }
 
-PublicKey::PublicKey(PublicKey const& other)
-{
-    std::memcpy(buf_, other.buf_, size_);
-}
+// // Copy Constructor
+// PublicKey::PublicKey(PublicKey const& other)
+//     : buf_(other.buf_), keySize_(other.keySize_) {
+//     std::cout << "PublicKey copy constructor called." << std::endl;
+// }
 
-PublicKey&
-PublicKey::operator=(PublicKey const& other)
-{
-    if (this != &other)
-    {
-        std::memcpy(buf_, other.buf_, size_);
-    }
-
-    return *this;
-}
+// // Copy Assignment Operator
+// PublicKey& PublicKey::operator=(PublicKey const& other) {
+//     if (this != &other) {
+//         std::cout << "PublicKey copy assignment operator called." << std::endl;
+//         buf_ = other.buf_; // Copy the buffer
+//         keySize_ = other.keySize_; // Copy the key size
+//     }
+//     return *this;
+// }
 
 //------------------------------------------------------------------------------
 

@@ -64,74 +64,33 @@ namespace ripple {
 class PublicKey
 {
 protected:
-    // All the constructed public keys are valid, non-empty and contain 32
-    // bytes of data.
-    static constexpr std::size_t size_ = 1312;
-    std::uint8_t buf_[size_];  // should be large enough
+    std::vector<std::uint8_t> buf_; // Dynamically sized buffer for the key
+    std::size_t keySize_;           // Actual size of the key (e.g., 33 or 1312 bytes)
 
 public:
     using const_iterator = std::uint8_t const*;
 
-public:
-    PublicKey() = delete;
+    PublicKey() = delete; // Default constructor is deleted
 
-    PublicKey(PublicKey const& other);
-    PublicKey&
-    operator=(PublicKey const& other);
+    PublicKey(PublicKey const& other) = default; // Copy constructor
+    PublicKey& operator=(PublicKey const& other) = default; // Copy assignment operator
 
-    /** Create a public key.
+    explicit PublicKey(Slice const& slice); // Constructor from Slice
+    PublicKey(KeyType type, Slice const& slice); // Constructor with KeyType
 
-        Preconditions:
-            publicKeyType(slice) != std::nullopt
-    */
-    explicit PublicKey(Slice const& slice);
+    // Accessors
+    std::uint8_t const* data() const noexcept { return buf_.data(); }
+    std::size_t size() const noexcept { return keySize_; }
 
-    std::uint8_t const*
-    data() const noexcept
-    {
-        return buf_;
-    }
+    // Iterators
+    const_iterator begin() const noexcept { return buf_.data(); }
+    const_iterator cbegin() const noexcept { return buf_.data(); }
+    const_iterator end() const noexcept { return buf_.data() + keySize_; }
+    const_iterator cend() const noexcept { return buf_.data() + keySize_; }
 
-    std::size_t
-    size() const noexcept
-    {
-        return size_;
-    }
-
-    const_iterator
-    begin() const noexcept
-    {
-        return buf_;
-    }
-
-    const_iterator
-    cbegin() const noexcept
-    {
-        return buf_;
-    }
-
-    const_iterator
-    end() const noexcept
-    {
-        return buf_ + size_;
-    }
-
-    const_iterator
-    cend() const noexcept
-    {
-        return buf_ + size_;
-    }
-
-    Slice
-    slice() const noexcept
-    {
-        return {buf_, size_};
-    }
-
-    operator Slice() const noexcept
-    {
-        return slice();
-    }
+    // Slice support
+    Slice slice() const noexcept { return {buf_.data(), keySize_}; }
+    operator Slice() const noexcept { return slice(); }
 };
 
 /** Print the public key to a stream.

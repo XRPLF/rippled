@@ -36,64 +36,29 @@ namespace ripple {
 class SecretKey
 {
 private:
-    std::uint8_t buf_[2528]; //Changed to 2528 because Dilithium will have largest keysize (2528)
+    std::vector<std::uint8_t> buf_; // Dynamically sized buffer for the key
+    std::size_t keySize_;           // Actual size of the key (32 or 2528 bytes)
 
 public:
     using const_iterator = std::uint8_t const*;
 
-    SecretKey() = delete;
-    SecretKey(SecretKey const&) = default;
-    SecretKey&
-    operator=(SecretKey const&) = default;
+    SecretKey() = delete; // Default constructor is deleted
+    SecretKey(Slice const& slice); // Constructor from Slice
+    SecretKey(KeyType type, Slice const& slice); // Constructor with KeyType
+    SecretKey(SecretKey const&) = default; // Copy constructor
+    SecretKey& operator=(SecretKey const&) = default; // Copy assignment operator
+    SecretKey(std::vector<std::uint8_t> const& data); // Constructor from std::vector
+    ~SecretKey() = default; // Default destructor
 
-    ~SecretKey();
+    std::uint8_t const* data() const { return buf_.data(); }
+    std::size_t size() const { return keySize_; }
 
-    SecretKey(std::array<std::uint8_t, 2528> const& data);
-    SecretKey(Slice const& slice);
+    std::string to_string() const;
 
-    std::uint8_t const*
-    data() const
-    {
-        return buf_;
-    }
-
-    std::size_t
-    size() const
-    {
-        return sizeof(buf_);
-    }
-
-    /** Convert the secret key to a hexadecimal string.
-
-        @note The operator<< function is deliberately omitted
-        to avoid accidental exposure of secret key material.
-    */
-    std::string
-    to_string() const;
-
-    const_iterator
-    begin() const noexcept
-    {
-        return buf_;
-    }
-
-    const_iterator
-    cbegin() const noexcept
-    {
-        return buf_;
-    }
-
-    const_iterator
-    end() const noexcept
-    {
-        return buf_ + sizeof(buf_);
-    }
-
-    const_iterator
-    cend() const noexcept
-    {
-        return buf_ + sizeof(buf_);
-    }
+    const_iterator begin() const noexcept { return buf_.data(); }
+    const_iterator cbegin() const noexcept { return buf_.data(); }
+    const_iterator end() const noexcept { return buf_.data() + keySize_; }
+    const_iterator cend() const noexcept { return buf_.data() + keySize_; }
 };
 
 inline bool
