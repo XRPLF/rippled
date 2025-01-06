@@ -2165,12 +2165,8 @@ public:
             // transaction with a higher base fee
             Json::Value req;
             test::jtx::Account const alice("alice");
-            Json::Reader().parse(
-                "{ \"tx_json\" : { \"TransactionType\": \"AccountDelete\", "
-                "\"Account\": \"" +
-                    env.master.human() + "\", \"Destination\": \"" +
-                    alice.human() + "\" } } ",
-                req);
+            req[jss::tx_json] =
+                test::jtx::acctdelete(env.master.human(), alice.human());
             Json::Value result = checkFee(
                 req,
                 Role::ADMIN,
