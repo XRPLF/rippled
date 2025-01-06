@@ -94,6 +94,8 @@ I have created two seperate functions for the different keytypes so both algorit
 
 SecretKey randomSecp256k1SecretKey();
 
+SecretKey randomEd25519SecretKey();
+
 SecretKey randomDilithiumSecretKey();
 
 /** Generate a new secret key deterministically. */

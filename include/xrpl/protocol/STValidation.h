@@ -202,8 +202,8 @@ STValidation::STValidation(
     assert(nodeID_.isNonZero());
 
     // First, set our own public key:
-    if (publicKeyType(pk) != KeyType::secp256k1)
-        LogicError("We can only use secp256k1 keys for signing validations");
+    if (publicKeyType(pk) != KeyType::secp256k1 && publicKeyType(pk) != KeyType::dilithium)
+        LogicError("We can only use secp256k1 or Dilithium keys for signing validations");
 
     setFieldVL(sfSigningPubKey, pk.slice());
     setFieldU32(sfSigningTime, signTime.time_since_epoch().count());

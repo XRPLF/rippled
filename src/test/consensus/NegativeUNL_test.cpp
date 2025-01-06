@@ -779,9 +779,9 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
         auto txSet = std::make_shared<SHAMap>(
             SHAMapType::TRANSACTION, env.app().getNodeFamily());
         PublicKey toDisableKey(
-            derivePublicKey(KeyType::ed25519, randomSecp256k1SecretKey()));
+            derivePublicKey(KeyType::ed25519, randomEd25519SecretKey()));
         PublicKey toReEnableKey(
-            derivePublicKey(KeyType::ed25519, randomSecp256k1SecretKey()));
+            derivePublicKey(KeyType::ed25519, randomEd25519SecretKey()));
         LedgerIndex seq(1234);
         BEAST_EXPECT(countTx(txSet) == 0);
         vote.addTx(seq, toDisableKey, NegativeUNLVote::ToDisable, txSet);
@@ -1846,7 +1846,7 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
         std::vector<std::shared_ptr<STValidation>> vals;
         for (int i = 0; i < numNodes; ++i)
         {
-            auto keyPair = randomKeyPair(KeyType::secp256k1);
+            auto keyPair = randomKeyPair(KeyType::dilithium);
             vals.emplace_back(createSTVal(keyPair));
             cfgKeys.push_back(toBase58(TokenType::NodePublic, keyPair.first));
             activeValidators.emplace(calcNodeID(keyPair.first));

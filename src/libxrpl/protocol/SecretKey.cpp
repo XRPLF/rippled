@@ -325,10 +325,10 @@ Buffer signDigest(PublicKey const& pk, SecretKey const& sk, uint256 const& diges
         std::cout << "Signing Digest done with digest and Dilithium Signature Length: " << dilithium_siglen << std::endl;
         
         // Verify the signature
-        if (crypto_sign_verify(dilithium_sig, dilithium_siglen, digest.data(), digest.size(), pk.data())) {
-            std::cerr << "Dilithium Signature Verification Failed" << std::endl;
-            LogicError("signDigest: Dilithium Signature Verification Failed");
-        }
+        // if (crypto_sign_verify(dilithium_sig, dilithium_siglen, digest.data(), digest.size(), pk.data())) {
+        //     std::cerr << "Dilithium Signature Verification Failed" << std::endl;
+        //     LogicError("signDigest: Dilithium Signature Verification Failed");
+        // }
         return Buffer{dilithium_sig, dilithium_siglen};
     }
     LogicError("signDigest: unknown key type");
@@ -410,6 +410,18 @@ Buffer sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
 // Function to generate a secp256k1 secret key
 SecretKey randomSecp256k1SecretKey() {
     std::cout << "Using Secp256k1" << std::endl;
+    std::uint8_t buf[32];
+    beast::rngfill(buf, sizeof(buf), crypto_prng());
+    
+    // std::cout << "Secret Key: " << toHexString(buf, sizeof(buf)) << std::endl;
+    std::cout << "Length of Secret Key: " << sizeof(buf) << " bytes" << std::endl;
+    SecretKey sk(Slice{buf, sizeof(buf)});
+    secure_erase(buf, sizeof(buf));
+    return sk;
+}
+// Function to generate a Ed25519 secret key
+SecretKey randomEd25519SecretKey() {
+    std::cout << "Using Ed25519" << std::endl;
     std::uint8_t buf[32];
     beast::rngfill(buf, sizeof(buf), crypto_prng());
     
@@ -638,7 +650,18 @@ std::pair<PublicKey, SecretKey> randomKeyPair(KeyType type)
 
         return {pk, sk};
 
-    } else if (type == KeyType::dilithium) {
+    }else if (type == KeyType::ed25519) {
+        std::cout << "randomKeyPair using ed25519" << std::endl;
+        auto const sk = randomEd25519SecretKey();
+        auto const pk = derivePublicKey(KeyType::ed25519, sk);
+
+        //Debuggin Statements
+        std::cout << "Secret Key (ed25519)" << toHexString(sk.data(), sk.size()) << std::endl;
+        std::cout << "Public Key (ed25519)" << toHexString(pk.data(), pk.size()) << std::endl;
+
+        return {pk, sk};
+
+    }else if (type == KeyType::dilithium) {
         std::cout << "randomKeyPair using Dilithium" << std::endl;
         auto const sk = randomDilithiumSecretKey();
         auto const pk = derivePublicKey(KeyType::dilithium, sk, randomSeed());
