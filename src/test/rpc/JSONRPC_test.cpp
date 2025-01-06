@@ -2180,7 +2180,7 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(result.size() == 0);
             BEAST_EXPECT(
                 req[jss::tx_json].isMember(jss::Fee) &&
                 req[jss::tx_json][jss::Fee] ==

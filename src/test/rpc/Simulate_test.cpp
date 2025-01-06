@@ -39,10 +39,10 @@ class Simulate_test : public beast::unit_test::suite
 {
     void
     checkBasicReturnValidity(
-        Json::Value& result,
-        Json::Value& tx,
-        int expectedSequence,
-        std::string expectedFee)
+        Json::Value const& result,
+        Json::Value const& tx,
+        const int expectedSequence,
+        std::string const& expectedFee)
     {
         BEAST_EXPECT(result[jss::applied] == false);
         BEAST_EXPECT(result.isMember(jss::engine_result));
@@ -58,7 +58,7 @@ class Simulate_test : public beast::unit_test::suite
         }
         else
         {
-            auto unHexed = strUnHex(result[jss::tx_blob].asString());
+            auto const unHexed = strUnHex(result[jss::tx_blob].asString());
             SerialIter sitTrans(makeSlice(*unHexed));
             tx_json = STObject(std::ref(sitTrans), sfGeneric)
                           .getJson(JsonOptions::none);
@@ -76,8 +76,8 @@ class Simulate_test : public beast::unit_test::suite
 
     void
     checkBasicReturnValidity(
-        Json::Value& result,
-        Json::Value& tx,
+        Json::Value const& result,
+        Json::Value const& tx,
         int expectedSequence,
         XRPAmount expectedFee)
     {
@@ -88,8 +88,9 @@ class Simulate_test : public beast::unit_test::suite
     void
     testTx(
         jtx::Env& env,
-        Json::Value& tx,
-        std::function<void(Json::Value, Json::Value&)> validate,
+        Json::Value const& tx,
+        std::function<void(Json::Value const&, Json::Value const&)> const&
+            validate,
         bool testSerialized = true)
     {
         Json::Value params;
@@ -104,7 +105,7 @@ class Simulate_test : public beast::unit_test::suite
             // This cannot be tested in the multisign autofill scenario
             // It is technically not a valid STObject, so the following line
             // will crash
-            STParsedJSONObject parsed(std::string(jss::tx_json), tx);
+            STParsedJSONObject const parsed(std::string(jss::tx_json), tx);
             auto const tx_blob =
                 strHex(parsed.object->getSerializer().peekData());
             if (BEAST_EXPECT(parsed.object.has_value()))
@@ -131,8 +132,8 @@ class Simulate_test : public beast::unit_test::suite
 
         {
             // No params
-            Json::Value params = Json::objectValue;
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            Json::Value const params = Json::objectValue;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Invalid parameters.");
         }
@@ -142,7 +143,7 @@ class Simulate_test : public beast::unit_test::suite
             params[jss::tx_json] = Json::objectValue;
             params[jss::tx_blob] = "1200";
 
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Invalid parameters.");
         }
@@ -151,7 +152,7 @@ class Simulate_test : public beast::unit_test::suite
             Json::Value params = Json::objectValue;
             params[jss::tx_blob] = "1200";
             params[jss::binary] = "100";
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Invalid field 'binary'.");
@@ -161,7 +162,7 @@ class Simulate_test : public beast::unit_test::suite
             Json::Value params = Json::objectValue;
             params[jss::tx_blob] = "12";
 
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Invalid field 'tx_blob'.");
@@ -171,7 +172,7 @@ class Simulate_test : public beast::unit_test::suite
             Json::Value params = Json::objectValue;
             params[jss::tx_json] = Json::objectValue;
 
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Missing field 'tx.TransactionType'.");
@@ -183,7 +184,7 @@ class Simulate_test : public beast::unit_test::suite
             tx_json[jss::TransactionType] = jss::Payment;
             params[jss::tx_json] = tx_json;
 
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Missing field 'tx.Account'.");
@@ -193,7 +194,7 @@ class Simulate_test : public beast::unit_test::suite
             Json::Value params = Json::objectValue;
             params[jss::tx_blob] = "";
 
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Invalid field 'tx_blob'.");
@@ -203,7 +204,7 @@ class Simulate_test : public beast::unit_test::suite
             Json::Value params;
             params[jss::tx_blob] = 1.1;
 
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Invalid field 'tx_blob'.");
@@ -213,7 +214,7 @@ class Simulate_test : public beast::unit_test::suite
             Json::Value params = Json::objectValue;
             params[jss::tx_json] = "";
 
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Invalid field 'tx_json', not object.");
@@ -226,7 +227,7 @@ class Simulate_test : public beast::unit_test::suite
             tx_json[jss::Account] = env.master.human();
             params[jss::tx_json] = tx_json;
 
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_exception] ==
                 "Field 'Destination' is required but missing.");
@@ -239,7 +240,7 @@ class Simulate_test : public beast::unit_test::suite
             tx_json[jss::Account] = "badAccount";
             params[jss::tx_json] = tx_json;
 
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECTS(
                 resp[jss::result][jss::error] == "srcActMalformed",
                 resp[jss::result][jss::error].toStyledString());
@@ -255,7 +256,7 @@ class Simulate_test : public beast::unit_test::suite
             tx_json[jss::Account] = alice.human();
             params[jss::tx_json] = tx_json;
 
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Source account not found.");
@@ -266,10 +267,10 @@ class Simulate_test : public beast::unit_test::suite
             Json::Value tx_json = Json::objectValue;
             tx_json[jss::TransactionType] = jss::AccountSet;
             tx_json[jss::Account] = env.master.human();
-            tx_json[sfSigners.jsonName] = "1";
+            tx_json[sfSigners] = "1";
             params[jss::tx_json] = tx_json;
 
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Invalid field 'tx.Signers'.");
@@ -280,11 +281,11 @@ class Simulate_test : public beast::unit_test::suite
             Json::Value tx_json = Json::objectValue;
             tx_json[jss::TransactionType] = jss::AccountSet;
             tx_json[jss::Account] = env.master.human();
-            tx_json[sfSigners.jsonName] = Json::arrayValue;
-            tx_json[sfSigners.jsonName].append("1");
+            tx_json[sfSigners] = Json::arrayValue;
+            tx_json[sfSigners].append("1");
             params[jss::tx_json] = tx_json;
 
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Invalid field 'tx.Signers[0]'.");
@@ -298,7 +299,7 @@ class Simulate_test : public beast::unit_test::suite
             tx_json["foo"] = "bar";
             params[jss::tx_json] = tx_json;
 
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Field 'tx_json.foo' is unknown.");
@@ -308,7 +309,7 @@ class Simulate_test : public beast::unit_test::suite
             Json::Value tx_json = Json::objectValue;
             tx_json[jss::TransactionType] = jss::AccountSet;
             tx_json[jss::Account] = alice.human();
-            auto resp = env.rpc("simulate", to_string(tx_json), "1");
+            auto const resp = env.rpc("simulate", to_string(tx_json), "1");
             BEAST_EXPECT(resp[jss::error_message] == "Invalid parameters.");
         }
         {
@@ -320,7 +321,7 @@ class Simulate_test : public beast::unit_test::suite
             tx_json[jss::TxnSignature] = "1200ABCD";
             params[jss::tx_json] = tx_json;
 
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Transaction should not be signed.");
@@ -331,19 +332,19 @@ class Simulate_test : public beast::unit_test::suite
             Json::Value tx_json = Json::objectValue;
             tx_json[jss::TransactionType] = jss::AccountSet;
             tx_json[jss::Account] = env.master.human();
-            tx_json[sfSigners.jsonName] = Json::arrayValue;
+            tx_json[sfSigners] = Json::arrayValue;
             {
                 Json::Value signer;
                 signer[jss::Account] = alice.human();
                 signer[jss::SigningPubKey] = alice.human();
                 signer[jss::TxnSignature] = "1200ABCD";
                 Json::Value signerOuter;
-                signerOuter[sfSigner.jsonName] = signer;
-                tx_json[sfSigners.jsonName].append(signerOuter);
+                signerOuter[sfSigner] = signer;
+                tx_json[sfSigners].append(signerOuter);
             }
             params[jss::tx_json] = tx_json;
 
-            auto resp = env.rpc("json", "simulate", to_string(params));
+            auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Transaction should not be signed.");
@@ -359,7 +360,8 @@ class Simulate_test : public beast::unit_test::suite
         static auto const newDomain = "123ABC";
 
         {
-            auto validateOutput = [&](Json::Value resp, Json::Value& tx) {
+            auto validateOutput = [&](Json::Value const& resp,
+                                      Json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(
                     result, tx, 1, env.current()->fees().base);
@@ -390,25 +392,21 @@ class Simulate_test : public beast::unit_test::suite
                     if (BEAST_EXPECT(
                             metadata.isMember(sfAffectedNodes.jsonName)))
                     {
-                        BEAST_EXPECT(
-                            metadata[sfAffectedNodes.jsonName].size() == 1);
-                        auto node = metadata[sfAffectedNodes.jsonName][0u];
+                        BEAST_EXPECT(metadata[sfAffectedNodes].size() == 1);
+                        auto node = metadata[sfAffectedNodes][0u];
                         if (BEAST_EXPECT(
                                 node.isMember(sfModifiedNode.jsonName)))
                         {
-                            auto modifiedNode = node[sfModifiedNode.jsonName];
+                            auto modifiedNode = node[sfModifiedNode];
                             BEAST_EXPECT(
-                                modifiedNode[sfLedgerEntryType.jsonName] ==
+                                modifiedNode[sfLedgerEntryType] ==
                                 "AccountRoot");
-                            auto finalFields =
-                                modifiedNode[sfFinalFields.jsonName];
-                            BEAST_EXPECT(
-                                finalFields[sfDomain.jsonName] == newDomain);
+                            auto finalFields = modifiedNode[sfFinalFields];
+                            BEAST_EXPECT(finalFields[sfDomain] == newDomain);
                         }
                     }
-                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
-                    BEAST_EXPECT(
-                        metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
+                    BEAST_EXPECT(metadata[sfTransactionIndex] == 0);
+                    BEAST_EXPECT(metadata[sfTransactionResult] == "tesSUCCESS");
                 }
             };
 
@@ -416,15 +414,15 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain.jsonName] = newDomain;
+            tx[sfDomain] = newDomain;
 
             // test with autofill
             testTx(env, tx, validateOutput);
 
-            tx[sfSigningPubKey.jsonName] = "";
-            tx[sfTxnSignature.jsonName] = "";
-            tx[sfSequence.jsonName] = 1;
-            tx[sfFee.jsonName] = "12";
+            tx[sfSigningPubKey] = "";
+            tx[sfTxnSignature] = "";
+            tx[sfSequence] = 1;
+            tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
 
             // test without autofill
             testTx(env, tx, validateOutput);
@@ -443,8 +441,9 @@ class Simulate_test : public beast::unit_test::suite
         Account const alice("alice");
 
         {
-            std::function<void(Json::Value, Json::Value&)> testSimulation =
-                [&](Json::Value resp, Json::Value& tx) {
+            std::function<void(Json::Value const&, Json::Value const&)> const&
+                testSimulation = [&](Json::Value const& resp,
+                                     Json::Value const& tx) {
                     auto result = resp[jss::result];
                     checkBasicReturnValidity(
                         result, tx, 1, env.current()->fees().base);
@@ -464,16 +463,16 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::Payment;
-            tx[sfDestination.jsonName] = alice.human();
-            tx[sfAmount.jsonName] = "0";  // invalid amount
+            tx[sfDestination] = alice.human();
+            tx[sfAmount] = "0";  // invalid amount
 
             // test with autofill
             testTx(env, tx, testSimulation);
 
-            tx[sfSigningPubKey.jsonName] = "";
-            tx[sfTxnSignature.jsonName] = "";
-            tx[sfSequence.jsonName] = 1;
-            tx[sfFee.jsonName] = "12";
+            tx[sfSigningPubKey] = "";
+            tx[sfTxnSignature] = "";
+            tx[sfSequence] = 1;
+            tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
 
             // test without autofill
             testTx(env, tx, testSimulation);
@@ -492,8 +491,9 @@ class Simulate_test : public beast::unit_test::suite
         Account const alice("alice");
 
         {
-            std::function<void(Json::Value, Json::Value&)> testSimulation =
-                [&](Json::Value resp, Json::Value& tx) {
+            std::function<void(Json::Value const&, Json::Value const&)> const&
+                testSimulation = [&](Json::Value const& resp,
+                                     Json::Value const& tx) {
                     auto result = resp[jss::result];
                     checkBasicReturnValidity(
                         result, tx, 1, env.current()->fees().base);
@@ -527,28 +527,24 @@ class Simulate_test : public beast::unit_test::suite
                         if (BEAST_EXPECT(
                                 metadata.isMember(sfAffectedNodes.jsonName)))
                         {
-                            BEAST_EXPECT(
-                                metadata[sfAffectedNodes.jsonName].size() == 1);
-                            auto node = metadata[sfAffectedNodes.jsonName][0u];
+                            BEAST_EXPECT(metadata[sfAffectedNodes].size() == 1);
+                            auto node = metadata[sfAffectedNodes][0u];
                             if (BEAST_EXPECT(
                                     node.isMember(sfModifiedNode.jsonName)))
                             {
-                                auto modifiedNode =
-                                    node[sfModifiedNode.jsonName];
+                                auto modifiedNode = node[sfModifiedNode];
                                 BEAST_EXPECT(
-                                    modifiedNode[sfLedgerEntryType.jsonName] ==
+                                    modifiedNode[sfLedgerEntryType] ==
                                     "AccountRoot");
-                                auto finalFields =
-                                    modifiedNode[sfFinalFields.jsonName];
+                                auto finalFields = modifiedNode[sfFinalFields];
                                 BEAST_EXPECT(
-                                    finalFields[sfBalance.jsonName] ==
+                                    finalFields[sfBalance] ==
                                     "99999999999999990");
                             }
                         }
+                        BEAST_EXPECT(metadata[sfTransactionIndex] == 0);
                         BEAST_EXPECT(
-                            metadata[sfTransactionIndex.jsonName] == 0);
-                        BEAST_EXPECT(
-                            metadata[sfTransactionResult.jsonName] ==
+                            metadata[sfTransactionResult] ==
                             "tecNO_DST_INSUF_XRP");
                     }
                 };
@@ -557,16 +553,16 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::Payment;
-            tx[sfDestination.jsonName] = alice.human();
-            tx[sfAmount.jsonName] = "1";  // not enough to create an account
+            tx[sfDestination] = alice.human();
+            tx[sfAmount] = "1";  // not enough to create an account
 
             // test with autofill
             testTx(env, tx, testSimulation);
 
-            tx[sfSigningPubKey.jsonName] = "";
-            tx[sfTxnSignature.jsonName] = "";
-            tx[sfSequence.jsonName] = 1;
-            tx[sfFee.jsonName] = "10";
+            tx[sfSigningPubKey] = "";
+            tx[sfTxnSignature] = "";
+            tx[sfSequence] = 1;
+            tx[sfFee] = "10";
 
             // test without autofill
             testTx(env, tx, testSimulation);
@@ -593,7 +589,8 @@ class Simulate_test : public beast::unit_test::suite
         env(signers(alice, 1, {{becky, 1}, {carol, 1}}));
 
         {
-            auto validateOutput = [&](Json::Value resp, Json::Value& tx) {
+            auto validateOutput = [&](Json::Value const& resp,
+                                      Json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx, 5, "20");
 
@@ -623,25 +620,21 @@ class Simulate_test : public beast::unit_test::suite
                     if (BEAST_EXPECT(
                             metadata.isMember(sfAffectedNodes.jsonName)))
                     {
-                        BEAST_EXPECT(
-                            metadata[sfAffectedNodes.jsonName].size() == 1);
-                        auto node = metadata[sfAffectedNodes.jsonName][0u];
+                        BEAST_EXPECT(metadata[sfAffectedNodes].size() == 1);
+                        auto node = metadata[sfAffectedNodes][0u];
                         if (BEAST_EXPECT(
                                 node.isMember(sfModifiedNode.jsonName)))
                         {
-                            auto modifiedNode = node[sfModifiedNode.jsonName];
+                            auto modifiedNode = node[sfModifiedNode];
                             BEAST_EXPECT(
-                                modifiedNode[sfLedgerEntryType.jsonName] ==
+                                modifiedNode[sfLedgerEntryType] ==
                                 "AccountRoot");
-                            auto finalFields =
-                                modifiedNode[sfFinalFields.jsonName];
-                            BEAST_EXPECT(
-                                finalFields[sfDomain.jsonName] == newDomain);
+                            auto finalFields = modifiedNode[sfFinalFields];
+                            BEAST_EXPECT(finalFields[sfDomain] == newDomain);
                         }
                     }
-                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 1);
-                    BEAST_EXPECT(
-                        metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
+                    BEAST_EXPECT(metadata[sfTransactionIndex] == 1);
+                    BEAST_EXPECT(metadata[sfTransactionResult] == "tesSUCCESS");
                 }
             };
 
@@ -649,26 +642,25 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[jss::Account] = alice.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain.jsonName] = newDomain;
-            tx[sfSigners.jsonName] = Json::arrayValue;
+            tx[sfDomain] = newDomain;
+            tx[sfSigners] = Json::arrayValue;
             {
                 Json::Value signer;
                 signer[jss::Account] = becky.human();
                 signer[jss::SigningPubKey] = strHex(becky.pk().slice());
                 Json::Value signerOuter;
-                signerOuter[sfSigner.jsonName] = signer;
-                tx[sfSigners.jsonName].append(signerOuter);
+                signerOuter[sfSigner] = signer;
+                tx[sfSigners].append(signerOuter);
             }
 
             // test with autofill
             testTx(env, tx, validateOutput, false);
 
-            tx[sfSigningPubKey.jsonName] = "";
-            tx[sfTxnSignature.jsonName] = "";
-            tx[sfSequence.jsonName] = 5;
-            tx[sfFee.jsonName] = "20";  // also tests a non-base fee
-            tx[sfSigners.jsonName][0u][sfSigner.jsonName][jss::TxnSignature] =
-                "";
+            tx[sfSigningPubKey] = "";
+            tx[sfTxnSignature] = "";
+            tx[sfSequence] = 5;
+            tx[sfFee] = "20";  // also tests a non-base fee
+            tx[sfSigners][0u][sfSigner][jss::TxnSignature] = "";
 
             // test without autofill
             testTx(env, tx, validateOutput);
@@ -691,37 +683,38 @@ class Simulate_test : public beast::unit_test::suite
         env.close();
 
         {
-            std::function<void(Json::Value, Json::Value&)> testSimulation =
-                [&](Json::Value resp, Json::Value& tx) {
-                    auto result = resp[jss::result];
-                    checkBasicReturnValidity(
-                        result, tx, 3, env.current()->fees().base);
+            std::function<void(Json::Value const&, Json::Value const&)> const&
+                testSimulation =
+                    [&](Json::Value const& resp, Json::Value const& tx) {
+                        auto result = resp[jss::result];
+                        checkBasicReturnValidity(
+                            result, tx, 3, env.current()->fees().base);
 
-                    BEAST_EXPECT(
-                        result[jss::engine_result] == "tefMASTER_DISABLED");
-                    BEAST_EXPECT(result[jss::engine_result_code] == -188);
-                    BEAST_EXPECT(
-                        result[jss::engine_result_message] ==
-                        "Master key is disabled.");
+                        BEAST_EXPECT(
+                            result[jss::engine_result] == "tefMASTER_DISABLED");
+                        BEAST_EXPECT(result[jss::engine_result_code] == -188);
+                        BEAST_EXPECT(
+                            result[jss::engine_result_message] ==
+                            "Master key is disabled.");
 
-                    BEAST_EXPECT(
-                        !result.isMember(jss::meta) &&
-                        !result.isMember(jss::meta_blob));
-                };
+                        BEAST_EXPECT(
+                            !result.isMember(jss::meta) &&
+                            !result.isMember(jss::meta_blob));
+                    };
 
             Json::Value tx;
 
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain.jsonName] = newDomain;
+            tx[sfDomain] = newDomain;
 
             // test with autofill
             testTx(env, tx, testSimulation, 3);
 
-            tx[sfSigningPubKey.jsonName] = "";
-            tx[sfTxnSignature.jsonName] = "";
-            tx[sfSequence.jsonName] = 3;
-            tx[sfFee.jsonName] = "12";
+            tx[sfSigningPubKey] = "";
+            tx[sfTxnSignature] = "";
+            tx[sfSequence] = 3;
+            tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
 
             // test without autofill
             testTx(env, tx, testSimulation, 3);
@@ -749,7 +742,8 @@ class Simulate_test : public beast::unit_test::suite
         env(signers(alice, 1, {{becky, 1}, {carol, 1}}));
 
         {
-            auto validateOutput = [&](Json::Value resp, Json::Value& tx) {
+            auto validateOutput = [&](Json::Value const& resp,
+                                      Json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx, 5, "20");
 
@@ -770,26 +764,25 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[jss::Account] = alice.human();
             tx[jss::TransactionType] = jss::AccountSet;
-            tx[sfDomain.jsonName] = newDomain;
-            tx[sfSigners.jsonName] = Json::arrayValue;
+            tx[sfDomain] = newDomain;
+            tx[sfSigners] = Json::arrayValue;
             {
                 Json::Value signer;
                 signer[jss::Account] = becky.human();
                 signer[jss::SigningPubKey] = strHex(dylan.pk().slice());
                 Json::Value signerOuter;
-                signerOuter[sfSigner.jsonName] = signer;
-                tx[sfSigners.jsonName].append(signerOuter);
+                signerOuter[sfSigner] = signer;
+                tx[sfSigners].append(signerOuter);
             }
 
             // test with autofill
             testTx(env, tx, validateOutput, false);
 
-            tx[sfSigningPubKey.jsonName] = "";
-            tx[sfTxnSignature.jsonName] = "";
-            tx[sfSequence.jsonName] = 5;
-            tx[sfFee.jsonName] = "20";  // also tests a non-base fee
-            tx[sfSigners.jsonName][0u][sfSigner.jsonName][jss::TxnSignature] =
-                "";
+            tx[sfSigningPubKey] = "";
+            tx[sfTxnSignature] = "";
+            tx[sfSequence] = 5;
+            tx[sfFee] = "20";  // also tests a non-base fee
+            tx[sfSigners][0u][sfSigner][jss::TxnSignature] = "";
 
             // test without autofill
             testTx(env, tx, validateOutput);
