@@ -67,7 +67,6 @@ include(target_link_modules)
 
 # Level 01
 add_module(xrpl beast)
-list(APPEND submodules beast)
 target_link_libraries(xrpl.libxrpl.beast PUBLIC
   xrpl.imports.main
   xrpl.libpb
@@ -75,21 +74,17 @@ target_link_libraries(xrpl.libxrpl.beast PUBLIC
 
 # Level 02
 add_module(xrpl basics)
-list(APPEND submodules basics)
 target_link_libraries(xrpl.libxrpl.basics PUBLIC xrpl.libxrpl.beast)
 
 # Level 03
 add_module(xrpl json)
-list(APPEND submodules json)
 target_link_libraries(xrpl.libxrpl.json PUBLIC xrpl.libxrpl.basics)
 
 add_module(xrpl crypto)
-list(APPEND submodules crypto)
 target_link_libraries(xrpl.libxrpl.crypto PUBLIC xrpl.libxrpl.basics)
 
 # Level 04
 add_module(xrpl protocol)
-list(APPEND submodules protocol)
 target_link_libraries(xrpl.libxrpl.protocol PUBLIC
   xrpl.libxrpl.crypto
   xrpl.libxrpl.json
@@ -97,11 +92,9 @@ target_link_libraries(xrpl.libxrpl.protocol PUBLIC
 
 # Level 05
 add_module(xrpl resource)
-list(APPEND submodules resource)
 target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
 
 add_module(xrpl server)
-list(APPEND submodules server)
 target_link_libraries(xrpl.libxrpl.server PUBLIC xrpl.libxrpl.protocol)
 
 
@@ -119,7 +112,13 @@ file(GLOB_RECURSE sources CONFIGURE_DEPENDS
 target_sources(xrpl.libxrpl PRIVATE ${sources})
 
 target_link_modules(xrpl PUBLIC
-  ${submodules}
+  basics
+  beast
+  crypto
+  json
+  protocol
+  resource
+  server
 )
 
 # All headers in libxrpl are in modules.
@@ -131,48 +130,33 @@ target_link_modules(xrpl PUBLIC
 #     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 #     $<INSTALL_INTERFACE:include>)
 
-# These settings must be applied to all the header modules, too.
-set(base "xrpl.libxrpl")
-foreach(submodule
-  ""
-  ${submodules}
+target_compile_definitions(xrpl.libxrpl
+  PUBLIC
+    BOOST_ASIO_USE_TS_EXECUTOR_AS_DEFAULT
+    BOOST_CONTAINER_FWD_BAD_DEQUE
+    HAS_UNCAUGHT_EXCEPTIONS=1)
+
+target_compile_options(xrpl.libxrpl
+  PUBLIC
+    $<$<BOOL:${is_gcc}>:-Wno-maybe-uninitialized>
+    $<$<BOOL:${voidstar}>:-DENABLE_VOIDSTAR>
 )
-  STRING(LENGTH "${submodule}" len)
-  if(len EQUAL 0)
-    set(module "${base}")
-  else()
-    set(module "${base}.${submodule}")
-  endif()
-  message(STATUS "Setting up module ${module}")
 
-  target_compile_definitions("${module}"
-    PUBLIC
-      BOOST_ASIO_USE_TS_EXECUTOR_AS_DEFAULT
-      BOOST_CONTAINER_FWD_BAD_DEQUE
-      HAS_UNCAUGHT_EXCEPTIONS=1)
-
-  target_compile_options("${module}"
-    PUBLIC
-      $<$<BOOL:${is_gcc}>:-Wno-maybe-uninitialized>
-      $<$<BOOL:${voidstar}>:-DENABLE_VOIDSTAR>
-  )
-
-  target_link_libraries("${module}"
-    PUBLIC
-      LibArchive::LibArchive
-      OpenSSL::Crypto
-      Ripple::boost
-      Ripple::opts
-      Ripple::syslibs
-      absl::random_random
-      date::date
-      ed25519::ed25519
-      secp256k1::secp256k1
-      xrpl.libpb
-      xxHash::xxhash
-      $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>
-  )
-endforeach()
+target_link_libraries(xrpl.libxrpl
+  PUBLIC
+    LibArchive::LibArchive
+    OpenSSL::Crypto
+    Ripple::boost
+    Ripple::opts
+    Ripple::syslibs
+    absl::random_random
+    date::date
+    ed25519::ed25519
+    secp256k1::secp256k1
+    xrpl.libpb
+    xxHash::xxhash
+    $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>
+)
 
 if(xrpld)
   add_executable(rippled)
