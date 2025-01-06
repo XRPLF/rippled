@@ -811,26 +811,41 @@ parsePermissionedDomains(Json::Value const& pd, Json::Value& jvResult)
 {
     if (pd.isString())
     {
-        return parseIndex(pd, jvResult);
+        Json::Value result;
+        auto const index = parseIndex(pd, result);
+        if (!index)
+            jvResult[jss::error] = "malformedObjectId";
+        return index;
     }
 
-    if (!pd.isObject() || !pd.isMember(jss::account) ||
-        !pd[jss::account].isString() || !pd.isMember(jss::seq) ||
+    if (!pd.isObject())
+    {
+        jvResult[jss::error] = "malformedObject";
+        return std::nullopt;
+    }
+
+    if (!pd.isMember(jss::account) || !pd[jss::account].isString())
+    {
+        jvResult[jss::error] = "malformedAccount";
+        return std::nullopt;
+    }
+
+    if (!pd.isMember(jss::seq) ||
         (pd[jss::seq].isInt() && pd[jss::seq].asInt() < 0) ||
         (!pd[jss::seq].isInt() && !pd[jss::seq].isUInt()))
     {
-        jvResult[jss::error] = "malformedRequest";
+        jvResult[jss::error] = "malformedSequence";
         return std::nullopt;
     }
 
     auto const account = parseBase58<AccountID>(pd[jss::account].asString());
-    unsigned const seq = pd[jss::seq].asUInt();
+    if (!account)
+    {
+        jvResult[jss::error] = "malformedAccount";
+        return std::nullopt;
+    }
 
-    if (account)
-        return keylet::permissionedDomain(*account, seq).key;
-
-    jvResult[jss::error] = "malformedRequest";
-    return std::nullopt;
+    return keylet::permissionedDomain(*account, pd[jss::seq].asUInt()).key;
 }
 
 using FunctionType =
