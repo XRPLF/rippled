@@ -20,6 +20,7 @@
 #ifndef RIPPLE_BASICS_CANPROCESS_H_INCLUDED
 #define RIPPLE_BASICS_CANPROCESS_H_INCLUDED
 
+#include <mutex>
 /** RAII class to check if an Item is already being processed on another thread,
  * as indicated by it's presence in a Collection.
  *
