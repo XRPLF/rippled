@@ -46,6 +46,21 @@ jobs:
       - name: install Ninja
         if: matrix.generator == 'Ninja'
         run: brew install ninja
+      - name: install python
+        run: | 
+          if which python > /dev/null 2>&1; then
+              echo "Python executable exists"
+          else
+              brew install python@3.13
+              ln -s /opt/homebrew/bin/python3 /opt/homebrew/bin/python
+          fi
+      - name: install cmake
+        run: |
+          if which cmake > /dev/null 2>&1; then
+              echo "cmake executable exists"
+          else
+              brew install cmake
+          fi
       - name: install nproc
         run: |
           brew install coreutils
