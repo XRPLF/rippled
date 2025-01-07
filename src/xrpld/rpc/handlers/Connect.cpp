@@ -39,7 +39,7 @@ doConnect(RPC::JsonContext& context)
 {
     if (context.app.config().standalone())
     {
-        return RPC::make_error(rpcNOT_SYNCED, "notSynced");
+        return RPC::make_error(rpcNOT_SYNCED);
     }
 
     if (!context.params.isMember(jss::ip))
