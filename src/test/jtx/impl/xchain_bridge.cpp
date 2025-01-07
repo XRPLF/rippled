@@ -43,10 +43,10 @@ bridge(
     Issue const& issuingChainIssue)
 {
     Json::Value jv;
-    jv[sfLockingChainDoor.getJsonName()] = lockingChainDoor.human();
-    jv[sfLockingChainIssue.getJsonName()] = to_json(lockingChainIssue);
-    jv[sfIssuingChainDoor.getJsonName()] = issuingChainDoor.human();
-    jv[sfIssuingChainIssue.getJsonName()] = to_json(issuingChainIssue);
+    jv[jss::LockingChainDoor] = lockingChainDoor.human();
+    jv[jss::LockingChainIssue] = to_json(lockingChainIssue);
+    jv[jss::IssuingChainDoor] = issuingChainDoor.human();
+    jv[jss::IssuingChainIssue] = to_json(issuingChainIssue);
     return jv;
 }
 
@@ -59,10 +59,10 @@ bridge_rpc(
     Issue const& issuingChainIssue)
 {
     Json::Value jv;
-    jv[sfLockingChainDoor.getJsonName()] = lockingChainDoor.human();
-    jv[sfLockingChainIssue.getJsonName()] = to_json(lockingChainIssue);
-    jv[sfIssuingChainDoor.getJsonName()] = issuingChainDoor.human();
-    jv[sfIssuingChainIssue.getJsonName()] = to_json(issuingChainIssue);
+    jv[jss::LockingChainDoor] = lockingChainDoor.human();
+    jv[jss::LockingChainIssue] = to_json(lockingChainIssue);
+    jv[jss::IssuingChainDoor] = issuingChainDoor.human();
+    jv[jss::IssuingChainIssue] = to_json(issuingChainIssue);
     return jv;
 }
 
