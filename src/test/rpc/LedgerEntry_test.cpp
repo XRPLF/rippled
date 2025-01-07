@@ -49,9 +49,9 @@ class LedgerEntry_test : public beast::unit_test::suite
             BEAST_EXPECT(jv[jss::error] == err);
         if (msg.empty())
         {
-            BEAST_EXPECT(
+            BEAST_EXPECTS(
                 jv[jss::error_message] == Json::nullValue ||
-                jv[jss::error_message] == "");
+                jv[jss::error_message] == "", jv[jss::error_message].toStyledString());
         }
         else if (BEAST_EXPECT(jv.isMember(jss::error_message)))
             BEAST_EXPECT(jv[jss::error_message] == msg);

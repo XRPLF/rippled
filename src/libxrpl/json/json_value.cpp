@@ -685,7 +685,8 @@ Value::isConvertibleTo(ValueType other) const
                 (other == intValue && value_.real_ >= minInt &&
                  value_.real_ <= maxInt) ||
                 (other == uintValue && value_.real_ >= 0 &&
-                 value_.real_ <= maxUInt) ||
+                 value_.real_ <= maxUInt &&
+                 static_cast<int>(value_.real_) == value_.real_) ||
                 other == realValue || other == stringValue ||
                 other == booleanValue;
 
