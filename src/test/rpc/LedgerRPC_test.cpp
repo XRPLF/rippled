@@ -682,6 +682,46 @@ class LedgerRPC_test : public beast::unit_test::suite
     }
 
     void
+    testLedgerEntryAmendments()
+    {
+        testcase("ledger_entry Request Amendments");
+        using namespace test::jtx;
+
+        Env env{*this, envconfig(validator, ""), supported_amendments()};
+        env.close();
+
+        {
+            // Not Found
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::amendments] = true;
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "");
+        }
+
+        auto majorities = getMajorityAmendments(*env.closed());
+        for (int i = 0; i <= 256; ++i)
+        {
+            env.close();
+            majorities = getMajorityAmendments(*env.closed());
+            if (!majorities.empty())
+                break;
+        }
+
+        {
+            // Success
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::amendments] = true;
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Amendments);
+        }
+    }
+
+    void
     testLedgerEntryCheck()
     {
         testcase("ledger_entry Request Check");
@@ -1720,6 +1760,27 @@ class LedgerRPC_test : public beast::unit_test::suite
     }
 
     void
+    testLedgerEntryFee()
+    {
+        testcase("ledger_entry Request Fee");
+        using namespace test::jtx;
+
+        Env env{*this};
+        env.close();
+
+        {
+            // Success
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::fee] = true;
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == jss::FeeSettings);
+        }
+    }
+
+    void
     testLedgerEntryOffer()
     {
         testcase("ledger_entry Request Offer");
@@ -2157,6 +2218,201 @@ class LedgerRPC_test : public beast::unit_test::suite
     }
 
     void
+    testLedgerEntryHashes()
+    {
+        testcase("ledger_entry Request Hashes");
+        using namespace test::jtx;
+
+        Env env{*this, envconfig(validator, ""), supported_amendments()};
+        env.close();
+
+        {
+            // Success
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::hashes] = true;
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] ==
+                jss::LedgerHashes);
+        }
+
+        {
+            // Not Found
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::hashes][jss::ledger_index] = 5;
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "");
+        }
+
+        // proceed to the next flag ledger
+        for (int i = 0; i <= 256; ++i)
+            env.close();
+
+        {
+            // Success
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::hashes][jss::ledger_index] = 5;
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] ==
+                jss::LedgerHashes);
+        }
+
+        {
+            // Fail
+            Account const alice{"alice"};
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::fee][jss::owner] = alice.human();
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+        {
+            // Fail
+            Account const alice{"alice"};
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::fee][jss::ledger_index] = alice.human();
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+    }
+
+    void
+    testLedgerEntryNegativeUNL()
+    {
+        testcase("ledger_entry Request NegativeUNL");
+        using namespace test::jtx;
+
+        Env env{*this, supported_amendments()};
+        env.close();
+
+        {
+            // Not found
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::nunl] = true;
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "");
+        }
+
+        {
+            // TODO: test for when negativeUNL is set
+            // Success
+            // Json::Value jvParams;
+            // jvParams[jss::ledger_index] = "current";
+            // jvParams[jss::nunl] = true;
+            // auto const jrr = env.rpc(
+            //     "json", "ledger_entry", to_string(jvParams))[jss::result];
+            // std::cout << "jrr: " << jrr << std::endl;
+            // BEAST_EXPECT(
+            //     jrr[jss::node][sfLedgerEntryType.jsonName] ==
+            //     jss::NegativeUNL);
+        }
+    }
+
+    void
+    testLedgerEntryNFTokenOffer()
+    {
+        testcase("ledger_entry Request NFTokenOffer");
+
+        using namespace test::jtx;
+        Env env{*this, supported_amendments()};
+        Account const alice{"alice"};
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto const aliceOfferSeq = env.seq(alice);
+        uint256 const offerID = keylet::nftoffer(alice, aliceOfferSeq).key;
+        auto createNFTokenAndOffer = [](test::jtx::Account const& account) {
+            Json::Value jv;
+            jv[jss::TransactionType] = jss::NFTokenMint;
+            jv[jss::Account] = account.human();
+            jv[sfNFTokenTaxon.jsonName] = 1;
+            jv[jss::Amount] = "10";
+            return jv;
+        };
+
+        env(createNFTokenAndOffer(alice));
+        env.close();
+
+        {
+            // Success
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::nft_offer] = to_string(offerID);
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] ==
+                jss::NFTokenOffer);
+        }
+        {
+            // Success
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::nft_offer][jss::owner] = alice.human();
+            jvParams[jss::nft_offer][jss::seq] = aliceOfferSeq;
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] ==
+                jss::NFTokenOffer);
+        }
+
+        {
+            // Not found
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::nft_offer] = to_string(uint256{0});
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "");
+        }
+        {
+            // Not found
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::nft_offer][jss::owner] = alice.human();
+            jvParams[jss::nft_offer][jss::seq] = aliceOfferSeq + 1;
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "entryNotFound", "");
+        }
+
+        {
+            // Fail
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::nft_offer][jss::owner] = alice.human();
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+        {
+            // Fail
+            Account const alice{"alice"};
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "current";
+            jvParams[jss::nft_offer][jss::account] = alice.human();
+            jvParams[jss::nft_offer][jss::seq] = aliceOfferSeq + 1;
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+    }
+
+    void
     testLedgerEntryDID()
     {
         testcase("ledger_entry Request DID");
@@ -2272,7 +2528,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
         // Fields that can handle objects just fine
         for (auto const& field :
-             {jss::directory, jss::escrow, jss::offer, jss::ticket, jss::amm})
+             {jss::directory, jss::escrow, jss::offer, jss::ticket, jss::amm, jss::nft_offer})
         {
             auto const jvParams =
                 makeParams([&field, &injectObject](Json::Value& jvParams) {
@@ -2283,6 +2539,34 @@ class LedgerRPC_test : public beast::unit_test::suite
                 "json", "ledger_entry", to_string(jvParams))[jss::result];
 
             checkErrorValue(jrr, "malformedRequest", "");
+        }
+        // Fields that can handle boolean values
+        for (auto const& field :
+             {jss::amendments, jss::fee, jss::hashes, jss::nunl})
+        {
+            auto const jvParams = makeParams(
+                [&field](Json::Value& jvParams) { jvParams[field] = false; });
+
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+        // Fields that can handle only boolean values
+        for (auto const& field : {jss::amendments, jss::fee, jss::nunl})
+        {
+            for (auto const& inject : {injectObject, injectArray})
+            {
+                auto const jvParams =
+                    makeParams([&field, &inject](Json::Value& jvParams) {
+                        jvParams[field] = inject;
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                checkErrorValue(jrr, "malformedRequest", "");
+            }
         }
 
         for (auto const& inject : {injectObject, injectArray})
@@ -2329,6 +2613,22 @@ class LedgerRPC_test : public beast::unit_test::suite
                     makeParams([&inject](Json::Value& jvParams) {
                         jvParams[jss::escrow][jss::owner] = inject;
                         jvParams[jss::escrow][jss::seq] = 99;
+                    });
+
+                Json::Value const jrr = env.rpc(
+                    "json", "ledger_entry", to_string(jvParams))[jss::result];
+
+                if (apiVersion < 2u)
+                    checkErrorValue(jrr, "internal", "Internal error.");
+                else
+                    checkErrorValue(jrr, "invalidParams", "");
+            }
+            // nft_offer sub-fields
+            {
+                auto const jvParams =
+                    makeParams([&inject](Json::Value& jvParams) {
+                        jvParams[jss::nft_offer][jss::owner] = inject;
+                        jvParams[jss::nft_offer][jss::seq] = 99;
                     });
 
                 Json::Value const jrr = env.rpc(
@@ -3098,16 +3398,21 @@ public:
         testLedgerFullNonAdmin();
         testLedgerAccounts();
         testLedgerEntryAccountRoot();
+        testLedgerEntryAmendments();
         testLedgerEntryCheck();
         testLedgerEntryCredentials();
         testLedgerEntryDepositPreauth();
         testLedgerEntryDepositPreauthCred();
         testLedgerEntryDirectory();
         testLedgerEntryEscrow();
+        testLedgerEntryFee();
         testLedgerEntryOffer();
         testLedgerEntryPayChan();
         testLedgerEntryRippleState();
         testLedgerEntryTicket();
+        testLedgerEntryHashes();
+        testLedgerEntryNegativeUNL();
+        testLedgerEntryNFTokenOffer();
         testLookupLedger();
         testNoQueue();
         testQueue();
