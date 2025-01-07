@@ -49,7 +49,9 @@ target_link_libraries(xrpl.libpb
 
 # TODO: Clean up the number of library targets later.
 add_library(xrpl.imports.main INTERFACE)
-target_link_libraries(xrpl.imports.main INTERFACE
+
+target_link_libraries(xrpl.imports.main
+  INTERFACE
     LibArchive::LibArchive
     OpenSSL::Crypto
     Ripple::boost
@@ -59,7 +61,9 @@ target_link_libraries(xrpl.imports.main INTERFACE
     date::date
     ed25519::ed25519
     secp256k1::secp256k1
+    xrpl.libpb
     xxHash::xxhash
+    $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>
 )
 
 include(add_module)
@@ -129,34 +133,6 @@ target_link_modules(xrpl PUBLIC
 #   PUBLIC
 #     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 #     $<INSTALL_INTERFACE:include>)
-
-target_compile_definitions(xrpl.libxrpl
-  PUBLIC
-    BOOST_ASIO_USE_TS_EXECUTOR_AS_DEFAULT
-    BOOST_CONTAINER_FWD_BAD_DEQUE
-    HAS_UNCAUGHT_EXCEPTIONS=1)
-
-target_compile_options(xrpl.libxrpl
-  PUBLIC
-    $<$<BOOL:${is_gcc}>:-Wno-maybe-uninitialized>
-    $<$<BOOL:${voidstar}>:-DENABLE_VOIDSTAR>
-)
-
-target_link_libraries(xrpl.libxrpl
-  PUBLIC
-    LibArchive::LibArchive
-    OpenSSL::Crypto
-    Ripple::boost
-    Ripple::opts
-    Ripple::syslibs
-    absl::random_random
-    date::date
-    ed25519::ed25519
-    secp256k1::secp256k1
-    xrpl.libpb
-    xxHash::xxhash
-    $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>
-)
 
 if(xrpld)
   add_executable(rippled)

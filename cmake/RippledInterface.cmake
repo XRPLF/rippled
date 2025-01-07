@@ -7,6 +7,9 @@ add_library (Ripple::opts ALIAS opts)
 target_compile_definitions (opts
   INTERFACE
     BOOST_ASIO_DISABLE_HANDLER_TYPE_REQUIREMENTS
+    BOOST_ASIO_USE_TS_EXECUTOR_AS_DEFAULT
+    BOOST_CONTAINER_FWD_BAD_DEQUE
+    HAS_UNCAUGHT_EXCEPTIONS=1
     $<$<BOOL:${boost_show_deprecated}>:
       BOOST_ASIO_NO_DEPRECATED
       BOOST_FILESYSTEM_NO_DEPRECATED
@@ -22,6 +25,8 @@ target_compile_definitions (opts
 target_compile_options (opts
   INTERFACE
     $<$<AND:$<BOOL:${is_gcc}>,$<COMPILE_LANGUAGE:CXX>>:-Wsuggest-override>
+    $<$<BOOL:${is_gcc}>:-Wno-maybe-uninitialized>
+    $<$<BOOL:${voidstar}>:-DENABLE_VOIDSTAR>
     $<$<BOOL:${perf}>:-fno-omit-frame-pointer>
     $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${coverage}>>:-g --coverage -fprofile-abs-path>
     $<$<AND:$<BOOL:${is_clang}>,$<BOOL:${coverage}>>:-g --coverage>
