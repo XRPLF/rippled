@@ -248,6 +248,8 @@ admin = 127.0.0.1
                 BEAST_EXPECT(types["Hash160"].asUInt() == 17);
                 BEAST_EXPECT(types["Hash192"].asUInt() == 21);
                 BEAST_EXPECT(types["Hash256"].asUInt() == 5);
+                BEAST_EXPECT(types["Hash384"].asUInt() == 22);
+                BEAST_EXPECT(types["Hash512"].asUInt() == 23);
             }
         }
 
