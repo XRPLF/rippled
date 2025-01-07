@@ -2528,7 +2528,12 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
         // Fields that can handle objects just fine
         for (auto const& field :
-             {jss::directory, jss::escrow, jss::offer, jss::ticket, jss::amm, jss::nft_offer})
+             {jss::directory,
+              jss::escrow,
+              jss::offer,
+              jss::ticket,
+              jss::amm,
+              jss::nft_offer})
         {
             auto const jvParams =
                 makeParams([&field, &injectObject](Json::Value& jvParams) {
