@@ -351,6 +351,44 @@ class Simulate_test : public beast::unit_test::suite
         }
     }
     void
+    testFeeError()
+    {
+        testcase("Fee failure");
+
+        using namespace jtx;
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->section("transaction_queue")
+                .set("minimum_txn_in_ledger_standalone", "3");
+            return cfg;
+        }));
+
+        Account const alice{"alice"};
+        env.fund(XRP(1000000), alice);
+        env.close();
+
+        // fill queue
+        auto metrics = env.app().getTxQ().getMetrics(*env.current());
+        for (int i = metrics.txInLedger; i <= metrics.txPerLedger; ++i)
+            env(noop(alice));
+
+        {
+            Json::Value params;
+            params[jss::tx_json] = noop(alice);
+
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            auto const result = resp[jss::result];
+            if (BEAST_EXPECT(result.isMember(jss::error)))
+            {
+                BEAST_EXPECT(result[jss::error] == "highFee");
+                BEAST_EXPECT(result[jss::error_code] == rpcHIGH_FEE);
+                BEAST_EXPECT(
+                    result[jss::error_message] ==
+                    "Fee of 8889 exceeds the requested tx limit of 100");
+            }
+        }
+    }
+    void
     testSuccessfulTransaction()
     {
         testcase("Successful transaction");
@@ -791,17 +829,156 @@ class Simulate_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testDeleteExpiredCredentials()
+    {
+        testcase("Credentials aren't actually deleted on `tecEXPIRED`");
+
+        // scenario setup
+
+        using namespace jtx;
+        Env env(*this);
+
+        Account const subject{"subject"};
+        Account const issuer{"issuer"};
+
+        env.fund(XRP(10000), subject, issuer);
+        env.close();
+
+        auto const credType = "123ABC";
+
+        auto jv = credentials::create(subject, issuer, credType);
+        uint32_t const t =
+            env.current()->info().parentCloseTime.time_since_epoch().count();
+        jv[sfExpiration.jsonName] = t;
+        env(jv);
+        env.close();
+
+        {
+            auto validateOutput = [&](Json::Value const& resp,
+                                      Json::Value const& tx) {
+                auto result = resp[jss::result];
+                checkBasicReturnValidity(
+                    result, tx, 4, env.current()->fees().base);
+
+                BEAST_EXPECT(result[jss::engine_result] == "tecEXPIRED");
+                BEAST_EXPECT(result[jss::engine_result_code] == 148);
+                BEAST_EXPECT(
+                    result[jss::engine_result_message] ==
+                    "Expiration time is passed.");
+
+                if (BEAST_EXPECT(
+                        result.isMember(jss::meta) ||
+                        result.isMember(jss::meta_blob)))
+                {
+                    Json::Value metadata;
+                    if (result.isMember(jss::meta_blob))
+                    {
+                        auto unHexed =
+                            strUnHex(result[jss::meta_blob].asString());
+                        SerialIter sitTrans(makeSlice(*unHexed));
+                        metadata = STObject(std::ref(sitTrans), sfGeneric)
+                                       .getJson(JsonOptions::none);
+                    }
+                    else
+                    {
+                        metadata = result[jss::meta];
+                    }
+                    if (BEAST_EXPECT(
+                            metadata.isMember(sfAffectedNodes.jsonName)))
+                    {
+                        BEAST_EXPECT(metadata[sfAffectedNodes].size() == 5);
+
+                        try
+                        {
+                            bool found = false;
+                            for (auto const& node : metadata[sfAffectedNodes])
+                            {
+                                if (node.isMember(sfDeletedNode.jsonName) &&
+                                    node[sfDeletedNode.jsonName]
+                                        [sfLedgerEntryType.jsonName]
+                                            .asString() == "Credential")
+                                {
+                                    auto const deleted =
+                                        node[sfDeletedNode.jsonName]
+                                            [sfFinalFields.jsonName];
+                                    found = deleted[jss::Issuer] ==
+                                            issuer.human() &&
+                                        deleted[jss::Subject] ==
+                                            subject.human() &&
+                                        deleted["CredentialType"] ==
+                                            strHex(std::string_view(credType));
+                                    break;
+                                }
+                            }
+                            BEAST_EXPECT(found);
+                        }
+                        catch (...)
+                        {
+                            fail();
+                        }
+                        // auto node = metadata[sfAffectedNodes][0u];
+                        // if (BEAST_EXPECT(
+                        //         node.isMember(sfModifiedNode.jsonName)))
+                        // {
+                        //     auto modifiedNode = node[sfModifiedNode];
+                        //     BEAST_EXPECT(
+                        //         modifiedNode[sfLedgerEntryType] ==
+                        //         "AccountRoot");
+                        //     auto finalFields = modifiedNode[sfFinalFields];
+                        //     BEAST_EXPECT(finalFields[sfDomain] == newDomain);
+                        // }
+                    }
+                    BEAST_EXPECT(metadata[sfTransactionIndex] == 0);
+                    BEAST_EXPECT(metadata[sfTransactionResult] == "tecEXPIRED");
+                }
+            };
+
+            Json::Value tx = credentials::accept(subject, issuer, credType);
+
+            // test with autofill
+            testTx(env, tx, validateOutput);
+
+            tx[sfSigningPubKey] = "";
+            tx[sfTxnSignature] = "";
+            tx[sfSequence] = 4;
+            tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
+
+            // test without autofill
+            testTx(env, tx, validateOutput);
+        }
+
+        // check that expired credentials weren't deleted
+        auto const jle =
+            credentials::ledgerEntry(env, subject, issuer, credType);
+        BEAST_EXPECT(
+            jle.isObject() && jle.isMember(jss::result) &&
+            !jle[jss::result].isMember(jss::error) &&
+            jle[jss::result].isMember(jss::node) &&
+            jle[jss::result][jss::node].isMember("LedgerEntryType") &&
+            jle[jss::result][jss::node]["LedgerEntryType"] == jss::Credential &&
+            jle[jss::result][jss::node][jss::Issuer] == issuer.human() &&
+            jle[jss::result][jss::node][jss::Subject] == subject.human() &&
+            jle[jss::result][jss::node]["CredentialType"] ==
+                strHex(std::string_view(credType)));
+
+        BEAST_EXPECT(ownerCount(env, issuer) == 1);
+        BEAST_EXPECT(ownerCount(env, subject) == 0);
+    }
+
 public:
     void
     run() override
     {
         testParamErrors();
+        testFeeError();
         testSuccessfulTransaction();
         testTransactionNonTecFailure();
         testTransactionTecFailure();
         testSuccessfulTransactionMultisigned();
         testTransactionSigningFailure();
         testMultisignedBadPubKey();
+        testDeleteExpiredCredentials();
     }
 };
 
