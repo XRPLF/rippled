@@ -135,30 +135,30 @@ preflight2(PreflightContext const& ctx)
 {
     if (ctx.flags & tapDRY_RUN)  // simulation
     {
-        if (ctx.tx.getSignature().empty())
+        if (!ctx.tx.getSignature().empty())
         {
-            if (ctx.tx.isFieldPresent(sfSigners))
+            // NOTE: This code should never be hit because it's checked in the
+            // `simulate` RPC
+            return temINVALID;  // LCOV_EXCL_LINE
+        }
+
+        if (!ctx.tx.isFieldPresent(sfSigners))
+        {
+            // no signers, no signature - a valid simulation
+            return tesSUCCESS;
+        }
+
+        for (auto const& signer : ctx.tx.getFieldArray(sfSigners))
+        {
+            if (signer.isFieldPresent(sfTxnSignature) &&
+                !ctx.tx.getSignature().empty())
             {
-                for (auto const& signer : ctx.tx.getFieldArray(sfSigners))
-                {
-                    if (signer.isFieldPresent(sfTxnSignature) &&
-                        !ctx.tx.getSignature().empty())
-                    {
-                        // NOTE: This code should never be hit because it's
-                        // checked in the `simulate` RPC
-                        return temINVALID;  // LCOV_EXCL_LINE
-                    }
-                }
-                return tesSUCCESS;
-            }
-            else
-            {
-                return tesSUCCESS;
+                // NOTE: This code should never be hit because it's
+                // checked in the `simulate` RPC
+                return temINVALID;  // LCOV_EXCL_LINE
             }
         }
-        // NOTE: This code should never be hit because it's checked in the
-        // `simulate` RPC
-        return temINVALID;  // LCOV_EXCL_LINE
+        return tesSUCCESS;
     }
     auto const sigValid = checkValidity(
         ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
@@ -543,9 +543,9 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
     // Look up the account.
     auto const idAccount = ctx.tx.getAccountID(sfAccount);
     // This ternary is only needed to handle `simulate`
-    auto const idSigner = pkSigner.size() > 0
-        ? calcAccountID(PublicKey(makeSlice(pkSigner)))
-        : idAccount;
+    auto const idSigner = pkSigner.empty()
+        ? idAccount
+        : calcAccountID(PublicKey(makeSlice(pkSigner)));
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
     if (!sleAccount)
         return terNO_ACCOUNT;
