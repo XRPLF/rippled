@@ -90,8 +90,12 @@ private:
     doInsert(Mutex& mtx, Collection& collection, Item const& item)
     {
         std::unique_lock<Mutex> lock(mtx);
-        auto const [it, inserted] = collection.insert(item);
-        if (!inserted)
+        // TODO: Use structured binding once LLVM 16 is the minimum supported
+        // version. See also: https://github.com/llvm/llvm-project/issues/48582
+        // https://github.com/llvm/llvm-project/commit/127bf44385424891eb04cff8e52d3f157fc2cb7c
+        auto const insertResult = collection.insert(item);
+        auto const it = insertResult.first;
+        if (!insertResult.second)
             return {};
         if constexpr (useIterator)
             return [&, it]() {
