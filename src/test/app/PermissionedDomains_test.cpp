@@ -203,9 +203,9 @@ class PermissionedDomains_test : public beast::unit_test::suite
                 {alice5, "credential4"},
             };
 
-            std::unordered_map<std::string, Account> pubKey2Acc;
+            std::unordered_map<std::string, Account> human2Acc;
             for (auto const& c : credentialsDup)
-                pubKey2Acc.emplace(c.issuer.human(), c.issuer);
+                human2Acc.emplace(c.issuer.human(), c.issuer);
 
             auto const sorted = pdomain::sortCredentials(credentialsDup);
             BEAST_EXPECT(sorted.size() == 4);
@@ -223,7 +223,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
             env.close();
             auto objects = pdomain::getObjects(account, env);
             auto const fromObject =
-                pdomain::credentialsFromJson(objects[d], pubKey2Acc);
+                pdomain::credentialsFromJson(objects[d], human2Acc);
             auto const sortedCreds = pdomain::sortCredentials(credentialsDup);
             BEAST_EXPECT(fromObject == sortedCreds);
         }
@@ -282,9 +282,9 @@ class PermissionedDomains_test : public beast::unit_test::suite
             "alice10",
             "alice11",
             "alice12"};
-        std::unordered_map<std::string, Account> pubKey2Acc;
+        std::unordered_map<std::string, Account> human2Acc;
         for (auto const& c : alice)
-            pubKey2Acc.emplace(c.human(), c);
+            human2Acc.emplace(c.human(), c);
 
         for (int i = 0; i < accNum; ++i)
             env.fund(XRP(1000), alice[i]);
@@ -305,7 +305,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
             BEAST_EXPECT(object["Owner"] == alice[0].human());
             BEAST_EXPECT(object["Sequence"] == tx["Sequence"]);
             BEAST_EXPECT(
-                pdomain::credentialsFromJson(object, pubKey2Acc) ==
+                pdomain::credentialsFromJson(object, human2Acc) ==
                 credentials1);
         }
 
@@ -339,7 +339,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
                         object["LedgerEntryType"] == "PermissionedDomain");
                     BEAST_EXPECT(object["Owner"] == alice[0].human());
                     BEAST_EXPECT(
-                        pdomain::credentialsFromJson(object, pubKey2Acc) ==
+                        pdomain::credentialsFromJson(object, human2Acc) ==
                         longCredentials);
                     break;
                 }
@@ -348,6 +348,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         }
 
         // Create new from existing account with 10 credentials.
+        // Last credential describe domain owner itself
         pdomain::Credentials const credentials10{
             {alice[2], "credential1"},
             {alice[3], "credential2"},
@@ -358,7 +359,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
             {alice[8], "credential7"},
             {alice[9], "credential8"},
             {alice[10], "credential9"},
-            {alice[11], "credential10"},
+            {alice[0], "credential10"},
         };
         uint256 domain2;
         {
@@ -373,7 +374,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
             auto objects = pdomain::getObjects(alice[0], env);
             auto object = objects[domain2];
             BEAST_EXPECT(
-                pdomain::credentialsFromJson(object, pubKey2Acc) ==
+                pdomain::credentialsFromJson(object, human2Acc) ==
                 pdomain::sortCredentials(credentials10));
         }
 
@@ -381,7 +382,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         env(pdomain::setTx(alice[0], credentials1, domain2));
         BEAST_EXPECT(
             pdomain::credentialsFromJson(
-                pdomain::getObjects(alice[0], env)[domain2], pubKey2Acc) ==
+                pdomain::getObjects(alice[0], env)[domain2], human2Acc) ==
             credentials1);
 
         // Update with 10 credentials.
@@ -389,7 +390,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         env.close();
         BEAST_EXPECT(
             pdomain::credentialsFromJson(
-                pdomain::getObjects(alice[0], env)[domain2], pubKey2Acc) ==
+                pdomain::getObjects(alice[0], env)[domain2], human2Acc) ==
             pdomain::sortCredentials(credentials10));
 
         // Update from the wrong owner.
@@ -403,6 +404,11 @@ class PermissionedDomains_test : public beast::unit_test::suite
         // Update non-existent domain
         env(pdomain::setTx(alice[0], credentials1, uint256(75)),
             ter(tecNO_ENTRY));
+
+        // Wrong flag
+        env(pdomain::setTx(alice[0], credentials1),
+            txflags(tfClawTwoAssets),
+            ter(temINVALID_FLAG));
 
         // Test bad data when creating a domain.
         testBadData(alice[0], env);
@@ -466,6 +472,11 @@ class PermissionedDomains_test : public beast::unit_test::suite
             ter(temBAD_FEE),
             fee(1, true));
 
+        // Wrong flag
+        env(pdomain::deleteTx(alice, domain),
+            ter(temINVALID_FLAG),
+            txflags(tfClawTwoAssets));
+
         // Delete a zero domain.
         env(pdomain::deleteTx(alice, uint256(0)), ter(temMALFORMED));
 
@@ -490,7 +501,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
     void
     testAccountReserve()
     {
-        // Verify that the reserve behaves as expected for minting.
+        // Verify that the reserve behaves as expected for creating.
         testcase("Account Reserve");
 
         using namespace test::jtx;
@@ -550,7 +561,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(PermissionedDomains, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE(PermissionedDomains, app, ripple);
 
 }  // namespace jtx
 }  // namespace test

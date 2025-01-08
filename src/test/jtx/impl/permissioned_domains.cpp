@@ -106,11 +106,14 @@ objectExists(uint256 const& objID, Env& env)
     auto const result =
         env.rpc("json", "ledger_entry", to_string(params))["result"];
 
-    if (result["status"] == "success")
-        return true;
-
     if ((result["status"] == "error") && (result["error"] == "entryNotFound"))
         return false;
+
+    if ((result["node"]["LedgerEntryType"] != jss::PermissionedDomain))
+        return false;
+
+    if (result["status"] == "success")
+        return true;
 
     throw std::runtime_error("Error getting ledger_entry RPC result.");
 }

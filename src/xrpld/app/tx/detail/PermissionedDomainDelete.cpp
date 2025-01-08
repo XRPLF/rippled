@@ -19,6 +19,7 @@
 
 #include <xrpld/app/tx/detail/PermissionedDomainDelete.h>
 #include <xrpld/ledger/View.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 
@@ -30,6 +31,12 @@ PermissionedDomainDelete::preflight(PreflightContext const& ctx)
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
+
+    if (ctx.tx.getFlags() & tfUniversalMask)
+    {
+        JLOG(ctx.j.debug()) << "PermissionedDomainDelete: invalid flags.";
+        return temINVALID_FLAG;
+    }
 
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
     if (domain == beast::zero)

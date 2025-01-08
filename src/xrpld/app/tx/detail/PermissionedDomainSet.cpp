@@ -35,6 +35,12 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
+    if (ctx.tx.getFlags() & tfUniversalMask)
+    {
+        JLOG(ctx.j.debug()) << "PermissionedDomainSet: invalid flags.";
+        return temINVALID_FLAG;
+    }
+
     if (auto err = credentials::checkArray(
             ctx.tx.getFieldArray(sfAcceptedCredentials),
             maxPermissionedDomainCredentialsArraySize,
