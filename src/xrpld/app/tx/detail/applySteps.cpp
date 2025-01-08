@@ -269,7 +269,7 @@ TxConsequences::TxConsequences(STTx const& tx, std::uint32_t sequencesConsumed)
     sequencesConsumed_ = sequencesConsumed;
 }
 
-static TxApplyResult
+static ApplyResult
 invoke_apply(ApplyContext& ctx)
 {
     try
@@ -367,7 +367,7 @@ calculateDefaultBaseFee(ReadView const& view, STTx const& tx)
     return Transactor::calculateBaseFee(view, tx);
 }
 
-TxApplyResult
+ApplyResult
 doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view)
 {
     if (preclaimResult.view.seq() != view.seq())

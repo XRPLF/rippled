@@ -29,7 +29,7 @@ class Application;
 class STTx;
 class TxQ;
 
-struct TxApplyResult
+struct ApplyResult
 {
     TER ter;
     bool applied;
@@ -340,7 +340,7 @@ calculateDefaultBaseFee(ReadView const& view, STTx const& tx);
     @return A pair with the `TER` and a `bool` indicating
     whether or not the transaction was applied.
 */
-TxApplyResult
+ApplyResult
 doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view);
 
 }  // namespace ripple

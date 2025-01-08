@@ -293,7 +293,7 @@ TxQ::MaybeTx::MaybeTx(
 {
 }
 
-TxApplyResult
+ApplyResult
 TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
 {
     // If the rules or flags change, preflight again
@@ -513,7 +513,7 @@ TxQ::erase(
     return txQAccount.transactions.erase(begin, end);
 }
 
-TxApplyResult
+ApplyResult
 TxQ::tryClearAccountQueueUpThruTx(
     Application& app,
     OpenView& view,
@@ -725,7 +725,7 @@ TxQ::tryClearAccountQueueUpThruTx(
 //    b. The entire queue also has a (dynamic) maximum size.  Transactions
 //       beyond that limit are rejected.
 //
-TxApplyResult
+ApplyResult
 TxQ::apply(
     Application& app,
     OpenView& view,
@@ -1674,7 +1674,7 @@ TxQ::getRequiredFeeLevel(
     return FeeMetrics::scaleFeeLevel(metricsSnapshot, view);
 }
 
-std::optional<TxApplyResult>
+std::optional<ApplyResult>
 TxQ::tryDirectApply(
     Application& app,
     OpenView& view,
@@ -1740,7 +1740,7 @@ TxQ::tryDirectApply(
                 }
             }
         }
-        return TxApplyResult{txnResult, didApply, metadata};
+        return ApplyResult{txnResult, didApply, metadata};
     }
     return {};
 }

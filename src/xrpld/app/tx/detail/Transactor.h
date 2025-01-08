@@ -100,7 +100,7 @@ protected:
 public:
     enum ConsequencesFactoryType { Normal, Blocker, Custom };
     /** Process the transaction. */
-    TxApplyResult
+    ApplyResult
     operator()();
 
     ApplyView&

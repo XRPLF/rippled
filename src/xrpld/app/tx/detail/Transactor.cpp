@@ -898,7 +898,7 @@ Transactor::trapTransaction(uint256 txHash) const
 }
 
 //------------------------------------------------------------------------------
-TxApplyResult
+ApplyResult
 Transactor::operator()()
 {
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
