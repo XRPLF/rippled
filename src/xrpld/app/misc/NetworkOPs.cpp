@@ -2329,12 +2329,12 @@ NetworkOPsImp::recvValidation(
         << "recvValidation " << val->getLedgerHash() << " from " << source;
 
     {
-        CanProcess check(
+        CanProcess const check(
             validationsMutex_, pendingValidations_, val->getLedgerHash());
         try
         {
             BypassAccept bypassAccept =
-                check.canProcess() ? BypassAccept::no : BypassAccept::yes;
+                check ? BypassAccept::no : BypassAccept::yes;
             handleNewValidation(app_, val, source, bypassAccept, m_journal);
         }
         catch (std::exception const& e)

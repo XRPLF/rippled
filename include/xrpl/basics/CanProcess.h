@@ -20,7 +20,10 @@
 #ifndef RIPPLE_BASICS_CANPROCESS_H_INCLUDED
 #define RIPPLE_BASICS_CANPROCESS_H_INCLUDED
 
+#include <functional>
 #include <mutex>
+#include <set>
+
 /** RAII class to check if an Item is already being processed on another thread,
  * as indicated by it's presence in a Collection.
  *
@@ -55,53 +58,73 @@
  *       CanProcess check(
  *           validationsMutex_, pendingValidations_, val->getLedgerHash());
  *       BypassAccept bypassAccept =
- *           check.canProcess() ? BypassAccept::no : BypassAccept::yes;
+ *           check ? BypassAccept::no : BypassAccept::yes;
  *       handleNewValidation(app_, val, source, bypassAccept, m_journal);
  *   }
  *
  */
-template <class Mutex, class Collection, class Item>
 class CanProcess
 {
 public:
+    template <class Mutex, class Collection, class Item>
     CanProcess(Mutex& mtx, Collection& collection, Item const& item)
-        : mtx_(mtx), collection_(collection), item_(item), canProcess_(insert())
+        : cleanup_(insert(mtx, collection, item))
     {
     }
 
     ~CanProcess()
     {
-        if (canProcess_)
-        {
-            std::unique_lock<Mutex> lock_(mtx_);
-            collection_.erase(item_);
-        }
+        if (cleanup_)
+            cleanup_();
     }
 
-    bool
-    canProcess() const
-    {
-        return canProcess_;
-    }
-
+    explicit
     operator bool() const
     {
-        return canProcess_;
+        return static_cast<bool>(cleanup_);
     }
 
 private:
-    bool
-    insert()
+    template <bool useIterator, class Mutex, class Collection, class Item>
+    std::function<void()>
+    doInsert(Mutex& mtx, Collection& collection, Item const& item)
     {
-        std::unique_lock<Mutex> lock_(mtx_);
-        auto const [_, inserted] = collection_.insert(item_);
-        return inserted;
+        std::unique_lock<Mutex> lock(mtx);
+        auto const [it, inserted] = collection.insert(item);
+        if (!inserted)
+            return {};
+        if constexpr (useIterator)
+            return [&, it]() {
+                std::unique_lock<Mutex> lock(mtx);
+                collection.erase(it);
+            };
+        else
+            return [&]() {
+                std::unique_lock<Mutex> lock(mtx);
+                collection.erase(item);
+            };
     }
 
-    Mutex& mtx_;
-    Collection& collection_;
-    Item const item_;
-    bool const canProcess_;
+    // Generic insert() function doesn't use iterators because they may get
+    // invalidated
+    template <class Mutex, class Collection, class Item>
+    std::function<void()>
+    insert(Mutex& mtx, Collection& collection, Item const& item)
+    {
+        return doInsert<false>(mtx, collection, item);
+    }
+
+    // Specialize insert() for std::set, which does not invalidate iterators for
+    // insert and erase
+    template <class Mutex, class Item>
+    std::function<void()>
+    insert(Mutex& mtx, std::set<Item>& collection, Item const& item)
+    {
+        return doInsert<true>(mtx, collection, item);
+    }
+
+    // If set, then the item is "usable"
+    std::function<void()> cleanup_;
 };
 
 #endif

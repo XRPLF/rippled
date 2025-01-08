@@ -77,8 +77,9 @@ public:
                 hash.isNonZero(),
                 "ripple::InboundLedgersImp::acquire::doAcquire : nonzero hash");
 
+            bool const needNetworkLedger = app_.getOPs().isNeedNetworkLedger();
             bool const shouldAcquire = [&]() {
-                if (!app_.getOPs().isNeedNetworkLedger())
+                if (!needNetworkLedger)
                     return true;
                 if (reason == InboundLedger::Reason::GENERIC)
                     return true;
@@ -86,17 +87,11 @@ public:
                     return true;
                 return false;
             }();
-            assert(
-                shouldAcquire ==
-                !(app_.getOPs().isNeedNetworkLedger() &&
-                  (reason != InboundLedger::Reason::GENERIC) &&
-                  (reason != InboundLedger::Reason::CONSENSUS)));
 
             std::stringstream ss;
             ss << "InboundLedger::acquire: "
                << "Request: " << to_string(hash) << ", " << seq
-               << " NeedNetworkLedger: "
-               << (app_.getOPs().isNeedNetworkLedger() ? "yes" : "no")
+               << " NeedNetworkLedger: " << (needNetworkLedger ? "yes" : "no")
                << " Reason: " << to_string(reason)
                << " Should acquire: " << (shouldAcquire ? "true." : "false.");
 
@@ -223,7 +218,7 @@ public:
         std::uint32_t seq,
         InboundLedger::Reason reason) override
     {
-        if (CanProcess check{acquiresMutex_, pendingAcquires_, hash})
+        if (CanProcess const check{acquiresMutex_, pendingAcquires_, hash})
         {
             try
             {
