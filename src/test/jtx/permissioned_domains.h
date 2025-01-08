@@ -55,7 +55,7 @@ objectExists(uint256 const& objID, Env& env);
 Credentials
 credentialsFromJson(
     Json::Value const& object,
-    std::unordered_map<std::string, Account> const& pubKey2Acc);
+    std::unordered_map<std::string, Account> const& human2Acc);
 
 // Sort credentials the same way as PermissionedDomainSet
 Credentials

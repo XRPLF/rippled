@@ -122,7 +122,7 @@ objectExists(uint256 const& objID, Env& env)
 Credentials
 credentialsFromJson(
     Json::Value const& object,
-    std::unordered_map<std::string, Account> const& pubKey2Acc)
+    std::unordered_map<std::string, Account> const& human2Acc)
 {
     Credentials ret;
     Json::Value credentials(Json::arrayValue);
@@ -135,7 +135,7 @@ credentialsFromJson(
         auto const& credentialType = obj["CredentialType"];
         auto blob = strUnHex(credentialType.asString()).value();
         ret.push_back(
-            {pubKey2Acc.at(issuer.asString()),
+            {human2Acc.at(issuer.asString()),
              std::string(blob.begin(), blob.end())});
     }
     return ret;

@@ -112,7 +112,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
 
         // Test empty credentials.
         env(pdomain::setTx(account, pdomain::Credentials(), domain),
-            ter(temMALFORMED));
+            ter(temARRAY_EMPTY));
 
         // Test 11 credentials.
         pdomain::Credentials const credentials11{
@@ -130,7 +130,8 @@ class PermissionedDomains_test : public beast::unit_test::suite
         BEAST_EXPECT(
             credentials11.size() ==
             maxPermissionedDomainCredentialsArraySize + 1);
-        env(pdomain::setTx(account, credentials11, domain), ter(temMALFORMED));
+        env(pdomain::setTx(account, credentials11, domain),
+            ter(temARRAY_TOO_LARGE));
 
         // Test credentials including non-existent issuer.
         Account const nobody("nobody");
@@ -238,9 +239,9 @@ class PermissionedDomains_test : public beast::unit_test::suite
                 {alice5, "credential4"},
                 {alice2, "credential6"},
             };
-            std::unordered_map<std::string, Account> pubKey2Acc;
+            std::unordered_map<std::string, Account> human2Acc;
             for (auto const& c : credentialsSame)
-                pubKey2Acc.emplace(c.issuer.human(), c.issuer);
+                human2Acc.emplace(c.issuer.human(), c.issuer);
 
             BEAST_EXPECT(
                 credentialsSame != pdomain::sortCredentials(credentialsSame));
@@ -254,7 +255,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
             env.close();
             auto objects = pdomain::getObjects(account, env);
             auto const fromObject =
-                pdomain::credentialsFromJson(objects[d], pubKey2Acc);
+                pdomain::credentialsFromJson(objects[d], human2Acc);
             auto const sortedCreds = pdomain::sortCredentials(credentialsSame);
             BEAST_EXPECT(fromObject == sortedCreds);
         }

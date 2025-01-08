@@ -234,7 +234,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
         JLOG(j.trace()) << "Malformed transaction: "
                            "Invalid credentials size: "
                         << credentials.size();
-        return temMALFORMED;
+        return credentials.empty() ? temARRAY_EMPTY : temARRAY_TOO_LARGE;
     }
 
     std::unordered_set<uint256> duplicates;
