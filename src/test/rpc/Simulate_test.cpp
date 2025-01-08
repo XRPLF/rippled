@@ -41,7 +41,7 @@ class Simulate_test : public beast::unit_test::suite
     checkBasicReturnValidity(
         Json::Value const& result,
         Json::Value const& tx,
-        const int expectedSequence,
+        int const expectedSequence,
         std::string const& expectedFee)
     {
         BEAST_EXPECT(result[jss::applied] == false);
@@ -78,8 +78,8 @@ class Simulate_test : public beast::unit_test::suite
     checkBasicReturnValidity(
         Json::Value const& result,
         Json::Value const& tx,
-        int expectedSequence,
-        XRPAmount expectedFee)
+        int const expectedSequence,
+        XRPAmount const expectedFee)
     {
         return checkBasicReturnValidity(
             result, tx, expectedSequence, expectedFee.jsonClipped().asString());
