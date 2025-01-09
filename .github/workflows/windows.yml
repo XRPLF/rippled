@@ -24,8 +24,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        generator:
-          - Visual Studio 16 2019
+        version:
+          - generator: Visual Studio 16 2019
+            runs-on: windows-2019
+          - generator: Visual Studio 17 2022
+            runs-on: windows-2022
         configuration:
           - Release
           # Github hosted runners tend to hang when running Debug unit tests.
@@ -33,7 +36,7 @@ jobs:
           # something beefier (i.e. a heavy self-hosted runner) becomes
           # available.
           # - Debug
-    runs-on: windows-2019
+    runs-on: ${{ matrix.version.runs-on }}
     env:
       build_dir: .build
     steps:
@@ -80,7 +83,7 @@ jobs:
       - name: build
         uses: ./.github/actions/build
         with:
-          generator: '${{ matrix.generator }}'
+          generator: '${{ matrix.version.generator }}'
           configuration: ${{ matrix.configuration }}
           # Hard code for now. Move to the matrix if varied options are needed
           cmake-args: '-Dassert=ON -Dreporting=OFF -Dunity=ON'
