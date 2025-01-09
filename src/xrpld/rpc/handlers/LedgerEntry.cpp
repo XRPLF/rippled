@@ -27,6 +27,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_errors.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -91,6 +92,17 @@ parseAccountRoot(Json::Value const& params, Json::Value& jvResult)
     }
 
     return keylet::account(*account).key;
+}
+
+std::optional<uint256>
+parseAmendments(Json::Value const& params, Json::Value& jvResult)
+{
+    if (!params.isBool() || !params.asBool())
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+    return keylet::amendments().key;
 }
 
 std::optional<uint256>
@@ -271,6 +283,43 @@ parseEscrow(Json::Value const& params, Json::Value& jvResult)
 }
 
 std::optional<uint256>
+parseFee(Json::Value const& params, Json::Value& jvResult)
+{
+    if (!params.isBool() || !params.asBool())
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+    return keylet::fees().key;
+}
+
+std::optional<uint256>
+parseHashes(Json::Value const& params, Json::Value& jvResult)
+{
+    if (params.isBool())
+    {
+        if (!params.asBool())
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+        return keylet::skip().key;
+    }
+    if (!params.isObject())
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+    if (!params.isMember(jss::ledger_index) ||
+        !params[jss::ledger_index].isIntegral())
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+    return keylet::skip(params[jss::ledger_index].asUInt()).key;
+}
+
+std::optional<uint256>
 parseOffer(Json::Value const& params, Json::Value& jvResult)
 {
     if (!params.isObject())
@@ -383,6 +432,36 @@ parseTicket(Json::Value const& params, Json::Value& jvResult)
 }
 
 std::optional<uint256>
+parseNFTokenOffer(Json::Value const& params, Json::Value& jvResult)
+{
+    if (!params.isObject())
+    {
+        uint256 uNodeIndex;
+        if (!uNodeIndex.parseHex(params.asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+        return uNodeIndex;
+    }
+
+    if (!params.isMember(jss::owner) || !params.isMember(jss::seq) ||
+        !params[jss::seq].isIntegral())
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    auto const id = parseBase58<AccountID>(params[jss::owner].asString());
+    if (!id)
+    {
+        jvResult[jss::error] = "malformedAddress";
+        return std::nullopt;
+    }
+    return keylet::nftoffer(*id, params[jss::seq].asUInt()).key;
+}
+
+std::optional<uint256>
 parseNFTokenPage(Json::Value const& params, Json::Value& jvResult)
 {
     if (params.isString())
@@ -398,6 +477,17 @@ parseNFTokenPage(Json::Value const& params, Json::Value& jvResult)
 
     jvResult[jss::error] = "malformedRequest";
     return std::nullopt;
+}
+
+std::optional<uint256>
+parseNegativeUNL(Json::Value const& params, Json::Value& jvResult)
+{
+    if (!params.isBool() || !params.asBool())
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+    return keylet::negativeUNL().key;
 }
 
 std::optional<uint256>
@@ -833,7 +923,7 @@ doLedgerEntry(RPC::JsonContext& context)
     static auto ledgerEntryParsers = std::to_array<LedgerEntry>({
         {jss::index, parseIndex, ltANY},
         {jss::account_root, parseAccountRoot, ltACCOUNT_ROOT},
-        // TODO: add amendments
+        {jss::amendments, parseAmendments, ltAMENDMENTS},
         {jss::amm, parseAMM, ltAMM},
         {jss::bridge, parseBridge, ltBRIDGE},
         {jss::check, parseCheck, ltCHECK},
@@ -842,12 +932,13 @@ doLedgerEntry(RPC::JsonContext& context)
         {jss::did, parseDID, ltDID},
         {jss::directory, parseDirectory, ltDIR_NODE},
         {jss::escrow, parseEscrow, ltESCROW},
-        // TODO: add fee, hashes
+        {jss::fee, parseFee, ltFEE_SETTINGS},
+        {jss::hashes, parseHashes, ltLEDGER_HASHES},
         {jss::mpt_issuance, parseMPTokenIssuance, ltMPTOKEN_ISSUANCE},
         {jss::mptoken, parseMPToken, ltMPTOKEN},
-        // TODO: add NFT Offers
+        {jss::nft_offer, parseNFTokenOffer, ltNFTOKEN_OFFER},
         {jss::nft_page, parseNFTokenPage, ltNFTOKEN_PAGE},
-        // TODO: add NegativeUNL
+        {jss::nunl, parseNegativeUNL, ltNEGATIVE_UNL},
         {jss::offer, parseOffer, ltOFFER},
         {jss::oracle, parseOracle, ltORACLE},
         {jss::payment_channel, parsePaymentChannel, ltPAYCHAN},
