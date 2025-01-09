@@ -1,5 +1,9 @@
 option (validator_keys "Enables building of validator-keys-tool as a separate target (imported via FetchContent)" OFF)
 
+if(package)
+  set(validator_keys ON)
+endif()
+
 if (validator_keys)
   git_branch (current_branch)
   # default to tracking VK master branch unless we are on release
