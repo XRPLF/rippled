@@ -63,6 +63,7 @@ jobs:
     container: rippleci/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
+    name: ${{ matrix.compiler }}-${{ matrix.configuration }}
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -93,13 +94,12 @@ jobs:
           CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:
           configuration: ${{ matrix.configuration }}
-      - name: upload archive
+      - name: upload Conan dependency archive
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
           path: conan.tar
           if-no-files-found: error
-
 
   test:
     strategy:
@@ -121,6 +121,7 @@ jobs:
     container: rippleci/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
+    name: ${{ matrix.compiler }}-${{ matrix.configuration }} ${{ matrix.cmake-args }}
     steps:
       - name: download cache
         uses: actions/download-artifact@v3
@@ -150,10 +151,43 @@ jobs:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
           cmake-args: ${{ matrix.cmake-args }}
+      - name: Generate packages
+        id: package_build
+        if: ${{ (matrix.configuration == 'Debug') && (matrix.compiler == 'gcc') && (matrix.cmake-args == '') }}
+        run: |
+          apt-get update && apt-get install -y \
+            ca-certificates \
+            curl \
+            debhelper \
+            file \
+            gpg \
+            jq \
+            rpm \
+            python-is-python3 \
+            python3-pip \
+            vim
+          cd ${{ env.build_dir }}
+          cmake .. -Dpackage=ON
+          cmake \
+            --build . \
+            --target all \
+            --target validator-keys
+          cpack -G DEB
+          cpack -G RPM
+      - name: Artifact packages
+        uses: actions/upload-artifact@v3
+        if: ${{ steps.package_build.outputs.pkgs_built  == 'true' }}
+        with:
+          name: rippled_packages
+          # compression-level: 0 # For v4
+          if-no-files-found: error
+          include-hidden-files: true
+          path: |
+            .build/packages/*.d*eb
+            .build/packages/*.rpm
       - name: test
         run: |
           ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
-
 
   coverage:
     strategy:
