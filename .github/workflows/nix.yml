@@ -10,7 +10,7 @@ on:
       - release
       - master
       # Branches that opt-in to running
-      - 'ci/**'
+      - "ci/**"
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -35,7 +35,6 @@ concurrency:
 # and builds and tests rippled.
 
 jobs:
-
   dependencies:
     strategy:
       fail-fast: false
@@ -96,12 +95,11 @@ jobs:
         with:
           configuration: ${{ matrix.configuration }}
       - name: upload archive
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
           path: conan.tar
           if-no-files-found: error
-
 
   test:
     strategy:
@@ -125,7 +123,7 @@ jobs:
       build_dir: .build
     steps:
       - name: download cache
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
@@ -156,7 +154,6 @@ jobs:
         run: |
           ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
 
-
   coverage:
     strategy:
       fail-fast: false
@@ -174,7 +171,7 @@ jobs:
       build_dir: .build
     steps:
       - name: download cache
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
@@ -216,7 +213,7 @@ jobs:
         run: |
           mv "${build_dir}/coverage.xml" ./
       - name: archive coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage.xml
           path: coverage.xml
@@ -244,7 +241,7 @@ jobs:
       configuration: Release
     steps:
       - name: download cache
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: linux-gcc-${{ env.configuration }}
       - name: extract cache
