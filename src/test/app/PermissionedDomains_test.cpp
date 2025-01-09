@@ -35,7 +35,8 @@
 
 namespace ripple {
 namespace test {
-namespace jtx {
+
+using namespace jtx;
 
 static std::string
 exceptionExpected(Env& env, Json::Value const& jv)
@@ -564,6 +565,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(PermissionedDomains, app, ripple);
 
-}  // namespace jtx
 }  // namespace test
 }  // namespace ripple
