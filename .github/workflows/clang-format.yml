@@ -28,7 +28,7 @@ jobs:
           git diff --exit-code | tee "clang-format.patch"
       - name: Upload patch
         if: failure() && steps.assert.outcome == 'failure'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         continue-on-error: true
         with:
           name: clang-format.patch
