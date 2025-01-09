@@ -121,6 +121,20 @@ class Simulate_test : public beast::unit_test::suite
         }
     }
 
+    Json::Value
+    getJsonMetadata(Json::Value txResult)
+    {
+        if (txResult.isMember(jss::meta_blob))
+        {
+            auto unHexed = strUnHex(txResult[jss::meta_blob].asString());
+            SerialIter sitTrans(makeSlice(*unHexed));
+            return STObject(std::ref(sitTrans), sfGeneric)
+                .getJson(JsonOptions::none);
+        }
+
+        return txResult[jss::meta];
+    }
+
     void
     testParamErrors()
     {
@@ -414,24 +428,14 @@ class Simulate_test : public beast::unit_test::suite
                         result.isMember(jss::meta) ||
                         result.isMember(jss::meta_blob)))
                 {
-                    Json::Value metadata;
-                    if (result.isMember(jss::meta_blob))
-                    {
-                        auto unHexed =
-                            strUnHex(result[jss::meta_blob].asString());
-                        SerialIter sitTrans(makeSlice(*unHexed));
-                        metadata = STObject(std::ref(sitTrans), sfGeneric)
-                                       .getJson(JsonOptions::none);
-                    }
-                    else
-                    {
-                        metadata = result[jss::meta];
-                    }
+                    Json::Value const metadata = getJsonMetadata(result);
+
                     if (BEAST_EXPECT(
                             metadata.isMember(sfAffectedNodes.jsonName)))
                     {
-                        BEAST_EXPECT(metadata[sfAffectedNodes].size() == 1);
-                        auto node = metadata[sfAffectedNodes][0u];
+                        BEAST_EXPECT(
+                            metadata[sfAffectedNodes.jsonName].size() == 1);
+                        auto node = metadata[sfAffectedNodes.jsonName][0u];
                         if (BEAST_EXPECT(
                                 node.isMember(sfModifiedNode.jsonName)))
                         {
@@ -443,8 +447,9 @@ class Simulate_test : public beast::unit_test::suite
                             BEAST_EXPECT(finalFields[sfDomain] == newDomain);
                         }
                     }
-                    BEAST_EXPECT(metadata[sfTransactionIndex] == 0);
-                    BEAST_EXPECT(metadata[sfTransactionResult] == "tesSUCCESS");
+                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
+                    BEAST_EXPECT(
+                        metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
                 }
             };
 
@@ -549,24 +554,14 @@ class Simulate_test : public beast::unit_test::suite
                             result.isMember(jss::meta) ||
                             result.isMember(jss::meta_blob)))
                     {
-                        Json::Value metadata;
-                        if (result.isMember(jss::meta_blob))
-                        {
-                            auto unHexed =
-                                strUnHex(result[jss::meta_blob].asString());
-                            SerialIter sitTrans(makeSlice(*unHexed));
-                            metadata = STObject(std::ref(sitTrans), sfGeneric)
-                                           .getJson(JsonOptions::none);
-                        }
-                        else
-                        {
-                            metadata = result[jss::meta];
-                        }
+                        Json::Value const metadata = getJsonMetadata(result);
+
                         if (BEAST_EXPECT(
                                 metadata.isMember(sfAffectedNodes.jsonName)))
                         {
-                            BEAST_EXPECT(metadata[sfAffectedNodes].size() == 1);
-                            auto node = metadata[sfAffectedNodes][0u];
+                            BEAST_EXPECT(
+                                metadata[sfAffectedNodes.jsonName].size() == 1);
+                            auto node = metadata[sfAffectedNodes.jsonName][0u];
                             if (BEAST_EXPECT(
                                     node.isMember(sfModifiedNode.jsonName)))
                             {
@@ -580,9 +575,10 @@ class Simulate_test : public beast::unit_test::suite
                                     "99999999999999990");
                             }
                         }
-                        BEAST_EXPECT(metadata[sfTransactionIndex] == 0);
                         BEAST_EXPECT(
-                            metadata[sfTransactionResult] ==
+                            metadata[sfTransactionIndex.jsonName] == 0);
+                        BEAST_EXPECT(
+                            metadata[sfTransactionResult.jsonName] ==
                             "tecNO_DST_INSUF_XRP");
                     }
                 };
@@ -643,24 +639,14 @@ class Simulate_test : public beast::unit_test::suite
                         result.isMember(jss::meta) ||
                         result.isMember(jss::meta_blob)))
                 {
-                    Json::Value metadata;
-                    if (result.isMember(jss::meta_blob))
-                    {
-                        auto unHexed =
-                            strUnHex(result[jss::meta_blob].asString());
-                        SerialIter sitTrans(makeSlice(*unHexed));
-                        metadata = STObject(std::ref(sitTrans), sfGeneric)
-                                       .getJson(JsonOptions::none);
-                    }
-                    else
-                    {
-                        metadata = result[jss::meta];
-                    }
+                    Json::Value const metadata = getJsonMetadata(result);
+
                     if (BEAST_EXPECT(
                             metadata.isMember(sfAffectedNodes.jsonName)))
                     {
-                        BEAST_EXPECT(metadata[sfAffectedNodes].size() == 1);
-                        auto node = metadata[sfAffectedNodes][0u];
+                        BEAST_EXPECT(
+                            metadata[sfAffectedNodes.jsonName].size() == 1);
+                        auto node = metadata[sfAffectedNodes.jsonName][0u];
                         if (BEAST_EXPECT(
                                 node.isMember(sfModifiedNode.jsonName)))
                         {
@@ -672,8 +658,9 @@ class Simulate_test : public beast::unit_test::suite
                             BEAST_EXPECT(finalFields[sfDomain] == newDomain);
                         }
                     }
-                    BEAST_EXPECT(metadata[sfTransactionIndex] == 1);
-                    BEAST_EXPECT(metadata[sfTransactionResult] == "tesSUCCESS");
+                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 1);
+                    BEAST_EXPECT(
+                        metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
                 }
             };
 
@@ -893,12 +880,14 @@ class Simulate_test : public beast::unit_test::suite
                     if (BEAST_EXPECT(
                             metadata.isMember(sfAffectedNodes.jsonName)))
                     {
-                        BEAST_EXPECT(metadata[sfAffectedNodes].size() == 5);
+                        BEAST_EXPECT(
+                            metadata[sfAffectedNodes.jsonName].size() == 5);
 
                         try
                         {
                             bool found = false;
-                            for (auto const& node : metadata[sfAffectedNodes])
+                            for (auto const& node :
+                                 metadata[sfAffectedNodes.jsonName])
                             {
                                 if (node.isMember(sfDeletedNode.jsonName) &&
                                     node[sfDeletedNode.jsonName]
@@ -924,8 +913,9 @@ class Simulate_test : public beast::unit_test::suite
                             fail();
                         }
                     }
-                    BEAST_EXPECT(metadata[sfTransactionIndex] == 0);
-                    BEAST_EXPECT(metadata[sfTransactionResult] == "tecEXPIRED");
+                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
+                    BEAST_EXPECT(
+                        metadata[sfTransactionResult.jsonName] == "tecEXPIRED");
                 }
             };
 
