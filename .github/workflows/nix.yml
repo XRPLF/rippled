@@ -10,7 +10,7 @@ on:
       - release
       - master
       # Branches that opt-in to running
-      - 'ci/**'
+      - "ci/**"
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -35,7 +35,6 @@ concurrency:
 # and builds and tests rippled.
 
 jobs:
-
   dependencies:
     strategy:
       fail-fast: false
@@ -100,7 +99,6 @@ jobs:
           path: conan.tar
           if-no-files-found: error
 
-
   test:
     strategy:
       fail-fast: false
@@ -153,7 +151,6 @@ jobs:
       - name: test
         run: |
           ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
-
 
   coverage:
     strategy:
