@@ -151,7 +151,7 @@ preflight2(PreflightContext const& ctx)
         for (auto const& signer : ctx.tx.getFieldArray(sfSigners))
         {
             if (signer.isFieldPresent(sfTxnSignature) &&
-                !ctx.tx.getSignature().empty())
+                !signer[sfTxnSignature].empty())
             {
                 // NOTE: This code should never be hit because it's
                 // checked in the `simulate` RPC

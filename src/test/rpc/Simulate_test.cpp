@@ -600,7 +600,7 @@ class Simulate_test : public beast::unit_test::suite
             tx[sfSigningPubKey] = "";
             tx[sfTxnSignature] = "";
             tx[sfSequence] = 1;
-            tx[sfFee] = "10";
+            tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
 
             // test without autofill
             testTx(env, tx, testSimulation);
@@ -630,7 +630,8 @@ class Simulate_test : public beast::unit_test::suite
             auto validateOutput = [&](Json::Value const& resp,
                                       Json::Value const& tx) {
                 auto result = resp[jss::result];
-                checkBasicReturnValidity(result, tx, 5, "20");
+                checkBasicReturnValidity(
+                    result, tx, 5, env.current()->fees().base * 2);
 
                 BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
                 BEAST_EXPECT(result[jss::engine_result_code] == 0);
@@ -696,8 +697,10 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[sfSigningPubKey] = "";
             tx[sfTxnSignature] = "";
-            tx[sfSequence] = 5;
-            tx[sfFee] = "20";  // also tests a non-base fee
+            tx[sfSequence] = env.seq(alice);
+            // transaction requires a non-base fee
+            tx[sfFee] =
+                (env.current()->fees().base * 2).jsonClipped().asString();
             tx[sfSigners][0u][sfSigner][jss::TxnSignature] = "";
 
             // test without autofill
@@ -751,7 +754,7 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[sfSigningPubKey] = "";
             tx[sfTxnSignature] = "";
-            tx[sfSequence] = 3;
+            tx[sfSequence] = env.seq(env.master);
             tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
 
             // test without autofill
@@ -783,7 +786,8 @@ class Simulate_test : public beast::unit_test::suite
             auto validateOutput = [&](Json::Value const& resp,
                                       Json::Value const& tx) {
                 auto result = resp[jss::result];
-                checkBasicReturnValidity(result, tx, 5, "20");
+                checkBasicReturnValidity(
+                    result, tx, 5, env.current()->fees().base * 2);
 
                 BEAST_EXPECTS(
                     result[jss::engine_result] == "tefBAD_SIGNATURE",
@@ -818,8 +822,10 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[sfSigningPubKey] = "";
             tx[sfTxnSignature] = "";
-            tx[sfSequence] = 5;
-            tx[sfFee] = "20";  // also tests a non-base fee
+            tx[sfSequence] = env.seq(alice);
+            // transaction requires a non-base fee
+            tx[sfFee] =
+                (env.current()->fees().base * 2).jsonClipped().asString();
             tx[sfSigners][0u][sfSigner][jss::TxnSignature] = "";
 
             // test without autofill
@@ -917,17 +923,6 @@ class Simulate_test : public beast::unit_test::suite
                         {
                             fail();
                         }
-                        // auto node = metadata[sfAffectedNodes][0u];
-                        // if (BEAST_EXPECT(
-                        //         node.isMember(sfModifiedNode.jsonName)))
-                        // {
-                        //     auto modifiedNode = node[sfModifiedNode];
-                        //     BEAST_EXPECT(
-                        //         modifiedNode[sfLedgerEntryType] ==
-                        //         "AccountRoot");
-                        //     auto finalFields = modifiedNode[sfFinalFields];
-                        //     BEAST_EXPECT(finalFields[sfDomain] == newDomain);
-                        // }
                     }
                     BEAST_EXPECT(metadata[sfTransactionIndex] == 0);
                     BEAST_EXPECT(metadata[sfTransactionResult] == "tecEXPIRED");
@@ -941,7 +936,7 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[sfSigningPubKey] = "";
             tx[sfTxnSignature] = "";
-            tx[sfSequence] = 4;
+            tx[sfSequence] = env.seq(subject);
             tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
 
             // test without autofill
