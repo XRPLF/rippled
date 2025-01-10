@@ -149,7 +149,8 @@ class Simulate_test : public beast::unit_test::suite
             Json::Value const params = Json::objectValue;
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
-                resp[jss::result][jss::error_message] == "Invalid parameters.");
+                resp[jss::result][jss::error_message] ==
+                "Neither `tx_blob` nor `tx_json` included.");
         }
         {
             // Providing both `tx_json` and `tx_blob`
@@ -159,7 +160,8 @@ class Simulate_test : public beast::unit_test::suite
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
-                resp[jss::result][jss::error_message] == "Invalid parameters.");
+                resp[jss::result][jss::error_message] ==
+                "Can only include one of `tx_blob` and `tx_json`.");
         }
         {
             // `binary` isn't a boolean
@@ -627,7 +629,7 @@ class Simulate_test : public beast::unit_test::suite
                                       Json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(
-                    result, tx, 5, env.current()->fees().base * 2);
+                    result, tx, env.seq(alice), env.current()->fees().base * 2);
 
                 BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
                 BEAST_EXPECT(result[jss::engine_result_code] == 0);
@@ -716,7 +718,10 @@ class Simulate_test : public beast::unit_test::suite
                     [&](Json::Value const& resp, Json::Value const& tx) {
                         auto result = resp[jss::result];
                         checkBasicReturnValidity(
-                            result, tx, 3, env.current()->fees().base);
+                            result,
+                            tx,
+                            env.seq(env.master),
+                            env.current()->fees().base);
 
                         BEAST_EXPECT(
                             result[jss::engine_result] == "tefMASTER_DISABLED");
@@ -737,7 +742,7 @@ class Simulate_test : public beast::unit_test::suite
             tx[sfDomain] = newDomain;
 
             // test with autofill
-            testTx(env, tx, testSimulation, 3);
+            testTx(env, tx, testSimulation);
 
             tx[sfSigningPubKey] = "";
             tx[sfTxnSignature] = "";
@@ -745,7 +750,7 @@ class Simulate_test : public beast::unit_test::suite
             tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
 
             // test without autofill
-            testTx(env, tx, testSimulation, 3);
+            testTx(env, tx, testSimulation);
 
             // TODO: check that the ledger wasn't affected
         }
@@ -774,7 +779,7 @@ class Simulate_test : public beast::unit_test::suite
                                       Json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(
-                    result, tx, 5, env.current()->fees().base * 2);
+                    result, tx, env.seq(alice), env.current()->fees().base * 2);
 
                 BEAST_EXPECTS(
                     result[jss::engine_result] == "tefBAD_SIGNATURE",
@@ -852,7 +857,7 @@ class Simulate_test : public beast::unit_test::suite
                                       Json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(
-                    result, tx, 4, env.current()->fees().base);
+                    result, tx, env.seq(subject), env.current()->fees().base);
 
                 BEAST_EXPECT(result[jss::engine_result] == "tecEXPIRED");
                 BEAST_EXPECT(result[jss::engine_result_code] == 148);
@@ -864,19 +869,8 @@ class Simulate_test : public beast::unit_test::suite
                         result.isMember(jss::meta) ||
                         result.isMember(jss::meta_blob)))
                 {
-                    Json::Value metadata;
-                    if (result.isMember(jss::meta_blob))
-                    {
-                        auto unHexed =
-                            strUnHex(result[jss::meta_blob].asString());
-                        SerialIter sitTrans(makeSlice(*unHexed));
-                        metadata = STObject(std::ref(sitTrans), sfGeneric)
-                                       .getJson(JsonOptions::none);
-                    }
-                    else
-                    {
-                        metadata = result[jss::meta];
-                    }
+                    Json::Value const metadata = getJsonMetadata(result);
+
                     if (BEAST_EXPECT(
                             metadata.isMember(sfAffectedNodes.jsonName)))
                     {

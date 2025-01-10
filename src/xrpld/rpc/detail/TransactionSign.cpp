@@ -540,7 +540,7 @@ transactionPreProcessImpl(
         return err;
     }
 
-    std::shared_ptr<STTx> stpTrans;
+    std::shared_ptr<STTx> stTx;
     try
     {
         // If we're generating a multi-signature the SigningPubKey must be
@@ -549,7 +549,7 @@ transactionPreProcessImpl(
             sfSigningPubKey,
             signingArgs.isMultiSigning() ? Slice(nullptr, 0) : pk.slice());
 
-        stpTrans = std::make_shared<STTx>(std::move(parsed.object.value()));
+        stTx = std::make_shared<STTx>(std::move(parsed.object.value()));
     }
     catch (STObject::FieldErr& err)
     {
@@ -563,14 +563,13 @@ transactionPreProcessImpl(
     }
 
     std::string reason;
-    if (!passesLocalChecks(*stpTrans, reason))
+    if (!passesLocalChecks(*stTx, reason))
         return RPC::make_error(rpcINVALID_PARAMS, reason);
 
     // If multisign then return multiSignature, else set TxnSignature field.
     if (signingArgs.isMultiSigning())
     {
-        Serializer s =
-            buildMultiSigningData(*stpTrans, signingArgs.getSigner());
+        Serializer s = buildMultiSigningData(*stTx, signingArgs.getSigner());
 
         auto multisig = ripple::sign(pk, sk, s.slice());
 
@@ -578,15 +577,15 @@ transactionPreProcessImpl(
     }
     else if (signingArgs.isSingleSigning())
     {
-        stpTrans->sign(pk, sk);
+        stTx->sign(pk, sk);
     }
 
-    return transactionPreProcessResult{std::move(stpTrans)};
+    return transactionPreProcessResult{std::move(stTx)};
 }
 
 static std::pair<Json::Value, Transaction::pointer>
 transactionConstructImpl(
-    std::shared_ptr<STTx const> const& stpTrans,
+    std::shared_ptr<STTx const> const& stTx,
     Rules const& rules,
     Application& app)
 {
@@ -596,7 +595,7 @@ transactionConstructImpl(
     Transaction::pointer tpTrans;
     {
         std::string reason;
-        tpTrans = std::make_shared<Transaction>(stpTrans, reason, app);
+        tpTrans = std::make_shared<Transaction>(stTx, reason, app);
         if (tpTrans->getStatus() != NEW)
         {
             ret.first = RPC::make_error(
@@ -1228,7 +1227,7 @@ transactionSubmitMultiSigned(
     }
 
     // Grind through the JSON in tx_json to produce a STTx.
-    std::shared_ptr<STTx> stpTrans;
+    std::shared_ptr<STTx> stTx;
     {
         STParsedJSONObject parsedTx_json("tx_json", tx_json);
         if (!parsedTx_json.object)
@@ -1241,7 +1240,7 @@ transactionSubmitMultiSigned(
         }
         try
         {
-            stpTrans =
+            stTx =
                 std::make_shared<STTx>(std::move(parsedTx_json.object.value()));
         }
         catch (STObject::FieldErr& err)
@@ -1256,7 +1255,7 @@ transactionSubmitMultiSigned(
                 "Exception while serializing transaction: " + reason);
         }
         std::string reason;
-        if (!passesLocalChecks(*stpTrans, reason))
+        if (!passesLocalChecks(*stTx, reason))
             return RPC::make_error(rpcINVALID_PARAMS, reason);
     }
 
@@ -1266,7 +1265,7 @@ transactionSubmitMultiSigned(
         // Verify the values of select fields.
         //
         // The SigningPubKey must be present but empty.
-        if (!stpTrans->getFieldVL(sfSigningPubKey).empty())
+        if (!stTx->getFieldVL(sfSigningPubKey).empty())
         {
             std::ostringstream err;
             err << "Invalid  " << sfSigningPubKey.fieldName
@@ -1275,11 +1274,11 @@ transactionSubmitMultiSigned(
         }
 
         // There may not be a TxnSignature field.
-        if (stpTrans->isFieldPresent(sfTxnSignature))
+        if (stTx->isFieldPresent(sfTxnSignature))
             return rpcError(rpcSIGNING_MALFORMED);
 
         // The Fee field must be in XRP and greater than zero.
-        auto const fee = stpTrans->getFieldAmount(sfFee);
+        auto const fee = stTx->getFieldAmount(sfFee);
 
         if (!isLegalNet(fee))
         {
@@ -1298,12 +1297,12 @@ transactionSubmitMultiSigned(
     }
 
     // Verify that the Signers field is present.
-    if (!stpTrans->isFieldPresent(sfSigners))
+    if (!stTx->isFieldPresent(sfSigners))
         return RPC::missing_field_error("tx_json.Signers");
 
     // If the Signers field is present the SField guarantees it to be an array.
     // Get a reference to the Signers array so we can verify and sort it.
-    auto& signers = stpTrans->peekFieldArray(sfSigners);
+    auto& signers = stTx->peekFieldArray(sfSigners);
 
     if (signers.empty())
         return RPC::make_param_error("tx_json.Signers array may not be empty.");
@@ -1330,7 +1329,7 @@ transactionSubmitMultiSigned(
 
     // Make sure the SerializedTransaction makes a legitimate Transaction.
     std::pair<Json::Value, Transaction::pointer> txn =
-        transactionConstructImpl(stpTrans, ledger->rules(), app);
+        transactionConstructImpl(stTx, ledger->rules(), app);
 
     if (!txn.second)
         return txn.first;

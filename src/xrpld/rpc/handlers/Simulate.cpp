@@ -33,7 +33,42 @@
 
 namespace ripple {
 
-std::optional<Json::Value>
+static Expected<std::uint32_t, Json::Value>
+getAutofillSequence(Json::Value tx_json, RPC::JsonContext& context)
+{
+    // autofill Sequence
+    bool const hasTicketSeq = tx_json.isMember(sfTicketSequence.jsonName);
+    auto const accountStr = tx_json[jss::Account];
+    if (!accountStr.isString())
+    {
+        // sanity check, should fail earlier
+        return Unexpected(
+            RPC::invalid_field_error("tx.Account"));  // LCOV_EXCL_LINE
+    }
+
+    auto const srcAddressID =
+        parseBase58<AccountID>(tx_json[jss::Account].asString());
+    if (!srcAddressID.has_value())
+    {
+        return Unexpected(RPC::make_error(
+            rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx.Account")));
+    }
+
+    std::shared_ptr<SLE const> sle = context.app.openLedger().current()->read(
+        keylet::account(*srcAddressID));
+    if (!hasTicketSeq && !sle)
+    {
+        JLOG(context.app.journal("Simulate").debug())
+            << "Failed to find source account "
+            << "in current ledger: " << toBase58(*srcAddressID);
+
+        return Unexpected(rpcError(rpcSRC_ACT_NOT_FOUND));
+    }
+
+    return hasTicketSeq ? 0 : context.app.getTxQ().nextQueuableSeq(sle).value();
+}
+
+static std::optional<Json::Value>
 autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
 {
     if (!tx_json.isMember(jss::Fee))
@@ -97,38 +132,10 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
 
     if (!tx_json.isMember(jss::Sequence))
     {
-        // autofill Sequence
-        bool const hasTicketSeq = tx_json.isMember(sfTicketSequence.jsonName);
-        auto const accountStr = tx_json[jss::Account];
-        if (!accountStr.isString())
-        {
-            // sanity check, should fail earlier
-            return RPC::invalid_field_error("tx.Account");  // LCOV_EXCL_LINE
-        }
-
-        auto const srcAddressID =
-            parseBase58<AccountID>(tx_json[jss::Account].asString());
-        if (!srcAddressID.has_value())
-        {
-            return RPC::make_error(
-                rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx.Account"));
-        }
-
-        std::shared_ptr<SLE const> sle =
-            context.app.openLedger().current()->read(
-                keylet::account(*srcAddressID));
-        if (!hasTicketSeq && !sle)
-        {
-            JLOG(context.app.journal("Simulate").debug())
-                << "Failed to find source account "
-                << "in current ledger: " << toBase58(*srcAddressID);
-
-            return rpcError(rpcSRC_ACT_NOT_FOUND);
-        }
-
-        tx_json[jss::Sequence] = hasTicketSeq
-            ? 0
-            : context.app.getTxQ().nextQueuableSeq(sle).value();
+        auto const seq = getAutofillSequence(tx_json, context);
+        if (!seq)
+            return seq.error();
+        tx_json[sfSequence.jsonName] = *seq;
     }
 
     return std::nullopt;
@@ -156,22 +163,25 @@ doSimulate(RPC::JsonContext& context)
         }
     }
 
+    // get JSON equivalent of transaction
     if (context.params.isMember(jss::tx_blob))
     {
         if (context.params.isMember(jss::tx_json))
         {
-            // both `tx_blob` and `tx_json` included
-            return rpcError(rpcINVALID_PARAMS);
+            return RPC::make_param_error(
+                "Can only include one of `tx_blob` and `tx_json`.");
         }
-        auto const blob = context.params[jss::tx_blob];
-        if (!blob.isString())
+
+        auto const tx_blob = context.params[jss::tx_blob];
+        if (!tx_blob.isString())
         {
             return RPC::invalid_field_error(jss::tx_blob);
         }
-        auto unHexed = strUnHex(blob.asString());
 
+        auto unHexed = strUnHex(tx_blob.asString());
         if (!unHexed || !unHexed->size())
             return RPC::invalid_field_error(jss::tx_blob);
+
         try
         {
             SerialIter sitTrans(makeSlice(*unHexed));
@@ -193,8 +203,8 @@ doSimulate(RPC::JsonContext& context)
     }
     else
     {
-        // neither `tx_blob` nor `tx_json` included
-        return rpcError(rpcINVALID_PARAMS);
+        return RPC::make_param_error(
+            "Neither `tx_blob` nor `tx_json` included.");
     }
 
     // basic sanity checks for transaction shape
@@ -202,6 +212,7 @@ doSimulate(RPC::JsonContext& context)
     {
         return RPC::missing_field_error("tx.TransactionType");
     }
+
     if (!tx_json.isMember(jss::Account))
     {
         return RPC::missing_field_error("tx.Account");
@@ -220,10 +231,10 @@ doSimulate(RPC::JsonContext& context)
         return jvResult;
     }
 
-    std::shared_ptr<STTx const> stpTrans;
+    std::shared_ptr<STTx const> stTx;
     try
     {
-        stpTrans = std::make_shared<STTx>(std::move(parsed.object.value()));
+        stTx = std::make_shared<STTx>(std::move(parsed.object.value()));
     }
     catch (std::exception& e)
     {
@@ -234,7 +245,7 @@ doSimulate(RPC::JsonContext& context)
     }
 
     std::string reason;
-    auto tpTrans = std::make_shared<Transaction>(stpTrans, reason, context.app);
+    auto transaction = std::make_shared<Transaction>(stTx, reason, context.app);
 
     // Actually run the transaction through the transaction processor
     try
@@ -244,7 +255,11 @@ doSimulate(RPC::JsonContext& context)
         // Process the transaction
         OpenView view = *context.app.openLedger().current();
         auto const result = context.app.getTxQ().apply(
-            context.app, view, tpTrans->getSTransaction(), flags, context.j);
+            context.app,
+            view,
+            transaction->getSTransaction(),
+            flags,
+            context.j);
 
         jvResult[jss::applied] = result.applied;
         jvResult[jss::ledger_index] = view.seq();
@@ -253,19 +268,29 @@ doSimulate(RPC::JsonContext& context)
             context.params.get(jss::binary, false).asBool();
 
         // Convert the TER to human-readable values
-        std::string sToken;
-        std::string sHuman;
-        transResultInfo(result.ter, sToken, sHuman);
-
-        // Engine result
-        jvResult[jss::engine_result] = sToken;
-        jvResult[jss::engine_result_code] = result.ter;
-        jvResult[jss::engine_result_message] = sHuman;
-        if (sToken == "tesSUCCESS")
+        std::string token;
+        std::string message;
+        if (transResultInfo(result.ter, token, message))
         {
-            static const std::string alternateSuccessMessage =
+            // Engine result
+            jvResult[jss::engine_result] = token;
+            jvResult[jss::engine_result_code] = result.ter;
+            jvResult[jss::engine_result_message] = message;
+        }
+        else
+        {
+            // shouldn't be hit
+            // LCOV_EXCL_START
+            jvResult[jss::engine_result] = "unknown";
+            jvResult[jss::engine_result_code] = result.ter;
+            jvResult[jss::engine_result_message] = "unknown";
+            // LCOV_EXCL_STOP
+        }
+
+        if (token == "tesSUCCESS")
+        {
+            jvResult[jss::engine_result_message] =
                 "The simulated transaction would have been applied.";
-            jvResult[jss::engine_result_message] = alternateSuccessMessage;
         }
 
         if (result.metadata)
@@ -282,14 +307,15 @@ doSimulate(RPC::JsonContext& context)
                     result.metadata->getJson(JsonOptions::none);
             }
         }
+
         if (isBinaryOutput)
         {
-            auto const txBlob = stpTrans->getSerializer().getData();
+            auto const txBlob = stTx->getSerializer().getData();
             jvResult[jss::tx_blob] = strHex(makeSlice(txBlob));
         }
         else
         {
-            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
+            jvResult[jss::tx_json] = transaction->getJson(JsonOptions::none);
         }
 
         return jvResult;

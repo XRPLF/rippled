@@ -83,11 +83,11 @@ doSubmit(RPC::JsonContext& context)
 
     SerialIter sitTrans(makeSlice(*ret));
 
-    std::shared_ptr<STTx const> stpTrans;
+    std::shared_ptr<STTx const> stTx;
 
     try
     {
-        stpTrans = std::make_shared<STTx const>(std::ref(sitTrans));
+        stTx = std::make_shared<STTx const>(std::ref(sitTrans));
     }
     catch (std::exception& e)
     {
@@ -101,11 +101,11 @@ doSubmit(RPC::JsonContext& context)
         if (!context.app.checkSigs())
             forceValidity(
                 context.app.getHashRouter(),
-                stpTrans->getTransactionID(),
+                stTx->getTransactionID(),
                 Validity::SigGoodOnly);
         auto [validity, reason] = checkValidity(
             context.app.getHashRouter(),
-            *stpTrans,
+            *stTx,
             context.ledgerMaster.getCurrentLedger()->rules(),
             context.app.config());
         if (validity != Validity::Valid)
@@ -118,8 +118,8 @@ doSubmit(RPC::JsonContext& context)
     }
 
     std::string reason;
-    auto tpTrans = std::make_shared<Transaction>(stpTrans, reason, context.app);
-    if (tpTrans->getStatus() != NEW)
+    auto transaction = std::make_shared<Transaction>(stTx, reason, context.app);
+    if (transaction->getStatus() != NEW)
     {
         jvResult[jss::error] = "invalidTransaction";
         jvResult[jss::error_exception] = "fails local checks: " + reason;
@@ -132,7 +132,7 @@ doSubmit(RPC::JsonContext& context)
         auto const failType = getFailHard(context);
 
         context.netOps.processTransaction(
-            tpTrans, isUnlimited(context.role), true, failType);
+            transaction, isUnlimited(context.role), true, failType);
     }
     catch (std::exception& e)
     {
@@ -144,22 +144,22 @@ doSubmit(RPC::JsonContext& context)
 
     try
     {
-        jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::none);
+        jvResult[jss::tx_json] = transaction->getJson(JsonOptions::none);
         jvResult[jss::tx_blob] =
-            strHex(tpTrans->getSTransaction()->getSerializer().peekData());
+            strHex(transaction->getSTransaction()->getSerializer().peekData());
 
-        if (temUNCERTAIN != tpTrans->getResult())
+        if (temUNCERTAIN != transaction->getResult())
         {
             std::string sToken;
             std::string sHuman;
 
-            transResultInfo(tpTrans->getResult(), sToken, sHuman);
+            transResultInfo(transaction->getResult(), sToken, sHuman);
 
             jvResult[jss::engine_result] = sToken;
-            jvResult[jss::engine_result_code] = tpTrans->getResult();
+            jvResult[jss::engine_result_code] = transaction->getResult();
             jvResult[jss::engine_result_message] = sHuman;
 
-            auto const submitResult = tpTrans->getSubmitResult();
+            auto const submitResult = transaction->getSubmitResult();
 
             jvResult[jss::accepted] = submitResult.any();
             jvResult[jss::applied] = submitResult.applied;
@@ -167,7 +167,7 @@ doSubmit(RPC::JsonContext& context)
             jvResult[jss::queued] = submitResult.queued;
             jvResult[jss::kept] = submitResult.kept;
 
-            if (auto currentLedgerState = tpTrans->getCurrentLedgerState())
+            if (auto currentLedgerState = transaction->getCurrentLedgerState())
             {
                 jvResult[jss::account_sequence_next] =
                     safe_cast<Json::Value::UInt>(
