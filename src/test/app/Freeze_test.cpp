@@ -806,7 +806,9 @@ class Freeze_test : public beast::unit_test::suite
                 offers(A1, 0));
 
             // test: cannot create passive sell offer
-            env(offer(A1, XRP(2), G1["USD"](1)), ter(tecUNFUNDED_OFFER));
+            env(offer(A1, XRP(2), G1["USD"](1)),
+                txflags(tfPassive),
+                ter(tecUNFUNDED_OFFER));
             env.close();
             env.require(balance(A1, G1["USD"](1001)), offers(A1, 0));
 
@@ -1048,6 +1050,310 @@ class Freeze_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testChecksWhenFrozen(FeatureBitset features)
+    {
+        testcase("Checks on frozen trust lines");
+
+        using namespace test::jtx;
+        Env env(*this, features);
+
+        Account G1{"G1"};
+        Account A1{"A1"};
+        Account A2{"A2"};
+        auto const USD{G1["USD"]};
+
+        env.fund(XRP(10000), G1, A1, A2);
+        env.close();
+
+        env.trust(USD(1000), A1, A2);
+        env.close();
+
+        env(pay(G1, A1, USD(1000)));
+        env(pay(G1, A2, USD(1000)));
+        env.close();
+
+        // Confirming we can write and cash checks
+        {
+            uint256 const checkId{getCheckIndex(G1, env.seq(G1))};
+            env(check::create(G1, A1, USD(10)));
+            env.close();
+            env(check::cash(A1, checkId, USD(10)));
+            env.close();
+        }
+
+        {
+            uint256 const checkId{getCheckIndex(G1, env.seq(G1))};
+            env(check::create(G1, A2, USD(10)));
+            env.close();
+            env(check::cash(A2, checkId, USD(10)));
+            env.close();
+        }
+
+        {
+            uint256 const checkId{getCheckIndex(A1, env.seq(A1))};
+            env(check::create(A1, G1, USD(10)));
+            env.close();
+            env(check::cash(G1, checkId, USD(10)));
+            env.close();
+        }
+
+        {
+            uint256 const checkId{getCheckIndex(A1, env.seq(A1))};
+            env(check::create(A1, A2, USD(10)));
+            env.close();
+            env(check::cash(A2, checkId, USD(10)));
+            env.close();
+        }
+
+        {
+            uint256 const checkId{getCheckIndex(A2, env.seq(A2))};
+            env(check::create(A2, G1, USD(10)));
+            env.close();
+            env(check::cash(G1, checkId, USD(10)));
+            env.close();
+        }
+
+        {
+            uint256 const checkId{getCheckIndex(A2, env.seq(A2))};
+            env(check::create(A2, A1, USD(10)));
+            env.close();
+            env(check::cash(A1, checkId, USD(10)));
+            env.close();
+        }
+
+        // Testing creation and cashing of checks on a trustline frozen by
+        // issuer
+        {
+            env(trust(G1, A1["USD"](0), tfSetFreeze));
+            env.close();
+
+            // test: issuer writes check to A1.
+            {
+                uint256 const checkId{getCheckIndex(G1, env.seq(G1))};
+                env(check::create(G1, A1, USD(10)));
+                env.close();
+                // This might be a bug in current check implementation.
+                // Normal freeze should not prevent A1 balance from increasing.
+                env(check::cash(A1, checkId, USD(10)), ter(tecFROZEN));
+                env.close();
+            }
+
+            // test: A2 writes check to A1.
+            {
+                uint256 const checkId{getCheckIndex(A2, env.seq(A2))};
+                env(check::create(A2, A1, USD(10)));
+                env.close();
+                // Same as previous test
+                env(check::cash(A1, checkId, USD(10)), ter(tecFROZEN));
+                env.close();
+            }
+
+            // test: A1 writes check to issuer
+            {
+                // This might be another bug in check implementation.
+                // The creation of the check is not a payment, it's not
+                // really necessary to prevent the creation of checks.
+                env(check::create(A1, G1, USD(10)), ter(tecFROZEN));
+                env.close();
+            }
+
+            // test: A1 writes check to A2
+            {
+                // Same as previous test
+                env(check::create(A1, A2, USD(10)), ter(tecFROZEN));
+                env.close();
+            }
+
+            // Unfreeze the trustline to create a couple of checks so that we
+            // could try to cash them later when the trustline is frozen again.
+            env(trust(G1, A1["USD"](0), tfClearFreeze));
+            env.close();
+
+            uint256 const checkId1{getCheckIndex(A1, env.seq(A1))};
+            env(check::create(A1, G1, USD(10)));
+            env.close();
+            uint256 const checkId2{getCheckIndex(A1, env.seq(A1))};
+            env(check::create(A1, A2, USD(10)));
+            env.close();
+
+            env(trust(G1, A1["USD"](0), tfSetFreeze));
+            env.close();
+
+            // test: issuer tries to cash the check from A1
+            {
+                env(check::cash(G1, checkId1, USD(10)), ter(tecPATH_PARTIAL));
+                env.close();
+            }
+
+            // test: A2 tries to cash the check from A1
+            {
+                env(check::cash(A2, checkId2, USD(10)), ter(tecPATH_PARTIAL));
+                env.close();
+            }
+
+            env(trust(G1, A1["USD"](0), tfClearFreeze));
+            env.close();
+        }
+
+        // Testing creation and cashing of checks on a trustline deep frozen by
+        // issuer
+        if (features[featureDeepFreeze])
+        {
+            env(trust(G1, A1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+
+            // test: issuer writes check to A1.
+            {
+                uint256 const checkId{getCheckIndex(G1, env.seq(G1))};
+                env(check::create(G1, A1, USD(10)));
+                env.close();
+                // This might be a bug in current check implementation.
+                // Normal freeze should not prevent A1 balance from increasing.
+                env(check::cash(A1, checkId, USD(10)), ter(tecFROZEN));
+                env.close();
+            }
+
+            // test: A2 writes check to A1.
+            {
+                uint256 const checkId{getCheckIndex(A2, env.seq(A2))};
+                env(check::create(A2, A1, USD(10)));
+                env.close();
+                // Same as previous test
+                env(check::cash(A1, checkId, USD(10)), ter(tecFROZEN));
+                env.close();
+            }
+
+            // test: A1 writes check to issuer
+            {
+                // This might be another bug in check implementation.
+                // The creation of the check is not a payment, it's not
+                // really necessary to prevent the creation of checks.
+                env(check::create(A1, G1, USD(10)), ter(tecFROZEN));
+                env.close();
+            }
+
+            // test: A1 writes check to A2
+            {
+                // Same as previous test
+                env(check::create(A1, A2, USD(10)), ter(tecFROZEN));
+                env.close();
+            }
+
+            // Unfreeze the trustline to create a couple of checks so that we
+            // could try to cash them later when the trustline is frozen again.
+            env(trust(G1, A1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+
+            uint256 const checkId1{getCheckIndex(A1, env.seq(A1))};
+            env(check::create(A1, G1, USD(10)));
+            env.close();
+            uint256 const checkId2{getCheckIndex(A1, env.seq(A1))};
+            env(check::create(A1, A2, USD(10)));
+            env.close();
+
+            env(trust(G1, A1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+
+            // test: issuer tries to cash the check from A1
+            {
+                env(check::cash(G1, checkId1, USD(10)), ter(tecPATH_PARTIAL));
+                env.close();
+            }
+
+            // test: A2 tries to cash the check from A1
+            {
+                env(check::cash(A2, checkId2, USD(10)), ter(tecPATH_PARTIAL));
+                env.close();
+            }
+
+            env(trust(G1, A1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+        }
+
+        // Testing creation and cashing of checks on a trustline frozen by
+        // a currency holder
+        {
+            env(trust(A1, G1["USD"](0), tfSetFreeze));
+            env.close();
+
+            // test: issuer writes check to A1.
+            {
+                env(check::create(G1, A1, USD(10)), ter(tecFROZEN));
+                env.close();
+            }
+
+            // test: A2 writes check to A1.
+            {
+                env(check::create(A2, A1, USD(10)), ter(tecFROZEN));
+                env.close();
+            }
+
+            // test: A1 writes check to issuer
+            {
+                uint256 const checkId{getCheckIndex(A1, env.seq(A1))};
+                env(check::create(A1, G1, USD(10)));
+                env.close();
+                env(check::cash(G1, checkId, USD(10)));
+                env.close();
+            }
+
+            // test: A1 writes check to A2
+            {
+                uint256 const checkId{getCheckIndex(A1, env.seq(A1))};
+                env(check::create(A1, A2, USD(10)));
+                env.close();
+                env(check::cash(A2, checkId, USD(10)));
+                env.close();
+            }
+
+            env(trust(A1, G1["USD"](0), tfClearFreeze));
+            env.close();
+        }
+
+        // Testing creation and cashing of checks on a trustline deep frozen by
+        // a currency holder
+        if (features[featureDeepFreeze])
+        {
+            env(trust(A1, G1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+
+            // test: issuer writes check to A1.
+            {
+                env(check::create(G1, A1, USD(10)), ter(tecFROZEN));
+                env.close();
+            }
+
+            // test: A2 writes check to A1.
+            {
+                env(check::create(A2, A1, USD(10)), ter(tecFROZEN));
+                env.close();
+            }
+
+            // test: A1 writes check to issuer
+            {
+                uint256 const checkId{getCheckIndex(A1, env.seq(A1))};
+                env(check::create(A1, G1, USD(10)));
+                env.close();
+                env(check::cash(G1, checkId, USD(10)), ter(tecPATH_PARTIAL));
+                env.close();
+            }
+
+            // test: A1 writes check to A2
+            {
+                uint256 const checkId{getCheckIndex(A1, env.seq(A1))};
+                env(check::create(A1, A2, USD(10)));
+                env.close();
+                env(check::cash(A2, checkId, USD(10)), ter(tecPATH_PARTIAL));
+                env.close();
+            }
+
+            env(trust(A1, G1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+        }
+    }
+
+    // Helper function to extract trustline flags from open ledger
     uint32_t
     getTrustlineFlags(
         test::jtx::Env& env,
@@ -1073,6 +1379,13 @@ class Freeze_test : public beast::unit_test::suite
                            .asUInt();
     }
 
+    // Helper function that returns the index of the next check on account
+    uint256
+    getCheckIndex(AccountID const& account, std::uint32_t uSequence)
+    {
+        return keylet::check(account, uSequence).key;
+    }
+
 public:
     void
     run() override
@@ -1087,6 +1400,7 @@ public:
             testOffersWhenFrozen(features);
             testOffersWhenDeepFrozen(features);
             testPaymentsWhenDeepFrozen(features);
+            testChecksWhenFrozen(features);
         };
         using namespace test::jtx;
         auto const sa = supported_amendments();
