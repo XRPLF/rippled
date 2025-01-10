@@ -448,5 +448,18 @@ LEDGER_ENTRY(ltCREDENTIAL, 0x0081, Credential, credential, ({
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
 }))
 
+/** A ledger object which tracks PermissionedDomain
+    \sa keylet::permissionedDomain
+ */
+LEDGER_ENTRY(ltPERMISSIONED_DOMAIN, 0x0082, PermissionedDomain, permissioned_domain, ({
+    {sfOwner,               soeREQUIRED},
+    {sfSequence,            soeREQUIRED},
+    {sfAcceptedCredentials, soeREQUIRED},
+    {sfOwnerNode,           soeREQUIRED},
+    {sfPreviousTxnID,       soeREQUIRED},
+    {sfPreviousTxnLgrSeq,   soeREQUIRED},
+}))
+
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE
+

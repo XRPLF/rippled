@@ -44,6 +44,7 @@ namespace jss {
 // clang-format off
 JSS(AL_size);              // out: GetCounts
 JSS(AL_hit_rate);          // out: GetCounts
+JSS(AcceptedCredentials);  // out: AccountObjects
 JSS(Account);              // in: TransactionSign; field.
 JSS(AMMID);                // field
 JSS(Amount);               // in: TransactionSign; field.
