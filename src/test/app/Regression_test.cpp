@@ -24,6 +24,7 @@
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -282,7 +283,7 @@ struct Regression_test : public beast::unit_test::suite
         };
 
         {
-            auto const alice_index = index(alice.human());
+            auto const alice_index = keylet::account(alice).key;
             if (BEAST_EXPECT(alice_index.isNonZero()))
             {
                 env(check::cash(
@@ -292,7 +293,7 @@ struct Regression_test : public beast::unit_test::suite
         }
 
         {
-            auto const bob_index = index(bob.human());
+            auto const bob_index = keylet::account(bob).key;
 
             auto const digest = [&]() -> std::optional<uint256> {
                 auto const& state =
