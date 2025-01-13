@@ -17,52 +17,32 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/MPTAmount.h>
+#ifndef RIPPLE_TX_NFTOKENMODIFY_H_INCLUDED
+#define RIPPLE_TX_NFTOKENMODIFY_H_INCLUDED
+
+#include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
 
-MPTAmount&
-MPTAmount::operator+=(MPTAmount const& other)
+class NFTokenModify : public Transactor
 {
-    value_ += other.value();
-    return *this;
-}
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-MPTAmount&
-MPTAmount::operator-=(MPTAmount const& other)
-{
-    value_ -= other.value();
-    return *this;
-}
+    explicit NFTokenModify(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
 
-MPTAmount
-MPTAmount::operator-() const
-{
-    return MPTAmount{-value_};
-}
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-bool
-MPTAmount::operator==(MPTAmount const& other) const
-{
-    return value_ == other.value_;
-}
+    static TER
+    preclaim(PreclaimContext const& ctx);
 
-bool
-MPTAmount::operator==(value_type other) const
-{
-    return value_ == other;
-}
-
-bool
-MPTAmount::operator<(MPTAmount const& other) const
-{
-    return value_ < other.value_;
-}
-
-MPTAmount
-MPTAmount::minPositiveAmount()
-{
-    return MPTAmount{1};
-}
+    TER
+    doApply() override;
+};
 
 }  // namespace ripple
+
+#endif

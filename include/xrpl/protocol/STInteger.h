@@ -110,8 +110,11 @@ template <typename Integer>
 inline void
 STInteger<Integer>::add(Serializer& s) const
 {
-    assert(getFName().isBinary());
-    assert(getFName().fieldType == getSType());
+    XRPL_ASSERT(
+        getFName().isBinary(), "ripple::STInteger::add : field is binary");
+    XRPL_ASSERT(
+        getFName().fieldType == getSType(),
+        "ripple::STInteger::add : field type match");
     s.addInteger(value_);
 }
 
