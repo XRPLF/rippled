@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -16,54 +16,30 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+#pragma once
 
-#ifndef RIPPLE_TEST_JTX_FEE_H_INCLUDED
-#define RIPPLE_TEST_JTX_FEE_H_INCLUDED
-
-#include <test/jtx/Env.h>
-#include <test/jtx/tags.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/protocol/STAmount.h>
-
-#include <optional>
+#include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
-namespace test {
-namespace jtx {
 
-/** Set the fee on a JTx. */
-class fee
+class PermissionedDomainSet : public Transactor
 {
-private:
-    bool manual_ = true;
-    std::optional<STAmount> amount_;
-
 public:
-    explicit fee(autofill_t) : manual_(false)
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
+    explicit PermissionedDomainSet(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    explicit fee(none_t)
-    {
-    }
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-    explicit fee(STAmount const& amount) : amount_(amount)
-    {
-        if (!isXRP(*amount_))
-            Throw<std::runtime_error>("fee: not XRP");
-    }
+    static TER
+    preclaim(PreclaimContext const& ctx);
 
-    explicit fee(std::uint64_t amount, bool negative = false)
-        : fee{STAmount{amount, negative}}
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const;
+    /** Attempt to create the Permissioned Domain. */
+    TER
+    doApply() override;
 };
 
-}  // namespace jtx
-}  // namespace test
 }  // namespace ripple
-
-#endif

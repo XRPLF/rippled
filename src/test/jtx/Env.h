@@ -407,6 +407,12 @@ public:
         trace_ = 0;
     }
 
+    void
+    set_parse_failure_expected(bool b)
+    {
+        parseFailureExpected_ = b;
+    }
+
     /** Turn off signature checks. */
     void
     disable_sigs()
@@ -700,6 +706,7 @@ protected:
     TestStopwatch stopwatch_;
     uint256 txid_;
     TER ter_ = tesSUCCESS;
+    bool parseFailureExpected_ = false;
 
     Json::Value
     do_rpc(

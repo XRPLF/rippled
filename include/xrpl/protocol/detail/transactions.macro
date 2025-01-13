@@ -447,8 +447,26 @@ TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete, ({
     {sfCredentialType, soeREQUIRED},
 }))
 
+/** This transaction type modify a NFToken */
+TRANSACTION(ttNFTOKEN_MODIFY, 61, NFTokenModify, ({
+    {sfNFTokenID, soeREQUIRED},
+    {sfOwner, soeOPTIONAL},
+    {sfURI, soeOPTIONAL},
+}))
+
+/** This transaction type creates or modifies a Permissioned Domain */
+TRANSACTION(ttPERMISSIONED_DOMAIN_SET, 62, PermissionedDomainSet, ({
+    {sfDomainID, soeOPTIONAL},
+    {sfAcceptedCredentials, soeREQUIRED},
+}))
+
+/** This transaction type deletes a Permissioned Domain */
+TRANSACTION(ttPERMISSIONED_DOMAIN_DELETE, 63, PermissionedDomainDelete, ({
+    {sfDomainID, soeREQUIRED},
+}))
+
 /** This transaction creates a single asset vault. */
-TRANSACTION(ttVAULT_CREATE, 61, VaultCreate, ({
+TRANSACTION(ttVAULT_CREATE, 64, VaultCreate, ({
     {sfAsset, soeREQUIRED, soeMPTSupported},
     {sfAssetMaximum, soeOPTIONAL},
     {sfMPTokenMetadata, soeOPTIONAL},
@@ -458,7 +476,7 @@ TRANSACTION(ttVAULT_CREATE, 61, VaultCreate, ({
 }))
 
 /** This transaction updates a single asset vault. */
-TRANSACTION(ttVAULT_SET, 62, VaultSet, ({
+TRANSACTION(ttVAULT_SET, 65, VaultSet, ({
     {sfVaultID, soeREQUIRED},
     {sfAssetMaximum, soeOPTIONAL},
     // no PermissionedDomainID yet
@@ -467,25 +485,25 @@ TRANSACTION(ttVAULT_SET, 62, VaultSet, ({
 }))
 
 /** This transaction deletes a single asset vault. */
-TRANSACTION(ttVAULT_DELETE, 63, VaultDelete, ({
+TRANSACTION(ttVAULT_DELETE, 66, VaultDelete, ({
     {sfVaultID, soeREQUIRED},
 }))
 
 /** This transaction trades assets for shares with a vault. */
-TRANSACTION(ttVAULT_DEPOSIT, 64, VaultDeposit, ({
+TRANSACTION(ttVAULT_DEPOSIT, 67, VaultDeposit, ({
     {sfVaultID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
 }))
 
 /** This transaction trades shares for assets with a vault. */
-TRANSACTION(ttVAULT_WITHDRAW, 65, VaultWithdraw, ({
+TRANSACTION(ttVAULT_WITHDRAW, 68, VaultWithdraw, ({
     {sfVaultID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfDestination, soeOPTIONAL},
 }))
 
 /** This transaction trades shares for assets with a vault. */
-TRANSACTION(ttVAULT_CLAWBACK, 66, VaultClawback, ({
+TRANSACTION(ttVAULT_CLAWBACK, 69, VaultClawback, ({
     {sfVaultID, soeREQUIRED},
     {sfHolder, soeREQUIRED},
     {sfAmount, soeDEFAULT, soeMPTSupported},
@@ -501,7 +519,6 @@ TRANSACTION(ttAMENDMENT, 100, EnableAmendment, ({
 }))
 
 /** This system-generated transaction type is used to update the network's fee settings.
-
     For details, see: https://xrpl.org/fee-voting.html
  */
 TRANSACTION(ttFEE, 101, SetFee, ({
