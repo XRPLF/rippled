@@ -96,12 +96,12 @@ Consumer::disposition() const
 }
 
 Disposition
-Consumer::charge(Charge const& what)
+Consumer::charge(Charge const& what, std::string const& context)
 {
     Disposition d = ok;
 
     if (m_logic && m_entry && !m_entry->isUnlimited())
-        d = m_logic->charge(*m_entry, what);
+        d = m_logic->charge(*m_entry, what, context);
 
     return d;
 }

@@ -444,7 +444,7 @@ ServerHandler::processSession(
             if (jv.isMember(jss::api_version))
                 jr[jss::api_version] = jv[jss::api_version];
 
-            is->getConsumer().charge(Resource::feeInvalidRPC);
+            is->getConsumer().charge(Resource::feeMalformedRPC);
             return jr;
         }
 
@@ -461,7 +461,7 @@ ServerHandler::processSession(
             is->user());
         if (Role::FORBID == role)
         {
-            loadType = Resource::feeInvalidRPC;
+            loadType = Resource::feeMalformedRPC;
             jr[jss::result] = rpcError(rpcFORBIDDEN);
         }
         else
@@ -729,7 +729,7 @@ ServerHandler::processRequest(
 
         if (role == Role::FORBID)
         {
-            usage.charge(Resource::feeInvalidRPC);
+            usage.charge(Resource::feeMalformedRPC);
             if (!batch)
             {
                 HTTPReply(403, "Forbidden", output, rpcJ);
@@ -743,7 +743,7 @@ ServerHandler::processRequest(
 
         if (!jsonRPC.isMember(jss::method) || jsonRPC[jss::method].isNull())
         {
-            usage.charge(Resource::feeInvalidRPC);
+            usage.charge(Resource::feeMalformedRPC);
             if (!batch)
             {
                 HTTPReply(400, "Null method", output, rpcJ);
@@ -758,7 +758,7 @@ ServerHandler::processRequest(
         Json::Value const& method = jsonRPC[jss::method];
         if (!method.isString())
         {
-            usage.charge(Resource::feeInvalidRPC);
+            usage.charge(Resource::feeMalformedRPC);
             if (!batch)
             {
                 HTTPReply(400, "method is not string", output, rpcJ);
@@ -774,7 +774,7 @@ ServerHandler::processRequest(
         std::string strMethod = method.asString();
         if (strMethod.empty())
         {
-            usage.charge(Resource::feeInvalidRPC);
+            usage.charge(Resource::feeMalformedRPC);
             if (!batch)
             {
                 HTTPReply(400, "method is empty", output, rpcJ);
@@ -802,7 +802,7 @@ ServerHandler::processRequest(
 
             else if (!params.isArray() || params.size() != 1)
             {
-                usage.charge(Resource::feeInvalidRPC);
+                usage.charge(Resource::feeMalformedRPC);
                 HTTPReply(400, "params unparseable", output, rpcJ);
                 return;
             }
@@ -811,7 +811,7 @@ ServerHandler::processRequest(
                 params = std::move(params[0u]);
                 if (!params.isObjectOrNull())
                 {
-                    usage.charge(Resource::feeInvalidRPC);
+                    usage.charge(Resource::feeMalformedRPC);
                     HTTPReply(400, "params unparseable", output, rpcJ);
                     return;
                 }
@@ -827,7 +827,7 @@ ServerHandler::processRequest(
         {
             if (!params[jss::ripplerpc].isString())
             {
-                usage.charge(Resource::feeInvalidRPC);
+                usage.charge(Resource::feeMalformedRPC);
                 if (!batch)
                 {
                     HTTPReply(400, "ripplerpc is not a string", output, rpcJ);

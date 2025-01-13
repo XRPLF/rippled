@@ -1043,7 +1043,7 @@ getLedgerByContext(RPC::JsonContext& context)
             "Exactly one of ledger_hash and ledger_index can be set.");
     }
 
-    context.loadType = Resource::feeHighBurdenRPC;
+    context.loadType = Resource::feeHeavyBurdenRPC;
 
     if (hasHash)
     {

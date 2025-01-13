@@ -80,7 +80,7 @@ LedgerHandler::check()
             return rpcTOO_BUSY;
         }
         context_.loadType =
-            binary ? Resource::feeMediumBurdenRPC : Resource::feeHighBurdenRPC;
+            binary ? Resource::feeMediumBurdenRPC : Resource::feeHeavyBurdenRPC;
     }
     if (queue)
     {
