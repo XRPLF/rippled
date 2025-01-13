@@ -265,23 +265,6 @@ struct Regression_test : public beast::unit_test::suite
         env.fund(XRP(10'000), alice, bob);
         env.close();
 
-        auto index = [&](auto account) {
-            Json::Value req(Json::objectValue);
-            req[jss::account] = account;
-            auto const resp = env.rpc("json", "account_info", to_string(req));
-            BEAST_EXPECT(
-                resp.isMember(jss::result) && resp[jss::result].isObject());
-            auto const& result = resp[jss::result];
-            BEAST_EXPECT(
-                result.isMember(jss::account_data) &&
-                result[jss::account_data].isObject());
-            auto const& ad = result[jss::account_data];
-            BEAST_EXPECT(ad.isMember(jss::index) && ad[jss::index].isString());
-            uint256 index;
-            BEAST_EXPECT(index.parseHex(ad[jss::index].asString()));
-            return index;
-        };
-
         {
             auto const alice_index = keylet::account(alice).key;
             if (BEAST_EXPECT(alice_index.isNonZero()))
@@ -314,33 +297,30 @@ struct Regression_test : public beast::unit_test::suite
                 return result;
             };
 
-            if (BEAST_EXPECT(bob_index.isNonZero()))
+            if (BEAST_EXPECT(bob_index.isNonZero()) &&
+                BEAST_EXPECT(digest.has_value()))
             {
-                if (BEAST_EXPECT(digest.has_value()))
-                {
-                    auto& cache = env.app().cachedSLEs();
-                    cache.del(*digest, false);
-                    auto const beforeCounts =
-                        mapCounts(CountedObjects::getInstance().getCounts(0));
+                auto& cache = env.app().cachedSLEs();
+                cache.del(*digest, false);
+                auto const beforeCounts =
+                    mapCounts(CountedObjects::getInstance().getCounts(0));
 
-                    env(check::cash(
-                            alice, bob_index, check::DeliverMin(XRP(100))),
-                        ter(tecNO_ENTRY));
+                env(check::cash(alice, bob_index, check::DeliverMin(XRP(100))),
+                    ter(tecNO_ENTRY));
 
-                    auto const afterCounts =
-                        mapCounts(CountedObjects::getInstance().getCounts(0));
+                auto const afterCounts =
+                    mapCounts(CountedObjects::getInstance().getCounts(0));
 
-                    using namespace std::string_literals;
-                    BEAST_EXPECT(
-                        beforeCounts.at("CachedView::hit"s) ==
-                        afterCounts.at("CachedView::hit"s));
-                    BEAST_EXPECT(
-                        beforeCounts.at("CachedView::hitExpired"s) + 1 ==
-                        afterCounts.at("CachedView::hitExpired"s));
-                    BEAST_EXPECT(
-                        beforeCounts.at("CachedView::miss"s) ==
-                        afterCounts.at("CachedView::miss"s));
-                }
+                using namespace std::string_literals;
+                BEAST_EXPECT(
+                    beforeCounts.at("CachedView::hit"s) ==
+                    afterCounts.at("CachedView::hit"s));
+                BEAST_EXPECT(
+                    beforeCounts.at("CachedView::hitExpired"s) + 1 ==
+                    afterCounts.at("CachedView::hitExpired"s));
+                BEAST_EXPECT(
+                    beforeCounts.at("CachedView::miss"s) ==
+                    afterCounts.at("CachedView::miss"s));
             }
         }
     }
