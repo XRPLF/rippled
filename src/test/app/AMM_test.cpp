@@ -4397,28 +4397,6 @@ private:
             0,
             std::nullopt,
             {features});
-
-        // Individually deep frozen account
-        if (features[featureDeepFreeze])
-        {
-            testAMM(
-                [&](AMM& ammAlice, Env& env) {
-                    env(trust(
-                        gw, carol["USD"](0), tfSetFreeze | tfSetDeepFreeze));
-                    env(trust(
-                        gw, alice["USD"](0), tfSetFreeze | tfSetDeepFreeze));
-                    env.close();
-                    env(pay(alice, carol, USD(1)),
-                        path(~USD),
-                        sendmax(XRP(10)),
-                        txflags(tfNoRippleDirect | tfPartialPayment),
-                        ter(tecPATH_DRY));
-                },
-                std::nullopt,
-                0,
-                std::nullopt,
-                {features});
-        }
     }
 
     void
@@ -6904,7 +6882,6 @@ private:
         testBasicPaymentEngine(all - fixAMMv1_1);
         testBasicPaymentEngine(all - fixReducedOffersV2);
         testBasicPaymentEngine(all - fixAMMv1_1 - fixReducedOffersV2);
-        testBasicPaymentEngine(all - featureDeepFreeze);
         testAMMTokens();
         testAmendment();
         testFlags();

@@ -4129,10 +4129,6 @@ private:
     {
         using namespace test::jtx;
         auto const sa = supported_amendments();
-        testRippleState(sa - featureDeepFreeze);
-        testGlobalFreeze(sa - featureDeepFreeze);
-        testOffersWhenFrozen(sa - featureDeepFreeze);
-
         testRippleState(sa);
         testGlobalFreeze(sa);
         testOffersWhenFrozen(sa);
