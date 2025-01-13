@@ -79,7 +79,7 @@ class Simulate_test : public beast::unit_test::suite
         Json::Value const& result,
         Json::Value const& tx,
         int const expectedSequence,
-        XRPAmount const expectedFee)
+        XRPAmount const& expectedFee)
     {
         return checkBasicReturnValidity(
             result, tx, expectedSequence, expectedFee.jsonClipped().asString());
