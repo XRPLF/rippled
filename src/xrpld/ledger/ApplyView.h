@@ -43,7 +43,7 @@ enum ApplyFlags : std::uint32_t {
 
     // Transaction shouldn't be applied
     // Signatures shouldn't be checked
-    tapDRY_RUN = 0x800
+    tapDRY_RUN = 0x1000
 };
 
 constexpr ApplyFlags
