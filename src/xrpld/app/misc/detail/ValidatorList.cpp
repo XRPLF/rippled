@@ -206,7 +206,7 @@ ValidatorList::load(
         listThreshold_ = (publisherLists_.size() < 3)
             ? 1  //
             : publisherLists_.size() / 2 + 1;
-        JLOG(j_.debug()) << "Validator list threshold set to "
+        JLOG(j_.debug()) << "Validator list threshold computed as "
                          << listThreshold_;
     }
 
