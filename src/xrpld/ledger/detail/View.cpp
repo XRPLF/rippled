@@ -308,6 +308,8 @@ accountHolds(
                 return false;
             }
 
+            // when fixFrozenLPTokenTransfer is enabled, if currency is lptoken,
+            // we need to check if the associated assets have been frozen
             if (view.rules().enabled(fixFrozenLPTokenTransfer))
             {
                 auto const sleIssuer = view.read(keylet::account(issuer));
