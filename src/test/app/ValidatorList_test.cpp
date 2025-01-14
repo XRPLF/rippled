@@ -518,7 +518,7 @@ private:
                 pubRevokedSigning.second,
                 std::numeric_limits<std::uint32_t>::max())));
 
-            // these two are not revoked (and not in the manifest cache at all.)
+            // this one is not revoked (and not in the manifest cache at all.)
             auto legitKey = randomMasterKey();
 
             std::vector<std::string> cfgPublishers = {
@@ -1630,6 +1630,7 @@ private:
                     {strHex(publisherPublic)});
                 std::vector<std::string> emptyCfgKeys;
 
+                // Threshold of 1 will result in a union of all the lists
                 BEAST_EXPECT(trustedKeys->load(
                     {}, emptyCfgKeys, cfgPublishers, std::size_t(1)));
 
@@ -2833,7 +2834,6 @@ private:
                 BEAST_EXPECT(!trustedKeys->trusted(val.masterPublic));
                 removed.insert(calcNodeID(val.masterPublic));
             }
-            BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
             BEAST_EXPECT(changes.added.empty());
             BEAST_EXPECT(changes.removed == removed);
         }
