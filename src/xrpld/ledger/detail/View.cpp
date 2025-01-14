@@ -295,17 +295,48 @@ accountHolds(
 
     // IOU: Return balance on trust line modulo freeze
     auto const sle = view.read(keylet::line(account, issuer, currency));
-    if (!sle)
-    {
-        amount.clear(Issue{currency, issuer});
-    }
-    else if (
-        (zeroIfFrozen == fhZERO_IF_FROZEN) &&
-        isFrozen(view, account, currency, issuer))
-    {
-        amount.clear(Issue{currency, issuer});
-    }
-    else
+    auto const allowBalance = [&]() {
+        if (!sle)
+        {
+            return false;
+        }
+
+        if (zeroIfFrozen == fhZERO_IF_FROZEN)
+        {
+            if (isFrozen(view, account, currency, issuer))
+            {
+                return false;
+            }
+
+            if (view.rules().enabled(fixFrozenLPTokenTransfer))
+            {
+                auto const sleIssuer = view.read(keylet::account(issuer));
+                if (!sleIssuer)
+                {
+                    return false;
+                }
+                else if (sleIssuer->isFieldPresent(sfAMMID))
+                {
+                    auto const sleAmm =
+                        view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+
+                    if (!sleAmm ||
+                        isLPTokenFrozen(
+                            view,
+                            account,
+                            (*sleAmm)[sfAsset].get<Issue>(),
+                            (*sleAmm)[sfAsset2].get<Issue>()))
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }();
+
+    if (allowBalance)
     {
         amount = sle->getFieldAmount(sfBalance);
         if (account > issuer)
@@ -314,34 +345,12 @@ accountHolds(
             amount.negate();
         }
         amount.setIssuer(issuer);
-
-        // if it's a LPToken, also need to check if issuers of the asset pair
-        // has frozen holder's trustline
-        if (view.rules().enabled(fixFrozenLPTokenTransfer) &&
-            zeroIfFrozen == fhZERO_IF_FROZEN)
-        {
-            auto const sleIssuer = view.read(keylet::account(issuer));
-            if (!sleIssuer)
-            {
-                amount.clear(Issue{currency, issuer});
-            }
-            else if (sleIssuer->isFieldPresent(sfAMMID))
-            {
-                auto const sleAmm =
-                    view.read(keylet::amm((*sleIssuer)[sfAMMID]));
-
-                if (!sleAmm ||
-                    isLPTokenFrozen(
-                        view,
-                        account,
-                        (*sleAmm)[sfAsset].get<Issue>(),
-                        (*sleAmm)[sfAsset2].get<Issue>()))
-                {
-                    amount.clear(Issue{currency, issuer});
-                }
-            }
-        }
     }
+    else
+    {
+        amount.clear(Issue{currency, issuer});
+    }
+
     JLOG(j.trace()) << "accountHolds:"
                     << " account=" << to_string(account)
                     << " amount=" << amount.getFullText();
