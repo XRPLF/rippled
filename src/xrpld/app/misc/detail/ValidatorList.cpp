@@ -2019,8 +2019,8 @@ ValidatorList::updateTrusted(
         else
         {
             XRPL_ASSERT(
-                kit->second > 0,
-                "ripple::ValidatorList::updateTrusted : nonzero publishers");
+                kit->second >= listThreshold_,
+                "ripple::ValidatorList::updateTrusted : count meets threshold");
             ++it;
         }
     }
