@@ -1333,6 +1333,44 @@ private:
                 std::numeric_limits<std::size_t>::max());
         }
         {
+            // Trust explicitly listed validators also when list threshold is
+            // higher than 1
+            auto trustedKeys = std::make_unique<ValidatorList>(
+                manifestsOuter,
+                manifestsOuter,
+                env.timeKeeper(),
+                app.config().legacy("database_path"),
+                env.journal);
+            auto const masterPrivate = randomSecretKey();
+            auto const masterPublic =
+                derivePublicKey(KeyType::ed25519, masterPrivate);
+            std::vector<std::string> cfgKeys(
+                {toBase58(TokenType::NodePublic, masterPublic)});
+
+            auto const publisher1Secret = randomSecretKey();
+            auto const publisher1Public =
+                derivePublicKey(KeyType::ed25519, publisher1Secret);
+            auto const publisher2Secret = randomSecretKey();
+            auto const publisher2Public =
+                derivePublicKey(KeyType::ed25519, publisher2Secret);
+            std::vector<std::string> cfgPublishers(
+                {strHex(publisher1Public), strHex(publisher2Public)});
+
+            BEAST_EXPECT(
+                trustedKeys->load({}, cfgKeys, cfgPublishers, std::size_t(2)));
+
+            TrustChanges changes = trustedKeys->updateTrusted(
+                activeValidatorsOuter,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().overlay(),
+                env.app().getHashRouter());
+            BEAST_EXPECT(changes.removed.empty());
+            BEAST_EXPECT(changes.added.size() == 1);
+            BEAST_EXPECT(trustedKeys->listed(masterPublic));
+            BEAST_EXPECT(trustedKeys->trusted(masterPublic));
+        }
+        {
             // Should use custom minimum quorum
             std::size_t const minQuorum = 1;
             ManifestCache manifests;

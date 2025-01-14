@@ -259,7 +259,7 @@ ValidatorList::load(
         if (*id == localPubKey_ || *id == localSigningKey)
             continue;
 
-        auto ret = keyListings_.insert({*id, 1});
+        auto ret = keyListings_.insert({*id, listThreshold_});
         if (!ret.second)
         {
             JLOG(j_.warn()) << "Duplicate node identity: " << match[1];
