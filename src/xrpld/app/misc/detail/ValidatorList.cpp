@@ -196,7 +196,9 @@ ValidatorList::load(
     {
         listThreshold_ = *listThreshold;
         // This should be enforced by Config class
-        assert(listThreshold_ > 0 && listThreshold_ <= publisherLists_.size());
+        XRPL_ASSERT(
+            listThreshold_ > 0 && listThreshold_ <= publisherLists_.size(),
+            "ripple::ValidatorList::load : list threshold inside range");
         JLOG(j_.debug()) << "Validator list threshold set in configuration to "
                          << listThreshold_;
     }
@@ -1858,7 +1860,9 @@ ValidatorList::calculateQuorum(
         auto const errorThreshold = std::min(
             listThreshold_,  //
             publisherLists_.size() - listThreshold_ + 1);
-        assert(errorThreshold > 0);
+        XRPL_ASSERT(
+            errorThreshold > 0,
+            "ripple::ValidatorList::calculateQuorum : nonzero error threshold");
         if (unavailable >= errorThreshold)
             return std::numeric_limits<std::size_t>::max();
     }
@@ -2014,7 +2018,9 @@ ValidatorList::updateTrusted(
         }
         else
         {
-            assert(kit->second > 0);
+            XRPL_ASSERT(
+                kit->second > 0,
+                "ripple::ValidatorList::updateTrusted : nonzero publishers");
             ++it;
         }
     }
