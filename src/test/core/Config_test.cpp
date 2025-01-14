@@ -638,6 +638,7 @@ trustthesevalidators.gov
             try
             {
                 c.loadFromString(toLoad);
+                fail();
             }
             catch (std::runtime_error& e)
             {
@@ -666,6 +667,7 @@ value = 2
             try
             {
                 c.loadFromString(toLoad);
+                fail();
             }
             catch (std::runtime_error& e)
             {
@@ -691,6 +693,7 @@ trustthesevalidators.gov
             try
             {
                 c.loadFromString(toLoad);
+                fail();
             }
             catch (std::bad_cast& e)
             {
@@ -713,6 +716,7 @@ trustthesevalidators.gov
             try
             {
                 c.loadFromString(toLoad);
+                fail();
             }
             catch (std::runtime_error& e)
             {
@@ -889,6 +893,7 @@ trustthesevalidators.gov
             {
                 Config c;
                 c.loadFromString(boost::str(cc % vtg.validatorsFile()));
+                fail();
             }
             catch (std::runtime_error& e)
             {
