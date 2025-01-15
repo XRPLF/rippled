@@ -282,10 +282,13 @@ isDeepFrozen(
         return false;
     }
 
-    // Check if the line is deep frozen
     auto const sle = view.read(keylet::line(account, issuer, currency));
-    return sle &&
-        (sle->isFlag(lsfHighDeepFreeze) || sle->isFlag(lsfLowDeepFreeze));
+    if (!sle)
+    {
+        return false;
+    }
+
+    return sle->isFlag(lsfHighDeepFreeze) || sle->isFlag(lsfLowDeepFreeze);
 }
 
 STAmount

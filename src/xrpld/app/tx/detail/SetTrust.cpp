@@ -235,14 +235,12 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         bool const bSetFreeze = (uTxFlags & tfSetFreeze);
         bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze);
 
-        if (bNoFreeze)
+        if (bNoFreeze && (bSetFreeze || bSetDeepFreeze))
         {
-            if (bSetFreeze || bSetDeepFreeze)
-            {
-                // Cannot freeze the trust line if NoFreeze is set
-                return tecNO_PERMISSION;
-            }
+            // Cannot freeze the trust line if NoFreeze is set
+            return tecNO_PERMISSION;
         }
+
         bool const bClearFreeze = (uTxFlags & tfClearFreeze);
         bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze);
         if ((bSetFreeze || bSetDeepFreeze) &&

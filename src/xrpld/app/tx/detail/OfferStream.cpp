@@ -279,9 +279,10 @@ TOfferStreamBase<TIn, TOut>::step()
             offer_.issueIn().account);
         if (deepFrozen)
         {
-            permRmOffer(entry->key());
             JLOG(j_.trace())
                 << "Removing deep frozen unfunded offer " << entry->key();
+            permRmOffer(entry->key());
+            offer_ = TOffer<TIn, TOut>{};
             continue;
         }
 
