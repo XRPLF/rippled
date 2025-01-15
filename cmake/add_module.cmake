@@ -9,15 +9,12 @@ include(isolate_headers)
 # that cannot include headers from other directories in include/
 # unless they come through linked libraries.
 #
-# add_module(parent a true)
-# add_module(parent b false)
+# add_module(parent a)
+# add_module(parent b)
 # target_link_libraries(project.libparent.b PUBLIC project.libparent.a)
-function(add_module parent name unity)
+function(add_module parent name)
   set(target ${PROJECT_NAME}.lib${parent}.${name})
   add_library(${target} OBJECT)
-  if(unity)
-    set_target_properties(${target} PROPERTIES UNITY_BUILD ON)
-  endif()
   file(GLOB_RECURSE sources CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/lib${parent}/${name}/*.cpp"
   )

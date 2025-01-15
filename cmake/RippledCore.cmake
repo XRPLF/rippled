@@ -70,35 +70,35 @@ include(add_module)
 include(target_link_modules)
 
 # Level 01
-add_module(xrpl beast ${unity})
+add_module(xrpl beast)
 target_link_libraries(xrpl.libxrpl.beast PUBLIC
   xrpl.imports.main
   xrpl.libpb
 )
 
 # Level 02
-add_module(xrpl basics ${unity})
+add_module(xrpl basics)
 target_link_libraries(xrpl.libxrpl.basics PUBLIC xrpl.libxrpl.beast)
 
 # Level 03
-add_module(xrpl json ${unity})
+add_module(xrpl json)
 target_link_libraries(xrpl.libxrpl.json PUBLIC xrpl.libxrpl.basics)
 
-add_module(xrpl crypto ${unity})
+add_module(xrpl crypto)
 target_link_libraries(xrpl.libxrpl.crypto PUBLIC xrpl.libxrpl.basics)
 
 # Level 04
-add_module(xrpl protocol ${unity})
+add_module(xrpl protocol)
 target_link_libraries(xrpl.libxrpl.protocol PUBLIC
   xrpl.libxrpl.crypto
   xrpl.libxrpl.json
 )
 
 # Level 05
-add_module(xrpl resource ${unity})
+add_module(xrpl resource)
 target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
 
-add_module(xrpl server ${unity})
+add_module(xrpl server)
 target_link_libraries(xrpl.libxrpl.server PUBLIC xrpl.libxrpl.protocol)
 
 
