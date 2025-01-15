@@ -9,6 +9,7 @@ include(target_protobuf_sources)
 # define a bunch of `static const` variables with the same names,
 # so we just build them as a separate library.
 add_library(xrpl.libpb)
+set_target_properties(xrpl.libpb PROPERTIES UNITY_BUILD OFF)
 target_protobuf_sources(xrpl.libpb xrpl/proto
   LANGUAGE cpp
   IMPORT_DIRS include/xrpl/proto
@@ -104,9 +105,6 @@ target_link_libraries(xrpl.libxrpl.server PUBLIC xrpl.libxrpl.protocol)
 
 add_library(xrpl.libxrpl)
 set_target_properties(xrpl.libxrpl PROPERTIES OUTPUT_NAME xrpl)
-if(unity)
-  set_target_properties(xrpl.libxrpl PROPERTIES UNITY_BUILD ON)
-endif()
 
 add_library(xrpl::libxrpl ALIAS xrpl.libxrpl)
 
@@ -136,9 +134,6 @@ target_link_modules(xrpl PUBLIC
 
 if(xrpld)
   add_executable(rippled)
-  if(unity)
-    set_target_properties(rippled PROPERTIES UNITY_BUILD ON)
-  endif()
   if(tests)
     target_compile_definitions(rippled PUBLIC ENABLE_TESTS)
   endif()
