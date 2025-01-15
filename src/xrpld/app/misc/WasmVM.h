@@ -33,6 +33,16 @@ runEscrowWasm(
     std::string const& funcName,
     int32_t input);
 
+Expected<bool, TER>
+runEscrowWasm(
+    std::vector<uint8_t> const& wasmCode,
+    std::string const& funcName,
+    std::vector<uint8_t> const& accountID);
+
+
+}  // namespace ripple
+#endif  // RIPPLE_APP_MISC_WASMVM_H_INLCUDED
+
 // class WasmVM final
 //{
 // public:
@@ -42,5 +52,3 @@ runEscrowWasm(
 // private:
 //     beast::Journal j_;
 // };
-}  // namespace ripple
-#endif  // RIPPLE_APP_MISC_WASMVM_H_INLCUDED

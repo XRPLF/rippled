@@ -56,13 +56,98 @@ runEscrowWasm(
     }
     else
     {
-        // printf("Error message: %s\n", WasmEdge_ResultGetMessage(Res));
+        printf("Error message: %s\n", WasmEdge_ResultGetMessage(Res));
     }
 
     WasmEdge_VMDelete(VMCxt);
     WasmEdge_StringDelete(FuncName);
     if (ok)
         return re;
+    else
+        return Unexpected<TER>(tecFAILED_PROCESSING);
+}
+
+Expected<bool, TER>
+runEscrowWasm(
+    std::vector<uint8_t> const& wasmCode,
+    std::string const& funcName,
+    std::vector<uint8_t> const& accountID)
+{
+    auto dataLen = (int32_t)accountID.size();
+    // printf("accountID size: %d\n", dataLen);
+    WasmEdge_VMContext* VMCxt = WasmEdge_VMCreate(NULL, NULL);
+
+    WasmEdge_Value allocParams[1] = {WasmEdge_ValueGenI32(dataLen)};
+    WasmEdge_Value allocReturns[1];
+    WasmEdge_String allocFunc = WasmEdge_StringCreateByCString("allocate");
+    WasmEdge_Result allocRes = WasmEdge_VMRunWasmFromBuffer(
+        VMCxt,
+        wasmCode.data(),
+        wasmCode.size(),
+        allocFunc,
+        allocParams,
+        1,
+        allocReturns,
+        1);
+
+    bool ok = WasmEdge_ResultOK(allocRes);
+    bool re = false;
+    if (ok)
+    {
+        auto pointer = WasmEdge_ValueGetI32(allocReturns[0]);
+        // printf("Alloc pointer: %d\n", pointer);
+
+        const WasmEdge_ModuleInstanceContext* m =
+            WasmEdge_VMGetActiveModule(VMCxt);
+        WasmEdge_String mName = WasmEdge_StringCreateByCString("memory");
+        WasmEdge_MemoryInstanceContext* mi =
+            WasmEdge_ModuleInstanceFindMemory(m, mName);
+        WasmEdge_Result setRes =
+            WasmEdge_MemoryInstanceSetData(mi, accountID.data(), pointer, dataLen);
+
+        ok = WasmEdge_ResultOK(setRes);
+        if (ok)
+        {
+            // printf("Set data ok\n");
+
+            WasmEdge_Value params[2] = {
+                WasmEdge_ValueGenI32(pointer), WasmEdge_ValueGenI32(dataLen)};
+            WasmEdge_Value returns[1];
+            WasmEdge_String func =
+                WasmEdge_StringCreateByCString(funcName.c_str());
+            WasmEdge_Result funcRes =
+                WasmEdge_VMExecute(VMCxt, func, params, 2, returns, 1);
+
+            ok = WasmEdge_ResultOK(funcRes);
+            if (ok)
+            {
+                // printf("func ok\n");
+                re = (WasmEdge_ValueGetI32(returns[0]) == 1);
+            }
+            else
+            {
+                printf(
+                    "Func message: %s\n", WasmEdge_ResultGetMessage(funcRes));
+            }
+        }
+        else
+        {
+            printf("Set error message: %s\n", WasmEdge_ResultGetMessage(setRes));
+        }
+    }
+    else
+    {
+        printf("Alloc error message: %s\n", WasmEdge_ResultGetMessage(allocRes));
+    }
+
+    WasmEdge_VMDelete(VMCxt);
+    // TODO free everything
+    //    WasmEdge_StringDelete(FuncName);
+    if (ok)
+    {
+        // printf("runEscrowWasm ok, result %d\n", re);
+        return re;
+    }
     else
         return Unexpected<TER>(tecFAILED_PROCESSING);
 }
