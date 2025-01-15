@@ -519,12 +519,15 @@ EscrowFinish::doApply()
     // Execute extension
     if ((*slep)[~sfFinishFunction])
     {
-        JLOG(j_.fatal()) << "HAS ESCROW";
+        JLOG(j_.fatal()) << "HAS FINISH FUNCTION";
         // WASM execution
         auto const wasmStr = slep->getFieldVL(sfFinishFunction);
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
-        std::string funcName("mock_escrow");
-        auto re = runEscrowWasm(wasm, funcName, ctx_.tx[sfSequence]);
+        std::string funcName("check_accountID");
+
+        std::string accountStr = toBase58(ctx_.tx[sfAccount]);
+        std::vector<uint8_t> account(accountStr.begin(), accountStr.end());
+        auto re = runEscrowWasm(wasm, funcName, account);
         JLOG(j_.fatal()) << "ESCROW RAN";
         if (re)
         {
