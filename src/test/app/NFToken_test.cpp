@@ -7782,6 +7782,273 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     }
 
     void
+    testNFTokenModify(FeatureBitset features)
+    {
+        testcase("Test NFTokenModify");
+
+        using namespace test::jtx;
+
+        Account const issuer{"issuer"};
+        Account const alice("alice");
+        Account const bob("bob");
+
+        bool const modifyEnabled = features[featureDynamicNFT];
+
+        {
+            // Mint with tfMutable
+            Env env{*this, features};
+            env.fund(XRP(10000), issuer);
+            env.close();
+
+            auto const expectedTer =
+                modifyEnabled ? TER{tesSUCCESS} : TER{temINVALID_FLAG};
+            env(token::mint(issuer, 0u), txflags(tfMutable), ter(expectedTer));
+            env.close();
+        }
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), issuer);
+            env.close();
+
+            // Modify a nftoken
+            uint256 const nftId{token::getNextID(env, issuer, 0u, tfMutable)};
+            if (modifyEnabled)
+            {
+                env(token::mint(issuer, 0u), txflags(tfMutable));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, issuer) == 1);
+                env(token::modify(issuer, nftId));
+                BEAST_EXPECT(ownerCount(env, issuer) == 1);
+            }
+            else
+            {
+                env(token::mint(issuer, 0u));
+                env.close();
+                env(token::modify(issuer, nftId), ter(temDISABLED));
+                env.close();
+            }
+        }
+        if (!modifyEnabled)
+            return;
+
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), issuer);
+            env.close();
+
+            uint256 const nftId{token::getNextID(env, issuer, 0u, tfMutable)};
+            env(token::mint(issuer, 0u), txflags(tfMutable));
+            env.close();
+
+            // Set a negative fee.  Exercises invalid preflight1.
+            env(token::modify(issuer, nftId),
+                fee(STAmount(10ull, true)),
+                ter(temBAD_FEE));
+            env.close();
+
+            // Invalid Owner
+            env(token::modify(issuer, nftId),
+                token::owner(issuer),
+                ter(temMALFORMED));
+            env.close();
+
+            // Invalid URI length = 0
+            env(token::modify(issuer, nftId),
+                token::uri(""),
+                ter(temMALFORMED));
+            env.close();
+
+            // Invalid URI length > 256
+            env(token::modify(issuer, nftId),
+                token::uri(std::string(maxTokenURILength + 1, 'q')),
+                ter(temMALFORMED));
+            env.close();
+        }
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), issuer, alice, bob);
+            env.close();
+
+            {
+                // NFToken not exists
+                uint256 const nftIDNotExists{
+                    token::getNextID(env, issuer, 0u, tfMutable)};
+                env.close();
+
+                env(token::modify(issuer, nftIDNotExists), ter(tecNO_ENTRY));
+                env.close();
+            }
+            {
+                // Invalid NFToken flag
+                uint256 const nftIDNotModifiable{
+                    token::getNextID(env, issuer, 0u)};
+                env(token::mint(issuer, 0u));
+                env.close();
+
+                env(token::modify(issuer, nftIDNotModifiable),
+                    ter(tecNO_PERMISSION));
+                env.close();
+            }
+            {
+                // Unauthorized account
+                uint256 const nftId{
+                    token::getNextID(env, issuer, 0u, tfMutable)};
+                env(token::mint(issuer, 0u), txflags(tfMutable));
+                env.close();
+
+                env(token::modify(bob, nftId),
+                    token::owner(issuer),
+                    ter(tecNO_PERMISSION));
+                env.close();
+
+                env(token::setMinter(issuer, alice));
+                env.close();
+
+                env(token::modify(bob, nftId),
+                    token::owner(issuer),
+                    ter(tecNO_PERMISSION));
+                env.close();
+            }
+        }
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), issuer, alice, bob);
+            env.close();
+
+            // lambda that returns the JSON form of NFTokens held by acct
+            auto accountNFTs = [&env](Account const& acct) {
+                Json::Value params;
+                params[jss::account] = acct.human();
+                params[jss::type] = "state";
+                auto response =
+                    env.rpc("json", "account_nfts", to_string(params));
+                return response[jss::result][jss::account_nfts];
+            };
+
+            // lambda that checks for the expected URI value of an NFToken
+            auto checkURI = [&accountNFTs, this](
+                                Account const& acct,
+                                char const* uri,
+                                int line) {
+                auto const nfts = accountNFTs(acct);
+                if (nfts.size() == 1)
+                    pass();
+                else
+                {
+                    std::ostringstream text;
+                    text << "checkURI: unexpected NFT count on line " << line;
+                    fail(text.str(), __FILE__, line);
+                    return;
+                }
+
+                if (uri == nullptr)
+                {
+                    if (!nfts[0u].isMember(sfURI.jsonName))
+                        pass();
+                    else
+                    {
+                        std::ostringstream text;
+                        text << "checkURI: unexpected URI present on line "
+                             << line;
+                        fail(text.str(), __FILE__, line);
+                    }
+                    return;
+                }
+
+                if (nfts[0u][sfURI.jsonName] == strHex(std::string(uri)))
+                    pass();
+                else
+                {
+                    std::ostringstream text;
+                    text << "checkURI: unexpected URI contents on line "
+                         << line;
+                    fail(text.str(), __FILE__, line);
+                }
+            };
+
+            uint256 const nftId{token::getNextID(env, issuer, 0u, tfMutable)};
+            env.close();
+
+            env(token::mint(issuer, 0u), txflags(tfMutable), token::uri("uri"));
+            env.close();
+            checkURI(issuer, "uri", __LINE__);
+
+            // set URI Field
+            env(token::modify(issuer, nftId), token::uri("new_uri"));
+            env.close();
+            checkURI(issuer, "new_uri", __LINE__);
+
+            // unset URI Field
+            env(token::modify(issuer, nftId));
+            env.close();
+            checkURI(issuer, nullptr, __LINE__);
+
+            // set URI Field
+            env(token::modify(issuer, nftId), token::uri("uri"));
+            env.close();
+            checkURI(issuer, "uri", __LINE__);
+
+            // Account != Owner
+            uint256 const offerID =
+                keylet::nftoffer(issuer, env.seq(issuer)).key;
+            env(token::createOffer(issuer, nftId, XRP(0)),
+                txflags(tfSellNFToken));
+            env.close();
+            env(token::acceptSellOffer(alice, offerID));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            checkURI(alice, "uri", __LINE__);
+
+            // Modify by owner fails.
+            env(token::modify(alice, nftId),
+                token::uri("new_uri"),
+                ter(tecNO_PERMISSION));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            checkURI(alice, "uri", __LINE__);
+
+            env(token::modify(issuer, nftId),
+                token::owner(alice),
+                token::uri("new_uri"));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            checkURI(alice, "new_uri", __LINE__);
+
+            env(token::modify(issuer, nftId), token::owner(alice));
+            env.close();
+            checkURI(alice, nullptr, __LINE__);
+
+            env(token::modify(issuer, nftId),
+                token::owner(alice),
+                token::uri("uri"));
+            env.close();
+            checkURI(alice, "uri", __LINE__);
+
+            // Modify by authorized minter
+            env(token::setMinter(issuer, bob));
+            env.close();
+            env(token::modify(bob, nftId),
+                token::owner(alice),
+                token::uri("new_uri"));
+            env.close();
+            checkURI(alice, "new_uri", __LINE__);
+
+            env(token::modify(bob, nftId), token::owner(alice));
+            env.close();
+            checkURI(alice, nullptr, __LINE__);
+
+            env(token::modify(bob, nftId),
+                token::owner(alice),
+                token::uri("uri"));
+            env.close();
+            checkURI(alice, "uri", __LINE__);
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnabled(features);
@@ -7818,6 +8085,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         testFixNFTokenBuyerReserve(features);
         testUnaskedForAutoTrustline(features);
         testNFTIssuerIsIOUIssuer(features);
+        testNFTokenModify(features);
     }
 
 public:
@@ -7828,17 +8096,20 @@ public:
         static FeatureBitset const all{supported_amendments()};
         static FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
-        static std::array<FeatureBitset, 7> const feats{
+        static std::array<FeatureBitset, 8> const feats{
             all - fixNFTDir - fixNonFungibleTokensV1_2 - fixNFTokenRemint -
-                fixNFTokenReserve - featureNFTokenMintOffer,
+                fixNFTokenReserve - featureNFTokenMintOffer - featureDynamicNFT,
             all - disallowIncoming - fixNonFungibleTokensV1_2 -
-                fixNFTokenRemint - fixNFTokenReserve - featureNFTokenMintOffer,
+                fixNFTokenRemint - fixNFTokenReserve - featureNFTokenMintOffer -
+                featureDynamicNFT,
             all - fixNonFungibleTokensV1_2 - fixNFTokenRemint -
-                fixNFTokenReserve - featureNFTokenMintOffer,
+                fixNFTokenReserve - featureNFTokenMintOffer - featureDynamicNFT,
             all - fixNFTokenRemint - fixNFTokenReserve -
-                featureNFTokenMintOffer,
-            all - fixNFTokenReserve - featureNFTokenMintOffer,
-            all - featureNFTokenMintOffer,
+                featureNFTokenMintOffer - featureDynamicNFT,
+            all - fixNFTokenReserve - featureNFTokenMintOffer -
+                featureDynamicNFT,
+            all - featureNFTokenMintOffer - featureDynamicNFT,
+            all - featureDynamicNFT,
             all};
 
         if (BEAST_EXPECT(instance < feats.size()))
@@ -7900,12 +8171,21 @@ class NFTokenWOMintOffer_test : public NFTokenBaseUtil_test
     }
 };
 
+class NFTokenWOModify_test : public NFTokenBaseUtil_test
+{
+    void
+    run() override
+    {
+        NFTokenBaseUtil_test::run(6);
+    }
+};
+
 class NFTokenAllFeatures_test : public NFTokenBaseUtil_test
 {
     void
     run() override
     {
-        NFTokenBaseUtil_test::run(6, true);
+        NFTokenBaseUtil_test::run(7, true);
     }
 };
 
@@ -7915,6 +8195,7 @@ BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOfixV1, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenRemint, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenReserve, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOMintOffer, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOModify, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAllFeatures, tx, ripple, 2);
 
 }  // namespace ripple
