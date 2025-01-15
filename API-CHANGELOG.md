@@ -88,6 +88,7 @@ The `network_id` field was added in the `server_info` response in version 1.5.0 
 ### Addition in 2.4
 
 - `ledger_entry`: `state` is added an alias for `ripple_state`.
+- `validators`: Added new field `validator_list_threshold` in response.
 
 ## XRP Ledger server version 2.3.0
 
@@ -100,7 +101,6 @@ Admins can still attempt to retrieve old ledgers with the `ledger_request` RPC.
 ### Addition in 2.3
 
 - `book_changes`: Returns a `validated` field in its response, which was missing in prior versions.
-- `validators`: Added new field `validator_list_threshold` in response.
 
 The following additions are non-breaking (because they are purely additive).
 
