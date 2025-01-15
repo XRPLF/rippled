@@ -7793,11 +7793,16 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::mint(issuer, 0u), txflags(tfMutable));
             env.close();
 
-            // Set a negative fee.  Exercises invalid preflight1.
+            // Set a negative fee. Exercises invalid preflight1.
             env(token::modify(issuer, nftId),
                 fee(STAmount(10ull, true)),
                 ter(temBAD_FEE));
             env.close();
+
+            // Invalid Flags
+            env(token::modify(issuer, nftId),
+                txflags(0x00000001),
+                ter(temINVALID_FLAG));
 
             // Invalid Owner
             env(token::modify(issuer, nftId),
