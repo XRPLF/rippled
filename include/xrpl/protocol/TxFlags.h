@@ -194,9 +194,6 @@ constexpr std::uint32_t const tfNFTokenCancelOfferMask     = ~tfUniversal;
 // NFTokenAcceptOffer flags:
 constexpr std::uint32_t const tfNFTokenAcceptOfferMask     = ~tfUniversal;
 
-// NFTokenModify flags:
-constexpr std::uint32_t const tfNFTokenModifyMask          = ~tfUniversal;
-
 // Clawback flags:
 constexpr std::uint32_t const tfClawbackMask               = ~tfUniversal;
 

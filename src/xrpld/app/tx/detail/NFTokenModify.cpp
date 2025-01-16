@@ -37,8 +37,7 @@ NFTokenModify::preflight(PreflightContext const& ctx)
     if (NotTEC const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    auto const flags = ctx.tx.getFlags();
-    if (flags & tfNFTokenModifyMask)
+    if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
     if (auto owner = ctx.tx[~sfOwner]; owner == ctx.tx[sfAccount])
