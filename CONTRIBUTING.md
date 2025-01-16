@@ -5,7 +5,7 @@ XRPL.
 # Contributing
 
 We assume you are familiar with the general practice of [making
-contributions on GitHub][1]. This file includes only special
+contributions on GitHub][contrib]. This file includes only special
 instructions specific to this project.
 
 
@@ -37,11 +37,6 @@ a permitted prefix. Permitted prefixes are:
 Regardless of where the branch is created, please open a *draft* pull
 request as soon as possible after pushing the branch to Github, to
 increase visibility, and ease feedback during the development process.
-
-[forking]: https://github.com/XRPLF/rippled/fork
-[rippled]: https://github.com/XRPLF/rippled
-[signing]:
-    https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification
 
 
 ## Major contributions
@@ -160,7 +155,7 @@ before it can be considered for merge by a Maintainer.
 Maintainers retain discretion to require more approvals if they feel the
 credibility of the existing approvals is insufficient.
 
-Pull requests must be merged by [squash-and-merge][2]
+Pull requests must be merged by [squash-and-merge][squash]
 to preserve a linear history for the `develop` branch.
 
 ### "Ready to merge"
@@ -425,7 +420,7 @@ $ git config remotes.upstreams
 upstream upstream-push
 ```
 
-You can use the [bin/git/setup-upstreams.sh] script to set this up.
+You can use the [setup-upstreams] script to set this up.
 
 It also assumes you have a default gpg signing key set up in git. e.g.
 ```
@@ -547,7 +542,7 @@ git push --set-upstream origin
 # everything can be done in one PR.
 ```
 
-You can also use the [bin/git/squash-branches.sh] script.
+You can also use the [squash-branches] script.
 
 You may also need to manually close the open PRs after the changes are
 merged to `develop`. Be sure to include the commit ID.
@@ -580,7 +575,7 @@ git push upstream-push
 git fetch upstreams
 git branch --set-upstream-to=upstream/release-next
 ```
-   You can also use the [bin/git/update-version.sh] script.
+   You can also use the [update-version] script.
 2. Create a Pull Request for `release-next` with **`develop`** as
    the base branch.
    1. Use the title "[TRIVIAL] Set version to X.X.X-bX".
@@ -677,7 +672,7 @@ to bug fixes, but other changes may be necessary from time to time.
    `release-next` can be thrown away and recreated if necessary.
 2. Once a new release candidate is ready, create a version commit as in
    step 1 [above](#making-the-release) on `release-next`. You can use
-   the [bin/git/update-version.sh] script for this, too.
+   the [update-version] script for this, too.
 3. Jump to step 8 ("Now create a Pull Request for `release-next` with
    **`release`** as the base") from the process
    [above](#making-the-release) to merge `release-next` into `release`.
@@ -759,7 +754,8 @@ moving from `release` to `master` instead of from `develop` to
 
 1. Ensure there is no old `master-next` branch hanging around.
    Then make a `master-next` branch that only changes the version
-   number. As above, or using the [bin/git/update-version.sh] script.
+   number. As above, or using the
+   [update-version] script.
 2. Create a Pull Request for `master-next` with **`master`** as
    the base branch.  Instead of the default template, reuse and update
    the message from the previous final release. Include the following verbiage
@@ -796,20 +792,20 @@ git log -1 --oneline
 # commit.
 # Other branches, including some from upstream-push, may also be
 # present.
-``
+```
 9. Tag the release, too.
 ```
 git tag <version number>
 git push upstream-push <version number>
 ```
-9. Delete the `master-next` branch on the repo. Use the Github UI or:
+10. Delete the `master-next` branch on the repo. Use the Github UI or:
 ```
 git push --delete upstream-push master-next
 ```
-10. [Create a new release on
+11. [Create a new release on
     Github](https://github.com/XRPLF/rippled/releases). Be sure that
     "Set as the latest release" is checked.
-11. Finally [reverse merge the release into `develop`](#follow-up-reverse-merge).
+12. Finally [reverse merge the release into `develop`](#follow-up-reverse-merge).
 
 #### Special cases: point releases, hotfixes, etc.
 
@@ -841,7 +837,8 @@ git fetch upstreams
    so they can be merged directly in to it. Unlike `develop`, though,
    `master-next` can be thrown away and recreated if necessary.
 3. Once the hotfix is ready, create a version commit using the same
-   steps as above, or use the [bin/git/update-version.sh] script.
+   steps as above, or use the
+   [update-version] script.
 4. Create a Pull Request for `master-next` with **`master`** as
    the base branch.  Instead of the default template, reuse and update
    the message from the previous final release. Include the following verbiage
@@ -986,5 +983,11 @@ git fetch upstreams
    from `master` to `develop`. (Please don't do this unless absolutely
    necessary.)
 
-[1]: https://docs.github.com/en/get-started/quickstart/contributing-to-projects
-[2]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#squash-and-merge-your-commits
+[contrib]: https://docs.github.com/en/get-started/quickstart/contributing-to-projects
+[squash]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#squash-and-merge-your-commits
+[forking]: https://github.com/XRPLF/rippled/fork
+[rippled]: https://github.com/XRPLF/rippled
+[signing]: https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification
+[setup-upstreams]: ./bin/git/setup-upstreams.sh
+[squash-branches]: ./bin/git/squash-branches.sh
+[update-version]: ./bin/git/update-version.sh
