@@ -7873,6 +7873,22 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.fund(XRP(10000), issuer, alice, bob);
             env.close();
 
+            // modify with tfFullyCanonicalSig should success
+            uint256 const nftId{
+                token::getNextID(env, issuer, 0u, tfMutable)};
+            env(token::mint(issuer, 0u),
+                txflags(tfMutable),
+                token::uri("uri"));
+            env.close();
+
+            env(token::modify(issuer, nftId), txflags(tfFullyCanonicalSig));
+            env.close();
+        }
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), issuer, alice, bob);
+            env.close();
+
             // lambda that returns the JSON form of NFTokens held by acct
             auto accountNFTs = [&env](Account const& acct) {
                 Json::Value params;
@@ -7923,20 +7939,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     fail(text.str(), __FILE__, line);
                 }
             };
-
-            {
-                // modify with tfFullyCanonicalSig should success
-                uint256 const nftId{
-                    token::getNextID(env, issuer, 0u, tfMutable)};
-                env(token::mint(issuer, 0u),
-                    txflags(tfMutable),
-                    token::uri("uri"));
-                env.close();
-                checkURI(issuer, "uri", __LINE__);
-
-                env(token::modify(issuer, nftId), txflags(tfFullyCanonicalSig));
-                env.close();
-            }
 
             uint256 const nftId{token::getNextID(env, issuer, 0u, tfMutable)};
             env.close();
