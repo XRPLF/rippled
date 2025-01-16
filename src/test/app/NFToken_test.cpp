@@ -7874,11 +7874,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
 
             // modify with tfFullyCanonicalSig should success
-            uint256 const nftId{
-                token::getNextID(env, issuer, 0u, tfMutable)};
-            env(token::mint(issuer, 0u),
-                txflags(tfMutable),
-                token::uri("uri"));
+            uint256 const nftId{token::getNextID(env, issuer, 0u, tfMutable)};
+            env(token::mint(issuer, 0u), txflags(tfMutable), token::uri("uri"));
             env.close();
 
             env(token::modify(issuer, nftId), txflags(tfFullyCanonicalSig));
