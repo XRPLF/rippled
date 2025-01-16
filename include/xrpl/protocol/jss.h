@@ -44,11 +44,9 @@ namespace jss {
 // clang-format off
 JSS(AL_size);              // out: GetCounts
 JSS(AL_hit_rate);          // out: GetCounts
+JSS(AcceptedCredentials);  // out: AccountObjects
 JSS(Account);              // in: TransactionSign; field.
-JSS(AccountRoot);          // ledger type.
-JSS(AMM);                  // ledger type
 JSS(AMMID);                // field
-JSS(Amendments);           // ledger type.
 JSS(Amount);               // in: TransactionSign; field.
 JSS(Amount2);              // in/out: AMM IOU/XRP pool, deposit, withdraw amount
 JSS(Asset);                // in: AMM Asset1
@@ -60,70 +58,49 @@ JSS(AuthAccounts);         // in: AMM Auction Slot
 JSS(BaseAsset);            // in: Oracle
 JSS(BidMax);               // in: AMM Bid
 JSS(BidMin);               // in: AMM Bid
-JSS(Bridge);               // ledger type.
-JSS(Check);                // ledger type.
 JSS(ClearFlag);            // field.
-JSS(Credential);           // ledger type.
-JSS(DID);                  // ledger type.
 JSS(DeliverMax);           // out: alias to Amount
 JSS(DeliverMin);           // in: TransactionSign
 JSS(Destination);          // in: TransactionSign; field.
-JSS(DirectoryNode);        // ledger type.
 JSS(EPrice);               // in: AMM Deposit option
-JSS(Escrow);               // ledger type.
 JSS(Fee);                  // in/out: TransactionSign; field.
-JSS(FeeSettings);          // ledger type.
 JSS(Flags);                // in/out: TransactionSign; field.
 JSS(Holder);               // field.
 JSS(Invalid);              //
 JSS(Issuer);               // in: Credential transactions
 JSS(LastLedgerSequence);   // in: TransactionSign; field
 JSS(LastUpdateTime);       // field.
-JSS(LedgerHashes);         // ledger type.
 JSS(LimitAmount);          // field.
-JSS(MPToken);              // ledger type.
-JSS(MPTokenIssuance);      // ledger type.
 JSS(NetworkID);            // field.
-JSS(NFTokenOffer);         // ledger type.
-JSS(NFTokenPage);          // ledger type.
 JSS(LPTokenOut);           // in: AMM Liquidity Provider deposit tokens
 JSS(LPTokenIn);            // in: AMM Liquidity Provider withdraw tokens
 JSS(LPToken);              // out: AMM Liquidity Provider tokens info
-JSS(Offer);                // ledger type.
 JSS(OfferSequence);        // field.
-JSS(Oracle);               // ledger type.
 JSS(OracleDocumentID);     // field
 JSS(Owner);                // field
 JSS(Paths);                // in/out: TransactionSign
-JSS(PayChannel);           // ledger type.
 JSS(PriceDataSeries);                    // field.
 JSS(PriceData);                          // field.
 JSS(Provider);                           // field.
 JSS(QuoteAsset);                         // in: Oracle.
-JSS(RippleState);                        // ledger type.
 JSS(SLE_hit_rate);                       // out: GetCounts.
 JSS(Scale);                              // field.
 JSS(SettleDelay);                        // in: TransactionSign
 JSS(SendMax);                            // in: TransactionSign
 JSS(Sequence);                           // in/out: TransactionSign; field.
 JSS(SetFlag);                            // field.
-JSS(SignerList);                         // ledger type.
 JSS(SigningPubKey);                      // field.
 JSS(Subject);                            // in: Credential transactions
 JSS(TakerGets);                          // field.
 JSS(TakerPays);                          // field.
-JSS(Ticket);                             // ledger type.
 JSS(TxnSignature);                       // field.
 JSS(TradingFee);                         // in/out: AMM trading fee
 JSS(TransactionType);                    // in: TransactionSign.
 JSS(TransferRate);                       // in: TransferRate.
 JSS(URI);                                // field.
 JSS(VoteSlots);                          // out: AMM Vote
-JSS(XChainOwnedClaimID);                 // ledger type.
-JSS(XChainOwnedCreateAccountClaimID);    // ledger type.
 JSS(aborted);                            // out: InboundLedger
 JSS(accepted);               // out: LedgerToJson, OwnerInfo, SubmitTransaction
-JSS(account);                // in/out: many
 JSS(accountState);           // out: LedgerToJson
 JSS(accountTreeHash);        // out: ledger/Ledger.cpp
 JSS(account_data);           // out: AccountInfo
@@ -150,8 +127,6 @@ JSS(affected);                // out: AcceptedLedgerTx
 JSS(age);                     // out: NetworkOPs, Peers
 JSS(alternatives);            // out: PathRequest, RipplePathFind
 JSS(amendment_blocked);       // out: NetworkOPs
-JSS(amendments);              // in: AccountObjects, out: NetworkOPs
-JSS(amm);                     // out: amm_info
 JSS(amm_account);             // in: amm_info
 JSS(amount);                  // out: AccountChannels, amm_info
 JSS(amount2);                 // out: amm_info
@@ -191,21 +166,17 @@ JSS(books);                   // in: Subscribe, Unsubscribe
 JSS(both);                    // in: Subscribe, Unsubscribe
 JSS(both_sides);              // in: Subscribe, Unsubscribe
 JSS(broadcast);               // out: SubmitTransaction
-JSS(bridge);                  // in: LedgerEntry
 JSS(bridge_account);          // in: LedgerEntry
 JSS(build_path);              // in: TransactionSign
 JSS(build_version);           // out: NetworkOPs
 JSS(cancel_after);            // out: AccountChannels
 JSS(can_delete);              // out: CanDelete
 JSS(mpt_amount);              // out: mpt_holders
-JSS(mpt_issuance);            // in: LedgerEntry, AccountObjects
 JSS(mpt_issuance_id);         // in: Payment, mpt_holders
-JSS(mptoken);                 // in: LedgerEntry, AccountObjects
 JSS(mptoken_index);           // out: mpt_holders
 JSS(changes);                 // out: BookChanges
 JSS(channel_id);              // out: AccountChannels
 JSS(channels);                // out: AccountChannels
-JSS(check);                   // in: AccountObjects
 JSS(check_nodes);             // in: LedgerCleaner
 JSS(clear);                   // in/out: FetchInfo
 JSS(close);                   // out: BookChanges
@@ -232,7 +203,6 @@ JSS(converge_time_s);         // out: NetworkOPs
 JSS(cookie);                  // out: NetworkOPs
 JSS(count);                   // in: AccountTx*, ValidatorList
 JSS(counters);                // in/out: retrieve counters
-JSS(credential);              // in: LedgerEntry Credential
 JSS(credentials);             // in: deposit_authorized
 JSS(credential_type);         // in: LedgerEntry DepositPreauth
 JSS(ctid);                    // in/out: Tx RPC
@@ -254,7 +224,6 @@ JSS(debug_signing);           // in: TransactionSign
 JSS(deletion_blockers_only);  // in: AccountObjects
 JSS(delivered_amount);        // out: insertDeliveredAmount
 JSS(deposit_authorized);      // out: deposit_authorized
-JSS(deposit_preauth);         // in: AccountObjects, LedgerData
 JSS(deprecated);              // out
 JSS(descending);              // in: AccountTx*
 JSS(description);             // in/out: Reservations
@@ -266,11 +235,9 @@ JSS(destination_currencies);  // in: PathRequest, RipplePathFind
 JSS(destination_tag);         // in: PathRequest
                               // out: AccountChannels
 JSS(details);                 // out: Manifest, server_info
-JSS(did);                     // in: LedgerEntry
 JSS(dir_entry);               // out: DirectoryEntryIterator
 JSS(dir_index);               // out: DirectoryEntryIterator
 JSS(dir_root);                // out: DirectoryEntryIterator
-JSS(directory);               // in: LedgerEntry
 JSS(discounted_fee);          // out: amm_info
 JSS(domain);                  // out: ValidatorInfo, Manifest
 JSS(drops);                   // out: TxQ
@@ -289,7 +256,6 @@ JSS(errored);
 JSS(error_code);              // out: error
 JSS(error_exception);         // out: Submit
 JSS(error_message);           // out: error
-JSS(escrow);                  // in: LedgerEntry
 JSS(expand);                  // in: handler/Ledger
 JSS(expected_date);           // out: any (warnings)
 JSS(expected_date_UTC);       // out: any (warnings)
@@ -300,7 +266,6 @@ JSS(fail_hard);               // in: Sign, Submit
 JSS(failed);                  // out: InboundLedger
 JSS(feature);                 // in: Feature
 JSS(features);                // out: Feature
-JSS(fee);                     // out: NetworkOPs, Peers
 JSS(fee_base);                // out: NetworkOPs
 JSS(fee_div_max);             // in: TransactionSign
 JSS(fee_level);               // out: AccountInfo
@@ -324,7 +289,6 @@ JSS(fullbelow_size);          // out: GetCounts
 JSS(good);                    // out: RPCVersion
 JSS(hash);                    // out: NetworkOPs, InboundLedger,
                               //      LedgerToJson, STTx; field
-JSS(hashes);                  // in: AccountObjects
 JSS(have_header);             // out: InboundLedger
 JSS(have_state);              // out: InboundLedger
 JSS(have_transactions);       // out: InboundLedger
@@ -462,9 +426,7 @@ JSS(network_id);              // out: NetworkOPs
 JSS(network_ledger);          // out: NetworkOPs
 JSS(next_refresh_time);       // out: ValidatorSite
 JSS(nft_id);                  // in: nft_sell_offers, nft_buy_offers
-JSS(nft_offer);               // in: LedgerEntry
 JSS(nft_offer_index);         // out nft_buy_offers, nft_sell_offers
-JSS(nft_page);                // in: LedgerEntry
 JSS(nft_serial);              // out: account_nfts
 JSS(nft_taxon);               // out: nft_info (clio)
 JSS(nftoken_id);              // out: insertNFTokenID
@@ -487,9 +449,7 @@ JSS(node_writes_duration_us); // out: GetCounts
 JSS(node_write_retries);      // out: GetCounts
 JSS(node_writes_delayed);     // out::GetCounts
 JSS(nth);                     // out: RPC server_definitions
-JSS(nunl);                    // in: AccountObjects
 JSS(obligations);             // out: GatewayBalances
-JSS(offer);                   // in: LedgerEntry
 JSS(offers);                  // out: NetworkOPs, AccountOffers, Subscribe
 JSS(offer_id);                // out: insertNFTokenOfferID
 JSS(offline);                 // in: TransactionSign
@@ -498,7 +458,6 @@ JSS(open);                    // out: handlers/Ledger
 JSS(open_ledger_cost);        // out: SubmitTransaction
 JSS(open_ledger_fee);         // out: TxQ
 JSS(open_ledger_level);       // out: TxQ
-JSS(oracle);                  // in: LedgerEntry
 JSS(oracles);                 // in: get_aggregate_price
 JSS(oracle_document_id);      // in: get_aggregate_price
 JSS(owner);                   // in: LedgerEntry, out: NetworkOPs
@@ -513,7 +472,6 @@ JSS(password);                // in: Subscribe
 JSS(paths);                   // in: RipplePathFind
 JSS(paths_canonical);         // out: RipplePathFind
 JSS(paths_computed);          // out: PathRequest, RipplePathFind
-JSS(payment_channel);         // in: LedgerEntry
 JSS(peer);                    // in: AccountLines
 JSS(peer_authorized);         // out: AccountLines
 JSS(peer_id);                 // out: RCLCxPeerPos
@@ -599,7 +557,6 @@ JSS(signature_verified);      // out: ChannelVerify
 JSS(signing_key);             // out: NetworkOPs
 JSS(signing_keys);            // out: ValidatorList
 JSS(signing_time);            // out: NetworkOPs
-JSS(signer_list);             // in: AccountObjects
 JSS(signer_lists);            // in/out: AccountInfo
 JSS(size);                    // out: get_aggregate_price
 JSS(snapshot);                // in: Subscribe
@@ -611,7 +568,6 @@ JSS(stand_alone);             // out: NetworkOPs
 JSS(standard_deviation);      // out: get_aggregate_price
 JSS(start);                   // in: TxHistory
 JSS(started);
-JSS(state);                   // out: Logic.h, ServerState, LedgerData
 JSS(state_accounting);        // out: NetworkOPs
 JSS(state_now);               // in: Subscribe
 JSS(status);                  // error
@@ -633,7 +589,6 @@ JSS(taker_gets_funded);       // out: NetworkOPs
 JSS(taker_pays);              // in: Subscribe, Unsubscribe, BookOffers
 JSS(taker_pays_funded);       // out: NetworkOPs
 JSS(threshold);               // in: Blacklist
-JSS(ticket);                  // in: AccountObjects
 JSS(ticket_count);            // out: AccountInfo
 JSS(ticket_seq);              // in: LedgerEntry
 JSS(time);
@@ -732,9 +687,6 @@ JSS(warning);                 // rpc:
 JSS(warnings);                // out: server_info, server_state
 JSS(workers);
 JSS(write_load);              // out: GetCounts
-JSS(xchain_owned_claim_id);   // in: LedgerEntry, AccountObjects
-JSS(xchain_owned_create_account_claim_id);  // in: LedgerEntry
-JSS(NegativeUNL);                           // out: ValidatorList; ledger type
 // clang-format on
 
 #pragma push_macro("TRANSACTION")
@@ -746,6 +698,24 @@ JSS(NegativeUNL);                           // out: ValidatorList; ledger type
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
+
+#pragma push_macro("LEDGER_ENTRY")
+#undef LEDGER_ENTRY
+#pragma push_macro("LEDGER_ENTRY_DUPLICATE")
+#undef LEDGER_ENTRY_DUPLICATE
+
+#define LEDGER_ENTRY(tag, value, name, rpcName, fields) \
+    JSS(name);                                          \
+    JSS(rpcName);
+
+#define LEDGER_ENTRY_DUPLICATE(tag, value, name, rpcName, fields) JSS(rpcName);
+
+#include <xrpl/protocol/detail/ledger_entries.macro>
+
+#undef LEDGER_ENTRY
+#pragma pop_macro("LEDGER_ENTRY")
+#undef LEDGER_ENTRY_DUPLICATE
+#pragma pop_macro("LEDGER_ENTRY_DUPLICATE")
 
 #undef JSS
 
