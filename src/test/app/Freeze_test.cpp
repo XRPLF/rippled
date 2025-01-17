@@ -1004,6 +1004,252 @@ class Freeze_test : public beast::unit_test::suite
     }
 
     void
+    testLongerPathsWhenFrozen(FeatureBitset features)
+    {
+        testcase("Longer paths payment on frozen trust lines");
+        using namespace test::jtx;
+
+        Env env(*this, features);
+        Account G1{"G1"};
+        Account A1{"A1"};
+        Account A2{"A2"};
+        auto const USD{G1["USD"]};
+
+        env.fund(XRP(10000), G1, A1, A2);
+        env.close();
+
+        env.trust(G1["USD"](10000), A1, A2);
+        env.close();
+
+        env(pay(G1, A1, USD(1000)));
+        env(pay(G1, A2, USD(1000)));
+        env.close();
+
+        env(offer(A2, XRP(100), USD(100)), txflags(tfPassive));
+        env.close();
+
+        // Testing payments A1 <-> G1 using offer from A2 frozen by issuer.
+        {
+            env(trust(G1, A2["USD"](0), tfSetFreeze));
+            env.close();
+
+            // test: A1 cannot send USD using XRP through A2 offer
+            env(pay(A1, G1, USD(10)),
+                path(~USD),
+                sendmax(XRP(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
+            env.close();
+
+            // test: G1 cannot send USD using XRP through A2 offer
+            env(pay(G1, A1, USD(10)),
+                path(~USD),
+                sendmax(XRP(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
+            env.close();
+
+            env(trust(G1, A2["USD"](0), tfClearFreeze));
+            env.close();
+        }
+
+        // Testing payments A1 <-> G1 using offer from A2 deep frozen by issuer.
+        if (features[featureDeepFreeze])
+        {
+            env(trust(G1, A2["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+
+            // test: A1 cannot send USD using XRP through A2 offer
+            env(pay(A1, G1, USD(10)),
+                path(~USD),
+                sendmax(XRP(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
+            env.close();
+
+            // test: G1 cannot send USD using XRP through A2 offer
+            env(pay(G1, A1, USD(10)),
+                path(~USD),
+                sendmax(XRP(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
+            env.close();
+
+            env(trust(G1, A2["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+        }
+
+        // Testing payments A1 <-> G1 using offer from A2 frozen by currency
+        // holder.
+        {
+            env(trust(A2, G1["USD"](0), tfSetFreeze));
+            env.close();
+
+            // test: A1 can send USD using XRP through A2 offer
+            env(pay(A1, G1, USD(10)),
+                path(~USD),
+                sendmax(XRP(11)),
+                txflags(tfNoRippleDirect));
+            env.close();
+
+            // test: G1 can send USD using XRP through A2 offer
+            env(pay(G1, A1, USD(10)),
+                path(~USD),
+                sendmax(XRP(11)),
+                txflags(tfNoRippleDirect));
+            env.close();
+
+            env(trust(A2, G1["USD"](0), tfClearFreeze));
+            env.close();
+        }
+
+        // Testing payments A1 <-> G1 using offer from A2 deep frozen by
+        // currency holder.
+        if (features[featureDeepFreeze])
+        {
+            env(trust(A2, G1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+
+            // test: A1 cannot send USD using XRP through A2 offer
+            env(pay(A1, G1, USD(10)),
+                path(~USD),
+                sendmax(XRP(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
+            env.close();
+
+            // test: G1 cannot send USD using XRP through A2 offer
+            env(pay(G1, A1, USD(10)),
+                path(~USD),
+                sendmax(XRP(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
+            env.close();
+
+            env(trust(A2, G1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+        }
+
+        // Cleanup
+        env(offer_cancel(A1, env.seq(A1) - 1));
+        env.require(offers(A1, 0));
+        env.close();
+
+        env(offer(A2, USD(100), XRP(100)), txflags(tfPassive));
+        env.close();
+
+        // Testing payments A1 <-> G1 using offer from A2 frozen by issuer.
+        {
+            env(trust(G1, A2["USD"](0), tfSetFreeze));
+            env.close();
+
+            // test: A1 can send XRP using USD through A2 offer
+            env(pay(A1, G1, XRP(10)),
+                path(~XRP),
+                sendmax(USD(11)),
+                txflags(tfNoRippleDirect));
+            env.close();
+
+            // test: G1 can send XRP using USD through A2 offer
+            env(pay(G1, A1, XRP(10)),
+                path(~XRP),
+                sendmax(USD(11)),
+                txflags(tfNoRippleDirect));
+            env.close();
+
+            env(trust(G1, A2["USD"](0), tfClearFreeze));
+            env.close();
+        }
+
+        // Testing payments A1 <-> G1 using offer from A2 deep frozen by
+        // issuer.
+        if (features[featureDeepFreeze])
+        {
+            env(trust(G1, A2["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+
+            // test: A1 cannot send XRP using USD through A2 offer
+            env(pay(A1, G1, XRP(10)),
+                path(~XRP),
+                sendmax(USD(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
+            env.close();
+
+            // test: G1 cannot send XRP using USD through A2 offer
+            env(pay(G1, A1, XRP(10)),
+                path(~XRP),
+                sendmax(USD(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
+            env.close();
+
+            env(trust(G1, A2["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+        }
+
+        // Testing payments A1 <-> G1 using offer from A2 frozen by currency
+        // holder.
+        {
+            env(trust(A2, G1["USD"](0), tfSetFreeze));
+            env.close();
+
+            // test: A1 can send XRP using USD through A2 offer
+            // TODO: This might be not a correct behavior. A2 doesn't want to
+            // receive USDs.
+            env(pay(A1, G1, XRP(10)),
+                path(~XRP),
+                sendmax(USD(11)),
+                txflags(tfNoRippleDirect));
+            env.close();
+
+            // test: G1 cannot send XRP using USD through A2 offer
+            // TODO: This might be not a correct behavior. A2 doesn't want to
+            // receive USDs.
+            env(pay(G1, A1, XRP(10)),
+                path(~XRP),
+                sendmax(USD(11)),
+                txflags(tfNoRippleDirect));
+            env.close();
+
+            env(trust(A2, G1["USD"](0), tfClearFreeze));
+            env.close();
+        }
+
+        // Testing payments A1 <-> G1 using offer from A2 deep frozen by
+        // currency holder.
+        if (features[featureDeepFreeze])
+        {
+            env(trust(A2, G1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+
+            // test: A1 cannot send XRP using USD through A2 offer
+            env(pay(A1, G1, XRP(10)),
+                path(~XRP),
+                sendmax(USD(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
+            env.close();
+
+            // test: G1 cannot send XRP using USD through A2 offer
+            env(pay(G1, A1, XRP(10)),
+                path(~XRP),
+                sendmax(USD(11)),
+                txflags(tfNoRippleDirect),
+                ter(tecPATH_PARTIAL));
+            env.close();
+
+            env(trust(A2, G1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+        }
+
+        // Cleanup
+        env(offer_cancel(A1, env.seq(A1) - 1));
+        env.require(offers(A1, 0));
+        env.close();
+    }
+
+    void
     testPaymentsWhenDeepFrozen(FeatureBitset features)
     {
         testcase("Direct payments on frozen trust lines");
@@ -1581,9 +1827,11 @@ public:
             testPaymentsWhenDeepFrozen(features);
             testChecksWhenFrozen(features);
             testAMMWhenFreeze(features);
+            testLongerPathsWhenFrozen(features);
         };
         using namespace test::jtx;
         auto const sa = supported_amendments();
+        testAll(sa - featureFlowCross - featureDeepFreeze);
         testAll(sa - featureFlowCross);
         testAll(sa - featureDeepFreeze);
         testAll(sa);
