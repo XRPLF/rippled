@@ -68,6 +68,8 @@ jobs:
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
+          lsb_release -a || true
+          ${{ matrix.profile.cc }} --version
           conan --version
           cmake --version
           env | sort
