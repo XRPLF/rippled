@@ -7840,11 +7840,16 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::mint(issuer, 0u), txflags(tfMutable));
             env.close();
 
-            // Set a negative fee.  Exercises invalid preflight1.
+            // Set a negative fee. Exercises invalid preflight1.
             env(token::modify(issuer, nftId),
                 fee(STAmount(10ull, true)),
                 ter(temBAD_FEE));
             env.close();
+
+            // Invalid Flags
+            env(token::modify(issuer, nftId),
+                txflags(0x00000001),
+                ter(temINVALID_FLAG));
 
             // Invalid Owner
             env(token::modify(issuer, nftId),
@@ -7909,6 +7914,19 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     ter(tecNO_PERMISSION));
                 env.close();
             }
+        }
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), issuer, alice, bob);
+            env.close();
+
+            // modify with tfFullyCanonicalSig should success
+            uint256 const nftId{token::getNextID(env, issuer, 0u, tfMutable)};
+            env(token::mint(issuer, 0u), txflags(tfMutable), token::uri("uri"));
+            env.close();
+
+            env(token::modify(issuer, nftId), txflags(tfFullyCanonicalSig));
+            env.close();
         }
         {
             Env env{*this, features};
