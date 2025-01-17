@@ -556,6 +556,7 @@ STAmount::operator=(Number const& number)
     mIsNegative = number.mantissa() < 0;
     mValue = mIsNegative ? -number.mantissa() : number.mantissa();
     mOffset = number.exponent();
+    canonicalize();
     return *this;
 }
 

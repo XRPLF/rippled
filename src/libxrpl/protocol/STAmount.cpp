@@ -276,6 +276,7 @@ STAmount::xrp() const
             "Cannot return non-native STAmount as XRPAmount");
 
     auto drops = static_cast<XRPAmount::value_type>(mValue);
+    XRPL_ASSERT(mOffset == 0, "ripple::STAmount::xrp : amount is canonical");
 
     if (mIsNegative)
         drops = -drops;
@@ -305,6 +306,7 @@ STAmount::mpt() const
         Throw<std::logic_error>("Cannot return STAmount as MPTAmount");
 
     auto value = static_cast<MPTAmount::value_type>(mValue);
+    XRPL_ASSERT(mOffset == 0, "ripple::STAmount::mpt : amount is canonical");
 
     if (mIsNegative)
         value = -value;

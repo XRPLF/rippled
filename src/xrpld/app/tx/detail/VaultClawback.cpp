@@ -107,14 +107,14 @@ VaultClawback::doApply()
     vault->at(sfAssetAvailable) -= assets;
     view().update(vault);
 
-    // auto const& vaultAccount = vault->at(sfAccount);
-    // // Transfer shares from holder to vault.
-    // if (auto ter = accountSend(view(), holder, vaultAccount, shares, j_))
-    //     return ter;
+    auto const& vaultAccount = vault->at(sfAccount);
+    // Transfer shares from holder to vault.
+    if (auto ter = accountSend(view(), holder, vaultAccount, shares, j_))
+        return ter;
 
-    // // Transfer assets from vault to issuer.
-    // if (auto ter = accountSend(view(), vaultAccount, account_, assets, j_))
-    //     return ter;
+    // Transfer assets from vault to issuer.
+    if (auto ter = accountSend(view(), vaultAccount, account_, assets, j_))
+        return ter;
 
     return tesSUCCESS;
 }
