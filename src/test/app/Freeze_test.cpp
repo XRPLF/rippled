@@ -1008,6 +1008,7 @@ class Freeze_test : public beast::unit_test::suite
     {
         testcase("Longer paths payment on frozen trust lines");
         using namespace test::jtx;
+        using path = test::jtx::path;
 
         Env env(*this, features);
         Account G1{"G1"};
@@ -1035,7 +1036,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: A1 cannot send USD using XRP through A2 offer
             env(pay(A1, G1, USD(10)),
-                test::jtx::path(~USD),
+                path(~USD),
                 sendmax(XRP(11)),
                 txflags(tfNoRippleDirect),
                 ter(tecPATH_PARTIAL));
@@ -1043,7 +1044,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: G1 cannot send USD using XRP through A2 offer
             env(pay(G1, A1, USD(10)),
-                test::jtx::path(~USD),
+                path(~USD),
                 sendmax(XRP(11)),
                 txflags(tfNoRippleDirect),
                 ter(tecPATH_PARTIAL));
@@ -1061,7 +1062,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: A1 cannot send USD using XRP through A2 offer
             env(pay(A1, G1, USD(10)),
-                test::jtx::path(~USD),
+                path(~USD),
                 sendmax(XRP(11)),
                 txflags(tfNoRippleDirect),
                 ter(tecPATH_PARTIAL));
@@ -1069,7 +1070,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: G1 cannot send USD using XRP through A2 offer
             env(pay(G1, A1, USD(10)),
-                test::jtx::path(~USD),
+                path(~USD),
                 sendmax(XRP(11)),
                 txflags(tfNoRippleDirect),
                 ter(tecPATH_PARTIAL));
@@ -1087,14 +1088,14 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: A1 can send USD using XRP through A2 offer
             env(pay(A1, G1, USD(10)),
-                test::jtx::path(~USD),
+                path(~USD),
                 sendmax(XRP(11)),
                 txflags(tfNoRippleDirect));
             env.close();
 
             // test: G1 can send USD using XRP through A2 offer
             env(pay(G1, A1, USD(10)),
-                test::jtx::path(~USD),
+                path(~USD),
                 sendmax(XRP(11)),
                 txflags(tfNoRippleDirect));
             env.close();
@@ -1112,7 +1113,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: A1 cannot send USD using XRP through A2 offer
             env(pay(A1, G1, USD(10)),
-                test::jtx::path(~USD),
+                path(~USD),
                 sendmax(XRP(11)),
                 txflags(tfNoRippleDirect),
                 ter(tecPATH_PARTIAL));
@@ -1120,7 +1121,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: G1 cannot send USD using XRP through A2 offer
             env(pay(G1, A1, USD(10)),
-                test::jtx::path(~USD),
+                path(~USD),
                 sendmax(XRP(11)),
                 txflags(tfNoRippleDirect),
                 ter(tecPATH_PARTIAL));
@@ -1145,14 +1146,14 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: A1 can send XRP using USD through A2 offer
             env(pay(A1, G1, XRP(10)),
-                test::jtx::path(~XRP),
+                path(~XRP),
                 sendmax(USD(11)),
                 txflags(tfNoRippleDirect));
             env.close();
 
             // test: G1 can send XRP using USD through A2 offer
             env(pay(G1, A1, XRP(10)),
-                test::jtx::path(~XRP),
+                path(~XRP),
                 sendmax(USD(11)),
                 txflags(tfNoRippleDirect));
             env.close();
@@ -1170,7 +1171,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: A1 cannot send XRP using USD through A2 offer
             env(pay(A1, G1, XRP(10)),
-                test::jtx::path(~XRP),
+                path(~XRP),
                 sendmax(USD(11)),
                 txflags(tfNoRippleDirect),
                 ter(tecPATH_PARTIAL));
@@ -1178,7 +1179,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: G1 cannot send XRP using USD through A2 offer
             env(pay(G1, A1, XRP(10)),
-                test::jtx::path(~XRP),
+                path(~XRP),
                 sendmax(USD(11)),
                 txflags(tfNoRippleDirect),
                 ter(tecPATH_PARTIAL));
@@ -1198,7 +1199,7 @@ class Freeze_test : public beast::unit_test::suite
             // TODO: This might be not a correct behavior. A2 doesn't want to
             // receive USDs.
             env(pay(A1, G1, XRP(10)),
-                test::jtx::path(~XRP),
+                path(~XRP),
                 sendmax(USD(11)),
                 txflags(tfNoRippleDirect));
             env.close();
@@ -1207,7 +1208,7 @@ class Freeze_test : public beast::unit_test::suite
             // TODO: This might be not a correct behavior. A2 doesn't want to
             // receive USDs.
             env(pay(G1, A1, XRP(10)),
-                test::jtx::path(~XRP),
+                path(~XRP),
                 sendmax(USD(11)),
                 txflags(tfNoRippleDirect));
             env.close();
@@ -1225,7 +1226,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: A1 cannot send XRP using USD through A2 offer
             env(pay(A1, G1, XRP(10)),
-                test::jtx::path(~XRP),
+                path(~XRP),
                 sendmax(USD(11)),
                 txflags(tfNoRippleDirect),
                 ter(tecPATH_PARTIAL));
@@ -1233,7 +1234,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: G1 cannot send XRP using USD through A2 offer
             env(pay(G1, A1, XRP(10)),
-                test::jtx::path(~XRP),
+                path(~XRP),
                 sendmax(USD(11)),
                 txflags(tfNoRippleDirect),
                 ter(tecPATH_PARTIAL));
@@ -1678,6 +1679,7 @@ class Freeze_test : public beast::unit_test::suite
     {
         testcase("AMM payments on frozen trust lines");
         using namespace test::jtx;
+        using path = test::jtx::path;
 
         Env env(*this, features);
         Account G1{"G1"};
@@ -1705,14 +1707,14 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: can still use XRP to make payment
             env(pay(A1, A2, USD(10)),
-                test::jtx::path(~USD),
+                path(~USD),
                 sendmax(XRP(11)),
                 txflags(tfNoRippleDirect));
             env.close();
 
             // test: cannot use USD to make payment
             env(pay(A1, A2, XRP(10)),
-                test::jtx::path(~XRP),
+                path(~XRP),
                 sendmax(USD(11)),
                 txflags(tfNoRippleDirect),
                 ter(tecPATH_DRY));
@@ -1720,14 +1722,14 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: can still receive USD payments.
             env(pay(A2, A1, USD(10)),
-                test::jtx::path(~USD),
+                path(~USD),
                 sendmax(XRP(11)),
                 txflags(tfNoRippleDirect));
             env.close();
 
             // test: can still receive XRP payments.
             env(pay(A2, A1, XRP(10)),
-                test::jtx::path(~XRP),
+                path(~XRP),
                 sendmax(USD(11)),
                 txflags(tfNoRippleDirect));
             env.close();
@@ -1745,14 +1747,14 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: can still use XRP to make payment
             env(pay(A1, A2, USD(10)),
-                test::jtx::path(~USD),
+                path(~USD),
                 sendmax(XRP(11)),
                 txflags(tfNoRippleDirect));
             env.close();
 
             // test: cannot use USD to make payment
             env(pay(A1, A2, XRP(10)),
-                test::jtx::path(~XRP),
+                path(~XRP),
                 sendmax(USD(11)),
                 txflags(tfNoRippleDirect),
                 ter(tecPATH_DRY));
@@ -1760,7 +1762,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: cannot receive USD payments.
             env(pay(A2, A1, USD(10)),
-                test::jtx::path(~USD),
+                path(~USD),
                 sendmax(XRP(11)),
                 txflags(tfNoRippleDirect),
                 ter(tecPATH_DRY));
@@ -1768,7 +1770,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: can still receive XRP payments.
             env(pay(A2, A1, XRP(10)),
-                test::jtx::path(~XRP),
+                path(~XRP),
                 sendmax(USD(11)),
                 txflags(tfNoRippleDirect));
             env.close();
