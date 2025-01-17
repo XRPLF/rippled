@@ -23,9 +23,9 @@
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/STBase.h>
 
-#include <cassert>
 #include <cstring>
 #include <memory>
 

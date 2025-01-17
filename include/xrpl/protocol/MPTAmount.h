@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_MPTAMOUNT_H_INCLUDED
-#define RIPPLE_BASICS_MPTAMOUNT_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_MPTAMOUNT_H_INCLUDED
+#define RIPPLE_PROTOCOL_MPTAMOUNT_H_INCLUDED
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -52,6 +53,11 @@ public:
     constexpr MPTAmount&
     operator=(MPTAmount const& other) = default;
 
+    // Round to nearest, even on tie.
+    explicit MPTAmount(Number const& x) : MPTAmount(static_cast<value_type>(x))
+    {
+    }
+
     constexpr explicit MPTAmount(value_type value);
 
     constexpr MPTAmount& operator=(beast::Zero);
@@ -77,6 +83,11 @@ public:
     /** Returns true if the amount is not zero */
     explicit constexpr
     operator bool() const noexcept;
+
+    operator Number() const noexcept
+    {
+        return value();
+    }
 
     /** Return the sign of the amount */
     constexpr int

@@ -46,12 +46,14 @@
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/basics/scope.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/resource/Fees.h>
+
 #include <algorithm>
-#include <cassert>
 #include <chrono>
 #include <cstdlib>
 #include <limits>
@@ -59,86 +61,6 @@
 #include <vector>
 
 namespace ripple {
-
-namespace {
-
-//==============================================================================
-/**
-    Automatically unlocks and re-locks a unique_lock object.
-
-    This is the reverse of a std::unique_lock object - instead of locking the
-   mutex for the lifetime of this object, it unlocks it.
-
-    Make sure you don't try to unlock mutexes that aren't actually locked!
-
-    This is essentially a less-versatile boost::reverse_lock.
-
-    e.g. @code
-
-    std::mutex mut;
-
-    for (;;)
-    {
-        std::unique_lock myScopedLock{mut};
-        // mut is now locked
-
-        ... do some stuff with it locked ..
-
-        while (xyz)
-        {
-            ... do some stuff with it locked ..
-
-            ScopedUnlock unlocker{myScopedLock};
-
-            // mut is now unlocked for the remainder of this block,
-            // and re-locked at the end.
-
-            ...do some stuff with it unlocked ...
-        }  // mut gets locked here.
-
-    }  // mut gets unlocked here
-    @endcode
-*/
-template <class MutexType>
-class ScopedUnlock
-{
-    std::unique_lock<MutexType>& lock_;
-
-public:
-    /** Creates a ScopedUnlock.
-
-        As soon as it is created, this will unlock the unique_lock, and
-        when the ScopedLock object is deleted, the unique_lock will
-        be re-locked.
-
-        Make sure this object is created and deleted by the same thread,
-        otherwise there are no guarantees what will happen! Best just to use it
-        as a local stack object, rather than creating on the heap.
-    */
-    explicit ScopedUnlock(std::unique_lock<MutexType>& lock) : lock_(lock)
-    {
-        assert(lock_.owns_lock());
-        lock_.unlock();
-    }
-
-    ScopedUnlock(ScopedUnlock const&) = delete;
-    ScopedUnlock&
-    operator=(ScopedUnlock const&) = delete;
-
-    /** Destructor.
-
-        The unique_lock will be locked after the destructor is called.
-
-        Make sure this object is created and deleted by the same thread,
-        otherwise there are no guarantees what will happen!
-    */
-    ~ScopedUnlock() noexcept(false)
-    {
-        lock_.lock();
-    }
-};
-
-}  // namespace
 
 // Don't catch up more than 100 ledgers (cannot exceed 256)
 static constexpr int MAX_LEDGER_GAP{100};
@@ -354,9 +276,11 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
 
     mValidLedger.set(l);
     mValidLedgerSign = signTime.time_since_epoch().count();
-    assert(
+    XRPL_ASSERT(
         mValidLedgerSeq || !app_.getMaxDisallowedLedger() ||
-        l->info().seq + max_ledger_difference_ > app_.getMaxDisallowedLedger());
+            l->info().seq + max_ledger_difference_ >
+                app_.getMaxDisallowedLedger(),
+        "ripple::LedgerMaster::setValidLedger : valid ledger sequence");
     (void)max_ledger_difference_;
     mValidLedgerSeq = l->info().seq;
 
@@ -421,7 +345,7 @@ LedgerMaster::addHeldTransaction(
 bool
 LedgerMaster::canBeCurrent(std::shared_ptr<Ledger const> const& ledger)
 {
-    assert(ledger);
+    XRPL_ASSERT(ledger, "ripple::LedgerMaster::canBeCurrent : non-null input");
 
     // Never jump to a candidate ledger that precedes our
     // last validated ledger
@@ -489,7 +413,7 @@ LedgerMaster::canBeCurrent(std::shared_ptr<Ledger const> const& ledger)
 void
 LedgerMaster::switchLCL(std::shared_ptr<Ledger const> const& lastClosed)
 {
-    assert(lastClosed);
+    XRPL_ASSERT(lastClosed, "ripple::LedgerMaster::switchLCL : non-null input");
     if (!lastClosed->isImmutable())
         LogicError("mutable ledger in switchLCL");
 
@@ -606,7 +530,9 @@ LedgerMaster::isValidated(ReadView const& ledger)
             // This ledger's hash is not the hash of the validated ledger
             if (hash)
             {
-                assert(hash->isNonZero());
+                XRPL_ASSERT(
+                    hash->isNonZero(),
+                    "ripple::LedgerMaster::isValidated : nonzero hash");
                 uint256 valHash =
                     app_.getRelationalDatabase().getHashByIndex(seq);
                 if (valHash == ledger.info().hash)
@@ -896,7 +822,9 @@ LedgerMaster::setFullLedger(
     // A new ledger has been accepted as part of the trusted chain
     JLOG(m_journal.debug()) << "Ledger " << ledger->info().seq
                             << " accepted :" << ledger->info().hash;
-    assert(ledger->stateMap().getHash().isNonZero());
+    XRPL_ASSERT(
+        ledger->stateMap().getHash().isNonZero(),
+        "ripple::LedgerMaster::setFullLedger : nonzero ledger state hash");
 
     ledger->setValidated();
     ledger->setFull();
@@ -1336,7 +1264,7 @@ LedgerMaster::findNewLedgersToPublish(
     auto valLedger = mValidLedger.get();
     std::uint32_t valSeq = valLedger->info().seq;
 
-    ScopedUnlock sul{sl};
+    scope_unlock sul{sl};
     try
     {
         for (std::uint32_t seq = pubSeq; seq <= valSeq; ++seq)
@@ -1360,7 +1288,9 @@ LedgerMaster::findNewLedgersToPublish(
             {
                 JLOG(m_journal.fatal()) << "Ledger: " << valSeq
                                         << " does not have hash for " << seq;
-                assert(false);
+                UNREACHABLE(
+                    "ripple::LedgerMaster::findNewLedgersToPublish : ledger "
+                    "not found");
             }
             else
             {
@@ -1447,7 +1377,9 @@ LedgerMaster::tryAdvance()
         app_.getJobQueue().addJob(jtADVANCE, "advanceLedger", [this]() {
             std::unique_lock sl(m_mutex);
 
-            assert(!mValidLedger.empty() && mAdvanceThread);
+            XRPL_ASSERT(
+                !mValidLedger.empty() && mAdvanceThread,
+                "ripple::LedgerMaster::tryAdvance : has valid ledger");
 
             JLOG(m_journal.trace()) << "advanceThread<";
 
@@ -1748,7 +1680,7 @@ LedgerMaster::walkHashBySeq(
     // be located easily and should contain the hash.
     LedgerIndex refIndex = getCandidateLedger(index);
     auto const refHash = hashOfSeq(*referenceLedger, refIndex, m_journal);
-    assert(refHash);
+    XRPL_ASSERT(refHash, "ripple::LedgerMaster::walkHashBySeq : found ledger");
     if (refHash)
     {
         // Try the hash and sequence of a better reference ledger just found
@@ -1773,7 +1705,10 @@ LedgerMaster::walkHashBySeq(
                     *refHash, refIndex, reason))
             {
                 ledgerHash = hashOfSeq(*l, index, m_journal);
-                assert(ledgerHash);
+                XRPL_ASSERT(
+                    ledgerHash,
+                    "ripple::LedgerMaster::walkHashBySeq : has complete "
+                    "ledger");
             }
         }
     }
@@ -1882,10 +1817,12 @@ LedgerMaster::fetchForHistory(
     InboundLedger::Reason reason,
     std::unique_lock<std::recursive_mutex>& sl)
 {
-    ScopedUnlock sul{sl};
+    scope_unlock sul{sl};
     if (auto hash = getLedgerHashForHistory(missing, reason))
     {
-        assert(hash->isNonZero());
+        XRPL_ASSERT(
+            hash->isNonZero(),
+            "ripple::LedgerMaster::fetchForHistory : found ledger");
         auto ledger = getLedgerByHash(*hash);
         if (!ledger)
         {
@@ -1912,7 +1849,9 @@ LedgerMaster::fetchForHistory(
         if (ledger)
         {
             auto seq = ledger->info().seq;
-            assert(seq == missing);
+            XRPL_ASSERT(
+                seq == missing,
+                "ripple::LedgerMaster::fetchForHistory : sequence match");
             JLOG(m_journal.trace()) << "fetchForHistory acquired " << seq;
             setFullLedger(ledger, false, false);
             int fillInProgress;
@@ -1953,7 +1892,10 @@ LedgerMaster::fetchForHistory(
                     std::uint32_t seq = missing - i;
                     if (auto h = getLedgerHashForHistory(seq, reason))
                     {
-                        assert(h->isNonZero());
+                        XRPL_ASSERT(
+                            h->isNonZero(),
+                            "ripple::LedgerMaster::fetchForHistory : "
+                            "prefetched ledger");
                         app_.getInboundLedgers().acquire(*h, seq, reason);
                     }
                 }
@@ -2052,7 +1994,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
             for (auto const& ledger : pubLedgers)
             {
                 {
-                    ScopedUnlock sul{sl};
+                    scope_unlock sul{sl};
                     JLOG(m_journal.debug())
                         << "tryAdvance publishing seq " << ledger->info().seq;
                     setFullLedger(ledger, true, true);
@@ -2061,7 +2003,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
                 setPubLedger(ledger);
 
                 {
-                    ScopedUnlock sul{sl};
+                    scope_unlock sul{sl};
                     app_.getOPs().pubLedger(ledger);
                 }
             }
@@ -2139,7 +2081,7 @@ populateFetchPack(
     std::uint32_t seq,
     bool withLeaves = true)
 {
-    assert(cnt != 0);
+    XRPL_ASSERT(cnt, "ripple::populateFetchPack : nonzero count input");
 
     Serializer s(1024);
 

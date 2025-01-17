@@ -30,6 +30,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+
 #include <cstdint>
 
 namespace ripple {
@@ -189,6 +190,11 @@ check(uint256 const& key) noexcept
 Keylet
 depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept;
 
+Keylet
+depositPreauth(
+    AccountID const& owner,
+    std::set<std::pair<AccountID, Slice>> const& authCreds) noexcept;
+
 inline Keylet
 depositPreauth(uint256 const& key) noexcept
 {
@@ -214,7 +220,8 @@ page(uint256 const& root, std::uint64_t index = 0) noexcept;
 inline Keylet
 page(Keylet const& root, std::uint64_t index = 0) noexcept
 {
-    assert(root.type == ltDIR_NODE);
+    XRPL_ASSERT(
+        root.type == ltDIR_NODE, "ripple::keylet::page : valid root type");
     return page(root.key, index);
 }
 /** @} */
@@ -267,7 +274,7 @@ nft_sells(uint256 const& id) noexcept;
 
 /** AMM entry */
 Keylet
-amm(Issue const& issue1, Issue const& issue2) noexcept;
+amm(Asset const& issue1, Asset const& issue2) noexcept;
 
 Keylet
 amm(uint256 const& amm) noexcept;
@@ -286,6 +293,18 @@ did(AccountID const& account) noexcept;
 
 Keylet
 oracle(AccountID const& account, std::uint32_t const& documentID) noexcept;
+
+Keylet
+credential(
+    AccountID const& subject,
+    AccountID const& issuer,
+    Slice const& credType) noexcept;
+
+inline Keylet
+credential(uint256 const& key) noexcept
+{
+    return {ltCREDENTIAL, key};
+}
 
 Keylet
 mptIssuance(std::uint32_t seq, AccountID const& issuer) noexcept;
@@ -311,6 +330,11 @@ mptoken(uint256 const& mptokenKey)
 Keylet
 mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept;
 
+Keylet
+permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept;
+
+Keylet
+permissionedDomain(uint256 const& domainID) noexcept;
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

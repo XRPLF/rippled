@@ -80,7 +80,7 @@ namespace detail {
 // Feature.cpp. Because it's only used to reserve storage, and determine how
 // large to make the FeatureBitset, it MAY be larger. It MUST NOT be less than
 // the actual number of amendments. A LogicError on startup will verify this.
-static constexpr std::size_t numFeatures = 81;
+static constexpr std::size_t numFeatures = 86;
 
 /** Amendments that this server supports and the default voting behavior.
    Whether they are enabled depends on the Rules defined in the validated
@@ -151,14 +151,19 @@ public:
 
     explicit FeatureBitset(base const& b) : base(b)
     {
-        assert(b.count() == count());
+        XRPL_ASSERT(
+            b.count() == count(),
+            "ripple::FeatureBitset::FeatureBitset(base) : count match");
     }
 
     template <class... Fs>
     explicit FeatureBitset(uint256 const& f, Fs&&... fs)
     {
         initFromFeatures(f, std::forward<Fs>(fs)...);
-        assert(count() == (sizeof...(fs) + 1));
+        XRPL_ASSERT(
+            count() == (sizeof...(fs) + 1),
+            "ripple::FeatureBitset::FeatureBitset(uint256) : count and "
+            "sizeof... do match");
     }
 
     template <class Col>
@@ -166,7 +171,10 @@ public:
     {
         for (auto const& f : fs)
             set(featureToBitsetIndex(f));
-        assert(fs.size() == count());
+        XRPL_ASSERT(
+            fs.size() == count(),
+            "ripple::FeatureBitset::FeatureBitset(Container auto) : count and "
+            "size do match");
     }
 
     auto

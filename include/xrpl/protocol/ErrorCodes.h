@@ -148,7 +148,10 @@ enum error_code_i {
     // Oracle
     rpcORACLE_MALFORMED = 94,
 
-    rpcLAST = rpcORACLE_MALFORMED  // rpcLAST should always equal the last code.
+    // deposit_authorized + credentials
+    rpcBAD_CREDENTIALS = 95,
+
+    rpcLAST = rpcBAD_CREDENTIALS  // rpcLAST should always equal the last code.
 };
 
 /** Codes returned in the `warnings` array of certain RPC commands.

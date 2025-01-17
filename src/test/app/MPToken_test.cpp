@@ -24,6 +24,7 @@
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
+namespace test {
 
 class MPToken_test : public beast::unit_test::suite
 {
@@ -1316,21 +1317,172 @@ class MPToken_test : public beast::unit_test::suite
     }
 
     void
+    testDepositPreauth()
+    {
+        testcase("DepositPreauth");
+
+        using namespace test::jtx;
+        Account const alice("alice");  // issuer
+        Account const bob("bob");      // holder
+        Account const diana("diana");
+        Account const dpIssuer("dpIssuer");  // holder
+
+        const char credType[] = "abcde";
+
+        {
+            Env env(*this);
+
+            env.fund(XRP(50000), diana, dpIssuer);
+            env.close();
+
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTRequireAuth | tfMPTCanTransfer});
+
+            env(pay(diana, bob, XRP(500)));
+            env.close();
+
+            // bob creates an empty MPToken
+            mptAlice.authorize({.account = bob});
+            // alice authorizes bob to hold funds
+            mptAlice.authorize({.account = alice, .holder = bob});
+
+            // Bob require preauthorization
+            env(fset(bob, asfDepositAuth));
+            env.close();
+
+            // alice try to send 100 MPT to bob, not authorized
+            mptAlice.pay(alice, bob, 100, tecNO_PERMISSION);
+            env.close();
+
+            // Bob authorize alice
+            env(deposit::auth(bob, alice));
+            env.close();
+
+            // alice sends 100 MPT to bob
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            // Create credentials
+            env(credentials::create(alice, dpIssuer, credType));
+            env.close();
+            env(credentials::accept(alice, dpIssuer, credType));
+            env.close();
+            auto const jv =
+                credentials::ledgerEntry(env, alice, dpIssuer, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            // alice sends 100 MPT to bob with credentials which aren't required
+            mptAlice.pay(alice, bob, 100, tesSUCCESS, {{credIdx}});
+            env.close();
+
+            // Bob revoke authorization
+            env(deposit::unauth(bob, alice));
+            env.close();
+
+            // alice try to send 100 MPT to bob, not authorized
+            mptAlice.pay(alice, bob, 100, tecNO_PERMISSION);
+            env.close();
+
+            // alice sends 100 MPT to bob with credentials, not authorized
+            mptAlice.pay(alice, bob, 100, tecNO_PERMISSION, {{credIdx}});
+            env.close();
+
+            // Bob authorize credentials
+            env(deposit::authCredentials(bob, {{dpIssuer, credType}}));
+            env.close();
+
+            // alice try to send 100 MPT to bob, not authorized
+            mptAlice.pay(alice, bob, 100, tecNO_PERMISSION);
+            env.close();
+
+            // alice sends 100 MPT to bob with credentials
+            mptAlice.pay(alice, bob, 100, tesSUCCESS, {{credIdx}});
+            env.close();
+        }
+
+        testcase("DepositPreauth disabled featureCredentials");
+        {
+            Env env(*this, supported_amendments() - featureCredentials);
+
+            std::string const credIdx =
+                "D007AE4B6E1274B4AF872588267B810C2F82716726351D1C7D38D3E5499FC6"
+                "E2";
+
+            env.fund(XRP(50000), diana, dpIssuer);
+            env.close();
+
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTRequireAuth | tfMPTCanTransfer});
+
+            env(pay(diana, bob, XRP(500)));
+            env.close();
+
+            // bob creates an empty MPToken
+            mptAlice.authorize({.account = bob});
+            // alice authorizes bob to hold funds
+            mptAlice.authorize({.account = alice, .holder = bob});
+
+            // Bob require preauthorization
+            env(fset(bob, asfDepositAuth));
+            env.close();
+
+            // alice try to send 100 MPT to bob, not authorized
+            mptAlice.pay(alice, bob, 100, tecNO_PERMISSION);
+            env.close();
+
+            // alice try to send 100 MPT to bob with credentials, amendment
+            // disabled
+            mptAlice.pay(alice, bob, 100, temDISABLED, {{credIdx}});
+            env.close();
+
+            // Bob authorize alice
+            env(deposit::auth(bob, alice));
+            env.close();
+
+            // alice sends 100 MPT to bob
+            mptAlice.pay(alice, bob, 100);
+            env.close();
+
+            // alice sends 100 MPT to bob with credentials, amendment disabled
+            mptAlice.pay(alice, bob, 100, temDISABLED, {{credIdx}});
+            env.close();
+
+            // Bob revoke authorization
+            env(deposit::unauth(bob, alice));
+            env.close();
+
+            // alice try to send 100 MPT to bob
+            mptAlice.pay(alice, bob, 100, tecNO_PERMISSION);
+            env.close();
+
+            // alice sends 100 MPT to bob with credentials, amendment disabled
+            mptAlice.pay(alice, bob, 100, temDISABLED, {{credIdx}});
+            env.close();
+        }
+    }
+
+    void
     testMPTInvalidInTx(FeatureBitset features)
     {
-        testcase("MPT Amount Invalid in Transaction");
+        testcase("MPT Issue Invalid in Transaction");
         using namespace test::jtx;
 
-        // Validate that every transaction with an amount field,
+        // Validate that every transaction with an amount/issue field,
         // which doesn't support MPT, fails.
 
-        // keyed by transaction + amount field
+        // keyed by transaction + amount/issue field
         std::set<std::string> txWithAmounts;
         for (auto const& format : TxFormats::getInstance())
         {
             for (auto const& e : format.getSOTemplate())
             {
-                // Transaction has amount fields.
+                // Transaction has amount/issue fields.
                 // Exclude pseudo-transaction SetFee. Don't consider
                 // the Fee field since it's included in every transaction.
                 if (e.supportMPT() == soeMPTNotSupported &&
@@ -1356,9 +1508,9 @@ class MPToken_test : public beast::unit_test::suite
             env.fund(XRP(1'000), alice);
             env.fund(XRP(1'000), carol);
             auto test = [&](Json::Value const& jv,
-                            std::string const& amtField) {
+                            std::string const& mptField) {
                 txWithAmounts.erase(
-                    jv[jss::TransactionType].asString() + amtField);
+                    jv[jss::TransactionType].asString() + mptField);
 
                 // tx is signed
                 auto jtx = env.jt(jv);
@@ -1378,8 +1530,27 @@ class MPToken_test : public beast::unit_test::suite
                 jrr = env.rpc("json", "sign", to_string(jv1));
                 BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
             };
-            // All transactions with sfAmount, which don't support MPT
-            // and transactions with amount fields, which can't be MPT
+            auto toSFieldRef = [](SField const& field) {
+                return std::ref(field);
+            };
+            auto setMPTFields = [&](SField const& field,
+                                    Json::Value& jv,
+                                    bool withAmount = true) {
+                jv[jss::Asset] = to_json(xrpIssue());
+                jv[jss::Asset2] = to_json(USD.issue());
+                if (withAmount)
+                    jv[field.fieldName] =
+                        USD(10).value().getJson(JsonOptions::none);
+                if (field == sfAsset)
+                    jv[jss::Asset] = to_json(mpt.get<MPTIssue>());
+                else if (field == sfAsset2)
+                    jv[jss::Asset2] = to_json(mpt.get<MPTIssue>());
+                else
+                    jv[field.fieldName] = mpt.getJson(JsonOptions::none);
+            };
+            // All transactions with sfAmount, which don't support MPT.
+            // Transactions with amount fields, which can't be MPT.
+            // Transactions with issue fields, which can't be MPT.
 
             // AMMCreate
             auto ammCreate = [&](SField const& field) {
@@ -1402,47 +1573,84 @@ class MPToken_test : public beast::unit_test::suite
                 Json::Value jv;
                 jv[jss::TransactionType] = jss::AMMDeposit;
                 jv[jss::Account] = alice.human();
-                jv[jss::Asset] = to_json(xrpIssue());
-                jv[jss::Asset2] = to_json(USD.issue());
-                jv[field.fieldName] = mpt.getJson(JsonOptions::none);
                 jv[jss::Flags] = tfSingleAsset;
+                setMPTFields(field, jv);
                 test(jv, field.fieldName);
             };
             for (SField const& field :
-                 {std::ref(sfAmount),
-                  std::ref(sfAmount2),
-                  std::ref(sfEPrice),
-                  std::ref(sfLPTokenOut)})
+                 {toSFieldRef(sfAmount),
+                  toSFieldRef(sfAmount2),
+                  toSFieldRef(sfEPrice),
+                  toSFieldRef(sfLPTokenOut),
+                  toSFieldRef(sfAsset),
+                  toSFieldRef(sfAsset2)})
                 ammDeposit(field);
             // AMMWithdraw
             auto ammWithdraw = [&](SField const& field) {
                 Json::Value jv;
                 jv[jss::TransactionType] = jss::AMMWithdraw;
                 jv[jss::Account] = alice.human();
-                jv[jss::Asset] = to_json(xrpIssue());
-                jv[jss::Asset2] = to_json(USD.issue());
                 jv[jss::Flags] = tfSingleAsset;
-                jv[field.fieldName] = mpt.getJson(JsonOptions::none);
+                setMPTFields(field, jv);
                 test(jv, field.fieldName);
             };
             ammWithdraw(sfAmount);
             for (SField const& field :
-                 {std::ref(sfAmount2),
-                  std::ref(sfEPrice),
-                  std::ref(sfLPTokenIn)})
+                 {toSFieldRef(sfAmount2),
+                  toSFieldRef(sfEPrice),
+                  toSFieldRef(sfLPTokenIn),
+                  toSFieldRef(sfAsset),
+                  toSFieldRef(sfAsset2)})
                 ammWithdraw(field);
             // AMMBid
             auto ammBid = [&](SField const& field) {
                 Json::Value jv;
                 jv[jss::TransactionType] = jss::AMMBid;
                 jv[jss::Account] = alice.human();
-                jv[jss::Asset] = to_json(xrpIssue());
-                jv[jss::Asset2] = to_json(USD.issue());
-                jv[field.fieldName] = mpt.getJson(JsonOptions::none);
+                setMPTFields(field, jv);
                 test(jv, field.fieldName);
             };
-            ammBid(sfBidMin);
-            ammBid(sfBidMax);
+            for (SField const& field :
+                 {toSFieldRef(sfBidMin),
+                  toSFieldRef(sfBidMax),
+                  toSFieldRef(sfAsset),
+                  toSFieldRef(sfAsset2)})
+                ammBid(field);
+            // AMMClawback
+            auto ammClawback = [&](SField const& field) {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::AMMClawback;
+                jv[jss::Account] = alice.human();
+                jv[jss::Holder] = carol.human();
+                setMPTFields(field, jv);
+                test(jv, field.fieldName);
+            };
+            for (SField const& field :
+                 {toSFieldRef(sfAmount),
+                  toSFieldRef(sfAsset),
+                  toSFieldRef(sfAsset2)})
+                ammClawback(field);
+            // AMMDelete
+            auto ammDelete = [&](SField const& field) {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::AMMDelete;
+                jv[jss::Account] = alice.human();
+                setMPTFields(field, jv, false);
+                test(jv, field.fieldName);
+            };
+            ammDelete(sfAsset);
+            ammDelete(sfAsset2);
+            // AMMVote
+            auto ammVote = [&](SField const& field) {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::AMMVote;
+                jv[jss::Account] = alice.human();
+                jv[jss::TradingFee] = 100;
+                setMPTFields(field, jv, false);
+                test(jv, field.fieldName);
+            };
+            ammVote(sfAsset);
+            ammVote(sfAsset2);
             // CheckCash
             auto checkCash = [&](SField const& field) {
                 Json::Value jv;
@@ -1938,6 +2146,132 @@ class MPToken_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testTokensEquality()
+    {
+        using namespace test::jtx;
+        testcase("Tokens Equality");
+        Currency const cur1{to_currency("CU1")};
+        Currency const cur2{to_currency("CU2")};
+        Account const gw1{"gw1"};
+        Account const gw2{"gw2"};
+        MPTID const mpt1 = makeMptID(1, gw1);
+        MPTID const mpt1a = makeMptID(1, gw1);
+        MPTID const mpt2 = makeMptID(1, gw2);
+        MPTID const mpt3 = makeMptID(2, gw2);
+        Asset const assetCur1Gw1{Issue{cur1, gw1}};
+        Asset const assetCur1Gw1a{Issue{cur1, gw1}};
+        Asset const assetCur2Gw1{Issue{cur2, gw1}};
+        Asset const assetCur2Gw2{Issue{cur2, gw2}};
+        Asset const assetMpt1Gw1{mpt1};
+        Asset const assetMpt1Gw1a{mpt1a};
+        Asset const assetMpt1Gw2{mpt2};
+        Asset const assetMpt2Gw2{mpt3};
+
+        // Assets holding Issue
+        // Currencies are equal regardless of the issuer
+        BEAST_EXPECT(equalTokens(assetCur1Gw1, assetCur1Gw1a));
+        BEAST_EXPECT(equalTokens(assetCur2Gw1, assetCur2Gw2));
+        // Currencies are different regardless of whether the issuers
+        // are the same or not
+        BEAST_EXPECT(!equalTokens(assetCur1Gw1, assetCur2Gw1));
+        BEAST_EXPECT(!equalTokens(assetCur1Gw1, assetCur2Gw2));
+
+        // Assets holding MPTIssue
+        // MPTIDs are the same if the sequence and the issuer are the same
+        BEAST_EXPECT(equalTokens(assetMpt1Gw1, assetMpt1Gw1a));
+        // MPTIDs are different if sequence and the issuer don't match
+        BEAST_EXPECT(!equalTokens(assetMpt1Gw1, assetMpt1Gw2));
+        BEAST_EXPECT(!equalTokens(assetMpt1Gw2, assetMpt2Gw2));
+
+        // Assets holding Issue and MPTIssue
+        BEAST_EXPECT(!equalTokens(assetCur1Gw1, assetMpt1Gw1));
+        BEAST_EXPECT(!equalTokens(assetMpt2Gw2, assetCur2Gw2));
+    }
+
+    void
+    testHelperFunctions()
+    {
+        using namespace test::jtx;
+        Account const gw{"gw"};
+        Asset const asset1{makeMptID(1, gw)};
+        Asset const asset2{makeMptID(2, gw)};
+        Asset const asset3{makeMptID(3, gw)};
+        STAmount const amt1{asset1, 100};
+        STAmount const amt2{asset2, 100};
+        STAmount const amt3{asset3, 10'000};
+
+        {
+            testcase("Test STAmount MPT arithmetics");
+            using namespace std::string_literals;
+            STAmount res = multiply(amt1, amt2, asset3);
+            BEAST_EXPECT(res == amt3);
+
+            res = mulRound(amt1, amt2, asset3, true);
+            BEAST_EXPECT(res == amt3);
+
+            res = mulRoundStrict(amt1, amt2, asset3, true);
+            BEAST_EXPECT(res == amt3);
+
+            // overflow, any value > 3037000499ull
+            STAmount mptOverflow{asset2, UINT64_C(3037000500)};
+            try
+            {
+                res = multiply(mptOverflow, mptOverflow, asset3);
+                fail("should throw runtime exception 1");
+            }
+            catch (std::runtime_error const& e)
+            {
+                BEAST_EXPECTS(e.what() == "MPT value overflow"s, e.what());
+            }
+            // overflow, (v1 >> 32) * v2 > 2147483648ull
+            mptOverflow = STAmount{asset2, UINT64_C(2147483648)};
+            uint64_t const mantissa = (2ull << 32) + 2;
+            try
+            {
+                res = multiply(STAmount{asset1, mantissa}, mptOverflow, asset3);
+                fail("should throw runtime exception 2");
+            }
+            catch (std::runtime_error const& e)
+            {
+                BEAST_EXPECTS(e.what() == "MPT value overflow"s, e.what());
+            }
+        }
+
+        {
+            testcase("Test MPTAmount arithmetics");
+            MPTAmount mptAmt1{100};
+            MPTAmount const mptAmt2{100};
+            BEAST_EXPECT((mptAmt1 += mptAmt2) == MPTAmount{200});
+            BEAST_EXPECT(mptAmt1 == 200);
+            BEAST_EXPECT((mptAmt1 -= mptAmt2) == mptAmt1);
+            BEAST_EXPECT(mptAmt1 == mptAmt2);
+            BEAST_EXPECT(mptAmt1 == 100);
+            BEAST_EXPECT(MPTAmount::minPositiveAmount() == MPTAmount{1});
+        }
+
+        {
+            testcase("Test MPTIssue from/to Json");
+            MPTIssue const issue1{asset1.get<MPTIssue>()};
+            Json::Value const jv = to_json(issue1);
+            BEAST_EXPECT(
+                jv[jss::mpt_issuance_id] == to_string(asset1.get<MPTIssue>()));
+            BEAST_EXPECT(issue1 == mptIssueFromJson(jv));
+        }
+
+        {
+            testcase("Test Asset from/to Json");
+            Json::Value const jv = to_json(asset1);
+            BEAST_EXPECT(
+                jv[jss::mpt_issuance_id] == to_string(asset1.get<MPTIssue>()));
+            BEAST_EXPECT(
+                to_string(jv) ==
+                "{\"mpt_issuance_id\":"
+                "\"00000001A407AF5856CCF3C42619DAA925813FC955C72983\"}");
+            BEAST_EXPECT(asset1 == assetFromJson(jv));
+        }
+    }
+
 public:
     void
     run() override
@@ -1967,15 +2301,23 @@ public:
 
         // Test Direct Payment
         testPayment(all);
+        testDepositPreauth();
 
         // Test MPT Amount is invalid in Tx, which don't support MPT
         testMPTInvalidInTx(all);
 
         // Test parsed MPTokenIssuanceID in API response metadata
         testTxJsonMetaFields(all);
+
+        // Test tokens equality
+        testTokensEquality();
+
+        // Test helpers
+        testHelperFunctions();
     }
 };
 
 BEAST_DEFINE_TESTSUITE_PRIO(MPToken, tx, ripple, 2);
 
+}  // namespace test
 }  // namespace ripple

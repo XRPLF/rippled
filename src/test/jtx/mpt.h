@@ -186,7 +186,8 @@ public:
     pay(Account const& src,
         Account const& dest,
         std::int64_t amount,
-        std::optional<TER> err = std::nullopt);
+        std::optional<TER> err = std::nullopt,
+        std::optional<std::vector<std::string>> credentials = std::nullopt);
 
     void
     claw(

@@ -29,6 +29,7 @@
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STPathSet.h>

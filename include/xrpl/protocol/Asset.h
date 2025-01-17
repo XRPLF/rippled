@@ -26,9 +26,16 @@
 
 namespace ripple {
 
+class Asset;
+
 template <typename TIss>
 concept ValidIssueType =
     std::is_same_v<TIss, Issue> || std::is_same_v<TIss, MPTIssue>;
+
+template <typename A>
+concept AssetType =
+    std::is_convertible_v<A, Asset> || std::is_convertible_v<A, Issue> ||
+    std::is_convertible_v<A, MPTIssue> || std::is_convertible_v<A, MPTID>;
 
 /* Asset is an abstraction of three different issue types: XRP, IOU, MPT.
  * For historical reasons, two issue types XRP and IOU are wrapped in Issue
@@ -37,8 +44,10 @@ concept ValidIssueType =
  */
 class Asset
 {
-private:
+public:
     using value_type = std::variant<Issue, MPTIssue>;
+
+private:
     value_type issue_;
 
 public:
@@ -92,11 +101,17 @@ public:
     friend constexpr bool
     operator==(Asset const& lhs, Asset const& rhs);
 
-    friend constexpr bool
-    operator!=(Asset const& lhs, Asset const& rhs);
+    friend constexpr std::weak_ordering
+    operator<=>(Asset const& lhs, Asset const& rhs);
 
     friend constexpr bool
     operator==(Currency const& lhs, Asset const& rhs);
+
+    /** Return true if both assets refer to the same currency (regardless of
+     * issuer) or MPT issuance. Otherwise return false.
+     */
+    friend constexpr bool
+    equalTokens(Asset const& lhs, Asset const& rhs);
 };
 
 template <ValidIssueType TIss>
@@ -145,16 +160,48 @@ operator==(Asset const& lhs, Asset const& rhs)
         rhs.issue_);
 }
 
-constexpr bool
-operator!=(Asset const& lhs, Asset const& rhs)
+constexpr std::weak_ordering
+operator<=>(Asset const& lhs, Asset const& rhs)
 {
-    return !(lhs == rhs);
+    return std::visit(
+        []<ValidIssueType TLhs, ValidIssueType TRhs>(
+            TLhs const& lhs_, TRhs const& rhs_) {
+            if constexpr (std::is_same_v<TLhs, TRhs>)
+                return std::weak_ordering(lhs_ <=> rhs_);
+            else if constexpr (
+                std::is_same_v<TLhs, Issue> && std::is_same_v<TRhs, MPTIssue>)
+                return std::weak_ordering::greater;
+            else
+                return std::weak_ordering::less;
+        },
+        lhs.issue_,
+        rhs.issue_);
 }
 
 constexpr bool
 operator==(Currency const& lhs, Asset const& rhs)
 {
     return rhs.holds<Issue>() && rhs.get<Issue>().currency == lhs;
+}
+
+constexpr bool
+equalTokens(Asset const& lhs, Asset const& rhs)
+{
+    return std::visit(
+        [&]<typename TLhs, typename TRhs>(
+            TLhs const& issLhs, TRhs const& issRhs) {
+            if constexpr (
+                std::is_same_v<TLhs, Issue> && std::is_same_v<TRhs, Issue>)
+                return issLhs.currency == issRhs.currency;
+            else if constexpr (
+                std::is_same_v<TLhs, MPTIssue> &&
+                std::is_same_v<TRhs, MPTIssue>)
+                return issLhs.getMptID() == issRhs.getMptID();
+            else
+                return false;
+        },
+        lhs.issue_,
+        rhs.issue_);
 }
 
 inline bool
@@ -171,6 +218,9 @@ validJSONAsset(Json::Value const& jv);
 
 Asset
 assetFromJson(Json::Value const& jv);
+
+Json::Value
+to_json(Asset const& asset);
 
 }  // namespace ripple
 

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
@@ -367,7 +368,8 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 TER
 Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
-    assert(sleAccount);
+    XRPL_ASSERT(
+        sleAccount, "ripple::Transactor::consumeSeqProxy : non-null account");
     SeqProxy const seqProx = ctx_.tx.getSeqProxy();
     if (seqProx.isSeq())
     {
@@ -439,7 +441,9 @@ Transactor::ticketDelete(
 void
 Transactor::preCompute()
 {
-    assert(account_ != beast::zero);
+    XRPL_ASSERT(
+        account_ != beast::zero,
+        "ripple::Transactor::preCompute : nonzero account");
 }
 
 TER
@@ -453,7 +457,9 @@ Transactor::apply()
 
     // sle must exist except for transactions
     // that allow zero account.
-    assert(sle != nullptr || account_ == beast::zero);
+    XRPL_ASSERT(
+        sle != nullptr || account_ == beast::zero,
+        "ripple::Transactor::apply : non-null SLE or zero account");
 
     if (sle)
     {
@@ -578,8 +584,12 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
 
     // We have plans to support multiple SignerLists in the future.  The
     // presence and defaulted value of the SignerListID field will enable that.
-    assert(sleAccountSigners->isFieldPresent(sfSignerListID));
-    assert(sleAccountSigners->getFieldU32(sfSignerListID) == 0);
+    XRPL_ASSERT(
+        sleAccountSigners->isFieldPresent(sfSignerListID),
+        "ripple::Transactor::checkMultiSign : has signer list ID");
+    XRPL_ASSERT(
+        sleAccountSigners->getFieldU32(sfSignerListID) == 0,
+        "ripple::Transactor::checkMultiSign : signer list ID is 0");
 
     auto accountSigners =
         SignerEntries::deserialize(*sleAccountSigners, ctx.j, "ledger");
@@ -761,6 +771,19 @@ removeExpiredNFTokenOffers(
 }
 
 static void
+removeExpiredCredentials(
+    ApplyView& view,
+    std::vector<uint256> const& creds,
+    beast::Journal viewJ)
+{
+    for (auto const& index : creds)
+    {
+        if (auto const sle = view.peek(keylet::credential(index)))
+            credentials::deleteSLE(view, sle, viewJ);
+    }
+}
+
+static void
 removeDeletedTrustLines(
     ApplyView& view,
     std::vector<uint256> const& trustLines,
@@ -802,7 +825,9 @@ Transactor::reset(XRPAmount fee)
     auto const balance = txnAcct->getFieldAmount(sfBalance).xrp();
 
     // balance should have already been checked in checkFee / preFlight.
-    assert(balance != beast::zero && (!view().open() || balance >= fee));
+    XRPL_ASSERT(
+        balance != beast::zero && (!view().open() || balance >= fee),
+        "ripple::Transactor::reset : valid balance");
 
     // We retry/reject the transaction if the account balance is zero or we're
     // applying against an open ledger and the balance is less than the fee
@@ -817,7 +842,8 @@ Transactor::reset(XRPAmount fee)
     // reject the transaction.
     txnAcct->setFieldAmount(sfBalance, balance - fee);
     TER const ter{consumeSeqProxy(txnAcct)};
-    assert(isTesSuccess(ter));
+    XRPL_ASSERT(
+        isTesSuccess(ter), "ripple::Transactor::reset : result is tesSUCCESS");
 
     if (isTesSuccess(ter))
         view().update(txnAcct);
@@ -857,7 +883,8 @@ Transactor::operator()()
             JLOG(j_.fatal()) << "Transaction serdes mismatch";
             JLOG(j_.info()) << to_string(ctx_.tx.getJson(JsonOptions::none));
             JLOG(j_.fatal()) << s2.getJson(JsonOptions::none);
-            assert(false);
+            UNREACHABLE(
+                "ripple::Transactor::operator() : transaction serdes mismatch");
         }
     }
 #endif
@@ -874,7 +901,9 @@ Transactor::operator()()
 
     // No transaction can return temUNKNOWN from apply,
     // and it can't be passed in from a preclaim.
-    assert(result != temUNKNOWN);
+    XRPL_ASSERT(
+        result != temUNKNOWN,
+        "ripple::Transactor::operator() : result is not temUNKNOWN");
 
     if (auto stream = j_.trace())
         stream << "preclaim result: " << transToken(result);
@@ -907,26 +936,33 @@ Transactor::operator()()
         std::vector<uint256> removedOffers;
         std::vector<uint256> removedTrustLines;
         std::vector<uint256> expiredNFTokenOffers;
+        std::vector<uint256> expiredCredentials;
 
         bool const doOffers =
             ((result == tecOVERSIZE) || (result == tecKILLED));
         bool const doLines = (result == tecINCOMPLETE);
         bool const doNFTokenOffers = (result == tecEXPIRED);
-        if (doOffers || doLines || doNFTokenOffers)
+        bool const doCredentials = (result == tecEXPIRED);
+        if (doOffers || doLines || doNFTokenOffers || doCredentials)
         {
-            ctx_.visit([&doOffers,
+            ctx_.visit([doOffers,
                         &removedOffers,
-                        &doLines,
+                        doLines,
                         &removedTrustLines,
-                        &doNFTokenOffers,
-                        &expiredNFTokenOffers](
+                        doNFTokenOffers,
+                        &expiredNFTokenOffers,
+                        doCredentials,
+                        &expiredCredentials](
                            uint256 const& index,
                            bool isDelete,
                            std::shared_ptr<SLE const> const& before,
                            std::shared_ptr<SLE const> const& after) {
                 if (isDelete)
                 {
-                    assert(before && after);
+                    XRPL_ASSERT(
+                        before && after,
+                        "ripple::Transactor::operator()::visit : non-null SLE "
+                        "inputs");
                     if (doOffers && before && after &&
                         (before->getType() == ltOFFER) &&
                         (before->getFieldAmount(sfTakerPays) ==
@@ -946,6 +982,10 @@ Transactor::operator()()
                     if (doNFTokenOffers && before && after &&
                         (before->getType() == ltNFTOKEN_OFFER))
                         expiredNFTokenOffers.push_back(index);
+
+                    if (doCredentials && before && after &&
+                        (before->getType() == ltCREDENTIAL))
+                        expiredCredentials.push_back(index);
                 }
             });
         }
@@ -971,6 +1011,10 @@ Transactor::operator()()
         if (result == tecINCOMPLETE)
             removeDeletedTrustLines(
                 view(), removedTrustLines, ctx_.app.journal("View"));
+
+        if (result == tecEXPIRED)
+            removeExpiredCredentials(
+                view(), expiredCredentials, ctx_.app.journal("View"));
 
         applied = isTecClaim(result);
     }

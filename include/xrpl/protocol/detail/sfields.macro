@@ -140,6 +140,8 @@ TYPED_SFIELD(sfAssetPrice,               UINT64,    23)
 TYPED_SFIELD(sfMaximumAmount,            UINT64,    24, SField::sMD_BaseTen|SField::sMD_Default)
 TYPED_SFIELD(sfOutstandingAmount,        UINT64,    25, SField::sMD_BaseTen|SField::sMD_Default)
 TYPED_SFIELD(sfMPTAmount,                UINT64,    26, SField::sMD_BaseTen|SField::sMD_Default)
+TYPED_SFIELD(sfIssuerNode,               UINT64,    27)
+TYPED_SFIELD(sfSubjectNode,              UINT64,    28)
 
 // 128-bit
 TYPED_SFIELD(sfEmailHash,                UINT128,    1)
@@ -188,6 +190,10 @@ TYPED_SFIELD(sfHookStateKey,             UINT256,   30)
 TYPED_SFIELD(sfHookHash,                 UINT256,   31)
 TYPED_SFIELD(sfHookNamespace,            UINT256,   32)
 TYPED_SFIELD(sfHookSetTxnID,             UINT256,   33)
+TYPED_SFIELD(sfDomainID,                 UINT256,   34)
+
+// number (common)
+TYPED_SFIELD(sfNumber,                   NUMBER,     1)
 
 // currency amount (common)
 TYPED_SFIELD(sfAmount,                   AMOUNT,     1)
@@ -258,6 +264,7 @@ TYPED_SFIELD(sfData,                     VL,        27)
 TYPED_SFIELD(sfAssetClass,               VL,        28)
 TYPED_SFIELD(sfProvider,                 VL,        29)
 TYPED_SFIELD(sfMPTokenMetadata,          VL,        30)
+TYPED_SFIELD(sfCredentialType,           VL,        31)
 
 // account (common)
 TYPED_SFIELD(sfAccount,                  ACCOUNT,    1)
@@ -280,12 +287,14 @@ TYPED_SFIELD(sfAttestationSignerAccount, ACCOUNT,   20)
 TYPED_SFIELD(sfAttestationRewardAccount, ACCOUNT,   21)
 TYPED_SFIELD(sfLockingChainDoor,         ACCOUNT,   22)
 TYPED_SFIELD(sfIssuingChainDoor,         ACCOUNT,   23)
+TYPED_SFIELD(sfSubject,                  ACCOUNT,   24)
 
 // vector of 256-bit
 TYPED_SFIELD(sfIndexes,                  VECTOR256,  1, SField::sMD_Never)
 TYPED_SFIELD(sfHashes,                   VECTOR256,  2)
 TYPED_SFIELD(sfAmendments,               VECTOR256,  3)
 TYPED_SFIELD(sfNFTokenOffers,            VECTOR256,  4)
+TYPED_SFIELD(sfCredentialIDs,            VECTOR256,  5)
 
 // path set
 UNTYPED_SFIELD(sfPaths,                  PATHSET,    1)
@@ -337,6 +346,7 @@ UNTYPED_SFIELD(sfXChainCreateAccountProofSig, OBJECT, 29)
 UNTYPED_SFIELD(sfXChainClaimAttestationCollectionElement, OBJECT, 30)
 UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement, OBJECT, 31)
 UNTYPED_SFIELD(sfPriceData,              OBJECT,    32)
+UNTYPED_SFIELD(sfCredential,             OBJECT,    33)
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array
@@ -364,3 +374,6 @@ UNTYPED_SFIELD(sfXChainCreateAccountAttestations, ARRAY, 22)
 //                                                  23 unused
 UNTYPED_SFIELD(sfPriceDataSeries,        ARRAY,     24)
 UNTYPED_SFIELD(sfAuthAccounts,           ARRAY,     25)
+UNTYPED_SFIELD(sfAuthorizeCredentials,   ARRAY,     26)
+UNTYPED_SFIELD(sfUnauthorizeCredentials, ARRAY,     27)
+UNTYPED_SFIELD(sfAcceptedCredentials,    ARRAY,     28)

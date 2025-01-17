@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/DID.h>
 #include <xrpld/app/tx/detail/DeleteAccount.h>
 #include <xrpld/app/tx/detail/DeleteOracle.h>
@@ -24,10 +25,11 @@
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
 #include <xrpld/ledger/View.h>
-#include <xrpl/basics/FeeUnits.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/mulDiv.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -41,6 +43,10 @@ DeleteAccount::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureDeletableAccounts))
         return temDISABLED;
 
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
+        !ctx.rules.enabled(featureCredentials))
+        return temDISABLED;
+
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
@@ -50,6 +56,9 @@ DeleteAccount::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
         // An account cannot be deleted and give itself the resulting XRP.
         return temDST_IS_SRC;
+
+    if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
+        return err;
 
     return preflight2(ctx);
 }
@@ -110,14 +119,14 @@ removeTicketFromLedger(
 
 TER
 removeDepositPreauthFromLedger(
-    Application& app,
+    Application&,
     ApplyView& view,
-    AccountID const& account,
+    AccountID const&,
     uint256 const& delIndex,
-    std::shared_ptr<SLE> const& sleDel,
+    std::shared_ptr<SLE> const&,
     beast::Journal j)
 {
-    return DepositPreauth::removeFromLedger(app, view, delIndex, j);
+    return DepositPreauth::removeFromLedger(view, delIndex, j);
 }
 
 TER
@@ -159,6 +168,18 @@ removeOracleFromLedger(
     return DeleteOracle::deleteOracle(view, sleDel, account, j);
 }
 
+TER
+removeCredentialFromLedger(
+    Application&,
+    ApplyView& view,
+    AccountID const&,
+    uint256 const&,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal j)
+{
+    return credentials::deleteSLE(view, sleDel, j);
+}
+
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -181,6 +202,8 @@ nonObligationDeleter(LedgerEntryType t)
             return removeDIDFromLedger;
         case ltORACLE:
             return removeOracleFromLedger;
+        case ltCREDENTIAL:
+            return removeCredentialFromLedger;
         default:
             return nullptr;
     }
@@ -202,16 +225,26 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
     if ((*sleDst)[sfFlags] & lsfRequireDestTag && !ctx.tx[~sfDestinationTag])
         return tecDST_TAG_NEEDED;
 
-    // Check whether the destination account requires deposit authorization.
-    if (ctx.view.rules().enabled(featureDepositAuth) &&
-        (sleDst->getFlags() & lsfDepositAuth))
+    // If credentials are provided - check them anyway
+    if (auto const err = credentials::valid(ctx, account); !isTesSuccess(err))
+        return err;
+
+    // if credentials then postpone auth check to doApply, to check for expired
+    // credentials
+    if (!ctx.tx.isFieldPresent(sfCredentialIDs))
     {
-        if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
-            return tecNO_PERMISSION;
+        // Check whether the destination account requires deposit authorization.
+        if (ctx.view.rules().enabled(featureDepositAuth) &&
+            (sleDst->getFlags() & lsfDepositAuth))
+        {
+            if (!ctx.view.exists(keylet::depositPreauth(dst, account)))
+                return tecNO_PERMISSION;
+        }
     }
 
     auto sleAccount = ctx.view.read(keylet::account(account));
-    assert(sleAccount);
+    XRPL_ASSERT(
+        sleAccount, "ripple::DeleteAccount::preclaim : non-null account");
     if (!sleAccount)
         return terNO_ACCOUNT;
 
@@ -314,13 +347,24 @@ TER
 DeleteAccount::doApply()
 {
     auto src = view().peek(keylet::account(account_));
-    assert(src);
+    XRPL_ASSERT(
+        src, "ripple::DeleteAccount::doApply : non-null source account");
 
-    auto dst = view().peek(keylet::account(ctx_.tx[sfDestination]));
-    assert(dst);
+    auto const dstID = ctx_.tx[sfDestination];
+    auto dst = view().peek(keylet::account(dstID));
+    XRPL_ASSERT(
+        dst, "ripple::DeleteAccount::doApply : non-null destination account");
 
     if (!src || !dst)
         return tefBAD_LEDGER;
+
+    if (ctx_.view().rules().enabled(featureDepositAuth) &&
+        ctx_.tx.isFieldPresent(sfCredentialIDs))
+    {
+        if (auto err = verifyDepositPreauth(ctx_, account_, dstID, dst);
+            !isTesSuccess(err))
+            return err;
+    }
 
     Keylet const ownerDirKeylet{keylet::ownerDir(account_)};
     auto const ter = cleanupOnAccountDelete(
@@ -337,7 +381,9 @@ DeleteAccount::doApply()
                 return {result, SkipEntry::No};
             }
 
-            assert(!"Undeletable entry should be found in preclaim.");
+            UNREACHABLE(
+                "ripple::DeleteAccount::doApply : undeletable item not found "
+                "in preclaim");
             JLOG(j_.error()) << "DeleteAccount undeletable item not "
                                 "found in preclaim.";
             return {tecHAS_OBLIGATIONS, SkipEntry::No};
@@ -351,7 +397,9 @@ DeleteAccount::doApply()
     (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
     ctx_.deliver(mSourceBalance);
 
-    assert((*src)[sfBalance] == XRPAmount(0));
+    XRPL_ASSERT(
+        (*src)[sfBalance] == XRPAmount(0),
+        "ripple::DeleteAccount::doApply : source balance is zero");
 
     // If there's still an owner directory associated with the source account
     // delete it.

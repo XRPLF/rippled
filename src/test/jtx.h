@@ -32,6 +32,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
 #include <test/jtx/check.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/delivermin.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/did.h>
@@ -49,6 +50,7 @@
 #include <test/jtx/owners.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/prop.h>
 #include <test/jtx/quality.h>
 #include <test/jtx/rate.h>

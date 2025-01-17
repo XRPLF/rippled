@@ -22,11 +22,11 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/st.h>
-#include <cassert>
 #include <optional>
 
 namespace ripple {
@@ -48,7 +48,9 @@ internalDirNext(
     uint256& entry)
 {
     auto const& svIndexes = page->getFieldV256(sfIndexes);
-    assert(index <= svIndexes.size());
+    XRPL_ASSERT(
+        index <= svIndexes.size(),
+        "ripple::detail::internalDirNext : index inside range");
 
     if (index >= svIndexes.size())
     {
@@ -65,7 +67,7 @@ internalDirNext(
         else
             page = view.peek(keylet::page(root, next));
 
-        assert(page);
+        XRPL_ASSERT(page, "ripple::detail::internalDirNext : non-null root");
 
         if (!page)
             return false;
@@ -457,7 +459,7 @@ confineOwnerCount(
                     << "Account " << *id << " owner count set below 0!";
             }
             adjusted = 0;
-            assert(!id);
+            XRPL_ASSERT(!id, "ripple::confineOwnerCount : id is not set");
         }
     }
     return adjusted;
@@ -506,7 +508,8 @@ forEachItem(
     Keylet const& root,
     std::function<void(std::shared_ptr<SLE const> const&)> const& f)
 {
-    assert(root.type == ltDIR_NODE);
+    XRPL_ASSERT(
+        root.type == ltDIR_NODE, "ripple::forEachItem : valid root type");
 
     if (root.type != ltDIR_NODE)
         return;
@@ -536,7 +539,8 @@ forEachItemAfter(
     unsigned int limit,
     std::function<bool(std::shared_ptr<SLE const> const&)> const& f)
 {
-    assert(root.type == ltDIR_NODE);
+    XRPL_ASSERT(
+        root.type == ltDIR_NODE, "ripple::forEachItemAfter : valid root type");
 
     if (root.type != ltDIR_NODE)
         return false;
@@ -811,9 +815,10 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
         auto const hashIndex = ledger.read(keylet::skip());
         if (hashIndex)
         {
-            assert(
+            XRPL_ASSERT(
                 hashIndex->getFieldU32(sfLastLedgerSequence) ==
-                (ledger.seq() - 1));
+                    (ledger.seq() - 1),
+                "ripple::hashOfSeq : matching ledger sequence");
             STVector256 vec = hashIndex->getFieldV256(sfHashes);
             if (vec.size() >= diff)
                 return vec[vec.size() - diff];
@@ -841,8 +846,9 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     if (hashIndex)
     {
         auto const lastSeq = hashIndex->getFieldU32(sfLastLedgerSequence);
-        assert(lastSeq >= seq);
-        assert((lastSeq & 0xff) == 0);
+        XRPL_ASSERT(lastSeq >= seq, "ripple::hashOfSeq : minimum last ledger");
+        XRPL_ASSERT(
+            (lastSeq & 0xff) == 0, "ripple::hashOfSeq : valid last ledger");
         auto const diff = (lastSeq - seq) >> 8;
         STVector256 vec = hashIndex->getFieldV256(sfHashes);
         if (vec.size() > diff)
@@ -868,7 +874,7 @@ adjustOwnerCount(
 {
     if (!sle)
         return;
-    assert(amount != 0);
+    XRPL_ASSERT(amount, "ripple::adjustOwnerCount : nonzero amount input");
     std::uint32_t const current{sle->getFieldU32(sfOwnerCount)};
     AccountID const id = (*sle)[sfAccount];
     std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
@@ -934,13 +940,14 @@ trustCreate(
     const bool bSetDst = saLimit.getIssuer() == uDstAccountID;
     const bool bSetHigh = bSrcHigh ^ bSetDst;
 
-    assert(sleAccount);
+    XRPL_ASSERT(sleAccount, "ripple::trustCreate : non-null SLE");
     if (!sleAccount)
         return tefINTERNAL;
 
-    assert(
+    XRPL_ASSERT(
         sleAccount->getAccountID(sfAccount) ==
-        (bSetHigh ? uHighAccountID : uLowAccountID));
+            (bSetHigh ? uHighAccountID : uLowAccountID),
+        "ripple::trustCreate : matching account ID");
     auto const slePeer =
         view.peek(keylet::account(bSetHigh ? uLowAccountID : uHighAccountID));
     if (!slePeer)
@@ -1096,17 +1103,25 @@ rippleCreditIOU(
     Currency const& currency = saAmount.getCurrency();
 
     // Make sure issuer is involved.
-    assert(!bCheckIssuer || uSenderID == issuer || uReceiverID == issuer);
+    XRPL_ASSERT(
+        !bCheckIssuer || uSenderID == issuer || uReceiverID == issuer,
+        "ripple::rippleCreditIOU : matching issuer or don't care");
     (void)issuer;
 
     // Disallow sending to self.
-    assert(uSenderID != uReceiverID);
+    XRPL_ASSERT(
+        uSenderID != uReceiverID,
+        "ripple::rippleCreditIOU : sender is not receiver");
 
     bool const bSenderHigh = uSenderID > uReceiverID;
     auto const index = keylet::line(uSenderID, uReceiverID, currency);
 
-    assert(!isXRP(uSenderID) && uSenderID != noAccount());
-    assert(!isXRP(uReceiverID) && uReceiverID != noAccount());
+    XRPL_ASSERT(
+        !isXRP(uSenderID) && uSenderID != noAccount(),
+        "ripple::rippleCreditIOU : sender is not XRP");
+    XRPL_ASSERT(
+        !isXRP(uReceiverID) && uReceiverID != noAccount(),
+        "ripple::rippleCreditIOU : receiver is not XRP");
 
     // If the line exists, modify it accordingly.
     if (auto const sleRippleState = view.peek(index))
@@ -1241,8 +1256,12 @@ rippleSendIOU(
 {
     auto const issuer = saAmount.getIssuer();
 
-    assert(!isXRP(uSenderID) && !isXRP(uReceiverID));
-    assert(uSenderID != uReceiverID);
+    XRPL_ASSERT(
+        !isXRP(uSenderID) && !isXRP(uReceiverID),
+        "ripple::rippleSendIOU : neither sender nor receiver is XRP");
+    XRPL_ASSERT(
+        uSenderID != uReceiverID,
+        "ripple::rippleSendIOU : sender is not receiver");
 
     if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
@@ -1295,7 +1314,9 @@ accountSendIOU(
     }
     else
     {
-        assert(saAmount >= beast::zero && !saAmount.holds<MPTIssue>());
+        XRPL_ASSERT(
+            saAmount >= beast::zero && !saAmount.holds<MPTIssue>(),
+            "ripple::accountSendIOU : minimum amount and not MPT");
     }
 
     /* If we aren't sending anything or if the sender is the same as the
@@ -1465,7 +1486,9 @@ rippleSendMPT(
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
-    assert(uSenderID != uReceiverID);
+    XRPL_ASSERT(
+        uSenderID != uReceiverID,
+        "ripple::rippleSendMPT : sender is not receiver");
 
     // Safe to get MPT since rippleSendMPT is only called by accountSendMPT
     auto const issuer = saAmount.getIssuer();
@@ -1528,7 +1551,9 @@ accountSendMPT(
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
-    assert(saAmount >= beast::zero && saAmount.holds<MPTIssue>());
+    XRPL_ASSERT(
+        saAmount >= beast::zero && saAmount.holds<MPTIssue>(),
+        "ripple::accountSendMPT : minimum amount and MPT");
 
     /* If we aren't sending anything or if the sender is the same as the
      * receiver then we don't need to do anything.
@@ -1624,13 +1649,16 @@ issueIOU(
     Issue const& issue,
     beast::Journal j)
 {
-    assert(!isXRP(account) && !isXRP(issue.account));
+    XRPL_ASSERT(
+        !isXRP(account) && !isXRP(issue.account),
+        "ripple::issueIOU : neither account nor issuer is XRP");
 
     // Consistency check
-    assert(issue == amount.issue());
+    XRPL_ASSERT(issue == amount.issue(), "ripple::issueIOU : matching issue");
 
     // Can't send to self!
-    assert(issue.account != account);
+    XRPL_ASSERT(
+        issue.account != account, "ripple::issueIOU : not issuer account");
 
     JLOG(j.trace()) << "issueIOU: " << to_string(account) << ": "
                     << amount.getFullText();
@@ -1721,13 +1749,16 @@ redeemIOU(
     Issue const& issue,
     beast::Journal j)
 {
-    assert(!isXRP(account) && !isXRP(issue.account));
+    XRPL_ASSERT(
+        !isXRP(account) && !isXRP(issue.account),
+        "ripple::redeemIOU : neither account nor issuer is XRP");
 
     // Consistency check
-    assert(issue == amount.issue());
+    XRPL_ASSERT(issue == amount.issue(), "ripple::redeemIOU : matching issue");
 
     // Can't send to self!
-    assert(issue.account != account);
+    XRPL_ASSERT(
+        issue.account != account, "ripple::redeemIOU : not issuer account");
 
     JLOG(j.trace()) << "redeemIOU: " << to_string(account) << ": "
                     << amount.getFullText();
@@ -1791,10 +1822,11 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j)
 {
-    assert(from != beast::zero);
-    assert(to != beast::zero);
-    assert(from != to);
-    assert(amount.native());
+    XRPL_ASSERT(
+        from != beast::zero, "ripple::transferXRP : nonzero from account");
+    XRPL_ASSERT(to != beast::zero, "ripple::transferXRP : nonzero to account");
+    XRPL_ASSERT(from != to, "ripple::transferXRP : sender is not receiver");
+    XRPL_ASSERT(amount.native(), "ripple::transferXRP : amount is XRP");
 
     SLE::pointer const sender = view.peek(keylet::account(from));
     SLE::pointer const receiver = view.peek(keylet::account(to));
@@ -1957,7 +1989,9 @@ cleanupOnAccountDelete(
             //
             //  3. So we verify that uDirEntry is indeed 'it'+1.  Then we jam it
             //     back to 'it' to "un-invalidate" the iterator.
-            assert(uDirEntry >= 1);
+            XRPL_ASSERT(
+                uDirEntry >= 1,
+                "ripple::cleanupOnAccountDelete : minimum dir entries");
             if (uDirEntry == 0)
             {
                 JLOG(j.error())
@@ -2041,7 +2075,9 @@ rippleCredit(
             }
             else
             {
-                assert(!bCheckIssuer);
+                XRPL_ASSERT(
+                    !bCheckIssuer,
+                    "ripple::rippleCredit : not checking issuer");
                 return rippleCreditMPT(
                     view, uSenderID, uReceiverID, saAmount, j);
             }

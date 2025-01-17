@@ -17,17 +17,18 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/PayChan.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/XRPAmount.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/st.h>
 
@@ -149,7 +150,9 @@ closeChannel(
     if (!sle)
         return tefINTERNAL;
 
-    assert((*slep)[sfAmount] >= (*slep)[sfBalance]);
+    XRPL_ASSERT(
+        (*slep)[sfAmount] >= (*slep)[sfBalance],
+        "ripple::closeChannel : minimum channel amount");
     (*sle)[sfBalance] =
         (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
     adjustOwnerCount(view, sle, -1, j);
@@ -403,6 +406,10 @@ PayChanFund::doApply()
 NotTEC
 PayChanClaim::preflight(PreflightContext const& ctx)
 {
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
+        !ctx.rules.enabled(featureCredentials))
+        return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -453,7 +460,23 @@ PayChanClaim::preflight(PreflightContext const& ctx)
             return temBAD_SIGNATURE;
     }
 
+    if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
+        return err;
+
     return preflight2(ctx);
+}
+
+TER
+PayChanClaim::preclaim(PreclaimContext const& ctx)
+{
+    if (!ctx.view.rules().enabled(featureCredentials))
+        return Transactor::preclaim(ctx);
+
+    if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
+        !isTesSuccess(err))
+        return err;
+
+    return tesSUCCESS;
 }
 
 TER
@@ -516,23 +539,18 @@ PayChanClaim::doApply()
             (txAccount == src && (sled->getFlags() & lsfDisallowXRP)))
             return tecNO_TARGET;
 
-        // Check whether the destination account requires deposit authorization.
-        if (depositAuth && (sled->getFlags() & lsfDepositAuth))
+        if (depositAuth)
         {
-            // A destination account that requires authorization has two
-            // ways to get a Payment Channel Claim into the account:
-            //  1. If Account == Destination, or
-            //  2. If Account is deposit preauthorized by destination.
-            if (txAccount != dst)
-            {
-                if (!view().exists(keylet::depositPreauth(dst, txAccount)))
-                    return tecNO_PERMISSION;
-            }
+            if (auto err = verifyDepositPreauth(ctx_, txAccount, dst, sled);
+                !isTesSuccess(err))
+                return err;
         }
 
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
         XRPAmount const reqDelta = reqBalance - chanBalance;
-        assert(reqDelta >= beast::zero);
+        XRPL_ASSERT(
+            reqDelta >= beast::zero,
+            "ripple::PayChanClaim::doApply : minimum balance delta");
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
         ctx_.view().update(sled);
         ctx_.view().update(slep);

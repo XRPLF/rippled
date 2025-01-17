@@ -116,6 +116,7 @@ transResults()
         MAKE_ERROR(tecARRAY_EMPTY,                   "Array is empty."),
         MAKE_ERROR(tecARRAY_TOO_LARGE,               "Array is too large."),
         MAKE_ERROR(tecLOCKED,                        "Fund is locked."),
+        MAKE_ERROR(tecBAD_CREDENTIALS,               "Bad credentials."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
@@ -160,7 +161,7 @@ transResults()
 
         MAKE_ERROR(temMALFORMED,                 "Malformed transaction."),
         MAKE_ERROR(temBAD_AMM_TOKENS,            "Malformed: Invalid LPTokens."),
-        MAKE_ERROR(temBAD_AMOUNT,                "Can only send positive amounts."),
+        MAKE_ERROR(temBAD_AMOUNT,                "Malformed: Bad amount."),
         MAKE_ERROR(temBAD_CURRENCY,              "Malformed: Bad currency."),
         MAKE_ERROR(temBAD_EXPIRATION,            "Malformed: Bad expiration."),
         MAKE_ERROR(temBAD_FEE,                   "Invalid fee, negative or not XRP."),
