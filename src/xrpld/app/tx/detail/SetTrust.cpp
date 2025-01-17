@@ -87,7 +87,7 @@ SetTrust::preflight(PreflightContext const& ctx)
         // `tfTrustSetMask`, they are not valid if the amendment is not enabled.
         if (uTxFlags & (tfSetDeepFreeze | tfClearDeepFreeze))
         {
-            return temDISABLED;
+            return temINVALID_FLAG;
         }
     }
 
