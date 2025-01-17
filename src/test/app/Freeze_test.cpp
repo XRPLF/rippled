@@ -1778,6 +1778,153 @@ class Freeze_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testNFTOffersWhenFreeze(FeatureBitset features)
+    {
+        testcase("NFT offers on frozen trust lines");
+        using namespace test::jtx;
+
+        Env env(*this, features);
+        Account G1{"G1"};
+        Account A1{"A1"};
+        Account A2{"A2"};
+        auto const USD{G1["USD"]};
+
+        env.fund(XRP(10000), G1, A1, A2);
+        env.close();
+
+        env.trust(G1["USD"](10000), A1, A2);
+        env.close();
+
+        env(pay(G1, A1, USD(1000)));
+        env(pay(G1, A2, USD(1000)));
+        env.close();
+
+        // Testing A2 nft offer sell when A2 frozen by issuer
+        {
+            auto const sellOfferIndex = createNFTOffer(env, A2, USD(10));
+            env(trust(G1, A2["USD"](0), tfSetFreeze));
+            env.close();
+
+            // test: A2 can still receive USD for his NFT
+            env(token::acceptSellOffer(A1, sellOfferIndex));
+            env.close();
+
+            env(trust(G1, A2["USD"](0), tfClearFreeze));
+            env.close();
+        }
+
+        // Testing A2 nft offer sell when A2 deep frozen by issuer
+        // if (features[featureDeepFreeze])
+        // {
+        //     auto const sellOfferIndex = createNFTOffer(env, A2, USD(10));
+
+        //     env(trust(G1, A2["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+        //     env.close();
+
+        //     // test: A2 cannot receive USD for his NFT
+        //     env(token::acceptSellOffer(A1, sellOfferIndex),
+        //         ter(tecINSUFFICIENT_FUNDS));
+        //     env.close();
+
+        //     env(trust(G1, A2["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+        //     env.close();
+        // }
+
+        // Testing A1 nft offer sell when A2 frozen by issuer
+        {
+            auto const sellOfferIndex = createNFTOffer(env, A1, USD(10));
+            env(trust(G1, A2["USD"](0), tfSetFreeze));
+            env.close();
+
+            // test: A2 cannot send USD for NFT
+            env(token::acceptSellOffer(A2, sellOfferIndex),
+                ter(tecINSUFFICIENT_FUNDS));
+            env.close();
+
+            env(trust(G1, A2["USD"](0), tfClearFreeze));
+            env.close();
+        }
+
+        // Testing A1 nft offer sell when A2 deep frozen by issuer
+        if (features[featureDeepFreeze])
+        {
+            auto const sellOfferIndex = createNFTOffer(env, A1, USD(10));
+            env(trust(G1, A2["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+
+            // test: A2 cannot send USD for NFT
+            env(token::acceptSellOffer(A2, sellOfferIndex),
+                ter(tecINSUFFICIENT_FUNDS));
+            env.close();
+
+            env(trust(G1, A2["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+        }
+
+        // // Testing A2 nft offer sell when A2 frozen by currency holder
+        // {
+        //     auto const sellOfferIndex = createNFTOffer(env, A2, USD(10));
+        //     env(trust(A2, G1["USD"](0), tfSetFreeze));
+        //     env.close();
+
+        //     // test: A2 cannot receive USD for his NFT
+        //     env(token::acceptSellOffer(A1, sellOfferIndex),
+        //         ter(tecINSUFFICIENT_FUNDS));
+        //     env.close();
+
+        //     env(trust(A2, G1["USD"](0), tfClearFreeze));
+        //     env.close();
+        // }
+
+        // // Testing A2 nft offer sell when A2 deep frozen by currency holder
+        // if (features[featureDeepFreeze])
+        // {
+        //     auto const sellOfferIndex = createNFTOffer(env, A2, USD(10));
+
+        //     env(trust(A2, G1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+        //     env.close();
+
+        //     // test: A2 cannot receive USD for his NFT
+        //     env(token::acceptSellOffer(A1, sellOfferIndex),
+        //         ter(tecINSUFFICIENT_FUNDS));
+        //     env.close();
+
+        //     env(trust(A2, G1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+        //     env.close();
+        // }
+
+        // Testing A1 nft offer sell when A2 frozen by currency holder
+        {
+            auto const sellOfferIndex = createNFTOffer(env, A1, USD(10));
+            env(trust(A2, G1["USD"](0), tfSetFreeze));
+            env.close();
+
+            // test: A2 cannot send USD for NFT
+            env(token::acceptSellOffer(A2, sellOfferIndex));
+            env.close();
+
+            env(trust(A2, G1["USD"](0), tfClearFreeze));
+            env.close();
+        }
+
+        // // Testing A1 nft offer sell when A2 deep frozen by currency holder
+        if (features[featureDeepFreeze])
+        {
+            auto const sellOfferIndex = createNFTOffer(env, A1, USD(10));
+            env(trust(A2, G1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+
+            // test: A2 cannot send USD for NFT
+            env(token::acceptSellOffer(A2, sellOfferIndex),
+                ter(tecINSUFFICIENT_FUNDS));
+            env.close();
+
+            env(trust(A2, G1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+        }
+    }
+
     // Helper function to extract trustline flags from open ledger
     uint32_t
     getTrustlineFlags(
@@ -1811,6 +1958,26 @@ class Freeze_test : public beast::unit_test::suite
         return keylet::check(account, uSequence).key;
     }
 
+    uint256
+    createNFTOffer(
+        test::jtx::Env& env,
+        test::jtx::Account const& account,
+        test::jtx::PrettyAmount const& currency)
+    {
+        using namespace test::jtx;
+        uint256 const nftID{token::getNextID(env, account, 0u, tfTransferable)};
+        env(token::mint(account, 0), txflags(tfTransferable));
+        env.close();
+
+        uint256 const sellOfferIndex =
+            keylet::nftoffer(account, env.seq(account)).key;
+        env(token::createOffer(account, nftID, currency),
+            txflags(tfSellNFToken));
+        env.close();
+
+        return sellOfferIndex;
+    }
+
 public:
     void
     run() override
@@ -1828,6 +1995,7 @@ public:
             testChecksWhenFrozen(features);
             testAMMWhenFreeze(features);
             testLongerPathsWhenFrozen(features);
+            testNFTOffersWhenFreeze(features);
         };
         using namespace test::jtx;
         auto const sa = supported_amendments();
