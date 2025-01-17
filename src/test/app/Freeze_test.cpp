@@ -261,10 +261,11 @@ class Freeze_test : public beast::unit_test::suite
         else
         {
             //  test: applying deep freeze before amendment fails
-            env(trust(G1, A1["USD"](0), tfSetDeepFreeze), ter(temDISABLED));
+            env(trust(G1, A1["USD"](0), tfSetDeepFreeze), ter(temINVALID_FLAG));
 
             //  test: clearing deep freeze before amendment fails
-            env(trust(G1, A1["USD"](0), tfClearDeepFreeze), ter(temDISABLED));
+            env(trust(G1, A1["USD"](0), tfClearDeepFreeze),
+                ter(temINVALID_FLAG));
         }
     }
 
