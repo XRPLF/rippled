@@ -2,7 +2,7 @@ name: missing-commits
 
 on:
   # TODO: Remove the next line before merging
-  pull-request:
+  pull_request:
   push:
     branches:
       # Only check that the branches are up to date when updating the
@@ -51,7 +51,7 @@ jobs:
           then
             echo "Checking ${prior[@]} for commits missing from ${branch}"
             git log --oneline --no-merges "${prior[@]}" \
-              ^origin/$branch | tee -a "missing-commits.txt"
+              ^$branch | tee -a "missing-commits.txt"
           fi
           prior+=( "${branch}" )
         done
