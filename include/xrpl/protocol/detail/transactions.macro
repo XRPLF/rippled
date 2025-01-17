@@ -470,7 +470,7 @@ TRANSACTION(ttVAULT_CREATE, 64, VaultCreate, ({
     {sfAsset, soeREQUIRED, soeMPTSupported},
     {sfAssetMaximum, soeOPTIONAL},
     {sfMPTokenMetadata, soeOPTIONAL},
-    // no PermissionedDomainID yet
+    {sfDomainID, soeOPTIONAL}, // PermissionedDomainID
     // no WithdrawalPolicy yet
     {sfData, soeOPTIONAL},
 }))
@@ -479,7 +479,6 @@ TRANSACTION(ttVAULT_CREATE, 64, VaultCreate, ({
 TRANSACTION(ttVAULT_SET, 65, VaultSet, ({
     {sfVaultID, soeREQUIRED},
     {sfAssetMaximum, soeOPTIONAL},
-    // no PermissionedDomainID yet
     // no WithdrawalPolicy yet
     {sfData, soeOPTIONAL},
 }))

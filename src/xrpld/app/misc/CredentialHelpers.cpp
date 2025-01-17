@@ -19,6 +19,9 @@
 
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/View.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
 
 #include <unordered_set>
@@ -185,15 +188,41 @@ valid(PreclaimContext const& ctx, AccountID const& src)
 }
 
 TER
-authorized(ApplyContext const& ctx, AccountID const& dst)
+authorizedDomain(
+    ReadView const& view,
+    uint256 domainID,
+    AccountID const& subject)
 {
-    auto const& credIDs(ctx.tx.getFieldV256(sfCredentialIDs));
+    auto const sle = view.read(keylet::permissionedDomain(domainID));
+    if (!sle || !sle->isFieldPresent(sfAcceptedCredentials))
+        return tefINTERNAL;
+
+    for (auto const& h : sle->getFieldArray(sfAcceptedCredentials))
+    {
+        if (!h.isFieldPresent(sfIssuer) || !h.isFieldPresent(sfCredentialType))
+            return tefINTERNAL;
+
+        auto const issuer = h.getAccountID(sfIssuer);
+        auto const type = makeSlice(h.getFieldVL(sfCredentialType));
+        if (view.exists(keylet::credential(subject, issuer, type)))
+            return tesSUCCESS;
+    }
+
+    return tecNO_PERMISSION;
+}
+
+TER
+authorizedDepositPreauth(
+    ApplyView const& view,
+    STVector256 const& credIDs,
+    AccountID const& dst)
+{
     std::set<std::pair<AccountID, Slice>> sorted;
     std::vector<std::shared_ptr<SLE const>> lifeExtender;
     lifeExtender.reserve(credIDs.size());
     for (auto const& h : credIDs)
     {
-        auto sleCred = ctx.view().read(keylet::credential(h));
+        auto sleCred = view.read(keylet::credential(h));
         if (!sleCred)  // already checked in preclaim
             return tefINTERNAL;
 
@@ -204,11 +233,8 @@ authorized(ApplyContext const& ctx, AccountID const& dst)
         lifeExtender.push_back(std::move(sleCred));
     }
 
-    if (!ctx.view().exists(keylet::depositPreauth(dst, sorted)))
-    {
-        JLOG(ctx.journal.trace()) << "DepositPreauth doesn't exist";
+    if (!view.exists(keylet::depositPreauth(dst, sorted)))
         return tecNO_PERMISSION;
-    }
 
     return tesSUCCESS;
 }
@@ -296,8 +322,12 @@ verifyDepositPreauth(
         if (src != dst)
         {
             if (!ctx.view().exists(keylet::depositPreauth(dst, src)))
-                return !credentialsPresent ? tecNO_PERMISSION
-                                           : credentials::authorized(ctx, dst);
+                return !credentialsPresent
+                    ? tecNO_PERMISSION
+                    : credentials::authorizedDepositPreauth(
+                          ctx.view(),
+                          ctx.tx.getFieldV256(sfCredentialIDs),
+                          dst);
         }
     }
 

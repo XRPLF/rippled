@@ -21,6 +21,7 @@
 #include <xrpld/app/tx/detail/VaultCreate.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -43,6 +44,10 @@ VaultCreate::preflight(PreflightContext const& ctx)
         if (data->length() > maxVaultDataLength)
             return temSTRING_TOO_LARGE;
     }
+
+    auto const domain = ctx.tx[~sfDomainID];
+    if (domain && *domain == beast::zero)
+        return temMALFORMED;
 
     // This block is copied from `MPTokenIssuanceCreate::preflight`.
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
@@ -70,10 +75,21 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     {
         auto mptID = asset.get<MPTIssue>().getMptID();
         auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
+        if (!issuance)
+            return tecNO_ENTRY;
         if (issuance->getFlags() & lsfMPTLocked)
             return tecLOCKED;
         if ((issuance->getFlags() & lsfMPTCanTransfer) == 0)
             return tecLOCKED;
+    }
+
+    auto const domain = ctx.tx[~sfDomainID];
+    if (domain)
+    {
+        auto const sleDomain =
+            ctx.view.read(keylet::permissionedDomain(*domain));
+        if (!sleDomain)
+            return tecNO_ENTRY;
     }
 
     return tesSUCCESS;
@@ -136,6 +152,8 @@ VaultCreate::doApply()
     vault->at(sfOwner) = ownerId;
     vault->at(sfAccount) = pseudoId;
     vault->at(sfAsset) = tx[sfAsset];
+    if (tx.isFieldPresent(sfDomainID))
+        vault->setFieldH256(sfDomainID, tx.getFieldH256(sfDomainID));
     // Leave default values for AssetTotal and AssetAvailable, both zero.
     if (auto value = tx[~sfAssetMaximum])
         vault->at(sfAssetMaximum) = *value;
