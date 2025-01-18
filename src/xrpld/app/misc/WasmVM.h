@@ -39,6 +39,12 @@ runEscrowWasm(
     std::string const& funcName,
     std::vector<uint8_t> const& accountID);
 
+Expected<bool, TER>
+runEscrowWasm(
+    std::vector<uint8_t> const& wasmCode,
+    std::string const& funcName,
+    std::vector<uint8_t> const& escrow_tx_json_data,
+    std::vector<uint8_t> const& escrow_lo_json_data);
 
 }  // namespace ripple
 #endif  // RIPPLE_APP_MISC_WASMVM_H_INLCUDED
