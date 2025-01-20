@@ -271,6 +271,33 @@ public:
 };
 
 /**
+ * @brief Invariant: Trust lines with deep freeze flag are not allowed if normal
+ * freeze flag is not set.
+ *
+ * We iterate all the trust lines created by this transaction and ensure
+ * that they don't have deep freeze flag set without normal freeze flag set.
+ */
+class NoDeepFreezeTrustLinesWithoutFreeze
+{
+    bool deepFreezeWithoutFreeze_ = false;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
+/**
  * @brief Invariant: offers should be for non-negative amounts and must not
  *                   be XRP to XRP.
  *
@@ -518,6 +545,7 @@ using InvariantChecks = std::tuple<
     XRPBalanceChecks,
     XRPNotCreated,
     NoXRPTrustLines,
+    NoDeepFreezeTrustLinesWithoutFreeze,
     NoBadOffers,
     NoZeroEscrow,
     ValidNewAccountRoot,

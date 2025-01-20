@@ -557,6 +557,44 @@ NoXRPTrustLines::finalize(
 //------------------------------------------------------------------------------
 
 void
+NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (after && after->getType() == ltRIPPLE_STATE)
+    {
+        std::uint32_t const uFlags = after->getFieldU32(sfFlags);
+        bool const lowFreeze = uFlags & lsfLowFreeze;
+        bool const lowDeepFreeze = uFlags & lsfLowDeepFreeze;
+
+        bool const highFreeze = uFlags & lsfHighFreeze;
+        bool const highDeepFreeze = uFlags & lsfHighDeepFreeze;
+
+        deepFreezeWithoutFreeze_ =
+            (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
+    }
+}
+
+bool
+NoDeepFreezeTrustLinesWithoutFreeze::finalize(
+    STTx const&,
+    TER const,
+    XRPAmount const,
+    ReadView const&,
+    beast::Journal const& j)
+{
+    if (!deepFreezeWithoutFreeze_)
+        return true;
+
+    JLOG(j.fatal()) << "Invariant failed: a trust line with deep freeze flag "
+                       "without normal freeze was created";
+    return false;
+}
+
+//------------------------------------------------------------------------------
+
+void
 ValidNewAccountRoot::visitEntry(
     bool,
     std::shared_ptr<SLE const> const& before,

@@ -409,6 +409,52 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
+    testNoDeepFreezeTrustLinesWithoutFreeze()
+    {
+        using namespace test::jtx;
+        testcase << "trust lines with deep freeze flag without freeze "
+                    "not allowed";
+        doInvariantCheck(
+            {{"a trust line with deep freeze flag without normal freeze was "
+              "created"}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const sleNew = std::make_shared<SLE>(
+                    keylet::line(A1, A2, A1["USD"].currency));
+                std::uint32_t uFlags = 0u;
+                uFlags |= lsfLowDeepFreeze;
+                sleNew->setFieldU32(sfFlags, uFlags);
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"a trust line with deep freeze flag without normal freeze was "
+              "created"}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const sleNew = std::make_shared<SLE>(
+                    keylet::line(A1, A2, A1["USD"].currency));
+                std::uint32_t uFlags = 0u;
+                uFlags |= lsfHighDeepFreeze;
+                sleNew->setFieldU32(sfFlags, uFlags);
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"a trust line with deep freeze flag without normal freeze was "
+              "created"}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const sleNew = std::make_shared<SLE>(
+                    keylet::line(A1, A2, A1["USD"].currency));
+                std::uint32_t uFlags = 0u;
+                uFlags |= lsfLowDeepFreeze | lsfHighDeepFreeze;
+                sleNew->setFieldU32(sfFlags, uFlags);
+                ac.view().insert(sleNew);
+                return true;
+            });
+    }
+
+    void
     testXRPBalanceCheck()
     {
         using namespace test::jtx;
@@ -1061,6 +1107,7 @@ public:
         testAccountRootsDeletedClean();
         testTypesMatch();
         testNoXRPTrustLine();
+        testNoDeepFreezeTrustLinesWithoutFreeze();
         testXRPBalanceCheck();
         testTransactionFeeCheck();
         testNoBadOffers();
