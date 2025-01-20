@@ -19,9 +19,12 @@
 
 #include <xrpld/app/tx/detail/VaultWithdraw.h>
 
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
@@ -47,6 +50,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecOBJECT_NOT_FOUND;
+
     return tesSUCCESS;
 }
 

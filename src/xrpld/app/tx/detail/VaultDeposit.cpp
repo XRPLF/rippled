@@ -19,6 +19,7 @@
 
 #include <xrpld/app/tx/detail/VaultDeposit.h>
 
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
@@ -49,6 +50,19 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecOBJECT_NOT_FOUND;
+
+    // Only the VaultDeposit transaction is subject to this permission check.
+    if (vault->getFlags() == tfVaultPrivate &&
+        ctx.tx[sfAccount] != vault->at(sfOwner))
+    {
+        if (auto const domain = vault->at(~sfVaultID))
+        {
+            if (!credentials::authorizedDomain(
+                    ctx.view, *domain, ctx.tx[sfAccount]))
+                return tecNO_PERMISSION;
+        }
+    }
+
     return tesSUCCESS;
 }
 

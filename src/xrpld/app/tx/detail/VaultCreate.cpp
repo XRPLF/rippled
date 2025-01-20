@@ -23,6 +23,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
@@ -45,16 +46,19 @@ VaultCreate::preflight(PreflightContext const& ctx)
             return temSTRING_TOO_LARGE;
     }
 
-    auto const domain = ctx.tx[~sfDomainID];
-    if (domain && *domain == beast::zero)
-        return temMALFORMED;
+    if (auto const domain = ctx.tx[~sfDomainID])
+    {
+        if (*domain == beast::zero)
+            return temMALFORMED;
+        else if ((ctx.tx.getFlags() & tfVaultPrivate) == 0)
+            return temMALFORMED;  // DomainID only allowed on private vaults
+    }
 
-    // This block is copied from `MPTokenIssuanceCreate::preflight`.
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
         if (metadata->length() == 0 ||
             metadata->length() > maxMPTokenMetadataLength)
-            return temSTRING_TOO_LARGE;
+            return temMALFORMED;
     }
 
     return preflight2(ctx);
@@ -83,8 +87,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
             return tecLOCKED;
     }
 
-    auto const domain = ctx.tx[~sfDomainID];
-    if (domain)
+    if (auto const domain = ctx.tx[~sfDomainID])
     {
         auto const sleDomain =
             ctx.view.read(keylet::permissionedDomain(*domain));
@@ -129,7 +132,7 @@ VaultCreate::doApply()
 
     auto txFlags = tx.getFlags();
     std::uint32_t mptFlags = 0;
-    if (!(txFlags & tfVaultShareNonTransferable))
+    if ((txFlags & tfVaultShareNonTransferable) == 0)
         mptFlags |= (lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer);
     if (txFlags & tfVaultPrivate)
         mptFlags |= lsfMPTRequireAuth;
