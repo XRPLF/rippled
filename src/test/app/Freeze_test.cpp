@@ -1818,21 +1818,20 @@ class Freeze_test : public beast::unit_test::suite
         }
 
         // Testing A2 nft offer sell when A2 deep frozen by issuer
-        // if (features[featureDeepFreeze])
-        // {
-        //     auto const sellOfferIndex = createNFTOffer(env, A2, USD(10));
+        if (features[featureDeepFreeze])
+        {
+            auto const sellOfferIndex = createNFTOffer(env, A2, USD(10));
 
-        //     env(trust(G1, A2["USD"](0), tfSetFreeze | tfSetDeepFreeze));
-        //     env.close();
+            env(trust(G1, A2["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
 
-        //     // test: A2 cannot receive USD for his NFT
-        //     env(token::acceptSellOffer(A1, sellOfferIndex),
-        //         ter(tecINSUFFICIENT_FUNDS));
-        //     env.close();
+            // test: A2 cannot receive USD for his NFT
+            env(token::acceptSellOffer(A1, sellOfferIndex), ter(tecFROZEN));
+            env.close();
 
-        //     env(trust(G1, A2["USD"](0), tfClearFreeze | tfClearDeepFreeze));
-        //     env.close();
-        // }
+            env(trust(G1, A2["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+        }
 
         // Testing A1 nft offer sell when A2 frozen by issuer
         {
@@ -1872,8 +1871,7 @@ class Freeze_test : public beast::unit_test::suite
         //     env.close();
 
         //     // test: A2 cannot receive USD for his NFT
-        //     env(token::acceptSellOffer(A1, sellOfferIndex),
-        //         ter(tecINSUFFICIENT_FUNDS));
+        //     env(token::acceptSellOffer(A1, sellOfferIndex), ter(tecFROZEN));
         //     env.close();
 
         //     env(trust(A2, G1["USD"](0), tfClearFreeze));
@@ -1881,21 +1879,20 @@ class Freeze_test : public beast::unit_test::suite
         // }
 
         // // Testing A2 nft offer sell when A2 deep frozen by currency holder
-        // if (features[featureDeepFreeze])
-        // {
-        //     auto const sellOfferIndex = createNFTOffer(env, A2, USD(10));
+        if (features[featureDeepFreeze])
+        {
+            auto const sellOfferIndex = createNFTOffer(env, A2, USD(10));
 
-        //     env(trust(A2, G1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
-        //     env.close();
+            env(trust(A2, G1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
 
-        //     // test: A2 cannot receive USD for his NFT
-        //     env(token::acceptSellOffer(A1, sellOfferIndex),
-        //         ter(tecINSUFFICIENT_FUNDS));
-        //     env.close();
+            // test: A2 cannot receive USD for his NFT
+            env(token::acceptSellOffer(A1, sellOfferIndex), ter(tecFROZEN));
+            env.close();
 
-        //     env(trust(A2, G1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
-        //     env.close();
-        // }
+            env(trust(A2, G1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+        }
 
         // Testing A1 nft offer sell when A2 frozen by currency holder
         {
