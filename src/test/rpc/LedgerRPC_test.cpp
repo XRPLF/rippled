@@ -3171,7 +3171,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             params[jss::ledger_index] = jss::validated;
             params[jss::permissioned_domain] = "NotAHexString";
             auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
-            checkErrorValue(jrr[jss::result], "malformedObjectId", "");
+            checkErrorValue(jrr[jss::result], "malformedRequest", "");
         }
 
         {
@@ -3180,7 +3180,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             params[jss::ledger_index] = jss::validated;
             params[jss::permissioned_domain] = 10;
             auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
-            checkErrorValue(jrr[jss::result], "malformedObject", "");
+            checkErrorValue(jrr[jss::result], "malformedRequest", "");
         }
 
         {
@@ -3190,7 +3190,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             params[jss::permissioned_domain][jss::account] = 1;
             params[jss::permissioned_domain][jss::seq] = seq;
             auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
-            checkErrorValue(jrr[jss::result], "malformedAccount", "");
+            checkErrorValue(jrr[jss::result], "malformedRequest", "");
         }
 
         {
@@ -3200,7 +3200,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             params[jss::permissioned_domain][jss::account] = "";
             params[jss::permissioned_domain][jss::seq] = seq;
             auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
-            checkErrorValue(jrr[jss::result], "malformedAccount", "");
+            checkErrorValue(jrr[jss::result], "malformedAddress", "");
         }
 
         {
@@ -3210,7 +3210,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             params[jss::permissioned_domain][jss::account] = alice.human();
             params[jss::permissioned_domain][jss::seq] = "12g";
             auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
-            checkErrorValue(jrr[jss::result], "malformedSequence", "");
+            checkErrorValue(jrr[jss::result], "malformedRequest", "");
         }
     }
 
