@@ -20,6 +20,7 @@
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
@@ -193,18 +194,20 @@ authorizedDomain(
     uint256 domainID,
     AccountID const& subject)
 {
-    auto const sle = view.read(keylet::permissionedDomain(domainID));
-    if (!sle || !sle->isFieldPresent(sfAcceptedCredentials))
+    auto const slePD = view.read(keylet::permissionedDomain(domainID));
+    if (!slePD || !slePD->isFieldPresent(sfAcceptedCredentials))
         return tefINTERNAL;
 
-    for (auto const& h : sle->getFieldArray(sfAcceptedCredentials))
+    for (auto const& h : slePD->getFieldArray(sfAcceptedCredentials))
     {
         if (!h.isFieldPresent(sfIssuer) || !h.isFieldPresent(sfCredentialType))
             return tefINTERNAL;
 
         auto const issuer = h.getAccountID(sfIssuer);
         auto const type = makeSlice(h.getFieldVL(sfCredentialType));
-        if (view.exists(keylet::credential(subject, issuer, type)))
+        auto const sleCredential =
+            view.read(keylet::credential(subject, issuer, type));
+        if (sleCredential && sleCredential->getFlags() & lsfAccepted)
             return tesSUCCESS;
     }
 

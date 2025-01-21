@@ -200,7 +200,7 @@ public:
     operator()(T v) const
     {
         STAmount amount{asset_, v * scale_};
-        return {amount, "uhh"};
+        return {amount, ""};
     }
 };
 //------------------------------------------------------------------------------

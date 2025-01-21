@@ -42,8 +42,8 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const data = ctx.tx[~sfData])
     {
-        if (data->length() > maxVaultDataLength)
-            return temSTRING_TOO_LARGE;
+        if (data->empty() || data->length() > maxVaultDataLength)
+            return temMALFORMED;
     }
 
     if (auto const domain = ctx.tx[~sfDomainID])

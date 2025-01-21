@@ -141,7 +141,6 @@ enum TEMcodes : TERUnderlyingType {
     temARRAY_TOO_LARGE,
 
     temBAD_TRANSFER_FEE,
-    temSTRING_TOO_LARGE,
 };
 
 //------------------------------------------------------------------------------

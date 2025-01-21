@@ -25,6 +25,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
@@ -57,8 +58,8 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     {
         if (auto const domain = vault->at(~sfVaultID))
         {
-            if (!credentials::authorizedDomain(
-                    ctx.view, *domain, ctx.tx[sfAccount]))
+            if (credentials::authorizedDomain(
+                    ctx.view, *domain, ctx.tx[sfAccount]) != tesSUCCESS)
                 return tecNO_PERMISSION;
         }
     }

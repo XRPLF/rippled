@@ -39,8 +39,8 @@ VaultSet::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     if (auto const data = ctx.tx[~sfData])
     {
-        if (data->length() > maxVaultDataLength)
-            return temSTRING_TOO_LARGE;
+        if (data->empty() || data->length() > maxVaultDataLength)
+            return temMALFORMED;
     }
 
     auto const domain = ctx.tx[~sfDomainID];
