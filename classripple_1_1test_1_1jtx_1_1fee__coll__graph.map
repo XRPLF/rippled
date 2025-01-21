@@ -1,4 +1,4 @@
 <map id="ripple::test::jtx::fee" name="ripple::test::jtx::fee">
-<area shape="rect" id="node1" title="Set the fee on a JTx." alt="" coords="9,109,156,136"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,5,160,47"/>
+<area shape="rect" id="node1" title="Set the fee on a JTx." alt="" coords="9,108,156,133"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,5,160,45"/>
 </map>

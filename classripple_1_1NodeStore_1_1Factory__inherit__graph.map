@@ -1,6 +1,6 @@
 <map id="ripple::NodeStore::Factory" name="ripple::NodeStore::Factory">
-<area shape="rect" id="node1" title="Base class for backend factories." alt="" coords="5,71,148,112"/>
-<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1MemoryFactory.html" title=" " alt="" coords="196,5,339,47"/>
-<area shape="rect" id="node3" href="$classripple_1_1NodeStore_1_1NuDBFactory.html" title=" " alt="" coords="196,71,339,112"/>
-<area shape="rect" id="node4" href="$classripple_1_1NodeStore_1_1NullFactory.html" title=" " alt="" coords="196,136,339,177"/>
+<area shape="rect" id="node1" title="Base class for backend factories." alt="" coords="5,69,148,109"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1MemoryFactory.html" title=" " alt="" coords="196,5,339,45"/>
+<area shape="rect" id="node3" href="$classripple_1_1NodeStore_1_1NuDBFactory.html" title=" " alt="" coords="196,69,339,109"/>
+<area shape="rect" id="node4" href="$classripple_1_1NodeStore_1_1NullFactory.html" title=" " alt="" coords="196,133,339,173"/>
 </map>

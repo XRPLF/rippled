@@ -1,6 +1,6 @@
 <map id="ripple::reduce_relay::SquelchHandler" name="ripple::reduce_relay::SquelchHandler">
-<area shape="rect" id="node1" title="Abstract class." alt="" coords="5,49,156,90"/>
-<area shape="rect" id="node2" href="$classripple_1_1OverlayImpl.html" title=" " alt="" coords="219,5,365,32"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1OverlaySim.html" title=" " alt="" coords="204,56,380,83"/>
-<area shape="rect" id="node4" href="$structripple_1_1test_1_1reduce__relay__test_1_1Handler.html" title=" " alt="" coords="215,107,369,149"/>
+<area shape="rect" id="node1" title="Abstract class." alt="" coords="5,47,156,87"/>
+<area shape="rect" id="node2" href="$classripple_1_1OverlayImpl.html" title=" " alt="" coords="219,5,365,31"/>
+<area shape="rect" id="node3" href="$classripple_1_1test_1_1OverlaySim.html" title=" " alt="" coords="204,55,380,80"/>
+<area shape="rect" id="node4" href="$structripple_1_1test_1_1reduce__relay__test_1_1Handler.html" title=" " alt="" coords="215,105,369,145"/>
 </map>

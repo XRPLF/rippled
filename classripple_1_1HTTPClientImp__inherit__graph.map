@@ -1,5 +1,5 @@
 <map id="ripple::HTTPClientImp" name="ripple::HTTPClientImp">
-<area shape="rect" id="node1" title=" " alt="" coords="134,95,298,121"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,224,47"/>
-<area shape="rect" id="node3" href="$classripple_1_1HTTPClient.html" title="Provides an asynchronous HTTP client implementation with optional SSL." alt="" coords="248,13,387,39"/>
+<area shape="rect" id="node1" title=" " alt="" coords="134,93,298,119"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,224,45"/>
+<area shape="rect" id="node3" href="$classripple_1_1HTTPClient.html" title="Provides an asynchronous HTTP client implementation with optional SSL." alt="" coords="248,13,387,38"/>
 </map>

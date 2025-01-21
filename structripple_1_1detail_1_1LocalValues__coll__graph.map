@@ -1,6 +1,6 @@
 <map id="ripple::detail::LocalValues" name="ripple::detail::LocalValues">
-<area shape="rect" id="node1" title=" " alt="" coords="797,35,987,61"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="549,5,701,91"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="265,20,436,76"/>
-<area shape="rect" id="node4" href="$structripple_1_1detail_1_1LocalValues_1_1BasicValue.html" title=" " alt="" coords="5,27,195,69"/>
+<area shape="rect" id="node1" title=" " alt="" coords="797,35,987,60"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="549,5,701,89"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="265,20,436,75"/>
+<area shape="rect" id="node4" href="$structripple_1_1detail_1_1LocalValues_1_1BasicValue.html" title=" " alt="" coords="5,27,195,67"/>
 </map>

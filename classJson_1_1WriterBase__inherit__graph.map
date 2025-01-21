@@ -1,5 +1,5 @@
 <map id="Json::WriterBase" name="Json::WriterBase">
-<area shape="rect" id="node1" title="Abstract class for writers." alt="" coords="80,5,208,32"/>
-<area shape="rect" id="node2" href="$classJson_1_1FastWriter.html" title="Outputs a Value in JSON format without formatting (not human friendly)." alt="" coords="5,80,128,107"/>
-<area shape="rect" id="node3" href="$classJson_1_1StyledWriter.html" title="Writes a Value in JSON format in a human friendly way." alt="" coords="153,80,290,107"/>
+<area shape="rect" id="node1" title="Abstract class for writers." alt="" coords="79,5,209,31"/>
+<area shape="rect" id="node2" href="$classJson_1_1FastWriter.html" title="Outputs a Value in JSON format without formatting (not human friendly)." alt="" coords="5,79,128,104"/>
+<area shape="rect" id="node3" href="$classJson_1_1StyledWriter.html" title="Writes a Value in JSON format in a human friendly way." alt="" coords="152,79,291,104"/>
 </map>

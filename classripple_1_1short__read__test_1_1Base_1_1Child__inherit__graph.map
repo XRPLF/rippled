@@ -1,4 +1,6 @@
 <map id="ripple::short_read_test::Base::Child" name="ripple::short_read_test::Base::Child">
-<area shape="rect" id="node1" title=" " alt="" coords="28,5,164,47"/>
-<area shape="rect" id="node2" href="$structripple_1_1short__read__test_1_1Client_1_1Connection.html" title=" " alt="" coords="5,95,187,136"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,69,141,109"/>
+<area shape="rect" id="node2" href="$structripple_1_1short__read__test_1_1Client_1_1Connection.html" title=" " alt="" coords="191,5,373,45"/>
+<area shape="rect" id="node3" href="$structripple_1_1short__read__test_1_1Server_1_1Acceptor.html" title=" " alt="" coords="197,69,367,109"/>
+<area shape="rect" id="node4" href="$structripple_1_1short__read__test_1_1Server_1_1Connection.html" title=" " alt="" coords="189,133,375,173"/>
 </map>

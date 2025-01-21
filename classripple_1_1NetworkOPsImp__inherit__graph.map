@@ -1,5 +1,5 @@
 <map id="ripple::NetworkOPsImp" name="ripple::NetworkOPsImp">
-<area shape="rect" id="node1" title=" " alt="" coords="5,155,177,181"/>
-<area shape="rect" id="node2" href="$classripple_1_1NetworkOPs.html" title="Provides server functionality for clients." alt="" coords="18,80,165,107"/>
-<area shape="rect" id="node3" href="$classripple_1_1InfoSub_1_1Source.html" title="Abstracts the source of subscription data." alt="" coords="7,5,175,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,152,177,177"/>
+<area shape="rect" id="node2" href="$classripple_1_1NetworkOPs.html" title="Provides server functionality for clients." alt="" coords="18,79,165,104"/>
+<area shape="rect" id="node3" href="$classripple_1_1InfoSub_1_1Source.html" title="Abstracts the source of subscription data." alt="" coords="7,5,175,31"/>
 </map>

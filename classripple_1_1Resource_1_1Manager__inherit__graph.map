@@ -1,5 +1,5 @@
 <map id="ripple::Resource::Manager" name="ripple::Resource::Manager">
-<area shape="rect" id="node1" title="Tracks load and resource consumption." alt="" coords="17,95,208,121"/>
-<area shape="rect" id="node3" href="$classripple_1_1Resource_1_1ManagerImp.html" title=" " alt="" coords="5,169,220,196"/>
-<area shape="rect" id="node2" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="29,5,197,47"/>
+<area shape="rect" id="node1" title="Tracks load and resource consumption." alt="" coords="18,93,210,119"/>
+<area shape="rect" id="node3" href="$classripple_1_1Resource_1_1ManagerImp.html" title=" " alt="" coords="5,167,223,192"/>
+<area shape="rect" id="node2" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="30,5,198,45"/>
 </map>

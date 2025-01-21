@@ -1,5 +1,5 @@
 <map id="ripple::PeerFinder::Checker&lt; Protocol &gt;" name="ripple::PeerFinder::Checker&lt; Protocol &gt;">
-<area shape="rect" id="node1" title="Tests remote listening sockets to make sure they are connectible." alt="" coords="85,95,251,136"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="5,5,176,32"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="201,5,293,32"/>
+<area shape="rect" id="node1" title="Tests remote listening sockets to make sure they are connectible." alt="" coords="46,93,211,133"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="5,5,97,31"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="122,5,293,31"/>
 </map>

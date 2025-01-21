@@ -1,8 +1,8 @@
 <map id="ripple::ApplyView" name="ripple::ApplyView">
-<area shape="rect" id="node1" title="Writeable view to a ledger, for applying a transaction." alt="" coords="247,5,383,32"/>
-<area shape="rect" id="node2" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="5,137,136,164"/>
-<area shape="rect" id="node4" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="227,56,403,112"/>
-<area shape="rect" id="node6" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="227,262,403,303"/>
-<area shape="rect" id="node3" href="$structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="452,113,652,140"/>
-<area shape="rect" id="node5" href="$structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="455,216,649,243"/>
+<area shape="rect" id="node1" title="Writeable view to a ledger, for applying a transaction." alt="" coords="253,5,389,31"/>
+<area shape="rect" id="node2" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="5,121,137,147"/>
+<area shape="rect" id="node4" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="228,55,415,95"/>
+<area shape="rect" id="node6" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="233,245,410,285"/>
+<area shape="rect" id="node3" href="$structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="464,99,665,124"/>
+<area shape="rect" id="node5" href="$structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="467,200,662,225"/>
 </map>

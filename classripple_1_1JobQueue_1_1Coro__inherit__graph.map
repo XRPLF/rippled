@@ -1,4 +1,4 @@
 <map id="ripple::JobQueue::Coro" name="ripple::JobQueue::Coro">
-<area shape="rect" id="node1" title="Coroutines must run to completion." alt="" coords="5,95,172,121"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="13,5,164,47"/>
+<area shape="rect" id="node1" title="Coroutines must run to completion." alt="" coords="5,93,172,119"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="13,5,164,45"/>
 </map>

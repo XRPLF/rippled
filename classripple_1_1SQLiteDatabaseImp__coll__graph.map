@@ -1,23 +1,24 @@
 <map id="ripple::SQLiteDatabaseImp" name="ripple::SQLiteDatabaseImp">
-<area shape="rect" id="node1" title=" " alt="" coords="1540,189,1736,215"/>
-<area shape="rect" id="node2" href="$classripple_1_1SQLiteDatabase.html" title=" " alt="" coords="1241,30,1412,57"/>
-<area shape="rect" id="node3" href="$classripple_1_1RelationalDatabase.html" title=" " alt="" coords="931,26,1125,53"/>
-<area shape="rect" id="node4" href="$classripple_1_1Application.html" title=" " alt="" coords="1257,225,1397,251"/>
-<area shape="rect" id="node5" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="944,217,1112,259"/>
-<area shape="rect" id="node12" href="$classbeast_1_1PropertyStream_1_1Item.html" title=" " alt="" coords="1243,155,1411,196"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title="STL class." alt="" coords="615,139,773,166"/>
-<area shape="rect" id="node17" href="$classripple_1_1DatabaseCon.html" title=" " alt="" coords="951,77,1105,103"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="651,275,737,302"/>
-<area shape="rect" id="node8" href="$classbeast_1_1List.html" title=" " alt="" coords="601,209,787,251"/>
-<area shape="rect" id="node9" href="$classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="313,235,496,291"/>
-<area shape="rect" id="node10" href="$classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="25,243,193,284"/>
-<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="361,185,449,211"/>
-<area shape="rect" id="node13" title=" " alt="" coords="955,127,1101,154"/>
-<area shape="rect" id="node14" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1271,282,1382,309"/>
-<area shape="rect" id="node15" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="955,286,1101,313"/>
-<area shape="rect" id="node16" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="1241,84,1412,125"/>
-<area shape="rect" id="node18" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="609,5,779,47"/>
-<area shape="rect" id="node19" href="$classripple_1_1Checkpointer.html" title=" " alt="" coords="328,13,481,39"/>
-<area shape="rect" id="node20" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,212,47"/>
-<area shape="rect" id="node21" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="614,71,774,112"/>
+<area shape="rect" id="node1" title=" " alt="" coords="1505,241,1701,267"/>
+<area shape="rect" id="node2" href="$classripple_1_1SQLiteDatabase.html" title=" " alt="" coords="1241,47,1412,72"/>
+<area shape="rect" id="node3" href="$classripple_1_1RelationalDatabase.html" title=" " alt="" coords="931,25,1125,51"/>
+<area shape="rect" id="node4" href="$classripple_1_1Application.html" title=" " alt="" coords="1257,212,1397,237"/>
+<area shape="rect" id="node5" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="944,163,1112,203"/>
+<area shape="rect" id="node9" href="$classbeast_1_1PropertyStream_1_1Item.html" title=" " alt="" coords="1243,115,1411,155"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="651,133,737,159"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="335,134,474,174"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title=" " alt="" coords="615,196,773,221"/>
+<area shape="rect" id="node18" href="$classripple_1_1DatabaseCon.html" title=" " alt="" coords="951,320,1105,345"/>
+<area shape="rect" id="node10" title=" " alt="" coords="955,75,1101,100"/>
+<area shape="rect" id="node11" href="$classbeast_1_1List.html" title=" " alt="" coords="601,62,787,102"/>
+<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="361,5,449,31"/>
+<area shape="rect" id="node13" href="$classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="313,55,496,109"/>
+<area shape="rect" id="node14" href="$classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="25,62,193,102"/>
+<area shape="rect" id="node15" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="639,275,749,300"/>
+<area shape="rect" id="node16" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="331,275,478,300"/>
+<area shape="rect" id="node17" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="1241,313,1412,353"/>
+<area shape="rect" id="node19" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="614,390,774,430"/>
+<area shape="rect" id="node20" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="609,326,779,366"/>
+<area shape="rect" id="node21" href="$classripple_1_1Checkpointer.html" title=" " alt="" coords="328,333,481,359"/>
+<area shape="rect" id="node22" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,326,212,366"/>
 </map>

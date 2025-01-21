@@ -1,10 +1,10 @@
 <map id="ripple::Book" name="ripple::Book">
-<area shape="rect" id="node1" title="Specifies an order book." alt="" coords="1035,45,1135,71"/>
-<area shape="rect" id="node2" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="803,8,965,49"/>
-<area shape="rect" id="node3" href="$classripple_1_1Issue.html" title="A currency issued by an account." alt="" coords="833,74,935,101"/>
-<area shape="rect" id="node4" href="$classripple_1_1base__uint.html" title=" " alt="" coords="491,33,689,75"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,5,389,47"/>
-<area shape="rect" id="node8" href="$classripple_1_1base__uint.html" title=" " alt="" coords="487,99,693,140"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,13,108,39"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,125,349,151"/>
+<area shape="rect" id="node1" title="Specifies an order book." alt="" coords="1035,42,1135,67"/>
+<area shape="rect" id="node2" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="803,5,965,45"/>
+<area shape="rect" id="node3" href="$classripple_1_1Issue.html" title="A currency issued by an account." alt="" coords="833,70,935,95"/>
+<area shape="rect" id="node4" href="$classripple_1_1base__uint.html" title=" " alt="" coords="491,31,689,71"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,41,349,66"/>
+<area shape="rect" id="node8" href="$classripple_1_1base__uint.html" title=" " alt="" coords="487,95,693,135"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,107,389,147"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,114,108,139"/>
 </map>

@@ -1,5 +1,5 @@
 <map id="ripple::LedgerCleaner" name="ripple::LedgerCleaner">
-<area shape="rect" id="node1" title="Check the ledger/transaction databases to make sure they have continuity." alt="" coords="18,95,179,121"/>
-<area shape="rect" id="node3" href="$classripple_1_1LedgerCleanerImp.html" title=" " alt="" coords="5,169,192,196"/>
-<area shape="rect" id="node2" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="15,5,183,47"/>
+<area shape="rect" id="node1" title="Check the ledger/transaction databases to make sure they have continuity." alt="" coords="18,93,179,119"/>
+<area shape="rect" id="node3" href="$classripple_1_1LedgerCleanerImp.html" title=" " alt="" coords="5,167,192,192"/>
+<area shape="rect" id="node2" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="15,5,183,45"/>
 </map>

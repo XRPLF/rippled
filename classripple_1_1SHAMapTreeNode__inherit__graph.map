@@ -1,8 +1,8 @@
 <map id="ripple::SHAMapTreeNode" name="ripple::SHAMapTreeNode">
-<area shape="rect" id="node1" title=" " alt="" coords="5,46,188,73"/>
-<area shape="rect" id="node2" href="$classripple_1_1SHAMapInnerNode.html" title=" " alt="" coords="236,21,424,47"/>
-<area shape="rect" id="node3" href="$classripple_1_1SHAMapLeafNode.html" title=" " alt="" coords="239,71,421,98"/>
-<area shape="rect" id="node4" href="$classripple_1_1SHAMapAccountStateLeafNode.html" title="A leaf node for a state object." alt="" coords="472,5,679,47"/>
-<area shape="rect" id="node5" href="$classripple_1_1SHAMapTxLeafNode.html" title="A leaf node for a transaction." alt="" coords="476,71,675,98"/>
-<area shape="rect" id="node6" href="$classripple_1_1SHAMapTxPlusMetaLeafNode.html" title="A leaf node for a transaction and its associated metadata." alt="" coords="477,123,673,164"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,46,188,71"/>
+<area shape="rect" id="node2" href="$classripple_1_1SHAMapInnerNode.html" title=" " alt="" coords="236,21,425,46"/>
+<area shape="rect" id="node3" href="$classripple_1_1SHAMapLeafNode.html" title=" " alt="" coords="239,70,423,95"/>
+<area shape="rect" id="node4" href="$classripple_1_1SHAMapAccountStateLeafNode.html" title="A leaf node for a state object." alt="" coords="473,5,681,45"/>
+<area shape="rect" id="node5" href="$classripple_1_1SHAMapTxLeafNode.html" title="A leaf node for a transaction." alt="" coords="477,70,677,95"/>
+<area shape="rect" id="node6" href="$classripple_1_1SHAMapTxPlusMetaLeafNode.html" title="A leaf node for a transaction and its associated metadata." alt="" coords="478,120,677,160"/>
 </map>

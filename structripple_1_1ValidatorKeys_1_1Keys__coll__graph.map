@@ -1,7 +1,7 @@
 <map id="ripple::ValidatorKeys::Keys" name="ripple::ValidatorKeys::Keys">
-<area shape="rect" id="node1" title=" " alt="" coords="71,199,227,240"/>
-<area shape="rect" id="node2" href="$classripple_1_1SecretKey.html" title="A secret key." alt="" coords="5,95,137,121"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="59,5,153,32"/>
-<area shape="rect" id="node4" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="162,95,293,121"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="183,5,271,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="70,196,226,236"/>
+<area shape="rect" id="node2" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="5,93,136,119"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="27,5,115,31"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="147,5,242,31"/>
+<area shape="rect" id="node5" href="$classripple_1_1SecretKey.html" title="A secret key." alt="" coords="161,93,293,119"/>
 </map>

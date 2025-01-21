@@ -1,14 +1,18 @@
 <map id="ripple::test::multi_runner_parent" name="ripple::test::multi_runner_parent">
-<area shape="rect" id="node1" title="Manager for children running unit tests." alt="" coords="1293,155,1428,197"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1detail_1_1multi__runner__base.html" title=" " alt="" coords="915,83,1077,139"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="507,115,684,171"/>
-<area shape="rect" id="node4" href="$structripple_1_1test_1_1detail_1_1multi__runner__base_1_1inner.html" title=" " alt="" coords="514,35,677,91"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="204,5,357,32"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="185,124,376,151"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,95,93,121"/>
-<area shape="rect" id="node8" href="$structripple_1_1test_1_1detail_1_1results.html" title=" " alt="" coords="212,57,349,98"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/set.html" title=" " alt="" coords="913,163,1079,189"/>
-<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="552,195,639,221"/>
-<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/thread.html" title="STL class." alt="" coords="950,213,1042,240"/>
-<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title="STL class." alt="" coords="944,264,1048,291"/>
+<area shape="rect" id="node1" title="Manager for children running unit tests." alt="" coords="1307,174,1441,214"/>
+<area shape="rect" id="node2" href="$classripple_1_1test_1_1detail_1_1multi__runner__base.html" title=" " alt="" coords="928,103,1091,157"/>
+<area shape="rect" id="node3" href="$structripple_1_1test_1_1detail_1_1multi__runner__base_1_1inner.html" title=" " alt="" coords="527,41,690,96"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="201,61,392,87"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="15,116,103,141"/>
+<area shape="rect" id="node7" href="$structripple_1_1test_1_1detail_1_1results.html" title=" " alt="" coords="228,130,365,170"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="220,5,373,31"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="520,120,697,175"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="957,181,1061,207"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="536,199,681,239"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ios.html" title=" " alt="" coords="211,207,382,232"/>
+<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/ios_base.html" title=" " alt="" coords="5,207,112,232"/>
+<area shape="rect" id="node13" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/thread.html" title=" " alt="" coords="963,231,1055,256"/>
+<area shape="rect" id="node14" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/set.html" title=" " alt="" coords="927,280,1092,305"/>
+<area shape="rect" id="node15" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="565,280,652,305"/>
+<area shape="rect" id="node16" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="227,273,366,313"/>
 </map>

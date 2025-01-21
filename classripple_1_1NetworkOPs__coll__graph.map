@@ -1,4 +1,4 @@
 <map id="ripple::NetworkOPs" name="ripple::NetworkOPs">
-<area shape="rect" id="node1" title="Provides server functionality for clients." alt="" coords="16,80,163,107"/>
-<area shape="rect" id="node2" href="$classripple_1_1InfoSub_1_1Source.html" title="Abstracts the source of subscription data." alt="" coords="5,5,173,32"/>
+<area shape="rect" id="node1" title="Provides server functionality for clients." alt="" coords="16,79,163,104"/>
+<area shape="rect" id="node2" href="$classripple_1_1InfoSub_1_1Source.html" title="Abstracts the source of subscription data." alt="" coords="5,5,173,31"/>
 </map>

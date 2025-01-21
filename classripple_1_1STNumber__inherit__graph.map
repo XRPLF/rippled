@@ -1,0 +1,5 @@
+<map id="ripple::STNumber" name="ripple::STNumber">
+<area shape="rect" id="node1" title="A serializable number." alt="" coords="77,93,211,119"/>
+<area shape="rect" id="node2" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="5,13,120,38"/>
+<area shape="rect" id="node3" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="144,5,307,45"/>
+</map>

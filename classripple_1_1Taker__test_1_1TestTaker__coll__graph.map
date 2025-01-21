@@ -1,22 +1,25 @@
 <map id="ripple::Taker_test::TestTaker" name="ripple::Taker_test::TestTaker">
-<area shape="rect" id="node1" title=" " alt="" coords="1513,181,1648,222"/>
-<area shape="rect" id="node2" href="$classripple_1_1BasicTaker.html" title="State for the active party during order book or payment operations." alt="" coords="1251,117,1388,144"/>
-<area shape="rect" id="node3" href="$structripple_1_1Rate.html" title="Represents a transfer rate." alt="" coords="319,65,417,92"/>
-<area shape="rect" id="node4" title=" " alt="" coords="5,47,171,89"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="37,124,139,151"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="284,127,452,169"/>
-<area shape="rect" id="node6" href="$classripple_1_1Issue.html" title="A currency issued by an account." alt="" coords="983,181,1084,208"/>
-<area shape="rect" id="node13" href="$classripple_1_1STAmount.html" title=" " alt="" coords="1253,256,1386,283"/>
-<area shape="rect" id="node7" href="$classripple_1_1base__uint.html" title=" " alt="" coords="576,190,775,231"/>
-<area shape="rect" id="node10" href="$classripple_1_1base__uint.html" title=" " alt="" coords="572,121,779,162"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="324,232,412,259"/>
-<area shape="rect" id="node11" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="978,9,1089,36"/>
-<area shape="rect" id="node12" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="602,5,749,32"/>
-<area shape="rect" id="node14" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="976,441,1091,468"/>
-<area shape="rect" id="node15" href="$classripple_1_1SField.html" title="Identifies fields." alt="" coords="623,311,728,337"/>
-<area shape="rect" id="node16" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="955,238,1111,279"/>
-<area shape="rect" id="node17" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="325,361,411,388"/>
-<area shape="rect" id="node18" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="302,311,434,337"/>
-<area shape="rect" id="node19" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="952,303,1115,345"/>
-<area shape="rect" id="node20" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="982,391,1085,417"/>
+<area shape="rect" id="node1" title=" " alt="" coords="1540,283,1673,323"/>
+<area shape="rect" id="node2" href="$classripple_1_1BasicTaker.html" title="State for the active party during order book or payment operations." alt="" coords="1275,189,1411,214"/>
+<area shape="rect" id="node3" href="$classripple_1_1base__uint.html" title=" " alt="" coords="572,108,779,148"/>
+<area shape="rect" id="node7" href="$classripple_1_1Issue.html" title="A currency issued by an account." alt="" coords="983,75,1084,101"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="324,111,412,137"/>
+<area shape="rect" id="node8" href="$classripple_1_1base__uint.html" title=" " alt="" coords="576,31,775,71"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="284,17,452,57"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="37,101,139,126"/>
+<area shape="rect" id="node9" href="$structripple_1_1Rate.html" title="Represents a transfer rate." alt="" coords="319,174,417,199"/>
+<area shape="rect" id="node10" title=" " alt="" coords="5,167,171,207"/>
+<area shape="rect" id="node11" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="978,239,1089,265"/>
+<area shape="rect" id="node12" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="602,239,749,265"/>
+<area shape="rect" id="node13" href="$classripple_1_1STAmount.html" title=" " alt="" coords="1276,346,1409,371"/>
+<area shape="rect" id="node14" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="976,577,1091,602"/>
+<area shape="rect" id="node15" href="$classripple_1_1SField.html" title="Identifies fields." alt="" coords="622,515,729,541"/>
+<area shape="rect" id="node19" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="955,463,1111,503"/>
+<area shape="rect" id="node16" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="325,541,411,566"/>
+<area shape="rect" id="node17" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="19,533,157,573"/>
+<area shape="rect" id="node18" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="302,491,434,517"/>
+<area shape="rect" id="node20" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="952,343,1115,383"/>
+<area shape="rect" id="node21" href="$classripple_1_1Asset.html" title=" " alt="" coords="982,293,1085,318"/>
+<area shape="rect" id="node22" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/variant.html" title=" " alt="" coords="601,289,750,329"/>
+<area shape="rect" id="node23" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="982,527,1085,553"/>
 </map>

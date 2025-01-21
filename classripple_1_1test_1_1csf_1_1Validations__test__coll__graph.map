@@ -1,16 +1,32 @@
 <map id="ripple::test::csf::Validations_test" name="ripple::test::csf::Validations_test">
-<area shape="rect" id="node1" title=" " alt="" coords="1717,193,1844,235"/>
-<area shape="rect" id="node2" title=" " alt="" coords="1480,171,1535,198"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1csf_1_1Ledger.html" title="A ledger is a set of observed transactions and a sequence number identifying the ledger." alt="" coords="1444,223,1571,264"/>
-<area shape="rect" id="node4" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="835,181,1010,223"/>
-<area shape="rect" id="node7" href="$structripple_1_1test_1_1csf_1_1Ledger_1_1Instance.html" title=" " alt="" coords="1204,287,1333,328"/>
-<area shape="rect" id="node5" title=" " alt="" coords="347,5,710,164"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="477,189,580,215"/>
-<area shape="rect" id="node8" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="829,247,1016,288"/>
-<area shape="rect" id="node9" title=" " alt="" coords="341,240,716,399"/>
-<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="851,312,994,353"/>
-<area shape="rect" id="node11" href="$classripple_1_1tagged__integer.html" title="A type&#45;safe wrap around standard integral types." alt="" coords="446,423,611,464"/>
-<area shape="rect" id="node12" title=" " alt="" coords="5,371,292,515"/>
-<area shape="rect" id="node13" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="845,377,1001,419"/>
-<area shape="rect" id="node14" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="837,443,1009,484"/>
+<area shape="rect" id="node1" title=" " alt="" coords="2072,384,2199,424"/>
+<area shape="rect" id="node2" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="1732,255,1895,281"/>
+<area shape="rect" id="node11" href="$classbeast_1_1unit__test_1_1suite_1_1log__buf.html" title=" " alt="" coords="2047,87,2224,156"/>
+<area shape="rect" id="node13" href="$classbeast_1_1unit__test_1_1suite_1_1testcase__t.html" title=" " alt="" coords="2054,203,2217,243"/>
+<area shape="rect" id="node3" href="$classbeast_1_1unit__test_1_1runner.html" title="Unit test runner interface." alt="" coords="1442,254,1615,279"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="1115,201,1202,226"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="615,192,754,232"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title=" " alt="" coords="1079,254,1238,279"/>
+<area shape="rect" id="node7" href="$classbeast_1_1unit__test_1_1suite_1_1log__os.html" title=" " alt="" coords="2305,101,2468,141"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="896,5,1041,45"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ios.html" title=" " alt="" coords="219,70,390,95"/>
+<area shape="rect" id="node17" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_istream.html" title=" " alt="" coords="614,127,755,167"/>
+<area shape="rect" id="node18" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="612,63,757,103"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/ios_base.html" title=" " alt="" coords="5,70,112,95"/>
+<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_stringbuf.html" title=" " alt="" coords="1727,63,1900,132"/>
+<area shape="rect" id="node14" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_stringstream.html" title=" " alt="" coords="1747,157,1880,182"/>
+<area shape="rect" id="node15" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_stringstream.html" title=" " alt="" coords="1441,140,1616,180"/>
+<area shape="rect" id="node16" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_iostream.html" title=" " alt="" coords="1084,127,1233,167"/>
+<area shape="rect" id="node19" href="$classripple_1_1test_1_1csf_1_1Ledger.html" title="A ledger is a set of observed transactions and a sequence number identifying the ledger." alt="" coords="1750,441,1877,481"/>
+<area shape="rect" id="node20" href="$structripple_1_1test_1_1csf_1_1Ledger_1_1Instance.html" title=" " alt="" coords="1464,441,1593,481"/>
+<area shape="rect" id="node21" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="1065,413,1252,453"/>
+<area shape="rect" id="node22" title=" " alt="" coords="497,256,872,413"/>
+<area shape="rect" id="node23" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="633,438,736,463"/>
+<area shape="rect" id="node26" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="1071,483,1246,523"/>
+<area shape="rect" id="node24" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="1081,349,1237,389"/>
+<area shape="rect" id="node25" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="1073,549,1245,589"/>
+<area shape="rect" id="node27" title=" " alt="" coords="503,488,866,645"/>
+<area shape="rect" id="node28" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="1087,625,1230,665"/>
+<area shape="rect" id="node29" href="$classripple_1_1tagged__integer.html" title="A type&#45;safe wrap around standard integral types." alt="" coords="602,669,767,709"/>
+<area shape="rect" id="node30" title=" " alt="" coords="161,618,448,761"/>
 </map>

@@ -1,12 +1,12 @@
 <map id="ripple::EitherAmount" name="ripple::EitherAmount">
-<area shape="rect" id="node1" title=" " alt="" coords="567,173,723,199"/>
-<area shape="rect" id="node2" href="$classripple_1_1IOUAmount.html" title="Floating point representation of amounts with high dynamic range." alt="" coords="351,89,493,115"/>
-<area shape="rect" id="node3" title=" " alt="" coords="35,5,201,47"/>
-<area shape="rect" id="node4" title=" " alt="" coords="6,71,230,98"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="71,122,165,149"/>
-<area shape="rect" id="node6" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="351,217,493,243"/>
-<area shape="rect" id="node7" title=" " alt="" coords="35,173,201,215"/>
-<area shape="rect" id="node8" title=" " alt="" coords="5,239,231,266"/>
-<area shape="rect" id="node9" title=" " alt="" coords="13,291,223,332"/>
-<area shape="rect" id="node10" title=" " alt="" coords="11,356,225,397"/>
+<area shape="rect" id="node1" title=" " alt="" coords="567,170,723,195"/>
+<area shape="rect" id="node2" href="$classripple_1_1IOUAmount.html" title="Floating point representation of amounts with high dynamic range." alt="" coords="351,87,493,113"/>
+<area shape="rect" id="node3" title=" " alt="" coords="35,5,201,45"/>
+<area shape="rect" id="node4" title=" " alt="" coords="6,70,230,95"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="71,119,165,145"/>
+<area shape="rect" id="node6" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="351,214,493,239"/>
+<area shape="rect" id="node7" title=" " alt="" coords="35,169,201,209"/>
+<area shape="rect" id="node8" title=" " alt="" coords="5,234,231,259"/>
+<area shape="rect" id="node9" title=" " alt="" coords="13,284,223,324"/>
+<area shape="rect" id="node10" title=" " alt="" coords="11,348,225,388"/>
 </map>

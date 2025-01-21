@@ -1,4 +1,4 @@
 <map id="ripple::NodeStore::Task" name="ripple::NodeStore::Task">
-<area shape="rect" id="node1" title="Derived classes perform scheduled tasks." alt="" coords="5,5,177,32"/>
-<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1BatchWriter.html" title="Batch&#45;writing assist logic." alt="" coords="20,80,163,121"/>
+<area shape="rect" id="node1" title="Derived classes perform scheduled tasks." alt="" coords="5,5,177,31"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1BatchWriter.html" title="Batch&#45;writing assist logic." alt="" coords="20,79,163,119"/>
 </map>

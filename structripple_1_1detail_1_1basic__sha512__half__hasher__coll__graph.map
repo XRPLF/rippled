@@ -1,4 +1,4 @@
 <map id="ripple::detail::basic_sha512_half_hasher&lt; Secure &gt;" name="ripple::detail::basic_sha512_half_hasher&lt; Secure &gt;">
-<area shape="rect" id="node1" title="Returns the SHA512&#45;Half digest of a message." alt="" coords="5,109,176,165"/>
-<area shape="rect" id="node2" href="$structripple_1_1openssl__sha512__hasher.html" title="SHA&#45;512 digest." alt="" coords="5,5,176,47"/>
+<area shape="rect" id="node1" title="Returns the SHA512&#45;Half digest of a message." alt="" coords="5,108,176,163"/>
+<area shape="rect" id="node2" href="$structripple_1_1openssl__sha512__hasher.html" title="SHA&#45;512 digest." alt="" coords="5,5,176,45"/>
 </map>

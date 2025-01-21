@@ -1,7 +1,6 @@
 <map id="ripple::test::csf::BasicSink" name="ripple::test::csf::BasicSink">
-<area shape="rect" id="node1" title="Sink that prepends simulation time to messages." alt="" coords="37,243,163,284"/>
-<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,139,152,165"/>
-<area shape="rect" id="node3" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="177,124,338,180"/>
-<area shape="rect" id="node4" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="82,5,243,61"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="267,20,439,47"/>
+<area shape="rect" id="node1" title="Sink that prepends simulation time to messages." alt="" coords="37,212,163,252"/>
+<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,109,152,135"/>
+<area shape="rect" id="node3" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="177,95,338,149"/>
+<area shape="rect" id="node4" href="$classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="177,5,337,45"/>
 </map>

@@ -1,4 +1,4 @@
 <map id="ripple::HTTPClient" name="ripple::HTTPClient">
-<area shape="rect" id="node1" title="Provides an asynchronous HTTP client implementation with optional SSL." alt="" coords="18,5,157,32"/>
-<area shape="rect" id="node2" href="$classripple_1_1HTTPClientImp.html" title=" " alt="" coords="5,80,169,107"/>
+<area shape="rect" id="node1" title="Provides an asynchronous HTTP client implementation with optional SSL." alt="" coords="18,5,157,31"/>
+<area shape="rect" id="node2" href="$classripple_1_1HTTPClientImp.html" title=" " alt="" coords="5,79,169,104"/>
 </map>

@@ -1,4 +1,4 @@
 <map id="ripple::csprng_engine" name="ripple::csprng_engine">
-<area shape="rect" id="node1" title="A cryptographically secure random number engine." alt="" coords="5,95,167,121"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="40,5,132,32"/>
+<area shape="rect" id="node1" title="A cryptographically secure random number engine." alt="" coords="5,93,167,119"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="40,5,132,31"/>
 </map>

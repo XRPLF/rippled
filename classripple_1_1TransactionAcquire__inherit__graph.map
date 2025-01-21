@@ -1,6 +1,6 @@
 <map id="ripple::TransactionAcquire" name="ripple::TransactionAcquire">
-<area shape="rect" id="node1" title=" " alt="" coords="297,64,488,91"/>
-<area shape="rect" id="node2" href="$classripple_1_1TimeoutCounter.html" title="This class is an &quot;active&quot; object." alt="" coords="41,5,213,32"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,57,249,98"/>
-<area shape="rect" id="node4" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="40,122,215,163"/>
+<area shape="rect" id="node1" title=" " alt="" coords="297,63,488,88"/>
+<area shape="rect" id="node2" href="$classripple_1_1TimeoutCounter.html" title="This class is an &quot;active&quot; object." alt="" coords="41,5,213,31"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,55,249,95"/>
+<area shape="rect" id="node4" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="40,119,215,159"/>
 </map>

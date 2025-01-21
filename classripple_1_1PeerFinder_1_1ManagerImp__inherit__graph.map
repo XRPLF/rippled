@@ -1,5 +1,5 @@
 <map id="ripple::PeerFinder::ManagerImp" name="ripple::PeerFinder::ManagerImp">
-<area shape="rect" id="node1" title=" " alt="" coords="22,184,157,225"/>
-<area shape="rect" id="node2" href="$classripple_1_1PeerFinder_1_1Manager.html" title="Maintains a set of IP addresses used for getting into the network." alt="" coords="22,95,157,136"/>
-<area shape="rect" id="node3" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="5,5,173,47"/>
+<area shape="rect" id="node1" title=" " alt="" coords="21,181,157,221"/>
+<area shape="rect" id="node2" href="$classripple_1_1PeerFinder_1_1Manager.html" title="Maintains a set of IP addresses used for getting into the network." alt="" coords="21,93,157,133"/>
+<area shape="rect" id="node3" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="5,5,173,45"/>
 </map>

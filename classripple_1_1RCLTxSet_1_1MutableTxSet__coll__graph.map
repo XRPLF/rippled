@@ -1,15 +1,15 @@
 <map id="ripple::RCLTxSet::MutableTxSet" name="ripple::RCLTxSet::MutableTxSet">
-<area shape="rect" id="node1" title=" " alt="" coords="1975,103,2161,145"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="1715,103,1885,145"/>
-<area shape="rect" id="node3" href="$classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan&#45;out of 16 and a Merkle tree." alt="" coords="1523,111,1644,137"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,83,108,109"/>
-<area shape="rect" id="node6" href="$classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="964,83,1147,109"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,134,389,175"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="1247,74,1417,115"/>
-<area shape="rect" id="node7" href="$classripple_1_1SHAMapHash.html" title=" " alt="" coords="719,143,873,169"/>
-<area shape="rect" id="node8" href="$classripple_1_1base__uint.html" title=" " alt="" coords="487,145,628,186"/>
-<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,201,349,228"/>
-<area shape="rect" id="node11" href="$classripple_1_1Family.html" title=" " alt="" coords="1277,140,1387,167"/>
-<area shape="rect" id="node12" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1277,191,1387,217"/>
-<area shape="rect" id="node13" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="982,191,1129,217"/>
+<area shape="rect" id="node1" title=" " alt="" coords="1976,73,2165,113"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="1716,73,1887,113"/>
+<area shape="rect" id="node3" href="$classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan&#45;out of 16 and a Merkle tree." alt="" coords="1523,80,1645,105"/>
+<area shape="rect" id="node4" href="$classripple_1_1Family.html" title=" " alt="" coords="1277,5,1387,31"/>
+<area shape="rect" id="node5" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1277,55,1387,80"/>
+<area shape="rect" id="node6" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="982,55,1129,80"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,167,108,192"/>
+<area shape="rect" id="node9" href="$classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="964,167,1147,192"/>
+<area shape="rect" id="node13" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,217,389,257"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="1247,157,1417,197"/>
+<area shape="rect" id="node10" href="$classripple_1_1SHAMapHash.html" title=" " alt="" coords="719,221,873,247"/>
+<area shape="rect" id="node11" href="$classripple_1_1base__uint.html" title=" " alt="" coords="487,227,628,267"/>
+<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,284,349,309"/>
 </map>

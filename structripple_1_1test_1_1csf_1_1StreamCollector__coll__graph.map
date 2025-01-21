@@ -1,4 +1,7 @@
 <map id="ripple::test::csf::StreamCollector" name="ripple::test::csf::StreamCollector">
-<area shape="rect" id="node1" title="Write out stream of ledger activity." alt="" coords="5,95,132,136"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title="STL class." alt="" coords="17,5,121,32"/>
+<area shape="rect" id="node1" title="Write out stream of ledger activity." alt="" coords="27,332,154,372"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="39,244,143,269"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="18,155,163,195"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ios.html" title=" " alt="" coords="5,80,176,105"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/ios_base.html" title=" " alt="" coords="37,5,144,31"/>
 </map>

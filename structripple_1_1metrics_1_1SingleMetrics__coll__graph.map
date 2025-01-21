@@ -1,5 +1,5 @@
 <map id="ripple::metrics::SingleMetrics" name="ripple::metrics::SingleMetrics">
-<area shape="rect" id="node1" title="Run single metrics rolling average." alt="" coords="14,109,225,136"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,32"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="132,5,235,32"/>
+<area shape="rect" id="node1" title="Run single metrics rolling average." alt="" coords="13,108,225,133"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,31"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="132,5,235,31"/>
 </map>

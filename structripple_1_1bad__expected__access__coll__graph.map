@@ -1,4 +1,5 @@
 <map id="ripple::bad_expected_access" name="ripple::bad_expected_access">
-<area shape="rect" id="node1" title="Expected is an approximation of std::expected (hoped for in C++23)" alt="" coords="5,80,164,121"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/runtime_error.html" title="STL class." alt="" coords="15,5,154,32"/>
+<area shape="rect" id="node1" title="Expected is an approximation of std::expected (hoped for in C++23)" alt="" coords="5,152,164,192"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/runtime_error.html" title=" " alt="" coords="15,79,154,104"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/exception.html" title=" " alt="" coords="27,5,142,31"/>
 </map>

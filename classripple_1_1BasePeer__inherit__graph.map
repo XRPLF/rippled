@@ -1,5 +1,9 @@
 <map id="ripple::BasePeer&lt; Handler, Impl &gt;" name="ripple::BasePeer&lt; Handler, Impl &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="5,80,204,121"/>
-<area shape="rect" id="node3" href="$classripple_1_1BaseWSPeer.html" title="Represents an active WebSocket connection." alt="" coords="30,169,179,211"/>
-<area shape="rect" id="node2" href="$classripple_1_1io__list_1_1work.html" title=" " alt="" coords="31,5,178,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="200,91,399,131"/>
+<area shape="rect" id="node3" href="$classripple_1_1BaseWSPeer.html" title=" " alt="" coords="447,5,625,60"/>
+<area shape="rect" id="node5" href="$classripple_1_1BaseWSPeer.html" title=" " alt="" coords="452,84,620,139"/>
+<area shape="rect" id="node7" href="$classripple_1_1BaseWSPeer.html" title="Represents an active WebSocket connection." alt="" coords="461,163,611,203"/>
+<area shape="rect" id="node2" href="$classripple_1_1io__list_1_1work.html" title=" " alt="" coords="5,99,152,124"/>
+<area shape="rect" id="node4" href="$classripple_1_1PlainWSPeer.html" title=" " alt="" coords="674,13,823,53"/>
+<area shape="rect" id="node6" href="$classripple_1_1SSLWSPeer.html" title=" " alt="" coords="673,91,824,131"/>
 </map>

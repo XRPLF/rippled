@@ -1,7 +1,7 @@
 <map id="ripple::ReadView::sles_type" name="ripple::ReadView::sles_type">
-<area shape="rect" id="node1" title=" " alt="" coords="208,5,408,32"/>
-<area shape="rect" id="node3" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="189,95,320,121"/>
-<area shape="rect" id="node2" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="279,184,455,240"/>
-<area shape="rect" id="node5" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="5,191,181,233"/>
-<area shape="rect" id="node4" href="$structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="64,289,259,316"/>
+<area shape="rect" id="node1" title=" " alt="" coords="212,5,413,31"/>
+<area shape="rect" id="node3" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="193,93,325,119"/>
+<area shape="rect" id="node2" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="281,181,467,221"/>
+<area shape="rect" id="node5" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="5,181,183,221"/>
+<area shape="rect" id="node4" href="$structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="65,271,259,296"/>
 </map>

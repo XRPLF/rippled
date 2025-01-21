@@ -1,4 +1,4 @@
 <map id="ripple::NodeStore::DummyScheduler" name="ripple::NodeStore::DummyScheduler">
-<area shape="rect" id="node1" title="Simple NodeStore Scheduler that just peforms the tasks synchronously." alt="" coords="5,95,148,136"/>
-<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1Scheduler.html" title="Scheduling for asynchronous backend activity." alt="" coords="5,5,148,47"/>
+<area shape="rect" id="node1" title="Simple NodeStore Scheduler that just peforms the tasks synchronously." alt="" coords="5,93,148,133"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1Scheduler.html" title="Scheduling for asynchronous backend activity." alt="" coords="5,5,148,45"/>
 </map>

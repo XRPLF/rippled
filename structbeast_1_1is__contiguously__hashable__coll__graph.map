@@ -1,4 +1,4 @@
 <map id="beast::is_contiguously_hashable&lt; T, HashAlgorithm &gt;" name="beast::is_contiguously_hashable&lt; T, HashAlgorithm &gt;">
-<area shape="rect" id="node1" title="Metafunction returning true if the type can be hashed in one call." alt="" coords="287,27,517,69"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="5,5,239,91"/>
+<area shape="rect" id="node1" title="Metafunction returning true if the type can be hashed in one call." alt="" coords="287,27,517,67"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="5,5,239,89"/>
 </map>

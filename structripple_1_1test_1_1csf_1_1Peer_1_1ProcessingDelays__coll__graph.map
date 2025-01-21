@@ -1,4 +1,4 @@
 <map id="ripple::test::csf::Peer::ProcessingDelays" name="ripple::test::csf::Peer::ProcessingDelays">
-<area shape="rect" id="node1" title="Simulated delays in internal peer processing." alt="" coords="10,109,185,151"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="5,5,189,32"/>
+<area shape="rect" id="node1" title="Simulated delays in internal peer processing." alt="" coords="10,108,185,148"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="5,5,189,31"/>
 </map>

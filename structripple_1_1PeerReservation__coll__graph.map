@@ -1,7 +1,8 @@
 <map id="ripple::PeerReservation" name="ripple::PeerReservation">
-<area shape="rect" id="node1" title=" " alt="" coords="15,184,189,211"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="5,95,92,121"/>
-<area shape="rect" id="node3" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="117,95,247,121"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="77,5,172,32"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="197,5,285,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="149,196,323,221"/>
+<area shape="rect" id="node2" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="100,108,231,133"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,13,93,38"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="118,13,213,38"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="259,108,346,133"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="237,5,376,45"/>
 </map>

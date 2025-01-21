@@ -1,7 +1,7 @@
 <map id="beast::insight::detail::StatsDHookImpl" name="beast::insight::detail::StatsDHookImpl">
-<area shape="rect" id="node1" title=" " alt="" coords="121,184,276,225"/>
-<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1HookImpl.html" title=" " alt="" coords="12,102,193,129"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,189,47"/>
-<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1detail_1_1StatsDMetricBase.html" title=" " alt="" coords="220,95,375,136"/>
-<area shape="rect" id="node5" title=" " alt="" coords="214,5,389,47"/>
+<area shape="rect" id="node1" title=" " alt="" coords="121,181,276,221"/>
+<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1HookImpl.html" title=" " alt="" coords="9,101,191,126"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,189,45"/>
+<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1detail_1_1StatsDMetricBase.html" title=" " alt="" coords="220,93,375,133"/>
+<area shape="rect" id="node5" title=" " alt="" coords="213,5,389,45"/>
 </map>

@@ -1,10 +1,10 @@
 <map id="ripple::NodeObject" name="ripple::NodeObject">
-<area shape="rect" id="node1" title="A simple object that the Ledger uses to store entries." alt="" coords="764,109,907,135"/>
-<area shape="rect" id="node2" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="503,5,665,47"/>
-<area shape="rect" id="node3" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="513,71,655,112"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,27,389,68"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,34,108,61"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,115,349,142"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title="STL class." alt="" coords="519,199,649,226"/>
-<area shape="rect" id="node8" title=" " alt="" coords="286,199,325,226"/>
+<area shape="rect" id="node1" title="A simple object that the Ledger uses to store entries." alt="" coords="764,90,907,115"/>
+<area shape="rect" id="node2" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="503,5,665,45"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,90,349,115"/>
+<area shape="rect" id="node4" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="513,132,655,172"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,152,389,192"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,159,108,185"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="519,203,649,229"/>
+<area shape="rect" id="node8" title=" " alt="" coords="286,217,325,242"/>
 </map>

@@ -1,11 +1,11 @@
 <map id="ripple::TxConsequences" name="ripple::TxConsequences">
-<area shape="rect" id="node1" title="Class describing the consequences to the account of applying a transaction if the transaction consume..." alt="" coords="633,63,811,89"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="67,5,169,32"/>
-<area shape="rect" id="node3" href="$classripple_1_1SeqProxy.html" title="A type that represents either a sequence value or a ticket value." alt="" coords="337,63,465,89"/>
-<area shape="rect" id="node4" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="330,135,473,161"/>
-<area shape="rect" id="node5" title=" " alt="" coords="35,61,201,102"/>
-<area shape="rect" id="node6" title=" " alt="" coords="5,127,231,153"/>
-<area shape="rect" id="node7" title=" " alt="" coords="13,178,223,219"/>
-<area shape="rect" id="node8" title=" " alt="" coords="11,243,225,285"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="71,309,165,336"/>
+<area shape="rect" id="node1" title="Class describing the consequences to the account of applying a transaction if the transaction consume..." alt="" coords="629,281,807,306"/>
+<area shape="rect" id="node2" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="330,159,473,185"/>
+<area shape="rect" id="node3" title=" " alt="" coords="35,5,201,45"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,70,231,95"/>
+<area shape="rect" id="node5" title=" " alt="" coords="13,120,223,160"/>
+<area shape="rect" id="node6" title=" " alt="" coords="11,184,225,224"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="71,249,165,274"/>
+<area shape="rect" id="node8" href="$classripple_1_1SeqProxy.html" title="A type that represents either a sequence value or a ticket value." alt="" coords="337,342,465,367"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="67,301,169,326"/>
 </map>

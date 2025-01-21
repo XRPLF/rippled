@@ -1,11 +1,9 @@
 <map id="ripple::test::csf::Peer::Position" name="ripple::test::csf::Peer::Position">
-<area shape="rect" id="node1" title="Basic wrapper of a proposed position taken by a peer." alt="" coords="1137,166,1264,207"/>
-<area shape="rect" id="node2" href="$classripple_1_1ConsensusProposal.html" title=" " alt="" coords="785,166,1021,207"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="106,11,209,37"/>
-<area shape="rect" id="node4" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="419,101,625,142"/>
-<area shape="rect" id="node5" title=" " alt="" coords="5,61,309,235"/>
-<area shape="rect" id="node6" href="$classripple_1_1tagged__integer.html" title="A type&#45;safe wrap around standard integral types." alt="" coords="439,166,605,207"/>
-<area shape="rect" id="node7" title=" " alt="" coords="14,259,301,403"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="445,231,599,273"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="436,297,608,338"/>
+<area shape="rect" id="node1" title="Basic wrapper of a proposed position taken by a peer." alt="" coords="1021,107,1148,147"/>
+<area shape="rect" id="node2" href="$classripple_1_1ConsensusProposal.html" title=" " alt="" coords="669,107,905,147"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="376,23,479,49"/>
+<area shape="rect" id="node4" href="$classripple_1_1tagged__integer.html" title="A type&#45;safe wrap around standard integral types." alt="" coords="345,73,510,113"/>
+<area shape="rect" id="node5" title=" " alt="" coords="5,22,292,165"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="341,137,513,177"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="350,201,505,241"/>
 </map>

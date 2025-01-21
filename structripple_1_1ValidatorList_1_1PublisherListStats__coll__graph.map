@@ -1,6 +1,6 @@
 <map id="ripple::ValidatorList::PublisherListStats" name="ripple::ValidatorList::PublisherListStats">
-<area shape="rect" id="node1" title="Describes the result of processing a Validator List (UNL), including some of the information from the..." alt="" coords="539,65,687,107"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="227,5,381,47"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,107,93,134"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="207,135,401,176"/>
+<area shape="rect" id="node1" title="Describes the result of processing a Validator List (UNL), including some of the information from the..." alt="" coords="539,48,687,88"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="207,48,401,88"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,14,93,39"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="227,112,381,152"/>
 </map>

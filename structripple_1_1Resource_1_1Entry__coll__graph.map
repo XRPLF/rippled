@@ -1,9 +1,8 @@
 <map id="ripple::Resource::Entry" name="ripple::Resource::Entry">
-<area shape="rect" id="node1" title=" " alt="" coords="824,71,992,98"/>
-<area shape="rect" id="node2" title=" " alt="" coords="510,5,649,47"/>
-<area shape="rect" id="node3" href="$structripple_1_1Resource_1_1Key.html" title=" " alt="" coords="500,71,659,98"/>
-<area shape="rect" id="node4" href="$classbeast_1_1IP_1_1Endpoint.html" title="A version&#45;independent IP address and port combination." alt="" coords="216,71,359,98"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,71,108,98"/>
-<area shape="rect" id="node6" href="$classripple_1_1DecayingSample.html" title=" " alt="" coords="476,123,683,193"/>
-<area shape="rect" id="node7" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="207,130,368,186"/>
+<area shape="rect" id="node1" title=" " alt="" coords="801,70,971,95"/>
+<area shape="rect" id="node2" title=" " alt="" coords="487,5,626,45"/>
+<area shape="rect" id="node3" href="$structripple_1_1Resource_1_1Key.html" title=" " alt="" coords="477,70,636,95"/>
+<area shape="rect" id="node4" href="$classbeast_1_1IP_1_1Endpoint.html" title="A version&#45;independent IP address and port combination." alt="" coords="207,70,349,95"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,70,108,95"/>
+<area shape="rect" id="node6" href="$classripple_1_1DecayingSample.html" title=" " alt="" coords="453,120,660,189"/>
 </map>

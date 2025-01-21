@@ -1,6 +1,7 @@
 <map id="ripple::SlabAllocator&lt; Type &gt;::SlabBlock" name="ripple::SlabAllocator&lt; Type &gt;::SlabBlock">
-<area shape="rect" id="node1" title="A block of memory that is owned by a slab allocator." alt="" coords="93,109,247,151"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,100,32"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="124,5,216,32"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="241,5,329,32"/>
+<area shape="rect" id="node1" title="A block of memory that is owned by a slab allocator." alt="" coords="82,211,237,251"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="5,5,97,31"/>
+<area shape="rect" id="node4" href="$structripple_1_1SlabAllocator_1_1SlabBlock.html" title="A block of memory that is owned by a slab allocator." alt="" coords="159,108,314,148"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="132,5,227,31"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="317,5,405,31"/>
 </map>

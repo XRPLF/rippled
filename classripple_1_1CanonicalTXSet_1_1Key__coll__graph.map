@@ -1,8 +1,8 @@
 <map id="ripple::CanonicalTXSet::Key" name="ripple::CanonicalTXSet::Key">
-<area shape="rect" id="node1" title=" " alt="" coords="5,332,207,359"/>
-<area shape="rect" id="node2" href="$classripple_1_1SeqProxy.html" title="A type that represents either a sequence value or a ticket value." alt="" coords="21,161,149,188"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="72,5,175,32"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="122,95,290,136"/>
-<area shape="rect" id="node4" href="$classripple_1_1base__uint.html" title=" " alt="" coords="181,213,322,255"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="314,102,402,129"/>
+<area shape="rect" id="node1" title=" " alt="" coords="161,328,362,353"/>
+<area shape="rect" id="node2" href="$classripple_1_1base__uint.html" title=" " alt="" coords="131,211,272,251"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,101,93,126"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="117,93,285,133"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="217,5,319,31"/>
+<area shape="rect" id="node6" href="$classripple_1_1SeqProxy.html" title="A type that represents either a sequence value or a ticket value." alt="" coords="257,159,385,185"/>
 </map>

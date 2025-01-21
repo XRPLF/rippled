@@ -1,8 +1,8 @@
 <map id="ripple::Session" name="ripple::Session">
-<area shape="rect" id="node1" title="Persistent state information for a connection session." alt="" coords="5,100,123,127"/>
-<area shape="rect" id="node2" href="$classripple_1_1BaseHTTPPeer.html" title=" " alt="" coords="171,5,361,61"/>
-<area shape="rect" id="node4" href="$classripple_1_1BaseHTTPPeer.html" title=" " alt="" coords="175,85,357,141"/>
-<area shape="rect" id="node6" href="$classripple_1_1BaseHTTPPeer.html" title="Represents an active connection." alt="" coords="185,166,347,207"/>
-<area shape="rect" id="node3" href="$classripple_1_1PlainHTTPPeer.html" title=" " alt="" coords="409,13,572,54"/>
-<area shape="rect" id="node5" href="$classripple_1_1SSLHTTPPeer.html" title=" " alt="" coords="414,93,567,134"/>
+<area shape="rect" id="node1" title="Persistent state information for a connection session." alt="" coords="5,99,123,124"/>
+<area shape="rect" id="node2" href="$classripple_1_1BaseHTTPPeer.html" title=" " alt="" coords="171,5,361,60"/>
+<area shape="rect" id="node4" href="$classripple_1_1BaseHTTPPeer.html" title=" " alt="" coords="175,84,357,139"/>
+<area shape="rect" id="node6" href="$classripple_1_1BaseHTTPPeer.html" title="Represents an active connection." alt="" coords="185,163,347,203"/>
+<area shape="rect" id="node3" href="$classripple_1_1PlainHTTPPeer.html" title=" " alt="" coords="409,13,572,53"/>
+<area shape="rect" id="node5" href="$classripple_1_1SSLHTTPPeer.html" title=" " alt="" coords="414,91,567,131"/>
 </map>

@@ -1,8 +1,6 @@
 var searchData=
 [
-  ['code_20style_20cheat_20sheet_28942',['Code Style Cheat Sheet',['../md____w_rippled_rippled_docs_CheatSheet.html',1,'']]],
-  ['coding_20standards_28943',['Coding Standards',['../md____w_rippled_rippled_docs_CodingStyle.html',1,'']]],
-  ['consensus_20and_20validation_28944',['Consensus and Validation',['../md____w_rippled_rippled_docs_consensus.html',1,'']]],
-  ['consensus_28945',['Consensus',['../md_ripple_consensus_README.html',1,'']]],
-  ['consensus_20simulation_20framework_28946',['Consensus Simulation Framework',['../md_test_csf_README.html',1,'']]]
+  ['basics_0',['Basics',['../md____w_rippled_rippled_include_xrpl_basics_README.html',1,'']]],
+  ['build_1',['BUILD',['../md____w_rippled_rippled_BUILD.html',1,'']]],
+  ['building_20documentation_2',['Building documentation',['../md____w_rippled_rippled_docs_README.html',1,'']]]
 ];

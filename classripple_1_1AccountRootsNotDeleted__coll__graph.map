@@ -1,4 +1,4 @@
 <map id="ripple::AccountRootsNotDeleted" name="ripple::AccountRootsNotDeleted">
-<area shape="rect" id="node1" title="Invariant: we cannot remove an account ledger entry." alt="" coords="5,95,235,121"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="69,5,171,32"/>
+<area shape="rect" id="node1" title="Invariant: we cannot remove an account ledger entry." alt="" coords="5,93,236,119"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="69,5,172,31"/>
 </map>

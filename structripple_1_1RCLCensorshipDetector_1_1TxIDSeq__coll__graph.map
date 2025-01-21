@@ -1,7 +1,7 @@
 <map id="ripple::RCLCensorshipDetector&lt; TxID, Sequence &gt;::TxIDSeq" name="ripple::RCLCensorshipDetector&lt; TxID, Sequence &gt;::TxIDSeq">
-<area shape="rect" id="node1" title=" " alt="" coords="93,317,312,359"/>
-<area shape="rect" id="node2" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="132,213,273,255"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="5,95,173,136"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="38,5,141,32"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="197,102,285,129"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,313,225,353"/>
+<area shape="rect" id="node2" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="45,211,186,251"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="14,101,102,126"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="126,93,294,133"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="159,5,261,31"/>
 </map>

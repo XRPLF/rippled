@@ -1,13 +1,14 @@
 <map id="ripple::STBlob" name="ripple::STBlob">
-<area shape="rect" id="node1" title=" " alt="" coords="351,303,463,329"/>
-<area shape="rect" id="node2" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="5,206,120,233"/>
-<area shape="rect" id="node3" href="$classripple_1_1SField.html" title="Identifies fields." alt="" coords="90,102,195,129"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="145,199,301,240"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="33,5,119,32"/>
-<area shape="rect" id="node6" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="143,5,275,32"/>
-<area shape="rect" id="node7" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="325,199,488,240"/>
-<area shape="rect" id="node8" href="$classripple_1_1Buffer.html" title="Like std::vector&lt;char&gt; but better." alt="" coords="512,206,619,233"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="391,95,545,136"/>
-<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="421,5,515,32"/>
-<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="569,102,657,129"/>
+<area shape="rect" id="node1" title=" " alt="" coords="351,388,463,413"/>
+<area shape="rect" id="node2" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="5,293,120,318"/>
+<area shape="rect" id="node3" href="$classripple_1_1SField.html" title="Identifies fields." alt="" coords="89,190,196,215"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="145,285,301,325"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="33,95,119,120"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="7,5,145,45"/>
+<area shape="rect" id="node6" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="143,95,275,120"/>
+<area shape="rect" id="node8" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="325,285,488,325"/>
+<area shape="rect" id="node9" href="$classripple_1_1Buffer.html" title="Like std::vector&lt;char&gt; but better." alt="" coords="512,293,619,318"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="391,183,545,223"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="421,95,515,120"/>
+<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="569,190,657,215"/>
 </map>

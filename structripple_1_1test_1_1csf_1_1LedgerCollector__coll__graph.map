@@ -1,11 +1,11 @@
 <map id="ripple::test::csf::LedgerCollector" name="ripple::test::csf::LedgerCollector">
-<area shape="rect" id="node1" title="Tracks the accepted &#45;&gt; validated evolution of ledgers." alt="" coords="1175,166,1301,207"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="756,78,989,149"/>
-<area shape="rect" id="node3" href="$structripple_1_1test_1_1csf_1_1LedgerCollector_1_1Tracker.html" title=" " alt="" coords="435,11,613,53"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="53,5,244,32"/>
-<area shape="rect" id="node5" href="$classripple_1_1tagged__integer.html" title="A type&#45;safe wrap around standard integral types." alt="" coords="441,99,607,141"/>
-<area shape="rect" id="node6" title=" " alt="" coords="5,56,292,200"/>
-<area shape="rect" id="node7" href="$classripple_1_1test_1_1csf_1_1Histogram.html" title=" " alt="" coords="787,224,958,280"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="105,225,193,252"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="439,287,609,358"/>
+<area shape="rect" id="node1" title="Tracks the accepted &#45;&gt; validated evolution of ledgers." alt="" coords="1171,60,1297,100"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="105,43,193,69"/>
+<area shape="rect" id="node8" href="$classripple_1_1test_1_1csf_1_1Histogram.html" title=" " alt="" coords="783,53,953,107"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="439,104,609,173"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="752,183,984,252"/>
+<area shape="rect" id="node4" href="$classripple_1_1tagged__integer.html" title="A type&#45;safe wrap around standard integral types." alt="" coords="441,197,607,237"/>
+<area shape="rect" id="node5" title=" " alt="" coords="5,134,292,277"/>
+<area shape="rect" id="node6" href="$structripple_1_1test_1_1csf_1_1LedgerCollector_1_1Tracker.html" title=" " alt="" coords="435,272,613,312"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="53,301,244,326"/>
 </map>

@@ -1,4 +1,4 @@
 <map id="Json::FastWriter" name="Json::FastWriter">
-<area shape="rect" id="node1" title="Outputs a Value in JSON format without formatting (not human friendly)." alt="" coords="8,80,131,107"/>
-<area shape="rect" id="node2" href="$classJson_1_1WriterBase.html" title="Abstract class for writers." alt="" coords="5,5,133,32"/>
+<area shape="rect" id="node1" title="Outputs a Value in JSON format without formatting (not human friendly)." alt="" coords="9,79,131,104"/>
+<area shape="rect" id="node2" href="$classJson_1_1WriterBase.html" title="Abstract class for writers." alt="" coords="5,5,135,31"/>
 </map>

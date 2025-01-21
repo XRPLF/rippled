@@ -1,4 +1,4 @@
 <map id="ripple::XRPNotCreated" name="ripple::XRPNotCreated">
-<area shape="rect" id="node1" title="Invariant: A transaction must not create XRP and should only destroy the XRP fee." alt="" coords="5,95,172,121"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="41,5,136,32"/>
+<area shape="rect" id="node1" title="Invariant: A transaction must not create XRP and should only destroy the XRP fee." alt="" coords="5,93,172,119"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="41,5,136,31"/>
 </map>

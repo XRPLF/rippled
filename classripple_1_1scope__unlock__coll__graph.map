@@ -1,0 +1,4 @@
+<map id="ripple::scope_unlock&lt; Mutex &gt;" name="ripple::scope_unlock&lt; Mutex &gt;">
+<area shape="rect" id="node1" title="Automatically unlocks and re&#45;locks a unique_lock object." alt="" coords="27,93,182,133"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/unique_lock.html" title=" " alt="" coords="5,5,204,31"/>
+</map>

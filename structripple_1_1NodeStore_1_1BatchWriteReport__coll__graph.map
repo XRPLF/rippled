@@ -1,4 +1,4 @@
 <map id="ripple::NodeStore::BatchWriteReport" name="ripple::NodeStore::BatchWriteReport">
-<area shape="rect" id="node1" title="Contains information about a batch write operation." alt="" coords="26,95,169,136"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="5,5,189,32"/>
+<area shape="rect" id="node1" title="Contains information about a batch write operation." alt="" coords="26,93,169,133"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="5,5,189,31"/>
 </map>

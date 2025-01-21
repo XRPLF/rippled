@@ -1,0 +1,11 @@
+<map id="ripple::detail::MultiApiJson&lt; MinVer, MaxVer &gt;" name="ripple::detail::MultiApiJson&lt; MinVer, MaxVer &gt;">
+<area shape="rect" id="node1" title=" " alt="" coords="1139,55,1320,95"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="911,5,999,31"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="867,55,1042,95"/>
+<area shape="rect" id="node4" href="$classJson_1_1Value.html" title="Represents a JSON value." alt="" coords="657,63,751,88"/>
+<area shape="rect" id="node5" href="$unionJson_1_1Value_1_1ValueHolder.html" title=" " alt="" coords="381,63,561,88"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="157,63,292,88"/>
+<area shape="rect" id="node7" title=" " alt="" coords="5,37,44,63"/>
+<area shape="rect" id="node8" title=" " alt="" coords="5,87,44,112"/>
+<area shape="rect" id="node9" href="$structripple_1_1detail_1_1MultiApiJson_1_1visitor__t.html" title=" " alt="" coords="864,120,1045,175"/>
+</map>

@@ -1,4 +1,4 @@
 <map id="beast::Journal" name="beast::Journal">
-<area shape="rect" id="node1" title="A generic endpoint for log messages." alt="" coords="23,95,134,121"/>
-<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,5,152,32"/>
+<area shape="rect" id="node1" title="A generic endpoint for log messages." alt="" coords="23,93,134,119"/>
+<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,5,152,31"/>
 </map>

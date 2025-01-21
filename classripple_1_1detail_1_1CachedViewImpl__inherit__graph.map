@@ -1,6 +1,6 @@
 <map id="ripple::detail::CachedViewImpl" name="ripple::detail::CachedViewImpl">
-<area shape="rect" id="node1" title=" " alt="" coords="5,155,227,181"/>
-<area shape="rect" id="node4" href="$classripple_1_1CachedView.html" title="Wraps a DigestAwareReadView to provide caching." alt="" coords="43,229,189,271"/>
-<area shape="rect" id="node2" href="$classripple_1_1DigestAwareReadView.html" title="ReadView that associates keys with digests." alt="" coords="9,80,223,107"/>
-<area shape="rect" id="node3" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="51,5,181,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,152,227,177"/>
+<area shape="rect" id="node4" href="$classripple_1_1CachedView.html" title="Wraps a DigestAwareReadView to provide caching." alt="" coords="43,225,189,265"/>
+<area shape="rect" id="node2" href="$classripple_1_1DigestAwareReadView.html" title="ReadView that associates keys with digests." alt="" coords="9,79,223,104"/>
+<area shape="rect" id="node3" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="50,5,182,31"/>
 </map>

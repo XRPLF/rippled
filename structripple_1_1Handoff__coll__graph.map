@@ -1,5 +1,5 @@
 <map id="ripple::Handoff" name="ripple::Handoff">
-<area shape="rect" id="node1" title="Used to indicate the result of a server connection handoff." alt="" coords="31,199,150,225"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="5,95,176,136"/>
-<area shape="rect" id="node3" href="$classripple_1_1Writer.html" title=" " alt="" coords="37,5,144,32"/>
+<area shape="rect" id="node1" title="Used to indicate the result of a server connection handoff." alt="" coords="31,196,150,221"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="5,93,176,133"/>
+<area shape="rect" id="node3" href="$classripple_1_1Writer.html" title=" " alt="" coords="37,5,144,31"/>
 </map>

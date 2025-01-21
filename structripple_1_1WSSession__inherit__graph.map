@@ -1,8 +1,8 @@
 <map id="ripple::WSSession" name="ripple::WSSession">
-<area shape="rect" id="node1" title=" " alt="" coords="5,100,144,127"/>
-<area shape="rect" id="node2" href="$classripple_1_1BaseWSPeer.html" title=" " alt="" coords="192,5,371,61"/>
-<area shape="rect" id="node4" href="$classripple_1_1BaseWSPeer.html" title=" " alt="" coords="197,85,365,141"/>
-<area shape="rect" id="node6" href="$classripple_1_1BaseWSPeer.html" title="Represents an active WebSocket connection." alt="" coords="207,166,356,207"/>
-<area shape="rect" id="node3" href="$classripple_1_1PlainWSPeer.html" title=" " alt="" coords="419,13,569,54"/>
-<area shape="rect" id="node5" href="$classripple_1_1SSLWSPeer.html" title=" " alt="" coords="419,93,569,134"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,99,144,124"/>
+<area shape="rect" id="node2" href="$classripple_1_1BaseWSPeer.html" title=" " alt="" coords="192,5,371,60"/>
+<area shape="rect" id="node4" href="$classripple_1_1BaseWSPeer.html" title=" " alt="" coords="197,84,365,139"/>
+<area shape="rect" id="node6" href="$classripple_1_1BaseWSPeer.html" title="Represents an active WebSocket connection." alt="" coords="207,163,356,203"/>
+<area shape="rect" id="node3" href="$classripple_1_1PlainWSPeer.html" title=" " alt="" coords="419,13,569,53"/>
+<area shape="rect" id="node5" href="$classripple_1_1SSLWSPeer.html" title=" " alt="" coords="419,91,569,131"/>
 </map>

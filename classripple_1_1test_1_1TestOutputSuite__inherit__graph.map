@@ -1,8 +1,8 @@
 <map id="ripple::test::TestOutputSuite" name="ripple::test::TestOutputSuite">
-<area shape="rect" id="node1" title=" " alt="" coords="181,155,351,196"/>
-<area shape="rect" id="node4" href="$classJson_1_1JsonObject__test.html" title=" " alt="" coords="5,244,164,271"/>
-<area shape="rect" id="node5" href="$classJson_1_1JsonWriter__test.html" title=" " alt="" coords="189,244,343,271"/>
-<area shape="rect" id="node6" href="$structJson_1_1Output__test.html" title=" " alt="" coords="367,244,501,271"/>
-<area shape="rect" id="node2" href="$classripple_1_1TestSuite.html" title=" " alt="" coords="203,80,329,107"/>
-<area shape="rect" id="node3" title=" " alt="" coords="239,5,293,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="181,152,351,192"/>
+<area shape="rect" id="node4" href="$classJson_1_1JsonObject__test.html" title=" " alt="" coords="5,240,164,265"/>
+<area shape="rect" id="node5" href="$classJson_1_1JsonWriter__test.html" title=" " alt="" coords="188,240,344,265"/>
+<area shape="rect" id="node6" href="$structJson_1_1Output__test.html" title=" " alt="" coords="369,240,502,265"/>
+<area shape="rect" id="node2" href="$classripple_1_1TestSuite.html" title=" " alt="" coords="203,79,329,104"/>
+<area shape="rect" id="node3" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="185,5,347,31"/>
 </map>

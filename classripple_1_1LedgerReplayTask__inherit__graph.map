@@ -1,6 +1,6 @@
 <map id="ripple::LedgerReplayTask" name="ripple::LedgerReplayTask">
-<area shape="rect" id="node1" title=" " alt="" coords="292,64,476,91"/>
-<area shape="rect" id="node2" href="$classripple_1_1TimeoutCounter.html" title="This class is an &quot;active&quot; object." alt="" coords="39,5,211,32"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,57,244,98"/>
-<area shape="rect" id="node4" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="40,122,209,163"/>
+<area shape="rect" id="node1" title=" " alt="" coords="292,63,477,88"/>
+<area shape="rect" id="node2" href="$classripple_1_1TimeoutCounter.html" title="This class is an &quot;active&quot; object." alt="" coords="39,5,211,31"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,55,244,95"/>
+<area shape="rect" id="node4" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="39,119,210,159"/>
 </map>

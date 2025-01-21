@@ -1,5 +1,5 @@
 <map id="ripple::test::jtx::AMMTest::gate" name="ripple::test::jtx::AMMTest::gate">
-<area shape="rect" id="node1" title=" " alt="" coords="105,95,231,136"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="5,5,176,32"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="201,5,293,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="105,93,231,133"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="5,5,176,31"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="201,5,293,31"/>
 </map>

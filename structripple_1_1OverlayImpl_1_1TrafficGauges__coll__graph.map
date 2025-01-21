@@ -1,7 +1,7 @@
 <map id="ripple::OverlayImpl::TrafficGauges" name="ripple::OverlayImpl::TrafficGauges">
-<area shape="rect" id="node1" title=" " alt="" coords="28,423,175,464"/>
-<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1Gauge.html" title="A metric for measuring an integral value." alt="" coords="21,289,181,316"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="16,185,187,227"/>
-<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1GaugeImpl.html" title=" " alt="" coords="7,96,196,123"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,197,47"/>
+<area shape="rect" id="node1" title=" " alt="" coords="28,417,175,457"/>
+<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1Gauge.html" title="A metric for measuring an integral value." alt="" coords="21,285,181,311"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="16,183,187,223"/>
+<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1GaugeImpl.html" title=" " alt="" coords="7,95,196,120"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,197,45"/>
 </map>

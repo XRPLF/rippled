@@ -1,10 +1,10 @@
 <map id="ripple::detail::VotableValue" name="ripple::detail::VotableValue">
-<area shape="rect" id="node1" title=" " alt="" coords="888,130,1085,157"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="553,157,772,199"/>
-<area shape="rect" id="node3" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="327,130,469,157"/>
-<area shape="rect" id="node4" title=" " alt="" coords="35,5,201,47"/>
-<area shape="rect" id="node5" title=" " alt="" coords="5,71,231,98"/>
-<area shape="rect" id="node6" title=" " alt="" coords="13,123,223,164"/>
-<area shape="rect" id="node7" title=" " alt="" coords="11,188,225,229"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="71,254,165,281"/>
+<area shape="rect" id="node1" title=" " alt="" coords="888,127,1085,153"/>
+<area shape="rect" id="node2" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="327,127,469,153"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="552,155,771,195"/>
+<area shape="rect" id="node3" title=" " alt="" coords="35,5,201,45"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,70,231,95"/>
+<area shape="rect" id="node5" title=" " alt="" coords="13,120,223,160"/>
+<area shape="rect" id="node6" title=" " alt="" coords="11,184,225,224"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="71,249,165,274"/>
 </map>

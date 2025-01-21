@@ -1,6 +1,6 @@
 <map id="ripple::test::detail::FileDirGuard" name="ripple::test::detail::FileDirGuard">
-<area shape="rect" id="node1" title="Write a file in a directory and remove when done." alt="" coords="129,95,267,136"/>
-<area shape="rect" id="node3" href="$classripple_1_1detail_1_1RippledCfgGuard.html" title="Write a rippled config file and remove when done." alt="" coords="5,184,188,225"/>
-<area shape="rect" id="node4" href="$classripple_1_1detail_1_1ValidatorsTxtGuard.html" title="Write a validators.txt file and remove when done." alt="" coords="212,184,389,225"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1detail_1_1DirGuard.html" title="Create a directory and remove it when it&#39;s done." alt="" coords="129,5,267,47"/>
+<area shape="rect" id="node1" title="Write a file in a directory and remove when done." alt="" coords="129,93,267,133"/>
+<area shape="rect" id="node3" href="$classripple_1_1detail_1_1RippledCfgGuard.html" title="Write a rippled config file and remove when done." alt="" coords="5,181,188,221"/>
+<area shape="rect" id="node4" href="$classripple_1_1detail_1_1ValidatorsTxtGuard.html" title="Write a validators.txt file and remove when done." alt="" coords="212,181,389,221"/>
+<area shape="rect" id="node2" href="$classripple_1_1test_1_1detail_1_1DirGuard.html" title="Create a directory and remove it when it&#39;s done." alt="" coords="129,5,267,45"/>
 </map>

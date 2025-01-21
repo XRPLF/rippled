@@ -1,5 +1,5 @@
 <map id="ripple::TrustLineBase" name="ripple::TrustLineBase">
-<area shape="rect" id="node1" title="Wraps a trust line SLE for convenience." alt="" coords="111,5,268,32"/>
-<area shape="rect" id="node2" href="$classripple_1_1PathFindTrustLine.html" title=" " alt="" coords="5,80,184,107"/>
-<area shape="rect" id="node3" href="$classripple_1_1RPCTrustLine.html" title=" " alt="" coords="209,80,359,107"/>
+<area shape="rect" id="node1" title="Wraps a trust line SLE for convenience." alt="" coords="111,5,269,31"/>
+<area shape="rect" id="node2" href="$classripple_1_1PathFindTrustLine.html" title=" " alt="" coords="5,79,185,104"/>
+<area shape="rect" id="node3" href="$classripple_1_1RPCTrustLine.html" title=" " alt="" coords="209,79,360,104"/>
 </map>

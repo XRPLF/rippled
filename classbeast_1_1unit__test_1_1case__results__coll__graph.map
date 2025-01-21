@@ -1,0 +1,13 @@
+<map id="beast::unit_test::case_results" name="beast::unit_test::case_results">
+<area shape="rect" id="node1" title="Holds a set of test condition outcomes in a testcase." alt="" coords="1600,85,1761,125"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="193,73,280,98"/>
+<area shape="rect" id="node7" href="$structbeast_1_1unit__test_1_1case__results_1_1test.html" title="Holds the result of evaluating one test condition." alt="" coords="406,65,567,105"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="393,137,580,162"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,65,144,105"/>
+<area shape="rect" id="node4" href="$classbeast_1_1unit__test_1_1case__results_1_1tests__t.html" title=" " alt="" coords="1353,85,1515,125"/>
+<area shape="rect" id="node5" href="$classbeast_1_1unit__test_1_1detail_1_1const__container.html" title=" " alt="" coords="976,58,1144,113"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="711,73,857,98"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="1016,137,1104,162"/>
+<area shape="rect" id="node9" href="$classbeast_1_1unit__test_1_1case__results_1_1log__t.html" title=" " alt="" coords="1168,180,1329,220"/>
+<area shape="rect" id="node10" href="$classbeast_1_1unit__test_1_1detail_1_1const__container.html" title=" " alt="" coords="693,158,875,213"/>
+</map>

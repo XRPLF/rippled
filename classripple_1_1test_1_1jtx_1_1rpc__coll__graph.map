@@ -1,0 +1,5 @@
+<map id="ripple::test::jtx::rpc" name="ripple::test::jtx::rpc">
+<area shape="rect" id="node1" title="Set the expected result code for a JTx The test will fail if the code doesn&#39;t match." alt="" coords="91,137,237,163"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,5,155,45"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="179,5,317,45"/>
+</map>

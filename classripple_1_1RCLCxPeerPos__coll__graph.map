@@ -1,13 +1,13 @@
 <map id="ripple::RCLCxPeerPos" name="ripple::RCLCxPeerPos">
-<area shape="rect" id="node1" title="A peer&#39;s signed, proposed position for use in RCLConsensus." alt="" coords="1184,298,1344,325"/>
-<area shape="rect" id="node2" href="$classripple_1_1ConsensusProposal.html" title=" " alt="" coords="853,129,1068,171"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,166,108,193"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,188,389,229"/>
-<area shape="rect" id="node4" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="541,193,682,235"/>
-<area shape="rect" id="node11" href="$classripple_1_1base__uint.html" title=" " alt="" coords="541,291,682,332"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,347,349,374"/>
-<area shape="rect" id="node9" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="546,393,677,419"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="534,5,689,47"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="525,71,697,112"/>
-<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="258,438,353,465"/>
+<area shape="rect" id="node1" title="A peer&#39;s signed, proposed position for use in RCLConsensus." alt="" coords="1184,112,1345,137"/>
+<area shape="rect" id="node2" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="546,49,677,75"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,111,349,136"/>
+<area shape="rect" id="node5" href="$classripple_1_1base__uint.html" title=" " alt="" coords="541,103,682,143"/>
+<area shape="rect" id="node9" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="541,231,682,271"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="258,5,353,31"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,254,389,294"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,339,108,364"/>
+<area shape="rect" id="node8" href="$classripple_1_1ConsensusProposal.html" title=" " alt="" coords="853,242,1068,282"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="525,167,697,207"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="534,295,689,335"/>
 </map>

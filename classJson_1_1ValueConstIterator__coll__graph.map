@@ -1,5 +1,5 @@
 <map id="Json::ValueConstIterator" name="Json::ValueConstIterator">
-<area shape="rect" id="node1" title="const iterator for object and array value." alt="" coords="11,171,190,197"/>
-<area shape="rect" id="node2" href="$classJson_1_1ValueIteratorBase.html" title="base class for Value iterators." alt="" coords="14,95,187,121"/>
-<area shape="rect" id="node3" title="STL iterator class." alt="" coords="5,5,196,32"/>
+<area shape="rect" id="node1" title="const iterator for object and array value." alt="" coords="11,168,190,193"/>
+<area shape="rect" id="node2" href="$classJson_1_1ValueIteratorBase.html" title="base class for Value iterators." alt="" coords="14,93,187,119"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,5,196,31"/>
 </map>

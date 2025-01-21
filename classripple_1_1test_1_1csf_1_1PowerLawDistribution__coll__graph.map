@@ -1,4 +1,4 @@
 <map id="ripple::test::csf::PowerLawDistribution" name="ripple::test::csf::PowerLawDistribution">
-<area shape="rect" id="node1" title="Power&#45;law distribution with PDF." alt="" coords="31,109,195,151"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/numeric/random/uniform_real_distribution.html" title=" " alt="" coords="5,5,220,47"/>
+<area shape="rect" id="node1" title="Power&#45;law distribution with PDF." alt="" coords="31,108,195,148"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/numeric/random/uniform_real_distribution.html" title=" " alt="" coords="5,5,220,45"/>
 </map>

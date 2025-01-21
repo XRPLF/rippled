@@ -1,5 +1,5 @@
 <map id="ripple::Application" name="ripple::Application">
-<area shape="rect" id="node1" title=" " alt="" coords="19,95,159,121"/>
-<area shape="rect" id="node3" href="$classripple_1_1ApplicationImp.html" title=" " alt="" coords="7,169,172,196"/>
-<area shape="rect" id="node2" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="5,5,173,47"/>
+<area shape="rect" id="node1" title=" " alt="" coords="19,93,159,119"/>
+<area shape="rect" id="node3" href="$classripple_1_1ApplicationImp.html" title=" " alt="" coords="7,167,172,192"/>
+<area shape="rect" id="node2" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="5,5,173,45"/>
 </map>

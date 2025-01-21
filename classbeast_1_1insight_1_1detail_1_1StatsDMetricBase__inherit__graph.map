@@ -1,8 +1,8 @@
 <map id="beast::insight::detail::StatsDMetricBase" name="beast::insight::detail::StatsDMetricBase">
-<area shape="rect" id="node1" title=" " alt="" coords="228,104,383,145"/>
-<area shape="rect" id="node3" href="$classbeast_1_1insight_1_1detail_1_1StatsDCounterImpl.html" title=" " alt="" coords="431,5,585,47"/>
-<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1detail_1_1StatsDGaugeImpl.html" title=" " alt="" coords="431,71,585,112"/>
-<area shape="rect" id="node5" href="$classbeast_1_1insight_1_1detail_1_1StatsDHookImpl.html" title=" " alt="" coords="431,136,585,177"/>
-<area shape="rect" id="node6" href="$classbeast_1_1insight_1_1detail_1_1StatsDMeterImpl.html" title=" " alt="" coords="431,201,585,243"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,104,180,145"/>
+<area shape="rect" id="node1" title=" " alt="" coords="229,101,384,141"/>
+<area shape="rect" id="node3" href="$classbeast_1_1insight_1_1detail_1_1StatsDCounterImpl.html" title=" " alt="" coords="432,5,587,45"/>
+<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1detail_1_1StatsDGaugeImpl.html" title=" " alt="" coords="432,69,587,109"/>
+<area shape="rect" id="node5" href="$classbeast_1_1insight_1_1detail_1_1StatsDHookImpl.html" title=" " alt="" coords="432,133,587,173"/>
+<area shape="rect" id="node6" href="$classbeast_1_1insight_1_1detail_1_1StatsDMeterImpl.html" title=" " alt="" coords="432,197,587,237"/>
+<area shape="rect" id="node2" title=" " alt="" coords="5,101,181,141"/>
 </map>

@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['how_20to_20add_20new_20features_28953',['How to add new features',['../Feature.html',1,'']]],
-  ['heap_20profiling_20of_20rippled_20with_20jemalloc_28954',['Heap profiling of rippled with jemalloc',['../md____w_rippled_rippled_docs_HeapProfiling.html',1,'']]],
-  ['how_20to_20use_20rpc_20coroutines_2e_28955',['How to use RPC coroutines.',['../md_ripple_rpc_README.html',1,'']]]
+  ['fee_20voting_0',['Fee Voting',['../md_xrpld_app_misc_README.html',1,'']]],
+  ['fees_1',['Fees',['../md_xrpld_app_misc_FeeEscalation.html',1,'']]]
 ];

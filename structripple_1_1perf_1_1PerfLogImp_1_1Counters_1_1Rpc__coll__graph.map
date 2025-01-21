@@ -1,4 +1,4 @@
 <map id="ripple::perf::PerfLogImp::Counters::Rpc" name="ripple::perf::PerfLogImp::Counters::Rpc">
-<area shape="rect" id="node1" title="RPC performance counters." alt="" coords="5,124,180,165"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="41,5,144,32"/>
+<area shape="rect" id="node1" title="RPC performance counters." alt="" coords="5,123,180,163"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="41,5,144,31"/>
 </map>

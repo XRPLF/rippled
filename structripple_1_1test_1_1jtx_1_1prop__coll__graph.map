@@ -1,5 +1,5 @@
 <map id="ripple::test::jtx::prop&lt; Prop &gt;" name="ripple::test::jtx::prop&lt; Prop &gt;">
-<area shape="rect" id="node1" title="Set a property on a JTx." alt="" coords="29,213,155,255"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="5,109,179,151"/>
-<area shape="rect" id="node3" href="$structripple_1_1test_1_1jtx_1_1basic__prop.html" title=" " alt="" coords="29,5,155,47"/>
+<area shape="rect" id="node1" title="Set a property on a JTx." alt="" coords="29,211,155,251"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="5,108,179,148"/>
+<area shape="rect" id="node3" href="$structripple_1_1test_1_1jtx_1_1basic__prop.html" title=" " alt="" coords="29,5,155,45"/>
 </map>

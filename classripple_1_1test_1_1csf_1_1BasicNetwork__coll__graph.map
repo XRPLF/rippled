@@ -1,9 +1,8 @@
 <map id="ripple::test::csf::BasicNetwork&lt; Peer &gt;" name="ripple::test::csf::BasicNetwork&lt; Peer &gt;">
-<area shape="rect" id="node1" title="Peer to peer network simulator." alt="" coords="881,60,1052,101"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1csf_1_1Digraph.html" title=" " alt="" coords="535,5,765,76"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1csf_1_1Scheduler.html" title="Simulated discrete&#45;event scheduler." alt="" coords="587,100,713,141"/>
-<area shape="rect" id="node4" href="$classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html" title=" " alt="" coords="264,64,435,105"/>
-<area shape="rect" id="node5" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="269,130,430,186"/>
-<area shape="rect" id="node6" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="11,97,172,153"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="5,177,177,203"/>
+<area shape="rect" id="node1" title="Peer to peer network simulator." alt="" coords="831,91,1001,131"/>
+<area shape="rect" id="node2" href="$classripple_1_1test_1_1csf_1_1Scheduler.html" title="Simulated discrete&#45;event scheduler." alt="" coords="537,35,663,75"/>
+<area shape="rect" id="node3" href="$classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html" title=" " alt="" coords="215,5,385,45"/>
+<area shape="rect" id="node4" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="219,70,381,125"/>
+<area shape="rect" id="node5" href="$classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="5,77,165,117"/>
+<area shape="rect" id="node6" href="$classripple_1_1test_1_1csf_1_1Digraph.html" title=" " alt="" coords="485,99,715,168"/>
 </map>

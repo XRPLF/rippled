@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1openssl__sha512__hasher.html" title="SHA&#45;512 digest." alt="" coords="5,5,176,47"/>
+<area shape="rect" id="node1" href="$classripple_1_1NodeStore_1_1Manager.html" title="Singleton for managing NodeStore factories and back ends." alt="" coords="5,5,148,45"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1ManagerImp.html" title=" " alt="" coords="196,5,339,45"/>
 </map>

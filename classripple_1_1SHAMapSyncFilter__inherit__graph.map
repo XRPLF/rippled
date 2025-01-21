@@ -1,7 +1,7 @@
 <map id="ripple::SHAMapSyncFilter" name="ripple::SHAMapSyncFilter">
-<area shape="rect" id="node1" title=" " alt="" coords="5,85,189,112"/>
-<area shape="rect" id="node2" href="$classripple_1_1AccountStateSF.html" title=" " alt="" coords="257,5,425,32"/>
-<area shape="rect" id="node3" href="$classripple_1_1ConsensusTransSetSF.html" title=" " alt="" coords="237,56,444,83"/>
-<area shape="rect" id="node4" href="$structripple_1_1tests_1_1FetchPack__test_1_1TestFilter.html" title=" " alt="" coords="255,107,426,149"/>
-<area shape="rect" id="node5" href="$classripple_1_1TransactionStateSF.html" title=" " alt="" coords="245,173,436,200"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,80,192,105"/>
+<area shape="rect" id="node2" href="$classripple_1_1AccountStateSF.html" title=" " alt="" coords="259,5,429,31"/>
+<area shape="rect" id="node3" href="$classripple_1_1ConsensusTransSetSF.html" title=" " alt="" coords="240,55,448,80"/>
+<area shape="rect" id="node4" href="$classripple_1_1TransactionStateSF.html" title=" " alt="" coords="249,104,439,129"/>
+<area shape="rect" id="node5" href="$structripple_1_1tests_1_1FetchPack__test_1_1TestFilter.html" title=" " alt="" coords="258,154,430,194"/>
 </map>

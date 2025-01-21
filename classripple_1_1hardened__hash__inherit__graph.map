@@ -1,5 +1,4 @@
 <map id="ripple::hardened_hash&lt; HashAlgorithm &gt;" name="ripple::hardened_hash&lt; HashAlgorithm &gt;">
-<area shape="rect" id="node1" title="Seed functor once per construction." alt="" coords="75,5,242,47"/>
-<area shape="rect" id="node2" href="$structstd_1_1hash_3_01ripple_1_1Currency_01_4.html" title=" " alt="" coords="5,95,147,136"/>
-<area shape="rect" id="node3" href="$structstd_1_1hash_3_01ripple_1_1Directory_01_4.html" title=" " alt="" coords="171,95,312,136"/>
+<area shape="rect" id="node1" title="Seed functor once per construction." alt="" coords="5,5,172,45"/>
+<area shape="rect" id="node2" href="$structstd_1_1hash_3_01ripple_1_1Directory_01_4.html" title=" " alt="" coords="18,93,159,133"/>
 </map>

@@ -1,4 +1,0 @@
-<map id="ripple::RPC::ShardArchiveHandler" name="ripple::RPC::ShardArchiveHandler">
-<area shape="rect" id="node1" title="Handles the download and import of one or more shard archives." alt="" coords="18,5,205,47"/>
-<area shape="rect" id="node2" href="$classripple_1_1RPC_1_1RecoveryHandler.html" title=" " alt="" coords="5,95,217,121"/>
-</map>

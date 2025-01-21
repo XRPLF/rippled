@@ -1,8 +1,10 @@
 <map id="beast::basic_logstream&lt; CharT, Traits &gt;" name="beast::basic_logstream&lt; CharT, Traits &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="783,53,956,94"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="521,5,701,61"/>
-<area shape="rect" id="node3" href="$classbeast_1_1detail_1_1logstream__buf.html" title=" " alt="" coords="523,85,700,141"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_stringbuf.html" title=" " alt="" coords="252,53,432,109"/>
-<area shape="rect" id="node5" href="$classbeast_1_1Journal_1_1Stream.html" title="Provide a light&#45;weight way to check active() before string formatting." alt="" coords="259,133,425,160"/>
-<area shape="rect" id="node6" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,133,152,160"/>
+<area shape="rect" id="node1" title=" " alt="" coords="780,41,953,81"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="537,5,683,45"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ios.html" title=" " alt="" coords="257,13,427,38"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/ios_base.html" title=" " alt="" coords="25,13,132,38"/>
+<area shape="rect" id="node5" href="$classbeast_1_1detail_1_1logstream__buf.html" title=" " alt="" coords="521,70,699,125"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_stringbuf.html" title=" " alt="" coords="252,66,432,121"/>
+<area shape="rect" id="node7" href="$classbeast_1_1Journal_1_1Stream.html" title="Provide a light&#45;weight way to check active() before string formatting." alt="" coords="259,145,425,170"/>
+<area shape="rect" id="node8" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,145,152,170"/>
 </map>

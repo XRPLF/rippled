@@ -1,4 +1,5 @@
 <map id="ripple::test::jtx::memo" name="ripple::test::jtx::memo">
-<area shape="rect" id="node1" title="Add a memo to a JTx." alt="" coords="5,124,172,151"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="45,5,132,32"/>
+<area shape="rect" id="node1" title="Add a memo to a JTx." alt="" coords="5,212,172,237"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="45,95,132,120"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="19,5,158,45"/>
 </map>

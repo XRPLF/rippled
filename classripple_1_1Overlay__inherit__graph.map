@@ -1,5 +1,5 @@
 <map id="ripple::Overlay" name="ripple::Overlay">
-<area shape="rect" id="node1" title="Manages the set of connected peers." alt="" coords="30,95,149,121"/>
-<area shape="rect" id="node3" href="$classripple_1_1OverlayImpl.html" title=" " alt="" coords="16,169,163,196"/>
-<area shape="rect" id="node2" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="5,5,173,47"/>
+<area shape="rect" id="node1" title="Manages the set of connected peers." alt="" coords="30,93,149,119"/>
+<area shape="rect" id="node3" href="$classripple_1_1OverlayImpl.html" title=" " alt="" coords="16,167,163,192"/>
+<area shape="rect" id="node2" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="5,5,173,45"/>
 </map>

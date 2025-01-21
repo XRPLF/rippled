@@ -1,4 +1,4 @@
 <map id="ripple::test::jtx::seq" name="ripple::test::jtx::seq">
-<area shape="rect" id="node1" title="Set the sequence number on a JTx." alt="" coords="5,109,153,136"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="10,5,149,47"/>
+<area shape="rect" id="node1" title="Set the sequence number on a JTx." alt="" coords="5,108,153,133"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="10,5,149,45"/>
 </map>

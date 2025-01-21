@@ -1,4 +1,4 @@
 <map id="ripple::AmendmentTable" name="ripple::AmendmentTable">
-<area shape="rect" id="node1" title="The amendment table stores the list of enabled and potential amendments." alt="" coords="20,5,201,32"/>
-<area shape="rect" id="node2" href="$classripple_1_1AmendmentTableImpl.html" title="Track the list of &quot;amendments&quot;." alt="" coords="5,80,216,107"/>
+<area shape="rect" id="node1" title="The amendment table stores the list of enabled and potential amendments." alt="" coords="20,5,201,31"/>
+<area shape="rect" id="node2" href="$classripple_1_1AmendmentTableImpl.html" title="Track the list of &quot;amendments&quot;." alt="" coords="5,79,216,104"/>
 </map>

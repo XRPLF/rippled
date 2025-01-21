@@ -1,10 +1,10 @@
 <map id="ripple::JsonPropertyStream" name="ripple::JsonPropertyStream">
-<area shape="rect" id="node1" title="A PropertyStream::Sink which produces a Json::Value of type objectValue." alt="" coords="123,467,319,493"/>
-<area shape="rect" id="node2" href="$classbeast_1_1PropertyStream.html" title="Abstract stream with RAII containers that produce a property tree." alt="" coords="5,370,173,397"/>
-<area shape="rect" id="node3" href="$classJson_1_1Value.html" title="Represents a JSON value." alt="" coords="196,273,289,300"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="291,363,432,404"/>
-<area shape="rect" id="node4" href="$unionJson_1_1Value_1_1ValueHolder.html" title=" " alt="" coords="153,184,333,211"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title="STL class." alt="" coords="175,95,310,121"/>
-<area shape="rect" id="node6" title=" " alt="" coords="190,5,229,32"/>
-<area shape="rect" id="node7" title=" " alt="" coords="257,5,295,32"/>
+<area shape="rect" id="node1" title="A PropertyStream::Sink which produces a Json::Value of type objectValue." alt="" coords="123,460,319,485"/>
+<area shape="rect" id="node2" href="$classbeast_1_1PropertyStream.html" title="Abstract stream with RAII containers that produce a property tree." alt="" coords="5,365,173,390"/>
+<area shape="rect" id="node3" href="$classJson_1_1Value.html" title="Represents a JSON value." alt="" coords="196,269,289,295"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="291,357,432,397"/>
+<area shape="rect" id="node4" href="$unionJson_1_1Value_1_1ValueHolder.html" title=" " alt="" coords="153,181,333,207"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="175,93,310,119"/>
+<area shape="rect" id="node6" title=" " alt="" coords="191,5,230,31"/>
+<area shape="rect" id="node7" title=" " alt="" coords="257,5,295,31"/>
 </map>

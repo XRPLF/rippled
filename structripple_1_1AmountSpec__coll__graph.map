@@ -1,13 +1,13 @@
 <map id="ripple::AmountSpec" name="ripple::AmountSpec">
-<area shape="rect" id="node1" title=" " alt="" coords="611,217,760,243"/>
-<area shape="rect" id="node2" href="$classripple_1_1IOUAmount.html" title="Floating point representation of amounts with high dynamic range." alt="" coords="357,89,499,115"/>
-<area shape="rect" id="node3" title=" " alt="" coords="35,5,201,47"/>
-<area shape="rect" id="node4" title=" " alt="" coords="6,71,230,98"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="71,122,165,149"/>
-<area shape="rect" id="node7" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="357,218,499,245"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="351,269,505,311"/>
-<area shape="rect" id="node8" title=" " alt="" coords="35,173,201,215"/>
-<area shape="rect" id="node9" title=" " alt="" coords="5,239,231,266"/>
-<area shape="rect" id="node10" title=" " alt="" coords="13,291,223,332"/>
-<area shape="rect" id="node11" title=" " alt="" coords="11,356,225,397"/>
+<area shape="rect" id="node1" title=" " alt="" coords="615,282,764,307"/>
+<area shape="rect" id="node2" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="357,155,499,181"/>
+<area shape="rect" id="node3" title=" " alt="" coords="35,5,201,45"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,70,231,95"/>
+<area shape="rect" id="node5" title=" " alt="" coords="13,120,223,160"/>
+<area shape="rect" id="node6" title=" " alt="" coords="11,184,225,224"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="71,249,165,274"/>
+<area shape="rect" id="node8" href="$classripple_1_1IOUAmount.html" title="Floating point representation of amounts with high dynamic range." alt="" coords="357,283,499,309"/>
+<area shape="rect" id="node9" title=" " alt="" coords="35,299,201,339"/>
+<area shape="rect" id="node10" title=" " alt="" coords="6,363,230,389"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="351,335,505,375"/>
 </map>

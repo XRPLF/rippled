@@ -1,17 +1,18 @@
 <map id="ripple::perf::PerfLogImp::Counters" name="ripple::perf::PerfLogImp::Counters">
-<area shape="rect" id="node1" title="Track performance counters and currently executing tasks." alt="" coords="1167,209,1341,250"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="837,33,1041,119"/>
-<area shape="rect" id="node3" href="$structripple_1_1perf_1_1Locked.html" title=" " alt="" coords="481,56,672,112"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="249,143,341,169"/>
-<area shape="rect" id="node14" href="$structripple_1_1perf_1_1Locked.html" title=" " alt="" coords="481,197,672,253"/>
-<area shape="rect" id="node5" href="$structripple_1_1perf_1_1PerfLogImp_1_1Counters_1_1Rpc.html" title="RPC performance counters." alt="" coords="208,62,383,103"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,219,108,245"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="863,289,1015,345"/>
-<area shape="rect" id="node15" href="$structripple_1_1perf_1_1PerfLogImp_1_1Counters_1_1Jq.html" title="Job Queue task performance counters." alt="" coords="208,211,383,253"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="533,5,620,32"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="539,333,614,360"/>
-<area shape="rect" id="node10" title=" " alt="" coords="276,367,315,393"/>
-<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="495,390,658,431"/>
-<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="851,373,1027,429"/>
-<area shape="rect" id="node13" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="829,194,1049,265"/>
+<area shape="rect" id="node1" title="Track performance counters and currently executing tasks." alt="" coords="1161,213,1336,253"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="833,39,1035,123"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="533,13,619,38"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="230,5,369,45"/>
+<area shape="rect" id="node5" href="$structripple_1_1perf_1_1Locked.html" title=" " alt="" coords="481,62,671,117"/>
+<area shape="rect" id="node6" href="$structripple_1_1perf_1_1PerfLogImp_1_1Counters_1_1Rpc.html" title="RPC performance counters." alt="" coords="212,73,387,113"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,229,108,254"/>
+<area shape="rect" id="node11" href="$structripple_1_1perf_1_1PerfLogImp_1_1Counters_1_1Jq.html" title="Job Queue task performance counters." alt="" coords="212,221,387,261"/>
+<area shape="rect" id="node14" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="858,371,1010,426"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="253,149,345,174"/>
+<area shape="rect" id="node10" href="$structripple_1_1perf_1_1Locked.html" title=" " alt="" coords="481,206,671,261"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="824,199,1044,268"/>
+<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="846,293,1022,347"/>
+<area shape="rect" id="node13" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="495,292,657,332"/>
+<area shape="rect" id="node15" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="539,411,613,437"/>
+<area shape="rect" id="node16" title=" " alt="" coords="280,417,319,442"/>
 </map>

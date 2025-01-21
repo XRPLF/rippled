@@ -1,7 +1,0 @@
-<map id="ripple::test::GRPCTestClientBase" name="ripple::test::GRPCTestClientBase">
-<area shape="rect" id="node1" title=" " alt="" coords="5,111,237,138"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1ReportingETL__test_1_1GrpcLedgerClient.html" title=" " alt="" coords="297,5,482,47"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1ReportingETL__test_1_1GrpcLedgerDataClient.html" title=" " alt="" coords="287,71,492,112"/>
-<area shape="rect" id="node4" href="$classripple_1_1test_1_1ReportingETL__test_1_1GrpcLedgerDiffClient.html" title=" " alt="" coords="291,136,488,177"/>
-<area shape="rect" id="node5" href="$classripple_1_1test_1_1ReportingETL__test_1_1GrpcLedgerEntryClient.html" title=" " alt="" coords="285,201,493,243"/>
-</map>

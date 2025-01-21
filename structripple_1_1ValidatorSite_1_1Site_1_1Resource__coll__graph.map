@@ -1,6 +1,7 @@
 <map id="ripple::ValidatorSite::Site::Resource" name="ripple::ValidatorSite::Site::Resource">
-<area shape="rect" id="node1" title=" " alt="" coords="89,257,239,299"/>
-<area shape="rect" id="node2" href="$structripple_1_1parsedURL.html" title=" " alt="" coords="37,168,174,195"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,5,144,47"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="174,13,261,39"/>
+<area shape="rect" id="node1" title=" " alt="" coords="87,344,238,384"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="173,102,259,127"/>
+<area shape="rect" id="node4" href="$structripple_1_1parsedURL.html" title=" " alt="" coords="35,256,173,281"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="147,5,285,45"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,95,144,135"/>
 </map>

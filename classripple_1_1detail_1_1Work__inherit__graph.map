@@ -1,9 +1,9 @@
 <map id="ripple::detail::Work" name="ripple::detail::Work">
-<area shape="rect" id="node1" title=" " alt="" coords="5,101,151,127"/>
-<area shape="rect" id="node2" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="199,5,376,47"/>
-<area shape="rect" id="node3" href="$classripple_1_1detail_1_1WorkFile.html" title=" " alt="" coords="204,71,371,98"/>
-<area shape="rect" id="node4" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="199,123,376,164"/>
-<area shape="rect" id="node6" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="199,188,376,229"/>
-<area shape="rect" id="node5" href="$classripple_1_1detail_1_1WorkPlain.html" title=" " alt="" coords="424,130,601,157"/>
-<area shape="rect" id="node7" href="$classripple_1_1detail_1_1WorkSSL.html" title=" " alt="" coords="429,195,597,222"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,109,151,134"/>
+<area shape="rect" id="node2" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="199,5,376,45"/>
+<area shape="rect" id="node4" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="199,69,376,109"/>
+<area shape="rect" id="node6" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="199,133,376,173"/>
+<area shape="rect" id="node7" href="$classripple_1_1detail_1_1WorkFile.html" title=" " alt="" coords="203,198,371,223"/>
+<area shape="rect" id="node3" href="$classripple_1_1detail_1_1WorkPlain.html" title=" " alt="" coords="424,13,601,38"/>
+<area shape="rect" id="node5" href="$classripple_1_1detail_1_1WorkSSL.html" title=" " alt="" coords="429,77,597,102"/>
 </map>

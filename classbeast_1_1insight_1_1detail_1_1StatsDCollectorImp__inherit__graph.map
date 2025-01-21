@@ -1,6 +1,6 @@
 <map id="beast::insight::detail::StatsDCollectorImp" name="beast::insight::detail::StatsDCollectorImp">
-<area shape="rect" id="node1" title=" " alt="" coords="496,31,652,73"/>
-<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1StatsDCollector.html" title="A Collector that reports metrics to a StatsD server." alt="" coords="229,5,448,32"/>
-<area shape="rect" id="node3" href="$classbeast_1_1insight_1_1Collector.html" title="Interface for a manager that allows collection of metrics." alt="" coords="5,5,181,32"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="235,56,442,112"/>
+<area shape="rect" id="node1" title=" " alt="" coords="496,30,652,70"/>
+<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1StatsDCollector.html" title="A Collector that reports metrics to a StatsD server." alt="" coords="229,5,448,31"/>
+<area shape="rect" id="node3" href="$classbeast_1_1insight_1_1Collector.html" title="Interface for a manager that allows collection of metrics." alt="" coords="5,5,181,31"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="235,55,442,109"/>
 </map>

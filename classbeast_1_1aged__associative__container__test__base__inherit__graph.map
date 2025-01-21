@@ -1,12 +1,12 @@
 <map id="beast::aged_associative_container_test_base" name="beast::aged_associative_container_test_base">
-<area shape="rect" id="node1" title=" " alt="" coords="108,179,287,221"/>
-<area shape="rect" id="node3" href="$classbeast_1_1aged__map__test.html" title=" " alt="" coords="351,5,518,32"/>
-<area shape="rect" id="node4" href="$classbeast_1_1aged__multimap__test.html" title=" " alt="" coords="335,56,535,83"/>
-<area shape="rect" id="node5" href="$classbeast_1_1aged__multiset__test.html" title=" " alt="" coords="339,107,530,133"/>
-<area shape="rect" id="node6" href="$classbeast_1_1aged__set__test.html" title=" " alt="" coords="356,157,513,184"/>
-<area shape="rect" id="node7" href="$classbeast_1_1aged__unordered__map__test.html" title=" " alt="" coords="349,209,520,250"/>
-<area shape="rect" id="node8" href="$classbeast_1_1aged__unordered__multimap__test.html" title=" " alt="" coords="349,274,520,315"/>
-<area shape="rect" id="node9" href="$classbeast_1_1aged__unordered__multiset__test.html" title=" " alt="" coords="349,339,520,381"/>
-<area shape="rect" id="node10" href="$classbeast_1_1aged__unordered__set__test.html" title=" " alt="" coords="349,405,520,446"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,187,60,213"/>
+<area shape="rect" id="node1" title=" " alt="" coords="216,175,395,215"/>
+<area shape="rect" id="node3" href="$classbeast_1_1aged__map__test.html" title=" " alt="" coords="459,5,626,31"/>
+<area shape="rect" id="node4" href="$classbeast_1_1aged__multimap__test.html" title=" " alt="" coords="443,55,643,80"/>
+<area shape="rect" id="node5" href="$classbeast_1_1aged__multiset__test.html" title=" " alt="" coords="447,104,638,129"/>
+<area shape="rect" id="node6" href="$classbeast_1_1aged__set__test.html" title=" " alt="" coords="464,153,621,179"/>
+<area shape="rect" id="node7" href="$classbeast_1_1aged__unordered__map__test.html" title=" " alt="" coords="457,203,628,243"/>
+<area shape="rect" id="node8" href="$classbeast_1_1aged__unordered__multimap__test.html" title=" " alt="" coords="457,267,628,307"/>
+<area shape="rect" id="node9" href="$classbeast_1_1aged__unordered__multiset__test.html" title=" " alt="" coords="457,331,628,371"/>
+<area shape="rect" id="node10" href="$classbeast_1_1aged__unordered__set__test.html" title=" " alt="" coords="457,395,628,435"/>
+<area shape="rect" id="node2" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="5,183,168,208"/>
 </map>

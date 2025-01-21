@@ -1,7 +1,7 @@
 <map id="ripple::XRPAmount" name="ripple::XRPAmount">
-<area shape="rect" id="node1" title=" " alt="" coords="279,101,421,127"/>
-<area shape="rect" id="node2" title=" " alt="" coords="35,5,201,47"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,71,231,98"/>
-<area shape="rect" id="node4" title=" " alt="" coords="13,123,223,164"/>
-<area shape="rect" id="node5" title=" " alt="" coords="11,188,225,229"/>
+<area shape="rect" id="node1" title=" " alt="" coords="279,99,421,125"/>
+<area shape="rect" id="node2" title=" " alt="" coords="35,5,201,45"/>
+<area shape="rect" id="node3" title=" " alt="" coords="5,70,231,95"/>
+<area shape="rect" id="node4" title=" " alt="" coords="13,120,223,160"/>
+<area shape="rect" id="node5" title=" " alt="" coords="11,184,225,224"/>
 </map>

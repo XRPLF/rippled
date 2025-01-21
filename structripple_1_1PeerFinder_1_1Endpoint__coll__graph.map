@@ -1,6 +1,6 @@
 <map id="ripple::PeerFinder::Endpoint" name="ripple::PeerFinder::Endpoint">
-<area shape="rect" id="node1" title="Describes a connectible peer address along with some metadata." alt="" coords="43,184,177,225"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,95,108,121"/>
-<area shape="rect" id="node3" href="$classbeast_1_1IP_1_1Endpoint.html" title="A version&#45;independent IP address and port combination." alt="" coords="132,95,275,121"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="152,5,255,32"/>
+<area shape="rect" id="node1" title="Describes a connectible peer address along with some metadata." alt="" coords="42,181,178,221"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,93,108,119"/>
+<area shape="rect" id="node3" href="$classbeast_1_1IP_1_1Endpoint.html" title="A version&#45;independent IP address and port combination." alt="" coords="132,93,275,119"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="152,5,255,31"/>
 </map>

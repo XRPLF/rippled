@@ -1,4 +1,5 @@
 <map id="ripple::AmendmentState" name="ripple::AmendmentState">
-<area shape="rect" id="node1" title="Current state of an amendment." alt="" coords="5,95,187,121"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="53,5,139,32"/>
+<area shape="rect" id="node1" title="Current state of an amendment." alt="" coords="5,183,187,208"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="53,95,139,120"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="27,5,165,45"/>
 </map>

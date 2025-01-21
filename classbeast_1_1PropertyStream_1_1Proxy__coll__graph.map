@@ -1,7 +1,12 @@
 <map id="beast::PropertyStream::Proxy" name="beast::PropertyStream::Proxy">
-<area shape="rect" id="node1" title=" " alt="" coords="192,184,360,225"/>
-<area shape="rect" id="node2" href="$classbeast_1_1PropertyStream_1_1Map.html" title=" " alt="" coords="5,95,208,121"/>
-<area shape="rect" id="node3" href="$classbeast_1_1PropertyStream.html" title="Abstract stream with RAII containers that produce a property tree." alt="" coords="23,5,191,32"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="233,95,319,121"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostringstream.html" title="STL class." alt="" coords="344,95,485,121"/>
+<area shape="rect" id="node1" title=" " alt="" coords="197,435,365,475"/>
+<area shape="rect" id="node2" href="$classbeast_1_1PropertyStream_1_1Map.html" title=" " alt="" coords="5,347,209,372"/>
+<area shape="rect" id="node3" href="$classbeast_1_1PropertyStream.html" title="Abstract stream with RAII containers that produce a property tree." alt="" coords="19,251,187,277"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="237,347,324,372"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="211,244,350,284"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostringstream.html" title=" " alt="" coords="371,347,513,372"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostringstream.html" title=" " alt="" coords="375,244,557,284"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="393,155,539,195"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ios.html" title=" " alt="" coords="381,80,551,105"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/ios_base.html" title=" " alt="" coords="413,5,519,31"/>
 </map>

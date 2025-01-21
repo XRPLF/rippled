@@ -1,5 +1,5 @@
 <map id="ripple::TimeKeeper" name="ripple::TimeKeeper">
-<area shape="rect" id="node1" title="Manages various times used by the server." alt="" coords="23,95,168,121"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1ManualTimeKeeper.html" title=" " alt="" coords="5,169,185,211"/>
-<area shape="rect" id="node2" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="15,5,175,47"/>
+<area shape="rect" id="node1" title="Manages various times used by the server." alt="" coords="23,93,169,119"/>
+<area shape="rect" id="node3" href="$classripple_1_1test_1_1ManualTimeKeeper.html" title=" " alt="" coords="5,167,187,207"/>
+<area shape="rect" id="node2" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="16,5,176,45"/>
 </map>

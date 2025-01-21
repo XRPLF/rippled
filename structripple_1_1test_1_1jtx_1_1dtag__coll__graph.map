@@ -1,4 +1,4 @@
 <map id="ripple::test::jtx::dtag" name="ripple::test::jtx::dtag">
-<area shape="rect" id="node1" title="Set the destination tag on a JTx." alt="" coords="5,95,160,121"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="31,5,134,32"/>
+<area shape="rect" id="node1" title="Set the destination tag on a JTx." alt="" coords="5,93,160,119"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="31,5,134,31"/>
 </map>

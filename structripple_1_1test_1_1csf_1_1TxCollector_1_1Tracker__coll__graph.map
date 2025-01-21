@@ -1,6 +1,6 @@
 <map id="ripple::test::csf::TxCollector::Tracker" name="ripple::test::csf::TxCollector::Tracker">
-<area shape="rect" id="node1" title=" " alt="" coords="144,199,295,240"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1csf_1_1Tx.html" title="A single transaction." alt="" coords="5,95,148,121"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="25,5,128,32"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="172,95,363,121"/>
+<area shape="rect" id="node1" title=" " alt="" coords="144,196,295,236"/>
+<area shape="rect" id="node2" href="$classripple_1_1test_1_1csf_1_1Tx.html" title="A single transaction." alt="" coords="5,93,148,119"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="25,5,128,31"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="172,93,363,119"/>
 </map>

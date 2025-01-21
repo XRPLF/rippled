@@ -1,10 +1,11 @@
 <map id="ripple::ValidatorSite::Site" name="ripple::ValidatorSite::Site">
-<area shape="rect" id="node1" title=" " alt="" coords="1035,209,1185,251"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="697,122,868,178"/>
-<area shape="rect" id="node3" href="$structripple_1_1ValidatorSite_1_1Site_1_1Resource.html" title=" " alt="" coords="476,129,627,171"/>
-<area shape="rect" id="node4" href="$structripple_1_1parsedURL.html" title=" " alt="" coords="259,109,396,135"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,5,144,47"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="31,138,118,165"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="705,202,860,258"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="705,282,860,309"/>
+<area shape="rect" id="node1" title=" " alt="" coords="1223,196,1373,236"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="884,125,1055,179"/>
+<area shape="rect" id="node3" href="$structripple_1_1ValidatorSite_1_1Site_1_1Resource.html" title=" " alt="" coords="663,132,813,172"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="219,138,306,163"/>
+<area shape="rect" id="node6" href="$structripple_1_1parsedURL.html" title=" " alt="" coords="445,109,583,134"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,131,144,171"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="193,5,332,45"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="892,203,1047,229"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="892,253,1047,307"/>
 </map>

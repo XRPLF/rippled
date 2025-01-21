@@ -1,5 +1,5 @@
 <map id="ripple::UptimeClock" name="ripple::UptimeClock">
-<area shape="rect" id="node1" title="Tracks program uptime to seconds precision." alt="" coords="90,95,241,121"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="5,5,152,32"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="177,5,330,32"/>
+<area shape="rect" id="node1" title="Tracks program uptime to seconds precision." alt="" coords="90,93,241,119"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="5,5,152,31"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="177,5,330,31"/>
 </map>

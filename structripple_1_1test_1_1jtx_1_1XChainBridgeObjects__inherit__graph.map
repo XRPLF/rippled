@@ -1,7 +1,7 @@
 <map id="ripple::test::jtx::XChainBridgeObjects" name="ripple::test::jtx::XChainBridgeObjects">
-<area shape="rect" id="node1" title=" " alt="" coords="5,74,164,115"/>
-<area shape="rect" id="node2" href="$classripple_1_1LedgerRPC__XChain__test.html" title=" " alt="" coords="212,5,433,32"/>
-<area shape="rect" id="node3" href="$structripple_1_1test_1_1XChain__test.html" title=" " alt="" coords="234,56,411,83"/>
-<area shape="rect" id="node4" href="$structripple_1_1test_1_1XChainSim__test.html" title=" " alt="" coords="221,107,424,133"/>
-<area shape="rect" id="node5" href="$structripple_1_1test_1_1XEnv.html" title=" " alt="" coords="237,157,408,184"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,73,164,113"/>
+<area shape="rect" id="node2" href="$classripple_1_1LedgerRPC__XChain__test.html" title=" " alt="" coords="212,5,433,31"/>
+<area shape="rect" id="node3" href="$structripple_1_1test_1_1XChainSim__test.html" title=" " alt="" coords="221,55,424,80"/>
+<area shape="rect" id="node4" href="$structripple_1_1test_1_1XChain__test.html" title=" " alt="" coords="234,104,411,129"/>
+<area shape="rect" id="node5" href="$structripple_1_1test_1_1XEnv.html" title=" " alt="" coords="237,153,408,179"/>
 </map>

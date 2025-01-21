@@ -1,12 +1,12 @@
 <map id="ripple::reduce_relay::Slot&lt; clock_type &gt;" name="ripple::reduce_relay::Slot&lt; clock_type &gt;">
-<area shape="rect" id="node1" title="Slot is associated with a specific validator via validator&#39;s public key." alt="" coords="849,130,1004,171"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="511,5,613,32"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_set.html" title=" " alt="" coords="491,57,633,98"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="209,77,311,104"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="451,123,673,179"/>
-<area shape="rect" id="node6" href="$structripple_1_1reduce__relay_1_1Slot_1_1PeerInfo.html" title="Data maintained for each peer." alt="" coords="183,140,337,196"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,155,93,181"/>
-<area shape="rect" id="node8" href="$classripple_1_1reduce__relay_1_1SquelchHandler.html" title="Abstract class." alt="" coords="487,203,637,245"/>
-<area shape="rect" id="node9" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="507,269,617,296"/>
-<area shape="rect" id="node10" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="187,269,333,296"/>
+<area shape="rect" id="node1" title="Slot is associated with a specific validator via validator&#39;s public key." alt="" coords="849,141,1004,181"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="451,70,673,125"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="209,26,311,51"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_set.html" title=" " alt="" coords="491,5,633,45"/>
+<area shape="rect" id="node4" href="$structripple_1_1reduce__relay_1_1Slot_1_1PeerInfo.html" title="Data maintained for each peer." alt="" coords="183,89,337,143"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,103,93,129"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="511,149,613,174"/>
+<area shape="rect" id="node8" href="$classripple_1_1reduce__relay_1_1SquelchHandler.html" title="Abstract class." alt="" coords="487,199,637,239"/>
+<area shape="rect" id="node9" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="507,263,617,289"/>
+<area shape="rect" id="node10" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="187,263,333,289"/>
 </map>

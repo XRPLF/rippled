@@ -1,11 +1,10 @@
 <map id="ripple::test::csf::Submitter&lt; Distribution, Generator, Selector &gt;" name="ripple::test::csf::Submitter&lt; Distribution, Generator, Selector &gt;">
-<area shape="rect" id="node1" title="Submits transactions to a specified peer." alt="" coords="887,49,1068,105"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="604,5,707,32"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1csf_1_1Selector.html" title="Invocable that returns random samples from a range according to a discrete distribution." alt="" coords="547,57,764,98"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/numeric/random/discrete_distribution.html" title=" " alt="" coords="264,64,447,91"/>
-<area shape="rect" id="node5" href="$classripple_1_1test_1_1csf_1_1Scheduler.html" title="Simulated discrete&#45;event scheduler." alt="" coords="592,122,719,163"/>
-<area shape="rect" id="node6" href="$classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html" title=" " alt="" coords="270,118,441,159"/>
-<area shape="rect" id="node7" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="275,184,436,240"/>
-<area shape="rect" id="node8" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="11,151,172,207"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="5,231,177,257"/>
+<area shape="rect" id="node1" title="Submits transactions to a specified peer." alt="" coords="839,48,1020,103"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="555,5,658,31"/>
+<area shape="rect" id="node3" href="$classripple_1_1test_1_1csf_1_1Selector.html" title="Invocable that returns random samples from a range according to a discrete distribution." alt="" coords="497,55,716,95"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/numeric/random/discrete_distribution.html" title=" " alt="" coords="215,63,397,88"/>
+<area shape="rect" id="node5" href="$classripple_1_1test_1_1csf_1_1Scheduler.html" title="Simulated discrete&#45;event scheduler." alt="" coords="543,119,670,159"/>
+<area shape="rect" id="node6" href="$classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html" title=" " alt="" coords="221,115,391,155"/>
+<area shape="rect" id="node7" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="225,180,387,235"/>
+<area shape="rect" id="node8" href="$classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="5,187,165,227"/>
 </map>

@@ -1,4 +1,5 @@
 <map id="ripple::test::jtx::parse_error" name="ripple::test::jtx::parse_error">
-<area shape="rect" id="node1" title="Thrown when parse fails." alt="" coords="5,80,131,121"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/logic_error.html" title="STL class." alt="" coords="9,5,127,32"/>
+<area shape="rect" id="node1" title="Thrown when parse fails." alt="" coords="5,152,131,192"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/logic_error.html" title=" " alt="" coords="9,79,127,104"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/exception.html" title=" " alt="" coords="11,5,125,31"/>
 </map>

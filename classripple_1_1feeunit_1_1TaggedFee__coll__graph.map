@@ -1,10 +1,9 @@
 <map id="ripple::feeunit::TaggedFee&lt; UnitTag, T &gt;" name="ripple::feeunit::TaggedFee&lt; UnitTag, T &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="317,201,507,243"/>
-<area shape="rect" id="node2" title=" " alt="" coords="13,5,228,47"/>
-<area shape="rect" id="node3" title=" " alt="" coords="19,71,222,112"/>
-<area shape="rect" id="node4" title=" " alt="" coords="5,136,236,177"/>
-<area shape="rect" id="node5" title=" " alt="" coords="27,201,214,243"/>
-<area shape="rect" id="node6" title=" " alt="" coords="17,267,224,308"/>
-<area shape="rect" id="node7" title=" " alt="" coords="34,333,207,389"/>
-<area shape="rect" id="node8" title=" " alt="" coords="101,413,140,439"/>
+<area shape="rect" id="node1" title=" " alt="" coords="285,165,476,205"/>
+<area shape="rect" id="node2" title=" " alt="" coords="13,5,229,45"/>
+<area shape="rect" id="node3" title=" " alt="" coords="20,69,223,109"/>
+<area shape="rect" id="node4" title=" " alt="" coords="5,133,237,173"/>
+<area shape="rect" id="node5" title=" " alt="" coords="28,197,215,237"/>
+<area shape="rect" id="node6" title=" " alt="" coords="18,261,225,301"/>
+<area shape="rect" id="node7" title=" " alt="" coords="34,326,209,381"/>
 </map>

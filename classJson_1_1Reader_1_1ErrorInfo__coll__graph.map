@@ -1,5 +1,6 @@
 <map id="Json::Reader::ErrorInfo" name="Json::Reader::ErrorInfo">
-<area shape="rect" id="node1" title=" " alt="" coords="36,95,203,121"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="5,5,92,32"/>
-<area shape="rect" id="node3" href="$classJson_1_1Reader_1_1Token.html" title=" " alt="" coords="116,5,264,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="51,183,217,208"/>
+<area shape="rect" id="node2" href="$classJson_1_1Reader_1_1Token.html" title=" " alt="" coords="5,95,153,120"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="177,95,264,120"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="151,5,290,45"/>
 </map>

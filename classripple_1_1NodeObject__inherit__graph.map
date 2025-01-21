@@ -1,4 +1,4 @@
 <map id="ripple::NodeObject" name="ripple::NodeObject">
-<area shape="rect" id="node1" title="A simple object that the Ledger uses to store entries." alt="" coords="15,95,158,121"/>
-<area shape="rect" id="node2" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,168,47"/>
+<area shape="rect" id="node1" title="A simple object that the Ledger uses to store entries." alt="" coords="15,93,158,119"/>
+<area shape="rect" id="node2" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,168,45"/>
 </map>

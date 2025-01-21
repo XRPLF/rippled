@@ -1,0 +1,6 @@
+<map id="beast::unit_test::runner" name="beast::unit_test::runner">
+<area shape="rect" id="node1" title="Unit test runner interface." alt="" coords="5,70,179,95"/>
+<area shape="rect" id="node2" href="$classbeast_1_1unit__test_1_1detail_1_1reporter.html" title="A simple test runner that writes everything to a stream in real time." alt="" coords="235,5,403,45"/>
+<area shape="rect" id="node3" href="$classbeast_1_1unit__test_1_1recorder.html" title="A test runner that stores the results." alt="" coords="227,70,412,95"/>
+<area shape="rect" id="node4" href="$classripple_1_1test_1_1multi__runner__child.html" title="A class to run a subset of unit tests." alt="" coords="252,120,387,160"/>
+</map>

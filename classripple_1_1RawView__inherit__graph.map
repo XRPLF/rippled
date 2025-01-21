@@ -1,10 +1,10 @@
 <map id="ripple::RawView" name="ripple::RawView">
-<area shape="rect" id="node1" title="Interface for ledger entry changes." alt="" coords="5,132,132,159"/>
-<area shape="rect" id="node2" href="$classripple_1_1detail_1_1ApplyViewBase.html" title=" " alt="" coords="180,81,393,108"/>
-<area shape="rect" id="node6" href="$classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="211,157,362,184"/>
-<area shape="rect" id="node3" href="$classripple_1_1ApplyViewImpl.html" title="Editable, discardable view that can build metadata for one tx." alt="" coords="449,5,614,32"/>
-<area shape="rect" id="node4" href="$classripple_1_1PaymentSandbox.html" title="A wrapper which makes credits unavailable to balances." alt="" coords="441,56,621,83"/>
-<area shape="rect" id="node5" href="$classripple_1_1Sandbox.html" title="Discardable, editable view to a ledger." alt="" coords="470,107,593,133"/>
-<area shape="rect" id="node7" href="$classripple_1_1Ledger.html" title="Holds a ledger." alt="" coords="476,157,587,184"/>
-<area shape="rect" id="node8" href="$classripple_1_1OpenView.html" title="Writable ledger view that accumulates state and tx changes." alt="" coords="465,208,598,235"/>
+<area shape="rect" id="node1" title="Interface for ledger entry changes." alt="" coords="5,104,132,129"/>
+<area shape="rect" id="node2" href="$classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="211,55,362,80"/>
+<area shape="rect" id="node5" href="$classripple_1_1detail_1_1ApplyViewBase.html" title=" " alt="" coords="180,128,393,153"/>
+<area shape="rect" id="node3" href="$classripple_1_1Ledger.html" title="Holds a ledger." alt="" coords="476,5,587,31"/>
+<area shape="rect" id="node4" href="$classripple_1_1OpenView.html" title="Writable ledger view that accumulates state and tx changes." alt="" coords="465,55,598,80"/>
+<area shape="rect" id="node6" href="$classripple_1_1ApplyViewImpl.html" title="Editable, discardable view that can build metadata for one tx." alt="" coords="449,104,614,129"/>
+<area shape="rect" id="node7" href="$classripple_1_1PaymentSandbox.html" title="A wrapper which makes credits unavailable to balances." alt="" coords="441,153,621,179"/>
+<area shape="rect" id="node8" href="$classripple_1_1Sandbox.html" title="Discardable, editable view to a ledger." alt="" coords="470,203,593,228"/>
 </map>

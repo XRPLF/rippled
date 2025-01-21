@@ -1,6 +1,6 @@
 <map id="ripple::NodeStore::Backend" name="ripple::NodeStore::Backend">
-<area shape="rect" id="node1" title="A backend used for the NodeStore." alt="" coords="5,71,148,112"/>
-<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1MemoryBackend.html" title=" " alt="" coords="196,5,339,47"/>
-<area shape="rect" id="node3" href="$classripple_1_1NodeStore_1_1NuDBBackend.html" title=" " alt="" coords="196,71,339,112"/>
-<area shape="rect" id="node4" href="$classripple_1_1NodeStore_1_1NullBackend.html" title=" " alt="" coords="196,136,339,177"/>
+<area shape="rect" id="node1" title="A backend used for the NodeStore." alt="" coords="5,69,148,109"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1MemoryBackend.html" title=" " alt="" coords="196,5,339,45"/>
+<area shape="rect" id="node3" href="$classripple_1_1NodeStore_1_1NuDBBackend.html" title=" " alt="" coords="196,69,339,109"/>
+<area shape="rect" id="node4" href="$classripple_1_1NodeStore_1_1NullBackend.html" title=" " alt="" coords="196,133,339,173"/>
 </map>

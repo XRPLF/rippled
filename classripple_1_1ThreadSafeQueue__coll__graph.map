@@ -1,6 +1,0 @@
-<map id="ripple::ThreadSafeQueue&lt; T &gt;" name="ripple::ThreadSafeQueue&lt; T &gt;">
-<area shape="rect" id="node1" title="Generic thread&#45;safe queue with an optional maximum size Note, we can&#39;t use a lockfree queue here,..." alt="" coords="183,95,404,121"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="5,5,176,32"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="200,5,387,32"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="411,5,503,32"/>
-</map>

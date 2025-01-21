@@ -1,7 +1,7 @@
 <map id="ripple::test::PeerPartial" name="ripple::test::PeerPartial">
-<area shape="rect" id="node1" title="Simulate two entities &#45; peer directly connected to the server (via squelch in PeerSim) and PeerImp (v..." alt="" coords="5,184,176,211"/>
-<area shape="rect" id="node2" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="21,95,117,121"/>
-<area shape="rect" id="node3" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="141,95,272,121"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="102,5,197,32"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="221,5,309,32"/>
+<area shape="rect" id="node1" title="Simulate two entities &#45; peer directly connected to the server (via squelch in PeerSim) and PeerImp (v..." alt="" coords="5,181,176,207"/>
+<area shape="rect" id="node2" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="21,93,117,119"/>
+<area shape="rect" id="node3" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="141,93,272,119"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="105,5,193,31"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="218,5,313,31"/>
 </map>

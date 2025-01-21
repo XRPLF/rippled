@@ -1,4 +1,4 @@
 <map id="ripple::test::jtx::sig" name="ripple::test::jtx::sig">
-<area shape="rect" id="node1" title="Set the regular signature on a JTx." alt="" coords="11,109,155,136"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,5,160,47"/>
+<area shape="rect" id="node1" title="Set the regular signature on a JTx." alt="" coords="11,108,155,133"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,5,160,45"/>
 </map>

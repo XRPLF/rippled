@@ -1,6 +1,6 @@
 <map id="beast::insight::HookImpl" name="beast::insight::HookImpl">
-<area shape="rect" id="node1" title=" " alt="" coords="81,95,263,121"/>
-<area shape="rect" id="node3" href="$classbeast_1_1insight_1_1detail_1_1NullHookImpl.html" title=" " alt="" coords="5,169,160,211"/>
-<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1detail_1_1StatsDHookImpl.html" title=" " alt="" coords="184,169,339,211"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="80,5,264,47"/>
+<area shape="rect" id="node1" title=" " alt="" coords="81,93,263,119"/>
+<area shape="rect" id="node3" href="$classbeast_1_1insight_1_1detail_1_1NullHookImpl.html" title=" " alt="" coords="5,167,160,207"/>
+<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1detail_1_1StatsDHookImpl.html" title=" " alt="" coords="184,167,339,207"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="80,5,264,45"/>
 </map>

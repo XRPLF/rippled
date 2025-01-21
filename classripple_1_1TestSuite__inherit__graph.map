@@ -1,12 +1,12 @@
 <map id="ripple::TestSuite" name="ripple::TestSuite">
-<area shape="rect" id="node1" title=" " alt="" coords="108,107,235,133"/>
-<area shape="rect" id="node3" href="$classripple_1_1Config__test.html" title=" " alt="" coords="326,5,466,32"/>
-<area shape="rect" id="node4" href="$classripple_1_1RPC_1_1WalletPropose__test.html" title=" " alt="" coords="283,56,509,83"/>
-<area shape="rect" id="node5" href="$classripple_1_1SociDB__test.html" title=" " alt="" coords="323,107,469,133"/>
-<area shape="rect" id="node6" href="$classripple_1_1test_1_1TestOutputSuite.html" title=" " alt="" coords="311,158,481,199"/>
-<area shape="rect" id="node10" href="$classripple_1_1tests_1_1cluster__test.html" title=" " alt="" coords="305,224,487,251"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,107,60,133"/>
-<area shape="rect" id="node7" href="$classJson_1_1JsonObject__test.html" title=" " alt="" coords="557,115,716,141"/>
-<area shape="rect" id="node8" href="$classJson_1_1JsonWriter__test.html" title=" " alt="" coords="559,165,714,192"/>
-<area shape="rect" id="node9" href="$structJson_1_1Output__test.html" title=" " alt="" coords="570,216,703,243"/>
+<area shape="rect" id="node1" title=" " alt="" coords="216,104,343,129"/>
+<area shape="rect" id="node3" href="$classripple_1_1Config__test.html" title=" " alt="" coords="434,5,574,31"/>
+<area shape="rect" id="node4" href="$classripple_1_1RPC_1_1WalletPropose__test.html" title=" " alt="" coords="391,55,617,80"/>
+<area shape="rect" id="node5" href="$classripple_1_1SociDB__test.html" title=" " alt="" coords="431,104,577,129"/>
+<area shape="rect" id="node6" href="$classripple_1_1test_1_1TestOutputSuite.html" title=" " alt="" coords="419,154,589,194"/>
+<area shape="rect" id="node10" href="$classripple_1_1tests_1_1cluster__test.html" title=" " alt="" coords="413,219,595,244"/>
+<area shape="rect" id="node2" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="5,104,168,129"/>
+<area shape="rect" id="node7" href="$classJson_1_1JsonObject__test.html" title=" " alt="" coords="665,112,824,137"/>
+<area shape="rect" id="node8" href="$classJson_1_1JsonWriter__test.html" title=" " alt="" coords="667,161,823,187"/>
+<area shape="rect" id="node9" href="$structJson_1_1Output__test.html" title=" " alt="" coords="678,211,811,236"/>
 </map>

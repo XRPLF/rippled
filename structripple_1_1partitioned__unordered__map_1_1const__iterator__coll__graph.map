@@ -1,5 +1,5 @@
 <map id="ripple::partitioned_unordered_map&lt; Key, Value, Hash, Pred, Alloc &gt;::const_iterator" name="ripple::partitioned_unordered_map&lt; Key, Value, Hash, Pred, Alloc &gt;::const_iterator">
-<area shape="rect" id="node1" title=" " alt="" coords="87,109,267,180"/>
-<area shape="rect" id="node2" title="STL iterator class." alt="" coords="5,5,157,47"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="181,13,368,39"/>
+<area shape="rect" id="node1" title=" " alt="" coords="105,108,285,177"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="5,13,192,38"/>
+<area shape="rect" id="node3" title=" " alt="" coords="216,5,368,45"/>
 </map>

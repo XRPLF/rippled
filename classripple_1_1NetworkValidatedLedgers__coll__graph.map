@@ -1,6 +1,0 @@
-<map id="ripple::NetworkValidatedLedgers" name="ripple::NetworkValidatedLedgers">
-<area shape="rect" id="node1" title="This datastructure is used to keep track of the sequence of the most recent ledger validated by the n..." alt="" coords="202,95,385,136"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="5,5,176,32"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="200,5,387,32"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="411,5,503,32"/>
-</map>

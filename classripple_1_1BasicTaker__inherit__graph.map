@@ -1,5 +1,5 @@
 <map id="ripple::BasicTaker" name="ripple::BasicTaker">
-<area shape="rect" id="node1" title="State for the active party during order book or payment operations." alt="" coords="59,5,196,32"/>
-<area shape="rect" id="node2" href="$classripple_1_1Taker.html" title=" " alt="" coords="5,87,108,114"/>
-<area shape="rect" id="node3" href="$classripple_1_1Taker__test_1_1TestTaker.html" title=" " alt="" coords="132,80,267,121"/>
+<area shape="rect" id="node1" title="State for the active party during order book or payment operations." alt="" coords="59,5,195,31"/>
+<area shape="rect" id="node2" href="$classripple_1_1Taker.html" title=" " alt="" coords="5,86,107,111"/>
+<area shape="rect" id="node3" href="$classripple_1_1Taker__test_1_1TestTaker.html" title=" " alt="" coords="131,79,264,119"/>
 </map>

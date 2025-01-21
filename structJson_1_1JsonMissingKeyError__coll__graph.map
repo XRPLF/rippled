@@ -1,5 +1,6 @@
 <map id="Json::JsonMissingKeyError" name="Json::JsonMissingKeyError">
-<area shape="rect" id="node1" title=" " alt="" coords="31,95,219,121"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/exception.html" title="STL class." alt="" coords="5,5,120,32"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="145,5,231,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,183,195,208"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/exception.html" title=" " alt="" coords="21,95,136,120"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="161,95,247,120"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="135,5,273,45"/>
 </map>

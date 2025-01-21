@@ -1,17 +1,18 @@
 <map id="ripple::PeerFinder::Livecache&lt; Allocator &gt;" name="ripple::PeerFinder::Livecache&lt; Allocator &gt;">
-<area shape="rect" id="node1" title="The Livecache holds the short&#45;lived relayed Endpoint messages." alt="" coords="1231,305,1413,347"/>
-<area shape="rect" id="node2" href="$classripple_1_1PeerFinder_1_1Livecache_1_1hops__t.html" title=" " alt="" coords="937,63,1105,119"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="553,5,731,47"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="547,71,737,112"/>
-<area shape="rect" id="node5" href="$classbeast_1_1detail_1_1aged__ordered__container.html" title=" " alt="" coords="929,269,1113,383"/>
-<area shape="rect" id="node6" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1config__t.html" title=" " alt="" coords="537,137,747,222"/>
-<area shape="rect" id="node7" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1KeyValueCompare.html" title=" " alt="" coords="193,42,404,127"/>
-<area shape="rect" id="node8" title=" " alt="" coords="32,71,113,98"/>
-<area shape="rect" id="node9" href="$classbeast_1_1detail_1_1empty__base__optimization.html" title=" " alt="" coords="189,151,408,207"/>
-<area shape="rect" id="node10" title=" " alt="" coords="5,166,140,193"/>
-<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/reference_wrapper.html" title=" " alt="" coords="203,232,394,273"/>
-<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/conditional.html" title=" " alt="" coords="495,247,789,405"/>
-<area shape="rect" id="node13" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1chronological__t.html" title=" " alt="" coords="537,430,747,515"/>
-<area shape="rect" id="node14" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="966,473,1077,499"/>
-<area shape="rect" id="node15" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="569,539,715,566"/>
+<area shape="rect" id="node1" title="The Livecache holds the short&#45;lived relayed Endpoint messages." alt="" coords="1231,126,1413,166"/>
+<area shape="rect" id="node2" href="$classripple_1_1PeerFinder_1_1detail_1_1LivecacheBase.html" title=" " alt="" coords="935,34,1107,74"/>
+<area shape="rect" id="node3" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="966,99,1077,124"/>
+<area shape="rect" id="node4" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="569,5,715,31"/>
+<area shape="rect" id="node5" href="$classbeast_1_1detail_1_1aged__ordered__container.html" title=" " alt="" coords="929,148,1113,261"/>
+<area shape="rect" id="node6" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1chronological__t.html" title=" " alt="" coords="537,55,747,139"/>
+<area shape="rect" id="node7" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1config__t.html" title=" " alt="" coords="537,163,747,247"/>
+<area shape="rect" id="node8" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1KeyValueCompare.html" title=" " alt="" coords="193,69,404,153"/>
+<area shape="rect" id="node9" title=" " alt="" coords="32,99,113,124"/>
+<area shape="rect" id="node10" href="$classbeast_1_1detail_1_1empty__base__optimization.html" title=" " alt="" coords="189,177,408,232"/>
+<area shape="rect" id="node11" title=" " alt="" coords="5,192,140,217"/>
+<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/reference_wrapper.html" title=" " alt="" coords="203,257,394,297"/>
+<area shape="rect" id="node13" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/conditional.html" title=" " alt="" coords="495,271,789,429"/>
+<area shape="rect" id="node14" href="$classripple_1_1PeerFinder_1_1Livecache_1_1hops__t.html" title=" " alt="" coords="937,445,1105,500"/>
+<area shape="rect" id="node15" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="547,453,737,493"/>
+<area shape="rect" id="node16" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="553,517,731,557"/>
 </map>

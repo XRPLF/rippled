@@ -1,10 +1,11 @@
 <map id="ripple::detail::STVar" name="ripple::detail::STVar">
-<area shape="rect" id="node1" title=" " alt="" coords="328,288,477,315"/>
-<area shape="rect" id="node2" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="5,191,120,218"/>
-<area shape="rect" id="node3" href="$classripple_1_1SField.html" title="Identifies fields." alt="" coords="90,95,195,121"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="145,184,301,225"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="33,5,119,32"/>
-<area shape="rect" id="node6" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="143,5,275,32"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/aligned_storage.html" title=" " alt="" coords="325,184,480,225"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="504,191,592,218"/>
+<area shape="rect" id="node1" title=" " alt="" coords="120,373,269,399"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,278,93,303"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/aligned_storage.html" title=" " alt="" coords="117,271,272,311"/>
+<area shape="rect" id="node4" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="296,278,411,303"/>
+<area shape="rect" id="node5" href="$classripple_1_1SField.html" title="Identifies fields." alt="" coords="380,183,487,208"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="443,271,599,311"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="323,95,410,120"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="297,5,436,45"/>
+<area shape="rect" id="node8" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="434,95,566,120"/>
 </map>

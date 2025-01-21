@@ -1,4 +1,4 @@
 <map id="ripple::test::CheckMessageLogs" name="ripple::test::CheckMessageLogs">
-<area shape="rect" id="node1" title="Log manager that searches for a specific message substring." alt="" coords="5,80,232,107"/>
-<area shape="rect" id="node2" href="$classripple_1_1Logs.html" title="Manages partitions for logging." alt="" coords="70,5,167,32"/>
+<area shape="rect" id="node1" title="Log manager that searches for a specific message substring." alt="" coords="5,79,233,104"/>
+<area shape="rect" id="node2" href="$classripple_1_1Logs.html" title="Manages partitions for logging." alt="" coords="71,5,168,31"/>
 </map>

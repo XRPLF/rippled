@@ -1,4 +1,4 @@
 <map id="ripple::ValidNewAccountRoot" name="ripple::ValidNewAccountRoot">
-<area shape="rect" id="node1" title="Invariant: a new account root must be the consequence of a payment, must have the right starting sequ..." alt="" coords="5,109,215,136"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="59,5,161,32"/>
+<area shape="rect" id="node1" title="Invariant: a new account root must be the consequence of a payment, must have the right starting sequ..." alt="" coords="5,108,216,133"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="59,5,162,31"/>
 </map>

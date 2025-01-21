@@ -1,6 +1,6 @@
 <map id="ripple::DummyPeerSet" name="ripple::DummyPeerSet">
-<area shape="rect" id="node1" title=" " alt="" coords="5,184,175,211"/>
-<area shape="rect" id="node2" href="$classripple_1_1PeerSet.html" title="Supports data retrieval by managing a set of peers." alt="" coords="10,95,127,121"/>
-<area shape="rect" id="node3" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="152,95,263,121"/>
-<area shape="rect" id="node4" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="134,5,281,32"/>
+<area shape="rect" id="node1" title=" " alt="" coords="5,181,175,207"/>
+<area shape="rect" id="node2" href="$classripple_1_1PeerSet.html" title="Supports data retrieval by managing a set of peers." alt="" coords="10,93,127,119"/>
+<area shape="rect" id="node3" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="152,93,263,119"/>
+<area shape="rect" id="node4" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="134,5,281,31"/>
 </map>

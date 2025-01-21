@@ -1,7 +1,7 @@
 <map id="ripple::ApplyViewImpl" name="ripple::ApplyViewImpl">
-<area shape="rect" id="node1" title="Editable, discardable view that can build metadata for one tx." alt="" coords="68,229,233,256"/>
-<area shape="rect" id="node2" href="$classripple_1_1detail_1_1ApplyViewBase.html" title=" " alt="" coords="44,155,257,181"/>
-<area shape="rect" id="node3" href="$classripple_1_1ApplyView.html" title="Writeable view to a ledger, for applying a transaction." alt="" coords="5,80,141,107"/>
-<area shape="rect" id="node4" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="8,5,139,32"/>
-<area shape="rect" id="node5" href="$classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="166,80,293,107"/>
+<area shape="rect" id="node1" title="Editable, discardable view that can build metadata for one tx." alt="" coords="68,225,233,251"/>
+<area shape="rect" id="node2" href="$classripple_1_1detail_1_1ApplyViewBase.html" title=" " alt="" coords="44,152,257,177"/>
+<area shape="rect" id="node3" href="$classripple_1_1ApplyView.html" title="Writeable view to a ledger, for applying a transaction." alt="" coords="5,79,141,104"/>
+<area shape="rect" id="node4" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="7,5,139,31"/>
+<area shape="rect" id="node5" href="$classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="166,79,293,104"/>
 </map>

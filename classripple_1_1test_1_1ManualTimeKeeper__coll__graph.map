@@ -1,9 +1,9 @@
 <map id="ripple::test::ManualTimeKeeper" name="ripple::test::ManualTimeKeeper">
-<area shape="rect" id="node1" title=" " alt="" coords="816,100,996,141"/>
-<area shape="rect" id="node2" href="$classripple_1_1TimeKeeper.html" title="Manages various times used by the server." alt="" coords="565,78,711,105"/>
-<area shape="rect" id="node3" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="242,5,402,47"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="231,71,413,112"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="5,78,160,105"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="547,129,729,171"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="236,137,408,163"/>
+<area shape="rect" id="node1" title=" " alt="" coords="816,99,997,139"/>
+<area shape="rect" id="node2" href="$classripple_1_1TimeKeeper.html" title="Manages various times used by the server." alt="" coords="565,77,711,102"/>
+<area shape="rect" id="node3" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="242,5,402,45"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="231,69,413,109"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="5,77,160,102"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="547,127,729,167"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="236,134,408,159"/>
 </map>

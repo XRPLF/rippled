@@ -1,6 +1,6 @@
 <map id="beast::insight::MeterImpl" name="beast::insight::MeterImpl">
-<area shape="rect" id="node1" title=" " alt="" coords="80,95,264,121"/>
-<area shape="rect" id="node3" href="$classbeast_1_1insight_1_1detail_1_1NullMeterImpl.html" title=" " alt="" coords="5,169,160,211"/>
-<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1detail_1_1StatsDMeterImpl.html" title=" " alt="" coords="184,169,339,211"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="79,5,265,47"/>
+<area shape="rect" id="node1" title=" " alt="" coords="79,93,265,119"/>
+<area shape="rect" id="node3" href="$classbeast_1_1insight_1_1detail_1_1NullMeterImpl.html" title=" " alt="" coords="5,167,160,207"/>
+<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1detail_1_1StatsDMeterImpl.html" title=" " alt="" coords="184,167,339,207"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="78,5,266,45"/>
 </map>

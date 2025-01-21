@@ -1,15 +1,16 @@
 <map id="ripple::Workers" name="ripple::Workers">
-<area shape="rect" id="node1" title="Workers is effectively a thread pool." alt="" coords="991,308,1111,335"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="627,44,769,71"/>
-<area shape="rect" id="node3" href="$structripple_1_1Workers_1_1Callback.html" title="Called to perform tasks as needed." alt="" coords="606,95,790,121"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="295,161,466,188"/>
-<area shape="rect" id="node8" href="$classripple_1_1basic__semaphore.html" title=" " alt="" coords="597,220,799,276"/>
-<area shape="rect" id="node5" href="$classbeast_1_1LockFreeStack.html" title=" " alt="" coords="591,369,805,425"/>
-<area shape="rect" id="node6" href="$classbeast_1_1LockFreeStack_1_1Node.html" title=" " alt="" coords="5,410,184,451"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="285,419,476,461"/>
-<area shape="rect" id="node11" href="$classbeast_1_1LockFreeStack.html" title=" " alt="" coords="596,450,800,491"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title="STL class." alt="" coords="335,291,427,317"/>
-<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="337,227,425,253"/>
-<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="655,516,741,543"/>
-<area shape="rect" id="node13" href="$classripple_1_1perf_1_1PerfLog.html" title="Singleton class that maintains performance counters and optionally writes Json&#45;formatted data to a di..." alt="" coords="623,567,773,593"/>
+<area shape="rect" id="node1" title="Workers is effectively a thread pool." alt="" coords="992,245,1111,270"/>
+<area shape="rect" id="node2" href="$structripple_1_1Workers_1_1Callback.html" title="Called to perform tasks as needed." alt="" coords="608,17,791,42"/>
+<area shape="rect" id="node3" href="$classripple_1_1perf_1_1PerfLog.html" title="Singleton class that maintains performance counters and optionally writes Json&#45;formatted data to a di..." alt="" coords="625,66,774,91"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="656,115,743,141"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="312,108,451,148"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="296,183,467,209"/>
+<area shape="rect" id="node8" href="$classripple_1_1basic__semaphore.html" title=" " alt="" coords="598,230,801,285"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="335,314,427,339"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="337,245,425,270"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="628,385,771,410"/>
+<area shape="rect" id="node11" href="$classbeast_1_1LockFreeStack.html" title=" " alt="" coords="598,435,801,475"/>
+<area shape="rect" id="node12" href="$classbeast_1_1LockFreeStack_1_1Node.html" title=" " alt="" coords="5,471,184,511"/>
+<area shape="rect" id="node13" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="285,480,477,520"/>
+<area shape="rect" id="node14" href="$classbeast_1_1LockFreeStack.html" title=" " alt="" coords="592,499,807,554"/>
 </map>

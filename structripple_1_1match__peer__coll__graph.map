@@ -1,4 +1,4 @@
 <map id="ripple::match_peer" name="ripple::match_peer">
-<area shape="rect" id="node1" title="Select the specific peer." alt="" coords="5,95,149,121"/>
-<area shape="rect" id="node2" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="29,5,125,32"/>
+<area shape="rect" id="node1" title="Select the specific peer." alt="" coords="5,93,149,119"/>
+<area shape="rect" id="node2" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="29,5,125,31"/>
 </map>

@@ -1,0 +1,6 @@
+<map id="beast::unit_test::amount" name="beast::unit_test::amount">
+<area shape="rect" id="node1" title="Utility for producing nicely composed output of amounts with units." alt="" coords="5,183,187,208"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="27,95,115,120"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="139,95,226,120"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="113,5,252,45"/>
+</map>

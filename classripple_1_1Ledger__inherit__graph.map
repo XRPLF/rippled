@@ -1,9 +1,9 @@
 <map id="ripple::Ledger" name="ripple::Ledger">
-<area shape="rect" id="node1" title="Holds a ledger." alt="" coords="445,97,556,123"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="208,5,373,47"/>
-<area shape="rect" id="node3" href="$classripple_1_1DigestAwareReadView.html" title="ReadView that associates keys with digests." alt="" coords="184,71,397,98"/>
-<area shape="rect" id="node4" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="5,71,136,98"/>
-<area shape="rect" id="node5" href="$classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="215,122,366,149"/>
-<area shape="rect" id="node6" href="$classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="7,122,134,149"/>
-<area shape="rect" id="node7" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="209,173,372,215"/>
+<area shape="rect" id="node1" title="Holds a ledger." alt="" coords="448,95,559,121"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="210,5,375,45"/>
+<area shape="rect" id="node3" href="$classripple_1_1DigestAwareReadView.html" title="ReadView that associates keys with digests." alt="" coords="185,70,400,95"/>
+<area shape="rect" id="node4" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="5,70,137,95"/>
+<area shape="rect" id="node5" href="$classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="217,119,368,145"/>
+<area shape="rect" id="node6" href="$classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="8,119,135,145"/>
+<area shape="rect" id="node7" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="211,169,374,209"/>
 </map>

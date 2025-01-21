@@ -1,13 +1,14 @@
 <map id="Json::Reader" name="Json::Reader">
-<area shape="rect" id="node1" title="Unserialize a JSON document into a Value." alt="" coords="233,452,336,479"/>
-<area shape="rect" id="node2" href="$classJson_1_1Value.html" title="Represents a JSON value." alt="" coords="49,273,142,300"/>
-<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/stack.html" title=" " alt="" coords="121,363,283,389"/>
-<area shape="rect" id="node3" href="$unionJson_1_1Value_1_1ValueHolder.html" title=" " alt="" coords="5,184,185,211"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title="STL class." alt="" coords="28,95,163,121"/>
-<area shape="rect" id="node5" title=" " alt="" coords="43,5,81,32"/>
-<area shape="rect" id="node6" title=" " alt="" coords="109,5,148,32"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/deque.html" title=" " alt="" coords="358,363,534,389"/>
-<area shape="rect" id="node8" href="$classJson_1_1Reader_1_1ErrorInfo.html" title=" " alt="" coords="363,273,529,300"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title="STL class." alt="" coords="280,184,367,211"/>
-<area shape="rect" id="node10" href="$classJson_1_1Reader_1_1Token.html" title=" " alt="" coords="392,184,540,211"/>
+<area shape="rect" id="node1" title="Unserialize a JSON document into a Value." alt="" coords="272,460,375,485"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/stack.html" title=" " alt="" coords="122,372,285,397"/>
+<area shape="rect" id="node3" href="$classJson_1_1Value.html" title="Represents a JSON value." alt="" coords="49,284,142,309"/>
+<area shape="rect" id="node4" href="$unionJson_1_1Value_1_1ValueHolder.html" title=" " alt="" coords="5,196,185,221"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="28,101,163,126"/>
+<area shape="rect" id="node6" title=" " alt="" coords="44,5,83,31"/>
+<area shape="rect" id="node7" title=" " alt="" coords="109,5,148,31"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/deque.html" title=" " alt="" coords="309,372,485,397"/>
+<area shape="rect" id="node9" href="$classJson_1_1Reader_1_1ErrorInfo.html" title=" " alt="" coords="313,284,480,309"/>
+<area shape="rect" id="node10" href="$classJson_1_1Reader_1_1Token.html" title=" " alt="" coords="279,196,427,221"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="464,196,551,221"/>
+<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="438,93,577,133"/>
 </map>

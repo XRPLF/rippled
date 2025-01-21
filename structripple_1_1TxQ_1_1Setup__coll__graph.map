@@ -1,14 +1,13 @@
 <map id="ripple::TxQ::Setup" name="ripple::TxQ::Setup">
-<area shape="rect" id="node1" title="Structure used to customize TxQ behavior." alt="" coords="752,279,891,305"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="337,188,439,215"/>
-<area shape="rect" id="node3" href="$classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="293,239,483,281"/>
-<area shape="rect" id="node4" title=" " alt="" coords="14,5,203,61"/>
-<area shape="rect" id="node5" title=" " alt="" coords="7,86,210,127"/>
-<area shape="rect" id="node6" title=" " alt="" coords="7,152,210,208"/>
-<area shape="rect" id="node7" title=" " alt="" coords="15,232,202,288"/>
-<area shape="rect" id="node8" title=" " alt="" coords="5,313,212,354"/>
-<area shape="rect" id="node9" title=" " alt="" coords="14,379,203,435"/>
-<area shape="rect" id="node10" title=" " alt="" coords="89,459,128,485"/>
-<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="319,305,457,346"/>
-<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="344,371,432,397"/>
+<area shape="rect" id="node1" title="Structure used to customize TxQ behavior." alt="" coords="721,211,860,237"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="313,35,401,61"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="305,179,408,205"/>
+<area shape="rect" id="node4" href="$classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="261,229,452,269"/>
+<area shape="rect" id="node5" title=" " alt="" coords="13,38,204,93"/>
+<area shape="rect" id="node6" title=" " alt="" coords="7,117,210,157"/>
+<area shape="rect" id="node7" title=" " alt="" coords="7,182,210,237"/>
+<area shape="rect" id="node8" title=" " alt="" coords="15,261,202,315"/>
+<area shape="rect" id="node9" title=" " alt="" coords="5,340,212,380"/>
+<area shape="rect" id="node10" title=" " alt="" coords="13,405,204,459"/>
+<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="287,293,426,333"/>
 </map>

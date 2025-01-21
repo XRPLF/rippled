@@ -1,6 +1,6 @@
 <map id="ripple::test::AbstractClient" name="ripple::test::AbstractClient">
-<area shape="rect" id="node1" title=" " alt="" coords="107,5,299,32"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1JSONRPCClient.html" title=" " alt="" coords="5,80,201,107"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1WSClient.html" title=" " alt="" coords="225,80,384,107"/>
-<area shape="rect" id="node4" href="$classripple_1_1test_1_1WSClientImpl.html" title=" " alt="" coords="211,155,399,181"/>
+<area shape="rect" id="node1" title=" " alt="" coords="107,5,299,31"/>
+<area shape="rect" id="node2" href="$classripple_1_1test_1_1JSONRPCClient.html" title=" " alt="" coords="5,79,201,104"/>
+<area shape="rect" id="node3" href="$classripple_1_1test_1_1WSClient.html" title=" " alt="" coords="225,79,384,104"/>
+<area shape="rect" id="node4" href="$classripple_1_1test_1_1WSClientImpl.html" title=" " alt="" coords="211,152,399,177"/>
 </map>

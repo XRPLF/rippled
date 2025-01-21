@@ -1,8 +1,7 @@
 <map id="ripple::NodeStore::TestBase" name="ripple::NodeStore::TestBase">
-<area shape="rect" id="node1" title=" " alt="" coords="108,104,251,145"/>
-<area shape="rect" id="node3" href="$classripple_1_1NodeStore_1_1Backend__test.html" title=" " alt="" coords="306,5,449,47"/>
-<area shape="rect" id="node4" href="$classripple_1_1NodeStore_1_1Database__test.html" title=" " alt="" coords="306,71,449,112"/>
-<area shape="rect" id="node5" href="$classripple_1_1NodeStore_1_1DatabaseShard__test.html" title=" " alt="" coords="301,136,454,177"/>
-<area shape="rect" id="node6" href="$classripple_1_1NodeStore_1_1NodeStoreBasic__test.html" title=" " alt="" coords="299,201,456,243"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,111,60,138"/>
+<area shape="rect" id="node1" title=" " alt="" coords="216,69,359,109"/>
+<area shape="rect" id="node3" href="$classripple_1_1NodeStore_1_1Backend__test.html" title=" " alt="" coords="414,5,557,45"/>
+<area shape="rect" id="node4" href="$classripple_1_1NodeStore_1_1Database__test.html" title=" " alt="" coords="414,69,557,109"/>
+<area shape="rect" id="node5" href="$classripple_1_1NodeStore_1_1NodeStoreBasic__test.html" title=" " alt="" coords="407,133,564,173"/>
+<area shape="rect" id="node2" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="5,77,168,102"/>
 </map>

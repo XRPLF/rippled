@@ -1,6 +1,6 @@
 <map id="ripple::PeerFinder::StoreSqdb" name="ripple::PeerFinder::StoreSqdb">
-<area shape="rect" id="node1" title="Database persistence for PeerFinder using SQLite." alt="" coords="52,199,187,240"/>
-<area shape="rect" id="node2" href="$classripple_1_1PeerFinder_1_1Store.html" title="Abstract persistence for PeerFinder data." alt="" coords="5,95,140,136"/>
-<area shape="rect" id="node3" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="164,102,275,129"/>
-<area shape="rect" id="node4" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="146,5,293,32"/>
+<area shape="rect" id="node1" title="Database persistence for PeerFinder using SQLite." alt="" coords="27,196,163,236"/>
+<area shape="rect" id="node2" href="$classripple_1_1PeerFinder_1_1Store.html" title="Abstract persistence for PeerFinder data." alt="" coords="5,93,141,133"/>
+<area shape="rect" id="node3" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="166,101,277,126"/>
+<area shape="rect" id="node4" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="148,5,295,31"/>
 </map>

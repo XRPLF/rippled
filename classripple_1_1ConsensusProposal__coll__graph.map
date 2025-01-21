@@ -1,6 +1,6 @@
 <map id="ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t &gt;" name="ripple::ConsensusProposal&lt; NodeID_t, LedgerID_t, Position_t &gt;">
-<area shape="rect" id="node1" title="Represents a proposed position taken during a round of consensus." alt="" coords="317,59,511,115"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="40,15,143,41"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="14,66,169,107"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="5,131,177,173"/>
+<area shape="rect" id="node1" title="Represents a proposed position taken during a round of consensus." alt="" coords="317,67,511,122"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="40,22,143,47"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="5,75,177,115"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="14,139,169,179"/>
 </map>

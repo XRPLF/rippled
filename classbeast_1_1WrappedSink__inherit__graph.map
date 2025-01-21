@@ -1,4 +1,4 @@
 <map id="beast::WrappedSink" name="beast::WrappedSink">
-<area shape="rect" id="node1" title="Wraps a Journal::Sink to prefix its output with a string." alt="" coords="5,80,156,107"/>
-<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="7,5,154,32"/>
+<area shape="rect" id="node1" title="Wraps a Journal::Sink to prefix its output with a string." alt="" coords="5,79,157,104"/>
+<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="8,5,155,31"/>
 </map>

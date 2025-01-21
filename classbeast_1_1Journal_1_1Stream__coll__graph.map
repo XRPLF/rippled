@@ -1,4 +1,4 @@
 <map id="beast::Journal::Stream" name="beast::Journal::Stream">
-<area shape="rect" id="node1" title="Provide a light&#45;weight way to check active() before string formatting." alt="" coords="5,95,172,121"/>
-<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="15,5,162,32"/>
+<area shape="rect" id="node1" title="Provide a light&#45;weight way to check active() before string formatting." alt="" coords="5,93,172,119"/>
+<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="15,5,162,31"/>
 </map>
