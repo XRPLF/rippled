@@ -1,15 +1,12 @@
 name: missing-commits
 
 on:
-  # TODO: Remove the next line before merging
-  pull_request:
   push:
     branches:
       # Only check that the branches are up to date when updating the
       # relevant branches.
-      # TODO: Uncomment the next lines before merging
-      # - develop
-      # - release
+      - develop
+      - release
 
 jobs:
   check:
@@ -23,7 +20,7 @@ jobs:
       env:
         SUGGESTION: |
 
-          If you are reading this, then there are commits that are
+          If you are reading this, then the commits indicated above are
           missing from "develop" and/or "release". Do a reverse-merge
           as soon as possible. See CONTRIBUTING.md for instructions.
       run: |
@@ -52,6 +49,7 @@ jobs:
             echo "Checking ${prior[@]} for commits missing from ${branch}"
             git log --oneline --no-merges "${prior[@]}" \
               ^$branch | tee -a "missing-commits.txt"
+            echo
           fi
           prior+=( "${branch}" )
         done

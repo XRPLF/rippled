@@ -365,7 +365,7 @@ existing maintainer without a vote.
 
 Maintainers are users with maintain or admin access to the repo.
 
-* [bachase](https://github.com/bachase) (Ripple)
+* [bthomee](https://github.com/bthomee) (Ripple)
 * [intelliot](https://github.com/intelliot) (Ripple)
 * [JoelKatz](https://github.com/JoelKatz) (Ripple)
 * [nixer89](https://github.com/nixer89) (XRP Ledger Foundation)
@@ -377,7 +377,8 @@ Maintainers are users with maintain or admin access to the repo.
 
 ## Current Code Reviewers
 
-Code Reviewers are developers who have the ability to review and approve source code changes.
+Code Reviewers are developers who have the ability to review, approve, and
+in some cases merge source code changes.
 
 * [HowardHinnant](https://github.com/HowardHinnant) (Ripple)
 * [scottschurr](https://github.com/scottschurr) (Ripple)
@@ -447,9 +448,22 @@ the suggested commit message, or modify it as needed.
 #### Slightly more complicated pull requests
 
 Some pull requests need to be pushed to `develop` as more than one
-commit. There are multiple ways to accomplish this. If the author
-describes a process, and it is reasonable, follow it. Otherwise, do
-a fast forward only merge (`--ff-only`) on the command line and push.
+commit. A PR author may *request* to merge as separate commits. They
+must *justify* why separate commits are needed, and *specify* how they
+would like the commits to be merged. If you disagree with the author,
+discuss it with them directly.
+
+If the process is reasonable, follow it. The simplest option is to do a
+fast forward only merge (`--ff-only`) on the command line and push to
+`develop`.
+
+Some examples of when separate commits are worthwhile are:
+1. PRs where source files are reorganized in multiple steps.
+2. PRs where the commits are mostly independent and *could* be separate
+   PRs, but are pulled together into one PR under a commit theme or
+   issue.
+3. PRs that are complicated enough that `git bisect` would not be much
+   help if it determined this PR introduced a problem.
 
 Either way, check that:
 * The commits are based on the current tip of `develop`.
@@ -460,8 +474,9 @@ Either way, check that:
 * At least one (but preferably all) of the commits has the PR number
   in the commit message.
 
-**Never use the "Create a merge commit" or "Rebase and merge" Github UI
- functions!**
+The "Create a merge commit" and "Rebase and merge" options should be
+disabled in the Github UI, but if you ever find them available **Do not
+use them!**
 
 ### Releases
 
