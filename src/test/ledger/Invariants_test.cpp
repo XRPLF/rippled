@@ -452,6 +452,32 @@ class Invariants_test : public beast::unit_test::suite
                 ac.view().insert(sleNew);
                 return true;
             });
+
+        doInvariantCheck(
+            {{"a trust line with deep freeze flag without normal freeze was "
+              "created"}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const sleNew = std::make_shared<SLE>(
+                    keylet::line(A1, A2, A1["USD"].currency));
+                std::uint32_t uFlags = 0u;
+                uFlags |= lsfLowDeepFreeze | lsfHighFreeze;
+                sleNew->setFieldU32(sfFlags, uFlags);
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"a trust line with deep freeze flag without normal freeze was "
+              "created"}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const sleNew = std::make_shared<SLE>(
+                    keylet::line(A1, A2, A1["USD"].currency));
+                std::uint32_t uFlags = 0u;
+                uFlags |= lsfLowFreeze | lsfHighDeepFreeze;
+                sleNew->setFieldU32(sfFlags, uFlags);
+                ac.view().insert(sleNew);
+                return true;
+            });
     }
 
     void
