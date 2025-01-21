@@ -76,8 +76,8 @@ If you create new source files, they must be organized as follows:
 * If the files are in any of the `libxrpl` modules, the headers (`.h`) must go
   under `include/xrpl`, and source (`.cpp`) files must go under
   `src/libxrpl`.
-* All other non-test files they must go under `src/xrpld`.
-* All test source files, they must go under `src/test`.
+* All other non-test files must go under `src/xrpld`.
+* All test source files must go under `src/test`.
 
 The source must be formatted according to the style guide below.
 
@@ -504,7 +504,7 @@ Rippled uses a linear workflow model that can be summarized as:
       because the delays waiting for CI in between each merge will be
       unnecessarily onerous. (Incidentally, this process can also be
       used to merge if the Github UI has issues.) Merge each PR branch
-      directly to a `release-next` on your local machine create a single
+      directly to a `release-next` on your local machine and create a single
       PR, then push your branch to `develop`.
       1. Squash the changes from each PR, one commit each (unless more
          are needed), being sure to sign each commit and update the
