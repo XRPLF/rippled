@@ -1805,7 +1805,7 @@ class Freeze_test : public beast::unit_test::suite
 
         // Testing A2 nft offer sell when A2 frozen by issuer
         {
-            auto const sellOfferIndex = createNFTOffer(env, A2, USD(10));
+            auto const sellOfferIndex = createNFTSellOffer(env, A2, USD(10));
             env(trust(G1, A2["USD"](0), tfSetFreeze));
             env.close();
 
@@ -1820,7 +1820,7 @@ class Freeze_test : public beast::unit_test::suite
         // Testing A2 nft offer sell when A2 deep frozen by issuer
         if (features[featureDeepFreeze])
         {
-            auto const sellOfferIndex = createNFTOffer(env, A2, USD(10));
+            auto const sellOfferIndex = createNFTSellOffer(env, A2, USD(10));
 
             env(trust(G1, A2["USD"](0), tfSetFreeze | tfSetDeepFreeze));
             env.close();
@@ -1835,7 +1835,7 @@ class Freeze_test : public beast::unit_test::suite
 
         // Testing A1 nft offer sell when A2 frozen by issuer
         {
-            auto const sellOfferIndex = createNFTOffer(env, A1, USD(10));
+            auto const sellOfferIndex = createNFTSellOffer(env, A1, USD(10));
             env(trust(G1, A2["USD"](0), tfSetFreeze));
             env.close();
 
@@ -1851,7 +1851,7 @@ class Freeze_test : public beast::unit_test::suite
         // Testing A1 nft offer sell when A2 deep frozen by issuer
         if (features[featureDeepFreeze])
         {
-            auto const sellOfferIndex = createNFTOffer(env, A1, USD(10));
+            auto const sellOfferIndex = createNFTSellOffer(env, A1, USD(10));
             env(trust(G1, A2["USD"](0), tfSetFreeze | tfSetDeepFreeze));
             env.close();
 
@@ -1866,7 +1866,7 @@ class Freeze_test : public beast::unit_test::suite
 
         // Testing A2 nft offer sell when A2 frozen by currency holder
         {
-            auto const sellOfferIndex = createNFTOffer(env, A2, USD(10));
+            auto const sellOfferIndex = createNFTSellOffer(env, A2, USD(10));
             env(trust(A2, G1["USD"](0), tfSetFreeze));
             env.close();
 
@@ -1882,7 +1882,7 @@ class Freeze_test : public beast::unit_test::suite
         // // Testing A2 nft offer sell when A2 deep frozen by currency holder
         if (features[featureDeepFreeze])
         {
-            auto const sellOfferIndex = createNFTOffer(env, A2, USD(10));
+            auto const sellOfferIndex = createNFTSellOffer(env, A2, USD(10));
 
             env(trust(A2, G1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
             env.close();
@@ -1897,7 +1897,7 @@ class Freeze_test : public beast::unit_test::suite
 
         // Testing A1 nft offer sell when A2 frozen by currency holder
         {
-            auto const sellOfferIndex = createNFTOffer(env, A1, USD(10));
+            auto const sellOfferIndex = createNFTSellOffer(env, A1, USD(10));
             env(trust(A2, G1["USD"](0), tfSetFreeze));
             env.close();
 
@@ -1912,7 +1912,7 @@ class Freeze_test : public beast::unit_test::suite
         // // Testing A1 nft offer sell when A2 deep frozen by currency holder
         if (features[featureDeepFreeze])
         {
-            auto const sellOfferIndex = createNFTOffer(env, A1, USD(10));
+            auto const sellOfferIndex = createNFTSellOffer(env, A1, USD(10));
             env(trust(A2, G1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
             env.close();
 
@@ -1960,7 +1960,7 @@ class Freeze_test : public beast::unit_test::suite
     }
 
     uint256
-    createNFTOffer(
+    createNFTSellOffer(
         test::jtx::Env& env,
         test::jtx::Account const& account,
         test::jtx::PrettyAmount const& currency)

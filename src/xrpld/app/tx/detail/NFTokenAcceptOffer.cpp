@@ -272,7 +272,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // Make sure that we are allowed to hold what the taker will pay us.
         // This is the same approach taken by usual offers except we don't check
         // trust line authorization at the moment.
-        if (!needed.native())
+        if (ctx.view.rules().enabled(featureDeepFreeze) && !needed.native())
         {
             auto const result = checkAcceptAsset(
                 ctx.view,
@@ -536,7 +536,7 @@ NFTokenAcceptOffer::checkAcceptAsset(
     // Only valid for custom currencies
     XRPL_ASSERT(
         !isXRP(issue.currency),
-        "ripple::CreateOffer::checkAcceptAsset : input is not XRP");
+        "NFTokenAcceptOffer::checkAcceptAsset : input is not XRP");
 
     auto const issuerAccount = view.read(keylet::account(issue.account));
 
@@ -546,7 +546,7 @@ NFTokenAcceptOffer::checkAcceptAsset(
             << "delay: can't receive IOUs from non-existent issuer: "
             << to_string(issue.account);
 
-        return (flags & tapRETRY) ? TER{terNO_ACCOUNT} : TER{tecNO_ISSUER};
+        return tecNO_ISSUER;
     }
 
     // An account can not create a trustline to itself, so no line can exist
