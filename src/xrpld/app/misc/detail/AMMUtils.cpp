@@ -126,13 +126,9 @@ ammLPHolds(
 
     auto const sle = view.read(keylet::line(lpAccount, ammAccount, currency));
     if (!sle)
-    {
         amount.clear(Issue{currency, ammAccount});
-    }
     else if (isFrozen(view, lpAccount, currency, ammAccount))
-    {
         amount.clear(Issue{currency, ammAccount});
-    }
     else
     {
         amount = sle->getFieldAmount(sfBalance);

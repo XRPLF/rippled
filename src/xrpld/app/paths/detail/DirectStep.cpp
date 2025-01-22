@@ -905,8 +905,8 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
     // pure issue/redeem can't be frozen
     if (!(ctx.isLast && ctx.isFirst))
     {
-        if (auto const ter = checkFreeze(ctx.view, src_, dst_, currency_);
-            ter != tesSUCCESS)
+        auto const ter = checkFreeze(ctx.view, src_, dst_, currency_);
+        if (ter != tesSUCCESS)
             return ter;
     }
 

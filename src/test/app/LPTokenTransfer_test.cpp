@@ -20,29 +20,7 @@
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/sendmax.h>
-#include <xrpld/app/misc/AMMHelpers.h>
-#include <xrpld/app/misc/AMMUtils.h>
-#include <xrpld/app/paths/AMMContext.h>
-#include <xrpld/app/paths/AMMOffer.h>
-#include <xrpld/app/tx/detail/AMMBid.h>
-#include <xrpld/ledger/ApplyViewImpl.h>
-#include <xrpld/rpc/RPCHandler.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
-#include <xrpl/basics/Number.h>
-#include <xrpl/protocol/AMMCore.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/STParsedJSON.h>
-#include <xrpl/resource/Fees.h>
 
-#include "xrpl/protocol/TER.h"
-#include "xrpl/protocol/TxFlags.h"
-#include <chrono>
-#include <utility>
-#include <vector>
-
-#include <boost/regex.hpp>
 namespace ripple {
 namespace test {
 
@@ -82,7 +60,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env(trust(gw, carol["USD"](0), tfSetFreeze));
         env.close();
 
-        // bob can still send to lptoken to carol even tho carol's USD is
+        // bob can still send lptoken to carol even tho carol's USD is
         // frozen, regardless of whether fixFrozenLPTokenTransfer is enabled or
         // not
         // Note: Deep freeze is not considered for LPToken transfer
@@ -479,8 +457,7 @@ public:
     void
     run() override
     {
-        using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{jtx::supported_amendments()};
 
         for (auto const features : {all, all - fixFrozenLPTokenTransfer})
         {

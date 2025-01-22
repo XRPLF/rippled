@@ -297,16 +297,12 @@ accountHolds(
     auto const sle = view.read(keylet::line(account, issuer, currency));
     auto const allowBalance = [&]() {
         if (!sle)
-        {
             return false;
-        }
 
         if (zeroIfFrozen == fhZERO_IF_FROZEN)
         {
             if (isFrozen(view, account, currency, issuer))
-            {
                 return false;
-            }
 
             // when fixFrozenLPTokenTransfer is enabled, if currency is lptoken,
             // we need to check if the associated assets have been frozen
@@ -315,7 +311,7 @@ accountHolds(
                 auto const sleIssuer = view.read(keylet::account(issuer));
                 if (!sleIssuer)
                 {
-                    return false;
+                    return false;  // LCOV_EXCL_LINE
                 }
                 else if (sleIssuer->isFieldPresent(sfAMMID))
                 {

@@ -26,7 +26,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
-#include "xrpl/protocol/TER.h"
 
 namespace ripple {
 
@@ -63,7 +62,7 @@ checkFreeze(
         {
             auto const sleAmm = view.read(keylet::amm((*sleDst)[sfAMMID]));
             if (!sleAmm)
-                return tecINTERNAL;
+                return tecINTERNAL;  // LCOV_EXCL_LINE
 
             if (isLPTokenFrozen(
                     view,
