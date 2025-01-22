@@ -157,8 +157,8 @@ isFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
 isLPTokenFrozen(
     ReadView const& view,
     AccountID const& account,
-    Issue asset,
-    Issue asset2);
+    Issue const& asset,
+    Issue const& asset2);
 
 // Returns the amount an account can spend without going into debt.
 //

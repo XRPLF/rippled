@@ -271,8 +271,8 @@ bool
 isLPTokenFrozen(
     ReadView const& view,
     AccountID const& account,
-    Issue asset,
-    Issue asset2)
+    Issue const& asset,
+    Issue const& asset2)
 {
     return isFrozen(view, account, asset.currency, asset.account) ||
         isFrozen(view, account, asset2.currency, asset2.account);
