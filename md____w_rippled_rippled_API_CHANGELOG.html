@@ -159,6 +159,7 @@ Inconsistency: server_info - network_id</h2>
 <p >The <code>network_id</code> field was added in the <code>server_info</code> response in version 1.5.0 (2019), but it is not returned in <a href="https://xrpl.org/rippled-server-modes.html#reporting-mode">reporting mode</a>. However, use of reporting mode is now discouraged, in favor of using <a href="https://github.com/XRPLF/clio">Clio</a> instead.</p>
 <h1><a class="anchor" id="autotoc_md10"></a>
 XRP Ledger server version 2.4.0</h1>
+<p >As of 2025-01-23, version 2.4.0 is in development. You can use a pre-release version by building from source or <a href="https://xrpl.org/docs/infrastructure/installation/install-rippled-on-ubuntu">using the <code>nightly</code> package</a>.</p>
 <h2><a class="anchor" id="autotoc_md11"></a>
 Addition in 2.4</h2>
 <ul>
@@ -166,30 +167,39 @@ Addition in 2.4</h2>
 </ul>
 <h1><a class="anchor" id="autotoc_md12"></a>
 XRP Ledger server version 2.3.0</h1>
+<p ><a href="https://github.com/XRPLF/rippled/releases/tag/2.3.0">Version 2.3.0</a> was released on Nov 25, 2024.</p>
 <h2><a class="anchor" id="autotoc_md13"></a>
-Breaking change in 2.3</h2>
+Breaking changes in 2.3.0</h2>
 <ul>
 <li><code>book_changes</code>: If the requested ledger version is not available on this node, a <code>ledgerNotFound</code> error is returned and the node does not attempt to acquire the ledger from the p2p network (as with other non-admin RPCs).</li>
 </ul>
 <p >Admins can still attempt to retrieve old ledgers with the <code>ledger_request</code> RPC.</p>
 <h2><a class="anchor" id="autotoc_md14"></a>
-Addition in 2.3</h2>
+Additions and bugfixes in 2.3.0</h2>
 <ul>
 <li><code>book_changes</code>: Returns a <code>validated</code> field in its response, which was missing in prior versions.</li>
 </ul>
-<p >The following additions are non-breaking (because they are purely additive).</p>
+<h1><a class="anchor" id="autotoc_md15"></a>
+XRP Ledger server version 2.2.0</h1>
+<p ><a href="https://github.com/XRPLF/rippled/releases/tag/2.2.0">Version 2.2.0</a> was released on Jun 5, 2024. The following additions are non-breaking (because they are purely additive):</p>
+<ul>
+<li>The <code>feature</code> method now has a non-admin mode for users. (It was previously only available to admin connections.) The method returns an updated list of amendments, including their names and other information. (<a href="https://github.com/XRPLF/rippled/pull/4781">#4781</a>)</li>
+</ul>
+<h1><a class="anchor" id="autotoc_md16"></a>
+XRP Ledger server version 2.0.0</h1>
+<p ><a href="https://github.com/XRPLF/rippled/releases/tag/2.0.0">Version 2.0.0</a> was released on Jan 9, 2024. The following additions are non-breaking (because they are purely additive):</p>
 <ul>
 <li><code>server_definitions</code>: A new RPC that generates a <code>definitions.json</code>-like output that can be used in XRPL libraries.</li>
 <li>In <code>Payment</code> transactions, <code>DeliverMax</code> has been added. This is a replacement for the <code>Amount</code> field, which should not be used. Typically, the <code>delivered_amount</code> (in transaction metadata) should be used. To ease the transition, <code>DeliverMax</code> is present regardless of API version, since adding a field is non-breaking.</li>
 <li>API version 2 has been moved from beta to supported, meaning that it is generally available (regardless of the <code>beta_rpc_api</code> setting).</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md15"></a>
+<h1><a class="anchor" id="autotoc_md17"></a>
 XRP Ledger server version 2.2.0</h1>
 <p >The following is a non-breaking addition to the API.</p>
 <ul>
 <li>The <code>feature</code> method now has a non-admin mode for users. (It was previously only available to admin connections.) The method returns an updated list of amendments, including their names and other information. (<a href="https://github.com/XRPLF/rippled/pull/4781">#4781</a>)</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md16"></a>
+<h1><a class="anchor" id="autotoc_md18"></a>
 XRP Ledger server version 1.12.0</h1>
 <p ><a href="https://github.com/XRPLF/rippled/releases/tag/1.12.0">Version 1.12.0</a> was released on Sep 6, 2023. The following additions are non-breaking (because they are purely additive).</p>
 <ul>
@@ -237,10 +247,10 @@ XRP Ledger server version 1.12.0</h1>
 </ul>
 </li>
 </ul>
-<h1><a class="anchor" id="autotoc_md17"></a>
+<h1><a class="anchor" id="autotoc_md19"></a>
 XRP Ledger server version 1.11.0</h1>
 <p ><a href="https://github.com/XRPLF/rippled/releases/tag/1.11.0">Version 1.11.0</a> was released on Jun 20, 2023.</p>
-<h2><a class="anchor" id="autotoc_md18"></a>
+<h2><a class="anchor" id="autotoc_md20"></a>
 Breaking changes in 1.11</h2>
 <ul>
 <li>Added the ability to mark amendments as obsolete. For the <code>feature</code> admin API, there is a new possible value for the <code>vetoed</code> field. (<a href="https://github.com/XRPLF/rippled/pull/4291">https://github.com/XRPLF/rippled/pull/4291</a>)<ul>
@@ -272,7 +282,7 @@ Breaking changes in 1.11</h2>
 </ul>
 </li>
 </ul>
-<h2><a class="anchor" id="autotoc_md19"></a>
+<h2><a class="anchor" id="autotoc_md21"></a>
 Additions and bug fixes in 1.11</h2>
 <ul>
 <li>Added <code>nftoken_id</code>, <code>nftoken_ids</code> and <code>offer_id</code> meta fields into NFT <code>tx</code> and <code>account_tx</code> responses. (<a href="https://github.com/XRPLF/rippled/pull/4447">https://github.com/XRPLF/rippled/pull/4447</a>)</li>
@@ -280,15 +290,15 @@ Additions and bug fixes in 1.11</h2>
 <li>Added <code>NFTokenPages</code> to the <code>account_objects</code> RPC. (<a href="https://github.com/XRPLF/rippled/pull/4352">https://github.com/XRPLF/rippled/pull/4352</a>)</li>
 <li>Fixed: <code>marker</code> returned from the <code>account_lines</code> command would not work on subsequent commands. (<a href="https://github.com/XRPLF/rippled/pull/4361">https://github.com/XRPLF/rippled/pull/4361</a>)</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md20"></a>
+<h1><a class="anchor" id="autotoc_md22"></a>
 XRP Ledger server version 1.10.0</h1>
 <p ><a href="https://github.com/XRPLF/rippled/releases/tag/1.10.0">Version 1.10.0</a> was released on Mar 14, 2023.</p>
-<h2><a class="anchor" id="autotoc_md21"></a>
+<h2><a class="anchor" id="autotoc_md23"></a>
 Breaking changes in 1.10</h2>
 <ul>
 <li>If the <code>XRPFees</code> feature is enabled, the <code>fee_ref</code> field will be removed from the <a href="https://xrpl.org/subscribe.html#ledger-stream">ledger subscription stream</a>, because it will no longer have any meaning.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md22"></a>
+<h1><a class="anchor" id="autotoc_md24"></a>
 Unit tests for API changes</h1>
 <p >The following information is useful to developers contributing to this project:</p>
 <p >The purpose of unit tests is to catch bugs and prevent regressions. In general, it often makes sense to create a test function when there is a breaking change to the API. For APIs that have changed in a new API version, the tests should be modified so that both the prior version and the new version are properly tested.</p>

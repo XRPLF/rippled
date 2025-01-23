@@ -73,7 +73,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p >We recommend two different methods to depend on libxrpl in your own <a href="https://cmake.org/cmake/help/latest/">CMake</a> project. Both methods add a CMake library target named <code>xrpl::libxrpl</code>.</p>
-<h2><a class="anchor" id="autotoc_md137"></a>
+<h2><a class="anchor" id="autotoc_md139"></a>
 Conan requirement</h2>
 <p >The first method adds libxrpl as a <a href="https://docs.conan.io/">Conan</a> requirement. With this method, there is no need for a Git <a href="https://git-scm.com/book/en/v2/Git-Tools-Submodules">submodule</a>. It is good for when you just need a dependency on libxrpl as-is.</p>
 <div class="fragment"><div class="line"># This conanfile.txt is just an example.</div>
@@ -103,7 +103,7 @@ Conan requirement</h2>
 <div class="line">  -DCMAKE_BUILD_TYPE=Release \</div>
 <div class="line">  ..</div>
 <div class="line">cmake --build . --parallel</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md138"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md140"></a>
 CMake subdirectory</h2>
 <p >The second method adds the <a href="https://github.com/ripple/rippled">rippled</a> project as a CMake <a href="https://cmake.org/cmake/help/latest/command/add_subdirectory.html">subdirectory</a>. This method works well when you keep the rippled project as a Git <a href="https://git-scm.com/book/en/v2/Git-Tools-Submodules">submodule</a>. It's good for when you want to make changes to libxrpl as part of your own project. Be careful, though. Your project will inherit all of the same CMake options, so watch out for name collisions. We still recommend using <a href="https://docs.conan.io/">Conan</a> to download, build, and connect dependencies.</p>
 <div class="fragment"><div class="line"># Add the project as a Git submodule.</div>
