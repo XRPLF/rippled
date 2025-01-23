@@ -23,10 +23,10 @@
 #include <xrpld/ledger/OpenView.h>
 #include <xrpld/ledger/RawView.h>
 #include <xrpld/ledger/ReadView.h>
-#include <xrpl/basics/XRPAmount.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <memory>
 
 namespace ripple {

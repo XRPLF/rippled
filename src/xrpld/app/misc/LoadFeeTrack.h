@@ -20,10 +20,11 @@
 #ifndef RIPPLE_CORE_LOADFEETRACK_H_INCLUDED
 #define RIPPLE_CORE_LOADFEETRACK_H_INCLUDED
 
-#include <xrpl/basics/FeeUnits.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/FeeUnits.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <algorithm>
 #include <cstdint>
 #include <mutex>

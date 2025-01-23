@@ -204,6 +204,15 @@ Env::balance(Account const& account, Issue const& issue) const
 }
 
 std::uint32_t
+Env::ownerCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfOwnerCount);
+}
+
+std::uint32_t
 Env::seq(Account const& account) const
 {
     auto const sle = le(account);
@@ -503,7 +512,8 @@ Env::autofill(JTx& jt)
     }
     catch (parse_error const&)
     {
-        test.log << "parse failed:\n" << pretty(jv) << std::endl;
+        if (!parseFailureExpected_)
+            test.log << "parse failed:\n" << pretty(jv) << std::endl;
         Rethrow();
     }
 }

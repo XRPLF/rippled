@@ -100,8 +100,8 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    auto const asset = ctx.tx[sfAsset];
-    auto const asset2 = ctx.tx[sfAsset2];
+    auto const asset = ctx.tx[sfAsset].get<Issue>();
+    auto const asset2 = ctx.tx[sfAsset2].get<Issue>();
     if (auto const res = invalidAMMAssetPair(asset, asset2))
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid asset pair.";
@@ -418,7 +418,12 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         return {result, false};
 
     auto const res = deleteAMMAccountIfEmpty(
-        sb, ammSle, newLPTokenBalance, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);
+        sb,
+        ammSle,
+        newLPTokenBalance,
+        ctx_.tx[sfAsset].get<Issue>(),
+        ctx_.tx[sfAsset2].get<Issue>(),
+        j_);
     // LCOV_EXCL_START
     if (!res.second)
         return {res.first, false};
@@ -877,7 +882,9 @@ AMMWithdraw::equalWithdrawLimit(
 
     frac = Number{amount2} / amount2Balance;
     auto const amountWithdraw = amountBalance * frac;
-    assert(amountWithdraw <= amount);
+    XRPL_ASSERT(
+        amountWithdraw <= amount,
+        "ripple::AMMWithdraw::equalWithdrawLimit : maximum amountWithdraw");
     return withdraw(
         view,
         ammSle,

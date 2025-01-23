@@ -220,7 +220,8 @@ page(uint256 const& root, std::uint64_t index = 0) noexcept;
 inline Keylet
 page(Keylet const& root, std::uint64_t index = 0) noexcept
 {
-    assert(root.type == ltDIR_NODE);
+    XRPL_ASSERT(
+        root.type == ltDIR_NODE, "ripple::keylet::page : valid root type");
     return page(root.key, index);
 }
 /** @} */
@@ -273,7 +274,7 @@ nft_sells(uint256 const& id) noexcept;
 
 /** AMM entry */
 Keylet
-amm(Issue const& issue1, Issue const& issue2) noexcept;
+amm(Asset const& issue1, Asset const& issue2) noexcept;
 
 Keylet
 amm(uint256 const& amm) noexcept;
@@ -329,6 +330,11 @@ mptoken(uint256 const& mptokenKey)
 Keylet
 mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept;
 
+Keylet
+permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept;
+
+Keylet
+permissionedDomain(uint256 const& domainID) noexcept;
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:
