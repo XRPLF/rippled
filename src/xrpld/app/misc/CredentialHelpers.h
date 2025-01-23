@@ -34,9 +34,9 @@ checkExpired(
     std::shared_ptr<SLE const> const& sleCredential,
     NetClock::time_point const& closed);
 
-// Return true if at least 1 expired credentials was found(and deleted)
+// Return true if any expired credential was found in arr (and deleted)
 bool
-removeExpired(ApplyView& view, STTx const& tx, beast::Journal const j);
+removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j);
 
 // Actually remove a credentials object from the ledger
 TER
@@ -49,16 +49,17 @@ deleteSLE(
 NotTEC
 checkFields(PreflightContext const& ctx);
 
-// Accessing the ledger to check if provided credentials are valid
+// Accessing the ledger to check if provided credentials are valid. Do not use
+// in doApply (only in preclaim) since it does not remove expired credentials.
+// If you call it in prelaim, you also must call verifyDepositPreauth in doApply
 TER
 valid(PreclaimContext const& ctx, AccountID const& src);
 
-// Check if subject has any credentials maching given credential domain
+// Check if subject has any credential maching the given domain. Do not use in
+// doApply (only in preclaim) since it does not remove expired credentials. If
+// you call it in prelaim, you also must call verifyDomain in doApply
 TER
-authorizedDomain(
-    ReadView const& view,
-    uint256 domainID,
-    AccountID const& subject);
+valid(ReadView const& view, uint256 domainID, AccountID const& subject);
 
 // This function is only called when we about to return tecNO_PERMISSION
 // because all the checks for the DepositPreauth authorization failed.
@@ -78,6 +79,15 @@ NotTEC
 checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j);
 
 }  // namespace credentials
+
+// Check expired credentials and for credentials maching DomainID of the ledger
+// object
+TER
+verifyDomain(
+    ApplyContext& ctx,
+    AccountID const& src,
+    AccountID const& dst,
+    std::shared_ptr<SLE> const& object);
 
 // Check expired credentials and for existing DepositPreauth ledger object
 TER

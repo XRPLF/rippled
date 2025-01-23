@@ -209,8 +209,7 @@ class Vault_test : public beast::unit_test::suite
         testCases(
             "XRP",
             [](Env& env, Account const& issuer, Account const& depositor)
-                -> PrettyAsset { return {xrpIssue(), 1'000'000};
-            });
+                -> PrettyAsset { return {xrpIssue(), 1'000'000}; });
 
         testCases(
             "IOU",

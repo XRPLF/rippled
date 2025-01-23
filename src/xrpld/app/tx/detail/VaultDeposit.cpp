@@ -56,11 +56,16 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (vault->getFlags() == tfVaultPrivate &&
         ctx.tx[sfAccount] != vault->at(sfOwner))
     {
+        // Similar to credential::valid call inside Payment::prelaim (different
+        // overload), if we do not see authorised credentials in preclaim, we do
+        // not progress to doApply. This means that any expired credentials are
+        // only deleted *if* we pass this check here in preclaim.
         if (auto const domain = vault->at(~sfVaultID))
         {
-            if (credentials::authorizedDomain(
-                    ctx.view, *domain, ctx.tx[sfAccount]) != tesSUCCESS)
-                return tecNO_PERMISSION;
+            if (auto const err =
+                    credentials::valid(ctx.view, *domain, ctx.tx[sfAccount]);
+                !isTesSuccess(err))
+                return err;
         }
     }
 
@@ -74,9 +79,16 @@ VaultDeposit::doApply()
     if (!vault)
         return tecOBJECT_NOT_FOUND;
 
-    // TODO: Check credentials.
+    auto const dst = ctx_.tx[sfAccount];
+    auto const src = vault->at(sfOwner);
+
     if (vault->getFlags() & lsfVaultPrivate)
-        return tecNO_PERMISSION;
+    {
+        // TODO move DomainID from vault to MPTokenIssuance
+        if (auto const err = verifyDomain(ctx_, src, dst, vault);
+            !isTesSuccess(err))
+            return err;
+    }
 
     auto const assets = ctx_.tx[sfAmount];
     Asset const& asset = vault->at(sfAsset);
