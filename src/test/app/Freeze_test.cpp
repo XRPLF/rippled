@@ -1892,7 +1892,7 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
         }
 
-        // // Testing A2 nft offer sell when A2 deep frozen by currency holder
+        // Testing A2 nft offer sell when A2 deep frozen by currency holder
         if (features[featureDeepFreeze])
         {
             auto const sellOfferIndex = createNFTSellOffer(env, A2, USD(10));
@@ -1922,7 +1922,7 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
         }
 
-        // // Testing A1 nft offer sell when A2 deep frozen by currency holder
+        // Testing A1 nft offer sell when A2 deep frozen by currency holder
         if (features[featureDeepFreeze])
         {
             auto const sellOfferIndex = createNFTSellOffer(env, A1, USD(10));

@@ -595,6 +595,266 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
 //------------------------------------------------------------------------------
 
 void
+BalanceChangeNotFrozen::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    // `before` can be null in case it's a newly created trustline, but `after`
+    // can't be null.
+    XRPL_ASSERT(
+        after, "ripple::BalanceChangeNotFrozen::visitEntry : invalid after.");
+
+    if (!isValidEntry(before, after))
+    {
+        return;
+    }
+
+    auto const balanceChange = calculateBalanceChange(before, after, isDelete);
+    if (balanceChange.signum() == 0)
+    {
+        return;
+    }
+
+    recordBalanceChanges(after, balanceChange);
+}
+
+bool
+BalanceChangeNotFrozen::finalize(
+    STTx const& tx,
+    TER const ter,
+    XRPAmount const fee,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    // This invariant check is only enabled with deep freeze amendment.
+    [[maybe_unused]] bool const enforce =
+        view.rules().enabled(featureDeepFreeze);
+
+    for (auto const& [issuerID, byCurrency] : balanceChanges)
+    {
+        auto const issuer = findIssuer(issuerID, view);
+        // It should be impossible for the issuer to not be found, but check
+        // just in case so rippled doesn't crash in release.
+        if (!issuer)
+        {
+            XRPL_ASSERT(
+                enforce,
+                "ripple::BalanceChangeNotFrozen::finalize : Issuer not found.");
+            if (enforce)
+            {
+                return false;
+            }
+            continue;
+        }
+
+        if (!validateIssuerChanges(issuer, byCurrency, tx, j, enforce))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool
+BalanceChangeNotFrozen::isValidEntry(
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (!after)
+    {
+        return false;
+    }
+
+    if (after->getType() == ltACCOUNT_ROOT)
+    {
+        possibleIssuers.emplace(after->at(sfAccount), after);
+        return false;
+    }
+
+    return after->getType() == ltRIPPLE_STATE &&
+        (!before || before->getType() == ltRIPPLE_STATE);
+}
+
+STAmount
+BalanceChangeNotFrozen::calculateBalanceChange(
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after,
+    bool isDelete)
+{
+    auto getBalance = [](auto const& line, auto const& other, bool zero) {
+        STAmount amt =
+            line ? line->at(sfBalance) : line->at(sfBalance).zeroed();
+        return zero ? amt.zeroed() : amt;
+    };
+
+    auto const balanceBefore = getBalance(before, after, false);
+    auto const balanceAfter = getBalance(after, before, isDelete);
+    return balanceAfter - balanceBefore;
+}
+
+void
+BalanceChangeNotFrozen::recordBalance(
+    AccountID const& issuer,
+    Currency const& currency,
+    BalanceChange change)
+{
+    XRPL_ASSERT(
+        change.balanceChangeSign,
+        "ripple::BalanceChangeNotFrozen::recordBalance : invalid trust "
+        "line balance sign.");
+    auto& changes = balanceChanges[issuer][currency];
+    if (change.balanceChangeSign < 0)
+        changes.senders.emplace_back(std::move(change));
+    else
+        changes.receivers.emplace_back(std::move(change));
+}
+
+void
+BalanceChangeNotFrozen::recordBalanceChanges(
+    std::shared_ptr<SLE const> const& after,
+    STAmount const& balanceChange)
+{
+    auto const balanceChangeSign = balanceChange.signum();
+    auto const currency = after->at(sfBalance).getCurrency();
+
+    recordBalance(
+        after->at(sfHighLimit).getIssuer(),
+        currency,
+        {after, balanceChangeSign});
+
+    recordBalance(
+        after->at(sfLowLimit).getIssuer(),
+        currency,
+        {after, -balanceChangeSign});
+}
+
+std::shared_ptr<SLE const>
+BalanceChangeNotFrozen::findIssuer(
+    AccountID const& issuerID,
+    ReadView const& view)
+{
+    if (auto it = possibleIssuers.find(issuerID); it != possibleIssuers.end())
+    {
+        return it->second;
+    }
+
+    return view.read(keylet::account(issuerID));
+}
+
+bool
+BalanceChangeNotFrozen::validateIssuerChanges(
+    std::shared_ptr<SLE const> const& issuer,
+    ByCurrency const& byCurrency,
+    STTx const& tx,
+    beast::Journal const& j,
+    bool enforce)
+{
+    if (!issuer)
+    {
+        return false;
+    }
+
+    bool const globalFreeze = issuer->isFlag(lsfGlobalFreeze);
+
+    for (auto const& [currency, changes] : byCurrency)
+    {
+        if (changes.receivers.empty() || changes.senders.empty())
+        {
+            // If there are no receivers, then the holder(s) are returning
+            // their tokens to the issuer. Likewise, if there are no
+            // senders, then the issuer is issuing tokens to the holder(s).
+            // This is allowed regardless of the issuer's freeze flags. (The
+            // holder may have contradicting freeze flags, but that will be
+            // checked when the holder is treated as issuer.)
+            continue;
+        }
+
+        if (!validateChanges(changes, issuer, tx, j, enforce, globalFreeze))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool
+BalanceChangeNotFrozen::validateChanges(
+    IssuerChanges const& changes,
+    std::shared_ptr<SLE const> const& issuer,
+    STTx const& tx,
+    beast::Journal const& j,
+    bool enforce,
+    bool globalFreeze)
+{
+    for (auto const& actors : {changes.senders, changes.receivers})
+    {
+        for (auto const& change : actors)
+        {
+            bool const high = change.line->at(sfLowLimit).getIssuer() ==
+                issuer->at(sfAccount);
+
+            if (!validateFrozenState(
+                    change, high, tx, j, enforce, globalFreeze))
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool
+BalanceChangeNotFrozen::validateFrozenState(
+    BalanceChange const& change,
+    bool high,
+    STTx const& tx,
+    beast::Journal const& j,
+    bool enforce,
+    bool globalFreeze)
+{
+    bool const freeze = change.balanceChangeSign < 0 &&
+        change.line->isFlag(high ? lsfLowFreeze : lsfHighFreeze);
+    bool const deepFreeze =
+        change.line->isFlag(high ? lsfLowDeepFreeze : lsfHighFreeze);
+    bool const frozen = globalFreeze || deepFreeze || freeze;
+
+    bool const isAMMLine = change.line->isFlag(lsfAMMNode);
+
+    if (!frozen)
+    {
+        return true;
+    }
+
+    // AMMClawbacks are allowed to override some freeze rules
+    if ((!isAMMLine || globalFreeze) && tx.getTxnType() == ttAMM_CLAWBACK)
+    {
+        JLOG(j.debug()) << "Invariant check allowing funds to be moved "
+                        << (change.balanceChangeSign > 0 ? "to" : "from")
+                        << " a frozen trustline for AMMClawback "
+                        << tx.getTransactionID();
+        return true;
+    }
+
+    JLOG(j.fatal()) << "Invariant failed: Attempting to move frozen funds for "
+                    << tx.getTransactionID();
+    XRPL_ASSERT(
+        enforce,
+        "ripple::BalanceChangeNotFrozen::validateFrozenState : Attempting to "
+        "move frozen funds.");
+
+    if (enforce)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
 ValidNewAccountRoot::visitEntry(
     bool,
     std::shared_ptr<SLE const> const& before,
