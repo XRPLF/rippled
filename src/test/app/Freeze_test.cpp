@@ -244,6 +244,17 @@ class Freeze_test : public beast::unit_test::suite
                 env.close();
             }
 
+            //  test: Holder clearing freeze flags has no effect. Each sides'
+            //  flags are independent
+            env(trust(A1, G1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            {
+                auto const flags = getTrustlineFlags(env, 2u, 1u);
+                BEAST_EXPECT(flags & lsfLowFreeze);
+                BEAST_EXPECT(flags & lsfLowDeepFreeze);
+                BEAST_EXPECT(!(flags & (lsfHighFreeze | lsfHighDeepFreeze)));
+                env.close();
+            }
+
             //  test: Issuer can't clear normal freeze when line is deep frozen
             env(trust(G1, A1["USD"](0), tfClearFreeze), ter(tecNO_PERMISSION));
 
@@ -760,7 +771,8 @@ class Freeze_test : public beast::unit_test::suite
         env.fund(XRP(10000), G1, A1, A2, A3);
         env.close();
 
-        env.trust(G1["USD"](10000), A1, A2, A3);
+        auto const limit = USD(10000);
+        env.trust(limit, A1, A2, A3);
         env.close();
 
         env(pay(G1, A1, USD(1000)));
@@ -924,12 +936,10 @@ class Freeze_test : public beast::unit_test::suite
         // Testing aggressive and passive offer placing, trustline frozen by
         // the holder
         {
-            env(trust(A1, G1["USD"](0), tfSetFreeze));
+            env(trust(A1, limit, tfSetFreeze));
             env.close();
 
             // test: A1 can make passive buy offer
-            // TODO: I expected that it would not possible to create buy offer
-            // in this situation. Fix later.
             env(offer(A1, USD(1), XRP(0.5)), txflags(tfPassive));
             env.close();
             env.require(balance(A1, USD(1002)), offers(A1, 1));
@@ -972,7 +982,7 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
             env.require(balance(A1, USD(1001)), offers(A1, 0));
 
-            env(trust(A1, G1["USD"](0), tfClearFreeze));
+            env(trust(A1, limit, tfClearFreeze));
             env.close();
         }
 
@@ -980,7 +990,7 @@ class Freeze_test : public beast::unit_test::suite
         // by the holder
         if (features[featureDeepFreeze])
         {
-            env(trust(A1, G1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env(trust(A1, limit, tfSetFreeze | tfSetDeepFreeze));
             env.close();
 
             // test: A1 cannot create passive buy offer
@@ -999,7 +1009,7 @@ class Freeze_test : public beast::unit_test::suite
             env(offer(A1, XRP(1), USD(1)), ter(tecUNFUNDED_OFFER));
             env.close();
 
-            env(trust(A1, G1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env(trust(A1, limit, tfClearFreeze | tfClearDeepFreeze));
             env.close();
         }
     }
@@ -1020,7 +1030,8 @@ class Freeze_test : public beast::unit_test::suite
         env.fund(XRP(10000), G1, A1, A2);
         env.close();
 
-        env.trust(G1["USD"](10000), A1, A2);
+        auto const limit = USD(10000);
+        env.trust(limit, A1, A2);
         env.close();
 
         env(pay(G1, A1, USD(1000)));
@@ -1084,7 +1095,7 @@ class Freeze_test : public beast::unit_test::suite
         // Testing payments A1 <-> G1 using offer from A2 frozen by currency
         // holder.
         {
-            env(trust(A2, G1["USD"](0), tfSetFreeze));
+            env(trust(A2, limit, tfSetFreeze));
             env.close();
 
             // test: A1 can send USD using XRP through A2 offer
@@ -1101,7 +1112,7 @@ class Freeze_test : public beast::unit_test::suite
                 txflags(tfNoRippleDirect));
             env.close();
 
-            env(trust(A2, G1["USD"](0), tfClearFreeze));
+            env(trust(A2, limit, tfClearFreeze));
             env.close();
         }
 
@@ -1109,7 +1120,7 @@ class Freeze_test : public beast::unit_test::suite
         // currency holder.
         if (features[featureDeepFreeze])
         {
-            env(trust(A2, G1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env(trust(A2, limit, tfSetFreeze | tfSetDeepFreeze));
             env.close();
 
             // test: A1 cannot send USD using XRP through A2 offer
@@ -1128,7 +1139,7 @@ class Freeze_test : public beast::unit_test::suite
                 ter(tecPATH_PARTIAL));
             env.close();
 
-            env(trust(A2, G1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env(trust(A2, limit, tfClearFreeze | tfClearDeepFreeze));
             env.close();
         }
 
@@ -1193,7 +1204,7 @@ class Freeze_test : public beast::unit_test::suite
         // Testing payments A1 <-> G1 using offer from A2 frozen by currency
         // holder.
         {
-            env(trust(A2, G1["USD"](0), tfSetFreeze));
+            env(trust(A2, limit, tfSetFreeze));
             env.close();
 
             // test: A1 can send XRP using USD through A2 offer
@@ -1214,7 +1225,7 @@ class Freeze_test : public beast::unit_test::suite
                 txflags(tfNoRippleDirect));
             env.close();
 
-            env(trust(A2, G1["USD"](0), tfClearFreeze));
+            env(trust(A2, limit, tfClearFreeze));
             env.close();
         }
 
@@ -1222,7 +1233,7 @@ class Freeze_test : public beast::unit_test::suite
         // currency holder.
         if (features[featureDeepFreeze])
         {
-            env(trust(A2, G1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env(trust(A2, limit, tfSetFreeze | tfSetDeepFreeze));
             env.close();
 
             // test: A1 cannot send XRP using USD through A2 offer
@@ -1241,7 +1252,7 @@ class Freeze_test : public beast::unit_test::suite
                 ter(tecPATH_PARTIAL));
             env.close();
 
-            env(trust(A2, G1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env(trust(A2, limit, tfClearFreeze | tfClearDeepFreeze));
             env.close();
         }
 
@@ -1267,7 +1278,8 @@ class Freeze_test : public beast::unit_test::suite
         env.fund(XRP(10000), G1, A1, A2);
         env.close();
 
-        env.trust(G1["USD"](1000), A1, A2);
+        auto const limit = USD(10000);
+        env.trust(limit, A1, A2);
         env.close();
 
         env(pay(G1, A1, USD(1000)));
@@ -1328,7 +1340,7 @@ class Freeze_test : public beast::unit_test::suite
         env.close();
 
         // A1 freezes trust line
-        env(trust(A1, G1["USD"](0), tfSetFreeze));
+        env(trust(A1, limit, tfSetFreeze));
         env.close();
 
         // Issuer and A2 must not be affected
@@ -1343,15 +1355,15 @@ class Freeze_test : public beast::unit_test::suite
         env(pay(A1, A2, USD(1)));
         env.close();
 
-        // Issuer cannot sent tokens to A1
-        env(pay(G1, A1, USD(1)), ter(tecPATH_DRY));
+        // Issuer can sent tokens to A1
+        env(pay(G1, A1, USD(1)));
         // A2 cannot send tokens to A1
         env(pay(A2, A1, USD(1)), ter(tecPATH_DRY));
 
         if (features[featureDeepFreeze])
         {
             // A1 deep freezes trust line
-            env(trust(A1, G1["USD"](0), tfSetDeepFreeze));
+            env(trust(A1, limit, tfSetDeepFreeze));
             env.close();
 
             // Issuer and A2 must not be affected
@@ -1363,8 +1375,8 @@ class Freeze_test : public beast::unit_test::suite
             env(pay(A1, G1, USD(1)));
             env.close();
 
-            // Issuer cannot send tokens to A1
-            env(pay(G1, A1, USD(1)), ter(tecPATH_DRY));
+            // Issuer can send tokens to A1
+            env(pay(G1, A1, USD(1)));
             // A2 cannot send tokens to A1
             env(pay(A2, A1, USD(1)), ter(tecPATH_DRY));
             // A1 cannot send tokens to A2
@@ -1388,7 +1400,8 @@ class Freeze_test : public beast::unit_test::suite
         env.fund(XRP(10000), G1, A1, A2);
         env.close();
 
-        env.trust(USD(1000), A1, A2);
+        auto const limit = USD(10000);
+        env.trust(limit, A1, A2);
         env.close();
 
         env(pay(G1, A1, USD(1000)));
@@ -1530,8 +1543,7 @@ class Freeze_test : public beast::unit_test::suite
                 uint256 const checkId{getCheckIndex(G1, env.seq(G1))};
                 env(check::create(G1, A1, USD(10)));
                 env.close();
-                // This might be a bug in current check implementation.
-                // Normal freeze should not prevent A1 balance from increasing.
+
                 env(check::cash(A1, checkId, USD(10)), ter(tecFROZEN));
                 env.close();
             }
@@ -1596,7 +1608,7 @@ class Freeze_test : public beast::unit_test::suite
         // Testing creation and cashing of checks on a trustline frozen by
         // a currency holder
         {
-            env(trust(A1, G1["USD"](0), tfSetFreeze));
+            env(trust(A1, limit, tfSetFreeze));
             env.close();
 
             // test: issuer writes check to A1.
@@ -1629,7 +1641,7 @@ class Freeze_test : public beast::unit_test::suite
                 env.close();
             }
 
-            env(trust(A1, G1["USD"](0), tfClearFreeze));
+            env(trust(A1, limit, tfClearFreeze));
             env.close();
         }
 
@@ -1637,7 +1649,7 @@ class Freeze_test : public beast::unit_test::suite
         // a currency holder
         if (features[featureDeepFreeze])
         {
-            env(trust(A1, G1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env(trust(A1, limit, tfSetFreeze | tfSetDeepFreeze));
             env.close();
 
             // test: issuer writes check to A1.
@@ -1670,7 +1682,7 @@ class Freeze_test : public beast::unit_test::suite
                 env.close();
             }
 
-            env(trust(A1, G1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env(trust(A1, limit, tfClearFreeze | tfClearDeepFreeze));
             env.close();
         }
     }
@@ -1796,7 +1808,8 @@ class Freeze_test : public beast::unit_test::suite
         env.fund(XRP(10000), G1, A1, A2);
         env.close();
 
-        env.trust(G1["USD"](10000), A1, A2);
+        auto const limit = USD(10000);
+        env.trust(limit, A1, A2);
         env.close();
 
         env(pay(G1, A1, USD(1000)));
@@ -1867,7 +1880,7 @@ class Freeze_test : public beast::unit_test::suite
         // Testing A2 nft offer sell when A2 frozen by currency holder
         {
             auto const sellOfferIndex = createNFTSellOffer(env, A2, USD(10));
-            env(trust(A2, G1["USD"](0), tfSetFreeze));
+            env(trust(A2, limit, tfSetFreeze));
             env.close();
 
             // test: this should actually fail since the currency holder doesn't
@@ -1875,7 +1888,7 @@ class Freeze_test : public beast::unit_test::suite
             env(token::acceptSellOffer(A1, sellOfferIndex));
             env.close();
 
-            env(trust(A2, G1["USD"](0), tfClearFreeze));
+            env(trust(A2, limit, tfClearFreeze));
             env.close();
         }
 
@@ -1884,28 +1897,28 @@ class Freeze_test : public beast::unit_test::suite
         {
             auto const sellOfferIndex = createNFTSellOffer(env, A2, USD(10));
 
-            env(trust(A2, G1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env(trust(A2, limit, tfSetFreeze | tfSetDeepFreeze));
             env.close();
 
             // test: A2 cannot receive USD for his NFT
             env(token::acceptSellOffer(A1, sellOfferIndex), ter(tecFROZEN));
             env.close();
 
-            env(trust(A2, G1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env(trust(A2, limit, tfClearFreeze | tfClearDeepFreeze));
             env.close();
         }
 
         // Testing A1 nft offer sell when A2 frozen by currency holder
         {
             auto const sellOfferIndex = createNFTSellOffer(env, A1, USD(10));
-            env(trust(A2, G1["USD"](0), tfSetFreeze));
+            env(trust(A2, limit, tfSetFreeze));
             env.close();
 
             // test: A2 cannot send USD for NFT
             env(token::acceptSellOffer(A2, sellOfferIndex));
             env.close();
 
-            env(trust(A2, G1["USD"](0), tfClearFreeze));
+            env(trust(A2, limit, tfClearFreeze));
             env.close();
         }
 
@@ -1913,7 +1926,7 @@ class Freeze_test : public beast::unit_test::suite
         if (features[featureDeepFreeze])
         {
             auto const sellOfferIndex = createNFTSellOffer(env, A1, USD(10));
-            env(trust(A2, G1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env(trust(A2, limit, tfSetFreeze | tfSetDeepFreeze));
             env.close();
 
             // test: A2 cannot send USD for NFT
@@ -1921,7 +1934,7 @@ class Freeze_test : public beast::unit_test::suite
                 ter(tecINSUFFICIENT_FUNDS));
             env.close();
 
-            env(trust(A2, G1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env(trust(A2, limit, tfClearFreeze | tfClearDeepFreeze));
             env.close();
         }
     }

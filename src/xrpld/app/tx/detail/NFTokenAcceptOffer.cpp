@@ -279,7 +279,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                 ctx.flags,
                 (*so)[sfOwner],
                 ctx.j,
-                Issue(needed.getCurrency(), needed.getIssuer()));
+                needed.asset().get<Issue>());
             if (result != tesSUCCESS)
                 return result;
         }
