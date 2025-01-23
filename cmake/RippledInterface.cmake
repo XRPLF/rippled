@@ -7,6 +7,9 @@ add_library (Ripple::opts ALIAS opts)
 target_compile_definitions (opts
   INTERFACE
     BOOST_ASIO_DISABLE_HANDLER_TYPE_REQUIREMENTS
+    BOOST_ASIO_USE_TS_EXECUTOR_AS_DEFAULT
+    BOOST_CONTAINER_FWD_BAD_DEQUE
+    HAS_UNCAUGHT_EXCEPTIONS=1
     $<$<BOOL:${boost_show_deprecated}>:
       BOOST_ASIO_NO_DEPRECATED
       BOOST_FILESYSTEM_NO_DEPRECATED
@@ -18,10 +21,12 @@ target_compile_definitions (opts
     >
     $<$<BOOL:${beast_no_unit_test_inline}>:BEAST_NO_UNIT_TEST_INLINE=1>
     $<$<BOOL:${beast_disable_autolink}>:BEAST_DONT_AUTOLINK_TO_WIN32_LIBRARIES=1>
-    $<$<BOOL:${single_io_service_thread}>:RIPPLE_SINGLE_IO_SERVICE_THREAD=1>)
+    $<$<BOOL:${single_io_service_thread}>:RIPPLE_SINGLE_IO_SERVICE_THREAD=1>
+    $<$<BOOL:${voidstar}>:ENABLE_VOIDSTAR>)
 target_compile_options (opts
   INTERFACE
     $<$<AND:$<BOOL:${is_gcc}>,$<COMPILE_LANGUAGE:CXX>>:-Wsuggest-override>
+    $<$<BOOL:${is_gcc}>:-Wno-maybe-uninitialized>
     $<$<BOOL:${perf}>:-fno-omit-frame-pointer>
     $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${coverage}>>:-g --coverage -fprofile-abs-path>
     $<$<AND:$<BOOL:${is_clang}>,$<BOOL:${coverage}>>:-g --coverage>
